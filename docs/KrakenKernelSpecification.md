@@ -3,6 +3,8 @@
 **Version**: v0.9
 **Status**: Frozen
 
+Read this before the framework specification. This document freezes the kernel primitives only.
+
 ---
 
 ## Purpose
@@ -11,7 +13,7 @@ The kernel is the structural persistence engine of the Kraken stateful agent run
 
 The kernel provides mechanism without policy: immutable content storage, structured state snapshots, a history DAG, durable write-ahead tracking, and stepwise execution with declarative checkpointing. It does not know what a "model call" is, what a "tool" is, or what "context assembly" means.
 
-The framework — specified in companion documents — provides agent-specific behavior built on the kernel's 28 operations. The kernel is language-agnostic and implementable in a native language with the framework as an SDK in any language on top.
+The framework — specified in `KrakenFrameworkSpecification.md` — provides agent-specific behavior built on the kernel's 28 operations. The kernel is language-agnostic and implementable in a native language with the framework as an SDK in any language on top.
 
 ---
 
@@ -862,4 +864,4 @@ SQLite with WAL satisfies all of these.
 
 ---
 
-_v0.9. Kernel has 28 operations, 18 invariants, 10 operation groups. Frozen._
+_v0.9. Kernel has 28 operations, 18 invariants, 10 operation groups. Frozen. Companion rationale is explanatory only and non-contract._

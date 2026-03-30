@@ -3,6 +3,8 @@
 **Companion to**: Kernel Specification
 **Purpose**: Decision archaeology, design reasoning, and illustrative stories. Not contract — the Kernel Specification is authoritative.
 
+Read after `KrakenKernelSpecification.md`. This document explains decisions; it does not define the contract.
+
 ---
 
 ## 1. Design Philosophy
@@ -190,4 +192,4 @@ A paused Run represents a pending external decision (human approval, external sy
 
 ---
 
-_This document records the reasoning behind kernel design decisions. It is not authoritative for implementation — the Kernel Specification is the contract._
+_This document records the reasoning behind kernel design decisions. Read it after the kernel specification. It is not authoritative for implementation — the Kernel Specification is the contract._

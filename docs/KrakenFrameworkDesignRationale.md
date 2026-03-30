@@ -3,6 +3,8 @@
 **Companion to**: Framework Specification
 **Purpose**: Decision archaeology, cross-framework analysis, design reasoning. Not contract — the Framework Specification is authoritative.
 
+Read after `KrakenFrameworkSpecification.md`. This document explains decisions; it does not define the contract.
+
 ---
 
 ## 1. Cross-Framework Analysis
@@ -223,7 +225,7 @@ The current consistency pass hardened several load-bearing framework semantics:
 - **Two-tier event contract**: Canonical internal event vocabulary split into required core events and optional standardized observability events, with protocol adapters treated as outbound bridges.
 - **Extension continuity**: Context engineering and handoff preserve branch-scoped extension state by default.
 - **First-class shared exports**: `sharedExports` became a declared feature through explicit `exports` keys on extensions.
-- **Semantic turn lineage**: Framework turn creation now treats `parentTurnId` as real same-thread lineage, not convenience metadata.
+- **Semantic turn lineage**: Framework turn creation now treats `parentTurnId` as real same-thread lineage on the active Branch, not convenience metadata.
 - **Loop-policy legality**: Invalid `continue + no tool execution` decisions in the presence of executable tool calls now fail hard by contract.
 
 ---
@@ -245,4 +247,4 @@ What Kraken learns from, and what it does not adopt:
 
 ---
 
-_This document records the reasoning behind framework design decisions. It is not authoritative for implementation — the Framework Specification is the contract._
+_This document records the reasoning behind framework design decisions. Read it after the framework specification. It is not authoritative for implementation — the Framework Specification is the contract._

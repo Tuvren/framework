@@ -4,7 +4,9 @@
 **Status**: Authoritative
 **Basis**: Kernel Specification v0.9 (frozen)
 
-This is the single authoritative specification for framework execution semantics. All framework behavior — execution model, extension system, multi-agent orchestration, streaming, host contract, and tool dispatch — is defined in this document.
+Read this after the kernel specification. This document is authoritative for framework behavior built on the frozen kernel.
+
+This is the single authoritative specification for framework execution semantics. All framework behavior — execution model, extension system, multi-agent orchestration, streaming, host contract, and tool dispatch — is defined in this document. The companion rationale document is explanatory only.
 
 ---
 
@@ -483,7 +485,7 @@ Signal arrives
 - Context engineering is a per-iteration check, not a per-turn phase. The manifest drives the decision. O(1).
 - Extension hooks fire within existing framework phases — they do not create their own Runs or checkpoint boundaries.
 - `beforeTurn` fires exactly once per semantic Turn, after input incorporation and before the first iteration of the first handle.
-- `afterTurn` fires exactly once per semantic Turn, only after the Turn reaches a terminal non-paused resolution.
+- `afterTurn` fires exactly once per semantic Turn, only after the iteration loop reaches a terminal non-paused stop. A `beforeTurn` short-circuit does not trigger `afterTurn`.
 - Approval resume continues the same Turn and MUST NOT re-run Turn-level hooks.
 - `pause` is approval-only. A paused Turn represents approval-gated continuation of already-requested tool work.
 - After any Run completion that produces a checkpointed TurnNode, the framework MUST advance the Turn head via `turn.updateHead(turnId, turnNodeHash)` before starting the next Run on that Turn.
@@ -675,6 +677,7 @@ function executeIteration(turnId, branchId, schemaId, toolRegistry, config, iter
   messages = readMessages(currentHead)
   manifest = readManifest(currentHead)
   stagedMessages = []
+  iterationStateUpdates = pendingExtensionStateUpdates
 
   // ── System prompt collection (base + extension contributions) ──
   systemPrompts = collectSystemPrompts(config.extensions, manifest, iterationCount)
@@ -682,7 +685,9 @@ function executeIteration(turnId, branchId, schemaId, toolRegistry, config, iter
   prompt = renderer.render(messages, renderedTools, config, systemPrompts)
 
   // ── Model call through aroundModel chain (§6.2, §9.5) ──
-  response = await executeModelCall(iterRunId, prompt, config, iterationCount)
+  modelResult = await executeModelCall(iterRunId, prompt, config, iterationCount)
+  response = modelResult.response
+  iterationStateUpdates = mergeStateUpdates(iterationStateUpdates, modelResult.state ?? {})
 
   // ── Capture handoff intent before durable staging ──
   handoffIntents = extractHandoffIntents(response.parts)
@@ -736,6 +741,7 @@ function executeIteration(turnId, branchId, schemaId, toolRegistry, config, iter
       }
     }
     executionResult = await toolExecutor.execute(toolCalls, dispatchContext)
+    iterationStateUpdates = mergeStateUpdates(iterationStateUpdates, executionResult.state ?? {})
 
     if executionResult.approval:
       emit { type: "approval.requested", request: executionResult.approval, timestamp: now() }
@@ -753,7 +759,7 @@ function executeIteration(turnId, branchId, schemaId, toolRegistry, config, iter
     kernel.staging.stage(iterRunId, serialize(status), "runtime_status", "runtime_status", completed)
 
   // ── Update manifest ──
-  manifest = updateManifest(manifest, stagedMessages, pendingExtensionStateUpdates)
+  manifest = updateManifest(manifest, stagedMessages, iterationStateUpdates)
   kernel.staging.stage(iterRunId, serialize(manifest), "manifest", "context_manifest", completed)
 
   // ── Checkpoint ──
@@ -780,11 +786,12 @@ function executeTurn(signal, threadId, branchId, schemaId, tools, config, steeri
 
   function* driver():
     branch = kernel.branch.get(branchId)
-    resolvedParentTurnId = parentTurnId ?? resolveParentTurnId(threadId)
+    resolvedParentTurnId = parentTurnId ?? resolveParentTurnId(threadId, branchId)
     kernel.turn.create(turnId, threadId, resolvedParentTurnId, branch.headTurnNodeHash)
     activeConfig = config
     activeTools = tools ?? activeConfig.tools ?? []
     toolRegistry = buildToolRegistry(activeTools, activeConfig.extensions)
+    enteredIterationLoop = false
 
     yield { type: "turn.start", turnId, threadId, timestamp: now() }
 
@@ -796,11 +803,13 @@ function executeTurn(signal, threadId, branchId, schemaId, tools, config, steeri
       resolution = turnHookResolution
     else if turnHookResolution == fail(soft):
       log soft failure
+      enteredIterationLoop = true
       resolution = iterationLoop(turnId, branchId, schemaId, toolRegistry, activeConfig, steering)
     else:
+      enteredIterationLoop = true
       resolution = iterationLoop(turnId, branchId, schemaId, toolRegistry, activeConfig, steering)
 
-    if resolution.type != "pause":
+    if enteredIterationLoop && resolution.type != "pause":
       runAfterTurnHooks(activeConfig.extensions)
       finalizeTurnStatus(turnId, branchId, schemaId, resolution)
 
@@ -812,7 +821,7 @@ function executeTurn(signal, threadId, branchId, schemaId, tools, config, steeri
 
 `executeTurn` returns an `ExecutionHandle` (§7.1), not a bare `AsyncIterable`. The handle wraps the internal driver generator. The `events()` method on the handle provides the iterable that drives execution.
 
-For a Thread's first semantic Turn, `parentTurnId` is `null`. For every subsequent semantic Turn on that Thread, `parentTurnId` MUST identify the immediately previous Turn in the same Thread. Approval resumes stay within the existing Turn and do not create a new Turn.
+For a Thread's first semantic Turn, `parentTurnId` is `null`. For every subsequent semantic Turn, `parentTurnId` MUST identify the immediately previous semantic Turn on the active Branch and still belong to the same Thread. When the framework resolves this parent implicitly, the resolver must be branch-aware (`resolveParentTurnId(threadId, branchId)`), so branching and rollback do not make semantic lineage ambiguous. Approval resumes stay within the existing Turn and do not create a new Turn.
 
 ### 4.8 Pause and Resume
 
@@ -957,8 +966,8 @@ toolExecutor.execute(toolCalls: ToolCallPart[], context: ToolDispatchContext)
   → Promise<ToolExecutionResult>
 
 ToolExecutionResult =
-  | { approval: undefined, results: ToolResultPart[] }           // all executed
-  | { approval: ApprovalRequest, results: ToolResultPart[] }     // partial: some executed, some pending
+  | { approval: undefined, results: ToolResultPart[], state?: Record<string, unknown> }           // all executed
+  | { approval: ApprovalRequest, results: ToolResultPart[], state?: Record<string, unknown> }     // partial: some executed, some pending
 ```
 
 See §8 for tool dispatch details.
@@ -1004,7 +1013,7 @@ During a model call, two consumers need different things simultaneously:
 
 ```
 function executeModelCall(runId, prompt, config, iterationCount):
-  → KrakenModelResponse
+  → { response: KrakenModelResponse, state?: Record<string, unknown> }
 
   messageId = generateId()
   callIdMap = {}                    // providerCallId → framework callId
@@ -1012,23 +1021,24 @@ function executeModelCall(runId, prompt, config, iterationCount):
 
   yield { type: "message.start", messageId, role: "assistant", timestamp: now() }
 
-  response = await aroundModelChain(ctx, async (innerCtx) => {
+  rawModelResult = await aroundModelChain(ctx, async (innerCtx) => {
     for await (const chunk of provider.stream(innerCtx.prompt)) {
       accumulator.absorb(chunk)
       yield* toStreamEvents(chunk, messageId, callIdMap)
     }
     return accumulator.finalize()
   })
+  modelResult = normalizeAroundModelResult(rawModelResult)
 
   // If aroundModel short-circuited (no chunks absorbed), synthesize events
   if !accumulator.hasContent():
-    yield* synthesizeEvents(response, messageId)
+    yield* synthesizeEvents(modelResult.response, messageId)
 
   yield { type: "message.done", messageId,
-          finishReason: response.finishReason,
-          usage: response.usage, timestamp: now() }
+          finishReason: modelResult.response.finishReason,
+          usage: modelResult.response.usage, timestamp: now() }
 
-  return response
+  return modelResult
 ```
 
 `toStreamEvents` maps `ProviderStreamChunk` → `KrakenStreamEvent`, adding `messageId`, `timestamp`, and translating `providerCallId` → framework `callId` via `callIdMap`.
@@ -1078,6 +1088,8 @@ The `aroundModel` wrapper receives the complete `KrakenModelResponse` from `next
 
 **Retry**: If aroundModel calls `next()` multiple times (fallback to different provider), each call produces its own stream event sequence with a new `messageId`. The consumer sees multiple message sequences. Only the final response (from the last `next()` call) is staged on the durable path.
 
+When aroundModel returns `{ response, state }`, the driver merges `state` into the iteration's pending extension updates and applies it at the same checkpoint that commits the assistant message and manifest.
+
 ### 6.6 aroundTool Interaction with Streaming
 
 The driver emits `tool.start` immediately before the first executable aroundTool/execute entry for an approved or resumed tool call, and emits `tool.result` after the aroundTool chain returns. The around is invisible to the event stream.
@@ -1085,6 +1097,8 @@ The driver emits `tool.start` immediately before the first executable aroundTool
 **Short-circuit** (cache hit): Both `tool.start` and `tool.result` are emitted. The result arrives instantly.
 
 **Retry**: If aroundTool calls `next()` multiple times, the consumer still sees one `tool.start` and one `tool.result`. Internal retries are invisible to the event stream. This differs from aroundModel retry because tool results are not user-facing streamed content.
+
+When aroundTool returns `{ result, state }` or `{ verdict: "pause", approval, state }`, the executor merges `state` into the iteration's pending extension updates. Those updates are applied at the next iteration checkpoint, including the pause checkpoint when approval interrupts the batch.
 
 ### 6.7 Custom Event Emission
 
@@ -1312,6 +1326,8 @@ For each tool call in the batch:
 3. APPROVAL CHECK  tool.approval field. If true → mark as pending.
 4. AROUND + EXEC   aroundTool chain wraps: tool.execute(validatedInput, context).
                    aroundTool may also trigger approval (pause verdict).
+                   Any `state` returned by aroundTool is merged into
+                   `ToolExecutionResult.state` for the iteration checkpoint.
 5. PRODUCE         ToolResultPart. Immediately after each ToolResultPart is produced,
                    the executor MUST invoke `context.stageResult(result)` when available.
                    The staged durable unit is `{ role: "tool", parts: [result] }`
@@ -1478,7 +1494,7 @@ Fires once before the first iteration. Used for precondition validation, one-tim
 
 #### afterTurn
 
-Fires once after the last iteration completes. Used for cleanup, turn-level accounting, final metrics emission. Uses `InterceptHandler` / `InterceptResult`. Verdicts from afterTurn do not affect the completed Turn — the Turn has already resolved. State updates from afterTurn are non-durable on terminal paths.
+Fires once after the iteration loop reaches a terminal non-paused stop. It is not fired for `beforeTurn` short-circuits because no iteration ran, and it is not fired for approval pauses because the Turn may resume. Used for cleanup, turn-level accounting, final metrics emission. Uses `InterceptHandler` / `InterceptResult`. Verdicts from afterTurn do not affect the completed Turn — the Turn has already resolved. State updates from afterTurn are non-durable on terminal paths.
 
 #### beforeIteration
 
@@ -1536,7 +1552,7 @@ type AroundModelResult = KrakenModelResponse | { response: KrakenModelResponse, 
 
 `next` accepts an optional modified context — this is how tool filtering, prompt modification, model swapping, and retry work. These are call-scoped execution mechanics, not persistent policy decisions. aroundModel is an execution wrapper, not a generic verdict surface.
 
-State updates returned from aroundModel are collected and applied at the next checkpoint. If the around crashes before returning, state updates are lost (ephemeral).
+State updates returned from aroundModel are collected by the driver and applied at the next iteration checkpoint. If the around crashes before returning, state updates are lost (ephemeral).
 
 #### aroundTool
 
@@ -1565,7 +1581,7 @@ type AroundToolResult =
   | { verdict: "pause", approval: ApprovalRequest, state?: Record<string, unknown> }
 ```
 
-When filtered by tool name, the handler only runs for matching tools. When the handler returns `{ verdict: "pause", approval }`, it uses the same approval machinery as tool-level `approval` fields (§8.7). State updates returned with a pause verdict are applied at the pause checkpoint. On approval resume, only unfinished tool calls are resumed, and each resumed call re-enters the full aroundTool chain. Approval-aware wrappers use the prior decision for the exact call and pass through without re-requesting approval.
+When filtered by tool name, the handler only runs for matching tools. When the handler returns `{ verdict: "pause", approval }`, it uses the same approval machinery as tool-level `approval` fields (§8.7). State updates returned with `{ result, state }` or with a pause verdict are collected by the executor and applied at the next iteration checkpoint, including the pause checkpoint when approval interrupts the batch. On approval resume, only unfinished tool calls are resumed, and each resumed call re-enters the full aroundTool chain. Approval-aware wrappers use the prior decision for the exact call and pass through without re-requesting approval.
 
 `forward` is available on aroundTool — this is the mechanism for worker sub-agent streaming (§6.7, §10.2).
 
@@ -1972,4 +1988,4 @@ This specification does not define:
 
 ---
 
-_v0.12. This is the single authoritative framework specification. All framework behavior — execution model, extension system, multi-agent orchestration, streaming, host contract, and tool dispatch — is defined here. No companion documents._
+_v0.12. This is the single authoritative framework specification. All framework behavior — execution model, extension system, multi-agent orchestration, streaming, host contract, and tool dispatch — is defined here. Companion rationale is explanatory only and non-contract._
