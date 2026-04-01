@@ -4,5 +4,10 @@
     "rootDir": "./src",
     "outDir": "../../../../dist/boundaries/kernel/contracts/protocol"
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts"],
+  "references": [
+    {
+      "path": "../../../shared/contracts/core-types/tsconfig.lib.json"
+    }
+  ]
 }

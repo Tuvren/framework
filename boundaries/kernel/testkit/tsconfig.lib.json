@@ -4,5 +4,13 @@
     "rootDir": "./src",
     "outDir": "../../../dist/boundaries/kernel/testkit"
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts"],
+  "references": [
+    {
+      "path": "../contracts/protocol/tsconfig.lib.json"
+    },
+    {
+      "path": "../../shared/contracts/core-types/tsconfig.lib.json"
+    }
+  ]
 }
