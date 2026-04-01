@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+const KRAKEN_ERROR_CODE_PATTERN = /^[a-z0-9]+(?:_[a-z0-9]+)*$/;
+
 export type KrakenErrorCode = string;
 
 export interface KrakenErrorOptions {
@@ -23,12 +25,28 @@ export interface KrakenErrorOptions {
   details?: unknown;
 }
 
+export function isKrakenErrorCode(value: unknown): value is KrakenErrorCode {
+  return typeof value === "string" && KRAKEN_ERROR_CODE_PATTERN.test(value);
+}
+
+export function assertKrakenErrorCode(
+  value: unknown,
+  label = "value"
+): asserts value is KrakenErrorCode {
+  if (!isKrakenErrorCode(value)) {
+    throw new TypeError(
+      `${label} must be a lowercase snake_case Kraken error code`
+    );
+  }
+}
+
 export abstract class KrakenError extends Error {
   readonly code: KrakenErrorCode;
   readonly details?: unknown;
   override readonly cause?: unknown;
 
   protected constructor(message: string, options: KrakenErrorOptions) {
+    assertKrakenErrorCode(options.code, "options.code");
     super(
       message,
       options.cause === undefined ? undefined : { cause: options.cause }

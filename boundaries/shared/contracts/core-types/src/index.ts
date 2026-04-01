@@ -36,6 +36,8 @@ export type {
   KrakenErrorOptions,
 } from "./lib/kraken-error.js";
 export {
+  assertKrakenErrorCode,
+  isKrakenErrorCode,
   KrakenError,
   KrakenLineageError,
   KrakenPersistenceError,

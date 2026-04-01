@@ -21,9 +21,11 @@ import {
   assertEpochMs,
   assertHashString,
   assertKernelRecord,
+  assertKrakenErrorCode,
   isEpochMs,
   isHashString,
   isKernelRecord,
+  isKrakenErrorCode,
   KrakenPersistenceError,
   KrakenRuntimeError,
   KrakenValidationError,
@@ -103,6 +105,23 @@ describe("KernelRecord", () => {
     );
   });
 
+  test("rejects cyclic objects and arrays without overflowing the stack", () => {
+    const cyclicObject: { self?: unknown } = {};
+    cyclicObject.self = cyclicObject;
+
+    const cyclicArray: unknown[] = [];
+    cyclicArray.push(cyclicArray);
+
+    expect(isKernelRecord(cyclicObject)).toBe(false);
+    expect(isKernelRecord(cyclicArray)).toBe(false);
+    expect(() => assertKernelRecord(cyclicObject, "record")).toThrow(
+      "record must match the restricted Kraken kernel record profile"
+    );
+    expect(() => assertKernelRecord(cyclicArray, "record")).toThrow(
+      "record must match the restricted Kraken kernel record profile"
+    );
+  });
+
   test("normalizes insertion-order variants to identical deterministic bytes", () => {
     const encodedVariants = kernelRecordInsertionOrderVariants.map((variant) =>
       Buffer.from(encodeDeterministicKernelRecord(variant)).toString("hex")
@@ -150,6 +169,23 @@ describe("KernelRecord", () => {
 });
 
 describe("KrakenError", () => {
+  test("accepts lowercase snake_case error codes", () => {
+    expect(isKrakenErrorCode("invalid_schema")).toBe(true);
+    expect(() =>
+      assertKrakenErrorCode("store_write_failed", "code")
+    ).not.toThrow();
+  });
+
+  test("rejects invalid public error code shapes", () => {
+    expect(isKrakenErrorCode("Not_Snake_Case")).toBe(false);
+    expect(() => assertKrakenErrorCode("Not_Snake_Case", "code")).toThrow(
+      "code must be a lowercase snake_case Kraken error code"
+    );
+    expect(
+      () => new KrakenValidationError("bad", { code: "Not_Snake_Case" })
+    ).toThrow("options.code must be a lowercase snake_case Kraken error code");
+  });
+
   test("stores code, details, and cause on the base contract", () => {
     const cause = new Error("root cause");
     const error = new KrakenValidationError("invalid schema", {

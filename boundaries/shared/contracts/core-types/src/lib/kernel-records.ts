@@ -63,7 +63,7 @@ export function assertEpochMs(
 }
 
 export function isKernelRecord(value: unknown): value is KernelRecord {
-  return isKernelRecordValue(value);
+  return isKernelRecordValueInternal(value, new WeakSet<object>());
 }
 
 export function assertKernelRecord(
@@ -77,7 +77,10 @@ export function assertKernelRecord(
   }
 }
 
-function isKernelRecordValue(value: unknown): value is KernelRecord {
+function isKernelRecordValueInternal(
+  value: unknown,
+  activeParents: WeakSet<object>
+): value is KernelRecord {
   if (value === null) {
     return true;
   }
@@ -93,20 +96,31 @@ function isKernelRecordValue(value: unknown): value is KernelRecord {
         return true;
       }
 
+      if (activeParents.has(value)) {
+        return false;
+      }
+
+      activeParents.add(value);
+
       if (Array.isArray(value)) {
-        return isDenseKernelArray(value);
+        const isValidArray = isDenseKernelArray(value, activeParents);
+        activeParents.delete(value);
+        return isValidArray;
       }
 
       if (!isPlainKernelObject(value)) {
+        activeParents.delete(value);
         return false;
       }
 
       for (const key of Object.keys(value)) {
-        if (!isKernelRecordValue(value[key])) {
+        if (!isKernelRecordValueInternal(value[key], activeParents)) {
+          activeParents.delete(value);
           return false;
         }
       }
 
+      activeParents.delete(value);
       return true;
     default:
       return false;
@@ -123,9 +137,17 @@ function isPlainKernelObject(value: object): value is Record<string, unknown> {
   return Object.getOwnPropertySymbols(value).length === 0;
 }
 
-function isDenseKernelArray(value: unknown[]): value is KernelArray {
+function isDenseKernelArray(
+  value: unknown[],
+  activeParents: WeakSet<object>
+): value is KernelArray {
   for (let index = 0; index < value.length; index += 1) {
-    if (!(index in value && isKernelRecordValue(value[index]))) {
+    if (
+      !(
+        index in value &&
+        isKernelRecordValueInternal(value[index], activeParents)
+      )
+    ) {
       return false;
     }
   }
