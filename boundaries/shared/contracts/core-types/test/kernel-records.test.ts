@@ -64,6 +64,7 @@ describe("EpochMs", () => {
     expect(isEpochMs(1.5)).toBe(false);
     expect(isEpochMs(Number.NaN)).toBe(false);
     expect(isEpochMs(Number.POSITIVE_INFINITY)).toBe(false);
+    expect(isEpochMs(-0)).toBe(false);
     expect(isEpochMs(Number.MAX_SAFE_INTEGER + 1)).toBe(false);
     expect(() => assertEpochMs(1.5, "epoch")).toThrow(
       "epoch must be a safe integer Unix epoch millisecond value"
@@ -105,6 +106,19 @@ describe("KernelRecord", () => {
     );
   });
 
+  test("rejects objects with non-enumerable own string properties", () => {
+    const hiddenPropertyObject = {};
+    Object.defineProperty(hiddenPropertyObject, "secret", {
+      enumerable: false,
+      value: 1,
+    });
+
+    expect(isKernelRecord(hiddenPropertyObject)).toBe(false);
+    expect(() => assertKernelRecord(hiddenPropertyObject, "record")).toThrow(
+      "record must match the restricted Kraken kernel record profile"
+    );
+  });
+
   test("rejects cyclic objects and arrays without overflowing the stack", () => {
     const cyclicObject: { self?: unknown } = {};
     cyclicObject.self = cyclicObject;
@@ -118,6 +132,14 @@ describe("KernelRecord", () => {
       "record must match the restricted Kraken kernel record profile"
     );
     expect(() => assertKernelRecord(cyclicArray, "record")).toThrow(
+      "record must match the restricted Kraken kernel record profile"
+    );
+  });
+
+  test("rejects negative zero as a non-canonical kernel integer", () => {
+    expect(isKernelRecord(-0)).toBe(false);
+    expect(isKernelRecord({ n: -0 })).toBe(false);
+    expect(() => assertKernelRecord(-0, "record")).toThrow(
       "record must match the restricted Kraken kernel record profile"
     );
   });

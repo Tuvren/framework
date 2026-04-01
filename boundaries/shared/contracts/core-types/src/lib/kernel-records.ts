@@ -48,7 +48,7 @@ export function assertHashString(
 }
 
 export function isEpochMs(value: unknown): value is EpochMs {
-  return typeof value === "number" && Number.isSafeInteger(value);
+  return isCanonicalKernelInteger(value);
 }
 
 export function assertEpochMs(
@@ -90,7 +90,7 @@ function isKernelRecordValueInternal(
     case "string":
       return true;
     case "number":
-      return Number.isSafeInteger(value);
+      return isCanonicalKernelInteger(value);
     case "object":
       if (value instanceof Uint8Array) {
         return true;
@@ -134,7 +134,19 @@ function isPlainKernelObject(value: object): value is Record<string, unknown> {
     return false;
   }
 
-  return Object.getOwnPropertySymbols(value).length === 0;
+  if (Object.getOwnPropertySymbols(value).length > 0) {
+    return false;
+  }
+
+  const descriptors = Object.getOwnPropertyDescriptors(value);
+
+  for (const key of Object.getOwnPropertyNames(descriptors)) {
+    if (!descriptors[key]?.enumerable) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 function isDenseKernelArray(
@@ -153,4 +165,12 @@ function isDenseKernelArray(
   }
 
   return true;
+}
+
+function isCanonicalKernelInteger(value: unknown): value is number {
+  return (
+    typeof value === "number" &&
+    Number.isSafeInteger(value) &&
+    !Object.is(value, -0)
+  );
 }
