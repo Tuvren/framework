@@ -1,6 +1,7 @@
 # Technical Specification
 
 ## 0. Version History & Changelog
+- v0.2.1 - Added the shared `KrakenError` foundation contract so stable error codes and category subclasses are specified before later framework and backend work depends on them.
 - v0.2.0 - Locked the authoritative implementation posture: protocol-first kernel, TypeScript first implementation, AI SDK bridge-only provider baseline, strict uniform backend contract, official `memory` and `sqlite` backends, deterministic CBOR plus SHA-256 identity rules, integer-only core record profile, path-granular TurnTree storage with threshold-based chunking for ordered paths, and an architecture-first `devenv + nx` monorepo layout grouped by boundary, contract, and implementation language.
 - v0.1.0 - Initial TechSpec draft establishing the baseline package layout, early provider posture, persistence abstraction, and framework-facing public surface.
 - ... [Older history truncated, refer to git logs]
@@ -328,6 +329,40 @@ erDiagram
   - indexes: primary key, secondary on `(run_id, status)`, `object_hash`
 
 ## 4. Interface Contract
+### 4.0 Shared Error Foundation
+- **Style:** shared cross-boundary TypeScript contract
+- **Ownership:** `@kraken/shared-core-types` owns the shared error base class and category subclasses. Concrete packages own their package-specific `code` values and message text.
+- **Compatibility Strategy:** `KrakenError` shape, subclass names, and stable `code` values are semver-governed public API. Adding a new error subclass is semver-minor. Changing or removing an existing stable `code` is semver-major.
+- **Code policy:** every `KrakenError` carries a stable lowercase snake_case `code`. Category is conveyed by the subclass, not by a required string prefix.
+- **Projection rule:** when errors cross logging, streaming, or host boundaries, implementations must preserve at least `name`, `message`, `code`, and optional `details`.
+
+```ts
+export type KrakenErrorCode = string;
+
+export interface KrakenErrorOptions {
+  code: KrakenErrorCode;
+  cause?: unknown;
+  details?: unknown;
+}
+
+export abstract class KrakenError extends Error {
+  readonly code: KrakenErrorCode;
+  readonly details?: unknown;
+  override readonly cause?: unknown;
+
+  protected constructor(message: string, options: KrakenErrorOptions);
+}
+
+export class KrakenValidationError extends KrakenError {}
+export class KrakenPersistenceError extends KrakenError {}
+export class KrakenLineageError extends KrakenError {}
+export class KrakenRecoveryError extends KrakenError {}
+export class KrakenRuntimeError extends KrakenError {}
+export class KrakenProviderError extends KrakenError {}
+```
+
+Concrete code examples already defined in the authoritative specs such as `structured_output_validation` and `invalid_loop_policy` are `KrakenRuntimeError` codes. Backend-specific failures must normalize to `KrakenPersistenceError` codes before surfacing through shared contracts.
+
 ### 4.1 Host-Facing TypeScript Framework API
 - **Style:** library API
 - **Authentication / Authorization:** Not built into Kraken. Host applications authenticate and authorize their own callers before exposing runtime operations.

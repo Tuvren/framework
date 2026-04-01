@@ -6,6 +6,13 @@
   "projectType": "library",
   "tags": ["boundary:shared", "layer:contract"],
   "targets": {
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "boundaries/shared/contracts/core-types",
+        "command": "bun test"
+      }
+    },
     "typecheck": {
       "executor": "nx:run-commands",
       "options": {

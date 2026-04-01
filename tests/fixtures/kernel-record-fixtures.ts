@@ -1,0 +1,152 @@
+/**
+ * Copyright 2026 Oscar Yáñez Cisterna (@SkrOYC)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import type { KernelRecord } from "@kraken/shared-core-types";
+import { assertKernelRecord } from "@kraken/shared-core-types";
+import { Encoder } from "cbor-x";
+
+const deterministicEncoder = new Encoder({
+  useRecords: false,
+  variableMapSize: true,
+});
+
+export const deterministicKernelRecordFixture = {
+  logicalValue: {
+    active: true,
+    bytes: new Uint8Array([1, 2, 3, 4]),
+    items: ["alpha", 7, null],
+    meta: {
+      count: 2,
+      label: "kraken",
+    },
+    timestamp: 1_717_171_717_171,
+  } satisfies KernelRecord,
+  expectedCborHex:
+    "a566616374697665f5656279746573d8404401020304656974656d738365616c70686107f6646d657461a265636f756e7402656c6162656c666b72616b656e6974696d657374616d701b0000018fcf690433",
+  expectedSha256Hex:
+    "4734bac3b98f290e0ea0a9ff621e64b2252355428d49e0c6e47e8f6a62c5eff6",
+};
+
+export const kernelRecordInsertionOrderVariants: readonly KernelRecord[] = [
+  {
+    timestamp: 1_717_171_717_171,
+    meta: {
+      label: "kraken",
+      count: 2,
+    },
+    items: ["alpha", 7, null],
+    bytes: new Uint8Array([1, 2, 3, 4]),
+    active: true,
+  },
+  {
+    active: true,
+    bytes: new Uint8Array([1, 2, 3, 4]),
+    items: ["alpha", 7, null],
+    meta: {
+      count: 2,
+      label: "kraken",
+    },
+    timestamp: 1_717_171_717_171,
+  },
+];
+
+export const invalidKernelRecordFixtures: readonly unknown[] = [
+  Number.NaN,
+  Number.POSITIVE_INFINITY,
+  3.14,
+  BigInt(7),
+  new Date("2026-01-01T00:00:00.000Z"),
+  new Map([["a", 1]]),
+  new Set([1]),
+  undefined,
+  () => "nope",
+];
+
+export function canonicalizeKernelRecord(value: KernelRecord): KernelRecord {
+  assertKernelRecord(value);
+
+  if (
+    value === null ||
+    typeof value === "boolean" ||
+    typeof value === "string" ||
+    typeof value === "number" ||
+    value instanceof Uint8Array
+  ) {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => canonicalizeKernelRecord(item));
+  }
+
+  const sortedEntries = Object.entries(value).sort(([leftKey], [rightKey]) =>
+    leftKey.localeCompare(rightKey)
+  );
+
+  return Object.fromEntries(
+    sortedEntries.map(([key, nestedValue]) => [
+      key,
+      canonicalizeKernelRecord(nestedValue),
+    ])
+  );
+}
+
+export function encodeDeterministicKernelRecord(
+  value: KernelRecord
+): Uint8Array {
+  const canonicalValue = canonicalizeKernelRecord(value);
+  return new Uint8Array(
+    deterministicEncoder.encode(prepareKernelRecordForEncoding(canonicalValue))
+  );
+}
+
+export async function sha256Hex(bytes: Uint8Array): Promise<string> {
+  const digest = await globalThis.crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(digest), (byte) =>
+    byte.toString(16).padStart(2, "0")
+  ).join("");
+}
+
+function prepareKernelRecordForEncoding(value: KernelRecord): unknown {
+  if (
+    value === null ||
+    typeof value === "boolean" ||
+    typeof value === "string" ||
+    value instanceof Uint8Array
+  ) {
+    return value;
+  }
+
+  if (typeof value === "number") {
+    if (value > 0xff_ff_ff_ff || value < -0x1_00_00_00_00) {
+      return BigInt(value);
+    }
+
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => prepareKernelRecordForEncoding(item));
+  }
+
+  return Object.fromEntries(
+    Object.entries(value).map(([key, nestedValue]) => [
+      key,
+      prepareKernelRecordForEncoding(nestedValue),
+    ])
+  );
+}
