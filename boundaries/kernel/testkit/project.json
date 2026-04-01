@@ -5,5 +5,13 @@
   "sourceRoot": "boundaries/kernel/testkit/src",
   "projectType": "library",
   "tags": ["boundary:kernel", "layer:testkit"],
-  "targets": {}
+  "targets": {
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "boundaries/kernel/testkit",
+        "command": "tsc --project tsconfig.lib.json --noEmit --pretty false"
+      }
+    }
+  }
 }

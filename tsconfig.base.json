@@ -3,6 +3,18 @@
     "target": "es2025",
     "module": "esnext",
     "moduleResolution": "bundler",
+    "paths": {
+      "@kraken/shared-core-types": [
+        "./boundaries/shared/contracts/core-types/src/index.ts"
+      ],
+      "@kraken/kernel-contract-protocol": [
+        "./boundaries/kernel/contracts/protocol/src/index.ts"
+      ],
+      "@kraken/backend-memory": [
+        "./boundaries/kernel/implementations/typescript/backend-memory/src/index.ts"
+      ],
+      "@kraken/kernel-testkit": ["./boundaries/kernel/testkit/src/index.ts"]
+    },
     "strict": true,
     "composite": true,
     "declaration": true,

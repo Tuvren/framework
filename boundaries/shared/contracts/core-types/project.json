@@ -5,5 +5,13 @@
   "sourceRoot": "boundaries/shared/contracts/core-types/src",
   "projectType": "library",
   "tags": ["boundary:shared", "layer:contract"],
-  "targets": {}
+  "targets": {
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "boundaries/shared/contracts/core-types",
+        "command": "tsc --project tsconfig.lib.json --noEmit --pretty false"
+      }
+    }
+  }
 }

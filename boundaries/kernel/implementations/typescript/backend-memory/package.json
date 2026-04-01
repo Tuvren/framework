@@ -4,9 +4,14 @@
   "version": "0.0.0",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
   },
-  "types": "./src/index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "dependencies": {
     "@kraken/kernel-contract-protocol": "workspace:*",
     "@kraken/shared-core-types": "workspace:*"

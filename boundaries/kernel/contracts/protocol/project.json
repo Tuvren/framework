@@ -5,5 +5,13 @@
   "sourceRoot": "boundaries/kernel/contracts/protocol/src",
   "projectType": "library",
   "tags": ["boundary:kernel", "layer:contract"],
-  "targets": {}
+  "targets": {
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "boundaries/kernel/contracts/protocol",
+        "command": "tsc --project tsconfig.lib.json --noEmit --pretty false"
+      }
+    }
+  }
 }

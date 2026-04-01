@@ -11,7 +11,7 @@
   "scripts": {
     "lint": "bunx --bun @biomejs/biome check .",
     "format": "bunx --bun @biomejs/biome check --write .",
-    "typecheck": "tsc -b --pretty false",
+    "typecheck": "bun run nx run-many -t typecheck",
     "graph": "nx graph"
   },
   "devDependencies": {
