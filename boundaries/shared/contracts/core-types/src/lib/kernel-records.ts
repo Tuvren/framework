@@ -141,7 +141,13 @@ function isPlainKernelObject(value: object): value is Record<string, unknown> {
   const descriptors = Object.getOwnPropertyDescriptors(value);
 
   for (const key of Object.getOwnPropertyNames(descriptors)) {
-    if (!descriptors[key]?.enumerable) {
+    const descriptor = descriptors[key];
+
+    if (
+      !(descriptor?.enumerable && Object.hasOwn(descriptor, "value")) ||
+      Object.hasOwn(descriptor, "get") ||
+      Object.hasOwn(descriptor, "set")
+    ) {
       return false;
     }
   }
@@ -156,7 +162,7 @@ function isDenseKernelArray(
   for (let index = 0; index < value.length; index += 1) {
     if (
       !(
-        index in value &&
+        Object.hasOwn(value, index) &&
         isKernelRecordValueInternal(value[index], activeParents)
       )
     ) {

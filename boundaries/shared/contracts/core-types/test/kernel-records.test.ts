@@ -106,6 +106,27 @@ describe("KernelRecord", () => {
     );
   });
 
+  test("rejects inherited array elements from the prototype chain", () => {
+    const inheritedArray = new Array(1);
+    const originalPrototypeElement = Array.prototype[0];
+    const hadOwnPrototypeElement = Object.hasOwn(Array.prototype, 0);
+
+    Array.prototype[0] = "prototype-value";
+
+    try {
+      expect(isKernelRecord(inheritedArray)).toBe(false);
+      expect(() => assertKernelRecord(inheritedArray, "record")).toThrow(
+        "record must match the restricted Kraken kernel record profile"
+      );
+    } finally {
+      if (hadOwnPrototypeElement) {
+        Array.prototype[0] = originalPrototypeElement;
+      } else {
+        Array.prototype[0] = undefined;
+      }
+    }
+  });
+
   test("rejects objects with non-enumerable own string properties", () => {
     const hiddenPropertyObject = {};
     Object.defineProperty(hiddenPropertyObject, "secret", {
@@ -117,6 +138,25 @@ describe("KernelRecord", () => {
     expect(() => assertKernelRecord(hiddenPropertyObject, "record")).toThrow(
       "record must match the restricted Kraken kernel record profile"
     );
+  });
+
+  test("rejects objects with enumerable accessor properties", () => {
+    let getterCalls = 0;
+    const accessorObject = {};
+    Object.defineProperty(accessorObject, "secret", {
+      enumerable: true,
+      get() {
+        getterCalls += 1;
+        return getterCalls;
+      },
+    });
+
+    expect(isKernelRecord(accessorObject)).toBe(false);
+    expect(getterCalls).toBe(0);
+    expect(() => assertKernelRecord(accessorObject, "record")).toThrow(
+      "record must match the restricted Kraken kernel record profile"
+    );
+    expect(getterCalls).toBe(0);
   });
 
   test("rejects cyclic objects and arrays without overflowing the stack", () => {
