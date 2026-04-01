@@ -94,7 +94,7 @@ export function canonicalizeKernelRecord(value: KernelRecord): KernelRecord {
   }
 
   const sortedEntries = Object.entries(value).sort(([leftKey], [rightKey]) =>
-    leftKey.localeCompare(rightKey)
+    compareKeys(leftKey, rightKey)
   );
 
   return Object.fromEntries(
@@ -149,4 +149,16 @@ function prepareKernelRecordForEncoding(value: KernelRecord): unknown {
       prepareKernelRecordForEncoding(nestedValue),
     ])
   );
+}
+
+function compareKeys(leftKey: string, rightKey: string): number {
+  if (leftKey < rightKey) {
+    return -1;
+  }
+
+  if (leftKey > rightKey) {
+    return 1;
+  }
+
+  return 0;
 }

@@ -94,7 +94,7 @@ function isKernelRecordValue(value: unknown): value is KernelRecord {
       }
 
       if (Array.isArray(value)) {
-        return value.every((item) => isKernelRecordValue(item));
+        return isDenseKernelArray(value);
       }
 
       if (!isPlainKernelObject(value)) {
@@ -121,4 +121,14 @@ function isPlainKernelObject(value: object): value is Record<string, unknown> {
   }
 
   return Object.getOwnPropertySymbols(value).length === 0;
+}
+
+function isDenseKernelArray(value: unknown[]): value is KernelArray {
+  for (let index = 0; index < value.length; index += 1) {
+    if (!(index in value && isKernelRecordValue(value[index]))) {
+      return false;
+    }
+  }
+
+  return true;
 }

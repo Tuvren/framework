@@ -89,6 +89,17 @@ describe("KernelRecord", () => {
     );
   });
 
+  test("rejects sparse arrays", () => {
+    const sparseArray = new Array(3);
+    sparseArray[0] = "alpha";
+    sparseArray[2] = "omega";
+
+    expect(isKernelRecord(sparseArray)).toBe(false);
+    expect(() => assertKernelRecord(sparseArray, "record")).toThrow(
+      "record must match the restricted Kraken kernel record profile"
+    );
+  });
+
   test("normalizes insertion-order variants to identical deterministic bytes", () => {
     const encodedVariants = kernelRecordInsertionOrderVariants.map((variant) =>
       Buffer.from(encodeDeterministicKernelRecord(variant)).toString("hex")
