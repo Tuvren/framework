@@ -907,7 +907,7 @@ function assertPlainObject(
     });
   }
 
-  return Object.fromEntries(Object.entries(value));
+  return value as Record<string, unknown>;
 }
 
 function assertNonEmptyString(

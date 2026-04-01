@@ -262,7 +262,7 @@ function compareByteArrays(
 }
 
 async function hashBytesToHex(bytes: Uint8Array): Promise<HashString> {
-  const digestInput = Uint8Array.from(bytes);
+  const digestInput = getDigestInput(bytes);
   const digest = await globalThis.crypto.subtle.digest("SHA-256", digestInput);
   const hash = Array.from(new Uint8Array(digest), (byte) =>
     byte.toString(16).padStart(2, "0")
@@ -270,4 +270,18 @@ async function hashBytesToHex(bytes: Uint8Array): Promise<HashString> {
 
   assertHashString(hash, "hash");
   return hash;
+}
+
+function getDigestInput(bytes: Uint8Array): BufferSource {
+  const { buffer, byteLength, byteOffset } = bytes;
+
+  if (!(buffer instanceof ArrayBuffer)) {
+    return Uint8Array.from(bytes);
+  }
+
+  if (byteOffset === 0 && byteLength === buffer.byteLength) {
+    return buffer;
+  }
+
+  return buffer.slice(byteOffset, byteOffset + byteLength);
 }
