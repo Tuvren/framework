@@ -87,6 +87,11 @@ export const kernelProtocolDeterministicFixtures = {
 };
 
 export const kernelProtocolLogicalFixtures = {
+  branchHeadListEntry: {
+    branchId: "branch_main",
+    headTurnNodeHash:
+      "9999999999999999999999999999999999999999999999999999999999999999",
+  },
   branchRecord: {
     archivedFromBranchId: "branch_archive",
     branchId: "branch_main",
@@ -377,6 +382,10 @@ export const kernelProtocolStoredFixtures = {
 };
 
 export const kernelProtocolInvalidFixtures = {
+  invalidBranchHeadListEntry: {
+    branchId: "",
+    headTurnNodeHash: "not_a_hash",
+  },
   duplicatePathSchema: {
     incorporationRules: [{ objectType: "message", targetPath: "messages" }],
     paths: [

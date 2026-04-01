@@ -30,6 +30,7 @@ import {
   hashOpaqueObjectBytes,
 } from "./kernel-identity.js";
 import type {
+  BranchHeadListEntry,
   BranchRecord,
   ObserveResult,
   PathCollectionKind,
@@ -330,6 +331,22 @@ export function assertBranchRecord(
   if (objectValue.updatedAtMs !== undefined) {
     assertEpochMs(objectValue.updatedAtMs, `${label}.updatedAtMs`);
   }
+}
+
+export function isBranchHeadListEntry(
+  value: unknown
+): value is BranchHeadListEntry {
+  return tryAssert(value, assertBranchHeadListEntry);
+}
+
+export function assertBranchHeadListEntry(
+  value: unknown,
+  label = "value"
+): asserts value is BranchHeadListEntry {
+  const objectValue = assertPlainObject(value, label);
+
+  assertNonEmptyString(objectValue.branchId, `${label}.branchId`);
+  assertHashString(objectValue.headTurnNodeHash, `${label}.headTurnNodeHash`);
 }
 
 export function isTurnRecord(value: unknown): value is TurnRecord {

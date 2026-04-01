@@ -61,6 +61,7 @@ export type {
   TurnTreeSchema,
 } from "./lib/kernel-types.js";
 export {
+  assertBranchHeadListEntry,
   assertBranchRecord,
   assertObserveResult,
   assertPathCollectionKind,
@@ -95,6 +96,7 @@ export {
   assertTurnTreeChangeSet,
   assertTurnTreeManifest,
   assertTurnTreeSchema,
+  isBranchHeadListEntry,
   isBranchRecord,
   isObserveResult,
   isPathCollectionKind,

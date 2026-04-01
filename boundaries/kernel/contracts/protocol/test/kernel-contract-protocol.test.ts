@@ -24,6 +24,7 @@ import {
 } from "../../../../../tests/fixtures/kernel-protocol-fixtures.js";
 import { deterministicKernelRecordFixture } from "../../../../../tests/fixtures/kernel-record-fixtures.js";
 import {
+  assertBranchHeadListEntry,
   assertObserveResult,
   assertPathValue,
   assertPathValueForCollectionKind,
@@ -58,6 +59,7 @@ import {
   encodeDeterministicKernelRecord,
   hashKernelRecord,
   hashOpaqueObjectBytes,
+  isBranchHeadListEntry,
   isObserveResult,
   isRunStatus,
   isStagedResultStatus,
@@ -162,7 +164,7 @@ describe("deterministic identity", () => {
     );
   });
 
-  test("locks the canonical TurnNode bytes and hash", async () => {
+  test("locks the canonical TurnNode fixture bytes and record digest", async () => {
     const encodedHex = Buffer.from(
       encodeDeterministicKernelRecord(
         kernelProtocolDeterministicFixtures.turnNodeRecord
@@ -398,6 +400,11 @@ function restorePrototypeValue(
 describe("logical contract fixtures", () => {
   test("accepts the canonical logical record fixtures", () => {
     expect(() =>
+      assertBranchHeadListEntry(
+        kernelProtocolLogicalFixtures.branchHeadListEntry
+      )
+    ).not.toThrow();
+    expect(() =>
       assertThreadRecord(kernelProtocolLogicalFixtures.threadRecord)
     ).not.toThrow();
     expect(() =>
@@ -449,6 +456,14 @@ describe("logical contract fixtures", () => {
   });
 
   test("exposes status guards for runtime callers", () => {
+    expect(
+      isBranchHeadListEntry(kernelProtocolLogicalFixtures.branchHeadListEntry)
+    ).toBe(true);
+    expect(
+      isBranchHeadListEntry(
+        kernelProtocolInvalidFixtures.invalidBranchHeadListEntry
+      )
+    ).toBe(false);
     expect(isRunStatus("running")).toBe(true);
     expect(isRunStatus("broken")).toBe(false);
     expect(isStagedResultStatus("completed")).toBe(true);
@@ -466,6 +481,14 @@ describe("logical contract fixtures", () => {
     ).toThrow(
       "annotations[0] must be a lowercase 64-character SHA-256 hex digest"
     );
+  });
+
+  test("rejects invalid branch head list entries", () => {
+    expect(() =>
+      assertBranchHeadListEntry(
+        kernelProtocolInvalidFixtures.invalidBranchHeadListEntry
+      )
+    ).toThrow("branchId must be a non-empty string");
   });
 });
 
