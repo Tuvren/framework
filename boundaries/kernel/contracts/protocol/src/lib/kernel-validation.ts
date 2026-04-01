@@ -483,6 +483,17 @@ export function assertStoredObject(
   assertUint8Array(objectValue.bytes, `${label}.bytes`);
   assertNonNegativeInteger(objectValue.byteLength, `${label}.byteLength`);
   assertEpochMs(objectValue.createdAtMs, `${label}.createdAtMs`);
+
+  if (objectValue.byteLength !== objectValue.bytes.byteLength) {
+    throw validationError(
+      `${label}.byteLength must match ${label}.bytes.byteLength`,
+      "invalid_stored_object_byte_length",
+      {
+        actualByteLength: objectValue.bytes.byteLength,
+        byteLength: objectValue.byteLength,
+      }
+    );
+  }
 }
 
 export function isStoredSchema(value: unknown): value is StoredSchema {
@@ -527,44 +538,165 @@ export function assertStoredTurnTreePath(
   label = "value"
 ): asserts value is StoredTurnTreePath {
   const objectValue = assertPlainObject(value, label);
+  const turnTreeHash = objectValue.turnTreeHash;
+  const path = objectValue.path;
+  const collectionKind = objectValue.collectionKind;
+  const singleHash = objectValue.singleHash;
+  const orderedEncoding = objectValue.orderedEncoding;
+  const orderedCount = objectValue.orderedCount;
+  const orderedInlineCbor = objectValue.orderedInlineCbor;
+  const orderedChunkListCbor = objectValue.orderedChunkListCbor;
 
-  assertHashString(objectValue.turnTreeHash, `${label}.turnTreeHash`);
-  assertNonEmptyString(objectValue.path, `${label}.path`);
-  assertPathCollectionKind(
-    objectValue.collectionKind,
-    `${label}.collectionKind`
-  );
+  assertHashString(turnTreeHash, `${label}.turnTreeHash`);
+  assertNonEmptyString(path, `${label}.path`);
+  assertPathCollectionKind(collectionKind, `${label}.collectionKind`);
 
-  if (objectValue.singleHash !== undefined) {
-    assertNullableHashString(objectValue.singleHash, `${label}.singleHash`);
+  if (singleHash !== undefined) {
+    assertNullableHashString(singleHash, `${label}.singleHash`);
   }
 
   if (
-    objectValue.orderedEncoding !== undefined &&
-    !isStringLiteral(objectValue.orderedEncoding, ORDERED_ENCODINGS)
+    orderedEncoding !== undefined &&
+    !isStringLiteral(orderedEncoding, ORDERED_ENCODINGS)
   ) {
     throw validationError(
       `${label}.orderedEncoding must be "flat" or "chunked"`,
       "invalid_ordered_encoding",
-      { value: objectValue.orderedEncoding }
+      { value: orderedEncoding }
     );
   }
 
-  if (objectValue.orderedCount !== undefined) {
-    assertNonNegativeInteger(objectValue.orderedCount, `${label}.orderedCount`);
+  if (orderedCount !== undefined) {
+    assertNonNegativeInteger(orderedCount, `${label}.orderedCount`);
   }
 
-  if (objectValue.orderedInlineCbor !== undefined) {
-    assertUint8Array(
-      objectValue.orderedInlineCbor,
-      `${label}.orderedInlineCbor`
+  if (orderedInlineCbor !== undefined) {
+    assertUint8Array(orderedInlineCbor, `${label}.orderedInlineCbor`);
+  }
+
+  if (orderedChunkListCbor !== undefined) {
+    assertUint8Array(orderedChunkListCbor, `${label}.orderedChunkListCbor`);
+  }
+
+  assertStoredTurnTreePathShape(
+    {
+      collectionKind,
+      orderedChunkListCbor,
+      orderedCount,
+      orderedEncoding,
+      orderedInlineCbor,
+      path,
+      singleHash,
+      turnTreeHash,
+    },
+    label
+  );
+}
+
+function assertStoredTurnTreePathShape(
+  value: StoredTurnTreePath,
+  label: string
+): void {
+  if (value.collectionKind === "single") {
+    assertStoredSingleTurnTreePathShape(value, label);
+    return;
+  }
+
+  assertStoredOrderedTurnTreePathShape(value, label);
+}
+
+function assertStoredSingleTurnTreePathShape(
+  value: StoredTurnTreePath,
+  label: string
+): void {
+  if (
+    value.orderedEncoding !== undefined ||
+    value.orderedCount !== undefined ||
+    value.orderedInlineCbor !== undefined ||
+    value.orderedChunkListCbor !== undefined
+  ) {
+    throw validationError(
+      `${label} must not include ordered-path fields when collectionKind is "single"`,
+      "invalid_stored_turn_tree_path_shape",
+      { collectionKind: value.collectionKind }
+    );
+  }
+}
+
+function assertStoredOrderedTurnTreePathShape(
+  value: StoredTurnTreePath,
+  label: string
+): void {
+  if (value.singleHash !== undefined) {
+    throw validationError(
+      `${label}.singleHash must be omitted when collectionKind is "ordered"`,
+      "invalid_stored_turn_tree_path_shape",
+      { collectionKind: value.collectionKind }
     );
   }
 
-  if (objectValue.orderedChunkListCbor !== undefined) {
-    assertUint8Array(
-      objectValue.orderedChunkListCbor,
-      `${label}.orderedChunkListCbor`
+  if (value.orderedEncoding === undefined) {
+    throw validationError(
+      `${label}.orderedEncoding is required when collectionKind is "ordered"`,
+      "invalid_stored_turn_tree_path_shape",
+      { collectionKind: value.collectionKind }
+    );
+  }
+
+  if (value.orderedCount === undefined) {
+    throw validationError(
+      `${label}.orderedCount is required when collectionKind is "ordered"`,
+      "invalid_stored_turn_tree_path_shape",
+      { collectionKind: value.collectionKind }
+    );
+  }
+
+  if (value.orderedEncoding === "flat") {
+    assertStoredFlatTurnTreePathShape(value, label);
+    return;
+  }
+
+  assertStoredChunkedTurnTreePathShape(value, label);
+}
+
+function assertStoredFlatTurnTreePathShape(
+  value: StoredTurnTreePath,
+  label: string
+): void {
+  if (value.orderedInlineCbor === undefined) {
+    throw validationError(
+      `${label}.orderedInlineCbor is required when orderedEncoding is "flat"`,
+      "invalid_stored_turn_tree_path_shape",
+      { orderedEncoding: value.orderedEncoding }
+    );
+  }
+
+  if (value.orderedChunkListCbor !== undefined) {
+    throw validationError(
+      `${label}.orderedChunkListCbor must be omitted when orderedEncoding is "flat"`,
+      "invalid_stored_turn_tree_path_shape",
+      { orderedEncoding: value.orderedEncoding }
+    );
+  }
+}
+
+function assertStoredChunkedTurnTreePathShape(
+  value: StoredTurnTreePath,
+  label: string
+): void {
+  if (value.orderedChunkListCbor === undefined) {
+    throw validationError(
+      `${label}.orderedChunkListCbor is required when orderedEncoding is "chunked"`,
+      "invalid_stored_turn_tree_path_shape",
+      { orderedEncoding: value.orderedEncoding }
+    );
+  }
+
+  if (value.orderedInlineCbor !== undefined) {
+    throw validationError(
+      `${label}.orderedInlineCbor must be omitted when orderedEncoding is "chunked"`,
+      "invalid_stored_turn_tree_path_shape",
+      { orderedEncoding: value.orderedEncoding }
     );
   }
 }
@@ -712,6 +844,12 @@ export function assertStoredStagedResult(
     );
   }
 
+  assertInterruptPayloadConsistency(
+    objectValue.status,
+    objectValue.interruptPayloadCbor,
+    `${label}.interruptPayloadCbor`
+  );
+
   assertEpochMs(objectValue.createdAtMs, `${label}.createdAtMs`);
 }
 
@@ -737,6 +875,12 @@ export function assertStagedResult(
       `${label}.interruptPayload`
     );
   }
+
+  assertInterruptPayloadConsistency(
+    objectValue.status,
+    objectValue.interruptPayload,
+    `${label}.interruptPayload`
+  );
 }
 
 function assertTurnTreePathMap(
@@ -748,6 +892,32 @@ function assertTurnTreePathMap(
   for (const [path, pathValue] of Object.entries(objectValue)) {
     assertNonEmptyString(path, `${label} path`);
     assertPathValue(pathValue, `${label}.${path}`);
+  }
+}
+
+function assertInterruptPayloadConsistency(
+  status: StagedResultStatus,
+  interruptPayload: KernelRecord | Uint8Array | undefined,
+  label: string
+): void {
+  if (status === "interrupted") {
+    if (interruptPayload === undefined) {
+      throw validationError(
+        `${label} is required when status is "interrupted"`,
+        "invalid_interrupt_payload",
+        { status }
+      );
+    }
+
+    return;
+  }
+
+  if (interruptPayload !== undefined) {
+    throw validationError(
+      `${label} must be omitted unless status is "interrupted"`,
+      "invalid_interrupt_payload",
+      { status }
+    );
   }
 }
 

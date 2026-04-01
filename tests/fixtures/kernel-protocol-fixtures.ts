@@ -375,6 +375,72 @@ export const kernelProtocolInvalidFixtures = {
     annotations: [{ not: "a hash" }],
     signals: ["okay"],
   },
+  invalidStagedResultWithCompletedInterruptPayload: {
+    interruptPayload: { reason: "should_not_exist" },
+    objectHash:
+      "3737373737373737373737373737373737373737373737373737373737373737",
+    objectType: "tool_result",
+    status: "completed",
+    taskId: "tool_call_done",
+    timestamp: 1_717_171_717_272,
+  },
+  invalidStoredObjectByteLength: {
+    byteLength: 999,
+    bytes: new Uint8Array([1, 2, 3, 4]),
+    createdAtMs: 1_717_171_717_171,
+    hash: "3838383838383838383838383838383838383838383838383838383838383838",
+    mediaType: "application/json",
+  },
+  invalidStoredStagedResultWithCompletedInterruptPayload: {
+    createdAtMs: 1_717_171_717_171,
+    interruptPayloadCbor: new Uint8Array([
+      161, 102, 114, 101, 97, 115, 111, 110,
+    ]),
+    objectHash:
+      "3939393939393939393939393939393939393939393939393939393939393939",
+    objectType: "tool_result",
+    runId: "run_main",
+    status: "completed",
+    taskId: "tool_call_done",
+  },
+  invalidStoredTurnTreePathMissingOrderedPayload: {
+    collectionKind: "ordered",
+    orderedCount: 2,
+    orderedEncoding: "flat",
+    path: "messages",
+    turnTreeHash:
+      "4040404040404040404040404040404040404040404040404040404040404040",
+  },
+  invalidStoredTurnTreePathSingleWithOrderedFields: {
+    collectionKind: "single",
+    orderedCount: 1,
+    orderedEncoding: "flat",
+    orderedInlineCbor: new Uint8Array([129, 1]),
+    path: "context_manifest",
+    turnTreeHash:
+      "4141414141414141414141414141414141414141414141414141414141414141",
+  },
+  invalidStoredTurnTreePathWithOrderedSingleHash: {
+    collectionKind: "ordered",
+    orderedCount: 2,
+    orderedEncoding: "chunked",
+    orderedChunkListCbor: new Uint8Array([129, 1]),
+    path: "messages",
+    singleHash:
+      "4242424242424242424242424242424242424242424242424242424242424242",
+    turnTreeHash:
+      "4343434343434343434343434343434343434343434343434343434343434343",
+  },
+  invalidStoredTurnTreePathWithWrongEncodingPayload: {
+    collectionKind: "ordered",
+    orderedCount: 2,
+    orderedEncoding: "flat",
+    orderedChunkListCbor: new Uint8Array([129, 1]),
+    orderedInlineCbor: new Uint8Array([130, 1, 2]),
+    path: "messages",
+    turnTreeHash:
+      "4444444444444444444444444444444444444444444444444444444444444444",
+  },
   unknownPathSchema: {
     incorporationRules: [{ objectType: "message", targetPath: "missing" }],
     paths: [{ collection: "ordered", path: "messages" }],

@@ -275,4 +275,70 @@ describe("stored contract fixtures", () => {
       assertStoredStagedResult(kernelProtocolStoredFixtures.storedStagedResult)
     ).not.toThrow();
   });
+
+  test("rejects stored objects whose byteLength disagrees with bytes", () => {
+    expect(() =>
+      assertStoredObject(
+        kernelProtocolInvalidFixtures.invalidStoredObjectByteLength
+      )
+    ).toThrow("byteLength must match");
+  });
+
+  test("rejects impossible stored turn-tree path combinations", () => {
+    expect(() =>
+      assertStoredTurnTreePath(
+        kernelProtocolInvalidFixtures.invalidStoredTurnTreePathSingleWithOrderedFields
+      )
+    ).toThrow(
+      'must not include ordered-path fields when collectionKind is "single"'
+    );
+    expect(() =>
+      assertStoredTurnTreePath(
+        kernelProtocolInvalidFixtures.invalidStoredTurnTreePathWithOrderedSingleHash
+      )
+    ).toThrow('singleHash must be omitted when collectionKind is "ordered"');
+    expect(() =>
+      assertStoredTurnTreePath(
+        kernelProtocolInvalidFixtures.invalidStoredTurnTreePathMissingOrderedPayload
+      )
+    ).toThrow('orderedInlineCbor is required when orderedEncoding is "flat"');
+    expect(() =>
+      assertStoredTurnTreePath(
+        kernelProtocolInvalidFixtures.invalidStoredTurnTreePathWithWrongEncodingPayload
+      )
+    ).toThrow(
+      'orderedChunkListCbor must be omitted when orderedEncoding is "flat"'
+    );
+  });
+
+  test("rejects contradictory interrupt payloads", () => {
+    expect(() =>
+      assertStagedResult(
+        kernelProtocolInvalidFixtures.invalidStagedResultWithCompletedInterruptPayload
+      )
+    ).toThrow(
+      'interruptPayload must be omitted unless status is "interrupted"'
+    );
+    expect(() =>
+      assertStoredStagedResult(
+        kernelProtocolInvalidFixtures.invalidStoredStagedResultWithCompletedInterruptPayload
+      )
+    ).toThrow(
+      'interruptPayloadCbor must be omitted unless status is "interrupted"'
+    );
+    expect(() =>
+      assertStagedResult({
+        ...kernelProtocolInvalidFixtures.invalidStagedResultWithCompletedInterruptPayload,
+        interruptPayload: undefined,
+        status: "interrupted",
+      })
+    ).toThrow('interruptPayload is required when status is "interrupted"');
+    expect(() =>
+      assertStoredStagedResult({
+        ...kernelProtocolInvalidFixtures.invalidStoredStagedResultWithCompletedInterruptPayload,
+        interruptPayloadCbor: undefined,
+        status: "interrupted",
+      })
+    ).toThrow('interruptPayloadCbor is required when status is "interrupted"');
+  });
 });
