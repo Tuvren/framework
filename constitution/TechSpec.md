@@ -436,14 +436,14 @@ export interface ExecutionHandle {
 - **Compatibility Strategy:** Protocol-first contract. Breaking changes to record shapes, operation signatures, or validation semantics are semver-major.
 - **Error model:** `KrakenError` with persistence, validation, lineage, and recovery codes
 - **Concrete payload rule:** The frozen kernel specification names `ObserveResult.annotations` as `Object[]` and `signals` as `Signal[]`, but does not define their first TypeScript wire shape. The authoritative TypeScript realization is:
-  - observe annotations are `HashString[]` that reference Objects already present in the kernel object store
-  - observe signals are `KernelRecord[]`, keeping them serializable and boundary-safe without adding a second hidden object-ingest path to `run.completeStep`
+  - observe annotations are `KernelRecord[]` carried into `run.completeStep`, where the kernel remains responsible for persisting them per the frozen kernel specification
+  - observe signals are `KernelRecord[]`, keeping them serializable and boundary-safe within the run lifecycle
 
 ```ts
 export type KernelSignal = KernelRecord;
 
 export interface ObserveResult {
-  annotations: HashString[];
+  annotations: KernelRecord[];
   signals: KernelSignal[];
 }
 
@@ -511,9 +511,7 @@ export interface KrakenKernel {
       branchId: string,
       turnNodeHash: HashString
     ): Promise<SetHeadResult>;
-    list(
-      threadId: string
-    ): Promise<Array<{ branchId: string; headTurnNodeHash: HashString }>>;
+    list(threadId: string): Promise<Array<[string, HashString]>>;
   };
 
   staging: {

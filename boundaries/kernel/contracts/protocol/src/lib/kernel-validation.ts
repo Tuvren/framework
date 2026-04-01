@@ -197,7 +197,7 @@ export function assertObserveResult(
 ): asserts value is ObserveResult {
   const objectValue = assertPlainObject(value, label);
 
-  assertHashStringArray(objectValue.annotations, `${label}.annotations`);
+  assertKernelRecordArray(objectValue.annotations, `${label}.annotations`);
   assertKernelRecordArray(objectValue.signals, `${label}.signals`);
 }
 
@@ -343,10 +343,18 @@ export function assertBranchHeadListEntry(
   value: unknown,
   label = "value"
 ): asserts value is BranchHeadListEntry {
-  const objectValue = assertPlainObject(value, label);
+  const tupleValue = assertArray(value, label);
 
-  assertNonEmptyString(objectValue.branchId, `${label}.branchId`);
-  assertHashString(objectValue.headTurnNodeHash, `${label}.headTurnNodeHash`);
+  if (tupleValue.length !== 2) {
+    throw validationError(
+      `${label} must be a [branchId, headTurnNodeHash] tuple`,
+      "invalid_branch_head_list_entry",
+      { value }
+    );
+  }
+
+  assertNonEmptyString(tupleValue[0], `${label}[0]`);
+  assertHashString(tupleValue[1], `${label}[1]`);
 }
 
 export function isTurnRecord(value: unknown): value is TurnRecord {

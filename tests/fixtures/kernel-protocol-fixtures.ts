@@ -87,11 +87,10 @@ export const kernelProtocolDeterministicFixtures = {
 };
 
 export const kernelProtocolLogicalFixtures = {
-  branchHeadListEntry: {
-    branchId: "branch_main",
-    headTurnNodeHash:
-      "9999999999999999999999999999999999999999999999999999999999999999",
-  },
+  branchHeadListEntry: [
+    "branch_main",
+    "9999999999999999999999999999999999999999999999999999999999999999",
+  ],
   branchRecord: {
     archivedFromBranchId: "branch_archive",
     branchId: "branch_main",
@@ -102,9 +101,7 @@ export const kernelProtocolLogicalFixtures = {
     updatedAtMs: 1_717_171_717_272,
   },
   observeResult: {
-    annotations: [
-      "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-    ],
+    annotations: [{ kind: "note", severity: 1 }],
     signals: [{ kind: "post_step", severity: 1 }],
   },
   recoveryState: {
@@ -382,10 +379,7 @@ export const kernelProtocolStoredFixtures = {
 };
 
 export const kernelProtocolInvalidFixtures = {
-  invalidBranchHeadListEntry: {
-    branchId: "",
-    headTurnNodeHash: "not_a_hash",
-  },
+  invalidBranchHeadListEntry: ["", "not_a_hash"],
   duplicatePathSchema: {
     incorporationRules: [{ objectType: "message", targetPath: "messages" }],
     paths: [
@@ -403,7 +397,7 @@ export const kernelProtocolInvalidFixtures = {
     schemaId: "schema_main",
   },
   invalidObserveResult: {
-    annotations: [{ not: "a hash" }],
+    annotations: [Number.NaN],
     signals: ["okay"],
   },
   invalidNonCanonicalKernelRecordBytes: Uint8Array.from(

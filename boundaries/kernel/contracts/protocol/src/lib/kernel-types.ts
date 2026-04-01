@@ -57,7 +57,7 @@ export interface StepDeclaration {
 }
 
 export interface ObserveResult {
-  annotations: HashString[];
+  annotations: KernelRecord[];
   signals: KernelRecord[];
 }
 
@@ -148,10 +148,10 @@ export interface SetHeadResult {
   branch: BranchRecord;
 }
 
-export interface BranchHeadListEntry {
-  branchId: string;
-  headTurnNodeHash: HashString;
-}
+export type BranchHeadListEntry = [
+  branchId: string,
+  headTurnNodeHash: HashString,
+];
 
 export interface StoredObject {
   byteLength: number;

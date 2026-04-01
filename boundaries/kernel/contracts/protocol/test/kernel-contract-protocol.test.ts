@@ -472,14 +472,14 @@ describe("logical contract fixtures", () => {
     expect(() => assertStagedResultStatus("interrupted")).not.toThrow();
   });
 
-  test("rejects invalid observe annotations", () => {
+  test("rejects invalid observe payloads", () => {
     expect(
       isObserveResult(kernelProtocolInvalidFixtures.invalidObserveResult)
     ).toBe(false);
     expect(() =>
       assertObserveResult(kernelProtocolInvalidFixtures.invalidObserveResult)
     ).toThrow(
-      "annotations[0] must be a lowercase 64-character SHA-256 hex digest"
+      "annotations[0] must match the restricted Kraken kernel record profile"
     );
   });
 
@@ -488,7 +488,7 @@ describe("logical contract fixtures", () => {
       assertBranchHeadListEntry(
         kernelProtocolInvalidFixtures.invalidBranchHeadListEntry
       )
-    ).toThrow("branchId must be a non-empty string");
+    ).toThrow("[0] must be a non-empty string");
   });
 });
 
