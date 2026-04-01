@@ -89,8 +89,23 @@ export function decodeDeterministicKernelRecord(
 ): KernelRecord {
   const decodedValue = deterministicDecoder.decode(bytes);
   const normalizedValue = normalizeDecodedKernelValue(decodedValue, "value");
+  const canonicalBytes = encodeDeterministicKernelRecord(normalizedValue);
 
   assertKernelRecord(normalizedValue, "decoded kernel record");
+
+  if (!areByteArraysEqual(bytes, canonicalBytes)) {
+    throw new KrakenValidationError(
+      "decoded kernel record must already use the canonical deterministic CBOR encoding",
+      {
+        code: "non_canonical_kernel_record_encoding",
+        details: {
+          canonicalHex: bytesToHex(canonicalBytes),
+          receivedHex: bytesToHex(bytes),
+        },
+      }
+    );
+  }
+
   return normalizedValue;
 }
 
@@ -259,6 +274,29 @@ function compareByteArrays(
   }
 
   return leftBytes.length < rightBytes.length ? -1 : 1;
+}
+
+function areByteArraysEqual(
+  leftBytes: Uint8Array,
+  rightBytes: Uint8Array
+): boolean {
+  if (leftBytes.length !== rightBytes.length) {
+    return false;
+  }
+
+  for (let index = 0; index < leftBytes.length; index += 1) {
+    if (leftBytes[index] !== rightBytes[index]) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function bytesToHex(bytes: Uint8Array): string {
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join(
+    ""
+  );
 }
 
 async function hashBytesToHex(bytes: Uint8Array): Promise<HashString> {

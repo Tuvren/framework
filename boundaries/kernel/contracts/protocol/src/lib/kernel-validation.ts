@@ -1046,7 +1046,17 @@ function assertHashStringArray(
 }
 
 function isHashStringArray(value: unknown): value is string[] {
-  return Array.isArray(value) && value.every((item) => isHashString(item));
+  if (!Array.isArray(value)) {
+    return false;
+  }
+
+  for (let index = 0; index < value.length; index += 1) {
+    if (!(Object.hasOwn(value, index) && isHashString(value[index]))) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 function assertArray(value: unknown, label: string): unknown[] {

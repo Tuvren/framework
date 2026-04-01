@@ -25,6 +25,7 @@ import {
 import { deterministicKernelRecordFixture } from "../../../../../tests/fixtures/kernel-record-fixtures.js";
 import {
   assertObserveResult,
+  assertPathValue,
   assertPathValueForCollectionKind,
   assertRecoveryState,
   assertRunRecord,
@@ -81,6 +82,14 @@ describe("deterministic identity", () => {
     );
 
     expect(decodedValue).toEqual(deterministicKernelRecordFixture.logicalValue);
+  });
+
+  test("rejects non-canonical deterministic CBOR encodings on decode", () => {
+    expect(() =>
+      decodeDeterministicKernelRecord(
+        kernelProtocolInvalidFixtures.invalidNonCanonicalKernelRecordBytes
+      )
+    ).toThrow("must already use the canonical deterministic CBOR encoding");
   });
 
   test("locks the canonical TurnTreeSchema bytes and hash", async () => {
@@ -176,6 +185,20 @@ describe("schema validation", () => {
         "single"
       )
     ).toThrow("must be a HashString or null for a single path");
+  });
+
+  test("rejects sparse ordered-path arrays", () => {
+    expect(() =>
+      assertPathValue(
+        kernelProtocolInvalidFixtures.invalidSparseOrderedPathValue
+      )
+    ).toThrow("must be a HashString, HashString[], or null");
+    expect(() =>
+      assertPathValueForCollectionKind(
+        kernelProtocolInvalidFixtures.invalidSparseOrderedPathValue,
+        "ordered"
+      )
+    ).toThrow("must be a HashString[] for an ordered path");
   });
 });
 

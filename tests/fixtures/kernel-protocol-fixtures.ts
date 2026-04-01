@@ -375,6 +375,10 @@ export const kernelProtocolInvalidFixtures = {
     annotations: [{ not: "a hash" }],
     signals: ["okay"],
   },
+  invalidNonCanonicalKernelRecordBytes: Uint8Array.from(
+    Buffer.from("fb41f0000000000000", "hex")
+  ),
+  invalidSparseOrderedPathValue: new Array(1),
   invalidStagedResultWithCompletedInterruptPayload: {
     interruptPayload: { reason: "should_not_exist" },
     objectHash:
