@@ -672,7 +672,7 @@ export function assertStoredTurnTreePath(
   const orderedChunkListCbor = objectValue.orderedChunkListCbor;
 
   assertHashString(turnTreeHash, `${label}.turnTreeHash`);
-  assertNonEmptyString(path, `${label}.path`);
+  assertSchemaPath(path, `${label}.path`);
   assertPathCollectionKind(collectionKind, `${label}.collectionKind`);
 
   if (singleHash !== undefined) {
@@ -841,10 +841,35 @@ function assertStoredChunkedTurnTreePathShape(
     );
   }
 
-  assertDecodedHashStringArray(
+  const chunkHashes = assertDecodedHashStringArray(
     value.orderedChunkListCbor,
     `${label}.orderedChunkListCbor`
   );
+  const orderedCount = value.orderedCount;
+
+  if (orderedCount === undefined) {
+    throw validationError(
+      `${label}.orderedCount is required when orderedEncoding is "chunked"`,
+      "invalid_stored_turn_tree_path_shape",
+      { orderedEncoding: value.orderedEncoding }
+    );
+  }
+
+  if (orderedCount === 0 && chunkHashes.length !== 0) {
+    throw validationError(
+      `${label}.orderedChunkListCbor must be empty when ${label}.orderedCount is 0`,
+      "invalid_stored_turn_tree_path_shape",
+      { chunkCount: chunkHashes.length, orderedCount }
+    );
+  }
+
+  if (orderedCount > 0 && chunkHashes.length === 0) {
+    throw validationError(
+      `${label}.orderedChunkListCbor must contain at least one chunk when ${label}.orderedCount is positive`,
+      "invalid_stored_turn_tree_path_shape",
+      { chunkCount: chunkHashes.length, orderedCount }
+    );
+  }
 }
 
 export function isStoredOrderedPathChunk(
@@ -1069,7 +1094,7 @@ function assertTurnTreePathMap(
   const objectValue = assertPlainObject(value, label);
 
   for (const [path, pathValue] of Object.entries(objectValue)) {
-    assertNonEmptyString(path, `${label} path`);
+    assertSchemaPath(path, `${label} path`);
     assertPathValue(pathValue, `${label}.${path}`);
   }
 }

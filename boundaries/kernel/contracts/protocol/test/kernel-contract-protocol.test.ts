@@ -245,6 +245,12 @@ describe("schema validation", () => {
         kernelProtocolInvalidFixtures.invalidSchemaPathSchema
       )
     ).toThrow("must be a dot-separated path with non-empty segments");
+    expect(() =>
+      assertTurnTreeChangeSet({
+        "messages..results":
+          "5858585858585858585858585858585858585858585858585858585858585858",
+      })
+    ).toThrow("must be a dot-separated path with non-empty segments");
   });
 
   test("rejects schema records with symbol keys or accessor-backed fields", () => {
@@ -640,6 +646,16 @@ describe("stored contract fixtures", () => {
     ).toThrow(
       'orderedChunkListCbor must be omitted when orderedEncoding is "flat"'
     );
+    expect(() =>
+      assertStoredTurnTreePath(
+        kernelProtocolInvalidFixtures.invalidStoredTurnTreePathChunkedWithoutChunkRefs
+      )
+    ).toThrow("must contain at least one chunk");
+    expect(() =>
+      assertStoredTurnTreePath(
+        kernelProtocolInvalidFixtures.invalidStoredTurnTreePathWithMalformedPath
+      )
+    ).toThrow("must be a dot-separated path with non-empty segments");
   });
 
   test("rejects stored ordered payloads whose decoded cardinality disagrees", () => {

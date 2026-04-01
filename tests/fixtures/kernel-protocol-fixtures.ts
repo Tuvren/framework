@@ -665,6 +665,23 @@ export const kernelProtocolInvalidFixtures = {
     turnTreeHash:
       "4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a",
   },
+  invalidStoredTurnTreePathChunkedWithoutChunkRefs: {
+    collectionKind: "ordered",
+    orderedCount: 1,
+    orderedEncoding: "chunked",
+    orderedChunkListCbor: encodeDeterministicKernelRecord([]),
+    path: "messages",
+    turnTreeHash:
+      "5555555555555555555555555555555555555555555555555555555555555555",
+  },
+  invalidStoredTurnTreePathWithMalformedPath: {
+    collectionKind: "single",
+    path: "messages..results",
+    singleHash:
+      "5656565656565656565656565656565656565656565656565656565656565656",
+    turnTreeHash:
+      "5757575757575757575757575757575757575757575757575757575757575757",
+  },
   unknownPathSchema: {
     incorporationRules: [{ objectType: "message", targetPath: "missing" }],
     paths: [{ collection: "ordered", path: "messages" }],
