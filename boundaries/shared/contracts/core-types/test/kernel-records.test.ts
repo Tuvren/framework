@@ -24,6 +24,9 @@ import {
   isEpochMs,
   isHashString,
   isKernelRecord,
+  KrakenPersistenceError,
+  KrakenRuntimeError,
+  KrakenValidationError,
 } from "@kraken/shared-core-types";
 import {
   deterministicKernelRecordFixture,
@@ -126,5 +129,44 @@ describe("KernelRecord", () => {
 
     expect(encodedHex).toContain("1b");
     expect(encodedHex).not.toContain("fb4278fcf690433000");
+  });
+
+  test("encodes Uint8Array as a plain CBOR byte string without tag 64", () => {
+    const encodedHex = Buffer.from(
+      encodeDeterministicKernelRecord({ bytes: new Uint8Array([1, 2, 3, 4]) })
+    ).toString("hex");
+
+    expect(encodedHex).toContain("65734401020304");
+    expect(encodedHex).not.toContain("d84044");
+  });
+});
+
+describe("KrakenError", () => {
+  test("stores code, details, and cause on the base contract", () => {
+    const cause = new Error("root cause");
+    const error = new KrakenValidationError("invalid schema", {
+      cause,
+      code: "invalid_schema",
+      details: { path: "messages" },
+    });
+
+    expect(error).toBeInstanceOf(Error);
+    expect(error).toBeInstanceOf(KrakenValidationError);
+    expect(error.code).toBe("invalid_schema");
+    expect(error.details).toEqual({ path: "messages" });
+    expect(error.cause).toBe(cause);
+    expect(error.name).toBe("KrakenValidationError");
+  });
+
+  test("preserves subclass categories for downstream normalization", () => {
+    const persistenceError = new KrakenPersistenceError("write failed", {
+      code: "store_write_failed",
+    });
+    const runtimeError = new KrakenRuntimeError("loop policy failed", {
+      code: "invalid_loop_policy",
+    });
+
+    expect(persistenceError).toBeInstanceOf(KrakenPersistenceError);
+    expect(runtimeError).toBeInstanceOf(KrakenRuntimeError);
   });
 });

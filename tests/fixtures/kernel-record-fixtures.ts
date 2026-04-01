@@ -20,6 +20,7 @@ import { assertKernelRecord } from "@kraken/shared-core-types";
 import { Encoder } from "cbor-x";
 
 const deterministicEncoder = new Encoder({
+  tagUint8Array: false,
   useRecords: false,
   variableMapSize: true,
 });
@@ -36,9 +37,9 @@ export const deterministicKernelRecordFixture = {
     timestamp: 1_717_171_717_171,
   } satisfies KernelRecord,
   expectedCborHex:
-    "a566616374697665f5656279746573d8404401020304656974656d738365616c70686107f6646d657461a265636f756e7402656c6162656c666b72616b656e6974696d657374616d701b0000018fcf690433",
+    "a566616374697665f56562797465734401020304656974656d738365616c70686107f6646d657461a265636f756e7402656c6162656c666b72616b656e6974696d657374616d701b0000018fcf690433",
   expectedSha256Hex:
-    "4734bac3b98f290e0ea0a9ff621e64b2252355428d49e0c6e47e8f6a62c5eff6",
+    "eadb347410b843d92029f030a29979b46cd5e258f497ccd35c3720789bf01fae",
 };
 
 export const kernelRecordInsertionOrderVariants: readonly KernelRecord[] = [

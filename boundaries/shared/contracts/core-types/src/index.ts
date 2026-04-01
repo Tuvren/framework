@@ -31,3 +31,16 @@ export {
   isHashString,
   isKernelRecord,
 } from "./lib/kernel-records.js";
+export type {
+  KrakenErrorCode,
+  KrakenErrorOptions,
+} from "./lib/kraken-error.js";
+export {
+  KrakenError,
+  KrakenLineageError,
+  KrakenPersistenceError,
+  KrakenProviderError,
+  KrakenRecoveryError,
+  KrakenRuntimeError,
+  KrakenValidationError,
+} from "./lib/kraken-error.js";
