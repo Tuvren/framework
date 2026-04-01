@@ -111,6 +111,14 @@ describe("KernelRecord", () => {
     expect(new Set(encodedVariants).size).toBe(1);
   });
 
+  test("sorts keys by deterministic CBOR key bytes rather than plain string order", () => {
+    const encodedHex = Buffer.from(
+      encodeDeterministicKernelRecord({ aa: 1, b: 2 })
+    ).toString("hex");
+
+    expect(encodedHex).toBe("a261620262616101");
+  });
+
   test("locks the canonical fixture bytes and hash", async () => {
     const encodedBytes = encodeDeterministicKernelRecord(
       deterministicKernelRecordFixture.logicalValue

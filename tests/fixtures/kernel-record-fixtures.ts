@@ -24,6 +24,11 @@ const deterministicEncoder = new Encoder({
   useRecords: false,
   variableMapSize: true,
 });
+const deterministicKeyEncoder = new Encoder({
+  tagUint8Array: false,
+  useRecords: false,
+  variableMapSize: true,
+});
 
 export const deterministicKernelRecordFixture = {
   logicalValue: {
@@ -37,9 +42,9 @@ export const deterministicKernelRecordFixture = {
     timestamp: 1_717_171_717_171,
   } satisfies KernelRecord,
   expectedCborHex:
-    "a566616374697665f56562797465734401020304656974656d738365616c70686107f6646d657461a265636f756e7402656c6162656c666b72616b656e6974696d657374616d701b0000018fcf690433",
+    "a5646d657461a265636f756e7402656c6162656c666b72616b656e6562797465734401020304656974656d738365616c70686107f666616374697665f56974696d657374616d701b0000018fcf690433",
   expectedSha256Hex:
-    "eadb347410b843d92029f030a29979b46cd5e258f497ccd35c3720789bf01fae",
+    "a7e74da5ec721eb03b261d9898f0ade2a6e26ba63d123ca94669d6b130d38a98",
 };
 
 export const kernelRecordInsertionOrderVariants: readonly KernelRecord[] = [
@@ -153,13 +158,31 @@ function prepareKernelRecordForEncoding(value: KernelRecord): unknown {
 }
 
 function compareKeys(leftKey: string, rightKey: string): number {
-  if (leftKey < rightKey) {
-    return -1;
+  return compareByteArrays(
+    encodeDeterministicKey(leftKey),
+    encodeDeterministicKey(rightKey)
+  );
+}
+
+function compareByteArrays(
+  leftBytes: Uint8Array,
+  rightBytes: Uint8Array
+): number {
+  const sharedLength = Math.min(leftBytes.length, rightBytes.length);
+
+  for (let index = 0; index < sharedLength; index += 1) {
+    if (leftBytes[index] !== rightBytes[index]) {
+      return leftBytes[index] < rightBytes[index] ? -1 : 1;
+    }
   }
 
-  if (leftKey > rightKey) {
-    return 1;
+  if (leftBytes.length === rightBytes.length) {
+    return 0;
   }
 
-  return 0;
+  return leftBytes.length < rightBytes.length ? -1 : 1;
+}
+
+function encodeDeterministicKey(value: string): Uint8Array {
+  return new Uint8Array(deterministicKeyEncoder.encode(value));
 }

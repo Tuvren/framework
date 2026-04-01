@@ -11,6 +11,7 @@ This spike records the verified baseline for Epic B before protocol contracts de
   - `variableMapSize: true`
 - Determinism rule:
   - Recursively sort plain-object keys before encoding.
+  - Sort map keys by the bytewise lexicographic order of their deterministic CBOR encodings, following RFC 8949 core deterministic encoding requirements.
   - Reject values outside the restricted kernel record profile before encoding.
   - Convert safe integers outside the 32-bit fast path into `bigint` just before encoding so `cbor-x` emits CBOR integers instead of float64.
   - Disable `Uint8Array` tagging so kernel records stay within the v0.1 no-CBOR-tags rule and hash the same byte stream across runtimes.
