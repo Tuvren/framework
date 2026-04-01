@@ -1146,6 +1146,16 @@ function assertArray(value: unknown, label: string): unknown[] {
     }
   }
 
+  for (let index = 0; index < value.length; index += 1) {
+    if (!Object.hasOwn(value, index)) {
+      throw validationError(
+        `${label} must be a dense data-only array`,
+        "invalid_array",
+        { value }
+      );
+    }
+  }
+
   return value;
 }
 
@@ -1191,7 +1201,10 @@ function assertPlainObject(
     }
   }
 
-  return value as Record<string, unknown>;
+  return Object.assign(
+    Object.create(null),
+    Object.fromEntries(Object.entries(value))
+  ) as Record<string, unknown>;
 }
 
 function assertNonEmptyString(

@@ -34,6 +34,7 @@ import {
   assertStagedResult,
   assertStagedResultStatus,
   assertStepContext,
+  assertStepDeclaration,
   assertStoredBranch,
   assertStoredObject,
   assertStoredOrderedPathChunk,
@@ -198,6 +199,67 @@ describe("schema validation", () => {
     ).toThrow("must be a plain object");
   });
 
+  test("does not accept required fields inherited from Object.prototype", () => {
+    const originalSchemaId = Object.prototype.schemaId;
+    const originalPaths = Object.prototype.paths;
+    const originalIncorporationRules = Object.prototype.incorporationRules;
+    const originalId = Object.prototype.id;
+    const originalDeterministic = Object.prototype.deterministic;
+    const originalSideEffects = Object.prototype.sideEffects;
+    const hadSchemaId = Object.hasOwn(Object.prototype, "schemaId");
+    const hadPaths = Object.hasOwn(Object.prototype, "paths");
+    const hadIncorporationRules = Object.hasOwn(
+      Object.prototype,
+      "incorporationRules"
+    );
+    const hadId = Object.hasOwn(Object.prototype, "id");
+    const hadDeterministic = Object.hasOwn(Object.prototype, "deterministic");
+    const hadSideEffects = Object.hasOwn(Object.prototype, "sideEffects");
+
+    Object.prototype.schemaId = "schema_main";
+    Object.prototype.paths = [{ path: "messages", collection: "ordered" }];
+    Object.prototype.incorporationRules = [];
+    Object.prototype.id = "model_call";
+    Object.prototype.deterministic = false;
+    Object.prototype.sideEffects = false;
+
+    try {
+      expect(() => assertTurnTreeSchema({})).toThrow(
+        "schemaId must be a non-empty string"
+      );
+      expect(() => assertStepDeclaration({})).toThrow(
+        "id must be a non-empty string"
+      );
+    } finally {
+      restorePrototypeValue(
+        Object.prototype,
+        "schemaId",
+        hadSchemaId,
+        originalSchemaId
+      );
+      restorePrototypeValue(Object.prototype, "paths", hadPaths, originalPaths);
+      restorePrototypeValue(
+        Object.prototype,
+        "incorporationRules",
+        hadIncorporationRules,
+        originalIncorporationRules
+      );
+      restorePrototypeValue(Object.prototype, "id", hadId, originalId);
+      restorePrototypeValue(
+        Object.prototype,
+        "deterministic",
+        hadDeterministic,
+        originalDeterministic
+      );
+      restorePrototypeValue(
+        Object.prototype,
+        "sideEffects",
+        hadSideEffects,
+        originalSideEffects
+      );
+    }
+  });
+
   test("enforces collection-kind-specific path values", () => {
     expect(() =>
       assertPathValueForCollectionKind(
@@ -247,7 +309,59 @@ describe("schema validation", () => {
       )
     ).toThrow("must be a HashString[] for an ordered path");
   });
+
+  test("does not accept sparse arrays that borrow values from Array.prototype", () => {
+    const inheritedHash =
+      "4848484848484848484848484848484848484848484848484848484848484848";
+    const originalPrototypeValue = Array.prototype[0];
+    const hadPrototypeValue = Object.hasOwn(Array.prototype, 0);
+
+    Array.prototype[0] = inheritedHash;
+
+    try {
+      expect(() =>
+        assertObserveResult({ annotations: new Array(1), signals: [] })
+      ).toThrow("annotations must be a dense data-only array");
+      expect(() =>
+        assertStepContext({
+          currentTurnNodeHash:
+            "4949494949494949494949494949494949494949494949494949494949494949",
+          schema: {
+            schemaId: "schema_main",
+            paths: [{ path: "messages", collection: "ordered" }],
+            incorporationRules: [],
+          },
+          signals: new Array(1),
+          step: {
+            deterministic: false,
+            id: "model_call",
+            sideEffects: false,
+          },
+        })
+      ).toThrow("signals must be a dense data-only array");
+    } finally {
+      if (hadPrototypeValue) {
+        Array.prototype[0] = originalPrototypeValue;
+      } else {
+        Reflect.deleteProperty(Array.prototype, 0);
+      }
+    }
+  });
 });
+
+function restorePrototypeValue(
+  target: Record<PropertyKey, unknown>,
+  key: PropertyKey,
+  hadOwn: boolean,
+  originalValue: unknown
+): void {
+  if (hadOwn) {
+    target[key] = originalValue;
+    return;
+  }
+
+  Reflect.deleteProperty(target, key);
+}
 
 describe("logical contract fixtures", () => {
   test("accepts the canonical logical record fixtures", () => {
