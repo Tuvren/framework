@@ -160,6 +160,7 @@
   - `schemaId: string`
   - `manifestCbor: Uint8Array`
   - `createdAtMs: EpochMs`
+  - identity note: `hash` is derived from the logical tree identity tuple `{ schemaId, manifest }`, so identical manifests under different schemas never alias
 - `StoredTurnTreePath`
   - `turnTreeHash: HashString`
   - `path: string`

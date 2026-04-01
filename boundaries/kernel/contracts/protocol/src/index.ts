@@ -23,6 +23,7 @@ export {
   hashKernelRecord,
   hashOpaqueObjectBytes,
   hashTurnNodeIdentity,
+  hashTurnTreeIdentity,
 } from "./lib/kernel-identity.js";
 export type {
   BranchHeadListEntry,

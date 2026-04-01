@@ -17,12 +17,13 @@
 
 import type { HashString, KernelRecord } from "@kraken/shared-core-types";
 import {
+  assertEpochMs,
   assertHashString,
   assertKernelRecord,
   KrakenValidationError,
 } from "@kraken/shared-core-types";
 import { Decoder, Encoder } from "cbor-x";
-import type { TurnNode } from "./kernel-types.js";
+import type { TurnNode, TurnTreeManifest } from "./kernel-types.js";
 
 const deterministicEncoderOptions = {
   tagUint8Array: false,
@@ -43,6 +44,7 @@ const deterministicDecoder = new Decoder({
   mapsAsObjects: false,
   useRecords: false,
 });
+const STAGED_RESULT_STATUSES = ["completed", "failed", "interrupted"] as const;
 
 export function canonicalizeKernelRecord(value: KernelRecord): unknown {
   assertKernelRecord(value);
@@ -136,6 +138,15 @@ export function hashOpaqueObjectBytes(bytes: Uint8Array): Promise<HashString> {
   return hashBytesToHex(bytes);
 }
 
+export function hashTurnTreeIdentity(
+  schemaId: string,
+  manifest: TurnTreeManifest
+): Promise<HashString> {
+  assertNonEmptyString(schemaId, "schemaId");
+  assertKernelRecord(manifest, "manifest");
+  return hashKernelRecord({ manifest, schemaId });
+}
+
 export async function hashTurnNodeIdentity(
   value: Omit<TurnNode, "hash"> | TurnNode
 ): Promise<HashString> {
@@ -203,6 +214,37 @@ function assertTurnNodeIdentityInput(
     );
   }
 
+  assertAllowedKeys(
+    value,
+    [
+      "consumedStagedResults",
+      "eventHash",
+      "hash",
+      "previousTurnNodeHash",
+      "schemaId",
+      "turnTreeHash",
+    ],
+    "turn node identity input"
+  );
+
+  if ("hash" in value && value.hash !== undefined) {
+    assertHashStringOrThrow(value.hash, "turn node identity input.hash");
+  }
+
+  assertNullableHashStringOrThrow(
+    value.eventHash,
+    "turn node identity input.eventHash"
+  );
+  assertNullableHashStringOrThrow(
+    value.previousTurnNodeHash,
+    "turn node identity input.previousTurnNodeHash"
+  );
+  assertHashStringOrThrow(
+    value.turnTreeHash,
+    "turn node identity input.turnTreeHash"
+  );
+  assertNonEmptyString(value.schemaId, "turn node identity input.schemaId");
+
   const consumedStagedResults = value.consumedStagedResults;
 
   if (!Array.isArray(consumedStagedResults)) {
@@ -214,6 +256,118 @@ function assertTurnNodeIdentityInput(
       }
     );
   }
+
+  for (const [index, stagedResult] of consumedStagedResults.entries()) {
+    assertStagedResultIdentityInput(
+      stagedResult,
+      `turn node identity input.consumedStagedResults[${index}]`
+    );
+  }
+}
+
+function assertStagedResultIdentityInput(value: unknown, label: string): void {
+  if (
+    value === null ||
+    typeof value !== "object" ||
+    Array.isArray(value) ||
+    !isPlainObject(value)
+  ) {
+    throw turnNodeIdentityError(`${label} must be a plain object`, { value });
+  }
+
+  assertAllowedKeys(
+    value,
+    [
+      "interruptPayload",
+      "objectHash",
+      "objectType",
+      "status",
+      "taskId",
+      "timestamp",
+    ],
+    label
+  );
+
+  assertHashStringOrThrow(value.objectHash, `${label}.objectHash`);
+  assertNonEmptyString(value.objectType, `${label}.objectType`);
+  assertStagedResultStatusOrThrow(value.status, `${label}.status`);
+  assertNonEmptyString(value.taskId, `${label}.taskId`);
+  assertEpochMs(value.timestamp, `${label}.timestamp`);
+
+  if (value.interruptPayload !== undefined) {
+    assertKernelRecord(value.interruptPayload, `${label}.interruptPayload`);
+  }
+}
+
+function assertAllowedKeys(
+  value: Record<string, unknown>,
+  allowedKeys: readonly string[],
+  label: string
+): void {
+  const allowedKeySet = new Set(allowedKeys);
+
+  for (const key of Object.keys(value)) {
+    if (!allowedKeySet.has(key)) {
+      throw turnNodeIdentityError(
+        `${label}.${key} is not part of the contract shape`,
+        {
+          allowedKeys,
+          key,
+        }
+      );
+    }
+  }
+}
+
+function assertHashStringOrThrow(value: unknown, label: string): void {
+  try {
+    assertHashString(value, label);
+  } catch (error: unknown) {
+    throw turnNodeIdentityError(
+      error instanceof Error ? error.message : `${label} must be a hash string`,
+      { value }
+    );
+  }
+}
+
+function assertNullableHashStringOrThrow(value: unknown, label: string): void {
+  if (value === null) {
+    return;
+  }
+
+  assertHashStringOrThrow(value, label);
+}
+
+function assertNonEmptyString(value: unknown, label: string): void {
+  if (typeof value !== "string" || value.length === 0) {
+    throw turnNodeIdentityError(`${label} must be a non-empty string`, {
+      value,
+    });
+  }
+}
+
+function assertStagedResultStatusOrThrow(value: unknown, label: string): void {
+  if (
+    !(
+      typeof value === "string" &&
+      (STAGED_RESULT_STATUSES as readonly string[]).includes(value)
+    )
+  ) {
+    throw turnNodeIdentityError(
+      `${label} must be one of ${STAGED_RESULT_STATUSES.join(", ")}`,
+      { value }
+    );
+  }
+}
+
+function turnNodeIdentityError(
+  message: string,
+  details: unknown
+): KrakenValidationError {
+  return new KrakenValidationError(message, {
+    code: "invalid_turn_node_hash",
+    details,
+  });
 }
 
 function prepareCanonicalKernelValue(value: unknown): unknown {

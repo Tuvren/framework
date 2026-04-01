@@ -346,7 +346,7 @@ export const kernelProtocolStoredFixtures = {
   },
   storedTurnTree: {
     createdAtMs: 1_717_171_717_171,
-    hash: "8d3bd386c9db2a0579098a945db580ba7bfb44f84c9c91cf0691840b30c17be8",
+    hash: "61e074b4637072c8d97be130149f27ae8675740a0a48b0afeb6e52af1a2348c0",
     manifestCbor: encodeDeterministicKernelRecord(
       kernelProtocolLogicalFixtures.turnTreeChangeSet
     ),

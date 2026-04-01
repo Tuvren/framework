@@ -130,7 +130,7 @@ schema.get(schemaId) → TurnTreeSchema | null
 
 An immutable state root built from a schema. A nested manifest of object refs with structural sharing.
 
-- **Identity**: Hash, computed from canonical serialization of the manifest structure.
+- **Identity**: Hash, computed from canonical serialization of the tree identity tuple `{ schemaId, manifest }`.
 - **Mutation authority**: Created by the kernel via `tree.create` or `tree.incorporate`. Never modified after creation.
 - **Crash consistency**: During checkpoint transactions (§5.5), TurnTree creation is part of the atomic operation.
 

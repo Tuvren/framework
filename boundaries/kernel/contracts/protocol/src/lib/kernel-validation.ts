@@ -29,6 +29,7 @@ import {
   hashKernelRecord,
   hashOpaqueObjectBytes,
   hashTurnNodeIdentity,
+  hashTurnTreeIdentity,
 } from "./kernel-identity.js";
 import type {
   BranchHeadListEntry,
@@ -712,11 +713,11 @@ export async function assertStoredTurnTreeIdentity(
     assertTurnTreeManifest,
     `${label}.manifestCbor`
   );
-  const expectedHash = await hashKernelRecord(manifest);
+  const expectedHash = await hashTurnTreeIdentity(value.schemaId, manifest);
 
   if (value.hash !== expectedHash) {
     throw validationError(
-      `${label}.hash must match the deterministic hash of ${label}.manifestCbor`,
+      `${label}.hash must match the deterministic hash of ${label}.schemaId and ${label}.manifestCbor`,
       "invalid_stored_turn_tree_hash",
       {
         expectedHash,

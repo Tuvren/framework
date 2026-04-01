@@ -158,6 +158,15 @@ describe("deterministic identity", () => {
     await expect(hashTurnNodeIdentity(undefined as never)).rejects.toThrow(
       "turn node identity input must be a plain object"
     );
+    await expect(
+      hashTurnNodeIdentity({
+        consumedStagedResults: [],
+        eventHash: 5,
+        previousTurnNodeHash: null,
+        schemaId: 7,
+        turnTreeHash: 8,
+      } as never)
+    ).rejects.toThrow("turn node identity input.eventHash");
   });
 
   test("rejects decoded non-canonical kernel numbers as validation errors", () => {
@@ -677,6 +686,14 @@ describe("stored contract fixtures", () => {
     await expect(
       assertStoredTurnTreeIdentity(kernelProtocolStoredFixtures.storedTurnTree)
     ).resolves.toBeUndefined();
+    await expect(
+      assertStoredTurnTreeIdentity({
+        ...kernelProtocolStoredFixtures.storedTurnTree,
+        schemaId: "schema_other",
+      })
+    ).rejects.toThrow(
+      "hash must match the deterministic hash of value.schemaId and value.manifestCbor"
+    );
     await expect(
       assertStoredObjectIdentity(
         kernelProtocolInvalidFixtures.invalidStoredObjectMismatchedHash
