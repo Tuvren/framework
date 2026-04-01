@@ -383,6 +383,26 @@ export const kernelProtocolInvalidFixtures = {
     infinity: Uint8Array.from(Buffer.from("f97c00", "hex")),
     nan: Uint8Array.from(Buffer.from("f97e00", "hex")),
   },
+  invalidRunRecordPastStepSequence: {
+    branchId: "branch_main",
+    createdAtMs: 1_717_171_717_171,
+    createdTurnNodes: [],
+    currentStepIndex: 5,
+    runId: "run_main",
+    schemaId: "schema_main",
+    startTurnNodeHash:
+      "4545454545454545454545454545454545454545454545454545454545454545",
+    status: "running",
+    stepSequence: [
+      {
+        deterministic: false,
+        id: "model_call",
+        sideEffects: false,
+      },
+    ],
+    turnId: "turn_main",
+    updatedAtMs: 1_717_171_717_272,
+  },
   invalidSchemaWithAccessorPathMetadata: (() => {
     const pathDefinition = { path: "messages", collection: "ordered" };
     Object.defineProperty(pathDefinition, "metadata", {
@@ -408,6 +428,28 @@ export const kernelProtocolInvalidFixtures = {
     return schema;
   })(),
   invalidSparseOrderedPathValue: new Array(1),
+  invalidArrayWithAccessorIndex: (() => {
+    const arrayValue = [
+      "4646464646464646464646464646464646464646464646464646464646464646",
+    ];
+    Object.defineProperty(arrayValue, "0", {
+      enumerable: true,
+      get() {
+        return "4646464646464646464646464646464646464646464646464646464646464646";
+      },
+    });
+    return arrayValue;
+  })(),
+  invalidArrayWithEnumerableMetadata: (() => {
+    const arrayValue = [
+      "4747474747474747474747474747474747474747474747474747474747474747",
+    ];
+    Object.defineProperty(arrayValue, "meta", {
+      enumerable: true,
+      value: 1,
+    });
+    return arrayValue;
+  })(),
   invalidStagedResultWithCompletedInterruptPayload: {
     interruptPayload: { reason: "should_not_exist" },
     objectHash:

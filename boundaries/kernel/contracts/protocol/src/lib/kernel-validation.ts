@@ -362,6 +362,8 @@ export function assertRunRecord(
   label = "value"
 ): asserts value is RunRecord {
   const objectValue = assertPlainObject(value, label);
+  const currentStepIndex = objectValue.currentStepIndex;
+  const stepSequence = objectValue.stepSequence;
 
   assertNonEmptyString(objectValue.runId, `${label}.runId`);
   assertNonEmptyString(objectValue.turnId, `${label}.turnId`);
@@ -369,15 +371,23 @@ export function assertRunRecord(
   assertNonEmptyString(objectValue.schemaId, `${label}.schemaId`);
   assertHashString(objectValue.startTurnNodeHash, `${label}.startTurnNodeHash`);
   assertRunStatus(objectValue.status, `${label}.status`);
-  assertNonNegativeInteger(
-    objectValue.currentStepIndex,
-    `${label}.currentStepIndex`
-  );
-  assertStepDeclarationArray(objectValue.stepSequence, `${label}.stepSequence`);
+  assertNonNegativeInteger(currentStepIndex, `${label}.currentStepIndex`);
+  assertStepDeclarationArray(stepSequence, `${label}.stepSequence`);
   assertHashStringArray(
     objectValue.createdTurnNodes,
     `${label}.createdTurnNodes`
   );
+
+  if (currentStepIndex > stepSequence.length) {
+    throw validationError(
+      `${label}.currentStepIndex must not exceed ${label}.stepSequence.length`,
+      "invalid_run_step_index",
+      {
+        currentStepIndex,
+        stepCount: stepSequence.length,
+      }
+    );
+  }
 
   if (objectValue.createdAtMs !== undefined) {
     assertEpochMs(objectValue.createdAtMs, `${label}.createdAtMs`);
@@ -1050,6 +1060,36 @@ function isHashStringArray(value: unknown): value is string[] {
     return false;
   }
 
+  if (Object.getOwnPropertySymbols(value).length > 0) {
+    return false;
+  }
+
+  const descriptors = Object.getOwnPropertyDescriptors(value);
+
+  for (const key of Object.getOwnPropertyNames(descriptors)) {
+    if (key === "length") {
+      continue;
+    }
+
+    const descriptor = descriptors[key];
+    const index = Number(key);
+
+    if (
+      !(
+        descriptor?.enumerable &&
+        Object.hasOwn(descriptor, "value") &&
+        Number.isInteger(index) &&
+        index >= 0 &&
+        index < value.length &&
+        String(index) === key
+      ) ||
+      Object.hasOwn(descriptor, "get") ||
+      Object.hasOwn(descriptor, "set")
+    ) {
+      return false;
+    }
+  }
+
   for (let index = 0; index < value.length; index += 1) {
     if (!(Object.hasOwn(value, index) && isHashString(value[index]))) {
       return false;
@@ -1064,6 +1104,46 @@ function assertArray(value: unknown, label: string): unknown[] {
     throw validationError(`${label} must be an array`, "invalid_array", {
       value,
     });
+  }
+
+  if (Object.getOwnPropertySymbols(value).length > 0) {
+    throw validationError(
+      `${label} must be a dense data-only array`,
+      "invalid_array",
+      {
+        value,
+      }
+    );
+  }
+
+  const descriptors = Object.getOwnPropertyDescriptors(value);
+
+  for (const key of Object.getOwnPropertyNames(descriptors)) {
+    if (key === "length") {
+      continue;
+    }
+
+    const descriptor = descriptors[key];
+    const index = Number(key);
+
+    if (
+      !(
+        descriptor?.enumerable &&
+        Object.hasOwn(descriptor, "value") &&
+        Number.isInteger(index) &&
+        index >= 0 &&
+        index < value.length &&
+        String(index) === key
+      ) ||
+      Object.hasOwn(descriptor, "get") ||
+      Object.hasOwn(descriptor, "set")
+    ) {
+      throw validationError(
+        `${label} must be a dense data-only array`,
+        "invalid_array",
+        { value }
+      );
+    }
   }
 
   return value;

@@ -232,6 +232,21 @@ describe("schema validation", () => {
       )
     ).toThrow("must be a HashString[] for an ordered path");
   });
+
+  test("rejects non-data array shapes in path validation", () => {
+    expect(() =>
+      assertPathValueForCollectionKind(
+        kernelProtocolInvalidFixtures.invalidArrayWithEnumerableMetadata,
+        "ordered"
+      )
+    ).toThrow("must be a HashString[] for an ordered path");
+    expect(() =>
+      assertPathValueForCollectionKind(
+        kernelProtocolInvalidFixtures.invalidArrayWithAccessorIndex,
+        "ordered"
+      )
+    ).toThrow("must be a HashString[] for an ordered path");
+  });
 });
 
 describe("logical contract fixtures", () => {
@@ -269,6 +284,14 @@ describe("logical contract fixtures", () => {
     expect(() =>
       assertObserveResult(kernelProtocolLogicalFixtures.observeResult)
     ).not.toThrow();
+  });
+
+  test("rejects impossible run step indexes", () => {
+    expect(() =>
+      assertRunRecord(
+        kernelProtocolInvalidFixtures.invalidRunRecordPastStepSequence
+      )
+    ).toThrow("currentStepIndex must not exceed");
   });
 
   test("exposes status guards for runtime callers", () => {
