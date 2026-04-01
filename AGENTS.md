@@ -24,6 +24,10 @@
 - Use Biome directly for formatting/linting; the Ultracite preset is configuration, not the execution path.
 - Keep root scripts workspace-wide and minimal.
 - Use Nx for per-project actions; do not duplicate project execution commands into inner package `package.json` scripts unless there is a specific reason.
+- Keep inner package manifests lightweight and project-focused.
+- Do not point package runtime `exports` at source `.ts` files; package boundaries should target built artifacts, while local development wiring can rely on TypeScript path mapping and Nx.
+- Treat `typecheck` as a no-emit validation step; artifact generation belongs to explicit build flows.
+- When adding Nx targets or inference, keep them aligned with the TechSpec so the scaffold does not silently standardize on the wrong build tool.
 
 ## Monorepo shape
 
