@@ -190,6 +190,7 @@ export function assertStepDeclaration(
     label
   );
 
+  assertOptionalFieldIsOmittedWhenUndefined(objectValue, "metadata", label);
   assertNonEmptyString(objectValue.id, `${label}.id`);
   assertBoolean(objectValue.deterministic, `${label}.deterministic`);
   assertBoolean(objectValue.sideEffects, `${label}.sideEffects`);
@@ -577,6 +578,11 @@ export function assertSetHeadResult(
   const objectValue = assertPlainObject(value, label);
   assertAllowedObjectKeys(objectValue, ["archiveBranch", "branch"], label);
 
+  assertOptionalFieldIsOmittedWhenUndefined(
+    objectValue,
+    "archiveBranch",
+    label
+  );
   assertBranchRecord(objectValue.branch, `${label}.branch`);
 
   if (objectValue.archiveBranch !== undefined) {
@@ -761,6 +767,23 @@ export function assertStoredTurnTreePath(
   const orderedInlineCbor = objectValue.orderedInlineCbor;
   const orderedChunkListCbor = objectValue.orderedChunkListCbor;
 
+  assertOptionalFieldIsOmittedWhenUndefined(objectValue, "singleHash", label);
+  assertOptionalFieldIsOmittedWhenUndefined(
+    objectValue,
+    "orderedEncoding",
+    label
+  );
+  assertOptionalFieldIsOmittedWhenUndefined(objectValue, "orderedCount", label);
+  assertOptionalFieldIsOmittedWhenUndefined(
+    objectValue,
+    "orderedInlineCbor",
+    label
+  );
+  assertOptionalFieldIsOmittedWhenUndefined(
+    objectValue,
+    "orderedChunkListCbor",
+    label
+  );
   assertHashString(turnTreeHash, `${label}.turnTreeHash`);
   assertSchemaPath(path, `${label}.path`);
   assertPathCollectionKind(collectionKind, `${label}.collectionKind`);
@@ -1133,6 +1156,11 @@ export function assertStoredBranch(
     label
   );
 
+  assertOptionalFieldIsOmittedWhenUndefined(
+    objectValue,
+    "archivedFromBranchId",
+    label
+  );
   assertNonEmptyString(objectValue.branchId, `${label}.branchId`);
   assertNonEmptyString(objectValue.threadId, `${label}.threadId`);
   assertHashString(objectValue.headTurnNodeHash, `${label}.headTurnNodeHash`);
@@ -1272,6 +1300,11 @@ export function assertStoredStagedResult(
   );
   const interruptPayloadCbor = objectValue.interruptPayloadCbor;
 
+  assertOptionalFieldIsOmittedWhenUndefined(
+    objectValue,
+    "interruptPayloadCbor",
+    label
+  );
   assertNonEmptyString(objectValue.runId, `${label}.runId`);
   assertNonEmptyString(objectValue.taskId, `${label}.taskId`);
   assertHashString(objectValue.objectHash, `${label}.objectHash`);
@@ -1318,6 +1351,11 @@ export function assertStagedResult(
     label
   );
 
+  assertOptionalFieldIsOmittedWhenUndefined(
+    objectValue,
+    "interruptPayload",
+    label
+  );
   assertNonEmptyString(objectValue.taskId, `${label}.taskId`);
   assertHashString(objectValue.objectHash, `${label}.objectHash`);
   assertNonEmptyString(objectValue.objectType, `${label}.objectType`);
@@ -1398,6 +1436,11 @@ function assertPathDefinitions(
       `${definitionLabel}.collection`
     );
 
+    assertOptionalFieldIsOmittedWhenUndefined(
+      objectValue,
+      "metadata",
+      definitionLabel
+    );
     if (objectValue.metadata !== undefined) {
       assertKernelRecord(objectValue.metadata, `${definitionLabel}.metadata`);
     }
@@ -1764,6 +1807,20 @@ function assertAllowedObjectKeys(
         { allowedKeys, key }
       );
     }
+  }
+}
+
+function assertOptionalFieldIsOmittedWhenUndefined(
+  value: Record<string, unknown>,
+  key: string,
+  label: string
+): void {
+  if (Object.hasOwn(value, key) && value[key] === undefined) {
+    throw validationError(
+      `${label}.${key} must be omitted instead of undefined`,
+      "invalid_optional_field",
+      { key }
+    );
   }
 }
 

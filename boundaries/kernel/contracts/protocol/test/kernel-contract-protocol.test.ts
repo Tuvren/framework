@@ -169,6 +169,58 @@ describe("deterministic identity", () => {
     ).rejects.toThrow("turn node identity input.eventHash");
   });
 
+  test("rejects TurnNode identity inputs that rely on inherited required fields", async () => {
+    const objectPrototype = Object.prototype as Record<string, unknown>;
+    const originalEventHash = objectPrototype.eventHash;
+    const hadEventHash = Object.hasOwn(objectPrototype, "eventHash");
+    const originalPreviousTurnNodeHash = objectPrototype.previousTurnNodeHash;
+    const hadPreviousTurnNodeHash = Object.hasOwn(
+      objectPrototype,
+      "previousTurnNodeHash"
+    );
+    const originalSchemaId = objectPrototype.schemaId;
+    const hadSchemaId = Object.hasOwn(objectPrototype, "schemaId");
+    const originalTurnTreeHash = objectPrototype.turnTreeHash;
+    const hadTurnTreeHash = Object.hasOwn(objectPrototype, "turnTreeHash");
+
+    objectPrototype.eventHash = null;
+    objectPrototype.previousTurnNodeHash = null;
+    objectPrototype.schemaId = "schema_main";
+    objectPrototype.turnTreeHash =
+      "abababababababababababababababababababababababababababababababab";
+
+    try {
+      await expect(
+        hashTurnNodeIdentity({ consumedStagedResults: [] } as never)
+      ).rejects.toThrow("turn node identity input.eventHash");
+    } finally {
+      restorePrototypeValue(
+        objectPrototype,
+        "eventHash",
+        hadEventHash,
+        originalEventHash
+      );
+      restorePrototypeValue(
+        objectPrototype,
+        "previousTurnNodeHash",
+        hadPreviousTurnNodeHash,
+        originalPreviousTurnNodeHash
+      );
+      restorePrototypeValue(
+        objectPrototype,
+        "schemaId",
+        hadSchemaId,
+        originalSchemaId
+      );
+      restorePrototypeValue(
+        objectPrototype,
+        "turnTreeHash",
+        hadTurnTreeHash,
+        originalTurnTreeHash
+      );
+    }
+  });
+
   test("rejects decoded non-canonical kernel numbers as validation errors", () => {
     expect(() =>
       decodeDeterministicKernelRecord(
@@ -594,6 +646,42 @@ describe("logical contract fixtures", () => {
     ).toThrow("debug is not part of the contract shape");
   });
 
+  test("rejects explicit undefined for optional logical fields", () => {
+    expect(() =>
+      assertStepDeclaration({
+        deterministic: false,
+        id: "model_call",
+        metadata: undefined,
+        sideEffects: false,
+      })
+    ).toThrow("metadata must be omitted instead of undefined");
+    expect(() =>
+      assertSetHeadResult({
+        archiveBranch: undefined,
+        branch: kernelProtocolLogicalFixtures.branchRecord,
+      })
+    ).toThrow("archiveBranch must be omitted instead of undefined");
+    expect(() =>
+      assertStagedResult({
+        ...kernelProtocolLogicalFixtures.stagedResult,
+        interruptPayload: undefined,
+      })
+    ).toThrow("interruptPayload must be omitted instead of undefined");
+    expect(() =>
+      assertTurnTreeSchema({
+        incorporationRules: [],
+        paths: [
+          {
+            collection: "ordered",
+            metadata: undefined,
+            path: "messages",
+          },
+        ],
+        schemaId: "schema_main",
+      })
+    ).toThrow("metadata must be omitted instead of undefined");
+  });
+
   test("rejects invalid branch head list entries", () => {
     expect(() =>
       assertBranchHeadListEntry(
@@ -808,14 +896,35 @@ describe("stored contract fixtures", () => {
         interruptPayload: undefined,
         status: "interrupted",
       })
-    ).toThrow('interruptPayload is required when status is "interrupted"');
+    ).toThrow("interruptPayload must be omitted instead of undefined");
     expect(() =>
       assertStoredStagedResult({
         ...kernelProtocolInvalidFixtures.invalidStoredStagedResultWithCompletedInterruptPayload,
         interruptPayloadCbor: undefined,
         status: "interrupted",
       })
-    ).toThrow('interruptPayloadCbor is required when status is "interrupted"');
+    ).toThrow("interruptPayloadCbor must be omitted instead of undefined");
+  });
+
+  test("rejects explicit undefined for optional stored fields", () => {
+    expect(() =>
+      assertStoredStagedResult({
+        ...kernelProtocolStoredFixtures.storedStagedResult,
+        interruptPayloadCbor: undefined,
+      })
+    ).toThrow("interruptPayloadCbor must be omitted instead of undefined");
+    expect(() =>
+      assertStoredBranch({
+        ...kernelProtocolStoredFixtures.storedBranch,
+        archivedFromBranchId: undefined,
+      })
+    ).toThrow("archivedFromBranchId must be omitted instead of undefined");
+    expect(() =>
+      assertStoredTurnTreePath({
+        ...kernelProtocolStoredFixtures.storedTurnTreePath,
+        orderedInlineCbor: undefined,
+      })
+    ).toThrow("orderedInlineCbor must be omitted instead of undefined");
   });
 
   test("rejects malformed stored CBOR payloads for core records", () => {

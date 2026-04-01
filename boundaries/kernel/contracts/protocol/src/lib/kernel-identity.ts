@@ -23,7 +23,11 @@ import {
   KrakenValidationError,
 } from "@kraken/shared-core-types";
 import { Decoder, Encoder } from "cbor-x";
-import type { TurnNode, TurnTreeManifest } from "./kernel-types.js";
+import type {
+  StagedResult,
+  TurnNode,
+  TurnTreeManifest,
+} from "./kernel-types.js";
 
 const deterministicEncoderOptions = {
   tagUint8Array: false,
@@ -150,8 +154,8 @@ export function hashTurnTreeIdentity(
 export async function hashTurnNodeIdentity(
   value: Omit<TurnNode, "hash"> | TurnNode
 ): Promise<HashString> {
-  assertTurnNodeIdentityInput(value);
-  return await hashKernelRecord(toTurnNodeIdentityRecord(value));
+  const turnNodeValue = assertTurnNodeIdentityInput(value);
+  return await hashKernelRecord(toTurnNodeIdentityRecord(turnNodeValue));
 }
 
 function toTurnNodeIdentityRecord(
@@ -198,24 +202,14 @@ function toTurnNodeIdentityRecord(
 
 function assertTurnNodeIdentityInput(
   value: Omit<TurnNode, "hash"> | TurnNode
-): void {
-  if (
-    value === null ||
-    typeof value !== "object" ||
-    Array.isArray(value) ||
-    !isPlainObject(value)
-  ) {
-    throw new KrakenValidationError(
-      "turn node identity input must be a plain object",
-      {
-        code: "invalid_turn_node_hash",
-        details: { value },
-      }
-    );
-  }
+): Omit<TurnNode, "hash"> | TurnNode {
+  const objectValue = assertPlainObjectRecord(
+    value,
+    "turn node identity input"
+  );
 
   assertAllowedKeys(
-    value,
+    objectValue,
     [
       "consumedStagedResults",
       "eventHash",
@@ -227,56 +221,66 @@ function assertTurnNodeIdentityInput(
     "turn node identity input"
   );
 
-  if ("hash" in value && value.hash !== undefined) {
-    assertHashStringOrThrow(value.hash, "turn node identity input.hash");
+  assertOptionalFieldIsOmittedWhenUndefined(
+    objectValue,
+    "hash",
+    "turn node identity input"
+  );
+
+  if (Object.hasOwn(objectValue, "hash")) {
+    assertHashStringOrThrow(objectValue.hash, "turn node identity input.hash");
   }
 
   assertNullableHashStringOrThrow(
-    value.eventHash,
+    objectValue.eventHash,
     "turn node identity input.eventHash"
   );
   assertNullableHashStringOrThrow(
-    value.previousTurnNodeHash,
+    objectValue.previousTurnNodeHash,
     "turn node identity input.previousTurnNodeHash"
   );
   assertHashStringOrThrow(
-    value.turnTreeHash,
+    objectValue.turnTreeHash,
     "turn node identity input.turnTreeHash"
   );
-  assertNonEmptyString(value.schemaId, "turn node identity input.schemaId");
+  assertNonEmptyString(
+    objectValue.schemaId,
+    "turn node identity input.schemaId"
+  );
 
-  const consumedStagedResults = value.consumedStagedResults;
+  const consumedStagedResults = objectValue.consumedStagedResults;
 
   if (!Array.isArray(consumedStagedResults)) {
     throw new KrakenValidationError(
       "turn node identity input must include consumedStagedResults as an array",
       {
         code: "invalid_turn_node_hash",
-        details: { value },
+        details: { value: objectValue },
       }
     );
   }
 
-  for (const [index, stagedResult] of consumedStagedResults.entries()) {
-    assertStagedResultIdentityInput(
-      stagedResult,
-      `turn node identity input.consumedStagedResults[${index}]`
-    );
-  }
+  const normalizedConsumedStagedResults = consumedStagedResults.map(
+    (stagedResult, index) =>
+      assertStagedResultIdentityInput(
+        stagedResult,
+        `turn node identity input.consumedStagedResults[${index}]`
+      )
+  );
+
+  return Object.assign(Object.create(null), objectValue, {
+    consumedStagedResults: normalizedConsumedStagedResults,
+  }) as Omit<TurnNode, "hash"> | TurnNode;
 }
 
-function assertStagedResultIdentityInput(value: unknown, label: string): void {
-  if (
-    value === null ||
-    typeof value !== "object" ||
-    Array.isArray(value) ||
-    !isPlainObject(value)
-  ) {
-    throw turnNodeIdentityError(`${label} must be a plain object`, { value });
-  }
+function assertStagedResultIdentityInput(
+  value: unknown,
+  label: string
+): StagedResult {
+  const objectValue = assertPlainObjectRecord(value, label);
 
   assertAllowedKeys(
-    value,
+    objectValue,
     [
       "interruptPayload",
       "objectHash",
@@ -288,15 +292,45 @@ function assertStagedResultIdentityInput(value: unknown, label: string): void {
     label
   );
 
-  assertHashStringOrThrow(value.objectHash, `${label}.objectHash`);
-  assertNonEmptyString(value.objectType, `${label}.objectType`);
-  assertStagedResultStatusOrThrow(value.status, `${label}.status`);
-  assertNonEmptyString(value.taskId, `${label}.taskId`);
-  assertEpochMs(value.timestamp, `${label}.timestamp`);
+  assertOptionalFieldIsOmittedWhenUndefined(
+    objectValue,
+    "interruptPayload",
+    label
+  );
+  assertHashStringOrThrow(objectValue.objectHash, `${label}.objectHash`);
+  assertNonEmptyString(objectValue.objectType, `${label}.objectType`);
+  assertStagedResultStatusOrThrow(objectValue.status, `${label}.status`);
+  assertNonEmptyString(objectValue.taskId, `${label}.taskId`);
+  assertEpochMs(objectValue.timestamp, `${label}.timestamp`);
 
-  if (value.interruptPayload !== undefined) {
-    assertKernelRecord(value.interruptPayload, `${label}.interruptPayload`);
+  if (objectValue.interruptPayload !== undefined) {
+    assertKernelRecord(
+      objectValue.interruptPayload,
+      `${label}.interruptPayload`
+    );
   }
+
+  const normalizedValue = {
+    objectHash: objectValue.objectHash as HashString,
+    objectType: objectValue.objectType as string,
+    status: objectValue.status as StagedResult["status"],
+    taskId: objectValue.taskId as string,
+    timestamp: objectValue.timestamp as StagedResult["timestamp"],
+  } as {
+    interruptPayload?: KernelRecord;
+    objectHash: HashString;
+    objectType: string;
+    status: StagedResult["status"];
+    taskId: string;
+    timestamp: StagedResult["timestamp"];
+  };
+
+  if (objectValue.interruptPayload !== undefined) {
+    normalizedValue.interruptPayload =
+      objectValue.interruptPayload as KernelRecord;
+  }
+
+  return normalizedValue;
 }
 
 function assertAllowedKeys(
@@ -316,6 +350,51 @@ function assertAllowedKeys(
         }
       );
     }
+  }
+}
+
+function assertPlainObjectRecord(
+  value: unknown,
+  label: string
+): Record<string, unknown> {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw turnNodeIdentityError(`${label} must be a plain object`, { value });
+  }
+
+  if (!isPlainObject(value) || Object.getOwnPropertySymbols(value).length > 0) {
+    throw turnNodeIdentityError(`${label} must be a plain object`, { value });
+  }
+
+  const descriptors = Object.getOwnPropertyDescriptors(value);
+
+  for (const key of Object.getOwnPropertyNames(descriptors)) {
+    const descriptor = descriptors[key];
+
+    if (
+      !(descriptor?.enumerable && Object.hasOwn(descriptor, "value")) ||
+      Object.hasOwn(descriptor, "get") ||
+      Object.hasOwn(descriptor, "set")
+    ) {
+      throw turnNodeIdentityError(`${label} must be a plain object`, { value });
+    }
+  }
+
+  return Object.assign(
+    Object.create(null),
+    Object.fromEntries(Object.entries(value))
+  ) as Record<string, unknown>;
+}
+
+function assertOptionalFieldIsOmittedWhenUndefined(
+  value: Record<string, unknown>,
+  key: string,
+  label: string
+): void {
+  if (Object.hasOwn(value, key) && value[key] === undefined) {
+    throw turnNodeIdentityError(
+      `${label}.${key} must be omitted instead of undefined`,
+      { key }
+    );
   }
 }
 
