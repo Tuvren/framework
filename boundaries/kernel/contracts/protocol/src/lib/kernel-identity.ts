@@ -158,10 +158,13 @@ function normalizeDecodedKernelValue(
   if (
     value === null ||
     typeof value === "boolean" ||
-    typeof value === "string" ||
-    typeof value === "number"
+    typeof value === "string"
   ) {
     return value;
+  }
+
+  if (typeof value === "number") {
+    return normalizeDecodedKernelNumber(value, label);
   }
 
   if (typeof value === "bigint") {
@@ -246,6 +249,25 @@ function normalizeDecodedKernelValue(
       },
     }
   );
+}
+
+function normalizeDecodedKernelNumber(value: number, label: string): number {
+  if (
+    !Number.isSafeInteger(value) ||
+    Number.isNaN(value) ||
+    !Number.isFinite(value) ||
+    Object.is(value, -0)
+  ) {
+    throw new KrakenValidationError(
+      `${label} decoded to a non-canonical kernel number`,
+      {
+        code: "invalid_decoded_kernel_record",
+        details: { value },
+      }
+    );
+  }
+
+  return value;
 }
 
 function isPlainObject(value: object): value is Record<string, unknown> {

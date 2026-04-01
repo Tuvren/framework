@@ -378,6 +378,11 @@ export const kernelProtocolInvalidFixtures = {
   invalidNonCanonicalKernelRecordBytes: Uint8Array.from(
     Buffer.from("fb41f0000000000000", "hex")
   ),
+  invalidNonCanonicalKernelNumberBytes: {
+    float: Uint8Array.from(Buffer.from("fb3ff8000000000000", "hex")),
+    infinity: Uint8Array.from(Buffer.from("f97c00", "hex")),
+    nan: Uint8Array.from(Buffer.from("f97e00", "hex")),
+  },
   invalidSparseOrderedPathValue: new Array(1),
   invalidStagedResultWithCompletedInterruptPayload: {
     interruptPayload: { reason: "should_not_exist" },

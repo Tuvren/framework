@@ -92,6 +92,25 @@ describe("deterministic identity", () => {
     ).toThrow("must already use the canonical deterministic CBOR encoding");
   });
 
+  test("rejects decoded non-canonical kernel numbers as validation errors", () => {
+    expect(() =>
+      decodeDeterministicKernelRecord(
+        kernelProtocolInvalidFixtures.invalidNonCanonicalKernelNumberBytes.float
+      )
+    ).toThrow("decoded to a non-canonical kernel number");
+    expect(() =>
+      decodeDeterministicKernelRecord(
+        kernelProtocolInvalidFixtures.invalidNonCanonicalKernelNumberBytes.nan
+      )
+    ).toThrow("decoded to a non-canonical kernel number");
+    expect(() =>
+      decodeDeterministicKernelRecord(
+        kernelProtocolInvalidFixtures.invalidNonCanonicalKernelNumberBytes
+          .infinity
+      )
+    ).toThrow("decoded to a non-canonical kernel number");
+  });
+
   test("locks the canonical TurnTreeSchema bytes and hash", async () => {
     const encodedHex = Buffer.from(
       encodeDeterministicKernelRecord(
