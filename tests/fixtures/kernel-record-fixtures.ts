@@ -19,12 +19,14 @@ import type { KernelRecord } from "@kraken/shared-core-types";
 import { assertKernelRecord } from "@kraken/shared-core-types";
 import { Encoder } from "cbor-x";
 
-const deterministicEncoder = new Encoder({
+const deterministicEncoderOptions = {
   tagUint8Array: false,
   useTag259ForMaps: false,
   useRecords: false,
   variableMapSize: true,
-});
+};
+
+const deterministicEncoder = new Encoder(deterministicEncoderOptions);
 const deterministicScalarEncoder = new Encoder({
   tagUint8Array: false,
   useRecords: false,
@@ -122,7 +124,24 @@ export function encodeDeterministicKernelRecord(
 }
 
 export async function sha256Hex(bytes: Uint8Array): Promise<string> {
-  const digest = await globalThis.crypto.subtle.digest("SHA-256", bytes);
+  let digestInput: ArrayBuffer;
+
+  if (
+    bytes.buffer instanceof ArrayBuffer &&
+    bytes.byteOffset === 0 &&
+    bytes.byteLength === bytes.buffer.byteLength
+  ) {
+    digestInput = bytes.buffer;
+  } else if (bytes.buffer instanceof ArrayBuffer) {
+    digestInput = bytes.buffer.slice(
+      bytes.byteOffset,
+      bytes.byteOffset + bytes.byteLength
+    );
+  } else {
+    digestInput = Uint8Array.from(bytes).buffer;
+  }
+
+  const digest = await globalThis.crypto.subtle.digest("SHA-256", digestInput);
   return Array.from(new Uint8Array(digest), (byte) =>
     byte.toString(16).padStart(2, "0")
   ).join("");

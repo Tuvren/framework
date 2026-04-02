@@ -2,13 +2,20 @@
   "extends": "./tsconfig.lib.json",
   "compilerOptions": {
     "composite": false,
-    "rootDir": "../../../",
+    "rootDir": "../../../../",
+    "allowImportingTsExtensions": true,
     "paths": {
       "@kraken/shared-core-types": [
         "../../../shared/contracts/core-types/src/index.ts"
       ],
       "@kraken/kernel-contract-protocol": ["./src/index.ts"]
-    }
+    },
+    "types": ["bun"]
   },
-  "include": ["src/**/*.ts", "../../../shared/contracts/core-types/src/**/*.ts"]
+  "include": [
+    "src/**/*.ts",
+    "test/**/*.ts",
+    "../../../shared/contracts/core-types/src/**/*.ts",
+    "../../../tests/fixtures/**/*.ts"
+  ]
 }

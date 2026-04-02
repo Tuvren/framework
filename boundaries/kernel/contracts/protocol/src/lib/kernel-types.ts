@@ -32,6 +32,7 @@ export type RunCompletionStatus = Extract<
   RunStatus,
   "paused" | "completed" | "failed"
 >;
+export type KernelSignal = KernelRecord;
 
 export interface PathDefinition {
   collection: PathCollectionKind;
@@ -59,7 +60,7 @@ export interface StepDeclaration {
 
 export interface ObserveResult {
   annotations: KernelObject[];
-  signals: KernelRecord[];
+  signals: KernelSignal[];
 }
 
 export interface StagedResult {
@@ -116,7 +117,7 @@ export interface RunRecord {
 export interface StepContext {
   currentTurnNodeHash: HashString;
   schema: TurnTreeSchema;
-  signals: KernelRecord[];
+  signals: KernelSignal[];
   step: StepDeclaration;
 }
 

@@ -29,6 +29,7 @@ export type {
   BranchHeadListEntry,
   BranchRecord,
   IncorporationRule,
+  KernelSignal,
   KrakenKernel,
   ObserveResult,
   PathCollectionKind,

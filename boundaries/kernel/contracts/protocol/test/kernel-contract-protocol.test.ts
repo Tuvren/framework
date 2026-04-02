@@ -16,6 +16,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
+import type { KernelRecord } from "@kraken/shared-core-types";
 import { KrakenValidationError } from "@kraken/shared-core-types";
 import {
   kernelProtocolDeterministicFixtures,
@@ -24,6 +25,7 @@ import {
   kernelProtocolStoredFixtures,
 } from "../../../../../tests/fixtures/kernel-protocol-fixtures.js";
 import { deterministicKernelRecordFixture } from "../../../../../tests/fixtures/kernel-record-fixtures.js";
+import type { KernelSignal } from "../src/index.ts";
 import {
   assertBranchHeadListEntry,
   assertBranchRecord,
@@ -315,14 +317,12 @@ describe("deterministic identity", () => {
   });
 
   test("locks the canonical TurnTreeSchema bytes and hash", async () => {
+    const schemaRecord =
+      kernelProtocolDeterministicFixtures.turnTreeSchemaRecord as unknown as KernelRecord;
     const encodedHex = Buffer.from(
-      encodeDeterministicKernelRecord(
-        kernelProtocolDeterministicFixtures.turnTreeSchemaRecord
-      )
+      encodeDeterministicKernelRecord(schemaRecord)
     ).toString("hex");
-    const digestHex = await hashKernelRecord(
-      kernelProtocolDeterministicFixtures.turnTreeSchemaRecord
-    );
+    const digestHex = await hashKernelRecord(schemaRecord);
 
     expect(encodedHex).toBe(
       kernelProtocolDeterministicFixtures.turnTreeSchemaRecordCborHex
@@ -333,10 +333,10 @@ describe("deterministic identity", () => {
   });
 
   test("locks the canonical TurnNode identity-preimage bytes and digest", async () => {
+    const turnNodeIdentityRecord =
+      kernelProtocolDeterministicFixtures.turnNodeIdentityRecord as unknown as KernelRecord;
     const encodedHex = Buffer.from(
-      encodeDeterministicKernelRecord(
-        kernelProtocolDeterministicFixtures.turnNodeIdentityRecord
-      )
+      encodeDeterministicKernelRecord(turnNodeIdentityRecord)
     ).toString("hex");
     const digestHex = await hashTurnNodeIdentity(
       kernelProtocolDeterministicFixtures.turnNodeIdentityRecord
@@ -491,28 +491,29 @@ describe("schema validation", () => {
   });
 
   test("does not accept required fields inherited from Object.prototype", () => {
-    const originalSchemaId = Object.prototype.schemaId;
-    const originalPaths = Object.prototype.paths;
-    const originalIncorporationRules = Object.prototype.incorporationRules;
-    const originalId = Object.prototype.id;
-    const originalDeterministic = Object.prototype.deterministic;
-    const originalSideEffects = Object.prototype.sideEffects;
-    const hadSchemaId = Object.hasOwn(Object.prototype, "schemaId");
-    const hadPaths = Object.hasOwn(Object.prototype, "paths");
+    const objectPrototype = Object.prototype as Record<string, unknown>;
+    const originalSchemaId = objectPrototype.schemaId;
+    const originalPaths = objectPrototype.paths;
+    const originalIncorporationRules = objectPrototype.incorporationRules;
+    const originalId = objectPrototype.id;
+    const originalDeterministic = objectPrototype.deterministic;
+    const originalSideEffects = objectPrototype.sideEffects;
+    const hadSchemaId = Object.hasOwn(objectPrototype, "schemaId");
+    const hadPaths = Object.hasOwn(objectPrototype, "paths");
     const hadIncorporationRules = Object.hasOwn(
-      Object.prototype,
+      objectPrototype,
       "incorporationRules"
     );
-    const hadId = Object.hasOwn(Object.prototype, "id");
-    const hadDeterministic = Object.hasOwn(Object.prototype, "deterministic");
-    const hadSideEffects = Object.hasOwn(Object.prototype, "sideEffects");
+    const hadId = Object.hasOwn(objectPrototype, "id");
+    const hadDeterministic = Object.hasOwn(objectPrototype, "deterministic");
+    const hadSideEffects = Object.hasOwn(objectPrototype, "sideEffects");
 
-    Object.prototype.schemaId = "schema_main";
-    Object.prototype.paths = [{ path: "messages", collection: "ordered" }];
-    Object.prototype.incorporationRules = [];
-    Object.prototype.id = "model_call";
-    Object.prototype.deterministic = false;
-    Object.prototype.sideEffects = false;
+    objectPrototype.schemaId = "schema_main";
+    objectPrototype.paths = [{ path: "messages", collection: "ordered" }];
+    objectPrototype.incorporationRules = [];
+    objectPrototype.id = "model_call";
+    objectPrototype.deterministic = false;
+    objectPrototype.sideEffects = false;
 
     try {
       expect(() => assertTurnTreeSchema({})).toThrow(
@@ -523,27 +524,27 @@ describe("schema validation", () => {
       );
     } finally {
       restorePrototypeValue(
-        Object.prototype,
+        objectPrototype,
         "schemaId",
         hadSchemaId,
         originalSchemaId
       );
-      restorePrototypeValue(Object.prototype, "paths", hadPaths, originalPaths);
+      restorePrototypeValue(objectPrototype, "paths", hadPaths, originalPaths);
       restorePrototypeValue(
-        Object.prototype,
+        objectPrototype,
         "incorporationRules",
         hadIncorporationRules,
         originalIncorporationRules
       );
-      restorePrototypeValue(Object.prototype, "id", hadId, originalId);
+      restorePrototypeValue(objectPrototype, "id", hadId, originalId);
       restorePrototypeValue(
-        Object.prototype,
+        objectPrototype,
         "deterministic",
         hadDeterministic,
         originalDeterministic
       );
       restorePrototypeValue(
-        Object.prototype,
+        objectPrototype,
         "sideEffects",
         hadSideEffects,
         originalSideEffects
@@ -560,7 +561,7 @@ describe("schema validation", () => {
     ).not.toThrow();
     expect(() =>
       assertPathValueForCollectionKind(
-        kernelProtocolLogicalFixtures.turnTreeChangeSet.context_manifest,
+        kernelProtocolLogicalFixtures.turnTreeChangeSet["context.manifest"],
         "single"
       )
     ).not.toThrow();
@@ -693,6 +694,17 @@ describe("logical contract fixtures", () => {
     ).not.toThrow();
     expect(() =>
       assertObserveResult(kernelProtocolLogicalFixtures.observeResult)
+    ).not.toThrow();
+  });
+
+  test("exports KernelSignal as part of the public protocol surface", () => {
+    const signal: KernelSignal = { kind: "carry_forward", level: 1 };
+
+    expect(() =>
+      assertObserveResult({
+        annotations: [{ kind: "note" }],
+        signals: [signal],
+      })
     ).not.toThrow();
   });
 

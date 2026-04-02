@@ -15,6 +15,22 @@
  * limitations under the License.
  */
 
+import type {
+  BranchHeadListEntry,
+  BranchRecord,
+  ObserveResult,
+  RecoveryState,
+  RunRecord,
+  SetHeadResult,
+  StagedResult,
+  StepContext,
+  ThreadCreateResult,
+  ThreadRecord,
+  TurnNode,
+  TurnRecord,
+  TurnTreeChangeSet,
+  TurnTreeSchema,
+} from "../../boundaries/kernel/contracts/protocol/src/index.ts";
 import { encodeDeterministicKernelRecord } from "../../boundaries/kernel/contracts/protocol/src/index.ts";
 
 const orderedPathHashes = [
@@ -27,6 +43,50 @@ const orderedChunkHashes = [
   "8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c",
 ];
 
+const turnTreeSchemaRecord: TurnTreeSchema = {
+  incorporationRules: [
+    {
+      objectType: "message",
+      targetPath: "messages",
+    },
+    {
+      objectType: "context_manifest",
+      targetPath: "context.manifest",
+    },
+  ],
+  paths: [
+    {
+      collection: "ordered",
+      metadata: { role: "chat" },
+      path: "messages",
+    },
+    {
+      collection: "single",
+      metadata: { version: 1 },
+      path: "context.manifest",
+    },
+  ],
+  schemaId: "schema_main",
+};
+
+const turnNodeIdentityRecord: Omit<TurnNode, "hash"> = {
+  consumedStagedResults: [
+    {
+      objectHash:
+        "3333333333333333333333333333333333333333333333333333333333333333",
+      objectType: "tool_result",
+      status: "completed",
+      taskId: "tool_call_1",
+      timestamp: 1_717_171_717_171,
+    },
+  ],
+  eventHash: "4444444444444444444444444444444444444444444444444444444444444444",
+  previousTurnNodeHash: null,
+  schemaId: "schema_main",
+  turnTreeHash:
+    "2222222222222222222222222222222222222222222222222222222222222222",
+};
+
 function bytesFromHex(hex: string): Uint8Array {
   return Uint8Array.from(Buffer.from(hex, "hex"));
 }
@@ -35,57 +95,16 @@ export const kernelProtocolDeterministicFixtures = {
   rawOpaqueBytes: new Uint8Array([0, 1, 2, 3, 4, 5, 250, 255]),
   rawOpaqueBytesSha256Hex:
     "68e4b69f67af1d263b6c6818ef79cb2c48aa3f18bec18b7436806a316cb4204c",
-  turnNodeIdentityRecord: {
-    consumedStagedResults: [
-      {
-        objectHash:
-          "3333333333333333333333333333333333333333333333333333333333333333",
-        objectType: "tool_result",
-        status: "completed",
-        taskId: "tool_call_1",
-        timestamp: 1_717_171_717_171,
-      },
-    ],
-    eventHash:
-      "4444444444444444444444444444444444444444444444444444444444444444",
-    previousTurnNodeHash: null,
-    schemaId: "schema_main",
-    turnTreeHash:
-      "2222222222222222222222222222222222222222222222222222222222222222",
-  },
+  turnNodeIdentityRecord,
   turnNodeIdentityRecordCborHex:
     "a568736368656d6149646b736368656d615f6d61696e696576656e74486173687840343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434346c7475726e54726565486173687840323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232327470726576696f75735475726e4e6f646548617368f675636f6e73756d6564537461676564526573756c747381a56673746174757369636f6d706c65746564667461736b49646b746f6f6c5f63616c6c5f316974696d657374616d701b0000018fcf6904336a6f626a656374486173687840333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333336a6f626a656374547970656b746f6f6c5f726573756c74",
   turnNodeIdentityRecordSha256Hex:
     "44ab935c53fcd44b91ede01abf694507fa9605827db0b93185e2a72f13814bbb",
-  turnTreeSchemaRecord: {
-    incorporationRules: [
-      {
-        objectType: "message",
-        targetPath: "messages",
-      },
-      {
-        objectType: "context_manifest",
-        targetPath: "context_manifest",
-      },
-    ],
-    paths: [
-      {
-        collection: "ordered",
-        metadata: { role: "chat" },
-        path: "messages",
-      },
-      {
-        collection: "single",
-        metadata: { version: 1 },
-        path: "context_manifest",
-      },
-    ],
-    schemaId: "schema_main",
-  },
+  turnTreeSchemaRecord,
   turnTreeSchemaRecordCborHex:
-    "a365706174687382a36470617468686d65737361676573686d65746164617461a164726f6c6564636861746a636f6c6c656374696f6e676f726465726564a3647061746870636f6e746578745f6d616e6966657374686d65746164617461a16776657273696f6e016a636f6c6c656374696f6e6673696e676c6568736368656d6149646b736368656d615f6d61696e72696e636f72706f726174696f6e52756c657382a26a6f626a65637454797065676d6573736167656a74617267657450617468686d65737361676573a26a6f626a6563745479706570636f6e746578745f6d616e69666573746a7461726765745061746870636f6e746578745f6d616e6966657374",
+    "a365706174687382a36470617468686d65737361676573686d65746164617461a164726f6c6564636861746a636f6c6c656374696f6e676f726465726564a3647061746870636f6e746578742e6d616e6966657374686d65746164617461a16776657273696f6e016a636f6c6c656374696f6e6673696e676c6568736368656d6149646b736368656d615f6d61696e72696e636f72706f726174696f6e52756c657382a26a6f626a65637454797065676d6573736167656a74617267657450617468686d65737361676573a26a6f626a6563745479706570636f6e746578745f6d616e69666573746a7461726765745061746870636f6e746578742e6d616e6966657374",
   turnTreeSchemaRecordSha256Hex:
-    "5a807487d01657c0aa1c567110af3f71fc487813e0d96d4f0a7436705a4cf14c",
+    "addd90a22e8a72dc1aad6011e78dc324dba747ab380cb78b9b50f2a9dc33b098",
   storedOrderedPathChunkItemsCborHex:
     "82784037623762376237623762376237623762376237623762376237623762376237623762376237623762376237623762376237623762376237623762376237623762784038633863386338633863386338633863386338633863386338633863386338633863386338633863386338633863386338633863386338633863386338633863",
   storedRunCreatedTurnNodesCborHex:
@@ -93,13 +112,13 @@ export const kernelProtocolDeterministicFixtures = {
   storedRunStepSequenceCborHex:
     "81a46269646a6d6f64656c5f63616c6c686d65746164617461a165706861736569726561736f6e696e676b7369646545666665637473f46d64657465726d696e6973746963f4",
   storedSchemaSchemaCborHex:
-    "a365706174687382a36470617468686d65737361676573686d65746164617461a164726f6c6564636861746a636f6c6c656374696f6e676f726465726564a3647061746870636f6e746578745f6d616e6966657374686d65746164617461a16776657273696f6e016a636f6c6c656374696f6e6673696e676c6568736368656d6149646b736368656d615f6d61696e72696e636f72706f726174696f6e52756c657382a26a6f626a65637454797065676d6573736167656a74617267657450617468686d65737361676573a26a6f626a6563745479706570636f6e746578745f6d616e69666573746a7461726765745061746870636f6e746578745f6d616e6966657374",
+    "a365706174687382a36470617468686d65737361676573686d65746164617461a164726f6c6564636861746a636f6c6c656374696f6e676f726465726564a3647061746870636f6e746578742e6d616e6966657374686d65746164617461a16776657273696f6e016a636f6c6c656374696f6e6673696e676c6568736368656d6149646b736368656d615f6d61696e72696e636f72706f726174696f6e52756c657382a26a6f626a65637454797065676d6573736167656a74617267657450617468686d65737361676573a26a6f626a6563745479706570636f6e746578745f6d616e69666573746a7461726765745061746870636f6e746578742e6d616e6966657374",
   storedStagedResultInterruptPayloadCborHex:
     "a166726561736f6e716177616974696e675f617070726f76616c",
   storedTurnNodeConsumedStagedResultsCborHex:
     "81a56673746174757369636f6d706c65746564667461736b49646d6d73675f617373697374616e746974696d657374616d701b0000018fcf6904336a6f626a656374486173687840313631363136313631363136313631363136313631363136313631363136313631363136313631363136313631363136313631363136313631363136313631366a6f626a65637454797065676d657373616765",
   storedTurnTreeManifestCborHex:
-    "a2686d657373616765738178403233323332333233323332333233323332333233323332333233323332333233323332333233323332333233323332333233323332333233323332333233323370636f6e746578745f6d616e6966657374784032323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232",
+    "a2686d657373616765738178403233323332333233323332333233323332333233323332333233323332333233323332333233323332333233323332333233323332333233323332333233323370636f6e746578742e6d616e6966657374784032323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232",
   storedTurnTreePathOrderedInlineCborHex:
     "82784035663566356635663566356635663566356635663566356635663566356635663566356635663566356635663566356635663566356635663566356635663566784036613661366136613661366136613661366136613661366136613661366136613661366136613661366136613661366136613661366136613661366136613661",
 };
@@ -108,17 +127,17 @@ export const kernelProtocolLogicalFixtures = {
   branchHeadListEntry: [
     "branch_main",
     "9999999999999999999999999999999999999999999999999999999999999999",
-  ],
+  ] satisfies BranchHeadListEntry,
   branchRecord: {
     branchId: "branch_main",
     headTurnNodeHash:
       "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     threadId: "thread_main",
-  },
+  } satisfies BranchRecord,
   observeResult: {
     annotations: [{ kind: "note", severity: 1 }],
     signals: [{ kind: "post_step", severity: 1 }],
-  },
+  } satisfies ObserveResult,
   recoveryState: {
     consumedStagedResults: [
       {
@@ -158,7 +177,7 @@ export const kernelProtocolLogicalFixtures = {
         timestamp: 1_717_171_717_272,
       },
     ],
-  },
+  } satisfies RecoveryState,
   runRecord: {
     branchId: "branch_main",
     createdTurnNodes: [
@@ -179,7 +198,7 @@ export const kernelProtocolLogicalFixtures = {
       },
     ],
     turnId: "turn_main",
-  },
+  } satisfies RunRecord,
   setHeadResult: {
     archiveBranch: {
       branchId: "branch_archive",
@@ -193,7 +212,7 @@ export const kernelProtocolLogicalFixtures = {
         "dededededededededededededededededededededededededededededededede",
       threadId: "thread_main",
     },
-  },
+  } satisfies SetHeadResult,
   stagedResult: {
     interruptPayload: { reason: "awaiting_approval" },
     objectHash:
@@ -202,13 +221,19 @@ export const kernelProtocolLogicalFixtures = {
     status: "interrupted",
     taskId: "tool_call_pending",
     timestamp: 1_717_171_717_272,
-  },
+  } satisfies StagedResult,
   stepContext: {
     currentTurnNodeHash:
       "1212121212121212121212121212121212121212121212121212121212121212",
     schema: {
-      incorporationRules: [{ objectType: "message", targetPath: "messages" }],
-      paths: [{ collection: "ordered", path: "messages" }],
+      incorporationRules: [
+        { objectType: "message", targetPath: "messages" },
+        { objectType: "runtime_status", targetPath: "runtime.status" },
+      ],
+      paths: [
+        { collection: "ordered", path: "messages" },
+        { collection: "single", path: "runtime.status" },
+      ],
       schemaId: "schema_main",
     },
     signals: [{ kind: "carry_forward", count: 1 }],
@@ -218,7 +243,7 @@ export const kernelProtocolLogicalFixtures = {
       metadata: { phase: "tooling" },
       sideEffects: true,
     },
-  },
+  } satisfies StepContext,
   threadCreateResult: {
     branchId: "branch_main",
     rootTurnNodeHash:
@@ -226,13 +251,13 @@ export const kernelProtocolLogicalFixtures = {
     rootTurnTreeHash:
       "1414141414141414141414141414141414141414141414141414141414141414",
     threadId: "thread_main",
-  },
+  } satisfies ThreadCreateResult,
   threadRecord: {
     rootTurnNodeHash:
       "1515151515151515151515151515151515151515151515151515151515151515",
     schemaId: "schema_main",
     threadId: "thread_main",
-  },
+  } satisfies ThreadRecord,
   turnNode: {
     consumedStagedResults: [
       {
@@ -251,7 +276,7 @@ export const kernelProtocolLogicalFixtures = {
     schemaId: "schema_main",
     turnTreeHash:
       "1919191919191919191919191919191919191919191919191919191919191919",
-  },
+  } satisfies TurnNode,
   turnRecord: {
     branchId: "branch_main",
     headTurnNodeHash:
@@ -261,14 +286,14 @@ export const kernelProtocolLogicalFixtures = {
       "2121212121212121212121212121212121212121212121212121212121212121",
     threadId: "thread_main",
     turnId: "turn_main",
-  },
+  } satisfies TurnRecord,
   turnTreeChangeSet: {
-    context_manifest:
+    "context.manifest":
       "2222222222222222222222222222222222222222222222222222222222222222",
     messages: [
       "2323232323232323232323232323232323232323232323232323232323232323",
     ],
-  },
+  } satisfies TurnTreeChangeSet,
 };
 
 export const kernelProtocolStoredFixtures = {
@@ -368,7 +393,7 @@ export const kernelProtocolStoredFixtures = {
   },
   storedTurnTree: {
     createdAtMs: 1_717_171_717_171,
-    hash: "61e074b4637072c8d97be130149f27ae8675740a0a48b0afeb6e52af1a2348c0",
+    hash: "98d7b1f35f6ebf506508b1bfbd6be173147a80bc85917a17756c66d97faf8b87",
     manifestCbor: bytesFromHex(
       kernelProtocolDeterministicFixtures.storedTurnTreeManifestCborHex
     ),
@@ -381,7 +406,7 @@ export const kernelProtocolStoredFixtures = {
     orderedInlineCbor: bytesFromHex(
       kernelProtocolDeterministicFixtures.storedTurnTreePathOrderedInlineCborHex
     ),
-    path: "messages",
+    path: "context.manifest",
     turnTreeHash:
       "3636363636363636363636363636363636363636363636363636363636363636",
   },
@@ -457,7 +482,7 @@ export const kernelProtocolInvalidFixtures = {
     };
   })(),
   invalidSchemaWithSymbolKey: (() => {
-    const schema = {
+    const schema: Record<PropertyKey, unknown> = {
       schemaId: "schema_main",
       paths: [{ path: "messages", collection: "ordered" }],
       incorporationRules: [],
@@ -660,7 +685,7 @@ export const kernelProtocolInvalidFixtures = {
     orderedCount: 1,
     orderedEncoding: "flat",
     orderedInlineCbor: new Uint8Array([129, 1]),
-    path: "context_manifest",
+    path: "context.manifest",
     turnTreeHash:
       "4141414141414141414141414141414141414141414141414141414141414141",
   },
