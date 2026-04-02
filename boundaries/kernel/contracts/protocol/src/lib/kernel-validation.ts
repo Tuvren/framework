@@ -580,6 +580,15 @@ export function assertRunRecord(
       }
     );
   }
+
+  assertRunningRunHasNextStep(
+    objectValue.status,
+    currentStepIndex,
+    stepSequence.length,
+    `${label}.status`,
+    `${label}.currentStepIndex`,
+    `${label}.stepSequence`
+  );
 }
 
 export function isStepContext(value: unknown): value is StepContext {
@@ -1485,6 +1494,15 @@ export function assertStoredRun(
       }
     );
   }
+
+  assertRunningRunHasNextStep(
+    objectValue.status,
+    currentStepIndex,
+    stepSequence.length,
+    `${label}.status`,
+    `${label}.currentStepIndex`,
+    `${label}.stepSequenceCbor`
+  );
 }
 
 export function isStoredStagedResult(
@@ -1907,6 +1925,35 @@ function assertStepDeclarationArray(
     }
 
     seenIds.add(step.id);
+  }
+}
+
+function assertRunningRunHasNextStep(
+  status: RunStatus,
+  currentStepIndex: number,
+  stepCount: number,
+  statusLabel: string,
+  currentStepIndexLabel: string,
+  stepSequenceLabel: string
+): void {
+  if (status !== "running") {
+    return;
+  }
+
+  if (stepCount === 0) {
+    throw validationError(
+      `${statusLabel} cannot be "running" when ${stepSequenceLabel} is empty`,
+      "invalid_run_step_index",
+      { status, stepCount }
+    );
+  }
+
+  if (currentStepIndex >= stepCount) {
+    throw validationError(
+      `${currentStepIndexLabel} must reference an available step when ${statusLabel} is "running"`,
+      "invalid_run_step_index",
+      { currentStepIndex, status, stepCount }
+    );
   }
 }
 

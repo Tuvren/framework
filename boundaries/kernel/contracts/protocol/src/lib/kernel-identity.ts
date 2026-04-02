@@ -519,38 +519,178 @@ function assertTurnTreeSchemaIdentityInput(
     label
   );
   assertTurnTreeNonEmptyString(objectValue.schemaId, `${label}.schemaId`);
-  if (!Array.isArray(objectValue.paths)) {
-    throw turnTreeIdentityError(`${label}.paths must be an array`, {
-      value: objectValue.paths,
-    });
-  }
+  const pathDefinitions = assertTurnTreeSchemaPathDefinitions(
+    objectValue.paths,
+    `${label}.paths`
+  );
+  assertTurnTreeSchemaIncorporationRules(
+    objectValue.incorporationRules,
+    pathDefinitions,
+    `${label}.incorporationRules`
+  );
+}
 
-  for (const [index, definition] of objectValue.paths.entries()) {
+function assertTurnTreeSchemaPathDefinitions(
+  value: unknown,
+  label: string
+): Array<{ collection: "ordered" | "single"; path: string }> {
+  const definitions = assertTurnTreeDenseDataArray(value, label);
+  const seenPaths = new Set<string>();
+  const validatedDefinitions: Array<{
+    collection: "ordered" | "single";
+    path: string;
+  }> = [];
+
+  for (const [index, definition] of definitions.entries()) {
     const definitionValue = assertTurnTreePlainObjectRecord(
       definition,
-      `${label}.paths[${index}]`
+      `${label}[${index}]`
     );
     assertAllowedKeys(
       definitionValue,
       ["collection", "metadata", "path"],
-      `${label}.paths[${index}]`
+      `${label}[${index}]`
     );
-    assertTurnTreeSchemaPath(
-      definitionValue.path,
-      `${label}.paths[${index}].path`
-    );
-    if (
-      !(
-        definitionValue.collection === "ordered" ||
-        definitionValue.collection === "single"
-      )
-    ) {
+    const pathValue = definitionValue.path;
+    const collectionValue = definitionValue.collection;
+
+    assertTurnTreeSchemaPath(pathValue, `${label}[${index}].path`);
+    if (!(collectionValue === "ordered" || collectionValue === "single")) {
       throw turnTreeIdentityError(
-        `${label}.paths[${index}].collection must be "ordered" or "single"`,
-        { value: definitionValue.collection }
+        `${label}[${index}].collection must be "ordered" or "single"`,
+        { value: collectionValue }
       );
     }
+    const path: string = pathValue;
+    const collection: "ordered" | "single" = collectionValue;
+
+    if (Object.hasOwn(definitionValue, "metadata")) {
+      if (definitionValue.metadata === undefined) {
+        throw turnTreeIdentityError(
+          `${label}[${index}].metadata must be omitted instead of undefined`,
+          { key: "metadata" }
+        );
+      }
+
+      assertKernelRecord(
+        definitionValue.metadata,
+        `${label}[${index}].metadata`
+      );
+    }
+
+    if (seenPaths.has(path)) {
+      throw turnTreeIdentityError(
+        `${label} must not contain duplicate schema paths`,
+        { path }
+      );
+    }
+
+    seenPaths.add(path);
+    validatedDefinitions.push({ collection, path });
   }
+
+  return validatedDefinitions;
+}
+
+function assertTurnTreeSchemaIncorporationRules(
+  value: unknown,
+  pathDefinitions: Array<{ collection: "ordered" | "single"; path: string }>,
+  label: string
+): void {
+  const rules = assertTurnTreeDenseDataArray(value, label);
+  const knownPaths = new Set(pathDefinitions.map(({ path }) => path));
+  const seenObjectTypes = new Set<string>();
+
+  for (const [index, rule] of rules.entries()) {
+    const ruleValue = assertTurnTreePlainObjectRecord(
+      rule,
+      `${label}[${index}]`
+    );
+    assertAllowedKeys(
+      ruleValue,
+      ["objectType", "targetPath"],
+      `${label}[${index}]`
+    );
+    assertTurnTreeNonEmptyString(
+      ruleValue.objectType,
+      `${label}[${index}].objectType`
+    );
+    assertTurnTreeNonEmptyString(
+      ruleValue.targetPath,
+      `${label}[${index}].targetPath`
+    );
+
+    if (!knownPaths.has(ruleValue.targetPath)) {
+      throw turnTreeIdentityError(
+        `${label}[${index}].targetPath must reference a defined schema path`,
+        { targetPath: ruleValue.targetPath }
+      );
+    }
+
+    if (seenObjectTypes.has(ruleValue.objectType)) {
+      throw turnTreeIdentityError(
+        `${label} must not contain duplicate objectType mappings`,
+        { objectType: ruleValue.objectType }
+      );
+    }
+
+    seenObjectTypes.add(ruleValue.objectType);
+  }
+}
+
+function assertTurnTreeDenseDataArray(
+  value: unknown,
+  label: string
+): unknown[] {
+  if (!Array.isArray(value)) {
+    throw turnTreeIdentityError(`${label} must be a dense data-only array`, {
+      value,
+    });
+  }
+
+  if (Object.getOwnPropertySymbols(value).length > 0) {
+    throw turnTreeIdentityError(`${label} must be a dense data-only array`, {
+      value,
+    });
+  }
+
+  const descriptors = Object.getOwnPropertyDescriptors(value);
+
+  for (const key of Object.getOwnPropertyNames(descriptors)) {
+    if (key === "length") {
+      continue;
+    }
+
+    const descriptor = descriptors[key];
+    const index = Number(key);
+
+    if (
+      !(
+        descriptor?.enumerable &&
+        Object.hasOwn(descriptor, "value") &&
+        Number.isInteger(index) &&
+        index >= 0 &&
+        index < value.length &&
+        String(index) === key
+      ) ||
+      Object.hasOwn(descriptor, "get") ||
+      Object.hasOwn(descriptor, "set")
+    ) {
+      throw turnTreeIdentityError(`${label} must be a dense data-only array`, {
+        value,
+      });
+    }
+  }
+
+  for (let index = 0; index < value.length; index += 1) {
+    if (!Object.hasOwn(value, index)) {
+      throw turnTreeIdentityError(`${label} must be a dense data-only array`, {
+        value,
+      });
+    }
+  }
+
+  return value;
 }
 
 function assertTurnTreePlainObjectRecord(
@@ -596,7 +736,10 @@ function assertTurnTreeNonEmptyString(
   }
 }
 
-function assertTurnTreeSchemaPath(value: unknown, label: string): void {
+function assertTurnTreeSchemaPath(
+  value: unknown,
+  label: string
+): asserts value is string {
   assertTurnTreeNonEmptyString(value, label);
   const pathValue = value;
   const segments = pathValue.split(".");

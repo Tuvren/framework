@@ -79,6 +79,18 @@ import {
   isVerdictDisposition,
 } from "../src/index.ts";
 
+function invokeHashTurnTreeIdentity(
+  schemaId: string,
+  manifest: unknown,
+  schema: unknown
+): Promise<string> {
+  return Reflect.apply(hashTurnTreeIdentity, undefined, [
+    schemaId,
+    manifest,
+    schema,
+  ]);
+}
+
 describe("deterministic identity", () => {
   test("matches the shared canonical kernel-record fixture bytes and hash", async () => {
     const encodedBytes = encodeDeterministicKernelRecord(
@@ -404,6 +416,36 @@ describe("deterministic identity", () => {
         kernelProtocolDeterministicFixtures.turnTreeSchemaRecord
       )
     ).toThrow("manifest.bad..path must reference a schema-defined path");
+    expect(() =>
+      invokeHashTurnTreeIdentity(
+        "schema_main",
+        kernelProtocolLogicalFixtures.turnTreeChangeSet,
+        kernelProtocolInvalidFixtures.invalidSchemaWithConflictingDuplicatePathDefinitions
+      )
+    ).toThrow("schema.paths must not contain duplicate schema paths");
+    expect(() =>
+      invokeHashTurnTreeIdentity(
+        "schema_main",
+        kernelProtocolLogicalFixtures.turnTreeChangeSet,
+        kernelProtocolInvalidFixtures.invalidSchemaWithDateMetadata
+      )
+    ).toThrow("schema.paths[0].metadata");
+    expect(() =>
+      invokeHashTurnTreeIdentity(
+        "schema_main",
+        kernelProtocolLogicalFixtures.turnTreeChangeSet,
+        kernelProtocolInvalidFixtures.unknownPathSchema
+      )
+    ).toThrow(
+      "schema.incorporationRules[0].targetPath must reference a defined schema path"
+    );
+    expect(() =>
+      invokeHashTurnTreeIdentity(
+        "schema_main",
+        kernelProtocolLogicalFixtures.turnTreeChangeSet,
+        kernelProtocolInvalidFixtures.invalidSchemaWithNonDensePathsArray
+      )
+    ).toThrow("schema.paths must be a dense data-only array");
   });
 
   test("hashes opaque object bytes without structured-record canonicalization", async () => {
@@ -525,6 +567,11 @@ describe("schema validation", () => {
         kernelProtocolInvalidFixtures.invalidSchemaWithAccessorPathMetadata
       )
     ).toThrow("must be a plain object");
+    expect(() =>
+      assertTurnTreeSchema(
+        kernelProtocolInvalidFixtures.invalidSchemaWithDateMetadata
+      )
+    ).toThrow("must match the restricted Kraken kernel record profile");
   });
 
   test("does not accept required fields inherited from Object.prototype", () => {
@@ -864,6 +911,18 @@ describe("logical contract fixtures", () => {
         kernelProtocolInvalidFixtures.invalidRunRecordPastStepSequence
       )
     ).toThrow("currentStepIndex must not exceed");
+    expect(() =>
+      assertRunRecord(
+        kernelProtocolInvalidFixtures.invalidRunningRunRecordAtSequenceEnd
+      )
+    ).toThrow(
+      'must reference an available step when value.status is "running"'
+    );
+    expect(() =>
+      assertRunRecord(
+        kernelProtocolInvalidFixtures.invalidRunningRunRecordWithEmptyStepSequence
+      )
+    ).toThrow('cannot be "running" when value.stepSequence is empty');
   });
 
   test("rejects logical TurnNodes with stored-only timestamps", () => {

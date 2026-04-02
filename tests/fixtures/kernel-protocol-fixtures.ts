@@ -186,7 +186,7 @@ export const kernelProtocolLogicalFixtures = {
     createdTurnNodes: [
       "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
     ],
-    currentStepIndex: 1,
+    currentStepIndex: 0,
     runId: "run_main",
     schemaId: "schema_main",
     startTurnNodeHash:
@@ -477,6 +477,36 @@ export const kernelProtocolInvalidFixtures = {
     ],
     turnId: "turn_main",
   },
+  invalidRunningRunRecordAtSequenceEnd: {
+    branchId: "branch_main",
+    createdTurnNodes: [],
+    currentStepIndex: 1,
+    runId: "run_main",
+    schemaId: "schema_main",
+    startTurnNodeHash:
+      "4545454545454545454545454545454545454545454545454545454545454546",
+    status: "running",
+    stepSequence: [
+      {
+        deterministic: false,
+        id: "model_call",
+        sideEffects: false,
+      },
+    ],
+    turnId: "turn_main",
+  },
+  invalidRunningRunRecordWithEmptyStepSequence: {
+    branchId: "branch_main",
+    createdTurnNodes: [],
+    currentStepIndex: 0,
+    runId: "run_main",
+    schemaId: "schema_main",
+    startTurnNodeHash:
+      "4545454545454545454545454545454545454545454545454545454545454547",
+    status: "running",
+    stepSequence: [],
+    turnId: "turn_main",
+  },
   invalidSchemaWithAccessorPathMetadata: (() => {
     const pathDefinition = { path: "messages", collection: "ordered" };
     Object.defineProperty(pathDefinition, "metadata", {
@@ -500,6 +530,36 @@ export const kernelProtocolInvalidFixtures = {
     };
     schema[Symbol("meta")] = 1;
     return schema;
+  })(),
+  invalidSchemaWithDateMetadata: {
+    incorporationRules: [],
+    paths: [
+      {
+        collection: "ordered",
+        metadata: new Date("2026-01-01T00:00:00.000Z"),
+        path: "messages",
+      },
+    ],
+    schemaId: "schema_main",
+  },
+  invalidSchemaWithConflictingDuplicatePathDefinitions: {
+    incorporationRules: [],
+    paths: [
+      { collection: "ordered", path: "messages" },
+      { collection: "single", path: "messages" },
+    ],
+    schemaId: "schema_main",
+  },
+  invalidSchemaWithNonDensePathsArray: (() => {
+    const paths = Object.assign([{ collection: "ordered", path: "messages" }], {
+      meta: 1,
+    });
+
+    return {
+      incorporationRules: [],
+      paths,
+      schemaId: "schema_main",
+    };
   })(),
   invalidSparseOrderedPathValue: new Array(1),
   invalidArrayWithAccessorIndex: (() => {
@@ -576,6 +636,40 @@ export const kernelProtocolInvalidFixtures = {
         sideEffects: false,
       },
     ]),
+    turnId: "turn_main",
+    updatedAtMs: 1_717_171_717_272,
+  },
+  invalidStoredRunningRunAtSequenceEnd: {
+    branchId: "branch_main",
+    createdAtMs: 1_717_171_717_171,
+    createdTurnNodesCbor: encodeDeterministicKernelRecord([]),
+    currentStepIndex: 1,
+    runId: "run_main",
+    schemaId: "schema_main",
+    startTurnNodeHash:
+      "3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3d",
+    status: "running",
+    stepSequenceCbor: encodeDeterministicKernelRecord([
+      {
+        deterministic: false,
+        id: "model_call",
+        sideEffects: false,
+      },
+    ]),
+    turnId: "turn_main",
+    updatedAtMs: 1_717_171_717_272,
+  },
+  invalidStoredRunningRunWithEmptyStepSequence: {
+    branchId: "branch_main",
+    createdAtMs: 1_717_171_717_171,
+    createdTurnNodesCbor: encodeDeterministicKernelRecord([]),
+    currentStepIndex: 0,
+    runId: "run_main",
+    schemaId: "schema_main",
+    startTurnNodeHash:
+      "3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3e",
+    status: "running",
+    stepSequenceCbor: encodeDeterministicKernelRecord([]),
     turnId: "turn_main",
     updatedAtMs: 1_717_171_717_272,
   },
