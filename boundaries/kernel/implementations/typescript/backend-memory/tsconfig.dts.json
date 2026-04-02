@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "declaration": true,
+    "declarationMap": true,
+    "emitDeclarationOnly": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "outDir": "./dist",
+    "paths": {
+      "@kraken/shared-core-types": [
+        "../../../../shared/contracts/core-types/dist/index.d.ts"
+      ],
+      "@kraken/kernel-contract-protocol": [
+        "../../../contracts/protocol/dist/index.d.ts"
+      ],
+      "@kraken/backend-memory": ["./src/index.ts"]
+    },
+    "rootDir": "./src",
+    "target": "esnext",
+    "types": ["node"],
+    "verbatimModuleSyntax": true
+  },
+  "include": ["src/**/*.ts"]
+}

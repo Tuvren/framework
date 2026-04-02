@@ -6,6 +6,21 @@
   "projectType": "library",
   "tags": ["boundary:shared", "layer:contract"],
   "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "boundaries/shared/contracts/core-types",
+        "commands": [
+          {
+            "command": "bunx --bun tsup --config tsup.config.ts"
+          },
+          {
+            "command": "bunx --bun tsc --project tsconfig.dts.json --pretty false"
+          }
+        ],
+        "parallel": false
+      }
+    },
     "test": {
       "executor": "nx:run-commands",
       "options": {

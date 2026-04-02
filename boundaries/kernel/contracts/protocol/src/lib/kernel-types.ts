@@ -330,6 +330,89 @@ export type StoredStagedResult =
   | InterruptedStoredStagedResult
   | SettledStoredStagedResult;
 
+export interface ObjectRepository {
+  get(hash: HashString): Promise<StoredObject | null>;
+  has(hash: HashString): Promise<boolean>;
+  put(record: StoredObject): Promise<void>;
+}
+
+export interface SchemaRepository {
+  get(schemaId: string): Promise<StoredSchema | null>;
+  put(record: StoredSchema): Promise<void>;
+}
+
+export interface TurnTreeRepository {
+  get(hash: HashString): Promise<StoredTurnTree | null>;
+  put(record: StoredTurnTree): Promise<void>;
+}
+
+export interface TurnTreePathRepository {
+  get(
+    turnTreeHash: HashString,
+    path: string
+  ): Promise<StoredTurnTreePath | null>;
+  listByTurnTree(turnTreeHash: HashString): Promise<StoredTurnTreePath[]>;
+  putMany(records: StoredTurnTreePath[]): Promise<void>;
+}
+
+export interface OrderedPathChunkRepository {
+  get(chunkHash: HashString): Promise<StoredOrderedPathChunk | null>;
+  put(record: StoredOrderedPathChunk): Promise<void>;
+}
+
+export interface TurnNodeRepository {
+  get(hash: HashString): Promise<StoredTurnNode | null>;
+  put(record: StoredTurnNode): Promise<void>;
+}
+
+export interface ThreadRepository {
+  get(threadId: string): Promise<StoredThread | null>;
+  put(record: StoredThread): Promise<void>;
+}
+
+export interface BranchRepository {
+  get(branchId: string): Promise<StoredBranch | null>;
+  listByThread(threadId: string): Promise<StoredBranch[]>;
+  set(record: StoredBranch): Promise<void>;
+}
+
+export interface TurnRepository {
+  get(turnId: string): Promise<StoredTurn | null>;
+  set(record: StoredTurn): Promise<void>;
+}
+
+export interface RunRepository {
+  get(runId: string): Promise<StoredRun | null>;
+  listByBranch(branchId: string): Promise<StoredRun[]>;
+  set(record: StoredRun): Promise<void>;
+}
+
+export interface StagedResultRepository {
+  clearRun(runId: string): Promise<void>;
+  get(runId: string, taskId: string): Promise<StoredStagedResult | null>;
+  listByRun(runId: string): Promise<StoredStagedResult[]>;
+  set(record: StoredStagedResult): Promise<void>;
+}
+
+export interface KrakenBackendTx {
+  branches: BranchRepository;
+  objects: ObjectRepository;
+  orderedPathChunks: OrderedPathChunkRepository;
+  runs: RunRepository;
+  schemas: SchemaRepository;
+  stagedResults: StagedResultRepository;
+  threads: ThreadRepository;
+  turnNodes: TurnNodeRepository;
+  turns: TurnRepository;
+  turnTreePaths: TurnTreePathRepository;
+  turnTrees: TurnTreeRepository;
+}
+
+export interface KrakenBackend {
+  health(): Promise<{ ok: true } | { ok: false; reason: string }>;
+  transact<T>(work: (tx: KrakenBackendTx) => Promise<T>): Promise<T>;
+}
+
 export interface KrakenKernel {
   branch: {
     create(
@@ -425,4 +508,8 @@ export interface KrakenKernel {
   verdicts: {
     compose(verdicts: Verdict[]): Promise<ComposedVerdict>;
   };
+}
+
+export interface MemoryBackendOptions {
+  now?: () => EpochMs;
 }

@@ -6,11 +6,42 @@
   "projectType": "library",
   "tags": ["boundary:kernel", "layer:implementation"],
   "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["^build"],
+      "options": {
+        "cwd": "boundaries/kernel/implementations/typescript/backend-memory",
+        "commands": [
+          {
+            "command": "bunx --bun tsup --config tsup.config.ts"
+          },
+          {
+            "command": "bunx --bun tsc --project tsconfig.dts.json --pretty false"
+          }
+        ],
+        "parallel": false
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "boundaries/kernel/implementations/typescript/backend-memory",
+        "command": "bun test"
+      }
+    },
     "typecheck": {
       "executor": "nx:run-commands",
       "options": {
         "cwd": "boundaries/kernel/implementations/typescript/backend-memory",
-        "command": "tsc --project tsconfig.lib.json --noEmit --pretty false"
+        "commands": [
+          {
+            "command": "bunx --bun tsc --build tsconfig.lib.json --dry --force --pretty false"
+          },
+          {
+            "command": "bunx --bun tsc --project tsconfig.typecheck.json --noEmit --pretty false"
+          }
+        ],
+        "parallel": false
       }
     }
   }

@@ -1,6 +1,7 @@
 # Technical Specification
 
 ## 0. Version History & Changelog
+- v0.2.3 - Defined the backend adapter repository interfaces and the `createMemoryBackend` factory surface so backend implementations no longer depend on implied persistence contracts.
 - v0.2.2 - Defined the concrete TypeScript kernel-contract shapes for `StepContext`, `ObserveResult`, and kernel observe signals so the run lifecycle surface no longer depends on implied upstream payload structure.
 - v0.2.1 - Added the shared `KrakenError` foundation contract so stable error codes and category subclasses are specified before later framework and backend work depends on them.
 - v0.2.0 - Locked the authoritative implementation posture: protocol-first kernel, TypeScript first implementation, AI SDK bridge-only provider baseline, strict uniform backend contract, official `memory` and `sqlite` backends, deterministic CBOR plus SHA-256 identity rules, integer-only core record profile, path-granular TurnTree storage with threshold-based chunking for ordered paths, and an architecture-first `devenv + nx` monorepo layout grouped by boundary, contract, and implementation language.
@@ -594,6 +595,70 @@ export interface KrakenBackend {
   health(): Promise<{ ok: true } | { ok: false; reason: string }>;
 }
 
+export interface ObjectRepository {
+  get(hash: HashString): Promise<StoredObject | null>;
+  has(hash: HashString): Promise<boolean>;
+  put(record: StoredObject): Promise<void>;
+}
+
+export interface SchemaRepository {
+  get(schemaId: string): Promise<StoredSchema | null>;
+  put(record: StoredSchema): Promise<void>;
+}
+
+export interface TurnTreeRepository {
+  get(hash: HashString): Promise<StoredTurnTree | null>;
+  put(record: StoredTurnTree): Promise<void>;
+}
+
+export interface TurnTreePathRepository {
+  get(
+    turnTreeHash: HashString,
+    path: string
+  ): Promise<StoredTurnTreePath | null>;
+  listByTurnTree(turnTreeHash: HashString): Promise<StoredTurnTreePath[]>;
+  putMany(records: StoredTurnTreePath[]): Promise<void>;
+}
+
+export interface OrderedPathChunkRepository {
+  get(chunkHash: HashString): Promise<StoredOrderedPathChunk | null>;
+  put(record: StoredOrderedPathChunk): Promise<void>;
+}
+
+export interface TurnNodeRepository {
+  get(hash: HashString): Promise<StoredTurnNode | null>;
+  put(record: StoredTurnNode): Promise<void>;
+}
+
+export interface ThreadRepository {
+  get(threadId: string): Promise<StoredThread | null>;
+  put(record: StoredThread): Promise<void>;
+}
+
+export interface BranchRepository {
+  get(branchId: string): Promise<StoredBranch | null>;
+  listByThread(threadId: string): Promise<StoredBranch[]>;
+  set(record: StoredBranch): Promise<void>;
+}
+
+export interface TurnRepository {
+  get(turnId: string): Promise<StoredTurn | null>;
+  set(record: StoredTurn): Promise<void>;
+}
+
+export interface RunRepository {
+  get(runId: string): Promise<StoredRun | null>;
+  listByBranch(branchId: string): Promise<StoredRun[]>;
+  set(record: StoredRun): Promise<void>;
+}
+
+export interface StagedResultRepository {
+  clearRun(runId: string): Promise<void>;
+  get(runId: string, taskId: string): Promise<StoredStagedResult | null>;
+  listByRun(runId: string): Promise<StoredStagedResult[]>;
+  set(record: StoredStagedResult): Promise<void>;
+}
+
 export interface KrakenBackendTx {
   objects: ObjectRepository;
   schemas: SchemaRepository;
@@ -607,6 +672,14 @@ export interface KrakenBackendTx {
   runs: RunRepository;
   stagedResults: StagedResultRepository;
 }
+
+export interface MemoryBackendOptions {
+  now?: () => EpochMs;
+}
+
+export declare function createMemoryBackend(
+  options?: MemoryBackendOptions
+): KrakenBackend;
 ```
 
 ### 4.4 Provider Bridge Contract

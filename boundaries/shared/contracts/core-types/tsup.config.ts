@@ -14,6 +14,15 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public contract surface.
-export type { MemoryBackendOptions } from "@kraken/kernel-contract-protocol";
-export { createMemoryBackend } from "./lib/memory-backend.js";
+import { defineConfig } from "tsup";
+
+export default defineConfig({
+  clean: true,
+  dts: false,
+  entry: ["src/index.ts"],
+  format: ["esm"],
+  outDir: "dist",
+  sourcemap: true,
+  tsconfig: "tsconfig.tsup.json",
+  target: "esnext",
+});
