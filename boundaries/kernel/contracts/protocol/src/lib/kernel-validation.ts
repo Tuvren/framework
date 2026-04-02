@@ -17,9 +17,9 @@
 
 import type { KernelObject, KernelRecord } from "@kraken/shared-core-types";
 import {
-  assertEpochMs,
-  assertHashString,
-  assertKernelRecord,
+  assertEpochMs as assertSharedEpochMs,
+  assertHashString as assertSharedHashString,
+  assertKernelRecord as assertSharedKernelRecord,
   isEpochMs,
   isHashString,
   KrakenValidationError,
@@ -1898,6 +1898,54 @@ function assertNonNegativeInteger(
       `${label} must be a non-negative safe integer`,
       "invalid_integer",
       { value: integerValue }
+    );
+  }
+}
+
+function assertHashString(
+  value: unknown,
+  label: string
+): asserts value is string {
+  try {
+    assertSharedHashString(value, label);
+  } catch (error: unknown) {
+    throw validationError(
+      error instanceof Error
+        ? error.message
+        : `${label} must be a lowercase 64-character SHA-256 hex digest`,
+      "invalid_hash_string",
+      { value }
+    );
+  }
+}
+
+function assertEpochMs(value: unknown, label: string): asserts value is number {
+  try {
+    assertSharedEpochMs(value, label);
+  } catch (error: unknown) {
+    throw validationError(
+      error instanceof Error
+        ? error.message
+        : `${label} must be a non-negative safe integer epoch milliseconds value`,
+      "invalid_epoch_ms",
+      { value }
+    );
+  }
+}
+
+function assertKernelRecord(
+  value: unknown,
+  label = "value"
+): asserts value is KernelRecord {
+  try {
+    assertSharedKernelRecord(value, label);
+  } catch (error: unknown) {
+    throw validationError(
+      error instanceof Error
+        ? error.message
+        : `${label} must match the restricted Kraken kernel record profile`,
+      "invalid_kernel_record",
+      { value }
     );
   }
 }

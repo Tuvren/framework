@@ -27,6 +27,10 @@ const orderedChunkHashes = [
   "8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c",
 ];
 
+function bytesFromHex(hex: string): Uint8Array {
+  return Uint8Array.from(Buffer.from(hex, "hex"));
+}
+
 export const kernelProtocolDeterministicFixtures = {
   rawOpaqueBytes: new Uint8Array([0, 1, 2, 3, 4, 5, 250, 255]),
   rawOpaqueBytesSha256Hex:
@@ -82,6 +86,22 @@ export const kernelProtocolDeterministicFixtures = {
     "a365706174687382a36470617468686d65737361676573686d65746164617461a164726f6c6564636861746a636f6c6c656374696f6e676f726465726564a3647061746870636f6e746578745f6d616e6966657374686d65746164617461a16776657273696f6e016a636f6c6c656374696f6e6673696e676c6568736368656d6149646b736368656d615f6d61696e72696e636f72706f726174696f6e52756c657382a26a6f626a65637454797065676d6573736167656a74617267657450617468686d65737361676573a26a6f626a6563745479706570636f6e746578745f6d616e69666573746a7461726765745061746870636f6e746578745f6d616e6966657374",
   turnTreeSchemaRecordSha256Hex:
     "5a807487d01657c0aa1c567110af3f71fc487813e0d96d4f0a7436705a4cf14c",
+  storedOrderedPathChunkItemsCborHex:
+    "82784037623762376237623762376237623762376237623762376237623762376237623762376237623762376237623762376237623762376237623762376237623762784038633863386338633863386338633863386338633863386338633863386338633863386338633863386338633863386338633863386338633863386338633863",
+  storedRunCreatedTurnNodesCborHex:
+    "81784066666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666",
+  storedRunStepSequenceCborHex:
+    "81a46269646a6d6f64656c5f63616c6c686d65746164617461a165706861736569726561736f6e696e676b7369646545666665637473f46d64657465726d696e6973746963f4",
+  storedSchemaSchemaCborHex:
+    "a365706174687382a36470617468686d65737361676573686d65746164617461a164726f6c6564636861746a636f6c6c656374696f6e676f726465726564a3647061746870636f6e746578745f6d616e6966657374686d65746164617461a16776657273696f6e016a636f6c6c656374696f6e6673696e676c6568736368656d6149646b736368656d615f6d61696e72696e636f72706f726174696f6e52756c657382a26a6f626a65637454797065676d6573736167656a74617267657450617468686d65737361676573a26a6f626a6563745479706570636f6e746578745f6d616e69666573746a7461726765745061746870636f6e746578745f6d616e6966657374",
+  storedStagedResultInterruptPayloadCborHex:
+    "a166726561736f6e716177616974696e675f617070726f76616c",
+  storedTurnNodeConsumedStagedResultsCborHex:
+    "81a56673746174757369636f6d706c65746564667461736b49646d6d73675f617373697374616e746974696d657374616d701b0000018fcf6904336a6f626a656374486173687840313631363136313631363136313631363136313631363136313631363136313631363136313631363136313631363136313631363136313631363136313631366a6f626a65637454797065676d657373616765",
+  storedTurnTreeManifestCborHex:
+    "a2686d657373616765738178403233323332333233323332333233323332333233323332333233323332333233323332333233323332333233323332333233323332333233323332333233323370636f6e746578745f6d616e6966657374784032323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232",
+  storedTurnTreePathOrderedInlineCborHex:
+    "82784035663566356635663566356635663566356635663566356635663566356635663566356635663566356635663566356635663566356635663566356635663566784036613661366136613661366136613661366136613661366136613661366136613661366136613661366136613661366136613661366136613661366136613661",
 };
 
 export const kernelProtocolLogicalFixtures = {
@@ -273,13 +293,15 @@ export const kernelProtocolStoredFixtures = {
       "f44cfe9356859374d8600ab20def5ea4a4c91a8bd7f13ea6def7959080bf2584",
     createdAtMs: 1_717_171_717_171,
     itemCount: 2,
-    itemsCbor: encodeDeterministicKernelRecord(orderedChunkHashes),
+    itemsCbor: bytesFromHex(
+      kernelProtocolDeterministicFixtures.storedOrderedPathChunkItemsCborHex
+    ),
   },
   storedRun: {
     branchId: "branch_main",
     createdAtMs: 1_717_171_717_171,
-    createdTurnNodesCbor: encodeDeterministicKernelRecord(
-      kernelProtocolLogicalFixtures.runRecord.createdTurnNodes
+    createdTurnNodesCbor: bytesFromHex(
+      kernelProtocolDeterministicFixtures.storedRunCreatedTurnNodesCborHex
     ),
     currentStepIndex: 1,
     runId: "run_main",
@@ -287,24 +309,24 @@ export const kernelProtocolStoredFixtures = {
     startTurnNodeHash:
       "2727272727272727272727272727272727272727272727272727272727272727",
     status: "paused",
-    stepSequenceCbor: encodeDeterministicKernelRecord(
-      kernelProtocolLogicalFixtures.runRecord.stepSequence
+    stepSequenceCbor: bytesFromHex(
+      kernelProtocolDeterministicFixtures.storedRunStepSequenceCborHex
     ),
     turnId: "turn_main",
     updatedAtMs: 1_717_171_717_272,
   },
   storedSchema: {
     createdAtMs: 1_717_171_717_171,
-    schemaCbor: encodeDeterministicKernelRecord(
-      kernelProtocolDeterministicFixtures.turnTreeSchemaRecord
+    schemaCbor: bytesFromHex(
+      kernelProtocolDeterministicFixtures.storedSchemaSchemaCborHex
     ),
     schemaId: "schema_main",
   },
   storedStagedResult: {
     createdAtMs: 1_717_171_717_171,
-    interruptPayloadCbor: encodeDeterministicKernelRecord({
-      reason: "awaiting_approval",
-    }),
+    interruptPayloadCbor: bytesFromHex(
+      kernelProtocolDeterministicFixtures.storedStagedResultInterruptPayloadCborHex
+    ),
     objectHash:
       "2828282828282828282828282828282828282828282828282828282828282828",
     objectType: "tool_result",
@@ -332,8 +354,8 @@ export const kernelProtocolStoredFixtures = {
     updatedAtMs: 1_717_171_717_272,
   },
   storedTurnNode: {
-    consumedStagedResultsCbor: encodeDeterministicKernelRecord(
-      kernelProtocolLogicalFixtures.turnNode.consumedStagedResults
+    consumedStagedResultsCbor: bytesFromHex(
+      kernelProtocolDeterministicFixtures.storedTurnNodeConsumedStagedResultsCborHex
     ),
     createdAtMs: 1_717_171_717_171,
     eventHash:
@@ -347,8 +369,8 @@ export const kernelProtocolStoredFixtures = {
   storedTurnTree: {
     createdAtMs: 1_717_171_717_171,
     hash: "61e074b4637072c8d97be130149f27ae8675740a0a48b0afeb6e52af1a2348c0",
-    manifestCbor: encodeDeterministicKernelRecord(
-      kernelProtocolLogicalFixtures.turnTreeChangeSet
+    manifestCbor: bytesFromHex(
+      kernelProtocolDeterministicFixtures.storedTurnTreeManifestCborHex
     ),
     schemaId: "schema_main",
   },
@@ -356,7 +378,9 @@ export const kernelProtocolStoredFixtures = {
     collectionKind: "ordered",
     orderedCount: 2,
     orderedEncoding: "flat",
-    orderedInlineCbor: encodeDeterministicKernelRecord(orderedPathHashes),
+    orderedInlineCbor: bytesFromHex(
+      kernelProtocolDeterministicFixtures.storedTurnTreePathOrderedInlineCborHex
+    ),
     path: "messages",
     turnTreeHash:
       "3636363636363636363636363636363636363636363636363636363636363636",

@@ -381,6 +381,59 @@ describe("deterministic identity", () => {
       kernelProtocolDeterministicFixtures.rawOpaqueBytesSha256Hex
     );
   });
+
+  test("locks canonical stored CBOR payload bytes", () => {
+    expect(
+      Buffer.from(
+        kernelProtocolStoredFixtures.storedOrderedPathChunk.itemsCbor
+      ).toString("hex")
+    ).toBe(
+      kernelProtocolDeterministicFixtures.storedOrderedPathChunkItemsCborHex
+    );
+    expect(
+      Buffer.from(
+        kernelProtocolStoredFixtures.storedRun.createdTurnNodesCbor
+      ).toString("hex")
+    ).toBe(
+      kernelProtocolDeterministicFixtures.storedRunCreatedTurnNodesCborHex
+    );
+    expect(
+      Buffer.from(
+        kernelProtocolStoredFixtures.storedRun.stepSequenceCbor
+      ).toString("hex")
+    ).toBe(kernelProtocolDeterministicFixtures.storedRunStepSequenceCborHex);
+    expect(
+      Buffer.from(
+        kernelProtocolStoredFixtures.storedSchema.schemaCbor
+      ).toString("hex")
+    ).toBe(kernelProtocolDeterministicFixtures.storedSchemaSchemaCborHex);
+    expect(
+      Buffer.from(
+        kernelProtocolStoredFixtures.storedStagedResult.interruptPayloadCbor
+      ).toString("hex")
+    ).toBe(
+      kernelProtocolDeterministicFixtures.storedStagedResultInterruptPayloadCborHex
+    );
+    expect(
+      Buffer.from(
+        kernelProtocolStoredFixtures.storedTurnNode.consumedStagedResultsCbor
+      ).toString("hex")
+    ).toBe(
+      kernelProtocolDeterministicFixtures.storedTurnNodeConsumedStagedResultsCborHex
+    );
+    expect(
+      Buffer.from(
+        kernelProtocolStoredFixtures.storedTurnTree.manifestCbor
+      ).toString("hex")
+    ).toBe(kernelProtocolDeterministicFixtures.storedTurnTreeManifestCborHex);
+    expect(
+      Buffer.from(
+        kernelProtocolStoredFixtures.storedTurnTreePath.orderedInlineCbor
+      ).toString("hex")
+    ).toBe(
+      kernelProtocolDeterministicFixtures.storedTurnTreePathOrderedInlineCborHex
+    );
+  });
 });
 
 describe("schema validation", () => {
@@ -641,6 +694,32 @@ describe("logical contract fixtures", () => {
     expect(() =>
       assertObserveResult(kernelProtocolLogicalFixtures.observeResult)
     ).not.toThrow();
+  });
+
+  test("wraps primitive field failures in KrakenValidationError", () => {
+    let turnNodeError: unknown;
+    let storedObjectError: unknown;
+
+    try {
+      assertTurnNode({
+        ...kernelProtocolLogicalFixtures.turnNode,
+        hash: "bad",
+      });
+    } catch (error: unknown) {
+      turnNodeError = error;
+    }
+
+    try {
+      assertStoredObject({
+        ...kernelProtocolStoredFixtures.storedObject,
+        hash: "bad",
+      });
+    } catch (error: unknown) {
+      storedObjectError = error;
+    }
+
+    expect(turnNodeError).toBeInstanceOf(KrakenValidationError);
+    expect(storedObjectError).toBeInstanceOf(KrakenValidationError);
   });
 
   test("enforces canonical TurnNode identity hashes", async () => {
