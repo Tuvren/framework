@@ -1200,6 +1200,20 @@ describe("stored contract fixtures", () => {
     ).toThrow("must contain at least one chunk");
     expect(() =>
       assertStoredTurnTreePath(
+        {
+          collectionKind: "ordered",
+          orderedChunkListCbor: encodeDeterministicKernelRecord([]),
+          orderedCount: 0,
+          orderedEncoding: "chunked",
+          path: "messages",
+          turnTreeHash:
+            "5858585858585858585858585858585858585858585858585858585858585858",
+        },
+        schema
+      )
+    ).toThrow("must use flat ordered storage");
+    expect(() =>
+      assertStoredTurnTreePath(
         kernelProtocolInvalidFixtures.invalidStoredTurnTreePathWithMalformedPath,
         schema
       )

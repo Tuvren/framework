@@ -778,13 +778,14 @@ export function assertStoredSchema(
 }
 
 export function isStoredTurnTree(value: unknown): value is StoredTurnTree {
-  return tryAssert(value, assertStoredTurnTree);
+  return tryAssert(
+    value,
+    (candidate, label = "value"): asserts candidate is StoredTurnTree => {
+      assertStoredTurnTreeShape(candidate, label);
+    }
+  );
 }
 
-export function assertStoredTurnTree(
-  value: unknown,
-  label?: string
-): asserts value is StoredTurnTree;
 export function assertStoredTurnTree(
   value: unknown,
   schema: TurnTreeSchema,
@@ -792,15 +793,12 @@ export function assertStoredTurnTree(
 ): asserts value is StoredTurnTree;
 export function assertStoredTurnTree(
   value: unknown,
-  schemaOrLabel?: string | TurnTreeSchema,
+  schema: TurnTreeSchema,
   label = "value"
 ): asserts value is StoredTurnTree {
-  const { schema, resolvedLabel } = resolveSchemaAndLabel(
-    schemaOrLabel,
-    label,
-    "schema"
-  );
-  const objectValue = assertPlainObject(value, resolvedLabel);
+  assertTurnTreeSchema(schema, "schema");
+  const resolvedLabel = label;
+  const objectValue = assertStoredTurnTreeShape(value, resolvedLabel);
   assertAllowedObjectKeys(
     objectValue,
     ["createdAtMs", "hash", "manifestCbor", "schemaId"],
@@ -808,12 +806,7 @@ export function assertStoredTurnTree(
   );
   const manifestCbor = objectValue.manifestCbor;
 
-  assertHashString(objectValue.hash, `${resolvedLabel}.hash`);
-  assertNonEmptyString(objectValue.schemaId, `${resolvedLabel}.schemaId`);
-  assertUint8Array(manifestCbor, `${resolvedLabel}.manifestCbor`);
-  assertEpochMs(objectValue.createdAtMs, `${resolvedLabel}.createdAtMs`);
-
-  if (schema !== undefined && schema.schemaId !== objectValue.schemaId) {
+  if (schema.schemaId !== objectValue.schemaId) {
     throw validationError(
       `${resolvedLabel}.schemaId must match schema.schemaId`,
       "invalid_stored_turn_tree_schema_id",
@@ -826,12 +819,10 @@ export function assertStoredTurnTree(
 
   assertDecodedKernelRecord(
     manifestCbor,
-    (decodedValue, manifestLabel) => {
-      if (schema === undefined) {
-        assertTurnTreeManifest(decodedValue, manifestLabel);
-        return;
-      }
-
+    (
+      decodedValue: unknown,
+      manifestLabel: string
+    ): asserts decodedValue is TurnTreeManifest => {
       assertTurnTreeManifest(decodedValue, schema, manifestLabel);
     },
     `${resolvedLabel}.manifestCbor`
@@ -840,42 +831,22 @@ export function assertStoredTurnTree(
 
 export async function assertStoredTurnTreeIdentity(
   value: unknown,
-  label?: string
-): Promise<void>;
-export async function assertStoredTurnTreeIdentity(
-  value: unknown,
   schema: TurnTreeSchema,
   label?: string
 ): Promise<void>;
 export async function assertStoredTurnTreeIdentity(
   value: unknown,
-  schemaOrLabel?: string | TurnTreeSchema,
+  schema: TurnTreeSchema,
   label = "value"
 ): Promise<void> {
-  const { schema, resolvedLabel } = resolveSchemaAndLabel(
-    schemaOrLabel,
-    label,
-    "schema"
-  );
+  assertTurnTreeSchema(schema, "schema");
+  const resolvedLabel = label;
+  assertStoredTurnTree(value, schema, resolvedLabel);
 
-  if (schema === undefined) {
-    assertStoredTurnTree(value, resolvedLabel);
-  } else {
-    assertStoredTurnTree(value, schema, resolvedLabel);
-  }
-
-  const assertManifest =
-    schema === undefined
-      ? assertTurnTreeManifest
-      : (
-          decodedValue: unknown,
-          manifestLabel: string
-        ): asserts decodedValue is TurnTreeManifest => {
-          assertTurnTreeManifest(decodedValue, schema, manifestLabel);
-        };
   const manifest = assertDecodedKernelRecord<TurnTreeManifest>(
     value.manifestCbor,
-    assertManifest,
+    (decodedValue, manifestLabel) =>
+      assertTurnTreeManifest(decodedValue, schema, manifestLabel),
     `${resolvedLabel}.manifestCbor`
   );
   const expectedHash = await hashTurnTreeIdentity(value.schemaId, manifest);
@@ -1175,6 +1146,14 @@ function assertStoredChunkedTurnTreePathShape(
       `${label}.orderedChunkListCbor must be empty when ${label}.orderedCount is 0`,
       "invalid_stored_turn_tree_path_shape",
       { chunkCount: chunkHashes.length, orderedCount }
+    );
+  }
+
+  if (orderedCount === 0) {
+    throw validationError(
+      `${label} must use flat ordered storage when ${label}.orderedCount is 0`,
+      "invalid_stored_turn_tree_path_shape",
+      { orderedCount }
     );
   }
 
@@ -1583,13 +1562,15 @@ function assertTurnTreePathMap(
   label: string
 ): Record<string, PathValue> {
   const objectValue = assertPlainObject(value, label);
+  const validatedPathMap: Record<string, PathValue> = Object.create(null);
 
   for (const [path, pathValue] of Object.entries(objectValue)) {
     assertSchemaPath(path, `${label} path`);
     assertPathValue(pathValue, `${label}.${path}`);
+    validatedPathMap[path] = pathValue;
   }
 
-  return objectValue as Record<string, PathValue>;
+  return validatedPathMap;
 }
 
 function assertTurnTreePathMapMatchesSchema(
@@ -2187,6 +2168,35 @@ function resolveSchemaAndLabel(
   return {
     resolvedLabel: label,
     schema: schemaOrLabel,
+  };
+}
+
+function assertStoredTurnTreeShape(
+  value: unknown,
+  label: string
+): {
+  createdAtMs: unknown;
+  hash: unknown;
+  manifestCbor: Uint8Array;
+  schemaId: unknown;
+} {
+  const objectValue = assertPlainObject(value, label);
+
+  assertAllowedObjectKeys(
+    objectValue,
+    ["createdAtMs", "hash", "manifestCbor", "schemaId"],
+    label
+  );
+  assertHashString(objectValue.hash, `${label}.hash`);
+  assertNonEmptyString(objectValue.schemaId, `${label}.schemaId`);
+  assertUint8Array(objectValue.manifestCbor, `${label}.manifestCbor`);
+  assertEpochMs(objectValue.createdAtMs, `${label}.createdAtMs`);
+
+  return {
+    createdAtMs: objectValue.createdAtMs,
+    hash: objectValue.hash,
+    manifestCbor: objectValue.manifestCbor,
+    schemaId: objectValue.schemaId,
   };
 }
 
