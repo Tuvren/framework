@@ -923,6 +923,13 @@ describe("logical contract fixtures", () => {
         kernelProtocolInvalidFixtures.invalidRunningRunRecordWithEmptyStepSequence
       )
     ).toThrow('cannot be "running" when value.stepSequence is empty');
+    expect(() =>
+      assertRunRecord(
+        kernelProtocolInvalidFixtures.invalidCompletedRunRecordBeforeSequenceEnd
+      )
+    ).toThrow(
+      'must equal the declared step count in value.stepSequence when value.status is "completed"'
+    );
   });
 
   test("rejects logical TurnNodes with stored-only timestamps", () => {
@@ -940,6 +947,34 @@ describe("logical contract fixtures", () => {
         kernelProtocolInvalidFixtures.invalidRecoveryStateWithUnknownCompletedStepId
       )
     ).toThrow("lastCompletedStepId must reference a declared stepSequence id");
+    expect(() =>
+      assertRecoveryState(
+        kernelProtocolInvalidFixtures.invalidRecoveryStateWithConsumedResultsButNullCompletedStepId
+      )
+    ).toThrow("lastCompletedStepId must name a completed step");
+  });
+
+  test("rejects incoherent archive results", () => {
+    expect(() =>
+      assertSetHeadResult({
+        archiveBranch: {
+          ...kernelProtocolLogicalFixtures.setHeadResult.archiveBranch,
+          threadId: "thread_other",
+        },
+        branch: kernelProtocolLogicalFixtures.setHeadResult.branch,
+      })
+    ).toThrow("value.archiveBranch.threadId must match value.branch.threadId");
+    expect(() =>
+      assertSetHeadResult({
+        archiveBranch: {
+          ...kernelProtocolLogicalFixtures.setHeadResult.archiveBranch,
+          branchId: kernelProtocolLogicalFixtures.setHeadResult.branch.branchId,
+        },
+        branch: kernelProtocolLogicalFixtures.setHeadResult.branch,
+      })
+    ).toThrow(
+      "value.archiveBranch.branchId must differ from value.branch.branchId"
+    );
   });
 
   test("exposes status guards for runtime callers", () => {
@@ -1311,6 +1346,13 @@ describe("stored contract fixtures", () => {
     ).toThrow("currentStepIndex must not exceed the decoded step count");
     expect(() =>
       assertStoredRun(
+        kernelProtocolInvalidFixtures.invalidStoredCompletedRunBeforeSequenceEnd
+      )
+    ).toThrow(
+      'must equal the declared step count in value.stepSequenceCbor when value.status is "completed"'
+    );
+    expect(() =>
+      assertStoredRun(
         kernelProtocolInvalidFixtures.invalidStoredRunWithMalformedCreatedTurnNodesCbor
       )
     ).toThrow("createdTurnNodesCbor");
@@ -1457,6 +1499,34 @@ describe("stored contract fixtures", () => {
           "98d7b1f35f6ebf506508b1bfbd6be173147a80bc85917a17756c66d97faf8b87",
       })
     ).toThrow('singleHash is required when collectionKind is "single"');
+  });
+
+  test("rejects time-regressing and self-referential stored lifecycle rows", () => {
+    expect(() =>
+      assertStoredBranch({
+        ...kernelProtocolStoredFixtures.storedBranch,
+        archivedFromBranchId:
+          kernelProtocolStoredFixtures.storedBranch.branchId,
+      })
+    ).toThrow("archivedFromBranchId must differ from value.branchId");
+    expect(() =>
+      assertStoredBranch({
+        ...kernelProtocolStoredFixtures.storedBranch,
+        updatedAtMs: kernelProtocolStoredFixtures.storedBranch.createdAtMs - 1,
+      })
+    ).toThrow("updatedAtMs must be greater than or equal to value.createdAtMs");
+    expect(() =>
+      assertStoredTurn({
+        ...kernelProtocolStoredFixtures.storedTurn,
+        updatedAtMs: kernelProtocolStoredFixtures.storedTurn.createdAtMs - 1,
+      })
+    ).toThrow("updatedAtMs must be greater than or equal to value.createdAtMs");
+    expect(() =>
+      assertStoredRun({
+        ...kernelProtocolStoredFixtures.storedRun,
+        updatedAtMs: kernelProtocolStoredFixtures.storedRun.createdAtMs - 1,
+      })
+    ).toThrow("updatedAtMs must be greater than or equal to value.createdAtMs");
   });
 
   test("rejects malformed stored CBOR payloads for core records", () => {

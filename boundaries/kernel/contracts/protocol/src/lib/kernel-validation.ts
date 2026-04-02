@@ -589,6 +589,14 @@ export function assertRunRecord(
     `${label}.currentStepIndex`,
     `${label}.stepSequence`
   );
+  assertCompletedRunExhaustsSteps(
+    objectValue.status,
+    currentStepIndex,
+    stepSequence.length,
+    `${label}.status`,
+    `${label}.currentStepIndex`,
+    `${label}.stepSequence`
+  );
 }
 
 export function isStepContext(value: unknown): value is StepContext {
@@ -655,6 +663,12 @@ export function assertRecoveryState(
     objectValue.uncommittedStagedResults,
     `${label}.uncommittedStagedResults`
   );
+  assertRecoveryStateCoherence(
+    objectValue.consumedStagedResults,
+    lastCompletedStepId,
+    `${label}.consumedStagedResults`,
+    `${label}.lastCompletedStepId`
+  );
 
   if (lastCompletedStepId === null) {
     return;
@@ -712,6 +726,12 @@ export function assertSetHeadResult(
 
   if (objectValue.archiveBranch !== undefined) {
     assertBranchRecord(objectValue.archiveBranch, `${label}.archiveBranch`);
+    assertSetHeadArchiveCoherence(
+      objectValue.branch,
+      objectValue.archiveBranch,
+      `${label}.branch`,
+      `${label}.archiveBranch`
+    );
   }
 }
 
@@ -1392,10 +1412,27 @@ export function assertStoredBranch(
       objectValue.archivedFromBranchId,
       `${label}.archivedFromBranchId`
     );
+
+    if (objectValue.archivedFromBranchId === objectValue.branchId) {
+      throw validationError(
+        `${label}.archivedFromBranchId must differ from ${label}.branchId`,
+        "invalid_branch_archive_source",
+        {
+          archivedFromBranchId: objectValue.archivedFromBranchId,
+          branchId: objectValue.branchId,
+        }
+      );
+    }
   }
 
   assertEpochMs(objectValue.createdAtMs, `${label}.createdAtMs`);
   assertEpochMs(objectValue.updatedAtMs, `${label}.updatedAtMs`);
+  assertMonotonicTimestamps(
+    objectValue.createdAtMs,
+    objectValue.updatedAtMs,
+    `${label}.createdAtMs`,
+    `${label}.updatedAtMs`
+  );
 }
 
 export function isStoredTurn(value: unknown): value is StoredTurn {
@@ -1430,6 +1467,12 @@ export function assertStoredTurn(
   assertHashString(objectValue.headTurnNodeHash, `${label}.headTurnNodeHash`);
   assertEpochMs(objectValue.createdAtMs, `${label}.createdAtMs`);
   assertEpochMs(objectValue.updatedAtMs, `${label}.updatedAtMs`);
+  assertMonotonicTimestamps(
+    objectValue.createdAtMs,
+    objectValue.updatedAtMs,
+    `${label}.createdAtMs`,
+    `${label}.updatedAtMs`
+  );
 }
 
 export function isStoredRun(value: unknown): value is StoredRun {
@@ -1483,6 +1526,12 @@ export function assertStoredRun(
   );
   assertEpochMs(objectValue.createdAtMs, `${label}.createdAtMs`);
   assertEpochMs(objectValue.updatedAtMs, `${label}.updatedAtMs`);
+  assertMonotonicTimestamps(
+    objectValue.createdAtMs,
+    objectValue.updatedAtMs,
+    `${label}.createdAtMs`,
+    `${label}.updatedAtMs`
+  );
 
   if (currentStepIndex > stepSequence.length) {
     throw validationError(
@@ -1496,6 +1545,14 @@ export function assertStoredRun(
   }
 
   assertRunningRunHasNextStep(
+    objectValue.status,
+    currentStepIndex,
+    stepSequence.length,
+    `${label}.status`,
+    `${label}.currentStepIndex`,
+    `${label}.stepSequenceCbor`
+  );
+  assertCompletedRunExhaustsSteps(
     objectValue.status,
     currentStepIndex,
     stepSequence.length,
@@ -1957,6 +2014,27 @@ function assertRunningRunHasNextStep(
   }
 }
 
+function assertCompletedRunExhaustsSteps(
+  status: RunStatus,
+  currentStepIndex: number,
+  stepCount: number,
+  statusLabel: string,
+  currentStepIndexLabel: string,
+  stepSequenceLabel: string
+): void {
+  if (status !== "completed") {
+    return;
+  }
+
+  if (currentStepIndex !== stepCount) {
+    throw validationError(
+      `${currentStepIndexLabel} must equal the declared step count in ${stepSequenceLabel} when ${statusLabel} is "completed"`,
+      "invalid_run_step_index",
+      { currentStepIndex, status, stepCount }
+    );
+  }
+}
+
 function assertStagedResultArray(
   value: unknown,
   label: string
@@ -1995,6 +2073,62 @@ function assertDisjointStagedResultTaskIds(
         { leftLabel, rightLabel, taskId: result.taskId }
       );
     }
+  }
+}
+
+function assertRecoveryStateCoherence(
+  consumedStagedResults: StagedResult[],
+  lastCompletedStepId: string | null,
+  consumedStagedResultsLabel: string,
+  lastCompletedStepIdLabel: string
+): void {
+  if (lastCompletedStepId === null && consumedStagedResults.length > 0) {
+    throw validationError(
+      `${lastCompletedStepIdLabel} must name a completed step when ${consumedStagedResultsLabel} is non-empty`,
+      "invalid_recovery_state_step_id",
+      { consumedCount: consumedStagedResults.length, lastCompletedStepId }
+    );
+  }
+}
+
+function assertSetHeadArchiveCoherence(
+  branch: BranchRecord,
+  archiveBranch: BranchRecord,
+  branchLabel: string,
+  archiveBranchLabel: string
+): void {
+  if (branch.threadId !== archiveBranch.threadId) {
+    throw validationError(
+      `${archiveBranchLabel}.threadId must match ${branchLabel}.threadId`,
+      "invalid_set_head_result",
+      {
+        archiveThreadId: archiveBranch.threadId,
+        branchThreadId: branch.threadId,
+      }
+    );
+  }
+
+  if (branch.branchId === archiveBranch.branchId) {
+    throw validationError(
+      `${archiveBranchLabel}.branchId must differ from ${branchLabel}.branchId`,
+      "invalid_set_head_result",
+      { archiveBranchId: archiveBranch.branchId, branchId: branch.branchId }
+    );
+  }
+}
+
+function assertMonotonicTimestamps(
+  createdAtMs: number,
+  updatedAtMs: number,
+  createdAtMsLabel: string,
+  updatedAtMsLabel: string
+): void {
+  if (updatedAtMs < createdAtMs) {
+    throw validationError(
+      `${updatedAtMsLabel} must be greater than or equal to ${createdAtMsLabel}`,
+      "invalid_timestamp_order",
+      { createdAtMs, updatedAtMs }
+    );
   }
 }
 

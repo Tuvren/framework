@@ -507,6 +507,24 @@ export const kernelProtocolInvalidFixtures = {
     stepSequence: [],
     turnId: "turn_main",
   },
+  invalidCompletedRunRecordBeforeSequenceEnd: {
+    branchId: "branch_main",
+    createdTurnNodes: [],
+    currentStepIndex: 0,
+    runId: "run_main",
+    schemaId: "schema_main",
+    startTurnNodeHash:
+      "4545454545454545454545454545454545454545454545454545454545454548",
+    status: "completed",
+    stepSequence: [
+      {
+        deterministic: false,
+        id: "model_call",
+        sideEffects: false,
+      },
+    ],
+    turnId: "turn_main",
+  },
   invalidSchemaWithAccessorPathMetadata: (() => {
     const pathDefinition = { path: "messages", collection: "ordered" };
     Object.defineProperty(pathDefinition, "metadata", {
@@ -673,6 +691,26 @@ export const kernelProtocolInvalidFixtures = {
     turnId: "turn_main",
     updatedAtMs: 1_717_171_717_272,
   },
+  invalidStoredCompletedRunBeforeSequenceEnd: {
+    branchId: "branch_main",
+    createdAtMs: 1_717_171_717_171,
+    createdTurnNodesCbor: encodeDeterministicKernelRecord([]),
+    currentStepIndex: 0,
+    runId: "run_main",
+    schemaId: "schema_main",
+    startTurnNodeHash:
+      "3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3f",
+    status: "completed",
+    stepSequenceCbor: encodeDeterministicKernelRecord([
+      {
+        deterministic: false,
+        id: "model_call",
+        sideEffects: false,
+      },
+    ]),
+    turnId: "turn_main",
+    updatedAtMs: 1_717_171_717_272,
+  },
   invalidStoredRunWithMalformedCreatedTurnNodesCbor: {
     branchId: "branch_main",
     createdAtMs: 1_717_171_717_171,
@@ -716,6 +754,30 @@ export const kernelProtocolInvalidFixtures = {
     lastCompletedStepId: "not_in_sequence",
     lastTurnNodeHash:
       "3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a",
+    stepSequence: [
+      {
+        deterministic: false,
+        id: "model_call",
+        sideEffects: false,
+      },
+    ],
+    uncommittedStagedResults: [],
+  },
+  invalidRecoveryStateWithConsumedResultsButNullCompletedStepId: {
+    consumedStagedResults: [
+      {
+        interruptPayload: { reason: "awaiting_approval" },
+        objectHash:
+          "edededededededededededededededededededededededededededededededed",
+        objectType: "tool_result",
+        status: "interrupted",
+        taskId: "tool_call_pending",
+        timestamp: 1_717_171_717_272,
+      },
+    ],
+    lastCompletedStepId: null,
+    lastTurnNodeHash:
+      "ecececececececececececececececececececececececececececececececec",
     stepSequence: [
       {
         deterministic: false,
