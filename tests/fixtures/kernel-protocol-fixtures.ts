@@ -400,13 +400,10 @@ export const kernelProtocolStoredFixtures = {
     schemaId: "schema_main",
   },
   storedTurnTreePath: {
-    collectionKind: "ordered",
-    orderedCount: 2,
-    orderedEncoding: "flat",
-    orderedInlineCbor: bytesFromHex(
-      kernelProtocolDeterministicFixtures.storedTurnTreePathOrderedInlineCborHex
-    ),
+    collectionKind: "single",
     path: "context.manifest",
+    singleHash:
+      "2222222222222222222222222222222222222222222222222222222222222222",
     turnTreeHash:
       "3636363636363636363636363636363636363636363636363636363636363636",
   },

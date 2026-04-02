@@ -26,16 +26,22 @@ export {
   hashTurnTreeIdentity,
 } from "./lib/kernel-identity.js";
 export type {
+  AbortVerdict,
   BranchHeadListEntry,
   BranchRecord,
+  ComposedVerdict,
   IncorporationRule,
   KernelSignal,
   KrakenKernel,
+  ModifyVerdict,
   ObserveResult,
   PathCollectionKind,
   PathDefinition,
   PathValue,
+  PauseVerdict,
+  ProceedVerdict,
   RecoveryState,
+  RetryVerdict,
   RunCompletionStatus,
   RunRecord,
   RunStatus,
@@ -62,6 +68,8 @@ export type {
   TurnTreeChangeSet,
   TurnTreeManifest,
   TurnTreeSchema,
+  Verdict,
+  VerdictDisposition,
 } from "./lib/kernel-types.js";
 export {
   assertBranchHeadListEntry,

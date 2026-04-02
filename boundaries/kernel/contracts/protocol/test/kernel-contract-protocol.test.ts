@@ -25,7 +25,7 @@ import {
   kernelProtocolStoredFixtures,
 } from "../../../../../tests/fixtures/kernel-protocol-fixtures.js";
 import { deterministicKernelRecordFixture } from "../../../../../tests/fixtures/kernel-record-fixtures.js";
-import type { KernelSignal } from "../src/index.ts";
+import type { ComposedVerdict, KernelSignal, Verdict } from "../src/index.ts";
 import {
   assertBranchHeadListEntry,
   assertBranchRecord,
@@ -61,6 +61,7 @@ import {
   assertTurnNodeIdentity,
   assertTurnRecord,
   assertTurnTreeChangeSet,
+  assertTurnTreeManifest,
   assertTurnTreeSchema,
   decodeDeterministicKernelRecord,
   encodeDeterministicKernelRecord,
@@ -426,13 +427,6 @@ describe("deterministic identity", () => {
         kernelProtocolStoredFixtures.storedTurnTree.manifestCbor
       ).toString("hex")
     ).toBe(kernelProtocolDeterministicFixtures.storedTurnTreeManifestCborHex);
-    expect(
-      Buffer.from(
-        kernelProtocolStoredFixtures.storedTurnTreePath.orderedInlineCbor
-      ).toString("hex")
-    ).toBe(
-      kernelProtocolDeterministicFixtures.storedTurnTreePathOrderedInlineCborHex
-    );
   });
 });
 
@@ -708,6 +702,17 @@ describe("logical contract fixtures", () => {
     ).not.toThrow();
   });
 
+  test("exports verdict algebra types as part of the public protocol surface", () => {
+    const verdict: Verdict = {
+      disposition: "HardFail",
+      kind: "abort",
+      reason: "blocked",
+    };
+    const composedVerdict: ComposedVerdict = verdict;
+
+    expect(composedVerdict.kind).toBe("abort");
+  });
+
   test("wraps primitive field failures in KrakenValidationError", () => {
     let turnNodeError: unknown;
     let storedObjectError: unknown;
@@ -901,6 +906,8 @@ describe("logical contract fixtures", () => {
 
 describe("stored contract fixtures", () => {
   test("accepts the canonical stored record fixtures", () => {
+    const schema = kernelProtocolDeterministicFixtures.turnTreeSchemaRecord;
+
     expect(() =>
       assertStoredObject(kernelProtocolStoredFixtures.storedObject)
     ).not.toThrow();
@@ -908,10 +915,13 @@ describe("stored contract fixtures", () => {
       assertStoredSchema(kernelProtocolStoredFixtures.storedSchema)
     ).not.toThrow();
     expect(() =>
-      assertStoredTurnTree(kernelProtocolStoredFixtures.storedTurnTree)
+      assertStoredTurnTree(kernelProtocolStoredFixtures.storedTurnTree, schema)
     ).not.toThrow();
     expect(() =>
-      assertStoredTurnTreePath(kernelProtocolStoredFixtures.storedTurnTreePath)
+      assertStoredTurnTreePath(
+        kernelProtocolStoredFixtures.storedTurnTreePath,
+        schema
+      )
     ).not.toThrow();
     expect(() =>
       assertStoredOrderedPathChunk(
@@ -947,6 +957,8 @@ describe("stored contract fixtures", () => {
   });
 
   test("enforces content-addressed identity for stored objects, chunk refs, turn nodes, and turn trees", async () => {
+    const schema = kernelProtocolDeterministicFixtures.turnTreeSchemaRecord;
+
     await expect(
       assertStoredObjectIdentity(kernelProtocolStoredFixtures.storedObject)
     ).resolves.toBeUndefined();
@@ -959,16 +971,20 @@ describe("stored contract fixtures", () => {
       assertStoredTurnNodeIdentity(kernelProtocolStoredFixtures.storedTurnNode)
     ).resolves.toBeUndefined();
     await expect(
-      assertStoredTurnTreeIdentity(kernelProtocolStoredFixtures.storedTurnTree)
+      assertStoredTurnTreeIdentity(
+        kernelProtocolStoredFixtures.storedTurnTree,
+        schema
+      )
     ).resolves.toBeUndefined();
     await expect(
-      assertStoredTurnTreeIdentity({
-        ...kernelProtocolStoredFixtures.storedTurnTree,
-        schemaId: "schema_other",
-      })
-    ).rejects.toThrow(
-      "hash must match the deterministic hash of value.schemaId and value.manifestCbor"
-    );
+      assertStoredTurnTreeIdentity(
+        {
+          ...kernelProtocolStoredFixtures.storedTurnTree,
+          schemaId: "schema_other",
+        },
+        schema
+      )
+    ).rejects.toThrow("schemaId must match schema.schemaId");
     await expect(
       assertStoredObjectIdentity(
         kernelProtocolInvalidFixtures.invalidStoredObjectMismatchedHash
@@ -986,9 +1002,60 @@ describe("stored contract fixtures", () => {
     ).rejects.toThrow("hash must match the canonical TurnNode identity hash");
     await expect(
       assertStoredTurnTreeIdentity(
-        kernelProtocolInvalidFixtures.invalidStoredTurnTreeMismatchedHash
+        kernelProtocolInvalidFixtures.invalidStoredTurnTreeMismatchedHash,
+        schema
       )
     ).rejects.toThrow("hash must match the deterministic hash");
+  });
+
+  test("rejects manifests and stored TurnTree rows that do not match the active schema", async () => {
+    const schema = kernelProtocolDeterministicFixtures.turnTreeSchemaRecord;
+    const invalidManifest = {
+      ghost: [],
+      messages: null,
+    };
+
+    expect(() => assertTurnTreeManifest(invalidManifest, schema)).toThrow(
+      "must reference a schema-defined path"
+    );
+    expect(() =>
+      assertStoredTurnTree(
+        {
+          ...kernelProtocolStoredFixtures.storedTurnTree,
+          manifestCbor: encodeDeterministicKernelRecord(
+            invalidManifest as never
+          ),
+        },
+        schema
+      )
+    ).toThrow("must reference a schema-defined path");
+    await expect(
+      assertStoredTurnTreeIdentity(
+        {
+          ...kernelProtocolStoredFixtures.storedTurnTree,
+          manifestCbor: encodeDeterministicKernelRecord(
+            invalidManifest as never
+          ),
+        },
+        schema
+      )
+    ).rejects.toThrow("must reference a schema-defined path");
+    expect(() =>
+      assertStoredTurnTreePath(
+        {
+          collectionKind: "ordered",
+          orderedCount: 1,
+          orderedEncoding: "flat",
+          orderedInlineCbor: encodeDeterministicKernelRecord([
+            "2222222222222222222222222222222222222222222222222222222222222222",
+          ]),
+          path: "context.manifest",
+          turnTreeHash:
+            "3636363636363636363636363636363636363636363636363636363636363636",
+        },
+        schema
+      )
+    ).toThrow("collectionKind must match the schema collection");
   });
 
   test("rejects stored runs whose decoded step sequence or created nodes are invalid", () => {
@@ -1013,46 +1080,57 @@ describe("stored contract fixtures", () => {
   });
 
   test("rejects impossible stored turn-tree path combinations", () => {
+    const schema = kernelProtocolDeterministicFixtures.turnTreeSchemaRecord;
+
     expect(() =>
       assertStoredTurnTreePath(
-        kernelProtocolInvalidFixtures.invalidStoredTurnTreePathSingleWithOrderedFields
+        kernelProtocolInvalidFixtures.invalidStoredTurnTreePathSingleWithOrderedFields,
+        schema
       )
     ).toThrow(
       'must not include ordered-path fields when collectionKind is "single"'
     );
     expect(() =>
       assertStoredTurnTreePath(
-        kernelProtocolInvalidFixtures.invalidStoredTurnTreePathWithOrderedSingleHash
+        kernelProtocolInvalidFixtures.invalidStoredTurnTreePathWithOrderedSingleHash,
+        schema
       )
     ).toThrow('singleHash must be omitted when collectionKind is "ordered"');
     expect(() =>
       assertStoredTurnTreePath(
-        kernelProtocolInvalidFixtures.invalidStoredTurnTreePathMissingOrderedPayload
+        kernelProtocolInvalidFixtures.invalidStoredTurnTreePathMissingOrderedPayload,
+        schema
       )
     ).toThrow('orderedInlineCbor is required when orderedEncoding is "flat"');
     expect(() =>
       assertStoredTurnTreePath(
-        kernelProtocolInvalidFixtures.invalidStoredTurnTreePathWithWrongEncodingPayload
+        kernelProtocolInvalidFixtures.invalidStoredTurnTreePathWithWrongEncodingPayload,
+        schema
       )
     ).toThrow(
       'orderedChunkListCbor must be omitted when orderedEncoding is "flat"'
     );
     expect(() =>
       assertStoredTurnTreePath(
-        kernelProtocolInvalidFixtures.invalidStoredTurnTreePathChunkedWithoutChunkRefs
+        kernelProtocolInvalidFixtures.invalidStoredTurnTreePathChunkedWithoutChunkRefs,
+        schema
       )
     ).toThrow("must contain at least one chunk");
     expect(() =>
       assertStoredTurnTreePath(
-        kernelProtocolInvalidFixtures.invalidStoredTurnTreePathWithMalformedPath
+        kernelProtocolInvalidFixtures.invalidStoredTurnTreePathWithMalformedPath,
+        schema
       )
     ).toThrow("must be a dot-separated path with non-empty segments");
   });
 
   test("rejects stored ordered payloads whose decoded cardinality disagrees", () => {
+    const schema = kernelProtocolDeterministicFixtures.turnTreeSchemaRecord;
+
     expect(() =>
       assertStoredTurnTreePath(
-        kernelProtocolInvalidFixtures.invalidStoredTurnTreePathOrderedCountMismatch
+        kernelProtocolInvalidFixtures.invalidStoredTurnTreePathOrderedCountMismatch,
+        schema
       )
     ).toThrow("orderedCount must match the decoded item count");
     expect(() =>
@@ -1109,9 +1187,9 @@ describe("stored contract fixtures", () => {
     expect(() =>
       assertStoredTurnTreePath({
         ...kernelProtocolStoredFixtures.storedTurnTreePath,
-        orderedInlineCbor: undefined,
+        singleHash: undefined,
       })
-    ).toThrow("orderedInlineCbor must be omitted instead of undefined");
+    ).toThrow("singleHash must be omitted instead of undefined");
   });
 
   test("rejects malformed stored CBOR payloads for core records", () => {
@@ -1122,7 +1200,8 @@ describe("stored contract fixtures", () => {
     ).toThrow("schemaCbor");
     expect(() =>
       assertStoredTurnTree(
-        kernelProtocolInvalidFixtures.invalidStoredTurnTreeMalformedManifestCbor
+        kernelProtocolInvalidFixtures.invalidStoredTurnTreeMalformedManifestCbor,
+        kernelProtocolDeterministicFixtures.turnTreeSchemaRecord
       )
     ).toThrow("manifestCbor");
     expect(() =>

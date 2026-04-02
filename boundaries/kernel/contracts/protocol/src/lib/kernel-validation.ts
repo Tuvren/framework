@@ -163,9 +163,28 @@ export function assertTurnTreeSchema(
 
 export function assertTurnTreeManifest(
   value: unknown,
+  label?: string
+): asserts value is TurnTreeManifest;
+export function assertTurnTreeManifest(
+  value: unknown,
+  schema: TurnTreeSchema,
+  label?: string
+): asserts value is TurnTreeManifest;
+export function assertTurnTreeManifest(
+  value: unknown,
+  schemaOrLabel?: string | TurnTreeSchema,
   label = "value"
 ): asserts value is TurnTreeManifest {
-  assertTurnTreePathMap(value, label);
+  const { schema, resolvedLabel } = resolveSchemaAndLabel(
+    schemaOrLabel,
+    label,
+    "schema"
+  );
+  const manifest = assertTurnTreePathMap(value, resolvedLabel);
+
+  if (schema !== undefined) {
+    assertTurnTreePathMapMatchesSchema(manifest, schema, resolvedLabel);
+  }
 }
 
 export function assertTurnTreeChangeSet(
@@ -687,43 +706,106 @@ export function isStoredTurnTree(value: unknown): value is StoredTurnTree {
 
 export function assertStoredTurnTree(
   value: unknown,
+  label?: string
+): asserts value is StoredTurnTree;
+export function assertStoredTurnTree(
+  value: unknown,
+  schema: TurnTreeSchema,
+  label?: string
+): asserts value is StoredTurnTree;
+export function assertStoredTurnTree(
+  value: unknown,
+  schemaOrLabel?: string | TurnTreeSchema,
   label = "value"
 ): asserts value is StoredTurnTree {
-  const objectValue = assertPlainObject(value, label);
+  const { schema, resolvedLabel } = resolveSchemaAndLabel(
+    schemaOrLabel,
+    label,
+    "schema"
+  );
+  const objectValue = assertPlainObject(value, resolvedLabel);
   assertAllowedObjectKeys(
     objectValue,
     ["createdAtMs", "hash", "manifestCbor", "schemaId"],
-    label
+    resolvedLabel
   );
   const manifestCbor = objectValue.manifestCbor;
 
-  assertHashString(objectValue.hash, `${label}.hash`);
-  assertNonEmptyString(objectValue.schemaId, `${label}.schemaId`);
-  assertUint8Array(manifestCbor, `${label}.manifestCbor`);
-  assertEpochMs(objectValue.createdAtMs, `${label}.createdAtMs`);
+  assertHashString(objectValue.hash, `${resolvedLabel}.hash`);
+  assertNonEmptyString(objectValue.schemaId, `${resolvedLabel}.schemaId`);
+  assertUint8Array(manifestCbor, `${resolvedLabel}.manifestCbor`);
+  assertEpochMs(objectValue.createdAtMs, `${resolvedLabel}.createdAtMs`);
+
+  if (schema !== undefined && schema.schemaId !== objectValue.schemaId) {
+    throw validationError(
+      `${resolvedLabel}.schemaId must match schema.schemaId`,
+      "invalid_stored_turn_tree_schema_id",
+      {
+        expectedSchemaId: schema.schemaId,
+        schemaId: objectValue.schemaId,
+      }
+    );
+  }
+
   assertDecodedKernelRecord(
     manifestCbor,
-    assertTurnTreeManifest,
-    `${label}.manifestCbor`
+    (decodedValue, manifestLabel) => {
+      if (schema === undefined) {
+        assertTurnTreeManifest(decodedValue, manifestLabel);
+        return;
+      }
+
+      assertTurnTreeManifest(decodedValue, schema, manifestLabel);
+    },
+    `${resolvedLabel}.manifestCbor`
   );
 }
 
 export async function assertStoredTurnTreeIdentity(
   value: unknown,
+  label?: string
+): Promise<void>;
+export async function assertStoredTurnTreeIdentity(
+  value: unknown,
+  schema: TurnTreeSchema,
+  label?: string
+): Promise<void>;
+export async function assertStoredTurnTreeIdentity(
+  value: unknown,
+  schemaOrLabel?: string | TurnTreeSchema,
   label = "value"
 ): Promise<void> {
-  assertStoredTurnTree(value, label);
+  const { schema, resolvedLabel } = resolveSchemaAndLabel(
+    schemaOrLabel,
+    label,
+    "schema"
+  );
 
-  const manifest = assertDecodedKernelRecord(
+  if (schema === undefined) {
+    assertStoredTurnTree(value, resolvedLabel);
+  } else {
+    assertStoredTurnTree(value, schema, resolvedLabel);
+  }
+
+  const assertManifest =
+    schema === undefined
+      ? assertTurnTreeManifest
+      : (
+          decodedValue: unknown,
+          manifestLabel: string
+        ): asserts decodedValue is TurnTreeManifest => {
+          assertTurnTreeManifest(decodedValue, schema, manifestLabel);
+        };
+  const manifest = assertDecodedKernelRecord<TurnTreeManifest>(
     value.manifestCbor,
-    assertTurnTreeManifest,
-    `${label}.manifestCbor`
+    assertManifest,
+    `${resolvedLabel}.manifestCbor`
   );
   const expectedHash = await hashTurnTreeIdentity(value.schemaId, manifest);
 
   if (value.hash !== expectedHash) {
     throw validationError(
-      `${label}.hash must match the deterministic hash of ${label}.schemaId and ${label}.manifestCbor`,
+      `${resolvedLabel}.hash must match the deterministic hash of ${resolvedLabel}.schemaId and ${resolvedLabel}.manifestCbor`,
       "invalid_stored_turn_tree_hash",
       {
         expectedHash,
@@ -741,9 +823,24 @@ export function isStoredTurnTreePath(
 
 export function assertStoredTurnTreePath(
   value: unknown,
+  label?: string
+): asserts value is StoredTurnTreePath;
+export function assertStoredTurnTreePath(
+  value: unknown,
+  schema: TurnTreeSchema,
+  label?: string
+): asserts value is StoredTurnTreePath;
+export function assertStoredTurnTreePath(
+  value: unknown,
+  schemaOrLabel?: string | TurnTreeSchema,
   label = "value"
 ): asserts value is StoredTurnTreePath {
-  const objectValue = assertPlainObject(value, label);
+  const { schema, resolvedLabel } = resolveSchemaAndLabel(
+    schemaOrLabel,
+    label,
+    "schema"
+  );
+  const objectValue = assertPlainObject(value, resolvedLabel);
   assertAllowedObjectKeys(
     objectValue,
     [
@@ -756,7 +853,7 @@ export function assertStoredTurnTreePath(
       "singleHash",
       "turnTreeHash",
     ],
-    label
+    resolvedLabel
   );
   const turnTreeHash = objectValue.turnTreeHash;
   const path = objectValue.path;
@@ -767,29 +864,37 @@ export function assertStoredTurnTreePath(
   const orderedInlineCbor = objectValue.orderedInlineCbor;
   const orderedChunkListCbor = objectValue.orderedChunkListCbor;
 
-  assertOptionalFieldIsOmittedWhenUndefined(objectValue, "singleHash", label);
+  assertOptionalFieldIsOmittedWhenUndefined(
+    objectValue,
+    "singleHash",
+    resolvedLabel
+  );
   assertOptionalFieldIsOmittedWhenUndefined(
     objectValue,
     "orderedEncoding",
-    label
+    resolvedLabel
   );
-  assertOptionalFieldIsOmittedWhenUndefined(objectValue, "orderedCount", label);
+  assertOptionalFieldIsOmittedWhenUndefined(
+    objectValue,
+    "orderedCount",
+    resolvedLabel
+  );
   assertOptionalFieldIsOmittedWhenUndefined(
     objectValue,
     "orderedInlineCbor",
-    label
+    resolvedLabel
   );
   assertOptionalFieldIsOmittedWhenUndefined(
     objectValue,
     "orderedChunkListCbor",
-    label
+    resolvedLabel
   );
-  assertHashString(turnTreeHash, `${label}.turnTreeHash`);
-  assertSchemaPath(path, `${label}.path`);
-  assertPathCollectionKind(collectionKind, `${label}.collectionKind`);
+  assertHashString(turnTreeHash, `${resolvedLabel}.turnTreeHash`);
+  assertSchemaPath(path, `${resolvedLabel}.path`);
+  assertPathCollectionKind(collectionKind, `${resolvedLabel}.collectionKind`);
 
   if (singleHash !== undefined) {
-    assertNullableHashString(singleHash, `${label}.singleHash`);
+    assertNullableHashString(singleHash, `${resolvedLabel}.singleHash`);
   }
 
   if (
@@ -797,22 +902,25 @@ export function assertStoredTurnTreePath(
     !isStringLiteral(orderedEncoding, ORDERED_ENCODINGS)
   ) {
     throw validationError(
-      `${label}.orderedEncoding must be "flat" or "chunked"`,
+      `${resolvedLabel}.orderedEncoding must be "flat" or "chunked"`,
       "invalid_ordered_encoding",
       { value: orderedEncoding }
     );
   }
 
   if (orderedCount !== undefined) {
-    assertNonNegativeInteger(orderedCount, `${label}.orderedCount`);
+    assertNonNegativeInteger(orderedCount, `${resolvedLabel}.orderedCount`);
   }
 
   if (orderedInlineCbor !== undefined) {
-    assertUint8Array(orderedInlineCbor, `${label}.orderedInlineCbor`);
+    assertUint8Array(orderedInlineCbor, `${resolvedLabel}.orderedInlineCbor`);
   }
 
   if (orderedChunkListCbor !== undefined) {
-    assertUint8Array(orderedChunkListCbor, `${label}.orderedChunkListCbor`);
+    assertUint8Array(
+      orderedChunkListCbor,
+      `${resolvedLabel}.orderedChunkListCbor`
+    );
   }
 
   assertStoredTurnTreePathShape(
@@ -826,8 +934,25 @@ export function assertStoredTurnTreePath(
       singleHash,
       turnTreeHash,
     },
-    label
+    resolvedLabel
   );
+
+  if (schema !== undefined) {
+    assertStoredTurnTreePathMatchesSchema(
+      {
+        collectionKind,
+        orderedChunkListCbor,
+        orderedCount,
+        orderedEncoding,
+        orderedInlineCbor,
+        path,
+        singleHash,
+        turnTreeHash,
+      },
+      schema,
+      resolvedLabel
+    );
+  }
 }
 
 function assertStoredTurnTreePathShape(
@@ -1379,12 +1504,72 @@ export function assertStagedResult(
 function assertTurnTreePathMap(
   value: unknown,
   label: string
-): asserts value is Record<string, PathValue> {
+): Record<string, PathValue> {
   const objectValue = assertPlainObject(value, label);
 
   for (const [path, pathValue] of Object.entries(objectValue)) {
     assertSchemaPath(path, `${label} path`);
     assertPathValue(pathValue, `${label}.${path}`);
+  }
+
+  return objectValue as Record<string, PathValue>;
+}
+
+function assertTurnTreePathMapMatchesSchema(
+  value: Record<string, PathValue>,
+  schema: TurnTreeSchema,
+  label: string
+): void {
+  const pathDefinitions = new Map(
+    schema.paths.map((definition) => [definition.path, definition.collection])
+  );
+
+  for (const [path, pathValue] of Object.entries(value)) {
+    const collectionKind = pathDefinitions.get(path);
+
+    if (collectionKind === undefined) {
+      throw validationError(
+        `${label}.${path} must reference a schema-defined path`,
+        "unknown_turn_tree_path",
+        { path, schemaId: schema.schemaId }
+      );
+    }
+
+    assertPathValueForCollectionKind(
+      pathValue,
+      collectionKind,
+      `${label}.${path}`
+    );
+  }
+}
+
+function assertStoredTurnTreePathMatchesSchema(
+  value: StoredTurnTreePath,
+  schema: TurnTreeSchema,
+  label: string
+): void {
+  const pathDefinition = schema.paths.find(
+    (definition) => definition.path === value.path
+  );
+
+  if (pathDefinition === undefined) {
+    throw validationError(
+      `${label}.path must reference a schema-defined path`,
+      "unknown_turn_tree_path",
+      { path: value.path, schemaId: schema.schemaId }
+    );
+  }
+
+  if (pathDefinition.collection !== value.collectionKind) {
+    throw validationError(
+      `${label}.collectionKind must match the schema collection for ${label}.path`,
+      "invalid_turn_tree_path_collection_kind",
+      {
+        collectionKind: value.collectionKind,
+        expectedCollectionKind: pathDefinition.collection,
+        path: value.path,
+      }
+    );
   }
 }
 
@@ -1808,6 +1993,29 @@ function assertAllowedObjectKeys(
       );
     }
   }
+}
+
+function resolveSchemaAndLabel(
+  schemaOrLabel: string | TurnTreeSchema | undefined,
+  label: string,
+  schemaLabel: string
+): {
+  resolvedLabel: string;
+  schema?: TurnTreeSchema;
+} {
+  if (schemaOrLabel === undefined) {
+    return { resolvedLabel: label };
+  }
+
+  if (typeof schemaOrLabel === "string") {
+    return { resolvedLabel: schemaOrLabel };
+  }
+
+  assertTurnTreeSchema(schemaOrLabel, schemaLabel);
+  return {
+    resolvedLabel: label,
+    schema: schemaOrLabel,
+  };
 }
 
 function assertOptionalFieldIsOmittedWhenUndefined(

@@ -444,11 +444,21 @@ export interface ExecutionHandle {
 
 ```ts
 export type KernelSignal = KernelRecord;
+export type VerdictDisposition = "HardFail" | "SoftFail" | "EndTurn";
 
 export interface ObserveResult {
   annotations: KernelObject[];
   signals: KernelSignal[];
 }
+
+export type Verdict =
+  | { kind: "proceed" }
+  | { kind: "abort"; disposition: VerdictDisposition; reason: string }
+  | { kind: "modify"; transform: KernelRecord }
+  | { kind: "pause"; reason: string; resumptionSchema: KernelRecord }
+  | { kind: "retry"; adjustment: KernelRecord };
+
+export type ComposedVerdict = Verdict;
 
 export interface StepContext {
   currentTurnNodeHash: HashString;
@@ -552,6 +562,10 @@ export interface KrakenKernel {
       eventHash?: HashString
     ): Promise<{ turnNodeHash?: HashString }>;
     recover(runId: string): Promise<RecoveryState>;
+  };
+
+  verdicts: {
+    compose(verdicts: Verdict[]): Promise<ComposedVerdict>;
   };
 
   turn: {

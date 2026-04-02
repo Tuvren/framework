@@ -33,6 +33,7 @@ export type RunCompletionStatus = Extract<
   "paused" | "completed" | "failed"
 >;
 export type KernelSignal = KernelRecord;
+export type VerdictDisposition = "HardFail" | "SoftFail" | "EndTurn";
 
 export interface PathDefinition {
   collection: PathCollectionKind;
@@ -62,6 +63,41 @@ export interface ObserveResult {
   annotations: KernelObject[];
   signals: KernelSignal[];
 }
+
+export interface ProceedVerdict {
+  kind: "proceed";
+}
+
+export interface AbortVerdict {
+  disposition: VerdictDisposition;
+  kind: "abort";
+  reason: string;
+}
+
+export interface ModifyVerdict {
+  kind: "modify";
+  transform: KernelRecord;
+}
+
+export interface PauseVerdict {
+  kind: "pause";
+  reason: string;
+  resumptionSchema: KernelRecord;
+}
+
+export interface RetryVerdict {
+  adjustment: KernelRecord;
+  kind: "retry";
+}
+
+export type Verdict =
+  | AbortVerdict
+  | ModifyVerdict
+  | PauseVerdict
+  | ProceedVerdict
+  | RetryVerdict;
+
+export type ComposedVerdict = Verdict;
 
 export interface StagedResult {
   interruptPayload?: KernelRecord;
@@ -337,5 +373,8 @@ export interface KrakenKernel {
     ): Promise<TurnRecord>;
     get(turnId: string): Promise<TurnRecord | null>;
     updateHead(turnId: string, headTurnNodeHash: HashString): Promise<void>;
+  };
+  verdicts: {
+    compose(verdicts: Verdict[]): Promise<ComposedVerdict>;
   };
 }
