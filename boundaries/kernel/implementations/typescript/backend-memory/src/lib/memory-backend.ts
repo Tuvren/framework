@@ -115,6 +115,7 @@ class MemoryBackend implements KrakenBackend {
         work(repositories)
       );
 
+      validateCommittedState(draftState);
       this.state = draftState;
       return result;
     } finally {
@@ -557,6 +558,258 @@ function createEmptyState(): BackendState {
   };
 }
 
+function validateCommittedState(state: BackendState): void {
+  validateThreadInvariants(state);
+  validateBranchInvariants(state);
+  validateTurnNodeInvariants(state);
+  validateTurnInvariants(state);
+  validateRunInvariants(state);
+  validateTurnTreePathInvariants(state);
+}
+
+function validateThreadInvariants(state: BackendState): void {
+  for (const thread of state.threads.values()) {
+    const rootTurnNode = ensureTurnNodeExists(
+      state,
+      thread.rootTurnNodeHash,
+      "thread.rootTurnNodeHash"
+    );
+
+    if (rootTurnNode.schemaId !== thread.schemaId) {
+      throw persistenceError(
+        "stored threads must use the schema of their root turn node",
+        "memory_backend_thread_schema_mismatch",
+        {
+          rootTurnNodeHash: thread.rootTurnNodeHash,
+          threadId: thread.threadId,
+          threadSchemaId: thread.schemaId,
+          turnNodeSchemaId: rootTurnNode.schemaId,
+        }
+      );
+    }
+  }
+}
+
+function validateBranchInvariants(state: BackendState): void {
+  for (const branch of state.branches.values()) {
+    const thread = ensureThreadExists(
+      state,
+      branch.threadId,
+      "branch.threadId"
+    );
+
+    assertTurnNodeBelongsToThread(
+      state,
+      branch.headTurnNodeHash,
+      thread,
+      "branch.headTurnNodeHash"
+    );
+
+    if (branch.archivedFromBranchId === undefined) {
+      continue;
+    }
+
+    const sourceBranch = ensureBranchExists(
+      state,
+      branch.archivedFromBranchId,
+      "branch.archivedFromBranchId"
+    );
+
+    if (sourceBranch.threadId !== branch.threadId) {
+      throw persistenceError(
+        "stored branches must archive only from branches in the same thread",
+        "memory_backend_branch_archive_thread_mismatch",
+        {
+          archivedFromBranchId: sourceBranch.branchId,
+          branchId: branch.branchId,
+          branchThreadId: branch.threadId,
+          sourceThreadId: sourceBranch.threadId,
+        }
+      );
+    }
+  }
+}
+
+function validateTurnNodeInvariants(state: BackendState): void {
+  for (const turnNode of state.turnNodes.values()) {
+    const turnTree = ensureTurnTreeExists(
+      state,
+      turnNode.turnTreeHash,
+      "turnNode.turnTreeHash"
+    );
+
+    if (turnTree.schemaId !== turnNode.schemaId) {
+      throw persistenceError(
+        "stored turn nodes must use the schema of their referenced turn tree",
+        "memory_backend_turn_node_schema_mismatch",
+        {
+          turnNodeHash: turnNode.hash,
+          turnNodeSchemaId: turnNode.schemaId,
+          turnTreeHash: turnTree.hash,
+          turnTreeSchemaId: turnTree.schemaId,
+        }
+      );
+    }
+  }
+}
+
+function validateTurnInvariants(state: BackendState): void {
+  for (const turn of state.turns.values()) {
+    const thread = ensureThreadExists(state, turn.threadId, "turn.threadId");
+    const branch = ensureBranchExists(state, turn.branchId, "turn.branchId");
+
+    if (branch.threadId !== thread.threadId) {
+      throw persistenceError(
+        "stored turns must reference a branch on the same thread",
+        "memory_backend_turn_branch_thread_mismatch",
+        {
+          branchId: branch.branchId,
+          branchThreadId: branch.threadId,
+          threadId: thread.threadId,
+          turnId: turn.turnId,
+        }
+      );
+    }
+
+    assertTurnNodeBelongsToThread(
+      state,
+      turn.startTurnNodeHash,
+      thread,
+      "turn.startTurnNodeHash"
+    );
+    assertTurnNodeBelongsToThread(
+      state,
+      turn.headTurnNodeHash,
+      thread,
+      "turn.headTurnNodeHash"
+    );
+    assertTurnNodeDescendsFrom(
+      state,
+      turn.headTurnNodeHash,
+      turn.startTurnNodeHash,
+      "turn.headTurnNodeHash"
+    );
+
+    if (turn.parentTurnId === null) {
+      continue;
+    }
+
+    const parentTurn = ensureTurnExists(
+      state,
+      turn.parentTurnId,
+      "turn.parentTurnId"
+    );
+
+    if (parentTurn.threadId !== thread.threadId) {
+      throw persistenceError(
+        "stored turns must reference a parent turn on the same thread",
+        "memory_backend_turn_parent_thread_mismatch",
+        {
+          parentThreadId: parentTurn.threadId,
+          threadId: thread.threadId,
+          turnId: turn.turnId,
+        }
+      );
+    }
+  }
+}
+
+function validateRunInvariants(state: BackendState): void {
+  const activeRunCounts = new Map<string, number>();
+
+  for (const run of state.runs.values()) {
+    const branch = ensureBranchExists(state, run.branchId, "run.branchId");
+    const turn = ensureTurnExists(state, run.turnId, "run.turnId");
+    const startTurnNode = ensureTurnNodeExists(
+      state,
+      run.startTurnNodeHash,
+      "run.startTurnNodeHash"
+    );
+    const thread = ensureThreadExists(state, turn.threadId, "turn.threadId");
+
+    if (turn.branchId !== branch.branchId) {
+      throw persistenceError(
+        "stored runs must reference a turn on the same branch",
+        "memory_backend_run_branch_mismatch",
+        {
+          branchId: branch.branchId,
+          runId: run.runId,
+          turnBranchId: turn.branchId,
+          turnId: turn.turnId,
+        }
+      );
+    }
+
+    assertTurnNodeBelongsToThread(
+      state,
+      run.startTurnNodeHash,
+      thread,
+      "run.startTurnNodeHash"
+    );
+
+    if (branch.headTurnNodeHash !== run.startTurnNodeHash) {
+      throw persistenceError(
+        "stored runs must start from the current branch head",
+        "memory_backend_run_start_turn_node_mismatch",
+        {
+          branchHeadTurnNodeHash: branch.headTurnNodeHash,
+          runId: run.runId,
+          startTurnNodeHash: run.startTurnNodeHash,
+        }
+      );
+    }
+
+    if (startTurnNode.schemaId !== run.schemaId) {
+      throw persistenceError(
+        "stored runs must use the schema of their start turn node",
+        "memory_backend_run_schema_mismatch",
+        {
+          runId: run.runId,
+          runSchemaId: run.schemaId,
+          startTurnNodeHash: startTurnNode.hash,
+          turnNodeSchemaId: startTurnNode.schemaId,
+        }
+      );
+    }
+
+    if (run.status === "running" || run.status === "paused") {
+      const currentActiveCount = activeRunCounts.get(run.branchId) ?? 0;
+      activeRunCounts.set(run.branchId, currentActiveCount + 1);
+    }
+  }
+
+  for (const [branchId, activeRunCount] of activeRunCounts.entries()) {
+    if (activeRunCount > 1) {
+      throw persistenceError(
+        "stored branches must not have more than one active run",
+        "memory_backend_multiple_active_runs",
+        {
+          activeRunCount,
+          branchId,
+        }
+      );
+    }
+  }
+}
+
+function validateTurnTreePathInvariants(state: BackendState): void {
+  for (const [turnTreeHash, storedPaths] of state.turnTreePaths.entries()) {
+    ensureTurnTreeExists(state, turnTreeHash, "turnTreePath.turnTreeHash");
+
+    if (storedPaths.size === 0) {
+      throw persistenceError(
+        "stored turn tree path collections must not be empty",
+        "memory_backend_empty_turn_tree_path_collection",
+        { turnTreeHash }
+      );
+    }
+  }
+
+  for (const turnTree of state.turnTrees.values()) {
+    assertTurnTreeManifestMatchesStoredPaths(state, turnTree);
+  }
+}
+
 function cloneState(state: BackendState): BackendState {
   return {
     branches: new Map(state.branches),
@@ -714,6 +967,229 @@ function decodeHashStringArray(bytes: Uint8Array, label: string): string[] {
   }
 
   return hashes;
+}
+
+function assertTurnNodeBelongsToThread(
+  state: BackendState,
+  turnNodeHash: string,
+  thread: StoredThread,
+  label: string
+): void {
+  const visitedTurnNodes = new Set<string>();
+  let currentTurnNodeHash: string | null = turnNodeHash;
+
+  while (currentTurnNodeHash !== null) {
+    if (visitedTurnNodes.has(currentTurnNodeHash)) {
+      throw persistenceError(
+        `${label} must not traverse a cyclic turn node lineage`,
+        "memory_backend_cyclic_turn_node_lineage",
+        {
+          threadId: thread.threadId,
+          turnNodeHash,
+        }
+      );
+    }
+
+    visitedTurnNodes.add(currentTurnNodeHash);
+
+    if (currentTurnNodeHash === thread.rootTurnNodeHash) {
+      return;
+    }
+
+    currentTurnNodeHash = ensureTurnNodeExists(
+      state,
+      currentTurnNodeHash,
+      label
+    ).previousTurnNodeHash;
+  }
+
+  throw persistenceError(
+    `${label} must belong to the referenced thread by lineage walk`,
+    "memory_backend_thread_lineage_mismatch",
+    {
+      threadId: thread.threadId,
+      threadRootTurnNodeHash: thread.rootTurnNodeHash,
+      turnNodeHash,
+    }
+  );
+}
+
+function assertTurnNodeDescendsFrom(
+  state: BackendState,
+  descendantTurnNodeHash: string,
+  ancestorTurnNodeHash: string,
+  label: string
+): void {
+  const visitedTurnNodes = new Set<string>();
+  let currentTurnNodeHash: string | null = descendantTurnNodeHash;
+
+  while (currentTurnNodeHash !== null) {
+    if (visitedTurnNodes.has(currentTurnNodeHash)) {
+      throw persistenceError(
+        `${label} must not traverse a cyclic turn node lineage`,
+        "memory_backend_cyclic_turn_node_lineage",
+        {
+          ancestorTurnNodeHash,
+          descendantTurnNodeHash,
+        }
+      );
+    }
+
+    if (currentTurnNodeHash === ancestorTurnNodeHash) {
+      return;
+    }
+
+    visitedTurnNodes.add(currentTurnNodeHash);
+    currentTurnNodeHash = ensureTurnNodeExists(
+      state,
+      currentTurnNodeHash,
+      label
+    ).previousTurnNodeHash;
+  }
+
+  throw persistenceError(
+    `${label} must be a descendant of the referenced start turn node`,
+    "memory_backend_turn_node_not_descendant",
+    {
+      ancestorTurnNodeHash,
+      descendantTurnNodeHash,
+    }
+  );
+}
+
+function assertTurnTreeManifestMatchesStoredPaths(
+  state: BackendState,
+  turnTree: StoredTurnTree
+): void {
+  const schema = getSchemaForTurnTree(state, turnTree);
+  const manifestValue = decodeDeterministicKernelRecord(turnTree.manifestCbor);
+  const storedPaths = state.turnTreePaths.get(turnTree.hash);
+
+  if (
+    manifestValue === null ||
+    typeof manifestValue !== "object" ||
+    Array.isArray(manifestValue) ||
+    manifestValue instanceof Uint8Array
+  ) {
+    throw persistenceError(
+      "stored turn trees must decode to a manifest object",
+      "memory_backend_invalid_turn_tree_manifest",
+      {
+        turnTreeHash: turnTree.hash,
+      }
+    );
+  }
+
+  if (storedPaths === undefined) {
+    throw persistenceError(
+      "stored turn trees must have indexed path rows",
+      "memory_backend_missing_turn_tree_paths",
+      {
+        turnTreeHash: turnTree.hash,
+      }
+    );
+  }
+
+  if (storedPaths.size !== schema.paths.length) {
+    throw persistenceError(
+      "stored turn tree paths must fully cover the schema-defined manifest",
+      "memory_backend_turn_tree_path_count_mismatch",
+      {
+        pathCount: storedPaths.size,
+        schemaPathCount: schema.paths.length,
+        turnTreeHash: turnTree.hash,
+      }
+    );
+  }
+
+  for (const pathDefinition of schema.paths) {
+    const storedPath = storedPaths.get(pathDefinition.path);
+
+    if (storedPath === undefined) {
+      throw persistenceError(
+        "stored turn tree paths must include every schema path",
+        "memory_backend_missing_turn_tree_path",
+        {
+          path: pathDefinition.path,
+          turnTreeHash: turnTree.hash,
+        }
+      );
+    }
+
+    const manifestPathValue = Reflect.get(manifestValue, pathDefinition.path);
+    const storedPathValue = resolveStoredTurnTreePathValue(state, storedPath);
+
+    if (!areManifestPathValuesEqual(manifestPathValue, storedPathValue)) {
+      throw persistenceError(
+        "stored turn tree paths must match the logical manifest",
+        "memory_backend_turn_tree_manifest_path_mismatch",
+        {
+          path: pathDefinition.path,
+          turnTreeHash: turnTree.hash,
+        }
+      );
+    }
+  }
+}
+
+function resolveStoredTurnTreePathValue(
+  state: BackendState,
+  storedPath: StoredTurnTreePath
+): string[] | string | null {
+  if (storedPath.collectionKind === "single") {
+    return storedPath.singleHash;
+  }
+
+  if (storedPath.orderedEncoding === "flat") {
+    return decodeHashStringArray(
+      storedPath.orderedInlineCbor,
+      "storedPath.orderedInlineCbor"
+    );
+  }
+
+  const resolvedHashes: string[] = [];
+  const chunkHashes = decodeHashStringArray(
+    storedPath.orderedChunkListCbor,
+    "storedPath.orderedChunkListCbor"
+  );
+
+  for (const chunkHash of chunkHashes) {
+    const chunk = ensureOrderedPathChunkExists(
+      state,
+      chunkHash,
+      "storedPath.orderedChunkListCbor"
+    );
+
+    resolvedHashes.push(
+      ...decodeHashStringArray(chunk.itemsCbor, "chunk.itemsCbor")
+    );
+  }
+
+  return resolvedHashes;
+}
+
+function areManifestPathValuesEqual(
+  left: unknown,
+  right: string[] | string | null
+): boolean {
+  if (left === null || typeof left === "string") {
+    return left === right;
+  }
+
+  if (
+    !(Array.isArray(left) && Array.isArray(right)) ||
+    left.length !== right.length
+  ) {
+    return false;
+  }
+
+  for (const [index, item] of left.entries()) {
+    if (item !== right[index]) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 function encodeHashStringArray(hashes: string[]): Uint8Array {
