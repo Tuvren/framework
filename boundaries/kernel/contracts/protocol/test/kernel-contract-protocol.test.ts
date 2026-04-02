@@ -222,6 +222,79 @@ describe("deterministic identity", () => {
     }
   });
 
+  test("rejects TurnNode identity inputs with invalid staged-result interrupt semantics", async () => {
+    await expect(
+      hashTurnNodeIdentity({
+        consumedStagedResults: [
+          {
+            objectHash:
+              "1111111111111111111111111111111111111111111111111111111111111111",
+            objectType: "tool_result",
+            status: "interrupted",
+            taskId: "tool_call_1",
+            timestamp: 1_717_171_717_171,
+          },
+        ],
+        eventHash: null,
+        previousTurnNodeHash: null,
+        schemaId: "schema_main",
+        turnTreeHash:
+          "2222222222222222222222222222222222222222222222222222222222222222",
+      } as never)
+    ).rejects.toThrow(
+      'interruptPayload is required when status is "interrupted"'
+    );
+    await expect(
+      hashTurnNodeIdentity({
+        consumedStagedResults: [
+          {
+            interruptPayload: { reason: "awaiting_approval" },
+            objectHash:
+              "1111111111111111111111111111111111111111111111111111111111111111",
+            objectType: "tool_result",
+            status: "completed",
+            taskId: "tool_call_1",
+            timestamp: 1_717_171_717_171,
+          },
+        ],
+        eventHash: null,
+        previousTurnNodeHash: null,
+        schemaId: "schema_main",
+        turnTreeHash:
+          "2222222222222222222222222222222222222222222222222222222222222222",
+      } as never)
+    ).rejects.toThrow(
+      'interruptPayload must be omitted unless status is "interrupted"'
+    );
+  });
+
+  test("rejects TurnNode identity inputs with non-data consumedStagedResults arrays", async () => {
+    const consumedStagedResults = Object.assign(
+      [
+        {
+          objectHash:
+            "1111111111111111111111111111111111111111111111111111111111111111",
+          objectType: "tool_result",
+          status: "completed",
+          taskId: "tool_call_1",
+          timestamp: 1_717_171_717_171,
+        },
+      ],
+      { meta: 1 }
+    );
+
+    await expect(
+      hashTurnNodeIdentity({
+        consumedStagedResults,
+        eventHash: null,
+        previousTurnNodeHash: null,
+        schemaId: "schema_main",
+        turnTreeHash:
+          "2222222222222222222222222222222222222222222222222222222222222222",
+      } as never)
+    ).rejects.toThrow("consumedStagedResults must be a dense data-only array");
+  });
+
   test("rejects decoded non-canonical kernel numbers as validation errors", () => {
     expect(() =>
       decodeDeterministicKernelRecord(

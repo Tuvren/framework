@@ -249,16 +249,10 @@ function assertTurnNodeIdentityInput(
   );
 
   const consumedStagedResults = objectValue.consumedStagedResults;
-
-  if (!Array.isArray(consumedStagedResults)) {
-    throw new KrakenValidationError(
-      "turn node identity input must include consumedStagedResults as an array",
-      {
-        code: "invalid_turn_node_hash",
-        details: { value: objectValue },
-      }
-    );
-  }
+  assertDenseDataArray(
+    consumedStagedResults,
+    "turn node identity input.consumedStagedResults"
+  );
 
   const normalizedConsumedStagedResults = consumedStagedResults.map(
     (stagedResult, index) =>
@@ -310,6 +304,12 @@ function assertStagedResultIdentityInput(
     );
   }
 
+  assertInterruptPayloadConsistency(
+    objectValue.status as StagedResult["status"],
+    objectValue.interruptPayload,
+    `${label}.interruptPayload`
+  );
+
   const normalizedValue = {
     objectHash: objectValue.objectHash as HashString,
     objectType: objectValue.objectType as string,
@@ -331,6 +331,81 @@ function assertStagedResultIdentityInput(
   }
 
   return normalizedValue;
+}
+
+function assertDenseDataArray(
+  value: unknown,
+  label: string
+): asserts value is unknown[] {
+  if (!Array.isArray(value)) {
+    throw turnNodeIdentityError(`${label} must be an array`, { value });
+  }
+
+  if (Object.getOwnPropertySymbols(value).length > 0) {
+    throw turnNodeIdentityError(`${label} must be a dense data-only array`, {
+      value,
+    });
+  }
+
+  const descriptors = Object.getOwnPropertyDescriptors(value);
+
+  for (const key of Object.getOwnPropertyNames(descriptors)) {
+    if (key === "length") {
+      continue;
+    }
+
+    const descriptor = descriptors[key];
+    const index = Number(key);
+
+    if (
+      !(
+        descriptor?.enumerable &&
+        Object.hasOwn(descriptor, "value") &&
+        Number.isInteger(index) &&
+        index >= 0 &&
+        index < value.length &&
+        String(index) === key
+      ) ||
+      Object.hasOwn(descriptor, "get") ||
+      Object.hasOwn(descriptor, "set")
+    ) {
+      throw turnNodeIdentityError(`${label} must be a dense data-only array`, {
+        value,
+      });
+    }
+  }
+
+  for (let index = 0; index < value.length; index += 1) {
+    if (!Object.hasOwn(value, index)) {
+      throw turnNodeIdentityError(`${label} must be a dense data-only array`, {
+        value,
+      });
+    }
+  }
+}
+
+function assertInterruptPayloadConsistency(
+  status: StagedResult["status"],
+  interruptPayload: KernelRecord | undefined,
+  label: string
+): void {
+  if (status === "interrupted") {
+    if (interruptPayload === undefined) {
+      throw turnNodeIdentityError(
+        `${label} is required when status is "interrupted"`,
+        { status }
+      );
+    }
+
+    return;
+  }
+
+  if (interruptPayload !== undefined) {
+    throw turnNodeIdentityError(
+      `${label} must be omitted unless status is "interrupted"`,
+      { status }
+    );
+  }
 }
 
 function assertAllowedKeys(
