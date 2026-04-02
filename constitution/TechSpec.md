@@ -835,7 +835,7 @@ Target implementation layout after code generation begins:
   - `"strict": true`
   - `"module": "esnext"`
   - `"moduleResolution": "bundler"`
-  - `"target": "es2025"`
+  - `"target": "esnext"`
   - explicit `"rootDir"` per package
   - explicit `"types"` arrays where runtime globals are required
 - **Kernel Encoding Rules:**
