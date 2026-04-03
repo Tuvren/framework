@@ -215,6 +215,12 @@ function createRepositories(
             "record.archivedFromBranchId",
             "memory_backend_branch_archive_source_immutable"
           );
+          assertMonotonicUpdatedAtMs(
+            existingBranch.updatedAtMs,
+            record.updatedAtMs,
+            "record.updatedAtMs",
+            "memory_backend_branch_updated_at_regressed"
+          );
 
           assertBranchHeadMoveIsLinear(
             state,
@@ -440,7 +446,19 @@ function createRepositories(
         const runResults =
           state.stagedResults.get(record.runId) ??
           new Map<string, StoredStagedResult>();
-        runResults.set(record.taskId, cloneStoredStagedResult(record));
+        const existingResult = runResults.get(record.taskId);
+
+        if (existingResult === undefined) {
+          runResults.set(record.taskId, cloneStoredStagedResult(record));
+        } else {
+          ensureImmutableRecordMatch(
+            existingResult,
+            record,
+            areStoredStagedResultsEqual,
+            "stored staged result"
+          );
+        }
+
         state.stagedResults.set(record.runId, runResults);
         return Promise.resolve();
       },
@@ -674,6 +692,14 @@ function createRepositories(
               { parentTurnId: parentTurn.turnId, threadId: thread.threadId }
             );
           }
+
+          assertTurnParentIsImmediatePredecessor(
+            state,
+            thread.threadId,
+            parentTurn,
+            record,
+            "record.parentTurnId"
+          );
         }
 
         const existingTurn = state.turns.get(record.turnId);
@@ -707,6 +733,12 @@ function createRepositories(
             record.createdAtMs,
             "record.createdAtMs",
             "memory_backend_turn_created_at_immutable"
+          );
+          assertMonotonicUpdatedAtMs(
+            existingTurn.updatedAtMs,
+            record.updatedAtMs,
+            "record.updatedAtMs",
+            "memory_backend_turn_updated_at_regressed"
           );
           assertTurnNodeDescendsFrom(
             state,
@@ -1002,7 +1034,23 @@ function validateRunInvariants(state: BackendState): void {
     );
 
     for (const turnNodeHash of decodeRunCreatedTurnNodeHashes(run)) {
-      ensureTurnNodeExists(state, turnNodeHash, "run.createdTurnNodesCbor");
+      const createdTurnNode = ensureTurnNodeExists(
+        state,
+        turnNodeHash,
+        "run.createdTurnNodesCbor"
+      );
+      assertTurnNodeBelongsToThread(
+        state,
+        turnNodeHash,
+        thread,
+        "run.createdTurnNodesCbor"
+      );
+      assertRunCreatedTurnNodeWithinTurnSpan(
+        state,
+        turn,
+        createdTurnNode,
+        "run.createdTurnNodesCbor"
+      );
     }
 
     if (run.status === "running" || run.status === "paused") {
@@ -1071,6 +1119,25 @@ function validateTurnTreePathInvariants(state: BackendState): void {
   for (const turnTree of state.turnTrees.values()) {
     assertTurnTreeManifestMatchesStoredPaths(state, turnTree);
   }
+}
+
+function listTurnsByThread(
+  state: BackendState,
+  threadId: string,
+  excludedTurnId?: string
+): StoredTurn[] {
+  const turns: StoredTurn[] = [];
+
+  for (const turn of state.turns.values()) {
+    if (turn.threadId !== threadId || turn.turnId === excludedTurnId) {
+      continue;
+    }
+
+    turns.push(turn);
+  }
+
+  turns.sort(compareStoredTurn);
+  return turns;
 }
 
 function cloneState(state: BackendState): BackendState {
@@ -1549,6 +1616,12 @@ function assertRunUpdateIsLegal(
     "record.stepSequenceCbor",
     "memory_backend_run_step_sequence_immutable"
   );
+  assertMonotonicUpdatedAtMs(
+    existingRun.updatedAtMs,
+    nextRun.updatedAtMs,
+    "record.updatedAtMs",
+    "memory_backend_run_updated_at_regressed"
+  );
 
   assertMonotonicRunStepIndex(existingRun, nextRun);
   assertAppendOnlyRunCreatedTurnNodes(existingRun, nextRun);
@@ -1570,6 +1643,20 @@ function assertMonotonicRunStepIndex(
         runId: existingRun.runId,
       }
     );
+  }
+}
+
+function assertMonotonicUpdatedAtMs(
+  previousUpdatedAtMs: number,
+  nextUpdatedAtMs: number,
+  label: string,
+  code: string
+): void {
+  if (nextUpdatedAtMs < previousUpdatedAtMs) {
+    throw persistenceError(`${label} must not move backwards`, code, {
+      nextUpdatedAtMs,
+      previousUpdatedAtMs,
+    });
   }
 }
 
@@ -1652,6 +1739,116 @@ function assertRunStartTurnNodeWithinTurnSpan(
         startTurnNodeHash,
         turnHeadTurnNodeHash: turn.headTurnNodeHash,
         turnId: turn.turnId,
+      }
+    );
+  }
+}
+
+function assertRunCreatedTurnNodeWithinTurnSpan(
+  state: BackendState,
+  turn: StoredTurn,
+  createdTurnNode: StoredTurnNode,
+  label: string
+): void {
+  const relationshipToTurnStart = classifyTurnNodeRelationship(
+    state,
+    turn.startTurnNodeHash,
+    createdTurnNode.hash
+  );
+
+  if (
+    relationshipToTurnStart !== "same" &&
+    relationshipToTurnStart !== "forward"
+  ) {
+    throw persistenceError(
+      `${label} entries must remain within the referenced turn span`,
+      "memory_backend_run_created_turn_node_outside_turn_span",
+      {
+        createdTurnNodeHash: createdTurnNode.hash,
+        turnId: turn.turnId,
+        turnStartTurnNodeHash: turn.startTurnNodeHash,
+      }
+    );
+  }
+
+  const relationshipToTurnHead = classifyTurnNodeRelationship(
+    state,
+    createdTurnNode.hash,
+    turn.headTurnNodeHash
+  );
+
+  if (
+    relationshipToTurnHead !== "same" &&
+    relationshipToTurnHead !== "forward"
+  ) {
+    throw persistenceError(
+      `${label} entries must not move beyond the referenced turn head`,
+      "memory_backend_run_created_turn_node_outside_turn_span",
+      {
+        createdTurnNodeHash: createdTurnNode.hash,
+        turnHeadTurnNodeHash: turn.headTurnNodeHash,
+        turnId: turn.turnId,
+      }
+    );
+  }
+}
+
+function assertTurnParentIsImmediatePredecessor(
+  state: BackendState,
+  threadId: string,
+  parentTurn: StoredTurn,
+  nextTurn: StoredTurn,
+  label: string
+): void {
+  if (parentTurn.headTurnNodeHash !== nextTurn.startTurnNodeHash) {
+    throw persistenceError(
+      `${label} must chain contiguously into record.startTurnNodeHash`,
+      "memory_backend_turn_parent_start_turn_node_mismatch",
+      {
+        parentTurnHeadTurnNodeHash: parentTurn.headTurnNodeHash,
+        parentTurnId: parentTurn.turnId,
+        startTurnNodeHash: nextTurn.startTurnNodeHash,
+        turnId: nextTurn.turnId,
+      }
+    );
+  }
+
+  const threadTurns = listTurnsByThread(state, threadId, nextTurn.turnId);
+  let immediateParent: StoredTurn | null = null;
+
+  for (const turn of threadTurns) {
+    if (turn.headTurnNodeHash !== nextTurn.startTurnNodeHash) {
+      continue;
+    }
+
+    if (
+      immediateParent === null ||
+      compareStoredTurn(turn, immediateParent) > 0
+    ) {
+      immediateParent = turn;
+    }
+  }
+
+  if (immediateParent === null) {
+    throw persistenceError(
+      `${label} must reference the immediate previous semantic turn`,
+      "memory_backend_turn_parent_not_immediate_predecessor",
+      {
+        parentTurnId: parentTurn.turnId,
+        startTurnNodeHash: nextTurn.startTurnNodeHash,
+        turnId: nextTurn.turnId,
+      }
+    );
+  }
+
+  if (immediateParent.turnId !== parentTurn.turnId) {
+    throw persistenceError(
+      `${label} must reference the immediate previous semantic turn`,
+      "memory_backend_turn_parent_not_immediate_predecessor",
+      {
+        expectedParentTurnId: immediateParent.turnId,
+        parentTurnId: parentTurn.turnId,
+        turnId: nextTurn.turnId,
       }
     );
   }
@@ -2274,6 +2471,28 @@ function areStoredThreadsEqual(
   );
 }
 
+function areStoredStagedResultsEqual(
+  left: StoredStagedResult,
+  right: StoredStagedResult
+): boolean {
+  if (
+    left.runId !== right.runId ||
+    left.taskId !== right.taskId ||
+    left.createdAtMs !== right.createdAtMs ||
+    left.objectHash !== right.objectHash ||
+    left.objectType !== right.objectType ||
+    left.status !== right.status
+  ) {
+    return false;
+  }
+
+  if (left.status === "interrupted" && right.status === "interrupted") {
+    return areBytesEqual(left.interruptPayloadCbor, right.interruptPayloadCbor);
+  }
+
+  return left.status !== "interrupted" && right.status !== "interrupted";
+}
+
 function areStoredTurnTreePathsEqual(
   left: StoredTurnTreePath,
   right: StoredTurnTreePath
@@ -2331,6 +2550,15 @@ function compareStoredRun(left: StoredRun, right: StoredRun): number {
     right.createdAtMs,
     left.runId,
     right.runId
+  );
+}
+
+function compareStoredTurn(left: StoredTurn, right: StoredTurn): number {
+  return compareByTimestampAndKey(
+    left.createdAtMs,
+    right.createdAtMs,
+    left.turnId,
+    right.turnId
   );
 }
 
