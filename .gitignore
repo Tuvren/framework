@@ -8,6 +8,7 @@ coverage
 .devenv.flake.nix
 .direnv
 .cache
+.tmp-tests
 .env
 .env.*
 .codex
