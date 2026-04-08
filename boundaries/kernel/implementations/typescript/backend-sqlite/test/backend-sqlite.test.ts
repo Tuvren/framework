@@ -14,8 +14,13 @@
  * limitations under the License.
  */
 
-import { deepStrictEqual, rejects, strictEqual } from "node:assert/strict";
-import { mkdtempSync, rmSync } from "node:fs";
+import {
+  deepStrictEqual,
+  rejects,
+  strictEqual,
+  throws,
+} from "node:assert/strict";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, describe, test } from "node:test";
@@ -32,11 +37,17 @@ import Database from "better-sqlite3";
 import { createSqliteBackend } from "../src/index.js";
 
 const NESTED_TRANSACTION_ERROR_PATTERN = /must not be nested/u;
+const MIGRATION_CONFLICT_ERROR_PATTERN = /table turn_trees already exists/u;
 const tempDirectories = new Set<string>();
 
-function createTempDatabasePath(): string {
-  const tempDirectory = mkdtempSync(join(tmpdir(), "kraken-sqlite-"));
+function createTempDirectory(prefix = "kraken-sqlite-"): string {
+  const tempDirectory = mkdtempSync(join(tmpdir(), prefix));
   tempDirectories.add(tempDirectory);
+  return tempDirectory;
+}
+
+function createTempDatabasePath(): string {
+  const tempDirectory = createTempDirectory();
   return join(tempDirectory, "kraken.db");
 }
 
@@ -103,6 +114,80 @@ describe("@kraken/backend-sqlite", () => {
     secondProbe.close();
 
     deepStrictEqual(reappliedRows, [{ name: "0001_initial_schema.sql" }]);
+  });
+
+  test("uses package-local migrations when cwd has unrelated SQL files", {
+    concurrency: false,
+  }, () => {
+    const databasePath = createTempDatabasePath();
+    const tempCwd = createTempDirectory("kraken-sqlite-cwd-");
+    const originalCwd = process.cwd();
+
+    mkdirSync(join(tempCwd, "migrations"));
+    writeFileSync(
+      join(tempCwd, "migrations", "0001_wrong.sql"),
+      "THIS IS NOT SQL;\n",
+      "utf8"
+    );
+
+    try {
+      process.chdir(tempCwd);
+      createSqliteBackend({ databasePath });
+    } finally {
+      process.chdir(originalCwd);
+    }
+
+    const probe = new Database(databasePath, { readonly: true });
+    const migrationRows = probe
+      .prepare("SELECT name FROM backend_sqlite_migrations ORDER BY name")
+      .all() as Array<{ name: string }>;
+    const objectsTable = probe
+      .prepare(
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'objects'"
+      )
+      .get() as { name: string } | undefined;
+    probe.close();
+
+    deepStrictEqual(migrationRows, [{ name: "0001_initial_schema.sql" }]);
+    deepStrictEqual(objectsTable, { name: "objects" });
+  });
+
+  test("rolls back failed migration files without recording partial success", () => {
+    const databasePath = createTempDatabasePath();
+    const seed = new Database(databasePath);
+    seed.exec("CREATE TABLE turn_trees (hash TEXT PRIMARY KEY)");
+    seed.close();
+
+    throws(
+      () => createSqliteBackend({ databasePath }),
+      MIGRATION_CONFLICT_ERROR_PATTERN
+    );
+
+    const probe = new Database(databasePath, { readonly: true });
+    const objectsTable = probe
+      .prepare(
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'objects'"
+      )
+      .get();
+    const schemasTable = probe
+      .prepare(
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'schemas'"
+      )
+      .get();
+    const turnTreesTable = probe
+      .prepare(
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'turn_trees'"
+      )
+      .get();
+    const migrationRows = probe
+      .prepare("SELECT name FROM backend_sqlite_migrations ORDER BY name")
+      .all() as Array<{ name: string }>;
+    probe.close();
+
+    strictEqual(objectsTable, undefined);
+    strictEqual(schemasTable, undefined);
+    deepStrictEqual(turnTreesTable, { name: "turn_trees" });
+    deepStrictEqual(migrationRows, []);
   });
 
   test("serializes concurrent transactions and rejects nested transactions", async () => {

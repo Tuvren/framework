@@ -627,13 +627,11 @@ export function registerBackendInvariantSuite(
             await tx.runs.set({
               branchId: branch.branchId,
               createdAtMs: 12,
-              createdTurnNodesCbor: encodeDeterministicKernelRecord([
-                finalNode.hash,
-              ]),
+              createdTurnNodesCbor: encodeDeterministicKernelRecord([]),
               currentStepIndex: 0,
-              runId: "run_created_nodes_subset",
+              runId: "run_start_not_branch_head",
               schemaId: schemaA.schemaId,
-              startTurnNodeHash: rootNode.hash,
+              startTurnNodeHash: nextNode.hash,
               status: "running",
               stepSequenceCbor: encodeDeterministicKernelRecord([
                 {
@@ -655,6 +653,33 @@ export function registerBackendInvariantSuite(
               branchId: branch.branchId,
               createdAtMs: 13,
               createdTurnNodesCbor: encodeDeterministicKernelRecord([
+                finalNode.hash,
+              ]),
+              currentStepIndex: 0,
+              runId: "run_created_nodes_subset",
+              schemaId: schemaA.schemaId,
+              startTurnNodeHash: rootNode.hash,
+              status: "running",
+              stepSequenceCbor: encodeDeterministicKernelRecord([
+                {
+                  deterministic: false,
+                  id: "model_call",
+                  sideEffects: false,
+                },
+              ]),
+              turnId: turn.turnId,
+              updatedAtMs: 13,
+            });
+          }),
+          KrakenPersistenceError
+        );
+
+        await rejects(
+          backend.transact(async (tx) => {
+            await tx.runs.set({
+              branchId: branch.branchId,
+              createdAtMs: 14,
+              createdTurnNodesCbor: encodeDeterministicKernelRecord([
                 nextNode.hash,
               ]),
               currentStepIndex: 0,
@@ -670,11 +695,11 @@ export function registerBackendInvariantSuite(
                 },
               ]),
               turnId: turn.turnId,
-              updatedAtMs: 13,
+              updatedAtMs: 14,
             });
             await tx.runs.set({
               branchId: branch.branchId,
-              createdAtMs: 14,
+              createdAtMs: 15,
               createdTurnNodesCbor: encodeDeterministicKernelRecord([
                 nextNode.hash,
               ]),
@@ -691,7 +716,7 @@ export function registerBackendInvariantSuite(
                 },
               ]),
               turnId: turn.turnId,
-              updatedAtMs: 14,
+              updatedAtMs: 15,
             });
           }),
           KrakenPersistenceError
@@ -701,7 +726,7 @@ export function registerBackendInvariantSuite(
           backend.transact(async (tx) => {
             await tx.runs.set({
               branchId: branch.branchId,
-              createdAtMs: 15,
+              createdAtMs: 16,
               createdTurnNodesCbor: encodeDeterministicKernelRecord([]),
               currentStepIndex: 1,
               runId: "run_created_completed",
@@ -716,7 +741,7 @@ export function registerBackendInvariantSuite(
                 },
               ]),
               turnId: turn.turnId,
-              updatedAtMs: 15,
+              updatedAtMs: 16,
             });
           }),
           KrakenPersistenceError

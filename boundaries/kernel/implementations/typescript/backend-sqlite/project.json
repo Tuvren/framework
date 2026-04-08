@@ -45,6 +45,9 @@
             "command": "bunx --bun tsc --project tsconfig.test.json --pretty false"
           },
           {
+            "command": "mkdir -p .tmp-tests/boundaries/kernel/implementations/typescript/backend-sqlite/migrations && cp migrations/*.sql .tmp-tests/boundaries/kernel/implementations/typescript/backend-sqlite/migrations/"
+          },
+          {
             "command": "node --test .tmp-tests/boundaries/kernel/implementations/typescript/backend-sqlite/test/backend-sqlite.test.js"
           }
         ],

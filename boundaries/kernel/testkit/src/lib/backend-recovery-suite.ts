@@ -28,7 +28,6 @@ import type { BackendConformanceSuiteOptions } from "./backend-test-suite-types.
 import {
   createCanonicalKernelTestSchema,
   createCanonicalTurnTreePaths,
-  createHashFromIndex,
   createStoredObjectRecord,
   createStoredSchemaRecord,
   createStoredTurnNodeRecord,
@@ -345,9 +344,8 @@ export function registerBackendRecoverySuite(
           { "context.manifest": null, messages: [] },
           2
         );
-        const siblingTree = await createStoredTurnTreeRecord(
-          schema,
-          { "context.manifest": null, messages: [createHashFromIndex(1)] },
+        const siblingEventObject = await createStoredObjectRecord(
+          new Uint8Array([9]),
           3
         );
         const rootNode = await createStoredTurnNodeRecord({
@@ -366,13 +364,13 @@ export function registerBackendRecoverySuite(
           schemaId: schema.schemaId,
           turnTreeHash: baseTree.hash,
         });
-        const siblingRoot = await createStoredTurnNodeRecord({
+        const siblingNode = await createStoredTurnNodeRecord({
           consumedStagedResults: [],
           createdAtMs: 6,
-          eventHash: null,
-          previousTurnNodeHash: null,
+          eventHash: siblingEventObject.hash,
+          previousTurnNodeHash: rootNode.hash,
           schemaId: schema.schemaId,
-          turnTreeHash: siblingTree.hash,
+          turnTreeHash: baseTree.hash,
         });
         const thread: StoredThread = {
           createdAtMs: 7,
@@ -389,24 +387,18 @@ export function registerBackendRecoverySuite(
         };
 
         await backend.transact(async (tx) => {
+          await tx.objects.put(siblingEventObject);
           await tx.schemas.put(schemaRecord);
           await tx.turnTrees.put(baseTree);
-          await tx.turnTrees.put(siblingTree);
           await tx.turnTreePaths.putMany(
             createCanonicalTurnTreePaths(baseTree, {
               "context.manifest": null,
               messages: [],
             })
           );
-          await tx.turnTreePaths.putMany(
-            createCanonicalTurnTreePaths(siblingTree, {
-              "context.manifest": null,
-              messages: [createHashFromIndex(1)],
-            })
-          );
           await tx.turnNodes.put(rootNode);
           await tx.turnNodes.put(childNode);
-          await tx.turnNodes.put(siblingRoot);
+          await tx.turnNodes.put(siblingNode);
           await tx.threads.put(thread);
           await tx.branches.set(branch);
         });
@@ -426,7 +418,7 @@ export function registerBackendRecoverySuite(
           backend.transact(async (tx) => {
             await tx.branches.set({
               ...branch,
-              headTurnNodeHash: siblingRoot.hash,
+              headTurnNodeHash: siblingNode.hash,
               updatedAtMs: 10,
             });
           }),

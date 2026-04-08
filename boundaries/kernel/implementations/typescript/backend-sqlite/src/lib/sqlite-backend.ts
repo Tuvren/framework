@@ -16,7 +16,7 @@
 
 import { AsyncLocalStorage } from "node:async_hooks";
 import { existsSync, mkdirSync, readdirSync, readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   assertStoredBranch,
@@ -342,6 +342,12 @@ function createRepositories(
             "record.updatedAtMs",
             "sqlite_backend_branch_updated_at_regressed"
           );
+          assertBranchHeadMoveIsLinearInDatabase(
+            db,
+            existingBranch.headTurnNodeHash,
+            record.headTurnNodeHash,
+            "record.headTurnNodeHash"
+          );
         }
 
         db.prepare(
@@ -448,7 +454,11 @@ function createRepositories(
       set(record) {
         assertTransactionActive();
         assertStoredRun(record, "record");
-        ensureBranchExistsInDatabase(db, record.branchId, "record.branchId");
+        const branch = ensureBranchExistsInDatabase(
+          db,
+          record.branchId,
+          "record.branchId"
+        );
         ensureTurnExistsInDatabase(db, record.turnId, "record.turnId");
         ensureSchemaExistsInDatabase(db, record.schemaId, "record.schemaId");
         ensureTurnNodeExistsInDatabase(
@@ -465,6 +475,16 @@ function createRepositories(
             "new runs must start in running status",
             "sqlite_backend_invalid_initial_run_status",
             { runId: record.runId, status: record.status }
+          );
+        } else if (branch.headTurnNodeHash !== record.startTurnNodeHash) {
+          throw persistenceError(
+            "stored runs must start from the current branch head when first created",
+            "sqlite_backend_run_start_turn_node_mismatch",
+            {
+              branchHeadTurnNodeHash: branch.headTurnNodeHash,
+              runId: record.runId,
+              startTurnNodeHash: record.startTurnNodeHash,
+            }
           );
         }
 
@@ -1000,6 +1020,17 @@ function runMigrations(db: Database.Database, now: () => number): void {
     )
   `);
 
+  const recordMigration = db.prepare(
+    `
+      INSERT INTO backend_sqlite_migrations (name, applied_at_ms)
+      VALUES (?, ?)
+    `
+  );
+  const applyMigration = db.transaction((fileName: string, sql: string) => {
+    db.exec(sql);
+    recordMigration.run(fileName, now());
+  });
+
   const applied = new Set(
     (
       db
@@ -1018,20 +1049,12 @@ function runMigrations(db: Database.Database, now: () => number): void {
     }
 
     const sql = readFileSync(`${migrationDirectory}/${fileName}`, "utf8");
-    db.exec(sql);
-    db.prepare(
-      `
-        INSERT INTO backend_sqlite_migrations (name, applied_at_ms)
-        VALUES (?, ?)
-      `
-    ).run(fileName, now());
+    applyMigration(fileName, sql);
   }
 }
 
 function resolveMigrationDirectory(): string {
   const candidates = [
-    resolve(process.cwd(), "migrations"),
-    resolve(process.cwd(), "dist/migrations"),
     fileURLToPath(new URL("../../migrations", import.meta.url)),
     fileURLToPath(new URL("../migrations", import.meta.url)),
   ];
@@ -2931,7 +2954,55 @@ function assertBackwardBranchMoveIsArchived(
   }
 }
 
+function assertBranchHeadMoveIsLinearInDatabase(
+  db: Database.Database,
+  previousHeadTurnNodeHash: string,
+  nextHeadTurnNodeHash: string,
+  label: string
+): void {
+  const relationship = classifyTurnNodeRelationshipInDatabase(
+    db,
+    previousHeadTurnNodeHash,
+    nextHeadTurnNodeHash
+  );
+
+  if (relationship === "lateral") {
+    throw persistenceError(
+      `${label} must remain on the same thread lineage as the current branch head`,
+      "sqlite_backend_branch_head_lateral_move",
+      {
+        nextHeadTurnNodeHash,
+        previousHeadTurnNodeHash,
+      }
+    );
+  }
+}
+
 type TurnNodeRelationship = "backward" | "forward" | "lateral" | "same";
+
+function classifyTurnNodeRelationshipInDatabase(
+  db: Database.Database,
+  sourceTurnNodeHash: string,
+  targetTurnNodeHash: string
+): TurnNodeRelationship {
+  if (sourceTurnNodeHash === targetTurnNodeHash) {
+    return "same";
+  }
+
+  if (
+    isTurnNodeDescendantOfInDatabase(db, targetTurnNodeHash, sourceTurnNodeHash)
+  ) {
+    return "forward";
+  }
+
+  if (
+    isTurnNodeDescendantOfInDatabase(db, sourceTurnNodeHash, targetTurnNodeHash)
+  ) {
+    return "backward";
+  }
+
+  return "lateral";
+}
 
 function classifyTurnNodeRelationship(
   state: BackendState,
@@ -2951,6 +3022,41 @@ function classifyTurnNodeRelationship(
   }
 
   return "lateral";
+}
+
+function isTurnNodeDescendantOfInDatabase(
+  db: Database.Database,
+  descendantTurnNodeHash: string,
+  ancestorTurnNodeHash: string
+): boolean {
+  const visitedTurnNodes = new Set<string>();
+  let currentTurnNodeHash: string | null = descendantTurnNodeHash;
+
+  while (currentTurnNodeHash !== null) {
+    if (visitedTurnNodes.has(currentTurnNodeHash)) {
+      throw persistenceError(
+        "turn node lineage must not contain cycles",
+        "sqlite_backend_cyclic_turn_node_lineage",
+        {
+          ancestorTurnNodeHash,
+          descendantTurnNodeHash,
+        }
+      );
+    }
+
+    if (currentTurnNodeHash === ancestorTurnNodeHash) {
+      return true;
+    }
+
+    visitedTurnNodes.add(currentTurnNodeHash);
+    currentTurnNodeHash = ensureTurnNodeExistsInDatabase(
+      db,
+      currentTurnNodeHash,
+      "turn node lineage"
+    ).previousTurnNodeHash;
+  }
+
+  return false;
 }
 
 function isTurnNodeDescendantOf(
