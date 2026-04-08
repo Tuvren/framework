@@ -15,6 +15,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
+import { createMemoryBackend } from "@kraken/backend-memory";
 import {
   decodeDeterministicKernelRecord,
   encodeDeterministicKernelRecord,
@@ -46,7 +47,6 @@ import {
   registerBackendRecoverySuite,
 } from "@kraken/kernel-testkit";
 import { KrakenPersistenceError } from "@kraken/shared-core-types";
-import { createMemoryBackend } from "../src/index.ts";
 
 registerBackendConformanceSuite({
   createBackend: () => createMemoryBackend(),
