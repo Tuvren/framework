@@ -138,9 +138,7 @@ export function registerBackendConformanceSuite(
         const runRecord: StoredRun = {
           branchId: branchRecord.branchId,
           createdAtMs: 107,
-          createdTurnNodesCbor: encodeDeterministicKernelRecord([
-            turnNodeRecord.hash,
-          ]),
+          createdTurnNodesCbor: encodeDeterministicKernelRecord([]),
           currentStepIndex: 0,
           runId: "run_main",
           schemaId: schema.schemaId,

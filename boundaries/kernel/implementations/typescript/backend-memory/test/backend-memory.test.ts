@@ -381,7 +381,7 @@ describe("@kraken/backend-memory", () => {
     const stagedRun: StoredRun = {
       branchId: earlyBranch.branchId,
       createdAtMs: 307,
-      createdTurnNodesCbor: encodeDeterministicKernelRecord([turnNode.hash]),
+      createdTurnNodesCbor: encodeDeterministicKernelRecord([]),
       currentStepIndex: 0,
       runId: "run_staged",
       schemaId: schema.schemaId,
@@ -400,9 +400,7 @@ describe("@kraken/backend-memory", () => {
     const orderedRunB: StoredRun = {
       branchId: lateBranch.branchId,
       createdAtMs: 307,
-      createdTurnNodesCbor: encodeDeterministicKernelRecord([
-        lateTurnNode.hash,
-      ]),
+      createdTurnNodesCbor: encodeDeterministicKernelRecord([]),
       currentStepIndex: 1,
       runId: "run_b",
       schemaId: schema.schemaId,
@@ -1043,7 +1041,7 @@ describe("@kraken/backend-memory", () => {
     const runningRun: StoredRun = {
       branchId: branch.branchId,
       createdAtMs: 9,
-      createdTurnNodesCbor: encodeDeterministicKernelRecord([headNode.hash]),
+      createdTurnNodesCbor: encodeDeterministicKernelRecord([]),
       currentStepIndex: 0,
       runId: "run_historical_completed",
       schemaId: schema.schemaId,
@@ -1156,7 +1154,7 @@ describe("@kraken/backend-memory", () => {
     const runningForFailure: StoredRun = {
       branchId: branch.branchId,
       createdAtMs: 9,
-      createdTurnNodesCbor: encodeDeterministicKernelRecord([createdNode.hash]),
+      createdTurnNodesCbor: encodeDeterministicKernelRecord([]),
       currentStepIndex: 0,
       runId: "run_halted_failed",
       schemaId: schema.schemaId,
@@ -1378,7 +1376,7 @@ describe("@kraken/backend-memory", () => {
     const runningCompletedRun: StoredRun = {
       branchId: branch.branchId,
       createdAtMs: 7,
-      createdTurnNodesCbor: encodeDeterministicKernelRecord([turnNode.hash]),
+      createdTurnNodesCbor: encodeDeterministicKernelRecord([]),
       currentStepIndex: 0,
       runId: "run_completed",
       schemaId: schema.schemaId,
@@ -1403,7 +1401,7 @@ describe("@kraken/backend-memory", () => {
     const runningPausedRun: StoredRun = {
       branchId: branch.branchId,
       createdAtMs: 9,
-      createdTurnNodesCbor: encodeDeterministicKernelRecord([turnNode.hash]),
+      createdTurnNodesCbor: encodeDeterministicKernelRecord([]),
       currentStepIndex: 0,
       runId: "run_paused",
       schemaId: schema.schemaId,
@@ -1520,7 +1518,7 @@ describe("@kraken/backend-memory", () => {
     const branch: StoredBranch = {
       branchId: "branch_run_progress",
       createdAtMs: 7,
-      headTurnNodeHash: turnNode.hash,
+      headTurnNodeHash: createdNode.hash,
       threadId: thread.threadId,
       updatedAtMs: 7,
     };
@@ -1537,11 +1535,11 @@ describe("@kraken/backend-memory", () => {
     const runningRun: StoredRun = {
       branchId: branch.branchId,
       createdAtMs: 9,
-      createdTurnNodesCbor: encodeDeterministicKernelRecord([createdNode.hash]),
+      createdTurnNodesCbor: encodeDeterministicKernelRecord([]),
       currentStepIndex: 1,
       runId: "run_progress",
       schemaId: schema.schemaId,
-      startTurnNodeHash: turnNode.hash,
+      startTurnNodeHash: createdNode.hash,
       status: "running",
       stepSequenceCbor: encodeDeterministicKernelRecord([
         {

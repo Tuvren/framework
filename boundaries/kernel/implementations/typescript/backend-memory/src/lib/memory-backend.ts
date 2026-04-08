@@ -948,6 +948,28 @@ function validateBranchInvariants(
         }
       );
     }
+
+    if (
+      existingBranch === undefined &&
+      sourceBranchBeforeTransaction !== undefined &&
+      classifyTurnNodeRelationship(
+        state,
+        sourceBranchBeforeTransaction.headTurnNodeHash,
+        sourceBranch.headTurnNodeHash
+      ) !== "backward"
+    ) {
+      throw persistenceError(
+        "new archive branches must be paired with a backward move on their source branch",
+        "memory_backend_branch_archive_without_backward_move",
+        {
+          archivedFromBranchId: branch.archivedFromBranchId,
+          branchId: branch.branchId,
+          sourceBranchHeadTurnNodeHash: sourceBranch.headTurnNodeHash,
+          sourceBranchPreviousHeadTurnNodeHash:
+            sourceBranchBeforeTransaction.headTurnNodeHash,
+        }
+      );
+    }
   }
 
   for (const branch of state.branches.values()) {
@@ -1126,6 +1148,7 @@ function validateRunInvariants(state: BackendState): void {
     assertRunCreatedTurnNodesAreCanonical(state, run);
 
     if (run.status === "running" || run.status === "paused") {
+      assertActiveRunHeadAlignment(run, branch, turn);
       const currentActiveCount = activeRunCounts.get(run.branchId) ?? 0;
       activeRunCounts.set(run.branchId, currentActiveCount + 1);
     }
@@ -1890,12 +1913,6 @@ function assertRunCreatedTurnNodesAreCanonical(
       );
     }
 
-    const relationship = classifyTurnNodeRelationship(
-      state,
-      previousTurnNodeHash,
-      turnNodeHash
-    );
-
     const createdTurnNode = ensureTurnNodeExists(
       state,
       turnNodeHash,
@@ -1904,7 +1921,7 @@ function assertRunCreatedTurnNodesAreCanonical(
     const isImmediateNextTurnNode =
       createdTurnNode.previousTurnNodeHash === previousTurnNodeHash;
 
-    if (relationship !== "same" && !isImmediateNextTurnNode) {
+    if (!isImmediateNextTurnNode) {
       throw persistenceError(
         "stored runs must keep createdTurnNodesCbor as a canonical contiguous lineage",
         "memory_backend_run_created_turn_nodes_not_contiguous",
@@ -1921,6 +1938,42 @@ function assertRunCreatedTurnNodesAreCanonical(
 
     seenTurnNodeHashes.add(turnNodeHash);
     previousTurnNodeHash = turnNodeHash;
+  }
+}
+
+function assertActiveRunHeadAlignment(
+  run: StoredRun,
+  branch: StoredBranch,
+  turn: StoredTurn
+): void {
+  const activeTurnNodeHash = getRunActiveTurnNodeHash(run);
+
+  if (activeTurnNodeHash !== branch.headTurnNodeHash) {
+    throw persistenceError(
+      "stored active runs must stay aligned with the current branch head",
+      "memory_backend_active_run_branch_head_mismatch",
+      {
+        activeTurnNodeHash,
+        branchHeadTurnNodeHash: branch.headTurnNodeHash,
+        branchId: branch.branchId,
+        runId: run.runId,
+        status: run.status,
+      }
+    );
+  }
+
+  if (activeTurnNodeHash !== turn.headTurnNodeHash) {
+    throw persistenceError(
+      "stored active runs must stay aligned with the current turn head",
+      "memory_backend_active_run_turn_head_mismatch",
+      {
+        activeTurnNodeHash,
+        runId: run.runId,
+        status: run.status,
+        turnHeadTurnNodeHash: turn.headTurnNodeHash,
+        turnId: turn.turnId,
+      }
+    );
   }
 }
 

@@ -1766,18 +1766,16 @@ function resolveMigrationDirectory(): string {
 }
 
 function validateMigrationState(db: Database.Database): void {
-  const knownMigrationFiles = new Set(
-    listMigrationFiles(resolveMigrationDirectory())
-  );
-  const appliedMigrations = new Set(
-    (
-      db
-        .prepare("SELECT name FROM backend_sqlite_migrations ORDER BY name")
-        .all() as SqliteMigrationRow[]
-    ).map((row) => row.name)
-  );
+  const knownMigrationFiles = listMigrationFiles(resolveMigrationDirectory());
+  const knownMigrationFileSet = new Set(knownMigrationFiles);
+  const appliedMigrationNames = (
+    db
+      .prepare("SELECT name FROM backend_sqlite_migrations ORDER BY name")
+      .all() as SqliteMigrationRow[]
+  ).map((row) => row.name);
+  const appliedMigrations = new Set(appliedMigrationNames);
   const unknownAppliedMigrations = [...appliedMigrations].filter(
-    (migrationName) => !knownMigrationFiles.has(migrationName)
+    (migrationName) => !knownMigrationFileSet.has(migrationName)
   );
 
   if (unknownAppliedMigrations.length > 0) {
@@ -1785,7 +1783,7 @@ function validateMigrationState(db: Database.Database): void {
       "sqlite backend found applied migrations that this package version does not recognize",
       "sqlite_backend_unknown_applied_migration",
       {
-        knownMigrationFiles: [...knownMigrationFiles],
+        knownMigrationFiles,
         unknownAppliedMigrations,
       }
     );
@@ -1841,6 +1839,11 @@ function validateMigrationState(db: Database.Database): void {
         missingIndexes,
       }
     );
+  }
+
+  const latestAppliedMigrationName = appliedMigrationNames.at(-1);
+  if (latestAppliedMigrationName !== INITIAL_SCHEMA_MIGRATION_NAME) {
+    return;
   }
 
   for (const tableName of INITIAL_SCHEMA_REQUIRED_TABLES) {
@@ -3255,6 +3258,28 @@ function validateBranchInvariants(
         }
       );
     }
+
+    if (
+      existingBranch === undefined &&
+      sourceBranchBeforeTransaction !== undefined &&
+      classifyTurnNodeRelationship(
+        state,
+        sourceBranchBeforeTransaction.headTurnNodeHash,
+        sourceBranch.headTurnNodeHash
+      ) !== "backward"
+    ) {
+      throw persistenceError(
+        "new archive branches must be paired with a backward move on their source branch",
+        "sqlite_backend_branch_archive_without_backward_move",
+        {
+          archivedFromBranchId: branch.archivedFromBranchId,
+          branchId: branch.branchId,
+          sourceBranchHeadTurnNodeHash: sourceBranch.headTurnNodeHash,
+          sourceBranchPreviousHeadTurnNodeHash:
+            sourceBranchBeforeTransaction.headTurnNodeHash,
+        }
+      );
+    }
   }
 
   for (const branch of state.branches.values()) {
@@ -3433,6 +3458,7 @@ function validateRunInvariants(state: BackendState): void {
     assertRunCreatedTurnNodesAreCanonical(state, run);
 
     if (run.status === "running" || run.status === "paused") {
+      assertActiveRunHeadAlignment(run, branch, turn);
       const currentActiveCount = activeRunCounts.get(run.branchId) ?? 0;
       activeRunCounts.set(run.branchId, currentActiveCount + 1);
     }
@@ -4145,12 +4171,6 @@ function assertRunCreatedTurnNodesAreCanonical(
       );
     }
 
-    const relationship = classifyTurnNodeRelationship(
-      state,
-      previousTurnNodeHash,
-      turnNodeHash
-    );
-
     const createdTurnNode = ensureTurnNodeExists(
       state,
       turnNodeHash,
@@ -4159,7 +4179,7 @@ function assertRunCreatedTurnNodesAreCanonical(
     const isImmediateNextTurnNode =
       createdTurnNode.previousTurnNodeHash === previousTurnNodeHash;
 
-    if (relationship !== "same" && !isImmediateNextTurnNode) {
+    if (!isImmediateNextTurnNode) {
       throw persistenceError(
         "stored runs must keep createdTurnNodesCbor as a canonical contiguous lineage",
         "sqlite_backend_run_created_turn_nodes_not_contiguous",
@@ -4176,6 +4196,42 @@ function assertRunCreatedTurnNodesAreCanonical(
 
     seenTurnNodeHashes.add(turnNodeHash);
     previousTurnNodeHash = turnNodeHash;
+  }
+}
+
+function assertActiveRunHeadAlignment(
+  run: StoredRun,
+  branch: StoredBranch,
+  turn: StoredTurn
+): void {
+  const activeTurnNodeHash = getRunActiveTurnNodeHash(run);
+
+  if (activeTurnNodeHash !== branch.headTurnNodeHash) {
+    throw persistenceError(
+      "stored active runs must stay aligned with the current branch head",
+      "sqlite_backend_active_run_branch_head_mismatch",
+      {
+        activeTurnNodeHash,
+        branchHeadTurnNodeHash: branch.headTurnNodeHash,
+        branchId: branch.branchId,
+        runId: run.runId,
+        status: run.status,
+      }
+    );
+  }
+
+  if (activeTurnNodeHash !== turn.headTurnNodeHash) {
+    throw persistenceError(
+      "stored active runs must stay aligned with the current turn head",
+      "sqlite_backend_active_run_turn_head_mismatch",
+      {
+        activeTurnNodeHash,
+        runId: run.runId,
+        status: run.status,
+        turnHeadTurnNodeHash: turn.headTurnNodeHash,
+        turnId: turn.turnId,
+      }
+    );
   }
 }
 

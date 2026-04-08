@@ -26,10 +26,11 @@ import {
   mkdtempSync,
   readFileSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { after, describe, test } from "node:test";
 import { pathToFileURL } from "node:url";
 import {
@@ -97,6 +98,14 @@ function createWorkspaceTempDirectory(prefix: string): string {
   const tempDirectory = mkdtempSync(join(process.cwd(), prefix));
   tempDirectories.add(tempDirectory);
   return tempDirectory;
+}
+
+function linkWorkspaceNodeModules(targetDirectory: string): void {
+  symlinkSync(
+    resolve(process.cwd(), "../../../../../node_modules"),
+    join(targetDirectory, "node_modules"),
+    "dir"
+  );
 }
 
 interface CorruptionSeed {
@@ -424,6 +433,7 @@ describe("@kraken/backend-sqlite", () => {
     const databasePath = join(tempDirectory, "dist-only.sqlite");
 
     mkdirSync(fakeMigrationsDirectory, { recursive: true });
+    linkWorkspaceNodeModules(tempDirectory);
     copyFileSync(getCompiledSqliteRuntimePath(), runtimePath);
     copyFileSync(
       join(process.cwd(), "migrations", "0001_initial_schema.sql"),
@@ -436,6 +446,99 @@ describe("@kraken/backend-sqlite", () => {
     const backend = runtimeModule.createSqliteBackend({ databasePath });
 
     deepStrictEqual(await backend.health(), { ok: true });
+  });
+
+  test("allows later migrations to extend baseline tables without revalidating them against 0001 exact shape", async () => {
+    const tempDirectory = createWorkspaceTempDirectory(
+      ".tmp-sqlite-future-table-layout-"
+    );
+    const fakeDistDirectory = join(tempDirectory, "deeper", "deep");
+    const fakeMigrationsDirectory = join(fakeDistDirectory, "migrations");
+    const runtimePath = join(fakeDistDirectory, "index.js");
+    const databasePath = join(tempDirectory, "future-table.sqlite");
+
+    mkdirSync(fakeMigrationsDirectory, { recursive: true });
+    linkWorkspaceNodeModules(tempDirectory);
+    copyFileSync(getCompiledSqliteRuntimePath(), runtimePath);
+    copyFileSync(
+      join(process.cwd(), "migrations", "0001_initial_schema.sql"),
+      join(fakeMigrationsDirectory, "0001_initial_schema.sql")
+    );
+    writeFileSync(
+      join(fakeMigrationsDirectory, "0002_add_objects_extra.sql"),
+      "ALTER TABLE objects ADD COLUMN extra TEXT;\n",
+      "utf8"
+    );
+
+    const runtimeModule = (await import(pathToFileURL(runtimePath).href)) as {
+      createSqliteBackend: typeof createSqliteBackend;
+    };
+    const backend = runtimeModule.createSqliteBackend({ databasePath });
+
+    deepStrictEqual(await backend.health(), { ok: true });
+
+    const probe = new Database(databasePath, { readonly: true });
+    const objectColumns = probe
+      .prepare("PRAGMA table_info(objects)")
+      .all() as Array<{ name: string }>;
+    const migrationRows = probe
+      .prepare("SELECT name FROM backend_sqlite_migrations ORDER BY name")
+      .all() as Array<{ name: string }>;
+    probe.close();
+
+    deepStrictEqual(
+      objectColumns.some((column) => column.name === "extra"),
+      true
+    );
+    deepStrictEqual(migrationRows, [
+      { name: "0001_initial_schema.sql" },
+      { name: "0002_add_objects_extra.sql" },
+    ]);
+  });
+
+  test("allows later migrations to rebuild baseline indexes without revalidating 0001 exact index definitions", async () => {
+    const tempDirectory = createWorkspaceTempDirectory(
+      ".tmp-sqlite-future-index-layout-"
+    );
+    const fakeDistDirectory = join(tempDirectory, "deeper", "deep");
+    const fakeMigrationsDirectory = join(fakeDistDirectory, "migrations");
+    const runtimePath = join(fakeDistDirectory, "index.js");
+    const databasePath = join(tempDirectory, "future-index.sqlite");
+
+    mkdirSync(fakeMigrationsDirectory, { recursive: true });
+    linkWorkspaceNodeModules(tempDirectory);
+    copyFileSync(getCompiledSqliteRuntimePath(), runtimePath);
+    copyFileSync(
+      join(process.cwd(), "migrations", "0001_initial_schema.sql"),
+      join(fakeMigrationsDirectory, "0001_initial_schema.sql")
+    );
+    writeFileSync(
+      join(fakeMigrationsDirectory, "0002_rebuild_runs_index.sql"),
+      [
+        "DROP INDEX idx_runs_branch_id_status;",
+        "CREATE INDEX idx_runs_branch_id_status ON runs(branch_id, status, updated_at_ms);",
+        "",
+      ].join("\n"),
+      "utf8"
+    );
+
+    const runtimeModule = (await import(pathToFileURL(runtimePath).href)) as {
+      createSqliteBackend: typeof createSqliteBackend;
+    };
+    const backend = runtimeModule.createSqliteBackend({ databasePath });
+
+    deepStrictEqual(await backend.health(), { ok: true });
+
+    const probe = new Database(databasePath, { readonly: true });
+    const indexColumns = probe
+      .prepare("PRAGMA index_info(idx_runs_branch_id_status)")
+      .all() as Array<{ name: string }>;
+    probe.close();
+
+    deepStrictEqual(
+      indexColumns.map((column) => column.name),
+      ["branch_id", "status", "updated_at_ms"]
+    );
   });
 
   test("reports unhealthy status when committed-state invariants are broken", async () => {
