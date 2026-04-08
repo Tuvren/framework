@@ -217,32 +217,22 @@ export function registerBackendConformanceSuite(
       }
     );
 
-    options.testApi.test(
-      "accepts idempotent immutable writes and rejects conflicting ones",
-      async () => {
-        const backend = options.createBackend();
-        const objectRecord = await createStoredObjectRecord(
-          new Uint8Array([4, 5, 6]),
-          1
-        );
-        const conflictingObject = {
-          ...objectRecord,
-          mediaType: "application/json",
-        };
+    options.testApi.test("accepts idempotent object writes", async () => {
+      const backend = options.createBackend();
+      const objectRecord = await createStoredObjectRecord(
+        new Uint8Array([4, 5, 6]),
+        1
+      );
 
-        await backend.transact(async (tx) => {
-          await tx.objects.put(objectRecord);
-          await tx.objects.put(objectRecord);
-        });
+      await backend.transact(async (tx) => {
+        await tx.objects.put(objectRecord);
+        await tx.objects.put(objectRecord);
+      });
 
-        await rejects(
-          backend.transact(async (tx) => {
-            await tx.objects.put(conflictingObject);
-          }),
-          KrakenPersistenceError
-        );
-      }
-    );
+      await backend.transact(async (tx) => {
+        deepStrictEqual(await tx.objects.get(objectRecord.hash), objectRecord);
+      });
+    });
 
     options.testApi.test(
       "rejects branch heads and archive metadata that cross thread lineage",

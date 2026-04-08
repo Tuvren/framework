@@ -493,6 +493,24 @@ describe("@kraken/backend-memory", () => {
     });
   });
 
+  test("treats same-byte objects as idempotent even when mediaType differs", async () => {
+    const backend = createMemoryBackend();
+    const objectRecord = await createStoredObject(new Uint8Array([4, 5, 6]), 1);
+    const sameBytesDifferentMediaType: StoredObject = {
+      ...objectRecord,
+      mediaType: "application/json",
+    };
+
+    await backend.transact(async (tx) => {
+      await tx.objects.put(objectRecord);
+      await tx.objects.put(sameBytesDifferentMediaType);
+    });
+
+    await backend.transact(async (tx) => {
+      expect(await tx.objects.get(objectRecord.hash)).toEqual(objectRecord);
+    });
+  });
+
   test("rejects turns whose start or head lineage is illegal", async () => {
     const backend = createMemoryBackend();
     const schema = createSchema();
@@ -2079,6 +2097,408 @@ describe("@kraken/backend-memory", () => {
         await tx.threads.put({
           ...threadRecord,
           createdAtMs: 999,
+        });
+      })
+    ).rejects.toBeInstanceOf(KrakenPersistenceError);
+  });
+  test("allows replacement runs to be created before a paused run is failed within one transaction", async () => {
+    const backend = createMemoryBackend();
+    const schema = createSchema();
+    const schemaRecord = createStoredSchema(schema, 1);
+    const turnTree = await createStoredTurnTree(
+      schema,
+      { "context.manifest": null, messages: [] },
+      2
+    );
+    const turnNode = await createStoredTurnNode({
+      consumedStagedResults: [],
+      createdAtMs: 3,
+      eventHash: null,
+      previousTurnNodeHash: null,
+      schemaId: schema.schemaId,
+      turnTreeHash: turnTree.hash,
+    });
+    const thread: StoredThread = {
+      createdAtMs: 4,
+      rootTurnNodeHash: turnNode.hash,
+      schemaId: schema.schemaId,
+      threadId: "thread_replacement_run_order",
+    };
+    const branch: StoredBranch = {
+      branchId: "branch_replacement_run_order",
+      createdAtMs: 5,
+      headTurnNodeHash: turnNode.hash,
+      threadId: thread.threadId,
+      updatedAtMs: 5,
+    };
+    const turn: StoredTurn = {
+      branchId: branch.branchId,
+      createdAtMs: 6,
+      headTurnNodeHash: turnNode.hash,
+      parentTurnId: null,
+      startTurnNodeHash: turnNode.hash,
+      threadId: thread.threadId,
+      turnId: "turn_replacement_run_order",
+      updatedAtMs: 6,
+    };
+    const pausedRun: StoredRun = {
+      branchId: branch.branchId,
+      createdAtMs: 7,
+      createdTurnNodesCbor: encodeDeterministicKernelRecord([]),
+      currentStepIndex: 0,
+      runId: "run_replacement_old",
+      schemaId: schema.schemaId,
+      startTurnNodeHash: turnNode.hash,
+      status: "paused",
+      stepSequenceCbor: encodeDeterministicKernelRecord([
+        {
+          deterministic: false,
+          id: "model_call",
+          sideEffects: false,
+        },
+      ]),
+      turnId: turn.turnId,
+      updatedAtMs: 7,
+    };
+    const replacementRun: StoredRun = {
+      branchId: branch.branchId,
+      createdAtMs: 8,
+      createdTurnNodesCbor: encodeDeterministicKernelRecord([]),
+      currentStepIndex: 0,
+      runId: "run_replacement_new",
+      schemaId: schema.schemaId,
+      startTurnNodeHash: turnNode.hash,
+      status: "running",
+      stepSequenceCbor: encodeDeterministicKernelRecord([
+        {
+          deterministic: false,
+          id: "tool_execution",
+          sideEffects: true,
+        },
+      ]),
+      turnId: turn.turnId,
+      updatedAtMs: 8,
+    };
+
+    await backend.transact(async (tx) => {
+      await tx.schemas.put(schemaRecord);
+      await tx.turnTrees.put(turnTree);
+      await tx.turnTreePaths.putMany(
+        createCanonicalTurnTreePaths(turnTree, [])
+      );
+      await tx.turnNodes.put(turnNode);
+      await tx.threads.put(thread);
+      await tx.branches.set(branch);
+      await tx.turns.set(turn);
+      await tx.runs.set({
+        ...pausedRun,
+        status: "running",
+      });
+      await tx.runs.set(pausedRun);
+    });
+
+    await backend.transact(async (tx) => {
+      await tx.runs.set(replacementRun);
+      await tx.runs.set({
+        ...pausedRun,
+        status: "failed",
+        updatedAtMs: 8,
+      });
+    });
+
+    await backend.transact(async (tx) => {
+      expect(await tx.runs.get(pausedRun.runId)).toEqual({
+        ...pausedRun,
+        status: "failed",
+        updatedAtMs: 8,
+      });
+      expect(await tx.runs.get(replacementRun.runId)).toEqual(replacementRun);
+    });
+  });
+
+  test("allows child turns to be written before their parent in the same transaction", async () => {
+    const backend = createMemoryBackend();
+    const schema = createSchema();
+    const schemaRecord = createStoredSchema(schema, 1);
+    const turnTree = await createStoredTurnTree(
+      schema,
+      { "context.manifest": null, messages: [] },
+      2
+    );
+    const rootNode = await createStoredTurnNode({
+      consumedStagedResults: [],
+      createdAtMs: 3,
+      eventHash: null,
+      previousTurnNodeHash: null,
+      schemaId: schema.schemaId,
+      turnTreeHash: turnTree.hash,
+    });
+    const nodeA = await createStoredTurnNode({
+      consumedStagedResults: [],
+      createdAtMs: 4,
+      eventHash: null,
+      previousTurnNodeHash: rootNode.hash,
+      schemaId: schema.schemaId,
+      turnTreeHash: turnTree.hash,
+    });
+    const nodeB = await createStoredTurnNode({
+      consumedStagedResults: [],
+      createdAtMs: 5,
+      eventHash: null,
+      previousTurnNodeHash: nodeA.hash,
+      schemaId: schema.schemaId,
+      turnTreeHash: turnTree.hash,
+    });
+    const thread: StoredThread = {
+      createdAtMs: 6,
+      rootTurnNodeHash: rootNode.hash,
+      schemaId: schema.schemaId,
+      threadId: "thread_turn_parent_order",
+    };
+    const branch: StoredBranch = {
+      branchId: "branch_turn_parent_order",
+      createdAtMs: 7,
+      headTurnNodeHash: nodeB.hash,
+      threadId: thread.threadId,
+      updatedAtMs: 7,
+    };
+    const parentTurn: StoredTurn = {
+      branchId: branch.branchId,
+      createdAtMs: 8,
+      headTurnNodeHash: nodeA.hash,
+      parentTurnId: null,
+      startTurnNodeHash: rootNode.hash,
+      threadId: thread.threadId,
+      turnId: "turn_parent_order_parent",
+      updatedAtMs: 8,
+    };
+    const childTurn: StoredTurn = {
+      branchId: branch.branchId,
+      createdAtMs: 9,
+      headTurnNodeHash: nodeB.hash,
+      parentTurnId: parentTurn.turnId,
+      startTurnNodeHash: nodeA.hash,
+      threadId: thread.threadId,
+      turnId: "turn_parent_order_child",
+      updatedAtMs: 9,
+    };
+
+    await backend.transact(async (tx) => {
+      await tx.schemas.put(schemaRecord);
+      await tx.turnTrees.put(turnTree);
+      await tx.turnTreePaths.putMany(
+        createCanonicalTurnTreePaths(turnTree, [])
+      );
+      await tx.turnNodes.put(rootNode);
+      await tx.turnNodes.put(nodeA);
+      await tx.turnNodes.put(nodeB);
+      await tx.threads.put(thread);
+      await tx.branches.set(branch);
+      await tx.turns.set(childTurn);
+      await tx.turns.set(parentTurn);
+    });
+
+    await backend.transact(async (tx) => {
+      expect(await tx.turns.get(parentTurn.turnId)).toEqual(parentTurn);
+      expect(await tx.turns.get(childTurn.turnId)).toEqual(childTurn);
+    });
+  });
+
+  test("allows archive branches to be written after the source branch rewind in the same transaction", async () => {
+    const backend = createMemoryBackend();
+    const schema = createSchema();
+    const schemaRecord = createStoredSchema(schema, 1);
+    const turnTree = await createStoredTurnTree(
+      schema,
+      { "context.manifest": null, messages: [] },
+      2
+    );
+    const rootNode = await createStoredTurnNode({
+      consumedStagedResults: [],
+      createdAtMs: 3,
+      eventHash: null,
+      previousTurnNodeHash: null,
+      schemaId: schema.schemaId,
+      turnTreeHash: turnTree.hash,
+    });
+    const middleNode = await createStoredTurnNode({
+      consumedStagedResults: [],
+      createdAtMs: 4,
+      eventHash: null,
+      previousTurnNodeHash: rootNode.hash,
+      schemaId: schema.schemaId,
+      turnTreeHash: turnTree.hash,
+    });
+    const headNode = await createStoredTurnNode({
+      consumedStagedResults: [],
+      createdAtMs: 5,
+      eventHash: null,
+      previousTurnNodeHash: middleNode.hash,
+      schemaId: schema.schemaId,
+      turnTreeHash: turnTree.hash,
+    });
+    const thread: StoredThread = {
+      createdAtMs: 6,
+      rootTurnNodeHash: rootNode.hash,
+      schemaId: schema.schemaId,
+      threadId: "thread_archive_write_order",
+    };
+    const branch: StoredBranch = {
+      branchId: "branch_archive_write_order",
+      createdAtMs: 7,
+      headTurnNodeHash: headNode.hash,
+      threadId: thread.threadId,
+      updatedAtMs: 7,
+    };
+    const archiveBranch: StoredBranch = {
+      archivedFromBranchId: branch.branchId,
+      branchId: "branch_archive_write_order_archive",
+      createdAtMs: 8,
+      headTurnNodeHash: headNode.hash,
+      threadId: thread.threadId,
+      updatedAtMs: 8,
+    };
+
+    await backend.transact(async (tx) => {
+      await tx.schemas.put(schemaRecord);
+      await tx.turnTrees.put(turnTree);
+      await tx.turnTreePaths.putMany(
+        createCanonicalTurnTreePaths(turnTree, [])
+      );
+      await tx.turnNodes.put(rootNode);
+      await tx.turnNodes.put(middleNode);
+      await tx.turnNodes.put(headNode);
+      await tx.threads.put(thread);
+      await tx.branches.set(branch);
+    });
+
+    await backend.transact(async (tx) => {
+      await tx.branches.set({
+        ...branch,
+        headTurnNodeHash: middleNode.hash,
+        updatedAtMs: 8,
+      });
+      await tx.branches.set(archiveBranch);
+    });
+
+    await backend.transact(async (tx) => {
+      expect(await tx.branches.get(branch.branchId)).toEqual({
+        ...branch,
+        headTurnNodeHash: middleNode.hash,
+        updatedAtMs: 8,
+      });
+      expect(await tx.branches.get(archiveBranch.branchId)).toEqual(
+        archiveBranch
+      );
+    });
+  });
+
+  test("rejects backward rollback transactions that leave a newly created active run on the archived segment", async () => {
+    const backend = createMemoryBackend();
+    const schema = createSchema();
+    const schemaRecord = createStoredSchema(schema, 1);
+    const turnTree = await createStoredTurnTree(
+      schema,
+      { "context.manifest": null, messages: [] },
+      2
+    );
+    const rootNode = await createStoredTurnNode({
+      consumedStagedResults: [],
+      createdAtMs: 3,
+      eventHash: null,
+      previousTurnNodeHash: null,
+      schemaId: schema.schemaId,
+      turnTreeHash: turnTree.hash,
+    });
+    const middleNode = await createStoredTurnNode({
+      consumedStagedResults: [],
+      createdAtMs: 4,
+      eventHash: null,
+      previousTurnNodeHash: rootNode.hash,
+      schemaId: schema.schemaId,
+      turnTreeHash: turnTree.hash,
+    });
+    const headNode = await createStoredTurnNode({
+      consumedStagedResults: [],
+      createdAtMs: 5,
+      eventHash: null,
+      previousTurnNodeHash: middleNode.hash,
+      schemaId: schema.schemaId,
+      turnTreeHash: turnTree.hash,
+    });
+    const thread: StoredThread = {
+      createdAtMs: 6,
+      rootTurnNodeHash: rootNode.hash,
+      schemaId: schema.schemaId,
+      threadId: "thread_backward_new_run",
+    };
+    const branch: StoredBranch = {
+      branchId: "branch_backward_new_run",
+      createdAtMs: 7,
+      headTurnNodeHash: headNode.hash,
+      threadId: thread.threadId,
+      updatedAtMs: 7,
+    };
+    const turn: StoredTurn = {
+      branchId: branch.branchId,
+      createdAtMs: 8,
+      headTurnNodeHash: headNode.hash,
+      parentTurnId: null,
+      startTurnNodeHash: rootNode.hash,
+      threadId: thread.threadId,
+      turnId: "turn_backward_new_run",
+      updatedAtMs: 8,
+    };
+    const newActiveRun: StoredRun = {
+      branchId: branch.branchId,
+      createdAtMs: 9,
+      createdTurnNodesCbor: encodeDeterministicKernelRecord([]),
+      currentStepIndex: 0,
+      runId: "run_backward_new_run",
+      schemaId: schema.schemaId,
+      startTurnNodeHash: headNode.hash,
+      status: "running",
+      stepSequenceCbor: encodeDeterministicKernelRecord([
+        {
+          deterministic: false,
+          id: "model_call",
+          sideEffects: false,
+        },
+      ]),
+      turnId: turn.turnId,
+      updatedAtMs: 9,
+    };
+    const archiveBranch: StoredBranch = {
+      archivedFromBranchId: branch.branchId,
+      branchId: "branch_backward_new_run_archive",
+      createdAtMs: 10,
+      headTurnNodeHash: headNode.hash,
+      threadId: thread.threadId,
+      updatedAtMs: 10,
+    };
+
+    await backend.transact(async (tx) => {
+      await tx.schemas.put(schemaRecord);
+      await tx.turnTrees.put(turnTree);
+      await tx.turnTreePaths.putMany(
+        createCanonicalTurnTreePaths(turnTree, [])
+      );
+      await tx.turnNodes.put(rootNode);
+      await tx.turnNodes.put(middleNode);
+      await tx.turnNodes.put(headNode);
+      await tx.threads.put(thread);
+      await tx.branches.set(branch);
+      await tx.turns.set(turn);
+    });
+
+    await expect(
+      backend.transact(async (tx) => {
+        await tx.runs.set(newActiveRun);
+        await tx.branches.set(archiveBranch);
+        await tx.branches.set({
+          ...branch,
+          headTurnNodeHash: middleNode.hash,
+          updatedAtMs: 10,
         });
       })
     ).rejects.toBeInstanceOf(KrakenPersistenceError);

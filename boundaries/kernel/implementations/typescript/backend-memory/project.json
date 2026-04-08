@@ -35,7 +35,7 @@
         "cwd": "boundaries/kernel/implementations/typescript/backend-memory",
         "commands": [
           {
-            "command": "bunx --bun tsc --build tsconfig.lib.json --dry --force --pretty false"
+            "command": "bunx --bun tsc --project tsconfig.lib.json --noEmit --pretty false"
           },
           {
             "command": "bunx --bun tsc --project tsconfig.typecheck.json --noEmit --pretty false"

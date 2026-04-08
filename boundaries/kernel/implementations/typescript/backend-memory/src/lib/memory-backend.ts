@@ -218,21 +218,6 @@ function createRepositories(
               }
             );
           }
-
-          if (
-            existingBranch === undefined &&
-            record.headTurnNodeHash !== sourceBranch.headTurnNodeHash
-          ) {
-            throw persistenceError(
-              "new archive branches must preserve the source branch head they reference",
-              "memory_backend_branch_archive_head_mismatch",
-              {
-                archivedFromBranchId: sourceBranch.branchId,
-                archiveHeadTurnNodeHash: record.headTurnNodeHash,
-                sourceHeadTurnNodeHash: sourceBranch.headTurnNodeHash,
-              }
-            );
-          }
         }
 
         if (existingBranch !== undefined) {
@@ -420,14 +405,6 @@ function createRepositories(
                 runId: record.runId,
                 startTurnNodeHash: record.startTurnNodeHash,
               }
-            );
-          }
-
-          if (record.status === "running" || record.status === "paused") {
-            assertBranchHasNoOtherActiveRuns(
-              state,
-              record.branchId,
-              record.runId
             );
           }
         } else {
@@ -752,8 +729,6 @@ function createRepositories(
             { branchId: branch.branchId, threadId: thread.threadId }
           );
         }
-
-        assertTurnParentLink(state, record, "record.parentTurnId");
 
         const existingTurn = state.turns.get(record.turnId);
         if (existingTurn !== undefined) {
@@ -1608,30 +1583,6 @@ function encodeHashStringArray(hashes: string[]): Uint8Array {
   );
 }
 
-function assertBranchHasNoOtherActiveRuns(
-  state: BackendState,
-  branchId: string,
-  runId: string
-): void {
-  for (const run of state.runs.values()) {
-    if (
-      run.branchId === branchId &&
-      run.runId !== runId &&
-      (run.status === "running" || run.status === "paused")
-    ) {
-      throw persistenceError(
-        "stored branches must not have more than one active run",
-        "memory_backend_multiple_active_runs",
-        {
-          branchId,
-          conflictingRunId: run.runId,
-          runId,
-        }
-      );
-    }
-  }
-}
-
 function assertRunUpdateIsLegal(
   existingRun: StoredRun,
   nextRun: StoredRun
@@ -1990,7 +1941,7 @@ function assertBackwardBranchMoveIsArchived(
     );
   }
 
-  for (const run of baseState.runs.values()) {
+  for (const run of state.runs.values()) {
     if (
       run.branchId !== nextBranch.branchId ||
       (run.status !== "running" && run.status !== "paused")
@@ -1998,19 +1949,21 @@ function assertBackwardBranchMoveIsArchived(
       continue;
     }
 
-    const finalRun = ensureRunExists(state, run.runId, "run.runId");
-
-    if (finalRun.status !== "failed") {
-      throw persistenceError(
-        "stored backward branch moves must fail active runs from the abandoned segment",
-        "memory_backend_backward_branch_move_active_run_not_failed",
-        {
-          branchId: nextBranch.branchId,
-          runId: run.runId,
-          status: finalRun.status,
-        }
-      );
+    if (run.startTurnNodeHash === nextBranch.headTurnNodeHash) {
+      continue;
     }
+
+    throw persistenceError(
+      "stored backward branch moves must fail active runs from the abandoned segment",
+      "memory_backend_backward_branch_move_active_run_not_failed",
+      {
+        branchHeadTurnNodeHash: nextBranch.headTurnNodeHash,
+        branchId: nextBranch.branchId,
+        runId: run.runId,
+        startTurnNodeHash: run.startTurnNodeHash,
+        status: run.status,
+      }
+    );
   }
 }
 
@@ -2507,7 +2460,6 @@ function areStoredObjectsEqual(
 ): boolean {
   return (
     left.hash === right.hash &&
-    left.mediaType === right.mediaType &&
     left.byteLength === right.byteLength &&
     areBytesEqual(left.bytes, right.bytes)
   );
