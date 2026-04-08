@@ -24,6 +24,7 @@ import {
   copyFileSync,
   mkdirSync,
   mkdtempSync,
+  readFileSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
@@ -59,8 +60,12 @@ const MISSING_SCHEMA_ERROR_PATTERN =
   /applied migration without its required schema tables/u;
 const MISSING_INDEX_ERROR_PATTERN =
   /applied migration without its required schema indexes/u;
+const NON_PERSISTENT_DATABASE_ERROR_PATTERN =
+  /requires a filesystem database path/u;
 const NORMALIZED_SQLITE_ERROR_PATTERN =
   /required schema tables|missing schema tables/u;
+const SCHEMA_MISMATCH_ERROR_PATTERN =
+  /column contract does not match|foreign-key contract does not match/u;
 const UNKNOWN_MIGRATION_ERROR_PATTERN = /does not recognize/u;
 const MULTIPLE_ACTIVE_RUNS_ERROR_PATTERN = /more than one active run/u;
 const RUN_STATUS_ERROR_PATTERN = /valid run status/u;
@@ -114,6 +119,13 @@ function getCompiledSqliteRuntimePath(): string {
     "src",
     "lib",
     "sqlite-backend.js"
+  );
+}
+
+function getBaselineMigrationSql(): string {
+  return readFileSync(
+    join(process.cwd(), "migrations", "0001_initial_schema.sql"),
+    "utf8"
   );
 }
 
@@ -294,6 +306,13 @@ describe("@kraken/backend-sqlite", () => {
     secondProbe.close();
 
     deepStrictEqual(reappliedRows, [{ name: "0001_initial_schema.sql" }]);
+  });
+
+  test("rejects non-persistent in-memory database paths", () => {
+    throws(
+      () => createSqliteBackend({ databasePath: ":memory:" }),
+      NON_PERSISTENT_DATABASE_ERROR_PATTERN
+    );
   });
 
   test("uses package-local migrations when cwd has unrelated SQL files", {
@@ -598,6 +617,91 @@ describe("@kraken/backend-sqlite", () => {
     throws(
       () => createSqliteBackend({ databasePath }),
       UNKNOWN_MIGRATION_ERROR_PATTERN
+    );
+  });
+
+  test("rejects databases whose baseline table definitions no longer match the package schema", async () => {
+    const databasePath = createTempDatabasePath();
+    const seed = new Database(databasePath);
+    const malformedSchemaSql = getBaselineMigrationSql().replace(
+      `CREATE TABLE objects (
+  hash TEXT PRIMARY KEY,
+  media_type TEXT NOT NULL,
+  bytes BLOB NOT NULL,
+  byte_length INTEGER NOT NULL,
+  created_at_ms INTEGER NOT NULL
+);`,
+      `CREATE TABLE objects (
+  hash TEXT NOT NULL,
+  media_type TEXT NOT NULL,
+  bytes BLOB NOT NULL,
+  byte_length INTEGER NOT NULL,
+  created_at_ms INTEGER NOT NULL
+);`
+    );
+    const duplicateObject = await createStoredObjectRecord(
+      new Uint8Array([1]),
+      1
+    );
+
+    seed.exec(`
+      CREATE TABLE backend_sqlite_migrations (
+        name TEXT PRIMARY KEY,
+        applied_at_ms INTEGER NOT NULL
+      )
+    `);
+    seed
+      .prepare(
+        `
+          INSERT INTO backend_sqlite_migrations (name, applied_at_ms)
+          VALUES (?, ?)
+        `
+      )
+      .run("0001_initial_schema.sql", 1);
+    seed.exec(malformedSchemaSql);
+    seed
+      .prepare(
+        `
+          INSERT INTO objects (
+            hash,
+            media_type,
+            bytes,
+            byte_length,
+            created_at_ms
+          ) VALUES (?, ?, ?, ?, ?)
+        `
+      )
+      .run(
+        duplicateObject.hash,
+        duplicateObject.mediaType,
+        Buffer.from(duplicateObject.bytes),
+        duplicateObject.byteLength,
+        duplicateObject.createdAtMs
+      );
+    seed
+      .prepare(
+        `
+          INSERT INTO objects (
+            hash,
+            media_type,
+            bytes,
+            byte_length,
+            created_at_ms
+          ) VALUES (?, ?, ?, ?, ?)
+        `
+      )
+      .run(
+        duplicateObject.hash,
+        duplicateObject.mediaType,
+        Buffer.from(duplicateObject.bytes),
+        duplicateObject.byteLength,
+        duplicateObject.createdAtMs
+      );
+    seed.close();
+
+    throws(
+      () => createSqliteBackend({ databasePath }),
+      SCHEMA_MISMATCH_ERROR_PATTERN
     );
   });
 

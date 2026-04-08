@@ -93,6 +93,567 @@ const INITIAL_SCHEMA_REQUIRED_INDEXES = [
   "idx_staged_results_run_id_status",
   "idx_staged_results_object_hash",
 ] as const;
+const SQLITE_TRANSIENT_MEMORY_PATH = ":memory:";
+
+interface ExpectedSqliteColumnSchema {
+  name: string;
+  notNull: boolean;
+  primaryKeyOrder: number;
+  type: string;
+}
+
+interface ExpectedSqliteForeignKeySchema {
+  columns: readonly string[];
+  referencedColumns: readonly string[];
+  referencedTable: string;
+}
+
+interface ExpectedSqliteIndexSchema {
+  columns: readonly string[];
+  tableName: string;
+  unique: boolean;
+}
+
+interface ExpectedSqliteTableSchema {
+  columns: readonly ExpectedSqliteColumnSchema[];
+  foreignKeys: readonly ExpectedSqliteForeignKeySchema[];
+}
+
+const INITIAL_SCHEMA_TABLE_DEFINITIONS = {
+  branches: {
+    columns: [
+      {
+        name: "branch_id",
+        notNull: false,
+        primaryKeyOrder: 1,
+        type: "TEXT",
+      },
+      { name: "thread_id", notNull: true, primaryKeyOrder: 0, type: "TEXT" },
+      {
+        name: "head_turn_node_hash",
+        notNull: true,
+        primaryKeyOrder: 0,
+        type: "TEXT",
+      },
+      {
+        name: "archived_from_branch_id",
+        notNull: false,
+        primaryKeyOrder: 0,
+        type: "TEXT",
+      },
+      {
+        name: "created_at_ms",
+        notNull: true,
+        primaryKeyOrder: 0,
+        type: "INTEGER",
+      },
+      {
+        name: "updated_at_ms",
+        notNull: true,
+        primaryKeyOrder: 0,
+        type: "INTEGER",
+      },
+    ],
+    foreignKeys: [
+      {
+        columns: ["thread_id"],
+        referencedColumns: ["thread_id"],
+        referencedTable: "threads",
+      },
+      {
+        columns: ["head_turn_node_hash"],
+        referencedColumns: ["hash"],
+        referencedTable: "turn_nodes",
+      },
+      {
+        columns: ["archived_from_branch_id"],
+        referencedColumns: ["branch_id"],
+        referencedTable: "branches",
+      },
+    ],
+  },
+  objects: {
+    columns: [
+      { name: "hash", notNull: false, primaryKeyOrder: 1, type: "TEXT" },
+      { name: "media_type", notNull: true, primaryKeyOrder: 0, type: "TEXT" },
+      { name: "bytes", notNull: true, primaryKeyOrder: 0, type: "BLOB" },
+      {
+        name: "byte_length",
+        notNull: true,
+        primaryKeyOrder: 0,
+        type: "INTEGER",
+      },
+      {
+        name: "created_at_ms",
+        notNull: true,
+        primaryKeyOrder: 0,
+        type: "INTEGER",
+      },
+    ],
+    foreignKeys: [],
+  },
+  ordered_path_chunks: {
+    columns: [
+      {
+        name: "chunk_hash",
+        notNull: false,
+        primaryKeyOrder: 1,
+        type: "TEXT",
+      },
+      {
+        name: "item_count",
+        notNull: true,
+        primaryKeyOrder: 0,
+        type: "INTEGER",
+      },
+      { name: "items_cbor", notNull: true, primaryKeyOrder: 0, type: "BLOB" },
+      {
+        name: "created_at_ms",
+        notNull: true,
+        primaryKeyOrder: 0,
+        type: "INTEGER",
+      },
+    ],
+    foreignKeys: [],
+  },
+  runs: {
+    columns: [
+      { name: "run_id", notNull: false, primaryKeyOrder: 1, type: "TEXT" },
+      { name: "turn_id", notNull: true, primaryKeyOrder: 0, type: "TEXT" },
+      { name: "branch_id", notNull: true, primaryKeyOrder: 0, type: "TEXT" },
+      { name: "schema_id", notNull: true, primaryKeyOrder: 0, type: "TEXT" },
+      {
+        name: "start_turn_node_hash",
+        notNull: true,
+        primaryKeyOrder: 0,
+        type: "TEXT",
+      },
+      { name: "status", notNull: true, primaryKeyOrder: 0, type: "TEXT" },
+      {
+        name: "current_step_index",
+        notNull: true,
+        primaryKeyOrder: 0,
+        type: "INTEGER",
+      },
+      {
+        name: "step_sequence_cbor",
+        notNull: true,
+        primaryKeyOrder: 0,
+        type: "BLOB",
+      },
+      {
+        name: "created_turn_nodes_cbor",
+        notNull: true,
+        primaryKeyOrder: 0,
+        type: "BLOB",
+      },
+      {
+        name: "created_at_ms",
+        notNull: true,
+        primaryKeyOrder: 0,
+        type: "INTEGER",
+      },
+      {
+        name: "updated_at_ms",
+        notNull: true,
+        primaryKeyOrder: 0,
+        type: "INTEGER",
+      },
+    ],
+    foreignKeys: [
+      {
+        columns: ["turn_id"],
+        referencedColumns: ["turn_id"],
+        referencedTable: "turns",
+      },
+      {
+        columns: ["branch_id"],
+        referencedColumns: ["branch_id"],
+        referencedTable: "branches",
+      },
+      {
+        columns: ["schema_id"],
+        referencedColumns: ["schema_id"],
+        referencedTable: "schemas",
+      },
+      {
+        columns: ["start_turn_node_hash"],
+        referencedColumns: ["hash"],
+        referencedTable: "turn_nodes",
+      },
+    ],
+  },
+  schemas: {
+    columns: [
+      {
+        name: "schema_id",
+        notNull: false,
+        primaryKeyOrder: 1,
+        type: "TEXT",
+      },
+      {
+        name: "schema_cbor",
+        notNull: true,
+        primaryKeyOrder: 0,
+        type: "BLOB",
+      },
+      {
+        name: "created_at_ms",
+        notNull: true,
+        primaryKeyOrder: 0,
+        type: "INTEGER",
+      },
+    ],
+    foreignKeys: [],
+  },
+  staged_results: {
+    columns: [
+      { name: "run_id", notNull: true, primaryKeyOrder: 1, type: "TEXT" },
+      { name: "task_id", notNull: true, primaryKeyOrder: 2, type: "TEXT" },
+      {
+        name: "object_hash",
+        notNull: true,
+        primaryKeyOrder: 0,
+        type: "TEXT",
+      },
+      {
+        name: "object_type",
+        notNull: true,
+        primaryKeyOrder: 0,
+        type: "TEXT",
+      },
+      { name: "status", notNull: true, primaryKeyOrder: 0, type: "TEXT" },
+      {
+        name: "interrupt_payload_cbor",
+        notNull: false,
+        primaryKeyOrder: 0,
+        type: "BLOB",
+      },
+      {
+        name: "created_at_ms",
+        notNull: true,
+        primaryKeyOrder: 0,
+        type: "INTEGER",
+      },
+    ],
+    foreignKeys: [
+      {
+        columns: ["run_id"],
+        referencedColumns: ["run_id"],
+        referencedTable: "runs",
+      },
+      {
+        columns: ["object_hash"],
+        referencedColumns: ["hash"],
+        referencedTable: "objects",
+      },
+    ],
+  },
+  threads: {
+    columns: [
+      {
+        name: "thread_id",
+        notNull: false,
+        primaryKeyOrder: 1,
+        type: "TEXT",
+      },
+      { name: "schema_id", notNull: true, primaryKeyOrder: 0, type: "TEXT" },
+      {
+        name: "root_turn_node_hash",
+        notNull: true,
+        primaryKeyOrder: 0,
+        type: "TEXT",
+      },
+      {
+        name: "created_at_ms",
+        notNull: true,
+        primaryKeyOrder: 0,
+        type: "INTEGER",
+      },
+    ],
+    foreignKeys: [
+      {
+        columns: ["schema_id"],
+        referencedColumns: ["schema_id"],
+        referencedTable: "schemas",
+      },
+      {
+        columns: ["root_turn_node_hash"],
+        referencedColumns: ["hash"],
+        referencedTable: "turn_nodes",
+      },
+    ],
+  },
+  turn_nodes: {
+    columns: [
+      { name: "hash", notNull: false, primaryKeyOrder: 1, type: "TEXT" },
+      {
+        name: "previous_turn_node_hash",
+        notNull: false,
+        primaryKeyOrder: 0,
+        type: "TEXT",
+      },
+      {
+        name: "turn_tree_hash",
+        notNull: true,
+        primaryKeyOrder: 0,
+        type: "TEXT",
+      },
+      {
+        name: "consumed_staged_results_cbor",
+        notNull: true,
+        primaryKeyOrder: 0,
+        type: "BLOB",
+      },
+      { name: "schema_id", notNull: true, primaryKeyOrder: 0, type: "TEXT" },
+      { name: "event_hash", notNull: false, primaryKeyOrder: 0, type: "TEXT" },
+      {
+        name: "created_at_ms",
+        notNull: true,
+        primaryKeyOrder: 0,
+        type: "INTEGER",
+      },
+    ],
+    foreignKeys: [
+      {
+        columns: ["previous_turn_node_hash"],
+        referencedColumns: ["hash"],
+        referencedTable: "turn_nodes",
+      },
+      {
+        columns: ["turn_tree_hash"],
+        referencedColumns: ["hash"],
+        referencedTable: "turn_trees",
+      },
+      {
+        columns: ["schema_id"],
+        referencedColumns: ["schema_id"],
+        referencedTable: "schemas",
+      },
+      {
+        columns: ["event_hash"],
+        referencedColumns: ["hash"],
+        referencedTable: "objects",
+      },
+    ],
+  },
+  turn_tree_paths: {
+    columns: [
+      {
+        name: "turn_tree_hash",
+        notNull: true,
+        primaryKeyOrder: 1,
+        type: "TEXT",
+      },
+      { name: "path", notNull: true, primaryKeyOrder: 2, type: "TEXT" },
+      {
+        name: "collection_kind",
+        notNull: true,
+        primaryKeyOrder: 0,
+        type: "TEXT",
+      },
+      { name: "single_hash", notNull: false, primaryKeyOrder: 0, type: "TEXT" },
+      {
+        name: "ordered_encoding",
+        notNull: false,
+        primaryKeyOrder: 0,
+        type: "TEXT",
+      },
+      {
+        name: "ordered_count",
+        notNull: false,
+        primaryKeyOrder: 0,
+        type: "INTEGER",
+      },
+      {
+        name: "ordered_inline_cbor",
+        notNull: false,
+        primaryKeyOrder: 0,
+        type: "BLOB",
+      },
+      {
+        name: "ordered_chunk_list_cbor",
+        notNull: false,
+        primaryKeyOrder: 0,
+        type: "BLOB",
+      },
+    ],
+    foreignKeys: [
+      {
+        columns: ["turn_tree_hash"],
+        referencedColumns: ["hash"],
+        referencedTable: "turn_trees",
+      },
+    ],
+  },
+  turn_trees: {
+    columns: [
+      { name: "hash", notNull: false, primaryKeyOrder: 1, type: "TEXT" },
+      { name: "schema_id", notNull: true, primaryKeyOrder: 0, type: "TEXT" },
+      {
+        name: "manifest_cbor",
+        notNull: true,
+        primaryKeyOrder: 0,
+        type: "BLOB",
+      },
+      {
+        name: "created_at_ms",
+        notNull: true,
+        primaryKeyOrder: 0,
+        type: "INTEGER",
+      },
+    ],
+    foreignKeys: [
+      {
+        columns: ["schema_id"],
+        referencedColumns: ["schema_id"],
+        referencedTable: "schemas",
+      },
+    ],
+  },
+  turns: {
+    columns: [
+      { name: "turn_id", notNull: false, primaryKeyOrder: 1, type: "TEXT" },
+      { name: "thread_id", notNull: true, primaryKeyOrder: 0, type: "TEXT" },
+      { name: "branch_id", notNull: true, primaryKeyOrder: 0, type: "TEXT" },
+      {
+        name: "parent_turn_id",
+        notNull: false,
+        primaryKeyOrder: 0,
+        type: "TEXT",
+      },
+      {
+        name: "start_turn_node_hash",
+        notNull: true,
+        primaryKeyOrder: 0,
+        type: "TEXT",
+      },
+      {
+        name: "head_turn_node_hash",
+        notNull: true,
+        primaryKeyOrder: 0,
+        type: "TEXT",
+      },
+      {
+        name: "created_at_ms",
+        notNull: true,
+        primaryKeyOrder: 0,
+        type: "INTEGER",
+      },
+      {
+        name: "updated_at_ms",
+        notNull: true,
+        primaryKeyOrder: 0,
+        type: "INTEGER",
+      },
+    ],
+    foreignKeys: [
+      {
+        columns: ["thread_id"],
+        referencedColumns: ["thread_id"],
+        referencedTable: "threads",
+      },
+      {
+        columns: ["branch_id"],
+        referencedColumns: ["branch_id"],
+        referencedTable: "branches",
+      },
+      {
+        columns: ["parent_turn_id"],
+        referencedColumns: ["turn_id"],
+        referencedTable: "turns",
+      },
+      {
+        columns: ["start_turn_node_hash"],
+        referencedColumns: ["hash"],
+        referencedTable: "turn_nodes",
+      },
+      {
+        columns: ["head_turn_node_hash"],
+        referencedColumns: ["hash"],
+        referencedTable: "turn_nodes",
+      },
+    ],
+  },
+} as const satisfies Record<
+  (typeof INITIAL_SCHEMA_REQUIRED_TABLES)[number],
+  ExpectedSqliteTableSchema
+>;
+const INITIAL_SCHEMA_INDEX_DEFINITIONS = {
+  idx_branches_head_turn_node_hash: {
+    columns: ["head_turn_node_hash"],
+    tableName: "branches",
+    unique: false,
+  },
+  idx_branches_thread_id: {
+    columns: ["thread_id"],
+    tableName: "branches",
+    unique: false,
+  },
+  idx_runs_branch_id: {
+    columns: ["branch_id"],
+    tableName: "runs",
+    unique: false,
+  },
+  idx_runs_branch_id_status: {
+    columns: ["branch_id", "status"],
+    tableName: "runs",
+    unique: false,
+  },
+  idx_runs_turn_id: {
+    columns: ["turn_id"],
+    tableName: "runs",
+    unique: false,
+  },
+  idx_staged_results_object_hash: {
+    columns: ["object_hash"],
+    tableName: "staged_results",
+    unique: false,
+  },
+  idx_staged_results_run_id_status: {
+    columns: ["run_id", "status"],
+    tableName: "staged_results",
+    unique: false,
+  },
+  idx_turn_nodes_previous_turn_node_hash: {
+    columns: ["previous_turn_node_hash"],
+    tableName: "turn_nodes",
+    unique: false,
+  },
+  idx_turn_nodes_turn_tree_hash: {
+    columns: ["turn_tree_hash"],
+    tableName: "turn_nodes",
+    unique: false,
+  },
+  idx_turn_tree_paths_path_turn_tree_hash: {
+    columns: ["path", "turn_tree_hash"],
+    tableName: "turn_tree_paths",
+    unique: false,
+  },
+  idx_turn_trees_schema_id: {
+    columns: ["schema_id"],
+    tableName: "turn_trees",
+    unique: false,
+  },
+  idx_turns_branch_id: {
+    columns: ["branch_id"],
+    tableName: "turns",
+    unique: false,
+  },
+  idx_turns_parent_turn_id: {
+    columns: ["parent_turn_id"],
+    tableName: "turns",
+    unique: false,
+  },
+  idx_turns_thread_id: {
+    columns: ["thread_id"],
+    tableName: "turns",
+    unique: false,
+  },
+} as const satisfies Record<
+  (typeof INITIAL_SCHEMA_REQUIRED_INDEXES)[number],
+  ExpectedSqliteIndexSchema
+>;
 
 interface BackendState {
   branches: Map<string, StoredBranch>;
@@ -114,6 +675,40 @@ interface MutableRepositories extends KrakenBackendTx {
 
 interface SqliteMigrationRow {
   name: string;
+}
+
+interface SqliteForeignKeyPragmaRow {
+  from: string;
+  id: number;
+  match: string;
+  on_delete: string;
+  on_update: string;
+  seq: number;
+  table: string;
+  to: string;
+}
+
+interface SqliteIndexInfoPragmaRow {
+  cid: number;
+  name: string;
+  seqno: number;
+}
+
+interface SqliteIndexListPragmaRow {
+  name: string;
+  origin: string;
+  partial: number;
+  seq: number;
+  unique: number;
+}
+
+interface SqliteTableInfoPragmaRow {
+  cid: number;
+  dflt_value: unknown;
+  name: string;
+  notnull: number;
+  pk: number;
+  type: string;
 }
 
 interface SqliteObjectRow {
@@ -229,6 +824,7 @@ class SqliteBackend implements KrakenBackend {
 
   constructor(options: SqliteBackendOptions) {
     this.now = options.now ?? Date.now;
+    assertPersistentDatabasePath(options.databasePath);
     ensureDatabaseDirectory(options.databasePath);
     this.db = new Database(options.databasePath, {
       timeout: SQLITE_BUSY_TIMEOUT_MS,
@@ -237,32 +833,7 @@ class SqliteBackend implements KrakenBackend {
     runMigrations(this.db, this.now);
   }
 
-  health(): Promise<{ ok: true } | { ok: false; reason: string }> {
-    try {
-      validateMigrationState(this.db);
-      const state = loadState(this.db);
-      return validateLoadedState(state)
-        .then(() => {
-          validateCommittedState(state, state);
-          return { ok: true as const };
-        })
-        .catch((error: unknown) => ({
-          ok: false as const,
-          reason: getErrorMessage(normalizeBackendError(error)),
-        }));
-    } catch (error: unknown) {
-      return Promise.resolve({ ok: false, reason: getErrorMessage(error) });
-    }
-  }
-
-  async transact<T>(work: (tx: KrakenBackendTx) => Promise<T>): Promise<T> {
-    if (this.transactionContext.getStore() === true) {
-      throw persistenceError(
-        "sqlite backend transactions must not be nested",
-        "sqlite_backend_nested_transaction"
-      );
-    }
-
+  private async queueConnectionWork<T>(work: () => Promise<T>): Promise<T> {
     const priorTransaction = this.transactionQueue;
     let releaseQueue: (() => void) | undefined;
 
@@ -271,31 +842,69 @@ class SqliteBackend implements KrakenBackend {
     });
 
     await priorTransaction;
-    let active = false;
 
     try {
-      this.db.exec("BEGIN IMMEDIATE");
-      validateMigrationState(this.db);
-      const baseState = loadState(this.db);
-      await validateLoadedState(baseState);
-      validateCommittedState(baseState, baseState);
-      active = true;
-      const repositories = createRepositories(
-        this.db,
-        this.now,
-        () => active && this.transactionContext.getStore() === true
-      );
+      return await work();
+    } finally {
+      releaseQueue?.();
+    }
+  }
 
+  health(): Promise<{ ok: true } | { ok: false; reason: string }> {
+    return this.queueConnectionWork(async () => {
       try {
-        const result = await this.transactionContext.run(true, () =>
-          work(repositories)
+        this.db.exec("BEGIN");
+        await loadValidatedState(this.db);
+        this.db.exec("ROLLBACK");
+        return { ok: true as const };
+      } catch (error: unknown) {
+        if (this.db.inTransaction) {
+          this.db.exec("ROLLBACK");
+        }
+
+        return {
+          ok: false as const,
+          reason: getErrorMessage(normalizeBackendError(error)),
+        };
+      }
+    });
+  }
+
+  transact<T>(work: (tx: KrakenBackendTx) => Promise<T>): Promise<T> {
+    if (this.transactionContext.getStore() === true) {
+      throw persistenceError(
+        "sqlite backend transactions must not be nested",
+        "sqlite_backend_nested_transaction"
+      );
+    }
+
+    return this.queueConnectionWork(async () => {
+      let active = false;
+      try {
+        this.db.exec("BEGIN IMMEDIATE");
+        const baseState = await loadValidatedState(this.db);
+        active = true;
+        const repositories = createRepositories(
+          this.db,
+          this.now,
+          () => active && this.transactionContext.getStore() === true
         );
-        active = false;
-        const committedState = loadState(this.db);
-        await validateLoadedState(committedState);
-        validateCommittedState(committedState, baseState);
-        this.db.exec("COMMIT");
-        return result;
+
+        try {
+          const result = await this.transactionContext.run(true, () =>
+            work(repositories)
+          );
+          active = false;
+          await loadValidatedState(this.db, baseState);
+          this.db.exec("COMMIT");
+          return result;
+        } catch (error: unknown) {
+          active = false;
+          if (this.db.inTransaction) {
+            this.db.exec("ROLLBACK");
+          }
+          throw normalizeBackendError(error);
+        }
       } catch (error: unknown) {
         active = false;
         if (this.db.inTransaction) {
@@ -303,15 +912,7 @@ class SqliteBackend implements KrakenBackend {
         }
         throw normalizeBackendError(error);
       }
-    } catch (error: unknown) {
-      active = false;
-      if (this.db.inTransaction) {
-        this.db.exec("ROLLBACK");
-      }
-      throw normalizeBackendError(error);
-    } finally {
-      releaseQueue?.();
-    }
+    });
   }
 }
 
@@ -979,11 +1580,42 @@ function createRepositories(
 }
 
 function ensureDatabaseDirectory(databasePath: string): void {
-  if (databasePath === ":memory:") {
+  mkdirSync(dirname(resolveFilesystemDatabasePath(databasePath)), {
+    recursive: true,
+  });
+}
+
+function assertPersistentDatabasePath(databasePath: string): void {
+  if (databasePath === SQLITE_TRANSIENT_MEMORY_PATH) {
+    throw persistenceError(
+      "sqlite persistent backend requires a filesystem database path instead of :memory:",
+      "sqlite_backend_requires_persistent_database_path",
+      { databasePath }
+    );
+  }
+
+  if (!databasePath.startsWith("file:")) {
     return;
   }
 
-  mkdirSync(dirname(databasePath), { recursive: true });
+  const url = new URL(databasePath);
+  if (url.searchParams.get("mode") !== "memory") {
+    return;
+  }
+
+  throw persistenceError(
+    "sqlite persistent backend requires a filesystem database path instead of an in-memory file URI",
+    "sqlite_backend_requires_persistent_database_path",
+    { databasePath }
+  );
+}
+
+function resolveFilesystemDatabasePath(databasePath: string): string {
+  if (!databasePath.startsWith("file:")) {
+    return databasePath;
+  }
+
+  return fileURLToPath(new URL(databasePath));
 }
 
 async function insertTurnTreePathBatchEntry(
@@ -1060,7 +1692,17 @@ async function insertTurnTreePathBatchEntry(
 function configureDatabase(db: Database.Database): void {
   db.pragma("foreign_keys = ON");
   db.pragma(`busy_timeout = ${SQLITE_BUSY_TIMEOUT_MS}`);
-  db.pragma("journal_mode = WAL");
+  const journalMode = db.pragma("journal_mode = WAL", {
+    simple: true,
+  });
+
+  if (typeof journalMode !== "string" || journalMode.toLowerCase() !== "wal") {
+    throw persistenceError(
+      "sqlite backend requires WAL journal mode",
+      "sqlite_backend_requires_wal_mode",
+      { journalMode }
+    );
+  }
 }
 
 function runMigrations(db: Database.Database, now: () => number): void {
@@ -1200,12 +1842,281 @@ function validateMigrationState(db: Database.Database): void {
       }
     );
   }
+
+  for (const tableName of INITIAL_SCHEMA_REQUIRED_TABLES) {
+    validateBaselineTableSchema(
+      db,
+      tableName,
+      INITIAL_SCHEMA_TABLE_DEFINITIONS[tableName]
+    );
+  }
+
+  for (const indexName of INITIAL_SCHEMA_REQUIRED_INDEXES) {
+    validateBaselineIndexSchema(
+      db,
+      indexName,
+      INITIAL_SCHEMA_INDEX_DEFINITIONS[indexName]
+    );
+  }
 }
 
 function listMigrationFiles(migrationDirectory: string): string[] {
   return readdirSync(migrationDirectory)
     .filter((fileName) => fileName.endsWith(".sql"))
     .sort((left, right) => left.localeCompare(right));
+}
+
+function validateBaselineTableSchema(
+  db: Database.Database,
+  tableName: string,
+  expectedSchema: ExpectedSqliteTableSchema
+): void {
+  const tableInfo = db
+    .prepare(`PRAGMA table_info(${tableName})`)
+    .all() as SqliteTableInfoPragmaRow[];
+  const actualColumns = tableInfo.map((column) => ({
+    name: column.name,
+    notNull: column.notnull === 1,
+    primaryKeyOrder: column.pk,
+    type: column.type.toUpperCase(),
+  }));
+  const expectedColumns = expectedSchema.columns.map((column) => ({
+    ...column,
+    type: column.type.toUpperCase(),
+  }));
+
+  if (!areExpectedColumnsEqual(actualColumns, expectedColumns)) {
+    throw persistenceError(
+      "sqlite backend found a baseline table whose column contract does not match the package schema",
+      "sqlite_backend_applied_migration_schema_mismatch",
+      {
+        actualColumns,
+        expectedColumns,
+        migrationName: INITIAL_SCHEMA_MIGRATION_NAME,
+        tableName,
+      }
+    );
+  }
+
+  const foreignKeyRows = db
+    .prepare(`PRAGMA foreign_key_list(${tableName})`)
+    .all() as SqliteForeignKeyPragmaRow[];
+  const actualForeignKeys = groupForeignKeyRows(foreignKeyRows);
+  if (
+    !areExpectedForeignKeysEqual(actualForeignKeys, expectedSchema.foreignKeys)
+  ) {
+    throw persistenceError(
+      "sqlite backend found a baseline table whose foreign-key contract does not match the package schema",
+      "sqlite_backend_applied_migration_schema_mismatch",
+      {
+        actualForeignKeys,
+        expectedForeignKeys: expectedSchema.foreignKeys,
+        migrationName: INITIAL_SCHEMA_MIGRATION_NAME,
+        tableName,
+      }
+    );
+  }
+}
+
+function validateBaselineIndexSchema(
+  db: Database.Database,
+  indexName: string,
+  expectedSchema: ExpectedSqliteIndexSchema
+): void {
+  const indexEntry = (
+    db
+      .prepare(`PRAGMA index_list(${expectedSchema.tableName})`)
+      .all() as SqliteIndexListPragmaRow[]
+  ).find((entry) => entry.name === indexName);
+
+  if (indexEntry === undefined) {
+    throw persistenceError(
+      "sqlite backend found an applied migration without its required schema indexes",
+      "sqlite_backend_applied_migration_index_missing",
+      {
+        indexName,
+        migrationName: INITIAL_SCHEMA_MIGRATION_NAME,
+      }
+    );
+  }
+
+  const actualIndex = {
+    columns: (
+      db
+        .prepare(`PRAGMA index_info(${indexName})`)
+        .all() as SqliteIndexInfoPragmaRow[]
+    )
+      .sort((left, right) => left.seqno - right.seqno)
+      .map((column) => column.name),
+    partial: indexEntry.partial === 1,
+    origin: indexEntry.origin,
+    tableName: expectedSchema.tableName,
+    unique: indexEntry.unique === 1,
+  };
+  const expectedIndex = {
+    columns: [...expectedSchema.columns],
+    partial: false,
+    origin: "c",
+    tableName: expectedSchema.tableName,
+    unique: expectedSchema.unique,
+  };
+
+  if (!areExpectedIndexDefinitionsEqual(actualIndex, expectedIndex)) {
+    throw persistenceError(
+      "sqlite backend found a baseline index whose definition does not match the package schema",
+      "sqlite_backend_applied_migration_index_mismatch",
+      {
+        actualIndex,
+        expectedIndex,
+        indexName,
+        migrationName: INITIAL_SCHEMA_MIGRATION_NAME,
+      }
+    );
+  }
+}
+
+function groupForeignKeyRows(
+  rows: readonly SqliteForeignKeyPragmaRow[]
+): ExpectedSqliteForeignKeySchema[] {
+  const groupedRows = new Map<number, SqliteForeignKeyPragmaRow[]>();
+
+  for (const row of rows) {
+    const group = groupedRows.get(row.id) ?? [];
+    group.push(row);
+    groupedRows.set(row.id, group);
+  }
+
+  return [...groupedRows.entries()]
+    .sort((left, right) => left[0] - right[0])
+    .map(([, group]) => {
+      const sortedGroup = [...group].sort(
+        (left, right) => left.seq - right.seq
+      );
+      const [firstRow] = sortedGroup;
+      if (firstRow === undefined) {
+        throw new Error("expected at least one foreign key row");
+      }
+
+      return {
+        columns: sortedGroup.map((row) => row.from),
+        referencedColumns: sortedGroup.map((row) => row.to),
+        referencedTable: firstRow.table,
+      };
+    });
+}
+
+function areExpectedColumnsEqual(
+  left: readonly ExpectedSqliteColumnSchema[],
+  right: readonly ExpectedSqliteColumnSchema[]
+): boolean {
+  if (left.length !== right.length) {
+    return false;
+  }
+
+  for (const [index, leftColumn] of left.entries()) {
+    const rightColumn = right[index];
+    if (
+      rightColumn === undefined ||
+      leftColumn.name !== rightColumn.name ||
+      leftColumn.notNull !== rightColumn.notNull ||
+      leftColumn.primaryKeyOrder !== rightColumn.primaryKeyOrder ||
+      leftColumn.type !== rightColumn.type
+    ) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function areExpectedForeignKeysEqual(
+  left: readonly ExpectedSqliteForeignKeySchema[],
+  right: readonly ExpectedSqliteForeignKeySchema[]
+): boolean {
+  if (left.length !== right.length) {
+    return false;
+  }
+
+  const normalizedLeft = [...left].sort(compareExpectedForeignKeys);
+  const normalizedRight = [...right].sort(compareExpectedForeignKeys);
+
+  for (const [index, leftForeignKey] of normalizedLeft.entries()) {
+    const rightForeignKey = normalizedRight[index];
+    if (
+      rightForeignKey === undefined ||
+      leftForeignKey.referencedTable !== rightForeignKey.referencedTable ||
+      !areStringArraysEqual(leftForeignKey.columns, rightForeignKey.columns) ||
+      !areStringArraysEqual(
+        leftForeignKey.referencedColumns,
+        rightForeignKey.referencedColumns
+      )
+    ) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function compareExpectedForeignKeys(
+  left: ExpectedSqliteForeignKeySchema,
+  right: ExpectedSqliteForeignKeySchema
+): number {
+  return [
+    left.referencedTable,
+    left.columns.join("\u0000"),
+    left.referencedColumns.join("\u0000"),
+  ]
+    .join("\u0001")
+    .localeCompare(
+      [
+        right.referencedTable,
+        right.columns.join("\u0000"),
+        right.referencedColumns.join("\u0000"),
+      ].join("\u0001")
+    );
+}
+
+function areExpectedIndexDefinitionsEqual(
+  left: {
+    columns: readonly string[];
+    origin: string;
+    partial: boolean;
+    tableName: string;
+    unique: boolean;
+  },
+  right: {
+    columns: readonly string[];
+    origin: string;
+    partial: boolean;
+    tableName: string;
+    unique: boolean;
+  }
+): boolean {
+  return (
+    left.origin === right.origin &&
+    left.partial === right.partial &&
+    left.tableName === right.tableName &&
+    left.unique === right.unique &&
+    areStringArraysEqual(left.columns, right.columns)
+  );
+}
+
+function areStringArraysEqual(
+  left: readonly string[],
+  right: readonly string[]
+): boolean {
+  if (left.length !== right.length) {
+    return false;
+  }
+
+  for (const [index, leftValue] of left.entries()) {
+    if (right[index] !== leftValue) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 function loadState(db: Database.Database): BackendState {
@@ -1215,28 +2126,40 @@ function loadState(db: Database.Database): BackendState {
     .prepare("SELECT * FROM objects")
     .all() as SqliteObjectRow[]) {
     const record = decodeObjectRow(row);
-    state.objects.set(record.hash, record);
+    setUniqueLoadedRecord(state.objects, record.hash, record, "object", {
+      hash: record.hash,
+    });
   }
 
   for (const row of db
     .prepare("SELECT * FROM schemas")
     .all() as SqliteSchemaRow[]) {
     const record = decodeSchemaRow(row);
-    state.schemas.set(record.schemaId, record);
+    setUniqueLoadedRecord(state.schemas, record.schemaId, record, "schema", {
+      schemaId: record.schemaId,
+    });
   }
 
   for (const row of db
     .prepare("SELECT * FROM turn_trees")
     .all() as SqliteTurnTreeRow[]) {
     const record = decodeTurnTreeRow(row);
-    state.turnTrees.set(record.hash, record);
+    setUniqueLoadedRecord(state.turnTrees, record.hash, record, "turn tree", {
+      hash: record.hash,
+    });
   }
 
   for (const row of db
     .prepare("SELECT * FROM ordered_path_chunks")
     .all() as SqliteOrderedPathChunkRow[]) {
     const record = decodeOrderedPathChunkRow(row);
-    state.orderedPathChunks.set(record.chunkHash, record);
+    setUniqueLoadedRecord(
+      state.orderedPathChunks,
+      record.chunkHash,
+      record,
+      "ordered path chunk",
+      { chunkHash: record.chunkHash }
+    );
   }
 
   for (const row of db
@@ -1246,7 +2169,10 @@ function loadState(db: Database.Database): BackendState {
     const treePaths =
       state.turnTreePaths.get(record.turnTreeHash) ??
       new Map<string, StoredTurnTreePath>();
-    treePaths.set(record.path, record);
+    setUniqueLoadedRecord(treePaths, record.path, record, "turn tree path", {
+      path: record.path,
+      turnTreeHash: record.turnTreeHash,
+    });
     state.turnTreePaths.set(record.turnTreeHash, treePaths);
   }
 
@@ -1254,33 +2180,43 @@ function loadState(db: Database.Database): BackendState {
     .prepare("SELECT * FROM turn_nodes")
     .all() as SqliteTurnNodeRow[]) {
     const record = decodeTurnNodeRow(row);
-    state.turnNodes.set(record.hash, record);
+    setUniqueLoadedRecord(state.turnNodes, record.hash, record, "turn node", {
+      hash: record.hash,
+    });
   }
 
   for (const row of db
     .prepare("SELECT * FROM threads")
     .all() as SqliteThreadRow[]) {
     const record = decodeThreadRow(row);
-    state.threads.set(record.threadId, record);
+    setUniqueLoadedRecord(state.threads, record.threadId, record, "thread", {
+      threadId: record.threadId,
+    });
   }
 
   for (const row of db
     .prepare("SELECT * FROM branches")
     .all() as SqliteBranchRow[]) {
     const record = decodeBranchRow(row);
-    state.branches.set(record.branchId, record);
+    setUniqueLoadedRecord(state.branches, record.branchId, record, "branch", {
+      branchId: record.branchId,
+    });
   }
 
   for (const row of db
     .prepare("SELECT * FROM turns")
     .all() as SqliteTurnRow[]) {
     const record = decodeTurnRow(row);
-    state.turns.set(record.turnId, record);
+    setUniqueLoadedRecord(state.turns, record.turnId, record, "turn", {
+      turnId: record.turnId,
+    });
   }
 
   for (const row of db.prepare("SELECT * FROM runs").all() as SqliteRunRow[]) {
     const record = decodeRunRow(row);
-    state.runs.set(record.runId, record);
+    setUniqueLoadedRecord(state.runs, record.runId, record, "run", {
+      runId: record.runId,
+    });
   }
 
   for (const row of db
@@ -1290,11 +2226,46 @@ function loadState(db: Database.Database): BackendState {
     const stagedResults =
       state.stagedResults.get(record.runId) ??
       new Map<string, StoredStagedResult>();
-    stagedResults.set(record.taskId, record);
+    setUniqueLoadedRecord(
+      stagedResults,
+      record.taskId,
+      record,
+      "staged result",
+      { runId: record.runId, taskId: record.taskId }
+    );
     state.stagedResults.set(record.runId, stagedResults);
   }
 
   return state;
+}
+
+async function loadValidatedState(
+  db: Database.Database,
+  priorState?: BackendState
+): Promise<BackendState> {
+  validateMigrationState(db);
+  const state = loadState(db);
+  await validateLoadedState(state);
+  validateCommittedState(state, priorState ?? state);
+  return state;
+}
+
+function setUniqueLoadedRecord<T>(
+  records: Map<string, T>,
+  key: string,
+  value: T,
+  recordType: string,
+  details: Record<string, string>
+): void {
+  if (records.has(key)) {
+    throw persistenceError(
+      `sqlite backend found duplicate ${recordType} rows while loading persisted state`,
+      "sqlite_backend_duplicate_loaded_record",
+      { key, recordType, ...details }
+    );
+  }
+
+  records.set(key, value);
 }
 
 function selectObject(
