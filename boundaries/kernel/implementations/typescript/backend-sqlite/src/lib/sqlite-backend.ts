@@ -813,7 +813,19 @@ interface SqliteStagedResultRow {
 }
 
 export interface SqliteBackendOptions {
+  /**
+   * Filesystem-backed SQLite database path.
+   *
+   * Supports plain filesystem paths and `file:` URIs that resolve to
+   * filesystem locations. Temporary or in-memory database paths are rejected
+   * because this package is the persistent backend baseline for Epic F.
+   */
   databasePath: string;
+  /**
+   * Optional clock used for migration bookkeeping and tests.
+   *
+   * When omitted, the backend uses `Date.now`.
+   */
   now?: () => EpochMs;
 }
 
@@ -912,6 +924,13 @@ class SqliteBackend implements KrakenBackend {
   }
 }
 
+/**
+ * Creates the official SQLite-backed persistent kernel backend.
+ *
+ * The backend serializes transactions on a single connection, enforces the
+ * package-local migration posture, and validates persisted state before it is
+ * exposed to callers.
+ */
 export function createSqliteBackend(
   options: SqliteBackendOptions
 ): KrakenBackend {
