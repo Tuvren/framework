@@ -77,6 +77,22 @@ const INITIAL_SCHEMA_REQUIRED_TABLES = [
   "runs",
   "staged_results",
 ] as const;
+const INITIAL_SCHEMA_REQUIRED_INDEXES = [
+  "idx_turn_trees_schema_id",
+  "idx_turn_tree_paths_path_turn_tree_hash",
+  "idx_turn_nodes_previous_turn_node_hash",
+  "idx_turn_nodes_turn_tree_hash",
+  "idx_branches_thread_id",
+  "idx_branches_head_turn_node_hash",
+  "idx_turns_thread_id",
+  "idx_turns_branch_id",
+  "idx_turns_parent_turn_id",
+  "idx_runs_turn_id",
+  "idx_runs_branch_id",
+  "idx_runs_branch_id_status",
+  "idx_staged_results_run_id_status",
+  "idx_staged_results_object_hash",
+] as const;
 
 interface BackendState {
   branches: Map<string, StoredBranch>;
@@ -226,7 +242,10 @@ class SqliteBackend implements KrakenBackend {
       validateMigrationState(this.db);
       const state = loadState(this.db);
       return validateLoadedState(state)
-        .then(() => ({ ok: true as const }))
+        .then(() => {
+          validateCommittedState(state, state);
+          return { ok: true as const };
+        })
         .catch((error: unknown) => ({
           ok: false as const,
           reason: getErrorMessage(normalizeBackendError(error)),
@@ -259,6 +278,7 @@ class SqliteBackend implements KrakenBackend {
       validateMigrationState(this.db);
       const baseState = loadState(this.db);
       await validateLoadedState(baseState);
+      validateCommittedState(baseState, baseState);
       active = true;
       const repositories = createRepositories(
         this.db,
@@ -1070,9 +1090,7 @@ function runMigrations(db: Database.Database, now: () => number): void {
     ).map((row) => row.name)
   );
   const migrationDirectory = resolveMigrationDirectory();
-  const migrationFiles = readdirSync(migrationDirectory)
-    .filter((fileName) => fileName.endsWith(".sql"))
-    .sort((left, right) => left.localeCompare(right));
+  const migrationFiles = listMigrationFiles(migrationDirectory);
 
   for (const fileName of migrationFiles) {
     if (applied.has(fileName)) {
@@ -1106,6 +1124,9 @@ function resolveMigrationDirectory(): string {
 }
 
 function validateMigrationState(db: Database.Database): void {
+  const knownMigrationFiles = new Set(
+    listMigrationFiles(resolveMigrationDirectory())
+  );
   const appliedMigrations = new Set(
     (
       db
@@ -1113,6 +1134,20 @@ function validateMigrationState(db: Database.Database): void {
         .all() as SqliteMigrationRow[]
     ).map((row) => row.name)
   );
+  const unknownAppliedMigrations = [...appliedMigrations].filter(
+    (migrationName) => !knownMigrationFiles.has(migrationName)
+  );
+
+  if (unknownAppliedMigrations.length > 0) {
+    throw persistenceError(
+      "sqlite backend found applied migrations that this package version does not recognize",
+      "sqlite_backend_unknown_applied_migration",
+      {
+        knownMigrationFiles: [...knownMigrationFiles],
+        unknownAppliedMigrations,
+      }
+    );
+  }
 
   if (!appliedMigrations.has(INITIAL_SCHEMA_MIGRATION_NAME)) {
     return;
@@ -1131,18 +1166,46 @@ function validateMigrationState(db: Database.Database): void {
     (tableName) => !existingTables.has(tableName)
   );
 
-  if (missingTables.length === 0) {
-    return;
+  if (missingTables.length > 0) {
+    throw persistenceError(
+      "sqlite backend found an applied migration without its required schema tables",
+      "sqlite_backend_applied_migration_schema_missing",
+      {
+        migrationName: INITIAL_SCHEMA_MIGRATION_NAME,
+        missingTables,
+      }
+    );
   }
 
-  throw persistenceError(
-    "sqlite backend found an applied migration without its required schema tables",
-    "sqlite_backend_applied_migration_schema_missing",
-    {
-      migrationName: INITIAL_SCHEMA_MIGRATION_NAME,
-      missingTables,
-    }
+  const existingIndexes = new Set(
+    (
+      db
+        .prepare(
+          "SELECT name FROM sqlite_master WHERE type = 'index' ORDER BY name"
+        )
+        .all() as Array<{ name: string }>
+    ).map((row) => row.name)
   );
+  const missingIndexes = INITIAL_SCHEMA_REQUIRED_INDEXES.filter(
+    (indexName) => !existingIndexes.has(indexName)
+  );
+
+  if (missingIndexes.length > 0) {
+    throw persistenceError(
+      "sqlite backend found an applied migration without its required schema indexes",
+      "sqlite_backend_applied_migration_index_missing",
+      {
+        migrationName: INITIAL_SCHEMA_MIGRATION_NAME,
+        missingIndexes,
+      }
+    );
+  }
+}
+
+function listMigrationFiles(migrationDirectory: string): string[] {
+  return readdirSync(migrationDirectory)
+    .filter((fileName) => fileName.endsWith(".sql"))
+    .sort((left, right) => left.localeCompare(right));
 }
 
 function loadState(db: Database.Database): BackendState {

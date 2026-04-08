@@ -57,8 +57,12 @@ const NESTED_TRANSACTION_ERROR_PATTERN = /must not be nested/u;
 const MIGRATION_CONFLICT_ERROR_PATTERN = /table turn_trees already exists/u;
 const MISSING_SCHEMA_ERROR_PATTERN =
   /applied migration without its required schema tables/u;
+const MISSING_INDEX_ERROR_PATTERN =
+  /applied migration without its required schema indexes/u;
 const NORMALIZED_SQLITE_ERROR_PATTERN =
   /required schema tables|missing schema tables/u;
+const UNKNOWN_MIGRATION_ERROR_PATTERN = /does not recognize/u;
+const MULTIPLE_ACTIVE_RUNS_ERROR_PATTERN = /more than one active run/u;
 const RUN_STATUS_ERROR_PATTERN = /valid run status/u;
 const RUN_SHAPE_ERROR_PATTERN = /currentStepIndex/u;
 const STAGED_RESULT_ROW_ERROR_PATTERN =
@@ -415,6 +419,115 @@ describe("@kraken/backend-sqlite", () => {
     deepStrictEqual(await backend.health(), { ok: true });
   });
 
+  test("reports unhealthy status when committed-state invariants are broken", async () => {
+    const seeded = await seedCorruptionDatabase();
+    const backend = createSqliteBackend({ databasePath: seeded.databasePath });
+    const probe = new Database(seeded.databasePath);
+    probe
+      .prepare(
+        `
+          INSERT INTO runs (
+            run_id,
+            turn_id,
+            branch_id,
+            schema_id,
+            start_turn_node_hash,
+            status,
+            current_step_index,
+            step_sequence_cbor,
+            created_turn_nodes_cbor,
+            created_at_ms,
+            updated_at_ms
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `
+      )
+      .run(
+        "run_duplicate_active",
+        "turn_corruption",
+        "branch_corruption",
+        "schema_main",
+        seeded.runStartTurnNodeHash,
+        "running",
+        0,
+        Buffer.from(
+          encodeDeterministicKernelRecord([
+            {
+              deterministic: false,
+              id: "model_call",
+              sideEffects: false,
+            },
+          ])
+        ),
+        Buffer.from(encodeDeterministicKernelRecord([])),
+        10,
+        10
+      );
+    probe.close();
+
+    const health = await backend.health();
+    deepStrictEqual(health.ok, false);
+    if (health.ok) {
+      throw new Error("expected unhealthy status");
+    }
+    strictEqual(MULTIPLE_ACTIVE_RUNS_ERROR_PATTERN.test(health.reason), true);
+  });
+
+  test("rejects invariant-broken persisted state before running the user callback", async () => {
+    const seeded = await seedCorruptionDatabase();
+    const backend = createSqliteBackend({ databasePath: seeded.databasePath });
+    const probe = new Database(seeded.databasePath);
+    probe
+      .prepare(
+        `
+          INSERT INTO runs (
+            run_id,
+            turn_id,
+            branch_id,
+            schema_id,
+            start_turn_node_hash,
+            status,
+            current_step_index,
+            step_sequence_cbor,
+            created_turn_nodes_cbor,
+            created_at_ms,
+            updated_at_ms
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `
+      )
+      .run(
+        "run_duplicate_preflight",
+        "turn_corruption",
+        "branch_corruption",
+        "schema_main",
+        seeded.runStartTurnNodeHash,
+        "running",
+        0,
+        Buffer.from(
+          encodeDeterministicKernelRecord([
+            {
+              deterministic: false,
+              id: "model_call",
+              sideEffects: false,
+            },
+          ])
+        ),
+        Buffer.from(encodeDeterministicKernelRecord([])),
+        10,
+        10
+      );
+    probe.close();
+
+    let callbackRan = false;
+    await rejects(
+      backend.transact(() => {
+        callbackRan = true;
+        return Promise.resolve(undefined);
+      }),
+      MULTIPLE_ACTIVE_RUNS_ERROR_PATTERN
+    );
+    strictEqual(callbackRan, false);
+  });
+
   test("reports unhealthy status when required schema tables are missing", async () => {
     const databasePath = createTempDatabasePath();
     const backend = createSqliteBackend({ databasePath });
@@ -461,6 +574,51 @@ describe("@kraken/backend-sqlite", () => {
       backend.transact(async () => undefined),
       NORMALIZED_SQLITE_ERROR_PATTERN
     );
+  });
+
+  test("rejects databases that contain unknown applied migrations", () => {
+    const databasePath = createTempDatabasePath();
+    const seed = new Database(databasePath);
+    seed.exec(`
+      CREATE TABLE backend_sqlite_migrations (
+        name TEXT PRIMARY KEY,
+        applied_at_ms INTEGER NOT NULL
+      )
+    `);
+    seed
+      .prepare(
+        `
+          INSERT INTO backend_sqlite_migrations (name, applied_at_ms)
+          VALUES (?, ?)
+        `
+      )
+      .run("9999_future_schema.sql", 1);
+    seed.close();
+
+    throws(
+      () => createSqliteBackend({ databasePath }),
+      UNKNOWN_MIGRATION_ERROR_PATTERN
+    );
+  });
+
+  test("rejects databases that are missing baseline indexes", async () => {
+    const seeded = await seedCorruptionDatabase();
+    const backend = createSqliteBackend({ databasePath: seeded.databasePath });
+    const probe = new Database(seeded.databasePath);
+    probe.exec("DROP INDEX idx_runs_branch_id_status");
+    probe.close();
+
+    throws(
+      () => createSqliteBackend({ databasePath: seeded.databasePath }),
+      MISSING_INDEX_ERROR_PATTERN
+    );
+
+    const health = await backend.health();
+    deepStrictEqual(health.ok, false);
+    if (health.ok) {
+      throw new Error("expected unhealthy status");
+    }
+    strictEqual(MISSING_INDEX_ERROR_PATTERN.test(health.reason), true);
   });
 
   test("rejects stored run rows with invalid status values", async () => {
