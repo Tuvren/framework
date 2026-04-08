@@ -812,6 +812,8 @@ function validateCommittedState(
 }
 
 function validateThreadInvariants(state: BackendState): void {
+  const rootTurnNodeOwners = new Map<string, string>();
+
   for (const thread of state.threads.values()) {
     const rootTurnNode = ensureTurnNodeExists(
       state,
@@ -843,6 +845,26 @@ function validateThreadInvariants(state: BackendState): void {
         }
       );
     }
+
+    const existingOwnerThreadId = rootTurnNodeOwners.get(
+      thread.rootTurnNodeHash
+    );
+    if (
+      existingOwnerThreadId !== undefined &&
+      existingOwnerThreadId !== thread.threadId
+    ) {
+      throw persistenceError(
+        "stored thread roots must be unique across threads",
+        "memory_backend_thread_root_not_unique",
+        {
+          existingOwnerThreadId,
+          rootTurnNodeHash: thread.rootTurnNodeHash,
+          threadId: thread.threadId,
+        }
+      );
+    }
+
+    rootTurnNodeOwners.set(thread.rootTurnNodeHash, thread.threadId);
   }
 }
 
@@ -891,6 +913,20 @@ function validateBranchInvariants(
     const sourceBranchBeforeTransaction = baseState.branches.get(
       branch.archivedFromBranchId
     );
+
+    if (
+      existingBranch === undefined &&
+      sourceBranchBeforeTransaction === undefined
+    ) {
+      throw persistenceError(
+        "new archive branches must reference a source branch that existed before the transaction",
+        "memory_backend_branch_archive_source_missing_before_transaction",
+        {
+          archivedFromBranchId: branch.archivedFromBranchId,
+          branchId: branch.branchId,
+        }
+      );
+    }
 
     if (
       existingBranch === undefined &&
@@ -1083,6 +1119,8 @@ function validateRunInvariants(state: BackendState): void {
       );
     }
 
+    assertRunCreatedTurnNodesAreCanonical(state, run);
+
     if (run.status === "running" || run.status === "paused") {
       const currentActiveCount = activeRunCounts.get(run.branchId) ?? 0;
       activeRunCounts.set(run.branchId, currentActiveCount + 1);
@@ -1211,13 +1249,25 @@ async function normalizeStoredTurnTreePath(
       "record.orderedChunkListCbor"
     );
 
+    if (record.orderedCount <= ORDERED_PATH_CHUNK_THRESHOLD) {
+      throw persistenceError(
+        "chunked ordered turn tree paths must only be used after crossing the promotion threshold",
+        "memory_backend_chunked_turn_tree_path_below_threshold",
+        {
+          orderedCount: record.orderedCount,
+          threshold: ORDERED_PATH_CHUNK_THRESHOLD,
+        }
+      );
+    }
+
     let totalCount = 0;
-    for (const chunkHash of chunkHashes) {
+    for (const [index, chunkHash] of chunkHashes.entries()) {
       const chunk = ensureOrderedPathChunkExists(
         state,
         chunkHash,
         "record.orderedChunkListCbor"
       );
+      assertChunkedTurnTreePathChunkLayout(chunk, index, chunkHashes.length);
       totalCount += chunk.itemCount;
     }
 
@@ -1815,6 +1865,51 @@ function assertRunCreatedTurnNodeWithinTurnSpan(
   }
 }
 
+function assertRunCreatedTurnNodesAreCanonical(
+  state: BackendState,
+  run: StoredRun
+): void {
+  const createdTurnNodeHashes = decodeRunCreatedTurnNodeHashes(run);
+  const seenTurnNodeHashes = new Set<string>();
+  let previousTurnNodeHash = run.startTurnNodeHash;
+
+  for (const [index, turnNodeHash] of createdTurnNodeHashes.entries()) {
+    if (seenTurnNodeHashes.has(turnNodeHash)) {
+      throw persistenceError(
+        "stored runs must keep createdTurnNodesCbor unique",
+        "memory_backend_run_created_turn_nodes_duplicate",
+        {
+          duplicateTurnNodeHash: turnNodeHash,
+          index,
+          runId: run.runId,
+        }
+      );
+    }
+
+    const relationship = classifyTurnNodeRelationship(
+      state,
+      previousTurnNodeHash,
+      turnNodeHash
+    );
+
+    if (relationship !== "same" && relationship !== "forward") {
+      throw persistenceError(
+        "stored runs must keep createdTurnNodesCbor in lineage order",
+        "memory_backend_run_created_turn_nodes_not_lineage_ordered",
+        {
+          index,
+          previousTurnNodeHash,
+          runId: run.runId,
+          turnNodeHash,
+        }
+      );
+    }
+
+    seenTurnNodeHashes.add(turnNodeHash);
+    previousTurnNodeHash = turnNodeHash;
+  }
+}
+
 function assertTurnParentLink(
   state: BackendState,
   turn: StoredTurn,
@@ -1949,7 +2044,9 @@ function assertBackwardBranchMoveIsArchived(
       continue;
     }
 
-    if (run.startTurnNodeHash === nextBranch.headTurnNodeHash) {
+    const activeTurnNodeHash = getRunActiveTurnNodeHash(run);
+
+    if (activeTurnNodeHash === nextBranch.headTurnNodeHash) {
       continue;
     }
 
@@ -1957,6 +2054,7 @@ function assertBackwardBranchMoveIsArchived(
       "stored backward branch moves must fail active runs from the abandoned segment",
       "memory_backend_backward_branch_move_active_run_not_failed",
       {
+        activeTurnNodeHash,
         branchHeadTurnNodeHash: nextBranch.headTurnNodeHash,
         branchId: nextBranch.branchId,
         runId: run.runId,
@@ -2029,6 +2127,43 @@ function decodeRunCreatedTurnNodeHashes(run: StoredRun): string[] {
     run.createdTurnNodesCbor,
     "run.createdTurnNodesCbor"
   );
+}
+
+function getRunActiveTurnNodeHash(run: StoredRun): string {
+  const createdTurnNodeHashes = decodeRunCreatedTurnNodeHashes(run);
+  return createdTurnNodeHashes.at(-1) ?? run.startTurnNodeHash;
+}
+
+function assertChunkedTurnTreePathChunkLayout(
+  chunk: StoredOrderedPathChunk,
+  index: number,
+  totalChunks: number
+): void {
+  if (chunk.itemCount < 1 || chunk.itemCount > ORDERED_PATH_CHUNK_SIZE) {
+    throw persistenceError(
+      "ordered path chunks must contain between one and the fixed chunk size number of items",
+      "memory_backend_ordered_path_chunk_size_invalid",
+      {
+        chunkHash: chunk.chunkHash,
+        chunkItemCount: chunk.itemCount,
+        chunkSize: ORDERED_PATH_CHUNK_SIZE,
+      }
+    );
+  }
+
+  if (index < totalChunks - 1 && chunk.itemCount !== ORDERED_PATH_CHUNK_SIZE) {
+    throw persistenceError(
+      "non-final ordered path chunks must use the fixed chunk size",
+      "memory_backend_ordered_path_chunk_not_fixed_size",
+      {
+        chunkHash: chunk.chunkHash,
+        chunkIndex: index,
+        chunkItemCount: chunk.itemCount,
+        chunkSize: ORDERED_PATH_CHUNK_SIZE,
+        totalChunks,
+      }
+    );
+  }
 }
 
 function decodeTurnNodeConsumedStagedResultObjectHashes(

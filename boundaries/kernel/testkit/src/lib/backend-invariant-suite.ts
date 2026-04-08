@@ -360,61 +360,85 @@ export function registerBackendInvariantSuite(
           },
           2
         );
+        const siblingTurnTree = await createStoredTurnTreeRecord(
+          schema,
+          {
+            "context.manifest": null,
+            messages: ["9".repeat(64)],
+          },
+          3
+        );
         const turnNode = await createStoredTurnNodeRecord({
           consumedStagedResults: [],
-          createdAtMs: 3,
+          createdAtMs: 4,
           eventHash: null,
           previousTurnNodeHash: null,
           schemaId: schema.schemaId,
           turnTreeHash: turnTree.hash,
         });
+        const siblingTurnNode = await createStoredTurnNodeRecord({
+          consumedStagedResults: [],
+          createdAtMs: 5,
+          eventHash: null,
+          previousTurnNodeHash: null,
+          schemaId: schema.schemaId,
+          turnTreeHash: siblingTurnTree.hash,
+        });
         const threadA: StoredThread = {
-          createdAtMs: 4,
+          createdAtMs: 6,
           rootTurnNodeHash: turnNode.hash,
           schemaId: schema.schemaId,
           threadId: "thread_a",
         };
         const threadB: StoredThread = {
-          createdAtMs: 5,
-          rootTurnNodeHash: turnNode.hash,
+          createdAtMs: 7,
+          rootTurnNodeHash: siblingTurnNode.hash,
           schemaId: schema.schemaId,
           threadId: "thread_b",
         };
         const branchA: StoredBranch = {
           branchId: "branch_a",
-          createdAtMs: 6,
+          createdAtMs: 8,
           headTurnNodeHash: turnNode.hash,
           threadId: threadA.threadId,
-          updatedAtMs: 6,
+          updatedAtMs: 8,
         };
         const branchB: StoredBranch = {
           branchId: "branch_b",
-          createdAtMs: 7,
-          headTurnNodeHash: turnNode.hash,
+          createdAtMs: 9,
+          headTurnNodeHash: siblingTurnNode.hash,
           threadId: threadB.threadId,
-          updatedAtMs: 7,
+          updatedAtMs: 9,
         };
         const turnOnA: StoredTurn = {
           branchId: branchA.branchId,
-          createdAtMs: 8,
+          createdAtMs: 10,
           headTurnNodeHash: turnNode.hash,
           parentTurnId: null,
           startTurnNodeHash: turnNode.hash,
           threadId: threadA.threadId,
           turnId: "turn_a",
-          updatedAtMs: 8,
+          updatedAtMs: 10,
         };
 
         await backend.transact(async (tx) => {
           await tx.schemas.put(schemaRecord);
           await tx.turnTrees.put(turnTree);
+          await tx.turnTrees.put(siblingTurnTree);
           await tx.turnTreePaths.putMany(
             createCanonicalTurnTreePaths(turnTree, {
               "context.manifest": null,
               messages: [],
             })
           );
+          await tx.turnTreePaths.putMany(
+            createCanonicalTurnTreePaths(siblingTurnTree, {
+              "context.manifest": null,
+              messages: ["9".repeat(64)],
+            })
+          );
           await tx.turnNodes.put(turnNode);
+          await tx.turnNodes.put(siblingTurnNode);
           await tx.threads.put(threadA);
           await tx.threads.put(threadB);
           await tx.branches.set(branchA);
@@ -437,7 +461,7 @@ export function registerBackendInvariantSuite(
           backend.transact(async (tx) => {
             await tx.runs.set({
               branchId: branchB.branchId,
-              createdAtMs: 9,
+              createdAtMs: 11,
               createdTurnNodesCbor: encodeDeterministicKernelRecord([
                 turnNode.hash,
               ]),
@@ -454,7 +478,7 @@ export function registerBackendInvariantSuite(
                 },
               ]),
               turnId: turnOnA.turnId,
-              updatedAtMs: 10,
+              updatedAtMs: 11,
             });
           }),
           KrakenPersistenceError
