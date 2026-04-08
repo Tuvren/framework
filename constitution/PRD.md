@@ -1,19 +1,22 @@
 # Product Requirements Document
 
 ## 0. Version History & Changelog
+- v0.2.0 - Reframed Kraken as a driver-oriented runtime where the framework can host multiple execution drivers over shared kernel primitives, with ReAct as the initial driver.
 - v0.1.0 - Initial PRD synthesized from the existing Kraken kernel/framework specifications and rationale documents.
+- ... [Older history truncated, refer to git logs]
 
 ## 1. Executive Summary & Target Archetype
-- **Target Archetype:** Embeddable stateful agent runtime kernel plus application framework/SDK
+- **Target Archetype:** Embeddable stateful agent and workflow runtime kernel plus driver-oriented framework/SDK
 - **Vision:** Kraken becomes a trustworthy substrate for building long-lived agent systems whose progress, state transitions, interruptions, and control transfers remain durable, inspectable, and recoverable instead of opaque and fragile.
-- **Problem:** Existing agent runtimes often make state continuity, tool execution, pause/resume, context shaping, and multi-agent control feel incidental or ad hoc. That makes long-running agent work hard to audit, hard to recover after interruption, hard to govern, and hard to embed cleanly into real host applications.
-- **Jobs to Be Done:** Enable a builder to run agent turns with durable state and explicit history; let a host observe and steer execution safely; let a system execute tools, approvals, and handoffs without losing continuity; and let downstream teams reason about what happened, why it happened, and how to resume or redirect work.
+- **Problem:** Existing agent runtimes often make state continuity, tool execution, pause/resume, context shaping, and multi-agent control feel incidental or ad hoc, while many workflow systems hard-code one execution style as if it were the whole product. That makes long-running agent work hard to audit, hard to recover after interruption, hard to govern, and hard to adapt cleanly across different execution models.
+- **Jobs to Be Done:** Enable a builder to run durable agent or workflow execution with explicit history; let a host observe and steer execution safely; let a system execute tools, approvals, and handoffs without losing continuity; and let downstream teams reason about what happened, why it happened, and how to resume, redirect, or swap execution strategy without discarding the shared runtime foundation.
 
 ### 1.1 Product Posture
 - Kraken is a runtime product, not just a message wrapper or prompt helper.
 - Kraken must treat durable state continuity as a first-class product outcome, not an implementation detail.
-- Kraken must separate low-level runtime mechanism from higher-level agent policy so that the product can stay stable while agent behaviors evolve.
+- Kraken must separate low-level runtime mechanism from higher-level execution policy so that the product can stay stable while agent and workflow behaviors evolve.
 - Kraken must be host-embeddable. The product serves applications, services, CLIs, and protocol adapters rather than replacing them.
+- Kraken must support a shared runtime foundation that can host more than one execution driver over time rather than treating one agent loop as the entire product ontology.
 
 ### 1.2 Success Criteria
 - A builder can embed Kraken as the execution substrate for an agentic product without having to invent custom persistence, pause/resume, or recovery semantics.
@@ -26,13 +29,16 @@
 - **Delegation vs. handoff:** Workers perform subordinate tasks and return results; handoffs transfer active control to another agent.
 - **History preservation vs. active context shaping:** The active working context may be reduced or rewritten, but previously committed history remains recoverable.
 - **Host control vs. runtime execution:** The host initiates, observes, and influences execution, but the runtime remains responsible for the execution lifecycle itself.
+- **Framework vs. driver:** The framework supplies shared runtime services and contracts, while a driver defines one concrete execution model built on that shared foundation.
 
 ## 2. Ubiquitous Language (Glossary)
 | Term | Definition | Do Not Use |
 | --- | --- | --- |
 | Kraken Runtime | The overall product surface that enables durable, stateful agent execution and orchestration. | engine, bot framework, wrapper |
 | Kernel | The mechanism-focused layer that owns durable storage, structural state, lineage, and recovery primitives. | framework core, agent brain |
-| Framework | The agent-facing behavior layer built on the kernel that governs execution flow, tools, approvals, streaming, extensions, and orchestration. | kernel, SDK internals |
+| Framework | The shared runtime layer built on the kernel that provides common contracts, services, and integration surfaces used by one or more drivers. | kernel, single agent loop |
+| Driver | A concrete execution model built on the shared framework and kernel primitives. | workflow preset, implementation detail |
+| ReAct Driver | The initial Kraken driver centered on iterative model reasoning, tool use, and runtime feedback within one ongoing turn. | the whole framework, generic agent |
 | Thread | The long-lived container for one continuing line of work or conversation. | session log, chat room |
 | Branch | A named continuation within a thread representing one active path through history. | forked chat, duplicate thread |
 | Turn | One user-visible interaction span within a thread. | step, request packet |
@@ -216,6 +222,17 @@
 - **Capability:** The product must support pluggable policies for context shaping, prompt rendering, loop continuation, and tool execution.
 - **Rationale:** Different agent products need different execution policies without redefining the runtime’s core ontology.
 
+### Epic: Driver Modularity
+- **Priority:** P0
+- **Capability ID:** CAP-P0-033
+- **Capability:** The product must support a shared runtime foundation that can host multiple execution drivers over time rather than hard-coding one execution model as the whole framework.
+- **Rationale:** Durable state, host control, provider neutrality, and orchestration primitives should be reusable across ReAct-style agents and future workflow-oriented drivers.
+
+- **Priority:** P1
+- **Capability ID:** CAP-P1-034
+- **Capability:** The product must ship with one primary driver-first baseline, centered initially on a ReAct-style execution model, while keeping room for future workflow, routing, evaluator, or orchestration-focused drivers.
+- **Rationale:** Kraken needs one strong default execution path now without letting that first choice become an accidental product monopoly.
+
 ### Epic: Multi-Agent Orchestration
 - **Priority:** P0
 - **Capability ID:** CAP-P0-026
@@ -256,6 +273,7 @@
 
 ### 4.1 Scope Notes
 - The PRD intentionally treats persistence, streaming, tool dispatch, approvals, context engineering, and orchestration as product capabilities because they materially define the user-facing value of Kraken as a runtime.
+- The initial active product line is the shared runtime foundation plus the ReAct Driver, not a commitment to implement every possible driver pattern in the first release line.
 - This PRD does not prescribe the concrete storage engine, programming language, packaging layout, or transport stack used to implement those capabilities.
 
 ### 4.2 Distinction Notes

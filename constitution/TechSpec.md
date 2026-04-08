@@ -1,10 +1,9 @@
 # Technical Specification
 
 ## 0. Version History & Changelog
+- v0.3.0 - Reframed the framework implementation as driver-oriented, added the initial ReAct-driver posture, and updated package structure and build sequence to separate shared framework services from driver implementations.
 - v0.2.3 - Defined the backend adapter repository interfaces and the `createMemoryBackend` factory surface so backend implementations no longer depend on implied persistence contracts.
 - v0.2.2 - Defined the concrete TypeScript kernel-contract shapes for `StepContext`, `ObserveResult`, and kernel observe signals so the run lifecycle surface no longer depends on implied upstream payload structure.
-- v0.2.1 - Added the shared `KrakenError` foundation contract so stable error codes and category subclasses are specified before later framework and backend work depends on them.
-- v0.2.0 - Locked the authoritative implementation posture: protocol-first kernel, TypeScript first implementation, AI SDK bridge-only provider baseline, strict uniform backend contract, official `memory` and `sqlite` backends, deterministic CBOR plus SHA-256 identity rules, integer-only core record profile, path-granular TurnTree storage with threshold-based chunking for ordered paths, and an architecture-first `devenv + nx` monorepo layout grouped by boundary, contract, and implementation language.
 - ... [Older history truncated, refer to git logs]
 
 ## 1. Stack Specification (Bill of Materials)
@@ -19,11 +18,13 @@
 - **Authoritative center:** The kernel boundary is a protocol of serializable data, not an in-process callback API.
 - **First implementation choice:** TypeScript is the first authoritative implementation of that protocol for speed of validation, not a claim that the kernel is fundamentally JavaScript-bound.
 - **Portability posture:** Core packages stay runtime-portable where practical; backend packages and provider bridges may have narrower runtime support when their dependencies require it.
+- **Framework posture:** The framework layer is driver-oriented. Shared framework contracts and runtime services stay driver-neutral where practical, while concrete execution semantics live in driver implementations.
+- **Initial driver posture:** The first production-depth driver is the ReAct Driver. It is the baseline implementation, not the whole framework ontology.
 - **Provider posture:** Kraken owns the canonical provider contract. The baseline bridge surface is AI SDK Providers only. LangChain is intentionally out of baseline scope. First-class Kraken provider packages for major providers are expected later.
 - **Backend posture:** All official backends implement one strict kernel-visible contract. Backend-specific optimizations may exist internally, but they must not change kernel semantics or require capability negotiation at the kernel layer in v0.1.
 
 ### 1.2 Current-State vs Target-State
-- **Current repository reality:** The repository currently contains governing documents only: `constitution/` and `docs/`.
+- **Current repository reality:** The repository already contains the workspace scaffold, `@kraken/shared-core-types`, `@kraken/kernel-contract-protocol`, `@kraken/backend-memory`, and `@kraken/kernel-testkit`. SQLite, framework, provider, stream, and host packages remain target-state work.
 - **Target implementation state:** The package layout and interfaces defined below are the intended implementation target for the first authoritative code line.
 - **Drift rule:** The future codebase must conform to this TechSpec. The TechSpec must not be treated as a loose commentary on whatever structure happens to emerge.
 
@@ -46,11 +47,11 @@
 - **Decision:** Realize the approved logical containers as projects in one monorepo, grouped first by architectural boundary and then by contract versus implementation, rather than as separate deployable services.
 - **Consequences:** Boundary discipline is preserved without adding network topology, deployment orchestration, or remote protocol complexity before it is justified. The repository structure mirrors the architecture docs instead of centering JavaScript package-manager conventions.
 
-### ADR-004 The Framework Public Surface Remains Library-First
+### ADR-004 The Framework Public Surface Remains Library-First and Driver-Neutral
 - **Status:** accepted
 - **Context:** Kraken is a framework for developers to embed, not a mandatory network service. The architecture’s host boundary is an embedding surface.
-- **Decision:** The primary TypeScript framework surface remains a library API centered on `KrakenRuntime`, `ExecutionHandle`, typed events, provider ports, and backend ports.
-- **Consequences:** HTTP, WebSocket, CLI, editor, and protocol adapters are secondary packages layered over the library API. This does not weaken the protocol-first kernel boundary because the library surface sits above it.
+- **Decision:** The primary TypeScript framework surface remains a library API centered on `KrakenRuntime`, `ExecutionHandle`, typed events, driver selection, provider ports, and backend ports.
+- **Consequences:** HTTP, WebSocket, CLI, editor, and protocol adapters are secondary packages layered over the library API. This does not weaken the protocol-first kernel boundary because the library surface sits above it, and it prevents the first driver from becoming the only host-facing abstraction.
 
 ### ADR-005 The Baseline Provider Strategy Is Kraken Contract Plus AI SDK Providers Bridge
 - **Status:** accepted
@@ -106,9 +107,16 @@
 - **Decision:** Use `devenv` as the reproducible developer environment entry point and pin `nx@22.6.3` with aligned `@nx/workspace@22.6.3` and `@nx/js@22.6.3` for orchestration of the TypeScript subtree.
 - **Consequences:** Environment pinning lives in Nix/devenv configuration rather than npm manifests alone. Nx project orchestration is first-class, but limited to the TypeScript subtree and does not define the overall repository ontology.
 
+### ADR-014 The Framework Is Driver-Oriented and ReAct Is the Initial Driver
+- **Status:** accepted
+- **Context:** The architecture now distinguishes shared framework services from concrete execution models. The current behavioral specification is strongly ReAct-shaped, but the product must support future workflow-oriented drivers over the same durable runtime foundation.
+- **Decision:** Implement the framework as shared contracts plus shared runtime services, with concrete drivers as explicit implementation packages. The first driver is the ReAct Driver.
+- **Consequences:** Package structure, task planning, and future implementation sequencing must separate shared framework logic from driver-specific logic. Future drivers can be added without redefining the kernel, host API, or provider-neutral content model.
+
 ### 2.1 Compatibility Record
 - **Kernel identity compatibility:** Changes to deterministic CBOR profile, SHA-256 usage, hash string representation, or durable record shapes are semver-major.
 - **Framework public API compatibility:** Breaking changes to exported TypeScript library contracts require a semver-major release.
+- **Driver compatibility:** Changes to shared driver-selection semantics or driver-neutral framework contracts are semver-major; adding a new driver is semver-minor unless it changes existing shared contracts.
 - **Backend compatibility:** All official backends must preserve the same kernel semantics. Physical schemas may differ by backend.
 - **Provider compatibility:** AI SDK bridge upgrades may happen in minor releases only if the Kraken-owned provider contract remains unchanged and contract fixtures still pass.
 
@@ -372,6 +380,7 @@ Concrete code examples already defined in the authoritative specs such as `struc
 - **Authentication / Authorization:** Not built into Kraken. Host applications authenticate and authorize their own callers before exposing runtime operations.
 - **Compatibility Strategy:** Exported TypeScript framework APIs follow semantic versioning. Additive methods and additive optional fields are minor-compatible.
 - **Error model:** Typed `KrakenError` subclasses with stable `code` values plus canonical `error` stream events.
+- **Driver note:** The host-facing framework API is driver-neutral. Callers may select a concrete driver, but the host surface does not become ReAct-specific.
 
 ```ts
 export type HashString = string;
@@ -419,6 +428,7 @@ export interface KrakenRuntime {
     threadId: string;
     branchId: string;
     schemaId?: string;
+    driverId?: string;
     config: AgentConfig;
     tools?: KrakenToolDefinition[];
     parentTurnId?: string | null;
@@ -733,6 +743,7 @@ export type ProviderStreamChunk =
 ```ts
 export interface EventSource {
   agent: string;
+  driver?: string;
   workerId?: string;
   threadId?: string;
 }
@@ -813,6 +824,10 @@ Target implementation layout after code generation begins:
 │   │   │   │   ├── package.json
 │   │   │   │   ├── project.json
 │   │   │   │   └── src/
+│   │   │   ├── driver-api/
+│   │   │   │   ├── package.json
+│   │   │   │   ├── project.json
+│   │   │   │   └── src/
 │   │   │   ├── event-stream/
 │   │   │   │   ├── package.json
 │   │   │   │   ├── project.json
@@ -823,11 +838,17 @@ Target implementation layout after code generation begins:
 │   │   │       └── src/
 │   │   ├── implementations/
 │   │   │   └── typescript/
-│   │   │       ├── core/
+│   │   │       ├── runtime-core/
 │   │   │       │   ├── package.json
 │   │   │       │   ├── project.json
 │   │   │       │   ├── src/
 │   │   │       │   └── test/
+│   │   │       ├── drivers/
+│   │   │       │   └── react/
+│   │   │       │       ├── package.json
+│   │   │       │       ├── project.json
+│   │   │       │       ├── src/
+│   │   │       │       └── test/
 │   │   │       ├── stream-core/
 │   │   │       │   ├── package.json
 │   │   │       │   ├── project.json
@@ -896,7 +917,7 @@ Target implementation layout after code generation begins:
 - Language-specific code lives under `implementations/<language>/...`.
 - Nx manages the TypeScript projects in this tree. Nx does not define the repo ontology.
 - `shared/` must remain small and contain only truly cross-boundary primitives. It must not become a semantic dumping ground.
-- Contract-driven components such as backends, provider surfaces, tool contracts, and stream-event vocabulary must have an explicit contract home before any implementation package is added.
+- Contract-driven components such as backends, provider surfaces, driver contracts, tool contracts, and stream-event vocabulary must have an explicit contract home before any implementation package is added.
 
 ### 5.2 Coding Standards
 - **Formatting / Linting:** Use Biome configured to follow the repository’s Ultracite-aligned standards.
@@ -915,11 +936,12 @@ Target implementation layout after code generation begins:
   - no floating-point values in normative kernel records
   - timestamps are safe-integer epoch milliseconds
 - **Testing Expectations:**
-  - unit tests for pure logic in `shared/contracts/core-types`, `kernel/contracts/protocol`, `kernel/implementations/typescript/backend-memory`, `kernel/implementations/typescript/backend-sqlite`, and `framework/implementations/typescript/core`
+  - unit tests for pure logic in `shared/contracts/core-types`, `kernel/contracts/protocol`, `kernel/implementations/typescript/backend-memory`, `kernel/implementations/typescript/backend-sqlite`, `framework/implementations/typescript/runtime-core`, and `framework/implementations/typescript/drivers/react`
   - golden-byte tests for deterministic CBOR encodings
   - hash identity fixtures for opaque bytes and structured records
   - shared backend contract tests that every official backend must pass
   - recovery and checkpoint scenario tests covering pause/resume, reactive checkpointing, and rollback archival
+  - driver contract and framework-runtime integration tests that keep shared framework services distinct from ReAct-specific behavior
   - AI SDK bridge contract tests
   - runtime portability tests for core packages on Bun and Node; Deno compatibility tests for core non-native packages as soon as package surfaces stabilize
 - **Observability Hooks:**
@@ -941,6 +963,7 @@ Target implementation layout after code generation begins:
 - `docs/KrakenKernelSpecification.md` and `docs/KrakenFrameworkSpecification.md` remain the authoritative behavioral sources that this TechSpec realizes physically.
 - `constitution/PRD.md`, `constitution/Architecture.md`, and `constitution/TechSpec.md` remain the governing artifacts for product, logical architecture, and technical implementation posture.
 - Changes to provider posture, backend posture, record encoding, hash algorithm, or public framework contracts require a TechSpec update in the same change.
+- Changes that alter the driver model, driver-neutral framework surface, or the ReAct Driver’s role as the initial baseline require a TechSpec update in the same change.
 - New backend adapters require updates to backend conformance documentation and compatibility notes.
 
 ### 5.4 Initial Build Sequence
@@ -949,8 +972,10 @@ Target implementation layout after code generation begins:
 3. Implement `boundaries/kernel/contracts/protocol` with exact protocol data types, deterministic CBOR utilities, SHA-256 hashing helpers, validation rules, and shared semantic fixtures.
 4. Implement `boundaries/kernel/implementations/typescript/backend-memory` as the reference semantic backend.
 5. Implement `boundaries/kernel/implementations/typescript/backend-sqlite` with WAL mode, migrations, and full backend contract conformance.
-6. Implement the framework contract packages under `boundaries/framework/contracts/`.
-7. Implement `boundaries/framework/implementations/typescript/core` against the kernel protocol and backend ports.
-8. Implement `boundaries/providers/contracts/provider-api` and then `boundaries/providers/implementations/typescript/bridge-ai-sdk`.
-9. Implement stream adapter packages and the playground host under their architectural boundaries.
-10. Add backend conformance suites for future peer adapters such as PostgreSQL and MySQL/MariaDB before expanding the official backend set.
+6. Implement the shared framework contract packages under `boundaries/framework/contracts/`, including the driver contract surface.
+7. Implement `boundaries/providers/contracts/provider-api` as the canonical provider-neutral model contract.
+8. Implement `boundaries/framework/implementations/typescript/runtime-core` as the shared framework-services layer above the kernel and below concrete drivers.
+9. Implement `boundaries/framework/implementations/typescript/drivers/react` as the first production-depth driver against the shared runtime and provider/tool contracts.
+10. Implement `boundaries/providers/implementations/typescript/bridge-ai-sdk` as the baseline provider bridge.
+11. Implement stream adapter packages and the playground host under their architectural boundaries.
+12. Add backend conformance suites for future peer adapters such as PostgreSQL and MySQL/MariaDB before expanding the official backend set.
