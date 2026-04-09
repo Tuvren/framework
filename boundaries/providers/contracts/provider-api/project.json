@@ -1,0 +1,40 @@
+{
+  "name": "provider-api",
+  "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
+  "root": "boundaries/providers/contracts/provider-api",
+  "sourceRoot": "boundaries/providers/contracts/provider-api/src",
+  "projectType": "library",
+  "tags": ["boundary:providers", "layer:contract"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["^build"],
+      "options": {
+        "cwd": "boundaries/providers/contracts/provider-api",
+        "commands": [
+          {
+            "command": "bunx --bun tsup --config tsup.config.ts"
+          },
+          {
+            "command": "bunx --bun tsc --project tsconfig.dts.json --pretty false"
+          }
+        ],
+        "parallel": false
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "boundaries/providers/contracts/provider-api",
+        "command": "bun test"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "boundaries/providers/contracts/provider-api",
+        "command": "tsc --project tsconfig.typecheck.json --noEmit --pretty false"
+      }
+    }
+  }
+}

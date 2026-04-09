@@ -10,6 +10,21 @@
       "@kraken/kernel-contract-protocol": [
         "./boundaries/kernel/contracts/protocol/src/index.ts"
       ],
+      "@kraken/framework-runtime-api": [
+        "./boundaries/framework/contracts/runtime-api/src/index.ts"
+      ],
+      "@kraken/framework-event-stream": [
+        "./boundaries/framework/contracts/event-stream/src/index.ts"
+      ],
+      "@kraken/framework-tool-contracts": [
+        "./boundaries/framework/contracts/tool-contracts/src/index.ts"
+      ],
+      "@kraken/framework-driver-api": [
+        "./boundaries/framework/contracts/driver-api/src/index.ts"
+      ],
+      "@kraken/provider-api": [
+        "./boundaries/providers/contracts/provider-api/src/index.ts"
+      ],
       "@kraken/backend-memory": [
         "./boundaries/kernel/implementations/typescript/backend-memory/src/index.ts"
       ],

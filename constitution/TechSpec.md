@@ -381,6 +381,7 @@ Concrete code examples already defined in the authoritative specs such as `struc
 - **Compatibility Strategy:** Exported TypeScript framework APIs follow semantic versioning. Additive methods and additive optional fields are minor-compatible.
 - **Error model:** Typed `KrakenError` subclasses with stable `code` values plus canonical `error` stream events.
 - **Driver note:** The host-facing framework API is driver-neutral. Callers may select a concrete driver, but the host surface does not become ReAct-specific.
+- **Package partition note:** `@kraken/framework-runtime-api` is the semantic anchor for shared framework types and the host-facing runtime surface. `@kraken/framework-event-stream`, `@kraken/framework-tool-contracts`, and `@kraken/provider-api` are focused facade packages that expose curated subsets of the same shared contract family.
 
 ```ts
 export type HashString = string;
@@ -441,6 +442,27 @@ export interface ExecutionHandle {
   steer(signal: InputSignal): void;
   resolveApproval(response: ApprovalResponse): ExecutionHandle;
   status(): ExecutionStatus;
+}
+
+export interface ExecutionStatus {
+  phase: "running" | "paused" | "completed" | "failed";
+  iterationCount: number;
+  activeAgent?: string;
+  manifest?: ContextManifest;
+  pauseReason?: string;
+  approval?: ApprovalRequest;
+}
+
+export interface AgentConfig {
+  name: string;
+  model?: string | KrakenProvider;
+  systemPrompt?: string;
+  tools?: KrakenToolDefinition[];
+  extensions?: KrakenExtension[];
+  loopPolicy?: LoopPolicy;
+  contextPolicy?: ContextPolicy;
+  responseFormat?: StructuredOutputRequest;
+  maxIterations?: number;
 }
 ```
 
@@ -774,6 +796,56 @@ export type KrakenStreamEvent =
   | { type: "custom"; name: string; data: unknown; timestamp: EpochMs; source?: EventSource };
 ```
 
+### 4.6 Driver Runtime Contract
+- **Style:** library API
+- **Authentication / Authorization:** Internal contract between shared runtime foundations and concrete driver implementations
+- **Compatibility Strategy:** Breaking changes to driver execution entrypoints, driver result semantics, or registry ownership are semver-major because future drivers depend on this seam rather than on `runtime-core` internals
+- **Error model:** Driver implementations return `RuntimeResolution` outcomes and may raise typed `KrakenRuntimeError` failures for invalid driver behavior
+
+```ts
+export interface DriverRuntimePort {
+  emit(event: KrakenStreamEvent): Promise<void> | void;
+  now(): EpochMs;
+}
+
+export interface DriverExecutionContext {
+  turnId: string;
+  branchId: string;
+  schemaId: string;
+  config: AgentConfig;
+  toolRegistry: ToolRegistry;
+  steering?: AsyncIterable<unknown>;
+  runtime: DriverRuntimePort;
+}
+
+export interface DriverResumeContext extends DriverExecutionContext {
+  approval: ApprovalResponse;
+  resumedFrom?: HashString;
+}
+
+export interface DriverExecutionResult {
+  resolution: RuntimeResolution;
+  activeAgent: string;
+}
+
+export interface KrakenDriver {
+  readonly id: string;
+  execute(context: DriverExecutionContext): Promise<DriverExecutionResult>;
+  resume(context: DriverResumeContext): Promise<DriverExecutionResult>;
+}
+
+export interface KrakenDriverFactory {
+  readonly id: string;
+  create(): KrakenDriver;
+}
+
+export interface DriverRegistry {
+  register(driver: KrakenDriver | KrakenDriverFactory): void;
+  resolve(driverId: string): KrakenDriver | KrakenDriverFactory | undefined;
+  list(): Array<KrakenDriver | KrakenDriverFactory>;
+}
+```
+
 ## 5. Implementation Guidelines
 ### 5.1 Project Structure
 Target implementation layout after code generation begins:
@@ -918,6 +990,7 @@ Target implementation layout after code generation begins:
 - Nx manages the TypeScript projects in this tree. Nx does not define the repo ontology.
 - `shared/` must remain small and contain only truly cross-boundary primitives. It must not become a semantic dumping ground.
 - Contract-driven components such as backends, provider surfaces, driver contracts, tool contracts, and stream-event vocabulary must have an explicit contract home before any implementation package is added.
+- `@kraken/framework-runtime-api` may own the shared semantic definitions that multiple framework contract packages project outward, but focused facade packages must remain the public home for event, tool, provider, and driver-specific entrypoints.
 
 ### 5.2 Coding Standards
 - **Formatting / Linting:** Use Biome configured to follow the repository’s Ultracite-aligned standards.

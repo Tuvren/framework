@@ -1,0 +1,14 @@
+{
+  "extends": "../../../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "paths": {
+      "@kraken/framework-runtime-api": [
+        "../../../framework/contracts/runtime-api/src/index.ts"
+      ],
+      "@kraken/provider-api": ["./src/index.ts"]
+    }
+  },
+  "include": ["src/**/*.ts"]
+}
