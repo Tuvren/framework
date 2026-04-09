@@ -22,12 +22,14 @@ import {
 import {
   type AgentConfig,
   assertApprovalRequest,
+  assertApprovalResponse,
   assertExecutionStatus,
   assertKrakenMessage,
   assertKrakenStreamEvent,
   assertKrakenToolDefinition,
   assertProviderStreamChunk,
   isApprovalRequest,
+  isApprovalResponse,
   isExecutionStatus,
   isKrakenMessage,
   isKrakenStreamEvent,
@@ -162,6 +164,25 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
   });
 
+  test("rejects negative iteration counters in stream events", () => {
+    expect(
+      isKrakenStreamEvent({
+        iterationCount: -1,
+        timestamp: 1,
+        type: "iteration.start",
+      })
+    ).toBe(false);
+
+    expect(
+      isKrakenStreamEvent({
+        iterationCount: -1,
+        timestamp: 1,
+        turnNodeHash: "1".repeat(64),
+        type: "state.checkpoint",
+      })
+    ).toBe(false);
+  });
+
   test("rejects assistant messages with incomplete content parts", () => {
     expect(
       isKrakenMessage({
@@ -187,6 +208,24 @@ describe("runtime-api contracts", () => {
         approval: "oops",
         iterationCount: 1,
         phase: "paused",
+      })
+    ).toBe(false);
+  });
+
+  test("rejects execution statuses with invalid phase invariants", () => {
+    expect(
+      isExecutionStatus({
+        approval: frameworkContractFixtures.approvalRequest,
+        iterationCount: 1,
+        phase: "running",
+      })
+    ).toBe(false);
+
+    expect(
+      isExecutionStatus({
+        iterationCount: 1,
+        pauseReason: "approval_required",
+        phase: "completed",
       })
     ).toBe(false);
   });
@@ -254,6 +293,26 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
   });
 
+  test("rejects approval responses with duplicate decision callIds", () => {
+    expect(
+      isApprovalResponse({
+        decisions: [
+          { callId: "call-1", type: "approve" },
+          { callId: "call-1", type: "reject" },
+        ],
+      })
+    ).toBe(false);
+
+    expect(() =>
+      assertApprovalResponse({
+        decisions: [
+          { callId: "call-1", type: "approve" },
+          { callId: "call-1", type: "reject" },
+        ],
+      })
+    ).toThrow();
+  });
+
   test("rejects event sources with a non-string workerId", () => {
     expect(
       isKrakenStreamEvent({
@@ -287,6 +346,57 @@ describe("runtime-api contracts", () => {
           turnBoundaries: [0],
         },
         phase: "running",
+      })
+    ).toBe(false);
+  });
+
+  test("rejects execution statuses with negative manifest counters", () => {
+    expect(
+      isExecutionStatus({
+        iterationCount: 0,
+        manifest: {
+          byRole: {
+            assistant: -1,
+            system: 0,
+            tool: 0,
+            user: 1,
+          },
+          extensions: {},
+          lastAssistantMessageIndex: 0,
+          lastUserMessageIndex: 1,
+          messageCount: 2,
+          tokenEstimate: 12,
+          toolCalls: { byName: {}, total: -2 },
+          toolResults: { byName: {}, total: 0 },
+          turnBoundaries: [0],
+        },
+        phase: "running",
+      })
+    ).toBe(false);
+  });
+
+  test("rejects provider usage with negative token counts", () => {
+    expect(
+      isProviderStreamChunk({
+        finishReason: "stop",
+        type: "finish",
+        usage: {
+          inputTokens: -1,
+          outputTokens: 0,
+        },
+      })
+    ).toBe(false);
+
+    expect(
+      isKrakenStreamEvent({
+        finishReason: "stop",
+        messageId: "message-1",
+        timestamp: 1,
+        type: "message.done",
+        usage: {
+          inputTokens: 1,
+          outputTokens: -1,
+        },
       })
     ).toBe(false);
   });

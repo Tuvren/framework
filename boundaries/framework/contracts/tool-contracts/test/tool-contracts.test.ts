@@ -18,8 +18,10 @@ import { describe, expect, test } from "bun:test";
 import { frameworkContractFixtures } from "../../../../../tests/fixtures/framework-contract-fixtures.js";
 import {
   assertApprovalRequest,
+  assertApprovalResponse,
   assertKrakenToolDefinition,
   isApprovalRequest,
+  isApprovalResponse,
   isKrakenToolDefinition,
 } from "../src/index.ts";
 
@@ -29,10 +31,18 @@ describe("tool-contracts", () => {
       true
     );
     expect(
+      isApprovalResponse({ decisions: [{ callId: "call-1", type: "approve" }] })
+    ).toBe(true);
+    expect(
       isKrakenToolDefinition(frameworkContractFixtures.toolDefinition)
     ).toBe(true);
     expect(() =>
       assertApprovalRequest(frameworkContractFixtures.approvalRequest)
+    ).not.toThrow();
+    expect(() =>
+      assertApprovalResponse({
+        decisions: [{ callId: "call-1", type: "approve" }],
+      })
     ).not.toThrow();
     expect(() =>
       assertKrakenToolDefinition(frameworkContractFixtures.toolDefinition)

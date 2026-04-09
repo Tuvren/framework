@@ -984,7 +984,7 @@ function hasValidStreamEventPayload(
       );
     case "iteration.start":
     case "iteration.end":
-      return isSafeIntegerProperty(value, "iterationCount");
+      return isNonNegativeSafeIntegerProperty(value, "iterationCount");
     case "message.start":
       return typeof value.messageId === "string" && value.role === "assistant";
     case "text.delta":
@@ -1057,7 +1057,7 @@ function hasValidStreamEventPayload(
       return isContextManifest(value.manifest);
     case "state.checkpoint":
       return (
-        isSafeIntegerProperty(value, "iterationCount") &&
+        isNonNegativeSafeIntegerProperty(value, "iterationCount") &&
         isHashString(value.turnNodeHash)
       );
     case "error":
@@ -1111,16 +1111,30 @@ export function assertKrakenToolDefinition(
 }
 
 export function isExecutionStatus(value: unknown): value is ExecutionStatus {
-  return (
-    isPlainObject(value) &&
-    isStringProperty(value, "phase") &&
-    EXECUTION_PHASES.has(value.phase) &&
-    isSafeIntegerProperty(value, "iterationCount") &&
-    isOptionalApprovalRequest(value, "approval") &&
-    isOptionalStringProperty(value, "activeAgent") &&
-    isOptionalContextManifest(value, "manifest") &&
-    isOptionalStringProperty(value, "pauseReason")
-  );
+  if (
+    !(
+      isPlainObject(value) &&
+      isStringProperty(value, "phase") &&
+      EXECUTION_PHASES.has(value.phase) &&
+      isNonNegativeSafeIntegerProperty(value, "iterationCount") &&
+      isOptionalApprovalRequest(value, "approval") &&
+      isOptionalStringProperty(value, "activeAgent") &&
+      isOptionalContextManifest(value, "manifest") &&
+      isOptionalStringProperty(value, "pauseReason")
+    )
+  ) {
+    return false;
+  }
+
+  if (value.approval !== undefined && value.phase !== "paused") {
+    return false;
+  }
+
+  if (value.pauseReason !== undefined && value.phase !== "paused") {
+    return false;
+  }
+
+  return true;
 }
 
 export function assertExecutionStatus(
@@ -1219,12 +1233,25 @@ function isPendingToolCall(value: unknown): value is PendingToolCall {
   );
 }
 
-function isApprovalResponse(value: unknown): value is ApprovalResponse {
+export function isApprovalResponse(value: unknown): value is ApprovalResponse {
   return (
     isPlainObject(value) &&
     Array.isArray(value.decisions) &&
+    hasUniqueApprovalDecisionCallIds(value.decisions) &&
     value.decisions.every(isApprovalDecision)
   );
+}
+
+export function assertApprovalResponse(
+  value: unknown,
+  label = "value"
+): asserts value is ApprovalResponse {
+  if (!isApprovalResponse(value)) {
+    throw new KrakenValidationError(
+      `${label} must be a valid ApprovalResponse`,
+      { code: "invalid_approval_response", details: value }
+    );
+  }
 }
 
 function isApprovalDecision(value: unknown): value is ApprovalDecision {
@@ -1261,14 +1288,16 @@ function isContextManifest(value: unknown): value is ContextManifest {
     isPlainObject(value) &&
     isContextManifestCounters(value.byRole) &&
     isPlainObject(value.extensions) &&
-    isSafeIntegerProperty(value, "lastAssistantMessageIndex") &&
-    isSafeIntegerProperty(value, "lastUserMessageIndex") &&
-    isSafeIntegerProperty(value, "messageCount") &&
+    isNonNegativeSafeIntegerProperty(value, "lastAssistantMessageIndex") &&
+    isNonNegativeSafeIntegerProperty(value, "lastUserMessageIndex") &&
+    isNonNegativeSafeIntegerProperty(value, "messageCount") &&
     isFiniteNumberProperty(value, "tokenEstimate") &&
     isContextManifestNameCounters(value.toolCalls) &&
     isContextManifestNameCounters(value.toolResults) &&
     Array.isArray(value.turnBoundaries) &&
-    value.turnBoundaries.every((item) => Number.isSafeInteger(item))
+    value.turnBoundaries.every(
+      (item) => Number.isSafeInteger(item) && item >= 0
+    )
   );
 }
 
@@ -1277,10 +1306,10 @@ function isContextManifestCounters(
 ): value is ContextManifestCounters {
   return (
     isPlainObject(value) &&
-    isSafeIntegerProperty(value, "assistant") &&
-    isSafeIntegerProperty(value, "system") &&
-    isSafeIntegerProperty(value, "tool") &&
-    isSafeIntegerProperty(value, "user")
+    isNonNegativeSafeIntegerProperty(value, "assistant") &&
+    isNonNegativeSafeIntegerProperty(value, "system") &&
+    isNonNegativeSafeIntegerProperty(value, "tool") &&
+    isNonNegativeSafeIntegerProperty(value, "user")
   );
 }
 
@@ -1290,8 +1319,11 @@ function isContextManifestNameCounters(
   return (
     isPlainObject(value) &&
     isPlainObject(value.byName) &&
-    Object.values(value.byName).every((count) => Number.isSafeInteger(count)) &&
-    isSafeIntegerProperty(value, "total")
+    Object.values(value.byName).every(
+      (count) =>
+        typeof count === "number" && Number.isSafeInteger(count) && count >= 0
+    ) &&
+    isNonNegativeSafeIntegerProperty(value, "total")
   );
 }
 
@@ -1414,8 +1446,8 @@ function isCustomSchema(value: unknown): value is CustomSchema {
 function isProviderUsage(value: unknown): value is ProviderUsage {
   return (
     isPlainObject(value) &&
-    isSafeIntegerProperty(value, "inputTokens") &&
-    isSafeIntegerProperty(value, "outputTokens")
+    isNonNegativeSafeIntegerProperty(value, "inputTokens") &&
+    isNonNegativeSafeIntegerProperty(value, "outputTokens")
   );
 }
 
@@ -1423,11 +1455,32 @@ function isTimeoutMs(value: unknown): boolean {
   return typeof value === "number" && Number.isFinite(value) && value >= 0;
 }
 
-function isSafeIntegerProperty<
+function isNonNegativeSafeIntegerProperty<
   TKey extends string,
   TObject extends Record<string, unknown>,
 >(value: TObject, key: TKey): boolean {
-  return typeof value[key] === "number" && Number.isSafeInteger(value[key]);
+  const propertyValue = value[key];
+  return (
+    typeof propertyValue === "number" &&
+    Number.isSafeInteger(propertyValue) &&
+    propertyValue >= 0
+  );
+}
+
+function hasUniqueApprovalDecisionCallIds(
+  decisions: ApprovalDecision[]
+): boolean {
+  const seenCallIds = new Set<string>();
+
+  for (const decision of decisions) {
+    if (seenCallIds.has(decision.callId)) {
+      return false;
+    }
+
+    seenCallIds.add(decision.callId);
+  }
+
+  return true;
 }
 
 function isEventSource(value: unknown): value is EventSource {

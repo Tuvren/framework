@@ -99,12 +99,14 @@ export type {
 } from "./lib/runtime-contracts.js";
 export {
   assertApprovalRequest,
+  assertApprovalResponse,
   assertExecutionStatus,
   assertKrakenMessage,
   assertKrakenStreamEvent,
   assertKrakenToolDefinition,
   assertProviderStreamChunk,
   isApprovalRequest,
+  isApprovalResponse,
   isExecutionStatus,
   isKrakenMessage,
   isKrakenStreamEvent,
