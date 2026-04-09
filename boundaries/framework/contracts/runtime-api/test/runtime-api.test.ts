@@ -106,6 +106,18 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
   });
 
+  test("rejects event sources with a non-string workerId", () => {
+    expect(
+      isKrakenStreamEvent({
+        source: { agent: "primary", workerId: 7 },
+        timestamp: 1,
+        type: "turn.end",
+        turnId: "turn-1",
+        status: "completed",
+      })
+    ).toBe(false);
+  });
+
   test("exposes a host-facing type surface that composes with the shared fixtures", () => {
     const runtime = frameworkContractFixtures.runtime as KrakenRuntime;
     const config = frameworkContractFixtures.agentConfig satisfies AgentConfig;

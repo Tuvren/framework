@@ -17,6 +17,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   assertKrakenDriver,
+  type DriverExecutionContext,
   isKrakenDriver,
   type KrakenDriver,
 } from "../src/index.ts";
@@ -41,7 +42,25 @@ describe("driver-api", () => {
 
     expect(isKrakenDriver(driver)).toBe(true);
     expect(() => assertKrakenDriver(driver)).not.toThrow();
-    await expect(driver.execute({} as never)).resolves.toEqual({
+    const context: DriverExecutionContext = {
+      branchId: "branch-1",
+      config: { name: "primary" },
+      runtime: {
+        emit: () => undefined,
+        now: () => 0,
+      },
+      schemaId: "schema-1",
+      toolRegistry: {
+        get: () => undefined,
+        has: () => false,
+        list: () => [],
+        register: () => undefined,
+        toDefinitions: () => [],
+      },
+      turnId: "turn-1",
+    };
+
+    await expect(driver.execute(context)).resolves.toEqual({
       activeAgent: "primary",
       resolution: { type: "continue_iteration" },
     });

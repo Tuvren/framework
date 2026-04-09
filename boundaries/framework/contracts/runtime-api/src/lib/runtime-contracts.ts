@@ -19,10 +19,7 @@ import type {
   HashString,
   KernelRecord,
 } from "@kraken/shared-core-types";
-import {
-  assertEpochMs,
-  KrakenValidationError,
-} from "@kraken/shared-core-types";
+import { KrakenValidationError } from "@kraken/shared-core-types";
 
 const CONTENT_PART_TYPES = new Set([
   "text",
@@ -995,33 +992,27 @@ function isPendingToolCall(value: unknown): value is PendingToolCall {
 function hasEpochMsTimestamp(
   value: Record<string, unknown>
 ): value is Record<string, unknown> & { timestamp: EpochMs } {
-  try {
-    assertEpochMs(value.timestamp, "timestamp");
-    if ("source" in value && value.source !== undefined) {
-      assertEventSource(value.source, "source");
-    }
-    return true;
-  } catch {
+  if (
+    typeof value.timestamp !== "number" ||
+    !Number.isSafeInteger(value.timestamp)
+  ) {
     return false;
   }
-}
 
-function assertEventSource(
-  value: unknown,
-  label: string
-): asserts value is EventSource {
-  if (!isPlainObject(value)) {
-    throw new KrakenValidationError(`${label} must be a plain object`, {
-      code: "invalid_event_source",
-      details: value,
-    });
+  if (
+    "source" in value &&
+    value.source !== undefined &&
+    !isEventSource(value.source)
+  ) {
+    return false;
   }
 
-  if (!isStringProperty(value, "agent")) {
-    throw new KrakenValidationError(`${label}.agent must be a string`, {
-      code: "invalid_event_source",
-      details: value,
-    });
+  return true;
+}
+
+function isEventSource(value: unknown): value is EventSource {
+  if (!(isPlainObject(value) && isStringProperty(value, "agent"))) {
+    return false;
   }
 
   if (
@@ -1029,10 +1020,7 @@ function assertEventSource(
     value.driver !== undefined &&
     typeof value.driver !== "string"
   ) {
-    throw new KrakenValidationError(`${label}.driver must be a string`, {
-      code: "invalid_event_source",
-      details: value,
-    });
+    return false;
   }
 
   if (
@@ -1040,11 +1028,18 @@ function assertEventSource(
     value.threadId !== undefined &&
     typeof value.threadId !== "string"
   ) {
-    throw new KrakenValidationError(`${label}.threadId must be a string`, {
-      code: "invalid_event_source",
-      details: value,
-    });
+    return false;
   }
+
+  if (
+    "workerId" in value &&
+    value.workerId !== undefined &&
+    typeof value.workerId !== "string"
+  ) {
+    return false;
+  }
+
+  return true;
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
