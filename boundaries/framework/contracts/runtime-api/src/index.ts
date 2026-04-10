@@ -20,6 +20,7 @@ export type {
   HashString,
   KernelRecord,
 } from "@kraken/shared-core-types";
+export { KrakenValidationError } from "@kraken/shared-core-types";
 export type {
   AfterIterationContext,
   AfterIterationHandler,

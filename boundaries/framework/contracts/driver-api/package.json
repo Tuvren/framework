@@ -13,7 +13,6 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@kraken/framework-runtime-api": "workspace:*",
-    "@kraken/shared-core-types": "workspace:*"
+    "@kraken/framework-runtime-api": "workspace:*"
   }
 }

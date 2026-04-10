@@ -215,6 +215,13 @@ describe("runtime-api contracts", () => {
   test("rejects execution statuses with invalid phase invariants", () => {
     expect(
       isExecutionStatus({
+        iterationCount: 1,
+        phase: "paused",
+      })
+    ).toBe(false);
+
+    expect(
+      isExecutionStatus({
         approval: frameworkContractFixtures.approvalRequest,
         iterationCount: 1,
         phase: "running",
@@ -369,6 +376,56 @@ describe("runtime-api contracts", () => {
           toolCalls: { byName: {}, total: -2 },
           toolResults: { byName: {}, total: 0 },
           turnBoundaries: [0],
+        },
+        phase: "running",
+      })
+    ).toBe(false);
+  });
+
+  test("accepts first-turn manifests with sentinel assistant indexes", () => {
+    expect(
+      isExecutionStatus({
+        iterationCount: 0,
+        manifest: {
+          byRole: {
+            assistant: 0,
+            system: 0,
+            tool: 0,
+            user: 1,
+          },
+          extensions: {},
+          lastAssistantMessageIndex: -1,
+          lastUserMessageIndex: 0,
+          messageCount: 1,
+          tokenEstimate: 12,
+          toolCalls: { byName: {}, total: 0 },
+          toolResults: { byName: {}, total: 0 },
+          turnBoundaries: [0],
+        },
+        phase: "running",
+      })
+    ).toBe(true);
+  });
+
+  test("rejects manifests with inconsistent summary indexes and totals", () => {
+    expect(
+      isExecutionStatus({
+        iterationCount: 0,
+        manifest: {
+          byRole: {
+            assistant: 1,
+            system: 0,
+            tool: 0,
+            user: 1,
+          },
+          extensions: {},
+          lastAssistantMessageIndex: 99,
+          lastUserMessageIndex: 0,
+          messageCount: 2,
+          tokenEstimate: 12,
+          toolCalls: { byName: { search: 2 }, total: 0 },
+          toolResults: { byName: {}, total: 0 },
+          turnBoundaries: [5, 0, 5],
         },
         phase: "running",
       })

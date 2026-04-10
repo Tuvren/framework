@@ -1134,6 +1134,10 @@ export function isExecutionStatus(value: unknown): value is ExecutionStatus {
     return false;
   }
 
+  if (value.phase === "paused" && value.approval === undefined) {
+    return false;
+  }
+
   return true;
 }
 
@@ -1284,21 +1288,78 @@ function isKrakenErrorProjection(
 }
 
 function isContextManifest(value: unknown): value is ContextManifest {
-  return (
-    isPlainObject(value) &&
-    isContextManifestCounters(value.byRole) &&
-    isPlainObject(value.extensions) &&
-    isNonNegativeSafeIntegerProperty(value, "lastAssistantMessageIndex") &&
-    isNonNegativeSafeIntegerProperty(value, "lastUserMessageIndex") &&
-    isNonNegativeSafeIntegerProperty(value, "messageCount") &&
-    isFiniteNumberProperty(value, "tokenEstimate") &&
-    isContextManifestNameCounters(value.toolCalls) &&
-    isContextManifestNameCounters(value.toolResults) &&
-    Array.isArray(value.turnBoundaries) &&
-    value.turnBoundaries.every(
-      (item) => Number.isSafeInteger(item) && item >= 0
+  const byRole = isPlainObject(value) ? value.byRole : undefined;
+  const messageCount = isPlainObject(value) ? value.messageCount : undefined;
+  const lastAssistantMessageIndex = isPlainObject(value)
+    ? value.lastAssistantMessageIndex
+    : undefined;
+  const lastUserMessageIndex = isPlainObject(value)
+    ? value.lastUserMessageIndex
+    : undefined;
+  const toolCalls = isPlainObject(value) ? value.toolCalls : undefined;
+  const toolResults = isPlainObject(value) ? value.toolResults : undefined;
+
+  if (
+    !(
+      isPlainObject(value) &&
+      isContextManifestCounters(byRole) &&
+      isPlainObject(value.extensions) &&
+      isNonNegativeSafeInteger(messageCount) &&
+      isFiniteNumberProperty(value, "tokenEstimate") &&
+      isContextManifestNameCounters(toolCalls) &&
+      isContextManifestNameCounters(toolResults) &&
+      Array.isArray(value.turnBoundaries) &&
+      value.turnBoundaries.every(
+        (item) => Number.isSafeInteger(item) && item >= 0
+      )
     )
-  );
+  ) {
+    return false;
+  }
+
+  if (
+    !(
+      isMessageIndexValue(lastAssistantMessageIndex, messageCount) &&
+      isMessageIndexValue(lastUserMessageIndex, messageCount)
+    )
+  ) {
+    return false;
+  }
+
+  if (
+    !(
+      hasValidLastRoleIndex(
+        byRole.assistant,
+        lastAssistantMessageIndex,
+        messageCount
+      ) &&
+      hasValidLastRoleIndex(byRole.user, lastUserMessageIndex, messageCount)
+    )
+  ) {
+    return false;
+  }
+
+  if (
+    byRole.assistant + byRole.system + byRole.tool + byRole.user !==
+    messageCount
+  ) {
+    return false;
+  }
+
+  if (
+    !(
+      hasMatchingNamedCounterTotal(toolCalls) &&
+      hasMatchingNamedCounterTotal(toolResults)
+    )
+  ) {
+    return false;
+  }
+
+  if (!hasOrderedTurnBoundaries(value.turnBoundaries, messageCount)) {
+    return false;
+  }
+
+  return true;
 }
 
 function isContextManifestCounters(
@@ -1325,6 +1386,45 @@ function isContextManifestNameCounters(
     ) &&
     isNonNegativeSafeIntegerProperty(value, "total")
   );
+}
+
+function hasValidLastRoleIndex(
+  roleCount: number,
+  lastIndex: number,
+  messageCount: number
+): boolean {
+  if (roleCount === 0) {
+    return lastIndex === -1;
+  }
+
+  return lastIndex >= 0 && lastIndex < messageCount;
+}
+
+function hasMatchingNamedCounterTotal(
+  counters: ContextManifestNameCounters
+): boolean {
+  const namedTotal = Object.values(counters.byName).reduce(
+    (sum, count) => sum + count,
+    0
+  );
+  return namedTotal === counters.total;
+}
+
+function hasOrderedTurnBoundaries(
+  turnBoundaries: number[],
+  messageCount: number
+): boolean {
+  let previousBoundary = -1;
+
+  for (const boundary of turnBoundaries) {
+    if (boundary >= messageCount || boundary <= previousBoundary) {
+      return false;
+    }
+
+    previousBoundary = boundary;
+  }
+
+  return true;
 }
 
 function hasEpochMsTimestamp(
@@ -1465,6 +1565,25 @@ function isNonNegativeSafeIntegerProperty<
     Number.isSafeInteger(propertyValue) &&
     propertyValue >= 0
   );
+}
+
+function isMessageIndexValue(
+  value: unknown,
+  messageCount: number
+): value is number {
+  if (typeof value !== "number" || !Number.isSafeInteger(value) || value < -1) {
+    return false;
+  }
+
+  if (messageCount === 0) {
+    return value === -1;
+  }
+
+  return value < messageCount;
+}
+
+function isNonNegativeSafeInteger(value: unknown): value is number {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
 }
 
 function hasUniqueApprovalDecisionCallIds(

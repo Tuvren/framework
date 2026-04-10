@@ -18,14 +18,12 @@ import type {
   AgentConfig,
   ApprovalResponse,
   EpochMs,
+  HashString,
   KrakenStreamEvent,
   RuntimeResolution,
   ToolRegistry,
 } from "@kraken/framework-runtime-api";
-import {
-  type HashString,
-  KrakenValidationError,
-} from "@kraken/shared-core-types";
+import { KrakenValidationError } from "@kraken/framework-runtime-api";
 
 export interface DriverRuntimePort {
   emit(event: KrakenStreamEvent): Promise<void> | void;

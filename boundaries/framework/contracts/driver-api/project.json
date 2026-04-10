@@ -31,9 +31,18 @@
     },
     "typecheck": {
       "executor": "nx:run-commands",
+      "dependsOn": ["^build"],
       "options": {
         "cwd": "boundaries/framework/contracts/driver-api",
-        "command": "tsc --project tsconfig.typecheck.json --noEmit --pretty false"
+        "commands": [
+          {
+            "command": "tsc --project tsconfig.dts.json --noEmit --pretty false"
+          },
+          {
+            "command": "tsc --project tsconfig.typecheck.json --noEmit --pretty false"
+          }
+        ],
+        "parallel": false
       }
     }
   }
