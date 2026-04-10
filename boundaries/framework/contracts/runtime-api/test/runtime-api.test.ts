@@ -349,6 +349,20 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
   });
 
+  test("rejects stream events with mixed-variant payload fields", () => {
+    expect(
+      isKrakenStreamEvent({
+        callId: "call-1",
+        input: {},
+        messageId: "message-1",
+        name: "search",
+        text: "ok",
+        timestamp: 1,
+        type: "text.done",
+      })
+    ).toBe(false);
+  });
+
   test("rejects file parts with empty media types", () => {
     expect(
       isKrakenMessage({
@@ -429,6 +443,16 @@ describe("runtime-api contracts", () => {
     expect(
       isKrakenMessage({
         parts: [{ type: "text" }],
+        role: "assistant",
+      })
+    ).toBe(false);
+  });
+
+  test("rejects messages with undeclared top-level fields", () => {
+    expect(
+      isKrakenMessage({
+        extra: 1,
+        parts: [{ text: "hi", type: "text" }],
         role: "assistant",
       })
     ).toBe(false);
@@ -524,6 +548,51 @@ describe("runtime-api contracts", () => {
             },
             text: "hi",
             type: "text",
+          },
+        ],
+        role: "assistant",
+      })
+    ).toBe(false);
+  });
+
+  test("rejects content parts with mixed-variant fields", () => {
+    expect(
+      isKrakenMessage({
+        parts: [
+          {
+            callId: "call-1",
+            input: {},
+            name: "search",
+            text: "hi",
+            type: "text",
+          },
+        ],
+        role: "assistant",
+      })
+    ).toBe(false);
+
+    expect(
+      isKrakenMessage({
+        parts: [
+          {
+            callId: "call-1",
+            data: { ok: true },
+            type: "structured",
+          },
+        ],
+        role: "assistant",
+      })
+    ).toBe(false);
+  });
+
+  test("rejects empty non-redacted reasoning parts", () => {
+    expect(
+      isKrakenMessage({
+        parts: [
+          {
+            redacted: false,
+            text: "",
+            type: "reasoning",
           },
         ],
         role: "assistant",
@@ -738,6 +807,61 @@ describe("runtime-api contracts", () => {
           type: "object",
         },
         name: "bad-duplicate-required",
+      })
+    ).toBe(false);
+
+    expect(
+      isKrakenToolDefinition({
+        description: "Bad items schema",
+        execute() {
+          return undefined;
+        },
+        inputSchema: {
+          items: 123,
+          type: "array",
+        },
+        name: "bad-items-schema",
+      })
+    ).toBe(false);
+
+    expect(
+      isKrakenToolDefinition({
+        description: "Bad additionalProperties schema",
+        execute() {
+          return undefined;
+        },
+        inputSchema: {
+          additionalProperties: 123,
+          type: "object",
+        },
+        name: "bad-additional-properties-schema",
+      })
+    ).toBe(false);
+
+    expect(
+      isKrakenToolDefinition({
+        description: "Bad propertyNames schema",
+        execute() {
+          return undefined;
+        },
+        inputSchema: {
+          propertyNames: 123,
+          type: "object",
+        },
+        name: "bad-property-names-schema",
+      })
+    ).toBe(false);
+
+    expect(
+      isKrakenToolDefinition({
+        description: "Bad oneOf schema",
+        execute() {
+          return undefined;
+        },
+        inputSchema: {
+          oneOf: [123],
+        },
+        name: "bad-one-of-schema",
       })
     ).toBe(false);
   });

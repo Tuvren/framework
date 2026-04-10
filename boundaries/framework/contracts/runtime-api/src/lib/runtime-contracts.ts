@@ -82,6 +82,45 @@ const JSON_SCHEMA_TYPE_NAMES = new Set([
   "integer",
   "string",
 ]);
+const SYSTEM_MESSAGE_KEYS = new Set(["role", "content"]);
+const USER_MESSAGE_KEYS = new Set(["role", "parts"]);
+const ASSISTANT_MESSAGE_KEYS = new Set(["role", "parts", "providerMetadata"]);
+const TOOL_MESSAGE_KEYS = new Set(["role", "parts"]);
+const TEXT_PART_KEYS = new Set(["type", "text", "providerMetadata"]);
+const REASONING_PART_KEYS = new Set([
+  "type",
+  "text",
+  "redacted",
+  "providerMetadata",
+]);
+const TOOL_CALL_PART_KEYS = new Set([
+  "type",
+  "callId",
+  "name",
+  "input",
+  "providerMetadata",
+]);
+const TOOL_RESULT_PART_KEYS = new Set([
+  "type",
+  "callId",
+  "name",
+  "output",
+  "isError",
+  "providerMetadata",
+]);
+const FILE_PART_KEYS = new Set([
+  "type",
+  "data",
+  "mediaType",
+  "filename",
+  "providerMetadata",
+]);
+const STRUCTURED_PART_KEYS = new Set([
+  "type",
+  "data",
+  "name",
+  "providerMetadata",
+]);
 
 export type KrakenJsonValue =
   | null
@@ -848,30 +887,29 @@ export function isKrakenMessage(value: unknown): value is KrakenMessage {
       case "system":
         return (
           // Durable framework messages should always carry meaningful content.
+          hasOnlyAllowedKeys(value, SYSTEM_MESSAGE_KEYS) &&
           isNonEmptyStringProperty(value, "content") &&
           !("parts" in value) &&
           !("providerMetadata" in value)
         );
       case "user":
         return (
+          hasOnlyAllowedKeys(value, USER_MESSAGE_KEYS) &&
           isNonEmptyArray(value.parts) &&
-          value.parts.every(isContentPart) &&
-          !("content" in value) &&
-          !("providerMetadata" in value)
+          value.parts.every(isContentPart)
         );
       case "assistant":
         return (
+          hasOnlyAllowedKeys(value, ASSISTANT_MESSAGE_KEYS) &&
           isNonEmptyArray(value.parts) &&
           value.parts.every(isContentPart) &&
-          !("content" in value) &&
           isOptionalSerializableRecordProperty(value, "providerMetadata")
         );
       case "tool":
         return (
+          hasOnlyAllowedKeys(value, TOOL_MESSAGE_KEYS) &&
           isNonEmptyArray(value.parts) &&
-          value.parts.every(isToolResultPart) &&
-          !("content" in value) &&
-          !("providerMetadata" in value)
+          value.parts.every(isToolResultPart)
         );
       default:
         return false;
@@ -1028,116 +1066,180 @@ function hasValidStreamEventPayload(
 ): boolean {
   switch (value.type) {
     case "turn.start":
-      return (
-        isNonEmptyStringProperty(value, "turnId") &&
-        isNonEmptyStringProperty(value, "threadId") &&
-        isOptionalHashStringProperty(value, "resumedFrom")
+      return matchesStreamEventVariant(
+        value,
+        ["turnId", "threadId", "resumedFrom"],
+        () =>
+          isNonEmptyStringProperty(value, "turnId") &&
+          isNonEmptyStringProperty(value, "threadId") &&
+          isOptionalHashStringProperty(value, "resumedFrom")
       );
     case "turn.end":
-      return (
-        isNonEmptyStringProperty(value, "turnId") &&
-        isStringProperty(value, "status") &&
-        TURN_END_STATUSES.has(value.status)
+      return matchesStreamEventVariant(
+        value,
+        ["turnId", "status"],
+        () =>
+          isNonEmptyStringProperty(value, "turnId") &&
+          isStringProperty(value, "status") &&
+          TURN_END_STATUSES.has(value.status)
       );
     case "iteration.start":
     case "iteration.end":
-      return isNonNegativeSafeIntegerProperty(value, "iterationCount");
+      return matchesStreamEventVariant(value, ["iterationCount"], () =>
+        isNonNegativeSafeIntegerProperty(value, "iterationCount")
+      );
     case "message.start":
-      return (
-        isNonEmptyStringProperty(value, "messageId") &&
-        value.role === "assistant"
+      return matchesStreamEventVariant(
+        value,
+        ["messageId", "role"],
+        () =>
+          isNonEmptyStringProperty(value, "messageId") &&
+          value.role === "assistant"
       );
     case "text.delta":
-      return (
-        isNonEmptyStringProperty(value, "messageId") &&
-        typeof value.delta === "string"
+      return matchesStreamEventVariant(
+        value,
+        ["messageId", "delta"],
+        () =>
+          isNonEmptyStringProperty(value, "messageId") &&
+          typeof value.delta === "string"
       );
     case "text.done":
-      return (
-        isNonEmptyStringProperty(value, "messageId") &&
-        typeof value.text === "string"
+      return matchesStreamEventVariant(
+        value,
+        ["messageId", "text"],
+        () =>
+          isNonEmptyStringProperty(value, "messageId") &&
+          typeof value.text === "string"
       );
     case "reasoning.delta":
-      return (
-        isNonEmptyStringProperty(value, "messageId") &&
-        typeof value.delta === "string"
+      return matchesStreamEventVariant(
+        value,
+        ["messageId", "delta"],
+        () =>
+          isNonEmptyStringProperty(value, "messageId") &&
+          typeof value.delta === "string"
       );
     case "reasoning.done":
-      return isNonEmptyStringProperty(value, "messageId");
+      return matchesStreamEventVariant(value, ["messageId"], () =>
+        isNonEmptyStringProperty(value, "messageId")
+      );
     case "structured.delta":
-      return (
-        isNonEmptyStringProperty(value, "messageId") &&
-        typeof value.delta === "string"
+      return matchesStreamEventVariant(
+        value,
+        ["messageId", "delta"],
+        () =>
+          isNonEmptyStringProperty(value, "messageId") &&
+          typeof value.delta === "string"
       );
     case "structured.done":
-      return (
-        isNonEmptyStringProperty(value, "messageId") &&
-        "data" in value &&
-        isSerializableContractValue(value.data) &&
-        isOptionalStringProperty(value, "name")
+      return matchesStreamEventVariant(
+        value,
+        ["messageId", "data", "name"],
+        () =>
+          isNonEmptyStringProperty(value, "messageId") &&
+          "data" in value &&
+          isSerializableContractValue(value.data) &&
+          isOptionalStringProperty(value, "name")
       );
     case "tool_call.start":
-      return (
-        isNonEmptyStringProperty(value, "messageId") &&
-        isNonEmptyStringProperty(value, "callId") &&
-        isNonEmptyStringProperty(value, "name")
+      return matchesStreamEventVariant(
+        value,
+        ["messageId", "callId", "name"],
+        () =>
+          isNonEmptyStringProperty(value, "messageId") &&
+          isNonEmptyStringProperty(value, "callId") &&
+          isNonEmptyStringProperty(value, "name")
       );
     case "tool_call.args_delta":
-      return (
-        isNonEmptyStringProperty(value, "callId") &&
-        typeof value.delta === "string"
+      return matchesStreamEventVariant(
+        value,
+        ["callId", "delta"],
+        () =>
+          isNonEmptyStringProperty(value, "callId") &&
+          typeof value.delta === "string"
       );
     case "tool_call.done":
-      return (
-        isNonEmptyStringProperty(value, "callId") &&
-        isNonEmptyStringProperty(value, "name") &&
-        "input" in value &&
-        isSerializableContractValue(value.input)
+      return matchesStreamEventVariant(
+        value,
+        ["callId", "name", "input"],
+        () =>
+          isNonEmptyStringProperty(value, "callId") &&
+          isNonEmptyStringProperty(value, "name") &&
+          "input" in value &&
+          isSerializableContractValue(value.input)
       );
     case "message.done":
-      return (
-        isNonEmptyStringProperty(value, "messageId") &&
-        isStringProperty(value, "finishReason") &&
-        FINISH_REASONS.has(value.finishReason) &&
-        isOptionalProviderUsage(value, "usage")
+      return matchesStreamEventVariant(
+        value,
+        ["messageId", "finishReason", "usage"],
+        () =>
+          isNonEmptyStringProperty(value, "messageId") &&
+          isStringProperty(value, "finishReason") &&
+          FINISH_REASONS.has(value.finishReason) &&
+          isOptionalProviderUsage(value, "usage")
       );
     case "tool.start":
-      return (
-        isNonEmptyStringProperty(value, "callId") &&
-        isNonEmptyStringProperty(value, "name") &&
-        "input" in value &&
-        isSerializableContractValue(value.input)
+      return matchesStreamEventVariant(
+        value,
+        ["callId", "name", "input"],
+        () =>
+          isNonEmptyStringProperty(value, "callId") &&
+          isNonEmptyStringProperty(value, "name") &&
+          "input" in value &&
+          isSerializableContractValue(value.input)
       );
     case "tool.result":
-      return (
-        isNonEmptyStringProperty(value, "callId") &&
-        isNonEmptyStringProperty(value, "name") &&
-        "output" in value &&
-        isSerializableContractValue(value.output) &&
-        isOptionalBooleanProperty(value, "isError")
+      return matchesStreamEventVariant(
+        value,
+        ["callId", "name", "output", "isError"],
+        () =>
+          isNonEmptyStringProperty(value, "callId") &&
+          isNonEmptyStringProperty(value, "name") &&
+          "output" in value &&
+          isSerializableContractValue(value.output) &&
+          isOptionalBooleanProperty(value, "isError")
       );
     case "approval.requested":
-      return isApprovalRequest(value.request);
+      return matchesStreamEventVariant(value, ["request"], () =>
+        isApprovalRequest(value.request)
+      );
     case "approval.resolved":
-      return isApprovalResponse(value.response);
+      return matchesStreamEventVariant(value, ["response"], () =>
+        isApprovalResponse(value.response)
+      );
     case "steering.incorporated":
-      return isNonEmptyStringProperty(value, "messageId");
+      return matchesStreamEventVariant(value, ["messageId"], () =>
+        isNonEmptyStringProperty(value, "messageId")
+      );
     case "state.snapshot":
-      return isContextManifest(value.manifest);
+      return matchesStreamEventVariant(value, ["manifest"], () =>
+        isContextManifest(value.manifest)
+      );
     case "state.checkpoint":
-      return (
-        isNonNegativeSafeIntegerProperty(value, "iterationCount") &&
-        isHashString(value.turnNodeHash)
+      return matchesStreamEventVariant(
+        value,
+        ["iterationCount", "turnNodeHash"],
+        () =>
+          isNonNegativeSafeIntegerProperty(value, "iterationCount") &&
+          isHashString(value.turnNodeHash)
       );
     case "error":
-      return (
-        isKrakenErrorProjection(value.error) && typeof value.fatal === "boolean"
+      return matchesStreamEventVariant(
+        value,
+        ["error", "fatal"],
+        () =>
+          isKrakenErrorProjection(value.error) &&
+          typeof value.fatal === "boolean"
       );
     case "custom":
-      return (
-        isNonEmptyStringProperty(value, "name") &&
-        "data" in value &&
-        isSerializableContractValue(value.data)
+      return matchesStreamEventVariant(
+        value,
+        ["name", "data"],
+        () =>
+          isNonEmptyStringProperty(value, "name") &&
+          "data" in value &&
+          isSerializableContractValue(value.data)
       );
     default:
       return false;
@@ -1248,17 +1350,21 @@ function isContentPart(value: unknown): value is ContentPart {
   switch (value.type) {
     case "text":
       return (
+        hasOnlyAllowedKeys(value, TEXT_PART_KEYS) &&
         typeof value.text === "string" &&
         isOptionalSerializableRecordProperty(value, "providerMetadata")
       );
     case "reasoning":
       return (
+        hasOnlyAllowedKeys(value, REASONING_PART_KEYS) &&
         typeof value.text === "string" &&
         typeof value.redacted === "boolean" &&
+        (value.redacted || value.text.length > 0) &&
         isOptionalSerializableRecordProperty(value, "providerMetadata")
       );
     case "tool_call":
       return (
+        hasOnlyAllowedKeys(value, TOOL_CALL_PART_KEYS) &&
         isNonEmptyStringProperty(value, "callId") &&
         isNonEmptyStringProperty(value, "name") &&
         "input" in value &&
@@ -1267,6 +1373,7 @@ function isContentPart(value: unknown): value is ContentPart {
       );
     case "tool_result":
       return (
+        hasOnlyAllowedKeys(value, TOOL_RESULT_PART_KEYS) &&
         isNonEmptyStringProperty(value, "callId") &&
         isNonEmptyStringProperty(value, "name") &&
         "output" in value &&
@@ -1276,6 +1383,7 @@ function isContentPart(value: unknown): value is ContentPart {
       );
     case "file":
       return (
+        hasOnlyAllowedKeys(value, FILE_PART_KEYS) &&
         (typeof value.data === "string" || value.data instanceof Uint8Array) &&
         isNonEmptyStringProperty(value, "mediaType") &&
         isOptionalStringProperty(value, "filename") &&
@@ -1283,6 +1391,7 @@ function isContentPart(value: unknown): value is ContentPart {
       );
     case "structured":
       return (
+        hasOnlyAllowedKeys(value, STRUCTURED_PART_KEYS) &&
         "data" in value &&
         isSerializableContractValue(value.data) &&
         isOptionalStringProperty(value, "name") &&
@@ -1795,6 +1904,31 @@ function isValidJsonSchemaObject(value: {
     return false;
   }
 
+  if ("items" in value && !isKrakenJsonSchema(value.items)) {
+    return false;
+  }
+
+  if (
+    "additionalProperties" in value &&
+    !(
+      typeof value.additionalProperties === "boolean" ||
+      isKrakenJsonSchema(value.additionalProperties)
+    )
+  ) {
+    return false;
+  }
+
+  if ("propertyNames" in value && !isKrakenJsonSchema(value.propertyNames)) {
+    return false;
+  }
+
+  if (
+    "oneOf" in value &&
+    !(Array.isArray(value.oneOf) && value.oneOf.every(isKrakenJsonSchema))
+  ) {
+    return false;
+  }
+
   return true;
 }
 
@@ -2027,4 +2161,29 @@ function safePredicate(check: () => boolean): boolean {
     // must collapse to `false` instead of escaping as thrown errors.
     return false;
   }
+}
+
+function hasOnlyAllowedKeys(
+  value: Record<string, unknown>,
+  allowedKeys: ReadonlySet<string>
+): boolean {
+  return Object.keys(value).every((key) => allowedKeys.has(key));
+}
+
+function hasOnlyStreamEventKeys(
+  value: Record<string, unknown>,
+  eventSpecificKeys: string[]
+): boolean {
+  return hasOnlyAllowedKeys(
+    value,
+    new Set(["type", "timestamp", "source", ...eventSpecificKeys])
+  );
+}
+
+function matchesStreamEventVariant(
+  value: Record<string, unknown>,
+  eventSpecificKeys: string[],
+  predicate: () => boolean
+): boolean {
+  return hasOnlyStreamEventKeys(value, eventSpecificKeys) && predicate();
 }

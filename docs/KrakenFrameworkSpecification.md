@@ -285,6 +285,7 @@ The internal event vocabulary. Discriminated union on `type`. Every event carrie
 ```
 EventSource
 ├─ agent: string
+├─ driver?: string
 ├─ workerId?: string
 └─ threadId?: string
 ```
@@ -1368,7 +1369,7 @@ KrakenToolDefinition
 ### 8.2 Schema Flexibility
 
 ```
-KrakenSchema = JSONSchema | ZodSchema | TypeBoxSchema | CustomSchema
+KrakenSchema = JSONSchema | CustomSchema
 
 ValidationResult =
   | { valid: true, value: unknown }
@@ -1379,7 +1380,7 @@ CustomSchema
 └─ validate(input: unknown): ValidationResult
 ```
 
-JSON Schema is the interchange format. Zod and TypeBox convert to JSON Schema for providers and validate natively.
+JSON Schema is the interchange format at the shared framework contract boundary. Zod and TypeBox remain acceptable implementation conveniences upstream, but they must be converted into JSON Schema or wrapped behind `CustomSchema` before they cross this shared contract seam.
 
 ### 8.3 Execute Function
 
