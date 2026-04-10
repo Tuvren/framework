@@ -466,6 +466,8 @@ export interface AgentConfig {
 }
 ```
 
+`ApprovalDecision.message` is optional operator commentary for every approval decision type. When present, runtime implementations must attach it to the resulting `ToolResultPart` produced by approval resolution rather than staging it as a separate `user` message or treating it as steering input. Reject and custom decisions therefore remain structurally valid without a message, but the runtime must synthesize a default error explanation when one is omitted.
+
 ### 4.2 Kernel Protocol Surface
 - **Style:** protocol-shaped library contract for the first TypeScript implementation
 - **Authentication / Authorization:** Internal kernel boundary used by framework packages and backend adapters

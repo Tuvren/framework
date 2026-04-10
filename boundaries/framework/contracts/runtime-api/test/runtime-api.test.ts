@@ -489,6 +489,14 @@ describe("runtime-api contracts", () => {
         phase: "completed",
       })
     ).toBe(false);
+
+    expect(
+      isExecutionStatus({
+        approval: frameworkContractFixtures.approvalRequest,
+        iterationCount: 1,
+        phase: "paused",
+      })
+    ).toBe(false);
   });
 
   test("rejects tool definitions with invalid schemas", () => {
@@ -530,6 +538,22 @@ describe("runtime-api contracts", () => {
           type: "object",
         },
         name: "bad-properties",
+      })
+    ).toBe(false);
+
+    expect(
+      isKrakenToolDefinition({
+        description: "Bad nested property schema",
+        execute() {
+          return undefined;
+        },
+        inputSchema: {
+          properties: {
+            foo: 1,
+          },
+          type: "object",
+        },
+        name: "bad-nested-properties",
       })
     ).toBe(false);
   });
@@ -746,6 +770,33 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
   });
 
+  test("rejects blank correlation identifiers", () => {
+    expect(
+      isApprovalResponse({
+        decisions: [{ callId: "   ", type: "approve" }],
+      })
+    ).toBe(false);
+
+    expect(
+      isKrakenStreamEvent({
+        messageId: "   ",
+        text: "ok",
+        timestamp: 1,
+        type: "text.done",
+      })
+    ).toBe(false);
+
+    expect(
+      isKrakenStreamEvent({
+        source: { agent: "" },
+        status: "completed",
+        timestamp: 1,
+        turnId: "turn-1",
+        type: "turn.end",
+      })
+    ).toBe(false);
+  });
+
   test("rejects execution statuses with non-finite manifest token estimates", () => {
     expect(
       isExecutionStatus({
@@ -762,6 +813,29 @@ describe("runtime-api contracts", () => {
           lastUserMessageIndex: 1,
           messageCount: 2,
           tokenEstimate: Number.NaN,
+          toolCalls: { byName: {}, total: 0 },
+          toolResults: { byName: {}, total: 0 },
+          turnBoundaries: [0],
+        },
+        phase: "running",
+      })
+    ).toBe(false);
+
+    expect(
+      isExecutionStatus({
+        iterationCount: 1,
+        manifest: {
+          byRole: {
+            assistant: 1,
+            system: 0,
+            tool: 0,
+            user: 1,
+          },
+          extensions: {},
+          lastAssistantMessageIndex: 0,
+          lastUserMessageIndex: 1,
+          messageCount: 2,
+          tokenEstimate: -5,
           toolCalls: { byName: {}, total: 0 },
           toolResults: { byName: {}, total: 0 },
           turnBoundaries: [0],

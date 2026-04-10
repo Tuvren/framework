@@ -264,7 +264,7 @@ ApprovalDecision
 ├─ callId: string                    // must match a PendingToolCall.callId
 ├─ type: "approve" | "edit" | "reject" | string
 ├─ editedInput?: unknown
-└─ message?: string
+└─ message?: string                  // optional operator commentary attached to the resulting ToolResultPart
 ```
 
 Each approval decision applies to exactly one pending tool call, linked by framework `callId`.
@@ -275,6 +275,8 @@ Each approval decision applies to exactly one pending tool call, linked by frame
 | `edit`    | Execute with `editedInput`                                         |
 | `reject`  | Produce error ToolResultPart with message                          |
 | custom    | Treated as reject with decision type and message surfaced to model |
+
+`ApprovalDecision.message` remains optional for every decision type. When present, it is incorporated into the resulting `ToolResultPart` produced by the approval outcome; it does not create a separate `user` message and is not treated as steering. For `approve` and `edit`, the message is attached to the executed tool result. For `reject` and custom decisions, the message is attached to the synthesized error `ToolResultPart`. When `reject` or a custom decision omits `message`, the framework MUST still synthesize a coherent error `ToolResultPart` using a framework-defined default explanation.
 
 ### 1.8 KrakenStreamEvent
 
@@ -932,7 +934,7 @@ When a pause is triggered by tool approval, the framework MUST emit `approval.re
 
 #### Approval Resume
 
-When a Turn is paused for tool approval, `resolveApproval` on the `ExecutionHandle` triggers the approval resume path. The `ApprovalResponse` is a control signal, not conversational content — no user message is incorporated.
+When a Turn is paused for tool approval, `resolveApproval` on the `ExecutionHandle` triggers the approval resume path. The `ApprovalResponse` is a control signal, not conversational content. Any optional `ApprovalDecision.message` is folded into the resulting `ToolResultPart` for that decision; it is not incorporated as a standalone `user` message.
 
 Approval resume continues the existing Turn. `beforeTurn` and `afterTurn` are not re-fired.
 

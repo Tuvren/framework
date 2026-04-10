@@ -1174,9 +1174,9 @@ export function isExecutionStatus(value: unknown): value is ExecutionStatus {
       EXECUTION_PHASES.has(value.phase) &&
       isNonNegativeSafeIntegerProperty(value, "iterationCount") &&
       isOptionalApprovalRequest(value, "approval") &&
-      isOptionalStringProperty(value, "activeAgent") &&
+      isOptionalNonEmptyStringProperty(value, "activeAgent") &&
       isOptionalContextManifest(value, "manifest") &&
-      isOptionalStringProperty(value, "pauseReason")
+      isOptionalNonEmptyStringProperty(value, "pauseReason")
     )
   ) {
     return false;
@@ -1190,7 +1190,10 @@ export function isExecutionStatus(value: unknown): value is ExecutionStatus {
     return false;
   }
 
-  if (value.phase === "paused" && value.approval === undefined) {
+  if (
+    value.phase === "paused" &&
+    (value.approval === undefined || value.pauseReason === undefined)
+  ) {
     return false;
   }
 
@@ -1373,7 +1376,7 @@ function isContextManifest(value: unknown): value is ContextManifest {
       isContextManifestCounters(byRole) &&
       isSerializableRecord(value.extensions) &&
       isNonNegativeSafeInteger(messageCount) &&
-      isFiniteNumberProperty(value, "tokenEstimate") &&
+      isNonNegativeFiniteNumberProperty(value, "tokenEstimate") &&
       isContextManifestNameCounters(toolCalls) &&
       isContextManifestNameCounters(toolResults) &&
       Array.isArray(value.turnBoundaries) &&
@@ -1665,7 +1668,7 @@ function isNonEmptyStringProperty<
   TKey extends string,
   TObject extends Record<string, unknown>,
 >(value: TObject, key: TKey): boolean {
-  return typeof value[key] === "string" && value[key].length > 0;
+  return typeof value[key] === "string" && value[key].trim().length > 0;
 }
 
 function isNonEmptyArray(value: unknown): value is [unknown, ...unknown[]] {
@@ -1683,11 +1686,16 @@ function isApprovalPolicy(value: unknown): value is ApprovalPolicy {
   return typeof value === "boolean" || typeof value === "function";
 }
 
-function isFiniteNumberProperty<
+function isNonNegativeFiniteNumberProperty<
   TKey extends string,
   TObject extends Record<string, unknown>,
 >(value: TObject, key: TKey): boolean {
-  return typeof value[key] === "number" && Number.isFinite(value[key]);
+  const numericValue = value[key];
+  return (
+    typeof numericValue === "number" &&
+    Number.isFinite(numericValue) &&
+    numericValue >= 0
+  );
 }
 
 function isKrakenJsonSchema(value: unknown): value is KrakenJsonSchema {
@@ -1736,7 +1744,10 @@ function isValidJsonSchemaObject(value: {
 
   if (
     "properties" in value &&
-    !isKrakenJsonObject(value.properties, new WeakSet<object>())
+    !(
+      isKrakenJsonObject(value.properties, new WeakSet<object>()) &&
+      Object.values(value.properties).every(isKrakenJsonSchema)
+    )
   ) {
     return false;
   }
@@ -1885,14 +1896,14 @@ function hasUniqueApprovalDecisionCallIds(
 }
 
 function isEventSource(value: unknown): value is EventSource {
-  if (!(isPlainObject(value) && isStringProperty(value, "agent"))) {
+  if (!(isPlainObject(value) && isNonEmptyStringProperty(value, "agent"))) {
     return false;
   }
 
   if (
     "driver" in value &&
     value.driver !== undefined &&
-    typeof value.driver !== "string"
+    !isNonEmptyStringProperty(value, "driver")
   ) {
     return false;
   }
@@ -1900,7 +1911,7 @@ function isEventSource(value: unknown): value is EventSource {
   if (
     "threadId" in value &&
     value.threadId !== undefined &&
-    typeof value.threadId !== "string"
+    !isNonEmptyStringProperty(value, "threadId")
   ) {
     return false;
   }
@@ -1908,7 +1919,7 @@ function isEventSource(value: unknown): value is EventSource {
   if (
     "workerId" in value &&
     value.workerId !== undefined &&
-    typeof value.workerId !== "string"
+    !isNonEmptyStringProperty(value, "workerId")
   ) {
     return false;
   }
