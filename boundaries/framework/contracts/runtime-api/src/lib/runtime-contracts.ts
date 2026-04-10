@@ -82,6 +82,44 @@ const JSON_SCHEMA_TYPE_NAMES = new Set([
   "integer",
   "string",
 ]);
+const NON_NEGATIVE_INTEGER_SCHEMA_KEYWORDS = [
+  "maxItems",
+  "maxLength",
+  "maxProperties",
+  "maxContains",
+  "minItems",
+  "minLength",
+  "minProperties",
+  "minContains",
+];
+const FINITE_NUMBER_SCHEMA_KEYWORDS = [
+  "minimum",
+  "maximum",
+  "exclusiveMinimum",
+  "exclusiveMaximum",
+];
+const STRING_SCHEMA_KEYWORDS = ["pattern"];
+const SCHEMA_KEYWORDS = [
+  "additionalProperties",
+  "contains",
+  "else",
+  "if",
+  "items",
+  "not",
+  "propertyNames",
+  "then",
+];
+const NON_EMPTY_SCHEMA_ARRAY_KEYWORDS = [
+  "allOf",
+  "anyOf",
+  "oneOf",
+  "prefixItems",
+];
+const SCHEMA_RECORD_KEYWORDS = [
+  "dependentSchemas",
+  "patternProperties",
+  "properties",
+];
 const SYSTEM_MESSAGE_KEYS = new Set(["role", "content"]);
 const USER_MESSAGE_KEYS = new Set(["role", "parts"]);
 const ASSISTANT_MESSAGE_KEYS = new Set(["role", "parts", "providerMetadata"]);
@@ -166,6 +204,7 @@ const EXECUTION_STATUS_KEYS = new Set([
   "manifest",
   "pauseReason",
 ]);
+const APPROVAL_REQUEST_KEYS = new Set(["toolCalls", "completedResults"]);
 const TOOL_RESULT_MESSAGE_KEYS = new Set([
   "type",
   "callId",
@@ -888,17 +927,6 @@ export interface AgentConfig {
   tools?: KrakenToolDefinition[];
 }
 
-export interface RuntimeStatusRecord {
-  activeAgent?: string;
-  currentModel?: string;
-  currentProvider?: string;
-  iterationCount?: number;
-  partial?: boolean;
-  pauseReason?: string;
-  resumptionSchema?: unknown;
-  state: "running" | "paused" | "completed" | "failed";
-}
-
 export interface ExecutionStatus {
   activeAgent?: string;
   approval?: ApprovalRequest;
@@ -1022,6 +1050,7 @@ export function isApprovalRequest(value: unknown): value is ApprovalRequest {
     if (
       !(
         isPlainObject(value) &&
+        hasOnlyAllowedKeys(value, APPROVAL_REQUEST_KEYS) &&
         Array.isArray(value.toolCalls) &&
         value.toolCalls.length > 0 &&
         value.toolCalls.every(isPendingToolCall) &&
@@ -1531,11 +1560,15 @@ function isPendingToolCall(value: unknown): value is PendingToolCall {
     isSerializableContractValue(value.input) &&
     Array.isArray(value.decisions) &&
     value.decisions.length > 0 &&
-    value.decisions.every(isNonEmptyStringValue)
+    value.decisions.every(isNonEmptyStringValue) &&
+    hasUniqueStrings(value.decisions)
   );
 }
 
 export function isApprovalResponse(value: unknown): value is ApprovalResponse {
+  // Standalone approval responses can only validate response-local shape.
+  // Matching decision callIds back to the paused request requires request
+  // context and is enforced by `isApprovalResponseForRequest`.
   return safePredicate(
     () =>
       isPlainObject(value) &&
@@ -1547,6 +1580,20 @@ export function isApprovalResponse(value: unknown): value is ApprovalResponse {
   );
 }
 
+export function isApprovalResponseForRequest(
+  value: unknown,
+  request: ApprovalRequest
+): value is ApprovalResponse {
+  return safePredicate(
+    () =>
+      isApprovalResponse(value) &&
+      hasApprovalDecisionCallIdsWithinRequest(
+        value.decisions,
+        request.toolCalls
+      )
+  );
+}
+
 export function assertApprovalResponse(
   value: unknown,
   label = "value"
@@ -1554,6 +1601,19 @@ export function assertApprovalResponse(
   if (!isApprovalResponse(value)) {
     throw new KrakenValidationError(
       `${label} must be a valid ApprovalResponse`,
+      { code: "invalid_approval_response", details: value }
+    );
+  }
+}
+
+export function assertApprovalResponseForRequest(
+  value: unknown,
+  request: ApprovalRequest,
+  label = "value"
+): asserts value is ApprovalResponse {
+  if (!isApprovalResponseForRequest(value, request)) {
+    throw new KrakenValidationError(
+      `${label} must be a valid ApprovalResponse for the active approval request`,
       { code: "invalid_approval_response", details: value }
     );
   }
@@ -1980,61 +2040,74 @@ function isSerializableRecord(
 function isValidJsonSchemaObject(value: {
   [key: string]: KrakenJsonValue;
 }): boolean {
-  if ("type" in value) {
-    const schemaType = value.type;
+  // This is a structural guard for the shared contract seam. It rejects
+  // malformed standard keyword shapes without trying to replace a full
+  // metaschema engine such as Ajv.
+  if ("type" in value && !isValidJsonSchemaType(value.type)) {
+    return false;
+  }
 
-    if (!isValidJsonSchemaType(schemaType)) {
-      return false;
-    }
+  if (!hasValidUniqueStringArrayKeyword(value, "required")) {
+    return false;
+  }
+
+  if (!hasValidUniqueStringArrayRecordKeyword(value, "dependentRequired")) {
+    return false;
+  }
+
+  if (!hasValidEnumKeyword(value)) {
+    return false;
+  }
+
+  if (!hasValidFiniteNumberKeyword(value, "multipleOf", { positive: true })) {
+    return false;
+  }
+
+  if (!hasValidBooleanKeyword(value, "uniqueItems")) {
+    return false;
   }
 
   if (
-    "required" in value &&
-    !(
-      Array.isArray(value.required) &&
-      value.required.every((item) => typeof item === "string") &&
-      hasUniqueStrings(value.required)
+    !NON_NEGATIVE_INTEGER_SCHEMA_KEYWORDS.every((keyword) =>
+      hasValidNonNegativeIntegerKeyword(value, keyword)
     )
   ) {
     return false;
   }
 
   if (
-    "properties" in value &&
-    !(
-      isKrakenJsonObject(value.properties, new WeakSet<object>()) &&
-      Object.values(value.properties).every(isKrakenJsonSchema)
+    !FINITE_NUMBER_SCHEMA_KEYWORDS.every((keyword) =>
+      hasValidFiniteNumberKeyword(value, keyword)
     )
   ) {
     return false;
   }
 
-  if ("items" in value && !isKrakenJsonSchema(value.items)) {
-    return false;
-  }
-
   if (
-    "additionalProperties" in value &&
-    !(
-      typeof value.additionalProperties === "boolean" ||
-      isKrakenJsonSchema(value.additionalProperties)
+    !STRING_SCHEMA_KEYWORDS.every((keyword) =>
+      hasValidStringKeyword(value, keyword)
     )
   ) {
     return false;
   }
 
-  if ("propertyNames" in value && !isKrakenJsonSchema(value.propertyNames)) {
-    return false;
-  }
-
   if (
-    "oneOf" in value &&
-    !(Array.isArray(value.oneOf) && value.oneOf.every(isKrakenJsonSchema))
+    !SCHEMA_KEYWORDS.every((keyword) => hasValidSchemaKeyword(value, keyword))
   ) {
     return false;
   }
 
-  return true;
+  if (
+    !NON_EMPTY_SCHEMA_ARRAY_KEYWORDS.every((keyword) =>
+      hasValidSchemaArrayKeyword(value, keyword, { requireNonEmpty: true })
+    )
+  ) {
+    return false;
+  }
+
+  return SCHEMA_RECORD_KEYWORDS.every((keyword) =>
+    hasValidSchemaRecordKeyword(value, keyword)
+  );
 }
 
 function isKrakenJsonObject(
@@ -2108,6 +2181,9 @@ function isKrakenToolSchema(
 }
 
 function isCustomSchema(value: unknown): value is CustomSchema {
+  // Custom schemas are executable objects. The boundary guard intentionally
+  // stays structural here so probing untrusted input never invokes arbitrary
+  // user code inside `toJSONSchema()` or `validate()`.
   return (
     value !== null &&
     typeof value === "object" &&
@@ -2176,6 +2252,14 @@ function hasUniqueApprovalDecisionCallIds(
   }
 
   return true;
+}
+
+function hasApprovalDecisionCallIdsWithinRequest(
+  decisions: ApprovalDecision[],
+  toolCalls: PendingToolCall[]
+): boolean {
+  const pendingCallIds = new Set(toolCalls.map((toolCall) => toolCall.callId));
+  return decisions.every((decision) => pendingCallIds.has(decision.callId));
 }
 
 function hasUniqueStrings(values: string[]): boolean {
@@ -2262,6 +2346,134 @@ function isValidJsonSchemaType(value: unknown): boolean {
       value.every(
         (item) => typeof item === "string" && JSON_SCHEMA_TYPE_NAMES.has(item)
       ))
+  );
+}
+
+function hasValidNonNegativeIntegerKeyword(
+  value: { [key: string]: KrakenJsonValue },
+  key: string
+): boolean {
+  return !(key in value) || isNonNegativeSafeInteger(value[key]);
+}
+
+function hasValidFiniteNumberKeyword(
+  value: { [key: string]: KrakenJsonValue },
+  key: string,
+  options?: { positive?: boolean }
+): boolean {
+  if (!(key in value)) {
+    return true;
+  }
+
+  const keywordValue = value[key];
+
+  if (typeof keywordValue !== "number" || !Number.isFinite(keywordValue)) {
+    return false;
+  }
+
+  if (options?.positive) {
+    return keywordValue > 0;
+  }
+
+  return true;
+}
+
+function hasValidBooleanKeyword(
+  value: { [key: string]: KrakenJsonValue },
+  key: string
+): boolean {
+  return !(key in value) || typeof value[key] === "boolean";
+}
+
+function hasValidStringKeyword(
+  value: { [key: string]: KrakenJsonValue },
+  key: string
+): boolean {
+  return !(key in value) || typeof value[key] === "string";
+}
+
+function hasValidEnumKeyword(value: {
+  [key: string]: KrakenJsonValue;
+}): boolean {
+  return !("enum" in value) || Array.isArray(value.enum);
+}
+
+function hasValidUniqueStringArrayKeyword(
+  value: { [key: string]: KrakenJsonValue },
+  key: string
+): boolean {
+  if (!(key in value)) {
+    return true;
+  }
+
+  const keywordValue = value[key];
+
+  return (
+    Array.isArray(keywordValue) &&
+    keywordValue.every((item) => typeof item === "string") &&
+    hasUniqueStrings(keywordValue)
+  );
+}
+
+function hasValidUniqueStringArrayRecordKeyword(
+  value: { [key: string]: KrakenJsonValue },
+  key: string
+): boolean {
+  if (!(key in value)) {
+    return true;
+  }
+
+  const keywordValue = value[key];
+
+  return (
+    isKrakenJsonObject(keywordValue, new WeakSet<object>()) &&
+    Object.values(keywordValue).every(
+      (recordValue) =>
+        Array.isArray(recordValue) &&
+        recordValue.every((item) => typeof item === "string") &&
+        hasUniqueStrings(recordValue)
+    )
+  );
+}
+
+function hasValidSchemaKeyword(
+  value: { [key: string]: KrakenJsonValue },
+  key: string
+): boolean {
+  return !(key in value) || isKrakenJsonSchema(value[key]);
+}
+
+function hasValidSchemaArrayKeyword(
+  value: { [key: string]: KrakenJsonValue },
+  key: string,
+  options?: { requireNonEmpty?: boolean }
+): boolean {
+  if (!(key in value)) {
+    return true;
+  }
+
+  const keywordValue = value[key];
+
+  return (
+    Array.isArray(keywordValue) &&
+    (!options?.requireNonEmpty || keywordValue.length > 0) &&
+    keywordValue.every(isKrakenJsonSchema)
+  );
+}
+
+function hasValidSchemaRecordKeyword(
+  value: { [key: string]: KrakenJsonValue },
+  key: string
+): boolean {
+  if (!(key in value)) {
+    return true;
+  }
+
+  const keywordValue = value[key];
+
+  return (
+    isKrakenJsonObject(keywordValue, new WeakSet<object>()) &&
+    Object.values(keywordValue).every(isKrakenJsonSchema)
   );
 }
 

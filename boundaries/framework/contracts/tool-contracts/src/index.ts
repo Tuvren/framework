@@ -43,8 +43,10 @@ export type {
 export {
   assertApprovalRequest,
   assertApprovalResponse,
+  assertApprovalResponseForRequest,
   assertKrakenToolDefinition,
   isApprovalRequest,
   isApprovalResponse,
+  isApprovalResponseForRequest,
   isKrakenToolDefinition,
 } from "@kraken/framework-runtime-api";

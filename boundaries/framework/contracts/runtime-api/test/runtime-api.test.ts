@@ -23,6 +23,7 @@ import {
   type AgentConfig,
   assertApprovalRequest,
   assertApprovalResponse,
+  assertApprovalResponseForRequest,
   assertExecutionStatus,
   assertKrakenMessage,
   assertKrakenStreamEvent,
@@ -30,6 +31,7 @@ import {
   assertProviderStreamChunk,
   isApprovalRequest,
   isApprovalResponse,
+  isApprovalResponseForRequest,
   isExecutionStatus,
   isKrakenMessage,
   isKrakenStreamEvent,
@@ -179,6 +181,24 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
   });
 
+  test("rejects approval requests with undeclared top-level fields", () => {
+    expect(
+      isApprovalRequest({
+        completedResults: [],
+        extra: 1,
+        toolCalls: [
+          {
+            callId: "call-1",
+            decisions: ["approve"],
+            input: { query: "status" },
+            message: "Approve?",
+            name: "search",
+          },
+        ],
+      })
+    ).toBe(false);
+  });
+
   test("rejects approval requests and tool-result messages with undeclared fields", () => {
     expect(
       isApprovalRequest({
@@ -277,6 +297,23 @@ describe("runtime-api contracts", () => {
           {
             callId: "call-1",
             decisions: ["   "],
+            input: { query: "status" },
+            message: "Approve?",
+            name: "search",
+          },
+        ],
+      })
+    ).toBe(false);
+  });
+
+  test("rejects approval requests with duplicate decision labels", () => {
+    expect(
+      isApprovalRequest({
+        completedResults: [],
+        toolCalls: [
+          {
+            callId: "call-1",
+            decisions: ["approve", "approve"],
             input: { query: "status" },
             message: "Approve?",
             name: "search",
@@ -999,6 +1036,89 @@ describe("runtime-api contracts", () => {
         name: "bad-one-of-schema",
       })
     ).toBe(false);
+
+    expect(
+      isKrakenToolDefinition({
+        description: "Bad minLength schema",
+        execute() {
+          return undefined;
+        },
+        inputSchema: {
+          minLength: "abc",
+          type: "string",
+        },
+        name: "bad-min-length",
+      })
+    ).toBe(false);
+
+    expect(
+      isKrakenToolDefinition({
+        description: "Bad enum schema",
+        execute() {
+          return undefined;
+        },
+        inputSchema: {
+          enum: "not-an-array",
+          type: "string",
+        },
+        name: "bad-enum",
+      })
+    ).toBe(false);
+
+    expect(
+      isKrakenToolDefinition({
+        description: "Bad allOf schema",
+        execute() {
+          return undefined;
+        },
+        inputSchema: {
+          allOf: "oops",
+          type: "string",
+        },
+        name: "bad-all-of",
+      })
+    ).toBe(false);
+
+    expect(
+      isKrakenToolDefinition({
+        description: "Bad anyOf schema",
+        execute() {
+          return undefined;
+        },
+        inputSchema: {
+          anyOf: 123,
+          type: "string",
+        },
+        name: "bad-any-of",
+      })
+    ).toBe(false);
+
+    expect(
+      isKrakenToolDefinition({
+        description: "Bad prefixItems schema",
+        execute() {
+          return undefined;
+        },
+        inputSchema: {
+          prefixItems: 123,
+          type: "array",
+        },
+        name: "bad-prefix-items",
+      })
+    ).toBe(false);
+
+    expect(
+      isKrakenToolDefinition({
+        description: "Bad empty oneOf schema",
+        execute() {
+          return undefined;
+        },
+        inputSchema: {
+          oneOf: [],
+        },
+        name: "bad-empty-one-of",
+      })
+    ).toBe(false);
   });
 
   test("accepts structurally valid CustomSchema class instances", () => {
@@ -1168,6 +1288,29 @@ describe("runtime-api contracts", () => {
         decisions: [{ callId: "call-1", type: "needs_human" }],
       })
     ).toBe(true);
+  });
+
+  test("validates approval responses against the active approval request when context is available", () => {
+    expect(
+      isApprovalResponseForRequest(
+        { decisions: [{ callId: "call_2", type: "approve" }] },
+        frameworkContractFixtures.approvalRequest
+      )
+    ).toBe(true);
+
+    expect(
+      isApprovalResponseForRequest(
+        { decisions: [{ callId: "missing-call", type: "approve" }] },
+        frameworkContractFixtures.approvalRequest
+      )
+    ).toBe(false);
+
+    expect(() =>
+      assertApprovalResponseForRequest(
+        { decisions: [{ callId: "missing-call", type: "approve" }] },
+        frameworkContractFixtures.approvalRequest
+      )
+    ).toThrow();
   });
 
   test("rejects approval responses with undeclared decision fields", () => {

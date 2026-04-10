@@ -19,9 +19,11 @@ import { frameworkContractFixtures } from "../../../../../tests/fixtures/framewo
 import {
   assertApprovalRequest,
   assertApprovalResponse,
+  assertApprovalResponseForRequest,
   assertKrakenToolDefinition,
   isApprovalRequest,
   isApprovalResponse,
+  isApprovalResponseForRequest,
   isKrakenToolDefinition,
 } from "../src/index.ts";
 
@@ -43,6 +45,18 @@ describe("tool-contracts", () => {
       assertApprovalResponse({
         decisions: [{ callId: "call-1", type: "approve" }],
       })
+    ).not.toThrow();
+    expect(
+      isApprovalResponseForRequest(
+        { decisions: [{ callId: "call_2", type: "approve" }] },
+        frameworkContractFixtures.approvalRequest
+      )
+    ).toBe(true);
+    expect(() =>
+      assertApprovalResponseForRequest(
+        { decisions: [{ callId: "call_2", type: "approve" }] },
+        frameworkContractFixtures.approvalRequest
+      )
     ).not.toThrow();
     expect(() =>
       assertKrakenToolDefinition(frameworkContractFixtures.toolDefinition)

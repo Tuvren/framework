@@ -86,7 +86,6 @@ export type {
   RenderedToolDefinition,
   RuntimeModelProvider,
   RuntimeResolution,
-  RuntimeStatusRecord,
   StateCheckpointEvent,
   StateSnapshotEvent,
   StructuredOutputRequest,
@@ -106,6 +105,7 @@ export type {
 export {
   assertApprovalRequest,
   assertApprovalResponse,
+  assertApprovalResponseForRequest,
   assertExecutionStatus,
   assertKrakenMessage,
   assertKrakenStreamEvent,
@@ -113,6 +113,7 @@ export {
   assertProviderStreamChunk,
   isApprovalRequest,
   isApprovalResponse,
+  isApprovalResponseForRequest,
   isExecutionStatus,
   isKrakenMessage,
   isKrakenStreamEvent,
