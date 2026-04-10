@@ -72,9 +72,13 @@ export function isKrakenDriver(value: unknown): value is KrakenDriver {
   return (
     value !== null &&
     typeof value === "object" &&
-    typeof (value as KrakenDriver).id === "string" &&
-    typeof (value as KrakenDriver).execute === "function" &&
-    typeof (value as KrakenDriver).resume === "function"
+    "id" in value &&
+    typeof value.id === "string" &&
+    value.id.length > 0 &&
+    "execute" in value &&
+    typeof value.execute === "function" &&
+    "resume" in value &&
+    typeof value.resume === "function"
   );
 }
 

@@ -71,5 +71,12 @@ describe("driver-api", () => {
     expect(() => assertKrakenDriver({ id: "react" })).toThrow(
       "must be a valid KrakenDriver"
     );
+    expect(
+      isKrakenDriver({
+        execute: () => undefined,
+        id: "",
+        resume: () => undefined,
+      })
+    ).toBe(false);
   });
 });

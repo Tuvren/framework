@@ -1262,7 +1262,7 @@ function isPendingToolCall(value: unknown): value is PendingToolCall {
     isPlainObject(value) &&
     isNonEmptyStringProperty(value, "callId") &&
     isNonEmptyStringProperty(value, "name") &&
-    typeof value.message === "string" &&
+    isNonEmptyStringProperty(value, "message") &&
     "input" in value &&
     Array.isArray(value.decisions) &&
     value.decisions.length > 0 &&
@@ -1502,7 +1502,13 @@ function hasValidTurnBoundaries(
     );
   }
 
-  return turnBoundaries[0] === 0;
+  const lastBoundary = turnBoundaries.at(-1);
+
+  return (
+    turnBoundaries[0] === 0 &&
+    lastBoundary !== undefined &&
+    lastBoundary <= lastUserMessageIndex
+  );
 }
 
 function hasDistinctApprovalRequestCallIds(

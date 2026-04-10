@@ -509,6 +509,23 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
   });
 
+  test("rejects approval requests with empty review message text", () => {
+    expect(
+      isApprovalRequest({
+        completedResults: [],
+        toolCalls: [
+          {
+            callId: "call-1",
+            decisions: ["approve"],
+            input: {},
+            message: "",
+            name: "search",
+          },
+        ],
+      })
+    ).toBe(false);
+  });
+
   test("rejects event sources with a non-string workerId", () => {
     expect(
       isKrakenStreamEvent({
@@ -738,6 +755,31 @@ describe("runtime-api contracts", () => {
           toolCalls: { byName: {}, total: 0 },
           toolResults: { byName: {}, total: 0 },
           turnBoundaries: [1],
+        },
+        phase: "running",
+      })
+    ).toBe(false);
+  });
+
+  test("rejects multi-turn boundaries that exceed the last user index", () => {
+    expect(
+      isExecutionStatus({
+        iterationCount: 0,
+        manifest: {
+          byRole: {
+            assistant: 0,
+            system: 0,
+            tool: 0,
+            user: 2,
+          },
+          extensions: {},
+          lastAssistantMessageIndex: -1,
+          lastUserMessageIndex: 1,
+          messageCount: 3,
+          tokenEstimate: 12,
+          toolCalls: { byName: {}, total: 0 },
+          toolResults: { byName: {}, total: 0 },
+          turnBoundaries: [0, 2],
         },
         phase: "running",
       })
