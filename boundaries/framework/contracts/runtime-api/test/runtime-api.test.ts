@@ -325,6 +325,36 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
   });
 
+  test("rejects tool definitions with malformed JSON Schema objects", () => {
+    expect(
+      isKrakenToolDefinition({
+        description: "Bad required schema",
+        execute() {
+          return undefined;
+        },
+        inputSchema: {
+          required: [7],
+          type: "object",
+        },
+        name: "bad-required",
+      })
+    ).toBe(false);
+
+    expect(
+      isKrakenToolDefinition({
+        description: "Bad properties schema",
+        execute() {
+          return undefined;
+        },
+        inputSchema: {
+          properties: "oops",
+          type: "object",
+        },
+        name: "bad-properties",
+      })
+    ).toBe(false);
+  });
+
   test("accepts CustomSchema class instances", () => {
     class ExampleSchema {
       toJSONSchema() {
@@ -454,6 +484,29 @@ describe("runtime-api contracts", () => {
         ],
       })
     ).toThrow();
+  });
+
+  test("rejects empty approval and tool identifiers", () => {
+    expect(
+      isApprovalRequest({
+        completedResults: [],
+        toolCalls: [
+          {
+            callId: "",
+            decisions: [""],
+            input: {},
+            message: "",
+            name: "",
+          },
+        ],
+      })
+    ).toBe(false);
+
+    expect(
+      isApprovalResponse({
+        decisions: [{ callId: "", type: "", message: "x" }],
+      })
+    ).toBe(false);
   });
 
   test("rejects event sources with a non-string workerId", () => {
@@ -635,6 +688,56 @@ describe("runtime-api contracts", () => {
           toolCalls: { byName: {}, total: 0 },
           toolResults: { byName: {}, total: 0 },
           turnBoundaries: [0],
+        },
+        phase: "running",
+      })
+    ).toBe(false);
+  });
+
+  test("rejects manifests with impossible last-role summary indexes", () => {
+    expect(
+      isExecutionStatus({
+        iterationCount: 0,
+        manifest: {
+          byRole: {
+            assistant: 2,
+            system: 0,
+            tool: 0,
+            user: 0,
+          },
+          extensions: {},
+          lastAssistantMessageIndex: 0,
+          lastUserMessageIndex: -1,
+          messageCount: 2,
+          tokenEstimate: 12,
+          toolCalls: { byName: {}, total: 0 },
+          toolResults: { byName: {}, total: 0 },
+          turnBoundaries: [],
+        },
+        phase: "running",
+      })
+    ).toBe(false);
+  });
+
+  test("rejects manifests with impossible multi-turn boundaries", () => {
+    expect(
+      isExecutionStatus({
+        iterationCount: 0,
+        manifest: {
+          byRole: {
+            assistant: 0,
+            system: 0,
+            tool: 0,
+            user: 2,
+          },
+          extensions: {},
+          lastAssistantMessageIndex: -1,
+          lastUserMessageIndex: 2,
+          messageCount: 3,
+          tokenEstimate: 12,
+          toolCalls: { byName: {}, total: 0 },
+          toolResults: { byName: {}, total: 0 },
+          turnBoundaries: [1],
         },
         phase: "running",
       })

@@ -1120,7 +1120,7 @@ export function isKrakenToolDefinition(
 ): value is KrakenToolDefinition {
   return (
     isPlainObject(value) &&
-    typeof value.name === "string" &&
+    isNonEmptyStringProperty(value, "name") &&
     typeof value.description === "string" &&
     typeof value.execute === "function" &&
     isKrakenToolSchema(value.inputSchema) &&
@@ -1249,8 +1249,8 @@ function isToolResultPart(value: unknown): value is ToolResultPart {
   return (
     isPlainObject(value) &&
     value.type === "tool_result" &&
-    typeof value.callId === "string" &&
-    typeof value.name === "string" &&
+    isNonEmptyStringProperty(value, "callId") &&
+    isNonEmptyStringProperty(value, "name") &&
     "output" in value &&
     isOptionalBooleanProperty(value, "isError") &&
     isOptionalPlainObjectProperty(value, "providerMetadata")
@@ -1260,13 +1260,13 @@ function isToolResultPart(value: unknown): value is ToolResultPart {
 function isPendingToolCall(value: unknown): value is PendingToolCall {
   return (
     isPlainObject(value) &&
-    typeof value.callId === "string" &&
-    typeof value.name === "string" &&
+    isNonEmptyStringProperty(value, "callId") &&
+    isNonEmptyStringProperty(value, "name") &&
     typeof value.message === "string" &&
     "input" in value &&
     Array.isArray(value.decisions) &&
     value.decisions.length > 0 &&
-    value.decisions.every((item) => typeof item === "string")
+    value.decisions.every((item) => typeof item === "string" && item.length > 0)
   );
 }
 
@@ -1296,8 +1296,8 @@ function isApprovalDecision(value: unknown): value is ApprovalDecision {
   if (
     !(
       isPlainObject(value) &&
-      typeof value.callId === "string" &&
-      typeof value.type === "string" &&
+      isNonEmptyStringProperty(value, "callId") &&
+      isNonEmptyStringProperty(value, "type") &&
       isOptionalStringProperty(value, "message")
     )
   ) {
@@ -1446,7 +1446,9 @@ function hasValidLastRoleIndex(
     return lastIndex === -1;
   }
 
-  return lastIndex >= 0 && lastIndex < messageCount;
+  return (
+    lastIndex >= roleCount - 1 && lastIndex >= 0 && lastIndex < messageCount
+  );
 }
 
 function hasMatchingNamedCounterTotal(
@@ -1500,7 +1502,7 @@ function hasValidTurnBoundaries(
     );
   }
 
-  return true;
+  return turnBoundaries[0] === 0;
 }
 
 function hasDistinctApprovalRequestCallIds(
@@ -1631,7 +1633,47 @@ function isFiniteNumberProperty<
 }
 
 function isKrakenJsonSchema(value: unknown): value is KrakenJsonSchema {
-  return typeof value === "boolean" || isKrakenJsonObject(value, new WeakSet());
+  return (
+    typeof value === "boolean" ||
+    (isKrakenJsonObject(value, new WeakSet()) && isValidJsonSchemaObject(value))
+  );
+}
+
+function isValidJsonSchemaObject(value: {
+  [key: string]: KrakenJsonValue;
+}): boolean {
+  if ("type" in value) {
+    const schemaType = value.type;
+
+    if (
+      !(
+        typeof schemaType === "string" ||
+        (Array.isArray(schemaType) &&
+          schemaType.every((item) => typeof item === "string"))
+      )
+    ) {
+      return false;
+    }
+  }
+
+  if (
+    "required" in value &&
+    !(
+      Array.isArray(value.required) &&
+      value.required.every((item) => typeof item === "string")
+    )
+  ) {
+    return false;
+  }
+
+  if (
+    "properties" in value &&
+    !isKrakenJsonObject(value.properties, new WeakSet<object>())
+  ) {
+    return false;
+  }
+
+  return true;
 }
 
 function isKrakenJsonObject(
