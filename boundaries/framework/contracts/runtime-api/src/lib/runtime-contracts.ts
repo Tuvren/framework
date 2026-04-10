@@ -82,6 +82,15 @@ export type KrakenJsonValue =
   | KrakenJsonValue[]
   | { [key: string]: KrakenJsonValue };
 export type KrakenJsonSchema = { [key: string]: KrakenJsonValue } | boolean;
+export type ApprovalDecisionType =
+  | "approve"
+  | "edit"
+  | "reject"
+  | (string & {});
+export type HandoffContextMode =
+  | "preserve_trace"
+  | "last_output_only"
+  | (string & {});
 
 export interface TextPart {
   providerMetadata?: Record<string, unknown>;
@@ -261,7 +270,7 @@ export interface ApprovalDecision {
   callId: string;
   editedInput?: unknown;
   message?: string;
-  type: "approve" | "edit" | "reject" | string;
+  type: ApprovalDecisionType;
 }
 
 export interface ApprovalResponse {
@@ -305,7 +314,7 @@ export type HandoffContextBuilder = (
 
 export interface HandoffContextPlan {
   builder: HandoffContextBuilder;
-  mode: "preserve_trace" | "last_output_only" | string;
+  mode: HandoffContextMode;
   reason: string;
   sourceContext: HandoffSourceContext;
   targetAgent: string;
@@ -827,16 +836,30 @@ export function isKrakenMessage(value: unknown): value is KrakenMessage {
 
   switch (value.role) {
     case "system":
-      return typeof value.content === "string";
+      return (
+        typeof value.content === "string" &&
+        !("parts" in value) &&
+        !("providerMetadata" in value)
+      );
     case "user":
-      return isContentPartArray(value.parts);
+      return (
+        isContentPartArray(value.parts) &&
+        !("content" in value) &&
+        !("providerMetadata" in value)
+      );
     case "assistant":
       return (
         isContentPartArray(value.parts) &&
+        !("content" in value) &&
         isOptionalPlainObjectProperty(value, "providerMetadata")
       );
     case "tool":
-      return Array.isArray(value.parts) && value.parts.every(isToolResultPart);
+      return (
+        Array.isArray(value.parts) &&
+        value.parts.every(isToolResultPart) &&
+        !("content" in value) &&
+        !("providerMetadata" in value)
+      );
     default:
       return false;
   }
@@ -1374,15 +1397,14 @@ function isContextManifest(value: unknown): value is ContextManifest {
     return false;
   }
 
-  if (!hasOrderedTurnBoundaries(value.turnBoundaries, messageCount)) {
-    return false;
-  }
-
-  if (value.turnBoundaries.length !== byRole.user) {
-    return false;
-  }
-
-  if (byRole.user > 0 && !value.turnBoundaries.includes(lastUserMessageIndex)) {
+  if (
+    !hasValidTurnBoundaries(
+      value.turnBoundaries,
+      messageCount,
+      byRole.user,
+      lastUserMessageIndex
+    )
+  ) {
     return false;
   }
 
@@ -1449,6 +1471,33 @@ function hasOrderedTurnBoundaries(
     }
 
     previousBoundary = boundary;
+  }
+
+  return true;
+}
+
+function hasValidTurnBoundaries(
+  turnBoundaries: number[],
+  messageCount: number,
+  userCount: number,
+  lastUserMessageIndex: number
+): boolean {
+  if (!hasOrderedTurnBoundaries(turnBoundaries, messageCount)) {
+    return false;
+  }
+
+  if (userCount === 0) {
+    return turnBoundaries.length === 0;
+  }
+
+  if (!(turnBoundaries.length > 0 && turnBoundaries.length <= userCount)) {
+    return false;
+  }
+
+  if (userCount === 1) {
+    return (
+      turnBoundaries.length === 1 && turnBoundaries[0] === lastUserMessageIndex
+    );
   }
 
   return true;
@@ -1657,8 +1706,11 @@ function isKrakenToolSchema(
 
 function isCustomSchema(value: unknown): value is CustomSchema {
   return (
-    isPlainObject(value) &&
+    value !== null &&
+    typeof value === "object" &&
+    "toJSONSchema" in value &&
     typeof value.toJSONSchema === "function" &&
+    "validate" in value &&
     typeof value.validate === "function"
   );
 }

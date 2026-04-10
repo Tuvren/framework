@@ -189,6 +189,31 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
   });
 
+  test("accepts manifests with multiple user messages in a single turn", () => {
+    expect(
+      isExecutionStatus({
+        iterationCount: 0,
+        manifest: {
+          byRole: {
+            assistant: 0,
+            system: 0,
+            tool: 0,
+            user: 2,
+          },
+          extensions: {},
+          lastAssistantMessageIndex: -1,
+          lastUserMessageIndex: 1,
+          messageCount: 2,
+          tokenEstimate: 12,
+          toolCalls: { byName: {}, total: 0 },
+          toolResults: { byName: {}, total: 0 },
+          turnBoundaries: [0],
+        },
+        phase: "running",
+      })
+    ).toBe(true);
+  });
+
   test("rejects stream events that omit required fields", () => {
     expect(isKrakenStreamEvent({ type: "turn.end", timestamp: 1 })).toBe(false);
   });
@@ -298,6 +323,29 @@ describe("runtime-api contracts", () => {
         name: "search",
       })
     ).toBe(false);
+  });
+
+  test("accepts CustomSchema class instances", () => {
+    class ExampleSchema {
+      toJSONSchema() {
+        return { type: "string" } as const;
+      }
+
+      validate(input: unknown) {
+        return { valid: typeof input === "string", value: input } as const;
+      }
+    }
+
+    expect(
+      isKrakenToolDefinition({
+        description: "Class-backed schema tool",
+        execute() {
+          return undefined;
+        },
+        inputSchema: new ExampleSchema(),
+        name: "class-schema",
+      })
+    ).toBe(true);
   });
 
   test("accepts JSON Schema numeric keywords with fractional values", () => {
@@ -565,7 +613,7 @@ describe("runtime-api contracts", () => {
         },
         phase: "running",
       })
-    ).toBe(false);
+    ).toBe(true);
   });
 
   test("rejects manifests whose turn boundaries contradict the last user index", () => {
@@ -589,6 +637,16 @@ describe("runtime-api contracts", () => {
           turnBoundaries: [0],
         },
         phase: "running",
+      })
+    ).toBe(false);
+  });
+
+  test("rejects mixed-shape discriminated messages", () => {
+    expect(
+      isKrakenMessage({
+        content: "system",
+        parts: [],
+        role: "system",
       })
     ).toBe(false);
   });
