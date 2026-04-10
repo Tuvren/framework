@@ -98,16 +98,39 @@ const FINITE_NUMBER_SCHEMA_KEYWORDS = [
   "exclusiveMinimum",
   "exclusiveMaximum",
 ];
-const STRING_SCHEMA_KEYWORDS = ["pattern"];
+const STRING_SCHEMA_KEYWORDS = [
+  "$anchor",
+  "$comment",
+  "$dynamicAnchor",
+  "$dynamicRef",
+  "$id",
+  "$ref",
+  "$schema",
+  "contentEncoding",
+  "contentMediaType",
+  "description",
+  "format",
+  "pattern",
+  "title",
+];
+const BOOLEAN_SCHEMA_KEYWORDS = [
+  "deprecated",
+  "readOnly",
+  "uniqueItems",
+  "writeOnly",
+];
 const SCHEMA_KEYWORDS = [
   "additionalProperties",
   "contains",
+  "contentSchema",
   "else",
   "if",
   "items",
   "not",
   "propertyNames",
   "then",
+  "unevaluatedItems",
+  "unevaluatedProperties",
 ];
 const NON_EMPTY_SCHEMA_ARRAY_KEYWORDS = [
   "allOf",
@@ -116,6 +139,7 @@ const NON_EMPTY_SCHEMA_ARRAY_KEYWORDS = [
   "prefixItems",
 ];
 const SCHEMA_RECORD_KEYWORDS = [
+  "$defs",
   "dependentSchemas",
   "patternProperties",
   "properties",
@@ -1584,13 +1608,12 @@ export function isApprovalResponseForRequest(
   value: unknown,
   request: ApprovalRequest
 ): value is ApprovalResponse {
+  // Request-aware validation binds the response back to the paused approval
+  // batch: every pending tool call needs exactly one allowed operator choice.
   return safePredicate(
     () =>
       isApprovalResponse(value) &&
-      hasApprovalDecisionCallIdsWithinRequest(
-        value.decisions,
-        request.toolCalls
-      )
+      hasApprovalDecisionCoverage(value.decisions, request.toolCalls)
   );
 }
 
@@ -2092,6 +2115,14 @@ function isValidJsonSchemaObject(value: {
   }
 
   if (
+    !BOOLEAN_SCHEMA_KEYWORDS.every((keyword) =>
+      hasValidBooleanKeyword(value, keyword)
+    )
+  ) {
+    return false;
+  }
+
+  if (
     !SCHEMA_KEYWORDS.every((keyword) => hasValidSchemaKeyword(value, keyword))
   ) {
     return false;
@@ -2262,6 +2293,35 @@ function hasApprovalDecisionCallIdsWithinRequest(
   return decisions.every((decision) => pendingCallIds.has(decision.callId));
 }
 
+function hasApprovalDecisionCoverage(
+  decisions: ApprovalDecision[],
+  toolCalls: PendingToolCall[]
+): boolean {
+  if (
+    decisions.length !== toolCalls.length ||
+    !hasApprovalDecisionCallIdsWithinRequest(decisions, toolCalls)
+  ) {
+    return false;
+  }
+
+  const pendingToolCallsById = new Map(
+    toolCalls.map((toolCall) => [toolCall.callId, toolCall])
+  );
+
+  for (const decision of decisions) {
+    const matchingToolCall = pendingToolCallsById.get(decision.callId);
+
+    if (
+      matchingToolCall === undefined ||
+      !matchingToolCall.decisions.includes(decision.type)
+    ) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 function hasUniqueStrings(values: string[]): boolean {
   return new Set(values).size === values.length;
 }
@@ -2395,7 +2455,18 @@ function hasValidStringKeyword(
 function hasValidEnumKeyword(value: {
   [key: string]: KrakenJsonValue;
 }): boolean {
-  return !("enum" in value) || Array.isArray(value.enum);
+  if (!("enum" in value)) {
+    return true;
+  }
+
+  // The shared contract seam rejects degenerate enum arrays so provider-facing
+  // schemas stay canonical instead of carrying duplicates or an always-invalid
+  // empty choice set downstream.
+  return (
+    Array.isArray(value.enum) &&
+    value.enum.length > 0 &&
+    hasUniqueKrakenJsonValues(value.enum)
+  );
 }
 
 function hasValidUniqueStringArrayKeyword(
@@ -2491,6 +2562,9 @@ function hasOnlyAllowedKeys(
   value: Record<string, unknown>,
   allowedKeys: ReadonlySet<string>
 ): boolean {
+  // Runtime validators define the exact payload surface for the current
+  // released contract version. Minor releases stay compatible by extending
+  // these allowlists alongside any newly-added optional fields.
   return Object.keys(value).every((key) => allowedKeys.has(key));
 }
 
@@ -2510,4 +2584,49 @@ function matchesStreamEventVariant(
   predicate: () => boolean
 ): boolean {
   return hasOnlyStreamEventKeys(value, eventSpecificKeys) && predicate();
+}
+
+function hasUniqueKrakenJsonValues(values: KrakenJsonValue[]): boolean {
+  const seenValues = new Set<string>();
+
+  for (const value of values) {
+    const canonicalValueKey = toCanonicalKrakenJsonValueKey(value);
+
+    if (seenValues.has(canonicalValueKey)) {
+      return false;
+    }
+
+    seenValues.add(canonicalValueKey);
+  }
+
+  return true;
+}
+
+function toCanonicalKrakenJsonValueKey(value: KrakenJsonValue): string {
+  if (value === null) {
+    return "null";
+  }
+
+  switch (typeof value) {
+    case "boolean":
+      return `boolean:${value}`;
+    case "number":
+      return `number:${value}`;
+    case "string":
+      return `string:${JSON.stringify(value)}`;
+    case "object":
+      if (Array.isArray(value)) {
+        return `array:[${value.map(toCanonicalKrakenJsonValueKey).join(",")}]`;
+      }
+
+      return `object:{${Object.keys(value)
+        .sort()
+        .map(
+          (key) =>
+            `${JSON.stringify(key)}:${toCanonicalKrakenJsonValueKey(value[key])}`
+        )
+        .join(",")}}`;
+    default:
+      return "unknown";
+  }
 }

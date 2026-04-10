@@ -69,6 +69,9 @@ export interface DriverRegistry {
 }
 
 export function isKrakenDriver(value: unknown): value is KrakenDriver {
+  // Driver installation guards stay structural on purpose. Verifying execute
+  // or resume result semantics would require invoking arbitrary plugin code,
+  // so runtime-core validates the returned data at the call boundary instead.
   return safePredicate(
     () =>
       value !== null &&

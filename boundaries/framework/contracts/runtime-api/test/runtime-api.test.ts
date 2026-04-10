@@ -1067,6 +1067,34 @@ describe("runtime-api contracts", () => {
 
     expect(
       isKrakenToolDefinition({
+        description: "Bad empty enum schema",
+        execute() {
+          return undefined;
+        },
+        inputSchema: {
+          enum: [],
+          type: "string",
+        },
+        name: "bad-empty-enum",
+      })
+    ).toBe(false);
+
+    expect(
+      isKrakenToolDefinition({
+        description: "Bad duplicate enum schema",
+        execute() {
+          return undefined;
+        },
+        inputSchema: {
+          enum: ["a", "a"],
+          type: "string",
+        },
+        name: "bad-duplicate-enum",
+      })
+    ).toBe(false);
+
+    expect(
+      isKrakenToolDefinition({
         description: "Bad allOf schema",
         execute() {
           return undefined;
@@ -1117,6 +1145,61 @@ describe("runtime-api contracts", () => {
           oneOf: [],
         },
         name: "bad-empty-one-of",
+      })
+    ).toBe(false);
+
+    expect(
+      isKrakenToolDefinition({
+        description: "Bad $ref schema",
+        execute() {
+          return undefined;
+        },
+        inputSchema: {
+          $ref: 123,
+        },
+        name: "bad-ref",
+      })
+    ).toBe(false);
+
+    expect(
+      isKrakenToolDefinition({
+        description: "Bad $defs schema",
+        execute() {
+          return undefined;
+        },
+        inputSchema: {
+          $defs: [1],
+          type: "object",
+        },
+        name: "bad-defs",
+      })
+    ).toBe(false);
+
+    expect(
+      isKrakenToolDefinition({
+        description: "Bad title schema",
+        execute() {
+          return undefined;
+        },
+        inputSchema: {
+          title: 123,
+          type: "string",
+        },
+        name: "bad-title",
+      })
+    ).toBe(false);
+
+    expect(
+      isKrakenToolDefinition({
+        description: "Bad description schema",
+        execute() {
+          return undefined;
+        },
+        inputSchema: {
+          description: 123,
+          type: "string",
+        },
+        name: "bad-description",
       })
     ).toBe(false);
   });
@@ -1311,6 +1394,51 @@ describe("runtime-api contracts", () => {
         frameworkContractFixtures.approvalRequest
       )
     ).toThrow();
+  });
+
+  test("rejects request-aware approval responses that use disallowed decisions or omit pending calls", () => {
+    const multiCallApprovalRequest = {
+      completedResults: [],
+      toolCalls: [
+        {
+          callId: "call-1",
+          decisions: ["approve", "reject"],
+          input: { query: "status" },
+          message: "Decide the search",
+          name: "search",
+        },
+        {
+          callId: "call-2",
+          decisions: ["approve"],
+          input: { target: "ops" },
+          message: "Decide the notify call",
+          name: "notify",
+        },
+      ],
+    };
+
+    expect(
+      isApprovalResponseForRequest(
+        {
+          decisions: [
+            {
+              callId: "call-1",
+              editedInput: { query: "updated status" },
+              type: "edit",
+            },
+            { callId: "call-2", type: "approve" },
+          ],
+        },
+        multiCallApprovalRequest
+      )
+    ).toBe(false);
+
+    expect(
+      isApprovalResponseForRequest(
+        { decisions: [{ callId: "call-1", type: "approve" }] },
+        multiCallApprovalRequest
+      )
+    ).toBe(false);
   });
 
   test("rejects approval responses with undeclared decision fields", () => {

@@ -379,6 +379,7 @@ Concrete code examples already defined in the authoritative specs such as `struc
 - **Style:** library API
 - **Authentication / Authorization:** Not built into Kraken. Host applications authenticate and authorize their own callers before exposing runtime operations.
 - **Compatibility Strategy:** Exported TypeScript framework APIs follow semantic versioning. Additive methods and additive optional fields are minor-compatible.
+- **Validator note:** Runtime `is*` / `assert*` guards treat the current released payload shapes as exact for that version. Minor releases that add optional fields must extend those validators in the same release; older releases are not required to accept newer payloads.
 - **Error model:** Typed `KrakenError` subclasses with stable `code` values plus canonical `error` stream events.
 - **Driver note:** The host-facing framework API is driver-neutral. Callers may select a concrete driver, but the host surface does not become ReAct-specific.
 - **Package partition note:** `@kraken/framework-runtime-api` is the semantic anchor for shared framework types and the host-facing runtime surface. `@kraken/framework-event-stream`, `@kraken/framework-tool-contracts`, and `@kraken/provider-api` are focused facade packages that expose curated subsets of the same shared contract family.
@@ -762,6 +763,7 @@ export type ProviderStreamChunk =
 - **Style:** library API
 - **Authentication / Authorization:** Controlled by the host embedding layer
 - **Compatibility Strategy:** Existing event types and required fields are stable within a major version; minor releases may add event types or optional fields
+- **Validator note:** Current-version stream validators reject undeclared fields so adapter drift fails fast. When a minor release adds an optional field, the same release must widen the validator allowlists accordingly.
 - **Error model:** `error` events plus terminal `turn.end` where applicable
 
 ```ts
