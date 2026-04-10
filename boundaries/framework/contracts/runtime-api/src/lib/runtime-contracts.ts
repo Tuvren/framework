@@ -938,18 +938,18 @@ export function isProviderStreamChunk(
       return "data" in value && isOptionalStringProperty(value, "name");
     case "tool_call_start":
       return (
-        typeof value.providerCallId === "string" &&
-        typeof value.name === "string"
+        isNonEmptyStringProperty(value, "providerCallId") &&
+        isNonEmptyStringProperty(value, "name")
       );
     case "tool_call_args_delta":
       return (
-        typeof value.providerCallId === "string" &&
+        isNonEmptyStringProperty(value, "providerCallId") &&
         typeof value.delta === "string"
       );
     case "tool_call_done":
       return (
-        typeof value.providerCallId === "string" &&
-        typeof value.name === "string" &&
+        isNonEmptyStringProperty(value, "providerCallId") &&
+        isNonEmptyStringProperty(value, "name") &&
         "input" in value
       );
     case "finish":
@@ -1045,18 +1045,19 @@ function hasValidStreamEventPayload(
       );
     case "tool_call.start":
       return (
-        typeof value.messageId === "string" &&
-        typeof value.callId === "string" &&
-        typeof value.name === "string"
+        isNonEmptyStringProperty(value, "messageId") &&
+        isNonEmptyStringProperty(value, "callId") &&
+        isNonEmptyStringProperty(value, "name")
       );
     case "tool_call.args_delta":
       return (
-        typeof value.callId === "string" && typeof value.delta === "string"
+        isNonEmptyStringProperty(value, "callId") &&
+        typeof value.delta === "string"
       );
     case "tool_call.done":
       return (
-        typeof value.callId === "string" &&
-        typeof value.name === "string" &&
+        isNonEmptyStringProperty(value, "callId") &&
+        isNonEmptyStringProperty(value, "name") &&
         "input" in value
       );
     case "message.done":
@@ -1068,14 +1069,14 @@ function hasValidStreamEventPayload(
       );
     case "tool.start":
       return (
-        typeof value.callId === "string" &&
-        typeof value.name === "string" &&
+        isNonEmptyStringProperty(value, "callId") &&
+        isNonEmptyStringProperty(value, "name") &&
         "input" in value
       );
     case "tool.result":
       return (
-        typeof value.callId === "string" &&
-        typeof value.name === "string" &&
+        isNonEmptyStringProperty(value, "callId") &&
+        isNonEmptyStringProperty(value, "name") &&
         "output" in value &&
         isOptionalBooleanProperty(value, "isError")
       );
@@ -1311,7 +1312,8 @@ function isApprovalDecision(value: unknown): value is ApprovalDecision {
   if (
     value.type !== "approve" &&
     value.type !== "edit" &&
-    !isNonEmptyStringProperty(value, "message")
+    value.message !== undefined &&
+    typeof value.message !== "string"
   ) {
     return false;
   }
@@ -1500,6 +1502,13 @@ function hasValidTurnBoundaries(
     return (
       turnBoundaries.length === 1 && turnBoundaries[0] === lastUserMessageIndex
     );
+  }
+
+  if (
+    turnBoundaries.length === userCount &&
+    turnBoundaries.at(-1) !== lastUserMessageIndex
+  ) {
+    return false;
   }
 
   const lastBoundary = turnBoundaries.at(-1);

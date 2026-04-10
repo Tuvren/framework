@@ -78,5 +78,12 @@ describe("driver-api", () => {
         resume: () => undefined,
       })
     ).toBe(false);
+    expect(
+      isKrakenDriver({
+        execute: () => undefined,
+        id: "   ",
+        resume: () => undefined,
+      })
+    ).toBe(false);
   });
 });

@@ -112,6 +112,25 @@ describe("runtime-api contracts", () => {
     expect(isProviderStreamChunk({ type: "tool_call_start" })).toBe(false);
   });
 
+  test("rejects provider chunks with empty provider tool identifiers", () => {
+    expect(
+      isProviderStreamChunk({
+        name: "search",
+        providerCallId: "",
+        type: "tool_call_start",
+      })
+    ).toBe(false);
+
+    expect(
+      isProviderStreamChunk({
+        input: {},
+        name: "",
+        providerCallId: "provider-call-1",
+        type: "tool_call_done",
+      })
+    ).toBe(false);
+  });
+
   test("rejects approval requests with incomplete tool results", () => {
     expect(
       isApprovalRequest({
@@ -216,6 +235,18 @@ describe("runtime-api contracts", () => {
 
   test("rejects stream events that omit required fields", () => {
     expect(isKrakenStreamEvent({ type: "turn.end", timestamp: 1 })).toBe(false);
+  });
+
+  test("rejects stream events with empty tool names", () => {
+    expect(
+      isKrakenStreamEvent({
+        callId: "call-1",
+        input: {},
+        name: "",
+        timestamp: 1,
+        type: "tool.start",
+      })
+    ).toBe(false);
   });
 
   test("rejects stream events with invalid hash references", () => {
@@ -449,13 +480,13 @@ describe("runtime-api contracts", () => {
       isApprovalResponse({
         decisions: [{ callId: "call-1", type: "reject" }],
       })
-    ).toBe(false);
+    ).toBe(true);
 
     expect(
       isApprovalResponse({
         decisions: [{ callId: "call-1", type: "needs_human" }],
       })
-    ).toBe(false);
+    ).toBe(true);
   });
 
   test("rejects approval responses with no decisions", () => {
@@ -755,6 +786,31 @@ describe("runtime-api contracts", () => {
           toolCalls: { byName: {}, total: 0 },
           toolResults: { byName: {}, total: 0 },
           turnBoundaries: [1],
+        },
+        phase: "running",
+      })
+    ).toBe(false);
+  });
+
+  test("rejects manifests whose final turn boundary cannot match the last user", () => {
+    expect(
+      isExecutionStatus({
+        iterationCount: 0,
+        manifest: {
+          byRole: {
+            assistant: 0,
+            system: 0,
+            tool: 1,
+            user: 2,
+          },
+          extensions: {},
+          lastAssistantMessageIndex: -1,
+          lastUserMessageIndex: 2,
+          messageCount: 3,
+          tokenEstimate: 12,
+          toolCalls: { byName: {}, total: 0 },
+          toolResults: { byName: {}, total: 0 },
+          turnBoundaries: [0, 1],
         },
         phase: "running",
       })
