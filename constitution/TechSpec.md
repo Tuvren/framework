@@ -992,7 +992,7 @@ Target implementation layout after code generation begins:
 - Nx manages the TypeScript projects in this tree. Nx does not define the repo ontology.
 - `shared/` must remain small and contain only truly cross-boundary primitives. It must not become a semantic dumping ground.
 - Contract-driven components such as backends, provider surfaces, driver contracts, tool contracts, and stream-event vocabulary must have an explicit contract home before any implementation package is added.
-- `@kraken/framework-runtime-api` may own the shared semantic definitions that multiple framework contract packages project outward, but focused facade packages must remain the public home for event, tool, provider, and driver-specific entrypoints.
+- `@kraken/framework-runtime-api` remains the semantic anchor and compatibility source for shared framework contracts. Focused facade packages remain the preferred public home for event, tool, provider, and driver-specific imports, but compatibility re-exports from `@kraken/framework-runtime-api` are allowed while the partition settles.
 
 ### 5.2 Coding Standards
 - **Formatting / Linting:** Use Biome configured to follow the repository’s Ultracite-aligned standards.

@@ -121,6 +121,73 @@ const STRUCTURED_PART_KEYS = new Set([
   "name",
   "providerMetadata",
 ]);
+const PROVIDER_TEXT_DELTA_KEYS = new Set(["type", "text"]);
+const PROVIDER_REASONING_DELTA_KEYS = new Set(["type", "text", "signature"]);
+const PROVIDER_REASONING_DONE_KEYS = new Set(["type"]);
+const PROVIDER_STRUCTURED_DELTA_KEYS = new Set(["type", "delta"]);
+const PROVIDER_STRUCTURED_DONE_KEYS = new Set(["type", "data", "name"]);
+const PROVIDER_TOOL_CALL_START_KEYS = new Set([
+  "type",
+  "providerCallId",
+  "name",
+]);
+const PROVIDER_TOOL_CALL_ARGS_DELTA_KEYS = new Set([
+  "type",
+  "providerCallId",
+  "delta",
+]);
+const PROVIDER_TOOL_CALL_DONE_KEYS = new Set([
+  "type",
+  "providerCallId",
+  "name",
+  "input",
+]);
+const PROVIDER_FINISH_KEYS = new Set([
+  "type",
+  "finishReason",
+  "usage",
+  "providerMetadata",
+]);
+const PROVIDER_ERROR_KEYS = new Set(["type", "error"]);
+const TOOL_DEFINITION_KEYS = new Set([
+  "approval",
+  "description",
+  "execute",
+  "inputSchema",
+  "metadata",
+  "name",
+  "timeout",
+]);
+const EXECUTION_STATUS_KEYS = new Set([
+  "phase",
+  "iterationCount",
+  "approval",
+  "activeAgent",
+  "manifest",
+  "pauseReason",
+]);
+const TOOL_RESULT_MESSAGE_KEYS = new Set([
+  "type",
+  "callId",
+  "name",
+  "output",
+  "isError",
+  "providerMetadata",
+]);
+const PENDING_TOOL_CALL_KEYS = new Set([
+  "callId",
+  "decisions",
+  "input",
+  "message",
+  "name",
+]);
+const APPROVAL_RESPONSE_KEYS = new Set(["decisions"]);
+const APPROVAL_DECISION_KEYS = new Set([
+  "callId",
+  "editedInput",
+  "message",
+  "type",
+]);
 
 export type KrakenJsonValue =
   | null
@@ -979,34 +1046,45 @@ export function isProviderStreamChunk(
 
     switch (value.type) {
       case "text_delta":
-        return typeof value.text === "string";
+        return (
+          hasOnlyAllowedKeys(value, PROVIDER_TEXT_DELTA_KEYS) &&
+          typeof value.text === "string"
+        );
       case "reasoning_delta":
         return (
+          hasOnlyAllowedKeys(value, PROVIDER_REASONING_DELTA_KEYS) &&
           typeof value.text === "string" &&
           isOptionalStringProperty(value, "signature")
         );
       case "reasoning_done":
-        return true;
+        return hasOnlyAllowedKeys(value, PROVIDER_REASONING_DONE_KEYS);
       case "structured_delta":
-        return typeof value.delta === "string";
+        return (
+          hasOnlyAllowedKeys(value, PROVIDER_STRUCTURED_DELTA_KEYS) &&
+          typeof value.delta === "string"
+        );
       case "structured_done":
         return (
+          hasOnlyAllowedKeys(value, PROVIDER_STRUCTURED_DONE_KEYS) &&
           "data" in value &&
           isSerializableContractValue(value.data) &&
           isOptionalStringProperty(value, "name")
         );
       case "tool_call_start":
         return (
+          hasOnlyAllowedKeys(value, PROVIDER_TOOL_CALL_START_KEYS) &&
           isNonEmptyStringProperty(value, "providerCallId") &&
           isNonEmptyStringProperty(value, "name")
         );
       case "tool_call_args_delta":
         return (
+          hasOnlyAllowedKeys(value, PROVIDER_TOOL_CALL_ARGS_DELTA_KEYS) &&
           isNonEmptyStringProperty(value, "providerCallId") &&
           typeof value.delta === "string"
         );
       case "tool_call_done":
         return (
+          hasOnlyAllowedKeys(value, PROVIDER_TOOL_CALL_DONE_KEYS) &&
           isNonEmptyStringProperty(value, "providerCallId") &&
           isNonEmptyStringProperty(value, "name") &&
           "input" in value &&
@@ -1014,13 +1092,16 @@ export function isProviderStreamChunk(
         );
       case "finish":
         return (
+          hasOnlyAllowedKeys(value, PROVIDER_FINISH_KEYS) &&
           isStringProperty(value, "finishReason") &&
           FINISH_REASONS.has(value.finishReason) &&
           isOptionalProviderUsage(value, "usage") &&
           isOptionalSerializableRecordProperty(value, "providerMetadata")
         );
       case "error":
-        return "error" in value;
+        return (
+          hasOnlyAllowedKeys(value, PROVIDER_ERROR_KEYS) && "error" in value
+        );
       default:
         return false;
     }
@@ -1264,6 +1345,7 @@ export function isKrakenToolDefinition(
   return safePredicate(
     () =>
       isPlainObject(value) &&
+      hasOnlyAllowedKeys(value, TOOL_DEFINITION_KEYS) &&
       isNonEmptyStringProperty(value, "name") &&
       typeof value.description === "string" &&
       typeof value.execute === "function" &&
@@ -1291,6 +1373,7 @@ export function isExecutionStatus(value: unknown): value is ExecutionStatus {
     if (
       !(
         isPlainObject(value) &&
+        hasOnlyAllowedKeys(value, EXECUTION_STATUS_KEYS) &&
         isStringProperty(value, "phase") &&
         EXECUTION_PHASES.has(value.phase) &&
         isNonNegativeSafeIntegerProperty(value, "iterationCount") &&
@@ -1405,6 +1488,7 @@ function isContentPart(value: unknown): value is ContentPart {
 function isToolResultPart(value: unknown): value is ToolResultPart {
   return (
     isPlainObject(value) &&
+    hasOnlyAllowedKeys(value, TOOL_RESULT_MESSAGE_KEYS) &&
     value.type === "tool_result" &&
     isNonEmptyStringProperty(value, "callId") &&
     isNonEmptyStringProperty(value, "name") &&
@@ -1418,6 +1502,7 @@ function isToolResultPart(value: unknown): value is ToolResultPart {
 function isPendingToolCall(value: unknown): value is PendingToolCall {
   return (
     isPlainObject(value) &&
+    hasOnlyAllowedKeys(value, PENDING_TOOL_CALL_KEYS) &&
     isNonEmptyStringProperty(value, "callId") &&
     isNonEmptyStringProperty(value, "name") &&
     isNonEmptyStringProperty(value, "message") &&
@@ -1433,6 +1518,7 @@ export function isApprovalResponse(value: unknown): value is ApprovalResponse {
   return safePredicate(
     () =>
       isPlainObject(value) &&
+      hasOnlyAllowedKeys(value, APPROVAL_RESPONSE_KEYS) &&
       Array.isArray(value.decisions) &&
       value.decisions.length > 0 &&
       hasUniqueApprovalDecisionCallIds(value.decisions) &&
@@ -1456,6 +1542,7 @@ function isApprovalDecision(value: unknown): value is ApprovalDecision {
   if (
     !(
       isPlainObject(value) &&
+      hasOnlyAllowedKeys(value, APPROVAL_DECISION_KEYS) &&
       isNonEmptyStringProperty(value, "callId") &&
       isNonEmptyStringProperty(value, "type") &&
       isOptionalNonEmptyStringProperty(value, "message")

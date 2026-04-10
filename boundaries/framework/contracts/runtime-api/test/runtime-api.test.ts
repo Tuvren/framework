@@ -130,6 +130,16 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
   });
 
+  test("rejects provider chunks with mixed-variant payload fields", () => {
+    expect(
+      isProviderStreamChunk({
+        providerCallId: "provider-call-1",
+        text: "ok",
+        type: "text_delta",
+      })
+    ).toBe(false);
+  });
+
   test("rejects approval requests with incomplete tool results", () => {
     expect(
       isApprovalRequest({
@@ -137,6 +147,39 @@ describe("runtime-api contracts", () => {
           { callId: "call-1", name: "search", type: "tool_result" },
         ],
         toolCalls: [],
+      })
+    ).toBe(false);
+  });
+
+  test("rejects approval requests and tool-result messages with undeclared fields", () => {
+    expect(
+      isApprovalRequest({
+        completedResults: [],
+        toolCalls: [
+          {
+            callId: "call-1",
+            decisions: ["approve"],
+            extra: 1,
+            input: { query: "status" },
+            message: "Approve?",
+            name: "search",
+          },
+        ],
+      })
+    ).toBe(false);
+
+    expect(
+      isKrakenMessage({
+        parts: [
+          {
+            callId: "call-1",
+            extra: 1,
+            name: "search",
+            output: { hits: 1 },
+            type: "tool_result",
+          },
+        ],
+        role: "tool",
       })
     ).toBe(false);
   });
@@ -650,6 +693,16 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
   });
 
+  test("rejects execution statuses with undeclared fields", () => {
+    expect(
+      isExecutionStatus({
+        extra: 1,
+        iterationCount: 0,
+        phase: "running",
+      })
+    ).toBe(false);
+  });
+
   test("rejects execution statuses with invalid phase invariants", () => {
     expect(
       isExecutionStatus({
@@ -939,6 +992,20 @@ describe("runtime-api contracts", () => {
     ).toBe(true);
   });
 
+  test("rejects tool definitions with undeclared fields", () => {
+    expect(
+      isKrakenToolDefinition({
+        description: "Search",
+        execute() {
+          return undefined;
+        },
+        extra: 1,
+        inputSchema: true,
+        name: "search",
+      })
+    ).toBe(false);
+  });
+
   test("rejects tool definitions with malformed optional behavior fields", () => {
     expect(
       isKrakenToolDefinition({
@@ -1001,6 +1068,14 @@ describe("runtime-api contracts", () => {
         decisions: [{ callId: "call-1", type: "needs_human" }],
       })
     ).toBe(true);
+  });
+
+  test("rejects approval responses with undeclared decision fields", () => {
+    expect(
+      isApprovalResponse({
+        decisions: [{ callId: "call-1", extra: 1, type: "approve" }],
+      })
+    ).toBe(false);
   });
 
   test("accepts approval response messages as optional annotations", () => {
