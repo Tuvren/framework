@@ -11,6 +11,7 @@
 
 - The kernel/framework specs in `docs/` are the behavioral source of truth.
 - The constitution docs define product, architecture, implementation posture, and execution scope.
+- Keep constitution-driven working docs under `constitution/`; spike and similar research artifacts produced while following the constitutional framework belong under `constitution/spikes/`, not a top-level `spikes/` directory.
 - Do not invent contract details that are missing upstream.
 - Do not introduce provider-specific concerns into core primitives.
 - Do not add abstractions just for future extensibility.
