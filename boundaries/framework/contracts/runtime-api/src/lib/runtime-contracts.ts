@@ -424,10 +424,6 @@ export interface KrakenProvider {
   stream(prompt: KrakenPrompt): AsyncIterable<ProviderStreamChunk>;
 }
 
-// `RuntimeModelProvider` stays as a compatibility alias while the focused
-// provider package and the framework spec converge on `KrakenProvider`.
-export interface RuntimeModelProvider extends KrakenProvider {}
-
 export interface ContextManifestCounters {
   assistant: number;
   system: number;

@@ -94,7 +94,6 @@ export type {
   ReasoningDoneEvent,
   ReasoningPart,
   RenderedToolDefinition,
-  RuntimeModelProvider,
   RuntimeResolution,
   StateCheckpointEvent,
   StateSnapshotEvent,

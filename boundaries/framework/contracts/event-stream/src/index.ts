@@ -15,6 +15,9 @@
  */
 
 // biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public contract surface.
+// This package is intentionally a focused import home over the shared runtime
+// contract family. `@kraken/framework-runtime-api` remains the semantic anchor,
+// while stream consumers depend on this narrower surface.
 export type {
   ApprovalRequestedEvent,
   ApprovalResolvedEvent,
