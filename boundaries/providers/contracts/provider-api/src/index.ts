@@ -18,9 +18,10 @@
 export type {
   KrakenModelResponse,
   KrakenPrompt,
+  KrakenProvider,
   ProviderStreamChunk,
   ProviderUsage,
-  RuntimeModelProvider as KrakenProvider,
+  RuntimeModelProvider,
   StructuredOutputRequest,
 } from "@kraken/framework-runtime-api";
 export {

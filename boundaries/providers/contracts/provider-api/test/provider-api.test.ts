@@ -15,19 +15,34 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { frameworkContractFixtures } from "../../../../../tests/fixtures/framework-contract-fixtures.js";
 import {
   assertProviderStreamChunk,
   isProviderStreamChunk,
+  type KrakenProvider,
+  type ProviderStreamChunk,
 } from "../src/index.ts";
 
 describe("provider-api", () => {
-  test("re-exports the provider-neutral streaming contract", () => {
-    expect(
-      isProviderStreamChunk(frameworkContractFixtures.providerStreamChunk)
-    ).toBe(true);
-    expect(() =>
-      assertProviderStreamChunk(frameworkContractFixtures.providerStreamChunk)
-    ).not.toThrow();
+  test("re-exports the provider-neutral seam under its canonical public name", () => {
+    const chunk = {
+      delta: '{"status":"pending"}',
+      type: "structured_delta",
+    } satisfies ProviderStreamChunk;
+    const provider = {
+      generate: () =>
+        Promise.resolve({
+          finishReason: "stop",
+          parts: [],
+        }),
+      id: "provider-1",
+      async *stream() {
+        await Promise.resolve();
+        yield chunk;
+      },
+    } satisfies KrakenProvider;
+
+    expect(provider.id).toBe("provider-1");
+    expect(isProviderStreamChunk(chunk)).toBe(true);
+    expect(() => assertProviderStreamChunk(chunk)).not.toThrow();
   });
 });

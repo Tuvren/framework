@@ -15,16 +15,27 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { frameworkContractFixtures } from "../../../../../tests/fixtures/framework-contract-fixtures.js";
-import { assertKrakenStreamEvent, isKrakenStreamEvent } from "../src/index.ts";
+import {
+  assertKrakenStreamEvent,
+  isKrakenStreamEvent,
+  type TextDoneEvent,
+} from "../src/index.ts";
 
 describe("event-stream contracts", () => {
-  test("re-exports the canonical Kraken event vocabulary", () => {
-    expect(isKrakenStreamEvent(frameworkContractFixtures.streamEvent)).toBe(
-      true
-    );
-    expect(() =>
-      assertKrakenStreamEvent(frameworkContractFixtures.streamEvent)
-    ).not.toThrow();
+  test("re-exports the canonical Kraken event vocabulary and named variants", () => {
+    const event = {
+      messageId: "message-1",
+      source: {
+        agent: "primary",
+        driver: "react",
+        threadId: "thread-main",
+      },
+      text: "Need approval before continuing.",
+      timestamp: 1_717_171_717_171,
+      type: "text.done",
+    } satisfies TextDoneEvent;
+
+    expect(isKrakenStreamEvent(event)).toBe(true);
+    expect(() => assertKrakenStreamEvent(event)).not.toThrow();
   });
 });

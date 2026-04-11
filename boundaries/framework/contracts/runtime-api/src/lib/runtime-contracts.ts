@@ -418,11 +418,15 @@ export interface KrakenModelResponse {
   usage?: ProviderUsage;
 }
 
-export interface RuntimeModelProvider {
+export interface KrakenProvider {
   generate(prompt: KrakenPrompt): Promise<KrakenModelResponse>;
   readonly id: string;
   stream(prompt: KrakenPrompt): AsyncIterable<ProviderStreamChunk>;
 }
+
+// `RuntimeModelProvider` stays as a compatibility alias while the focused
+// provider package and the framework spec converge on `KrakenProvider`.
+export interface RuntimeModelProvider extends KrakenProvider {}
 
 export interface ContextManifestCounters {
   assistant: number;
@@ -546,157 +550,200 @@ export interface ValidationErrorPayload {
   message: string;
 }
 
+export interface TurnStartEvent {
+  resumedFrom?: HashString;
+  source?: EventSource;
+  threadId: string;
+  timestamp: EpochMs;
+  turnId: string;
+  type: "turn.start";
+}
+
+export interface TurnEndEvent {
+  source?: EventSource;
+  status: "completed" | "paused" | "failed";
+  timestamp: EpochMs;
+  turnId: string;
+  type: "turn.end";
+}
+
+export interface IterationStartEvent {
+  iterationCount: number;
+  source?: EventSource;
+  timestamp: EpochMs;
+  type: "iteration.start";
+}
+
+export interface IterationEndEvent {
+  iterationCount: number;
+  source?: EventSource;
+  timestamp: EpochMs;
+  type: "iteration.end";
+}
+
+export interface MessageStartEvent {
+  messageId: string;
+  role: "assistant";
+  source?: EventSource;
+  timestamp: EpochMs;
+  type: "message.start";
+}
+
+export interface TextDeltaEvent {
+  delta: string;
+  messageId: string;
+  source?: EventSource;
+  timestamp: EpochMs;
+  type: "text.delta";
+}
+
+export interface TextDoneEvent {
+  messageId: string;
+  source?: EventSource;
+  text: string;
+  timestamp: EpochMs;
+  type: "text.done";
+}
+
+export interface ReasoningDeltaEvent {
+  delta: string;
+  messageId: string;
+  source?: EventSource;
+  timestamp: EpochMs;
+  type: "reasoning.delta";
+}
+
+export interface ReasoningDoneEvent {
+  messageId: string;
+  source?: EventSource;
+  timestamp: EpochMs;
+  type: "reasoning.done";
+}
+
+export interface StructuredDeltaEvent {
+  delta: string;
+  messageId: string;
+  source?: EventSource;
+  timestamp: EpochMs;
+  type: "structured.delta";
+}
+
+export interface StructuredDoneEvent {
+  data: unknown;
+  messageId: string;
+  name?: string;
+  source?: EventSource;
+  timestamp: EpochMs;
+  type: "structured.done";
+}
+
+export interface ToolCallStartEvent {
+  callId: string;
+  messageId: string;
+  name: string;
+  source?: EventSource;
+  timestamp: EpochMs;
+  type: "tool_call.start";
+}
+
+export interface ToolCallArgsDeltaEvent {
+  callId: string;
+  delta: string;
+  source?: EventSource;
+  timestamp: EpochMs;
+  type: "tool_call.args_delta";
+}
+
+export interface ToolCallDoneEvent {
+  callId: string;
+  input: unknown;
+  name: string;
+  source?: EventSource;
+  timestamp: EpochMs;
+  type: "tool_call.done";
+}
+
+export interface MessageDoneEvent {
+  finishReason: "stop" | "tool_call" | "length" | "error" | "content_filter";
+  messageId: string;
+  source?: EventSource;
+  timestamp: EpochMs;
+  type: "message.done";
+  usage?: ProviderUsage;
+}
+
+export interface ToolStartEvent {
+  callId: string;
+  input: unknown;
+  name: string;
+  source?: EventSource;
+  timestamp: EpochMs;
+  type: "tool.start";
+}
+
+export interface ToolResultEvent {
+  callId: string;
+  isError?: boolean;
+  name: string;
+  output: unknown;
+  source?: EventSource;
+  timestamp: EpochMs;
+  type: "tool.result";
+}
+
+export interface ApprovalRequestedEvent {
+  request: ApprovalRequest;
+  source?: EventSource;
+  timestamp: EpochMs;
+  type: "approval.requested";
+}
+
+export interface ApprovalResolvedEvent {
+  response: ApprovalResponse;
+  source?: EventSource;
+  timestamp: EpochMs;
+  type: "approval.resolved";
+}
+
+export interface SteeringIncorporatedEvent {
+  messageId: string;
+  source?: EventSource;
+  timestamp: EpochMs;
+  type: "steering.incorporated";
+}
+
+export interface ErrorEvent {
+  error: KrakenErrorProjection;
+  fatal: boolean;
+  source?: EventSource;
+  timestamp: EpochMs;
+  type: "error";
+}
+
 export type KrakenStreamEvent =
-  | {
-      type: "turn.start";
-      turnId: string;
-      threadId: string;
-      resumedFrom?: HashString;
-      timestamp: EpochMs;
-      source?: EventSource;
-    }
-  | {
-      type: "turn.end";
-      turnId: string;
-      status: "completed" | "paused" | "failed";
-      timestamp: EpochMs;
-      source?: EventSource;
-    }
-  | {
-      type: "iteration.start" | "iteration.end";
-      iterationCount: number;
-      timestamp: EpochMs;
-      source?: EventSource;
-    }
-  | {
-      type: "message.start";
-      messageId: string;
-      role: "assistant";
-      timestamp: EpochMs;
-      source?: EventSource;
-    }
-  | {
-      type: "text.delta";
-      messageId: string;
-      delta: string;
-      timestamp: EpochMs;
-      source?: EventSource;
-    }
-  | {
-      type: "text.done";
-      messageId: string;
-      text: string;
-      timestamp: EpochMs;
-      source?: EventSource;
-    }
-  | {
-      type: "reasoning.delta";
-      messageId: string;
-      delta: string;
-      timestamp: EpochMs;
-      source?: EventSource;
-    }
-  | {
-      type: "reasoning.done";
-      messageId: string;
-      timestamp: EpochMs;
-      source?: EventSource;
-    }
-  | {
-      type: "structured.delta";
-      messageId: string;
-      delta: string;
-      timestamp: EpochMs;
-      source?: EventSource;
-    }
-  | {
-      type: "structured.done";
-      messageId: string;
-      data: unknown;
-      name?: string;
-      timestamp: EpochMs;
-      source?: EventSource;
-    }
-  | {
-      type: "tool_call.start";
-      messageId: string;
-      callId: string;
-      name: string;
-      timestamp: EpochMs;
-      source?: EventSource;
-    }
-  | {
-      type: "tool_call.args_delta";
-      callId: string;
-      delta: string;
-      timestamp: EpochMs;
-      source?: EventSource;
-    }
-  | {
-      type: "tool_call.done";
-      callId: string;
-      name: string;
-      input: unknown;
-      timestamp: EpochMs;
-      source?: EventSource;
-    }
-  | {
-      type: "message.done";
-      messageId: string;
-      finishReason:
-        | "stop"
-        | "tool_call"
-        | "length"
-        | "error"
-        | "content_filter";
-      usage?: ProviderUsage;
-      timestamp: EpochMs;
-      source?: EventSource;
-    }
-  | {
-      type: "tool.start";
-      callId: string;
-      name: string;
-      input: unknown;
-      timestamp: EpochMs;
-      source?: EventSource;
-    }
-  | {
-      type: "tool.result";
-      callId: string;
-      name: string;
-      output: unknown;
-      isError?: boolean;
-      timestamp: EpochMs;
-      source?: EventSource;
-    }
-  | {
-      type: "approval.requested";
-      request: ApprovalRequest;
-      timestamp: EpochMs;
-      source?: EventSource;
-    }
-  | {
-      type: "approval.resolved";
-      response: ApprovalResponse;
-      timestamp: EpochMs;
-      source?: EventSource;
-    }
-  | {
-      type: "steering.incorporated";
-      messageId: string;
-      timestamp: EpochMs;
-      source?: EventSource;
-    }
+  | TurnStartEvent
+  | TurnEndEvent
+  | IterationStartEvent
+  | IterationEndEvent
+  | MessageStartEvent
+  | TextDeltaEvent
+  | TextDoneEvent
+  | ReasoningDeltaEvent
+  | ReasoningDoneEvent
+  | StructuredDeltaEvent
+  | StructuredDoneEvent
+  | ToolCallStartEvent
+  | ToolCallArgsDeltaEvent
+  | ToolCallDoneEvent
+  | MessageDoneEvent
+  | ToolStartEvent
+  | ToolResultEvent
+  | ApprovalRequestedEvent
+  | ApprovalResolvedEvent
+  | SteeringIncorporatedEvent
   | StateSnapshotEvent
   | StateCheckpointEvent
-  | {
-      type: "error";
-      error: KrakenErrorProjection;
-      fatal: boolean;
-      timestamp: EpochMs;
-      source?: EventSource;
-    }
+  | ErrorEvent
   | CustomEvent;
 
 export interface StateSnapshotEvent {
@@ -940,7 +987,7 @@ export interface AgentConfig {
   extensions?: KrakenExtension[];
   loopPolicy?: LoopPolicy;
   maxIterations?: number;
-  model?: string | RuntimeModelProvider;
+  model?: string | KrakenProvider;
   name: string;
   responseFormat?: StructuredOutputRequest;
   systemPrompt?: string;
@@ -1204,7 +1251,7 @@ export function isKrakenStreamEvent(
       return false;
     }
 
-    if (!hasEpochMsTimestampAndValidSource(value)) {
+    if (!hasCanonicalEpochMsTimestampAndValidSource(value)) {
       return false;
     }
 
@@ -1757,7 +1804,9 @@ function isContextManifest(value: unknown): value is ContextManifest {
       value.turnBoundaries,
       messageCount,
       byRole.user,
-      lastUserMessageIndex
+      lastUserMessageIndex,
+      byRole.assistant,
+      lastAssistantMessageIndex
     )
   ) {
     return false;
@@ -1840,7 +1889,9 @@ function hasValidTurnBoundaries(
   turnBoundaries: number[],
   messageCount: number,
   userCount: number,
-  lastUserMessageIndex: number
+  lastUserMessageIndex: number,
+  assistantCount: number,
+  lastAssistantMessageIndex: number
 ): boolean {
   if (!hasOrderedTurnBoundaries(turnBoundaries, messageCount)) {
     return false;
@@ -1858,6 +1909,16 @@ function hasValidTurnBoundaries(
     return (
       turnBoundaries.length === 1 && turnBoundaries[0] === lastUserMessageIndex
     );
+  }
+
+  // The manifest cannot reconstruct every message role index, but it does know
+  // the last assistant position exactly. Any declared user-turn boundary that
+  // collides with that known assistant index is structurally impossible.
+  if (
+    assistantCount > 0 &&
+    turnBoundaries.includes(lastAssistantMessageIndex)
+  ) {
+    return false;
   }
 
   // There must still be enough index space before the last user message to
@@ -1910,7 +1971,7 @@ function hasDistinctApprovalRequestCallIds(
   return true;
 }
 
-function hasEpochMsTimestampAndValidSource(
+function hasCanonicalEpochMsTimestampAndValidSource(
   value: Record<string, unknown>
 ): value is Record<string, unknown> & { timestamp: EpochMs } {
   if (!isEpochMs(value.timestamp)) {
@@ -2058,7 +2119,8 @@ function isValidJsonSchemaObject(value: {
 }): boolean {
   // This is a structural guard for the shared contract seam. It rejects
   // malformed standard keyword shapes without trying to replace a full
-  // metaschema engine such as Ajv.
+  // metaschema engine such as Ajv. Structurally valid but unsatisfiable
+  // schemas still remain valid JSON Schema and are intentionally allowed.
   if ("type" in value && !isValidJsonSchemaType(value.type)) {
     return false;
   }

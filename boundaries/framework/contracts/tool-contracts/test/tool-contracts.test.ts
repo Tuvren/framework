@@ -15,8 +15,8 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { frameworkContractFixtures } from "../../../../../tests/fixtures/framework-contract-fixtures.js";
 import {
+  type ApprovalRequest,
   assertApprovalRequest,
   assertApprovalResponse,
   assertApprovalResponseForRequest,
@@ -25,22 +25,51 @@ import {
   isApprovalResponse,
   isApprovalResponseForRequest,
   isKrakenToolDefinition,
+  type KrakenToolDefinition,
 } from "../src/index.ts";
 
 describe("tool-contracts", () => {
   test("re-exports tool and approval contracts from the shared runtime anchor", () => {
-    expect(isApprovalRequest(frameworkContractFixtures.approvalRequest)).toBe(
-      true
-    );
+    const approvalRequest = {
+      completedResults: [
+        {
+          callId: "call-1",
+          name: "search",
+          output: { hits: 1 },
+          type: "tool_result",
+        },
+      ],
+      toolCalls: [
+        {
+          callId: "call-2",
+          decisions: ["approve", "edit", "reject"],
+          input: { query: "latest status" },
+          message: "Approve the outbound search?",
+          name: "search",
+        },
+      ],
+    } satisfies ApprovalRequest;
+    const toolDefinition = {
+      description: "Search documentation",
+      execute() {
+        return { hits: 1 };
+      },
+      inputSchema: {
+        properties: {
+          query: { type: "string" },
+        },
+        required: ["query"],
+        type: "object",
+      },
+      name: "search",
+    } satisfies KrakenToolDefinition;
+
+    expect(isApprovalRequest(approvalRequest)).toBe(true);
     expect(
       isApprovalResponse({ decisions: [{ callId: "call-1", type: "approve" }] })
     ).toBe(true);
-    expect(
-      isKrakenToolDefinition(frameworkContractFixtures.toolDefinition)
-    ).toBe(true);
-    expect(() =>
-      assertApprovalRequest(frameworkContractFixtures.approvalRequest)
-    ).not.toThrow();
+    expect(isKrakenToolDefinition(toolDefinition)).toBe(true);
+    expect(() => assertApprovalRequest(approvalRequest)).not.toThrow();
     expect(() =>
       assertApprovalResponse({
         decisions: [{ callId: "call-1", type: "approve" }],
@@ -48,18 +77,16 @@ describe("tool-contracts", () => {
     ).not.toThrow();
     expect(
       isApprovalResponseForRequest(
-        { decisions: [{ callId: "call_2", type: "approve" }] },
-        frameworkContractFixtures.approvalRequest
+        { decisions: [{ callId: "call-2", type: "approve" }] },
+        approvalRequest
       )
     ).toBe(true);
     expect(() =>
       assertApprovalResponseForRequest(
-        { decisions: [{ callId: "call_2", type: "approve" }] },
-        frameworkContractFixtures.approvalRequest
+        { decisions: [{ callId: "call-2", type: "approve" }] },
+        approvalRequest
       )
     ).not.toThrow();
-    expect(() =>
-      assertKrakenToolDefinition(frameworkContractFixtures.toolDefinition)
-    ).not.toThrow();
+    expect(() => assertKrakenToolDefinition(toolDefinition)).not.toThrow();
   });
 });

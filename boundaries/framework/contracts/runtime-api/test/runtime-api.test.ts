@@ -441,6 +441,31 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
   });
 
+  test("rejects manifests whose turn boundary collides with the known last assistant index", () => {
+    expect(
+      isExecutionStatus({
+        iterationCount: 0,
+        manifest: {
+          byRole: {
+            assistant: 1,
+            system: 1,
+            tool: 0,
+            user: 2,
+          },
+          extensions: {},
+          lastAssistantMessageIndex: 1,
+          lastUserMessageIndex: 3,
+          messageCount: 4,
+          tokenEstimate: 12,
+          toolCalls: { byName: {}, total: 0 },
+          toolResults: { byName: {}, total: 0 },
+          turnBoundaries: [1],
+        },
+        phase: "running",
+      })
+    ).toBe(false);
+  });
+
   test("rejects stream events that omit required fields", () => {
     expect(isKrakenStreamEvent({ type: "turn.end", timestamp: 1 })).toBe(false);
   });
@@ -1284,6 +1309,23 @@ describe("runtime-api contracts", () => {
           type: "number",
         },
         name: "fractional-schema",
+      })
+    ).toBe(true);
+  });
+
+  test("accepts structurally valid but unsatisfiable JSON Schemas", () => {
+    expect(
+      isKrakenToolDefinition({
+        description: "Unsatisfiable numeric bounds",
+        execute() {
+          return undefined;
+        },
+        inputSchema: {
+          maximum: 3,
+          minimum: 5,
+          type: "number",
+        },
+        name: "unsat-bounds",
       })
     ).toBe(true);
   });
