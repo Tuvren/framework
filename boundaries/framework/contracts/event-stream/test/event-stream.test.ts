@@ -1,0 +1,41 @@
+/**
+ * Copyright 2026 Oscar Yáñez Cisterna (@SkrOYC)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import { describe, expect, test } from "bun:test";
+import {
+  assertKrakenStreamEvent,
+  isKrakenStreamEvent,
+  type TextDoneEvent,
+} from "../src/index.ts";
+
+describe("event-stream contracts", () => {
+  test("re-exports the canonical Kraken event vocabulary and named variants", () => {
+    const event = {
+      messageId: "message-1",
+      source: {
+        agent: "primary",
+        driver: "react",
+        threadId: "thread-main",
+      },
+      text: "Need approval before continuing.",
+      timestamp: 1_717_171_717_171,
+      type: "text.done",
+    } satisfies TextDoneEvent;
+
+    expect(isKrakenStreamEvent(event)).toBe(true);
+    expect(() => assertKrakenStreamEvent(event)).not.toThrow();
+  });
+});

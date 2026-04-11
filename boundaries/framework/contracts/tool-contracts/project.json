@@ -1,0 +1,52 @@
+{
+  "name": "framework-tool-contracts",
+  "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
+  "root": "boundaries/framework/contracts/tool-contracts",
+  "sourceRoot": "boundaries/framework/contracts/tool-contracts/src",
+  "projectType": "library",
+  "tags": ["boundary:framework", "layer:contract"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["^build"],
+      "options": {
+        "cwd": "boundaries/framework/contracts/tool-contracts",
+        "commands": [
+          {
+            "command": "bunx --bun tsup --config tsup.config.ts"
+          },
+          {
+            "command": "bunx --bun tsc --project tsconfig.dts.json --pretty false"
+          }
+        ],
+        "parallel": false
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "boundaries/framework/contracts/tool-contracts",
+        "command": "bun test"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["^build"],
+      "options": {
+        "cwd": "boundaries/framework/contracts/tool-contracts",
+        "commands": [
+          {
+            "command": "tsc --project tsconfig.lib.json --noEmit --pretty false"
+          },
+          {
+            "command": "tsc --project tsconfig.dts.json --noEmit --pretty false"
+          },
+          {
+            "command": "tsc --project tsconfig.typecheck.json --noEmit --pretty false"
+          }
+        ],
+        "parallel": false
+      }
+    }
+  }
+}
