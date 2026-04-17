@@ -1257,7 +1257,7 @@ class RuntimeCore implements KrakenRuntime {
           ? await this.stageRuntimeStatus(
               iterationRunId,
               {
-                activeAgent: driverResult.activeAgent,
+                activeAgent: loopState.activeConfig.name,
                 iterationCount: nextIteration,
                 pauseReason: resolution.reason,
                 state: "paused",
@@ -2241,11 +2241,18 @@ class RuntimeCore implements KrakenRuntime {
       },
       helpers: {
         loadMessage(hash) {
-          return (
-            pendingMessages.get(hash) ?? existingMessages.get(hash) ?? null
-          );
+          const message =
+            pendingMessages.get(hash) ?? existingMessages.get(hash) ?? null;
+
+          if (message === null) {
+            return null;
+          }
+
+          assertKrakenMessage(message, `message "${hash}"`);
+          return message;
         },
         storeMessage(message) {
+          assertKrakenMessage(message, "context engineering helper message");
           const encoded = encodeKernelRecord(message, "message");
           const hash = hashRecord(encoded);
           pendingMessages.set(hash, message);
@@ -2254,6 +2261,7 @@ class RuntimeCore implements KrakenRuntime {
         },
         storeMessages(messagesToStore) {
           return messagesToStore.map((message) => {
+            assertKrakenMessage(message, "context engineering helper message");
             const encoded = encodeKernelRecord(message, "message");
             const hash = hashRecord(encoded);
             pendingMessages.set(hash, message);
@@ -2455,7 +2463,7 @@ class RuntimeCore implements KrakenRuntime {
       });
     }
 
-    return decodeDeterministicKernelRecord(payload) as KrakenMessage;
+    return decodeKrakenMessageRecord(payload, `message "${hash}"`);
   }
 
   private async resolveExecutionSchemaId(
@@ -2729,8 +2737,13 @@ class OrchestrationHandleImpl implements OrchestrationHandle {
   }
 
   cancel(): void {
+    const phase = this.parentHandle.status().phase;
     this.parentHandle.cancel();
     this.runtime.cancelSessionWorkers(this.sessionId);
+
+    if (phase === "paused") {
+      this.closeForCancelledParent();
+    }
   }
 
   events(): AsyncIterable<KrakenStreamEvent> {
@@ -2879,6 +2892,16 @@ class OrchestrationHandleImpl implements OrchestrationHandle {
 
     this.workerEventFanouts.clear();
     this.runtime.releaseHandle(this);
+  }
+
+  private closeForCancelledParent(): void {
+    if (this.parentCompleted) {
+      return;
+    }
+
+    this.parentCompleted = true;
+    this.parentEventsFanout.close();
+    this.closeAllEventsIfSettled();
   }
 
   private ensureStarted(): void {
@@ -3718,7 +3741,7 @@ async function readKernelMessage(
     });
   }
 
-  return decodeDeterministicKernelRecord(payload) as KrakenMessage;
+  return decodeKrakenMessageRecord(payload, `message "${hash}"`);
 }
 
 function extractWorkerOutput(messages: KrakenMessage[]): unknown {
@@ -3852,6 +3875,15 @@ function normalizeWorkerTask(task: unknown): InputSignal {
       },
     ],
   };
+}
+
+function decodeKrakenMessageRecord(
+  payload: Uint8Array,
+  label: string
+): KrakenMessage {
+  const decoded = decodeDeterministicKernelRecord(payload);
+  assertKrakenMessage(decoded, label);
+  return decoded;
 }
 
 function createWorkerResultSignal(

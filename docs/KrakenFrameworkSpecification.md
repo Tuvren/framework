@@ -1835,16 +1835,22 @@ tools: [{
 }]
 ```
 
-**Steering payload format**: When a worker result is delivered through steering, the `OrchestrationRuntime` (§10.6) uses a structured message of this form:
+**Steering payload format**: When a worker result is delivered through steering, the `OrchestrationRuntime` (§10.6) injects a `user` message containing one `structured` part:
 
 ```
-[Worker Result: {workerId}]
-Agent: {agentName}
-Status: {completed | failed}
-Output: {structured result or failure payload}
+{
+  type: "structured",
+  name: "worker_result",
+  data: {
+    workerId: string,
+    agent: string,
+    status: "completed" | "failed",
+    output: unknown
+  }
+}
 ```
 
-When such a payload is delivered while the parent Turn is running, the parent sees it as a user message at the next iteration boundary. The model can reason about worker status (“I got vendor A’s results, still waiting on B and C”).
+When such a payload is delivered while the parent Turn is running, the parent sees it as a user message at the next iteration boundary. The model can reason about worker status (“I got vendor A’s results, still waiting on B and C”), and drivers or extensions can also consume the payload programmatically without string parsing.
 
 **wait_for_worker**: Converts an async worker to sync mid-flight. The tool blocks until the specified worker completes and returns the result as a tool result. The developer chooses when to synchronize, not the framework.
 

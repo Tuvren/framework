@@ -888,6 +888,62 @@ describe("framework-runtime-core", () => {
     expect(driverExecutedIndex).toBeGreaterThan(rewrittenSnapshotIndex);
   });
 
+  test("rejects invalid context-engineering helper messages with a validation error", async () => {
+    const harness = createFakeKernelHarness();
+    const driver = {
+      async execute(context) {
+        return {
+          activeAgent: context.config.name,
+          messages: [assistantText("This should not run.")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        contextPolicy: {
+          evaluate() {
+            return {
+              action: "store_invalid_message",
+              execute(context) {
+                return [
+                  ...context.messageHashes,
+                  context.helpers.storeMessage(JSON.parse('{"role":"banana"}')),
+                ];
+              },
+            };
+          },
+        },
+        name: "primary",
+      },
+      signal: textSignal("Reject invalid context helper message"),
+      threadId: thread.threadId,
+    });
+
+    const events = await collectEvents(handle.events());
+    const errorEvent = events.find(
+      (event): event is Extract<(typeof events)[number], { type: "error" }> =>
+        event.type === "error"
+    );
+
+    expect(handle.status().phase).toBe("failed");
+    expect(errorEvent?.error.code).toBe("invalid_kraken_message");
+  });
+
   test("fails invalid context-engineering plans before corrupting the branch head", async () => {
     const harness = createFakeKernelHarness();
     const driver = {
@@ -1199,6 +1255,80 @@ describe("framework-runtime-core", () => {
 
     await collectEvents(resumedHandle.events());
     expect(resumedHandle.status().phase).toBe("completed");
+  });
+
+  test("persists paused runtime status with the framework-owned active agent", async () => {
+    const harness = createFakeKernelHarness();
+    const driver = {
+      async execute() {
+        return {
+          activeAgent: "other-agent",
+          messages: [
+            assistantToolCalls([
+              {
+                callId: "call-email",
+                input: { subject: "Pause", to: "ops@example.com" },
+                name: "email",
+              },
+            ]),
+          ],
+          resolution: {
+            type: "continue_iteration",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        name: "primary",
+        tools: [
+          {
+            approval: true,
+            description: "Pause with approval",
+            execute() {
+              return {
+                sent: true,
+              };
+            },
+            inputSchema: {
+              properties: {
+                subject: { type: "string" },
+                to: { type: "string" },
+              },
+              required: ["to", "subject"],
+              type: "object",
+            },
+            name: "email",
+          },
+        ],
+      },
+      signal: textSignal("Pause with framework agent"),
+      threadId: thread.threadId,
+    });
+
+    const events = await collectEvents(handle.events());
+    const turnId = extractTurnId(events);
+
+    expect(handle.status().phase).toBe("paused");
+    expect(handle.status().activeAgent).toBe("primary");
+    expect(await harness.readBranchRuntimeStatus(thread.branchId)).toEqual({
+      activeAgent: "primary",
+      iterationCount: 1,
+      pauseReason: "approval_required",
+      state: "paused",
+      turnId,
+    });
   });
 
   test("durably fails paused turns when the host cancels after approval pause", async () => {
@@ -4372,6 +4502,146 @@ describe("framework-runtime-core", () => {
           typeof event.resumedFrom === "string"
       )
     ).toBe(true);
+  });
+
+  test("closes paused parent streams and releases the cancelled session", async () => {
+    const harness = createFakeKernelHarness();
+    const driver = {
+      async execute(context) {
+        const workerResult = extractLastWorkerResult(context.messages);
+        const toolMessages = context.messages.filter(
+          (message) => message.role === "tool"
+        );
+
+        if (context.config.name === "worker") {
+          return {
+            activeAgent: "worker",
+            messages: [assistantText("Worker after cancelled session.")],
+            resolution: {
+              reason: "done",
+              type: "end_turn",
+            },
+          };
+        }
+
+        if (
+          workerResult?.status === "completed" &&
+          workerResult.output === "Worker after cancelled session."
+        ) {
+          return {
+            activeAgent: "primary",
+            messages: [assistantText("Parent saw post-cancel worker.")],
+            resolution: {
+              reason: "done",
+              type: "end_turn",
+            },
+          };
+        }
+
+        if (toolMessages.length === 0) {
+          return {
+            activeAgent: "primary",
+            messages: [
+              assistantToolCalls([
+                {
+                  callId: "call-hold",
+                  input: { hold: true },
+                  name: "hold",
+                },
+              ]),
+            ],
+            resolution: {
+              type: "continue_iteration",
+            },
+          };
+        }
+
+        await delay(10);
+        return {
+          activeAgent: "primary",
+          messages: [assistantText("Waiting.")],
+          resolution: {
+            type: "continue_iteration",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const framework = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const orchestration = createOrchestrationRuntime({
+      agents: {
+        primary: {
+          name: "primary",
+          tools: [
+            {
+              approval: true,
+              description: "Pause parent session",
+              execute() {
+                return {
+                  approved: true,
+                };
+              },
+              inputSchema: {
+                properties: {
+                  hold: { type: "boolean" },
+                },
+                required: ["hold"],
+                type: "object",
+              },
+              name: "hold",
+            },
+          ],
+        },
+        worker: { name: "worker" },
+      },
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      entrypoint: "primary",
+      framework,
+      kernel: harness.kernel,
+    });
+    const threadA = await framework.createThread({});
+    const handleA = orchestration.executeTurn({
+      branchId: threadA.branchId,
+      signal: textSignal("Pause and cancel A"),
+      threadId: threadA.threadId,
+    });
+
+    detachTestPromise(collectEventsForDuration(handleA.events(), 50));
+    await waitFor(() => handleA.status().phase === "paused");
+    const parentDrain = settleWithin(
+      collectEvents(handleA.parentEvents()),
+      100
+    );
+    const allDrain = settleWithin(collectEvents(handleA.allEvents()), 100);
+
+    handleA.cancel();
+    await waitFor(() => handleA.status().phase === "failed");
+
+    expect(await parentDrain).toEqual([]);
+    expect(await allDrain).toEqual([]);
+
+    const threadB = await framework.createThread({});
+    const handleB = orchestration.executeTurn({
+      branchId: threadB.branchId,
+      signal: textSignal("Single live session"),
+      threadId: threadB.threadId,
+    });
+    detachTestPromise(collectEventsForDuration(handleB.events(), 50));
+
+    const workerId = await orchestration.launchWorker("worker", {
+      task: "cleanup",
+    });
+    const workerResult = await orchestration.awaitWorker(workerId);
+
+    expect(workerResult).toBe("Worker after cancelled session.");
   });
 
   test("routes worker completions to the resumed orchestration handle", async () => {
