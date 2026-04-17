@@ -1025,7 +1025,10 @@ export interface OrchestrationHandle extends ExecutionHandle {
 }
 
 export interface OrchestrationRuntime {
-  awaitWorker(workerId: string): Promise<unknown>;
+  awaitWorker(
+    workerId: string,
+    options?: { parent: OrchestrationHandle }
+  ): Promise<unknown>;
   cancel(): void;
   executeTurn(input: {
     branchId: string;
@@ -1041,7 +1044,11 @@ export interface OrchestrationRuntime {
     task: unknown,
     options?: { parent: OrchestrationHandle }
   ): Promise<string>;
-  resolveWorkerApproval(workerId: string, response: ApprovalResponse): void;
+  resolveWorkerApproval(
+    workerId: string,
+    response: ApprovalResponse,
+    options?: { parent: OrchestrationHandle }
+  ): void;
 }
 
 export interface KrakenRuntime {

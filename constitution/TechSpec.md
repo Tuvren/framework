@@ -479,8 +479,15 @@ export interface OrchestrationRuntime {
     task: unknown,
     options?: { parent: OrchestrationHandle }
   ): Promise<string>;
-  awaitWorker(workerId: string): Promise<unknown>;
-  resolveWorkerApproval(workerId: string, response: ApprovalResponse): void;
+  awaitWorker(
+    workerId: string,
+    options?: { parent: OrchestrationHandle }
+  ): Promise<unknown>;
+  resolveWorkerApproval(
+    workerId: string,
+    response: ApprovalResponse,
+    options?: { parent: OrchestrationHandle }
+  ): void;
   cancel(): void;
 }
 

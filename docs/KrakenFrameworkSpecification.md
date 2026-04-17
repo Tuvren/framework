@@ -1823,12 +1823,12 @@ tools: [{
   name: "delegate",
   execute: async (input, ctx) => {
     // OrchestrationRuntime (§10.6) handles launch + completion watching
-    const workerId = orchestration.launchWorker(input.agent, input.task)
+    const workerId = await orchestration.launchWorker(input.agent, input.task)
     return { workerId, status: "launched" }
   }
 },
 {
-  name: "wait_for_worker",
+  name: "wait_for_worker",    // single active parent session shown here
   execute: async (input) => await orchestration.awaitWorker(input.workerId)
 }]
 ```
@@ -2013,9 +2013,9 @@ The framework-provided runtime for multi-agent coordination. Owns worker lifecyc
 ```
 OrchestrationRuntime
 ├─ executeTurn(input: { signal, threadId, branchId, schemaId?, driverId? }) → OrchestrationHandle
-├─ launchWorker(agent: string, task: unknown, options?: { parent: OrchestrationHandle }) → string (workerId)
-├─ awaitWorker(workerId: string) → Promise<unknown>
-├─ resolveWorkerApproval(workerId: string, response: ApprovalResponse) → void
+├─ launchWorker(agent: string, task: unknown, options?: { parent: OrchestrationHandle }) → Promise<string> (workerId)
+├─ awaitWorker(workerId: string, options?: { parent: OrchestrationHandle }) → Promise<unknown>
+├─ resolveWorkerApproval(workerId: string, response: ApprovalResponse, options?: { parent: OrchestrationHandle }) → void
 └─ cancel(): void
 ```
 
@@ -2060,7 +2060,7 @@ const orchestration = createOrchestrationRuntime({
 
 No new kernel concepts. The runtime is a composition layer.
 
-When one `OrchestrationRuntime` hosts multiple active parent sessions at once, `launchWorker(..., { parent })` is the required disambiguation mechanism. When only one parent session is active, the runtime may resolve the parent implicitly.
+When one `OrchestrationRuntime` hosts multiple active parent sessions at once, `launchWorker(..., { parent })` is the required disambiguation mechanism. The same rule applies to `awaitWorker(...)` and `resolveWorkerApproval(...)`: when more than one orchestration session exists, the host MUST supply the owning `{ parent }` handle for worker control. When only one parent session is active, the runtime may resolve the parent implicitly.
 
 **Event stream demuxing**: The runtime provides three consumption patterns:
 
@@ -2080,7 +2080,9 @@ The frontend developer subscribes to the streams they need. Separate UI panels g
 - If the worker completed successfully and the parent Turn is `running`, the runtime calls `parentHandle.steer()` with a structured worker result message.
 - If the worker failed and the parent Turn is `running`, the runtime still calls `parentHandle.steer()` with the structured failure payload so the parent can react without polling.
 - If the parent Turn is `paused`, the runtime queues terminal worker results for delivery at the next valid steering injection point after approval resume.
-- If the worker itself pauses for approval, the runtime records `WorkerStatus.status = "paused"` plus the worker approval payload and waits for the host to call `resolveWorkerApproval(workerId, response)`.
+- If the worker itself pauses for approval, the runtime records `WorkerStatus.status = "paused"` plus the worker approval payload and waits for the host to call `resolveWorkerApproval(workerId, response, { parent })`. The `{ parent }` handle is required whenever more than one orchestration session exists.
+- Worker launch inherits the parent session's schema. Custom thread schemas therefore remain intact across worker Threads; worker orchestration MUST NOT silently fall back to the default schema surface.
+- Launching a brand-new worker requires the owning parent handle to still be `running` or `paused`. Completed or failed parent sessions cannot accept new workers.
 - If the parent Turn has already ended, the runtime stores the result for host-level retrieval so the host can deliver it through a new Turn or alongside the next human-initiated Turn.
 
 **Worker visibility**: `OrchestrationHandle.workers()` is session-local. Each parent handle sees only the workers launched for that orchestration session, even when multiple parent sessions share one `OrchestrationRuntime`.
