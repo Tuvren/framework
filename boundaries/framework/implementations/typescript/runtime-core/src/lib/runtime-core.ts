@@ -2705,19 +2705,7 @@ class OrchestrationRuntimeImpl implements OrchestrationRuntime {
     });
 
     if (worker.status === "completed") {
-      const signal: InputSignal = {
-        parts: [
-          {
-            text: [
-              `[Worker Result: ${worker.workerId}]`,
-              `Agent: ${worker.agent}`,
-              "Status: completed",
-              `Output: ${lastText}`,
-            ].join("\n"),
-            type: "text",
-          },
-        ],
-      };
+      const signal = createWorkerResultSignal(worker, worker.result);
 
       if (parentHandle.status().phase === "running") {
         parentHandle.steer(signal);
@@ -2886,6 +2874,26 @@ function normalizeWorkerTask(task: unknown): InputSignal {
       {
         data: task,
         name: "worker_task",
+        type: "structured",
+      },
+    ],
+  };
+}
+
+function createWorkerResultSignal(
+  worker: WorkerRecord,
+  output: unknown
+): InputSignal {
+  return {
+    parts: [
+      {
+        data: {
+          agent: worker.agent,
+          output,
+          status: "completed",
+          workerId: worker.workerId,
+        },
+        name: "worker_result",
         type: "structured",
       },
     ],

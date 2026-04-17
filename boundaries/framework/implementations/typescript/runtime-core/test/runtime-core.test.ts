@@ -629,7 +629,7 @@ describe("framework-runtime-core", () => {
     const harness = createFakeKernelHarness();
     const driver = {
       async execute(context) {
-        const lastUserText = extractLastUserText(context.messages);
+        const workerResult = extractLastWorkerResult(context.messages);
 
         if (context.config.name === "worker") {
           context.runtime.emit({
@@ -648,7 +648,10 @@ describe("framework-runtime-core", () => {
           };
         }
 
-        if (lastUserText.includes("[Worker Result:")) {
+        if (
+          workerResult?.status === "completed" &&
+          workerResult.output === "Worker complete."
+        ) {
           return {
             activeAgent: "primary",
             messages: [assistantText("Parent saw the worker result.")],
@@ -801,20 +804,60 @@ function delay(milliseconds: number): Promise<void> {
   });
 }
 
-function extractLastUserText(messages: KrakenMessage[]): string {
-  for (let index = messages.length - 1; index >= 0; index -= 1) {
-    const message = messages[index];
+function extractLastWorkerResult(messages: KrakenMessage[]): {
+  agent: string;
+  output: unknown;
+  status: string;
+  workerId: string;
+} | null {
+  for (
+    let messageIndex = messages.length - 1;
+    messageIndex >= 0;
+    messageIndex -= 1
+  ) {
+    const message = messages[messageIndex];
 
     if (message.role !== "user") {
       continue;
     }
 
-    return message.parts
-      .map((part) => (part.type === "text" ? part.text : JSON.stringify(part)))
-      .join("\n");
+    for (
+      let partIndex = message.parts.length - 1;
+      partIndex >= 0;
+      partIndex -= 1
+    ) {
+      const part = message.parts[partIndex];
+
+      if (part.type !== "structured" || part.name !== "worker_result") {
+        continue;
+      }
+
+      const { data } = part;
+
+      if (
+        data === null ||
+        typeof data !== "object" ||
+        !("agent" in data) ||
+        !("output" in data) ||
+        !("status" in data) ||
+        !("workerId" in data) ||
+        typeof data.agent !== "string" ||
+        typeof data.status !== "string" ||
+        typeof data.workerId !== "string"
+      ) {
+        continue;
+      }
+
+      return {
+        agent: data.agent,
+        output: data.output,
+        status: data.status,
+        workerId: data.workerId,
+      };
+    }
   }
 
-  return "";
+  return null;
 }
 
 function textSignal(text: string): InputSignal {
