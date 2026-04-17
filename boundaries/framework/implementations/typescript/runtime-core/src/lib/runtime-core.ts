@@ -52,6 +52,7 @@ import type {
   WorkerStatus,
 } from "@kraken/framework-runtime-api";
 import {
+  assertApprovalRequest,
   assertApprovalResponseForRequest,
   assertKrakenMessage,
 } from "@kraken/framework-runtime-api";
@@ -512,7 +513,7 @@ class RuntimeExecutionHandle implements ExecutionHandle {
       );
     }
 
-    this.steeringQueue.push(signal);
+    this.steeringQueue.push(normalizeInputSignal(signal, "steering signal"));
   }
 
   updateStatus(patch: Partial<ExecutionStatus>): void {
@@ -614,9 +615,16 @@ class RuntimeCore implements KrakenRuntime {
   createExecutionHandle(
     request: ExecutionSessionRequest
   ): RuntimeExecutionHandle {
+    const normalizedSignal = normalizeInputSignal(
+      request.signal,
+      "request.signal"
+    );
     return new RuntimeExecutionHandle(
       this,
-      request,
+      {
+        ...request,
+        signal: normalizedSignal,
+      },
       this.createId(),
       request.schemaId ?? DEFAULT_AGENT_SCHEMA_ID
     );
@@ -1656,13 +1664,16 @@ class RuntimeCore implements KrakenRuntime {
     resumeContext: ResumeContext | undefined
   ) {
     try {
-      return resumeContext === undefined
-        ? await driver.execute(context)
-        : await driver.resume({
-            ...context,
-            approval: resumeContext.approval,
-            resumedFrom: resumeContext.pausedTurnNodeHash,
-          } satisfies DriverResumeContext);
+      const result =
+        resumeContext === undefined
+          ? await driver.execute(context)
+          : await driver.resume({
+              ...context,
+              approval: resumeContext.approval,
+              resumedFrom: resumeContext.pausedTurnNodeHash,
+            } satisfies DriverResumeContext);
+      assertDriverExecutionResult(result);
+      return result;
     } catch (error: unknown) {
       return {
         activeAgent: context.config.name,
@@ -3492,20 +3503,29 @@ export function createOrchestrationRuntime(
   options: OrchestrationRuntimeOptions
 ): OrchestrationRuntime {
   const sequenceResolver = buildSequenceResolver(options.sequence);
-  const framework =
-    options.framework ??
-    createKrakenRuntimeCore({
-      createId: options.createId,
-      defaultDriverId: options.defaultDriverId,
-      driverRegistry: options.driverRegistry,
-      enableStateObservability: options.enableStateObservability,
-      kernel: options.kernel,
-      now: options.now,
-      resolveAgentConfig: (agentName) => options.agents[agentName],
-      resolveNextAgent: sequenceResolver,
-      sequenceHandoffContextBuilder: options.handoffContextBuilder,
-      resolveParentTurnId: options.resolveParentTurnId,
-    });
+  const orchestrationFrameworkCore = createKrakenRuntimeCore({
+    createId: options.createId,
+    defaultDriverId: options.defaultDriverId,
+    driverRegistry: options.driverRegistry,
+    enableStateObservability: options.enableStateObservability,
+    kernel: options.kernel,
+    now: options.now,
+    resolveAgentConfig: (agentName) => options.agents[agentName],
+    resolveNextAgent: sequenceResolver,
+    sequenceHandoffContextBuilder: options.handoffContextBuilder,
+    resolveParentTurnId: options.resolveParentTurnId,
+  });
+  const baseFramework = options.framework ?? orchestrationFrameworkCore;
+  const framework: KrakenRuntime =
+    options.framework === undefined
+      ? orchestrationFrameworkCore
+      : {
+          createBranch: (input) => baseFramework.createBranch(input),
+          createThread: (input) => baseFramework.createThread(input),
+          executeTurn: (input) => orchestrationFrameworkCore.executeTurn(input),
+          getThread: (threadId) => baseFramework.getThread(threadId),
+          setBranchHead: (input) => baseFramework.setBranchHead(input),
+        };
 
   return new OrchestrationRuntimeImpl(
     framework,
@@ -3846,24 +3866,12 @@ function normalizeWorkerTask(task: unknown): InputSignal {
     "parts" in task &&
     Array.isArray(task.parts)
   ) {
-    const candidateMessage: unknown = {
-      parts: task.parts,
-      role: "user",
-    };
-    assertKrakenMessage(candidateMessage, "worker task");
-
-    if (candidateMessage.role !== "user") {
-      throw new KrakenRuntimeError(
-        "worker tasks must normalize to a user message",
-        {
-          code: "invalid_worker_task",
-        }
-      );
-    }
-
-    return {
-      parts: candidateMessage.parts,
-    };
+    return normalizeInputSignal(
+      {
+        parts: task.parts,
+      },
+      "worker task"
+    );
   }
 
   return {
@@ -3875,6 +3883,111 @@ function normalizeWorkerTask(task: unknown): InputSignal {
       },
     ],
   };
+}
+
+function normalizeInputSignal(signal: InputSignal, label: string): InputSignal {
+  const candidateMessage: unknown = {
+    parts: cloneValue(signal.parts),
+    role: "user",
+  };
+  assertKrakenMessage(candidateMessage, label);
+
+  if (candidateMessage.role !== "user") {
+    throw new KrakenRuntimeError(
+      "input signals must normalize to user messages",
+      {
+        code: "invalid_input_signal",
+      }
+    );
+  }
+
+  return {
+    parts: candidateMessage.parts,
+  };
+}
+
+function assertDriverExecutionResult(result: unknown): asserts result is {
+  activeAgent: string;
+  messages?: KrakenMessage[];
+  resolution: RuntimeResolution;
+} {
+  if (!isRecord(result) || typeof result.activeAgent !== "string") {
+    throw new KrakenRuntimeError("driver result must include activeAgent", {
+      code: "invalid_driver_result",
+      details: result,
+    });
+  }
+
+  if ("messages" in result && result.messages !== undefined) {
+    if (!Array.isArray(result.messages)) {
+      throw new KrakenRuntimeError("driver result messages must be an array", {
+        code: "invalid_driver_result",
+        details: result,
+      });
+    }
+
+    for (const [index, message] of result.messages.entries()) {
+      assertKrakenMessage(message, `driverResult.messages[${index}]`);
+    }
+  }
+
+  assertRuntimeResolution(result.resolution);
+}
+
+function assertRuntimeResolution(
+  resolution: unknown
+): asserts resolution is RuntimeResolution {
+  if (!isRecord(resolution) || typeof resolution.type !== "string") {
+    throw new KrakenRuntimeError(
+      "driver result must include a valid resolution",
+      {
+        code: "invalid_driver_result",
+        details: resolution,
+      }
+    );
+  }
+
+  switch (resolution.type) {
+    case "continue_iteration":
+      return;
+    case "end_turn":
+      if (typeof resolution.reason === "string") {
+        return;
+      }
+      break;
+    case "pause":
+      if (typeof resolution.reason === "string" && "approval" in resolution) {
+        assertApprovalRequest(
+          resolution.approval,
+          "driverResult.resolution.approval"
+        );
+        return;
+      }
+      break;
+    case "handoff":
+      if (
+        typeof resolution.targetAgent === "string" &&
+        isRecord(resolution.contextPlan)
+      ) {
+        return;
+      }
+      break;
+    case "fail":
+      if (
+        resolution.error instanceof Error &&
+        (resolution.fatality === "hard" || resolution.fatality === "soft")
+      ) {
+        return;
+      }
+      break;
+    default:
+      break;
+  }
+
+  throw new KrakenRuntimeError("driver returned an invalid resolution", {
+    code: "invalid_driver_result",
+    details: resolution,
+  });
 }
 
 function decodeKrakenMessageRecord(
