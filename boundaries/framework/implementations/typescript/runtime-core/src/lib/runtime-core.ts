@@ -1525,17 +1525,22 @@ class RuntimeCore implements KrakenRuntime {
       publishEvent: (event) => {
         this.publishEvent(handle, event, loopState);
       },
+      reportSoftError: (error) => {
+        this.publishProjectedError(handle, error, false, loopState);
+      },
       runId,
       signal: handle.abortSignal,
-      stageResult: async (result) => {
-        await this.stageMessage(
-          runId,
-          {
-            parts: [result],
-            role: "tool",
-          },
-          `tool_message_${result.callId}`
-        );
+      stageResults: async (results) => {
+        for (const result of results) {
+          await this.stageMessage(
+            runId,
+            {
+              parts: [result],
+              role: "tool",
+            },
+            `tool_message_${result.callId}`
+          );
+        }
       },
       threadId: handle.request.threadId,
       toolRegistry: loopState.activeToolRegistry,
@@ -2551,7 +2556,7 @@ class OrchestrationHandleImpl implements OrchestrationHandle {
 
   cancel(): void {
     this.parentHandle.cancel();
-    this.runtime.cancelWorkers();
+    this.runtime.cancelSessionWorkers(this.sessionId);
   }
 
   events(): AsyncIterable<KrakenStreamEvent> {
@@ -2763,6 +2768,14 @@ class OrchestrationRuntimeImpl implements OrchestrationRuntime {
     }
   }
 
+  cancelSessionWorkers(sessionId: string): void {
+    for (const worker of this.workers.values()) {
+      if (worker.sessionId === sessionId && worker.status === "running") {
+        worker.handle.cancel();
+      }
+    }
+  }
+
   executeTurn(input: {
     branchId: string;
     driverId?: string;
@@ -2846,9 +2859,13 @@ class OrchestrationRuntimeImpl implements OrchestrationRuntime {
     return snapshot;
   }
 
-  async launchWorker(agent: string, task: unknown): Promise<string> {
+  async launchWorker(
+    agent: string,
+    task: unknown,
+    options?: { parent: OrchestrationHandle }
+  ): Promise<string> {
     const config = this.agents[agent];
-    const currentHandle = this.currentHandle;
+    const parentHandle = this.resolveLaunchParentHandle(options?.parent);
 
     if (config === undefined) {
       throw new KrakenRuntimeError(`worker agent "${agent}" is not defined`, {
@@ -2857,15 +2874,6 @@ class OrchestrationRuntimeImpl implements OrchestrationRuntime {
           agent,
         },
       });
-    }
-
-    if (currentHandle === undefined) {
-      throw new KrakenRuntimeError(
-        "launchWorker() requires an active orchestration handle",
-        {
-          code: "orchestration_parent_missing",
-        }
-      );
     }
 
     const thread = await this.framework.createThread({});
@@ -2884,14 +2892,14 @@ class OrchestrationRuntimeImpl implements OrchestrationRuntime {
       handle,
       resolveResult: deferred.resolve,
       resultPromise: deferred.promise,
-      sessionId: currentHandle.sessionId,
+      sessionId: parentHandle.sessionId,
       status: "running",
       threadId: thread.threadId,
       workerId,
     };
     this.workers.set(workerId, record);
-    currentHandle.registerWorker(workerId);
-    currentHandle.emitWorkerEvent(workerId, {
+    parentHandle.registerWorker(workerId);
+    parentHandle.emitWorkerEvent(workerId, {
       data: {
         agent,
         task,
@@ -2933,8 +2941,13 @@ class OrchestrationRuntimeImpl implements OrchestrationRuntime {
       );
     }
 
-    worker.status =
-      worker.handle.status().phase === "failed" ? "failed" : "completed";
+    const phase = worker.handle.status().phase;
+
+    if (phase === "paused") {
+      return;
+    }
+
+    worker.status = phase === "failed" ? "failed" : "completed";
     worker.result = await this.resolveWorkerResult(worker, lastError);
     worker.resolveResult(worker.result);
     const sessionHandle = this.resolveSessionHandle(worker.sessionId);
@@ -3006,6 +3019,54 @@ class OrchestrationRuntimeImpl implements OrchestrationRuntime {
     sessionId: string
   ): OrchestrationHandleImpl | undefined {
     return this.sessionHandles.get(sessionId);
+  }
+
+  private resolveLaunchParentHandle(
+    parent: OrchestrationHandle | undefined
+  ): OrchestrationHandleImpl {
+    if (parent instanceof OrchestrationHandleImpl) {
+      const activeHandle = this.resolveSessionHandle(parent.sessionId);
+
+      if (activeHandle !== undefined) {
+        return activeHandle;
+      }
+
+      throw new KrakenRuntimeError(
+        "launchWorker() requires an active parent handle from this orchestration runtime",
+        {
+          code: "orchestration_parent_missing",
+        }
+      );
+    }
+
+    if (parent !== undefined) {
+      throw new KrakenRuntimeError(
+        "launchWorker() requires a parent handle created by this orchestration runtime",
+        {
+          code: "invalid_orchestration_parent",
+        }
+      );
+    }
+
+    if (this.sessionHandles.size === 1) {
+      const iterator = this.sessionHandles.values().next();
+
+      if (!iterator.done) {
+        return iterator.value;
+      }
+    }
+
+    throw new KrakenRuntimeError(
+      this.sessionHandles.size === 0
+        ? "launchWorker() requires an active orchestration handle"
+        : "launchWorker() requires an explicit parent handle when multiple orchestration sessions are active",
+      {
+        code:
+          this.sessionHandles.size === 0
+            ? "orchestration_parent_missing"
+            : "orchestration_parent_ambiguous",
+      }
+    );
   }
 }
 

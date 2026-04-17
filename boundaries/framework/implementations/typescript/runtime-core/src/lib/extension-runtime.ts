@@ -25,6 +25,7 @@ import type {
   RuntimeResolution,
 } from "@kraken/framework-runtime-api";
 import { KrakenRuntimeError } from "@kraken/shared-core-types";
+import { runWithTimeout } from "./execution-timeouts.js";
 
 export interface ExtensionStateUpdate {
   extensionName: string;
@@ -158,19 +159,29 @@ export async function runAfterIterationHooks(
     }
 
     try {
-      const result = await extension.afterIteration({
-        emit: options.emit,
-        extensionState: asRecord(options.manifest.extensions[extension.name]),
-        iterationCount: options.iterationCount,
-        manifest: options.manifest,
-        messages: options.messages,
-        resolution: options.resolution,
-        response: options.response,
-        runId: options.runId,
-        sharedExports,
-        toolResults: options.toolResults,
-        turnId: options.turnId,
-      });
+      const result = await runWithTimeout(
+        () =>
+          extension.afterIteration?.({
+            emit: options.emit,
+            extensionState: asRecord(
+              options.manifest.extensions[extension.name]
+            ),
+            iterationCount: options.iterationCount,
+            manifest: options.manifest,
+            messages: options.messages,
+            resolution: options.resolution,
+            response: options.response,
+            runId: options.runId,
+            sharedExports,
+            toolResults: options.toolResults,
+            turnId: options.turnId,
+          }),
+        extension.timeout,
+        () =>
+          new Error(
+            `extension "${extension.name}" afterIteration timed out after ${extension.timeout}ms`
+          )
+      );
 
       collectHookState(extension.name, result, updates);
       resolution = composeResolution(resolution, liftInterceptResult(result));
@@ -247,8 +258,14 @@ async function runInterceptHooks(
     }
 
     try {
-      const result = await handler(
-        createInterceptContext(extension, options, sharedExports)
+      const result = await runWithTimeout(
+        () =>
+          handler(createInterceptContext(extension, options, sharedExports)),
+        extension.timeout,
+        () =>
+          new Error(
+            `extension "${extension.name}" ${hookName} timed out after ${extension.timeout}ms`
+          )
       );
       collectHookState(extension.name, result, updates);
 

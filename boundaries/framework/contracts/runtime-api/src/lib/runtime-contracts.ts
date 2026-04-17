@@ -1034,7 +1034,11 @@ export interface OrchestrationRuntime {
     threadId: string;
     tools?: KrakenToolDefinition[];
   }): OrchestrationHandle;
-  launchWorker(agent: string, task: unknown): Promise<string>;
+  launchWorker(
+    agent: string,
+    task: unknown,
+    options?: { parent: OrchestrationHandle }
+  ): Promise<string>;
 }
 
 export interface KrakenRuntime {

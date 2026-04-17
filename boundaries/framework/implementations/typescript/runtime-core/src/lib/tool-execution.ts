@@ -34,6 +34,7 @@ import type {
   ToolResultPart,
 } from "@kraken/framework-runtime-api";
 import Ajv, { type ErrorObject, type ValidateFunction } from "ajv";
+import { runWithTimeout } from "./execution-timeouts.js";
 import {
   buildSharedExports,
   type ExtensionStateUpdate,
@@ -55,9 +56,10 @@ export interface ToolBatchEnvironment {
   now(): EpochMs;
   publishCustom(event: { data: unknown; name: string }): void;
   publishEvent(event: KrakenStreamEvent): void;
+  reportSoftError(error: Error): void;
   runId: string;
   signal?: AbortSignal;
-  stageResult(result: ToolResultPart): Promise<void>;
+  stageResults(results: ToolResultPart[]): Promise<void>;
   threadId: string;
   toolRegistry: ToolRegistry;
   turnId: string;
@@ -74,6 +76,11 @@ interface ExecutableToolCall {
   input: unknown;
   tool: KrakenToolDefinition;
   toolCall: ToolCallPart;
+}
+
+interface OrderedExecutableToolCall {
+  executable: ExecutableToolCall;
+  index: number;
 }
 
 interface ToolStartState {
@@ -107,12 +114,12 @@ export async function executeToolBatch(
   toolCalls: ToolCallPart[],
   environment: ToolBatchEnvironment
 ): Promise<ToolBatchOutcome> {
-  const results: ToolResultPart[] = [];
+  const orderedResults = toolCalls.map((): ToolResultPart[] => []);
   const pendingToolCalls: PendingToolCall[] = [];
   const updates: ExtensionStateUpdate[] = [];
-  const executable: ExecutableToolCall[] = [];
+  const executable: OrderedExecutableToolCall[] = [];
 
-  for (const toolCall of toolCalls) {
+  for (const [index, toolCall] of toolCalls.entries()) {
     const resolved = await resolveExecutableToolCall(toolCall, environment);
 
     if ("pendingToolCall" in resolved) {
@@ -121,29 +128,42 @@ export async function executeToolBatch(
     }
 
     if ("result" in resolved) {
-      await stageAndEmitResult(environment, resolved.result);
-      results.push(resolved.result);
+      emitToolResultEvent(environment, resolved.result);
+      orderedResults[index].push(resolved.result);
       continue;
     }
 
-    executable.push(resolved.executable);
+    executable.push({
+      executable: resolved.executable,
+      index,
+    });
   }
 
   const executableOutcomes = await Promise.all(
-    executable.map((toolCall) => executeSingleTool(toolCall, environment))
+    executable.map((toolCall) =>
+      executeSingleTool(toolCall.executable, environment)
+    )
   );
 
-  for (const outcome of executableOutcomes) {
+  for (const [outcomeIndex, outcome] of executableOutcomes.entries()) {
     updates.push(...outcome.updates);
+    const resultIndex = executable[outcomeIndex]?.index;
 
-    if (outcome.approval !== undefined) {
-      pendingToolCalls.push(...outcome.approval.toolCalls);
-      results.push(...outcome.approval.completedResults);
+    if (resultIndex === undefined) {
       continue;
     }
 
-    results.push(outcome.result);
+    if (outcome.approval !== undefined) {
+      pendingToolCalls.push(...outcome.approval.toolCalls);
+      orderedResults[resultIndex].push(...outcome.approval.completedResults);
+      continue;
+    }
+
+    orderedResults[resultIndex].push(outcome.result);
   }
+
+  const results = orderedResults.flat();
+  await stageResultsInOrder(environment, results);
 
   return pendingToolCalls.length === 0
     ? { results, updates }
@@ -162,17 +182,16 @@ export async function resumeToolBatch(
   response: ApprovalResponse,
   environment: ToolBatchEnvironment
 ): Promise<ToolBatchOutcome> {
-  const immediateResults: ToolResultPart[] = [];
-  const results: ToolResultPart[] = [];
+  const orderedResults = request.toolCalls.map((): ToolResultPart[] => []);
   const updates: ExtensionStateUpdate[] = [];
-  const executable: ExecutableToolCall[] = [];
+  const executable: OrderedExecutableToolCall[] = [];
   const responseMap = new Map<string, ApprovalDecision>();
 
   for (const decision of response.decisions) {
     responseMap.set(decision.callId, decision);
   }
 
-  for (const pendingToolCall of request.toolCalls) {
+  for (const [index, pendingToolCall] of request.toolCalls.entries()) {
     const decision = responseMap.get(pendingToolCall.callId);
 
     if (decision === undefined) {
@@ -186,34 +205,43 @@ export async function resumeToolBatch(
     );
 
     if ("result" in resumePlan) {
-      immediateResults.push(resumePlan.result);
+      emitToolResultEvent(environment, resumePlan.result);
+      orderedResults[index].push(resumePlan.result);
       continue;
     }
 
-    executable.push(resumePlan.executable);
-  }
-
-  for (const result of immediateResults) {
-    await stageAndEmitResult(environment, result);
-    results.push(result);
+    executable.push({
+      executable: resumePlan.executable,
+      index,
+    });
   }
 
   const executedOutcomes = await Promise.all(
-    executable.map((toolCall) => executeSingleTool(toolCall, environment))
+    executable.map((toolCall) =>
+      executeSingleTool(toolCall.executable, environment)
+    )
   );
   const pendingToolCalls: PendingToolCall[] = [];
 
-  for (const outcome of executedOutcomes) {
+  for (const [outcomeIndex, outcome] of executedOutcomes.entries()) {
     updates.push(...outcome.updates);
+    const resultIndex = executable[outcomeIndex]?.index;
+
+    if (resultIndex === undefined) {
+      continue;
+    }
 
     if (outcome.approval !== undefined) {
-      results.push(...outcome.approval.completedResults);
+      orderedResults[resultIndex].push(...outcome.approval.completedResults);
       pendingToolCalls.push(...outcome.approval.toolCalls);
       continue;
     }
 
-    results.push(outcome.result);
+    orderedResults[resultIndex].push(outcome.result);
   }
+
+  const results = orderedResults.flat();
+  await stageResultsInOrder(environment, results);
 
   return {
     approval:
@@ -399,7 +427,7 @@ async function executeSingleTool(
       outcome.result,
       toolCall.approvalDecision
     );
-    await stageAndEmitResult(environment, result);
+    emitToolResultEvent(environment, result);
 
     return {
       result,
@@ -418,7 +446,7 @@ async function executeSingleTool(
       error,
       toolCall.approvalDecision
     );
-    await stageAndEmitResult(environment, result);
+    emitToolResultEvent(environment, result);
 
     return {
       result,
@@ -431,6 +459,7 @@ async function runAroundToolHandlers(
   handlers: Array<{
     extensionName: string;
     handler: AroundToolHandler;
+    timeout?: number;
   }>,
   index: number,
   toolCall: ExecutableToolCall,
@@ -440,9 +469,21 @@ async function runAroundToolHandlers(
 ): Promise<SingleToolOutcome> {
   if (index >= handlers.length) {
     emitToolStartIfNeeded(toolCall, environment, toolStartState);
-    const output = await toolCall.tool.execute(
-      toolCall.input,
-      createToolExecutionContext(toolCall.toolCall, toolCall.tool, environment)
+    const output = await runWithTimeout(
+      () =>
+        toolCall.tool.execute(
+          toolCall.input,
+          createToolExecutionContext(
+            toolCall.toolCall,
+            toolCall.tool,
+            environment
+          )
+        ),
+      toolCall.tool.timeout,
+      () =>
+        new Error(
+          `tool "${toolCall.tool.name}" timed out after ${toolCall.tool.timeout}ms`
+        )
     );
 
     return {
@@ -456,7 +497,7 @@ async function runAroundToolHandlers(
     };
   }
 
-  const { extensionName, handler } = handlers[index];
+  const { extensionName, handler, timeout } = handlers[index];
   const nestedUpdates: ExtensionStateUpdate[] = [];
   let nestedResult: ToolResultPart | undefined;
   const context = createAroundToolContext(
@@ -467,24 +508,32 @@ async function runAroundToolHandlers(
   );
 
   try {
-    const handlerResult = await handler(context, async (nextContext) => {
-      const outcome = await runAroundToolHandlers(
-        handlers,
-        index + 1,
-        toExecutableToolCall(toolCall, nextContext),
-        environment,
-        sharedExports,
-        toolStartState
-      );
+    const handlerResult = await runWithTimeout(
+      () =>
+        handler(context, async (nextContext) => {
+          const outcome = await runAroundToolHandlers(
+            handlers,
+            index + 1,
+            toExecutableToolCall(toolCall, nextContext),
+            environment,
+            sharedExports,
+            toolStartState
+          );
 
-      if (outcome.approval !== undefined) {
-        throw new ToolPauseSignal(outcome.approval, outcome.updates);
-      }
+          if (outcome.approval !== undefined) {
+            throw new ToolPauseSignal(outcome.approval, outcome.updates);
+          }
 
-      nestedUpdates.push(...outcome.updates);
-      nestedResult = outcome.result;
-      return outcome.result;
-    });
+          nestedUpdates.push(...outcome.updates);
+          nestedResult = outcome.result;
+          return outcome.result;
+        }),
+      timeout,
+      () =>
+        new Error(
+          `aroundTool handler for extension "${extensionName}" timed out after ${timeout}ms`
+        )
+    );
 
     return normalizeAroundToolResult(
       extensionName,
@@ -504,6 +553,7 @@ async function runAroundToolHandlers(
     }
 
     if (nestedResult !== undefined) {
+      environment.reportSoftError(normalizeError(error));
       return {
         result: nestedResult,
         updates: nestedUpdates,
@@ -620,10 +670,12 @@ function getAroundToolHandlers(
 ): Array<{
   extensionName: string;
   handler: AroundToolHandler;
+  timeout?: number;
 }> {
   const handlers: Array<{
     extensionName: string;
     handler: AroundToolHandler;
+    timeout?: number;
   }> = [];
 
   for (const extension of extensions) {
@@ -637,6 +689,7 @@ function getAroundToolHandlers(
       handlers.push({
         extensionName: extension.name,
         handler: spec,
+        timeout: extension.timeout,
       });
       continue;
     }
@@ -645,6 +698,7 @@ function getAroundToolHandlers(
       handlers.push({
         extensionName: extension.name,
         handler: spec.handler,
+        timeout: extension.timeout,
       });
     }
   }
@@ -896,20 +950,21 @@ function createExecutionFailureResult(
 ): ToolResultPart {
   const message =
     error instanceof Error ? error.message : `Tool "${toolCall.name}" failed.`;
+  const approval =
+    decision === undefined
+      ? undefined
+      : {
+          message: decision.message,
+          type: decision.type,
+        };
 
   return {
     callId: toolCall.callId,
     isError: true,
     name: toolCall.name,
     output: {
-      approval:
-        decision === undefined
-          ? undefined
-          : {
-              message: decision.message,
-              type: decision.type,
-            },
       error: message,
+      ...(approval === undefined ? {} : { approval }),
     },
     type: "tool_result",
   };
@@ -930,11 +985,10 @@ function createErrorToolResult(
   };
 }
 
-async function stageAndEmitResult(
+function emitToolResultEvent(
   environment: ToolBatchEnvironment,
   result: ToolResultPart
-): Promise<void> {
-  await environment.stageResult(result);
+): void {
   environment.publishEvent({
     callId: result.callId,
     isError: result.isError,
@@ -945,12 +999,27 @@ async function stageAndEmitResult(
   });
 }
 
+async function stageResultsInOrder(
+  environment: ToolBatchEnvironment,
+  results: ToolResultPart[]
+): Promise<void> {
+  if (results.length === 0) {
+    return;
+  }
+
+  await environment.stageResults(results);
+}
+
 function asRecord(value: unknown): Record<string, unknown> {
   if (value !== null && typeof value === "object" && !Array.isArray(value)) {
     return value as Record<string, unknown>;
   }
 
   return {};
+}
+
+function normalizeError(error: unknown): Error {
+  return error instanceof Error ? error : new Error(String(error));
 }
 
 function isExecutableApprovalDecision(
