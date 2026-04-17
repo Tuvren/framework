@@ -26,6 +26,7 @@ import type {
   KrakenStreamEvent,
   KrakenToolDefinition,
 } from "@kraken/framework-runtime-api";
+import type { TurnTreeSchema } from "@kraken/kernel-contract-protocol";
 import {
   collectSystemPrompts,
   createContextManifest,
@@ -383,6 +384,70 @@ describe("framework-runtime-core", () => {
     expect(secondTurn?.parentTurnId).toBe(firstTurnId);
   });
 
+  test("preserves custom thread schemas through final turn-status checkpoints", async () => {
+    const harness = createFakeKernelHarness();
+    const customSchema = {
+      incorporationRules: [
+        { objectType: "message", targetPath: "messages" },
+        { objectType: "context_manifest", targetPath: "context.manifest" },
+        { objectType: "runtime_status", targetPath: "runtime.status" },
+      ],
+      paths: [
+        { collection: "ordered", path: "messages" },
+        { collection: "single", path: "context.manifest" },
+        { collection: "single", path: "runtime.status" },
+      ],
+      schemaId: "custom.agent.v1",
+    } satisfies TurnTreeSchema;
+    const driver = {
+      async execute(context) {
+        return {
+          activeAgent: context.config.name,
+          messages: [assistantText("Used the custom schema.")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+
+    await harness.kernel.schema.register(customSchema);
+    const runtime = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({
+      schemaId: customSchema.schemaId,
+    });
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: { name: "primary" },
+      signal: textSignal("Stay on custom schema"),
+      threadId: thread.threadId,
+    });
+
+    await collectEvents(handle.events());
+
+    const branch = await harness.kernel.branch.get(thread.branchId);
+
+    if (branch === null) {
+      throw new Error("expected the custom-schema branch to exist");
+    }
+
+    const headTurnNode = await harness.kernel.node.get(branch.headTurnNodeHash);
+
+    expect(headTurnNode?.schemaId).toBe(customSchema.schemaId);
+    expect((await harness.kernel.thread.get(thread.threadId))?.schemaId).toBe(
+      customSchema.schemaId
+    );
+  });
+
   test("finalizes durable runtime status for post-start fatal failures", async () => {
     const harness = createFakeKernelHarness();
     const runtime = createKrakenRuntimeCore({
@@ -408,6 +473,57 @@ describe("framework-runtime-core", () => {
       state: "failed",
       turnId: failedTurnId,
     });
+  });
+
+  test("rejects branch and thread mismatches before creating a turn", async () => {
+    const harness = createFakeKernelHarness();
+    const driver = {
+      async execute(context) {
+        return {
+          activeAgent: context.config.name,
+          messages: [assistantText("This turn should not start.")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const threadA = await runtime.createThread({});
+    const threadB = await runtime.createThread({});
+    const originalBranchHead = (
+      await harness.kernel.branch.get(threadA.branchId)
+    )?.headTurnNodeHash;
+    const handle = runtime.executeTurn({
+      branchId: threadA.branchId,
+      config: { name: "primary" },
+      signal: textSignal("Cross the streams"),
+      threadId: threadB.threadId,
+    });
+
+    const events = await collectEvents(handle.events());
+    const errorEvent = events.find(
+      (event): event is Extract<(typeof events)[number], { type: "error" }> =>
+        event.type === "error"
+    );
+
+    expect(handle.status().phase).toBe("failed");
+    expect(events.some((event) => event.type === "turn.start")).toBe(false);
+    expect(errorEvent?.error.code).toBe("branch_thread_mismatch");
+    expect(await harness.readBranchMessages(threadA.branchId)).toEqual([]);
+    expect(await harness.readBranchRuntimeStatus(threadA.branchId)).toBeNull();
+    expect(
+      (await harness.kernel.branch.get(threadA.branchId))?.headTurnNodeHash
+    ).toBe(originalBranchHead);
   });
 
   test("seeds extension initial state into the first turn manifest", async () => {
@@ -2205,6 +2321,73 @@ describe("framework-runtime-core", () => {
     expect(secondStatus.manifest?.byRole.user).toBe(1);
   });
 
+  test("isolates event payloads between concurrent subscribers", async () => {
+    const harness = createFakeKernelHarness();
+    const driver = {
+      async execute(context) {
+        context.runtime.emit({
+          data: {
+            count: 1,
+          },
+          name: "shared.payload",
+          timestamp: context.runtime.now(),
+          type: "custom",
+        });
+
+        return {
+          activeAgent: context.config.name,
+          messages: [assistantText("Payload emitted.")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: { name: "primary" },
+      signal: textSignal("Clone event payloads"),
+      threadId: thread.threadId,
+    });
+
+    const [eventsA, eventsB] = await Promise.all([
+      collectEvents(handle.events()),
+      collectEvents(handle.events()),
+    ]);
+    const customEventA = eventsA.find(
+      (event): event is Extract<(typeof eventsA)[number], { type: "custom" }> =>
+        event.type === "custom" && event.name === "shared.payload"
+    );
+    const customEventB = eventsB.find(
+      (event): event is Extract<(typeof eventsB)[number], { type: "custom" }> =>
+        event.type === "custom" && event.name === "shared.payload"
+    );
+
+    if (
+      customEventA === undefined ||
+      customEventB === undefined ||
+      !hasCountData(customEventA.data) ||
+      !hasCountData(customEventB.data)
+    ) {
+      throw new Error("expected both subscribers to receive the payload event");
+    }
+
+    customEventA.data.count = 99;
+
+    expect(customEventB.data.count).toBe(1);
+  });
+
   test("applies handoffs through the shared runtime layer and swaps active agents", async () => {
     const harness = createFakeKernelHarness();
     const agents: Record<string, AgentConfig> = {
@@ -2268,6 +2451,91 @@ describe("framework-runtime-core", () => {
     ).toBe(true);
     expect(handle.status().activeAgent).toBe("reviewer");
     expect(handle.status().phase).toBe("completed");
+  });
+
+  test("seeds target extension state during handoff before the next iteration hooks run", async () => {
+    const harness = createFakeKernelHarness();
+    const agents: Record<string, AgentConfig> = {
+      primary: { name: "primary" },
+      reviewer: {
+        extensions: [
+          {
+            beforeIteration(context) {
+              context.emit({
+                data: context.extensionState,
+                name: "reviewer.state",
+              });
+              return undefined;
+            },
+            name: "reviewer-state",
+            state: {
+              enabled: true,
+            },
+          },
+        ],
+        name: "reviewer",
+      },
+    };
+    const handoffBuilder = createPreserveTraceHandoffContextBuilder();
+    const handoffDriver = {
+      async execute(context) {
+        if (context.config.name === "primary") {
+          return {
+            activeAgent: "primary",
+            messages: [assistantText("Passing this to review.")],
+            resolution: {
+              contextPlan: buildHandoffPlan(
+                context,
+                agents.primary,
+                agents.reviewer,
+                handoffBuilder
+              ),
+              targetAgent: "reviewer",
+              type: "handoff",
+            },
+          };
+        }
+
+        return {
+          activeAgent: "reviewer",
+          messages: [assistantText("Review complete.")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([handoffDriver]),
+      kernel: harness.kernel,
+      resolveAgentConfig: (agentName) => agents[agentName],
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: agents.primary,
+      signal: textSignal("Start seeded handoff"),
+      threadId: thread.threadId,
+    });
+
+    const events = await collectEvents(handle.events());
+    const reviewerStateEvent = events.find(
+      (event): event is Extract<(typeof events)[number], { type: "custom" }> =>
+        event.type === "custom" && event.name === "reviewer.state"
+    );
+
+    expect(reviewerStateEvent?.data).toEqual({
+      enabled: true,
+    });
+    expect(handle.status().manifest?.extensions["reviewer-state"]).toEqual({
+      enabled: true,
+    });
   });
 
   test("fails invalid handoff builders before persisting a corrupted branch head", async () => {
@@ -2926,6 +3194,148 @@ describe("framework-runtime-core", () => {
     await orchestration.awaitWorker(workerB);
     await eventsAPromise;
     await eventsBPromise;
+  });
+
+  test("workers() returns deep-cloned approval snapshots", async () => {
+    const harness = createFakeKernelHarness();
+    const driver = {
+      async execute(context) {
+        const workerResult = extractLastWorkerResult(context.messages);
+
+        if (context.config.name === "worker") {
+          const toolMessages = context.messages.filter(
+            (message) => message.role === "tool"
+          );
+
+          if (toolMessages.length === 0) {
+            return {
+              activeAgent: "worker",
+              messages: [
+                assistantToolCalls([
+                  {
+                    callId: "call-approval",
+                    input: { hold: true },
+                    name: "hold",
+                  },
+                ]),
+              ],
+              resolution: {
+                type: "continue_iteration",
+              },
+            };
+          }
+
+          return {
+            activeAgent: "worker",
+            messages: [assistantText("Worker resumed.")],
+            resolution: {
+              reason: "done",
+              type: "end_turn",
+            },
+          };
+        }
+
+        if (workerResult !== null) {
+          return {
+            activeAgent: "primary",
+            messages: [assistantText("Parent resumed worker.")],
+            resolution: {
+              reason: "done",
+              type: "end_turn",
+            },
+          };
+        }
+
+        await delay(10);
+        return {
+          activeAgent: "primary",
+          messages: [assistantText("Waiting.")],
+          resolution: {
+            type: "continue_iteration",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const framework = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const orchestration = createOrchestrationRuntime({
+      agents: {
+        primary: { name: "primary" },
+        worker: {
+          name: "worker",
+          tools: [
+            {
+              approval: true,
+              description: "Pause worker approval",
+              execute() {
+                return {
+                  approved: true,
+                };
+              },
+              inputSchema: {
+                properties: {
+                  hold: { type: "boolean" },
+                },
+                required: ["hold"],
+                type: "object",
+              },
+              name: "hold",
+            },
+          ],
+        },
+      },
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      entrypoint: "primary",
+      framework,
+      kernel: harness.kernel,
+    });
+    const thread = await framework.createThread({});
+    const handle = orchestration.executeTurn({
+      branchId: thread.branchId,
+      signal: textSignal("Pause worker snapshot"),
+      threadId: thread.threadId,
+    });
+
+    const allEventsPromise = collectEvents(handle.allEvents());
+    const workerId = await orchestration.launchWorker(
+      "worker",
+      {
+        task: "approval",
+      },
+      {
+        parent: handle,
+      }
+    );
+
+    await waitFor(() => handle.workers().get(workerId)?.status === "paused");
+
+    const firstSnapshot = handle.workers().get(workerId);
+
+    if (firstSnapshot?.approval === undefined) {
+      throw new Error("expected a paused worker approval snapshot");
+    }
+
+    firstSnapshot.approval.toolCalls[0].callId = "mutated-call";
+
+    const secondSnapshot = handle.workers().get(workerId);
+
+    expect(secondSnapshot?.approval?.toolCalls[0]?.callId).toBe(
+      "call-approval"
+    );
+
+    orchestration.resolveWorkerApproval(workerId, {
+      decisions: [{ callId: "call-approval", type: "approve" }],
+    });
+    await orchestration.awaitWorker(workerId);
+    await allEventsPromise;
   });
 
   test("keeps queued worker results scoped to the paused parent turn", async () => {
@@ -3826,6 +4236,100 @@ describe("framework-runtime-core", () => {
     expect(workerResult).toEqual(report);
   });
 
+  test("workers() returns deep-cloned completed worker results", async () => {
+    const harness = createFakeKernelHarness();
+    const driver = {
+      async execute(context) {
+        const workerResult = extractLastWorkerResult(context.messages);
+
+        if (context.config.name === "worker") {
+          return {
+            activeAgent: "worker",
+            messages: [assistantStructured("worker_report", { ok: true })],
+            resolution: {
+              reason: "done",
+              type: "end_turn",
+            },
+          };
+        }
+
+        if (workerResult?.status === "completed") {
+          return {
+            activeAgent: "primary",
+            messages: [assistantText("Parent saw structured worker output.")],
+            resolution: {
+              reason: "done",
+              type: "end_turn",
+            },
+          };
+        }
+
+        await delay(10);
+        return {
+          activeAgent: "primary",
+          messages: [assistantText("Waiting.")],
+          resolution: {
+            type: "continue_iteration",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const framework = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const orchestration = createOrchestrationRuntime({
+      agents: {
+        primary: { name: "primary" },
+        worker: { name: "worker" },
+      },
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      entrypoint: "primary",
+      framework,
+      kernel: harness.kernel,
+    });
+    const thread = await framework.createThread({});
+    const handle = orchestration.executeTurn({
+      branchId: thread.branchId,
+      signal: textSignal("Clone worker result snapshot"),
+      threadId: thread.threadId,
+    });
+    const allEventsPromise = collectEvents(handle.allEvents());
+
+    const workerId = await orchestration.launchWorker(
+      "worker",
+      {
+        task: "structured",
+      },
+      {
+        parent: handle,
+      }
+    );
+
+    await orchestration.awaitWorker(workerId);
+    await allEventsPromise;
+
+    const firstSnapshot = handle.workers().get(workerId);
+
+    if (firstSnapshot === undefined || !hasOkData(firstSnapshot.result)) {
+      throw new Error("expected a completed worker result snapshot");
+    }
+
+    firstSnapshot.result.ok = false;
+
+    const secondSnapshot = handle.workers().get(workerId);
+
+    expect(hasOkData(secondSnapshot?.result) && secondSnapshot.result.ok).toBe(
+      true
+    );
+  });
+
   test("returns failure payloads from failed workers", async () => {
     const harness = createFakeKernelHarness();
     const driver = {
@@ -4520,6 +5024,24 @@ function hasAssistantText(messages: unknown[], text: string): boolean {
         part.text === text
     );
   });
+}
+
+function hasCountData(value: unknown): value is { count: number } {
+  return (
+    value !== null &&
+    typeof value === "object" &&
+    "count" in value &&
+    typeof value.count === "number"
+  );
+}
+
+function hasOkData(value: unknown): value is { ok: boolean } {
+  return (
+    value !== null &&
+    typeof value === "object" &&
+    "ok" in value &&
+    typeof value.ok === "boolean"
+  );
 }
 
 function extractSingleUserText(message: KrakenMessage | null): string {

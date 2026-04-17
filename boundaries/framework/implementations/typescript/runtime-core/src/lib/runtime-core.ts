@@ -315,7 +315,7 @@ class EventFanout<T> {
     }
 
     for (const subscriber of this.subscribers) {
-      subscriber.push(item);
+      subscriber.push(cloneValue(item));
     }
   }
 
@@ -345,12 +345,12 @@ class RuntimeExecutionHandle implements ExecutionHandle {
   private lastErrorProjection?: KrakenErrorProjection;
   private pauseContext?: PauseContext;
   private readonly runtime: RuntimeCore;
+  private schemaIdValue: string;
   private readonly steeringQueue: InputSignal[] = [];
   private started = false;
   private statusSnapshot: ExecutionStatus;
   readonly request: ExecutionSessionRequest;
   readonly resumedFrom?: ResumeContext;
-  readonly schemaId: string;
   readonly turnId: string;
 
   constructor(
@@ -363,7 +363,7 @@ class RuntimeExecutionHandle implements ExecutionHandle {
     this.runtime = runtime;
     this.request = request;
     this.turnId = turnId;
-    this.schemaId = schemaId;
+    this.schemaIdValue = schemaId;
     this.resumedFrom = resumedFrom;
     this.statusSnapshot = {
       activeAgent: request.config.name,
@@ -399,6 +399,10 @@ class RuntimeExecutionHandle implements ExecutionHandle {
     return this.abortController.signal;
   }
 
+  get schemaId(): string {
+    return this.schemaIdValue;
+  }
+
   publish(event: KrakenStreamEvent): void {
     this.eventsFanout.emit(event);
   }
@@ -421,6 +425,10 @@ class RuntimeExecutionHandle implements ExecutionHandle {
 
   replaceStatus(status: ExecutionStatus): void {
     this.statusSnapshot = cloneExecutionStatus(status);
+  }
+
+  setSchemaId(schemaId: string): void {
+    this.schemaIdValue = schemaId;
   }
 
   resolveApproval(response: ApprovalResponse): ExecutionHandle {
@@ -615,6 +623,7 @@ class RuntimeCore implements KrakenRuntime {
   async startExecution(handle: RuntimeExecutionHandle): Promise<void> {
     try {
       const schemaId = await this.resolveExecutionSchemaId(handle.request);
+      handle.setSchemaId(schemaId);
       const branch = await this.options.kernel.branch.get(
         handle.request.branchId
       );
@@ -624,6 +633,20 @@ class RuntimeCore implements KrakenRuntime {
           `branch "${handle.request.branchId}" does not exist`,
           {
             code: "missing_branch",
+          }
+        );
+      }
+
+      if (branch.threadId !== handle.request.threadId) {
+        throw new KrakenLineageError(
+          `branch "${handle.request.branchId}" belongs to thread "${branch.threadId}", not "${handle.request.threadId}"`,
+          {
+            code: "branch_thread_mismatch",
+            details: {
+              branchId: handle.request.branchId,
+              branchThreadId: branch.threadId,
+              requestThreadId: handle.request.threadId,
+            },
           }
         );
       }
@@ -2041,10 +2064,18 @@ class RuntimeCore implements KrakenRuntime {
       nextMessageHashes,
       helperBundle.helpers
     );
+    const baseManifest = createContextManifest(
+      nextMessages,
+      headState.manifest.extensions
+    );
+    const initialTargetUpdates = collectInitialExtensionStateUpdates(
+      targetConfig.extensions ?? [],
+      baseManifest
+    );
     const nextManifest = updateContextManifest(
-      createContextManifest(nextMessages, headState.manifest.extensions),
+      baseManifest,
       [],
-      updates
+      [...initialTargetUpdates, ...updates]
     );
     const manifestHash = await this.storeKernelRecord(
       nextManifest,
@@ -2933,8 +2964,8 @@ class OrchestrationRuntimeImpl implements OrchestrationRuntime {
 
       snapshot.set(workerId, {
         agent: worker.agent,
-        approval: worker.approval,
-        result: worker.result,
+        approval: cloneValue(worker.approval),
+        result: cloneValue(worker.result),
         status: worker.status,
         threadId: worker.threadId,
         workerId,
