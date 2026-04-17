@@ -199,7 +199,10 @@ function estimateMessageTokens(message: KrakenMessage): number {
           switch (part.type) {
             case "file":
               return (
-                length + (part.filename?.length ?? 0) + part.mediaType.length
+                length +
+                estimateFilePayloadLength(part.data) +
+                (part.filename?.length ?? 0) +
+                part.mediaType.length
               );
             case "reasoning":
             case "text":
@@ -226,6 +229,10 @@ function estimateMessageTokens(message: KrakenMessage): number {
         }, 0);
 
   return Math.ceil(textLength / TOKEN_ESTIMATE_DIVISOR);
+}
+
+function estimateFilePayloadLength(payload: string | Uint8Array): number {
+  return typeof payload === "string" ? payload.length : payload.byteLength;
 }
 
 function incrementNameCounter(

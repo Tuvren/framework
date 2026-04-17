@@ -49,6 +49,7 @@ import type {
   ToolRegistry,
   ToolResultPart,
   TurnEndEvent,
+  WorkerStatus,
 } from "@kraken/framework-runtime-api";
 import { assertApprovalResponseForRequest } from "@kraken/framework-runtime-api";
 import {
@@ -206,13 +207,14 @@ interface HelperBundle {
 
 interface WorkerRecord {
   agent: string;
+  approval?: ApprovalRequest;
   branchId: string;
   handle: ExecutionHandle;
   resolveResult(value: unknown): void;
   result?: unknown;
   resultPromise: Promise<unknown>;
   sessionId: string;
-  status: "running" | "completed" | "failed";
+  status: WorkerStatus["status"];
   threadId: string;
   workerId: string;
 }
@@ -2586,7 +2588,7 @@ class OrchestrationHandleImpl implements OrchestrationHandle {
     this.pendingWorkerSignals.push(signal);
   }
 
-  resolveApproval(response: ApprovalResponse): ExecutionHandle {
+  resolveApproval(response: ApprovalResponse): OrchestrationHandle {
     const resumedParentHandle = this.parentHandle.resolveApproval(response);
     const resumedHandle = new OrchestrationHandleImpl(
       this.runtime,
@@ -2634,17 +2636,8 @@ class OrchestrationHandleImpl implements OrchestrationHandle {
     return events;
   }
 
-  workers(): ReadonlyMap<
-    string,
-    {
-      agent: string;
-      result?: unknown;
-      status: "running" | "completed" | "failed";
-      threadId: string;
-      workerId: string;
-    }
-  > {
-    return this.runtime.getWorkerStatuses();
+  workers(): ReadonlyMap<string, WorkerStatus> {
+    return this.runtime.getWorkerStatuses(this.sessionId);
   }
 
   private async watchParent(): Promise<void> {
@@ -2756,8 +2749,9 @@ class OrchestrationRuntimeImpl implements OrchestrationRuntime {
   }
 
   cancel(): void {
-    this.currentHandle?.cancel();
-    this.cancelWorkers();
+    for (const handle of [...this.sessionHandles.values()]) {
+      handle.cancel();
+    }
   }
 
   cancelWorkers(): void {
@@ -2770,7 +2764,23 @@ class OrchestrationRuntimeImpl implements OrchestrationRuntime {
 
   cancelSessionWorkers(sessionId: string): void {
     for (const worker of this.workers.values()) {
-      if (worker.sessionId === sessionId && worker.status === "running") {
+      if (worker.sessionId !== sessionId) {
+        continue;
+      }
+
+      if (worker.status === "running") {
+        worker.handle.cancel();
+        continue;
+      }
+
+      if (worker.status === "paused" && worker.approval !== undefined) {
+        this.resolveWorkerApproval(worker.workerId, {
+          decisions: worker.approval.toolCalls.map((toolCall) => ({
+            callId: toolCall.callId,
+            message: "Worker cancelled while awaiting approval.",
+            type: "reject",
+          })),
+        });
         worker.handle.cancel();
       }
     }
@@ -2825,30 +2835,49 @@ class OrchestrationRuntimeImpl implements OrchestrationRuntime {
     }
   }
 
-  getWorkerStatuses(): ReadonlyMap<
-    string,
-    {
-      agent: string;
-      result?: unknown;
-      status: "running" | "completed" | "failed";
-      threadId: string;
-      workerId: string;
+  resolveWorkerApproval(workerId: string, response: ApprovalResponse): void {
+    const worker = this.workers.get(workerId);
+
+    if (worker === undefined) {
+      throw new KrakenRuntimeError(`worker "${workerId}" is not known`, {
+        code: "unknown_worker",
+        details: {
+          workerId,
+        },
+      });
     }
-  > {
-    const snapshot = new Map<
-      string,
-      {
-        agent: string;
-        result?: unknown;
-        status: "running" | "completed" | "failed";
-        threadId: string;
-        workerId: string;
-      }
-    >();
+
+    if (worker.status !== "paused" || worker.approval === undefined) {
+      throw new KrakenRuntimeError(
+        `worker "${workerId}" is not awaiting approval`,
+        {
+          code: "invalid_approval_resolution",
+          details: {
+            status: worker.status,
+            workerId,
+          },
+        }
+      );
+    }
+
+    const resumedHandle = worker.handle.resolveApproval(response);
+    worker.approval = undefined;
+    worker.handle = resumedHandle;
+    worker.status = "running";
+    detachPromise(this.watchWorker(worker));
+  }
+
+  getWorkerStatuses(sessionId: string): ReadonlyMap<string, WorkerStatus> {
+    const snapshot = new Map<string, WorkerStatus>();
 
     for (const [workerId, worker] of this.workers) {
+      if (worker.sessionId !== sessionId) {
+        continue;
+      }
+
       snapshot.set(workerId, {
         agent: worker.agent,
+        approval: worker.approval,
         result: worker.result,
         status: worker.status,
         threadId: worker.threadId,
@@ -2944,9 +2973,12 @@ class OrchestrationRuntimeImpl implements OrchestrationRuntime {
     const phase = worker.handle.status().phase;
 
     if (phase === "paused") {
+      worker.approval = worker.handle.status().approval;
+      worker.status = "paused";
       return;
     }
 
+    worker.approval = undefined;
     worker.status = phase === "failed" ? "failed" : "completed";
     worker.result = await this.resolveWorkerResult(worker, lastError);
     worker.resolveResult(worker.result);

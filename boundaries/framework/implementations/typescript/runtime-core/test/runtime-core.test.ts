@@ -25,10 +25,10 @@ import type {
   KrakenMessage,
   KrakenStreamEvent,
   KrakenToolDefinition,
-  OrchestrationHandle,
 } from "@kraken/framework-runtime-api";
 import {
   collectSystemPrompts,
+  createContextManifest,
   createDriverRegistry,
   createKrakenRuntimeCore,
   createOrchestrationRuntime,
@@ -183,6 +183,32 @@ describe("framework-runtime-core", () => {
         message: "prompt failed",
       },
     ]);
+  });
+
+  test("counts file payload bytes in tokenEstimate", () => {
+    const payload = new Uint8Array(4096);
+    const manifest = createContextManifest([
+      {
+        parts: [
+          {
+            data: payload,
+            filename: "attachment.bin",
+            mediaType: "application/octet-stream",
+            type: "file",
+          },
+        ],
+        role: "user",
+      },
+    ]);
+
+    expect(manifest.tokenEstimate).toBe(
+      Math.ceil(
+        (payload.byteLength +
+          "attachment.bin".length +
+          "application/octet-stream".length) /
+          4
+      )
+    );
   });
 
   test("executes a driver-neutral turn and persists the input plus assistant output", async () => {
@@ -2563,6 +2589,121 @@ describe("framework-runtime-core", () => {
     );
   });
 
+  test("exposes only session-local workers on each orchestration handle", async () => {
+    const harness = createFakeKernelHarness();
+    let threadAId = "";
+    let threadBId = "";
+    const driver = {
+      async execute(context) {
+        const workerResult = extractLastWorkerResult(context.messages);
+
+        if (context.config.name === "worker") {
+          await delay(20);
+          return {
+            activeAgent: "worker",
+            messages: [assistantText(`Worker for ${context.threadId}.`)],
+            resolution: {
+              reason: "done",
+              type: "end_turn",
+            },
+          };
+        }
+
+        if (context.threadId === threadAId || context.threadId === threadBId) {
+          if (workerResult !== null) {
+            return {
+              activeAgent: "primary",
+              messages: [assistantText(`Parent got ${workerResult.workerId}.`)],
+              resolution: {
+                reason: "done",
+                type: "end_turn",
+              },
+            };
+          }
+
+          await delay(10);
+          return {
+            activeAgent: "primary",
+            messages: [assistantText("Waiting.")],
+            resolution: {
+              type: "continue_iteration",
+            },
+          };
+        }
+
+        throw new Error(`unexpected thread "${context.threadId}"`);
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const framework = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const orchestration = createOrchestrationRuntime({
+      agents: {
+        primary: { name: "primary" },
+        worker: { name: "worker" },
+      },
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      entrypoint: "primary",
+      framework,
+      kernel: harness.kernel,
+    });
+    const threadA = await framework.createThread({});
+    threadAId = threadA.threadId;
+    const handleA = orchestration.executeTurn({
+      branchId: threadA.branchId,
+      signal: textSignal("Run A"),
+      threadId: threadA.threadId,
+    });
+    const eventsAPromise = collectEvents(handleA.events());
+
+    const threadB = await framework.createThread({});
+    threadBId = threadB.threadId;
+    const handleB = orchestration.executeTurn({
+      branchId: threadB.branchId,
+      signal: textSignal("Run B"),
+      threadId: threadB.threadId,
+    });
+    const eventsBPromise = collectEvents(handleB.events());
+
+    const workerA = await orchestration.launchWorker(
+      "worker",
+      {
+        task: "A",
+      },
+      {
+        parent: handleA,
+      }
+    );
+    const workerB = await orchestration.launchWorker(
+      "worker",
+      {
+        task: "B",
+      },
+      {
+        parent: handleB,
+      }
+    );
+
+    await waitFor(
+      () => handleA.workers().has(workerA) && handleB.workers().has(workerB)
+    );
+
+    expect([...handleA.workers().keys()]).toEqual([workerA]);
+    expect([...handleB.workers().keys()]).toEqual([workerB]);
+
+    await orchestration.awaitWorker(workerA);
+    await orchestration.awaitWorker(workerB);
+    await eventsAPromise;
+    await eventsBPromise;
+  });
+
   test("keeps queued worker results scoped to the paused parent turn", async () => {
     const harness = createFakeKernelHarness();
     let parentAThreadId = "";
@@ -2839,11 +2980,6 @@ describe("framework-runtime-core", () => {
     const resumedHandle = handle.resolveApproval({
       decisions: [{ callId: "call-email", type: "approve" }],
     });
-    if (!isOrchestrationHandle(resumedHandle)) {
-      throw new Error(
-        "expected orchestration resume to return an orchestration handle"
-      );
-    }
 
     const resumedParentEvents = await collectEvents<KrakenStreamEvent>(
       resumedHandle.parentEvents()
@@ -2994,11 +3130,6 @@ describe("framework-runtime-core", () => {
     const resumedHandle = handle.resolveApproval({
       decisions: [{ callId: "hold-resume-worker", type: "approve" }],
     });
-    if (!isOrchestrationHandle(resumedHandle)) {
-      throw new Error(
-        "expected orchestration resume to return an orchestration handle"
-      );
-    }
 
     const resumedEventsPromise = collectEvents(resumedHandle.allEvents());
     const workerResult = await orchestration.awaitWorker(workerId);
@@ -3224,7 +3355,7 @@ describe("framework-runtime-core", () => {
     const parentEvents = await parentEventsPromise;
 
     expect(awaitWorkerOutcome).toBe(TIMEOUT_TOKEN);
-    expect(workerStatus?.status).toBe("running");
+    expect(workerStatus?.status).toBe("paused");
     expect(
       allEvents.some(
         (event) =>
@@ -3242,6 +3373,161 @@ describe("framework-runtime-core", () => {
     expect(parentEvents.some((event) => event.type === "turn.start")).toBe(
       true
     );
+  });
+
+  test("resolves paused workers through the orchestration runtime", async () => {
+    const harness = createFakeKernelHarness();
+    const driver = {
+      async execute(context) {
+        const workerResult = extractLastWorkerResult(context.messages);
+
+        if (context.config.name === "worker") {
+          const toolMessages = context.messages.filter(
+            (message) => message.role === "tool"
+          );
+
+          if (toolMessages.length === 0) {
+            return {
+              activeAgent: "worker",
+              messages: [
+                assistantToolCalls([
+                  {
+                    callId: "call-approve-worker",
+                    input: { hold: true },
+                    name: "hold",
+                  },
+                ]),
+              ],
+              resolution: {
+                type: "continue_iteration",
+              },
+            };
+          }
+
+          return {
+            activeAgent: "worker",
+            messages: [assistantText("Worker resumed with approval.")],
+            resolution: {
+              reason: "done",
+              type: "end_turn",
+            },
+          };
+        }
+
+        if (
+          workerResult?.status === "completed" &&
+          workerResult.output === "Worker resumed with approval."
+        ) {
+          return {
+            activeAgent: "primary",
+            messages: [assistantText("Parent saw the resumed worker.")],
+            resolution: {
+              reason: "done",
+              type: "end_turn",
+            },
+          };
+        }
+
+        await delay(10);
+        return {
+          activeAgent: "primary",
+          messages: [assistantText("Waiting.")],
+          resolution: {
+            type: "continue_iteration",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const framework = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const orchestration = createOrchestrationRuntime({
+      agents: {
+        primary: { name: "primary" },
+        worker: {
+          name: "worker",
+          tools: [
+            {
+              approval: true,
+              description: "Pause the worker",
+              execute() {
+                return {
+                  approved: true,
+                };
+              },
+              inputSchema: {
+                properties: {
+                  hold: { type: "boolean" },
+                },
+                required: ["hold"],
+                type: "object",
+              },
+              name: "hold",
+            },
+          ],
+        },
+      },
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      entrypoint: "primary",
+      framework,
+      kernel: harness.kernel,
+    });
+    const thread = await framework.createThread({});
+    const handle = orchestration.executeTurn({
+      branchId: thread.branchId,
+      signal: textSignal("Resume paused worker"),
+      threadId: thread.threadId,
+    });
+
+    const allEventsPromise = collectEvents(handle.allEvents());
+    const workerId = await orchestration.launchWorker(
+      "worker",
+      {
+        task: "approval",
+      },
+      {
+        parent: handle,
+      }
+    );
+
+    await waitFor(() => handle.workers().get(workerId)?.status === "paused");
+
+    const pausedWorker = handle.workers().get(workerId);
+
+    expect(
+      pausedWorker?.approval?.toolCalls.map((toolCall) => toolCall.callId)
+    ).toEqual(["call-approve-worker"]);
+
+    orchestration.resolveWorkerApproval(workerId, {
+      decisions: [{ callId: "call-approve-worker", type: "approve" }],
+    });
+
+    const workerResult = await orchestration.awaitWorker(workerId);
+    const allEvents = await allEventsPromise;
+
+    expect(workerResult).toBe("Worker resumed with approval.");
+    expect(handle.status().phase).toBe("completed");
+    expect(
+      allEvents.some(
+        (event) =>
+          event.type === "custom" &&
+          event.name === "worker.completed" &&
+          event.source?.workerId === workerId
+      )
+    ).toBe(true);
+    expect(
+      hasAssistantText(
+        await harness.readBranchMessages(thread.branchId),
+        "Parent saw the resumed worker."
+      )
+    ).toBe(true);
   });
 
   test("returns structured worker outputs through awaitWorker", async () => {
@@ -3491,6 +3777,97 @@ describe("framework-runtime-core", () => {
     expect(workerBResult).toBe("Worker stay-alive completed.");
   });
 
+  test("runtime cancel aborts every active session consistently", async () => {
+    const harness = createFakeKernelHarness();
+    const driver = {
+      async execute(context) {
+        if (context.config.name === "worker") {
+          await waitForAbort(context.signal);
+          throw new Error(
+            `worker ${readWorkerTask(context.messages)} cancelled`
+          );
+        }
+
+        await waitForAbort(context.signal);
+        throw new Error(`parent ${context.threadId} cancelled`);
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const framework = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const orchestration = createOrchestrationRuntime({
+      agents: {
+        primary: { name: "primary" },
+        worker: { name: "worker" },
+      },
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      entrypoint: "primary",
+      framework,
+      kernel: harness.kernel,
+    });
+    const threadA = await framework.createThread({});
+    const handleA = orchestration.executeTurn({
+      branchId: threadA.branchId,
+      signal: textSignal("Cancel everything A"),
+      threadId: threadA.threadId,
+    });
+    const eventsAPromise = collectEvents(handleA.events());
+
+    const threadB = await framework.createThread({});
+    const handleB = orchestration.executeTurn({
+      branchId: threadB.branchId,
+      signal: textSignal("Cancel everything B"),
+      threadId: threadB.threadId,
+    });
+    const eventsBPromise = collectEvents(handleB.events());
+
+    const workerA = await orchestration.launchWorker(
+      "worker",
+      {
+        task: "A",
+      },
+      {
+        parent: handleA,
+      }
+    );
+    const workerB = await orchestration.launchWorker(
+      "worker",
+      {
+        task: "B",
+      },
+      {
+        parent: handleB,
+      }
+    );
+
+    orchestration.cancel();
+
+    const workerAResult = await orchestration.awaitWorker(workerA);
+    const workerBResult = await orchestration.awaitWorker(workerB);
+    await eventsAPromise;
+    await eventsBPromise;
+
+    expect(handleA.status().phase).toBe("failed");
+    expect(handleB.status().phase).toBe("failed");
+    expect(workerAResult).toEqual({
+      code: undefined,
+      details: undefined,
+      message: "execution cancelled",
+    });
+    expect(workerBResult).toEqual({
+      code: undefined,
+      details: undefined,
+      message: "execution cancelled",
+    });
+  });
+
   test("emits steering.incorporated with the steering message hash", async () => {
     const harness = createFakeKernelHarness();
     const driver = {
@@ -3613,21 +3990,6 @@ function startEventCapture<T>(events: AsyncIterable<T>): {
     })(),
     events: collected,
   };
-}
-
-function isOrchestrationHandle(handle: unknown): handle is OrchestrationHandle {
-  return (
-    handle !== null &&
-    typeof handle === "object" &&
-    "allEvents" in handle &&
-    typeof handle.allEvents === "function" &&
-    "parentEvents" in handle &&
-    typeof handle.parentEvents === "function" &&
-    "workerEvents" in handle &&
-    typeof handle.workerEvents === "function" &&
-    "workers" in handle &&
-    typeof handle.workers === "function"
-  );
 }
 
 async function collectToolResultTimeline(

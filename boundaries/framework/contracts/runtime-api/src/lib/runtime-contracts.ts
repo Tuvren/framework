@@ -1009,8 +1009,9 @@ export interface ExecutionHandle {
 
 export interface WorkerStatus {
   agent: string;
+  approval?: ApprovalRequest;
   result?: unknown;
-  status: "running" | "completed" | "failed";
+  status: "running" | "paused" | "completed" | "failed";
   threadId: string;
   workerId: string;
 }
@@ -1018,6 +1019,7 @@ export interface WorkerStatus {
 export interface OrchestrationHandle extends ExecutionHandle {
   allEvents(): AsyncIterable<KrakenStreamEvent>;
   parentEvents(): AsyncIterable<KrakenStreamEvent>;
+  resolveApproval(response: ApprovalResponse): OrchestrationHandle;
   workerEvents(workerId: string): AsyncIterable<KrakenStreamEvent>;
   workers(): ReadonlyMap<string, WorkerStatus>;
 }
@@ -1039,6 +1041,7 @@ export interface OrchestrationRuntime {
     task: unknown,
     options?: { parent: OrchestrationHandle }
   ): Promise<string>;
+  resolveWorkerApproval(workerId: string, response: ApprovalResponse): void;
 }
 
 export interface KrakenRuntime {
