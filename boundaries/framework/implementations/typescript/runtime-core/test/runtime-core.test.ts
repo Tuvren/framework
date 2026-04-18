@@ -2465,6 +2465,218 @@ describe("framework-runtime-core", () => {
     });
   });
 
+  test("durably fails paused turns when the old handle cancels after resolveApproval before resume starts", async () => {
+    const harness = createFakeKernelHarness();
+    const driver = {
+      async execute(context) {
+        const toolMessages = context.messages.filter(
+          (message) => message.role === "tool"
+        );
+
+        if (toolMessages.length === 0) {
+          return {
+            activeAgent: "primary",
+            messages: [
+              assistantToolCalls([
+                {
+                  callId: "call-email",
+                  input: { subject: "Approval needed", to: "ops@example.com" },
+                  name: "email",
+                },
+              ]),
+            ],
+            resolution: {
+              type: "continue_iteration",
+            },
+          };
+        }
+
+        return {
+          activeAgent: "primary",
+          messages: [assistantText("This should not be reached.")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const pausedHandle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        name: "primary",
+        tools: [
+          {
+            approval: true,
+            description: "Pause for cancellation",
+            execute() {
+              return {
+                sent: true,
+              };
+            },
+            inputSchema: {
+              properties: {
+                subject: { type: "string" },
+                to: { type: "string" },
+              },
+              required: ["to", "subject"],
+              type: "object",
+            },
+            name: "email",
+          },
+        ],
+      },
+      signal: textSignal("Pause then cancel after approval"),
+      threadId: thread.threadId,
+    });
+    const pausedEvents = await collectEvents(pausedHandle.events());
+    const pausedTurnId = extractTurnId(pausedEvents);
+
+    const resumedHandle = pausedHandle.resolveApproval({
+      decisions: [{ callId: "call-email", type: "approve" }],
+    });
+    pausedHandle.cancel();
+
+    await waitFor(() => resumedHandle.status().phase === "failed");
+
+    expect(await harness.readBranchRuntimeStatus(thread.branchId)).toEqual({
+      activeAgent: "primary",
+      state: "failed",
+      turnId: pausedTurnId,
+    });
+    expect(
+      hasAssistantText(
+        await harness.readBranchMessages(thread.branchId),
+        "This should not be reached."
+      )
+    ).toBe(false);
+  });
+
+  test("preserves queued steering across approval resume", async () => {
+    const harness = createFakeKernelHarness();
+    const driver = {
+      async execute(context) {
+        const toolMessages = context.messages.filter(
+          (message) => message.role === "tool"
+        );
+        const steeringSeen = context.messages.some(
+          (message) =>
+            message.role === "user" &&
+            message.parts.some(
+              (part) => part.type === "text" && part.text === "Late steering"
+            )
+        );
+
+        if (toolMessages.length === 0) {
+          await delay(20);
+          return {
+            activeAgent: context.config.name,
+            messages: [
+              assistantToolCalls([
+                {
+                  callId: "call-email",
+                  input: { subject: "Approval needed", to: "ops@example.com" },
+                  name: "email",
+                },
+              ]),
+            ],
+            resolution: {
+              type: "continue_iteration",
+            },
+          };
+        }
+
+        return {
+          activeAgent: context.config.name,
+          messages: [
+            assistantText(
+              steeringSeen ? "Saw transferred steering." : "Missed steering."
+            ),
+          ],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        name: "primary",
+        tools: [
+          {
+            approval: true,
+            description: "Pause for steering transfer",
+            execute() {
+              return {
+                sent: true,
+              };
+            },
+            inputSchema: {
+              properties: {
+                subject: { type: "string" },
+                to: { type: "string" },
+              },
+              required: ["to", "subject"],
+              type: "object",
+            },
+            name: "email",
+          },
+        ],
+      },
+      signal: textSignal("Pause after queued steering"),
+      threadId: thread.threadId,
+    });
+    const pausedEventsPromise = collectEvents(handle.events());
+
+    await delay(0);
+    handle.steer(textSignal("Late steering"));
+    await waitFor(() => handle.status().phase === "paused");
+
+    const resumedHandle = handle.resolveApproval({
+      decisions: [{ callId: "call-email", type: "approve" }],
+    });
+    await collectEvents(resumedHandle.events());
+
+    await pausedEventsPromise;
+
+    expect(await harness.readBranchMessages(thread.branchId)).toEqual(
+      expect.arrayContaining([
+        {
+          parts: [{ text: "Late steering", type: "text" }],
+          role: "user",
+        },
+      ])
+    );
+    expect(
+      hasAssistantText(
+        await harness.readBranchMessages(thread.branchId),
+        "Saw transferred steering."
+      )
+    ).toBe(true);
+  });
+
   test("continues configured sequences after approval resume reaches endTurn in afterIteration", async () => {
     const harness = createFakeKernelHarness();
     const finishAfterApproval = {
@@ -7109,6 +7321,157 @@ describe("framework-runtime-core", () => {
       hasAssistantText(
         await harness.readBranchMessages(thread.branchId),
         "Parent received the resumed worker."
+      )
+    ).toBe(true);
+  });
+
+  test("retains completed paused-worker snapshots across orchestration approval resume", async () => {
+    const harness = createFakeKernelHarness();
+    const driver = {
+      async execute(context) {
+        const workerResult = extractLastWorkerResult(context.messages);
+        const toolMessages = context.messages.filter(
+          (message) => message.role === "tool"
+        );
+
+        if (context.config.name === "worker") {
+          return {
+            activeAgent: "worker",
+            messages: [assistantText("Worker while parent paused.")],
+            resolution: {
+              reason: "done",
+              type: "end_turn",
+            },
+          };
+        }
+
+        if (
+          workerResult?.status === "completed" &&
+          workerResult.output === "Worker while parent paused."
+        ) {
+          return {
+            activeAgent: "primary",
+            messages: [assistantText("Parent saw retained worker.")],
+            resolution: {
+              reason: "done",
+              type: "end_turn",
+            },
+          };
+        }
+
+        if (toolMessages.length === 0) {
+          await delay(20);
+          return {
+            activeAgent: "primary",
+            messages: [
+              assistantToolCalls([
+                {
+                  callId: "call-hold",
+                  input: { hold: true },
+                  name: "hold",
+                },
+              ]),
+            ],
+            resolution: {
+              type: "continue_iteration",
+            },
+          };
+        }
+
+        return {
+          activeAgent: "primary",
+          messages: [assistantText("Missing retained worker.")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const framework = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const orchestration = createOrchestrationRuntime({
+      agents: {
+        primary: {
+          name: "primary",
+          tools: [
+            {
+              approval: true,
+              description: "Pause parent until approved",
+              execute() {
+                return {
+                  approved: true,
+                };
+              },
+              inputSchema: {
+                properties: {
+                  hold: { type: "boolean" },
+                },
+                required: ["hold"],
+                type: "object",
+              },
+              name: "hold",
+            },
+          ],
+        },
+        worker: { name: "worker" },
+      },
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      entrypoint: "primary",
+      framework,
+      kernel: harness.kernel,
+    });
+    const thread = await framework.createThread({});
+    const handle = orchestration.executeTurn({
+      branchId: thread.branchId,
+      signal: textSignal("Pause, keep worker, then resume"),
+      threadId: thread.threadId,
+    });
+
+    detachTestPromise(collectEventsForDuration(handle.events(), 50));
+    await delay(0);
+    const workerId = await orchestration.launchWorker(
+      "worker",
+      {
+        task: "retained",
+      },
+      {
+        parent: handle,
+      }
+    );
+
+    await waitFor(() => handle.status().phase === "paused");
+
+    const pausedWorkerResult = await orchestration.awaitWorker(workerId, {
+      parent: handle,
+    });
+    expect(pausedWorkerResult).toBe("Worker while parent paused.");
+    expect(handle.workers().get(workerId)?.status).toBe("completed");
+
+    const resumedHandle = handle.resolveApproval({
+      decisions: [{ callId: "call-hold", type: "approve" }],
+    });
+    expect(
+      await orchestration.awaitWorker(workerId, {
+        parent: resumedHandle,
+      })
+    ).toBe("Worker while parent paused.");
+
+    await collectEvents(resumedHandle.events());
+
+    expect(resumedHandle.workers().get(workerId)?.status).toBe("completed");
+    expect(
+      hasAssistantText(
+        await harness.readBranchMessages(thread.branchId),
+        "Parent saw retained worker."
       )
     ).toBe(true);
   });

@@ -172,7 +172,7 @@ export function createFakeKernelHarness(): FakeKernelHarness {
         run.status = status;
         state.runs.set(runId, run);
 
-        if (status === "failed" && run.stagedResults.length > 0) {
+        if (run.stagedResults.length > 0) {
           const turnNodeHash = await checkpointRun(state, run, clock++);
           run.stagedResults = [];
           state.runs.set(runId, run);

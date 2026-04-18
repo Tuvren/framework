@@ -379,6 +379,7 @@ class RuntimeExecutionHandle implements ExecutionHandle {
   private materializedDriver?: KrakenDriver;
   private materializedDriverId?: string;
   private pauseContext?: PauseContext;
+  private replacementHandle?: RuntimeExecutionHandle;
   private readonly runtime: RuntimeCore;
   private schemaIdValue: string;
   private readonly steeringQueue: InputSignal[] = [];
@@ -408,6 +409,11 @@ class RuntimeExecutionHandle implements ExecutionHandle {
   }
 
   cancel(): void {
+    if (this.replacementHandle !== undefined) {
+      this.replacementHandle.cancel();
+      return;
+    }
+
     this.abortController.abort();
     this.runtime.cancelPausedExecution(this);
   }
@@ -486,10 +492,17 @@ class RuntimeExecutionHandle implements ExecutionHandle {
   }
 
   takePauseContextForCancellation(): PauseContext | undefined {
-    if (
-      this.statusSnapshot.phase !== "paused" ||
-      this.pauseContext === undefined
-    ) {
+    if (this.pauseContext === undefined) {
+      return undefined;
+    }
+
+    const canCancelPausedExecution =
+      this.statusSnapshot.phase === "paused" ||
+      (!this.started &&
+        this.resumedFrom !== undefined &&
+        this.statusSnapshot.phase === "running");
+
+    if (!canCancelPausedExecution) {
       return undefined;
     }
 
@@ -502,7 +515,8 @@ class RuntimeExecutionHandle implements ExecutionHandle {
     if (
       this.statusSnapshot.phase !== "paused" ||
       this.pauseContext === undefined ||
-      this.statusSnapshot.approval === undefined
+      this.statusSnapshot.approval === undefined ||
+      this.replacementHandle !== undefined
     ) {
       throw new KrakenRuntimeError(
         "resolveApproval() is only valid while execution is paused",
@@ -523,6 +537,7 @@ class RuntimeExecutionHandle implements ExecutionHandle {
       this.pauseContext,
       response
     );
+    this.replacementHandle = resumedHandle;
     this.pauseContext = undefined;
     return resumedHandle;
   }
@@ -573,6 +588,26 @@ class RuntimeExecutionHandle implements ExecutionHandle {
       ...this.statusSnapshot,
       ...patch,
     });
+  }
+
+  moveSteeringQueueTo(target: RuntimeExecutionHandle): void {
+    while (this.steeringQueue.length > 0) {
+      const signal = this.steeringQueue.shift();
+
+      if (signal !== undefined) {
+        target.steeringQueue.push(signal);
+      }
+    }
+  }
+
+  primeResumedCancellation(pauseContext: PauseContext): void {
+    this.pauseContext = pauseContext;
+  }
+
+  clearPendingResumeCancellation(): void {
+    if (this.statusSnapshot.phase === "running") {
+      this.pauseContext = undefined;
+    }
   }
 
   reuseDriverCache(previousHandle: RuntimeExecutionHandle): void {
@@ -709,6 +744,8 @@ class RuntimeCore implements KrakenRuntime {
       }
     );
     handle.reuseDriverCache(previousHandle);
+    previousHandle.moveSteeringQueueTo(handle);
+    handle.primeResumedCancellation(pauseContext);
     handle.replaceStatus({
       activeAgent: pauseContext.activeConfig.name,
       iterationCount: previousHandle.status().iterationCount,
@@ -868,6 +905,7 @@ class RuntimeCore implements KrakenRuntime {
           handle.resumedFrom.pausedRunId,
           "failed"
         );
+        handle.clearPendingResumeCancellation();
         this.publishEvent(
           handle,
           {
@@ -1397,7 +1435,11 @@ class RuntimeCore implements KrakenRuntime {
             )
           );
         } catch (error: unknown) {
-          await this.completeTrackedRun(handle, iterationRunId, "completed");
+          await this.failTrackedRunWithoutBranchAdvance(
+            handle,
+            iterationRunId,
+            headState.branchHeadHash
+          );
           return {
             resolution: {
               error: normalizeError(error),
@@ -1630,7 +1672,11 @@ class RuntimeCore implements KrakenRuntime {
         )
       );
     } catch (error: unknown) {
-      await this.completeTrackedRun(handle, runId, "completed");
+      await this.failTrackedRunWithoutBranchAdvance(
+        handle,
+        runId,
+        headState.branchHeadHash
+      );
       return {
         resolution: {
           error: normalizeError(error),
@@ -2953,6 +2999,23 @@ class RuntimeCore implements KrakenRuntime {
     return completion;
   }
 
+  private async failTrackedRunWithoutBranchAdvance(
+    handle: RuntimeExecutionHandle,
+    runId: string,
+    stableHeadTurnNodeHash: HashString
+  ): Promise<void> {
+    const completion = await this.completeTrackedRun(handle, runId, "failed");
+
+    if (completion.turnNodeHash === undefined) {
+      return;
+    }
+
+    await this.options.kernel.branch.setHead(
+      handle.request.branchId,
+      stableHeadTurnNodeHash
+    );
+  }
+
   private materializeDriver(driverId: string): KrakenDriver {
     const driverEntry = this.options.driverRegistry.resolve(driverId);
 
@@ -3170,6 +3233,7 @@ class OrchestrationHandleImpl implements OrchestrationHandle {
     options?: {
       openWorkers?: string[];
       pendingWorkerSignals?: InputSignal[];
+      retainedWorkers?: WorkerStatus[];
     }
   ) {
     this.runtime = runtime;
@@ -3181,6 +3245,9 @@ class OrchestrationHandleImpl implements OrchestrationHandle {
     }
     for (const signal of options?.pendingWorkerSignals ?? []) {
       this.pendingWorkerSignals.push(signal);
+    }
+    for (const worker of options?.retainedWorkers ?? []) {
+      this.retainedWorkers.set(worker.workerId, cloneWorkerStatus(worker));
     }
   }
 
@@ -3252,6 +3319,7 @@ class OrchestrationHandleImpl implements OrchestrationHandle {
       {
         openWorkers: [...this.openWorkers],
         pendingWorkerSignals: [...this.pendingWorkerSignals],
+        retainedWorkers: [...this.retainedWorkers.values()],
       }
     );
     this.runtime.setCurrentHandle(resumedHandle);
