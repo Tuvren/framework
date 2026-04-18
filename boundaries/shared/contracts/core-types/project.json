@@ -10,15 +10,7 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": "boundaries/shared/contracts/core-types",
-        "commands": [
-          {
-            "command": "bunx --bun tsup --config tsup.config.ts"
-          },
-          {
-            "command": "bunx --bun tsc --project tsconfig.dts.json --pretty false"
-          }
-        ],
-        "parallel": false
+        "command": "bunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false"
       }
     },
     "test": {

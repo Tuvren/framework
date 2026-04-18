@@ -11,15 +11,7 @@
       "dependsOn": ["^build"],
       "options": {
         "cwd": "boundaries/kernel/contracts/protocol",
-        "commands": [
-          {
-            "command": "bunx --bun tsup --config tsup.config.ts"
-          },
-          {
-            "command": "bunx --bun tsc --project tsconfig.dts.json --pretty false"
-          }
-        ],
-        "parallel": false
+        "command": "bunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false"
       }
     },
     "test": {
@@ -33,15 +25,7 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": "boundaries/kernel/contracts/protocol",
-        "commands": [
-          {
-            "command": "tsc --project tsconfig.lib.json --noEmit --pretty false"
-          },
-          {
-            "command": "tsc --project tsconfig.typecheck.json --noEmit --pretty false"
-          }
-        ],
-        "parallel": false
+        "command": "tsc --project tsconfig.lib.json --noEmit --pretty false && tsc --project tsconfig.typecheck.json --noEmit --pretty false"
       }
     }
   }

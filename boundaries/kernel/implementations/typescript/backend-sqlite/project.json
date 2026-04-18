@@ -11,18 +11,7 @@
       "dependsOn": ["^build"],
       "options": {
         "cwd": "boundaries/kernel/implementations/typescript/backend-sqlite",
-        "commands": [
-          {
-            "command": "bunx --bun tsup --config tsup.config.ts"
-          },
-          {
-            "command": "bunx --bun tsc --project tsconfig.dts.json --pretty false"
-          },
-          {
-            "command": "mkdir -p dist/migrations && cp migrations/*.sql dist/migrations/"
-          }
-        ],
-        "parallel": false
+        "command": "bunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false && mkdir -p dist/migrations && cp migrations/*.sql dist/migrations/"
       }
     },
     "smoke-native": {
@@ -37,36 +26,14 @@
       "dependsOn": ["smoke-native"],
       "options": {
         "cwd": "boundaries/kernel/implementations/typescript/backend-sqlite",
-        "commands": [
-          {
-            "command": "rm -rf .tmp-tests"
-          },
-          {
-            "command": "bunx --bun tsc --project tsconfig.test.json --pretty false"
-          },
-          {
-            "command": "mkdir -p .tmp-tests/boundaries/kernel/implementations/typescript/backend-sqlite/migrations && cp migrations/*.sql .tmp-tests/boundaries/kernel/implementations/typescript/backend-sqlite/migrations/"
-          },
-          {
-            "command": "node --test .tmp-tests/boundaries/kernel/implementations/typescript/backend-sqlite/test/backend-sqlite.test.js"
-          }
-        ],
-        "parallel": false
+        "command": "rm -rf .tmp-tests && bunx --bun tsc --project tsconfig.test.json --pretty false && mkdir -p .tmp-tests/boundaries/kernel/implementations/typescript/backend-sqlite/migrations && cp migrations/*.sql .tmp-tests/boundaries/kernel/implementations/typescript/backend-sqlite/migrations/ && node --test .tmp-tests/boundaries/kernel/implementations/typescript/backend-sqlite/test/backend-sqlite.test.js"
       }
     },
     "typecheck": {
       "executor": "nx:run-commands",
       "options": {
         "cwd": "boundaries/kernel/implementations/typescript/backend-sqlite",
-        "commands": [
-          {
-            "command": "bunx --bun tsc --project tsconfig.lib.json --noEmit --pretty false"
-          },
-          {
-            "command": "bunx --bun tsc --project tsconfig.typecheck.json --noEmit --pretty false"
-          }
-        ],
-        "parallel": false
+        "command": "bunx --bun tsc --project tsconfig.lib.json --noEmit --pretty false && bunx --bun tsc --project tsconfig.typecheck.json --noEmit --pretty false"
       }
     }
   }

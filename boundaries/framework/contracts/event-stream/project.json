@@ -11,15 +11,7 @@
       "dependsOn": ["^build"],
       "options": {
         "cwd": "boundaries/framework/contracts/event-stream",
-        "commands": [
-          {
-            "command": "bunx --bun tsup --config tsup.config.ts"
-          },
-          {
-            "command": "bunx --bun tsc --project tsconfig.dts.json --pretty false"
-          }
-        ],
-        "parallel": false
+        "command": "bunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false"
       }
     },
     "test": {
@@ -34,18 +26,7 @@
       "dependsOn": ["^build"],
       "options": {
         "cwd": "boundaries/framework/contracts/event-stream",
-        "commands": [
-          {
-            "command": "tsc --project tsconfig.lib.json --noEmit --pretty false"
-          },
-          {
-            "command": "tsc --project tsconfig.dts.json --noEmit --pretty false"
-          },
-          {
-            "command": "tsc --project tsconfig.typecheck.json --noEmit --pretty false"
-          }
-        ],
-        "parallel": false
+        "command": "tsc --project tsconfig.lib.json --noEmit --pretty false && tsc --project tsconfig.dts.json --noEmit --pretty false && tsc --project tsconfig.typecheck.json --noEmit --pretty false"
       }
     }
   }
