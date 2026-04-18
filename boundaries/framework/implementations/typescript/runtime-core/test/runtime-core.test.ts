@@ -2858,6 +2858,145 @@ describe("framework-runtime-core", () => {
     );
   });
 
+  test("aborts and joins sibling tool work before surfacing malformed initial approval failures", async () => {
+    const harness = createFakeKernelHarness();
+    let searchSideEffectCount = 0;
+    const driver = {
+      async execute(context) {
+        return {
+          activeAgent: context.config.name,
+          messages: [
+            assistantToolCalls([
+              {
+                callId: "call-search",
+                input: { query: "abort me" },
+                name: "search",
+              },
+              {
+                callId: "call-review",
+                input: { item: "abort me" },
+                name: "review",
+              },
+            ]),
+          ],
+          resolution: {
+            type: "continue_iteration",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        extensions: [
+          {
+            aroundTool(context, next) {
+              if (context.tool.name === "review") {
+                return {
+                  approval: {
+                    completedResults: [
+                      {
+                        callId: context.callId,
+                        name: context.tool.name,
+                        output: { duplicate: true },
+                        type: "tool_result",
+                      },
+                    ],
+                    toolCalls: [
+                      {
+                        callId: context.callId,
+                        decisions: ["approve"],
+                        input: context.input,
+                        message: "broken initial approval",
+                        name: context.tool.name,
+                      },
+                    ],
+                  },
+                  verdict: "pause",
+                };
+              }
+
+              return next();
+            },
+            name: "broken-initial-review-gate",
+          },
+        ],
+        name: "primary",
+        tools: [
+          {
+            description: "Search docs slowly",
+            async execute(_input, context) {
+              await new Promise<void>((resolve, reject) => {
+                const timer = setTimeout(() => {
+                  resolve();
+                }, 40);
+                context.signal?.addEventListener(
+                  "abort",
+                  () => {
+                    clearTimeout(timer);
+                    reject(new Error("search aborted"));
+                  },
+                  { once: true }
+                );
+              });
+              searchSideEffectCount += 1;
+              return {
+                ok: true,
+              };
+            },
+            inputSchema: {
+              properties: {
+                query: { type: "string" },
+              },
+              required: ["query"],
+              type: "object",
+            },
+            name: "search",
+          },
+          {
+            description: "Review docs",
+            execute() {
+              return {
+                reviewed: true,
+              };
+            },
+            inputSchema: {
+              properties: {
+                item: { type: "string" },
+              },
+              required: ["item"],
+              type: "object",
+            },
+            name: "review",
+          },
+        ],
+      },
+      signal: textSignal("Abort sibling tools on malformed approval"),
+      threadId: thread.threadId,
+    });
+    const events = await collectEvents(handle.events());
+    const errorEvent = events.find(
+      (event): event is Extract<(typeof events)[number], { type: "error" }> =>
+        event.type === "error"
+    );
+
+    await delay(60);
+
+    expect(handle.status().phase).toBe("failed");
+    expect(errorEvent?.error.code).toBe("invalid_approval_request");
+    expect(searchSideEffectCount).toBe(0);
+  });
+
   test("does not checkpoint resumed sibling tool progress when resume approval is malformed", async () => {
     const harness = createFakeKernelHarness();
     let searchCalls = 0;
@@ -3031,6 +3170,167 @@ describe("framework-runtime-core", () => {
         role: "assistant",
       },
     ]);
+  });
+
+  test("aborts and joins resumed sibling tool work before surfacing malformed resumed approvals", async () => {
+    const harness = createFakeKernelHarness();
+    let searchSideEffectCount = 0;
+    const driver = {
+      async execute(context) {
+        const toolMessages = extractToolMessages(context.messages);
+
+        if (toolMessages.length === 0) {
+          return {
+            activeAgent: "primary",
+            messages: [
+              assistantToolCalls([
+                {
+                  callId: "call-search",
+                  input: { query: "resume abort" },
+                  name: "search",
+                },
+                {
+                  callId: "call-review",
+                  input: { item: "resume abort" },
+                  name: "review",
+                },
+              ]),
+            ],
+            resolution: {
+              type: "continue_iteration",
+            },
+          };
+        }
+
+        return {
+          activeAgent: "primary",
+          messages: [assistantText("This should not be reached.")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const pausedHandle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        extensions: [
+          {
+            aroundTool(context, next) {
+              if (
+                context.tool.name === "review" &&
+                context.approvalDecision?.type === "approve"
+              ) {
+                return {
+                  approval: {
+                    completedResults: [
+                      {
+                        callId: context.callId,
+                        name: context.tool.name,
+                        output: { duplicate: true },
+                        type: "tool_result",
+                      },
+                    ],
+                    toolCalls: [
+                      {
+                        callId: context.callId,
+                        decisions: ["approve", "reject"],
+                        input: context.input,
+                        message: "broken resume approval",
+                        name: context.tool.name,
+                      },
+                    ],
+                  },
+                  verdict: "pause",
+                };
+              }
+
+              return next();
+            },
+            name: "broken-resume-review-abort-gate",
+          },
+        ],
+        name: "primary",
+        tools: [
+          {
+            approval: true,
+            description: "Search docs slowly",
+            async execute(_input, context) {
+              await new Promise<void>((resolve, reject) => {
+                const timer = setTimeout(() => {
+                  resolve();
+                }, 40);
+                context.signal?.addEventListener(
+                  "abort",
+                  () => {
+                    clearTimeout(timer);
+                    reject(new Error("search aborted"));
+                  },
+                  { once: true }
+                );
+              });
+              searchSideEffectCount += 1;
+              return {
+                ok: true,
+              };
+            },
+            inputSchema: {
+              properties: {
+                query: { type: "string" },
+              },
+              required: ["query"],
+              type: "object",
+            },
+            name: "search",
+          },
+          {
+            approval: true,
+            description: "Review docs",
+            execute() {
+              return {
+                reviewed: true,
+              };
+            },
+            inputSchema: {
+              properties: {
+                item: { type: "string" },
+              },
+              required: ["item"],
+              type: "object",
+            },
+            name: "review",
+          },
+        ],
+      },
+      signal: textSignal("Abort resumed sibling tools on malformed approval"),
+      threadId: thread.threadId,
+    });
+
+    await collectEvents(pausedHandle.events());
+
+    const resumedHandle = pausedHandle.resolveApproval({
+      decisions: [
+        { callId: "call-search", type: "approve" },
+        { callId: "call-review", type: "approve" },
+      ],
+    });
+    await collectEvents(resumedHandle.events());
+
+    await delay(60);
+
+    expect(resumedHandle.status().phase).toBe("failed");
+    expect(searchSideEffectCount).toBe(0);
   });
 
   test("does not checkpoint sibling tool progress when a parallel batch fails on invalid approval", async () => {

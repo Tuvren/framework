@@ -173,10 +173,9 @@ export async function executeToolBatch(
     });
   }
 
-  const executableOutcomes = await Promise.all(
-    executable.map((toolCall) =>
-      executeSingleTool(toolCall.executable, toolCall.index, environment)
-    )
+  const executableOutcomes = await executeConcurrentToolCalls(
+    executable,
+    environment
   );
 
   for (const [outcomeIndex, outcome] of executableOutcomes.entries()) {
@@ -267,10 +266,9 @@ export async function resumeToolBatch(
     });
   }
 
-  const executedOutcomes = await Promise.all(
-    executable.map((toolCall) =>
-      executeSingleTool(toolCall.executable, toolCall.index, environment)
-    )
+  const executedOutcomes = await executeConcurrentToolCalls(
+    executable,
+    environment
   );
   const pendingToolCalls: PendingToolCall[] = [];
 
@@ -561,6 +559,46 @@ async function executeSingleTool(
   }
 }
 
+async function executeConcurrentToolCalls(
+  executable: OrderedExecutableToolCall[],
+  environment: ToolBatchEnvironment
+): Promise<SingleToolOutcome[]> {
+  const batchAbortController = new AbortController();
+  const batchEnvironment = createBatchScopedEnvironment(
+    environment,
+    batchAbortController.signal
+  );
+  const outcomes = executable.map((toolCall) =>
+    executeSingleTool(
+      toolCall.executable,
+      toolCall.index,
+      batchEnvironment
+    ).catch((error: unknown) => {
+      if (!batchAbortController.signal.aborted) {
+        batchAbortController.abort(error);
+      }
+
+      throw error;
+    })
+  );
+  const settledOutcomes = await Promise.allSettled(outcomes);
+  const rejection = settledOutcomes.find(isRejectedPromiseResult);
+
+  if (rejection !== undefined) {
+    throw rejection.reason;
+  }
+
+  const successfulOutcomes: SingleToolOutcome[] = [];
+
+  for (const outcome of settledOutcomes) {
+    if (outcome.status === "fulfilled") {
+      successfulOutcomes.push(outcome.value);
+    }
+  }
+
+  return successfulOutcomes;
+}
+
 async function runAroundToolHandlers(
   handlers: Array<{
     extensionName: string;
@@ -826,6 +864,19 @@ function getAroundToolHandlers(
   return handlers;
 }
 
+function createBatchScopedEnvironment(
+  environment: ToolBatchEnvironment,
+  batchSignal: AbortSignal
+): ToolBatchEnvironment {
+  return {
+    ...environment,
+    signal:
+      environment.signal === undefined
+        ? batchSignal
+        : AbortSignal.any([environment.signal, batchSignal]),
+  };
+}
+
 function createToolExecutionContext(
   toolCall: ToolCallPart,
   tool: KrakenToolDefinition,
@@ -969,6 +1020,12 @@ function isApprovalRequestValidationError(error: unknown): boolean {
     "code" in error &&
     error.code === "invalid_approval_request"
   );
+}
+
+function isRejectedPromiseResult(
+  result: PromiseSettledResult<unknown>
+): result is PromiseRejectedResult {
+  return result.status === "rejected";
 }
 
 async function evaluateApprovalPolicy(
