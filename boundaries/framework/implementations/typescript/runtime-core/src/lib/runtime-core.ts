@@ -195,6 +195,7 @@ interface PauseContext {
   pausedIteration?: PausedIterationState;
   pausedRunId: string;
   pausedTurnNodeHash: HashString;
+  pauseReason: string;
 }
 
 interface ResumeContext {
@@ -451,7 +452,7 @@ class RuntimeExecutionHandle implements ExecutionHandle {
       approval: context.approval,
       iterationCount: this.statusSnapshot.iterationCount,
       manifest: this.statusSnapshot.manifest,
-      pauseReason: "approval_required",
+      pauseReason: context.pauseReason,
       phase: "paused",
     });
   }
@@ -1533,6 +1534,7 @@ class RuntimeCore implements KrakenRuntime {
             carriedStateUpdates: [...loopState.carriedStateUpdates],
             kind:
               requestedToolCalls.length > 0 ? "tool_approval" : "driver_pause",
+            pauseReason: resolution.reason,
             pausedIteration:
               requestedToolCalls.length > 0
                 ? {
@@ -1740,6 +1742,7 @@ class RuntimeCore implements KrakenRuntime {
           approval: resolution.approval,
           carriedStateUpdates: [...loopState.carriedStateUpdates],
           kind: "tool_approval",
+          pauseReason: resolution.reason,
           pausedIteration: {
             iterationCount: pausedIteration.iterationCount,
             response: pausedIteration.response,
@@ -3191,16 +3194,15 @@ class OrchestrationHandleImpl implements OrchestrationHandle {
   }
 
   emitWorkerEvent(workerId: string, event: KrakenStreamEvent): void {
-    if (this.allEventsClosed) {
-      return;
-    }
-
     const fanout =
       this.workerEventFanouts.get(workerId) ??
       new EventFanout<KrakenStreamEvent>();
     this.workerEventFanouts.set(workerId, fanout);
     fanout.emit(event);
-    this.allEventsFanout.emit(event);
+
+    if (!this.allEventsClosed) {
+      this.allEventsFanout.emit(event);
+    }
   }
 
   registerWorker(workerId: string): void {
@@ -3269,12 +3271,6 @@ class OrchestrationHandleImpl implements OrchestrationHandle {
   }
 
   workerEvents(workerId: string): AsyncIterable<KrakenStreamEvent> {
-    if (this.allEventsClosed) {
-      const closedFanout = new EventFanout<KrakenStreamEvent>();
-      closedFanout.close();
-      return closedFanout.subscribe();
-    }
-
     const fanout =
       this.workerEventFanouts.get(workerId) ??
       new EventFanout<KrakenStreamEvent>();
@@ -3294,7 +3290,7 @@ class OrchestrationHandleImpl implements OrchestrationHandle {
     for await (const event of observedHandle.events()) {
       const parentEvent = stripEventSource(event);
       this.parentEventsFanout.emit(parentEvent);
-      this.allEventsFanout.emit(parentEvent);
+      this.allEventsFanout.emit(event);
     }
 
     if (observedHandle.status().phase === "paused") {
@@ -3361,7 +3357,6 @@ class OrchestrationHandleImpl implements OrchestrationHandle {
     this.parentEventsFanout.close();
     this.allEventsClosed = true;
     this.allEventsFanout.close();
-    this.closeWorkerEventFanouts();
   }
 
   private closeWorkerEventFanouts(): void {
@@ -3632,6 +3627,7 @@ class OrchestrationRuntimeImpl implements OrchestrationRuntime {
       });
     }
 
+    const normalizedTask = normalizeWorkerTask(task);
     const workerSchemaId = await this.resolveWorkerSchemaId(parentHandle);
     const thread = await this.framework.createThread({
       schemaId: workerSchemaId,
@@ -3644,7 +3640,7 @@ class OrchestrationRuntimeImpl implements OrchestrationRuntime {
     const handle = this.framework.executeTurn({
       branchId: thread.branchId,
       config,
-      signal: normalizeWorkerTask(task),
+      signal: normalizedTask,
       threadId: thread.threadId,
       ...(workerDriverId === undefined ? {} : { driverId: workerDriverId }),
     });

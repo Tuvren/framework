@@ -95,6 +95,11 @@ interface ToolStartState {
   emitted: boolean;
 }
 
+interface ApprovalPendingSource {
+  callId: string;
+  name: string;
+}
+
 type SingleToolOutcome =
   | {
       approval?: never;
@@ -355,7 +360,7 @@ async function resolveExecutableToolCall(
 
   if (approvalRequired) {
     return {
-      pendingToolCall: createPendingToolCall(toolCall),
+      pendingToolCall: createPendingToolCall(toolCall, validation.value),
     };
   }
 
@@ -398,10 +403,25 @@ function resolveResumeDecision(
     };
   }
 
-  const input =
-    decision.type === "edit" ? decision.editedInput : pendingToolCall.input;
+  if (decision.type === "approve") {
+    return {
+      executable: {
+        approvalDecision: decision,
+        input: pendingToolCall.input,
+        tool,
+        toolCall: {
+          callId: pendingToolCall.callId,
+          input: pendingToolCall.input,
+          name: pendingToolCall.name,
+          type: "tool_call",
+        },
+      },
+    };
+  }
 
-  if (decision.type === "edit" && decision.editedInput === undefined) {
+  const input = decision.editedInput;
+
+  if (decision.editedInput === undefined) {
     return {
       result: createErrorToolResult(
         {
@@ -684,6 +704,7 @@ function normalizeAroundToolResult(
 
     const approval = normalizeApprovalRequest(
       context.toolCall,
+      context.input,
       result.approval
     );
     assertApprovalRequest(
@@ -890,22 +911,41 @@ function emitToolStartIfNeeded(
   });
 }
 
-function createPendingToolCall(toolCall: ToolCallPart): PendingToolCall {
+function createPendingToolCall(
+  toolCall: ApprovalPendingSource,
+  input: unknown
+): PendingToolCall {
   return {
     callId: toolCall.callId,
     decisions: [...DEFAULT_APPROVAL_DECISIONS],
-    input: toolCall.input,
+    input,
     message: `Approve tool "${toolCall.name}"?`,
     name: toolCall.name,
   };
 }
 
 function normalizeApprovalRequest(
-  toolCall: ToolCallPart,
+  toolCall: ApprovalPendingSource,
+  input: unknown,
   request: ApprovalRequest
 ): ApprovalRequest {
-  if (request.toolCalls.some((pending) => pending.callId === toolCall.callId)) {
-    return request;
+  const existingIndex = request.toolCalls.findIndex(
+    (pending) => pending.callId === toolCall.callId
+  );
+
+  if (existingIndex >= 0) {
+    return {
+      completedResults: request.completedResults,
+      toolCalls: request.toolCalls.map((pending, index) =>
+        index === existingIndex
+          ? {
+              ...pending,
+              input,
+              name: toolCall.name,
+            }
+          : pending
+      ),
+    };
   }
 
   return {
@@ -915,7 +955,7 @@ function normalizeApprovalRequest(
       {
         callId: toolCall.callId,
         decisions: [...DEFAULT_APPROVAL_DECISIONS],
-        input: toolCall.input,
+        input,
         message: `Approve tool "${toolCall.name}"?`,
         name: toolCall.name,
       },
