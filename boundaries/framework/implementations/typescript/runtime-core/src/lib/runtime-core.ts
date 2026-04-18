@@ -190,6 +190,7 @@ interface PauseContext {
   activeDriverId: string;
   activeToolRegistry: ToolRegistry;
   approval: ApprovalRequest;
+  carriedStateUpdates: ExtensionStateUpdate[];
   kind: "driver_pause" | "tool_approval";
   pausedIteration?: PausedIterationState;
   pausedRunId: string;
@@ -364,6 +365,8 @@ class RuntimeExecutionHandle implements ExecutionHandle {
   private readonly abortController = new AbortController();
   private readonly eventsFanout = new EventFanout<KrakenStreamEvent>();
   private lastErrorProjection?: KrakenErrorProjection;
+  private materializedDriver?: KrakenDriver;
+  private materializedDriverId?: string;
   private pauseContext?: PauseContext;
   private readonly runtime: RuntimeCore;
   private schemaIdValue: string;
@@ -521,6 +524,23 @@ class RuntimeExecutionHandle implements ExecutionHandle {
     return this.lastErrorProjection;
   }
 
+  getOrCreateDriver(
+    driverId: string,
+    materialize: (driverId: string) => KrakenDriver
+  ): KrakenDriver {
+    if (
+      this.materializedDriver !== undefined &&
+      this.materializedDriverId === driverId
+    ) {
+      return this.materializedDriver;
+    }
+
+    const driver = materialize(driverId);
+    this.materializedDriver = driver;
+    this.materializedDriverId = driverId;
+    return driver;
+  }
+
   steer(signal: InputSignal): void {
     if (this.statusSnapshot.phase !== "running") {
       throw new KrakenRuntimeError(
@@ -542,6 +562,11 @@ class RuntimeExecutionHandle implements ExecutionHandle {
       ...this.statusSnapshot,
       ...patch,
     });
+  }
+
+  reuseDriverCache(previousHandle: RuntimeExecutionHandle): void {
+    this.materializedDriver = previousHandle.materializedDriver;
+    this.materializedDriverId = previousHandle.materializedDriverId;
   }
 }
 
@@ -672,6 +697,7 @@ class RuntimeCore implements KrakenRuntime {
         pausedTurnNodeHash: pauseContext.pausedTurnNodeHash,
       }
     );
+    handle.reuseDriverCache(previousHandle);
     handle.replaceStatus({
       activeAgent: pauseContext.activeConfig.name,
       iterationCount: previousHandle.status().iterationCount,
@@ -756,7 +782,9 @@ class RuntimeCore implements KrakenRuntime {
         activeToolRegistry:
           resumedPauseContext?.activeToolRegistry ??
           createActiveToolRegistry(handle.request.tools, handle.request.config),
-        carriedStateUpdates: [],
+        carriedStateUpdates: [
+          ...(resumedPauseContext?.carriedStateUpdates ?? []),
+        ],
         enteredIterationLoop: false,
       };
 
@@ -1243,7 +1271,10 @@ class RuntimeCore implements KrakenRuntime {
         headState = await this.loadHeadState(handle.request.branchId);
       }
 
-      const driver = this.resolveDriver(loopState.activeDriverId);
+      const driver = handle.getOrCreateDriver(
+        loopState.activeDriverId,
+        (driverId) => this.materializeDriver(driverId)
+      );
       const iterationRunId = this.createId();
 
       await this.createTrackedRun(
@@ -1433,32 +1464,25 @@ class RuntimeCore implements KrakenRuntime {
         manifest,
       });
 
-      if (resolution.type !== "pause") {
-        const afterIteration = await runAfterIterationHooks({
-          emit: (event) => {
-            this.publishCustomEvent(handle, event, loopState);
-          },
-          extensions: loopState.activeConfig.extensions ?? [],
-          iterationCount: nextIteration,
-          manifest,
-          messages: [...headState.messages, ...stagedMessages],
-          resolution,
-          response: driverResponse,
-          runId: iterationRunId,
-          toolResults,
-          turnId: handle.turnId,
-        });
-        resolution = composeResolutions(resolution, afterIteration.resolution);
-        loopState.carriedStateUpdates.push(...afterIteration.updates);
+      const afterIteration = await runAfterIterationHooks({
+        emit: (event) => {
+          this.publishCustomEvent(handle, event, loopState);
+        },
+        extensions: loopState.activeConfig.extensions ?? [],
+        iterationCount: nextIteration,
+        manifest,
+        messages: [...headState.messages, ...stagedMessages],
+        resolution,
+        response: driverResponse,
+        runId: iterationRunId,
+        toolResults,
+        turnId: handle.turnId,
+      });
+      resolution = composeResolutions(resolution, afterIteration.resolution);
+      loopState.carriedStateUpdates.push(...afterIteration.updates);
 
-        if (resolution.type === "fail" && resolution.fatality === "soft") {
-          this.publishProjectedError(
-            handle,
-            resolution.error,
-            false,
-            loopState
-          );
-        }
+      if (resolution.type === "fail" && resolution.fatality === "soft") {
+        this.publishProjectedError(handle, resolution.error, false, loopState);
       }
 
       if (
@@ -1506,6 +1530,7 @@ class RuntimeCore implements KrakenRuntime {
             activeDriverId: loopState.activeDriverId,
             activeToolRegistry: loopState.activeToolRegistry,
             approval: resolution.approval,
+            carriedStateUpdates: [...loopState.carriedStateUpdates],
             kind:
               requestedToolCalls.length > 0 ? "tool_approval" : "driver_pause",
             pausedIteration:
@@ -1662,6 +1687,42 @@ class RuntimeCore implements KrakenRuntime {
     });
 
     if (resolution.type === "pause") {
+      const latestHeadState = await this.loadHeadState(handle.request.branchId);
+      const afterIteration = await runAfterIterationHooks({
+        emit: (event) => {
+          this.publishCustomEvent(handle, event, loopState);
+        },
+        extensions: loopState.activeConfig.extensions ?? [],
+        iterationCount: pausedIteration.iterationCount,
+        manifest: latestHeadState.manifest,
+        messages: latestHeadState.messages,
+        resolution,
+        response: pausedIteration.response,
+        runId,
+        toolResults: [...pausedIteration.toolResults, ...toolBatch.results],
+        turnId: handle.turnId,
+      });
+      resolution = composeResolutions(resolution, afterIteration.resolution);
+      loopState.carriedStateUpdates.push(...afterIteration.updates);
+      handle.updateStatus({
+        manifest: latestHeadState.manifest,
+      });
+
+      if (resolution.type !== "pause") {
+        if (resolution.type === "fail" && resolution.fatality === "soft") {
+          this.publishProjectedError(
+            handle,
+            resolution.error,
+            false,
+            loopState
+          );
+        }
+
+        return {
+          resolution,
+        };
+      }
+
       if (turnNodeHash === undefined) {
         throw new KrakenRuntimeError(
           "paused approval resumes must commit a durable pause checkpoint",
@@ -1677,6 +1738,7 @@ class RuntimeCore implements KrakenRuntime {
           activeDriverId: loopState.activeDriverId,
           activeToolRegistry: loopState.activeToolRegistry,
           approval: resolution.approval,
+          carriedStateUpdates: [...loopState.carriedStateUpdates],
           kind: "tool_approval",
           pausedIteration: {
             iterationCount: pausedIteration.iterationCount,
@@ -1821,8 +1883,8 @@ class RuntimeCore implements KrakenRuntime {
         handle,
         loopState,
         turnNodeHash,
-        manifest,
-        iterationCount
+        iterationCount,
+        manifest
       );
     }
 
@@ -1946,8 +2008,8 @@ class RuntimeCore implements KrakenRuntime {
         handle,
         loopState,
         stepResult.turnNodeHash,
-        manifest,
-        0
+        0,
+        manifest
       );
     }
   }
@@ -2005,8 +2067,8 @@ class RuntimeCore implements KrakenRuntime {
         handle,
         loopState,
         stepResult.turnNodeHash,
-        manifest,
-        handle.status().iterationCount
+        handle.status().iterationCount,
+        manifest
       );
     }
 
@@ -2071,8 +2133,8 @@ class RuntimeCore implements KrakenRuntime {
         handle,
         loopState,
         stepResult.turnNodeHash,
-        manifest,
-        iterationCount
+        iterationCount,
+        manifest
       );
     }
 
@@ -2157,8 +2219,8 @@ class RuntimeCore implements KrakenRuntime {
         handle,
         loopState,
         stepResult.turnNodeHash,
-        nextManifest,
-        handle.status().iterationCount
+        handle.status().iterationCount,
+        nextManifest
       );
     }
     handle.updateStatus({
@@ -2301,8 +2363,8 @@ class RuntimeCore implements KrakenRuntime {
           activeConfig: targetConfig,
         },
         stepResult.turnNodeHash,
-        nextManifest,
-        handle.status().iterationCount
+        handle.status().iterationCount,
+        nextManifest
       );
     }
 
@@ -2455,7 +2517,6 @@ class RuntimeCore implements KrakenRuntime {
         handle,
         loopState,
         stepResult.turnNodeHash,
-        handle.status().manifest ?? createEmptyContextManifest(),
         handle.status().iterationCount
       );
     }
@@ -2470,7 +2531,7 @@ class RuntimeCore implements KrakenRuntime {
       activeConfig: pauseContext.activeConfig,
       activeDriverId: pauseContext.activeDriverId,
       activeToolRegistry: pauseContext.activeToolRegistry,
-      carriedStateUpdates: [],
+      carriedStateUpdates: [...pauseContext.carriedStateUpdates],
       enteredIterationLoop: true,
     };
     const failureResolution: RuntimeResolution = {
@@ -2481,6 +2542,18 @@ class RuntimeCore implements KrakenRuntime {
 
     handle.rememberError(projectError(error));
     await this.options.kernel.run.complete(pauseContext.pausedRunId, "failed");
+
+    if (loopState.carriedStateUpdates.length > 0) {
+      await this.commitPendingExtensionStateUpdates(
+        handle,
+        handle.schemaId,
+        loopState,
+        loopState.carriedStateUpdates,
+        handle.status().iterationCount
+      );
+      loopState.carriedStateUpdates = [];
+    }
+
     await this.finalizeTurnStatus(handle, failureResolution, loopState);
     handle.replaceStatus({
       activeAgent: pauseContext.activeConfig.name,
@@ -2654,14 +2727,13 @@ class RuntimeCore implements KrakenRuntime {
       );
     }
 
-    if (parentTurn.threadId !== threadId || parentTurn.branchId !== branchId) {
+    if (parentTurn.threadId !== threadId) {
       throw new KrakenLineageError(
-        `parent turn "${parentTurnId}" must stay on thread "${threadId}" and branch "${branchId}"`,
+        `parent turn "${parentTurnId}" must stay on thread "${threadId}"`,
         {
           code: "invalid_parent_turn",
           details: {
             branchId,
-            parentBranchId: parentTurn.branchId,
             parentThreadId: parentTurn.threadId,
             parentTurnId,
             threadId,
@@ -2747,6 +2819,14 @@ class RuntimeCore implements KrakenRuntime {
     iterationCount: number
   ): Promise<void> {
     const headState = await this.loadHeadState(handle.request.branchId);
+    const nextManifest =
+      loopState.carriedStateUpdates.length === 0
+        ? headState.manifest
+        : updateContextManifest(
+            headState.manifest,
+            [],
+            loopState.carriedStateUpdates
+          );
     const runId = this.createId();
     await this.createTrackedRun(
       handle,
@@ -2774,11 +2854,20 @@ class RuntimeCore implements KrakenRuntime {
       },
       "runtime_status_running"
     );
+    const changes: Record<string, PathValue> = {
+      "runtime.status": runtimeStatusHash,
+    };
+
+    if (loopState.carriedStateUpdates.length > 0) {
+      changes["context.manifest"] = await this.stageManifest(
+        runId,
+        nextManifest
+      );
+    }
+
     const nextTreeHash = await this.options.kernel.tree.create(
       schemaId,
-      {
-        "runtime.status": runtimeStatusHash,
-      },
+      changes,
       headState.turnNode.turnTreeHash
     );
     const stepResult = await this.options.kernel.run.completeStep(
@@ -2799,17 +2888,18 @@ class RuntimeCore implements KrakenRuntime {
         handle,
         loopState,
         stepResult.turnNodeHash,
-        headState.manifest,
-        iterationCount
+        iterationCount,
+        loopState.carriedStateUpdates.length === 0 ? undefined : nextManifest
       );
     }
 
     handle.updateStatus({
       activeAgent: loopState.activeConfig.name,
       iterationCount,
-      manifest: headState.manifest,
+      manifest: nextManifest,
       phase: "running",
     });
+    loopState.carriedStateUpdates = [];
   }
 
   private async createTrackedRun(
@@ -2850,7 +2940,7 @@ class RuntimeCore implements KrakenRuntime {
     return completion;
   }
 
-  private resolveDriver(driverId: string): KrakenDriver {
+  private materializeDriver(driverId: string): KrakenDriver {
     const driverEntry = this.options.driverRegistry.resolve(driverId);
 
     if (driverEntry === undefined) {
@@ -3002,8 +3092,8 @@ class RuntimeCore implements KrakenRuntime {
     handle: RuntimeExecutionHandle,
     loopState: LoopState,
     turnNodeHash: HashString,
-    manifest: ContextManifest,
-    iterationCount: number
+    iterationCount: number,
+    manifest?: ContextManifest
   ): void {
     if (!this.options.enableStateObservability) {
       return;
@@ -3019,15 +3109,17 @@ class RuntimeCore implements KrakenRuntime {
       },
       loopState
     );
-    this.publishEvent(
-      handle,
-      {
-        manifest,
-        timestamp: this.now(),
-        type: "state.snapshot",
-      },
-      loopState
-    );
+    if (manifest !== undefined) {
+      this.publishEvent(
+        handle,
+        {
+          manifest,
+          timestamp: this.now(),
+          type: "state.snapshot",
+        },
+        loopState
+      );
+    }
   }
 
   private createId(): string {
@@ -3099,6 +3191,10 @@ class OrchestrationHandleImpl implements OrchestrationHandle {
   }
 
   emitWorkerEvent(workerId: string, event: KrakenStreamEvent): void {
+    if (this.allEventsClosed) {
+      return;
+    }
+
     const fanout =
       this.workerEventFanouts.get(workerId) ??
       new EventFanout<KrakenStreamEvent>();
@@ -3173,6 +3269,12 @@ class OrchestrationHandleImpl implements OrchestrationHandle {
   }
 
   workerEvents(workerId: string): AsyncIterable<KrakenStreamEvent> {
+    if (this.allEventsClosed) {
+      const closedFanout = new EventFanout<KrakenStreamEvent>();
+      closedFanout.close();
+      return closedFanout.subscribe();
+    }
+
     const fanout =
       this.workerEventFanouts.get(workerId) ??
       new EventFanout<KrakenStreamEvent>();
@@ -3196,6 +3298,7 @@ class OrchestrationHandleImpl implements OrchestrationHandle {
     }
 
     if (observedHandle.status().phase === "paused") {
+      this.closeForPausedParent();
       return;
     }
 
@@ -3233,23 +3336,40 @@ class OrchestrationHandleImpl implements OrchestrationHandle {
     this.parentEventsFanout.close();
     this.allEventsClosed = true;
     this.allEventsFanout.close();
-
-    for (const fanout of this.workerEventFanouts.values()) {
-      fanout.close();
-    }
-
-    this.workerEventFanouts.clear();
+    this.closeWorkerEventFanouts();
     this.runtime.releaseHandle(this);
   }
 
   private closeForCancelledParent(): void {
-    if (this.parentCompleted) {
+    if (this.parentCompleted && this.allEventsClosed) {
       return;
     }
 
     this.parentCompleted = true;
     this.parentEventsFanout.close();
-    this.closeAllEventsIfSettled();
+    this.allEventsClosed = true;
+    this.allEventsFanout.close();
+    this.closeWorkerEventFanouts();
+    this.runtime.releaseHandle(this);
+  }
+
+  private closeForPausedParent(): void {
+    if (this.allEventsClosed) {
+      return;
+    }
+
+    this.parentEventsFanout.close();
+    this.allEventsClosed = true;
+    this.allEventsFanout.close();
+    this.closeWorkerEventFanouts();
+  }
+
+  private closeWorkerEventFanouts(): void {
+    for (const fanout of this.workerEventFanouts.values()) {
+      fanout.close();
+    }
+
+    this.workerEventFanouts.clear();
   }
 
   private ensureStarted(): void {
