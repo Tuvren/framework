@@ -858,6 +858,16 @@ export interface DriverRuntimePort {
   now(): EpochMs;
 }
 
+export interface DriverHandoffPort {
+  createContextPlan(input: {
+    targetAgent: string;
+    reason: string;
+    mode?: HandoffContextMode;
+    builder?: HandoffContextBuilder;
+    payload?: unknown;
+  }): HandoffContextPlan;
+}
+
 export interface DriverExecutionContext {
   turnId: string;
   threadId: string;
@@ -865,6 +875,7 @@ export interface DriverExecutionContext {
   schemaId: string;
   iterationCount: number;
   config: AgentConfig;
+  handoff: DriverHandoffPort;
   messages: KrakenMessage[];
   manifest: ContextManifest;
   toolRegistry: ToolRegistry;

@@ -23,6 +23,7 @@ import type {
 import type {
   AfterIterationContext,
   AgentConfig,
+  ContextManifest,
   CustomSchema,
   ExecutionHandle,
   ExecutionStatus,
@@ -36,7 +37,9 @@ import type {
   KrakenStreamEvent,
   KrakenToolDefinition,
 } from "@kraken/framework-runtime-api";
+import { assertKrakenMessage } from "@kraken/framework-runtime-api";
 import {
+  decodeDeterministicKernelRecord,
   encodeDeterministicKernelRecord,
   type KrakenKernel,
   type TurnTreeSchema,
@@ -50,6 +53,7 @@ import {
   createOrchestrationRuntime,
   createPreserveTraceHandoffContextBuilder,
   createToolRegistry,
+  runBeforeTurnHooks,
 } from "../src/index.ts";
 import { createFakeKernelHarness } from "./fake-kernel.ts";
 
@@ -201,6 +205,129 @@ describe("framework-runtime-core", () => {
     ]);
   });
 
+  test("collectSystemPrompts and hook contexts do not expose live extension state or shared exports", async () => {
+    const manifest = {
+      byRole: {
+        assistant: 0,
+        system: 0,
+        tool: 0,
+        user: 0,
+      },
+      extensions: {
+        exporter: {
+          nested: {
+            count: 1,
+          },
+        },
+        viewer: {
+          local: {
+            flag: true,
+          },
+        },
+      },
+      lastAssistantMessageIndex: -1,
+      lastUserMessageIndex: -1,
+      messageCount: 0,
+      tokenEstimate: 0,
+      toolCalls: {
+        byName: {},
+        total: 0,
+      },
+      toolResults: {
+        byName: {},
+        total: 0,
+      },
+      turnBoundaries: [],
+    } satisfies ContextManifest;
+
+    collectSystemPrompts(
+      [
+        {
+          exports: ["nested"],
+          name: "exporter",
+        },
+        {
+          name: "viewer",
+          systemPrompt(context) {
+            const exportedNested = context.sharedExports.exporter?.nested;
+
+            if (
+              exportedNested !== undefined &&
+              typeof exportedNested === "object" &&
+              exportedNested !== null &&
+              "count" in exportedNested
+            ) {
+              exportedNested.count = 99;
+            }
+
+            context.extensionState.local = { flag: false };
+            context.manifest.extensions.exporter = {
+              nested: {
+                count: 100,
+              },
+            };
+            return "Prompt";
+          },
+        },
+      ],
+      manifest,
+      1
+    );
+
+    await runBeforeTurnHooks({
+      emit() {
+        return;
+      },
+      extensions: [
+        {
+          exports: ["nested"],
+          name: "exporter",
+        },
+        {
+          beforeTurn(context) {
+            const exportedNested = context.sharedExports.exporter?.nested;
+
+            if (
+              exportedNested !== undefined &&
+              typeof exportedNested === "object" &&
+              exportedNested !== null &&
+              "count" in exportedNested
+            ) {
+              exportedNested.count = 77;
+            }
+
+            context.extensionState.local = { flag: false };
+            context.manifest.extensions.exporter = {
+              nested: {
+                count: 200,
+              },
+            };
+            return undefined;
+          },
+          name: "viewer",
+        },
+      ],
+      iterationCount: 0,
+      manifest,
+      messages: [],
+      runId: "run-1",
+      turnId: "turn-1",
+    });
+
+    expect(manifest.extensions).toEqual({
+      exporter: {
+        nested: {
+          count: 1,
+        },
+      },
+      viewer: {
+        local: {
+          flag: true,
+        },
+      },
+    });
+  });
+
   test("counts file payload bytes in tokenEstimate", () => {
     const payload = new Uint8Array(4096);
     const manifest = createContextManifest([
@@ -267,12 +394,23 @@ describe("framework-runtime-core", () => {
 
     const events = await collectEvents(handle.events());
     const messages = await harness.readBranchMessages(thread.branchId);
+    const checkpointEventTypes = await readBranchCheckpointEventTypes(
+      harness.kernel,
+      thread.branchId
+    );
 
     expect(events.map((event) => event.type)).toContain("turn.start");
     expect(events.map((event) => event.type)).toContain("iteration.start");
     expect(events.map((event) => event.type)).toContain("turn.end");
     expect(handle.status().phase).toBe("completed");
     expect(messages).toHaveLength(2);
+    expect(checkpointEventTypes).toEqual(
+      expect.arrayContaining([
+        "input_received",
+        "iteration_step_completed",
+        "turn_status_finalized",
+      ])
+    );
   });
 
   test("rejects non-cloneable stream events before they reach the handle fanout", async () => {
@@ -1711,6 +1849,83 @@ describe("framework-runtime-core", () => {
     expect(errorEvent?.error.code).toBe("invalid_kraken_message");
   });
 
+  test("does not let context-engineering plans mutate loaded messages in place", async () => {
+    const harness = createFakeKernelHarness();
+    const runtime = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([
+        {
+          async execute(context) {
+            return {
+              activeAgent: context.config.name,
+              messages: [assistantText("Context engineering completed.")],
+              resolution: {
+                reason: "done",
+                type: "end_turn",
+              },
+            };
+          },
+          id: "fake",
+          async resume() {
+            throw new Error("resume was not expected");
+          },
+        } satisfies KrakenDriver,
+      ]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        contextPolicy: {
+          evaluate() {
+            return {
+              action: "mutate_loaded_message",
+              execute(context) {
+                const firstMessage = context.helpers.loadMessage(
+                  context.messageHashes[0]
+                );
+
+                if (
+                  firstMessage?.role === "user" &&
+                  firstMessage.parts[0]?.type === "text"
+                ) {
+                  firstMessage.parts[0].text =
+                    "This mutated text should never persist.";
+                }
+
+                return [...context.messageHashes];
+              },
+            };
+          },
+        },
+        name: "primary",
+      },
+      signal: textSignal("Original short text"),
+      threadId: thread.threadId,
+    });
+
+    await collectEvents(handle.events());
+
+    const branchMessages = await harness.readBranchMessages(thread.branchId);
+    const expectedManifest = createContextManifest(
+      toKrakenMessages(branchMessages)
+    );
+
+    expect(branchMessages).toEqual(
+      expect.arrayContaining([
+        {
+          parts: [{ text: "Original short text", type: "text" }],
+          role: "user",
+        },
+      ])
+    );
+    expect(handle.status().manifest).toEqual(expectedManifest);
+    expect(
+      await readBranchCheckpointEventTypes(harness.kernel, thread.branchId)
+    ).toEqual(expect.arrayContaining(["context_engineering_applied"]));
+  });
+
   test("fails invalid context-engineering plans before corrupting the branch head", async () => {
     const harness = createFakeKernelHarness();
     const driver = {
@@ -2776,6 +2991,8 @@ describe("framework-runtime-core", () => {
         })[agentName],
       resolveNextAgent: (agentName) =>
         agentName === "primary" ? "reviewer" : undefined,
+      resolveSequenceStep: (agentName) =>
+        agentName === "primary" ? 2 : undefined,
       sequenceHandoffContextBuilder:
         createLastOutputOnlyHandoffContextBuilder(),
     });
@@ -4924,6 +5141,71 @@ describe("framework-runtime-core", () => {
     expect(handle.status().phase).toBe("completed");
   });
 
+  test("lets drivers build valid handoff plans through DriverExecutionContext.handoff", async () => {
+    const harness = createFakeKernelHarness();
+    const runtime = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([
+        {
+          async execute(context) {
+            if (context.config.name === "primary") {
+              return {
+                activeAgent: "primary",
+                messages: [
+                  assistantText("Passing this through the driver helper."),
+                ],
+                resolution: {
+                  contextPlan: context.handoff.createContextPlan({
+                    reason: "driver_helper_handoff",
+                    targetAgent: "reviewer",
+                  }),
+                  targetAgent: "reviewer",
+                  type: "handoff",
+                },
+              };
+            }
+
+            return {
+              activeAgent: "reviewer",
+              messages: [assistantText("Driver helper handoff completed.")],
+              resolution: {
+                reason: "done",
+                type: "end_turn",
+              },
+            };
+          },
+          id: "fake",
+          async resume() {
+            throw new Error("resume was not expected");
+          },
+        } satisfies KrakenDriver,
+      ]),
+      kernel: harness.kernel,
+      resolveAgentConfig: (agentName) =>
+        agentName === "reviewer" ? { name: "reviewer" } : undefined,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: { name: "primary" },
+      signal: textSignal("Use the driver handoff helper"),
+      threadId: thread.threadId,
+    });
+
+    await collectEvents(handle.events());
+
+    expect(handle.status().activeAgent).toBe("reviewer");
+    expect(
+      hasAssistantText(
+        await harness.readBranchMessages(thread.branchId),
+        "Driver helper handoff completed."
+      )
+    ).toBe(true);
+    expect(
+      await readBranchCheckpointEventTypes(harness.kernel, thread.branchId)
+    ).toEqual(expect.arrayContaining(["handoff_applied"]));
+  });
+
   test("seeds target extension state during handoff before the next iteration hooks run", async () => {
     const harness = createFakeKernelHarness();
     const agents: Record<string, AgentConfig> = {
@@ -5344,6 +5626,8 @@ describe("framework-runtime-core", () => {
       resolveAgentConfig: (agentName) => agents[agentName],
       resolveNextAgent: (agentName) =>
         agentName === "primary" ? "reviewer" : undefined,
+      resolveSequenceStep: (agentName) =>
+        agentName === "primary" ? 2 : undefined,
       sequenceHandoffContextBuilder:
         createLastOutputOnlyHandoffContextBuilder(),
     });
@@ -5524,6 +5808,8 @@ describe("framework-runtime-core", () => {
         })[agentName],
       resolveNextAgent: (agentName) =>
         agentName === "primary" ? "reviewer" : undefined,
+      resolveSequenceStep: (agentName) =>
+        agentName === "primary" ? 2 : undefined,
       sequenceHandoffContextBuilder:
         createLastOutputOnlyHandoffContextBuilder(),
     });
@@ -5556,10 +5842,19 @@ describe("framework-runtime-core", () => {
       threadId: thread.threadId,
     });
 
-    await collectEvents(handle.events());
+    const events = await collectEvents(handle.events());
+    const sequenceStepEvent = events.find(
+      (event): event is Extract<(typeof events)[number], { type: "custom" }> =>
+        event.type === "custom" && event.name === "sequence.step"
+    );
 
     expect(externalExecuteTurnCalls).toBe(1);
     expect(handle.status().activeAgent).toBe("reviewer");
+    expect(sequenceStepEvent?.data).toEqual({
+      from: "primary",
+      step: 2,
+      to: "reviewer",
+    });
     expect(
       hasAssistantText(
         await harness.readBranchMessages(thread.branchId),
@@ -9063,6 +9358,52 @@ async function collectEvents<T>(events: AsyncIterable<T>): Promise<T[]> {
   }
 
   return collected;
+}
+
+async function readBranchCheckpointEventTypes(
+  kernel: KrakenKernel,
+  branchId: string
+): Promise<string[]> {
+  const branch = await kernel.branch.get(branchId);
+
+  if (branch === null) {
+    throw new Error(`expected branch "${branchId}" to exist`);
+  }
+
+  const eventTypes: string[] = [];
+
+  for await (const turnNode of kernel.node.walkBack(branch.headTurnNodeHash)) {
+    if (turnNode.eventHash === null) {
+      continue;
+    }
+
+    const payload = await kernel.store.get(turnNode.eventHash);
+
+    if (payload === null) {
+      throw new Error(`expected event "${turnNode.eventHash}" to exist`);
+    }
+
+    const decoded = decodeDeterministicKernelRecord(payload);
+
+    if (
+      decoded !== null &&
+      typeof decoded === "object" &&
+      !Array.isArray(decoded) &&
+      "type" in decoded &&
+      typeof decoded.type === "string"
+    ) {
+      eventTypes.push(decoded.type);
+    }
+  }
+
+  return eventTypes;
+}
+
+function toKrakenMessages(messages: unknown[]): KrakenMessage[] {
+  return messages.map((message, index) => {
+    assertKrakenMessage(message, `messages[${index}]`);
+    return message;
+  });
 }
 
 function detachTestPromise(promise: Promise<unknown>): void {

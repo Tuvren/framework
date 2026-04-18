@@ -76,7 +76,7 @@ export function buildSharedExports(
 
     for (const key of exportedState) {
       if (key in extensionState) {
-        visibleState[key] = extensionState[key];
+        visibleState[key] = cloneValue(extensionState[key]);
       }
     }
 
@@ -92,7 +92,6 @@ export function collectSystemPrompts(
   iterationCount: number,
   options?: CollectSystemPromptsOptions
 ): string[] {
-  const sharedExports = buildSharedExports(extensions, manifest);
   const prompts: string[] = [];
 
   for (const extension of extensions) {
@@ -107,10 +106,10 @@ export function collectSystemPrompts(
         typeof contribution === "string"
           ? contribution
           : contribution({
-              extensionState: asRecord(manifest.extensions[extension.name]),
+              extensionState: cloneRecord(manifest.extensions[extension.name]),
               iterationCount,
-              manifest,
-              sharedExports,
+              manifest: cloneValue(manifest),
+              sharedExports: buildContextSharedExports(extensions, manifest),
             });
 
       if (prompt !== undefined) {
@@ -149,7 +148,6 @@ export async function runAfterIterationHooks(
   options: AfterIterationOptions
 ): Promise<HookRunResult> {
   const { extensions } = options;
-  const sharedExports = buildSharedExports(extensions, options.manifest);
   const updates: ExtensionStateUpdate[] = [];
   let resolution: RuntimeResolution | undefined;
 
@@ -163,16 +161,19 @@ export async function runAfterIterationHooks(
         () =>
           extension.afterIteration?.({
             emit: options.emit,
-            extensionState: asRecord(
+            extensionState: cloneRecord(
               options.manifest.extensions[extension.name]
             ),
             iterationCount: options.iterationCount,
-            manifest: options.manifest,
-            messages: options.messages,
+            manifest: cloneValue(options.manifest),
+            messages: cloneValue(options.messages),
             resolution: options.resolution,
             response: options.response,
             runId: options.runId,
-            sharedExports,
+            sharedExports: buildContextSharedExports(
+              extensions,
+              options.manifest
+            ),
             toolResults: options.toolResults,
             turnId: options.turnId,
           }),
@@ -242,10 +243,6 @@ async function runInterceptHooks(
   const orderedExtensions = reverseOrder
     ? [...options.extensions].reverse()
     : options.extensions;
-  const sharedExports = buildSharedExports(
-    options.extensions,
-    options.manifest
-  );
   const updates: ExtensionStateUpdate[] = [];
   let cePlan: ContextEngineeringPlan | undefined;
   let resolution: RuntimeResolution | undefined;
@@ -259,8 +256,7 @@ async function runInterceptHooks(
 
     try {
       const result = await runWithTimeout(
-        () =>
-          handler(createInterceptContext(extension, options, sharedExports)),
+        () => handler(createInterceptContext(extension, options)),
         extension.timeout,
         () =>
           new Error(
@@ -298,17 +294,19 @@ async function runInterceptHooks(
 
 function createInterceptContext(
   extension: KrakenExtension,
-  options: HookExecutionOptions,
-  sharedExports: Record<string, Record<string, unknown>>
+  options: HookExecutionOptions
 ): InterceptContext {
   return {
     emit: options.emit,
-    extensionState: asRecord(options.manifest.extensions[extension.name]),
+    extensionState: cloneRecord(options.manifest.extensions[extension.name]),
     iterationCount: options.iterationCount,
-    manifest: options.manifest,
-    messages: options.messages,
+    manifest: cloneValue(options.manifest),
+    messages: cloneValue(options.messages),
     runId: options.runId,
-    sharedExports,
+    sharedExports: buildContextSharedExports(
+      options.extensions,
+      options.manifest
+    ),
     turnId: options.turnId,
   };
 }
@@ -373,6 +371,21 @@ function asRecord(value: unknown): Record<string, unknown> {
   }
 
   return {};
+}
+
+function buildContextSharedExports(
+  extensions: KrakenExtension[],
+  manifest: ContextManifest
+): Record<string, Record<string, unknown>> {
+  return cloneValue(buildSharedExports(extensions, manifest));
+}
+
+function cloneRecord(value: unknown): Record<string, unknown> {
+  return asRecord(cloneValue(asRecord(value)));
+}
+
+function cloneValue<T>(value: T): T {
+  return globalThis.structuredClone(value);
 }
 
 function normalizeError(error: unknown): Error {

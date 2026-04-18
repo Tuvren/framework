@@ -18,6 +18,7 @@
 export type {
   DriverExecutionContext,
   DriverExecutionResult,
+  DriverHandoffPort,
   DriverRegistry,
   DriverResumeContext,
   DriverRuntimePort,

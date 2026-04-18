@@ -71,6 +71,7 @@ import {
   assertKernelRecord,
   type EpochMs,
   type HashString,
+  type KernelRecord,
   KrakenLineageError,
   KrakenRuntimeError,
 } from "@kraken/shared-core-types";
@@ -78,6 +79,7 @@ import {
   createContextManifest,
   createEmptyContextManifest,
   createLastOutputOnlyHandoffContextBuilder,
+  createPreserveTraceHandoffContextBuilder,
   updateContextManifest,
 } from "./context-manifest.js";
 import { createDriverRegistry, materializeDriver } from "./driver-registry.js";
@@ -135,6 +137,7 @@ export interface RuntimeCoreOptions {
     threadId: string,
     branchId: string
   ) => Promise<string | null> | string | null;
+  resolveSequenceStep?: (agentName: string) => number | undefined;
   sequenceHandoffContextBuilder?: HandoffContextBuilder;
 }
 
@@ -160,6 +163,7 @@ interface ResolvedRuntimeCoreOptions {
     threadId: string,
     branchId: string
   ) => Promise<string | null> | string | null;
+  resolveSequenceStep?: (agentName: string) => number | undefined;
   sequenceHandoffContextBuilder?: HandoffContextBuilder;
 }
 
@@ -213,6 +217,7 @@ interface LoopOutcome {
 interface HelperBundle {
   flush(): Promise<void>;
   helpers: ContextEngineeringHelpers;
+  resolveHashes(hashes: HashString[]): HashString[];
 }
 
 interface WorkerRecord {
@@ -633,6 +638,7 @@ class RuntimeCore implements KrakenRuntime {
       now: options.now ?? Date.now,
       resolveAgentConfig: options.resolveAgentConfig,
       resolveNextAgent: options.resolveNextAgent,
+      resolveSequenceStep: options.resolveSequenceStep,
       sequenceHandoffContextBuilder: options.sequenceHandoffContextBuilder,
       resolveParentTurnId: options.resolveParentTurnId,
     };
@@ -1346,6 +1352,10 @@ class RuntimeCore implements KrakenRuntime {
       const driverContext: DriverExecutionContext = {
         branchId: handle.request.branchId,
         config: loopState.activeConfig,
+        handoff: {
+          createContextPlan: (input) =>
+            this.createDriverHandoffContextPlan(input, headState, loopState),
+        },
         iterationCount: nextIteration,
         manifest: headState.manifest,
         messages: headState.messages,
@@ -1878,6 +1888,54 @@ class RuntimeCore implements KrakenRuntime {
     };
   }
 
+  private createDriverHandoffContextPlan(
+    input: {
+      builder?: HandoffContextBuilder;
+      mode?: string;
+      payload?: unknown;
+      reason: string;
+      targetAgent: string;
+    },
+    headState: HeadState,
+    loopState: LoopState
+  ): HandoffContextPlan {
+    const mode = input.mode ?? "preserve_trace";
+    const builder =
+      input.builder ?? this.resolveDefaultHandoffContextBuilder(mode);
+    const helperBundle = this.createContextEngineeringHelpers(
+      headState.messageHashes,
+      headState.messages
+    );
+    const resolvedTargetAgent = this.options.resolveAgentConfig?.(
+      input.targetAgent
+    ) ?? {
+      name: input.targetAgent,
+    };
+
+    return {
+      builder,
+      mode,
+      reason: input.reason,
+      sourceContext: {
+        handoffIntent: {
+          payload: cloneValue(input.payload),
+          reason: input.reason,
+          targetAgent: input.targetAgent,
+        },
+        helpers: helperBundle.helpers,
+        manifest: cloneValue(headState.manifest),
+        messages: cloneValue(headState.messages),
+        sourceAgent: {
+          name: loopState.activeConfig.name,
+        },
+        targetAgent: {
+          name: resolvedTargetAgent.name,
+        },
+      },
+      targetAgent: input.targetAgent,
+    };
+  }
+
   private async executeDriver(
     driver: KrakenDriver,
     context: DriverExecutionContext,
@@ -1918,20 +1976,42 @@ class RuntimeCore implements KrakenRuntime {
     let turnNodeHash: HashString | undefined;
 
     if (resolution.type === "fail" && resolution.fatality === "hard") {
-      const completion = await this.completeTrackedRun(handle, runId, "failed");
+      const completion = await this.completeTrackedRun(
+        handle,
+        runId,
+        "failed",
+        {
+          fatality: resolution.fatality,
+          message: resolution.error.message,
+          type: "iteration_failed",
+        }
+      );
       turnNodeHash = completion.turnNodeHash;
     } else {
+      const stepEventHash = await this.storeEventRecord({
+        iteration: iterationCount,
+        type: "iteration_step_completed",
+      });
       const stepResult = await this.options.kernel.run.completeStep(
         runId,
         "iterate",
-        undefined,
+        stepEventHash,
         undefined,
         treeHash
       );
       const completion = await this.completeTrackedRun(
         handle,
         runId,
-        resolution.type === "pause" ? "paused" : "completed"
+        resolution.type === "pause" ? "paused" : "completed",
+        resolution.type === "pause"
+          ? {
+              reason: resolution.reason,
+              type: "paused",
+            }
+          : {
+              iteration: iterationCount,
+              type: "iteration_completed",
+            }
       );
       turnNodeHash = stepResult.turnNodeHash ?? completion.turnNodeHash;
     }
@@ -2005,6 +2085,27 @@ class RuntimeCore implements KrakenRuntime {
     };
   }
 
+  private resolveDefaultHandoffContextBuilder(
+    mode: string
+  ): HandoffContextBuilder {
+    switch (mode) {
+      case "last_output_only":
+        return createLastOutputOnlyHandoffContextBuilder();
+      case "preserve_trace":
+        return createPreserveTraceHandoffContextBuilder();
+      default:
+        throw new KrakenRuntimeError(
+          `handoff mode "${mode}" requires an explicit builder`,
+          {
+            code: "invalid_handoff_mode",
+            details: {
+              mode,
+            },
+          }
+        );
+    }
+  }
+
   private async incorporateInput(
     handle: RuntimeExecutionHandle,
     schemaId: string,
@@ -2054,7 +2155,10 @@ class RuntimeCore implements KrakenRuntime {
     );
     const stepResult = await this.options.kernel.run.completeStep(
       runId,
-      "incorporate_input"
+      "incorporate_input",
+      await this.storeEventRecord({
+        type: "input_received",
+      })
     );
     await this.completeTrackedRun(handle, runId, "completed");
 
@@ -2113,7 +2217,11 @@ class RuntimeCore implements KrakenRuntime {
     await this.stageManifest(runId, manifest);
     const stepResult = await this.options.kernel.run.completeStep(
       runId,
-      "incorporate_steering"
+      "incorporate_steering",
+      await this.storeEventRecord({
+        messageId: steeringMessageHash,
+        type: "steering_incorporated",
+      })
     );
     await this.completeTrackedRun(handle, runId, "completed");
 
@@ -2223,8 +2331,9 @@ class RuntimeCore implements KrakenRuntime {
     };
     const nextMessageHashes = plan.execute(context);
     await helperBundle.flush();
+    const resolvedMessageHashes = helperBundle.resolveHashes(nextMessageHashes);
     const nextMessages = this.materializeContextMessages(
-      nextMessageHashes,
+      resolvedMessageHashes,
       helperBundle.helpers
     );
     const nextManifest = updateContextManifest(
@@ -2240,7 +2349,7 @@ class RuntimeCore implements KrakenRuntime {
       schemaId,
       {
         "context.manifest": nextManifestHash,
-        messages: nextMessageHashes,
+        messages: resolvedMessageHashes,
       },
       headState.turnNode.turnTreeHash
     );
@@ -2264,7 +2373,10 @@ class RuntimeCore implements KrakenRuntime {
     const stepResult = await this.options.kernel.run.completeStep(
       runId,
       "context_engineering",
-      undefined,
+      await this.storeEventRecord({
+        action: plan.action,
+        type: "context_engineering_applied",
+      }),
       undefined,
       nextTreeHash
     );
@@ -2346,8 +2458,9 @@ class RuntimeCore implements KrakenRuntime {
       normalizedPlan.sourceContext
     );
     await helperBundle.flush();
+    const resolvedMessageHashes = helperBundle.resolveHashes(nextMessageHashes);
     const nextMessages = this.materializeContextMessages(
-      nextMessageHashes,
+      resolvedMessageHashes,
       helperBundle.helpers
     );
     const baseManifest = createContextManifest(
@@ -2380,7 +2493,7 @@ class RuntimeCore implements KrakenRuntime {
       {
         "context.manifest": manifestHash,
         "runtime.status": statusHash,
-        messages: nextMessageHashes,
+        messages: resolvedMessageHashes,
       },
       headState.turnNode.turnTreeHash
     );
@@ -2404,7 +2517,10 @@ class RuntimeCore implements KrakenRuntime {
     const stepResult = await this.options.kernel.run.completeStep(
       runId,
       "handoff_context",
-      undefined,
+      await this.storeEventRecord({
+        targetAgent: targetConfig.name,
+        type: "handoff_applied",
+      }),
       undefined,
       nextTreeHash
     );
@@ -2458,48 +2574,70 @@ class RuntimeCore implements KrakenRuntime {
     const kernel = this.options.kernel;
     const existingMessages = new Map<HashString, KrakenMessage>();
     const pendingMessages = new Map<HashString, KrakenMessage>();
-    const pendingRecords = new Map<HashString, Uint8Array>();
+    const pendingRecords = new Map<
+      HashString,
+      { message: KrakenMessage; record: Uint8Array }
+    >();
+    const resolvedHashes = new Map<HashString, HashString>();
 
     for (let index = 0; index < messageHashes.length; index += 1) {
-      existingMessages.set(messageHashes[index], messages[index]);
+      existingMessages.set(messageHashes[index], cloneValue(messages[index]));
     }
 
     return {
       async flush() {
-        for (const record of pendingRecords.values()) {
-          await kernel.store.put(record);
+        for (const [provisionalHash, pendingRecord] of pendingRecords) {
+          const canonicalHash = await kernel.store.put(pendingRecord.record);
+          resolvedHashes.set(provisionalHash, canonicalHash);
+          pendingMessages.set(canonicalHash, cloneValue(pendingRecord.message));
         }
       },
       helpers: {
         loadMessage(hash) {
+          const resolvedHash = resolvedHashes.get(hash) ?? hash;
           const message =
-            pendingMessages.get(hash) ?? existingMessages.get(hash) ?? null;
+            pendingMessages.get(resolvedHash) ??
+            pendingMessages.get(hash) ??
+            existingMessages.get(resolvedHash) ??
+            existingMessages.get(hash) ??
+            null;
 
           if (message === null) {
             return null;
           }
 
           assertKrakenMessage(message, `message "${hash}"`);
-          return message;
+          return cloneValue(message);
         },
         storeMessage(message) {
           assertKrakenMessage(message, "context engineering helper message");
           const encoded = encodeKernelRecord(message, "message");
-          const hash = hashRecord(encoded);
-          pendingMessages.set(hash, message);
-          pendingRecords.set(hash, encoded);
-          return hash;
+          const storedMessage = cloneValue(message);
+          const provisionalHash = createPendingKernelHash(encoded);
+          pendingMessages.set(provisionalHash, storedMessage);
+          pendingRecords.set(provisionalHash, {
+            message: storedMessage,
+            record: encoded,
+          });
+          return provisionalHash;
         },
         storeMessages(messagesToStore) {
           return messagesToStore.map((message) => {
             assertKrakenMessage(message, "context engineering helper message");
             const encoded = encodeKernelRecord(message, "message");
-            const hash = hashRecord(encoded);
-            pendingMessages.set(hash, message);
-            pendingRecords.set(hash, encoded);
-            return hash;
+            const storedMessage = cloneValue(message);
+            const provisionalHash = createPendingKernelHash(encoded);
+            pendingMessages.set(provisionalHash, storedMessage);
+            pendingRecords.set(provisionalHash, {
+              message: storedMessage,
+              record: encoded,
+            });
+            return provisionalHash;
           });
         },
+      },
+      resolveHashes(hashes) {
+        return hashes.map((hash) => resolvedHashes.get(hash) ?? hash);
       },
     };
   }
@@ -2563,7 +2701,11 @@ class RuntimeCore implements KrakenRuntime {
     );
     const stepResult = await this.options.kernel.run.completeStep(
       runId,
-      "finalize_turn_status"
+      "finalize_turn_status",
+      await this.storeEventRecord({
+        status: phase,
+        type: "turn_status_finalized",
+      })
     );
     await this.completeTrackedRun(handle, runId, "completed");
 
@@ -2840,6 +2982,21 @@ class RuntimeCore implements KrakenRuntime {
       return false;
     }
 
+    this.publishCustomEvent(
+      handle,
+      {
+        data: {
+          from: loopState.activeConfig.name,
+          step:
+            this.options.resolveSequenceStep?.(loopState.activeConfig.name) ??
+            null,
+          to: targetConfig.name,
+        },
+        name: "sequence.step",
+      },
+      loopState
+    );
+
     const latestHeadState = await this.loadHeadState(handle.request.branchId);
     const sequencePlan = this.createSequenceHandoffPlan(
       latestHeadState,
@@ -2988,9 +3145,16 @@ class RuntimeCore implements KrakenRuntime {
   private async completeTrackedRun(
     handle: RuntimeExecutionHandle,
     runId: string,
-    status: RunCompletionStatus
+    status: RunCompletionStatus,
+    event?: KernelRecord
   ): Promise<{ turnNodeHash?: HashString }> {
-    const completion = await this.options.kernel.run.complete(runId, status);
+    const eventHash =
+      event === undefined ? undefined : await this.storeEventRecord(event);
+    const completion = await this.options.kernel.run.complete(
+      runId,
+      status,
+      eventHash
+    );
 
     if (handle.getActiveRunId() === runId) {
       handle.takeActiveRunId();
@@ -3108,6 +3272,10 @@ class RuntimeCore implements KrakenRuntime {
     return await this.options.kernel.store.put(
       encodeKernelRecord(value, label)
     );
+  }
+
+  private async storeEventRecord(event: KernelRecord): Promise<HashString> {
+    return await this.storeKernelRecord(event, "event");
   }
 
   private publishCustomEvent(
@@ -4195,6 +4363,7 @@ export function createOrchestrationRuntime(
       now: options.now,
       resolveAgentConfig: (agentName) => options.agents[agentName],
       resolveNextAgent: buildSequenceResolver(options.sequence),
+      resolveSequenceStep: buildSequenceStepResolver(options.sequence),
       sequenceHandoffContextBuilder: options.handoffContextBuilder,
       resolveParentTurnId: options.resolveParentTurnId,
     });
@@ -4244,6 +4413,24 @@ function buildSequenceResolver(
     }
 
     return sequence[index + 1];
+  };
+}
+
+function buildSequenceStepResolver(
+  sequence: string[] | undefined
+): ((agentName: string) => number | undefined) | undefined {
+  if (sequence === undefined || sequence.length < 2) {
+    return undefined;
+  }
+
+  return (agentName: string) => {
+    const index = sequence.indexOf(agentName);
+
+    if (index === -1 || index + 1 >= sequence.length) {
+      return undefined;
+    }
+
+    return index + 2;
   };
 }
 
@@ -4372,8 +4559,11 @@ function extractToolCallsFromMessages(
   return calls;
 }
 
-function hashRecord(value: Uint8Array): HashString {
-  return createHash("sha256").update(value).digest("hex");
+function createPendingKernelHash(value: Uint8Array): HashString {
+  return createHash("sha256")
+    .update("kraken-runtime-pending:")
+    .update(value)
+    .digest("hex");
 }
 
 async function readBranchMessages(

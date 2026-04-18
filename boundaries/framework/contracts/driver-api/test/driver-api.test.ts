@@ -48,6 +48,52 @@ describe("driver-api", () => {
     const context: DriverExecutionContext = {
       branchId: "branch-1",
       config: { name: "primary" },
+      handoff: {
+        createContextPlan: (input) => ({
+          builder:
+            input.builder ?? ((context) => context.helpers.storeMessages([])),
+          mode: input.mode ?? "preserve_trace",
+          reason: input.reason,
+          sourceContext: {
+            handoffIntent: {
+              payload: input.payload,
+              reason: input.reason,
+              targetAgent: input.targetAgent,
+            },
+            helpers: {
+              loadMessage: () => null,
+              storeMessage: () => "1".repeat(64),
+              storeMessages: () => [],
+            },
+            manifest: {
+              byRole: {
+                assistant: 0,
+                system: 0,
+                tool: 0,
+                user: 0,
+              },
+              extensions: {},
+              lastAssistantMessageIndex: -1,
+              lastUserMessageIndex: -1,
+              messageCount: 0,
+              tokenEstimate: 0,
+              toolCalls: {
+                byName: {},
+                total: 0,
+              },
+              toolResults: {
+                byName: {},
+                total: 0,
+              },
+              turnBoundaries: [],
+            },
+            messages: [],
+            sourceAgent: { name: "primary" },
+            targetAgent: { name: input.targetAgent },
+          },
+          targetAgent: input.targetAgent,
+        }),
+      },
       iterationCount: 1,
       manifest: {
         byRole: {
@@ -92,6 +138,12 @@ describe("driver-api", () => {
       activeAgent: "primary",
       resolution: { type: "continue_iteration" },
     });
+    expect(
+      context.handoff.createContextPlan({
+        reason: "handoff",
+        targetAgent: "reviewer",
+      }).targetAgent
+    ).toBe("reviewer");
   });
 
   test("rejects malformed driver contracts", () => {

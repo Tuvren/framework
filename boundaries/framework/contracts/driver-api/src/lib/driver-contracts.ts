@@ -19,6 +19,9 @@ import type {
   ApprovalResponse,
   ContextManifest,
   EpochMs,
+  HandoffContextBuilder,
+  HandoffContextMode,
+  HandoffContextPlan,
   HashString,
   KrakenMessage,
   KrakenStreamEvent,
@@ -32,9 +35,20 @@ export interface DriverRuntimePort {
   now(): EpochMs;
 }
 
+export interface DriverHandoffPort {
+  createContextPlan(input: {
+    builder?: HandoffContextBuilder;
+    mode?: HandoffContextMode;
+    payload?: unknown;
+    reason: string;
+    targetAgent: string;
+  }): HandoffContextPlan;
+}
+
 export interface DriverExecutionContext {
   branchId: string;
   config: AgentConfig;
+  handoff: DriverHandoffPort;
   iterationCount: number;
   manifest: ContextManifest;
   messages: KrakenMessage[];
