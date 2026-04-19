@@ -87,6 +87,7 @@ import {
 } from "./handoff-builders.js";
 import {
   cloneValue,
+  createFrozenSnapshot,
   detachPromise,
   isRecord,
   normalizeError,
@@ -872,10 +873,14 @@ class RuntimeCore implements KrakenRuntime {
       this.publishProjectedError(handle, resolution.error, true, loopState);
     }
 
+    const finalizedHeadState = await this.loadHeadState(
+      handle.request.branchId
+    );
+
     handle.replaceStatus({
       activeAgent: loopState.activeConfig.name,
       iterationCount: handle.status().iterationCount,
-      manifest: handle.status().manifest,
+      manifest: finalizedHeadState.manifest,
       phase: resolutionToPhase(resolution),
     });
     this.publishEvent(
@@ -1175,7 +1180,7 @@ class RuntimeCore implements KrakenRuntime {
       pendingResume
     );
     let resolution = driverResult.resolution;
-    const driverMessages = driverResult.messages ?? [];
+    const driverMessages = [...(driverResult.messages ?? [])];
     const requestedToolCalls = extractToolCallsFromMessages(driverMessages);
     const cancellationResolution = createCancelledResolution(handle);
     const partial =
@@ -1325,16 +1330,20 @@ class RuntimeCore implements KrakenRuntime {
     headState: HeadState,
     iterationCount: number
   ): DriverExecutionContext {
+    const toolRegistrySnapshot = createReadonlyDriverToolRegistry(
+      loopState.activeToolRegistry
+    );
+
     return {
       branchId: handle.request.branchId,
-      config: loopState.activeConfig,
+      config: createFrozenSnapshot(loopState.activeConfig),
       handoff: {
         createContextPlan: (input) =>
           this.createDriverHandoffContextPlan(input, headState, loopState),
       },
       iterationCount,
-      manifest: headState.manifest,
-      messages: headState.messages,
+      manifest: createFrozenSnapshot(headState.manifest),
+      messages: createFrozenSnapshot(headState.messages),
       runtime: {
         emit: (event) => {
           this.publishEvent(handle, event, loopState);
@@ -1344,7 +1353,7 @@ class RuntimeCore implements KrakenRuntime {
       schemaId,
       signal: handle.abortSignal,
       threadId: handle.request.threadId,
-      toolRegistry: loopState.activeToolRegistry,
+      toolRegistry: toolRegistrySnapshot,
       turnId: handle.turnId,
     };
   }
@@ -3427,6 +3436,74 @@ function createActiveToolRegistry(
   const activeTools = requestTools ?? config.tools ?? [];
 
   return createToolRegistry(activeTools, config.extensions ?? []);
+}
+
+function createReadonlyDriverToolRegistry(
+  registry: ToolRegistry
+): ToolRegistry {
+  // Drivers only inspect a frozen tool snapshot here. Framework-owned execution
+  // always goes through the live registry used by the shared tool executor.
+  const toolSnapshots = registry
+    .list()
+    .map((tool) =>
+      createFrozenSnapshot(createDriverToolDefinitionSnapshot(tool))
+    );
+  const toolsByName = new Map(toolSnapshots.map((tool) => [tool.name, tool]));
+  const renderedDefinitions = registry
+    .toDefinitions()
+    .map((tool) => cloneValue(tool));
+
+  return Object.freeze({
+    get(name) {
+      return toolsByName.get(name);
+    },
+    has(name) {
+      return toolsByName.has(name);
+    },
+    list() {
+      return [...toolSnapshots];
+    },
+    register(tool) {
+      throw new KrakenRuntimeError(
+        `drivers must not mutate the execution tool registry with "${tool.name}"`,
+        {
+          code: "invalid_driver_result",
+          details: {
+            toolName: tool.name,
+          },
+        }
+      );
+    },
+    toDefinitions() {
+      return renderedDefinitions.map((tool) => cloneValue(tool));
+    },
+  } satisfies ToolRegistry);
+}
+
+function createDriverToolDefinitionSnapshot(
+  tool: KrakenToolDefinition
+): KrakenToolDefinition {
+  return {
+    approval: tool.approval,
+    description: tool.description,
+    execute() {
+      throw new KrakenRuntimeError(
+        `drivers must not execute tool "${tool.name}" from the read-only tool snapshot`,
+        {
+          code: "invalid_driver_result",
+          details: {
+            toolName: tool.name,
+          },
+        }
+      );
+    },
+    inputSchema: createFrozenSnapshot(tool.inputSchema),
+    metadata:
+      tool.metadata === undefined
+        ? undefined
+        : createFrozenSnapshot(tool.metadata),
+    name: tool.name,
+  };
 }
 
 function cloneAgentConfigForRequest(config: AgentConfig): AgentConfig {

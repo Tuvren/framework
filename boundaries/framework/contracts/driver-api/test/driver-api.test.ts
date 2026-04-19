@@ -331,6 +331,22 @@ describe("driver-api", () => {
     ).not.toThrow();
   });
 
+  test("rejects provider responses that are not paired with staged assistant messages", () => {
+    expect(() =>
+      assertDriverExecutionResult({
+        activeAgent: "primary",
+        response: {
+          finishReason: "stop",
+          parts: [{ text: "Visible but not durable.", type: "text" }],
+        },
+        resolution: {
+          reason: "done",
+          type: "end_turn",
+        },
+      })
+    ).toThrow("response requires staged assistant messages");
+  });
+
   test("rejects partial execution results that are not failed assistant output", () => {
     expect(() =>
       assertDriverExecutionResult({

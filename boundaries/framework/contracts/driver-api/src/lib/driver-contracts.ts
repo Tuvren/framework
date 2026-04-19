@@ -80,6 +80,8 @@ export interface DriverExecutionResult {
   messages?: KrakenMessage[];
   partial?: boolean;
   resolution: RuntimeResolution;
+  // `response` enriches staged assistant messages for hook/runtime consumers; it
+  // never replaces durable conversation history.
   response?: KrakenModelResponse;
 }
 
@@ -164,8 +166,24 @@ export function assertDriverExecutionResult(
 
   if ("response" in value && value.response !== undefined) {
     assertKrakenModelResponse(value.response, `${label}.response`);
+
+    if (
+      !(
+        Array.isArray(value.messages) &&
+        value.messages.some((message) => message.role === "assistant")
+      )
+    ) {
+      throw new KrakenValidationError(
+        `${label}.response requires staged assistant messages in ${label}.messages`,
+        {
+          code: "invalid_driver_result",
+          details: value,
+        }
+      );
+    }
+
     assertDriverResponseMatchesMessages(
-      Array.isArray(value.messages) ? value.messages : undefined,
+      value.messages,
       value.response,
       `${label}.response`
     );
@@ -345,7 +363,7 @@ function assertDriverMessage(message: KrakenMessage, label: string): void {
 }
 
 function assertDriverResponseMatchesMessages(
-  messages: KrakenMessage[] | undefined,
+  messages: KrakenMessage[],
   response: KrakenModelResponse,
   label: string
 ): void {
@@ -366,20 +384,6 @@ function assertDriverResponseMatchesMessages(
         details: response,
       }
     );
-  }
-
-  if (messages === undefined || messages.length === 0) {
-    if (response.finishReason === "tool_call" || responseToolCalls.length > 0) {
-      throw new KrakenValidationError(
-        `${label} must not advertise tool calls when messages contain none`,
-        {
-          code: "invalid_driver_result",
-          details: response,
-        }
-      );
-    }
-
-    return;
   }
 
   const lastMessage = messages.at(-1);

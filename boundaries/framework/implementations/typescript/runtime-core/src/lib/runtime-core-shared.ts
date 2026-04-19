@@ -200,6 +200,10 @@ export function cloneValue<T>(value: T): T {
   return globalThis.structuredClone(value);
 }
 
+export function createFrozenSnapshot<T>(value: T): T {
+  return freezeSnapshot(cloneValuePreservingFunctions(value));
+}
+
 export function detachPromise(task: Promise<unknown>): void {
   task.catch(() => undefined);
 }
@@ -263,6 +267,136 @@ function sanitizeErrorDetails(details: unknown): unknown {
   } catch {
     return undefined;
   }
+}
+
+function cloneValuePreservingFunctions<T>(
+  value: T,
+  seen = new Map<object, unknown>()
+): T {
+  if (value === null || typeof value !== "object") {
+    return value;
+  }
+
+  if (value instanceof Uint8Array) {
+    return value.slice() as T;
+  }
+
+  if (ArrayBuffer.isView(value)) {
+    return value;
+  }
+
+  if (value instanceof Date) {
+    return new Date(value.getTime()) as T;
+  }
+
+  if (value instanceof Map) {
+    const clone = new Map<unknown, unknown>();
+    seen.set(value, clone);
+
+    for (const [key, entry] of value.entries()) {
+      clone.set(
+        cloneValuePreservingFunctions(key, seen),
+        cloneValuePreservingFunctions(entry, seen)
+      );
+    }
+
+    return clone as T;
+  }
+
+  if (value instanceof Set) {
+    const clone = new Set<unknown>();
+    seen.set(value, clone);
+
+    for (const entry of value.values()) {
+      clone.add(cloneValuePreservingFunctions(entry, seen));
+    }
+
+    return clone as T;
+  }
+
+  const existing = seen.get(value);
+
+  if (existing !== undefined) {
+    return existing as T;
+  }
+
+  if (Array.isArray(value)) {
+    const clone: unknown[] = [];
+    seen.set(value, clone);
+
+    for (const entry of value) {
+      clone.push(cloneValuePreservingFunctions(entry, seen));
+    }
+
+    return clone as T;
+  }
+
+  const clone = Object.create(Object.getPrototypeOf(value)) as Record<
+    PropertyKey,
+    unknown
+  >;
+  seen.set(value, clone);
+
+  for (const key of Reflect.ownKeys(value)) {
+    const descriptor = Object.getOwnPropertyDescriptor(value, key);
+
+    if (descriptor === undefined) {
+      continue;
+    }
+
+    if ("value" in descriptor) {
+      descriptor.value = cloneValuePreservingFunctions(descriptor.value, seen);
+    }
+
+    Object.defineProperty(clone, key, descriptor);
+  }
+
+  return clone as T;
+}
+
+function freezeSnapshot<T>(value: T, seen = new Set<object>()): T {
+  if (value === null || typeof value !== "object") {
+    return value;
+  }
+
+  if (ArrayBuffer.isView(value)) {
+    return value;
+  }
+
+  if (seen.has(value)) {
+    return value;
+  }
+
+  seen.add(value);
+
+  if (Array.isArray(value)) {
+    for (const entry of value) {
+      freezeSnapshot(entry, seen);
+    }
+  } else if (value instanceof Map) {
+    for (const [key, entry] of value.entries()) {
+      freezeSnapshot(key, seen);
+      freezeSnapshot(entry, seen);
+    }
+
+    return value;
+  } else if (value instanceof Set) {
+    for (const entry of value.values()) {
+      freezeSnapshot(entry, seen);
+    }
+
+    return value;
+  } else {
+    for (const key of Reflect.ownKeys(value)) {
+      const descriptor = Object.getOwnPropertyDescriptor(value, key);
+
+      if (descriptor !== undefined && "value" in descriptor) {
+        freezeSnapshot(descriptor.value, seen);
+      }
+    }
+  }
+
+  return Object.freeze(value);
 }
 
 export function stripEventSource(event: KrakenStreamEvent): KrakenStreamEvent {

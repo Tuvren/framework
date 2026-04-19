@@ -893,7 +893,7 @@ export interface DriverExecutionResult {
   activeAgent?: string;
   messages?: KrakenMessage[];
   partial?: boolean;
-  response?: KrakenModelResponse;
+  response?: KrakenModelResponse; // supplements, never replaces, staged assistant messages
 }
 
 export interface KrakenDriver {

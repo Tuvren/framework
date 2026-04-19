@@ -49,6 +49,10 @@ import {
   runBeforeTurnHooks,
   updateContextManifest,
 } from "../src/index.ts";
+import {
+  OMITTED_WORKER_OUTPUT_PART,
+  projectWorkerOutputPart,
+} from "../src/lib/orchestration-runtime.ts";
 import { createFakeKernelHarness } from "./fake-kernel.ts";
 import {
   assistantStructured,
@@ -487,6 +491,9 @@ describe("framework-runtime-core", () => {
     expect(events.map((event) => event.type)).toContain("iteration.start");
     expect(events.map((event) => event.type)).toContain("turn.end");
     expect(handle.status().phase).toBe("completed");
+    expect(handle.status().manifest).toEqual(
+      await readBranchContextManifest(harness.kernel, thread.branchId)
+    );
     expect(messages).toHaveLength(2);
     expect(checkpointEventTypes).toEqual(
       expect.arrayContaining([
@@ -495,6 +502,133 @@ describe("framework-runtime-core", () => {
         "turn_status_finalized",
       ])
     );
+  });
+
+  test("gives drivers frozen execution snapshots instead of live framework state", async () => {
+    const harness = createFakeKernelHarness();
+    let configMutationError: unknown;
+    let manifestMutationError: unknown;
+    let messageMutationError: unknown;
+    let toolMutationError: unknown;
+    let registryMutationError: unknown;
+    const driver = {
+      async execute(context) {
+        try {
+          context.config.name = "mutated";
+        } catch (error: unknown) {
+          configMutationError = error;
+        }
+
+        try {
+          context.manifest.messageCount = 999;
+        } catch (error: unknown) {
+          manifestMutationError = error;
+        }
+
+        try {
+          context.messages.push(assistantText("mutated"));
+        } catch (error: unknown) {
+          messageMutationError = error;
+        }
+
+        try {
+          const tool = context.toolRegistry.get("safe");
+
+          if (tool !== undefined) {
+            tool.description = "mutated description";
+          }
+        } catch (error: unknown) {
+          toolMutationError = error;
+        }
+
+        try {
+          context.toolRegistry.register({
+            description: "rogue",
+            execute() {
+              return {
+                rogue: true,
+              };
+            },
+            inputSchema: {
+              type: "object",
+            },
+            name: "rogue",
+          });
+        } catch (error: unknown) {
+          registryMutationError = error;
+        }
+
+        return {
+          activeAgent: "primary",
+          messages: [
+            assistantText(`rogue:${String(context.toolRegistry.has("rogue"))}`),
+          ],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        name: "primary",
+        tools: [
+          {
+            description: "safe tool",
+            execute() {
+              return {
+                safe: true,
+              };
+            },
+            inputSchema: {
+              type: "object",
+            },
+            name: "safe",
+          },
+        ],
+      },
+      signal: textSignal("Immutable driver context"),
+      threadId: thread.threadId,
+    });
+
+    await collectEvents(handle.events());
+    const manifest = await readBranchContextManifest(
+      harness.kernel,
+      thread.branchId
+    );
+    const messages = await harness.readBranchMessages(thread.branchId);
+
+    expect(configMutationError).toBeInstanceOf(TypeError);
+    expect(manifestMutationError).toBeInstanceOf(TypeError);
+    expect(messageMutationError).toBeInstanceOf(TypeError);
+    expect(toolMutationError).toBeInstanceOf(TypeError);
+    expect(registryMutationError).toBeInstanceOf(Error);
+    expect(handle.status().phase).toBe("completed");
+    expect(handle.status().activeAgent).toBe("primary");
+    expect(manifest.messageCount).toBe(2);
+    expect(manifest.lastAssistantMessageIndex).toBe(1);
+    expect(messages).toEqual([
+      {
+        parts: [{ text: "Immutable driver context", type: "text" }],
+        role: "user",
+      },
+      {
+        parts: [{ text: "rogue:false", type: "text" }],
+        role: "assistant",
+      },
+    ]);
   });
 
   test("rejects non-cloneable stream events before they reach the handle fanout", async () => {
@@ -836,6 +970,56 @@ describe("framework-runtime-core", () => {
     expect(await harness.readBranchMessages(thread.branchId)).toEqual([
       {
         parts: [{ text: "Reject contradictory driver response", type: "text" }],
+        role: "user",
+      },
+    ]);
+  });
+
+  test("rejects provider responses that are not paired with staged assistant messages", async () => {
+    const harness = createFakeKernelHarness();
+    const driver = {
+      async execute() {
+        return {
+          activeAgent: "primary",
+          response: {
+            finishReason: "stop",
+            parts: [{ text: "Visible but not durable.", type: "text" }],
+          },
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: { name: "primary" },
+      signal: textSignal("Reject response-only driver result"),
+      threadId: thread.threadId,
+    });
+
+    const events = await collectEvents(handle.events());
+    const errorEvent = events.find(
+      (event): event is Extract<(typeof events)[number], { type: "error" }> =>
+        event.type === "error"
+    );
+
+    expect(handle.status().phase).toBe("failed");
+    expect(errorEvent?.error.code).toBe("invalid_driver_result");
+    expect(await harness.readBranchMessages(thread.branchId)).toEqual([
+      {
+        parts: [{ text: "Reject response-only driver result", type: "text" }],
         role: "user",
       },
     ]);
@@ -7991,6 +8175,19 @@ describe("framework-runtime-core", () => {
     });
   });
 
+  test("omits raw tool-call parts from projected worker output", () => {
+    expect(
+      projectWorkerOutputPart({
+        callId: "call-review",
+        input: {
+          task: "private tool input",
+        },
+        name: "review",
+        type: "tool_call",
+      })
+    ).toBe(OMITTED_WORKER_OUTPUT_PART);
+  });
+
   test("launches workers against the explicit parent handle when multiple sessions coexist", async () => {
     const harness = createFakeKernelHarness();
     let threadAId = "";
@@ -8587,6 +8784,72 @@ describe("framework-runtime-core", () => {
     ).rejects.toThrow(
       "launchWorker() requires an active current parent handle"
     );
+  });
+
+  test("keeps sole-session retained workers accessible without { parent } while the parent is still active", async () => {
+    const harness = createFakeKernelHarness();
+    const driver = {
+      async execute(context) {
+        if (context.config.name === "worker") {
+          return {
+            activeAgent: "worker",
+            messages: [assistantText(`Worker for ${context.threadId}.`)],
+            resolution: {
+              reason: "done",
+              type: "end_turn",
+            },
+          };
+        }
+
+        await delay(10);
+        return {
+          activeAgent: "primary",
+          messages: [assistantText("Parent still running.")],
+          resolution: {
+            type: "continue_iteration",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const framework = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const orchestration = createOrchestrationRuntime({
+      agents: {
+        primary: { name: "primary" },
+        worker: { name: "worker" },
+      },
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      entrypoint: "primary",
+      framework,
+      kernel: harness.kernel,
+    });
+    const thread = await framework.createThread({});
+    const handle = orchestration.executeTurn({
+      branchId: thread.branchId,
+      signal: textSignal("Keep parent alive"),
+      threadId: thread.threadId,
+    });
+    const eventsPromise = collectEvents(handle.events());
+
+    const workerId = await orchestration.launchWorker("worker", {
+      task: "retained",
+    });
+    const liveResult = await orchestration.awaitWorker(workerId);
+    const retainedResult = await orchestration.awaitWorker(workerId);
+
+    expect(liveResult).toBe(`Worker for ${workerId}.`);
+    expect(retainedResult).toBe(`Worker for ${workerId}.`);
+
+    handle.cancel();
+    await eventsPromise;
   });
 
   test("workers() returns deep-cloned approval snapshots", async () => {

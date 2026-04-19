@@ -948,19 +948,6 @@ class OrchestrationRuntimeImpl implements OrchestrationRuntime {
       });
     }
 
-    if (liveWorker === undefined) {
-      throw new KrakenRuntimeError(
-        `${methodName}() requires { parent } for workers from closed orchestration sessions`,
-        {
-          code: "orchestration_worker_parent_required",
-          details: {
-            methodName,
-            workerId,
-          },
-        }
-      );
-    }
-
     if (this.countActiveOrchestrationSessions() > 1) {
       throw new KrakenRuntimeError(
         `${methodName}() requires { parent } when multiple orchestration sessions exist`,
@@ -974,7 +961,45 @@ class OrchestrationRuntimeImpl implements OrchestrationRuntime {
       );
     }
 
-    if (!this.sessionHandles.has(liveWorker.sessionId)) {
+    const soleActiveSession = this.getSoleActiveSessionHandle();
+
+    if (soleActiveSession === undefined) {
+      throw new KrakenRuntimeError(
+        `${methodName}() requires { parent } for workers from closed orchestration sessions`,
+        {
+          code: "orchestration_worker_parent_required",
+          details: {
+            methodName,
+            workerId,
+          },
+        }
+      );
+    }
+
+    if (liveWorker === undefined) {
+      const retainedWorker =
+        soleActiveSession.getRetainedWorkerStatus(workerId);
+
+      if (retainedWorker !== undefined) {
+        return {
+          kind: "retained",
+          worker: retainedWorker,
+        };
+      }
+
+      throw new KrakenRuntimeError(
+        `${methodName}() requires { parent } for workers from closed orchestration sessions`,
+        {
+          code: "orchestration_worker_parent_required",
+          details: {
+            methodName,
+            workerId,
+          },
+        }
+      );
+    }
+
+    if (soleActiveSession.sessionId !== liveWorker.sessionId) {
       throw new KrakenRuntimeError(
         `${methodName}() requires { parent } for workers from closed orchestration sessions`,
         {
@@ -1021,6 +1046,14 @@ class OrchestrationRuntimeImpl implements OrchestrationRuntime {
 
   private countActiveOrchestrationSessions(): number {
     return this.sessionHandles.size;
+  }
+
+  private getSoleActiveSessionHandle(): OrchestrationHandleImpl | undefined {
+    if (this.sessionHandles.size !== 1) {
+      return undefined;
+    }
+
+    return this.sessionHandles.values().next().value;
   }
 
   private requireRuntimeParentHandle(
@@ -1390,7 +1423,7 @@ function projectMessageOutput(
   const projectedParts: unknown[] = [];
 
   for (const part of message.parts) {
-    const projectedPart = projectContentPart(part);
+    const projectedPart = projectWorkerOutputPart(part);
 
     if (projectedPart !== OMITTED_WORKER_OUTPUT_PART) {
       projectedParts.push(projectedPart);
@@ -1404,9 +1437,9 @@ function projectMessageOutput(
   return projectedParts.length === 1 ? projectedParts[0] : projectedParts;
 }
 
-const OMITTED_WORKER_OUTPUT_PART = Symbol("omitted_worker_output_part");
+export const OMITTED_WORKER_OUTPUT_PART = Symbol("omitted_worker_output_part");
 
-function projectContentPart(
+export function projectWorkerOutputPart(
   part: Extract<KrakenMessage, { role: "assistant" | "tool" }>["parts"][number]
 ): unknown | typeof OMITTED_WORKER_OUTPUT_PART {
   switch (part.type) {
@@ -1424,12 +1457,7 @@ function projectContentPart(
     case "text":
       return part.text;
     case "tool_call":
-      return {
-        callId: part.callId,
-        input: part.input,
-        name: part.name,
-        type: part.type,
-      };
+      return OMITTED_WORKER_OUTPUT_PART;
     case "tool_result":
       return {
         callId: part.callId,
