@@ -1065,6 +1065,13 @@ class RuntimeCore implements KrakenRuntime {
       await this.failActiveRunIfNeeded(handle);
 
       if (finalizationFailure !== undefined) {
+        handle.replaceStatus({
+          activeAgent: loopState.activeConfig.name,
+          iterationCount: handle.status().iterationCount,
+          manifest: handle.status().manifest,
+          phase: "failed",
+        });
+
         if (finalizationFailure.rootCause === undefined) {
           this.publishProjectedError(
             handle,
@@ -1094,6 +1101,12 @@ class RuntimeCore implements KrakenRuntime {
         try {
           await this.finalizeTurnStatus(handle, failureResolution, loopState);
         } catch (finalizeError: unknown) {
+          handle.replaceStatus({
+            activeAgent: loopState.activeConfig.name,
+            iterationCount: handle.status().iterationCount,
+            manifest: handle.status().manifest,
+            phase: "failed",
+          });
           this.publishProjectedError(
             handle,
             failureResolution.error,
@@ -4068,10 +4081,23 @@ class OrchestrationRuntimeImpl implements OrchestrationRuntime {
         return;
       }
 
+      if (phase !== "completed" && phase !== "failed") {
+        throw new KrakenRuntimeError(
+          "worker stream exhausted before terminal turn status",
+          {
+            code: "invalid_worker_lifecycle",
+            details: {
+              phase,
+              workerId: worker.workerId,
+            },
+          }
+        );
+      }
+
       completedTerminalWatch = true;
       sessionHandle = this.resolveSessionHandle(worker.sessionId);
       worker.approval = undefined;
-      worker.status = phase === "failed" ? "failed" : "completed";
+      worker.status = phase;
 
       try {
         worker.result = await this.resolveWorkerResult(worker, lastError);

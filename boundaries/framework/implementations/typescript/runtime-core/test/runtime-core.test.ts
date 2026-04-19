@@ -1346,7 +1346,7 @@ describe("framework-runtime-core", () => {
         event.type === "error"
     );
 
-    expect(handle.status().phase).toBe("running");
+    expect(handle.status().phase).toBe("failed");
     expect(errorEvent?.error.code).toBe("invalid_context_manifest");
     expect(events.some((event) => event.type === "turn.end")).toBe(false);
   });
@@ -1442,7 +1442,7 @@ describe("framework-runtime-core", () => {
     });
   });
 
-  test("does not emit turn.end when final turn-status checkpointing fails and preserves the root cause", async () => {
+  test("marks the handle failed without turn.end when final turn-status checkpointing fails and preserves the root cause", async () => {
     const harness = createFakeKernelHarness();
     const kernel = {
       ...harness.kernel,
@@ -1484,7 +1484,7 @@ describe("framework-runtime-core", () => {
         event.type === "error"
     );
 
-    expect(handle.status().phase).toBe("running");
+    expect(handle.status().phase).toBe("failed");
     expect(events.some((event) => event.type === "turn.end")).toBe(false);
     expect(
       errorEvents.some((event) => event.error.code === "unknown_driver")
@@ -10606,6 +10606,90 @@ describe("framework-runtime-core", () => {
       details: undefined,
       message: "execution cancelled",
     });
+  });
+
+  test("fails workers whose streams exhaust without a terminal turn status", async () => {
+    const harness = createFakeKernelHarness();
+    const baseFramework = createKrakenRuntimeCore({
+      defaultDriverId: "unused",
+      driverRegistry: createDriverRegistry(),
+      kernel: harness.kernel,
+    });
+    const parentThread = await baseFramework.createThread({});
+    const parentExecutionHandle = createStubExecutionHandle("running");
+    const brokenWorkerHandle: ExecutionHandle = {
+      cancel() {
+        return undefined;
+      },
+      events() {
+        return (async function* () {
+          yield* [];
+        })();
+      },
+      resolveApproval() {
+        throw new Error("resolveApproval was not expected");
+      },
+      status() {
+        return {
+          iterationCount: 0,
+          phase: "running",
+        };
+      },
+      steer() {
+        return undefined;
+      },
+    };
+    const framework = {
+      createBranch: (input) => baseFramework.createBranch(input),
+      createThread: (input) => baseFramework.createThread(input),
+      executeTurn(input) {
+        return input.threadId === parentThread.threadId
+          ? parentExecutionHandle
+          : brokenWorkerHandle;
+      },
+      getThread: (threadId) => baseFramework.getThread(threadId),
+      setBranchHead: (input) => baseFramework.setBranchHead(input),
+    } satisfies KrakenRuntime;
+    const orchestration = createOrchestrationRuntime({
+      agents: {
+        primary: { name: "primary" },
+        worker: { name: "worker" },
+      },
+      defaultDriverId: "unused",
+      entrypoint: "primary",
+      framework,
+      kernel: harness.kernel,
+    });
+    const handle = orchestration.executeTurn({
+      branchId: parentThread.branchId,
+      signal: textSignal("Start parent"),
+      threadId: parentThread.threadId,
+    });
+
+    detachTestPromise(collectEventsForDuration(handle.events(), 50));
+
+    const workerId = await orchestration.launchWorker(
+      "worker",
+      {
+        task: "broken",
+      },
+      {
+        parent: handle,
+      }
+    );
+    const workerResult = await orchestration.awaitWorker(workerId, {
+      parent: handle,
+    });
+
+    expect(workerResult).toEqual({
+      code: "invalid_worker_lifecycle",
+      details: {
+        phase: "running",
+        workerId,
+      },
+      message: "worker stream exhausted before terminal turn status",
+    });
+    expect(handle.workers().get(workerId)?.status).toBe("failed");
   });
 
   test("rejects malformed steering signals before they can be incorporated", async () => {
