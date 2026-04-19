@@ -189,7 +189,18 @@ The remaining design questions inside this topic are therefore narrower:
 - The full concurrency contract for tool execution and approval resume.
 - The durability boundary for per-tool completion versus whole-batch checkpointing.
 
-<!-- I think that we must handle the tool ordering for tool.start and tool.result events as part of the shared framework core to ensure that each driver doesn't have to reimplement it. When tools are executed, they must execute in parallel correctly and independently from each other *or* in a sequence, depending on the precise choise by the driver, which also could expose it to the host if the driver wants to -->
+**Working decision (sub-aspect 1):**
+
+- The driver chooses the tool execution mode for a batch: sequential or parallel.
+- The shared framework core owns the canonical ordering semantics once a mode is chosen.
+
+Current preferred ordering contract:
+
+- **Sequential mode:** execute and emit `tool.start` / `tool.result` in original tool-call order.
+- **Parallel mode:** emit all executable `tool.start` events first in original tool-call order, then emit each `tool.result` as soon as that specific tool finishes.
+- In parallel mode, the durable conversation order at checkpoint time remains the original tool-call order rather than completion order.
+
+This keeps execution policy flexible at the driver layer while keeping event and durability semantics canonical in the shared core.
 
 ### 5. Driver/runtime contract ownership
 
