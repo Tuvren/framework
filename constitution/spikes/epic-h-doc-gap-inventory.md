@@ -202,6 +202,18 @@ Current preferred ordering contract:
 
 This keeps execution policy flexible at the driver layer while keeping event and durability semantics canonical in the shared core.
 
+**Working decision (sub-aspect 2):**
+
+- Non-executed outcomes that are already known may surface and stage as soon as they are known; they should not be artificially delayed behind slower executable siblings.
+- The runtime may synthesize rejection or error `tool_result` values for tool calls that the model already requested.
+- The shared core must never invent synthetic `tool_call` / `tool_result` pairs that were not rooted in an existing model-requested call ID.
+
+This keeps the boundary clean:
+
+- `tool_call` is model-owned
+- `tool_result` is runtime-owned
+- but only for already-requested calls that exist in the trace
+
 ### 5. Driver/runtime contract ownership
 
 **Original gap in `docs/`:**
