@@ -93,6 +93,12 @@ interface StagedToolResult {
 
 interface ToolStartState {
   emitted: boolean;
+  settled: boolean;
+}
+
+interface ToolStartBarrier {
+  markSettled(): void;
+  waitUntilReady(): Promise<void>;
 }
 
 interface ApprovalPendingSource {
@@ -142,6 +148,7 @@ export async function executeToolBatch(
   environment: ToolBatchEnvironment
 ): Promise<ToolBatchOutcome> {
   const orderedResults = toolCalls.map((): StagedToolResult[] => []);
+  const immediateResults = toolCalls.map((): ToolResultPart[] => []);
   const pendingToolCalls: PendingToolCall[] = [];
   const updates: ExtensionStateUpdate[] = [];
   const executable: OrderedExecutableToolCall[] = [];
@@ -155,15 +162,7 @@ export async function executeToolBatch(
     }
 
     if ("result" in resolved) {
-      const hash = await stageAndEmitResult(
-        environment,
-        resolved.result,
-        index
-      );
-      orderedResults[index].push({
-        hash,
-        result: resolved.result,
-      });
+      immediateResults[index].push(resolved.result);
       continue;
     }
 
@@ -173,10 +172,19 @@ export async function executeToolBatch(
     });
   }
 
-  const executableOutcomes = await executeConcurrentToolCalls(
-    executable,
-    environment
-  );
+  const executableOutcomes =
+    executable.length === 0
+      ? []
+      : await executeConcurrentToolCalls(executable, environment);
+
+  if (executable.length === 0) {
+    await stageImmediateResults(
+      environment,
+      immediateResults,
+      orderedResults,
+      createToolStartBarrier(0)
+    );
+  }
 
   for (const [outcomeIndex, outcome] of executableOutcomes.entries()) {
     updates.push(...outcome.updates);
@@ -203,6 +211,15 @@ export async function executeToolBatch(
     });
   }
 
+  if (executable.length > 0) {
+    await stageImmediateResults(
+      environment,
+      immediateResults,
+      orderedResults,
+      createToolStartBarrier(0)
+    );
+  }
+
   const stagedResults = orderedResults.flat();
   const results = stagedResults.map((entry) => entry.result);
   const resultHashes = stagedResults.map((entry) => entry.hash);
@@ -226,6 +243,7 @@ export async function resumeToolBatch(
   environment: ToolBatchEnvironment
 ): Promise<ToolBatchOutcome> {
   const orderedResults = request.toolCalls.map((): StagedToolResult[] => []);
+  const immediateResults = request.toolCalls.map((): ToolResultPart[] => []);
   const updates: ExtensionStateUpdate[] = [];
   const executable: OrderedExecutableToolCall[] = [];
   const responseMap = new Map<string, ApprovalDecision>();
@@ -248,15 +266,7 @@ export async function resumeToolBatch(
     );
 
     if ("result" in resumePlan) {
-      const hash = await stageAndEmitResult(
-        environment,
-        resumePlan.result,
-        index
-      );
-      orderedResults[index].push({
-        hash,
-        result: resumePlan.result,
-      });
+      immediateResults[index].push(resumePlan.result);
       continue;
     }
 
@@ -266,10 +276,19 @@ export async function resumeToolBatch(
     });
   }
 
-  const executedOutcomes = await executeConcurrentToolCalls(
-    executable,
-    environment
-  );
+  const executedOutcomes =
+    executable.length === 0
+      ? []
+      : await executeConcurrentToolCalls(executable, environment);
+
+  if (executable.length === 0) {
+    await stageImmediateResults(
+      environment,
+      immediateResults,
+      orderedResults,
+      createToolStartBarrier(0)
+    );
+  }
   const pendingToolCalls: PendingToolCall[] = [];
 
   for (const [outcomeIndex, outcome] of executedOutcomes.entries()) {
@@ -295,6 +314,15 @@ export async function resumeToolBatch(
       hash: outcome.resultHash,
       result: outcome.result,
     });
+  }
+
+  if (executable.length > 0) {
+    await stageImmediateResults(
+      environment,
+      immediateResults,
+      orderedResults,
+      createToolStartBarrier(0)
+    );
   }
 
   const stagedResults = orderedResults.flat();
@@ -474,10 +502,12 @@ function resolveResumeDecision(
 async function executeSingleTool(
   toolCall: ExecutableToolCall,
   orderIndex: number,
-  environment: ToolBatchEnvironment
+  environment: ToolBatchEnvironment,
+  startBarrier: ToolStartBarrier
 ): Promise<SingleToolOutcome> {
   const toolStartState: ToolStartState = {
     emitted: false,
+    settled: false,
   };
 
   try {
@@ -491,14 +521,16 @@ async function executeSingleTool(
       toolCall,
       environment,
       sharedExports,
-      toolStartState
+      toolStartState,
+      startBarrier
     );
 
     if (outcome.approval !== undefined) {
       const completedResultHashes = await stageAndEmitResults(
         environment,
         outcome.approval.completedResults,
-        orderIndex
+        orderIndex,
+        startBarrier
       );
       return {
         approval: outcome.approval,
@@ -514,7 +546,8 @@ async function executeSingleTool(
     const resultHash = await stageAndEmitResult(
       environment,
       result,
-      orderIndex
+      orderIndex,
+      startBarrier
     );
 
     return {
@@ -524,10 +557,12 @@ async function executeSingleTool(
     };
   } catch (error: unknown) {
     if (error instanceof ToolPauseSignal) {
+      settleToolStartIfNeeded(toolStartState, startBarrier);
       const completedResultHashes = await stageAndEmitResults(
         environment,
         error.approval.completedResults,
-        orderIndex
+        orderIndex,
+        startBarrier
       );
       return {
         approval: error.approval,
@@ -545,10 +580,12 @@ async function executeSingleTool(
       error,
       toolCall.approvalDecision
     );
+    settleToolStartIfNeeded(toolStartState, startBarrier);
     const resultHash = await stageAndEmitResult(
       environment,
       result,
-      orderIndex
+      orderIndex,
+      startBarrier
     );
 
     return {
@@ -568,11 +605,13 @@ async function executeConcurrentToolCalls(
     environment,
     batchAbortController.signal
   );
+  const startBarrier = createToolStartBarrier(executable.length);
   const outcomes = executable.map((toolCall) =>
     executeSingleTool(
       toolCall.executable,
       toolCall.index,
-      batchEnvironment
+      batchEnvironment,
+      startBarrier
     ).catch((error: unknown) => {
       if (!batchAbortController.signal.aborted) {
         batchAbortController.abort(error);
@@ -609,10 +648,11 @@ async function runAroundToolHandlers(
   toolCall: ExecutableToolCall,
   environment: ToolBatchEnvironment,
   sharedExports: Record<string, Record<string, unknown>>,
-  toolStartState: ToolStartState
+  toolStartState: ToolStartState,
+  startBarrier: ToolStartBarrier
 ): Promise<RawSingleToolOutcome> {
   if (index >= handlers.length) {
-    emitToolStartIfNeeded(toolCall, environment, toolStartState);
+    emitToolStartIfNeeded(toolCall, environment, toolStartState, startBarrier);
     const output = await runWithTimeout(
       () =>
         toolCall.tool.execute(
@@ -661,7 +701,8 @@ async function runAroundToolHandlers(
             toExecutableToolCall(toolCall, nextContext),
             environment,
             sharedExports,
-            toolStartState
+            toolStartState,
+            startBarrier
           );
 
           if (outcome.approval !== undefined) {
@@ -686,7 +727,8 @@ async function runAroundToolHandlers(
       nestedResult,
       context,
       environment,
-      toolStartState
+      toolStartState,
+      startBarrier
     );
   } catch (error: unknown) {
     if (error instanceof ToolPauseSignal) {
@@ -726,7 +768,8 @@ function normalizeAroundToolResult(
   nestedResult: ToolResultPart | undefined,
   context: AroundToolContext,
   environment: ToolBatchEnvironment,
-  toolStartState: ToolStartState
+  toolStartState: ToolStartState,
+  startBarrier: ToolStartBarrier
 ): RawSingleToolOutcome {
   if (isPauseResult(result)) {
     if (nestedResult !== undefined) {
@@ -739,6 +782,8 @@ function normalizeAroundToolResult(
         ),
       };
     }
+
+    settleToolStartIfNeeded(toolStartState, startBarrier);
 
     const approval = normalizeApprovalRequest(
       context.toolCall,
@@ -772,7 +817,8 @@ function normalizeAroundToolResult(
         undefined
       ),
       environment,
-      toolStartState
+      toolStartState,
+      startBarrier
     );
     return {
       result: result.result,
@@ -802,7 +848,8 @@ function normalizeAroundToolResult(
       undefined
     ),
     environment,
-    toolStartState
+    toolStartState,
+    startBarrier
   );
   return {
     result,
@@ -946,13 +993,15 @@ function toExecutableToolCall(
 function emitToolStartIfNeeded(
   toolCall: ExecutableToolCall,
   environment: ToolBatchEnvironment,
-  toolStartState: ToolStartState
+  toolStartState: ToolStartState,
+  startBarrier: ToolStartBarrier
 ): void {
   if (toolStartState.emitted) {
     return;
   }
 
   toolStartState.emitted = true;
+  toolStartState.settled = true;
   environment.publishEvent({
     callId: toolCall.toolCall.callId,
     input: toolCall.input,
@@ -960,6 +1009,7 @@ function emitToolStartIfNeeded(
     timestamp: environment.now(),
     type: "tool.start",
   });
+  startBarrier.markSettled();
 }
 
 function createPendingToolCall(
@@ -1204,8 +1254,10 @@ function createErrorToolResult(
 async function stageAndEmitResult(
   environment: ToolBatchEnvironment,
   result: ToolResultPart,
-  orderIndex: number
+  orderIndex: number,
+  startBarrier: ToolStartBarrier
 ): Promise<HashString> {
+  await startBarrier.waitUntilReady();
   const hash = await environment.stageResult(result, orderIndex);
   emitToolResultEvent(environment, result);
   return hash;
@@ -1214,15 +1266,39 @@ async function stageAndEmitResult(
 async function stageAndEmitResults(
   environment: ToolBatchEnvironment,
   results: ToolResultPart[],
-  orderIndex: number
+  orderIndex: number,
+  startBarrier: ToolStartBarrier
 ): Promise<HashString[]> {
   const hashes: HashString[] = [];
 
   for (const result of results) {
-    hashes.push(await stageAndEmitResult(environment, result, orderIndex));
+    hashes.push(
+      await stageAndEmitResult(environment, result, orderIndex, startBarrier)
+    );
   }
 
   return hashes;
+}
+
+async function stageImmediateResults(
+  environment: ToolBatchEnvironment,
+  immediateResults: ToolResultPart[][],
+  orderedResults: StagedToolResult[][],
+  startBarrier: ToolStartBarrier
+): Promise<void> {
+  for (const [index, results] of immediateResults.entries()) {
+    if (results.length === 0) {
+      continue;
+    }
+
+    const hashes = await stageAndEmitResults(
+      environment,
+      results,
+      index,
+      startBarrier
+    );
+    orderedResults[index].push(...zipStagedToolResults(results, hashes));
+  }
 }
 
 function emitToolResultEvent(
@@ -1245,6 +1321,47 @@ function asRecord(value: unknown): Record<string, unknown> {
   }
 
   return {};
+}
+
+function createToolStartBarrier(totalCalls: number): ToolStartBarrier {
+  let pendingCalls = totalCalls;
+  let resolveReady: (() => void) | undefined;
+  const ready = new Promise<void>((resolve) => {
+    resolveReady = resolve;
+
+    if (pendingCalls === 0) {
+      resolve();
+    }
+  });
+
+  return {
+    markSettled() {
+      if (pendingCalls === 0) {
+        return;
+      }
+
+      pendingCalls -= 1;
+
+      if (pendingCalls === 0) {
+        resolveReady?.();
+      }
+    },
+    async waitUntilReady() {
+      await ready;
+    },
+  };
+}
+
+function settleToolStartIfNeeded(
+  toolStartState: ToolStartState,
+  startBarrier: ToolStartBarrier
+): void {
+  if (toolStartState.settled) {
+    return;
+  }
+
+  toolStartState.settled = true;
+  startBarrier.markSettled();
 }
 
 function normalizeError(error: unknown): Error {

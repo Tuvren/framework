@@ -29,7 +29,7 @@ import type {
   OrchestrationRuntime,
   ProviderStreamChunk,
   WorkerStatus,
-} from "../../boundaries/framework/contracts/runtime-api/src/index.ts";
+} from "@kraken/framework-runtime-api";
 
 function emptyEvents<T>(): AsyncIterable<T> {
   return (async function* () {

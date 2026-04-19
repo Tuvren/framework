@@ -1793,6 +1793,84 @@ describe("framework-runtime-core", () => {
     ).toBe(true);
   });
 
+  test("passes complete driver KrakenModelResponse data into afterIteration hooks", async () => {
+    const harness = createFakeKernelHarness();
+    let capturedResponse:
+      | {
+          finishReason: string;
+          providerMetadata?: unknown;
+          usage?: unknown;
+        }
+      | undefined;
+    const driver = {
+      async execute(context) {
+        return {
+          activeAgent: context.config.name,
+          messages: [assistantText("Truncated assistant output.")],
+          response: {
+            finishReason: "length",
+            parts: [{ text: "Truncated assistant output.", type: "text" }],
+            providerMetadata: {
+              stop: "max_tokens",
+            },
+            usage: {
+              inputTokens: 11,
+              outputTokens: 4,
+            },
+          },
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        extensions: [
+          {
+            afterIteration(context) {
+              capturedResponse = {
+                finishReason: context.response.finishReason,
+                providerMetadata: context.response.providerMetadata,
+                usage: context.response.usage,
+              };
+              return undefined;
+            },
+            name: "response-capture",
+          },
+        ],
+        name: "primary",
+      },
+      signal: textSignal("Capture the full driver response"),
+      threadId: thread.threadId,
+    });
+
+    await collectEvents(handle.events());
+
+    expect(capturedResponse).toEqual({
+      finishReason: "length",
+      providerMetadata: {
+        stop: "max_tokens",
+      },
+      usage: {
+        inputTokens: 11,
+        outputTokens: 4,
+      },
+    });
+  });
+
   test("rejects invalid context-engineering helper messages with a validation error", async () => {
     const harness = createFakeKernelHarness();
     const driver = {
@@ -4223,6 +4301,137 @@ describe("framework-runtime-core", () => {
       "slow-complete:slow",
       "event:call-slow",
     ]);
+  });
+
+  test("emits all parallel tool.start events before any tool.result when aroundTool preflights are delayed", async () => {
+    const harness = createFakeKernelHarness();
+    const completedCalls: string[] = [];
+    const driver = {
+      async execute(context) {
+        const toolMessages = context.messages.filter(
+          (message) => message.role === "tool"
+        );
+
+        if (toolMessages.length === 0) {
+          return {
+            activeAgent: "primary",
+            messages: [
+              assistantToolCalls([
+                {
+                  callId: "call-fast",
+                  input: { query: "fast" },
+                  name: "fast",
+                },
+                {
+                  callId: "call-delayed",
+                  input: { query: "delayed" },
+                  name: "delayed",
+                },
+              ]),
+            ],
+            resolution: {
+              type: "continue_iteration",
+            },
+          };
+        }
+
+        return {
+          activeAgent: "primary",
+          messages: [assistantText("Tools finished.")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        extensions: [
+          {
+            async aroundTool(context, next) {
+              if (context.tool.name === "delayed") {
+                await delay(20);
+              }
+
+              return await next();
+            },
+            name: "delayed-preflight",
+          },
+        ],
+        name: "primary",
+        tools: [
+          {
+            description: "Finish quickly",
+            execute(input: unknown) {
+              completedCalls.push(`fast:${readQueryInput(input)}`);
+              return {
+                status: "fast",
+              };
+            },
+            inputSchema: {
+              properties: {
+                query: { type: "string" },
+              },
+              required: ["query"],
+              type: "object",
+            },
+            name: "fast",
+          },
+          {
+            description: "Finish after preflight",
+            execute(input: unknown) {
+              completedCalls.push(`delayed:${readQueryInput(input)}`);
+              return {
+                status: "delayed",
+              };
+            },
+            inputSchema: {
+              properties: {
+                query: { type: "string" },
+              },
+              required: ["query"],
+              type: "object",
+            },
+            name: "delayed",
+          },
+        ],
+      },
+      signal: textSignal("Run delayed preflight tools"),
+      threadId: thread.threadId,
+    });
+
+    const events = await collectEvents(handle.events());
+    const firstToolResultIndex = events.findIndex(
+      (event) => event.type === "tool.result"
+    );
+    const startEventsBeforeFirstResult = events.filter(
+      (
+        event,
+        index
+      ): event is Extract<
+        (typeof events)[number],
+        { callId: string; type: "tool.start" }
+      > => index < firstToolResultIndex && event.type === "tool.start"
+    );
+
+    expect(firstToolResultIndex).toBeGreaterThan(0);
+    expect(startEventsBeforeFirstResult.map((event) => event.callId)).toEqual([
+      "call-fast",
+      "call-delayed",
+    ]);
+    expect(completedCalls).toEqual(["fast:fast", "delayed:delayed"]);
   });
 
   test("incrementally stages completed tool results before slower siblings finish", async () => {

@@ -56,6 +56,7 @@ import {
   assertApprovalResponseForRequest,
   assertContextManifest,
   assertKrakenMessage,
+  assertKrakenModelResponse,
   assertKrakenStreamEvent,
 } from "@kraken/framework-runtime-api";
 import {
@@ -1410,7 +1411,8 @@ class RuntimeCore implements KrakenRuntime {
       }
 
       const stagedMessages = [...driverMessages];
-      const driverResponse = synthesizeResponse(driverMessages, resolution);
+      const driverResponse =
+        driverResult.response ?? synthesizeResponse(driverMessages, resolution);
       const toolResults: ToolResultPart[] = [];
 
       for (const [index, driverMessage] of driverMessages.entries()) {
@@ -4876,6 +4878,10 @@ function assertDriverExecutionResult(result: unknown): asserts result is {
     for (const [index, message] of result.messages.entries()) {
       assertKrakenMessage(message, `driverResult.messages[${index}]`);
     }
+  }
+
+  if ("response" in result && result.response !== undefined) {
+    assertKrakenModelResponse(result.response, "driverResult.response");
   }
 
   assertRuntimeResolution(result.resolution);

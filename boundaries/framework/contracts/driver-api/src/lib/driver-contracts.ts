@@ -24,6 +24,7 @@ import type {
   HandoffContextPlan,
   HashString,
   KrakenMessage,
+  KrakenModelResponse,
   KrakenStreamEvent,
   RuntimeResolution,
   ToolRegistry,
@@ -69,6 +70,7 @@ export interface DriverExecutionResult {
   activeAgent: string;
   messages?: KrakenMessage[];
   resolution: RuntimeResolution;
+  response?: KrakenModelResponse;
 }
 
 export interface KrakenDriver {

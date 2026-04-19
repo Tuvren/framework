@@ -27,6 +27,7 @@ import {
   assertContextManifest,
   assertExecutionStatus,
   assertKrakenMessage,
+  assertKrakenModelResponse,
   assertKrakenStreamEvent,
   assertKrakenToolDefinition,
   assertProviderStreamChunk,
@@ -81,6 +82,17 @@ describe("runtime-api contracts", () => {
     ).not.toThrow();
     expect(() =>
       assertExecutionStatus(frameworkContractFixtures.executionStatus)
+    ).not.toThrow();
+    expect(() =>
+      assertKrakenModelResponse({
+        finishReason: "length",
+        parts: [{ text: "partial", type: "text" }],
+        providerMetadata: { stop: "max_tokens" },
+        usage: {
+          inputTokens: 10,
+          outputTokens: 5,
+        },
+      })
     ).not.toThrow();
   });
 

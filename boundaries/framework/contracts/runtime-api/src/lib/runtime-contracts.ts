@@ -268,6 +268,12 @@ const CONTEXT_MANIFEST_COUNTER_KEYS = new Set([
 const CONTEXT_MANIFEST_NAME_COUNTER_KEYS = new Set(["byName", "total"]);
 const EVENT_SOURCE_KEYS = new Set(["agent", "driver", "threadId", "workerId"]);
 const PROVIDER_USAGE_KEYS = new Set(["inputTokens", "outputTokens"]);
+const KRAKEN_MODEL_RESPONSE_KEYS = new Set([
+  "finishReason",
+  "parts",
+  "providerMetadata",
+  "usage",
+]);
 
 export type KrakenJsonValue =
   | null
@@ -416,6 +422,34 @@ export interface KrakenModelResponse {
   parts: ContentPart[];
   providerMetadata?: Record<string, unknown>;
   usage?: ProviderUsage;
+}
+
+export function isKrakenModelResponse(
+  value: unknown
+): value is KrakenModelResponse {
+  return safePredicate(
+    () =>
+      isPlainObject(value) &&
+      hasOnlyAllowedKeys(value, KRAKEN_MODEL_RESPONSE_KEYS) &&
+      isStringProperty(value, "finishReason") &&
+      FINISH_REASONS.has(value.finishReason) &&
+      Array.isArray(value.parts) &&
+      value.parts.every(isContentPart) &&
+      isOptionalProviderUsage(value, "usage") &&
+      isOptionalSerializableRecordProperty(value, "providerMetadata")
+  );
+}
+
+export function assertKrakenModelResponse(
+  value: unknown,
+  label = "value"
+): asserts value is KrakenModelResponse {
+  if (!isKrakenModelResponse(value)) {
+    throw new KrakenValidationError(
+      `${label} must be a valid KrakenModelResponse`,
+      { code: "invalid_model_response", details: value }
+    );
+  }
 }
 
 export interface KrakenProvider {

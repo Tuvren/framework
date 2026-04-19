@@ -2020,7 +2020,7 @@ The framework-provided runtime for multi-agent coordination. Owns worker lifecyc
 
 ```
 OrchestrationRuntime
-├─ executeTurn(input: { signal, threadId, branchId, schemaId?, driverId? }) → OrchestrationHandle
+├─ executeTurn(input: { signal, threadId, branchId, schemaId?, driverId?, tools?, parentTurnId? }) → OrchestrationHandle
 ├─ launchWorker(agent: string, task: unknown, options?: { parent: OrchestrationHandle }) → Promise<string> (workerId)
 ├─ awaitWorker(workerId: string, options?: { parent: OrchestrationHandle }) → Promise<unknown>
 ├─ resolveWorkerApproval(workerId: string, response: ApprovalResponse, options?: { parent: OrchestrationHandle }) → void
