@@ -1344,6 +1344,9 @@ async function stageImmediateResultsWhileExecuting(
     (error: unknown) => ({ error, rejected: true as const })
   );
 
+  // Known non-executing outcomes are staged before slower siblings finish so they
+  // survive crashes, but they still wait on the start barrier to preserve the
+  // contract that every executable tool emits `tool.start` before any `tool.result`.
   await stageImmediateResults(
     environment,
     immediateResults,

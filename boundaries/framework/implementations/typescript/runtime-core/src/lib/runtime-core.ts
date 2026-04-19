@@ -3980,6 +3980,9 @@ class OrchestrationRuntimeImpl implements OrchestrationRuntime {
   private async resolveWorkerSchemaId(
     parentHandle: OrchestrationHandleImpl
   ): Promise<string> {
+    // Delegated orchestration is allowed to wrap execution, but worker launch still
+    // requires the framework-facing thread view and kernel-facing thread view to be
+    // the same parent thread state.
     const parentThreadId = parentHandle.getParentThreadId();
     const frameworkThread = await this.framework.getThread(parentThreadId);
     const kernelThread = await this.kernel.thread.get(parentThreadId);
@@ -4656,6 +4659,8 @@ function extractToolCallsFromMessages(
 }
 
 function createPendingKernelHash(value: Uint8Array): HashString {
+  // These hashes are provisional helper ids only; the kernel's store hash remains
+  // authoritative once the record is flushed through `store.put()`.
   return createHash("sha256")
     .update("kraken-runtime-pending:")
     .update(value)
@@ -5063,6 +5068,9 @@ function assertRuntimeResolution(
 }
 
 function assertDriverMessage(message: KrakenMessage, label: string): void {
+  // Drivers author assistant output and resolutions only. Tool-role history and
+  // tool_result parts stay framework-owned so approval, events, and durable tool
+  // accounting cannot be bypassed at the driver boundary.
   if (message.role !== "assistant") {
     throw new KrakenRuntimeError(`${label} must be an assistant message`, {
       code: "invalid_driver_result",
@@ -5148,6 +5156,10 @@ function assertDriverResponseMatchesMessages(
   const responseHasToolCalls =
     response.finishReason === "tool_call" || responseToolCalls.length > 0;
 
+  // This is intentionally a semantic coherence check, not full equality. Drivers
+  // may keep richer provider metadata, usage, or non-stop finish reasons in
+  // `response`, but they must not contradict the staged assistant message about
+  // whether tool execution happened or which tool calls were produced.
   if (messageHasToolCalls !== responseHasToolCalls) {
     throw new KrakenRuntimeError(
       `${label} must agree with the staged assistant message about tool-call semantics`,
