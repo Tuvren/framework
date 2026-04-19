@@ -26,6 +26,10 @@ export type {
   KrakenDriverFactory,
 } from "./lib/driver-contracts.js";
 export {
+  assertDriverExecutionResult,
+  assertDriverHandoffContextPlan,
+  assertDriverHandoffSourceContext,
+  assertDriverRuntimeResolution,
   assertKrakenDriver,
   isKrakenDriver,
 } from "./lib/driver-contracts.js";

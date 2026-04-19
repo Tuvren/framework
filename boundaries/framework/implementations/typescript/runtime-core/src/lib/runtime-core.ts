@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import type {
   DriverExecutionContext,
   DriverRegistry,
   DriverResumeContext,
   KrakenDriver,
 } from "@kraken/framework-driver-api";
+import { assertDriverExecutionResult } from "@kraken/framework-driver-api";
 import type {
   AgentConfig,
   ApprovalRequest,
@@ -52,11 +53,9 @@ import type {
   WorkerStatus,
 } from "@kraken/framework-runtime-api";
 import {
-  assertApprovalRequest,
   assertApprovalResponseForRequest,
   assertContextManifest,
   assertKrakenMessage,
-  assertKrakenModelResponse,
   assertKrakenStreamEvent,
 } from "@kraken/framework-runtime-api";
 import {
@@ -649,11 +648,7 @@ class RuntimeCore implements KrakenRuntime {
 
   constructor(options: RuntimeCoreOptions) {
     this.options = {
-      createId:
-        options.createId ??
-        (() =>
-          globalThis.crypto?.randomUUID?.() ??
-          `${Date.now()}_${Math.random().toString(16).slice(2)}`),
+      createId: options.createId ?? randomUUID,
       defaultDriverId: options.defaultDriverId,
       driverRegistry: options.driverRegistry ?? createDriverRegistry(),
       enableStateObservability: options.enableStateObservability ?? true,
@@ -1996,7 +1991,7 @@ class RuntimeCore implements KrakenRuntime {
               approval: resumeContext.approval,
               resumedFrom: resumeContext.pausedTurnNodeHash,
             } satisfies DriverResumeContext);
-      assertDriverExecutionResult(result);
+      assertDriverExecutionResult(result, "driverResult");
       return result;
     } catch (error: unknown) {
       return {
@@ -4225,10 +4220,7 @@ class OrchestrationRuntimeImpl implements OrchestrationRuntime {
   }
 
   private createId(): string {
-    return (
-      globalThis.crypto?.randomUUID?.() ??
-      `${Date.now()}_${Math.random().toString(16).slice(2)}`
-    );
+    return randomUUID();
   }
 
   private requireWorker(workerId: string): WorkerRecord {
@@ -5109,377 +5101,6 @@ function normalizeInputSignal(signal: InputSignal, label: string): InputSignal {
   return {
     parts: candidateMessage.parts,
   };
-}
-
-function assertDriverExecutionResult(result: unknown): asserts result is {
-  activeAgent?: string;
-  messages?: KrakenMessage[];
-  response?: KrakenModelResponse;
-  resolution: RuntimeResolution;
-} {
-  if (
-    !isRecord(result) ||
-    ("activeAgent" in result && typeof result.activeAgent !== "string")
-  ) {
-    throw new KrakenRuntimeError(
-      "driver result must include a string activeAgent when provided",
-      {
-        code: "invalid_driver_result",
-        details: result,
-      }
-    );
-  }
-
-  if ("messages" in result && result.messages !== undefined) {
-    if (!Array.isArray(result.messages)) {
-      throw new KrakenRuntimeError("driver result messages must be an array", {
-        code: "invalid_driver_result",
-        details: result,
-      });
-    }
-
-    for (const [index, message] of result.messages.entries()) {
-      assertKrakenMessage(message, `driverResult.messages[${index}]`);
-      assertDriverMessage(message, `driverResult.messages[${index}]`);
-    }
-  }
-
-  if ("response" in result && result.response !== undefined) {
-    assertKrakenModelResponse(result.response, "driverResult.response");
-    assertDriverResponseMatchesMessages(
-      Array.isArray(result.messages) ? result.messages : undefined,
-      result.response,
-      "driverResult.response"
-    );
-  }
-
-  assertRuntimeResolution(result.resolution);
-}
-
-function assertRuntimeResolution(
-  resolution: unknown
-): asserts resolution is RuntimeResolution {
-  if (!isRecord(resolution) || typeof resolution.type !== "string") {
-    throw new KrakenRuntimeError(
-      "driver result must include a valid resolution",
-      {
-        code: "invalid_driver_result",
-        details: resolution,
-      }
-    );
-  }
-
-  switch (resolution.type) {
-    case "continue_iteration":
-      return;
-    case "end_turn":
-      if (typeof resolution.reason === "string") {
-        return;
-      }
-      break;
-    case "pause":
-      if (typeof resolution.reason === "string" && "approval" in resolution) {
-        assertApprovalRequest(
-          resolution.approval,
-          "driverResult.resolution.approval"
-        );
-        return;
-      }
-      break;
-    case "handoff":
-      if (typeof resolution.targetAgent === "string") {
-        assertDriverHandoffContextPlan(
-          resolution.contextPlan,
-          "driverResult.resolution.contextPlan"
-        );
-
-        if (resolution.contextPlan.targetAgent !== resolution.targetAgent) {
-          throw new KrakenRuntimeError(
-            "driver handoff target must match handoff context target",
-            {
-              code: "invalid_driver_result",
-              details: {
-                contextPlanTargetAgent: resolution.contextPlan.targetAgent,
-                resolutionTargetAgent: resolution.targetAgent,
-              },
-            }
-          );
-        }
-
-        return;
-      }
-      break;
-    case "fail":
-      if (
-        resolution.error instanceof Error &&
-        (resolution.fatality === "hard" || resolution.fatality === "soft")
-      ) {
-        return;
-      }
-      break;
-    default:
-      break;
-  }
-
-  throw new KrakenRuntimeError("driver returned an invalid resolution", {
-    code: "invalid_driver_result",
-    details: resolution,
-  });
-}
-
-function assertDriverMessage(message: KrakenMessage, label: string): void {
-  // Drivers author assistant output and resolutions only. Tool-role history and
-  // tool_result parts stay framework-owned so approval, events, and durable tool
-  // accounting cannot be bypassed at the driver boundary.
-  if (message.role !== "assistant") {
-    throw new KrakenRuntimeError(`${label} must be an assistant message`, {
-      code: "invalid_driver_result",
-      details: message,
-    });
-  }
-
-  for (const [index, part] of message.parts.entries()) {
-    if (part.type === "tool_result") {
-      throw new KrakenRuntimeError(
-        `${label}.parts[${index}] must not be a tool_result`,
-        {
-          code: "invalid_driver_result",
-          details: part,
-        }
-      );
-    }
-  }
-}
-
-function assertDriverResponseMatchesMessages(
-  messages: KrakenMessage[] | undefined,
-  response: KrakenModelResponse,
-  label: string
-): void {
-  const responseToolCalls = response.parts.filter(
-    (
-      part
-    ): part is Extract<
-      (typeof response.parts)[number],
-      { type: "tool_call" }
-    > => part.type === "tool_call"
-  );
-
-  if (response.parts.some((part) => part.type === "tool_result")) {
-    throw new KrakenRuntimeError(
-      `${label} must not contain tool_result parts`,
-      {
-        code: "invalid_driver_result",
-        details: response,
-      }
-    );
-  }
-
-  if (messages === undefined || messages.length === 0) {
-    if (response.finishReason === "tool_call" || responseToolCalls.length > 0) {
-      throw new KrakenRuntimeError(
-        `${label} must not advertise tool calls when driverResult.messages contains none`,
-        {
-          code: "invalid_driver_result",
-          details: response,
-        }
-      );
-    }
-
-    return;
-  }
-
-  const lastMessage = messages.at(-1);
-
-  if (lastMessage?.role !== "assistant") {
-    throw new KrakenRuntimeError(
-      `${label} requires the last driver message to be an assistant message`,
-      {
-        code: "invalid_driver_result",
-        details: {
-          lastMessage,
-          response,
-        },
-      }
-    );
-  }
-
-  const messageToolCalls = lastMessage.parts.filter(
-    (
-      part
-    ): part is Extract<
-      (typeof lastMessage.parts)[number],
-      { type: "tool_call" }
-    > => part.type === "tool_call"
-  );
-  const messageHasToolCalls = messageToolCalls.length > 0;
-  const responseHasToolCalls =
-    response.finishReason === "tool_call" || responseToolCalls.length > 0;
-
-  // This is intentionally a semantic coherence check, not full equality. Drivers
-  // may keep richer provider metadata, usage, or non-stop finish reasons in
-  // `response`, but they must not contradict the staged assistant message about
-  // whether tool execution happened or which tool calls were produced.
-  if (messageHasToolCalls !== responseHasToolCalls) {
-    throw new KrakenRuntimeError(
-      `${label} must agree with the staged assistant message about tool-call semantics`,
-      {
-        code: "invalid_driver_result",
-        details: {
-          messageParts: lastMessage.parts,
-          response,
-        },
-      }
-    );
-  }
-
-  if (!messageHasToolCalls) {
-    return;
-  }
-
-  if (
-    !equalKernelRecords(
-      encodeDeterministicKernelRecord(toKernelToolCalls(messageToolCalls)),
-      encodeDeterministicKernelRecord(toKernelToolCalls(responseToolCalls))
-    )
-  ) {
-    throw new KrakenRuntimeError(
-      `${label}.parts must preserve the staged assistant tool calls`,
-      {
-        code: "invalid_driver_result",
-        details: {
-          messageToolCalls,
-          responseToolCalls,
-        },
-      }
-    );
-  }
-}
-
-function toKernelToolCalls(toolCalls: ToolCallPart[]): KernelRecord {
-  return toolCalls.map((toolCall) => ({
-    callId: toolCall.callId,
-    input: toComparableKernelRecord(toolCall.input),
-    name: toolCall.name,
-    type: toolCall.type,
-  }));
-}
-
-function toComparableKernelRecord(value: unknown): KernelRecord {
-  if (
-    value === null ||
-    typeof value === "boolean" ||
-    typeof value === "string"
-  ) {
-    return value;
-  }
-
-  if (typeof value === "number") {
-    return Number.isSafeInteger(value) ? value : String(value);
-  }
-
-  if (value instanceof Uint8Array) {
-    return value;
-  }
-
-  if (Array.isArray(value)) {
-    return value.map((entry) => toComparableKernelRecord(entry));
-  }
-
-  if (isRecord(value)) {
-    const normalized: Record<string, KernelRecord> = {};
-
-    for (const [key, entry] of Object.entries(value)) {
-      if (entry !== undefined) {
-        normalized[key] = toComparableKernelRecord(entry);
-      }
-    }
-
-    return normalized;
-  }
-
-  return String(value);
-}
-
-function equalKernelRecords(left: Uint8Array, right: Uint8Array): boolean {
-  if (left.length !== right.length) {
-    return false;
-  }
-
-  for (let index = 0; index < left.length; index += 1) {
-    if (left[index] !== right[index]) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-function assertDriverHandoffContextPlan(
-  plan: unknown,
-  label: string
-): asserts plan is HandoffContextPlan {
-  if (
-    !isRecord(plan) ||
-    typeof plan.targetAgent !== "string" ||
-    typeof plan.reason !== "string" ||
-    typeof plan.mode !== "string" ||
-    typeof plan.builder !== "function" ||
-    !isRecord(plan.sourceContext)
-  ) {
-    throw new KrakenRuntimeError(`${label} must be a valid handoff plan`, {
-      code: "invalid_driver_result",
-      details: plan,
-    });
-  }
-
-  assertDriverHandoffSourceContext(
-    plan.sourceContext,
-    `${label}.sourceContext`
-  );
-}
-
-function assertDriverHandoffSourceContext(
-  sourceContext: unknown,
-  label: string
-): asserts sourceContext is HandoffSourceContext {
-  if (!isRecord(sourceContext)) {
-    throw new KrakenRuntimeError(`${label} must be a valid handoff source`, {
-      code: "invalid_driver_result",
-      details: sourceContext,
-    });
-  }
-
-  if (!Array.isArray(sourceContext.messages)) {
-    throw new KrakenRuntimeError(`${label}.messages must be an array`, {
-      code: "invalid_driver_result",
-      details: sourceContext,
-    });
-  }
-
-  for (const [index, message] of sourceContext.messages.entries()) {
-    assertKrakenMessage(message, `${label}.messages[${index}]`);
-  }
-
-  assertContextManifest(sourceContext.manifest, `${label}.manifest`);
-
-  if (
-    !isRecord(sourceContext.handoffIntent) ||
-    typeof sourceContext.handoffIntent.targetAgent !== "string" ||
-    !isRecord(sourceContext.sourceAgent) ||
-    typeof sourceContext.sourceAgent.name !== "string" ||
-    !isRecord(sourceContext.targetAgent) ||
-    typeof sourceContext.targetAgent.name !== "string" ||
-    !isRecord(sourceContext.helpers) ||
-    typeof sourceContext.helpers.loadMessage !== "function" ||
-    typeof sourceContext.helpers.storeMessage !== "function" ||
-    typeof sourceContext.helpers.storeMessages !== "function"
-  ) {
-    throw new KrakenRuntimeError(`${label} must be a valid handoff source`, {
-      code: "invalid_driver_result",
-      details: sourceContext,
-    });
-  }
 }
 
 function decodeKrakenMessageRecord(

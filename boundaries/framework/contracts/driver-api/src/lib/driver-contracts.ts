@@ -22,14 +22,22 @@ import type {
   HandoffContextBuilder,
   HandoffContextMode,
   HandoffContextPlan,
+  HandoffSourceContext,
   HashString,
   KrakenMessage,
   KrakenModelResponse,
   KrakenStreamEvent,
   RuntimeResolution,
+  ToolCallPart,
   ToolRegistry,
 } from "@kraken/framework-runtime-api";
-import { KrakenValidationError } from "@kraken/framework-runtime-api";
+import {
+  assertApprovalRequest,
+  assertContextManifest,
+  assertKrakenMessage,
+  assertKrakenModelResponse,
+  KrakenValidationError,
+} from "@kraken/framework-runtime-api";
 
 export interface DriverRuntimePort {
   emit(event: KrakenStreamEvent): Promise<void> | void;
@@ -120,10 +128,438 @@ export function assertKrakenDriver(
   }
 }
 
+export function assertDriverExecutionResult(
+  value: unknown,
+  label = "value"
+): asserts value is DriverExecutionResult {
+  if (
+    !isRecord(value) ||
+    ("activeAgent" in value && typeof value.activeAgent !== "string")
+  ) {
+    throw new KrakenValidationError(
+      `${label} must include a string activeAgent when provided`,
+      {
+        code: "invalid_driver_result",
+        details: value,
+      }
+    );
+  }
+
+  if ("messages" in value && value.messages !== undefined) {
+    if (!Array.isArray(value.messages)) {
+      throw new KrakenValidationError(`${label}.messages must be an array`, {
+        code: "invalid_driver_result",
+        details: value,
+      });
+    }
+
+    for (const [index, message] of value.messages.entries()) {
+      assertKrakenMessage(message, `${label}.messages[${index}]`);
+      assertDriverMessage(message, `${label}.messages[${index}]`);
+    }
+  }
+
+  if ("response" in value && value.response !== undefined) {
+    assertKrakenModelResponse(value.response, `${label}.response`);
+    assertDriverResponseMatchesMessages(
+      Array.isArray(value.messages) ? value.messages : undefined,
+      value.response,
+      `${label}.response`
+    );
+  }
+
+  assertDriverRuntimeResolution(value.resolution, `${label}.resolution`);
+}
+
+export function assertDriverRuntimeResolution(
+  value: unknown,
+  label = "value"
+): asserts value is RuntimeResolution {
+  if (!isRecord(value) || typeof value.type !== "string") {
+    throw new KrakenValidationError(`${label} must be a valid resolution`, {
+      code: "invalid_driver_result",
+      details: value,
+    });
+  }
+
+  switch (value.type) {
+    case "continue_iteration":
+      return;
+    case "end_turn":
+      if (typeof value.reason === "string") {
+        return;
+      }
+      break;
+    case "pause":
+      if (typeof value.reason === "string" && "approval" in value) {
+        assertApprovalRequest(value.approval, `${label}.approval`);
+        return;
+      }
+      break;
+    case "handoff":
+      if (typeof value.targetAgent === "string") {
+        assertDriverHandoffContextPlan(
+          value.contextPlan,
+          `${label}.contextPlan`
+        );
+
+        if (value.contextPlan.targetAgent !== value.targetAgent) {
+          throw new KrakenValidationError(
+            `${label}.targetAgent must match ${label}.contextPlan.targetAgent`,
+            {
+              code: "invalid_driver_result",
+              details: {
+                contextPlanTargetAgent: value.contextPlan.targetAgent,
+                resolutionTargetAgent: value.targetAgent,
+              },
+            }
+          );
+        }
+
+        return;
+      }
+      break;
+    case "fail":
+      if (
+        value.error instanceof Error &&
+        (value.fatality === "hard" || value.fatality === "soft")
+      ) {
+        return;
+      }
+      break;
+    default:
+      break;
+  }
+
+  throw new KrakenValidationError(`${label} must be a valid resolution`, {
+    code: "invalid_driver_result",
+    details: value,
+  });
+}
+
+export function assertDriverHandoffContextPlan(
+  value: unknown,
+  label = "value"
+): asserts value is HandoffContextPlan {
+  if (
+    !isRecord(value) ||
+    typeof value.targetAgent !== "string" ||
+    typeof value.reason !== "string" ||
+    typeof value.mode !== "string" ||
+    typeof value.builder !== "function" ||
+    !isRecord(value.sourceContext)
+  ) {
+    throw new KrakenValidationError(`${label} must be a valid handoff plan`, {
+      code: "invalid_driver_result",
+      details: value,
+    });
+  }
+
+  assertDriverHandoffSourceContext(
+    value.sourceContext,
+    `${label}.sourceContext`
+  );
+}
+
+export function assertDriverHandoffSourceContext(
+  value: unknown,
+  label = "value"
+): asserts value is HandoffSourceContext {
+  if (!isRecord(value)) {
+    throw new KrakenValidationError(`${label} must be a valid handoff source`, {
+      code: "invalid_driver_result",
+      details: value,
+    });
+  }
+
+  if (!Array.isArray(value.messages)) {
+    throw new KrakenValidationError(`${label}.messages must be an array`, {
+      code: "invalid_driver_result",
+      details: value,
+    });
+  }
+
+  for (const [index, message] of value.messages.entries()) {
+    assertKrakenMessage(message, `${label}.messages[${index}]`);
+  }
+
+  assertContextManifest(value.manifest, `${label}.manifest`);
+
+  if (
+    !isRecord(value.handoffIntent) ||
+    typeof value.handoffIntent.targetAgent !== "string" ||
+    !isRecord(value.sourceAgent) ||
+    typeof value.sourceAgent.name !== "string" ||
+    !isRecord(value.targetAgent) ||
+    typeof value.targetAgent.name !== "string" ||
+    !isRecord(value.helpers) ||
+    typeof value.helpers.loadMessage !== "function" ||
+    typeof value.helpers.storeMessage !== "function" ||
+    typeof value.helpers.storeMessages !== "function"
+  ) {
+    throw new KrakenValidationError(`${label} must be a valid handoff source`, {
+      code: "invalid_driver_result",
+      details: value,
+    });
+  }
+}
+
 function safePredicate(check: () => boolean): boolean {
   try {
     return check();
   } catch {
     return false;
   }
+}
+
+function assertDriverMessage(message: KrakenMessage, label: string): void {
+  if (message.role !== "assistant") {
+    throw new KrakenValidationError(`${label} must be an assistant message`, {
+      code: "invalid_driver_result",
+      details: message,
+    });
+  }
+
+  for (const [index, part] of message.parts.entries()) {
+    if (part.type === "tool_result") {
+      throw new KrakenValidationError(
+        `${label}.parts[${index}] must not be a tool_result`,
+        {
+          code: "invalid_driver_result",
+          details: part,
+        }
+      );
+    }
+  }
+}
+
+function assertDriverResponseMatchesMessages(
+  messages: KrakenMessage[] | undefined,
+  response: KrakenModelResponse,
+  label: string
+): void {
+  const responseToolCalls = response.parts.filter(
+    (
+      part
+    ): part is Extract<
+      (typeof response.parts)[number],
+      { type: "tool_call" }
+    > => part.type === "tool_call"
+  );
+
+  if (response.parts.some((part) => part.type === "tool_result")) {
+    throw new KrakenValidationError(
+      `${label} must not contain tool_result parts`,
+      {
+        code: "invalid_driver_result",
+        details: response,
+      }
+    );
+  }
+
+  if (messages === undefined || messages.length === 0) {
+    if (response.finishReason === "tool_call" || responseToolCalls.length > 0) {
+      throw new KrakenValidationError(
+        `${label} must not advertise tool calls when messages contain none`,
+        {
+          code: "invalid_driver_result",
+          details: response,
+        }
+      );
+    }
+
+    return;
+  }
+
+  const lastMessage = messages.at(-1);
+
+  if (lastMessage?.role !== "assistant") {
+    throw new KrakenValidationError(
+      `${label} requires the last driver message to be an assistant message`,
+      {
+        code: "invalid_driver_result",
+        details: {
+          lastMessage,
+          response,
+        },
+      }
+    );
+  }
+
+  const messageToolCalls = lastMessage.parts.filter(
+    (
+      part
+    ): part is Extract<
+      (typeof lastMessage.parts)[number],
+      { type: "tool_call" }
+    > => part.type === "tool_call"
+  );
+  const messageHasToolCalls = messageToolCalls.length > 0;
+  const responseHasToolCalls =
+    response.finishReason === "tool_call" || responseToolCalls.length > 0;
+
+  if (messageHasToolCalls !== responseHasToolCalls) {
+    throw new KrakenValidationError(
+      `${label} must agree with the staged assistant message about tool-call semantics`,
+      {
+        code: "invalid_driver_result",
+        details: {
+          messageParts: lastMessage.parts,
+          response,
+        },
+      }
+    );
+  }
+
+  if (!messageHasToolCalls) {
+    return;
+  }
+
+  if (!equalToolCallLists(messageToolCalls, responseToolCalls)) {
+    throw new KrakenValidationError(
+      `${label}.parts must preserve the staged assistant tool calls`,
+      {
+        code: "invalid_driver_result",
+        details: {
+          messageToolCalls,
+          responseToolCalls,
+        },
+      }
+    );
+  }
+}
+
+function equalToolCallLists(
+  left: ToolCallPart[],
+  right: ToolCallPart[]
+): boolean {
+  if (left.length !== right.length) {
+    return false;
+  }
+
+  for (const [index, leftToolCall] of left.entries()) {
+    const rightToolCall = right[index];
+
+    if (
+      rightToolCall === undefined ||
+      leftToolCall.callId !== rightToolCall.callId ||
+      leftToolCall.name !== rightToolCall.name ||
+      !equalUnknownValues(leftToolCall.input, rightToolCall.input)
+    ) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function equalUnknownValues(left: unknown, right: unknown): boolean {
+  if (left === right) {
+    return true;
+  }
+
+  if (!canCompareReferenceValues(left, right)) {
+    return false;
+  }
+
+  if (isPrimitiveComparableMiss(left) || isPrimitiveComparableMiss(right)) {
+    return false;
+  }
+
+  if (left instanceof Uint8Array || right instanceof Uint8Array) {
+    return equalByteArrays(left, right);
+  }
+
+  if (Array.isArray(left) || Array.isArray(right)) {
+    return equalUnknownArrays(left, right);
+  }
+
+  if (!(isRecord(left) && isRecord(right))) {
+    return false;
+  }
+
+  return equalUnknownRecords(left, right);
+}
+
+function canCompareReferenceValues(left: unknown, right: unknown): boolean {
+  return !(
+    left === null ||
+    right === null ||
+    typeof left !== typeof right ||
+    typeof left === "function" ||
+    typeof right === "function"
+  );
+}
+
+function isPrimitiveComparableMiss(value: unknown): boolean {
+  return (
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean" ||
+    typeof value === "bigint" ||
+    typeof value === "symbol" ||
+    value === undefined
+  );
+}
+
+function equalByteArrays(left: unknown, right: unknown): boolean {
+  if (!(left instanceof Uint8Array && right instanceof Uint8Array)) {
+    return false;
+  }
+
+  if (left.length !== right.length) {
+    return false;
+  }
+
+  for (const [index, leftByte] of left.entries()) {
+    if (leftByte !== right[index]) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function equalUnknownArrays(left: unknown, right: unknown): boolean {
+  if (!(Array.isArray(left) && Array.isArray(right))) {
+    return false;
+  }
+
+  if (left.length !== right.length) {
+    return false;
+  }
+
+  for (const [index, leftEntry] of left.entries()) {
+    if (!equalUnknownValues(leftEntry, right[index])) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function equalUnknownRecords(
+  left: Record<string, unknown>,
+  right: Record<string, unknown>
+): boolean {
+  const leftKeys = Object.keys(left).filter((key) => left[key] !== undefined);
+  const rightKeys = Object.keys(right).filter(
+    (key) => right[key] !== undefined
+  );
+
+  if (leftKeys.length !== rightKeys.length) {
+    return false;
+  }
+
+  for (const key of leftKeys) {
+    if (!(key in right && equalUnknownValues(left[key], right[key]))) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object";
 }
