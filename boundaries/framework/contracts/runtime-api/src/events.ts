@@ -14,10 +14,7 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public contract surface.
-// This package is intentionally a focused import home over the shared runtime
-// contract family. It now tracks the matching runtime-api subpath instead of
-// the broad root facade so the dependency shape stays as narrow as the surface.
+// biome-ignore-all lint/performance/noBarrelFile: This package subpath is the intentional focused contract surface.
 export type {
   ApprovalRequestedEvent,
   ApprovalResolvedEvent,
@@ -47,8 +44,8 @@ export type {
   ToolStartEvent,
   TurnEndEvent,
   TurnStartEvent,
-} from "@kraken/framework-runtime-api/events";
+} from "./lib/runtime-contracts.js";
 export {
   assertKrakenStreamEvent,
   isKrakenStreamEvent,
-} from "@kraken/framework-runtime-api/events";
+} from "./lib/runtime-contracts.js";

@@ -11,6 +11,7 @@
         "../../../shared/contracts/core-types/dist/index.d.ts"
       ],
       "@kraken/framework-runtime-api": ["../runtime-api/dist/index.d.ts"],
+      "@kraken/framework-runtime-api/tools": ["../runtime-api/dist/tools.d.ts"],
       "@kraken/framework-tool-contracts": ["./src/index.ts"]
     },
     "rootDir": "./src",

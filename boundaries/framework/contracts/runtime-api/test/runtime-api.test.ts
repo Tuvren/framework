@@ -20,6 +20,10 @@ import {
   invalidFrameworkContractFixtures,
 } from "../../../../../tests/fixtures/framework-contract-fixtures.js";
 import {
+  assertKrakenStreamEvent as assertKrakenStreamEventFromSubpath,
+  type KrakenStreamEvent as KrakenStreamEventFromSubpath,
+} from "../src/events.ts";
+import {
   type AgentConfig,
   assertApprovalRequest,
   assertApprovalResponse,
@@ -40,6 +44,14 @@ import {
   isKrakenToolDefinition,
   isProviderStreamChunk,
 } from "../src/index.ts";
+import {
+  assertProviderStreamChunk as assertProviderStreamChunkFromSubpath,
+  type ProviderStreamChunk as ProviderStreamChunkFromSubpath,
+} from "../src/provider.ts";
+import {
+  type ApprovalRequest as ApprovalRequestFromSubpath,
+  assertApprovalRequest as assertApprovalRequestFromSubpath,
+} from "../src/tools.ts";
 
 describe("runtime-api contracts", () => {
   test("accepts the canonical framework fixtures", () => {
@@ -93,6 +105,39 @@ describe("runtime-api contracts", () => {
           outputTokens: 5,
         },
       })
+    ).not.toThrow();
+  });
+
+  test("exposes narrow runtime-api subpaths without changing contract behavior", () => {
+    const approvalRequest = {
+      completedResults: [],
+      toolCalls: [
+        {
+          callId: "call-1",
+          decisions: ["approve", "reject"],
+          input: { query: "status" },
+          message: "Approve this search?",
+          name: "search",
+        },
+      ],
+    } satisfies ApprovalRequestFromSubpath;
+    const streamEvent = {
+      messageId: "message-1",
+      text: "done",
+      timestamp: 1,
+      type: "text.done",
+    } satisfies KrakenStreamEventFromSubpath;
+    const providerChunk = {
+      finishReason: "stop",
+      type: "finish",
+    } satisfies ProviderStreamChunkFromSubpath;
+
+    expect(() =>
+      assertApprovalRequestFromSubpath(approvalRequest)
+    ).not.toThrow();
+    expect(() => assertKrakenStreamEventFromSubpath(streamEvent)).not.toThrow();
+    expect(() =>
+      assertProviderStreamChunkFromSubpath(providerChunk)
     ).not.toThrow();
   });
 

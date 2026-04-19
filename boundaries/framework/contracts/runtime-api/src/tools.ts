@@ -14,10 +14,7 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public contract surface.
-// This package is intentionally a focused import home over the shared runtime
-// contract family. It now tracks the matching runtime-api subpath instead of
-// the broad root facade so the dependency shape stays as narrow as the surface.
+// biome-ignore-all lint/performance/noBarrelFile: This package subpath is the intentional focused contract surface.
 export type {
   ApprovalDecision,
   ApprovalPolicy,
@@ -42,7 +39,7 @@ export type {
   ToolResultPart,
   ValidationErrorPayload,
   ValidationResult,
-} from "@kraken/framework-runtime-api/tools";
+} from "./lib/runtime-contracts.js";
 export {
   assertApprovalRequest,
   assertApprovalResponse,
@@ -52,4 +49,4 @@ export {
   isApprovalResponse,
   isApprovalResponseForRequest,
   isKrakenToolDefinition,
-} from "@kraken/framework-runtime-api/tools";
+} from "./lib/runtime-contracts.js";

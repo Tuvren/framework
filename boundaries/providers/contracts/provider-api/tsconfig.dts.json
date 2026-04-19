@@ -13,6 +13,9 @@
       "@kraken/framework-runtime-api": [
         "../../../framework/contracts/runtime-api/dist/index.d.ts"
       ],
+      "@kraken/framework-runtime-api/provider": [
+        "../../../framework/contracts/runtime-api/dist/provider.d.ts"
+      ],
       "@kraken/provider-api": ["./src/index.ts"]
     },
     "rootDir": "./src",

@@ -14,15 +14,16 @@
  * limitations under the License.
  */
 
-import { defineConfig } from "tsup";
-
-export default defineConfig({
-  clean: true,
-  dts: false,
-  entry: ["src/index.ts", "src/events.ts", "src/provider.ts", "src/tools.ts"],
-  format: ["esm"],
-  outDir: "dist",
-  sourcemap: false,
-  tsconfig: "tsconfig.tsup.json",
-  target: "esnext",
-});
+// biome-ignore-all lint/performance/noBarrelFile: This package subpath is the intentional focused contract surface.
+export type {
+  KrakenModelResponse,
+  KrakenPrompt,
+  KrakenProvider,
+  ProviderStreamChunk,
+  ProviderUsage,
+  StructuredOutputRequest,
+} from "./lib/runtime-contracts.js";
+export {
+  assertProviderStreamChunk,
+  isProviderStreamChunk,
+} from "./lib/runtime-contracts.js";
