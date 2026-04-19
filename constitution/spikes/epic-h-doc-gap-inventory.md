@@ -214,6 +214,16 @@ This keeps the boundary clean:
 - `tool_result` is runtime-owned
 - but only for already-requested calls that exist in the trace
 
+**Working decision (sub-aspect 3):**
+
+- Sibling failure policy in a mixed or parallel tool batch is not fixed by the shared framework core.
+- Concrete drivers or hosts may choose different policies, for example:
+  - reject or stop all remaining sibling work when one call fails
+  - continue collecting sibling outcomes and feed the model both the successful results and the failure result for the failed call
+- The shared core should provide the primitives needed for either policy while preserving canonical trace integrity and the existing call-ID ownership rules.
+
+This keeps the core focused on durable semantics and leaves batch-level recovery or continuation strategy to the concrete execution model above it.
+
 ### 5. Driver/runtime contract ownership
 
 **Original gap in `docs/`:**
