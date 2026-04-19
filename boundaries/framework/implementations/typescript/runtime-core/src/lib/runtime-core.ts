@@ -3980,20 +3980,43 @@ class OrchestrationRuntimeImpl implements OrchestrationRuntime {
   private async resolveWorkerSchemaId(
     parentHandle: OrchestrationHandleImpl
   ): Promise<string> {
-    const thread = await this.kernel.thread.get(
-      parentHandle.getParentThreadId()
-    );
+    const parentThreadId = parentHandle.getParentThreadId();
+    const frameworkThread = await this.framework.getThread(parentThreadId);
+    const kernelThread = await this.kernel.thread.get(parentThreadId);
 
-    if (thread === null) {
-      throw new KrakenLineageError(
-        `thread "${parentHandle.getParentThreadId()}" does not exist`,
+    if (frameworkThread === null || kernelThread === null) {
+      throw new KrakenRuntimeError(
+        "orchestration framework and kernel must agree on the parent thread before launching workers",
         {
-          code: "missing_thread",
+          code: "invalid_orchestration_framework",
+          details: {
+            frameworkThreadMissing: frameworkThread === null,
+            kernelThreadMissing: kernelThread === null,
+            parentThreadId,
+          },
         }
       );
     }
 
-    return thread.schemaId;
+    if (
+      frameworkThread.threadId !== kernelThread.threadId ||
+      frameworkThread.schemaId !== kernelThread.schemaId ||
+      frameworkThread.rootTurnNodeHash !== kernelThread.rootTurnNodeHash
+    ) {
+      throw new KrakenRuntimeError(
+        "orchestration framework and kernel must reference the same parent thread state",
+        {
+          code: "invalid_orchestration_framework",
+          details: {
+            frameworkThread,
+            kernelThread,
+            parentThreadId,
+          },
+        }
+      );
+    }
+
+    return frameworkThread.schemaId;
   }
 
   private async watchWorker(worker: WorkerRecord): Promise<void> {

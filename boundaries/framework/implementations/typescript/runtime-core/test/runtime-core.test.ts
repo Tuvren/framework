@@ -4756,6 +4756,112 @@ describe("framework-runtime-core", () => {
     await eventsPromise;
   });
 
+  test("stages and emits immediate invalid tool results before slower executable siblings finish", async () => {
+    const harness = createFakeKernelHarness();
+    let releaseSlowTool: (() => void) | undefined;
+    const slowTool = new Promise<void>((resolve) => {
+      releaseSlowTool = resolve;
+    });
+    const driver = {
+      async execute(context) {
+        const toolMessages = context.messages.filter(
+          (message) => message.role === "tool"
+        );
+
+        if (toolMessages.length === 0) {
+          return {
+            activeAgent: "primary",
+            messages: [
+              assistantToolCalls([
+                {
+                  callId: "call-missing",
+                  input: { query: "missing" },
+                  name: "missing",
+                },
+                {
+                  callId: "call-slow",
+                  input: { query: "slow" },
+                  name: "slow",
+                },
+              ]),
+            ],
+            resolution: {
+              type: "continue_iteration",
+            },
+          };
+        }
+
+        return {
+          activeAgent: "primary",
+          messages: [assistantText("Tools finished.")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        name: "primary",
+        tools: [
+          {
+            description: "Wait for release",
+            async execute() {
+              await slowTool;
+              return {
+                status: "slow",
+              };
+            },
+            inputSchema: {
+              properties: {
+                query: { type: "string" },
+              },
+              required: ["query"],
+              type: "object",
+            },
+            name: "slow",
+          },
+        ],
+      },
+      signal: textSignal("Run mixed immediate and slow tools"),
+      threadId: thread.threadId,
+    });
+    const capture = startEventCapture(handle.events());
+
+    await waitForAsync(async () => {
+      const stagedMessages = await harness.readRunningStagedMessages(
+        thread.branchId
+      );
+      return extractToolMessages(stagedMessages).some(
+        (message) =>
+          message.parts[0]?.type === "tool_result" &&
+          message.parts[0].callId === "call-missing"
+      );
+    });
+
+    expect(
+      capture.events.some(
+        (event) =>
+          event.type === "tool.result" && event.callId === "call-missing"
+      )
+    ).toBe(true);
+
+    releaseSlowTool?.();
+    await capture.done;
+  });
+
   test("persists tool messages in call order even when parallel completion order differs", async () => {
     const harness = createFakeKernelHarness();
     const driver = {
@@ -5257,6 +5363,137 @@ describe("framework-runtime-core", () => {
       );
     }
     expect(resumedHandle.status().phase).toBe("completed");
+  });
+
+  test("stages and emits immediate resumed decisions before slower approved siblings finish", async () => {
+    const harness = createFakeKernelHarness();
+    let releaseSlowTool: (() => void) | undefined;
+    const slowTool = new Promise<void>((resolve) => {
+      releaseSlowTool = resolve;
+    });
+    const driver = {
+      async execute(context) {
+        const toolMessages = extractToolMessages(context.messages);
+
+        if (toolMessages.length === 0) {
+          return {
+            activeAgent: "primary",
+            messages: [
+              assistantToolCalls([
+                {
+                  callId: "call-reject",
+                  input: { query: "reject" },
+                  name: "rejectable",
+                },
+                {
+                  callId: "call-slow",
+                  input: { query: "slow" },
+                  name: "slow",
+                },
+              ]),
+            ],
+            resolution: {
+              type: "continue_iteration",
+            },
+          };
+        }
+
+        return {
+          activeAgent: "primary",
+          messages: [assistantText("Resume finished.")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const pausedHandle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        name: "primary",
+        tools: [
+          {
+            approval: true,
+            description: "Reject immediately on resume",
+            execute() {
+              return {
+                status: "unexpected",
+              };
+            },
+            inputSchema: {
+              properties: {
+                query: { type: "string" },
+              },
+              required: ["query"],
+              type: "object",
+            },
+            name: "rejectable",
+          },
+          {
+            approval: true,
+            description: "Wait for release",
+            async execute() {
+              await slowTool;
+              return {
+                status: "slow",
+              };
+            },
+            inputSchema: {
+              properties: {
+                query: { type: "string" },
+              },
+              required: ["query"],
+              type: "object",
+            },
+            name: "slow",
+          },
+        ],
+      },
+      signal: textSignal("Pause for resume staging"),
+      threadId: thread.threadId,
+    });
+
+    await collectEvents(pausedHandle.events());
+
+    const resumedHandle = pausedHandle.resolveApproval({
+      decisions: [
+        { callId: "call-reject", type: "reject" },
+        { callId: "call-slow", type: "approve" },
+      ],
+    });
+    const capture = startEventCapture(resumedHandle.events());
+
+    await waitForAsync(async () => {
+      const stagedMessages = await harness.readRunningStagedMessages(
+        thread.branchId
+      );
+      return extractToolMessages(stagedMessages).some(
+        (message) =>
+          message.parts[0]?.type === "tool_result" &&
+          message.parts[0].callId === "call-reject"
+      );
+    });
+
+    expect(
+      capture.events.some(
+        (event) =>
+          event.type === "tool.result" && event.callId === "call-reject"
+      )
+    ).toBe(true);
+
+    releaseSlowTool?.();
+    await capture.done;
   });
 
   test("resumes aroundTool approval gates through the shared executor", async () => {
@@ -9027,6 +9264,75 @@ describe("framework-runtime-core", () => {
     );
   });
 
+  test("rejects split-brain external framework and kernel worker launches before createThread", async () => {
+    const frameworkHarness = createFakeKernelHarness();
+    const orchestrationHarness = createFakeKernelHarness();
+    const driver = {
+      async execute(context) {
+        return {
+          activeAgent: context.config.name,
+          messages: [assistantText("Parent started.")],
+          resolution: {
+            type: "continue_iteration",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const baseFramework = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: frameworkHarness.kernel,
+    });
+    let createThreadCalls = 0;
+    const framework: KrakenRuntime = {
+      createBranch: (input) => baseFramework.createBranch(input),
+      createThread: async (input) => {
+        createThreadCalls += 1;
+        return await baseFramework.createThread(input);
+      },
+      executeTurn: (input) => baseFramework.executeTurn(input),
+      getThread: (threadId) => baseFramework.getThread(threadId),
+      setBranchHead: (input) => baseFramework.setBranchHead(input),
+    };
+    const orchestration = createOrchestrationRuntime({
+      agents: {
+        primary: { name: "primary" },
+        worker: { name: "worker" },
+      },
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      entrypoint: "primary",
+      framework,
+      kernel: orchestrationHarness.kernel,
+    });
+    const thread = await baseFramework.createThread({});
+    const handle = orchestration.executeTurn({
+      branchId: thread.branchId,
+      signal: textSignal("Parent"),
+      threadId: thread.threadId,
+    });
+    detachTestPromise(collectEventsForDuration(handle.events(), 50));
+
+    await expect(
+      orchestration.launchWorker(
+        "worker",
+        {
+          task: "split-brain",
+        },
+        {
+          parent: handle,
+        }
+      )
+    ).rejects.toThrow(
+      "orchestration framework and kernel must agree on the parent thread before launching workers"
+    );
+    expect(createThreadCalls).toBe(0);
+  });
+
   test("rejects malformed worker task signals before creating worker history", async () => {
     const harness = createFakeKernelHarness();
     const driver = {
@@ -10184,6 +10490,7 @@ function createStubExecutionHandle(
       resolve();
     }
   });
+
   const handle: ExecutionHandle = {
     cancel() {
       phase = "failed";

@@ -172,11 +172,6 @@ export async function executeToolBatch(
     });
   }
 
-  const executableOutcomes =
-    executable.length === 0
-      ? []
-      : await executeConcurrentToolCalls(executable, environment);
-
   if (executable.length === 0) {
     await stageImmediateResults(
       environment,
@@ -185,6 +180,15 @@ export async function executeToolBatch(
       createToolStartBarrier(0)
     );
   }
+  const executableOutcomes =
+    executable.length === 0
+      ? []
+      : await stageImmediateResultsWhileExecuting(
+          environment,
+          immediateResults,
+          orderedResults,
+          executable
+        );
 
   for (const [outcomeIndex, outcome] of executableOutcomes.entries()) {
     updates.push(...outcome.updates);
@@ -276,11 +280,6 @@ export async function resumeToolBatch(
     });
   }
 
-  const executedOutcomes =
-    executable.length === 0
-      ? []
-      : await executeConcurrentToolCalls(executable, environment);
-
   if (executable.length === 0) {
     await stageImmediateResults(
       environment,
@@ -289,6 +288,15 @@ export async function resumeToolBatch(
       createToolStartBarrier(0)
     );
   }
+  const executedOutcomes =
+    executable.length === 0
+      ? []
+      : await stageImmediateResultsWhileExecuting(
+          environment,
+          immediateResults,
+          orderedResults,
+          executable
+        );
   const pendingToolCalls: PendingToolCall[] = [];
 
   for (const [outcomeIndex, outcome] of executedOutcomes.entries()) {
@@ -314,15 +322,6 @@ export async function resumeToolBatch(
       hash: outcome.resultHash,
       result: outcome.result,
     });
-  }
-
-  if (executable.length > 0) {
-    await stageImmediateResults(
-      environment,
-      immediateResults,
-      orderedResults,
-      createToolStartBarrier(0)
-    );
   }
 
   const stagedResults = orderedResults.flat();
@@ -603,14 +602,14 @@ async function executeSingleTool(
 
 async function executeConcurrentToolCalls(
   executable: OrderedExecutableToolCall[],
-  environment: ToolBatchEnvironment
+  environment: ToolBatchEnvironment,
+  startBarrier: ToolStartBarrier
 ): Promise<SingleToolOutcome[]> {
   const batchAbortController = new AbortController();
   const batchEnvironment = createBatchScopedEnvironment(
     environment,
     batchAbortController.signal
   );
-  const startBarrier = createToolStartBarrier(executable.length);
   const outcomes = executable.map((toolCall) =>
     executeSingleTool(
       toolCall.executable,
@@ -1336,6 +1335,38 @@ async function stageImmediateResults(
     );
     orderedResults[index].push(...zipStagedToolResults(results, hashes));
   }
+}
+
+async function stageImmediateResultsWhileExecuting(
+  environment: ToolBatchEnvironment,
+  immediateResults: ToolResultPart[][],
+  orderedResults: StagedToolResult[][],
+  executable: OrderedExecutableToolCall[]
+): Promise<SingleToolOutcome[]> {
+  const startBarrier = createToolStartBarrier(executable.length);
+  const executablePromise = executeConcurrentToolCalls(
+    executable,
+    environment,
+    startBarrier
+  ).then(
+    (outcomes) => ({ outcomes, rejected: false as const }),
+    (error: unknown) => ({ error, rejected: true as const })
+  );
+
+  await stageImmediateResults(
+    environment,
+    immediateResults,
+    orderedResults,
+    startBarrier
+  );
+
+  const result = await executablePromise;
+
+  if (result.rejected) {
+    throw result.error;
+  }
+
+  return result.outcomes;
 }
 
 function emitToolResultEvent(
