@@ -6707,6 +6707,88 @@ describe("framework-runtime-core", () => {
     ).toBe(true);
   });
 
+  test("uses the custom handoff builder for agent-signaled handoffs when orchestration constructs the framework", async () => {
+    const harness = createFakeKernelHarness();
+    const handoffBuilder = (context: HandoffSourceContext) => [
+      context.helpers.storeMessage({
+        parts: [
+          {
+            text: `Custom handoff for ${context.targetAgent.name}`,
+            type: "text",
+          },
+        ],
+        role: "user",
+      }),
+    ];
+    const driver = {
+      async execute(context) {
+        if (context.config.name === "primary") {
+          return {
+            activeAgent: "primary",
+            messages: [assistantText("Passing to the custom reviewer.")],
+            resolution: {
+              contextPlan: context.handoff.createContextPlan({
+                reason: "delegate",
+                targetAgent: "reviewer",
+              }),
+              targetAgent: "reviewer",
+              type: "handoff",
+            },
+          };
+        }
+
+        return {
+          activeAgent: "reviewer",
+          messages: [
+            assistantText(
+              `Reviewer saw: ${extractSingleUserText(context.messages[0] ?? null)}`
+            ),
+          ],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const orchestration = createOrchestrationRuntime({
+      agents: {
+        primary: { name: "primary" },
+        reviewer: { name: "reviewer" },
+      },
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      entrypoint: "primary",
+      handoffContextBuilder: handoffBuilder,
+      kernel: harness.kernel,
+    });
+    const threadRuntime = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await threadRuntime.createThread({});
+    const handle = orchestration.executeTurn({
+      branchId: thread.branchId,
+      signal: textSignal("Start custom handoff"),
+      threadId: thread.threadId,
+    });
+
+    await collectEvents(handle.events());
+
+    expect(handle.status().activeAgent).toBe("reviewer");
+    expect(
+      hasAssistantText(
+        await harness.readBranchMessages(thread.branchId),
+        "Reviewer saw: Custom handoff for reviewer"
+      )
+    ).toBe(true);
+  });
+
   test("supports sequences when orchestration receives an external framework", async () => {
     const harness = createFakeKernelHarness();
     let externalExecuteTurnCalls = 0;

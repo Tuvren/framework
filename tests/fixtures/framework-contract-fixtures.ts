@@ -45,10 +45,32 @@ const noopExecutionHandle: ExecutionHandle = {
     return emptyEvents();
   },
   resolveApproval() {
-    return this;
+    return resumedExecutionHandle;
   },
   status() {
     return frameworkContractFixtures.executionStatus;
+  },
+  steer() {
+    return;
+  },
+};
+
+const resumedExecutionHandle: ExecutionHandle = {
+  cancel() {
+    return;
+  },
+  events() {
+    return emptyEvents();
+  },
+  resolveApproval() {
+    return this;
+  },
+  status() {
+    return {
+      activeAgent: "primary",
+      iterationCount: 2,
+      phase: "running",
+    };
   },
   steer() {
     return;
@@ -96,6 +118,25 @@ const workerStatusFixture = {
 
 const noopOrchestrationHandle: OrchestrationHandle = {
   ...noopExecutionHandle,
+  allEvents() {
+    return emptyEvents();
+  },
+  parentEvents() {
+    return emptyEvents();
+  },
+  resolveApproval() {
+    return resumedOrchestrationHandle;
+  },
+  workerEvents() {
+    return emptyEvents();
+  },
+  workers() {
+    return new Map([[workerStatusFixture.workerId, workerStatusFixture]]);
+  },
+};
+
+const resumedOrchestrationHandle: OrchestrationHandle = {
+  ...resumedExecutionHandle,
   allEvents() {
     return emptyEvents();
   },
@@ -252,7 +293,7 @@ export const frameworkContractFixtures = {
     messageId: "message_1",
     source: {
       agent: "primary",
-      driver: "react",
+      driver: "example",
       threadId: "thread_main",
     },
     text: "Need approval before continuing.",

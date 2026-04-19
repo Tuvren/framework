@@ -130,6 +130,7 @@ export interface RuntimeCoreOptions {
   defaultDriverId: string;
   driverRegistry?: DriverRegistry;
   enableStateObservability?: boolean;
+  handoffContextBuilder?: HandoffContextBuilder;
   kernel: KrakenKernel;
   now?: () => EpochMs;
   resolveAgentConfig?: (agentName: string) => AgentConfig | undefined;
@@ -156,6 +157,7 @@ interface ResolvedRuntimeCoreOptions {
   defaultDriverId: string;
   driverRegistry: DriverRegistry;
   enableStateObservability: boolean;
+  handoffContextBuilder?: HandoffContextBuilder;
   kernel: KrakenKernel;
   now: () => EpochMs;
   resolveAgentConfig?: (agentName: string) => AgentConfig | undefined;
@@ -635,6 +637,7 @@ class RuntimeCore implements KrakenRuntime {
       defaultDriverId: options.defaultDriverId,
       driverRegistry: options.driverRegistry ?? createDriverRegistry(),
       enableStateObservability: options.enableStateObservability ?? true,
+      handoffContextBuilder: options.handoffContextBuilder,
       kernel: options.kernel,
       now: options.now ?? Date.now,
       resolveAgentConfig: options.resolveAgentConfig,
@@ -2090,6 +2093,10 @@ class RuntimeCore implements KrakenRuntime {
   private resolveDefaultHandoffContextBuilder(
     mode: string
   ): HandoffContextBuilder {
+    if (this.options.handoffContextBuilder !== undefined) {
+      return this.options.handoffContextBuilder;
+    }
+
     switch (mode) {
       case "last_output_only":
         return createLastOutputOnlyHandoffContextBuilder();
@@ -4411,6 +4418,7 @@ export function createOrchestrationRuntime(
       defaultDriverId: options.defaultDriverId,
       driverRegistry: options.driverRegistry,
       enableStateObservability: options.enableStateObservability,
+      handoffContextBuilder: options.handoffContextBuilder,
       kernel: options.kernel,
       now: options.now,
       resolveAgentConfig: (agentName) => options.agents[agentName],

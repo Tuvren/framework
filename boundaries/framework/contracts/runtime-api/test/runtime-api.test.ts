@@ -105,8 +105,10 @@ describe("runtime-api contracts", () => {
       threadId: "thread_main",
     });
     const workerStatuses = handle.workers();
+    const resumedHandle = handle.resolveApproval({ decisions: [] });
 
-    expect(handle.resolveApproval({ decisions: [] })).toBe(handle);
+    expect(resumedHandle).not.toBe(handle);
+    expect(resumedHandle.workers()).toEqual(workerStatuses);
     expect(
       await frameworkContractFixtures.orchestrationRuntime.launchWorker(
         "worker",
