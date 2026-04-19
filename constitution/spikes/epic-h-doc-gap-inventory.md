@@ -138,17 +138,23 @@ Current non-goals for shared `runtime.status`:
 - If a worker pauses, the main Run and other workers may continue.
 - Steering queue management around a pause is host policy, not shared-core policy.
 - Approval resolution must not implicitly clear or reinterpret steering that was already accepted before the pause.
+- Canceling a HITL pause is semantically equivalent to rejecting the pending tool calls. It is not a framework-owned failure transition.
 
 **Explicit correction against the branch drift:**
 
 - The framework core should not auto-convert a paused Turn into `failed` by its own pause-time criteria.
 - A paused Turn may remain paused until an explicit approval decision is executed.
 
+**Working split of responsibility:**
+
+- Shared core owns the canonical meaning of approval rejection.
+- Host policy may decide whether a rejection is fed directly back into the model on the same Turn or whether the paused execution stops and a later host request continues from the durably staged rejection outcome.
+
 The remaining design questions inside this topic are therefore narrower:
 
 - whether `resolveApproval(...)` returns a replacement handle
 - what parts of the old paused handle become invalid after approval handoff
-- whether paused-handle `cancel()` should be rejected, ignored, or modeled as some future explicit abandonment action rather than as implicit failure
+- whether paused-handle `cancel()` is specified as a rejection shortcut directly or left as a host-level mapping onto explicit rejection semantics
 
 ### 4. Parallel tool execution semantics
 
