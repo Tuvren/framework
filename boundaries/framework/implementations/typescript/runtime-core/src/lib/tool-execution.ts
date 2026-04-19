@@ -374,7 +374,12 @@ async function resolveExecutableToolCall(
     };
   }
 
-  const toolContext = createToolExecutionContext(toolCall, tool, environment);
+  const toolContext = createToolExecutionContext(
+    toolCall,
+    tool,
+    environment,
+    environment.signal
+  );
   const approvalRequired =
     tool.approval === undefined
       ? false
@@ -652,6 +657,7 @@ async function runAroundToolHandlers(
   startBarrier: ToolStartBarrier
 ): Promise<RawSingleToolOutcome> {
   if (index >= handlers.length) {
+    const timeoutController = new AbortController();
     emitToolStartIfNeeded(toolCall, environment, toolStartState, startBarrier);
     const output = await runWithTimeout(
       () =>
@@ -660,14 +666,20 @@ async function runAroundToolHandlers(
           createToolExecutionContext(
             toolCall.toolCall,
             toolCall.tool,
-            environment
+            environment,
+            composeAbortSignals(environment.signal, timeoutController.signal)
           )
         ),
       toolCall.tool.timeout,
       () =>
         new Error(
           `tool "${toolCall.tool.name}" timed out after ${toolCall.tool.timeout}ms`
-        )
+        ),
+      {
+        onTimeout: (error) => {
+          timeoutController.abort(error);
+        },
+      }
     );
 
     return {
@@ -684,11 +696,13 @@ async function runAroundToolHandlers(
   const { extensionName, handler, timeout } = handlers[index];
   const nestedUpdates: ExtensionStateUpdate[] = [];
   let nestedResult: ToolResultPart | undefined;
+  const timeoutController = new AbortController();
   const context = createAroundToolContext(
     toolCall,
     extensionName,
     environment,
-    sharedExports
+    sharedExports,
+    composeAbortSignals(environment.signal, timeoutController.signal)
   );
 
   try {
@@ -717,7 +731,12 @@ async function runAroundToolHandlers(
       () =>
         new Error(
           `aroundTool handler for extension "${extensionName}" timed out after ${timeout}ms`
-        )
+        ),
+      {
+        onTimeout: (error) => {
+          timeoutController.abort(error);
+        },
+      }
     );
 
     return normalizeAroundToolResult(
@@ -927,14 +946,23 @@ function createBatchScopedEnvironment(
 function createToolExecutionContext(
   toolCall: ToolCallPart,
   tool: KrakenToolDefinition,
-  environment: ToolBatchEnvironment
+  environment: ToolBatchEnvironment,
+  timeoutSignal: AbortSignal | undefined
 ): ToolExecutionContext {
   return {
     callId: toolCall.callId,
     emit: (event: { data: unknown; name: string }) => {
+      if (timeoutSignal?.aborted) {
+        return;
+      }
+
       environment.publishCustom(event);
     },
     forward: (event: KrakenStreamEvent, source: EventSource) => {
+      if (timeoutSignal?.aborted) {
+        return;
+      }
+
       environment.publishEvent({
         ...event,
         source,
@@ -942,7 +970,7 @@ function createToolExecutionContext(
     },
     metadata: tool.metadata,
     name: tool.name,
-    signal: environment.signal,
+    signal: timeoutSignal ?? environment.signal,
   };
 }
 
@@ -950,27 +978,36 @@ function createAroundToolContext(
   toolCall: ExecutableToolCall,
   extensionName: string,
   environment: ToolBatchEnvironment,
-  sharedExports: Record<string, Record<string, unknown>>
+  sharedExports: Record<string, Record<string, unknown>>,
+  timeoutSignal: AbortSignal | undefined
 ): AroundToolContext {
   return {
     approvalDecision: toolCall.approvalDecision,
     callId: toolCall.toolCall.callId,
     emit: (event: { data: unknown; name: string }) => {
+      if (timeoutSignal?.aborted) {
+        return;
+      }
+
       environment.publishCustom(event);
     },
-    extensionState: asRecord(environment.manifest.extensions[extensionName]),
+    extensionState: cloneRecord(environment.manifest.extensions[extensionName]),
     forward: (event: KrakenStreamEvent, source: EventSource) => {
+      if (timeoutSignal?.aborted) {
+        return;
+      }
+
       environment.publishEvent({
         ...event,
         source,
       });
     },
-    input: toolCall.input,
+    input: cloneValue(toolCall.input),
     iterationCount: environment.iterationCount,
-    manifest: environment.manifest,
-    sharedExports,
+    manifest: cloneValue(environment.manifest),
+    sharedExports: cloneValue(sharedExports),
     tool: toolCall.tool,
-    toolCall: toolCall.toolCall,
+    toolCall: cloneValue(toolCall.toolCall),
   };
 }
 
@@ -1323,6 +1360,10 @@ function asRecord(value: unknown): Record<string, unknown> {
   return {};
 }
 
+function cloneRecord(value: unknown): Record<string, unknown> {
+  return asRecord(cloneValue(asRecord(value)));
+}
+
 function createToolStartBarrier(totalCalls: number): ToolStartBarrier {
   let pendingCalls = totalCalls;
   let resolveReady: (() => void) | undefined;
@@ -1362,6 +1403,25 @@ function settleToolStartIfNeeded(
 
   toolStartState.settled = true;
   startBarrier.markSettled();
+}
+
+function composeAbortSignals(
+  left: AbortSignal | undefined,
+  right: AbortSignal | undefined
+): AbortSignal | undefined {
+  if (left === undefined) {
+    return right;
+  }
+
+  if (right === undefined) {
+    return left;
+  }
+
+  return AbortSignal.any([left, right]);
+}
+
+function cloneValue<T>(value: T): T {
+  return globalThis.structuredClone(value);
 }
 
 function normalizeError(error: unknown): Error {

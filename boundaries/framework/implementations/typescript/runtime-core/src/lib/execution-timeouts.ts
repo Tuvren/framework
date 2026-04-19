@@ -25,7 +25,10 @@ function hasTimeout(timeoutMilliseconds: number | undefined): boolean {
 export async function runWithTimeout<T>(
   action: () => Promise<T> | T,
   timeoutMilliseconds: number | undefined,
-  createTimeoutError: () => Error
+  createTimeoutError: () => Error,
+  options?: {
+    onTimeout?(error: Error): void;
+  }
 ): Promise<T> {
   if (!hasTimeout(timeoutMilliseconds)) {
     return await action();
@@ -34,7 +37,9 @@ export async function runWithTimeout<T>(
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
   const timeoutPromise = new Promise<never>((_, reject) => {
     timeoutId = setTimeout(() => {
-      reject(createTimeoutError());
+      const timeoutError = createTimeoutError();
+      options?.onTimeout?.(timeoutError);
+      reject(timeoutError);
     }, timeoutMilliseconds);
   });
 

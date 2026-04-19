@@ -1613,6 +1613,69 @@ describe("framework-runtime-core", () => {
     );
   });
 
+  test("suppresses late hook events after timeout soft-fail conversion", async () => {
+    const harness = createFakeKernelHarness();
+    let lateEmitAttempts = 0;
+    const driver = {
+      async execute(context) {
+        return {
+          activeAgent: context.config.name,
+          messages: [assistantText("Driver still completed.")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        extensions: [
+          {
+            async beforeIteration(context) {
+              await delay(25);
+              lateEmitAttempts += 1;
+              context.emit({
+                data: {
+                  late: true,
+                },
+                name: "late-event",
+              });
+              return undefined;
+            },
+            name: "slow-hook",
+            timeout: 5,
+          },
+        ],
+        name: "primary",
+      },
+      signal: textSignal("Timeout hook"),
+      threadId: thread.threadId,
+    });
+
+    const capture = startEventCapture(handle.events());
+    await capture.done;
+    await delay(40);
+
+    expect(lateEmitAttempts).toBe(1);
+    expect(
+      capture.events.some(
+        (event) => event.type === "custom" && event.name === "late-event"
+      )
+    ).toBe(false);
+  });
+
   test("emits context-engineering observability before the driver runs with rewritten context", async () => {
     const harness = createFakeKernelHarness();
     const driver = {
@@ -4195,6 +4258,142 @@ describe("framework-runtime-core", () => {
     });
   });
 
+  test("isolates aroundTool manifest state and shared exports between extensions", async () => {
+    const harness = createFakeKernelHarness();
+    let observedState:
+      | {
+          extensionState: Record<string, unknown>;
+          manifestState: Record<string, unknown> | undefined;
+          sharedExports: Record<string, unknown> | undefined;
+        }
+      | undefined;
+    const driver = {
+      async execute(context) {
+        const toolMessages = context.messages.filter(
+          (message) => message.role === "tool"
+        );
+
+        if (toolMessages.length === 0) {
+          return {
+            activeAgent: "primary",
+            messages: [
+              assistantToolCalls([
+                {
+                  callId: "call-search",
+                  input: { query: "isolate state" },
+                  name: "search",
+                },
+              ]),
+            ],
+            resolution: {
+              type: "continue_iteration",
+            },
+          };
+        }
+
+        return {
+          activeAgent: "primary",
+          messages: [assistantText("AroundTool contexts stayed isolated.")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        extensions: [
+          {
+            aroundTool(context, next) {
+              if (
+                context.manifest.extensions.b !== null &&
+                typeof context.manifest.extensions.b === "object" &&
+                !Array.isArray(context.manifest.extensions.b)
+              ) {
+                Reflect.set(context.manifest.extensions.b, "leaked", true);
+              }
+
+              if (context.sharedExports.b !== undefined) {
+                context.sharedExports.b.leaked = true;
+              }
+
+              return next();
+            },
+            name: "a",
+            state: {
+              shared: "alpha",
+            },
+          },
+          {
+            aroundTool(context, next) {
+              observedState = {
+                extensionState: globalThis.structuredClone(
+                  context.extensionState
+                ),
+                manifestState: toOptionalRecord(context.manifest.extensions.b),
+                sharedExports: toOptionalRecord(context.sharedExports.b),
+              };
+              return next();
+            },
+            exports: ["shared"],
+            name: "b",
+            state: {
+              shared: "beta",
+            },
+          },
+        ],
+        name: "primary",
+        tools: [
+          {
+            description: "Search successfully",
+            execute(input: unknown) {
+              return {
+                query: readQueryInput(input),
+                status: "ok",
+              };
+            },
+            inputSchema: {
+              properties: {
+                query: { type: "string" },
+              },
+              required: ["query"],
+              type: "object",
+            },
+            name: "search",
+          },
+        ],
+      },
+      signal: textSignal("Isolate aroundTool state"),
+      threadId: thread.threadId,
+    });
+
+    await collectEvents(handle.events());
+
+    expect(observedState).toEqual({
+      extensionState: {
+        shared: "beta",
+      },
+      manifestState: {
+        shared: "beta",
+      },
+      sharedExports: {
+        shared: "beta",
+      },
+    });
+  });
+
   test("emits tool.result when each parallel tool finishes instead of after the slowest call", async () => {
     const harness = createFakeKernelHarness();
     const timeline: string[] = [];
@@ -4756,6 +4955,99 @@ describe("framework-runtime-core", () => {
       },
       type: "tool_result",
     });
+  });
+
+  test("aborts timed-out tool contexts and suppresses late tool events", async () => {
+    const harness = createFakeKernelHarness();
+    let observedAbort = false;
+    const driver = {
+      async execute(context) {
+        const toolMessages = context.messages.filter(
+          (message) => message.role === "tool"
+        );
+
+        if (toolMessages.length === 0) {
+          return {
+            activeAgent: "primary",
+            messages: [
+              assistantToolCalls([
+                {
+                  callId: "call-slow",
+                  input: { query: "timeout" },
+                  name: "slow",
+                },
+              ]),
+            ],
+            resolution: {
+              type: "continue_iteration",
+            },
+          };
+        }
+
+        return {
+          activeAgent: "primary",
+          messages: [assistantText("Timed out tool was handled.")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        name: "primary",
+        tools: [
+          {
+            description: "Time out cooperatively",
+            async execute(_input, context) {
+              await waitForAbort(context.signal);
+              observedAbort = context.signal?.aborted === true;
+              context.emit?.({
+                data: { late: true },
+                name: "late-tool-event",
+              });
+              return {
+                status: "late",
+              };
+            },
+            inputSchema: {
+              properties: {
+                query: { type: "string" },
+              },
+              required: ["query"],
+              type: "object",
+            },
+            name: "slow",
+            timeout: 5,
+          },
+        ],
+      },
+      signal: textSignal("Timeout tool cooperatively"),
+      threadId: thread.threadId,
+    });
+
+    const capture = startEventCapture(handle.events());
+    await capture.done;
+    await delay(30);
+
+    expect(observedAbort).toBe(true);
+    expect(
+      capture.events.some(
+        (event) => event.type === "custom" && event.name === "late-tool-event"
+      )
+    ).toBe(false);
   });
 
   test("treats thrown CustomSchema validators as tool input validation errors", async () => {
@@ -8796,6 +9088,75 @@ describe("framework-runtime-core", () => {
     expect(createThreadCalls).toBe(0);
   });
 
+  test("rejects malformed plain worker tasks before creating worker history", async () => {
+    const harness = createFakeKernelHarness();
+    const driver = {
+      async execute(context) {
+        return {
+          activeAgent: context.config.name,
+          messages: [assistantText("Worker should not start.")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const baseFramework = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    let createThreadCalls = 0;
+    const framework: KrakenRuntime = {
+      createBranch: (input) => baseFramework.createBranch(input),
+      createThread: async (input) => {
+        createThreadCalls += 1;
+        return await baseFramework.createThread(input);
+      },
+      executeTurn: (input) => baseFramework.executeTurn(input),
+      getThread: (threadId) => baseFramework.getThread(threadId),
+      setBranchHead: (input) => baseFramework.setBranchHead(input),
+    };
+    const orchestration = createOrchestrationRuntime({
+      agents: {
+        primary: { name: "primary" },
+        worker: { name: "worker" },
+      },
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      entrypoint: "primary",
+      framework,
+      kernel: harness.kernel,
+    });
+    const thread = await baseFramework.createThread({});
+    const handle = orchestration.executeTurn({
+      branchId: thread.branchId,
+      signal: textSignal("Parent"),
+      threadId: thread.threadId,
+    });
+    detachTestPromise(collectEventsForDuration(handle.events(), 50));
+
+    await expect(
+      orchestration.launchWorker(
+        "worker",
+        {
+          bad() {
+            return 1;
+          },
+        },
+        {
+          parent: handle,
+        }
+      )
+    ).rejects.toThrow();
+    expect(createThreadCalls).toBe(0);
+  });
+
   test("preserves forwarded source attribution on allEvents while keeping parentEvents source-free", async () => {
     const harness = createFakeKernelHarness();
     const driver = {
@@ -9699,6 +10060,14 @@ function toKrakenMessages(messages: unknown[]): KrakenMessage[] {
     assertKrakenMessage(message, `messages[${index}]`);
     return message;
   });
+}
+
+function toOptionalRecord(value: unknown): Record<string, unknown> | undefined {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    return undefined;
+  }
+
+  return Object.fromEntries(Object.entries(value));
 }
 
 function detachTestPromise(promise: Promise<unknown>): void {

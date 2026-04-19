@@ -3917,6 +3917,7 @@ class OrchestrationRuntimeImpl implements OrchestrationRuntime {
   ): Promise<string> {
     const config = this.agents[agent];
     const parentHandle = this.resolveLaunchParentHandle(options?.parent);
+    const normalizedTask = normalizeWorkerTask(task);
 
     if (config === undefined) {
       throw new KrakenRuntimeError(`worker agent "${agent}" is not defined`, {
@@ -3927,7 +3928,6 @@ class OrchestrationRuntimeImpl implements OrchestrationRuntime {
       });
     }
 
-    const normalizedTask = normalizeWorkerTask(task);
     const workerSchemaId = await this.resolveWorkerSchemaId(parentHandle);
     const thread = await this.framework.createThread({
       schemaId: workerSchemaId,
@@ -4894,15 +4894,18 @@ function normalizeWorkerTask(task: unknown): InputSignal {
     );
   }
 
-  return {
-    parts: [
-      {
-        data: task,
-        name: "worker_task",
-        type: "structured",
-      },
-    ],
-  };
+  return normalizeInputSignal(
+    {
+      parts: [
+        {
+          data: task,
+          name: "worker_task",
+          type: "structured",
+        },
+      ],
+    },
+    "worker task"
+  );
 }
 
 function normalizeInputSignal(signal: InputSignal, label: string): InputSignal {

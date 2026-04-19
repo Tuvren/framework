@@ -156,11 +156,13 @@ export async function runAfterIterationHooks(
       continue;
     }
 
+    const timeoutController = new AbortController();
+
     try {
       const result = await runWithTimeout(
         () =>
           extension.afterIteration?.({
-            emit: options.emit,
+            emit: createTimedEmit(options.emit, timeoutController.signal),
             extensionState: cloneRecord(
               options.manifest.extensions[extension.name]
             ),
@@ -181,7 +183,12 @@ export async function runAfterIterationHooks(
         () =>
           new Error(
             `extension "${extension.name}" afterIteration timed out after ${extension.timeout}ms`
-          )
+          ),
+        {
+          onTimeout: (error) => {
+            timeoutController.abort(error);
+          },
+        }
       );
 
       collectHookState(extension.name, result, updates);
@@ -254,14 +261,24 @@ async function runInterceptHooks(
       continue;
     }
 
+    const timeoutController = new AbortController();
+
     try {
       const result = await runWithTimeout(
-        () => handler(createInterceptContext(extension, options)),
+        () =>
+          handler(
+            createInterceptContext(extension, options, timeoutController.signal)
+          ),
         extension.timeout,
         () =>
           new Error(
             `extension "${extension.name}" ${hookName} timed out after ${extension.timeout}ms`
-          )
+          ),
+        {
+          onTimeout: (error) => {
+            timeoutController.abort(error);
+          },
+        }
       );
       collectHookState(extension.name, result, updates);
 
@@ -294,10 +311,11 @@ async function runInterceptHooks(
 
 function createInterceptContext(
   extension: KrakenExtension,
-  options: HookExecutionOptions
+  options: HookExecutionOptions,
+  timeoutSignal: AbortSignal
 ): InterceptContext {
   return {
-    emit: options.emit,
+    emit: createTimedEmit(options.emit, timeoutSignal),
     extensionState: cloneRecord(options.manifest.extensions[extension.name]),
     iterationCount: options.iterationCount,
     manifest: cloneValue(options.manifest),
@@ -386,6 +404,19 @@ function cloneRecord(value: unknown): Record<string, unknown> {
 
 function cloneValue<T>(value: T): T {
   return globalThis.structuredClone(value);
+}
+
+function createTimedEmit(
+  emit: (event: { data: unknown; name: string }) => void,
+  timeoutSignal: AbortSignal
+): (event: { data: unknown; name: string }) => void {
+  return (event) => {
+    if (timeoutSignal.aborted) {
+      return;
+    }
+
+    emit(event);
+  };
 }
 
 function normalizeError(error: unknown): Error {
