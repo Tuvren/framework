@@ -18,36 +18,52 @@ import type {
   ApprovalDecision,
   ApprovalRequest,
   ApprovalResponse,
-  AroundToolContext,
   AroundToolHandler,
-  AroundToolResult,
   ContextManifest,
   EpochMs,
-  EventSource,
   KrakenExtension,
   KrakenStreamEvent,
   KrakenToolDefinition,
   PendingToolCall,
   ToolCallPart,
-  ToolExecutionContext,
   ToolRegistry,
   ToolResultPart,
 } from "@kraken/framework-runtime-api";
-import { assertApprovalRequest } from "@kraken/framework-runtime-api";
 import type { HashString } from "@kraken/shared-core-types";
-import Ajv, { type ErrorObject, type ValidateFunction } from "ajv";
 import { runWithTimeout } from "./execution-timeouts.js";
 import {
   buildSharedExports,
   type ExtensionStateUpdate,
 } from "./extension-runtime.js";
-
-const DEFAULT_APPROVAL_DECISIONS = ["approve", "edit", "reject"];
-const ajv = new Ajv({
-  allErrors: true,
-  strict: false,
-});
-const validatorCache = new WeakMap<object, ValidateFunction>();
+import {
+  applyApprovalDecisionMetadata,
+  composeAbortSignals,
+  createAroundToolContext,
+  createBatchScopedEnvironment,
+  createErrorToolResult,
+  createExecutionFailureResult,
+  createPendingToolCall,
+  createRejectedToolResult,
+  createToolExecutionContext,
+  createToolStartBarrier,
+  emitToolStartIfNeeded,
+  evaluateApprovalPolicy,
+  getAroundToolHandlers,
+  isApprovalRequestValidationError,
+  isExecutableApprovalDecision,
+  isRejectedPromiseResult,
+  normalizeAroundToolResult,
+  normalizeError,
+  settleToolStartIfNeeded,
+  stageAndEmitResult,
+  stageAndEmitResults,
+  stageImmediateResults,
+  stageImmediateResultsWhileExecuting,
+  ToolPauseSignal,
+  toExecutableToolCall,
+  validateToolInput,
+  zipStagedToolResults,
+} from "./tool-execution-helpers.js";
 
 export interface ToolBatchEnvironment {
   activeAgent: string;
@@ -74,39 +90,34 @@ export interface ToolBatchOutcome {
   updates: ExtensionStateUpdate[];
 }
 
-interface ExecutableToolCall {
+export interface ExecutableToolCall {
   approvalDecision?: ApprovalDecision;
   input: unknown;
   tool: KrakenToolDefinition;
   toolCall: ToolCallPart;
 }
 
-interface OrderedExecutableToolCall {
+export interface OrderedExecutableToolCall {
   executable: ExecutableToolCall;
   index: number;
 }
 
-interface StagedToolResult {
+export interface StagedToolResult {
   hash: HashString;
   result: ToolResultPart;
 }
 
-interface ToolStartState {
+export interface ToolStartState {
   emitted: boolean;
   settled: boolean;
 }
 
-interface ToolStartBarrier {
+export interface ToolStartBarrier {
   markSettled(): void;
   waitUntilReady(): Promise<void>;
 }
 
-interface ApprovalPendingSource {
-  callId: string;
-  name: string;
-}
-
-type SingleToolOutcome =
+export type SingleToolOutcome =
   | {
       approval?: never;
       resultHash: HashString;
@@ -120,7 +131,7 @@ type SingleToolOutcome =
       updates: ExtensionStateUpdate[];
     };
 
-type RawSingleToolOutcome =
+export type RawSingleToolOutcome =
   | {
       approval?: never;
       result: ToolResultPart;
@@ -136,20 +147,6 @@ type ResolvedToolBatchStep =
   | { executable: ExecutableToolCall }
   | { pendingToolCall: PendingToolCall }
   | { result: ToolResultPart };
-
-// This remains throw-based intentionally: aroundTool handlers receive
-// `next(): Promise<ToolResultPart>`, so a nested pause has no value-level way to
-// short-circuit that contract without widening the public handler surface.
-class ToolPauseSignal extends Error {
-  readonly approval: ApprovalRequest;
-  readonly updates: ExtensionStateUpdate[];
-
-  constructor(approval: ApprovalRequest, updates: ExtensionStateUpdate[]) {
-    super("tool execution paused");
-    this.approval = approval;
-    this.updates = updates;
-  }
-}
 
 export async function executeToolBatch(
   toolCalls: ToolCallPart[],
@@ -261,7 +258,8 @@ async function executePlannedToolCalls(
           environment,
           immediateResults,
           orderedResults,
-          executable
+          executable,
+          executeConcurrentToolCalls
         );
 
   for (const [outcomeIndex, outcome] of executableOutcomes.entries()) {
@@ -748,719 +746,4 @@ async function runAroundToolHandlers(
       updates: nestedUpdates,
     };
   }
-}
-
-function normalizeAroundToolResult(
-  extensionName: string,
-  result: AroundToolResult,
-  nestedUpdates: ExtensionStateUpdate[],
-  nestedResult: ToolResultPart | undefined,
-  context: AroundToolContext,
-  environment: ToolBatchEnvironment,
-  toolStartState: ToolStartState,
-  startBarrier: ToolStartBarrier
-): RawSingleToolOutcome {
-  if (isPauseResult(result)) {
-    if (nestedResult !== undefined) {
-      return {
-        result: nestedResult,
-        updates: collectExtensionStateUpdate(
-          extensionName,
-          result.state,
-          nestedUpdates
-        ),
-      };
-    }
-
-    settleToolStartIfNeeded(toolStartState, startBarrier);
-
-    const approval = normalizeApprovalRequest(
-      context.toolCall,
-      context.input,
-      result.approval
-    );
-    assertApprovalRequest(
-      approval,
-      `aroundTool approval from extension "${extensionName}"`
-    );
-
-    return {
-      approval,
-      updates: collectExtensionStateUpdate(
-        extensionName,
-        result.state,
-        nestedUpdates
-      ),
-    };
-  }
-
-  if (isResultWithState(result)) {
-    emitToolStartIfNeeded(
-      toExecutableToolCall(
-        {
-          approvalDecision: context.approvalDecision,
-          input: context.input,
-          tool: context.tool,
-          toolCall: context.toolCall,
-        },
-        undefined
-      ),
-      environment,
-      toolStartState,
-      startBarrier
-    );
-    return {
-      result: result.result,
-      updates: collectExtensionStateUpdate(
-        extensionName,
-        result.state,
-        nestedUpdates
-      ),
-    };
-  }
-
-  if (nestedResult !== undefined && result === nestedResult) {
-    return {
-      result,
-      updates: nestedUpdates,
-    };
-  }
-
-  emitToolStartIfNeeded(
-    toExecutableToolCall(
-      {
-        approvalDecision: context.approvalDecision,
-        input: context.input,
-        tool: context.tool,
-        toolCall: context.toolCall,
-      },
-      undefined
-    ),
-    environment,
-    toolStartState,
-    startBarrier
-  );
-  return {
-    result,
-    updates: nestedUpdates,
-  };
-}
-
-function collectExtensionStateUpdate(
-  extensionName: string,
-  state: Record<string, unknown> | undefined,
-  nestedUpdates: ExtensionStateUpdate[]
-): ExtensionStateUpdate[] {
-  if (state === undefined) {
-    return nestedUpdates;
-  }
-
-  return [...nestedUpdates, { extensionName, state }];
-}
-
-function getAroundToolHandlers(
-  extensions: KrakenExtension[],
-  toolName: string
-): Array<{
-  extensionName: string;
-  handler: AroundToolHandler;
-  timeout?: number;
-}> {
-  const handlers: Array<{
-    extensionName: string;
-    handler: AroundToolHandler;
-    timeout?: number;
-  }> = [];
-
-  for (const extension of extensions) {
-    const spec = extension.aroundTool;
-
-    if (spec === undefined) {
-      continue;
-    }
-
-    if (typeof spec === "function") {
-      handlers.push({
-        extensionName: extension.name,
-        handler: spec,
-        timeout: extension.timeout,
-      });
-      continue;
-    }
-
-    if (spec.tools.includes(toolName)) {
-      handlers.push({
-        extensionName: extension.name,
-        handler: spec.handler,
-        timeout: extension.timeout,
-      });
-    }
-  }
-
-  return handlers;
-}
-
-function createBatchScopedEnvironment(
-  environment: ToolBatchEnvironment,
-  batchSignal: AbortSignal
-): ToolBatchEnvironment {
-  return {
-    ...environment,
-    signal:
-      environment.signal === undefined
-        ? batchSignal
-        : AbortSignal.any([environment.signal, batchSignal]),
-  };
-}
-
-function createToolExecutionContext(
-  toolCall: ToolCallPart,
-  tool: KrakenToolDefinition,
-  environment: ToolBatchEnvironment,
-  timeoutSignal: AbortSignal | undefined
-): ToolExecutionContext {
-  return {
-    callId: toolCall.callId,
-    emit: (event: { data: unknown; name: string }) => {
-      if (timeoutSignal?.aborted) {
-        return;
-      }
-
-      environment.publishCustom(event);
-    },
-    forward: (event: KrakenStreamEvent, source: EventSource) => {
-      if (timeoutSignal?.aborted) {
-        return;
-      }
-
-      environment.publishEvent({
-        ...event,
-        source,
-      });
-    },
-    metadata: tool.metadata,
-    name: tool.name,
-    signal: timeoutSignal ?? environment.signal,
-  };
-}
-
-function createAroundToolContext(
-  toolCall: ExecutableToolCall,
-  extensionName: string,
-  environment: ToolBatchEnvironment,
-  sharedExports: Record<string, Record<string, unknown>>,
-  timeoutSignal: AbortSignal | undefined
-): AroundToolContext {
-  return {
-    approvalDecision: toolCall.approvalDecision,
-    callId: toolCall.toolCall.callId,
-    emit: (event: { data: unknown; name: string }) => {
-      if (timeoutSignal?.aborted) {
-        return;
-      }
-
-      environment.publishCustom(event);
-    },
-    extensionState: cloneRecord(environment.manifest.extensions[extensionName]),
-    forward: (event: KrakenStreamEvent, source: EventSource) => {
-      if (timeoutSignal?.aborted) {
-        return;
-      }
-
-      environment.publishEvent({
-        ...event,
-        source,
-      });
-    },
-    input: cloneValue(toolCall.input),
-    iterationCount: environment.iterationCount,
-    manifest: cloneValue(environment.manifest),
-    sharedExports: cloneValue(sharedExports),
-    tool: toolCall.tool,
-    toolCall: cloneValue(toolCall.toolCall),
-  };
-}
-
-function toExecutableToolCall(
-  base: ExecutableToolCall,
-  nextContext: AroundToolContext | undefined
-): ExecutableToolCall {
-  if (nextContext === undefined) {
-    return base;
-  }
-
-  return {
-    approvalDecision: nextContext.approvalDecision ?? base.approvalDecision,
-    input: nextContext.input,
-    tool: nextContext.tool,
-    toolCall: nextContext.toolCall,
-  };
-}
-
-function emitToolStartIfNeeded(
-  toolCall: ExecutableToolCall,
-  environment: ToolBatchEnvironment,
-  toolStartState: ToolStartState,
-  startBarrier: ToolStartBarrier
-): void {
-  if (toolStartState.emitted) {
-    return;
-  }
-
-  toolStartState.emitted = true;
-  toolStartState.settled = true;
-  environment.publishEvent({
-    callId: toolCall.toolCall.callId,
-    input: toolCall.input,
-    name: toolCall.tool.name,
-    timestamp: environment.now(),
-    type: "tool.start",
-  });
-  startBarrier.markSettled();
-}
-
-function createPendingToolCall(
-  toolCall: ApprovalPendingSource,
-  input: unknown
-): PendingToolCall {
-  return {
-    callId: toolCall.callId,
-    decisions: [...DEFAULT_APPROVAL_DECISIONS],
-    input,
-    message: `Approve tool "${toolCall.name}"?`,
-    name: toolCall.name,
-  };
-}
-
-function normalizeApprovalRequest(
-  toolCall: ApprovalPendingSource,
-  input: unknown,
-  request: ApprovalRequest
-): ApprovalRequest {
-  const existingIndex = request.toolCalls.findIndex(
-    (pending) => pending.callId === toolCall.callId
-  );
-
-  if (existingIndex >= 0) {
-    return {
-      completedResults: request.completedResults,
-      toolCalls: request.toolCalls.map((pending, index) =>
-        index === existingIndex
-          ? {
-              ...pending,
-              input,
-              name: toolCall.name,
-            }
-          : pending
-      ),
-    };
-  }
-
-  return {
-    completedResults: request.completedResults,
-    toolCalls: [
-      ...request.toolCalls,
-      {
-        callId: toolCall.callId,
-        decisions: [...DEFAULT_APPROVAL_DECISIONS],
-        input,
-        message: `Approve tool "${toolCall.name}"?`,
-        name: toolCall.name,
-      },
-    ],
-  };
-}
-
-function isApprovalRequestValidationError(error: unknown): boolean {
-  return (
-    error instanceof Error &&
-    "code" in error &&
-    error.code === "invalid_approval_request"
-  );
-}
-
-function isRejectedPromiseResult(
-  result: PromiseSettledResult<unknown>
-): result is PromiseRejectedResult {
-  return result.status === "rejected";
-}
-
-async function evaluateApprovalPolicy(
-  policy: NonNullable<KrakenToolDefinition["approval"]>,
-  input: unknown,
-  context: ToolExecutionContext
-): Promise<boolean> {
-  return typeof policy === "function" ? await policy(input, context) : policy;
-}
-
-function validateToolInput(
-  tool: KrakenToolDefinition,
-  input: unknown
-):
-  | { details?: unknown; valid: true; value: unknown }
-  | { details?: unknown; valid: false } {
-  const schema = tool.inputSchema;
-
-  if (
-    schema !== null &&
-    typeof schema === "object" &&
-    "validate" in schema &&
-    typeof schema.validate === "function"
-  ) {
-    let result: ReturnType<typeof schema.validate>;
-
-    try {
-      result = schema.validate(input);
-    } catch (error: unknown) {
-      return {
-        details: {
-          error: normalizeError(error).message,
-        },
-        valid: false,
-      };
-    }
-
-    return result.valid
-      ? { valid: true, value: result.value }
-      : { details: result.error, valid: false };
-  }
-
-  const validator = getCompiledValidator(schema);
-  const valid = validator(input);
-
-  if (valid) {
-    return {
-      valid: true,
-      value: input,
-    };
-  }
-
-  return {
-    details: formatAjvErrors(validator.errors),
-    valid: false,
-  };
-}
-
-function getCompiledValidator(
-  schema: KrakenToolDefinition["inputSchema"]
-): ValidateFunction {
-  if (typeof schema === "boolean") {
-    return ajv.compile(schema);
-  }
-
-  const cached = validatorCache.get(schema);
-
-  if (cached !== undefined) {
-    return cached;
-  }
-
-  const validator = ajv.compile(schema);
-  validatorCache.set(schema, validator);
-  return validator;
-}
-
-function formatAjvErrors(errors: ErrorObject[] | null | undefined): unknown {
-  return errors?.map((error) => ({
-    instancePath: error.instancePath,
-    keyword: error.keyword,
-    message: error.message,
-    params: error.params,
-    schemaPath: error.schemaPath,
-  }));
-}
-
-function applyApprovalDecisionMetadata(
-  result: ToolResultPart,
-  decision: ApprovalDecision | undefined
-): ToolResultPart {
-  if (
-    decision === undefined ||
-    decision.message === undefined ||
-    decision.type === "reject" ||
-    !isExecutableApprovalDecision(decision)
-  ) {
-    return result;
-  }
-
-  return {
-    ...result,
-    output: {
-      approval: {
-        message: decision.message,
-        type: decision.type,
-      },
-      result: result.output,
-    },
-  };
-}
-
-function createRejectedToolResult(
-  toolCall: PendingToolCall,
-  decision: ApprovalDecision
-): ToolResultPart {
-  const message =
-    decision.message ??
-    (decision.type === "reject"
-      ? `Tool "${toolCall.name}" was rejected during approval.`
-      : `Tool "${toolCall.name}" was blocked by approval decision "${decision.type}".`);
-
-  return {
-    callId: toolCall.callId,
-    isError: true,
-    name: toolCall.name,
-    output: {
-      decisionType: decision.type,
-      error: message,
-    },
-    type: "tool_result",
-  };
-}
-
-function createExecutionFailureResult(
-  toolCall: ToolCallPart,
-  error: unknown,
-  decision: ApprovalDecision | undefined
-): ToolResultPart {
-  const message =
-    error instanceof Error ? error.message : `Tool "${toolCall.name}" failed.`;
-  const approval =
-    decision === undefined
-      ? undefined
-      : {
-          message: decision.message,
-          type: decision.type,
-        };
-
-  return {
-    callId: toolCall.callId,
-    isError: true,
-    name: toolCall.name,
-    output: {
-      error: message,
-      ...(approval === undefined ? {} : { approval }),
-    },
-    type: "tool_result",
-  };
-}
-
-function createErrorToolResult(
-  toolCall: ToolCallPart,
-  message: string,
-  details?: unknown
-): ToolResultPart {
-  return {
-    callId: toolCall.callId,
-    isError: true,
-    name: toolCall.name,
-    output:
-      details === undefined ? { error: message } : { details, error: message },
-    type: "tool_result",
-  };
-}
-
-async function stageAndEmitResult(
-  environment: ToolBatchEnvironment,
-  result: ToolResultPart,
-  orderIndex: number,
-  startBarrier: ToolStartBarrier
-): Promise<HashString> {
-  await startBarrier.waitUntilReady();
-  const hash = await environment.stageResult(result, orderIndex);
-  emitToolResultEvent(environment, result);
-  return hash;
-}
-
-async function stageAndEmitResults(
-  environment: ToolBatchEnvironment,
-  results: ToolResultPart[],
-  orderIndex: number,
-  startBarrier: ToolStartBarrier
-): Promise<HashString[]> {
-  const hashes: HashString[] = [];
-
-  for (const result of results) {
-    hashes.push(
-      await stageAndEmitResult(environment, result, orderIndex, startBarrier)
-    );
-  }
-
-  return hashes;
-}
-
-async function stageImmediateResults(
-  environment: ToolBatchEnvironment,
-  immediateResults: ToolResultPart[][],
-  orderedResults: StagedToolResult[][],
-  startBarrier: ToolStartBarrier
-): Promise<void> {
-  for (const [index, results] of immediateResults.entries()) {
-    if (results.length === 0) {
-      continue;
-    }
-
-    const hashes = await stageAndEmitResults(
-      environment,
-      results,
-      index,
-      startBarrier
-    );
-    orderedResults[index].push(...zipStagedToolResults(results, hashes));
-  }
-}
-
-async function stageImmediateResultsWhileExecuting(
-  environment: ToolBatchEnvironment,
-  immediateResults: ToolResultPart[][],
-  orderedResults: StagedToolResult[][],
-  executable: OrderedExecutableToolCall[]
-): Promise<SingleToolOutcome[]> {
-  const startBarrier = createToolStartBarrier(executable.length);
-  const executablePromise = executeConcurrentToolCalls(
-    executable,
-    environment,
-    startBarrier
-  ).then(
-    (outcomes) => ({ outcomes, rejected: false as const }),
-    (error: unknown) => ({ error, rejected: true as const })
-  );
-
-  // Known non-executing outcomes are staged before slower siblings finish so they
-  // survive crashes, but they still wait on the start barrier to preserve the
-  // contract that every executable tool emits `tool.start` before any `tool.result`.
-  await stageImmediateResults(
-    environment,
-    immediateResults,
-    orderedResults,
-    startBarrier
-  );
-
-  const result = await executablePromise;
-
-  if (result.rejected) {
-    throw result.error;
-  }
-
-  return result.outcomes;
-}
-
-function emitToolResultEvent(
-  environment: ToolBatchEnvironment,
-  result: ToolResultPart
-): void {
-  environment.publishEvent({
-    callId: result.callId,
-    isError: result.isError,
-    name: result.name,
-    output: result.output,
-    timestamp: environment.now(),
-    type: "tool.result",
-  });
-}
-
-function asRecord(value: unknown): Record<string, unknown> {
-  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
-    return value as Record<string, unknown>;
-  }
-
-  return {};
-}
-
-function cloneRecord(value: unknown): Record<string, unknown> {
-  return asRecord(cloneValue(asRecord(value)));
-}
-
-function createToolStartBarrier(totalCalls: number): ToolStartBarrier {
-  let pendingCalls = totalCalls;
-  let resolveReady: (() => void) | undefined;
-  const ready = new Promise<void>((resolve) => {
-    resolveReady = resolve;
-
-    if (pendingCalls === 0) {
-      resolve();
-    }
-  });
-
-  return {
-    markSettled() {
-      if (pendingCalls === 0) {
-        return;
-      }
-
-      pendingCalls -= 1;
-
-      if (pendingCalls === 0) {
-        resolveReady?.();
-      }
-    },
-    async waitUntilReady() {
-      await ready;
-    },
-  };
-}
-
-function settleToolStartIfNeeded(
-  toolStartState: ToolStartState,
-  startBarrier: ToolStartBarrier
-): void {
-  if (toolStartState.settled) {
-    return;
-  }
-
-  toolStartState.settled = true;
-  startBarrier.markSettled();
-}
-
-function composeAbortSignals(
-  left: AbortSignal | undefined,
-  right: AbortSignal | undefined
-): AbortSignal | undefined {
-  if (left === undefined) {
-    return right;
-  }
-
-  if (right === undefined) {
-    return left;
-  }
-
-  return AbortSignal.any([left, right]);
-}
-
-function cloneValue<T>(value: T): T {
-  return globalThis.structuredClone(value);
-}
-
-function normalizeError(error: unknown): Error {
-  return error instanceof Error ? error : new Error(String(error));
-}
-
-function zipStagedToolResults(
-  results: ToolResultPart[],
-  hashes: HashString[]
-): StagedToolResult[] {
-  if (results.length !== hashes.length) {
-    throw new Error("tool result hashes must align with tool results");
-  }
-
-  return results.map((result, index) => ({
-    hash: hashes[index],
-    result,
-  }));
-}
-
-function isExecutableApprovalDecision(
-  decision: ApprovalDecision
-): decision is ApprovalDecision & { type: "approve" | "edit" } {
-  return decision.type === "approve" || decision.type === "edit";
-}
-
-function isPauseResult(
-  result: AroundToolResult
-): result is Extract<AroundToolResult, { verdict: "pause" }> {
-  return "verdict" in result && result.verdict === "pause";
-}
-
-function isResultWithState(
-  result: AroundToolResult
-): result is Extract<AroundToolResult, { result: ToolResultPart }> {
-  return "result" in result;
 }
