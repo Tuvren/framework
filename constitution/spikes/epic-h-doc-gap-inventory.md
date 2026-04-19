@@ -156,6 +156,12 @@ The remaining design questions inside this topic are therefore narrower:
 - what parts of the old paused handle become invalid after approval handoff
 - whether paused-handle `cancel()` is specified as a rejection shortcut directly or left as a host-level mapping onto explicit rejection semantics
 
+**Working decision:**
+
+- `resolveApproval(...)` returns a new handle rather than mutating the paused one in place.
+- This fits the kernel-oriented ownership model better: the paused handle represents the completed paused execution token, while the resumed execution proceeds through a fresh handle.
+- After approval handoff, the old paused handle is exhausted/inert as an execution token and must not remain a second active owner of resume or further control flow.
+
 ### 4. Parallel tool execution semantics
 
 **Original gap in `docs/`:**
