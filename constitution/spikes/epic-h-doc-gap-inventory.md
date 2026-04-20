@@ -457,7 +457,16 @@ If shared sequence-like logic proves reusable later, it can be added above the p
 - Which parts of worker/session behavior are core framework semantics and which are implementation details.
 - Whether the no-`parent` convenience path is normative or merely optional when ambiguity is low.
 
-<!-- We will need to handle this in detail for me to be able to decide for each one -->
+**Working decision (sub-aspect 1):**
+
+- Keep orchestration support in the shared framework core, but only as a minimal primitive.
+- The main justification is to avoid forcing every concrete driver to reinvent parent/worker coordination and real-time worker event plumbing.
+- The shared core should provide the reusable logic and minimal semantics needed for:
+  - launching worker execution
+  - observing worker execution
+  - resolving worker approval when worker execution pauses
+
+It should **not** prematurely standardize rich orchestration ergonomics or opinionated workflow behavior above those primitives.
 
 ### 9. Worker-result projection
 
