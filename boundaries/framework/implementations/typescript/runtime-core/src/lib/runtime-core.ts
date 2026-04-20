@@ -24,6 +24,7 @@ import type {
 import { assertDriverExecutionResult } from "@kraken/framework-driver-api";
 import type {
   AgentConfig,
+  ApprovalRequest,
   ApprovalResponse,
   ContextEngineeringContext,
   ContextEngineeringHelpers,
@@ -1660,14 +1661,25 @@ class RuntimeCore implements KrakenRuntime {
     );
     const manifestHash = await this.stageManifest(runId, manifest);
 
-    let resolution: RuntimeResolution =
-      toolBatch.approval === undefined
-        ? { type: "continue_iteration" }
-        : {
-            approval: toolBatch.approval,
-            reason: "approval_required",
-            type: "pause",
-          };
+    const hasExecutableDecisions = hasExecutableApprovalDecisions(
+      resumeContext.approval
+    );
+    let resolution: RuntimeResolution;
+
+    if (toolBatch.approval !== undefined) {
+      resolution = {
+        approval: toolBatch.approval,
+        reason: "approval_required",
+        type: "pause",
+      };
+    } else if (hasExecutableDecisions) {
+      resolution = { type: "continue_iteration" };
+    } else {
+      resolution = {
+        reason: "approval_rejected",
+        type: "end_turn",
+      };
+    }
 
     const runtimeStatusHash =
       resolution.type === "pause"
@@ -2685,14 +2697,51 @@ class RuntimeCore implements KrakenRuntime {
       carriedStateUpdates: [...pauseContext.carriedStateUpdates],
       enteredIterationLoop: true,
     };
+    await this.options.kernel.run.complete(pauseContext.pausedRunId, "failed");
+
+    if (
+      pauseContext.kind === "tool_approval" &&
+      pauseContext.pausedIteration !== undefined
+    ) {
+      await this.checkpointResumeRunningStatus(
+        handle,
+        handle.schemaId,
+        loopState,
+        pauseContext.pausedIteration.iterationCount
+      );
+      const cancelledOutcome = await this.resumePausedToolExecution(
+        handle,
+        handle.schemaId,
+        loopState,
+        {
+          approval: createRejectedApprovalResponse(pauseContext.approval),
+          pauseContext,
+          pausedRunId: pauseContext.pausedRunId,
+          pausedTurnNodeHash: pauseContext.pausedTurnNodeHash,
+        }
+      );
+
+      if (cancelledOutcome.pauseContext !== undefined) {
+        handle.rememberPauseContext(cancelledOutcome.pauseContext);
+        return;
+      }
+
+      await this.completeExecution(
+        handle,
+        cancelledOutcome.resolution,
+        cancelledOutcome.partial ?? false,
+        loopState,
+        true
+      );
+      return;
+    }
+
     const failureResolution: RuntimeResolution = {
       error,
       fatality: "hard",
       type: "fail",
     };
-
     handle.rememberError(projectError(error));
-    await this.options.kernel.run.complete(pauseContext.pausedRunId, "failed");
 
     if (loopState.carriedStateUpdates.length > 0) {
       await this.commitPendingExtensionStateUpdates(
@@ -3646,21 +3695,40 @@ function synthesizeResponse(
   messages: KrakenMessage[],
   resolution: RuntimeResolution
 ): KrakenModelResponse {
-  for (let index = messages.length - 1; index >= 0; index -= 1) {
-    const message = messages[index];
+  const assistantMessages = messages.filter(
+    (message): message is Extract<KrakenMessage, { role: "assistant" }> =>
+      message.role === "assistant"
+  );
+  const lastAssistantMessage = assistantMessages.at(-1);
 
-    if (message.role === "assistant") {
-      return {
-        finishReason: inferFinishReason(message),
-        parts: message.parts,
-      };
-    }
+  if (lastAssistantMessage !== undefined) {
+    return {
+      finishReason: inferFinishReason(lastAssistantMessage),
+      parts: assistantMessages.flatMap((message) => message.parts),
+    };
   }
 
   return {
     finishReason: resolution.type === "fail" ? "error" : "stop",
     parts: [],
   };
+}
+
+function createRejectedApprovalResponse(
+  request: ApprovalRequest
+): ApprovalResponse {
+  return {
+    decisions: request.toolCalls.map((toolCall) => ({
+      callId: toolCall.callId,
+      type: "reject",
+    })),
+  };
+}
+
+function hasExecutableApprovalDecisions(response: ApprovalResponse): boolean {
+  return response.decisions.some(
+    (decision) => decision.type === "approve" || decision.type === "edit"
+  );
 }
 
 function toOptionalHash(value: PathValue): HashString | null {

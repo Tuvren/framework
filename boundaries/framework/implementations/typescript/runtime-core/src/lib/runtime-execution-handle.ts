@@ -86,7 +86,6 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
 
   cancel(): void {
     if (this.replacementHandle !== undefined) {
-      this.replacementHandle.cancel();
       return;
     }
 

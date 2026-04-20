@@ -18,6 +18,7 @@ import { randomUUID } from "node:crypto";
 import type {
   AgentConfig,
   ApprovalResponse,
+  ContentPart,
   ExecutionHandle,
   ExecutionStatus,
   InputSignal,
@@ -26,6 +27,7 @@ import type {
   KrakenStreamEvent,
   OrchestrationHandle,
   OrchestrationRuntime,
+  ToolResultPart,
 } from "@kraken/framework-runtime-api";
 import { type EpochMs, KrakenRuntimeError } from "@kraken/shared-core-types";
 import {
@@ -71,7 +73,7 @@ class OrchestrationNode {
   private readonly runtime: OrchestrationRuntimeImpl;
   private selfPhase: ExecutionStatus["phase"] = "running";
   private selfResultResolved = false;
-  private selfVisibleResult: unknown;
+  private selfVisibleResult?: ContentPart[] | ToolResultPart;
   private startedExecution = false;
   private readonly subtreeEvents = new EventFanout<KrakenStreamEvent>();
   private subtreeSettled = false;
@@ -450,8 +452,8 @@ class OrchestrationNode {
   private trackVisibleResult(
     event: KrakenStreamEvent,
     state: {
-      assistantParts: unknown[];
-      lastVisible: unknown;
+      assistantParts: ContentPart[];
+      lastVisible: ContentPart[] | ToolResultPart | undefined;
     }
   ): void {
     switch (event.type) {
@@ -459,10 +461,17 @@ class OrchestrationNode {
         state.assistantParts = [];
         return;
       case "text.done":
-        state.assistantParts.push(event.text);
+        state.assistantParts.push({
+          text: event.text,
+          type: "text",
+        });
         return;
       case "structured.done":
-        state.assistantParts.push(event.data);
+        state.assistantParts.push({
+          data: structuredClone(event.data),
+          name: event.name,
+          type: "structured",
+        });
         return;
       case "tool.result":
         state.lastVisible = {
@@ -474,10 +483,10 @@ class OrchestrationNode {
         };
         return;
       case "message.done":
-        if (state.assistantParts.length === 1) {
-          state.lastVisible = state.assistantParts[0];
-        } else if (state.assistantParts.length > 1) {
-          state.lastVisible = [...state.assistantParts];
+        if (state.assistantParts.length > 0) {
+          state.lastVisible = state.assistantParts.map((part) =>
+            cloneVisibleContentPart(part)
+          );
         }
 
         state.assistantParts = [];
@@ -497,8 +506,11 @@ class OrchestrationNode {
     try {
       const binding = await bindingPromise;
       const visibleState = {
-        assistantParts: [] as unknown[],
+        assistantParts: [],
         lastVisible: this.selfVisibleResult,
+      } satisfies {
+        assistantParts: ContentPart[];
+        lastVisible: ContentPart[] | ToolResultPart | undefined;
       };
 
       for await (const event of binding.handle.events()) {
@@ -764,6 +776,44 @@ export function createOrchestrationRuntime(
     options.agents,
     options.now ?? Date.now
   );
+}
+
+function cloneVisibleContentPart(part: ContentPart): ContentPart {
+  switch (part.type) {
+    case "file":
+      return {
+        data:
+          typeof part.data === "string" ? part.data : new Uint8Array(part.data),
+        filename: part.filename,
+        mediaType: part.mediaType,
+        providerMetadata:
+          part.providerMetadata === undefined
+            ? undefined
+            : structuredClone(part.providerMetadata),
+        type: "file",
+      };
+    case "structured":
+      return {
+        data: structuredClone(part.data),
+        name: part.name,
+        providerMetadata:
+          part.providerMetadata === undefined
+            ? undefined
+            : structuredClone(part.providerMetadata),
+        type: "structured",
+      };
+    case "text":
+      return {
+        providerMetadata:
+          part.providerMetadata === undefined
+            ? undefined
+            : structuredClone(part.providerMetadata),
+        text: part.text,
+        type: "text",
+      };
+    default:
+      return part;
+  }
 }
 
 function normalizeWorkerTask(task: unknown): InputSignal {

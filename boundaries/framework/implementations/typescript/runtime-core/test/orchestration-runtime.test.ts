@@ -136,7 +136,12 @@ describe("orchestration-runtime", () => {
       await harness.readBranchMessages(thread.branchId)
     );
 
-    expect(childResult).toBe("Worker complete.");
+    expect(childResult).toEqual([
+      {
+        text: "Worker complete.",
+        type: "text",
+      },
+    ]);
     expect(
       events.some(
         (event) =>
@@ -156,6 +161,75 @@ describe("orchestration-runtime", () => {
         );
       })
     ).toBe(false);
+  });
+
+  test("awaitResult preserves structured part metadata in the final visible result surface", async () => {
+    const harness = createFakeKernelHarness();
+    const framework = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([
+        createStaticDriver(async (context) => {
+          if (context.config.name === "worker") {
+            return {
+              messages: [
+                {
+                  parts: [
+                    {
+                      data: { ok: true },
+                      name: "report",
+                      type: "structured",
+                    },
+                  ],
+                  role: "assistant",
+                },
+              ],
+              resolution: {
+                reason: "done",
+                type: "end_turn",
+              },
+            };
+          }
+
+          return {
+            messages: [assistantText("Parent complete.")],
+            resolution: {
+              reason: "done",
+              type: "end_turn",
+            },
+          };
+        }),
+      ]),
+      kernel: harness.kernel,
+    });
+    const orchestration = createOrchestrationRuntime({
+      agents: {
+        primary: { name: "primary" },
+        worker: { name: "worker" },
+      },
+      framework,
+    });
+    const thread = await framework.createThread({});
+    const handle = orchestration.executeTurn({
+      agent: "primary",
+      branchId: thread.branchId,
+      signal: textSignal("Start root"),
+      threadId: thread.threadId,
+    });
+
+    detachTestPromise(collectEvents(handle.events()));
+    await delay(0);
+    const childHandle = handle.spawn({
+      agent: "worker",
+      task: "report",
+    });
+
+    expect(await childHandle.awaitResult()).toEqual([
+      {
+        data: { ok: true },
+        name: "report",
+        type: "structured",
+      },
+    ]);
   });
 
   test("keeps subtree events flowing while the parent is paused", async () => {
@@ -366,7 +440,12 @@ describe("orchestration-runtime", () => {
     await rootEventsPromise;
 
     expect(resumedChildHandle).not.toBe(childHandle);
-    expect(childResult).toBe("Worker resumed with approval.");
+    expect(childResult).toEqual([
+      {
+        text: "Worker resumed with approval.",
+        type: "text",
+      },
+    ]);
   });
 
   test("supports recursive child spawning", async () => {
@@ -437,7 +516,12 @@ describe("orchestration-runtime", () => {
     const grandchildResult = await grandchildHandle.awaitResult();
     const allEvents = await allEventsPromise;
 
-    expect(grandchildResult).toBe("Grandchild complete.");
+    expect(grandchildResult).toEqual([
+      {
+        text: "Grandchild complete.",
+        type: "text",
+      },
+    ]);
     expect(
       new Set(
         allEvents
