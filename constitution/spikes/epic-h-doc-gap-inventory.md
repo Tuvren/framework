@@ -281,7 +281,20 @@ The only resume-specific additions are decision context and the exclusion of alr
 
 This is one of the highest-value doc areas to settle before any Epic I driver work.
 
-<!-- Show me the current shape and let's work through at least 3 example use cases where this could be stress tested for me to decide the final shape -->
+**Working decision (sub-aspect 1):**
+
+- `DriverExecutionResult` should not carry a shared `response` field at all.
+- The shared driver seam should stay history-first and resolution-first:
+  - durable assistant history is represented through `messages`
+  - control flow is represented through `resolution`
+  - interrupted durable output is represented through `partial`
+- Richer transient iteration artifacts belong in driver-local or runtime-internal layers unless a future shared-core use case proves they must exist in the public driver contract.
+
+This is intentionally closer to the LangChain/LangGraph posture:
+
+- durable state/history is first-class
+- richer execution artifacts are local or explicitly modeled elsewhere
+- the shared contract avoids baking in a universal per-iteration raw response object
 
 ### 6. Handoff semantics versus exact wording
 
