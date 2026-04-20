@@ -555,7 +555,25 @@ Shared-core safety boundary:
 - The exact boundary between observability and correctness.
 - Whether any checkpoint event object is ever allowed to carry semantic state.
 
-<!-- Let's check this specifically because my guess is that we may be trying to reinvent the wheel in the sense of doing too much for something that may not be load-bearing -->
+**Working decision:**
+
+- Keep observability minimal and pluggable in the shared core.
+- Treat this topic primarily as high-level tracing and audit integration, not as a client-consumption correctness surface.
+
+Current boundary:
+
+- correctness-critical semantics live in kernel records and explicit framework state paths
+- observability surfaces remain optional, non-authoritative, and replaceable
+
+This keeps the shared core compatible with pluggable observability layers such as:
+
+- OpenTelemetry
+- Langfuse
+- custom host- or driver-owned tracing stacks
+
+without freezing one tracing model into the framework semantics.
+
+Checkpoint event objects and optional snapshot/checkpoint events are therefore observability aids, not hidden semantic state channels.
 
 ### 11. External or delegated framework execution mode
 
