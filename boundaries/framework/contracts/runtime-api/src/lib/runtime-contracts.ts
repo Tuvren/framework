@@ -82,6 +82,7 @@ const STREAM_EVENT_TYPES = new Set([
   "text.done",
   "reasoning.delta",
   "reasoning.done",
+  "file.done",
   "structured.delta",
   "structured.done",
   "tool_call.start",
@@ -550,6 +551,16 @@ export interface StructuredDoneEvent {
   type: "structured.done";
 }
 
+export interface FileDoneEvent {
+  data: string | Uint8Array;
+  filename?: string;
+  mediaType: string;
+  messageId: string;
+  source?: EventSource;
+  timestamp: EpochMs;
+  type: "file.done";
+}
+
 export interface ToolCallStartEvent {
   callId: string;
   messageId: string;
@@ -643,6 +654,7 @@ export type KrakenStreamEvent =
   | TextDoneEvent
   | ReasoningDeltaEvent
   | ReasoningDoneEvent
+  | FileDoneEvent
   | StructuredDeltaEvent
   | StructuredDoneEvent
   | ToolCallStartEvent
@@ -928,7 +940,7 @@ export interface OrchestrationHandle extends ExecutionHandle {
   allEvents(): AsyncIterable<KrakenStreamEvent>;
   awaitResult(): Promise<unknown>;
   resolveApproval(response: ApprovalResponse): OrchestrationHandle;
-  spawn(input: { agent: string; task: unknown }): OrchestrationHandle;
+  spawn(input: { agent: string; signal: InputSignal }): OrchestrationHandle;
 }
 
 export interface OrchestrationRuntime {
@@ -1254,6 +1266,18 @@ function hasValidStreamEventPayload(
     case "reasoning.done":
       return matchesStreamEventVariant(value, ["messageId"], () =>
         isNonEmptyStringProperty(value, "messageId")
+      );
+    case "file.done":
+      return matchesStreamEventVariant(
+        value,
+        ["messageId", "data", "filename", "mediaType"],
+        () =>
+          isNonEmptyStringProperty(value, "messageId") &&
+          "data" in value &&
+          (typeof value.data === "string" ||
+            value.data instanceof Uint8Array) &&
+          isOptionalStringProperty(value, "filename") &&
+          isNonEmptyStringProperty(value, "mediaType")
       );
     case "structured.delta":
       return matchesStreamEventVariant(

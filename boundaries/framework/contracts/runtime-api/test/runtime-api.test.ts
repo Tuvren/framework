@@ -165,6 +165,19 @@ describe("runtime-api contracts", () => {
     expect(typeof orchestrationHandle.awaitResult).toBe("function");
   });
 
+  test("accepts file.done stream events through the focused events surface", () => {
+    const streamEvent = {
+      data: new Uint8Array([1, 2, 3]),
+      filename: "report.csv",
+      mediaType: "text/csv",
+      messageId: "message-1",
+      timestamp: 1,
+      type: "file.done",
+    } satisfies KrakenStreamEventFromSubpath;
+
+    expect(() => assertKrakenStreamEventFromSubpath(streamEvent)).not.toThrow();
+  });
+
   test("exposes the orchestration contract surface through canonical fixtures", async () => {
     const handle = frameworkContractFixtures.orchestrationRuntime.executeTurn({
       agent: "primary",
@@ -177,7 +190,15 @@ describe("runtime-api contracts", () => {
     const resumedHandle = handle.resolveApproval({ decisions: [] });
     const childHandle = handle.spawn({
       agent: "worker",
-      task: { task: "summarize" },
+      signal: {
+        parts: [
+          {
+            data: { task: "summarize" },
+            name: "task",
+            type: "structured",
+          },
+        ],
+      },
     });
 
     expect(resumedHandle).not.toBe(handle);

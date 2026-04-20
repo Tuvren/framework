@@ -99,6 +99,36 @@ function formatTraceLine(label: string, text: string): string {
   return text.length === 0 ? `[${label}]` : `[${label}] ${text}`;
 }
 
+function summarizeTraceText(text: string, limit = 120): string {
+  const normalized = text.replace(/\s+/g, " ").trim();
+
+  if (normalized.length <= limit) {
+    return normalized;
+  }
+
+  return `${normalized.slice(0, limit - 3)}...`;
+}
+
+function summarizeTraceValue(value: unknown): string {
+  if (typeof value === "string") {
+    return `"${summarizeTraceText(value)}"`;
+  }
+
+  if (
+    typeof value === "number" ||
+    typeof value === "boolean" ||
+    value === null
+  ) {
+    return String(value);
+  }
+
+  try {
+    return summarizeTraceText(JSON.stringify(value));
+  } catch {
+    return "[Unserializable result]";
+  }
+}
+
 function extractLastVisibleAssistantOutputParts(
   messages: readonly KrakenMessage[]
 ): UserMessageParts {
@@ -166,15 +196,15 @@ function summarizeUserMessage(
   message: Extract<KrakenMessage, { role: "user" }>
 ): string {
   const summaryParts: string[] = [];
-  let textCount = 0;
   let structuredCount = 0;
   let fileCount = 0;
 
   for (const part of message.parts) {
     switch (part.type) {
-      case "text":
-        textCount += 1;
+      case "text": {
+        summaryParts.push(`Text request: ${summarizeTraceText(part.text)}`);
         break;
+      }
       case "structured":
         structuredCount += 1;
         break;
@@ -184,14 +214,6 @@ function summarizeUserMessage(
       default:
         break;
     }
-  }
-
-  if (textCount > 0) {
-    summaryParts.push(
-      textCount === 1
-        ? "Text request provided"
-        : `${textCount} text parts provided`
-    );
   }
 
   if (structuredCount > 0) {
@@ -217,8 +239,8 @@ function summarizeUserMessage(
 
 function summarizeToolResult(part: ToolResultPart): string {
   return part.isError === true
-    ? "Reported an error result"
-    : "Returned a result";
+    ? `Reported an error result: ${summarizeTraceValue(part.output)}`
+    : `Returned a result: ${summarizeTraceValue(part.output)}`;
 }
 
 function summarizeAssistantMessage(

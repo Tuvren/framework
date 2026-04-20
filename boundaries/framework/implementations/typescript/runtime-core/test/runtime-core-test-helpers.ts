@@ -428,62 +428,6 @@ export function delay(milliseconds: number): Promise<void> {
   });
 }
 
-export function extractLastWorkerResult(messages: readonly KrakenMessage[]): {
-  agent: string;
-  output: unknown;
-  status: string;
-  workerId: string;
-} | null {
-  for (
-    let messageIndex = messages.length - 1;
-    messageIndex >= 0;
-    messageIndex -= 1
-  ) {
-    const message = messages[messageIndex];
-
-    if (message.role !== "user") {
-      continue;
-    }
-
-    for (
-      let partIndex = message.parts.length - 1;
-      partIndex >= 0;
-      partIndex -= 1
-    ) {
-      const part = message.parts[partIndex];
-
-      if (part.type !== "structured" || part.name !== "worker_result") {
-        continue;
-      }
-
-      const { data } = part;
-
-      if (
-        data === null ||
-        typeof data !== "object" ||
-        !("agent" in data) ||
-        !("output" in data) ||
-        !("status" in data) ||
-        !("workerId" in data) ||
-        typeof data.agent !== "string" ||
-        typeof data.status !== "string" ||
-        typeof data.workerId !== "string"
-      ) {
-        continue;
-      }
-
-      return {
-        agent: data.agent,
-        output: data.output,
-        status: data.status,
-        workerId: data.workerId,
-      };
-    }
-  }
-
-  return null;
-}
-
 export function extractToolMessages(
   messages: readonly unknown[]
 ): Extract<KrakenMessage, { role: "tool" }>[] {
@@ -641,31 +585,6 @@ export function readQueryInput(input: unknown): string {
   }
 
   throw new Error("tool input did not contain a query string");
-}
-
-export function readWorkerTask(
-  messages: readonly KrakenMessage[]
-): string | null {
-  for (const message of messages) {
-    if (message.role !== "user") {
-      continue;
-    }
-
-    for (const part of message.parts) {
-      if (
-        part.type === "structured" &&
-        part.name === "worker_task" &&
-        part.data !== null &&
-        typeof part.data === "object" &&
-        "task" in part.data &&
-        typeof part.data.task === "string"
-      ) {
-        return part.data.task;
-      }
-    }
-  }
-
-  return null;
 }
 
 export function waitForAbort(signal: AbortSignal | undefined): Promise<void> {

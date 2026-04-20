@@ -106,6 +106,7 @@ import {
   resumeToolBatch,
   type ToolBatchEnvironment,
   type ToolBatchOutcome,
+  type ToolExecutionMode,
 } from "./tool-execution.js";
 import { createToolRegistry } from "./tool-registry.js";
 
@@ -127,6 +128,7 @@ export const DEFAULT_AGENT_SCHEMA: TurnTreeSchema = {
 };
 
 export interface RuntimeCoreOptions {
+  approvalRejectionContinuationMode?: "continue_iteration" | "end_turn";
   createId?: () => string;
   defaultDriverId: string;
   driverRegistry?: DriverRegistry;
@@ -139,9 +141,19 @@ export interface RuntimeCoreOptions {
     threadId: string,
     branchId: string
   ) => Promise<string | null> | string | null;
+  // Runtime-core keeps the shared driver seam minimal, so concrete driver
+  // compositions select sequential vs. parallel batches through this
+  // implementation-local hook instead of expanding DriverExecutionResult.
+  selectToolExecutionMode?: (input: {
+    activeAgent: string;
+    driverId: string;
+    iterationCount: number;
+    requestedToolCalls: readonly ToolCallPart[];
+  }) => ToolExecutionMode;
 }
 
 interface ResolvedRuntimeCoreOptions {
+  approvalRejectionContinuationMode: "continue_iteration" | "end_turn";
   createId: () => string;
   defaultDriverId: string;
   driverRegistry: DriverRegistry;
@@ -154,6 +166,12 @@ interface ResolvedRuntimeCoreOptions {
     threadId: string,
     branchId: string
   ) => Promise<string | null> | string | null;
+  selectToolExecutionMode: (input: {
+    activeAgent: string;
+    driverId: string;
+    iterationCount: number;
+    requestedToolCalls: readonly ToolCallPart[];
+  }) => ToolExecutionMode;
 }
 
 interface HeadState {
@@ -189,6 +207,7 @@ interface ExecutedIterationResult {
   partial: boolean;
   requestedToolCalls: ToolCallPart[];
   resolution: RuntimeResolution;
+  toolExecutionMode: ToolExecutionMode;
   toolResults: ToolResultPart[];
   turnNodeHash: HashString | undefined;
 }
@@ -237,6 +256,8 @@ class RuntimeCore implements KrakenRuntime {
 
   constructor(options: RuntimeCoreOptions) {
     this.options = {
+      approvalRejectionContinuationMode:
+        options.approvalRejectionContinuationMode ?? "end_turn",
       createId: options.createId ?? randomUUID,
       defaultDriverId: options.defaultDriverId,
       driverRegistry: options.driverRegistry ?? createDriverRegistry(),
@@ -244,6 +265,8 @@ class RuntimeCore implements KrakenRuntime {
       handoffContextBuilder: options.handoffContextBuilder,
       kernel: options.kernel,
       now: options.now ?? Date.now,
+      selectToolExecutionMode:
+        options.selectToolExecutionMode ?? (() => "parallel"),
       resolveAgentConfig: options.resolveAgentConfig,
       resolveParentTurnId: options.resolveParentTurnId,
     };
@@ -595,7 +618,6 @@ class RuntimeCore implements KrakenRuntime {
     }
 
     await this.options.kernel.run.complete(resumeContext.pausedRunId, "failed");
-    handle.clearPendingResumeCancellation();
     this.publishEvent(
       handle,
       {
@@ -612,6 +634,7 @@ class RuntimeCore implements KrakenRuntime {
       resumeContext.pauseContext.pausedIteration?.iterationCount ??
         handle.status().iterationCount
     );
+    handle.clearPendingResumeCancellation();
 
     if (resumeContext.pauseContext.kind !== "tool_approval") {
       return false;
@@ -1162,6 +1185,7 @@ class RuntimeCore implements KrakenRuntime {
     );
     await this.options.kernel.run.beginStep(iterationRunId, "iterate");
 
+    const emittedDriverEvents: KrakenStreamEvent[] = [];
     const driverResult = await this.executeDriver(
       driver,
       this.createDriverExecutionContext(
@@ -1169,13 +1193,22 @@ class RuntimeCore implements KrakenRuntime {
         schemaId,
         loopState,
         headState,
-        iterationCount
+        iterationCount,
+        emittedDriverEvents
       ),
       pendingResume
     );
     let resolution = driverResult.resolution;
     const driverMessages = [...(driverResult.messages ?? [])];
     const requestedToolCalls = extractToolCallsFromMessages(driverMessages);
+    const toolExecutionMode = this.options.selectToolExecutionMode({
+      activeAgent: loopState.activeConfig.name,
+      driverId: loopState.activeDriverId,
+      iterationCount,
+      requestedToolCalls: createFrozenSnapshot(
+        requestedToolCalls.map((toolCall) => cloneValue(toolCall))
+      ),
+    });
     const cancellationResolution = createCancelledResolution(handle);
     const partial =
       driverResult.partial === true ||
@@ -1217,7 +1250,11 @@ class RuntimeCore implements KrakenRuntime {
       driverMessages,
       iterationCount
     );
-    const driverResponse = synthesizeResponse(driverMessages, resolution);
+    const driverResponse = synthesizeResponse(
+      driverMessages,
+      resolution,
+      emittedDriverEvents
+    );
     const toolResults: ToolResultPart[] = [];
 
     if (cancellationResolution !== undefined) {
@@ -1234,7 +1271,8 @@ class RuntimeCore implements KrakenRuntime {
         headState,
         iterationCount,
         iterationRunId,
-        requestedToolCalls
+        requestedToolCalls,
+        toolExecutionMode
       );
 
       if ("outcome" in toolBatch) {
@@ -1310,6 +1348,7 @@ class RuntimeCore implements KrakenRuntime {
         partial,
         requestedToolCalls,
         resolution,
+        toolExecutionMode,
         toolResults,
         turnNodeHash,
       },
@@ -1321,7 +1360,8 @@ class RuntimeCore implements KrakenRuntime {
     schemaId: string,
     loopState: LoopState,
     headState: HeadState,
-    iterationCount: number
+    iterationCount: number,
+    emittedDriverEvents: KrakenStreamEvent[]
   ): DriverExecutionContext {
     const toolRegistrySnapshot = createReadonlyDriverToolRegistry(
       loopState.activeToolRegistry
@@ -1339,6 +1379,23 @@ class RuntimeCore implements KrakenRuntime {
       messages: createFrozenSnapshot(headState.messages),
       runtime: {
         emit: (event) => {
+          let clonedEvent: KrakenStreamEvent;
+
+          try {
+            clonedEvent = cloneValue(event);
+          } catch (error: unknown) {
+            throw new KrakenRuntimeError(
+              "driver-emitted stream events must be cloneable",
+              {
+                code: "invalid_stream_event",
+                details: {
+                  error: normalizeError(error).message,
+                },
+              }
+            );
+          }
+
+          emittedDriverEvents.push(clonedEvent);
           this.publishEvent(handle, event, loopState);
         },
         now: () => this.now(),
@@ -1378,7 +1435,8 @@ class RuntimeCore implements KrakenRuntime {
     headState: HeadState,
     iterationCount: number,
     runId: string,
-    requestedToolCalls: ToolCallPart[]
+    requestedToolCalls: ToolCallPart[],
+    toolExecutionMode: ToolExecutionMode
   ): Promise<ToolBatchOutcome | { outcome: LoopOutcome }> {
     try {
       return await executeToolBatch(
@@ -1389,7 +1447,8 @@ class RuntimeCore implements KrakenRuntime {
           headState.manifest,
           iterationCount,
           runId
-        )
+        ),
+        toolExecutionMode
       );
     } catch (error: unknown) {
       await this.failTrackedRunWithoutBranchAdvance(
@@ -1556,6 +1615,7 @@ class RuntimeCore implements KrakenRuntime {
               ? {
                   iterationCount,
                   response: result.driverResponse,
+                  toolExecutionMode: result.toolExecutionMode,
                   toolResults: result.toolResults,
                 }
               : undefined,
@@ -1633,7 +1693,8 @@ class RuntimeCore implements KrakenRuntime {
           headState.manifest,
           pausedIteration.iterationCount,
           runId
-        )
+        ),
+        pausedIteration.toolExecutionMode
       );
     } catch (error: unknown) {
       await this.failTrackedRunWithoutBranchAdvance(
@@ -1675,10 +1736,9 @@ class RuntimeCore implements KrakenRuntime {
     } else if (hasExecutableDecisions) {
       resolution = { type: "continue_iteration" };
     } else {
-      resolution = {
-        reason: "approval_rejected",
-        type: "end_turn",
-      };
+      resolution = createApprovalRejectionResolution(
+        this.options.approvalRejectionContinuationMode
+      );
     }
 
     const runtimeStatusHash =
@@ -1776,6 +1836,7 @@ class RuntimeCore implements KrakenRuntime {
           pausedIteration: {
             iterationCount: pausedIteration.iterationCount,
             response: pausedIteration.response,
+            toolExecutionMode: pausedIteration.toolExecutionMode,
             toolResults: [...pausedIteration.toolResults, ...toolBatch.results],
           },
           pausedRunId: runId,
@@ -1889,12 +1950,12 @@ class RuntimeCore implements KrakenRuntime {
         helpers: helperBundle.helpers,
         manifest: cloneValue(headState.manifest),
         messages: cloneValue(headState.messages),
-        sourceAgent: {
-          name: loopState.activeConfig.name,
-        },
-        targetAgent: {
-          name: resolvedTargetAgent.name,
-        },
+        sourceAgent: createFrozenSnapshot(
+          cloneAgentConfigForRequest(loopState.activeConfig)
+        ),
+        targetAgent: createFrozenSnapshot(
+          cloneAgentConfigForRequest(resolvedTargetAgent)
+        ),
       },
       targetAgent: input.targetAgent,
     };
@@ -3693,18 +3754,24 @@ function resolutionToPhase(
 
 function synthesizeResponse(
   messages: KrakenMessage[],
-  resolution: RuntimeResolution
+  resolution: RuntimeResolution,
+  emittedEvents: KrakenStreamEvent[]
 ): KrakenModelResponse {
   const assistantMessages = messages.filter(
     (message): message is Extract<KrakenMessage, { role: "assistant" }> =>
       message.role === "assistant"
   );
   const lastAssistantMessage = assistantMessages.at(-1);
+  const lastMessageDoneEvent = findLastMessageDoneEvent(emittedEvents);
 
   if (lastAssistantMessage !== undefined) {
     return {
-      finishReason: inferFinishReason(lastAssistantMessage),
+      finishReason:
+        lastMessageDoneEvent?.finishReason ??
+        inferFinishReason(lastAssistantMessage),
       parts: assistantMessages.flatMap((message) => message.parts),
+      providerMetadata: lastAssistantMessage.providerMetadata,
+      usage: lastMessageDoneEvent?.usage,
     };
   }
 
@@ -3712,6 +3779,20 @@ function synthesizeResponse(
     finishReason: resolution.type === "fail" ? "error" : "stop",
     parts: [],
   };
+}
+
+function findLastMessageDoneEvent(
+  events: KrakenStreamEvent[]
+): Extract<KrakenStreamEvent, { type: "message.done" }> | undefined {
+  for (let index = events.length - 1; index >= 0; index -= 1) {
+    const event = events[index];
+
+    if (event?.type === "message.done") {
+      return event;
+    }
+  }
+
+  return undefined;
 }
 
 function createRejectedApprovalResponse(
@@ -3722,6 +3803,19 @@ function createRejectedApprovalResponse(
       callId: toolCall.callId,
       type: "reject",
     })),
+  };
+}
+
+function createApprovalRejectionResolution(
+  mode: "continue_iteration" | "end_turn"
+): RuntimeResolution {
+  if (mode === "continue_iteration") {
+    return { type: "continue_iteration" };
+  }
+
+  return {
+    reason: "approval_rejected",
+    type: "end_turn",
   };
 }
 

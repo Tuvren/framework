@@ -26,6 +26,7 @@ import type {
 } from "@kraken/framework-runtime-api";
 import type { HashString } from "@kraken/shared-core-types";
 import type { ExtensionStateUpdate } from "./extension-runtime.js";
+import type { ToolExecutionMode } from "./tool-execution.js";
 
 export interface ExecutionSessionRequest {
   branchId: string;
@@ -41,6 +42,7 @@ export interface ExecutionSessionRequest {
 export interface PausedIterationState {
   iterationCount: number;
   response: KrakenModelResponse;
+  toolExecutionMode: ToolExecutionMode;
   toolResults: ToolResultPart[];
 }
 

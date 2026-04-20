@@ -56,7 +56,7 @@ interface ExecutionBinding {
 
 interface ChildSpawnRequest {
   agent: string;
-  task: unknown;
+  signal: InputSignal;
 }
 
 class OrchestrationNode {
@@ -460,6 +460,17 @@ class OrchestrationNode {
       case "message.start":
         state.assistantParts = [];
         return;
+      case "file.done":
+        state.assistantParts.push({
+          data:
+            typeof event.data === "string"
+              ? event.data
+              : new Uint8Array(event.data),
+          filename: event.filename,
+          mediaType: event.mediaType,
+          type: "file",
+        });
+        return;
       case "text.done":
         state.assistantParts.push({
           text: event.text,
@@ -596,12 +607,12 @@ class OrchestrationHandleImpl implements OrchestrationHandle {
     return new OrchestrationHandleImpl(resumedNode);
   }
 
-  spawn(input: { agent: string; task: unknown }): OrchestrationHandle {
+  spawn(input: { agent: string; signal: InputSignal }): OrchestrationHandle {
     this.assertActive("spawn");
     return new OrchestrationHandleImpl(
       this.node.spawn({
         agent: input.agent,
-        task: input.task,
+        signal: input.signal,
       })
     );
   }
@@ -732,7 +743,7 @@ class OrchestrationRuntimeImpl implements OrchestrationRuntime {
     const childHandle = this.framework.executeTurn({
       branchId: childThread.branchId,
       config,
-      signal: normalizeWorkerTask(input.task),
+      signal: normalizeInputSignal(input.signal, "orchestration child signal"),
       threadId: childThread.threadId,
     });
 
@@ -814,33 +825,4 @@ function cloneVisibleContentPart(part: ContentPart): ContentPart {
     default:
       return part;
   }
-}
-
-function normalizeWorkerTask(task: unknown): InputSignal {
-  if (
-    task !== null &&
-    typeof task === "object" &&
-    "parts" in task &&
-    Array.isArray(task.parts)
-  ) {
-    return normalizeInputSignal(
-      {
-        parts: task.parts,
-      },
-      "worker task"
-    );
-  }
-
-  return normalizeInputSignal(
-    {
-      parts: [
-        {
-          data: task,
-          name: "worker_task",
-          type: "structured",
-        },
-      ],
-    },
-    "worker task"
-  );
 }

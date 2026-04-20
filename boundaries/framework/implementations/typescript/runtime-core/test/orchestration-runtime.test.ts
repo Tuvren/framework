@@ -73,7 +73,7 @@ describe("orchestration-runtime", () => {
     expect(() =>
       handle.spawn({
         agent: "worker",
-        task: "too-early",
+        signal: textSignal("too-early"),
       })
     ).toThrow(
       "spawn() requires the orchestration handle to start execution first"
@@ -128,7 +128,7 @@ describe("orchestration-runtime", () => {
     await delay(0);
     const childHandle = handle.spawn({
       agent: "worker",
-      task: "research",
+      signal: textSignal("research"),
     });
     const childResult = await childHandle.awaitResult();
     const events = await eventsPromise;
@@ -190,6 +190,7 @@ describe("orchestration-runtime", () => {
             };
           }
 
+          await delay(20);
           return {
             messages: [assistantText("Parent complete.")],
             resolution: {
@@ -220,7 +221,7 @@ describe("orchestration-runtime", () => {
     await delay(0);
     const childHandle = handle.spawn({
       agent: "worker",
-      task: "report",
+      signal: textSignal("report"),
     });
 
     expect(await childHandle.awaitResult()).toEqual([
@@ -228,6 +229,78 @@ describe("orchestration-runtime", () => {
         data: { ok: true },
         name: "report",
         type: "structured",
+      },
+    ]);
+  });
+
+  test("awaitResult preserves file parts in the final visible result surface", async () => {
+    const harness = createFakeKernelHarness();
+    const framework = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([
+        createStaticDriver(async (context) => {
+          if (context.config.name === "worker") {
+            return {
+              messages: [
+                {
+                  parts: [
+                    {
+                      data: new Uint8Array([1, 2, 3]),
+                      filename: "report.csv",
+                      mediaType: "text/csv",
+                      type: "file",
+                    },
+                  ],
+                  role: "assistant",
+                },
+              ],
+              resolution: {
+                reason: "done",
+                type: "end_turn",
+              },
+            };
+          }
+
+          await delay(20);
+          return {
+            messages: [assistantText("Parent complete.")],
+            resolution: {
+              reason: "done",
+              type: "end_turn",
+            },
+          };
+        }),
+      ]),
+      kernel: harness.kernel,
+    });
+    const orchestration = createOrchestrationRuntime({
+      agents: {
+        primary: { name: "primary" },
+        worker: { name: "worker" },
+      },
+      framework,
+    });
+    const thread = await framework.createThread({});
+    const handle = orchestration.executeTurn({
+      agent: "primary",
+      branchId: thread.branchId,
+      signal: textSignal("Start root"),
+      threadId: thread.threadId,
+    });
+
+    detachTestPromise(collectEvents(handle.events()));
+    await delay(0);
+    const childHandle = handle.spawn({
+      agent: "worker",
+      signal: textSignal("file"),
+    });
+
+    expect(await childHandle.awaitResult()).toEqual([
+      {
+        data: new Uint8Array([1, 2, 3]),
+        filename: "report.csv",
+        mediaType: "text/csv",
+        type: "file",
       },
     ]);
   });
@@ -319,7 +392,7 @@ describe("orchestration-runtime", () => {
 
     const childHandle = handle.spawn({
       agent: "worker",
-      task: "background",
+      signal: textSignal("background"),
     });
     await childHandle.awaitResult();
     await waitFor(() =>
@@ -345,7 +418,7 @@ describe("orchestration-runtime", () => {
     const framework = createKrakenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([
-        createStaticDriver((context) => {
+        createStaticDriver(async (context) => {
           const toolMessages = context.messages.filter(
             (message) => message.role === "tool"
           );
@@ -377,6 +450,7 @@ describe("orchestration-runtime", () => {
             };
           }
 
+          await delay(20);
           return {
             messages: [assistantText("Parent finished.")],
             resolution: {
@@ -426,7 +500,7 @@ describe("orchestration-runtime", () => {
     await delay(0);
     const childHandle = handle.spawn({
       agent: "worker",
-      task: "approval",
+      signal: textSignal("approval"),
     });
 
     await collectEvents(childHandle.events());
@@ -453,7 +527,7 @@ describe("orchestration-runtime", () => {
     const framework = createKrakenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([
-        createStaticDriver((context) => {
+        createStaticDriver(async (context) => {
           if (context.config.name === "worker") {
             return {
               messages: [assistantText("Child complete.")],
@@ -474,6 +548,7 @@ describe("orchestration-runtime", () => {
             };
           }
 
+          await delay(20);
           return {
             messages: [assistantText("Root complete.")],
             resolution: {
@@ -505,13 +580,13 @@ describe("orchestration-runtime", () => {
     await delay(0);
     const childHandle = handle.spawn({
       agent: "worker",
-      task: "child",
+      signal: textSignal("child"),
     });
     detachTestPromise(collectEvents(childHandle.allEvents()));
     await delay(0);
     const grandchildHandle = childHandle.spawn({
       agent: "worker-2",
-      task: "grandchild",
+      signal: textSignal("grandchild"),
     });
     const grandchildResult = await grandchildHandle.awaitResult();
     const allEvents = await allEventsPromise;
@@ -536,11 +611,12 @@ describe("orchestration-runtime", () => {
     const framework = createKrakenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([
-        createStaticDriver((context) => {
+        createStaticDriver(async (context) => {
           if (context.config.name === "worker") {
             throw new Error("worker exploded");
           }
 
+          await delay(20);
           return {
             messages: [assistantText("Parent finished.")],
             resolution: {
@@ -571,7 +647,7 @@ describe("orchestration-runtime", () => {
     await delay(0);
     const childHandle = handle.spawn({
       agent: "worker",
-      task: "failure",
+      signal: textSignal("failure"),
     });
 
     await expect(childHandle.awaitResult()).rejects.toThrow("worker exploded");
@@ -605,6 +681,19 @@ function createStaticDriver(
 
         for (const part of message.parts) {
           switch (part.type) {
+            case "file":
+              context.runtime.emit({
+                data:
+                  typeof part.data === "string"
+                    ? part.data
+                    : new Uint8Array(part.data),
+                filename: part.filename,
+                mediaType: part.mediaType,
+                messageId,
+                timestamp: context.runtime.now(),
+                type: "file.done",
+              });
+              break;
             case "structured":
               context.runtime.emit({
                 data: part.data,

@@ -292,7 +292,7 @@ EventSource
 
 **Lifecycle events**: `turn.start`, `turn.end`, `iteration.start`, `iteration.end`
 
-**Model output events** (streaming): `message.start`, `text.delta`, `text.done`, `reasoning.delta`, `reasoning.done`, `structured.delta`, `structured.done`, `tool_call.start`, `tool_call.args_delta`, `tool_call.done`, `message.done`
+**Model output events** (streaming): `message.start`, `text.delta`, `text.done`, `reasoning.delta`, `reasoning.done`, `file.done`, `structured.delta`, `structured.done`, `tool_call.start`, `tool_call.args_delta`, `tool_call.done`, `message.done`
 
 **Tool execution events**: `tool.start`, `tool.result`
 
@@ -302,7 +302,7 @@ EventSource
 
 **Custom events**: `custom` (extension-defined `name` and `data`)
 
-Twenty-four event types in six groups. Complete type definitions:
+Twenty-five event types in six groups. Complete type definitions:
 
 ```
 TurnStartEvent         { type: "turn.start", turnId, threadId, resumedFrom?: string, timestamp }
@@ -315,6 +315,8 @@ TextDeltaEvent         { type: "text.delta", messageId, delta: string, timestamp
 TextDoneEvent          { type: "text.done", messageId, text: string, timestamp }
 ReasoningDeltaEvent    { type: "reasoning.delta", messageId, delta: string, timestamp }
 ReasoningDoneEvent     { type: "reasoning.done", messageId, timestamp }
+FileDoneEvent          { type: "file.done", messageId, data: string|Uint8Array,
+                         mediaType: string, filename?: string, timestamp }
 StructuredDeltaEvent   { type: "structured.delta", messageId, delta: string, timestamp }
 StructuredDoneEvent    { type: "structured.done", messageId, data: unknown, name?: string, timestamp }
 ToolCallStartEvent     { type: "tool_call.start", messageId, callId, name, timestamp }
@@ -338,11 +340,11 @@ CustomEvent            { type: "custom", name: string, data: unknown, timestamp 
 
 `TurnStartEvent.resumedFrom`: When present, contains the TurnNode hash of the pause point. Protocol adapters use this to distinguish fresh Turns from resumed Turns. Absent means fresh Turn.
 
-**Ordering guarantees**: `message.start` precedes all deltas for that message. `text.delta` events arrive in order. `structured.delta` events arrive in order; `structured.done` follows all `structured.delta` events for that message. `tool_call.start` precedes `tool_call.args_delta`. `message.done` follows all content events. Note: `tool_call.*` describes what the model requests (args streaming). `tool.*` describes what the framework executes. These are two different moments.
+**Ordering guarantees**: `message.start` precedes all content events for that message. `text.delta` events arrive in order. `structured.delta` events arrive in order; `structured.done` follows all `structured.delta` events for that message. `file.done` is emitted as one complete visible content event for that file and must occur between `message.start` and `message.done`. `tool_call.start` precedes `tool_call.args_delta`. `message.done` follows all content events. Note: `tool_call.*` describes what the model requests (args streaming). `tool.*` describes what the framework executes. These are two different moments.
 
 **Contract tiers**: Kraken's internal event vocabulary is intentionally richer than any single external protocol. Protocol adapters consume this canonical stream and bridge it into AG-UI, ACP, OpenResponses-style transports, or any other host protocol.
 
-**Required core events**: `turn.start`, `turn.end`, `iteration.start`, `iteration.end`, `message.start`, `text.delta`, `text.done`, `reasoning.delta`, `reasoning.done`, `structured.delta`, `structured.done`, `tool_call.start`, `tool_call.args_delta`, `tool_call.done`, `message.done`, `tool.start`, `tool.result`, `approval.requested`, `approval.resolved`, `steering.incorporated`, and `error`. When their corresponding runtime moments occur, the framework MUST emit them.
+**Required core events**: `turn.start`, `turn.end`, `iteration.start`, `iteration.end`, `message.start`, `text.delta`, `text.done`, `reasoning.delta`, `reasoning.done`, `file.done`, `structured.delta`, `structured.done`, `tool_call.start`, `tool_call.args_delta`, `tool_call.done`, `message.done`, `tool.start`, `tool.result`, `approval.requested`, `approval.resolved`, `steering.incorporated`, and `error`. When their corresponding runtime moments occur, the framework MUST emit them.
 
 **Optional standardized events**: `state.snapshot`, `state.checkpoint`, and `custom`. Their shapes and meanings are standardized, but hosts and protocol adapters MUST tolerate their absence. They are observability and integration affordances, not correctness dependencies.
 
@@ -2072,7 +2074,7 @@ OrchestrationRuntime
 ```
 OrchestrationHandle extends ExecutionHandle
 ├─ resolveApproval(response: ApprovalResponse) → OrchestrationHandle
-├─ spawn(input: { agent: string, task: unknown }) → OrchestrationHandle
+├─ spawn(input: { agent: string, signal: InputSignal }) → OrchestrationHandle
 ├─ allEvents(): AsyncIterable<KrakenStreamEvent>
 └─ awaitResult(): Promise<unknown>
 ```

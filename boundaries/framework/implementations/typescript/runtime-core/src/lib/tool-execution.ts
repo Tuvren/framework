@@ -39,7 +39,6 @@ import {
   applyApprovalDecisionMetadata,
   composeAbortSignals,
   createAroundToolContext,
-  createBatchScopedEnvironment,
   createErrorToolResult,
   createExecutionFailureResult,
   createPendingToolCall,
@@ -117,6 +116,8 @@ export interface ToolStartBarrier {
   waitUntilReady(): Promise<void>;
 }
 
+export type ToolExecutionMode = "parallel" | "sequential";
+
 export type SingleToolOutcome =
   | {
       approval?: never;
@@ -150,17 +151,24 @@ type ResolvedToolBatchStep =
 
 export async function executeToolBatch(
   toolCalls: ToolCallPart[],
-  environment: ToolBatchEnvironment
+  environment: ToolBatchEnvironment,
+  mode: ToolExecutionMode
 ): Promise<ToolBatchOutcome> {
-  return await runToolBatch(toolCalls.length, environment, async (index) => {
-    return await resolveExecutableToolCall(toolCalls[index], environment);
-  });
+  return await runToolBatch(
+    toolCalls.length,
+    environment,
+    mode,
+    async (index) => {
+      return await resolveExecutableToolCall(toolCalls[index], environment);
+    }
+  );
 }
 
 export async function resumeToolBatch(
   request: ApprovalRequest,
   response: ApprovalResponse,
-  environment: ToolBatchEnvironment
+  environment: ToolBatchEnvironment,
+  mode: ToolExecutionMode
 ): Promise<ToolBatchOutcome> {
   const responseMap = new Map<string, ApprovalDecision>();
   for (const decision of response.decisions) {
@@ -169,6 +177,7 @@ export async function resumeToolBatch(
   return await runToolBatch(
     request.toolCalls.length,
     environment,
+    mode,
     async (index) => {
       const pendingToolCall = request.toolCalls[index];
       const decision = responseMap.get(pendingToolCall.callId);
@@ -189,8 +198,25 @@ export async function resumeToolBatch(
 async function runToolBatch(
   totalCalls: number,
   environment: ToolBatchEnvironment,
+  mode: ToolExecutionMode,
   resolveStep: (index: number) => Promise<ResolvedToolBatchStep | undefined>
 ): Promise<ToolBatchOutcome> {
+  const resolvedSteps: Array<ResolvedToolBatchStep | undefined> = [];
+
+  for (let index = 0; index < totalCalls; index += 1) {
+    resolvedSteps[index] = await resolveStep(index);
+  }
+
+  return mode === "sequential"
+    ? await runSequentialToolBatch(resolvedSteps, environment)
+    : await runParallelToolBatch(resolvedSteps, environment);
+}
+
+async function runParallelToolBatch(
+  resolvedSteps: Array<ResolvedToolBatchStep | undefined>,
+  environment: ToolBatchEnvironment
+): Promise<ToolBatchOutcome> {
+  const totalCalls = resolvedSteps.length;
   const orderedResults = Array.from(
     { length: totalCalls },
     (): StagedToolResult[] => []
@@ -203,9 +229,7 @@ async function runToolBatch(
   const updates: ExtensionStateUpdate[] = [];
   const executable: OrderedExecutableToolCall[] = [];
 
-  for (let index = 0; index < totalCalls; index += 1) {
-    const resolved = await resolveStep(index);
-
+  for (const [index, resolved] of resolvedSteps.entries()) {
     if (resolved === undefined) {
       continue;
     }
@@ -226,26 +250,6 @@ async function runToolBatch(
     });
   }
 
-  await executePlannedToolCalls(
-    environment,
-    immediateResults,
-    orderedResults,
-    executable,
-    pendingToolCalls,
-    updates
-  );
-
-  return buildToolBatchOutcome(orderedResults, pendingToolCalls, updates);
-}
-
-async function executePlannedToolCalls(
-  environment: ToolBatchEnvironment,
-  immediateResults: ToolResultPart[][],
-  orderedResults: StagedToolResult[][],
-  executable: OrderedExecutableToolCall[],
-  pendingToolCalls: PendingToolCall[],
-  updates: ExtensionStateUpdate[]
-): Promise<void> {
   const executableOutcomes =
     executable.length === 0
       ? await stageImmediateResults(
@@ -286,6 +290,70 @@ async function executePlannedToolCalls(
       result: outcome.result,
     });
   }
+
+  return buildToolBatchOutcome(orderedResults, pendingToolCalls, updates);
+}
+
+async function runSequentialToolBatch(
+  resolvedSteps: Array<ResolvedToolBatchStep | undefined>,
+  environment: ToolBatchEnvironment
+): Promise<ToolBatchOutcome> {
+  const orderedResults = Array.from(
+    { length: resolvedSteps.length },
+    (): StagedToolResult[] => []
+  );
+  const pendingToolCalls: PendingToolCall[] = [];
+  const updates: ExtensionStateUpdate[] = [];
+
+  for (const [index, resolved] of resolvedSteps.entries()) {
+    if (resolved === undefined) {
+      continue;
+    }
+
+    if ("pendingToolCall" in resolved) {
+      pendingToolCalls.push(resolved.pendingToolCall);
+      break;
+    }
+
+    if ("result" in resolved) {
+      const resultHashes = await stageAndEmitResults(
+        environment,
+        [resolved.result],
+        index,
+        createToolStartBarrier(0)
+      );
+      orderedResults[index].push(
+        ...zipStagedToolResults([resolved.result], resultHashes)
+      );
+      continue;
+    }
+
+    const outcome = await executeSingleTool(
+      resolved.executable,
+      index,
+      environment,
+      createToolStartBarrier(1)
+    );
+    updates.push(...outcome.updates);
+
+    if (outcome.approval !== undefined) {
+      pendingToolCalls.push(...outcome.approval.toolCalls);
+      orderedResults[index].push(
+        ...zipStagedToolResults(
+          outcome.approval.completedResults,
+          outcome.completedResultHashes
+        )
+      );
+      break;
+    }
+
+    orderedResults[index].push({
+      hash: outcome.resultHash,
+      result: outcome.result,
+    });
+  }
+
+  return buildToolBatchOutcome(orderedResults, pendingToolCalls, updates);
 }
 
 function buildToolBatchOutcome(
@@ -574,24 +642,13 @@ async function executeConcurrentToolCalls(
   environment: ToolBatchEnvironment,
   startBarrier: ToolStartBarrier
 ): Promise<SingleToolOutcome[]> {
-  const batchAbortController = new AbortController();
-  const batchEnvironment = createBatchScopedEnvironment(
-    environment,
-    batchAbortController.signal
-  );
   const outcomes = executable.map((toolCall) =>
     executeSingleTool(
       toolCall.executable,
       toolCall.index,
-      batchEnvironment,
+      environment,
       startBarrier
-    ).catch((error: unknown) => {
-      if (!batchAbortController.signal.aborted) {
-        batchAbortController.abort(error);
-      }
-
-      throw error;
-    })
+    )
   );
   const settledOutcomes = await Promise.allSettled(outcomes);
   const rejection = settledOutcomes.find(isRejectedPromiseResult);

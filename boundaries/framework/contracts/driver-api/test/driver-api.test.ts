@@ -134,6 +134,15 @@ describe("driver-api", () => {
         },
       })
     ).toThrow('must not include unsupported driver result field "response"');
+
+    expect(() =>
+      assertDriverExecutionResult({
+        resolution: { type: "continue_iteration" },
+        toolExecutionMode: "sequential",
+      })
+    ).toThrow(
+      'must not include unsupported driver result field "toolExecutionMode"'
+    );
   });
 
   test("rejects handoff resolutions whose targetAgent contradicts the context plan", () => {

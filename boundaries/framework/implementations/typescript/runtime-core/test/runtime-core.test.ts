@@ -2341,6 +2341,94 @@ describe("framework-runtime-core", () => {
     expect(capturedFinishReason).toBe("stop");
   });
 
+  test("preserves emitted finish reason, usage, and provider metadata in synthesized afterIteration responses", async () => {
+    const harness = createFakeKernelHarness();
+    let capturedResponse: KrakenModelResponse | undefined;
+    const driver = {
+      async execute(context) {
+        context.runtime.emit({
+          messageId: "message-1",
+          role: "assistant",
+          timestamp: context.runtime.now(),
+          type: "message.start",
+        });
+        context.runtime.emit({
+          messageId: "message-1",
+          text: "Visible output",
+          timestamp: context.runtime.now(),
+          type: "text.done",
+        });
+        context.runtime.emit({
+          finishReason: "length",
+          messageId: "message-1",
+          timestamp: context.runtime.now(),
+          type: "message.done",
+          usage: {
+            inputTokens: 10,
+            outputTokens: 5,
+          },
+        });
+
+        return {
+          messages: [
+            {
+              parts: [{ text: "Visible output", type: "text" }],
+              providerMetadata: {
+                provider: "test-provider",
+              },
+              role: "assistant",
+            },
+          ],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        extensions: [
+          {
+            afterIteration(context) {
+              capturedResponse = context.response;
+              return undefined;
+            },
+            name: "response-capture",
+          },
+        ],
+        name: "primary",
+      },
+      signal: textSignal("Capture synthesized response metadata"),
+      threadId: thread.threadId,
+    });
+
+    await collectEvents(handle.events());
+
+    expect(capturedResponse).toEqual({
+      finishReason: "length",
+      parts: [{ text: "Visible output", type: "text" }],
+      providerMetadata: {
+        provider: "test-provider",
+      },
+      usage: {
+        inputTokens: 10,
+        outputTokens: 5,
+      },
+    });
+  });
+
   test("synthesizes afterIteration responses from every staged assistant message in the iteration", async () => {
     const harness = createFakeKernelHarness();
     let capturedResponse:
@@ -3926,7 +4014,7 @@ describe("framework-runtime-core", () => {
     expect(errorEvent?.error.code).toBe("invalid_approval_request");
   });
 
-  test("aborts and joins sibling tool work before surfacing malformed initial approval failures", async () => {
+  test("surfaces malformed initial approval failures without checkpointing sibling tool results", async () => {
     const harness = createFakeKernelHarness();
     let searchSideEffectCount = 0;
     const driver = {
@@ -4061,7 +4149,10 @@ describe("framework-runtime-core", () => {
 
     expect(handle.status().phase).toBe("failed");
     expect(errorEvent?.error.code).toBe("invalid_approval_request");
-    expect(searchSideEffectCount).toBe(0);
+    expect(searchSideEffectCount).toBe(1);
+    expect(
+      extractToolMessages(await harness.readBranchMessages(thread.branchId))
+    ).toHaveLength(0);
   });
 
   test("does not checkpoint resumed sibling tool progress when resume approval is malformed", async () => {
@@ -4237,7 +4328,7 @@ describe("framework-runtime-core", () => {
     ]);
   });
 
-  test("aborts and joins resumed sibling tool work before surfacing malformed resumed approvals", async () => {
+  test("surfaces malformed resumed approvals without checkpointing sibling tool results", async () => {
     const harness = createFakeKernelHarness();
     let searchSideEffectCount = 0;
     const driver = {
@@ -4393,7 +4484,10 @@ describe("framework-runtime-core", () => {
     await delay(60);
 
     expect(resumedHandle.status().phase).toBe("failed");
-    expect(searchSideEffectCount).toBe(0);
+    expect(searchSideEffectCount).toBe(1);
+    expect(
+      extractToolMessages(await harness.readBranchMessages(thread.branchId))
+    ).toHaveLength(0);
   });
 
   test("does not checkpoint sibling tool progress when a parallel batch fails on invalid approval", async () => {
@@ -4983,6 +5077,120 @@ describe("framework-runtime-core", () => {
       "event:call-fast",
       "slow-complete:slow",
       "event:call-slow",
+    ]);
+  });
+
+  test("runs tool batches sequentially when the runtime selects sequential mode", async () => {
+    const harness = createFakeKernelHarness();
+    const driver = {
+      async execute(context) {
+        const toolMessages = context.messages.filter(
+          (message) => message.role === "tool"
+        );
+
+        if (toolMessages.length === 0) {
+          return {
+            messages: [
+              assistantToolCalls([
+                {
+                  callId: "call-slow",
+                  input: { query: "slow" },
+                  name: "slow",
+                },
+                {
+                  callId: "call-fast",
+                  input: { query: "fast" },
+                  name: "fast",
+                },
+              ]),
+            ],
+            resolution: {
+              type: "continue_iteration",
+            },
+          };
+        }
+
+        return {
+          messages: [assistantText("Sequential tools finished.")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+      selectToolExecutionMode: () => "sequential",
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        name: "primary",
+        tools: [
+          {
+            description: "Complete after a delay",
+            async execute(input: unknown) {
+              await delay(20);
+              return {
+                query: readQueryInput(input),
+                status: "slow",
+              };
+            },
+            inputSchema: {
+              properties: {
+                query: { type: "string" },
+              },
+              required: ["query"],
+              type: "object",
+            },
+            name: "slow",
+          },
+          {
+            description: "Complete immediately",
+            execute(input: unknown) {
+              return {
+                query: readQueryInput(input),
+                status: "fast",
+              };
+            },
+            inputSchema: {
+              properties: {
+                query: { type: "string" },
+              },
+              required: ["query"],
+              type: "object",
+            },
+            name: "fast",
+          },
+        ],
+      },
+      signal: textSignal("Run sequential tools"),
+      threadId: thread.threadId,
+    });
+
+    const events = await collectEvents(handle.events());
+    const toolEvents = events.filter(
+      (
+        event
+      ): event is Extract<
+        (typeof events)[number],
+        { callId: string; type: "tool.start" | "tool.result" }
+      > => event.type === "tool.start" || event.type === "tool.result"
+    );
+
+    expect(toolEvents.map((event) => `${event.type}:${event.callId}`)).toEqual([
+      "tool.start:call-slow",
+      "tool.result:call-slow",
+      "tool.start:call-fast",
+      "tool.result:call-fast",
     ]);
   });
 
@@ -5852,6 +6060,101 @@ describe("framework-runtime-core", () => {
     expect(resumedHandle.status().phase).toBe("completed");
   });
 
+  test("can continue the same turn after approval rejection when the host selects that policy", async () => {
+    const harness = createFakeKernelHarness();
+    let emailCalls = 0;
+    const driver = {
+      async execute(context) {
+        const toolMessages = context.messages.filter(
+          (message) => message.role === "tool"
+        );
+
+        if (toolMessages.length === 0) {
+          return {
+            messages: [
+              assistantToolCalls([
+                {
+                  callId: "call-email",
+                  input: { subject: "Status update", to: "ops@example.com" },
+                  name: "email",
+                },
+              ]),
+            ],
+            resolution: {
+              type: "continue_iteration",
+            },
+          };
+        }
+
+        return {
+          messages: [assistantText("Acknowledged rejected tool.")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createKrakenRuntimeCore({
+      approvalRejectionContinuationMode: "continue_iteration",
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const pausedHandle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        name: "primary",
+        tools: [
+          {
+            approval: true,
+            description: "Send a status email",
+            execute() {
+              emailCalls += 1;
+              return { sent: true };
+            },
+            inputSchema: {
+              properties: {
+                subject: { type: "string" },
+                to: { type: "string" },
+              },
+              required: ["to", "subject"],
+              type: "object",
+            },
+            name: "email",
+          },
+        ],
+      },
+      signal: textSignal("Reject then continue"),
+      threadId: thread.threadId,
+    });
+
+    await collectEvents(pausedHandle.events());
+    const resumedHandle = pausedHandle.resolveApproval({
+      decisions: [{ callId: "call-email", type: "reject" }],
+    });
+    await collectEvents(resumedHandle.events());
+    const messages = await harness.readBranchMessages(thread.branchId);
+
+    expect(emailCalls).toBe(0);
+    expect(
+      extractToolMessages(messages).some(
+        (message) =>
+          message.parts[0]?.type === "tool_result" &&
+          message.parts[0].callId === "call-email"
+      )
+    ).toBe(true);
+    expect(hasAssistantText(messages, "Acknowledged rejected tool.")).toBe(
+      true
+    );
+    expect(resumedHandle.status().phase).toBe("completed");
+  });
+
   test("stages and emits immediate resumed decisions before slower approved siblings finish", async () => {
     const harness = createFakeKernelHarness();
     let releaseSlowTool: (() => void) | undefined;
@@ -6693,18 +6996,22 @@ describe("framework-runtime-core", () => {
     } satisfies HandoffSourceContext);
 
     const handoffText = extractSingleUserText(storedMessage);
-    const firstUserIndex = handoffText.indexOf("[User] Text request provided");
+    const firstUserIndex = handoffText.indexOf(
+      "[User] Text request: Please investigate."
+    );
     const firstAssistantIndex = handoffText.indexOf(
       "[Assistant] Visible summary"
     );
     const secondUserIndex = handoffText.indexOf(
-      "[User] Text request provided",
+      "[User] Text request: Please continue carefully.",
       firstUserIndex + 1
     );
     const secondAssistantIndex = handoffText.indexOf(
       "[Assistant] Second visible summary"
     );
-    const toolIndex = handoffText.indexOf("[Tool:search] Returned a result");
+    const toolIndex = handoffText.indexOf(
+      '[Tool:search] Returned a result: {"result":"okay"}'
+    );
 
     expect(handoffText).toContain("Visible summary");
     expect(handoffText).toContain("[Structured output produced]");
@@ -6714,11 +7021,124 @@ describe("framework-runtime-core", () => {
     expect(secondAssistantIndex).toBeGreaterThan(secondUserIndex);
     expect(toolIndex).toBeGreaterThan(secondAssistantIndex);
     expect(handoffText).not.toContain("private reasoning");
-    expect(handoffText).not.toContain("Please investigate.");
-    expect(handoffText).not.toContain("Please continue carefully.");
+    expect(handoffText).toContain("Please investigate.");
+    expect(handoffText).toContain("Please continue carefully.");
     expect(handoffText).not.toContain("leak me");
-    expect(handoffText).not.toContain("okay");
+    expect(handoffText).toContain("okay");
     expect(handoffText).not.toContain('"secret":true');
+  });
+
+  test("driver handoff plans expose full source and target agent configs", async () => {
+    const harness = createFakeKernelHarness();
+    const capturedAgents: Array<{
+      source: AgentConfig;
+      target: AgentConfig;
+    }> = [];
+    const reviewerTool = {
+      description: "Review a draft",
+      execute() {
+        return { approved: true };
+      },
+      inputSchema: {
+        properties: {
+          draft: { type: "string" },
+        },
+        required: ["draft"],
+        type: "object",
+      },
+      name: "review_draft",
+    } satisfies KrakenToolDefinition;
+    const agents: Record<string, AgentConfig> = {
+      primary: {
+        name: "primary",
+        systemPrompt: "You are the primary agent.",
+        tools: [
+          {
+            description: "Plan work",
+            execute() {
+              return { ok: true };
+            },
+            inputSchema: {
+              type: "object",
+            },
+            name: "plan_work",
+          },
+        ],
+      },
+      reviewer: {
+        name: "reviewer",
+        responseFormat: {
+          name: "review",
+          schema: {
+            properties: {
+              approved: { type: "boolean" },
+            },
+            required: ["approved"],
+            type: "object",
+          },
+        },
+        systemPrompt: "You review drafts.",
+        tools: [reviewerTool],
+      },
+    };
+    const driver = {
+      async execute(context) {
+        if (context.config.name === "reviewer") {
+          return {
+            messages: [assistantText("Reviewer picked up the handoff.")],
+            resolution: {
+              reason: "done",
+              type: "end_turn",
+            },
+          };
+        }
+
+        const contextPlan = context.handoff.createContextPlan({
+          builder: (handoffContext) => {
+            capturedAgents.push({
+              source: handoffContext.sourceAgent,
+              target: handoffContext.targetAgent,
+            });
+            return handoffContext.helpers.storeMessages([]);
+          },
+          reason: "delegate",
+          targetAgent: "reviewer",
+        });
+
+        return {
+          resolution: {
+            contextPlan,
+            targetAgent: "reviewer",
+            type: "handoff",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+      resolveAgentConfig: (agentName) => agents[agentName],
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: agents.primary,
+      signal: textSignal("Delegate this review"),
+      threadId: thread.threadId,
+    });
+
+    await collectEvents(handle.events());
+
+    expect(capturedAgents).toHaveLength(1);
+    expect(capturedAgents[0]?.source.tools?.[0]?.name).toBe("plan_work");
+    expect(capturedAgents[0]?.target.tools?.[0]?.name).toBe("review_draft");
+    expect(capturedAgents[0]?.target.systemPrompt).toBe("You review drafts.");
+    expect(capturedAgents[0]?.target.responseFormat?.name).toBe("review");
   });
 
   test("last_output_only handoff forwards the final visible assistant parts", () => {

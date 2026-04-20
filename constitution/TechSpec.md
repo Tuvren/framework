@@ -447,7 +447,7 @@ export interface ExecutionHandle {
 
 export interface OrchestrationHandle extends ExecutionHandle {
   resolveApproval(response: ApprovalResponse): OrchestrationHandle;
-  spawn(input: { agent: string; task: unknown }): OrchestrationHandle;
+  spawn(input: { agent: string; signal: InputSignal }): OrchestrationHandle;
   allEvents(): AsyncIterable<KrakenStreamEvent>;
   awaitResult(): Promise<unknown>;
 }

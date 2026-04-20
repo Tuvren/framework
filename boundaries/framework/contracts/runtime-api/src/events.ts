@@ -22,6 +22,7 @@ export type {
   DriverAttributedEventSource,
   ErrorEvent,
   EventSource,
+  FileDoneEvent,
   IterationEndEvent,
   IterationStartEvent,
   KrakenErrorProjection,

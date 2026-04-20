@@ -60,6 +60,7 @@ export type {
   ExecutionHandle,
   ExecutionStatus,
   ExtensionContext,
+  FileDoneEvent,
   FilePart,
   HandoffContextBuilder,
   HandoffContextMode,
