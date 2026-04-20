@@ -512,7 +512,25 @@ This keeps orchestration aligned with the execution tree rather than forcing the
 - Whether `worker_result` is purely structured.
 - Which part types are allowed or forbidden in projected worker output.
 
-<!-- Workers should only return the final response to the parent, nothing else. Any extra typed schema is for a driver-extra details such as adding a worker run id that could be used by the parent to, for example, transform an async run to sync by waiting for the worker. Same as I mentioned before, the core framework part must be providing the primitives that drivers use later -->
+**Working decision:**
+
+- Choose **Option C**: shared core does not define a canonical parent-context worker-result payload.
+- Shared core provides orchestration primitives only:
+  - child execution handles
+  - child/subtree events
+  - child completion access
+  - steering as a separate primitive already available to higher layers
+
+What happens with a worker's final result is a driver or host concern:
+
+- a driver may inject the result through steering
+- a driver may expose a sync tool that waits for a worker and returns its result
+- a driver may choose not to inject the result into parent conversational context at all
+
+Shared-core safety boundary:
+
+- any higher-layer projection of worker completion into parent context should be based only on the worker's visible final result surface
+- internal reasoning and other hidden trace details are not shared-core projection semantics
 
 ### 10. Observability versus correctness
 
