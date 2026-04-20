@@ -18,5 +18,4 @@
 export type {
   OrchestrationHandle,
   OrchestrationRuntime,
-  WorkerStatus,
 } from "./lib/runtime-contracts.js";

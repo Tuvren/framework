@@ -31,14 +31,12 @@ describe("driver-api", () => {
     const driver = {
       execute(_context) {
         return Promise.resolve({
-          activeAgent: "primary",
           resolution: continueIteration,
         });
       },
       id: "react",
       resume(_context) {
         return Promise.resolve({
-          activeAgent: "primary",
           resolution: continueIteration,
         });
       },
@@ -46,102 +44,13 @@ describe("driver-api", () => {
 
     expect(isKrakenDriver(driver)).toBe(true);
     expect(() => assertKrakenDriver(driver)).not.toThrow();
-    const context: DriverExecutionContext = {
-      branchId: "branch-1",
-      config: { name: "primary" },
-      handoff: {
-        createContextPlan: (input) => ({
-          builder:
-            input.builder ?? ((context) => context.helpers.storeMessages([])),
-          mode: input.mode ?? "preserve_trace",
-          reason: input.reason,
-          sourceContext: {
-            handoffIntent: {
-              payload: input.payload,
-              reason: input.reason,
-              targetAgent: input.targetAgent,
-            },
-            helpers: {
-              loadMessage: () => null,
-              storeMessage: () => "1".repeat(64),
-              storeMessages: () => [],
-            },
-            manifest: {
-              byRole: {
-                assistant: 0,
-                system: 0,
-                tool: 0,
-                user: 0,
-              },
-              extensions: {},
-              lastAssistantMessageIndex: -1,
-              lastUserMessageIndex: -1,
-              messageCount: 0,
-              tokenEstimate: 0,
-              toolCalls: {
-                byName: {},
-                total: 0,
-              },
-              toolResults: {
-                byName: {},
-                total: 0,
-              },
-              turnBoundaries: [],
-            },
-            messages: [],
-            sourceAgent: { name: "primary" },
-            targetAgent: { name: input.targetAgent },
-          },
-          targetAgent: input.targetAgent,
-        }),
-      },
-      iterationCount: 1,
-      manifest: {
-        byRole: {
-          assistant: 0,
-          system: 0,
-          tool: 0,
-          user: 0,
-        },
-        extensions: {},
-        lastAssistantMessageIndex: -1,
-        lastUserMessageIndex: -1,
-        messageCount: 0,
-        tokenEstimate: 0,
-        toolCalls: {
-          byName: {},
-          total: 0,
-        },
-        toolResults: {
-          byName: {},
-          total: 0,
-        },
-        turnBoundaries: [],
-      },
-      messages: [],
-      runtime: {
-        emit: () => undefined,
-        now: () => 0,
-      },
-      schemaId: "schema-1",
-      threadId: "thread-1",
-      toolRegistry: {
-        get: () => undefined,
-        has: () => false,
-        list: () => [],
-        register: () => undefined,
-        toDefinitions: () => [],
-      },
-      turnId: "turn-1",
-    };
 
+    const context = createDriverExecutionContext();
     await expect(driver.execute(context)).resolves.toEqual({
-      activeAgent: "primary",
       resolution: { type: "continue_iteration" },
     });
     expect(() =>
       assertDriverExecutionResult({
-        activeAgent: "primary",
         resolution: { type: "continue_iteration" },
       })
     ).not.toThrow();
@@ -153,168 +62,9 @@ describe("driver-api", () => {
     ).toBe("reviewer");
   });
 
-  test("permits drivers to return a complete KrakenModelResponse alongside messages", async () => {
-    const context: DriverExecutionContext = {
-      branchId: "branch-1",
-      config: { name: "primary" },
-      handoff: {
-        createContextPlan: (input) => ({
-          builder: (handoffContext) => handoffContext.helpers.storeMessages([]),
-          mode: input.mode ?? "preserve_trace",
-          reason: input.reason,
-          sourceContext: {
-            handoffIntent: {
-              payload: input.payload,
-              reason: input.reason,
-              targetAgent: input.targetAgent,
-            },
-            helpers: {
-              loadMessage: () => null,
-              storeMessage: () => "1".repeat(64),
-              storeMessages: () => [],
-            },
-            manifest: {
-              byRole: {
-                assistant: 0,
-                system: 0,
-                tool: 0,
-                user: 0,
-              },
-              extensions: {},
-              lastAssistantMessageIndex: -1,
-              lastUserMessageIndex: -1,
-              messageCount: 0,
-              tokenEstimate: 0,
-              toolCalls: {
-                byName: {},
-                total: 0,
-              },
-              toolResults: {
-                byName: {},
-                total: 0,
-              },
-              turnBoundaries: [],
-            },
-            messages: [],
-            sourceAgent: { name: "primary" },
-            targetAgent: { name: input.targetAgent },
-          },
-          targetAgent: input.targetAgent,
-        }),
-      },
-      iterationCount: 1,
-      manifest: {
-        byRole: {
-          assistant: 0,
-          system: 0,
-          tool: 0,
-          user: 0,
-        },
-        extensions: {},
-        lastAssistantMessageIndex: -1,
-        lastUserMessageIndex: -1,
-        messageCount: 0,
-        tokenEstimate: 0,
-        toolCalls: {
-          byName: {},
-          total: 0,
-        },
-        toolResults: {
-          byName: {},
-          total: 0,
-        },
-        turnBoundaries: [],
-      },
-      messages: [],
-      runtime: {
-        emit: () => undefined,
-        now: () => 0,
-      },
-      schemaId: "schema-1",
-      threadId: "thread-1",
-      toolRegistry: {
-        get: () => undefined,
-        has: () => false,
-        list: () => [],
-        register: () => undefined,
-        toDefinitions: () => [],
-      },
-      turnId: "turn-1",
-    };
-    const driver = {
-      execute(_context) {
-        return Promise.resolve({
-          activeAgent: "primary",
-          messages: [
-            {
-              parts: [{ text: "Truncated output", type: "text" }],
-              role: "assistant",
-            },
-          ],
-          response: {
-            finishReason: "length",
-            parts: [{ text: "Truncated output", type: "text" }],
-            providerMetadata: { stop: "max_tokens" },
-            usage: {
-              inputTokens: 12,
-              outputTokens: 4,
-            },
-          },
-          resolution: { reason: "done", type: "end_turn" },
-        });
-      },
-      id: "react",
-      resume() {
-        throw new Error("resume was not expected");
-      },
-    } satisfies KrakenDriver;
-
-    await expect(driver.execute(context)).resolves.toEqual({
-      activeAgent: "primary",
-      messages: [
-        {
-          parts: [{ text: "Truncated output", type: "text" }],
-          role: "assistant",
-        },
-      ],
-      response: {
-        finishReason: "length",
-        parts: [{ text: "Truncated output", type: "text" }],
-        providerMetadata: { stop: "max_tokens" },
-        usage: {
-          inputTokens: 12,
-          outputTokens: 4,
-        },
-      },
-      resolution: { reason: "done", type: "end_turn" },
-    });
-    expect(() =>
-      assertDriverExecutionResult({
-        activeAgent: "primary",
-        messages: [
-          {
-            parts: [{ text: "Truncated output", type: "text" }],
-            role: "assistant",
-          },
-        ],
-        response: {
-          finishReason: "length",
-          parts: [{ text: "Truncated output", type: "text" }],
-          providerMetadata: { stop: "max_tokens" },
-          usage: {
-            inputTokens: 12,
-            outputTokens: 4,
-          },
-        },
-        resolution: { reason: "done", type: "end_turn" },
-      })
-    ).not.toThrow();
-  });
-
   test("permits failed partial execution results when assistant output is staged", () => {
     expect(() =>
       assertDriverExecutionResult({
-        activeAgent: "primary",
         messages: [
           {
             parts: [{ text: "Interrupted output", type: "text" }],
@@ -331,26 +81,9 @@ describe("driver-api", () => {
     ).not.toThrow();
   });
 
-  test("rejects provider responses that are not paired with staged assistant messages", () => {
-    expect(() =>
-      assertDriverExecutionResult({
-        activeAgent: "primary",
-        response: {
-          finishReason: "stop",
-          parts: [{ text: "Visible but not durable.", type: "text" }],
-        },
-        resolution: {
-          reason: "done",
-          type: "end_turn",
-        },
-      })
-    ).toThrow("response requires staged assistant messages");
-  });
-
   test("rejects partial execution results that are not failed assistant output", () => {
     expect(() =>
       assertDriverExecutionResult({
-        activeAgent: "primary",
         partial: true,
         resolution: { reason: "done", type: "end_turn" },
       })
@@ -360,7 +93,6 @@ describe("driver-api", () => {
   test("rejects driver results that bypass framework-owned tool results", () => {
     expect(() =>
       assertDriverExecutionResult({
-        activeAgent: "primary",
         messages: [
           {
             parts: [
@@ -379,32 +111,29 @@ describe("driver-api", () => {
     ).toThrow("must not be a tool_result");
   });
 
-  test("rejects driver responses that contradict staged assistant tool-call semantics", () => {
+  test("rejects superseded driver result fields from the old branch shape", () => {
     expect(() =>
       assertDriverExecutionResult({
         activeAgent: "primary",
+        resolution: { type: "continue_iteration" },
+      })
+    ).toThrow('must not include unsupported driver result field "activeAgent"');
+
+    expect(() =>
+      assertDriverExecutionResult({
         messages: [
           {
-            parts: [{ text: "Plain answer", type: "text" }],
+            parts: [{ text: "Visible output", type: "text" }],
             role: "assistant",
           },
         ],
-        response: {
-          finishReason: "tool_call",
-          parts: [
-            {
-              callId: "call-search",
-              input: { query: "leak" },
-              name: "search",
-              type: "tool_call",
-            },
-          ],
-        },
         resolution: { reason: "done", type: "end_turn" },
+        response: {
+          finishReason: "stop",
+          parts: [{ text: "Visible output", type: "text" }],
+        },
       })
-    ).toThrow(
-      "must agree with the staged assistant message about tool-call semantics"
-    );
+    ).toThrow('must not include unsupported driver result field "response"');
   });
 
   test("rejects handoff resolutions whose targetAgent contradicts the context plan", () => {
@@ -412,60 +141,16 @@ describe("driver-api", () => {
 
     expect(() =>
       assertDriverExecutionResult({
-        activeAgent: "primary",
         resolution: {
           contextPlan: context.handoff.createContextPlan({
             reason: "handoff",
             targetAgent: "reviewer",
           }),
-          targetAgent: "worker",
+          targetAgent: "planner",
           type: "handoff",
         },
       })
-    ).toThrow("must match value.resolution.contextPlan.targetAgent");
-  });
-
-  test("rejects malformed driver contracts", () => {
-    const continueIteration = {
-      type: "continue_iteration",
-    } satisfies { type: "continue_iteration" };
-    expect(isKrakenDriver({ id: "react" })).toBe(false);
-    expect(() => assertKrakenDriver({ id: "react" })).toThrow(
-      "must be a valid KrakenDriver"
-    );
-    expect(
-      isKrakenDriver({
-        execute: () => undefined,
-        id: "",
-        resume: () => undefined,
-      })
-    ).toBe(false);
-    expect(
-      isKrakenDriver({
-        execute: () => undefined,
-        id: "   ",
-        resume: () => undefined,
-      })
-    ).toBe(false);
-
-    const hostileDriver = {
-      execute: () =>
-        Promise.resolve({
-          activeAgent: "primary",
-          resolution: continueIteration,
-        }),
-      get id() {
-        throw new Error("boom");
-      },
-      resume: () =>
-        Promise.resolve({
-          activeAgent: "primary",
-          resolution: continueIteration,
-        }),
-    };
-
-    expect(() => isKrakenDriver(hostileDriver)).not.toThrow();
-    expect(isKrakenDriver(hostileDriver)).toBe(false);
+    ).toThrow("targetAgent must match");
   });
 });
 
@@ -475,7 +160,8 @@ function createDriverExecutionContext(): DriverExecutionContext {
     config: { name: "primary" },
     handoff: {
       createContextPlan: (input) => ({
-        builder: (handoffContext) => handoffContext.helpers.storeMessages([]),
+        builder:
+          input.builder ?? ((context) => context.helpers.storeMessages([])),
         mode: input.mode ?? "preserve_trace",
         reason: input.reason,
         sourceContext: {

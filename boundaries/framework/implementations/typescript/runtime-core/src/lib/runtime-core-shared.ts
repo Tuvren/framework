@@ -19,7 +19,6 @@ import type {
   InputSignal,
   KrakenErrorProjection,
   KrakenStreamEvent,
-  WorkerStatus,
 } from "@kraken/framework-runtime-api";
 import {
   assertKrakenMessage,
@@ -165,17 +164,6 @@ export function cloneExecutionStatus(status: ExecutionStatus): ExecutionStatus {
     manifest: cloneValue(status.manifest),
     pauseReason: status.pauseReason,
     phase: status.phase,
-  };
-}
-
-export function cloneWorkerStatus(status: WorkerStatus): WorkerStatus {
-  return {
-    agent: status.agent,
-    approval: cloneValue(status.approval),
-    result: cloneValue(status.result),
-    status: status.status,
-    threadId: status.threadId,
-    workerId: status.workerId,
   };
 }
 

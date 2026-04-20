@@ -48,10 +48,7 @@ import {
   isKrakenToolDefinition,
   isProviderStreamChunk,
 } from "../src/index.ts";
-import type {
-  OrchestrationHandle as OrchestrationHandleFromSubpath,
-  WorkerStatus as WorkerStatusFromSubpath,
-} from "../src/orchestration.ts";
+import type { OrchestrationHandle as OrchestrationHandleFromSubpath } from "../src/orchestration.ts";
 import {
   assertProviderStreamChunk as assertProviderStreamChunkFromSubpath,
   type ProviderStreamChunk as ProviderStreamChunkFromSubpath,
@@ -144,10 +141,9 @@ describe("runtime-api contracts", () => {
       iterationCount: 0,
       phase: "running",
     } satisfies ExecutionStatusFromSubpath;
-    const workerStatus =
-      frameworkContractFixtures.workerStatus satisfies WorkerStatusFromSubpath;
     const orchestrationHandle =
       frameworkContractFixtures.orchestrationRuntime.executeTurn({
+        agent: "primary",
         branchId: "branch_subpath",
         signal: {
           parts: [{ text: "Subpath orchestration", type: "text" }],
@@ -165,39 +161,28 @@ describe("runtime-api contracts", () => {
     expect(() =>
       assertExecutionStatusFromSubpath(executionStatus)
     ).not.toThrow();
-    expect(workerStatus.workerId).toBe("worker_1");
-    expect(typeof orchestrationHandle.workers).toBe("function");
+    expect(typeof orchestrationHandle.spawn).toBe("function");
+    expect(typeof orchestrationHandle.awaitResult).toBe("function");
   });
 
   test("exposes the orchestration contract surface through canonical fixtures", async () => {
     const handle = frameworkContractFixtures.orchestrationRuntime.executeTurn({
+      agent: "primary",
       branchId: "branch_main",
       signal: {
         parts: [{ text: "Start orchestration", type: "text" }],
       },
       threadId: "thread_main",
     });
-    const workerStatuses = handle.workers();
     const resumedHandle = handle.resolveApproval({ decisions: [] });
+    const childHandle = handle.spawn({
+      agent: "worker",
+      task: { task: "summarize" },
+    });
 
     expect(resumedHandle).not.toBe(handle);
-    expect(resumedHandle.workers()).toEqual(workerStatuses);
-    expect(
-      await frameworkContractFixtures.orchestrationRuntime.launchWorker(
-        "worker",
-        {
-          task: "summarize",
-        }
-      )
-    ).toBe(frameworkContractFixtures.workerStatus.workerId);
-    expect(
-      await frameworkContractFixtures.orchestrationRuntime.awaitWorker(
-        frameworkContractFixtures.workerStatus.workerId
-      )
-    ).toEqual(frameworkContractFixtures.workerStatus.result);
-    expect(
-      workerStatuses.get(frameworkContractFixtures.workerStatus.workerId)
-    ).toEqual(frameworkContractFixtures.workerStatus);
+    expect(await childHandle.awaitResult()).toBe("child result");
+    expect(await resumedHandle.awaitResult()).toEqual({ ok: "resumed" });
   });
 
   test("rejects malformed contract values", () => {

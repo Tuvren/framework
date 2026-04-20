@@ -414,10 +414,10 @@ export interface HandoffSourceContext {
     payload?: unknown;
   };
   helpers: ContextEngineeringHelpers;
-  manifest: ContextManifest;
-  messages: KrakenMessage[];
-  sourceAgent: AgentConfig;
-  targetAgent: AgentConfig;
+  manifest: Readonly<ContextManifest>;
+  messages: readonly KrakenMessage[];
+  sourceAgent: Readonly<AgentConfig>;
+  targetAgent: Readonly<AgentConfig>;
 }
 
 export type HandoffContextBuilder = (
@@ -924,30 +924,16 @@ export interface ExecutionHandle {
   steer(signal: InputSignal): void;
 }
 
-export interface WorkerStatus {
-  agent: string;
-  approval?: ApprovalRequest;
-  result?: unknown;
-  status: "running" | "paused" | "completed" | "failed";
-  threadId: string;
-  workerId: string;
-}
-
 export interface OrchestrationHandle extends ExecutionHandle {
   allEvents(): AsyncIterable<KrakenStreamEvent>;
-  parentEvents(): AsyncIterable<KrakenStreamEvent>;
+  awaitResult(): Promise<unknown>;
   resolveApproval(response: ApprovalResponse): OrchestrationHandle;
-  workerEvents(workerId: string): AsyncIterable<KrakenStreamEvent>;
-  workers(): ReadonlyMap<string, WorkerStatus>;
+  spawn(input: { agent: string; task: unknown }): OrchestrationHandle;
 }
 
 export interface OrchestrationRuntime {
-  awaitWorker(
-    workerId: string,
-    options?: { parent: OrchestrationHandle }
-  ): Promise<unknown>;
-  cancel(): void;
   executeTurn(input: {
+    agent: string;
     branchId: string;
     driverId?: string;
     parentTurnId?: string | null;
@@ -956,16 +942,6 @@ export interface OrchestrationRuntime {
     threadId: string;
     tools?: KrakenToolDefinition[];
   }): OrchestrationHandle;
-  launchWorker(
-    agent: string,
-    task: unknown,
-    options?: { parent: OrchestrationHandle }
-  ): Promise<string>;
-  resolveWorkerApproval(
-    workerId: string,
-    response: ApprovalResponse,
-    options?: { parent: OrchestrationHandle }
-  ): void;
 }
 
 export interface KrakenRuntime {

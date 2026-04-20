@@ -86,7 +86,9 @@ export async function readBranchCheckpointEventTypes(
   return eventTypes;
 }
 
-export function toKrakenMessages(messages: unknown[]): KrakenMessage[] {
+export function toKrakenMessages(
+  messages: readonly unknown[]
+): KrakenMessage[] {
   return messages.map((message, index) => {
     assertKrakenMessage(message, `messages[${index}]`);
     return message;
@@ -311,8 +313,8 @@ export function buildHandoffPlan(
           return [];
         },
       },
-      manifest: context.manifest,
-      messages: context.messages,
+      manifest: structuredClone(context.manifest),
+      messages: [...context.messages],
       sourceAgent,
       targetAgent,
     } satisfies HandoffSourceContext,
@@ -426,7 +428,7 @@ export function delay(milliseconds: number): Promise<void> {
   });
 }
 
-export function extractLastWorkerResult(messages: KrakenMessage[]): {
+export function extractLastWorkerResult(messages: readonly KrakenMessage[]): {
   agent: string;
   output: unknown;
   status: string;
@@ -483,7 +485,7 @@ export function extractLastWorkerResult(messages: KrakenMessage[]): {
 }
 
 export function extractToolMessages(
-  messages: unknown[]
+  messages: readonly unknown[]
 ): Extract<KrakenMessage, { role: "tool" }>[] {
   return messages.filter(
     (message): message is Extract<KrakenMessage, { role: "tool" }> =>
@@ -496,7 +498,10 @@ export function extractToolMessages(
   );
 }
 
-export function hasAssistantText(messages: unknown[], text: string): boolean {
+export function hasAssistantText(
+  messages: readonly unknown[],
+  text: string
+): boolean {
   return messages.some((message) => {
     if (
       message === null ||
@@ -638,7 +643,9 @@ export function readQueryInput(input: unknown): string {
   throw new Error("tool input did not contain a query string");
 }
 
-export function readWorkerTask(messages: KrakenMessage[]): string | null {
+export function readWorkerTask(
+  messages: readonly KrakenMessage[]
+): string | null {
   for (const message of messages) {
     if (message.role !== "user") {
       continue;

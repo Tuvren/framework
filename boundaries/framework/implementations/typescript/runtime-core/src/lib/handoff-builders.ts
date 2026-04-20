@@ -61,7 +61,9 @@ export function createLastOutputOnlyHandoffContextBuilder(): HandoffContextBuild
   };
 }
 
-function extractChronologicalTrace(messages: KrakenMessage[]): string[] {
+function extractChronologicalTrace(
+  messages: readonly KrakenMessage[]
+): string[] {
   const excerpts: string[] = [];
 
   for (const message of messages) {
@@ -98,7 +100,7 @@ function formatTraceLine(label: string, text: string): string {
 }
 
 function extractLastVisibleAssistantOutputParts(
-  messages: KrakenMessage[]
+  messages: readonly KrakenMessage[]
 ): UserMessageParts {
   for (let index = messages.length - 1; index >= 0; index -= 1) {
     const message = messages[index];

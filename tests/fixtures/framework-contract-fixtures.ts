@@ -28,7 +28,6 @@ import type {
   OrchestrationHandle,
   OrchestrationRuntime,
   ProviderStreamChunk,
-  WorkerStatus,
 } from "@kraken/framework-runtime-api";
 
 function emptyEvents<T>(): AsyncIterable<T> {
@@ -108,67 +107,60 @@ const contextManifestFixture = {
   turnBoundaries: [0],
 } satisfies ContextManifest;
 
-const workerStatusFixture = {
-  agent: "worker",
-  result: { ok: true },
-  status: "completed",
-  threadId: "thread_worker",
-  workerId: "worker_1",
-} satisfies WorkerStatus;
+let resumedOrchestrationHandle: OrchestrationHandle;
+let childOrchestrationHandle: OrchestrationHandle;
 
 const noopOrchestrationHandle: OrchestrationHandle = {
   ...noopExecutionHandle,
   allEvents() {
     return emptyEvents();
   },
-  parentEvents() {
-    return emptyEvents();
+  awaitResult() {
+    return Promise.resolve({ ok: true });
   },
   resolveApproval() {
     return resumedOrchestrationHandle;
   },
-  workerEvents() {
-    return emptyEvents();
-  },
-  workers() {
-    return new Map([[workerStatusFixture.workerId, workerStatusFixture]]);
+  spawn() {
+    return childOrchestrationHandle;
   },
 };
 
-const resumedOrchestrationHandle: OrchestrationHandle = {
+resumedOrchestrationHandle = {
   ...resumedExecutionHandle,
   allEvents() {
     return emptyEvents();
   },
-  parentEvents() {
-    return emptyEvents();
+  awaitResult() {
+    return Promise.resolve({ ok: "resumed" });
   },
   resolveApproval() {
     return this;
   },
-  workerEvents() {
+  spawn() {
+    return childOrchestrationHandle;
+  },
+};
+
+childOrchestrationHandle = {
+  ...noopExecutionHandle,
+  allEvents() {
     return emptyEvents();
   },
-  workers() {
-    return new Map([[workerStatusFixture.workerId, workerStatusFixture]]);
+  awaitResult() {
+    return Promise.resolve("child result");
+  },
+  resolveApproval() {
+    return this;
+  },
+  spawn() {
+    return this;
   },
 };
 
 const noopOrchestrationRuntime: OrchestrationRuntime = {
-  awaitWorker() {
-    return Promise.resolve(workerStatusFixture.result);
-  },
-  cancel() {
-    return;
-  },
   executeTurn() {
     return noopOrchestrationHandle;
-  },
-  launchWorker() {
-    return Promise.resolve(workerStatusFixture.workerId);
-  },
-  resolveWorkerApproval() {
-    return;
   },
 };
 
@@ -314,7 +306,6 @@ export const frameworkContractFixtures = {
     },
     name: "search",
   } satisfies KrakenToolDefinition,
-  workerStatus: workerStatusFixture,
 };
 
 export const invalidFrameworkContractFixtures = {

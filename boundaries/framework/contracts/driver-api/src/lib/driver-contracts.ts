@@ -29,11 +29,8 @@ import {
   assertContextManifest,
   assertKrakenMessage,
 } from "@kraken/framework-runtime-api/execution";
-import type { KrakenModelResponse } from "@kraken/framework-runtime-api/provider";
-import { assertKrakenModelResponse } from "@kraken/framework-runtime-api/provider";
 import type {
   ApprovalResponse,
-  ToolCallPart,
   ToolRegistry,
 } from "@kraken/framework-runtime-api/tools";
 import { assertApprovalRequest } from "@kraken/framework-runtime-api/tools";
@@ -57,16 +54,16 @@ export interface DriverHandoffPort {
 
 export interface DriverExecutionContext {
   branchId: string;
-  config: AgentConfig;
+  config: Readonly<AgentConfig>;
   handoff: DriverHandoffPort;
   iterationCount: number;
-  manifest: ContextManifest;
-  messages: KrakenMessage[];
+  manifest: Readonly<ContextManifest>;
+  messages: readonly KrakenMessage[];
   runtime: DriverRuntimePort;
   schemaId: string;
   signal?: AbortSignal;
   threadId: string;
-  toolRegistry: ToolRegistry;
+  toolRegistry: Readonly<ToolRegistry>;
   turnId: string;
 }
 
@@ -76,13 +73,9 @@ export interface DriverResumeContext extends DriverExecutionContext {
 }
 
 export interface DriverExecutionResult {
-  activeAgent?: string;
   messages?: KrakenMessage[];
   partial?: boolean;
   resolution: RuntimeResolution;
-  // `response` enriches staged assistant messages for hook/runtime consumers; it
-  // never replaces durable conversation history.
-  response?: KrakenModelResponse;
 }
 
 export interface KrakenDriver {
@@ -138,7 +131,6 @@ export function assertDriverExecutionResult(
 ): asserts value is DriverExecutionResult {
   if (
     !isRecord(value) ||
-    ("activeAgent" in value && typeof value.activeAgent !== "string") ||
     ("partial" in value && typeof value.partial !== "boolean")
   ) {
     throw new KrakenValidationError(
@@ -164,28 +156,17 @@ export function assertDriverExecutionResult(
     }
   }
 
-  if ("response" in value && value.response !== undefined) {
-    assertKrakenModelResponse(value.response, `${label}.response`);
-
-    if (
-      !(
-        Array.isArray(value.messages) &&
-        value.messages.some((message) => message.role === "assistant")
-      )
-    ) {
-      throw new KrakenValidationError(
-        `${label}.response requires staged assistant messages in ${label}.messages`,
-        {
-          code: "invalid_driver_result",
-          details: value,
-        }
-      );
+  for (const key of Object.keys(value)) {
+    if (key === "messages" || key === "partial" || key === "resolution") {
+      continue;
     }
 
-    assertDriverResponseMatchesMessages(
-      value.messages,
-      value.response,
-      `${label}.response`
+    throw new KrakenValidationError(
+      `${label} must not include unsupported driver result field "${key}"`,
+      {
+        code: "invalid_driver_result",
+        details: value,
+      }
     );
   }
 
@@ -362,88 +343,6 @@ function assertDriverMessage(message: KrakenMessage, label: string): void {
   }
 }
 
-function assertDriverResponseMatchesMessages(
-  messages: KrakenMessage[],
-  response: KrakenModelResponse,
-  label: string
-): void {
-  const responseToolCalls = response.parts.filter(
-    (
-      part
-    ): part is Extract<
-      (typeof response.parts)[number],
-      { type: "tool_call" }
-    > => part.type === "tool_call"
-  );
-
-  if (response.parts.some((part) => part.type === "tool_result")) {
-    throw new KrakenValidationError(
-      `${label} must not contain tool_result parts`,
-      {
-        code: "invalid_driver_result",
-        details: response,
-      }
-    );
-  }
-
-  const lastMessage = messages.at(-1);
-
-  if (lastMessage?.role !== "assistant") {
-    throw new KrakenValidationError(
-      `${label} requires the last driver message to be an assistant message`,
-      {
-        code: "invalid_driver_result",
-        details: {
-          lastMessage,
-          response,
-        },
-      }
-    );
-  }
-
-  const messageToolCalls = lastMessage.parts.filter(
-    (
-      part
-    ): part is Extract<
-      (typeof lastMessage.parts)[number],
-      { type: "tool_call" }
-    > => part.type === "tool_call"
-  );
-  const messageHasToolCalls = messageToolCalls.length > 0;
-  const responseHasToolCalls =
-    response.finishReason === "tool_call" || responseToolCalls.length > 0;
-
-  if (messageHasToolCalls !== responseHasToolCalls) {
-    throw new KrakenValidationError(
-      `${label} must agree with the staged assistant message about tool-call semantics`,
-      {
-        code: "invalid_driver_result",
-        details: {
-          messageParts: lastMessage.parts,
-          response,
-        },
-      }
-    );
-  }
-
-  if (!messageHasToolCalls) {
-    return;
-  }
-
-  if (!equalToolCallLists(messageToolCalls, responseToolCalls)) {
-    throw new KrakenValidationError(
-      `${label}.parts must preserve the staged assistant tool calls`,
-      {
-        code: "invalid_driver_result",
-        details: {
-          messageToolCalls,
-          responseToolCalls,
-        },
-      }
-    );
-  }
-}
-
 function assertDriverPartialResult(
   value: {
     messages?: KrakenMessage[];
@@ -475,137 +374,6 @@ function assertDriverPartialResult(
       }
     );
   }
-}
-
-function equalToolCallLists(
-  left: ToolCallPart[],
-  right: ToolCallPart[]
-): boolean {
-  if (left.length !== right.length) {
-    return false;
-  }
-
-  for (const [index, leftToolCall] of left.entries()) {
-    const rightToolCall = right[index];
-
-    if (
-      rightToolCall === undefined ||
-      leftToolCall.callId !== rightToolCall.callId ||
-      leftToolCall.name !== rightToolCall.name ||
-      !equalUnknownValues(leftToolCall.input, rightToolCall.input)
-    ) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-function equalUnknownValues(left: unknown, right: unknown): boolean {
-  if (left === right) {
-    return true;
-  }
-
-  if (!canCompareReferenceValues(left, right)) {
-    return false;
-  }
-
-  if (isPrimitiveComparableMiss(left) || isPrimitiveComparableMiss(right)) {
-    return false;
-  }
-
-  if (left instanceof Uint8Array || right instanceof Uint8Array) {
-    return equalByteArrays(left, right);
-  }
-
-  if (Array.isArray(left) || Array.isArray(right)) {
-    return equalUnknownArrays(left, right);
-  }
-
-  if (!(isRecord(left) && isRecord(right))) {
-    return false;
-  }
-
-  return equalUnknownRecords(left, right);
-}
-
-function canCompareReferenceValues(left: unknown, right: unknown): boolean {
-  return !(
-    left === null ||
-    right === null ||
-    typeof left !== typeof right ||
-    typeof left === "function" ||
-    typeof right === "function"
-  );
-}
-
-function isPrimitiveComparableMiss(value: unknown): boolean {
-  return (
-    typeof value === "string" ||
-    typeof value === "number" ||
-    typeof value === "boolean" ||
-    typeof value === "bigint" ||
-    typeof value === "symbol" ||
-    value === undefined
-  );
-}
-
-function equalByteArrays(left: unknown, right: unknown): boolean {
-  if (!(left instanceof Uint8Array && right instanceof Uint8Array)) {
-    return false;
-  }
-
-  if (left.length !== right.length) {
-    return false;
-  }
-
-  for (const [index, leftByte] of left.entries()) {
-    if (leftByte !== right[index]) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-function equalUnknownArrays(left: unknown, right: unknown): boolean {
-  if (!(Array.isArray(left) && Array.isArray(right))) {
-    return false;
-  }
-
-  if (left.length !== right.length) {
-    return false;
-  }
-
-  for (const [index, leftEntry] of left.entries()) {
-    if (!equalUnknownValues(leftEntry, right[index])) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-function equalUnknownRecords(
-  left: Record<string, unknown>,
-  right: Record<string, unknown>
-): boolean {
-  const leftKeys = Object.keys(left).filter((key) => left[key] !== undefined);
-  const rightKeys = Object.keys(right).filter(
-    (key) => right[key] !== undefined
-  );
-
-  if (leftKeys.length !== rightKeys.length) {
-    return false;
-  }
-
-  for (const key of leftKeys) {
-    if (!(key in right && equalUnknownValues(left[key], right[key]))) {
-      return false;
-    }
-  }
-
-  return true;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

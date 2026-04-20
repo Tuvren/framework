@@ -124,7 +124,6 @@ export type {
   TurnStartEvent,
   ValidationErrorPayload,
   ValidationResult,
-  WorkerStatus,
 } from "./lib/runtime-contracts.js";
 export {
   assertApprovalRequest,

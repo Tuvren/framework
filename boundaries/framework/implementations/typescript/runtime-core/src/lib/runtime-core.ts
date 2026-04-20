@@ -134,12 +134,10 @@ export interface RuntimeCoreOptions {
   kernel: KrakenKernel;
   now?: () => EpochMs;
   resolveAgentConfig?: (agentName: string) => AgentConfig | undefined;
-  resolveNextAgent?: (agentName: string) => string | undefined;
   resolveParentTurnId?: (
     threadId: string,
     branchId: string
   ) => Promise<string | null> | string | null;
-  resolveSequenceStep?: (agentName: string) => number | undefined;
 }
 
 interface ResolvedRuntimeCoreOptions {
@@ -151,12 +149,10 @@ interface ResolvedRuntimeCoreOptions {
   kernel: KrakenKernel;
   now: () => EpochMs;
   resolveAgentConfig?: (agentName: string) => AgentConfig | undefined;
-  resolveNextAgent?: (agentName: string) => string | undefined;
   resolveParentTurnId?: (
     threadId: string,
     branchId: string
   ) => Promise<string | null> | string | null;
-  resolveSequenceStep?: (agentName: string) => number | undefined;
 }
 
 interface HeadState {
@@ -198,7 +194,6 @@ interface ExecutedIterationResult {
 
 interface DurableRuntimeStatus {
   activeAgent?: string;
-  iterationCount?: number;
   partial?: boolean;
   pauseReason?: string;
   state: "completed" | "failed" | "paused" | "running";
@@ -249,8 +244,6 @@ class RuntimeCore implements KrakenRuntime {
       kernel: options.kernel,
       now: options.now ?? Date.now,
       resolveAgentConfig: options.resolveAgentConfig,
-      resolveNextAgent: options.resolveNextAgent,
-      resolveSequenceStep: options.resolveSequenceStep,
       resolveParentTurnId: options.resolveParentTurnId,
     };
   }
@@ -1223,8 +1216,7 @@ class RuntimeCore implements KrakenRuntime {
       driverMessages,
       iterationCount
     );
-    const driverResponse =
-      driverResult.response ?? synthesizeResponse(driverMessages, resolution);
+    const driverResponse = synthesizeResponse(driverMessages, resolution);
     const toolResults: ToolResultPart[] = [];
 
     if (cancellationResolution !== undefined) {
@@ -1434,7 +1426,6 @@ class RuntimeCore implements KrakenRuntime {
             runId,
             {
               activeAgent: loopState.activeConfig.name,
-              iterationCount,
               pauseReason: resolution.reason,
               state: "paused",
             },
@@ -1684,7 +1675,6 @@ class RuntimeCore implements KrakenRuntime {
             runId,
             {
               activeAgent: loopState.activeConfig.name,
-              iterationCount: pausedIteration.iterationCount,
               pauseReason: resolution.reason,
               state: "paused",
             },
@@ -1916,7 +1906,6 @@ class RuntimeCore implements KrakenRuntime {
       return result;
     } catch (error: unknown) {
       return {
-        activeAgent: context.config.name,
         resolution: {
           error: normalizeError(error),
           fatality: "hard",
@@ -2018,35 +2007,6 @@ class RuntimeCore implements KrakenRuntime {
       changes,
       baseTurnTreeHash
     );
-  }
-
-  private createSequenceHandoffPlan(
-    headState: HeadState,
-    sourceAgent: AgentConfig,
-    targetAgent: AgentConfig
-  ): HandoffContextPlan {
-    const helperBundle = this.createContextEngineeringHelpers(
-      headState.messageHashes,
-      headState.messages
-    );
-
-    return {
-      builder: createLastOutputOnlyHandoffContextBuilder(),
-      mode: "last_output_only",
-      reason: "sequence_transition",
-      sourceContext: {
-        handoffIntent: {
-          reason: "sequence_transition",
-          targetAgent: targetAgent.name,
-        },
-        helpers: helperBundle.helpers,
-        manifest: headState.manifest,
-        messages: headState.messages,
-        sourceAgent,
-        targetAgent,
-      },
-      targetAgent: targetAgent.name,
-    };
   }
 
   private resolveDefaultHandoffContextBuilder(
@@ -2937,82 +2897,13 @@ class RuntimeCore implements KrakenRuntime {
     resolution: RuntimeResolution,
     loopState: LoopState
   ): Promise<boolean> {
-    if (resolution.type === "handoff") {
-      const handoff = await this.applyHandoff(
-        handle,
-        schemaId,
-        resolution.contextPlan,
-        loopState,
-        loopState.carriedStateUpdates
-      );
-      loopState.activeConfig = handoff.activeConfig;
-      loopState.activeToolRegistry = handoff.activeToolRegistry;
-      loopState.carriedStateUpdates = [];
-      return true;
-    }
-
-    const sequenceTarget =
-      resolution.type === "end_turn"
-        ? this.options.resolveNextAgent?.(loopState.activeConfig.name)
-        : undefined;
-
-    if (sequenceTarget === undefined) {
+    if (resolution.type !== "handoff") {
       return false;
     }
-
-    if (this.options.resolveAgentConfig === undefined) {
-      throw new KrakenRuntimeError(
-        `agent transition target "${sequenceTarget}" cannot be resolved because no agent resolver is configured`,
-        {
-          code: "invalid_agent_transition",
-          details: {
-            from: loopState.activeConfig.name,
-            to: sequenceTarget,
-          },
-        }
-      );
-    }
-
-    const targetConfig = this.options.resolveAgentConfig(sequenceTarget);
-
-    if (targetConfig === undefined) {
-      throw new KrakenRuntimeError(
-        `agent transition target "${sequenceTarget}" is not defined`,
-        {
-          code: "invalid_agent_transition",
-          details: {
-            from: loopState.activeConfig.name,
-            to: sequenceTarget,
-          },
-        }
-      );
-    }
-
-    this.publishCustomEvent(
-      handle,
-      {
-        data: {
-          from: loopState.activeConfig.name,
-          step:
-            this.options.resolveSequenceStep?.(loopState.activeConfig.name) ??
-            null,
-          to: targetConfig.name,
-        },
-        name: "sequence.step",
-      },
-      loopState
-    );
-
-    const latestHeadState = await this.loadHeadState(handle.request.branchId);
-    const sequencePlan = this.createSequenceHandoffPlan(
-      latestHeadState,
-      loopState.activeConfig,
-      targetConfig
-    );
     const handoff = await this.applyHandoff(
       handle,
       schemaId,
-      sequencePlan,
+      resolution.contextPlan,
       loopState,
       loopState.carriedStateUpdates
     );
@@ -3070,7 +2961,6 @@ class RuntimeCore implements KrakenRuntime {
       runId,
       {
         activeAgent: loopState.activeConfig.name,
-        iterationCount,
         state: "running",
       },
       "runtime_status_running"

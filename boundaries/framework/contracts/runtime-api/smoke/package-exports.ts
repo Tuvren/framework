@@ -73,6 +73,7 @@ describe("runtime-api package exports", () => {
     };
     let orchestrationHandleShape: OrchestrationHandle;
     orchestrationHandleShape = {
+      awaitResult: async () => ({ ok: true }),
       allEvents: () => ({
         [Symbol.asyncIterator]: createEmptyEventStream,
       }),
@@ -80,16 +81,10 @@ describe("runtime-api package exports", () => {
       events: () => ({
         [Symbol.asyncIterator]: createEmptyEventStream,
       }),
-      parentEvents: () => ({
-        [Symbol.asyncIterator]: createEmptyEventStream,
-      }),
       resolveApproval: () => orchestrationHandleShape,
+      spawn: () => orchestrationHandleShape,
       status: () => ({ iterationCount: 0, phase: "running" as const }),
       steer: () => undefined,
-      workerEvents: () => ({
-        [Symbol.asyncIterator]: createEmptyEventStream,
-      }),
-      workers: () => new Map(),
     };
 
     expect(() => assertContextManifest(manifest)).not.toThrow();
