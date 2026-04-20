@@ -296,6 +296,23 @@ This is intentionally closer to the LangChain/LangGraph posture:
 - richer execution artifacts are local or explicitly modeled elsewhere
 - the shared contract avoids baking in a universal per-iteration raw response object
 
+**Working decision (sub-aspect 2):**
+
+- `DriverExecutionContext` should expose immutable snapshots of framework-owned state plus explicit capability ports.
+- The primitive-layer shape is:
+  - snapshots in
+  - capabilities through ports
+  - explicit results out
+
+That means:
+
+- `messages`, `manifest`, and `config` are read-only snapshots
+- tool access is a read-only driver-facing view, not a mutable live registry
+- event emission, cancellation awareness, and handoff-plan construction are explicit ports
+- drivers do not mutate framework-owned state by aliasing context objects in place
+
+If a driver needs to influence framework state, it does so through explicit returned outputs such as `messages`, `resolution`, and `partial`, not through in-place mutation of the execution context.
+
 ### 6. Handoff semantics versus exact wording
 
 **Original gap in `docs/`:**
