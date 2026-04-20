@@ -54,6 +54,7 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
   private lastErrorProjection?: KrakenErrorProjection;
   private materializedDriver?: KrakenDriver;
   private materializedDriverId?: string;
+  private pendingPausedCancellation?: Promise<void>;
   private pauseContext?: PauseContext;
   private replacementHandle?: RuntimeExecutionHandle;
   private readonly runtime: RuntimeExecutionHandleRuntime;
@@ -277,6 +278,14 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
 
   primeResumedCancellation(pauseContext: PauseContext): void {
     this.pauseContext = pauseContext;
+  }
+
+  getPendingPausedCancellation(): Promise<void> | undefined {
+    return this.pendingPausedCancellation;
+  }
+
+  rememberPausedCancellation(task: Promise<void>): void {
+    this.pendingPausedCancellation = task;
   }
 
   clearPendingResumeCancellation(): void {

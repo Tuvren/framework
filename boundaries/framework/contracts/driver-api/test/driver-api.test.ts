@@ -84,6 +84,24 @@ describe("driver-api", () => {
     ).not.toThrow();
   });
 
+  test("rejects driver results with more than one assistant message", () => {
+    expect(() =>
+      assertDriverExecutionResult({
+        messages: [
+          {
+            parts: [{ text: "first", type: "text" }],
+            role: "assistant",
+          },
+          {
+            parts: [{ text: "second", type: "text" }],
+            role: "assistant",
+          },
+        ],
+        resolution: { reason: "done", type: "end_turn" },
+      })
+    ).toThrow("messages must not contain more than one assistant message");
+  });
+
   test("permits failed partial execution results when assistant output is staged", () => {
     expect(() =>
       assertDriverExecutionResult({

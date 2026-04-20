@@ -892,7 +892,7 @@ export interface DriverRegistry {
 }
 ```
 
-`DriverExecutionResult.toolExecutionMode` is required when assistant messages request tool calls and omitted otherwise. This keeps sequential-vs-parallel selection on the shared driver boundary instead of on runtime-core construction options.
+`DriverExecutionResult` may contain at most one assistant message per iteration. `toolExecutionMode` is required when that assistant message requests tool calls and omitted otherwise. This keeps sequential-vs-parallel selection on the shared driver boundary instead of on runtime-core construction options.
 
 ## 5. Implementation Guidelines
 ### 5.1 Project Structure

@@ -22,6 +22,7 @@ import type {
   KrakenDriver,
   KrakenDriverFactory,
 } from "@kraken/framework-driver-api";
+import type { KrakenRuntime } from "@kraken/framework-runtime-api";
 import {
   createDriverRegistry as createBaseDriverRegistry,
   createKrakenRuntimeCore,
@@ -32,6 +33,7 @@ import {
   assistantText,
   assistantToolCalls,
   collectEvents,
+  createStubExecutionHandle,
   delay,
   detachTestPromise,
   startEventCapture,
@@ -126,6 +128,85 @@ describe("orchestration-runtime", () => {
     ).toThrow(
       "spawn() requires the orchestration handle to start execution first"
     );
+  });
+
+  test("reports child binding initialization failures only once on subtree streams", async () => {
+    const rootHandle = createStubExecutionHandle("running");
+    let executeCalls = 0;
+    let nextThreadNumber = 0;
+    const framework = {
+      async createBranch() {
+        throw new Error("createBranch was not expected");
+      },
+      async createThread() {
+        nextThreadNumber += 1;
+        return {
+          branchId: `branch-${nextThreadNumber}`,
+          rootTurnNodeHash: "0".repeat(64),
+          rootTurnTreeHash: "1".repeat(64),
+          threadId: `thread-${nextThreadNumber}`,
+        };
+      },
+      executeTurn() {
+        executeCalls += 1;
+
+        if (executeCalls === 1) {
+          return rootHandle;
+        }
+
+        throw new Error("child start failed");
+      },
+      async getThread(threadId) {
+        if (threadId === "thread-root") {
+          return {
+            rootTurnNodeHash: "2".repeat(64),
+            schemaId: "kraken.agent.v1",
+            threadId,
+          };
+        }
+
+        return null;
+      },
+      async setBranchHead() {
+        throw new Error("setBranchHead was not expected");
+      },
+    } satisfies KrakenRuntime;
+    const orchestration = createOrchestrationRuntime({
+      agents: {
+        primary: { name: "primary" },
+        worker: { name: "worker" },
+      },
+      framework,
+    });
+    const handle = orchestration.executeTurn({
+      agent: "primary",
+      branchId: "branch-root",
+      signal: textSignal("root"),
+      threadId: "thread-root",
+    });
+    const capture = startEventCapture(handle.allEvents());
+    detachTestPromise(handle.awaitResult());
+
+    await delay(0);
+    const childHandle = handle.spawn({
+      agent: "worker",
+      signal: textSignal("child"),
+    });
+    await expect(childHandle.awaitResult()).rejects.toThrow(
+      "child start failed"
+    );
+    await waitFor(
+      () =>
+        capture.events.filter((event) => event.type === "error").length === 1
+    );
+    await delay(20);
+
+    expect(
+      capture.events.filter((event) => event.type === "error")
+    ).toHaveLength(1);
+
+    handle.cancel();
+    await capture.done;
   });
 
   test("bridges descendant events through allEvents and does not inject worker_result into parent history", async () => {

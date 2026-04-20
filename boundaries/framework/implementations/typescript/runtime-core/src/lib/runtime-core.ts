@@ -379,17 +379,28 @@ class RuntimeCore implements KrakenRuntime {
       return;
     }
 
-    detachPromise(
-      this.finalizePausedCancellation(
-        handle,
-        pauseContext,
-        new Error("execution cancelled")
-      )
+    const cancellationTask = this.finalizePausedCancellation(
+      handle,
+      pauseContext,
+      new Error("execution cancelled")
     );
+    handle.rememberPausedCancellation(cancellationTask);
+    detachPromise(cancellationTask);
   }
 
   async startExecution(handle: RuntimeExecutionHandle): Promise<void> {
     try {
+      const pendingPausedCancellation = handle.getPendingPausedCancellation();
+
+      if (pendingPausedCancellation !== undefined) {
+        await pendingPausedCancellation;
+        return;
+      }
+
+      if (handle.status().phase !== "running") {
+        return;
+      }
+
       const schemaId = await this.resolveExecutionSchemaId(handle.request);
       handle.setSchemaId(schemaId);
       const branchHeadHash = await this.resolveExecutionBranchHead(handle);
@@ -716,13 +727,11 @@ class RuntimeCore implements KrakenRuntime {
     const runtimeError = normalizeError(error);
     const rootError =
       finalizationFailure?.rootCause ?? finalizationFailure?.finalizationError;
+    const failureActiveConfig = this.resolveFailureActiveConfig(handle);
 
     handle.rememberError(projectError(rootError ?? runtimeError));
     const loopState: LoopState = {
-      activeConfig: {
-        ...handle.request.config,
-        extensions: [],
-      },
+      activeConfig: failureActiveConfig,
       activeDriverId: handle.request.driverId ?? this.options.defaultDriverId,
       activeToolRegistry: createToolRegistry(),
       carriedStateUpdates: [],
@@ -774,7 +783,7 @@ class RuntimeCore implements KrakenRuntime {
 
     this.publishProjectedError(handle, runtimeError, true, loopState);
     handle.replaceStatus({
-      activeAgent: handle.request.config.name,
+      activeAgent: loopState.activeConfig.name,
       iterationCount: handle.status().iterationCount,
       manifest: handle.status().manifest,
       phase: "failed",
@@ -3264,6 +3273,27 @@ class RuntimeCore implements KrakenRuntime {
     return materializeDriver(driverEntry);
   }
 
+  private resolveFailureActiveConfig(
+    handle: RuntimeExecutionHandle
+  ): AgentConfig {
+    const activeAgentName =
+      handle.status().activeAgent ?? handle.request.config.name;
+    const resolvedActiveConfig =
+      this.options.resolveAgentConfig?.(activeAgentName);
+
+    if (resolvedActiveConfig !== undefined) {
+      return resolvedActiveConfig;
+    }
+
+    if (activeAgentName === handle.request.config.name) {
+      return handle.request.config;
+    }
+
+    return {
+      name: activeAgentName,
+    };
+  }
+
   private async ensureSchemaId(schemaId?: string): Promise<string> {
     const resolvedSchemaId = schemaId ?? DEFAULT_AGENT_SCHEMA_ID;
     const existing = await this.options.kernel.schema.get(resolvedSchemaId);
@@ -3805,20 +3835,19 @@ function synthesizeResponse(
   resolution: RuntimeResolution,
   emittedEvents: KrakenStreamEvent[]
 ): KrakenModelResponse {
-  const assistantMessages = messages.filter(
+  const assistantMessage = messages.find(
     (message): message is Extract<KrakenMessage, { role: "assistant" }> =>
       message.role === "assistant"
   );
-  const lastAssistantMessage = assistantMessages.at(-1);
   const lastMessageDoneEvent = findLastMessageDoneEvent(emittedEvents);
 
-  if (lastAssistantMessage !== undefined) {
+  if (assistantMessage !== undefined) {
     return {
       finishReason:
         lastMessageDoneEvent?.finishReason ??
-        inferFinishReason(lastAssistantMessage),
-      parts: assistantMessages.flatMap((message) => message.parts),
-      providerMetadata: lastAssistantMessage.providerMetadata,
+        inferFinishReason(assistantMessage),
+      parts: assistantMessage.parts,
+      providerMetadata: assistantMessage.providerMetadata,
       usage: lastMessageDoneEvent?.usage,
     };
   }

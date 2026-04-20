@@ -160,19 +160,7 @@ export function assertDriverExecutionResult(
     );
   }
 
-  if ("messages" in value && value.messages !== undefined) {
-    if (!Array.isArray(value.messages)) {
-      throw new KrakenValidationError(`${label}.messages must be an array`, {
-        code: "invalid_driver_result",
-        details: value,
-      });
-    }
-
-    for (const [index, message] of value.messages.entries()) {
-      assertKrakenMessage(message, `${label}.messages[${index}]`);
-      assertDriverMessage(message, `${label}.messages[${index}]`);
-    }
-  }
+  assertDriverMessages(value, label);
 
   for (const key of Object.keys(value)) {
     if (
@@ -375,6 +363,37 @@ function assertDriverMessage(message: KrakenMessage, label: string): void {
         }
       );
     }
+  }
+}
+
+function assertDriverMessages(
+  value: Record<string, unknown>,
+  label: string
+): void {
+  if (!("messages" in value) || value.messages === undefined) {
+    return;
+  }
+
+  if (!Array.isArray(value.messages)) {
+    throw new KrakenValidationError(`${label}.messages must be an array`, {
+      code: "invalid_driver_result",
+      details: value,
+    });
+  }
+
+  for (const [index, message] of value.messages.entries()) {
+    assertKrakenMessage(message, `${label}.messages[${index}]`);
+    assertDriverMessage(message, `${label}.messages[${index}]`);
+  }
+
+  if (value.messages.length > 1) {
+    throw new KrakenValidationError(
+      `${label}.messages must not contain more than one assistant message`,
+      {
+        code: "invalid_driver_result",
+        details: value,
+      }
+    );
   }
 }
 

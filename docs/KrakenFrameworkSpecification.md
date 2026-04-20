@@ -1156,6 +1156,7 @@ The driver does not mutate framework-owned state by aliasing context objects in 
 
 - `resolution` is always required
 - `messages` are required whenever the iteration produces durable assistant history
+- `messages` may contain at most one assistant message per iteration
 - `messages` may be absent only for pure control outcomes with no durable assistant-history contribution, or for failures before any durable assistant output was staged
 - `partial` is valid only for failed execution results that stage an assistant message
 - `toolExecutionMode` is required when the driver requests tool calls through assistant messages, and invalid otherwise

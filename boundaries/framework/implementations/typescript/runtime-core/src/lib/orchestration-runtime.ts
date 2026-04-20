@@ -133,7 +133,6 @@ class OrchestrationNode {
           const normalizedError = normalizeError(error);
           this.lastErrorProjection = projectError(normalizedError);
           this.selfPhase = "failed";
-          this.emitSyntheticLifecycleFailure(normalizedError);
           throw normalizedError;
         });
     }
@@ -357,27 +356,6 @@ class OrchestrationNode {
         workerId: binding.workerId,
       },
     };
-  }
-
-  private emitSyntheticLifecycleFailure(error: Error): void {
-    const source =
-      this.workerId === undefined
-        ? {
-            agent: this.localAgent,
-          }
-        : {
-            agent: this.localAgent,
-            workerId: this.workerId,
-          };
-    this.subtreeEvents.emit({
-      error: projectError(error),
-      fatal: true,
-      source,
-      timestamp: this.now(),
-      type: "error",
-    });
-    this.settleResultFailure(error);
-    this.maybeCloseSubtree();
   }
 
   private ensureWatchingCurrentBinding(): void {

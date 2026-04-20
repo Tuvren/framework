@@ -2527,7 +2527,7 @@ describe("framework-runtime-core", () => {
     });
   });
 
-  test("synthesizes afterIteration responses from every staged assistant message in the iteration", async () => {
+  test("rejects driver results with more than one assistant message before afterIteration hooks run", async () => {
     const harness = createFakeKernelHarness();
     let capturedResponse:
       | {
@@ -2589,22 +2589,18 @@ describe("framework-runtime-core", () => {
       threadId: thread.threadId,
     });
 
-    await collectEvents(handle.events());
+    const events = await collectEvents(handle.events());
+    const errorEvent = events.find(
+      (event): event is Extract<(typeof events)[number], { type: "error" }> =>
+        event.type === "error"
+    );
 
     expect(capturedResponse).toEqual({
-      finishReason: "stop",
-      parts: [
-        {
-          text: "First assistant message.",
-          type: "text",
-        },
-        {
-          data: { ok: true },
-          name: "summary",
-          type: "structured",
-        },
-      ],
+      finishReason: "error",
+      parts: [],
     });
+    expect(handle.status().phase).toBe("failed");
+    expect(errorEvent?.error.code).toBe("invalid_driver_result");
   });
 
   test("rejects invalid context-engineering helper messages with a validation error", async () => {
@@ -3561,6 +3557,124 @@ describe("framework-runtime-core", () => {
         "This should not be reached."
       )
     ).toBe(true);
+  });
+
+  test("does not revive a cancelled resumed handle when events start later", async () => {
+    const harness = createFakeKernelHarness();
+    let emailCalls = 0;
+    const driver = {
+      async execute(context) {
+        const toolMessages = context.messages.filter(
+          (message) => message.role === "tool"
+        );
+
+        if (toolMessages.length === 0) {
+          return {
+            messages: [
+              assistantToolCalls([
+                {
+                  callId: "call-email",
+                  input: { subject: "Approval needed", to: "ops@example.com" },
+                  name: "email",
+                },
+              ]),
+            ],
+            resolution: {
+              type: "continue_iteration",
+            },
+          };
+        }
+
+        return {
+          messages: [assistantText("This should not resume.")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const pausedHandle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        name: "primary",
+        tools: [
+          {
+            approval: true,
+            description: "Pause for approval",
+            execute() {
+              emailCalls += 1;
+              return {
+                sent: true,
+              };
+            },
+            inputSchema: {
+              properties: {
+                subject: { type: "string" },
+                to: { type: "string" },
+              },
+              required: ["to", "subject"],
+              type: "object",
+            },
+            name: "email",
+          },
+        ],
+      },
+      signal: textSignal("Pause, approve, then cancel before start"),
+      threadId: thread.threadId,
+    });
+    await collectEvents(pausedHandle.events());
+
+    const resumedHandle = pausedHandle.resolveApproval({
+      decisions: [{ callId: "call-email", type: "approve" }],
+    });
+    resumedHandle.cancel();
+
+    await waitForAsync(async () => {
+      const runtimeStatus = await harness.readBranchRuntimeStatus(
+        thread.branchId
+      );
+
+      return (
+        runtimeStatus !== null &&
+        typeof runtimeStatus === "object" &&
+        "state" in runtimeStatus &&
+        runtimeStatus.state === "completed"
+      );
+    });
+
+    const resumedEvents = await collectEvents(resumedHandle.events());
+    const messages = extractToolMessages(
+      await harness.readBranchMessages(thread.branchId)
+    );
+
+    expect(emailCalls).toBe(0);
+    expect(resumedHandle.status().phase).toBe("completed");
+    expect(
+      resumedEvents.some((event) => event.type === "approval.resolved")
+    ).toBe(false);
+    expect(messages).toHaveLength(1);
+    expect(messages[0]?.parts[0]?.type).toBe("tool_result");
+    if (messages[0]?.parts[0]?.type === "tool_result") {
+      expect(messages[0].parts[0].isError).toBe(true);
+      expect(JSON.stringify(messages[0].parts[0].output)).toContain("rejected");
+    }
+    expect(
+      hasAssistantText(
+        await harness.readBranchMessages(thread.branchId),
+        "This should not resume."
+      )
+    ).toBe(false);
   });
 
   test("preserves queued steering across approval resume", async () => {
@@ -6722,6 +6836,77 @@ describe("framework-runtime-core", () => {
     ).toBe(true);
     expect(handle.status().activeAgent).toBe("reviewer");
     expect(handle.status().phase).toBe("completed");
+  });
+
+  test("preserves the handed-off activeAgent when later execution fails", async () => {
+    const harness = createFakeKernelHarness();
+    const agents: Record<string, AgentConfig> = {
+      primary: { name: "primary" },
+      reviewer: {
+        contextPolicy: {
+          evaluate() {
+            throw new Error("reviewer context policy boom");
+          },
+        },
+        name: "reviewer",
+      },
+    };
+    const handoffDriver = {
+      async execute(context) {
+        if (context.config.name === "primary") {
+          return {
+            messages: [assistantText("Pass this to the reviewer.")],
+            resolution: {
+              contextPlan: context.handoff.createContextPlan({
+                reason: "handoff",
+                targetAgent: "reviewer",
+              }),
+              targetAgent: "reviewer",
+              type: "handoff",
+            },
+          };
+        }
+
+        return {
+          messages: [assistantText("This should not run.")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([handoffDriver]),
+      kernel: harness.kernel,
+      resolveAgentConfig: (agentName) => agents[agentName],
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: agents.primary,
+      signal: textSignal("Start failing handoff"),
+      threadId: thread.threadId,
+    });
+
+    const events = await collectEvents(handle.events());
+    const errorEvent = events.find(
+      (event): event is Extract<(typeof events)[number], { type: "error" }> =>
+        event.type === "error"
+    );
+
+    expect(errorEvent?.error.message).toContain("reviewer context policy boom");
+    expect(handle.status().phase).toBe("failed");
+    expect(handle.status().activeAgent).toBe("reviewer");
+    expect(await harness.readBranchRuntimeStatus(thread.branchId)).toEqual({
+      activeAgent: "reviewer",
+      state: "failed",
+    });
   });
 
   test("lets drivers build valid handoff plans through DriverExecutionContext.handoff", async () => {

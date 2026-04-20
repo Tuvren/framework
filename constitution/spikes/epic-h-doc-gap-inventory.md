@@ -204,6 +204,7 @@ This note exists to preserve the conclusions reached while unwinding the long-ru
 
 - `resolution` is always required
 - `messages` are required whenever the iteration produces durable assistant history
+- `messages` may contain at most one assistant message per iteration
 - `messages` may be absent only for:
   - pure control outcomes with no durable assistant-history contribution
   - failures before any durable assistant output was staged
