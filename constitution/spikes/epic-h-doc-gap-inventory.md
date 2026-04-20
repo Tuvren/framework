@@ -598,7 +598,18 @@ Checkpoint event objects and optional snapshot/checkpoint events are therefore o
 
 - Whether delegated orchestration is part of the normative framework contract or just a convenience composition mode.
 
-<!-- I think I still don't understand what "delegated orchestration" means so this needs to be talked more for me to be able to decide on specifics -->
+**Working decision:**
+
+- Choose **Option C**: remove delegated or external framework execution mode from the authoritative framework semantics for now.
+- Do not define this boundary until there is a real and understood use case for it.
+
+Rationale:
+
+- the term itself is still too fuzzy to carry normative weight
+- it looks like a composition or implementation concern rather than a core semantic
+- trying to define it now would force premature decisions about ownership of execution, schema, driver selection, and handoff behavior
+
+If a real need emerges later, it can be specified from concrete usage rather than speculative abstraction.
 
 ## Recommended Docs-First Rewrite Order
 
