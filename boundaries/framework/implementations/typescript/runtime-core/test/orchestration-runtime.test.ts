@@ -33,7 +33,6 @@ import {
   assistantText,
   assistantToolCalls,
   collectEvents,
-  collectEventsForDuration,
   createStubExecutionHandle,
   delay,
   detachTestPromise,
@@ -82,6 +81,137 @@ describe("orchestration-runtime", () => {
     ).toThrow(
       "spawn() requires the orchestration handle to start execution first"
     );
+  });
+
+  test("does not start orchestration execution when events() is obtained but never consumed", async () => {
+    const harness = createFakeKernelHarness();
+    let executeCalls = 0;
+    const framework = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([
+        createStaticDriver((context) => {
+          executeCalls += 1;
+          return {
+            messages: [assistantText(`Finished ${context.config.name}.`)],
+            resolution: {
+              reason: "done",
+              type: "end_turn",
+            },
+          };
+        }),
+      ]),
+      kernel: harness.kernel,
+    });
+    const orchestration = createOrchestrationRuntime({
+      agents: {
+        primary: { name: "primary" },
+      },
+      framework,
+    });
+    const thread = await framework.createThread({});
+    const handle = orchestration.executeTurn({
+      agent: "primary",
+      branchId: thread.branchId,
+      signal: textSignal("Stay idle"),
+      threadId: thread.threadId,
+    });
+
+    handle.events();
+    await delay(40);
+
+    expect(executeCalls).toBe(0);
+    expect(await harness.readBranchMessages(thread.branchId)).toEqual([]);
+  });
+
+  test("does not start orchestration execution when allEvents() is obtained but never consumed", async () => {
+    const harness = createFakeKernelHarness();
+    let executeCalls = 0;
+    const framework = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([
+        createStaticDriver((context) => {
+          executeCalls += 1;
+          return {
+            messages: [assistantText(`Finished ${context.config.name}.`)],
+            resolution: {
+              reason: "done",
+              type: "end_turn",
+            },
+          };
+        }),
+      ]),
+      kernel: harness.kernel,
+    });
+    const orchestration = createOrchestrationRuntime({
+      agents: {
+        primary: { name: "primary" },
+      },
+      framework,
+    });
+    const thread = await framework.createThread({});
+    const handle = orchestration.executeTurn({
+      agent: "primary",
+      branchId: thread.branchId,
+      signal: textSignal("Stay idle"),
+      threadId: thread.threadId,
+    });
+
+    handle.allEvents();
+    await delay(40);
+
+    expect(executeCalls).toBe(0);
+    expect(await harness.readBranchMessages(thread.branchId)).toEqual([]);
+  });
+
+  test("closing orchestration streams before the first pull does not start execution", async () => {
+    const harness = createFakeKernelHarness();
+    let executeCalls = 0;
+    const framework = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([
+        createStaticDriver((context) => {
+          executeCalls += 1;
+          return {
+            messages: [assistantText(`Finished ${context.config.name}.`)],
+            resolution: {
+              reason: "done",
+              type: "end_turn",
+            },
+          };
+        }),
+      ]),
+      kernel: harness.kernel,
+    });
+    const orchestration = createOrchestrationRuntime({
+      agents: {
+        primary: { name: "primary" },
+      },
+      framework,
+    });
+    const thread = await framework.createThread({});
+    const eventsHandle = orchestration.executeTurn({
+      agent: "primary",
+      branchId: thread.branchId,
+      signal: textSignal("Do not start events"),
+      threadId: thread.threadId,
+    });
+    const allEventsHandle = orchestration.executeTurn({
+      agent: "primary",
+      branchId: thread.branchId,
+      signal: textSignal("Do not start allEvents"),
+      threadId: thread.threadId,
+    });
+    const eventsIterator = eventsHandle.events()[Symbol.asyncIterator]();
+    const allEventsIterator = allEventsHandle
+      .allEvents()
+      [Symbol.asyncIterator]();
+
+    await eventsIterator.return?.();
+    await allEventsIterator.return?.();
+    await delay(40);
+
+    expect(executeCalls).toBe(0);
+    expect(await harness.readBranchMessages(thread.branchId)).toEqual([]);
   });
 
   test("awaitResult does not satisfy the parent stream-start precondition for spawn", async () => {
@@ -185,8 +315,7 @@ describe("orchestration-runtime", () => {
       signal: textSignal("root"),
       threadId: "thread-root",
     });
-    const subtreeEvents = handle.allEvents();
-
+    const subtreeCapture = startEventCapture(handle.allEvents());
     await delay(0);
     const childHandle = handle.spawn({
       agent: "worker",
@@ -195,7 +324,8 @@ describe("orchestration-runtime", () => {
     await expect(childHandle.awaitResult()).rejects.toThrow(
       "child start failed"
     );
-    const events = await collectEventsForDuration(subtreeEvents, 40);
+    await delay(40);
+    const events = subtreeCapture.events;
 
     expect(events.filter((event) => event.type === "error")).toHaveLength(1);
   });

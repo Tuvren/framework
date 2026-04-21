@@ -7253,6 +7253,158 @@ describe("framework-runtime-core", () => {
     ).toEqual(expect.arrayContaining(["handoff_applied"]));
   });
 
+  test("driver helper handoff plans use the latest source context at apply time", async () => {
+    const harness = createFakeKernelHarness();
+    let capturedSourceContext: HandoffSourceContext | undefined;
+    const runtime = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([
+        {
+          async execute(context) {
+            if (context.config.name === "primary") {
+              return {
+                messages: [
+                  assistantText("Passing this through the driver helper."),
+                ],
+                resolution: {
+                  contextPlan: context.handoff.createContextPlan({
+                    builder: (sourceContext) => {
+                      capturedSourceContext = sourceContext;
+                      return createPreserveTraceHandoffContextBuilder()(
+                        sourceContext
+                      );
+                    },
+                    reason: "driver_helper_handoff",
+                    targetAgent: "reviewer",
+                  }),
+                  targetAgent: "reviewer",
+                  type: "handoff",
+                },
+              };
+            }
+
+            return {
+              messages: [assistantText("Reviewer complete.")],
+              resolution: {
+                reason: "done",
+                type: "end_turn",
+              },
+            };
+          },
+          id: "fake",
+          async resume() {
+            throw new Error("resume was not expected");
+          },
+        } satisfies KrakenDriver,
+      ]),
+      kernel: harness.kernel,
+      resolveAgentConfig: (agentName) =>
+        agentName === "reviewer" ? { name: "reviewer" } : undefined,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: { name: "primary" },
+      signal: textSignal("Use the driver handoff helper"),
+      threadId: thread.threadId,
+    });
+
+    await collectEvents(handle.events());
+
+    expect(capturedSourceContext?.messages).toEqual([
+      {
+        parts: [{ text: "Use the driver handoff helper", type: "text" }],
+        role: "user",
+      },
+      {
+        parts: [
+          { text: "Passing this through the driver helper.", type: "text" },
+        ],
+        role: "assistant",
+      },
+    ]);
+    expect(capturedSourceContext?.manifest.messageCount).toBe(2);
+    expect(capturedSourceContext?.manifest.lastAssistantMessageIndex).toBe(1);
+  });
+
+  test("driver helper last_output_only handoffs forward the just-produced assistant output", async () => {
+    const harness = createFakeKernelHarness();
+    const runtime = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([
+        {
+          async execute(context) {
+            if (context.config.name === "primary") {
+              return {
+                messages: [
+                  assistantText(
+                    "Passing this through the last_output_only helper."
+                  ),
+                ],
+                resolution: {
+                  contextPlan: context.handoff.createContextPlan({
+                    mode: "last_output_only",
+                    reason: "delegate",
+                    targetAgent: "reviewer",
+                  }),
+                  targetAgent: "reviewer",
+                  type: "handoff",
+                },
+              };
+            }
+
+            return {
+              messages: [
+                assistantText("Reviewer completed the pipeline step."),
+              ],
+              resolution: {
+                reason: "done",
+                type: "end_turn",
+              },
+            };
+          },
+          id: "fake",
+          async resume() {
+            throw new Error("resume was not expected");
+          },
+        } satisfies KrakenDriver,
+      ]),
+      kernel: harness.kernel,
+      resolveAgentConfig: (agentName) =>
+        agentName === "reviewer" ? { name: "reviewer" } : undefined,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: { name: "primary" },
+      signal: textSignal("Start the pipeline"),
+      threadId: thread.threadId,
+    });
+
+    await collectEvents(handle.events());
+
+    expect(await harness.readBranchMessages(thread.branchId)).toEqual([
+      {
+        parts: [
+          {
+            text: "Passing this through the last_output_only helper.",
+            type: "text",
+          },
+        ],
+        role: "user",
+      },
+      {
+        parts: [
+          {
+            text: "Reviewer completed the pipeline step.",
+            type: "text",
+          },
+        ],
+        role: "assistant",
+      },
+    ]);
+  });
+
   test("seeds target extension state during handoff before the next iteration hooks run", async () => {
     const harness = createFakeKernelHarness();
     const agents: Record<string, AgentConfig> = {

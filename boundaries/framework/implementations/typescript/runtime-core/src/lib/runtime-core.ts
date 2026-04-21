@@ -234,6 +234,8 @@ class FinalizationFailure extends Error {
 }
 
 class RuntimeCore implements KrakenRuntime {
+  private readonly driverCreatedHandoffPlans =
+    new WeakSet<HandoffContextPlan>();
   private readonly options: ResolvedRuntimeCoreOptions;
 
   constructor(options: RuntimeCoreOptions) {
@@ -1966,7 +1968,7 @@ class RuntimeCore implements KrakenRuntime {
       name: input.targetAgent,
     };
 
-    return {
+    const plan = {
       builder,
       mode,
       reason: input.reason,
@@ -1987,7 +1989,9 @@ class RuntimeCore implements KrakenRuntime {
         ),
       },
       targetAgent: input.targetAgent,
-    };
+    } satisfies HandoffContextPlan;
+    this.driverCreatedHandoffPlans.add(plan);
+    return plan;
   }
 
   private async executeDriver(
@@ -2465,12 +2469,16 @@ class RuntimeCore implements KrakenRuntime {
       headState.messageHashes,
       headState.messages
     );
+    const sourceContext = this.resolveHandoffSourceContext(
+      plan,
+      headState,
+      loopState,
+      targetConfig,
+      helperBundle.helpers
+    );
     const normalizedPlan = {
       ...plan,
-      sourceContext: {
-        ...plan.sourceContext,
-        helpers: helperBundle.helpers,
-      } satisfies HandoffSourceContext,
+      sourceContext,
       targetAgent: targetConfig.name,
     } satisfies HandoffContextPlan;
 
@@ -2676,6 +2684,34 @@ class RuntimeCore implements KrakenRuntime {
       resolveHashes(hashes) {
         return hashes.map((hash) => resolvedHashes.get(hash) ?? hash);
       },
+    };
+  }
+
+  private resolveHandoffSourceContext(
+    plan: HandoffContextPlan,
+    headState: HeadState,
+    loopState: LoopState,
+    targetConfig: AgentConfig,
+    helpers: ContextEngineeringHelpers
+  ): HandoffSourceContext {
+    if (this.driverCreatedHandoffPlans.has(plan)) {
+      return {
+        handoffIntent: cloneValue(plan.sourceContext.handoffIntent),
+        helpers,
+        manifest: cloneValue(headState.manifest),
+        messages: cloneValue(headState.messages),
+        sourceAgent: createFrozenSnapshot(
+          cloneAgentConfigForRequest(loopState.activeConfig)
+        ),
+        targetAgent: createFrozenSnapshot(
+          cloneAgentConfigForRequest(targetConfig)
+        ),
+      };
+    }
+
+    return {
+      ...plan.sourceContext,
+      helpers,
     };
   }
 

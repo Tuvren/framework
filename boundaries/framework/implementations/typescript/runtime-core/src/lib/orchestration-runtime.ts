@@ -64,6 +64,13 @@ interface ChildSpawnRequest {
 }
 
 class OrchestrationNode {
+  private activeEventStreams = 0;
+  private activeResultAwaiters = 0;
+  private activeSubtreeStreams = 0;
+  private readonly childForwarders = new Map<
+    OrchestrationNode,
+    AsyncIterator<KrakenStreamEvent>
+  >();
   private readonly children = new Set<OrchestrationNode>();
   private currentBinding?: ExecutionBinding;
   private currentBindingPromise?: Promise<ExecutionBinding>;
@@ -139,8 +146,26 @@ class OrchestrationNode {
   }
 
   allEvents(): AsyncIterable<KrakenStreamEvent> {
-    this.startExecution();
-    return this.subtreeEvents.subscribe();
+    return createLazyObservedStream({
+      onClose: async () => {
+        this.activeSubtreeStreams -= 1;
+
+        if (this.activeSubtreeStreams === 0) {
+          await this.stopAllChildForwarders();
+        }
+
+        this.maybeCancelUnobservedExecution();
+      },
+      onStart: () => {
+        this.activeSubtreeStreams += 1;
+        this.startExecution();
+
+        if (this.activeSubtreeStreams === 1) {
+          this.startChildForwardingForAllChildren();
+        }
+      },
+      subscribe: () => this.subtreeEvents.subscribe(),
+    });
   }
 
   async awaitResult(): Promise<unknown> {
@@ -154,7 +179,14 @@ class OrchestrationNode {
     }
 
     this.ensureWatchingCurrentBinding();
-    return await this.resultState.promise;
+    this.activeResultAwaiters += 1;
+
+    try {
+      return await this.resultState.promise;
+    } finally {
+      this.activeResultAwaiters -= 1;
+      this.maybeCancelUnobservedExecution();
+    }
   }
 
   cancel(): void {
@@ -183,10 +215,67 @@ class OrchestrationNode {
   }
 
   events(): AsyncIterable<KrakenStreamEvent> {
-    const queue = new AsyncEventQueue<KrakenStreamEvent>();
-    this.startExecution();
-    detachPromise(this.forwardCurrentGenerationEvents(queue));
-    return queue;
+    return {
+      [Symbol.asyncIterator]: () => {
+        let finished = false;
+        let iterator: AsyncIterator<KrakenStreamEvent> | undefined;
+
+        const finish = (): void => {
+          if (finished) {
+            return;
+          }
+
+          finished = true;
+          this.activeEventStreams -= 1;
+          this.maybeCancelUnobservedExecution();
+        };
+
+        const start = (): void => {
+          if (iterator !== undefined) {
+            return;
+          }
+
+          const queue = new AsyncEventQueue<KrakenStreamEvent>(() => {
+            finish();
+          });
+
+          iterator = queue[Symbol.asyncIterator]();
+          this.activeEventStreams += 1;
+          this.startExecution();
+          detachPromise(this.forwardCurrentGenerationEvents(queue));
+        };
+
+        return {
+          next: async (): Promise<IteratorResult<KrakenStreamEvent>> => {
+            start();
+
+            if (iterator === undefined) {
+              return createIteratorDoneResult<KrakenStreamEvent>();
+            }
+
+            const nextValue = await iterator.next();
+
+            if (nextValue.done) {
+              finish();
+            }
+
+            return nextValue;
+          },
+          return: async (): Promise<IteratorResult<KrakenStreamEvent>> => {
+            if (iterator === undefined) {
+              return createIteratorDoneResult<KrakenStreamEvent>();
+            }
+
+            const result =
+              iterator.return === undefined
+                ? createIteratorDoneResult<KrakenStreamEvent>()
+                : await iterator.return();
+            finish();
+            return result;
+          },
+        };
+      },
+    };
   }
 
   hasStartedExecution(): boolean {
@@ -195,7 +284,11 @@ class OrchestrationNode {
 
   registerChild(child: OrchestrationNode): void {
     this.children.add(child);
-    detachPromise(this.forwardChildEvents(child));
+    detachPromise(this.observeChildSettlement(child));
+
+    if (this.activeSubtreeStreams > 0) {
+      this.startChildForwarding(child);
+    }
   }
 
   steer(signal: InputSignal): void {
@@ -393,17 +486,6 @@ class OrchestrationNode {
     this.maybeCloseSubtree();
   }
 
-  private async forwardChildEvents(child: OrchestrationNode): Promise<void> {
-    try {
-      for await (const event of child.allEvents()) {
-        this.subtreeEvents.emit(event);
-      }
-    } finally {
-      this.children.delete(child);
-      this.maybeCloseSubtree();
-    }
-  }
-
   private async forwardCurrentGenerationEvents(
     queue: AsyncEventQueue<KrakenStreamEvent>
   ): Promise<void> {
@@ -449,6 +531,23 @@ class OrchestrationNode {
 
     this.subtreeSettled = true;
     this.subtreeEvents.close();
+  }
+
+  private maybeCancelUnobservedExecution(): void {
+    const currentPhase =
+      this.currentBinding?.handle.status().phase ?? this.selfPhase;
+
+    if (
+      !this.startedExecution ||
+      currentPhase !== "running" ||
+      this.activeEventStreams > 0 ||
+      this.activeSubtreeStreams > 0 ||
+      this.activeResultAwaiters > 0
+    ) {
+      return;
+    }
+
+    this.cancel();
   }
 
   private requireCurrentBinding(methodName: string): ExecutionBinding {
@@ -509,6 +608,77 @@ class OrchestrationNode {
 
     this.selfResultResolved = true;
     this.resultState.resolve(this.selfVisibleResult);
+  }
+
+  private async observeChildSettlement(
+    child: OrchestrationNode
+  ): Promise<void> {
+    await child.waitUntilSettled();
+    await this.stopChildForwarding(child);
+    this.children.delete(child);
+    this.maybeCloseSubtree();
+  }
+
+  private startChildForwarding(child: OrchestrationNode): void {
+    if (this.childForwarders.has(child) || this.activeSubtreeStreams === 0) {
+      return;
+    }
+
+    const iterator = child.allEvents()[Symbol.asyncIterator]();
+    this.childForwarders.set(child, iterator);
+    detachPromise(
+      (async () => {
+        try {
+          while (true) {
+            const nextEvent = await iterator.next();
+
+            if (nextEvent.done) {
+              return;
+            }
+
+            this.subtreeEvents.emit(nextEvent.value);
+          }
+        } finally {
+          if (this.childForwarders.get(child) === iterator) {
+            this.childForwarders.delete(child);
+          }
+        }
+      })()
+    );
+  }
+
+  private startChildForwardingForAllChildren(): void {
+    for (const child of this.children) {
+      this.startChildForwarding(child);
+    }
+  }
+
+  private async stopAllChildForwarders(): Promise<void> {
+    const iterators = [...this.childForwarders.values()];
+    this.childForwarders.clear();
+    const stopTasks: Promise<IteratorResult<KrakenStreamEvent>>[] = [];
+
+    for (const iterator of iterators) {
+      if (iterator.return !== undefined) {
+        stopTasks.push(iterator.return());
+      }
+    }
+
+    await Promise.allSettled(stopTasks);
+  }
+
+  private async stopChildForwarding(child: OrchestrationNode): Promise<void> {
+    const iterator = this.childForwarders.get(child);
+
+    if (iterator === undefined) {
+      return;
+    }
+
+    this.childForwarders.delete(child);
+
+    if (iterator.return !== undefined) {
+      await iterator.return();
+    }
   }
 
   private trackVisibleResult(
@@ -645,13 +815,19 @@ class OrchestrationNode {
       this.maybeCloseSubtree();
     }
   }
+
+  private async waitUntilSettled(): Promise<void> {
+    try {
+      await this.resultState.promise;
+    } catch {
+      return;
+    }
+  }
 }
 
 class OrchestrationHandleImpl implements OrchestrationHandle {
   private active = true;
   private inactiveStatus?: ExecutionStatus;
-  private readonly localSubtreeEvents = new EventFanout<KrakenStreamEvent>();
-  private subtreeForwardingStarted = false;
   private readonly node: OrchestrationNode;
 
   constructor(node: OrchestrationNode) {
@@ -660,8 +836,7 @@ class OrchestrationHandleImpl implements OrchestrationHandle {
 
   allEvents(): AsyncIterable<KrakenStreamEvent> {
     this.assertActive("allEvents");
-    this.ensureSubtreeForwarding();
-    return this.localSubtreeEvents.subscribe();
+    return this.node.allEvents();
   }
 
   async awaitResult(): Promise<unknown> {
@@ -731,30 +906,6 @@ class OrchestrationHandleImpl implements OrchestrationHandle {
     if (inactiveStatus !== undefined) {
       this.inactiveStatus = cloneExecutionStatus(inactiveStatus);
     }
-    this.localSubtreeEvents.close();
-  }
-
-  private ensureSubtreeForwarding(): void {
-    if (this.subtreeForwardingStarted) {
-      return;
-    }
-
-    this.subtreeForwardingStarted = true;
-    detachPromise(
-      (async () => {
-        try {
-          for await (const event of this.node.allEvents()) {
-            if (!this.active) {
-              break;
-            }
-
-            this.localSubtreeEvents.emit(event);
-          }
-        } finally {
-          this.localSubtreeEvents.close();
-        }
-      })()
-    );
   }
 }
 
@@ -883,6 +1034,86 @@ export function createOrchestrationRuntime(
     options.agents,
     options.now ?? Date.now
   );
+}
+
+function createLazyObservedStream<T>(input: {
+  onClose: () => Promise<void> | void;
+  onStart: () => void;
+  subscribe: () => AsyncIterable<T>;
+}): AsyncIterable<T> {
+  return {
+    [Symbol.asyncIterator](): AsyncIterator<T, undefined> {
+      let closed = false;
+      let iterator: AsyncIterator<T> | undefined;
+      let started = false;
+
+      const close = async (): Promise<void> => {
+        if (!started || closed) {
+          return;
+        }
+
+        closed = true;
+        await input.onClose();
+      };
+
+      const start = (): void => {
+        if (started) {
+          return;
+        }
+
+        const subscriptionIterator = input.subscribe()[Symbol.asyncIterator]();
+
+        try {
+          input.onStart();
+        } catch (error: unknown) {
+          detachPromise(
+            subscriptionIterator.return?.() ?? Promise.resolve(undefined)
+          );
+          throw error;
+        }
+
+        iterator = subscriptionIterator;
+        started = true;
+      };
+
+      return {
+        next: async (): Promise<IteratorResult<T, undefined>> => {
+          start();
+
+          if (iterator === undefined) {
+            return createIteratorDoneResult<T>();
+          }
+
+          const nextValue = await iterator.next();
+
+          if (nextValue.done) {
+            await close();
+          }
+
+          return nextValue;
+        },
+        return: async (): Promise<IteratorResult<T, undefined>> => {
+          if (!started || iterator === undefined) {
+            return createIteratorDoneResult<T>();
+          }
+
+          const result =
+            iterator.return === undefined
+              ? createIteratorDoneResult<T>()
+              : await iterator.return();
+          await close();
+          return result;
+        },
+      };
+    },
+  };
+}
+
+function createIteratorDoneResult<T>(): IteratorResult<T, undefined> {
+  return {
+    done: true,
+    value: undefined,
+  };
 }
 
 function cloneVisibleContentPart(part: ContentPart): ContentPart {
