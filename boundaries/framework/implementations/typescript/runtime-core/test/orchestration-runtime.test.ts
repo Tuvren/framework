@@ -483,6 +483,67 @@ describe("orchestration-runtime", () => {
     ]);
   });
 
+  test("awaitResult resolves persisted assistant output even when the child driver does not stream it explicitly", async () => {
+    const harness = createFakeKernelHarness();
+    const framework = createKrakenRuntimeCore({
+      defaultDriverId: "raw",
+      driverRegistry: createBaseDriverRegistry([
+        {
+          async execute(context) {
+            if (context.config.name === "worker") {
+              return {
+                messages: [assistantText("Worker without explicit streaming.")],
+                resolution: {
+                  reason: "done",
+                  type: "end_turn",
+                },
+              };
+            }
+
+            await delay(20);
+            return {
+              messages: [assistantText("Parent complete.")],
+              resolution: {
+                reason: "done",
+                type: "end_turn",
+              },
+            };
+          },
+          id: "raw",
+        } satisfies KrakenDriver,
+      ]),
+      kernel: harness.kernel,
+    });
+    const orchestration = createOrchestrationRuntime({
+      agents: {
+        primary: { name: "primary" },
+        worker: { name: "worker" },
+      },
+      framework,
+    });
+    const thread = await framework.createThread({});
+    const handle = orchestration.executeTurn({
+      agent: "primary",
+      branchId: thread.branchId,
+      signal: textSignal("Start root"),
+      threadId: thread.threadId,
+    });
+
+    detachTestPromise(collectEvents(handle.events()));
+    await delay(0);
+    const childHandle = handle.spawn({
+      agent: "worker",
+      signal: textSignal("worker"),
+    });
+
+    expect(await childHandle.awaitResult()).toEqual([
+      {
+        text: "Worker without explicit streaming.",
+        type: "text",
+      },
+    ]);
+  });
+
   test("awaitResult preserves file parts in the final visible result surface", async () => {
     const harness = createFakeKernelHarness();
     const framework = createKrakenRuntimeCore({

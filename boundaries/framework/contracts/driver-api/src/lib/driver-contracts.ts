@@ -291,6 +291,33 @@ export function assertDriverHandoffContextPlan(
     value.sourceContext,
     `${label}.sourceContext`
   );
+
+  if (value.sourceContext.handoffIntent.targetAgent !== value.targetAgent) {
+    throw new KrakenValidationError(
+      `${label}.sourceContext.handoffIntent.targetAgent must match ${label}.targetAgent`,
+      {
+        code: "invalid_driver_result",
+        details: {
+          contextPlanTargetAgent: value.targetAgent,
+          sourceContextTargetAgent:
+            value.sourceContext.handoffIntent.targetAgent,
+        },
+      }
+    );
+  }
+
+  if (value.sourceContext.targetAgent.name !== value.targetAgent) {
+    throw new KrakenValidationError(
+      `${label}.sourceContext.targetAgent.name must match ${label}.targetAgent`,
+      {
+        code: "invalid_driver_result",
+        details: {
+          contextPlanTargetAgent: value.targetAgent,
+          sourceContextTargetAgent: value.sourceContext.targetAgent.name,
+        },
+      }
+    );
+  }
 }
 
 export function assertDriverHandoffSourceContext(

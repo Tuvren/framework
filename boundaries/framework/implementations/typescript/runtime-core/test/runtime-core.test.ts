@@ -487,6 +487,63 @@ describe("framework-runtime-core", () => {
     );
   });
 
+  test("synthesizes assistant content events when a driver returns durable output without streaming it", async () => {
+    const harness = createFakeKernelHarness();
+    const driver = {
+      async execute() {
+        return {
+          messages: [assistantText("Visible without explicit runtime.emit.")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: { name: "primary" },
+      signal: textSignal("Show durable output"),
+      threadId: thread.threadId,
+    });
+
+    const events = await collectEvents(handle.events());
+
+    expect(
+      events.some(
+        (event) =>
+          event.type === "text.done" &&
+          event.text === "Visible without explicit runtime.emit."
+      )
+    ).toBe(true);
+    expect(events.some((event) => event.type === "message.done")).toBe(true);
+    expect(await harness.readBranchMessages(thread.branchId)).toEqual([
+      {
+        parts: [{ text: "Show durable output", type: "text" }],
+        role: "user",
+      },
+      {
+        parts: [
+          {
+            text: "Visible without explicit runtime.emit.",
+            type: "text",
+          },
+        ],
+        role: "assistant",
+      },
+    ]);
+  });
+
   test("does not start execution until the event stream is consumed", async () => {
     const harness = createFakeKernelHarness();
     let executeCalls = 0;
@@ -857,6 +914,120 @@ describe("framework-runtime-core", () => {
     ]);
   });
 
+  test("rejects driver-emitted shared-core lifecycle events", async () => {
+    const harness = createFakeKernelHarness();
+    const driver = {
+      async execute(context) {
+        context.runtime.emit({
+          callId: "forged-call",
+          name: "search",
+          output: { forged: true },
+          timestamp: context.runtime.now(),
+          type: "tool.result",
+        });
+
+        return {
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: { name: "primary" },
+      signal: textSignal("Reject forged lifecycle event"),
+      threadId: thread.threadId,
+    });
+
+    const events = await collectEvents(handle.events());
+    const errorEvent = events.find(
+      (event): event is Extract<(typeof events)[number], { type: "error" }> =>
+        event.type === "error"
+    );
+
+    expect(handle.status().phase).toBe("failed");
+    expect(errorEvent?.error.code).toBe("invalid_stream_event");
+    expect(
+      events.some(
+        (event) =>
+          event.type === "tool.result" && event.callId === "forged-call"
+      )
+    ).toBe(false);
+    expect(await harness.readBranchMessages(thread.branchId)).toEqual([
+      {
+        parts: [{ text: "Reject forged lifecycle event", type: "text" }],
+        role: "user",
+      },
+    ]);
+  });
+
+  test("overrides forged driver event source attribution", async () => {
+    const harness = createFakeKernelHarness();
+    const driver = {
+      async execute(context) {
+        context.runtime.emit({
+          data: { ok: true },
+          name: "driver.custom",
+          source: {
+            agent: "forged-agent",
+            driver: "forged-driver",
+            threadId: "forged-thread",
+            workerId: "forged-worker",
+          },
+          timestamp: context.runtime.now(),
+          type: "custom",
+        });
+
+        return {
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: { name: "primary" },
+      signal: textSignal("Stamp the real source"),
+      threadId: thread.threadId,
+    });
+
+    const events = await collectEvents(handle.events());
+    const customEvent = events.find(
+      (event): event is Extract<(typeof events)[number], { type: "custom" }> =>
+        event.type === "custom" && event.name === "driver.custom"
+    );
+
+    expect(customEvent?.source).toEqual({
+      agent: "primary",
+      driver: "fake",
+      threadId: thread.threadId,
+    });
+  });
+
   test("rejects malformed initial input signals before staging branch history", async () => {
     const harness = createFakeKernelHarness();
     const driver = {
@@ -1189,6 +1360,96 @@ describe("framework-runtime-core", () => {
     expect(await harness.readBranchMessages(thread.branchId)).toEqual([
       {
         parts: [{ text: "Reject handoff target mismatch", type: "text" }],
+        role: "user",
+      },
+    ]);
+  });
+
+  test("rejects raw handoff plans whose source context target disagrees with the plan target", async () => {
+    const harness = createFakeKernelHarness();
+    const agents: Record<string, AgentConfig> = {
+      planner: { name: "planner" },
+      primary: { name: "primary" },
+      reviewer: { name: "reviewer" },
+    };
+    const driver = {
+      async execute(context) {
+        return {
+          resolution: {
+            contextPlan: {
+              builder(sourceContext) {
+                return sourceContext.helpers.storeMessages([
+                  {
+                    parts: [
+                      {
+                        text: `prepared-for:${sourceContext.targetAgent.name}`,
+                        type: "text",
+                      },
+                    ],
+                    role: "user",
+                  },
+                ]);
+              },
+              mode: "preserve_trace",
+              reason: "delegate",
+              sourceContext: {
+                handoffIntent: {
+                  reason: "delegate",
+                  targetAgent: "planner",
+                },
+                helpers: {
+                  loadMessage() {
+                    return null;
+                  },
+                  storeMessage() {
+                    return "unused";
+                  },
+                  storeMessages() {
+                    return [];
+                  },
+                },
+                manifest: context.manifest,
+                messages: context.messages,
+                sourceAgent: agents.primary,
+                targetAgent: agents.planner,
+              },
+              targetAgent: "reviewer",
+            },
+            targetAgent: "reviewer",
+            type: "handoff",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+      resolveAgentConfig: (agentName) => agents[agentName],
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: agents.primary,
+      signal: textSignal("Reject raw handoff mismatch"),
+      threadId: thread.threadId,
+    });
+
+    const events = await collectEvents(handle.events());
+    const errorEvent = events.find(
+      (event): event is Extract<(typeof events)[number], { type: "error" }> =>
+        event.type === "error"
+    );
+
+    expect(handle.status().phase).toBe("failed");
+    expect(errorEvent?.error.code).toBe("invalid_driver_result");
+    expect(await harness.readBranchMessages(thread.branchId)).toEqual([
+      {
+        parts: [{ text: "Reject raw handoff mismatch", type: "text" }],
         role: "user",
       },
     ]);

@@ -1154,6 +1154,8 @@ The driver does not mutate framework-owned state by aliasing context objects in 
 
 The shared core does not require a driver-owned approval-resume path. Approval resume is handled by the framework around the paused tool batch, so any driver `resume(...)` method is optional and outside the current shared-core execution path.
 
+`runtime.emit(...)` is a driver-owned streaming surface, not a framework-lifecycle backdoor. Drivers may use it for custom events and assistant/provider stream-content events only. Shared-core lifecycle events such as `turn.*`, `iteration.*`, `tool.*`, `approval.*`, `state.*`, `error`, and similar framework-owned control events are emitted only by shared core itself. If a driver returns a durable assistant message without emitting matching assistant content events, shared core synthesizes the missing assistant stream events from that durable message so the public event stream still reflects the committed assistant output.
+
 `DriverExecutionResult` is intentionally minimal:
 
 - `resolution` is always required

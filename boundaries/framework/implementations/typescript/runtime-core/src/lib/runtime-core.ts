@@ -1175,6 +1175,12 @@ class RuntimeCore implements KrakenRuntime {
     );
     let resolution = driverResult.resolution;
     const driverMessages = [...(driverResult.messages ?? [])];
+    const emittedEvents = this.ensureDriverAssistantEvents(
+      handle,
+      driverMessages,
+      emittedDriverEvents,
+      loopState
+    );
     const requestedToolCalls = extractToolCallsFromMessages(driverMessages);
     const toolExecutionMode = driverResult.toolExecutionMode ?? "parallel";
     const cancellationResolution = createCancelledResolution(handle);
@@ -1207,7 +1213,7 @@ class RuntimeCore implements KrakenRuntime {
     const driverEventsForResponse = this.flushBufferedDriverEventsIfNeeded(
       handle,
       resolution,
-      emittedDriverEvents
+      emittedEvents
     );
 
     const stagedMessages = [...driverMessages];
@@ -1450,7 +1456,7 @@ class RuntimeCore implements KrakenRuntime {
           }
 
           emittedDriverEvents.push(
-            this.createPublishedEvent(handle, clonedEvent, loopState)
+            this.createDriverPublishedEvent(handle, clonedEvent, loopState)
           );
         },
         now: () => this.now(),
@@ -3483,6 +3489,26 @@ class RuntimeCore implements KrakenRuntime {
     return publishedEvent;
   }
 
+  private createDriverPublishedEvent(
+    handle: RuntimeExecutionHandle,
+    event: KrakenStreamEvent,
+    loopState: LoopState
+  ): KrakenStreamEvent {
+    assertDriverRuntimeEvent(event);
+    return this.createPublishedEvent(
+      handle,
+      {
+        ...event,
+        source: {
+          agent: loopState.activeConfig.name,
+          driver: loopState.activeDriverId,
+          threadId: handle.request.threadId,
+        },
+      },
+      loopState
+    );
+  }
+
   private flushBufferedDriverEvents(
     handle: RuntimeExecutionHandle,
     events: KrakenStreamEvent[]
@@ -3502,6 +3528,123 @@ class RuntimeCore implements KrakenRuntime {
     }
 
     this.flushBufferedDriverEvents(handle, events);
+    return events;
+  }
+
+  private ensureDriverAssistantEvents(
+    handle: RuntimeExecutionHandle,
+    messages: KrakenMessage[],
+    emittedEvents: KrakenStreamEvent[],
+    loopState: LoopState
+  ): KrakenStreamEvent[] {
+    const assistantMessage = messages.find(
+      (message): message is Extract<KrakenMessage, { role: "assistant" }> =>
+        message.role === "assistant"
+    );
+
+    if (
+      assistantMessage === undefined ||
+      emittedEvents.some((event) => isAssistantContentStreamEvent(event.type))
+    ) {
+      return emittedEvents;
+    }
+
+    return [
+      ...emittedEvents,
+      ...this.synthesizeAssistantMessageEvents(assistantMessage).map((event) =>
+        this.createPublishedEvent(handle, event, loopState)
+      ),
+    ];
+  }
+
+  private synthesizeAssistantMessageEvents(
+    message: Extract<KrakenMessage, { role: "assistant" }>
+  ): KrakenStreamEvent[] {
+    const messageId = this.createId();
+    const events: KrakenStreamEvent[] = [
+      {
+        messageId,
+        role: "assistant",
+        timestamp: this.now(),
+        type: "message.start",
+      },
+    ];
+
+    for (const part of message.parts) {
+      switch (part.type) {
+        case "file":
+          events.push({
+            data:
+              typeof part.data === "string"
+                ? part.data
+                : new Uint8Array(part.data),
+            filename: part.filename,
+            mediaType: part.mediaType,
+            messageId,
+            timestamp: this.now(),
+            type: "file.done",
+          });
+          break;
+        case "reasoning":
+          if (!part.redacted) {
+            events.push({
+              delta: part.text,
+              messageId,
+              timestamp: this.now(),
+              type: "reasoning.delta",
+            });
+          }
+
+          events.push({
+            messageId,
+            timestamp: this.now(),
+            type: "reasoning.done",
+          });
+          break;
+        case "structured":
+          events.push({
+            data: cloneValue(part.data),
+            messageId,
+            name: part.name,
+            timestamp: this.now(),
+            type: "structured.done",
+          });
+          break;
+        case "text":
+          events.push({
+            messageId,
+            text: part.text,
+            timestamp: this.now(),
+            type: "text.done",
+          });
+          break;
+        case "tool_call":
+          events.push({
+            callId: part.callId,
+            messageId,
+            name: part.name,
+            timestamp: this.now(),
+            type: "tool_call.start",
+          });
+          events.push({
+            callId: part.callId,
+            input: cloneValue(part.input),
+            name: part.name,
+            timestamp: this.now(),
+            type: "tool_call.done",
+          });
+          break;
+        default:
+          break;
+      }
+    }
+
+    events.push({
+      finishReason: inferFinishReason(message),
+      messageId,
+      timestamp: this.now(),
+      type: "message.done",
+    });
     return events;
   }
 
@@ -3880,6 +4023,57 @@ function shouldSuppressBufferedDriverEvents(
       code === "invalid_driver_resolution" ||
       code === "invalid_stream_event")
   );
+}
+
+function isAssistantContentStreamEvent(
+  type: KrakenStreamEvent["type"]
+): boolean {
+  switch (type) {
+    case "message.start":
+    case "text.delta":
+    case "text.done":
+    case "reasoning.delta":
+    case "reasoning.done":
+    case "file.done":
+    case "structured.delta":
+    case "structured.done":
+    case "tool_call.start":
+    case "tool_call.args_delta":
+    case "tool_call.done":
+    case "message.done":
+      return true;
+    default:
+      return false;
+  }
+}
+
+function assertDriverRuntimeEvent(event: KrakenStreamEvent): void {
+  switch (event.type) {
+    case "custom":
+    case "message.start":
+    case "text.delta":
+    case "text.done":
+    case "reasoning.delta":
+    case "reasoning.done":
+    case "file.done":
+    case "structured.delta":
+    case "structured.done":
+    case "tool_call.start":
+    case "tool_call.args_delta":
+    case "tool_call.done":
+    case "message.done":
+      return;
+    default:
+      throw new KrakenRuntimeError(
+        `drivers must not emit shared-core event type "${event.type}" directly`,
+        {
+          code: "invalid_stream_event",
+          details: {
+            eventType: event.type,
+          },
+        }
+      );
+  }
 }
 
 function formatToolResultTaskId(orderIndex: number, callId: string): string {
