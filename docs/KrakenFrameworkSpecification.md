@@ -85,11 +85,13 @@ Structured output is assistant-authored structured data — a distinct content k
 ### 1.2 Messages
 
 ```
+NonEmptyArray<T> = [T, ...T[]]
+
 KrakenMessage =
   | { role: "system",    content: string }
-  | { role: "user",      parts: ContentPart[] }
-  | { role: "assistant", parts: ContentPart[], providerMetadata?: Record<string, unknown> }
-  | { role: "tool",      parts: ToolResultPart[] }
+  | { role: "user",      parts: NonEmptyArray<ContentPart> }
+  | { role: "assistant", parts: NonEmptyArray<ContentPart>, providerMetadata?: Record<string, unknown> }
+  | { role: "tool",      parts: NonEmptyArray<ToolResultPart> }
 ```
 
 Separate `tool` role even though some providers merge tool results into user messages. Each adapter handles the merge or split.
@@ -100,11 +102,11 @@ Canonical inbound signal accepted by the framework and its drivers.
 
 ```
 InputSignal
-└─ parts: ContentPart[]           // Canonical inbound user content.
-                                 // Extend only if a future extra is irreducible.
+└─ parts: NonEmptyArray<ContentPart>  // Canonical inbound user content.
+                                      // Extend only if a future extra is irreducible.
 ```
 
-`InputSignal` is not a persisted message. The framework normalizes it into a `KrakenMessage` during input incorporation.
+`InputSignal` is not a persisted message. The framework normalizes it into a `KrakenMessage` during input incorporation. Empty `parts` arrays are invalid at the shared contract boundary.
 
 ### 1.4 Prompt and Response
 
@@ -971,7 +973,7 @@ function resumeFromApproval(approvalResponse, turnId, branchId, ...):
 
 Before resumed tool execution begins, the framework MUST durably restage `runtime.status` to `running` for the active Turn. This ensures the durable state surface reflects actual execution state throughout the decision path.
 
-`resolveApproval(...)` returns a **new** handle. The old paused handle remains exhausted/inert as the completed paused execution token and must not remain a second active owner of further control flow.
+`resolveApproval(...)` returns a **new** handle. The old paused handle remains exhausted/inert as the completed paused execution token and must not remain a second active owner of further control flow. Once approval has been resolved, subsequent control calls on the old handle are invalid.
 
 For `approve` and `edit` decisions, unfinished tool calls resume through the normal tool execution path. For `reject`, shared-core semantics require the canonical rejection `ToolResultPart` outcomes for the pending calls and then continue the same Turn through the normal iteration loop. The host chooses that explicit same-Turn rejection path by calling `resolveApproval(...)` with `reject` decisions; the paused-handle `cancel()` path remains the separate rejection-and-stop control surface described in §6.10.
 

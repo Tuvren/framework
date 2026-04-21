@@ -468,6 +468,8 @@ export interface OrchestrationRuntime {
 - `spawn()` is valid only while the current orchestration handle is running.
 - `spawn()` starts the child execution immediately; `awaitResult()` does not satisfy the parent launch precondition by itself.
 - Child launches inherit the caller's explicit execution surface (`driverId`, per-request `tools`) because `spawn()` intentionally stays minimal.
+- `InputSignal.parts` and persisted message `parts` are non-empty arrays in the shared contract; empty payload arrays are rejected at validation time.
+- Once `resolveApproval(...)` returns a replacement handle, further control calls on the old paused handle are invalid.
 
 export interface ExecutionStatus {
   phase: "running" | "paused" | "completed" | "failed";

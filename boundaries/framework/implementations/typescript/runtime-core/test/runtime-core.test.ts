@@ -23,12 +23,16 @@ import type {
 } from "@kraken/framework-driver-api";
 import type {
   AgentConfig,
+  AroundToolContext,
+  AroundToolResult,
   ContextManifest,
   CustomSchema,
   HandoffSourceContext,
+  KrakenExtension,
   KrakenMessage,
   KrakenModelResponse,
   KrakenToolDefinition,
+  ToolResultPart,
 } from "@kraken/framework-runtime-api";
 import type {
   KrakenKernel,
@@ -42,6 +46,8 @@ import {
   createLastOutputOnlyHandoffContextBuilder,
   createPreserveTraceHandoffContextBuilder,
   createToolRegistry,
+  runAfterTurnHooks,
+  runBeforeIterationHooks,
   runBeforeTurnHooks,
   updateContextManifest,
 } from "../src/index.ts";
@@ -248,6 +254,81 @@ describe("framework-runtime-core", () => {
         message: "prompt failed",
       },
     ]);
+  });
+
+  test("collectSystemPrompts and intercept hooks preserve extension method receivers", async () => {
+    interface ReceiverExtension extends KrakenExtension {
+      afterTurnCalls: number;
+      beforeIterationCalls: number;
+      beforeTurnCalls: number;
+      prompt: string;
+    }
+
+    const extension: ReceiverExtension = {
+      afterTurn() {
+        this.afterTurnCalls += 1;
+        return undefined;
+      },
+      afterTurnCalls: 0,
+      beforeIteration() {
+        this.beforeIterationCalls += 1;
+        return undefined;
+      },
+      beforeIterationCalls: 0,
+      beforeTurn() {
+        this.beforeTurnCalls += 1;
+        return undefined;
+      },
+      beforeTurnCalls: 0,
+      name: "receiver-aware",
+      prompt: "Receiver-aware prompt",
+      systemPrompt() {
+        return this.prompt;
+      },
+    };
+    const manifest = createContextManifest([]);
+
+    expect(collectSystemPrompts([extension], manifest, 1)).toEqual([
+      "Receiver-aware prompt",
+    ]);
+
+    await runBeforeTurnHooks({
+      emit() {
+        return;
+      },
+      extensions: [extension],
+      iterationCount: 0,
+      manifest,
+      messages: [],
+      runId: "run-before-turn",
+      turnId: "turn-before-turn",
+    });
+    await runBeforeIterationHooks({
+      emit() {
+        return;
+      },
+      extensions: [extension],
+      iterationCount: 1,
+      manifest,
+      messages: [],
+      runId: "run-before-iteration",
+      turnId: "turn-before-iteration",
+    });
+    await runAfterTurnHooks({
+      emit() {
+        return;
+      },
+      extensions: [extension],
+      iterationCount: 1,
+      manifest,
+      messages: [],
+      runId: "run-after-turn",
+      turnId: "turn-after-turn",
+    });
+
+    expect(extension.beforeTurnCalls).toBe(1);
+    expect(extension.beforeIterationCalls).toBe(1);
+    expect(extension.afterTurnCalls).toBe(1);
   });
 
   test("collectSystemPrompts and hook contexts do not expose live extension state or shared exports", async () => {
@@ -4582,7 +4663,9 @@ describe("framework-runtime-core", () => {
     const resumedHandle = pausedHandle.resolveApproval({
       decisions: [{ callId: "call-email", type: "approve" }],
     });
-    pausedHandle.cancel();
+    expect(() => pausedHandle.cancel()).toThrow(
+      "cancel() is not valid once approval has been resolved"
+    );
     const resumedEvents = await collectEvents(resumedHandle.events());
 
     expect(await harness.readBranchRuntimeStatus(thread.branchId)).toEqual({
@@ -4827,6 +4910,145 @@ describe("framework-runtime-core", () => {
       hasAssistantText(
         await harness.readBranchMessages(thread.branchId),
         "Saw transferred steering."
+      )
+    ).toBe(true);
+  });
+
+  test("preserves receiver context for function and object-form aroundTool handlers", async () => {
+    interface MethodAroundToolExtension extends KrakenExtension {
+      aroundTool(
+        context: AroundToolContext,
+        next: (context?: AroundToolContext) => Promise<ToolResultPart>
+      ): Promise<AroundToolResult> | AroundToolResult;
+      label: string;
+    }
+
+    interface AroundToolSpecReceiver {
+      handler(
+        context: AroundToolContext,
+        next: (context?: AroundToolContext) => Promise<ToolResultPart>
+      ): Promise<AroundToolResult> | AroundToolResult;
+      label: string;
+      tools: string[];
+    }
+
+    const harness = createFakeKernelHarness();
+    const methodExtension: MethodAroundToolExtension = {
+      aroundTool(_context, next) {
+        if (this.label !== "method") {
+          throw new Error("lost function-form aroundTool receiver");
+        }
+
+        return next();
+      },
+      label: "method",
+      name: "method-around-tool",
+    };
+    const aroundToolSpec: AroundToolSpecReceiver = {
+      handler(context, next) {
+        if (this.label !== "spec" || !this.tools.includes(context.tool.name)) {
+          throw new Error("lost object-form aroundTool receiver");
+        }
+
+        return next();
+      },
+      label: "spec",
+      tools: ["email"],
+    };
+    const specExtension: KrakenExtension = {
+      aroundTool: aroundToolSpec,
+      name: "spec-around-tool",
+    };
+    const driver = {
+      async execute(context) {
+        const toolMessages = context.messages.filter(
+          (message) => message.role === "tool"
+        );
+
+        if (toolMessages.length === 0) {
+          return {
+            messages: [
+              assistantToolCalls([
+                {
+                  callId: "call-email",
+                  input: {
+                    subject: "Receiver binding",
+                    to: "ops@example.com",
+                  },
+                  name: "email",
+                },
+              ]),
+            ],
+            resolution: {
+              type: "continue_iteration",
+            },
+            toolExecutionMode: "parallel",
+          };
+        }
+
+        const receiverLost = toolMessages.some((message) =>
+          message.parts.some((part) => part.isError === true)
+        );
+
+        return {
+          messages: [
+            assistantText(
+              receiverLost
+                ? "aroundTool receivers lost."
+                : "aroundTool receivers preserved."
+            ),
+          ],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        extensions: [methodExtension, specExtension],
+        name: "primary",
+        tools: [
+          {
+            description: "Send email",
+            execute() {
+              return { sent: true };
+            },
+            inputSchema: {
+              properties: {
+                subject: { type: "string" },
+                to: { type: "string" },
+              },
+              required: ["to", "subject"],
+              type: "object",
+            },
+            name: "email",
+          },
+        ],
+      },
+      signal: textSignal("Exercise aroundTool receivers"),
+      threadId: thread.threadId,
+    });
+
+    await collectEvents(handle.events());
+
+    expect(handle.status().phase).toBe("completed");
+    expect(
+      hasAssistantText(
+        await harness.readBranchMessages(thread.branchId),
+        "aroundTool receivers preserved."
       )
     ).toBe(true);
   });

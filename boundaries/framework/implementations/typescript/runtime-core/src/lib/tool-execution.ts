@@ -698,6 +698,7 @@ async function runAroundToolHandlers(
   handlers: Array<{
     extensionName: string;
     handler: AroundToolHandler;
+    receiver: object;
     timeout?: number;
   }>,
   index: number,
@@ -758,7 +759,7 @@ async function runAroundToolHandlers(
     };
   }
 
-  const { extensionName, handler, timeout } = handlers[index];
+  const { extensionName, handler, receiver, timeout } = handlers[index];
   const nestedUpdates: ExtensionStateUpdate[] = [];
   let nestedResult: ToolResultPart | undefined;
   const timeoutController = new AbortController();
@@ -773,7 +774,7 @@ async function runAroundToolHandlers(
   try {
     const handlerResult = await runWithTimeout(
       () =>
-        handler(context, async (nextContext) => {
+        handler.call(receiver, context, async (nextContext) => {
           const outcome = await runAroundToolHandlers(
             handlers,
             index + 1,

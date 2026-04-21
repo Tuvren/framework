@@ -549,6 +549,7 @@ export function getAroundToolHandlers(
     context: AroundToolContext,
     next: (context?: AroundToolContext) => Promise<ToolResultPart>
   ) => Promise<AroundToolResult> | AroundToolResult;
+  receiver: object;
   timeout?: number;
 }> {
   const handlers: Array<{
@@ -557,6 +558,7 @@ export function getAroundToolHandlers(
       context: AroundToolContext,
       next: (context?: AroundToolContext) => Promise<ToolResultPart>
     ) => Promise<AroundToolResult> | AroundToolResult;
+    receiver: object;
     timeout?: number;
   }> = [];
 
@@ -571,6 +573,7 @@ export function getAroundToolHandlers(
       handlers.push({
         extensionName: extension.name,
         handler: spec,
+        receiver: extension,
         timeout: extension.timeout,
       });
       continue;
@@ -580,6 +583,7 @@ export function getAroundToolHandlers(
       handlers.push({
         extensionName: extension.name,
         handler: spec.handler,
+        receiver: spec,
         timeout: extension.timeout,
       });
     }

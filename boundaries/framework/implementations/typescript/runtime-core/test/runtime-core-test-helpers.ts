@@ -270,21 +270,46 @@ export function assistantStructured(
 }
 
 export function assistantToolCalls(
-  calls: Array<{
-    callId: string;
-    input: unknown;
-    name: string;
-  }>
+  calls: [
+    {
+      callId: string;
+      input: unknown;
+      name: string;
+    },
+    ...Array<{
+      callId: string;
+      input: unknown;
+      name: string;
+    }>,
+  ]
 ): KrakenMessage {
-  return {
-    parts: calls.map((call) => ({
+  const parts = toNonEmptyArray(
+    calls.map((call) => ({
       callId: call.callId,
       input: call.input,
       name: call.name,
       type: "tool_call" as const,
-    })),
+    }))
+  );
+
+  if (parts === undefined) {
+    throw new Error("assistantToolCalls requires at least one tool call");
+  }
+
+  return {
+    parts,
     role: "assistant",
   };
+}
+
+function toNonEmptyArray<T>(values: T[]): [T, ...T[]] | undefined {
+  const [firstValue, ...remainingValues] = values;
+
+  if (firstValue === undefined) {
+    return undefined;
+  }
+
+  return [firstValue, ...remainingValues];
 }
 
 export function buildHandoffPlan(

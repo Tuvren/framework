@@ -222,6 +222,8 @@ export interface StructuredPart {
   type: "structured";
 }
 
+type NonEmptyArray<T> = [T, ...T[]];
+
 export type ContentPart =
   | TextPart
   | ReasoningPart
@@ -232,16 +234,16 @@ export type ContentPart =
 
 export type KrakenMessage =
   | { role: "system"; content: string }
-  | { role: "user"; parts: ContentPart[] }
+  | { role: "user"; parts: NonEmptyArray<ContentPart> }
   | {
       role: "assistant";
-      parts: ContentPart[];
+      parts: NonEmptyArray<ContentPart>;
       providerMetadata?: Record<string, unknown>;
     }
-  | { role: "tool"; parts: ToolResultPart[] };
+  | { role: "tool"; parts: NonEmptyArray<ToolResultPart> };
 
 export interface InputSignal {
-  parts: ContentPart[];
+  parts: NonEmptyArray<ContentPart>;
 }
 
 export interface RenderedToolDefinition {

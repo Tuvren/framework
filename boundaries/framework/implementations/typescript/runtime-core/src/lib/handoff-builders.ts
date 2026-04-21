@@ -140,10 +140,9 @@ function extractLastVisibleAssistantOutputParts(
     }
 
     const visibleParts = cloneVisibleAssistantParts(message.parts);
+    const nonEmptyVisibleParts = toNonEmptyArray(visibleParts);
 
-    return visibleParts.length > 0
-      ? visibleParts
-      : [{ text: "", type: "text" }];
+    return nonEmptyVisibleParts ?? [{ text: "", type: "text" }];
   }
 
   return [{ text: "", type: "text" }];
@@ -151,8 +150,8 @@ function extractLastVisibleAssistantOutputParts(
 
 function cloneVisibleAssistantParts(
   parts: Extract<KrakenMessage, { role: "assistant" }>["parts"]
-): UserMessageParts {
-  const visibleParts: UserMessageParts = [];
+): UserMessageParts[number][] {
+  const visibleParts: UserMessageParts[number][] = [];
 
   for (const part of parts) {
     switch (part.type) {
@@ -190,6 +189,16 @@ function cloneVisibleAssistantParts(
   }
 
   return visibleParts;
+}
+
+function toNonEmptyArray<T>(values: T[]): [T, ...T[]] | undefined {
+  const [firstValue, ...remainingValues] = values;
+
+  if (firstValue === undefined) {
+    return undefined;
+  }
+
+  return [firstValue, ...remainingValues];
 }
 
 function summarizeUserMessage(

@@ -105,7 +105,7 @@ export function collectSystemPrompts(
       const prompt =
         typeof contribution === "string"
           ? contribution
-          : contribution({
+          : contribution.call(extension, {
               extensionState: cloneRecord(manifest.extensions[extension.name]),
               iterationCount,
               manifest: cloneValue(manifest),
@@ -266,7 +266,8 @@ async function runInterceptHooks(
     try {
       const result = await runWithTimeout(
         () =>
-          handler(
+          handler.call(
+            extension,
             createInterceptContext(extension, options, timeoutController.signal)
           ),
         extension.timeout,

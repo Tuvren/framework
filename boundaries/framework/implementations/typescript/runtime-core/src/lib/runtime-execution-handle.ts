@@ -94,7 +94,12 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
 
   cancel(): void {
     if (this.replacementHandle !== undefined) {
-      return;
+      throw new KrakenRuntimeError(
+        "cancel() is not valid once approval has been resolved",
+        {
+          code: "invalid_approval_resolution",
+        }
+      );
     }
 
     this.abortController.abort();
