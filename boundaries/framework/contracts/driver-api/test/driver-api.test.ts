@@ -241,6 +241,36 @@ describe("driver-api", () => {
       })
     ).toThrow("targetAgent must match");
   });
+
+  test("rejects raw handoff plans whose sourceContext target disagrees with the plan target", () => {
+    const context = createDriverExecutionContext();
+
+    expect(() =>
+      assertDriverExecutionResult({
+        resolution: {
+          contextPlan: {
+            ...context.handoff.createContextPlan({
+              reason: "handoff",
+              targetAgent: "reviewer",
+            }),
+            sourceContext: {
+              ...context.handoff.createContextPlan({
+                reason: "handoff",
+                targetAgent: "reviewer",
+              }).sourceContext,
+              handoffIntent: {
+                reason: "handoff",
+                targetAgent: "planner",
+              },
+              targetAgent: { name: "planner" },
+            },
+          },
+          targetAgent: "reviewer",
+          type: "handoff",
+        },
+      })
+    ).toThrow("sourceContext.handoffIntent.targetAgent must match");
+  });
 });
 
 function createDriverExecutionContext(): DriverExecutionContext {

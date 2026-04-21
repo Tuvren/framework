@@ -15,6 +15,7 @@
  */
 
 import { createHash, randomUUID } from "node:crypto";
+import { isDeepStrictEqual } from "node:util";
 import type {
   DriverExecutionContext,
   DriverRegistry,
@@ -189,6 +190,7 @@ interface ExecutedIterationResult {
   partial: boolean;
   requestedToolCalls: ToolCallPart[];
   resolution: RuntimeResolution;
+  stableHeadTurnNodeHash: HashString;
   toolExecutionMode: ToolExecutionMode;
   toolResults: ToolResultPart[];
   turnNodeHash: HashString | undefined;
@@ -1175,6 +1177,10 @@ class RuntimeCore implements KrakenRuntime {
     );
     let resolution = driverResult.resolution;
     const driverMessages = [...(driverResult.messages ?? [])];
+    const assistantEventValidationError = validateDriverAssistantEvents(
+      driverMessages,
+      emittedDriverEvents
+    );
     const emittedEvents = this.ensureDriverAssistantEvents(
       handle,
       driverMessages,
@@ -1203,6 +1209,20 @@ class RuntimeCore implements KrakenRuntime {
         outcome: {
           resolution: {
             error: invalidDriverResolutionError,
+            fatality: "hard",
+            type: "fail",
+          },
+        },
+      };
+    }
+
+    if (assistantEventValidationError !== undefined) {
+      await this.completeTrackedRun(handle, iterationRunId, "completed");
+      return {
+        kind: "outcome",
+        outcome: {
+          resolution: {
+            error: assistantEventValidationError,
             fatality: "hard",
             type: "fail",
           },
@@ -1332,6 +1352,7 @@ class RuntimeCore implements KrakenRuntime {
         partial,
         requestedToolCalls,
         resolution,
+        stableHeadTurnNodeHash: headState.branchHeadHash,
         toolExecutionMode,
         toolResults,
         turnNodeHash,
@@ -1685,7 +1706,8 @@ class RuntimeCore implements KrakenRuntime {
         handle,
         schemaId,
         result.resolution,
-        loopState
+        loopState,
+        result.stableHeadTurnNodeHash
       )
     ) {
       return "continue";
@@ -3119,18 +3141,45 @@ class RuntimeCore implements KrakenRuntime {
     handle: RuntimeExecutionHandle,
     schemaId: string,
     resolution: RuntimeResolution,
-    loopState: LoopState
+    loopState: LoopState,
+    stableHeadTurnNodeHash?: HashString
   ): Promise<boolean> {
     if (resolution.type !== "handoff") {
       return false;
     }
-    const handoff = await this.applyHandoff(
-      handle,
-      schemaId,
-      resolution.contextPlan,
-      loopState,
-      loopState.carriedStateUpdates
-    );
+    let handoff:
+      | {
+          activeConfig: AgentConfig;
+          activeToolRegistry: ToolRegistry;
+        }
+      | undefined;
+
+    try {
+      handoff = await this.applyHandoff(
+        handle,
+        schemaId,
+        resolution.contextPlan,
+        loopState,
+        loopState.carriedStateUpdates
+      );
+    } catch (error: unknown) {
+      if (stableHeadTurnNodeHash !== undefined) {
+        await this.options.kernel.branch.setHead(
+          handle.request.branchId,
+          stableHeadTurnNodeHash
+        );
+        const restoredHeadState = await this.loadHeadState(
+          handle.request.branchId
+        );
+        handle.updateStatus({
+          activeAgent: loopState.activeConfig.name,
+          manifest: restoredHeadState.manifest,
+        });
+      }
+
+      throw error;
+    }
+
     loopState.activeConfig = handoff.activeConfig;
     loopState.activeToolRegistry = handoff.activeToolRegistry;
     loopState.carriedStateUpdates = [];
@@ -4047,6 +4096,22 @@ function isAssistantContentStreamEvent(
   }
 }
 
+function isAssistantValidationEvent(type: KrakenStreamEvent["type"]): boolean {
+  switch (type) {
+    case "message.start":
+    case "text.done":
+    case "reasoning.done":
+    case "file.done":
+    case "structured.done":
+    case "tool_call.start":
+    case "tool_call.done":
+    case "message.done":
+      return true;
+    default:
+      return false;
+  }
+}
+
 function assertDriverRuntimeEvent(event: KrakenStreamEvent): void {
   switch (event.type) {
     case "custom":
@@ -4074,6 +4139,217 @@ function assertDriverRuntimeEvent(event: KrakenStreamEvent): void {
         }
       );
   }
+}
+
+function validateDriverAssistantEvents(
+  messages: KrakenMessage[],
+  emittedEvents: KrakenStreamEvent[]
+): KrakenRuntimeError | undefined {
+  const assistantEvents = emittedEvents.filter((event) =>
+    isAssistantContentStreamEvent(event.type)
+  );
+
+  if (assistantEvents.length === 0) {
+    return undefined;
+  }
+
+  const assistantMessage = messages.find(
+    (message): message is Extract<KrakenMessage, { role: "assistant" }> =>
+      message.role === "assistant"
+  );
+
+  if (assistantMessage === undefined) {
+    return new KrakenRuntimeError(
+      "drivers must not emit assistant content events without returning a durable assistant message",
+      {
+        code: "invalid_stream_event",
+      }
+    );
+  }
+
+  const actualEvents = assistantEvents.filter((event) =>
+    isAssistantValidationEvent(event.type)
+  );
+  const expectedEvents = synthesizeAssistantValidationEvents(assistantMessage);
+
+  if (actualEvents.length !== expectedEvents.length) {
+    return new KrakenRuntimeError(
+      "driver-emitted assistant event sequences must be complete and match the durable assistant message",
+      {
+        code: "invalid_stream_event",
+      }
+    );
+  }
+
+  for (const [index, actualEvent] of actualEvents.entries()) {
+    const expectedEvent = expectedEvents[index];
+
+    if (
+      expectedEvent === undefined ||
+      !assistantValidationEventsMatch(actualEvent, expectedEvent)
+    ) {
+      return new KrakenRuntimeError(
+        "driver-emitted assistant events must match the durable assistant message",
+        {
+          code: "invalid_stream_event",
+        }
+      );
+    }
+  }
+
+  return undefined;
+}
+
+function synthesizeAssistantValidationEvents(
+  message: Extract<KrakenMessage, { role: "assistant" }>
+): KrakenStreamEvent[] {
+  const messageId = "assistant-validation";
+  const events: KrakenStreamEvent[] = [
+    {
+      messageId,
+      role: "assistant",
+      timestamp: 0,
+      type: "message.start",
+    },
+  ];
+
+  for (const part of message.parts) {
+    switch (part.type) {
+      case "file":
+        events.push({
+          data:
+            typeof part.data === "string"
+              ? part.data
+              : new Uint8Array(part.data),
+          filename: part.filename,
+          mediaType: part.mediaType,
+          messageId,
+          timestamp: 0,
+          type: "file.done",
+        });
+        break;
+      case "reasoning":
+        events.push({
+          messageId,
+          timestamp: 0,
+          type: "reasoning.done",
+        });
+        break;
+      case "structured":
+        events.push({
+          data: cloneValue(part.data),
+          messageId,
+          name: part.name,
+          timestamp: 0,
+          type: "structured.done",
+        });
+        break;
+      case "text":
+        events.push({
+          messageId,
+          text: part.text,
+          timestamp: 0,
+          type: "text.done",
+        });
+        break;
+      case "tool_call":
+        events.push({
+          callId: part.callId,
+          messageId,
+          name: part.name,
+          timestamp: 0,
+          type: "tool_call.start",
+        });
+        events.push({
+          callId: part.callId,
+          input: cloneValue(part.input),
+          name: part.name,
+          timestamp: 0,
+          type: "tool_call.done",
+        });
+        break;
+      default:
+        break;
+    }
+  }
+
+  events.push({
+    finishReason: inferFinishReason(message),
+    messageId,
+    timestamp: 0,
+    type: "message.done",
+  });
+
+  return events;
+}
+
+function assistantValidationEventsMatch(
+  actualEvent: KrakenStreamEvent,
+  expectedEvent: KrakenStreamEvent
+): boolean {
+  if (actualEvent.type !== expectedEvent.type) {
+    return false;
+  }
+
+  switch (actualEvent.type) {
+    case "message.start":
+      return expectedEvent.type === "message.start";
+    case "text.done":
+      return (
+        expectedEvent.type === "text.done" &&
+        actualEvent.text === expectedEvent.text
+      );
+    case "reasoning.done":
+      return expectedEvent.type === "reasoning.done";
+    case "file.done":
+      return (
+        expectedEvent.type === "file.done" &&
+        actualEvent.filename === expectedEvent.filename &&
+        actualEvent.mediaType === expectedEvent.mediaType &&
+        areStreamEventValuesEqual(actualEvent.data, expectedEvent.data)
+      );
+    case "structured.done":
+      return (
+        expectedEvent.type === "structured.done" &&
+        actualEvent.name === expectedEvent.name &&
+        isDeepStrictEqual(actualEvent.data, expectedEvent.data)
+      );
+    case "tool_call.start":
+      return (
+        expectedEvent.type === "tool_call.start" &&
+        actualEvent.callId === expectedEvent.callId &&
+        actualEvent.name === expectedEvent.name
+      );
+    case "tool_call.done":
+      return (
+        expectedEvent.type === "tool_call.done" &&
+        actualEvent.callId === expectedEvent.callId &&
+        actualEvent.name === expectedEvent.name &&
+        isDeepStrictEqual(actualEvent.input, expectedEvent.input)
+      );
+    case "message.done":
+      return expectedEvent.type === "message.done";
+    default:
+      return false;
+  }
+}
+
+function areStreamEventValuesEqual(left: unknown, right: unknown): boolean {
+  if (left instanceof Uint8Array && right instanceof Uint8Array) {
+    if (left.length !== right.length) {
+      return false;
+    }
+
+    for (let index = 0; index < left.length; index += 1) {
+      if (left[index] !== right[index]) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  return isDeepStrictEqual(left, right);
 }
 
 function formatToolResultTaskId(orderIndex: number, callId: string): string {

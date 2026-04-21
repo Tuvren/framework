@@ -432,9 +432,21 @@ describe("framework-runtime-core", () => {
       async execute(context) {
         context.runtime.emit({
           messageId: "assistant-1",
+          role: "assistant",
+          timestamp: context.runtime.now(),
+          type: "message.start",
+        });
+        context.runtime.emit({
+          messageId: "assistant-1",
           text: "Hello from Kraken.",
           timestamp: context.runtime.now(),
           type: "text.done",
+        });
+        context.runtime.emit({
+          finishReason: "stop",
+          messageId: "assistant-1",
+          timestamp: context.runtime.now(),
+          type: "message.done",
         });
 
         return {
@@ -1026,6 +1038,304 @@ describe("framework-runtime-core", () => {
       driver: "fake",
       threadId: thread.threadId,
     });
+  });
+
+  test("rejects assistant stream events when the driver does not return a durable assistant message", async () => {
+    const harness = createFakeKernelHarness();
+    const driver = {
+      async execute(context) {
+        context.runtime.emit({
+          messageId: "assistant-ghost",
+          role: "assistant",
+          timestamp: context.runtime.now(),
+          type: "message.start",
+        });
+        context.runtime.emit({
+          messageId: "assistant-ghost",
+          text: "ghost output",
+          timestamp: context.runtime.now(),
+          type: "text.done",
+        });
+        context.runtime.emit({
+          finishReason: "stop",
+          messageId: "assistant-ghost",
+          timestamp: context.runtime.now(),
+          type: "message.done",
+        });
+
+        return {
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: { name: "primary" },
+      signal: textSignal("Reject ghost assistant output"),
+      threadId: thread.threadId,
+    });
+
+    const events = await collectEvents(handle.events());
+    const errorEvent = events.find(
+      (event): event is Extract<(typeof events)[number], { type: "error" }> =>
+        event.type === "error"
+    );
+
+    expect(handle.status().phase).toBe("failed");
+    expect(errorEvent?.error.code).toBe("invalid_stream_event");
+    expect(
+      events.some(
+        (event) => event.type === "text.done" && event.text === "ghost output"
+      )
+    ).toBe(false);
+    expect(await harness.readBranchMessages(thread.branchId)).toEqual([
+      {
+        parts: [{ text: "Reject ghost assistant output", type: "text" }],
+        role: "user",
+      },
+    ]);
+  });
+
+  test("rejects assistant stream events that do not match the durable assistant message", async () => {
+    const harness = createFakeKernelHarness();
+    const driver = {
+      async execute(context) {
+        context.runtime.emit({
+          messageId: "assistant-streamed",
+          role: "assistant",
+          timestamp: context.runtime.now(),
+          type: "message.start",
+        });
+        context.runtime.emit({
+          messageId: "assistant-streamed",
+          text: "streamed-wrong",
+          timestamp: context.runtime.now(),
+          type: "text.done",
+        });
+        context.runtime.emit({
+          finishReason: "stop",
+          messageId: "assistant-streamed",
+          timestamp: context.runtime.now(),
+          type: "message.done",
+        });
+
+        return {
+          messages: [assistantText("persisted-right")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: { name: "primary" },
+      signal: textSignal("Reject mismatched assistant stream"),
+      threadId: thread.threadId,
+    });
+
+    const events = await collectEvents(handle.events());
+    const errorEvent = events.find(
+      (event): event is Extract<(typeof events)[number], { type: "error" }> =>
+        event.type === "error"
+    );
+
+    expect(handle.status().phase).toBe("failed");
+    expect(errorEvent?.error.code).toBe("invalid_stream_event");
+    expect(await harness.readBranchMessages(thread.branchId)).toEqual([
+      {
+        parts: [{ text: "Reject mismatched assistant stream", type: "text" }],
+        role: "user",
+      },
+    ]);
+  });
+
+  test("rejects tool-call stream previews that do not match the durable tool call", async () => {
+    const harness = createFakeKernelHarness();
+    const driver = {
+      async execute(context) {
+        context.runtime.emit({
+          messageId: "assistant-tool-call",
+          role: "assistant",
+          timestamp: context.runtime.now(),
+          type: "message.start",
+        });
+        context.runtime.emit({
+          callId: "call-search",
+          messageId: "assistant-tool-call",
+          name: "search",
+          timestamp: context.runtime.now(),
+          type: "tool_call.start",
+        });
+        context.runtime.emit({
+          callId: "call-search",
+          input: { value: "streamed-wrong" },
+          name: "search",
+          timestamp: context.runtime.now(),
+          type: "tool_call.done",
+        });
+        context.runtime.emit({
+          finishReason: "tool_call",
+          messageId: "assistant-tool-call",
+          timestamp: context.runtime.now(),
+          type: "message.done",
+        });
+
+        return {
+          messages: [
+            assistantToolCalls([
+              {
+                callId: "call-search",
+                input: { value: "persisted-right" },
+                name: "search",
+              },
+            ]),
+          ],
+          resolution: {
+            type: "continue_iteration",
+          },
+          toolExecutionMode: "parallel",
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        name: "primary",
+        tools: [
+          {
+            description: "Search",
+            execute() {
+              return { ok: true };
+            },
+            inputSchema: {
+              properties: {
+                value: { type: "string" },
+              },
+              required: ["value"],
+              type: "object",
+            },
+            name: "search",
+          },
+        ],
+      },
+      signal: textSignal("Reject mismatched tool preview"),
+      threadId: thread.threadId,
+    });
+
+    const events = await collectEvents(handle.events());
+    const errorEvent = events.find(
+      (event): event is Extract<(typeof events)[number], { type: "error" }> =>
+        event.type === "error"
+    );
+
+    expect(handle.status().phase).toBe("failed");
+    expect(errorEvent?.error.code).toBe("invalid_stream_event");
+    expect(
+      events.some(
+        (event) => event.type === "tool.start" || event.type === "tool.result"
+      )
+    ).toBe(false);
+    expect(await harness.readBranchMessages(thread.branchId)).toEqual([
+      {
+        parts: [{ text: "Reject mismatched tool preview", type: "text" }],
+        role: "user",
+      },
+    ]);
+  });
+
+  test("rejects incomplete assistant event sequences", async () => {
+    const harness = createFakeKernelHarness();
+    const driver = {
+      async execute(context) {
+        context.runtime.emit({
+          messageId: "assistant-incomplete",
+          role: "assistant",
+          timestamp: context.runtime.now(),
+          type: "message.start",
+        });
+        context.runtime.emit({
+          messageId: "assistant-incomplete",
+          text: "missing message.done",
+          timestamp: context.runtime.now(),
+          type: "text.done",
+        });
+
+        return {
+          messages: [assistantText("missing message.done")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: { name: "primary" },
+      signal: textSignal("Reject incomplete assistant events"),
+      threadId: thread.threadId,
+    });
+
+    const events = await collectEvents(handle.events());
+    const errorEvent = events.find(
+      (event): event is Extract<(typeof events)[number], { type: "error" }> =>
+        event.type === "error"
+    );
+
+    expect(handle.status().phase).toBe("failed");
+    expect(errorEvent?.error.code).toBe("invalid_stream_event");
+    expect(events.some((event) => event.type === "message.done")).toBe(false);
+    expect(await harness.readBranchMessages(thread.branchId)).toEqual([
+      {
+        parts: [{ text: "Reject incomplete assistant events", type: "text" }],
+        role: "user",
+      },
+    ]);
   });
 
   test("rejects malformed initial input signals before staging branch history", async () => {
@@ -7823,6 +8133,64 @@ describe("framework-runtime-core", () => {
     expect(await harness.readBranchMessages(thread.branchId)).toEqual([
       {
         parts: [{ text: "Start broken handoff", type: "text" }],
+        role: "user",
+      },
+    ]);
+  });
+
+  test("rolls back pre-handoff assistant output when the handoff builder fails", async () => {
+    const harness = createFakeKernelHarness();
+    const agents: Record<string, AgentConfig> = {
+      primary: { name: "primary" },
+      reviewer: { name: "reviewer" },
+    };
+    const driver = {
+      async execute(context) {
+        return {
+          messages: [assistantText("Passing this to review.")],
+          resolution: {
+            contextPlan: context.handoff.createContextPlan({
+              builder() {
+                return ["missing-handoff-message"];
+              },
+              reason: "delegate",
+              targetAgent: "reviewer",
+            }),
+            targetAgent: "reviewer",
+            type: "handoff",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+      resolveAgentConfig: (agentName) => agents[agentName],
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: agents.primary,
+      signal: textSignal("Start rollback handoff"),
+      threadId: thread.threadId,
+    });
+
+    const events = await collectEvents(handle.events());
+    const errorEvent = events.find(
+      (event): event is Extract<(typeof events)[number], { type: "error" }> =>
+        event.type === "error"
+    );
+
+    expect(handle.status().phase).toBe("failed");
+    expect(errorEvent?.error.code).toBe("missing_message");
+    expect(await harness.readBranchMessages(thread.branchId)).toEqual([
+      {
+        parts: [{ text: "Start rollback handoff", type: "text" }],
         role: "user",
       },
     ]);

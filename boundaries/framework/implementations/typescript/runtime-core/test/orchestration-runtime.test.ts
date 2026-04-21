@@ -1540,12 +1540,35 @@ function createStaticDriver(
                 type: "structured.done",
               });
               break;
+            case "tool_call":
+              context.runtime.emit({
+                callId: part.callId,
+                messageId,
+                name: part.name,
+                timestamp: context.runtime.now(),
+                type: "tool_call.start",
+              });
+              context.runtime.emit({
+                callId: part.callId,
+                input: part.input,
+                name: part.name,
+                timestamp: context.runtime.now(),
+                type: "tool_call.done",
+              });
+              break;
             case "text":
               context.runtime.emit({
                 messageId,
                 text: part.text,
                 timestamp: context.runtime.now(),
                 type: "text.done",
+              });
+              break;
+            case "reasoning":
+              context.runtime.emit({
+                messageId,
+                timestamp: context.runtime.now(),
+                type: "reasoning.done",
               });
               break;
             default:
