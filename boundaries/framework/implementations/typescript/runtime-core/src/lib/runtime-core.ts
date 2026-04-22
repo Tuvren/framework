@@ -1537,6 +1537,9 @@ class RuntimeCore implements KrakenRuntime {
       loopState.activeToolRegistry
     );
 
+    // Drivers get snapshots plus explicit capability ports here on purpose.
+    // Widening this bag with more live framework-owned objects would reopen the
+    // exact boundary drift Epic H just paid to close.
     return {
       branchId: handle.request.branchId,
       config: createDriverAgentConfigSnapshot(loopState.activeConfig),
@@ -2091,6 +2094,9 @@ class RuntimeCore implements KrakenRuntime {
       name: input.targetAgent,
     };
 
+    // Helper-built plans always start from framework-owned source snapshots.
+    // If a concrete driver needs a different handoff policy, that belongs in
+    // its builder output, not in a widened helper seam.
     const plan = {
       builder,
       mode,
