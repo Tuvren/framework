@@ -406,6 +406,10 @@ class RuntimeCore implements KrakenRuntime {
         return;
       }
 
+      if (handle.resumedFrom === undefined && handle.abortSignal.aborted) {
+        return;
+      }
+
       const schemaId = await this.resolveExecutionSchemaId(handle.request);
       handle.setSchemaId(schemaId);
       const branchHeadHash = await this.resolveExecutionBranchHead(handle);
@@ -638,6 +642,18 @@ class RuntimeCore implements KrakenRuntime {
       resumeContext.pauseContext.pausedIteration.iterationCount
     );
     handle.clearPendingResumeCancellation();
+    const cancelledOutcome = createCancelledLoopOutcome(handle);
+
+    if (cancelledOutcome !== undefined) {
+      await this.completeExecution(
+        handle,
+        cancelledOutcome.resolution,
+        cancelledOutcome.partial ?? false,
+        loopState,
+        false
+      );
+      return true;
+    }
 
     const resumedOutcome = await this.resumePausedToolExecution(
       handle,

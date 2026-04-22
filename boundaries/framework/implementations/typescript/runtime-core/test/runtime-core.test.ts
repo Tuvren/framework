@@ -2503,6 +2503,45 @@ describe("framework-runtime-core", () => {
     expect(await harness.readBranchMessages(thread.branchId)).toEqual([]);
   });
 
+  test("does not start a fresh handle when it is canceled before the first stream pull", async () => {
+    const harness = createFakeKernelHarness();
+    let executeCalls = 0;
+    const driver = {
+      async execute() {
+        executeCalls += 1;
+        return {
+          messages: [assistantText("This should never run.")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+    } satisfies KrakenDriver;
+    const runtime = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: { name: "primary" },
+      signal: textSignal("Never start"),
+      threadId: thread.threadId,
+    });
+
+    handle.cancel();
+    const events = await collectEvents(handle.events());
+
+    expect(handle.status().phase).toBe("failed");
+    expect(events).toEqual([]);
+    expect(executeCalls).toBe(0);
+    expect(await harness.readBranchMessages(thread.branchId)).toEqual([]);
+    expect(await harness.readBranchRuntimeStatus(thread.branchId)).toBeNull();
+  });
+
   test("fails malformed driver messages before they can be checkpointed", async () => {
     const harness = createFakeKernelHarness();
     const driver = {
@@ -5429,7 +5468,7 @@ describe("framework-runtime-core", () => {
     ]);
   });
 
-  test("stages rejected tool results instead of failing the turn when the host cancels a paused approval", async () => {
+  test("fails the resumed turn instead of rewriting approval into rejection when the fresh resumed handle is canceled before start", async () => {
     const harness = createFakeKernelHarness();
     let emailCalls = 0;
     const driver = {
@@ -5728,41 +5767,55 @@ describe("framework-runtime-core", () => {
     });
     resumedHandle.cancel();
 
-    await waitForAsync(async () => {
-      const runtimeStatus = await harness.readBranchRuntimeStatus(
-        thread.branchId
-      );
-
-      return (
-        runtimeStatus !== null &&
-        typeof runtimeStatus === "object" &&
-        "state" in runtimeStatus &&
-        runtimeStatus.state === "completed"
-      );
-    });
-
     const resumedEvents = await collectEvents(resumedHandle.events());
-    const messages = extractToolMessages(
-      await harness.readBranchMessages(thread.branchId)
+    const errorEvent = resumedEvents.find(
+      (
+        event
+      ): event is Extract<(typeof resumedEvents)[number], { type: "error" }> =>
+        event.type === "error"
     );
+    const turnEndEvent = resumedEvents.findLast(
+      (
+        event
+      ): event is Extract<
+        (typeof resumedEvents)[number],
+        { type: "turn.end" }
+      > => event.type === "turn.end"
+    );
+    const messages = await harness.readBranchMessages(thread.branchId);
 
     expect(emailCalls).toBe(0);
-    expect(resumedHandle.status().phase).toBe("completed");
+    expect(resumedHandle.status().phase).toBe("failed");
     expect(
       resumedEvents.some((event) => event.type === "approval.resolved")
-    ).toBe(false);
-    expect(messages).toHaveLength(1);
-    expect(messages[0]?.parts[0]?.type).toBe("tool_result");
-    if (messages[0]?.parts[0]?.type === "tool_result") {
-      expect(messages[0].parts[0].isError).toBe(true);
-      expect(JSON.stringify(messages[0].parts[0].output)).toContain("rejected");
-    }
-    expect(
-      hasAssistantText(
-        await harness.readBranchMessages(thread.branchId),
-        "This should not resume."
-      )
-    ).toBe(false);
+    ).toBe(true);
+    expect(errorEvent?.fatal).toBe(true);
+    expect(turnEndEvent?.status).toBe("failed");
+    expect(extractToolMessages(messages)).toEqual([]);
+    expect(messages).toEqual([
+      {
+        parts: [
+          { text: "Pause, approve, then cancel before start", type: "text" },
+        ],
+        role: "user",
+      },
+      {
+        parts: [
+          {
+            callId: "call-email",
+            input: { subject: "Approval needed", to: "ops@example.com" },
+            name: "email",
+            type: "tool_call",
+          },
+        ],
+        role: "assistant",
+      },
+    ]);
+    expect(hasAssistantText(messages, "This should not resume.")).toBe(false);
+    expect(await harness.readBranchRuntimeStatus(thread.branchId)).toEqual({
+      activeAgent: "primary",
+      state: "failed",
+    });
   });
 
   test("preserves queued steering across approval resume", async () => {
@@ -10862,9 +10915,16 @@ describe("framework-runtime-core", () => {
       threadId: thread.threadId,
     });
 
-    await delay(0);
+    const eventsPromise = collectEvents(handle.events());
+
+    await waitForAsync(async () =>
+      hasAssistantText(
+        await harness.readBranchMessages(thread.branchId),
+        "Waiting for steering."
+      )
+    );
     handle.steer(textSignal("Injected steering"));
-    const events = await collectEvents(handle.events());
+    const events = await eventsPromise;
     const manifest = await harness.readBranchManifest(thread.branchId);
     const steeringEvent = events.find(
       (
@@ -10876,6 +10936,64 @@ describe("framework-runtime-core", () => {
     );
 
     expect(steeringEvent?.messageId).toBe(extractLastMessageHash(manifest));
+  });
+
+  test("rejects steering before execution has started", async () => {
+    const harness = createFakeKernelHarness();
+    let firstExecuteSawSteering = false;
+    const driver = {
+      async execute(context) {
+        firstExecuteSawSteering = context.messages.some(
+          (message) =>
+            message.role === "user" &&
+            message.parts.some(
+              (part) =>
+                part.type === "text" && part.text === "Injected too early"
+            )
+        );
+
+        return {
+          messages: [assistantText("No early steering.")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: { name: "primary" },
+      signal: textSignal("Start steering validation"),
+      threadId: thread.threadId,
+    });
+
+    expect(() => handle.steer(textSignal("Injected too early"))).toThrow(
+      "steer() is only valid while execution is running"
+    );
+    await collectEvents(handle.events());
+
+    expect(firstExecuteSawSteering).toBe(false);
+    expect(await harness.readBranchMessages(thread.branchId)).toEqual([
+      {
+        parts: [{ text: "Start steering validation", type: "text" }],
+        role: "user",
+      },
+      {
+        parts: [{ text: "No early steering.", type: "text" }],
+        role: "assistant",
+      },
+    ]);
   });
 });
 

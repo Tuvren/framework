@@ -102,6 +102,19 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
       );
     }
 
+    if (
+      !this.started &&
+      this.resumedFrom === undefined &&
+      this.statusSnapshot.phase === "running"
+    ) {
+      this.abortController.abort();
+      this.replaceStatus({
+        ...this.statusSnapshot,
+        phase: "failed",
+      });
+      return;
+    }
+
     this.abortController.abort();
     this.runtime.cancelPausedExecution(this);
   }
@@ -207,17 +220,10 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
   }
 
   takePauseContextForCancellation(): PauseContext | undefined {
-    if (this.pauseContext === undefined) {
-      return undefined;
-    }
-
-    const canCancelPausedExecution =
-      this.statusSnapshot.phase === "paused" ||
-      (!this.started &&
-        this.resumedFrom !== undefined &&
-        this.statusSnapshot.phase === "running");
-
-    if (!canCancelPausedExecution) {
+    if (
+      this.pauseContext === undefined ||
+      this.statusSnapshot.phase !== "paused"
+    ) {
       return undefined;
     }
 
@@ -283,13 +289,14 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
   }
 
   steer(signal: InputSignal): void {
-    if (this.statusSnapshot.phase !== "running") {
+    if (!this.started || this.statusSnapshot.phase !== "running") {
       throw new KrakenRuntimeError(
         "steer() is only valid while execution is running",
         {
           code: "invalid_steering_state",
           details: {
             phase: this.statusSnapshot.phase,
+            started: this.started,
           },
         }
       );
