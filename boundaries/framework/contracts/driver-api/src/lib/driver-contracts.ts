@@ -55,6 +55,9 @@ export interface DriverHandoffPort {
   }): HandoffContextPlan;
 }
 
+// This is the shared driver boundary, not a convenience bag for one concrete
+// driver. New fields here are shared-core contract changes and should only land
+// when the framework spec proves they belong below every future driver.
 export interface DriverExecutionContext {
   branchId: string;
   config: Readonly<AgentConfig>;
@@ -77,6 +80,9 @@ export interface DriverResumeContext extends DriverExecutionContext {
 
 export type DriverToolExecutionMode = "parallel" | "sequential";
 
+// Keep the result seam intentionally minimal. If a future need cannot be
+// expressed through resolution/messages/partial/toolExecutionMode, treat that
+// as a spec discussion rather than extending the shared contract casually.
 export interface DriverExecutionResult {
   messages?: KrakenMessage[];
   partial?: boolean;
