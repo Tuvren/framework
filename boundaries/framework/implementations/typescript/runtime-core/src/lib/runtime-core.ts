@@ -433,6 +433,19 @@ class RuntimeCore implements KrakenRuntime {
           handle.resumedFrom?.approval,
           loopState
         );
+
+        if (resumedStart.pendingStateObservability !== undefined) {
+          // Resume prelude may need to durably checkpoint running status before
+          // the replacement handle becomes observable, but the resumed stream
+          // still begins with turn.start -> approval.resolved by contract.
+          this.emitStateObservability(
+            handle,
+            loopState,
+            resumedStart.pendingStateObservability.turnNodeHash,
+            resumedStart.pendingStateObservability.iterationCount,
+            resumedStart.pendingStateObservability.manifest
+          );
+        }
       }
 
       if (
@@ -627,7 +640,17 @@ class RuntimeCore implements KrakenRuntime {
     handle: RuntimeExecutionHandle,
     schemaId: string,
     loopState: LoopState
-  ): Promise<{ completed: boolean } | undefined> {
+  ): Promise<
+    | {
+        completed: boolean;
+        pendingStateObservability?: {
+          iterationCount: number;
+          manifest?: ContextManifest;
+          turnNodeHash: HashString;
+        };
+      }
+    | undefined
+  > {
     const resumeContext = handle.resumedFrom;
 
     if (resumeContext === undefined) {
@@ -642,14 +665,16 @@ class RuntimeCore implements KrakenRuntime {
         type: "paused_run_resolved",
       })
     );
-    await this.checkpointResumeRunningStatus(
+    const pendingStateObservability = await this.checkpointResumeRunningStatus(
       handle,
       schemaId,
       loopState,
-      resumeContext.pauseContext.pausedIteration.iterationCount
+      resumeContext.pauseContext.pausedIteration.iterationCount,
+      false
     );
     return {
       completed: false,
+      pendingStateObservability,
     };
   }
 
@@ -3272,8 +3297,16 @@ class RuntimeCore implements KrakenRuntime {
     handle: RuntimeExecutionHandle,
     schemaId: string,
     loopState: LoopState,
-    iterationCount: number
-  ): Promise<void> {
+    iterationCount: number,
+    emitObservability = true
+  ): Promise<
+    | {
+        iterationCount: number;
+        manifest?: ContextManifest;
+        turnNodeHash: HashString;
+      }
+    | undefined
+  > {
     const headState = await this.loadHeadState(handle.request.branchId);
     const nextManifest =
       loopState.carriedStateUpdates.length === 0
@@ -3342,13 +3375,32 @@ class RuntimeCore implements KrakenRuntime {
         handle.turnId,
         stepResult.turnNodeHash
       );
-      await this.emitStateObservability(
-        handle,
-        loopState,
-        stepResult.turnNodeHash,
+
+      const pendingStateObservability = {
         iterationCount,
-        loopState.carriedStateUpdates.length === 0 ? undefined : nextManifest
-      );
+        manifest:
+          loopState.carriedStateUpdates.length === 0 ? undefined : nextManifest,
+        turnNodeHash: stepResult.turnNodeHash,
+      };
+
+      if (emitObservability) {
+        this.emitStateObservability(
+          handle,
+          loopState,
+          pendingStateObservability.turnNodeHash,
+          pendingStateObservability.iterationCount,
+          pendingStateObservability.manifest
+        );
+      }
+
+      handle.updateStatus({
+        activeAgent: loopState.activeConfig.name,
+        iterationCount,
+        manifest: nextManifest,
+        phase: "running",
+      });
+      loopState.carriedStateUpdates = [];
+      return pendingStateObservability;
     }
 
     handle.updateStatus({
@@ -3358,6 +3410,7 @@ class RuntimeCore implements KrakenRuntime {
       phase: "running",
     });
     loopState.carriedStateUpdates = [];
+    return undefined;
   }
 
   private async createTrackedRun(

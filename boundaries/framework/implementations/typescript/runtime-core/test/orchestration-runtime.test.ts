@@ -1302,6 +1302,106 @@ describe("orchestration-runtime", () => {
     ]);
   });
 
+  test("inherits an explicit parent execution schema when spawning a child", async () => {
+    const rootHandle = createStubExecutionHandle("running");
+    const childHandle = createStaticExecutionHandle([], {
+      activeAgent: "worker",
+      iterationCount: 0,
+      phase: "completed",
+    });
+    const createThreadInputs: Array<{ schemaId?: string }> = [];
+    const executeTurnInputs: Array<{
+      agentName: string;
+      schemaId?: string;
+      threadId: string;
+    }> = [];
+    let executeCalls = 0;
+    const framework = {
+      async createBranch() {
+        throw new Error("createBranch was not expected");
+      },
+      async createThread(input) {
+        createThreadInputs.push(input);
+
+        return {
+          branchId: `branch-${createThreadInputs.length}`,
+          rootTurnNodeHash: "0".repeat(64),
+          rootTurnTreeHash: "1".repeat(64),
+          threadId: `thread-${createThreadInputs.length}`,
+        };
+      },
+      executeTurn(input) {
+        executeCalls += 1;
+        executeTurnInputs.push({
+          agentName: input.config.name,
+          schemaId: input.schemaId,
+          threadId: input.threadId,
+        });
+
+        if (executeCalls === 1) {
+          return rootHandle;
+        }
+
+        return childHandle;
+      },
+      async getThread(threadId) {
+        if (threadId === "thread-root") {
+          return {
+            rootTurnNodeHash: "2".repeat(64),
+            schemaId: "kraken.agent.v1",
+            threadId,
+          };
+        }
+
+        return null;
+      },
+      async setBranchHead() {
+        throw new Error("setBranchHead was not expected");
+      },
+    } satisfies KrakenRuntime;
+    const orchestration = createOrchestrationRuntime({
+      agents: {
+        primary: { name: "primary" },
+        worker: { name: "worker" },
+      },
+      framework,
+    });
+    const handle = orchestration.executeTurn({
+      agent: "primary",
+      branchId: "branch-root",
+      schemaId: "custom.agent.v1",
+      signal: textSignal("root"),
+      threadId: "thread-root",
+    });
+
+    detachTestPromise(collectEvents(handle.events()));
+    await delay(0);
+    const spawnedChild = handle.spawn({
+      agent: "worker",
+      signal: textSignal("child"),
+    });
+    await spawnedChild.awaitResult();
+
+    expect(createThreadInputs).toEqual([{ schemaId: "custom.agent.v1" }]);
+    expect(executeTurnInputs).toEqual([
+      {
+        agentName: "primary",
+        schemaId: "custom.agent.v1",
+        threadId: "thread-root",
+      },
+      {
+        agentName: "worker",
+        schemaId: "custom.agent.v1",
+        threadId: "thread-1",
+      },
+    ]);
+
+    rootHandle.cancel();
+    await expect(handle.awaitResult()).rejects.toThrow(
+      "orchestration execution failed"
+    );
+  });
+
   test("keeps live extension receiver state mutable during orchestrated execution", async () => {
     interface ReceiverExtension {
       beforeIteration(): undefined;

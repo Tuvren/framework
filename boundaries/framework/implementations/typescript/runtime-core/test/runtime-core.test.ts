@@ -5227,6 +5227,10 @@ describe("framework-runtime-core", () => {
       (event) => event.type === "approval.resolved"
     );
 
+    expect(resumedEvents.slice(0, 2).map((event) => event.type)).toEqual([
+      "turn.start",
+      "approval.resolved",
+    ]);
     expect(resumedTurnStartIndex).toBeGreaterThan(-1);
     expect(
       resumedEvents.some((event) => event.type === "approval.resolved")

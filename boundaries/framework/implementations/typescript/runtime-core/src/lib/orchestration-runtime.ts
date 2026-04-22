@@ -54,6 +54,7 @@ interface ExecutionBinding {
   branchId: string;
   driverId?: string;
   handle: ExecutionHandle;
+  schemaId?: string;
   threadId: string;
   tools?: AgentConfig["tools"];
   workerId?: string;
@@ -962,6 +963,7 @@ class OrchestrationRuntimeImpl implements OrchestrationRuntime {
         branchId: input.branchId,
         driverId: input.driverId,
         handle,
+        schemaId: input.schemaId,
         threadId: input.threadId,
         tools: requestedTools,
       },
@@ -989,13 +991,17 @@ class OrchestrationRuntimeImpl implements OrchestrationRuntime {
       );
     }
 
+    // Child spawning stays intentionally minimal, so the caller's explicit
+    // execution surface (including schemaId when provided) must carry forward.
+    const resolvedSchemaId = parentBinding.schemaId ?? parentThread.schemaId;
     const childThread = await this.framework.createThread({
-      schemaId: parentThread.schemaId,
+      schemaId: resolvedSchemaId,
     });
     const childHandle = this.framework.executeTurn({
       branchId: childThread.branchId,
       config,
       driverId: parentBinding.driverId,
+      schemaId: resolvedSchemaId,
       signal: normalizeInputSignal(input.signal, "orchestration child signal"),
       threadId: childThread.threadId,
       tools: parentBinding.tools,
@@ -1006,6 +1012,7 @@ class OrchestrationRuntimeImpl implements OrchestrationRuntime {
       branchId: childThread.branchId,
       driverId: parentBinding.driverId,
       handle: childHandle,
+      schemaId: resolvedSchemaId,
       threadId: childThread.threadId,
       tools: parentBinding.tools,
       workerId,
