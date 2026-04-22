@@ -1,19 +1,20 @@
 # Engineering Execution Plan
 
 ## 0. Version History & Changelog
+- v0.3.1 - Narrowed Epic H around the docs-first minimal shared-core model by removing sequence semantics from core scope, reducing orchestration to handle/tree primitives, and shrinking the shared driver contract surface.
+- v0.3.0 - Realigned the active backlog around Epic H after confirming Epics F and G already exist in repo reality, and expanded Epic H into the full brownfield-corrected shared framework foundation plan.
 - v0.2.0 - Replaced the kernel-only backlog with a driver-aware next-phase plan focused on SQLite, shared framework contracts, and shared framework foundations while deferring the first concrete driver and downstream integrations.
-- v0.1.0 - Initial kernel-first execution plan separating the active foundational scope from the broader TechSpec baseline.
 - ... [Older history truncated, refer to git logs]
 
 ## 1. Executive Summary & Active Critical Path
-- **Total Active Story Points:** 51
-- **Critical Path:** `KRT-F001 -> KRT-F002 -> KRT-F003 -> KRT-F004 -> KRT-F005 -> KRT-G001 -> KRT-G002 -> KRT-G003 -> KRT-H001 -> KRT-H002 -> KRT-H003 -> KRT-H004 -> KRT-H005` (Parallel prerequisites: `KRT-G004`, `KRT-G005`, and `KRT-G006` must complete before `KRT-H001`.)
-- **Planning Assumptions:** Kernel foundations are complete in repo reality through Epics A-E; this revision covers only the next shared foundation slice authorized by the revised PRD, Architecture, and TechSpec; the first concrete driver, provider bridge implementation, and host adapters remain intentionally deferred until the shared framework substrate is explicit and stable.
+- **Total Active Story Points:** 36
+- **Critical Path:** `KRT-H001 -> KRT-H002 -> KRT-H003 -> KRT-H004 -> KRT-H006 -> KRT-H007 -> KRT-H009 -> KRT-H010` (Parallel prerequisites: `KRT-H005` must complete before `KRT-H006`; `KRT-H008` must complete before `KRT-H009` and `KRT-H010`.)
+- **Planning Assumptions:** Kernel, SQLite backend, and shared framework contract foundations are already implemented in repo reality through Epic G; this revision covers the remaining shared framework substrate needed before the first concrete driver; Epic I starts only after runtime-core proves a fake driver can execute end to end through the explicit shared contracts.
 
 ### Brownfield Continuity Note
-- The current codebase already contains the workspace scaffold, shared core types, kernel protocol package, memory backend, and kernel testkit.
-- This plan does not reopen the completed kernel epics unless a later upstream revision explicitly changes kernel or backend contracts.
-- Ticket numbering continues from `KRT-E002` to preserve continuity with the existing execution history.
+- The current codebase already contains the workspace scaffold, shared core types, kernel protocol package, memory backend, SQLite backend, kernel testkit, and the shared framework contract packages.
+- This plan reopens the shared contract layer only where the authoritative framework spec drifted ahead of the brownfield package surfaces and runtime-core cannot be implemented safely without realignment.
+- Ticket numbering continues from `KRT-G006` to preserve continuity with the existing execution history.
 
 ## 2. Project Phasing & Iteration Strategy
 ### Delivery Cadence Posture
@@ -21,9 +22,9 @@
 - This section uses "iteration strategy" only because the planning framework requires that heading; the content below is dependency phasing and scope partitioning, not a commitment to Scrum-style iterations.
 
 ### Current Active Scope
-- Deliver `@kraken/backend-sqlite` as the first official persistent backend with WAL-mode transactions, forward-only migrations, and shared conformance coverage.
-- Formalize the shared framework contract surfaces so host, runtime, driver, tool, event, and provider boundaries are explicit before implementation pressure pushes ReAct assumptions into the wrong layer.
-- Implement the driver-neutral shared framework foundations, including runtime-core scaffolding, execution-handle control flow, context and checkpoint coordination, orchestration boundaries, and driver-neutral integration closure.
+- Realign the shared runtime and driver contracts where the framework specification now requires a narrower driver seam, explicit lineage, and minimal handle/tree orchestration primitives that the brownfield packages did not yet expose.
+- Implement the driver-neutral shared framework substrate in `runtime-core`, including durable kernel-backed helpers, event/control shell behavior, active-scope assembly, shared turn coordination, tool-gateway approval resume, context engineering, handoff, and minimal orchestration primitives.
+- Close Epic H with fake-driver and regression coverage proving the shared layer can host explicit drivers and minimal orchestration without leaking ReAct-specific or pipeline-specific policy into the core framework package.
 
 ### Future / Deferred Scope
 - Epic I will cover the first concrete driver, the ReAct Driver baseline.
@@ -38,6 +39,8 @@
 - Epic C delivered the kernel protocol contracts, deterministic CBOR/SHA helpers, and semantic fixtures.
 - Epic D delivered the semantic reference memory backend.
 - Epic E delivered the reusable kernel backend conformance, invariant, and recovery harness and closed the memory backend against it.
+- Epic F delivered the SQLite backend, migrations, repository logic, and conformance closure.
+- Epic G delivered the shared framework contract partition across runtime, driver, event, tool, and provider surfaces.
 
 ## 3. Build Order (Mermaid)
 ```mermaid
@@ -54,14 +57,26 @@ flowchart LR
   KRTG002 --> KRTG005[KRT-G005 Tool Execution Contracts]
   KRTG002 --> KRTG006[KRT-G006 Provider API Contracts]
 
-  KRTG003 --> KRTH001[KRT-H001 Runtime-Core Package Scaffold]
+  KRTG003 --> KRTH001[KRT-H001 Shared Contract Realignment]
   KRTG004 --> KRTH001
   KRTG005 --> KRTH001
   KRTG006 --> KRTH001
-  KRTH001 --> KRTH002[KRT-H002 Execution Handle and Control Shell]
-  KRTH002 --> KRTH003[KRT-H003 Context Manifest and Context Engineering Foundations]
-  KRTH003 --> KRTH004[KRT-H004 Checkpoint, Coordination, and Orchestration Foundations]
-  KRTH004 --> KRTH005[KRT-H005 Driver-Neutral Framework Closure]
+  KRTH001 --> KRTH002[KRT-H002 Runtime-Core Package Scaffold]
+  KRTH002 --> KRTH003[KRT-H003 Durable Kernel Coordination Helpers]
+  KRTH003 --> KRTH004[KRT-H004 Canonical Event and Execution Handle Shell]
+  KRTH003 --> KRTH005[KRT-H005 Shared Execution-Scope Assembly]
+  KRTH004 --> KRTH006[KRT-H006 Shared Turn and Iteration Coordinator]
+  KRTH005 --> KRTH006
+  KRTH005 --> KRTH007[KRT-H007 Tool Gateway and Approval Resume]
+  KRTH006 --> KRTH007
+  KRTH005 --> KRTH008[KRT-H008 Context Engineering and Handoff Coordination]
+  KRTH006 --> KRTH008
+  KRTH001 --> KRTH009[KRT-H009 Minimal Core Orchestration Primitives]
+  KRTH007 --> KRTH009
+  KRTH008 --> KRTH009
+  KRTH007 --> KRTH010[KRT-H010 Fake-Driver Closure and Regression Coverage]
+  KRTH008 --> KRTH010
+  KRTH009 --> KRTH010
 ```
 
 ## 4. Ticket List
@@ -214,67 +229,132 @@ Then model-provider integration depends on one Kraken-owned provider contract ra
 
 ### Epic H — Shared Framework Foundations (SFF)
 
-**KRT-H001 Runtime-Core Package Scaffold**
-- **Type:** Feature
-- **Effort:** 3
+**KRT-H001 Shared Contract Realignment**
+- **Type:** Chore
+- **Effort:** 2
 - **Dependencies:** KRT-G003, KRT-G004, KRT-G005, KRT-G006
-- **Capability / Contract Mapping:** PRD `CAP-P0-019`, `CAP-P0-033`; TechSpec `§1.1`, `§5.1`; Architecture `§2`
-- **Description:** Create `boundaries/framework/implementations/typescript/runtime-core` with the package scaffold, kernel integration wiring, and shared runtime domain types needed before concrete driver behavior is implemented.
+- **Capability / Contract Mapping:** PRD `CAP-P0-019`, `CAP-P0-023`, `CAP-P0-026`, `CAP-P0-027`, `CAP-P0-033`; TechSpec `§4.1`, `§5.1`, `§5.2`; Architecture `§2`
+- **Description:** Correct the brownfield shared runtime and driver contracts so lineage, minimal runtime status, approval resume, minimal handle/tree orchestration, and immutable driver execution context match the authoritative framework specification before runtime-core depends on them.
 - **Acceptance Criteria (Gherkin):**
 ```gherkin
-Given the shared framework and provider contracts exist
-When the runtime-core package scaffold is implemented
-Then the repository has one bounded package ready to host the shared framework-services layer above the kernel and below concrete drivers
+Given the shared framework contract packages already exist in repo reality
+When the Epic H contract realignment is completed
+Then runtime-api, driver-api, fixtures, and constitution docs expose the orchestration and resume seams required by the framework specification
 ```
 
-**KRT-H002 Execution Handle and Control Shell**
+**KRT-H002 Runtime-Core Package Scaffold**
 - **Type:** Feature
-- **Effort:** 5
+- **Effort:** 2
 - **Dependencies:** KRT-H001
-- **Capability / Contract Mapping:** PRD `CAP-P0-004`, `CAP-P0-019`, `CAP-P0-020`, `CAP-P0-033`; TechSpec `§4.1`, `§5.4`; Architecture `§2`
-- **Description:** Implement the shared execution-handle lifecycle, runtime command shell, driver selection wiring, and canonical event publication path in runtime-core.
+- **Capability / Contract Mapping:** PRD `CAP-P0-019`, `CAP-P0-033`; TechSpec `§1.1`, `§5.1`, `§5.2`; Architecture `§2`
+- **Description:** Create `boundaries/framework/implementations/typescript/runtime-core` with Nx, Bun, and tsup wiring, explicit kernel and driver seams, and the public factories that keep shared framework behavior below concrete drivers and above the kernel.
 - **Acceptance Criteria (Gherkin):**
 ```gherkin
-Given the runtime-core package scaffold exists
-When the execution-handle and control shell are implemented
-Then hosts can start turns, route controls, and observe canonical runtime events through one driver-neutral shared runtime layer
+Given the shared contracts are aligned with the framework specification
+When the runtime-core package scaffold is implemented
+Then the repository contains one bounded shared framework implementation package with explicit build, typecheck, and path-mapping support
 ```
 
-**KRT-H003 Context Manifest and Context Engineering Foundations**
+**KRT-H003 Durable Kernel Coordination Helpers**
 - **Type:** Feature
 - **Effort:** 5
 - **Dependencies:** KRT-H002
-- **Capability / Contract Mapping:** PRD `CAP-P0-010`, `CAP-P1-011`, `CAP-P1-022`, `CAP-P0-033`; TechSpec `§4.1`, `§5.2`; Architecture `§2`, `§4.3`
-- **Description:** Implement the shared framework services for context manifest ownership, active-context assembly boundaries, and driver-neutral context-engineering coordination above the kernel.
+- **Capability / Contract Mapping:** PRD `CAP-P0-005`, `CAP-P0-010`, `CAP-P0-033`; TechSpec `§4.1`, `§5.2`; Architecture `§2`, `§4.2`, `§4.3`
+- **Description:** Implement the shared kernel-backed helpers for thread, branch, turn, message, manifest, runtime-status, event-object, and checkpoint coordination so runtime-core can durably stage and advance execution state.
 - **Acceptance Criteria (Gherkin):**
 ```gherkin
-Given the execution-handle and control shell exist
-When context manifest and context-engineering foundations are implemented
-Then the shared framework layer owns context metadata and rewrite coordination in a way that future drivers can reuse without redefining durable history semantics
+Given the runtime-core package scaffold exists
+When the durable coordination helpers are implemented
+Then runtime-core can read and write branch-aware execution state through the kernel without inventing provider-specific or ReAct-specific persistence behavior
 ```
 
-**KRT-H004 Checkpoint, Coordination, and Orchestration Foundations**
+**KRT-H004 Canonical Event and Execution Handle Shell**
+- **Type:** Feature
+- **Effort:** 3
+- **Dependencies:** KRT-H003
+- **Capability / Contract Mapping:** PRD `CAP-P0-004`, `CAP-P0-020`, `CAP-P0-033`; TechSpec `§4.1`, `§5.2`, `§5.4`; Architecture `§2`
+- **Description:** Implement the canonical event fanout, execution-handle lifecycle, status snapshots, source attribution, cancel and steer control surface, and approval-resolution shell behavior used by all shared runtime execution.
+- **Acceptance Criteria (Gherkin):**
+```gherkin
+Given runtime-core can durably coordinate kernel state
+When the execution handle shell is implemented
+Then hosts can observe canonical runtime events and control driver-neutral turn execution through one shared lifecycle surface
+```
+
+**KRT-H005 Shared Execution-Scope Assembly**
+- **Type:** Feature
+- **Effort:** 3
+- **Dependencies:** KRT-H003
+- **Capability / Contract Mapping:** PRD `CAP-P0-019`, `CAP-P1-022`, `CAP-P0-033`; TechSpec `§4.1`, `§5.2`; Architecture `§2`, `§4.3`
+- **Description:** Build shared scope assembly for tool registries, extension-contributed shared exports, intercept ordering, around-chain helpers, system-prompt collection, and default contract fallback resolution.
+- **Acceptance Criteria (Gherkin):**
+```gherkin
+Given runtime-core can load durable branch state
+When shared execution-scope assembly is implemented
+Then drivers receive one validated, duplicate-safe runtime scope built from explicit tools, extensions, and shared runtime defaults
+```
+
+**KRT-H006 Shared Turn and Iteration Coordinator**
 - **Type:** Feature
 - **Effort:** 5
-- **Dependencies:** KRT-H003
-- **Capability / Contract Mapping:** PRD `CAP-P0-005`, `CAP-P0-023`, `CAP-P0-026`, `CAP-P0-027`, `CAP-P1-029`, `CAP-P0-033`; TechSpec `§4.1`, `§5.2`; Architecture `§2`, `§4.1`, `§4.4`
-- **Description:** Implement the shared framework services for checkpoint coordination, run-state handoff with the kernel, and driver-neutral worker and handoff orchestration boundaries.
+- **Dependencies:** KRT-H004, KRT-H005
+- **Capability / Contract Mapping:** PRD `CAP-P0-004`, `CAP-P0-005`, `CAP-P0-019`, `CAP-P0-033`; TechSpec `§4.1`, `§5.2`; Architecture `§2`, `§4.1`
+- **Description:** Implement the shared `executeTurn` coordinator for input incorporation, steering incorporation, per-iteration driver execution, hook ordering, resolution precedence, max-iteration handling, and durable head advancement on continue, end, and fail paths.
 - **Acceptance Criteria (Gherkin):**
 ```gherkin
-Given context and control foundations already exist
-When checkpoint, coordination, and orchestration foundations are implemented
-Then the shared framework layer can coordinate durable execution transitions and orchestration state without embedding ReAct-specific loop behavior
+Given the shared scope assembly and execution-handle shell exist
+When the shared turn coordinator is implemented
+Then runtime-core can execute driver iterations end to end while keeping turn state, hook timing, and checkpoint advancement consistent across drivers
 ```
 
-**KRT-H005 Driver-Neutral Framework Closure**
-- **Type:** Chore
-- **Effort:** 3
-- **Dependencies:** KRT-H004
-- **Capability / Contract Mapping:** PRD `CAP-P0-033`, `CAP-P1-034`; TechSpec `§5.2`, `§5.4`; ADR-014
-- **Description:** Add integration coverage, fake-driver smoke tests, and package-level closure work that proves the shared framework foundations are usable without depending on the ReAct Driver implementation itself.
+**KRT-H007 Tool Gateway and Approval Resume**
+- **Type:** Feature
+- **Effort:** 5
+- **Dependencies:** KRT-H005, KRT-H006
+- **Capability / Contract Mapping:** PRD `CAP-P0-020`, `CAP-P0-021`, `CAP-P0-024`, `CAP-P0-033`; TechSpec `§4.1`, `§5.2`, `§5.4`; Architecture `§2`, `§4.1`
+- **Description:** Implement shared tool validation and execution staging, approval precedence, partial pause checkpoints, canonical rejection-result synthesis for declined tool calls, timeout-safe post-timeout semantics, and resumed execution from unfinished approval-required calls.
 - **Acceptance Criteria (Gherkin):**
 ```gherkin
-Given runtime-core and the shared framework contracts are implemented
-When driver-neutral framework closure is completed
-Then tests prove the shared framework foundations can host a concrete driver through the explicit driver boundary without leaking ReAct-specific assumptions into the core layer
+Given the shared turn coordinator is running driver-neutral turns
+When the tool gateway and approval resume path are implemented
+Then runtime-core can pause, persist, resume, and complete approval-gated tool execution without rerunning turn bootstrap or leaking tool policy into driver code
+```
+
+**KRT-H008 Context Engineering and Handoff Coordination**
+- **Type:** Feature
+- **Effort:** 3
+- **Dependencies:** KRT-H005, KRT-H006
+- **Capability / Contract Mapping:** PRD `CAP-P0-010`, `CAP-P1-011`, `CAP-P0-026`, `CAP-P0-027`, `CAP-P0-033`; TechSpec `§4.1`, `§5.2`; Architecture `§2`, `§4.3`, `§4.4`
+- **Description:** Implement shared context-engineering runs, helper surfaces, default handoff builders, same-turn handoff application, active-agent updates, active-scope rebuilds, and canonical handoff events.
+- **Acceptance Criteria (Gherkin):**
+```gherkin
+Given runtime-core can coordinate shared turns and active scopes
+When context engineering and handoff coordination are implemented
+Then the shared framework layer can rewrite active context and swap agents durably without redefining message history semantics per driver
+```
+
+**KRT-H009 Minimal Core Orchestration Primitives**
+- **Type:** Feature
+- **Effort:** 5
+- **Dependencies:** KRT-H001, KRT-H007, KRT-H008
+- **Capability / Contract Mapping:** PRD `CAP-P0-023`, `CAP-P1-029`, `CAP-P0-033`; TechSpec `§4.1`, `§5.2`; Architecture `§2`, `§4.4`
+- **Description:** Implement the minimal shared-core orchestration primitive as a handle/tree model with child spawning, subtree event aggregation, child completion access, and local approval handling, without standardizing sequence policy, canonical worker-result payloads, or global worker registries.
+- **Acceptance Criteria (Gherkin):**
+```gherkin
+Given runtime-core can pause, resume, and hand off shared execution
+When the minimal core orchestration primitive is implemented
+Then hosts and drivers can coordinate child turns through explicit shared handle/tree contracts without importing driver-specific worker-plumbing logic or relying on a global worker registry
+```
+
+**KRT-H010 Fake-Driver Closure and Regression Coverage**
+- **Type:** Chore
+- **Effort:** 3
+- **Dependencies:** KRT-H007, KRT-H008, KRT-H009
+- **Capability / Contract Mapping:** PRD `CAP-P0-033`, `CAP-P1-034`; TechSpec `§5.2`, `§5.4`; Architecture `§2`
+- **Description:** Close Epic H with fake-driver integration suites, brownfield regression coverage, and documentation sync proving runtime-core can host explicit drivers, approval resume, handoff, and minimal orchestration without ReAct-specific or sequence-specific assumptions.
+- **Acceptance Criteria (Gherkin):**
+```gherkin
+Given the shared framework substrate is implemented
+When fake-driver closure and regression coverage are completed
+Then the repository proves the shared framework layer can host concrete drivers through the explicit contracts before Epic I begins
 ```

@@ -11,6 +11,9 @@
       "@kraken/framework-runtime-api": [
         "../../../framework/contracts/runtime-api/src/index.ts"
       ],
+      "@kraken/framework-runtime-api/provider": [
+        "../../../framework/contracts/runtime-api/src/provider.ts"
+      ],
       "@kraken/provider-api": ["./src/index.ts"]
     },
     "types": ["bun"]

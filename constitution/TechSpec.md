@@ -1,9 +1,9 @@
 # Technical Specification
 
 ## 0. Version History & Changelog
-- v0.3.0 - Reframed the framework implementation as driver-oriented, added the initial ReAct-driver posture, and updated package structure and build sequence to separate shared framework services from driver implementations.
-- v0.2.3 - Defined the backend adapter repository interfaces and the `createMemoryBackend` factory surface so backend implementations no longer depend on implied persistence contracts.
-- v0.2.2 - Defined the concrete TypeScript kernel-contract shapes for `StepContext`, `ObserveResult`, and kernel observe signals so the run lifecycle surface no longer depends on implied upstream payload structure.
+- v0.3.3 - Realigned the shared framework contract layer to the docs-first minimal core model: lineage path, minimal runtime status, handle/tree orchestration, and a reduced driver result seam.
+- v0.3.2 - Synced the published orchestration contract to the runtime-core reality by adding session-local worker state, worker approval resolution, parent-qualified worker launch, and narrowed orchestration resume typing.
+- v0.3.1 - Corrected the brownfield framework baseline to include the implemented contract packages, added the shared orchestration runtime contract surface, and expanded the driver seam so runtime-core can execute against explicit shared-runtime state.
 - ... [Older history truncated, refer to git logs]
 
 ## 1. Stack Specification (Bill of Materials)
@@ -24,7 +24,7 @@
 - **Backend posture:** All official backends implement one strict kernel-visible contract. Backend-specific optimizations may exist internally, but they must not change kernel semantics or require capability negotiation at the kernel layer in v0.1.
 
 ### 1.2 Current-State vs Target-State
-- **Current repository reality:** The repository already contains the workspace scaffold, `@kraken/shared-core-types`, `@kraken/kernel-contract-protocol`, `@kraken/backend-memory`, and `@kraken/kernel-testkit`. SQLite, framework, provider, stream, and host packages remain target-state work.
+- **Current repository reality:** The repository already contains the workspace scaffold, `@kraken/shared-core-types`, `@kraken/kernel-contract-protocol`, `@kraken/backend-memory`, `@kraken/backend-sqlite`, `@kraken/kernel-testkit`, `@kraken/framework-runtime-api`, `@kraken/framework-driver-api`, `@kraken/framework-event-stream`, `@kraken/framework-tool-contracts`, and `@kraken/provider-api`. `runtime-core`, the first concrete driver, provider bridges, stream adapters, and hosts remain target-state work.
 - **Target implementation state:** The package layout and interfaces defined below are the intended implementation target for the first authoritative code line.
 - **Drift rule:** The future codebase must conform to this TechSpec. The TechSpec must not be treated as a loose commentary on whatever structure happens to emerge.
 
@@ -445,6 +445,32 @@ export interface ExecutionHandle {
   status(): ExecutionStatus;
 }
 
+export interface OrchestrationHandle extends ExecutionHandle {
+  resolveApproval(response: ApprovalResponse): OrchestrationHandle;
+  spawn(input: { agent: string; signal: InputSignal }): OrchestrationHandle;
+  allEvents(): AsyncIterable<KrakenStreamEvent>;
+  awaitResult(): Promise<unknown>;
+}
+
+export interface OrchestrationRuntime {
+  executeTurn(input: {
+    agent: string;
+    signal: InputSignal;
+    threadId: string;
+    branchId: string;
+    schemaId?: string;
+    driverId?: string;
+    tools?: KrakenToolDefinition[];
+    parentTurnId?: string | null;
+  }): OrchestrationHandle;
+}
+
+- `spawn()` is valid only while the current orchestration handle is running.
+- `spawn()` starts the child execution immediately; `awaitResult()` does not satisfy the parent launch precondition by itself.
+- Child launches inherit the caller's explicit execution surface (`driverId`, per-request `tools`) because `spawn()` intentionally stays minimal.
+- `InputSignal.parts` and persisted message `parts` are non-empty arrays in the shared contract; empty payload arrays are rejected at validation time.
+- Once `resolveApproval(...)` returns a replacement handle, further control calls on the old paused handle are invalid.
+
 export interface ExecutionStatus {
   phase: "running" | "paused" | "completed" | "failed";
   iterationCount: number;
@@ -779,6 +805,7 @@ export type KrakenStreamEvent =
   | { type: "turn.end"; turnId: string; status: "completed" | "paused" | "failed"; timestamp: EpochMs; source?: EventSource }
   | { type: "iteration.start" | "iteration.end"; iterationCount: number; timestamp: EpochMs; source?: EventSource }
   | { type: "message.start"; messageId: string; role: "assistant"; timestamp: EpochMs; source?: EventSource }
+  | { type: "file.done"; messageId: string; data: string | Uint8Array; filename?: string; mediaType: string; timestamp: EpochMs; source?: EventSource }
   | { type: "text.delta"; messageId: string; delta: string; timestamp: EpochMs; source?: EventSource }
   | { type: "text.done"; messageId: string; text: string; timestamp: EpochMs; source?: EventSource }
   | { type: "reasoning.delta"; messageId: string; delta: string; timestamp: EpochMs; source?: EventSource }
@@ -812,13 +839,28 @@ export interface DriverRuntimePort {
   now(): EpochMs;
 }
 
+export interface DriverHandoffPort {
+  createContextPlan(input: {
+    targetAgent: string;
+    reason: string;
+    mode?: HandoffContextMode;
+    builder?: HandoffContextBuilder;
+    payload?: unknown;
+  }): HandoffContextPlan;
+}
+
 export interface DriverExecutionContext {
   turnId: string;
+  threadId: string;
   branchId: string;
   schemaId: string;
-  config: AgentConfig;
-  toolRegistry: ToolRegistry;
-  steering?: AsyncIterable<InputSignal>;
+  iterationCount: number;
+  config: Readonly<AgentConfig>;
+  handoff: DriverHandoffPort;
+  messages: ReadonlyArray<KrakenMessage>;
+  manifest: Readonly<ContextManifest>;
+  toolRegistry: Readonly<ToolRegistry>;
+  signal?: AbortSignal;
   runtime: DriverRuntimePort;
 }
 
@@ -829,13 +871,15 @@ export interface DriverResumeContext extends DriverExecutionContext {
 
 export interface DriverExecutionResult {
   resolution: RuntimeResolution;
-  activeAgent: string;
+  messages?: KrakenMessage[];
+  partial?: boolean;
+  toolExecutionMode?: "parallel" | "sequential";
 }
 
 export interface KrakenDriver {
   readonly id: string;
   execute(context: DriverExecutionContext): Promise<DriverExecutionResult>;
-  resume(context: DriverResumeContext): Promise<DriverExecutionResult>;
+  resume?(context: DriverResumeContext): Promise<DriverExecutionResult>;
 }
 
 export interface KrakenDriverFactory {
@@ -849,6 +893,10 @@ export interface DriverRegistry {
   list(): Array<KrakenDriver | KrakenDriverFactory>;
 }
 ```
+
+`DriverExecutionResult` may contain at most one assistant message per iteration. `toolExecutionMode` is required when that assistant message requests tool calls and omitted otherwise. This keeps sequential-vs-parallel selection on the shared driver boundary instead of on runtime-core construction options. Approval resume remains framework-owned; any driver `resume(...)` method is optional and not part of the current shared-core execution path.
+
+`runtime.emit(...)` is limited to driver-owned stream content and custom events. Framework-owned lifecycle events such as `turn.*`, `iteration.*`, `tool.*`, `approval.*`, `state.*`, and `error` remain shared-core responsibilities and are rejected if a driver tries to emit them directly. If a driver emits assistant content events, that emitted assistant sequence must reconcile to the durable assistant message in `DriverExecutionResult.messages`, including incremental delta payloads such as `text.delta`, `reasoning.delta`, `structured.delta`, and `tool_call.args_delta`, stable event identity (`messageId`, `callId`), canonical message-start/message-done ordering, and the final `finishReason`; otherwise runtime-core rejects it as an invalid stream event. When a driver returns a durable assistant message without emitting matching assistant content events, runtime-core synthesizes those missing assistant stream events from the durable message so the public stream and persisted history stay aligned.
 
 ## 5. Implementation Guidelines
 ### 5.1 Project Structure
@@ -999,7 +1047,7 @@ Target implementation layout after code generation begins:
 ### 5.2 Coding Standards
 - **Formatting / Linting:** Use Biome configured to follow the repository’s Ultracite-aligned standards.
 - **Workspace Tooling:** Use `devenv` for reproducible developer environments and `nx@22.6.3` with aligned `@nx/*` packages for project orchestration, affected-graph analysis, caching, generators, and task coordination across the TypeScript subtree.
-- **Build Tooling:** Use `tsup` for TypeScript package builds. Core packages emit ESM-first builds.
+- **Build Tooling:** Use `tsup` for TypeScript package builds. Core packages emit ESM-first builds and do not publish JavaScript sourcemaps or TypeScript declaration maps by default.
 - **TypeScript Settings:**
   - `"strict": true`
   - `"module": "esnext"`

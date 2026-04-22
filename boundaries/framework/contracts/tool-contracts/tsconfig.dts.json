@@ -1,16 +1,15 @@
 {
   "compilerOptions": {
     "declaration": true,
-    "declarationMap": true,
+    "declarationMap": false,
     "emitDeclarationOnly": true,
     "module": "esnext",
     "moduleResolution": "bundler",
     "outDir": "./dist",
     "paths": {
-      "@kraken/shared-core-types": [
-        "../../../shared/contracts/core-types/dist/index.d.ts"
-      ],
+      "@kraken/shared-core-types": ["../../../shared/contracts/core-types"],
       "@kraken/framework-runtime-api": ["../runtime-api/dist/index.d.ts"],
+      "@kraken/framework-runtime-api/tools": ["../runtime-api/dist/tools.d.ts"],
       "@kraken/framework-tool-contracts": ["./src/index.ts"]
     },
     "rootDir": "./src",

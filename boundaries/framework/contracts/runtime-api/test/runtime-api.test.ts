@@ -20,12 +20,22 @@ import {
   invalidFrameworkContractFixtures,
 } from "../../../../../tests/fixtures/framework-contract-fixtures.js";
 import {
+  assertKrakenStreamEvent as assertKrakenStreamEventFromSubpath,
+  type KrakenStreamEvent as KrakenStreamEventFromSubpath,
+} from "../src/events.ts";
+import {
+  assertExecutionStatus as assertExecutionStatusFromSubpath,
+  type ExecutionStatus as ExecutionStatusFromSubpath,
+} from "../src/execution.ts";
+import {
   type AgentConfig,
   assertApprovalRequest,
   assertApprovalResponse,
   assertApprovalResponseForRequest,
+  assertContextManifest,
   assertExecutionStatus,
   assertKrakenMessage,
+  assertKrakenModelResponse,
   assertKrakenStreamEvent,
   assertKrakenToolDefinition,
   assertProviderStreamChunk,
@@ -38,6 +48,15 @@ import {
   isKrakenToolDefinition,
   isProviderStreamChunk,
 } from "../src/index.ts";
+import type { OrchestrationHandle as OrchestrationHandleFromSubpath } from "../src/orchestration.ts";
+import {
+  assertProviderStreamChunk as assertProviderStreamChunkFromSubpath,
+  type ProviderStreamChunk as ProviderStreamChunkFromSubpath,
+} from "../src/provider.ts";
+import {
+  type ApprovalRequest as ApprovalRequestFromSubpath,
+  assertApprovalRequest as assertApprovalRequestFromSubpath,
+} from "../src/tools.ts";
 
 describe("runtime-api contracts", () => {
   test("accepts the canonical framework fixtures", () => {
@@ -59,6 +78,9 @@ describe("runtime-api contracts", () => {
     expect(isExecutionStatus(frameworkContractFixtures.executionStatus)).toBe(
       true
     );
+    expect(() =>
+      assertContextManifest(frameworkContractFixtures.contextManifest)
+    ).not.toThrow();
 
     expect(() =>
       assertKrakenMessage(frameworkContractFixtures.assistantMessage)
@@ -78,6 +100,110 @@ describe("runtime-api contracts", () => {
     expect(() =>
       assertExecutionStatus(frameworkContractFixtures.executionStatus)
     ).not.toThrow();
+    expect(() =>
+      assertKrakenModelResponse({
+        finishReason: "length",
+        parts: [{ text: "partial", type: "text" }],
+        providerMetadata: { stop: "max_tokens" },
+        usage: {
+          inputTokens: 10,
+          outputTokens: 5,
+        },
+      })
+    ).not.toThrow();
+  });
+
+  test("exposes narrow runtime-api subpaths without changing contract behavior", () => {
+    const approvalRequest = {
+      completedResults: [],
+      toolCalls: [
+        {
+          callId: "call-1",
+          decisions: ["approve", "reject"],
+          input: { query: "status" },
+          message: "Approve this search?",
+          name: "search",
+        },
+      ],
+    } satisfies ApprovalRequestFromSubpath;
+    const streamEvent = {
+      messageId: "message-1",
+      text: "done",
+      timestamp: 1,
+      type: "text.done",
+    } satisfies KrakenStreamEventFromSubpath;
+    const providerChunk = {
+      finishReason: "stop",
+      type: "finish",
+    } satisfies ProviderStreamChunkFromSubpath;
+    const executionStatus = {
+      activeAgent: "primary",
+      iterationCount: 0,
+      phase: "running",
+    } satisfies ExecutionStatusFromSubpath;
+    const orchestrationHandle =
+      frameworkContractFixtures.orchestrationRuntime.executeTurn({
+        agent: "primary",
+        branchId: "branch_subpath",
+        signal: {
+          parts: [{ text: "Subpath orchestration", type: "text" }],
+        },
+        threadId: "thread_subpath",
+      }) satisfies OrchestrationHandleFromSubpath;
+
+    expect(() =>
+      assertApprovalRequestFromSubpath(approvalRequest)
+    ).not.toThrow();
+    expect(() => assertKrakenStreamEventFromSubpath(streamEvent)).not.toThrow();
+    expect(() =>
+      assertProviderStreamChunkFromSubpath(providerChunk)
+    ).not.toThrow();
+    expect(() =>
+      assertExecutionStatusFromSubpath(executionStatus)
+    ).not.toThrow();
+    expect(typeof orchestrationHandle.spawn).toBe("function");
+    expect(typeof orchestrationHandle.awaitResult).toBe("function");
+  });
+
+  test("accepts file.done stream events through the focused events surface", () => {
+    const streamEvent = {
+      data: new Uint8Array([1, 2, 3]),
+      filename: "report.csv",
+      mediaType: "text/csv",
+      messageId: "message-1",
+      timestamp: 1,
+      type: "file.done",
+    } satisfies KrakenStreamEventFromSubpath;
+
+    expect(() => assertKrakenStreamEventFromSubpath(streamEvent)).not.toThrow();
+  });
+
+  test("exposes the orchestration contract surface through canonical fixtures", async () => {
+    const handle = frameworkContractFixtures.orchestrationRuntime.executeTurn({
+      agent: "primary",
+      branchId: "branch_main",
+      signal: {
+        parts: [{ text: "Start orchestration", type: "text" }],
+      },
+      threadId: "thread_main",
+    });
+    const resumedHandle = handle.resolveApproval({ decisions: [] });
+    const childHandle = handle.spawn({
+      agent: "worker",
+      signal: {
+        parts: [
+          {
+            data: { task: "summarize" },
+            name: "task",
+            type: "structured",
+          },
+        ],
+      },
+    });
+
+    expect(resumedHandle).not.toBe(handle);
+    expect(await childHandle.awaitResult()).toBe("child result");
+    expect(await resumedHandle.awaitResult()).toEqual({ ok: "resumed" });
   });
 
   test("rejects malformed contract values", () => {
@@ -107,6 +233,11 @@ describe("runtime-api contracts", () => {
         invalidFrameworkContractFixtures.malformedExecutionStatus
       )
     ).toBe(false);
+    expect(() =>
+      assertContextManifest(
+        invalidFrameworkContractFixtures.malformedContextManifest
+      )
+    ).toThrow("must be a valid ContextManifest");
   });
 
   test("rejects provider chunks that omit required fields", () => {

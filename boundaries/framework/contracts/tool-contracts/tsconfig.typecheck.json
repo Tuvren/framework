@@ -9,6 +9,7 @@
         "../../../shared/contracts/core-types/src/index.ts"
       ],
       "@kraken/framework-runtime-api": ["../runtime-api/src/index.ts"],
+      "@kraken/framework-runtime-api/tools": ["../runtime-api/src/tools.ts"],
       "@kraken/framework-tool-contracts": ["./src/index.ts"]
     },
     "types": ["bun"]

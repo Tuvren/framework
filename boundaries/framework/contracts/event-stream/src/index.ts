@@ -16,8 +16,8 @@
 
 // biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public contract surface.
 // This package is intentionally a focused import home over the shared runtime
-// contract family. `@kraken/framework-runtime-api` remains the semantic anchor,
-// while stream consumers depend on this narrower surface.
+// contract family. It now tracks the matching runtime-api subpath instead of
+// the broad root facade so the dependency shape stays as narrow as the surface.
 export type {
   ApprovalRequestedEvent,
   ApprovalResolvedEvent,
@@ -25,6 +25,7 @@ export type {
   DriverAttributedEventSource,
   ErrorEvent,
   EventSource,
+  FileDoneEvent,
   IterationEndEvent,
   IterationStartEvent,
   KrakenErrorProjection,
@@ -47,8 +48,8 @@ export type {
   ToolStartEvent,
   TurnEndEvent,
   TurnStartEvent,
-} from "@kraken/framework-runtime-api";
+} from "@kraken/framework-runtime-api/events";
 export {
   assertKrakenStreamEvent,
   isKrakenStreamEvent,
-} from "@kraken/framework-runtime-api";
+} from "@kraken/framework-runtime-api/events";

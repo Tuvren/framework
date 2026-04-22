@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "declaration": true,
-    "declarationMap": true,
+    "declarationMap": false,
     "emitDeclarationOnly": true,
     "module": "esnext",
     "moduleResolution": "bundler",
@@ -10,7 +10,12 @@
       "@kraken/shared-core-types": [
         "../../../shared/contracts/core-types/dist/index.d.ts"
       ],
-      "@kraken/framework-runtime-api": ["./src/index.ts"]
+      "@kraken/framework-runtime-api": ["./src/index.ts"],
+      "@kraken/framework-runtime-api/events": ["./src/events.ts"],
+      "@kraken/framework-runtime-api/execution": ["./src/execution.ts"],
+      "@kraken/framework-runtime-api/orchestration": ["./src/orchestration.ts"],
+      "@kraken/framework-runtime-api/provider": ["./src/provider.ts"],
+      "@kraken/framework-runtime-api/tools": ["./src/tools.ts"]
     },
     "rootDir": "./src",
     "target": "esnext",

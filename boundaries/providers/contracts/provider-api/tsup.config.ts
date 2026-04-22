@@ -22,7 +22,7 @@ export default defineConfig({
   entry: ["src/index.ts"],
   format: ["esm"],
   outDir: "dist",
-  sourcemap: true,
+  sourcemap: false,
   tsconfig: "tsconfig.tsup.json",
   target: "esnext",
 });

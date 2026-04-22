@@ -18,32 +18,149 @@
 import type {
   AgentConfig,
   ApprovalRequest,
+  ContextManifest,
   ExecutionHandle,
   ExecutionStatus,
   KrakenMessage,
   KrakenRuntime,
   KrakenStreamEvent,
   KrakenToolDefinition,
+  OrchestrationHandle,
+  OrchestrationRuntime,
   ProviderStreamChunk,
-} from "../../boundaries/framework/contracts/runtime-api/src/index.ts";
+} from "@kraken/framework-runtime-api";
+
+function emptyEvents<T>(): AsyncIterable<T> {
+  return (async function* () {
+    yield* [];
+  })();
+}
 
 const noopExecutionHandle: ExecutionHandle = {
   cancel() {
     return;
   },
   events() {
-    return (async function* () {
-      yield* [];
-    })();
+    return emptyEvents();
   },
   resolveApproval() {
-    return this;
+    return resumedExecutionHandle;
   },
   status() {
     return frameworkContractFixtures.executionStatus;
   },
   steer() {
     return;
+  },
+};
+
+const resumedExecutionHandle: ExecutionHandle = {
+  cancel() {
+    return;
+  },
+  events() {
+    return emptyEvents();
+  },
+  resolveApproval() {
+    return this;
+  },
+  status() {
+    return {
+      activeAgent: "primary",
+      iterationCount: 2,
+      phase: "running",
+    };
+  },
+  steer() {
+    return;
+  },
+};
+
+const contextManifestFixture = {
+  byRole: {
+    assistant: 1,
+    system: 0,
+    tool: 1,
+    user: 1,
+  },
+  extensions: {
+    budget: {
+      remaining: 3,
+    },
+  },
+  lastAssistantMessageIndex: 1,
+  lastUserMessageIndex: 0,
+  messageCount: 3,
+  tokenEstimate: 42,
+  toolCalls: {
+    byName: {
+      search: 1,
+    },
+    total: 1,
+  },
+  toolResults: {
+    byName: {
+      search: 1,
+    },
+    total: 1,
+  },
+  turnBoundaries: [0],
+} satisfies ContextManifest;
+
+let resumedOrchestrationHandle: OrchestrationHandle;
+let childOrchestrationHandle: OrchestrationHandle;
+
+const noopOrchestrationHandle: OrchestrationHandle = {
+  ...noopExecutionHandle,
+  allEvents() {
+    return emptyEvents();
+  },
+  awaitResult() {
+    return Promise.resolve({ ok: true });
+  },
+  resolveApproval() {
+    return resumedOrchestrationHandle;
+  },
+  spawn() {
+    return childOrchestrationHandle;
+  },
+};
+
+resumedOrchestrationHandle = {
+  ...resumedExecutionHandle,
+  allEvents() {
+    return emptyEvents();
+  },
+  awaitResult() {
+    return Promise.resolve({ ok: "resumed" });
+  },
+  resolveApproval() {
+    return this;
+  },
+  spawn() {
+    return childOrchestrationHandle;
+  },
+};
+
+childOrchestrationHandle = {
+  ...noopExecutionHandle,
+  allEvents() {
+    return emptyEvents();
+  },
+  awaitResult() {
+    return Promise.resolve("child result");
+  },
+  resolveApproval() {
+    return this;
+  },
+  spawn() {
+    return this;
+  },
+};
+
+const noopOrchestrationRuntime: OrchestrationRuntime = {
+  executeTurn() {
+    return noopOrchestrationHandle;
   },
 };
 
@@ -104,6 +221,7 @@ export const frameworkContractFixtures = {
     ],
     role: "assistant",
   } satisfies KrakenMessage,
+  contextManifest: contextManifestFixture,
   executionStatus: {
     activeAgent: "primary",
     approval: {
@@ -119,9 +237,12 @@ export const frameworkContractFixtures = {
       ],
     },
     iterationCount: 2,
+    manifest: contextManifestFixture,
     pauseReason: "approval_required",
     phase: "paused",
   } satisfies ExecutionStatus,
+  orchestrationHandle: noopOrchestrationHandle,
+  orchestrationRuntime: noopOrchestrationRuntime,
   providerStreamChunk: {
     delta: '{"status":"pending"}',
     type: "structured_delta",
@@ -164,7 +285,7 @@ export const frameworkContractFixtures = {
     messageId: "message_1",
     source: {
       agent: "primary",
-      driver: "react",
+      driver: "example",
       threadId: "thread_main",
     },
     text: "Need approval before continuing.",
@@ -195,6 +316,28 @@ export const invalidFrameworkContractFixtures = {
   malformedExecutionStatus: {
     iterationCount: 1.5,
     phase: "waiting",
+  },
+  malformedContextManifest: {
+    byRole: {
+      assistant: 0,
+      system: 0,
+      tool: 0,
+      user: 0,
+    },
+    extensions: {},
+    lastAssistantMessageIndex: -1,
+    lastUserMessageIndex: -1,
+    messageCount: 0,
+    tokenEstimate: 0,
+    toolCalls: {
+      byName: {},
+      total: -1,
+    },
+    toolResults: {
+      byName: {},
+      total: 0,
+    },
+    turnBoundaries: [],
   },
   malformedMessage: {
     parts: "not-an-array",

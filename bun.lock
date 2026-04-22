@@ -17,6 +17,45 @@
         "ultracite": "7.4.2",
       },
     },
+    "boundaries/framework/contracts/driver-api": {
+      "name": "@kraken/framework-driver-api",
+      "version": "0.0.0",
+      "dependencies": {
+        "@kraken/framework-runtime-api": "workspace:*",
+      },
+    },
+    "boundaries/framework/contracts/event-stream": {
+      "name": "@kraken/framework-event-stream",
+      "version": "0.0.0",
+      "dependencies": {
+        "@kraken/framework-runtime-api": "workspace:*",
+      },
+    },
+    "boundaries/framework/contracts/runtime-api": {
+      "name": "@kraken/framework-runtime-api",
+      "version": "0.0.0",
+      "dependencies": {
+        "@kraken/shared-core-types": "workspace:*",
+      },
+    },
+    "boundaries/framework/contracts/tool-contracts": {
+      "name": "@kraken/framework-tool-contracts",
+      "version": "0.0.0",
+      "dependencies": {
+        "@kraken/framework-runtime-api": "workspace:*",
+      },
+    },
+    "boundaries/framework/implementations/typescript/runtime-core": {
+      "name": "@kraken/framework-runtime-core",
+      "version": "0.0.0",
+      "dependencies": {
+        "@kraken/framework-driver-api": "workspace:*",
+        "@kraken/framework-runtime-api": "workspace:*",
+        "@kraken/kernel-contract-protocol": "workspace:*",
+        "@kraken/shared-core-types": "workspace:*",
+        "ajv": "8.18.0",
+      },
+    },
     "boundaries/kernel/contracts/protocol": {
       "name": "@kraken/kernel-contract-protocol",
       "version": "0.0.0",
@@ -55,6 +94,13 @@
       "dependencies": {
         "@kraken/kernel-contract-protocol": "workspace:*",
         "@kraken/shared-core-types": "workspace:*",
+      },
+    },
+    "boundaries/providers/contracts/provider-api": {
+      "name": "@kraken/provider-api",
+      "version": "0.0.0",
+      "dependencies": {
+        "@kraken/framework-runtime-api": "workspace:*",
       },
     },
     "boundaries/shared/contracts/core-types": {
@@ -372,9 +418,21 @@
 
     "@kraken/backend-sqlite": ["@kraken/backend-sqlite@workspace:boundaries/kernel/implementations/typescript/backend-sqlite"],
 
+    "@kraken/framework-driver-api": ["@kraken/framework-driver-api@workspace:boundaries/framework/contracts/driver-api"],
+
+    "@kraken/framework-event-stream": ["@kraken/framework-event-stream@workspace:boundaries/framework/contracts/event-stream"],
+
+    "@kraken/framework-runtime-api": ["@kraken/framework-runtime-api@workspace:boundaries/framework/contracts/runtime-api"],
+
+    "@kraken/framework-runtime-core": ["@kraken/framework-runtime-core@workspace:boundaries/framework/implementations/typescript/runtime-core"],
+
+    "@kraken/framework-tool-contracts": ["@kraken/framework-tool-contracts@workspace:boundaries/framework/contracts/tool-contracts"],
+
     "@kraken/kernel-contract-protocol": ["@kraken/kernel-contract-protocol@workspace:boundaries/kernel/contracts/protocol"],
 
     "@kraken/kernel-testkit": ["@kraken/kernel-testkit@workspace:boundaries/kernel/testkit"],
+
+    "@kraken/provider-api": ["@kraken/provider-api@workspace:boundaries/providers/contracts/provider-api"],
 
     "@kraken/shared-core-types": ["@kraken/shared-core-types@workspace:boundaries/shared/contracts/core-types"],
 
@@ -560,6 +618,8 @@
 
     "address": ["address@1.2.2", "", {}, "sha512-4B/qKCfeE/ODUaAUpSwfzazo5x29WD4r3vXiWsB7I2mSDAihwEqKO+g8GELZUQSSAo5e1XTYh3ZVfLyxBc12nA=="],
 
+    "ajv": ["ajv@8.18.0", "", { "dependencies": { "fast-deep-equal": "^3.1.3", "fast-uri": "^3.0.1", "json-schema-traverse": "^1.0.0", "require-from-string": "^2.0.2" } }, "sha512-PlXPeEWMXMZ7sPYOHqmDyCJzcfNrUr3fGNKtezX14ykXOEIvyK81d+qydx89KY5O71FKMPaQ2vBfBFI5NHR63A=="],
+
     "ansi-colors": ["ansi-colors@4.1.3", "", {}, "sha512-/6w/C21Pm1A7aZitlI5Ni/2J6FFQN8i1Cvz3kHABAAbw93v/NlvKdVOqz7CCWz/3iv/JplRSEEZ83XION15ovw=="],
 
     "ansi-regex": ["ansi-regex@5.0.1", "", {}, "sha512-quJQXlTSUGL2LH9SUXo8VwsY4soanhgo6LNSm84E1LBcE8s3O0wpdiRzyR9z/ZZJMlMWv37qOOb9pdJlMUEKFQ=="],
@@ -720,9 +780,13 @@
 
     "expand-template": ["expand-template@2.0.3", "", {}, "sha512-XYfuKMvj4O35f/pOXLObndIRvyQ+/+6AhODh+OKWj9S9498pHHn/IMszH+gt0fBCRWMNfk1ZSp5x3AifmnI2vg=="],
 
+    "fast-deep-equal": ["fast-deep-equal@3.1.3", "", {}, "sha512-f3qQ9oQy9j2AhBe/H9VC91wLmKBCCU/gDOnKNAYG5hswO7BLKj09Hc5HYNz9cGI++xlpDCIgDaitVs03ATR84Q=="],
+
     "fast-string-truncated-width": ["fast-string-truncated-width@1.2.1", "", {}, "sha512-Q9acT/+Uu3GwGj+5w/zsGuQjh9O1TyywhIwAxHudtWrgF09nHOPrvTLhQevPbttcxjr/SNN7mJmfOw/B1bXgow=="],
 
     "fast-string-width": ["fast-string-width@1.1.0", "", { "dependencies": { "fast-string-truncated-width": "^1.2.0" } }, "sha512-O3fwIVIH5gKB38QNbdg+3760ZmGz0SZMgvwJbA1b2TGXceKE6A2cOlfogh1iw8lr049zPyd7YADHy+B7U4W9bQ=="],
+
+    "fast-uri": ["fast-uri@3.1.0", "", {}, "sha512-iPeeDKJSWf4IEOasVVrknXpaBV0IApz/gp7S2bb7Z4Lljbl2MGJRqInZiUrQwV16cpzw/D3S5j5Julj/gT52AA=="],
 
     "fast-wrap-ansi": ["fast-wrap-ansi@0.1.6", "", { "dependencies": { "fast-string-width": "^1.1.0" } }, "sha512-HlUwET7a5gqjURj70D5jl7aC3Zmy4weA1SHUfM0JFI0Ptq987NH2TwbBFLoERhfwk+E+eaq4EK3jXoT+R3yp3w=="],
 
@@ -811,6 +875,8 @@
     "jsesc": ["jsesc@3.1.0", "", { "bin": { "jsesc": "bin/jsesc" } }, "sha512-/sM3dO2FOzXjKQhJuo0Q173wf2KOo8t4I8vHy6lF9poUp7bKT0/NHE8fPX23PwfhnykfqnC2xRxOnVw5XuGIaA=="],
 
     "json-parse-even-better-errors": ["json-parse-even-better-errors@2.3.1", "", {}, "sha512-xyFwyhro/JEof6Ghe2iz2NcXoj2sloNsWr/XsERDK/oiPCfaNhl5ONfp+jQdAZRQQ0IJWNzH9zIZF7li91kh2w=="],
+
+    "json-schema-traverse": ["json-schema-traverse@1.0.0", "", {}, "sha512-NM8/P9n3XjXhIZn1lLhkFaACTOURQXjWhV4BA/RnOv8xvgqtqpAX9IO4mRQxSx1Rlo4tqzeqb0sOlruaOy3dug=="],
 
     "json5": ["json5@2.2.3", "", { "bin": { "json5": "lib/cli.js" } }, "sha512-XmOWe7eyHYH14cLdVPoyg+GOH3rYX++KpzrylJwSW98t3Nk+U8XOl8FWKOgwtzdb8lXGf6zYwDUzeHMWfxasyg=="],
 
@@ -931,6 +997,8 @@
     "regjsparser": ["regjsparser@0.13.0", "", { "dependencies": { "jsesc": "~3.1.0" }, "bin": { "regjsparser": "bin/parser" } }, "sha512-NZQZdC5wOE/H3UT28fVGL+ikOZcEzfMGk/c3iN9UGxzWHMa1op7274oyiUVrAG4B2EuFhus8SvkaYnhvW92p9Q=="],
 
     "require-directory": ["require-directory@2.1.1", "", {}, "sha512-fGxEI7+wsG9xrvdjsrlmL22OMTTiHRwAMroiEeMgq8gzoLC/PQr7RsRDSTLUg/bZAZtF+TVIkHc6/4RIKrui+Q=="],
+
+    "require-from-string": ["require-from-string@2.0.2", "", {}, "sha512-Xf0nWe6RseziFMu+Ap9biiUbmplq6S9/p+7w7YXP/JBHhrUDDUhwa+vANyubuqfZWTveU//DYVGsDG7RKL/vEw=="],
 
     "resolve": ["resolve@1.22.11", "", { "dependencies": { "is-core-module": "^2.16.1", "path-parse": "^1.0.7", "supports-preserve-symlinks-flag": "^1.0.0" }, "bin": { "resolve": "bin/resolve" } }, "sha512-RfqAvLnMl313r7c9oclB1HhUEAezcpLjz95wFH4LVuhk9JF/r22qmVP9AMmOU4vMX7Q8pN8jwNg/CSpdFnMjTQ=="],
 

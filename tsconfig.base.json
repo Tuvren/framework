@@ -13,6 +13,21 @@
       "@kraken/framework-runtime-api": [
         "./boundaries/framework/contracts/runtime-api/src/index.ts"
       ],
+      "@kraken/framework-runtime-api/events": [
+        "./boundaries/framework/contracts/runtime-api/src/events.ts"
+      ],
+      "@kraken/framework-runtime-api/execution": [
+        "./boundaries/framework/contracts/runtime-api/src/execution.ts"
+      ],
+      "@kraken/framework-runtime-api/orchestration": [
+        "./boundaries/framework/contracts/runtime-api/src/orchestration.ts"
+      ],
+      "@kraken/framework-runtime-api/provider": [
+        "./boundaries/framework/contracts/runtime-api/src/provider.ts"
+      ],
+      "@kraken/framework-runtime-api/tools": [
+        "./boundaries/framework/contracts/runtime-api/src/tools.ts"
+      ],
       "@kraken/framework-event-stream": [
         "./boundaries/framework/contracts/event-stream/src/index.ts"
       ],
@@ -25,6 +40,9 @@
       "@kraken/provider-api": [
         "./boundaries/providers/contracts/provider-api/src/index.ts"
       ],
+      "@kraken/framework-runtime-core": [
+        "./boundaries/framework/implementations/typescript/runtime-core/src/index.ts"
+      ],
       "@kraken/backend-memory": [
         "./boundaries/kernel/implementations/typescript/backend-memory/src/index.ts"
       ],
@@ -36,7 +54,7 @@
     "strict": true,
     "composite": true,
     "declaration": true,
-    "declarationMap": true,
+    "declarationMap": false,
     "skipLibCheck": true,
     "verbatimModuleSyntax": true,
     "noFallthroughCasesInSwitch": true,

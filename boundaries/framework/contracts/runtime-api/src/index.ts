@@ -21,9 +21,9 @@ export type {
   KernelRecord,
 } from "@kraken/shared-core-types";
 export { KrakenValidationError } from "@kraken/shared-core-types";
-// Focused facade packages are the preferred import homes for event, tool,
-// provider, and driver-specific contracts. These re-exports remain here as a
-// compatibility bridge while the partitioned surface settles across packages.
+// The root runtime-api entrypoint remains the compatibility superset for hosts
+// and existing callers, while focused packages and new narrow consumers should
+// prefer the matching runtime-api subpaths (`/events`, `/tools`, `/provider`).
 export type {
   AfterIterationContext,
   AfterIterationHandler,
@@ -60,6 +60,7 @@ export type {
   ExecutionHandle,
   ExecutionStatus,
   ExtensionContext,
+  FileDoneEvent,
   FilePart,
   HandoffContextBuilder,
   HandoffContextMode,
@@ -87,6 +88,8 @@ export type {
   LoopPolicy,
   MessageDoneEvent,
   MessageStartEvent,
+  OrchestrationHandle,
+  OrchestrationRuntime,
   PendingToolCall,
   ProviderStreamChunk,
   ProviderUsage,
@@ -127,8 +130,10 @@ export {
   assertApprovalRequest,
   assertApprovalResponse,
   assertApprovalResponseForRequest,
+  assertContextManifest,
   assertExecutionStatus,
   assertKrakenMessage,
+  assertKrakenModelResponse,
   assertKrakenStreamEvent,
   assertKrakenToolDefinition,
   assertProviderStreamChunk,
@@ -137,6 +142,7 @@ export {
   isApprovalResponseForRequest,
   isExecutionStatus,
   isKrakenMessage,
+  isKrakenModelResponse,
   isKrakenStreamEvent,
   isKrakenToolDefinition,
   isProviderStreamChunk,

@@ -16,8 +16,8 @@
 
 // biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public contract surface.
 // This package is intentionally a focused import home over the shared runtime
-// contract family. `@kraken/framework-runtime-api` remains the semantic anchor,
-// while provider consumers depend on this narrower surface.
+// contract family. It now tracks the matching runtime-api subpath instead of
+// the broad root facade so the dependency shape stays as narrow as the surface.
 export type {
   KrakenModelResponse,
   KrakenPrompt,
@@ -25,8 +25,10 @@ export type {
   ProviderStreamChunk,
   ProviderUsage,
   StructuredOutputRequest,
-} from "@kraken/framework-runtime-api";
+} from "@kraken/framework-runtime-api/provider";
 export {
+  assertKrakenModelResponse,
   assertProviderStreamChunk,
+  isKrakenModelResponse,
   isProviderStreamChunk,
-} from "@kraken/framework-runtime-api";
+} from "@kraken/framework-runtime-api/provider";

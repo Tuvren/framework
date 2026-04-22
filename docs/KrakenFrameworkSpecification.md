@@ -1,6 +1,6 @@
 # Kraken Framework Specification
 
-**Version**: v0.15
+**Version**: v0.17
 **Status**: Authoritative
 **Basis**: Kernel Specification v0.9 (frozen)
 
@@ -85,11 +85,13 @@ Structured output is assistant-authored structured data — a distinct content k
 ### 1.2 Messages
 
 ```
+NonEmptyArray<T> = [T, ...T[]]
+
 KrakenMessage =
   | { role: "system",    content: string }
-  | { role: "user",      parts: ContentPart[] }
-  | { role: "assistant", parts: ContentPart[], providerMetadata?: Record<string, unknown> }
-  | { role: "tool",      parts: ToolResultPart[] }
+  | { role: "user",      parts: NonEmptyArray<ContentPart> }
+  | { role: "assistant", parts: NonEmptyArray<ContentPart>, providerMetadata?: Record<string, unknown> }
+  | { role: "tool",      parts: NonEmptyArray<ToolResultPart> }
 ```
 
 Separate `tool` role even though some providers merge tool results into user messages. Each adapter handles the merge or split.
@@ -100,11 +102,11 @@ Canonical inbound signal accepted by the framework and its drivers.
 
 ```
 InputSignal
-└─ parts: ContentPart[]           // Canonical inbound user content.
-                                 // Extend only if a future extra is irreducible.
+└─ parts: NonEmptyArray<ContentPart>  // Canonical inbound user content.
+                                      // Extend only if a future extra is irreducible.
 ```
 
-`InputSignal` is not a persisted message. The framework normalizes it into a `KrakenMessage` during input incorporation.
+`InputSignal` is not a persisted message. The framework normalizes it into a `KrakenMessage` during input incorporation. Empty `parts` arrays are invalid at the shared contract boundary.
 
 ### 1.4 Prompt and Response
 
@@ -292,7 +294,7 @@ EventSource
 
 **Lifecycle events**: `turn.start`, `turn.end`, `iteration.start`, `iteration.end`
 
-**Model output events** (streaming): `message.start`, `text.delta`, `text.done`, `reasoning.delta`, `reasoning.done`, `structured.delta`, `structured.done`, `tool_call.start`, `tool_call.args_delta`, `tool_call.done`, `message.done`
+**Model output events** (streaming): `message.start`, `text.delta`, `text.done`, `reasoning.delta`, `reasoning.done`, `file.done`, `structured.delta`, `structured.done`, `tool_call.start`, `tool_call.args_delta`, `tool_call.done`, `message.done`
 
 **Tool execution events**: `tool.start`, `tool.result`
 
@@ -302,7 +304,7 @@ EventSource
 
 **Custom events**: `custom` (extension-defined `name` and `data`)
 
-Twenty-four event types in six groups. Complete type definitions:
+Twenty-five event types in six groups. Complete type definitions:
 
 ```
 TurnStartEvent         { type: "turn.start", turnId, threadId, resumedFrom?: string, timestamp }
@@ -315,6 +317,8 @@ TextDeltaEvent         { type: "text.delta", messageId, delta: string, timestamp
 TextDoneEvent          { type: "text.done", messageId, text: string, timestamp }
 ReasoningDeltaEvent    { type: "reasoning.delta", messageId, delta: string, timestamp }
 ReasoningDoneEvent     { type: "reasoning.done", messageId, timestamp }
+FileDoneEvent          { type: "file.done", messageId, data: string|Uint8Array,
+                         mediaType: string, filename?: string, timestamp }
 StructuredDeltaEvent   { type: "structured.delta", messageId, delta: string, timestamp }
 StructuredDoneEvent    { type: "structured.done", messageId, data: unknown, name?: string, timestamp }
 ToolCallStartEvent     { type: "tool_call.start", messageId, callId, name, timestamp }
@@ -338,11 +342,11 @@ CustomEvent            { type: "custom", name: string, data: unknown, timestamp 
 
 `TurnStartEvent.resumedFrom`: When present, contains the TurnNode hash of the pause point. Protocol adapters use this to distinguish fresh Turns from resumed Turns. Absent means fresh Turn.
 
-**Ordering guarantees**: `message.start` precedes all deltas for that message. `text.delta` events arrive in order. `structured.delta` events arrive in order; `structured.done` follows all `structured.delta` events for that message. `tool_call.start` precedes `tool_call.args_delta`. `message.done` follows all content events. Note: `tool_call.*` describes what the model requests (args streaming). `tool.*` describes what the framework executes. These are two different moments.
+**Ordering guarantees**: `message.start` precedes all content events for that message. `text.delta` events arrive in order. `structured.delta` events arrive in order; `structured.done` follows all `structured.delta` events for that message. `file.done` is emitted as one complete visible content event for that file and must occur between `message.start` and `message.done`. `tool_call.start` precedes `tool_call.args_delta`. `message.done` follows all content events. Note: `tool_call.*` describes what the model requests (args streaming). `tool.*` describes what the framework executes. These are two different moments.
 
 **Contract tiers**: Kraken's internal event vocabulary is intentionally richer than any single external protocol. Protocol adapters consume this canonical stream and bridge it into AG-UI, ACP, OpenResponses-style transports, or any other host protocol.
 
-**Required core events**: `turn.start`, `turn.end`, `iteration.start`, `iteration.end`, `message.start`, `text.delta`, `text.done`, `reasoning.delta`, `reasoning.done`, `structured.delta`, `structured.done`, `tool_call.start`, `tool_call.args_delta`, `tool_call.done`, `message.done`, `tool.start`, `tool.result`, `approval.requested`, `approval.resolved`, `steering.incorporated`, and `error`. When their corresponding runtime moments occur, the framework MUST emit them.
+**Required core events**: `turn.start`, `turn.end`, `iteration.start`, `iteration.end`, `message.start`, `text.delta`, `text.done`, `reasoning.delta`, `reasoning.done`, `file.done`, `structured.delta`, `structured.done`, `tool_call.start`, `tool_call.args_delta`, `tool_call.done`, `message.done`, `tool.start`, `tool.result`, `approval.requested`, `approval.resolved`, `steering.incorporated`, and `error`. When their corresponding runtime moments occur, the framework MUST emit them.
 
 **Optional standardized events**: `state.snapshot`, `state.checkpoint`, and `custom`. Their shapes and meanings are standardized, but hosts and protocol adapters MUST tolerate their absence. They are observability and integration affordances, not correctness dependencies.
 
@@ -358,15 +362,17 @@ DefaultAgentSchema
 ├─ paths:
 │    messages              ordered     // conversation in natural order
 │    context.manifest      single      // structural index
+│    turn.lineage          single      // semantic-turn lineage metadata
 │    runtime.status        single      // execution state metadata
 │
 └─ incorporationRules:
      message               → messages
      context_manifest      → context.manifest
+     turn_lineage          → turn.lineage
      runtime_status        → runtime.status
 ```
 
-Three paths. Three objectTypes. Three incorporation rules.
+Four paths. Four objectTypes. Four incorporation rules.
 
 ### 2.2 Messages Path (ordered)
 
@@ -380,27 +386,32 @@ Staged as `objectType: "context_manifest"`. Each new manifest replaces the previ
 
 When context engineering restructures the messages path via `tree.create`, the manifest is rebuilt from the new hash array and included in the new TurnTree.
 
-### 2.4 Runtime Status Path (single)
+### 2.4 Turn Lineage Path (single)
+
+```
+TurnLineage
+└─ activeTurnId: string
+```
+
+`turn.lineage` is framework-owned semantic lineage metadata. It is initialized during input incorporation for a new Turn and then preserved across later checkpoints on the same Turn. When the caller omits `parentTurnId`, the framework infers the active semantic parent from the Branch Head's `turn.lineage.activeTurnId`. It is not used for context assembly or host status display.
+
+### 2.5 Runtime Status Path (single)
 
 ```
 RuntimeStatus
 ├─ state: "running" | "paused" | "completed" | "failed"
 ├─ activeAgent?: string
-├─ currentProvider?: string
-├─ currentModel?: string
-├─ iterationCount?: number
 ├─ pauseReason?: string
-├─ resumptionSchema?: unknown
 ├─ partial?: boolean                 // true when assistant output was interrupted
 ```
 
-**Lifecycle**: The framework stages an updated RuntimeStatus at Turn start (`running`, `activeAgent` set from active `AgentConfig`), on approval resume (`running` restaged before resumed work proceeds), on pause (`paused`), on handoff (`running`, `activeAgent` updated), and at Turn end (`completed` or `failed`). It is not staged on every iteration — only on state transitions. Used by the framework for execution decisions, by the UI for status display, and by multi-agent orchestration for active agent tracking. Not consumed by context assembly for prompt construction.
+**Lifecycle**: The framework stages an updated RuntimeStatus at Turn start (`running`, `activeAgent` set from the active `AgentConfig`), on approval decision execution (`running` restaged before any resumed work proceeds), on pause (`paused`, `pauseReason` set), on handoff (`running`, `activeAgent` updated), and at Turn end (`completed` or `failed`). It is not staged on every iteration — only on state transitions. Used by the framework for execution decisions, by hosts for status display, and by orchestration for current execution ownership. Not consumed by context assembly for prompt construction.
 
-`runtime.status` is framework-owned Turn execution state. It is persisted through the schema, not stored as a Kernel Turn field. Turn-final `completed` / `failed` status is durably committed through a dedicated framework finalization checkpoint (§4.11).
+`runtime.status` is framework-owned Turn execution lifecycle metadata. It is persisted through the schema, not stored as a Kernel Turn field. Turn-final `completed` / `failed` status is durably committed through a dedicated framework finalization checkpoint (§4.11). It is not a general telemetry bag; richer observability belongs to higher layers.
 
 `partial`: Set to `true` when a cancellation or other recoverable interruption stages a partial assistant message before the Run fails. Hard process crashes during model streaming may still lose in-memory accumulator state and re-execute from scratch. Extensions and host code can use this flag to detect incomplete responses that were durably staged.
 
-### 2.5 Context Engineering Operations
+### 2.6 Context Engineering Operations
 
 All produce new TurnTrees via `tree.create`. Original messages are never mutated.
 
@@ -594,6 +605,9 @@ function incorporateInput(signal, turnId, branchId, schemaId, agentName?):
   manifest = readManifest(branch.headTurnNodeHash)
   manifest = updateManifest(manifest, [userMsg])
   kernel.staging.stage(inputRunId, serialize(manifest), "manifest", "context_manifest", completed)
+
+  lineage = { activeTurnId: turnId }
+  kernel.staging.stage(inputRunId, serialize(lineage), "turn_lineage", "turn_lineage", completed)
 
   status = { state: "running", activeAgent: agentName }
   kernel.staging.stage(inputRunId, serialize(status), "runtime_status", "runtime_status", completed)
@@ -839,7 +853,7 @@ function executeIteration(turnId, branchId, schemaId, toolRegistry, config, iter
       })))
 
   if resolution.type == "pause":
-    status = { state: "paused", pauseReason: resolution.reason, iterationCount }
+    status = { state: "paused", pauseReason: resolution.reason, activeAgent: config.name }
     kernel.staging.stage(iterRunId, serialize(status), "runtime_status", "runtime_status", completed)
 
   // ── Update manifest ──
@@ -927,15 +941,15 @@ For a Thread's first semantic Turn, `parentTurnId` is `null`. For every subseque
 
 **Pause trigger**: Tool approval. A Turn pauses only when one or more requested tool calls are pending approval, whether that approval requirement came from the tool definition’s `approval` policy or from `aroundTool`.
 
-Cancellation is not a pause trigger. User-initiated cancellation follows §6.10 and terminates the current Turn as `failed`.
+Cancellation is not a pause trigger. While a Turn is running, user-initiated cancellation follows §6.10 and terminates the current Turn as `failed`. While a Turn is paused for approval, cancellation follows the approval-rejection semantics from §6.10 instead of forcing an automatic failed terminal state.
 
-**Pause protocol**: Stage pending work (including completed tool results from a partial batch), `run.complete(runId, paused, eventHash)`. Reactive checkpoint captures all staged work. Branch is blocked until approval is resolved or the paused Run is explicitly failed.
+**Pause protocol**: Stage pending work (including completed tool results from a partial batch), `run.complete(runId, paused, eventHash)`. Reactive checkpoint captures all staged work. Branch is blocked until an approval decision is executed.
 
 When a pause is triggered by tool approval, the framework MUST emit `approval.requested` before yielding `turn.end` with paused status.
 
 #### Approval Resume
 
-When a Turn is paused for tool approval, `resolveApproval` on the `ExecutionHandle` triggers the approval resume path. The `ApprovalResponse` is a control signal, not conversational content. Any optional `ApprovalDecision.message` is folded into the resulting `ToolResultPart` for that decision; it is not incorporated as a standalone `user` message.
+When a Turn is paused for tool approval, `resolveApproval` on the `ExecutionHandle` triggers the approval decision path. The `ApprovalResponse` is a control signal, not conversational content. Any optional `ApprovalDecision.message` is folded into the resulting `ToolResultPart` for that decision; it is not incorporated as a standalone `user` message.
 
 Approval resume continues the existing Turn. `beforeTurn` and `afterTurn` are not re-fired.
 
@@ -943,11 +957,11 @@ Approval resume continues the existing Turn. `beforeTurn` and `afterTurn` are no
 function resumeFromApproval(approvalResponse, turnId, branchId, ...):
   → ExecutionHandle
 
-  1. Fail paused Run (unblock Branch)
+  1. Close the paused Run and unblock the Branch
   2. Yield turn.start (with resumedFrom: pause TurnNode hash)
   3. Yield approval.resolved
   4. Create new Run with step "iterate"
-  5. Stage runtime.status = { state: "running", iterationCount, activeAgent } before resumed work proceeds
+  5. Stage runtime.status = { state: "running", activeAgent } before any resumed work proceeds
   6. Apply approval decisions → resume only unfinished tool calls through the full aroundTool chain;
      approval wrappers observe the prior decision for the exact call and pass through without re-requesting approval
   7. Stage tool results + manifest, checkpoint
@@ -957,7 +971,13 @@ function resumeFromApproval(approvalResponse, turnId, branchId, ...):
   return wrapAsHandle(driver(), turnId, branchId, steering)
 ```
 
-Before resumed tool execution begins, the framework MUST durably restage `runtime.status` to `running` for the active Turn. This ensures the durable state surface reflects actual execution state throughout the resume path.
+Before resumed tool execution begins, the framework MUST durably restage `runtime.status` to `running` for the active Turn. This ensures the durable state surface reflects actual execution state throughout the decision path.
+
+`resolveApproval(...)` returns a **new** handle. The old paused handle remains exhausted/inert as the completed paused execution token and must not remain a second active owner of further control flow. Once approval has been resolved, subsequent control calls on the old handle are invalid.
+
+For `approve` and `edit` decisions, unfinished tool calls resume through the normal tool execution path. For `reject`, shared-core semantics require the canonical rejection `ToolResultPart` outcomes for the pending calls and then continue the same Turn through the normal iteration loop. The host chooses that explicit same-Turn rejection path by calling `resolveApproval(...)` with `reject` decisions; the paused-handle `cancel()` path remains the separate rejection-and-stop control surface described in §6.10.
+
+At the kernel layer, closing a paused Run still uses the kernel's `paused -> failed` transition before the continuation Run begins. That is a Run-lifecycle bookkeeping step required by the kernel contract; it MUST NOT be interpreted as a Turn-level approval failure or as a contradiction of the framework's approval semantics.
 
 ### 4.9 Recovery Protocol
 
@@ -1085,6 +1105,70 @@ plan.execute(ctx: ContextEngineeringContext)
 
 Default plans: `summarizeRange`, `dropIndices`, `compactToolResults`. Custom plans supported.
 
+### 5.6 Driver Contract
+
+Shared drivers execute against immutable snapshots of framework-owned state plus explicit capability ports. The primitive-layer shape is:
+
+- snapshots in
+- capabilities through ports
+- explicit results out
+
+```
+DriverRuntimePort
+├─ emit(event: KrakenStreamEvent): void | Promise<void>
+└─ now(): EpochMs
+
+DriverHandoffPort
+└─ createContextPlan(input: {
+     targetAgent: string,
+     reason: string,
+     mode?: "preserve_trace" | "last_output_only" | string,
+     builder?: HandoffContextBuilder,
+     payload?: unknown
+   }): HandoffContextPlan
+
+DriverExecutionContext
+├─ turnId: string
+├─ threadId: string
+├─ branchId: string
+├─ schemaId: string
+├─ iterationCount: number
+├─ config: AgentConfig                 // read-only snapshot
+├─ messages: KrakenMessage[]           // read-only snapshot
+├─ manifest: ContextManifest           // read-only snapshot
+├─ toolRegistry: ToolRegistry          // read-only driver-facing view
+├─ runtime: DriverRuntimePort
+├─ handoff: DriverHandoffPort
+└─ signal?: AbortSignal
+
+DriverResumeContext extends DriverExecutionContext
+├─ approval: ApprovalResponse
+└─ resumedFrom?: HashString
+
+DriverExecutionResult
+├─ resolution: RuntimeResolution
+├─ messages?: KrakenMessage[]
+├─ partial?: boolean
+└─ toolExecutionMode?: "parallel" | "sequential"
+```
+
+The driver does not mutate framework-owned state by aliasing context objects in place. If a driver needs to influence framework state, it does so through explicit returned outputs such as `messages`, `resolution`, and `partial`, not through mutation of the execution context.
+
+The shared core does not require a driver-owned approval-resume path. Approval resume is handled by the framework around the paused tool batch, so any driver `resume(...)` method is optional and outside the current shared-core execution path.
+
+`runtime.emit(...)` is a driver-owned streaming surface, not a framework-lifecycle backdoor. Drivers may use it for custom events and assistant/provider stream-content events only. Shared-core lifecycle events such as `turn.*`, `iteration.*`, `tool.*`, `approval.*`, `state.*`, `error`, and similar framework-owned control events are emitted only by shared core itself. If a driver emits assistant content events, that emitted assistant sequence must reconcile to the same durable assistant message returned in `DriverExecutionResult.messages`, including incremental delta payloads such as `text.delta`, `reasoning.delta`, `structured.delta`, and `tool_call.args_delta`, stable event identity (`messageId`, `callId`), canonical message-start/message-done ordering, and the final `finishReason`; otherwise shared core rejects the result as an invalid stream event. If a driver returns a durable assistant message without emitting matching assistant content events, shared core synthesizes the missing assistant stream events from that durable message so the public event stream still reflects the committed assistant output.
+
+`DriverExecutionResult` is intentionally minimal:
+
+- `resolution` is always required
+- `messages` are required whenever the iteration produces durable assistant history
+- `messages` may contain at most one assistant message per iteration
+- `messages` may be absent only for pure control outcomes with no durable assistant-history contribution, or for failures before any durable assistant output was staged
+- `partial` is valid only for failed execution results that stage an assistant message
+- `toolExecutionMode` is required when the driver requests tool calls through assistant messages, and invalid otherwise
+
+The shared driver seam does **not** carry a generic raw `response` object. Richer transient iteration artifacts belong in driver-local or runtime-internal layers unless a future shared-core need proves otherwise.
+
 ---
 
 ## 6. Streaming
@@ -1157,6 +1241,8 @@ This same synthesis mechanism is used when aroundModel short-circuits (§6.5).
 
 `tool.start` and `tool.result` events describe framework-side execution. A `tool.start` event is emitted only after approval has resolved and immediately before the framework enters the first executable aroundTool/execute step for that call. It is never emitted merely because the model requested the tool (that’s `tool_call.done`).
 
+The driver chooses the execution mode for a batch (`sequential` or `parallel`). The shared framework core owns the ordering semantics once a mode is chosen.
+
 **Sequential execution:**
 
 ```
@@ -1168,17 +1254,22 @@ for each toolCall in executingTools:
 
 **Parallel execution:**
 
-All `tool.start` events for executing tools are yielded before any `tool.result`. This allows protocol adapters to show multiple tools executing concurrently.
+All `tool.start` events for executing tools are yielded before any `tool.result`. Each completed tool then emits `tool.result` at the moment that specific tool finishes; the runtime does not wait for the slowest sibling before surfacing already-completed results.
 
 ```
 for each toolCall in executingTools:
   yield { type: "tool.start", callId, name, input, timestamp: now() }
 
-results = await Promise.all(executingTools.map(executeSingleTool))
-
-for each result in results:
+for each toolCall in executingTools run concurrently:
+  result = await executeSingleTool(toolCall)
+  stage completed tool_result durably for recovery
   yield { type: "tool.result", callId, name, output, isError, timestamp: now() }
+
+// At checkpoint time the framework materializes the final messages path in the
+// original tool-call order so durable conversation order remains deterministic.
 ```
+
+For any batch mode, non-executed outcomes that are already known (for example invalid input, unknown tool, or explicit rejection) may emit and stage `tool.result` as soon as they are known; they are not artificially delayed behind slower executable siblings.
 
 **Mixed-approval batch ordering**: When a parallel batch contains both auto-approved and approval-gated tools, only auto-approved tools emit `tool.start`/`tool.result` events before the pause. Approval-gated tools do not emit `tool.start` until after approval, during the resume. The model’s request for the tool is already visible in `tool_call.done` events from the streaming phase.
 
@@ -1234,7 +1325,11 @@ Package topology: `@kraken/stream-agui`, `@kraken/stream-acp`, `@kraken/stream-s
 
 ### 6.10 Cancellation
 
-**User-initiated cancellation**: Host signals via `AbortSignal` through `handle.cancel()`. The driver aborts the provider stream, emits an `error` event with `fatal: true`, stages accumulated content as a partial assistant message (with `partial: true` on RuntimeStatus), completes the Run as `failed`, and yields `turn.end` with `"failed"`. The partial content is durable — on the next Turn, the model sees its own interrupted output.
+**User-initiated cancellation while running**: Host signals via `AbortSignal` through `handle.cancel()`. The driver aborts the provider stream, emits an `error` event with `fatal: true`, stages accumulated content as a partial assistant message (with `partial: true` on RuntimeStatus), completes the Run as `failed`, and yields `turn.end` with `"failed"`. The partial content is durable — on the next Turn, the model sees its own interrupted output.
+
+**User-initiated cancellation while paused for approval**: The shared-core semantic is equivalent to rejecting the pending tool calls and durably staging those rejection outcomes without re-entering the model on the same Turn. The framework MUST NOT reinterpret the paused Turn as failed solely because approval was declined. This is the host-facing rejection-and-stop path; higher layers remain responsible for any later host-initiated continuation after that staged rejection state.
+
+As with approval resolution, the kernel may still record the superseded paused Run through its `paused -> failed` transition because that is how paused Runs are closed at the kernel boundary. That Run-level status change does not alter the framework-level meaning of paused cancellation, which remains rejection-and-stop rather than Turn failure.
 
 **Provider stream interruption**: The driver emits an `error` event, stages an error message, and yields `turn.end` with `"failed"`.
 
@@ -1275,13 +1370,13 @@ ExecutionHandle
 └─ status(): ExecutionStatus
 ```
 
-**`events()`** — the primary output. The host iterates this to receive all execution events. Iteration drives execution — the driver advances as the consumer pulls events.
+**`events()`** — the primary output. The host iterates this to receive all execution events. Iteration drives execution — the driver advances as the consumer pulls events. If the last consumer abandons a still-running `events()` stream without calling `cancel()` separately, shared core treats that stream abandonment as cancellation of the running execution. Paused Handles remain explicit control surfaces: abandoning an already-paused stream does not synthesize rejection.
 
-**`cancel()`** — triggers the AbortSignal. The driver handles staging partial content and failing the Run.
+**`cancel()`** — while the Turn is running, triggers the AbortSignal. The driver handles staging partial content and failing the Run. If the Turn is already paused for approval, `cancel()` is treated as rejection of the pending tool calls rather than as an automatic failed terminal state. The shared-core `cancel()` path stages those rejection outcomes durably and stops the paused execution without re-entering the model on the same Turn. This is distinct from `resolveApproval(...)` with explicit `reject` decisions, which continues the same Turn through the normal iteration loop.
 
 **`steer(signal)`** — pushes a signal into the steering channel. The driver consumes it at the next iteration boundary. Only valid when `status().phase === "running"`. Rejected if the Turn is paused or completed.
 
-**`resolveApproval(response)`** — provides the human’s decision for a paused approval. Triggers the approval resume path (§4.8): fails the paused Run, applies decisions, executes approved tools, continues the iteration loop. Returns a **new** `ExecutionHandle` for the resumed Turn. Only valid when `status().phase === "paused"` and `status().approval` is present.
+**`resolveApproval(response)`** — provides the human’s decision for a paused approval. Triggers the approval decision path (§4.8): closes the paused Run, applies decisions, resumes only unfinished approved or edited tool calls through the normal execution path, and returns a **new** `ExecutionHandle` for the continued Turn. Reject decisions produce canonical rejection `ToolResultPart` outcomes for the pending calls and then continue the same Turn through the normal iteration loop. Only valid when `status().phase === "paused"` and `status().approval` is present.
 
 The old handle’s `events()` iterable is already exhausted (it yielded `turn.end` with `paused` and returned). The new handle produces a fresh event sequence starting with `turn.start` (with `resumedFrom` set).
 
@@ -1446,11 +1541,15 @@ For each tool call in the batch:
                    stored as `objectType: "message"`.
 ```
 
-**Parallel execution** (default): Steps 1–3 synchronously for all calls. Split into approved and pending sets. Steps 4–5 concurrently for approved tools via aroundTool chain. If pending set is non-empty, return partial result with `ApprovalRequest` containing `completedResults` (from approved tools) and `toolCalls` (pending).
+**Execution mode selection**: The driver chooses whether a batch executes sequentially or in parallel. The shared framework core owns the canonical ordering and durability semantics for the chosen mode (§6.4).
+
+**Parallel execution**: Steps 1–3 synchronously for all calls. Split into approved and pending sets. Steps 4–5 concurrently for approved tools via aroundTool chain. If pending set is non-empty, return partial result with `ApprovalRequest` containing `completedResults` (from approved tools) and `toolCalls` (pending).
 
 **Sequential execution**: All steps one call at a time. First approval-gated tool encountered triggers pause with results from previously completed tools.
 
 Individual tool failures produce error ToolResultParts. Tool failures never fail the Run.
+
+Whether one failed call aborts, rejects, or coexists with sibling results in a mixed or parallel batch is a driver- or host-level policy decision above the shared core. The shared core only defines trace integrity, call-ID ownership, and ordering/durability semantics for whichever results are ultimately produced.
 
 Incremental staging is required for crash-safe partial progress. In a parallel or sequential batch, each completed tool result becomes durably recoverable before the batch as a whole returns. Recovery can therefore skip completed tool calls by `callId` and resume only unfinished calls.
 
@@ -1753,7 +1852,7 @@ The extension system does not replace the five contracts. It provides an ergonom
 
 **System prompt errors**: Logged, that extension’s contribution omitted. Others unaffected.
 
-**Timeout**: All handlers subject to configurable timeout. Exceeded → treated as error per rules above.
+**Timeout**: Timeout ownership belongs to the framework or host layer, not to the shared core as a forced-termination guarantee. When timeout is triggered, the shared core provides the reliable semantics that follow: abort runtime-owned signals where available, fence runtime-owned callbacks and event injection surfaces, ignore late results, and prevent late timeout-losing work from re-entering durable framework state. Stronger timeout enforcement may exist in specific hosts, sandboxes, or concrete driver deployments above the core.
 
 ---
 
@@ -1813,46 +1912,26 @@ From the parent’s perspective: one tool call, one tool result. The sub-agent�
 
 ### 10.3 Asynchronous Workers
 
-The tool returns immediately with a worker pointer. Worker completion is delivered through the steering channel when the parent Turn is still running.
+An asynchronous worker runs on its own Thread and may complete while the parent Turn continues.
 
-```
-tools: [{
-  name: "delegate",
-  execute: async (input, ctx) => {
-    // OrchestrationRuntime (§10.6) handles launch + completion watching
-    const workerId = orchestration.launchWorker(input.agent, input.task)
-    return { workerId, status: "launched" }
-  }
-},
-{
-  name: "wait_for_worker",
-  execute: async (input) => await orchestration.awaitWorker(input.workerId)
-}]
-```
+The shared core does **not** define a canonical conversational `worker_result` payload. Instead it provides primitives:
 
-**Steering payload format**: When a worker result is delivered through steering, the `OrchestrationRuntime` (§10.6) uses a structured message of this form:
+- child execution handles
+- child/subtree event streams
+- child completion access
+- steering as a separate primitive already available to higher layers
 
-```
-[Worker Result: {workerId}]
-Agent: {agentName}
-Status: completed
-Output: {structured result}
-```
+What happens with a worker's final result is a driver or host concern. Higher layers may, for example:
 
-When such a payload is delivered while the parent Turn is running, the parent sees it as a user message at the next iteration boundary. The model can reason about worker status (“I got vendor A’s results, still waiting on B and C”).
+- inject a child result through steering while the parent is running
+- expose a sync tool that waits for a child and returns its result
+- choose not to inject the child result into parent conversational context at all
 
-**wait_for_worker**: Converts an async worker to sync mid-flight. The tool blocks until the specified worker completes and returns the result as a tool result. The developer chooses when to synchronize, not the framework.
+Any higher-layer projection of child completion into parent context should be based only on the child's visible final result surface. Internal reasoning or hidden trace details are not shared-core projection semantics.
 
-Async worker outputs enter parent context through exactly two mechanisms: explicit synchronization (`wait_for_worker`, or equivalent host-defined sync tooling) or steering during a running parent Turn. Worker completion alone does not mutate the parent’s context.
+**Run locality**: Worker execution is local to the specific execution handle that spawned it. If the parent pauses for approval, workers may continue. If a worker pauses for approval, the parent and sibling workers may continue. Pause semantics are always run-local.
 
-**Edge case — parent Turn is paused when workers complete**: Steering is only valid while `status().phase === "running"`. If the parent Turn is paused awaiting approval, completed worker results are recorded in worker state but are not injected into the paused Turn. They may be delivered by steering only after the parent resumes running.
-
-**Edge case — parent Turn finishes before workers complete**: Steering is only valid while `status().phase === "running"`. If the parent Turn ends before workers finish, worker results cannot be steered into the completed Turn. The developer must decide:
-
-- **Option 1**: Worker results trigger a new Turn — the host calls `executeTurn(workerResult, ...)`. The agent sees it as new input on the same Branch with full history.
-- **Option 2**: Queue for next user message — the host stores results and injects them via steering immediately after the next user-initiated Turn starts.
-
-The framework provides primitives for both options. The policy choice is the developer’s.
+**Launch precondition**: A parent handle must have actually started execution before it can spawn children. In the default lazy execution model that means at least one parent-facing event stream (`events()` or `allEvents()`) has started consumption.
 
 ### 10.4 Handoffs
 
@@ -1881,8 +1960,8 @@ Every handoff replaces the entire active `messages` collection. Handoffs stay on
 
 The framework provides two standard handoff modes:
 
-- **`preserve_trace`** — expected for agent-signaled handoffs. The receiving agent gets a rewritten request that preserves the prior agent trace in framework-defined form without exposing raw history or incompatible tool surfaces.
-- **`last_output_only`** — expected for pipeline/orchestrated handoffs. The receiving agent gets a clean-slate request containing only the previous agent’s final output (plus any developer-configured scaffolding).
+- **`preserve_trace`** — expected for agent-signaled handoffs. The receiving agent gets a rewritten request that preserves the prior agent trace as a chronological summarized trace without exposing raw history, raw tool-call inputs, or incompatible tool surfaces.
+- **`last_output_only`** — expected for thin higher-layer pipeline patterns built on handoff. The receiving agent gets a clean-slate request containing only the previous agent’s final visible output parts (text / structured / file) plus any developer-configured scaffolding. Provider continuity metadata is not carried across the role transition into the new user-authored handoff message.
 
 The handoff context builder (§1.5 `HandoffContextBuilder`) produces new message hashes. The framework executes it as a context engineering Run:
 
@@ -1929,10 +2008,23 @@ function applyHandoff(plan: HandoffContextPlan, turnId, branchId, schemaId, pend
 
 #### Default Handoff Context Builder (`preserve_trace`)
 
-Deterministic, no model call:
+Deterministic, no model call. The semantic content below is normative; the exact wrapper text is implementation-defined.
 
 ```
 function defaultHandoffContextBuilder(ctx: HandoffSourceContext) → Hash[]:
+  trace = []
+  for message in ctx.messages:
+    switch message.role:
+      case "user":
+        trace.push(`[User] ${renderVisibleUserContent(message)}`)
+      case "assistant":
+        trace.push(`[Assistant] ${summarizeVisibleAssistantOutput(message)}`)
+      case "tool":
+        for result in message.parts:
+          trace.push(`[Tool:${result.name}] ${renderToolResult(result)}`)
+      case "system":
+        continue
+
   handoffMsg = {
     role: "user",
     parts: [{
@@ -1940,12 +2032,8 @@ function defaultHandoffContextBuilder(ctx: HandoffSourceContext) → Hash[]:
       text: [
         `[Handoff from ${ctx.sourceAgent.name}]`,
         `Reason: ${ctx.handoffIntent.reason ?? "unspecified"}`,
-        `--- User Messages ---`,
-        ...extractUserMessages(ctx.messages),
-        `--- Previous Agent's Work ---`,
-        ...extractAssistantSummary(ctx.messages),
-        `--- Key Outcomes ---`,
-        ...extractToolOutcomes(ctx.messages),
+        `--- Chronological Trace ---`,
+        ...trace,
         `Continue from where the previous agent left off.`
       ].join('\n')
     }]
@@ -1957,18 +2045,18 @@ System instructions are never persisted by handoff context builders. The receivi
 
 Developers may replace this builder with custom builders for domain-specific handoff formats. The default remains available.
 
-#### Sequence Handoff Context Builder (`last_output_only`)
+#### Last Output Only Builder (`last_output_only`)
 
 Deterministic, no model call:
 
 ```
 function sequenceHandoffContextBuilder(ctx: HandoffSourceContext) → Hash[]:
+  lastParts = extractLastVisibleAssistantOutputParts(ctx.messages)
   handoffMsg = {
     role: "user",
-    parts: [{
-      type: "text",
-      text: extractLastAssistantOutput(ctx.messages)
-    }]
+    parts: lastParts.length > 0
+      ? lastParts
+      : [{ type: "text", text: "" }]
   }
   return [ctx.helpers.storeMessage(handoffMsg)]
 ```
@@ -1981,55 +2069,27 @@ Both handoff types use `tree.create` to build new TurnTrees. Previous TurnNodes 
 - **Rollback**: `branch.setHead` to pre-handoff TurnNode restores original agent state.
 - **Debugging**: `tree.diff` between pre-handoff and post-handoff shows exactly what context engineering changed.
 
-### 10.5 Sequences
+### 10.5 Ordered Pipelines
 
-A declarative pipeline of agents where each agent’s output becomes the next agent’s input.
+Ordered multi-agent pipelines are not part of the shared framework core. A thin driver may build them on top of handoff semantics, typically using `last_output_only` as the handoff mode between steps.
 
-```
-createOrchestration({
-  agents: { research, writer, reviewer },
-  sequence: ["research", "writer", "reviewer"],
-  entrypoint: "research"
-})
-```
-
-When the current agent reaches a non-paused, non-failed completion and a next agent exists in the sequence, the orchestration layer converts that completion into a handoff transition before Turn finalization. The framework:
-
-1. Extracts final output (last assistant message text).
-1. Synthesizes a sequence handoff plan using mode `last_output_only`.
-1. Builds a sequence handoff context (only the previous agent’s output, no raw history).
-1. Swaps to next agent config.
-1. Re-enters iteration loop.
-
-Sequences are a specialized handoff with a simpler context builder. They reuse the same Turn, Branch, context-rewrite, and active-agent swap semantics as agent-signaled handoffs. Each agent sees only the previous agent’s output.
+The shared core therefore does **not** standardize sequence configuration, validation, or progression policy as part of its normative semantics.
 
 ### 10.6 OrchestrationRuntime
 
-The framework-provided runtime for multi-agent coordination. Owns worker lifecycle management, completion-to-steering bridging, cascading cancellation, and demuxed event streams.
+The framework-provided orchestration primitive is minimal and handle/tree-based rather than runtime-global worker-registry-based.
 
 ```
 OrchestrationRuntime
-├─ executeTurn(input: { signal, threadId, branchId, schemaId?, driverId? }) → OrchestrationHandle
-├─ launchWorker(agent: string, task: unknown) → string (workerId)
-├─ awaitWorker(workerId: string) → Promise<unknown>
-└─ cancel(): void
+└─ executeTurn(input: { agent: string, signal, threadId, branchId, schemaId?, driverId?, tools?, parentTurnId? }) → OrchestrationHandle
 ```
 
 ```
 OrchestrationHandle extends ExecutionHandle
-├─ parentEvents(): AsyncIterable<KrakenStreamEvent>
-├─ workerEvents(workerId: string): AsyncIterable<KrakenStreamEvent>
+├─ resolveApproval(response: ApprovalResponse) → OrchestrationHandle
+├─ spawn(input: { agent: string, signal: InputSignal }) → OrchestrationHandle
 ├─ allEvents(): AsyncIterable<KrakenStreamEvent>
-└─ workers(): Map<string, WorkerStatus>
-```
-
-```
-WorkerStatus
-├─ workerId: string
-├─ agent: string
-├─ threadId: string
-├─ status: "running" | "completed" | "failed"
-└─ result?: unknown
+└─ awaitResult(): Promise<unknown>
 ```
 
 **Construction**:
@@ -2037,38 +2097,32 @@ WorkerStatus
 ```
 const orchestration = createOrchestrationRuntime({
   framework,
-  agents: { primary, research, billing },
-  entrypoint: "primary",
-  handoffContextBuilder?: HandoffContextBuilder,
-  sequence?: string[]
+  agents: { primary, research, billing }
 })
 ```
 
+The authoritative shared-core semantics define orchestration by composition over an existing framework runtime. More elaborate construction modes are outside current core scope until a concrete use case justifies them.
+
 **Internal mechanics**: The runtime composes existing primitives:
 
-- `executeTurn` for both parent and worker Turns
-- `ExecutionHandle.steer()` for worker result delivery
+- `executeTurn` for both root and child Turns
 - `ExecutionHandle.events()` for stream consumption
-- `thread.create` for worker Thread creation
-- `ctx.forward` for worker event attribution
+- `thread.create` for child Thread creation
+- existing event `source` attribution for descendant events in subtree streams
 
 No new kernel concepts. The runtime is a composition layer.
 
-**Event stream demuxing**: The runtime provides three consumption patterns:
+Child handles are ordinary execution handles:
 
-- `parentEvents()`: Only events from the parent agent’s execution. No `source` field.
-- `workerEvents(id)`: Only events from the specified worker. Source-attributed.
-- `allEvents()`: Merged stream with source attribution on all worker events. This is what protocol adapters consume.
+- each child owns its own pause/resume/cancel lifecycle
+- any child may itself spawn children, allowing recursive parent/worker trees
+- `spawn()` is valid only while the current orchestration handle is running
+- `spawn()` starts the child execution immediately; `awaitResult()` does not satisfy the parent launch precondition by itself
+- `allEvents()` means self + descendants
+- descendant events in `allEvents()` MUST carry `source` attribution sufficient to identify the originating execution node
+- child launches inherit the caller's explicit execution surface (for example `driverId` and per-request `tools`) because `spawn()` intentionally does not define its own override bag
 
-The frontend developer subscribes to the streams they need. Separate UI panels get separate streams. A unified view gets the merged stream. The contract is the same regardless of host implementation.
-
-**Cascading cancellation**: `cancel()` cancels the parent handle and all running worker handles.
-
-**Worker completion watching**: The runtime internally iterates each worker handle’s events. When a worker’s `turn.end` event arrives, the runtime extracts the final output and updates `WorkerStatus`.
-
-- If the parent Turn is `running`, the runtime calls `parentHandle.steer()` with a structured worker result message.
-- If the parent Turn is `paused`, the runtime queues the worker result for delivery at the next valid steering injection point after approval resume.
-- If the parent Turn has already ended, the runtime stores the result for host-level retrieval so the host can deliver it through a new Turn or alongside the next human-initiated Turn.
+`awaitResult()` waits for the child execution to reach a terminal state. It resolves with the child execution's final visible result surface on successful completion and rejects on failed completion. The shared core does not prescribe how higher layers feed that result into parent conversational context.
 
 ### 10.7 Extension Scoping
 
@@ -2082,19 +2136,13 @@ Cross-agent budget tracking: use a shared budget extension that both configs inc
 
 ### 10.8 Streaming Events for Orchestration
 
-Orchestration events are emitted as `custom` events with recommended default names:
+Orchestration-specific tracing stays minimal and pluggable in the shared core.
 
-| Moment              | Event                                                                  |
-| ------------------- | ---------------------------------------------------------------------- |
-| Handoff initiated   | `custom: { name: "handoff.start", data: { from, to, reason } }`        |
-| Handoff committed   | `state.checkpoint`                                                     |
-| New agent starts    | `custom: { name: "agent.start", data: { agent } }`                     |
-| Sequence transition | `custom: { name: "sequence.step", data: { from, to, step } }`          |
-| Worker launched     | `custom: { name: "worker.launched", data: { workerId, agent, task } }` |
-| Worker completed    | `custom: { name: "worker.completed", data: { workerId, agent } }`      |
-| Worker streaming    | Standard event types with `source` field                               |
+- `events()` and `allEvents()` are the canonical runtime surfaces.
+- Descendant execution is represented through standard event types plus `source` attribution.
+- Additional orchestration-specific tracing may be emitted through `custom` events, but names and payloads are implementation-defined rather than fixed framework semantics.
 
-These are framework-emitted defaults, not protocol-level guarantees. Protocol adapters translate them as appropriate.
+This keeps the shared core compatible with pluggable observability stacks such as OpenTelemetry, Langfuse, or custom host-defined tracing.
 
 ### 10.9 Boundaries
 
@@ -2104,9 +2152,10 @@ This specification does not define:
 - **Cross-thread state sharing**: Beyond tool results and steering. Deferred.
 - **Agent discovery**: Agents are statically configured.
 - **A2A protocol integration**: Adapter concern, not core orchestration.
+- **Delegated/external orchestration construction modes**: Deferred until a concrete use case justifies a normative boundary.
 - **Worker Thread lifecycle / GC**: Deferred per kernel spec.
 - **Concurrent handoffs**: Multiple handoff intents in one response are rejected — one handoff per iteration.
 
 ---
 
-_v0.14. This is the single authoritative framework specification. All framework behavior — execution model, extension system, multi-agent orchestration, streaming, host contract, and tool dispatch — is defined here. Companion rationale is explanatory only and non-contract._
+_v0.17. This is the single authoritative framework specification. All framework behavior — execution model, extension system, multi-agent orchestration, streaming, host contract, and tool dispatch — is defined here. Companion rationale is explanatory only and non-contract._

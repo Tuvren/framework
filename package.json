@@ -14,8 +14,9 @@
   "scripts": {
     "lint": "bunx --bun @biomejs/biome check .",
     "format": "bunx --bun @biomejs/biome check --write .",
+    "nx": "bun ./tools/run-nx.mjs",
     "typecheck": "bun run nx run-many -t typecheck",
-    "graph": "nx graph"
+    "graph": "bun run nx graph"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.10",

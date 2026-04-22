@@ -9,6 +9,14 @@
         "../../../shared/contracts/core-types/src/index.ts"
       ],
       "@kraken/framework-runtime-api": ["../runtime-api/src/index.ts"],
+      "@kraken/framework-runtime-api/events": ["../runtime-api/src/events.ts"],
+      "@kraken/framework-runtime-api/execution": [
+        "../runtime-api/src/execution.ts"
+      ],
+      "@kraken/framework-runtime-api/provider": [
+        "../runtime-api/src/provider.ts"
+      ],
+      "@kraken/framework-runtime-api/tools": ["../runtime-api/src/tools.ts"],
       "@kraken/framework-driver-api": ["./src/index.ts"]
     },
     "types": ["bun"]

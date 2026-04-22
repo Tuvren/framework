@@ -9,6 +9,7 @@
         "../../../shared/contracts/core-types/src/index.ts"
       ],
       "@kraken/framework-runtime-api": ["../runtime-api/src/index.ts"],
+      "@kraken/framework-runtime-api/events": ["../runtime-api/src/events.ts"],
       "@kraken/framework-event-stream": ["./src/index.ts"]
     },
     "types": ["bun"]

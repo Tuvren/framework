@@ -5,9 +5,17 @@
     "outDir": "./dist",
     "paths": {
       "@kraken/framework-runtime-api": ["../runtime-api/dist/index.d.ts"],
-      "@kraken/shared-core-types": [
-        "../../../shared/contracts/core-types/dist/index.d.ts"
+      "@kraken/framework-runtime-api/events": [
+        "../runtime-api/dist/events.d.ts"
       ],
+      "@kraken/framework-runtime-api/execution": [
+        "../runtime-api/dist/execution.d.ts"
+      ],
+      "@kraken/framework-runtime-api/provider": [
+        "../runtime-api/dist/provider.d.ts"
+      ],
+      "@kraken/framework-runtime-api/tools": ["../runtime-api/dist/tools.d.ts"],
+      "@kraken/shared-core-types": ["../../../shared/contracts/core-types"],
       "@kraken/framework-driver-api": ["./src/index.ts"]
     }
   },

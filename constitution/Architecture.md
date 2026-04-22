@@ -1,6 +1,7 @@
 # Solution Architecture
 
 ## 0. Version History & Changelog
+- v0.3.0 - Narrowed shared-core orchestration to a minimal handle/tree primitive, moved ordered pipelines out of core semantics, and aligned approval/cancel responsibilities with the docs-first HITL model.
 - v0.2.0 - Reframed the runtime around shared framework services plus pluggable drivers, with the current execution semantics treated as the initial ReAct-oriented driver.
 - v0.1.0 - Initial architecture derived from PRD v0.1.0, establishing the logical container model, critical flows, and resilience posture for Kraken Runtime.
 - ... [Older history truncated, refer to git logs]
@@ -89,9 +90,9 @@
 
 ### Orchestration Runtime
 - **Logical Type:** Coordination service
-- **Responsibility:** Manage delegated workers, handoff transitions, sequence progression, driver handover semantics, worker event forwarding, and parent-child execution coordination without creating ambiguous control ownership.
-- **Inputs:** Handoff resolutions, worker launch requests, worker completion signals, parent execution status, and context plans.
-- **Outputs:** New execution handles for workers or resumed agents, worker status updates, forwarded worker events, and handoff coordination outcomes.
+- **Responsibility:** Provide minimal handle/tree-based orchestration primitives for child execution, descendant event aggregation, and parent-child execution coordination without creating ambiguous control ownership.
+- **Inputs:** Child launch requests, child completion signals, parent execution status, and child subtree events.
+- **Outputs:** New execution handles for children, descendant-attributed event streams, and child completion access.
 - **Depends on:** Framework Shared Services, Context Assembly and Engineering, Event Stream Adapter Layer, Host Integration Boundary.
 
 ### Kernel Boundary
@@ -132,6 +133,7 @@
 - Framework Shared Services exist so host control, event vocabulary, context manifest handling, and execution-handle semantics do not get welded to the first driver.
 - Driver Runtime is a logical boundary, not a promise that every future driver needs a separate process or deployment unit.
 - The current active driver is ReAct-oriented, but the architecture keeps room for future workflow-oriented drivers such as pipeline, router, evaluator-optimizer, or orchestrator-worker patterns.
+- Ordered multi-agent pipelines are not a shared-core semantic. If they remain in scope, they belong above the shared handoff/orchestration primitives as driver-level policy.
 
 ## 3. Container Diagram (Mermaid)
 ```mermaid
@@ -146,7 +148,7 @@ System_Boundary(kraken, "Kraken Runtime") {
   Container(extensionRuntime, "Extension Runtime", "Policy Runtime", "Hooks, wrappers, prompt contributions, extension state")
   Container(providerGateway, "Provider Gateway", "Integration Boundary", "Canonical <-> provider translation")
   Container(toolGateway, "Tool Execution Gateway", "Integration Boundary", "Validation, approval gating, tool execution, incremental result staging")
-  Container(orchestrationRuntime, "Orchestration Runtime", "Coordination Service", "Workers, handoffs, sequences, forwarded events")
+  Container(orchestrationRuntime, "Orchestration Runtime", "Coordination Service", "Minimal child-handle orchestration and descendant event aggregation")
   Container(eventAdapter, "Event Stream Adapter Layer", "Outbound Adapter", "Canonical event translation for hosts")
   Container(kernelBoundary, "Kernel Boundary", "Mechanism Core", "Durable objects, staging, trees, lineage, runs, branches")
   ContainerDb(stateBoundary, "Durable State Boundary", "Persistence Boundary", "Atomic durable storage substrate")
@@ -162,13 +164,13 @@ Rel(frameworkServices, kernelBoundary, "Run lifecycle, checkpoints, lineage oper
 Rel(driverRuntime, extensionRuntime, "Lifecycle callbacks and wrappers")
 Rel(driverRuntime, providerGateway, "Canonical prompts / model responses")
 Rel(driverRuntime, toolGateway, "Tool batches / tool results")
-Rel(orchestrationRuntime, frameworkServices, "Worker and handoff coordination")
-Rel(frameworkServices, orchestrationRuntime, "Delegation and handoff requests")
+Rel(orchestrationRuntime, frameworkServices, "Child execution coordination")
+Rel(frameworkServices, orchestrationRuntime, "Child launch and orchestration requests")
 Rel(providerGateway, modelProviders, "Provider-facing requests and streams")
 Rel(toolGateway, externalTools, "Validated tool execution")
 Rel(kernelBoundary, stateBoundary, "Atomic durable transactions")
 Rel(frameworkServices, eventAdapter, "Canonical runtime events")
-Rel(orchestrationRuntime, eventAdapter, "Worker and handoff events")
+Rel(orchestrationRuntime, eventAdapter, "Descendant-attributed orchestration events")
 Rel(extensionRuntime, eventAdapter, "Custom events")
 Rel(eventAdapter, hostBoundary, "Host-facing event streams")
 ```
@@ -231,14 +233,14 @@ Framework->>Kernel: stage paused runtime status + manifest, complete paused Run
 Kernel->>State: checkpoint partial batch into new TurnNode
 Framework->>Events: emit approval.requested then paused turn.end
 Host->>Framework: resolveApproval(decisions)
-Framework->>Kernel: fail paused Run to unblock Branch
+Framework->>Kernel: close paused Run to unblock Branch
 Framework->>Kernel: create replacement Run from pause TurnNode
-Framework->>Driver: resume only unfinished tool calls with decisions
+Framework->>Driver: apply approval decisions and resume only unfinished approved or edited tool calls
 Driver->>Tooling: continue execution
 Tooling->>Kernel: stage resumed tool results
 Kernel->>State: commit resumed results and new history point
 Framework->>Events: emit approval.resolved and resumed execution events
-Framework-->>Host: continue same Turn without redoing completed side effects
+Framework-->>Host: continue same Turn without redoing completed side effects; rejection-only continuation policy remains host/driver owned
 ```
 
 ### 4.3 Context Engineering and Steering Between Iterations
@@ -265,7 +267,7 @@ Kernel-->>Framework: active head now points to rewritten context state
 Framework-->>Host: next iteration sees redirected context without erasing prior history
 ```
 
-### 4.4 Driver Handoff and Worker Coordination
+### 4.4 Driver Handoff and Minimal Child Orchestration
 - **Maps to PRD capability:** CAP-P0-023, CAP-P0-026, CAP-P0-027, CAP-P1-029, CAP-P0-033
 ```mermaid
 sequenceDiagram
@@ -277,14 +279,14 @@ participant Kernel as Kernel Boundary
 participant Events as Event Stream Adapter Layer
 
 Framework->>Driver: evaluate current iteration outcome
-Driver-->>Framework: resolution = handoff or worker delegation
-Framework->>Orch: apply orchestration resolution
-Orch->>Context: build replacement active context or worker context
+Driver-->>Framework: resolution = handoff or child delegation
+Framework->>Context: build replacement active context for handoff
 Context->>Kernel: create new TurnTree with rewritten message set and rebuilt manifest
-Kernel-->>Orch: committed context checkpoint
-Orch->>Events: emit handoff or worker lifecycle events
-Orch-->>Framework: resumed or delegated execution state
-Framework-->>Driver: continue with updated control ownership
+Kernel-->>Framework: committed handoff checkpoint
+Framework->>Orch: spawn child execution handle when delegation is requested
+Orch->>Events: emit descendant-attributed orchestration events
+Orch-->>Framework: child execution handle plus aggregated subtree events
+Framework-->>Driver: continue with updated control ownership or child coordination primitives
 ```
 
 ## 5. Resilience & Cross-Cutting Concerns
