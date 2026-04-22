@@ -1,9 +1,9 @@
 # Technical Specification
 
 ## 0. Version History & Changelog
+- v0.4.0 - Advanced the post-runtime-core roadmap into narrower deferred epics by splitting the old ReAct/bridge/adapter/host path into smaller slices beginning with a focused ReAct Driver foundation epic.
 - v0.3.3 - Realigned the shared framework contract layer to the docs-first minimal core model: lineage path, minimal runtime status, handle/tree orchestration, and a reduced driver result seam.
 - v0.3.2 - Synced the published orchestration contract to the runtime-core reality by adding session-local worker state, worker approval resolution, parent-qualified worker launch, and narrowed orchestration resume typing.
-- v0.3.1 - Corrected the brownfield framework baseline to include the implemented contract packages, added the shared orchestration runtime contract surface, and expanded the driver seam so runtime-core can execute against explicit shared-runtime state.
 - ... [Older history truncated, refer to git logs]
 
 ## 1. Stack Specification (Bill of Materials)
@@ -24,7 +24,7 @@
 - **Backend posture:** All official backends implement one strict kernel-visible contract. Backend-specific optimizations may exist internally, but they must not change kernel semantics or require capability negotiation at the kernel layer in v0.1.
 
 ### 1.2 Current-State vs Target-State
-- **Current repository reality:** The repository already contains the workspace scaffold, `@kraken/shared-core-types`, `@kraken/kernel-contract-protocol`, `@kraken/backend-memory`, `@kraken/backend-sqlite`, `@kraken/kernel-testkit`, `@kraken/framework-runtime-api`, `@kraken/framework-driver-api`, `@kraken/framework-event-stream`, `@kraken/framework-tool-contracts`, and `@kraken/provider-api`. `runtime-core`, the first concrete driver, provider bridges, stream adapters, and hosts remain target-state work.
+- **Current repository reality:** The repository already contains the workspace scaffold, `@kraken/shared-core-types`, `@kraken/kernel-contract-protocol`, `@kraken/backend-memory`, `@kraken/backend-sqlite`, `@kraken/kernel-testkit`, `@kraken/framework-runtime-api`, `@kraken/framework-driver-api`, `@kraken/framework-event-stream`, `@kraken/framework-tool-contracts`, `@kraken/provider-api`, and `@kraken/framework-runtime-core`. The first concrete driver, provider bridges, stream adapters, and hosts remain target-state work.
 - **Target implementation state:** The package layout and interfaces defined below are the intended implementation target for the first authoritative code line.
 - **Drift rule:** The future codebase must conform to this TechSpec. The TechSpec must not be treated as a loose commentary on whatever structure happens to emerge.
 
@@ -1100,7 +1100,10 @@ Target implementation layout after code generation begins:
 6. Implement the shared framework contract packages under `boundaries/framework/contracts/`, including the driver contract surface.
 7. Implement `boundaries/providers/contracts/provider-api` as the canonical provider-neutral model contract.
 8. Implement `boundaries/framework/implementations/typescript/runtime-core` as the shared framework-services layer above the kernel and below concrete drivers.
-9. Implement `boundaries/framework/implementations/typescript/drivers/react` as the first production-depth driver against the shared runtime and provider/tool contracts.
-10. Implement `boundaries/providers/implementations/typescript/bridge-ai-sdk` as the baseline provider bridge.
-11. Implement stream adapter packages and the playground host under their architectural boundaries.
-12. Add backend conformance suites for future peer adapters such as PostgreSQL and MySQL/MariaDB before expanding the official backend set.
+9. Implement `boundaries/framework/implementations/typescript/drivers/react` as a focused ReAct Driver foundation slice: package scaffold, canonical prompt rendering, provider-call shell, and response/result mapping against the shared runtime and provider/tool contracts.
+10. Extend `boundaries/framework/implementations/typescript/drivers/react` through the deeper ReAct loop and tool-integration behaviors that remain outside the initial foundation slice.
+11. Implement `boundaries/providers/implementations/typescript/bridge-ai-sdk` as the baseline provider bridge.
+12. Implement stream adapter packages under their architectural boundary once the first concrete driver and baseline provider bridge are in place.
+13. Implement the playground host after the stream adapters and baseline provider bridge exist.
+14. Add future concrete drivers beyond ReAct only after the first driver, provider bridge, and host-facing adapter path are proven.
+15. Add backend conformance suites for future peer adapters such as PostgreSQL and MySQL/MariaDB before expanding the official backend set.
