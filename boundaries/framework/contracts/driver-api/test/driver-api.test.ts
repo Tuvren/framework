@@ -301,6 +301,47 @@ describe("driver-api", () => {
     ).toThrow("sourceContext.targetAgent.tools must be an array");
   });
 
+  test("accepts handoff source agent models backed by provider objects with extra fields", () => {
+    const context = createDriverExecutionContext();
+    const provider = {
+      extra: true,
+      generate() {
+        return Promise.reject(new Error("not used"));
+      },
+      id: "provider-with-extra-state",
+      stream() {
+        return Promise.reject(new Error("not used"));
+      },
+    };
+    const basePlan = context.handoff.createContextPlan({
+      reason: "handoff",
+      targetAgent: "reviewer",
+    });
+
+    expect(() =>
+      assertDriverExecutionResult({
+        resolution: {
+          contextPlan: {
+            ...basePlan,
+            sourceContext: {
+              ...basePlan.sourceContext,
+              sourceAgent: {
+                ...basePlan.sourceContext.sourceAgent,
+                model: provider,
+              },
+              targetAgent: {
+                ...basePlan.sourceContext.targetAgent,
+                model: provider,
+              },
+            },
+          },
+          targetAgent: "reviewer",
+          type: "handoff",
+        },
+      })
+    ).not.toThrow();
+  });
+
   test("rejects terminal resolutions paired with assistant tool calls", () => {
     expect(() =>
       assertDriverExecutionResult({

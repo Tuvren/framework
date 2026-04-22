@@ -138,7 +138,6 @@ const EXTENSION_KEYS = new Set([
   "tools",
 ]);
 const STRUCTURED_OUTPUT_REQUEST_KEYS = new Set(["name", "schema", "strict"]);
-const PROVIDER_KEYS = new Set(["generate", "id", "stream"]);
 const CONTEXT_POLICY_KEYS = new Set(["evaluate"]);
 const LOOP_POLICY_KEYS = new Set(["evaluate"]);
 
@@ -664,8 +663,8 @@ function assertDriverModelSnapshot(value: unknown, label: string): void {
       }
     );
   }
-
-  assertOnlyAllowedKeys(value, PROVIDER_KEYS, label);
+  // KrakenProvider is an open runtime object. Shared core only relies on the
+  // callable provider surface and must not reject provider-owned extra state.
 }
 
 function assertDriverResponseFormatSnapshot(

@@ -10533,6 +10533,103 @@ describe("framework-runtime-core", () => {
     ).toEqual(expect.arrayContaining(["handoff_applied"]));
   });
 
+  test("driver helper handoff plans accept provider-backed agent configs with extra provider state", async () => {
+    const harness = createFakeKernelHarness();
+    const primaryProvider = {
+      extra: true,
+      async generate() {
+        return {
+          finishReason: "stop",
+          parts: [{ text: "unused primary provider output", type: "text" }],
+        } satisfies KrakenModelResponse;
+      },
+      id: "primary-provider",
+      async *stream() {
+        yield* [];
+      },
+    };
+    const reviewerProvider = {
+      extra: true,
+      async generate() {
+        return {
+          finishReason: "stop",
+          parts: [{ text: "unused reviewer provider output", type: "text" }],
+        } satisfies KrakenModelResponse;
+      },
+      id: "reviewer-provider",
+      async *stream() {
+        yield* [];
+      },
+    };
+    const agents: Record<string, AgentConfig> = {
+      primary: {
+        model: primaryProvider,
+        name: "primary",
+      },
+      reviewer: {
+        model: reviewerProvider,
+        name: "reviewer",
+      },
+    };
+    const runtime = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([
+        {
+          async execute(context) {
+            if (context.config.name === "primary") {
+              return {
+                messages: [
+                  assistantText("Passing this through the driver helper."),
+                ],
+                resolution: {
+                  contextPlan: context.handoff.createContextPlan({
+                    reason: "driver_helper_handoff",
+                    targetAgent: "reviewer",
+                  }),
+                  targetAgent: "reviewer",
+                  type: "handoff",
+                },
+              };
+            }
+
+            return {
+              messages: [
+                assistantText("Provider-backed helper handoff completed."),
+              ],
+              resolution: {
+                reason: "done",
+                type: "end_turn",
+              },
+            };
+          },
+          id: "fake",
+          async resume() {
+            throw new Error("resume was not expected");
+          },
+        } satisfies KrakenDriver,
+      ]),
+      kernel: harness.kernel,
+      resolveAgentConfig: (agentName) => agents[agentName],
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: agents.primary,
+      signal: textSignal("Use the provider-backed driver handoff helper"),
+      threadId: thread.threadId,
+    });
+
+    await collectEvents(handle.events());
+
+    expect(handle.status().activeAgent).toBe("reviewer");
+    expect(
+      hasAssistantText(
+        await harness.readBranchMessages(thread.branchId),
+        "Provider-backed helper handoff completed."
+      )
+    ).toBe(true);
+  });
+
   test("driver helper handoff plans use the latest source context at apply time", async () => {
     const harness = createFakeKernelHarness();
     let capturedSourceContext: HandoffSourceContext | undefined;
