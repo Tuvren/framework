@@ -22,7 +22,7 @@ import type {
   KrakenDriver,
   KrakenDriverFactory,
 } from "@kraken/framework-driver-api";
-import type { KrakenRuntime } from "@kraken/framework-runtime-api";
+import type { AgentConfig, KrakenRuntime } from "@kraken/framework-runtime-api";
 import {
   createDriverRegistry as createBaseDriverRegistry,
   createKrakenRuntimeCore,
@@ -1377,7 +1377,7 @@ describe("orchestration-runtime", () => {
 
   test("preserves handed-off child agent attribution on orchestration streams", async () => {
     const harness = createFakeKernelHarness();
-    const agents = {
+    const agents: Record<string, AgentConfig> = {
       primary: { name: "primary" },
       reviewer: { name: "reviewer" },
       worker: { name: "worker" },
