@@ -2979,7 +2979,7 @@ describe("framework-runtime-core", () => {
     );
 
     expect(handle.status().phase).toBe("failed");
-    expect(errorEvent?.error.code).toBe("invalid_driver_resolution");
+    expect(errorEvent?.error.code).toBe("invalid_driver_result");
     expect(await harness.readBranchMessages(thread.branchId)).toEqual([
       {
         parts: [{ text: "Reject terminal tool call", type: "text" }],
@@ -5397,7 +5397,7 @@ describe("framework-runtime-core", () => {
     );
 
     expect(pausedHandle.status().phase).toBe("failed");
-    expect(errorEvent?.error.code).toBe("invalid_driver_resolution");
+    expect(errorEvent?.error.code).toBe("invalid_driver_result");
     expect(await harness.readBranchRuntimeStatus(thread.branchId)).toEqual({
       activeAgent: "primary",
       state: "failed",
@@ -5459,7 +5459,7 @@ describe("framework-runtime-core", () => {
       )
     ).toBe(false);
     expect(handle.status().phase).toBe("failed");
-    expect(errorEvent?.error.code).toBe("invalid_driver_resolution");
+    expect(errorEvent?.error.code).toBe("invalid_driver_result");
     expect(await harness.readBranchMessages(thread.branchId)).toEqual([
       {
         parts: [{ text: "Reject ghost output", type: "text" }],
@@ -5581,6 +5581,127 @@ describe("framework-runtime-core", () => {
       expect(messages[0].parts[0].isError).toBe(true);
       expect(JSON.stringify(messages[0].parts[0].output)).toContain("rejected");
     }
+    expect(
+      hasAssistantText(
+        await harness.readBranchMessages(thread.branchId),
+        "This should not resume."
+      )
+    ).toBe(false);
+  });
+
+  test("preserves carried afterIteration state updates when a paused approval is canceled", async () => {
+    const harness = createFakeKernelHarness();
+    const driver = {
+      async execute(context) {
+        const toolMessages = context.messages.filter(
+          (message) => message.role === "tool"
+        );
+
+        if (toolMessages.length === 0) {
+          return {
+            messages: [
+              assistantToolCalls([
+                {
+                  callId: "call-email",
+                  input: { subject: "Cancel", to: "ops@example.com" },
+                  name: "email",
+                },
+              ]),
+            ],
+            resolution: {
+              type: "continue_iteration",
+            },
+          };
+        }
+
+        return {
+          messages: [assistantText("This should not resume.")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const pausedHandle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        extensions: [
+          {
+            afterIteration(context) {
+              if (context.resolution.type !== "pause") {
+                return undefined;
+              }
+
+              return {
+                state: {
+                  preservedAcrossCancel: true,
+                },
+              };
+            },
+            name: "approval-state",
+          },
+        ],
+        name: "primary",
+        tools: [
+          {
+            approval: true,
+            description: "Pause for cancellation",
+            execute() {
+              return {
+                sent: true,
+              };
+            },
+            inputSchema: {
+              properties: {
+                subject: { type: "string" },
+                to: { type: "string" },
+              },
+              required: ["to", "subject"],
+              type: "object",
+            },
+            name: "email",
+          },
+        ],
+      },
+      signal: textSignal("Pause then cancel with carried state"),
+      threadId: thread.threadId,
+    });
+
+    await collectEvents(pausedHandle.events());
+    pausedHandle.cancel();
+
+    await waitForAsync(async () => {
+      const runtimeStatus = await harness.readBranchRuntimeStatus(
+        thread.branchId
+      );
+
+      return (
+        runtimeStatus !== null &&
+        typeof runtimeStatus === "object" &&
+        "state" in runtimeStatus &&
+        runtimeStatus.state === "completed"
+      );
+    });
+
+    const manifest = await readBranchContextManifest(
+      harness.kernel,
+      thread.branchId
+    );
+
+    expect(manifest.extensions["approval-state"]).toEqual({
+      preservedAcrossCancel: true,
+    });
     expect(
       hasAssistantText(
         await harness.readBranchMessages(thread.branchId),
@@ -10407,17 +10528,11 @@ describe("framework-runtime-core", () => {
     expect(capturedAgents[0]?.target.responseFormat?.name).toBe("review");
   });
 
-  test("preserves explicit source context supplied in raw handoff plans", async () => {
+  test("normalizes raw handoff plans to the latest framework-owned source context", async () => {
     const harness = createFakeKernelHarness();
-    const customMessages = [assistantText("Provided source context.")];
-    const customManifest = createContextManifest(customMessages);
     const agents: Record<string, AgentConfig> = {
       primary: { name: "primary" },
       reviewer: { name: "reviewer" },
-    };
-    const providedSourceAgent: AgentConfig = {
-      name: "provided-source",
-      systemPrompt: "Use the provided source context.",
     };
     let capturedSourceContext: HandoffSourceContext | undefined;
     const driver = {
@@ -10433,11 +10548,17 @@ describe("framework-runtime-core", () => {
         }
 
         return {
+          messages: [assistantText("Pass this through the raw handoff plan.")],
           resolution: {
             contextPlan: {
               builder(sourceContext) {
                 capturedSourceContext = sourceContext;
-                return sourceContext.helpers.storeMessages([]);
+                return sourceContext.helpers.storeMessages([
+                  {
+                    parts: [{ text: "Raw handoff prepared.", type: "text" }],
+                    role: "user",
+                  },
+                ]);
               },
               mode: "preserve_trace",
               reason: "delegate",
@@ -10457,9 +10578,12 @@ describe("framework-runtime-core", () => {
                     return [];
                   },
                 },
-                manifest: customManifest,
-                messages: customMessages,
-                sourceAgent: providedSourceAgent,
+                manifest: createContextManifest([]),
+                messages: [],
+                sourceAgent: {
+                  name: "provided-source",
+                  systemPrompt: "Use the provided source context.",
+                },
                 targetAgent: agents.reviewer,
               },
               targetAgent: "reviewer",
@@ -10487,9 +10611,22 @@ describe("framework-runtime-core", () => {
 
     await collectEvents(handle.events());
 
-    expect(capturedSourceContext?.messages).toEqual(customMessages);
-    expect(capturedSourceContext?.manifest).toEqual(customManifest);
-    expect(capturedSourceContext?.sourceAgent).toEqual(providedSourceAgent);
+    expect(capturedSourceContext?.messages).toEqual([
+      {
+        parts: [{ text: "Use explicit source context", type: "text" }],
+        role: "user",
+      },
+      {
+        parts: [
+          { text: "Pass this through the raw handoff plan.", type: "text" },
+        ],
+        role: "assistant",
+      },
+    ]);
+    expect(capturedSourceContext?.manifest).toEqual(
+      createContextManifest([...(capturedSourceContext?.messages ?? [])])
+    );
+    expect(capturedSourceContext?.sourceAgent).toEqual(agents.primary);
     expect(capturedSourceContext?.targetAgent).toEqual(agents.reviewer);
   });
 

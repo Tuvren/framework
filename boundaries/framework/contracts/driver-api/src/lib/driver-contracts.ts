@@ -33,7 +33,10 @@ import type {
   ApprovalResponse,
   ToolRegistry,
 } from "@kraken/framework-runtime-api/tools";
-import { assertApprovalRequest } from "@kraken/framework-runtime-api/tools";
+import {
+  assertApprovalRequest,
+  assertKrakenToolDefinition,
+} from "@kraken/framework-runtime-api/tools";
 import type { EpochMs, HashString } from "@kraken/shared-core-types";
 import { KrakenValidationError } from "@kraken/shared-core-types";
 
@@ -98,6 +101,47 @@ export interface DriverRegistry {
   resolve(driverId: string): KrakenDriver | KrakenDriverFactory | undefined;
 }
 
+const DRIVER_RESULT_KEYS = new Set([
+  "messages",
+  "partial",
+  "resolution",
+  "toolExecutionMode",
+]);
+const CONTINUE_RESOLUTION_KEYS = new Set(["type"]);
+const END_TURN_RESOLUTION_KEYS = new Set(["reason", "type"]);
+const PAUSE_RESOLUTION_KEYS = new Set(["approval", "reason", "type"]);
+const HANDOFF_RESOLUTION_KEYS = new Set(["contextPlan", "targetAgent", "type"]);
+const FAIL_RESOLUTION_KEYS = new Set(["error", "fatality", "type"]);
+const AGENT_CONFIG_KEYS = new Set([
+  "contextPolicy",
+  "extensions",
+  "loopPolicy",
+  "maxIterations",
+  "model",
+  "name",
+  "responseFormat",
+  "systemPrompt",
+  "tools",
+]);
+const EXTENSION_KEYS = new Set([
+  "afterIteration",
+  "afterTurn",
+  "aroundModel",
+  "aroundTool",
+  "beforeIteration",
+  "beforeTurn",
+  "exports",
+  "name",
+  "state",
+  "systemPrompt",
+  "timeout",
+  "tools",
+]);
+const STRUCTURED_OUTPUT_REQUEST_KEYS = new Set(["name", "schema", "strict"]);
+const PROVIDER_KEYS = new Set(["generate", "id", "stream"]);
+const CONTEXT_POLICY_KEYS = new Set(["evaluate"]);
+const LOOP_POLICY_KEYS = new Set(["evaluate"]);
+
 export function isKrakenDriver(value: unknown): value is KrakenDriver {
   // Driver installation guards stay structural on purpose. Verifying execute
   // or resume result semantics would require invoking arbitrary plugin code,
@@ -161,24 +205,7 @@ export function assertDriverExecutionResult(
 
   assertDriverMessages(value, label);
 
-  for (const key of Object.keys(value)) {
-    if (
-      key === "messages" ||
-      key === "partial" ||
-      key === "resolution" ||
-      key === "toolExecutionMode"
-    ) {
-      continue;
-    }
-
-    throw new KrakenValidationError(
-      `${label} must not include unsupported driver result field "${key}"`,
-      {
-        code: "invalid_driver_result",
-        details: value,
-      }
-    );
-  }
+  assertOnlyAllowedKeys(value, DRIVER_RESULT_KEYS, label);
 
   assertDriverRuntimeResolution(value.resolution, `${label}.resolution`);
   assertDriverPartialResult(
@@ -201,6 +228,13 @@ export function assertDriverExecutionResult(
     },
     `${label}`
   );
+  assertDriverResolutionCompatibility(
+    {
+      messages: Array.isArray(value.messages) ? value.messages : undefined,
+      resolution: value.resolution,
+    },
+    `${label}`
+  );
 }
 
 export function assertDriverRuntimeResolution(
@@ -216,15 +250,18 @@ export function assertDriverRuntimeResolution(
 
   switch (value.type) {
     case "continue_iteration":
+      assertOnlyAllowedKeys(value, CONTINUE_RESOLUTION_KEYS, label);
       return;
     case "end_turn":
       if (typeof value.reason === "string") {
+        assertOnlyAllowedKeys(value, END_TURN_RESOLUTION_KEYS, label);
         return;
       }
       break;
     case "pause":
       if (typeof value.reason === "string" && "approval" in value) {
         assertApprovalRequest(value.approval, `${label}.approval`);
+        assertOnlyAllowedKeys(value, PAUSE_RESOLUTION_KEYS, label);
         return;
       }
       break;
@@ -234,6 +271,7 @@ export function assertDriverRuntimeResolution(
           value.contextPlan,
           `${label}.contextPlan`
         );
+        assertOnlyAllowedKeys(value, HANDOFF_RESOLUTION_KEYS, label);
 
         if (value.contextPlan.targetAgent !== value.targetAgent) {
           throw new KrakenValidationError(
@@ -256,6 +294,7 @@ export function assertDriverRuntimeResolution(
         value.error instanceof Error &&
         (value.fatality === "hard" || value.fatality === "soft")
       ) {
+        assertOnlyAllowedKeys(value, FAIL_RESOLUTION_KEYS, label);
         return;
       }
       break;
@@ -347,10 +386,6 @@ export function assertDriverHandoffSourceContext(
   if (
     !isRecord(value.handoffIntent) ||
     typeof value.handoffIntent.targetAgent !== "string" ||
-    !isRecord(value.sourceAgent) ||
-    typeof value.sourceAgent.name !== "string" ||
-    !isRecord(value.targetAgent) ||
-    typeof value.targetAgent.name !== "string" ||
     !isRecord(value.helpers) ||
     typeof value.helpers.loadMessage !== "function" ||
     typeof value.helpers.storeMessage !== "function" ||
@@ -361,6 +396,9 @@ export function assertDriverHandoffSourceContext(
       details: value,
     });
   }
+
+  assertDriverAgentConfigSnapshot(value.sourceAgent, `${label}.sourceAgent`);
+  assertDriverAgentConfigSnapshot(value.targetAgent, `${label}.targetAgent`);
 }
 
 function safePredicate(check: () => boolean): boolean {
@@ -463,12 +501,7 @@ function assertDriverToolExecutionMode(
   },
   label: string
 ): void {
-  const requestedToolCalls =
-    value.messages?.some(
-      (message) =>
-        message.role === "assistant" &&
-        message.parts.some((part) => part.type === "tool_call")
-    ) ?? false;
+  const requestedToolCalls = hasRequestedToolCalls(value.messages);
 
   if (requestedToolCalls && value.toolExecutionMode === undefined) {
     throw new KrakenValidationError(
@@ -489,6 +522,382 @@ function assertDriverToolExecutionMode(
       }
     );
   }
+}
+
+function assertDriverResolutionCompatibility(
+  value: {
+    messages?: KrakenMessage[];
+    resolution: RuntimeResolution;
+  },
+  label: string
+): void {
+  const requestedToolCalls = hasRequestedToolCalls(value.messages);
+
+  if (requestedToolCalls && value.resolution.type !== "continue_iteration") {
+    throw new KrakenValidationError(
+      `${label}.resolution must continue iteration when driver messages request tool calls`,
+      {
+        code: "invalid_driver_result",
+        details: value,
+      }
+    );
+  }
+
+  if (!requestedToolCalls && value.resolution.type === "pause") {
+    throw new KrakenValidationError(
+      `${label}.resolution.pause requires driver messages with tool calls`,
+      {
+        code: "invalid_driver_result",
+        details: value,
+      }
+    );
+  }
+}
+
+function assertDriverAgentConfigSnapshot(
+  value: unknown,
+  label: string
+): asserts value is AgentConfig {
+  if (!isRecord(value) || typeof value.name !== "string") {
+    throw new KrakenValidationError(`${label} must be a valid AgentConfig`, {
+      code: "invalid_driver_result",
+      details: value,
+    });
+  }
+
+  assertOnlyAllowedKeys(value, AGENT_CONFIG_KEYS, label);
+  assertDriverContextPolicySnapshot(
+    value.contextPolicy,
+    `${label}.contextPolicy`
+  );
+  assertDriverLoopPolicySnapshot(value.loopPolicy, `${label}.loopPolicy`);
+  assertFiniteOptionalNumber(
+    value.maxIterations,
+    `${label}.maxIterations`,
+    "must be a finite number"
+  );
+  assertDriverModelSnapshot(value.model, `${label}.model`);
+  assertDriverResponseFormatSnapshot(
+    value.responseFormat,
+    `${label}.responseFormat`
+  );
+  assertOptionalString(value.systemPrompt, `${label}.systemPrompt`);
+  assertToolDefinitions(value.tools, `${label}.tools`);
+  assertDriverExtensionsSnapshot(value.extensions, `${label}.extensions`);
+}
+
+function assertDriverExtensionSnapshot(value: unknown, label: string): void {
+  if (!isRecord(value) || typeof value.name !== "string") {
+    throw new KrakenValidationError(
+      `${label} must be a valid KrakenExtension`,
+      {
+        code: "invalid_driver_result",
+        details: value,
+      }
+    );
+  }
+
+  assertOnlyAllowedKeys(value, EXTENSION_KEYS, label);
+
+  assertDriverExtensionHandlers(value, label);
+  assertDriverAroundToolSnapshot(value.aroundTool, `${label}.aroundTool`);
+  assertOptionalStringArray(value.exports, `${label}.exports`);
+  assertOptionalRecord(value.state, `${label}.state`);
+  assertOptionalStringOrFunction(value.systemPrompt, `${label}.systemPrompt`);
+  assertFiniteOptionalNumber(
+    value.timeout,
+    `${label}.timeout`,
+    "must be a finite number"
+  );
+  assertToolDefinitions(value.tools, `${label}.tools`);
+}
+
+function assertDriverContextPolicySnapshot(
+  value: unknown,
+  label: string
+): void {
+  if (value === undefined) {
+    return;
+  }
+
+  if (!isRecord(value) || typeof value.evaluate !== "function") {
+    throw new KrakenValidationError(`${label} must be a valid ContextPolicy`, {
+      code: "invalid_driver_result",
+      details: value,
+    });
+  }
+
+  assertOnlyAllowedKeys(value, CONTEXT_POLICY_KEYS, label);
+}
+
+function assertDriverLoopPolicySnapshot(value: unknown, label: string): void {
+  if (value === undefined) {
+    return;
+  }
+
+  if (!isRecord(value) || typeof value.evaluate !== "function") {
+    throw new KrakenValidationError(`${label} must be a valid LoopPolicy`, {
+      code: "invalid_driver_result",
+      details: value,
+    });
+  }
+
+  assertOnlyAllowedKeys(value, LOOP_POLICY_KEYS, label);
+}
+
+function assertDriverModelSnapshot(value: unknown, label: string): void {
+  if (value === undefined || typeof value === "string") {
+    return;
+  }
+
+  if (
+    !isRecord(value) ||
+    typeof value.id !== "string" ||
+    typeof value.generate !== "function" ||
+    typeof value.stream !== "function"
+  ) {
+    throw new KrakenValidationError(
+      `${label} must be a string model id or KrakenProvider`,
+      {
+        code: "invalid_driver_result",
+        details: value,
+      }
+    );
+  }
+
+  assertOnlyAllowedKeys(value, PROVIDER_KEYS, label);
+}
+
+function assertDriverResponseFormatSnapshot(
+  value: unknown,
+  label: string
+): void {
+  if (value === undefined) {
+    return;
+  }
+
+  if (!isRecord(value)) {
+    throw new KrakenValidationError(
+      `${label} must be a valid StructuredOutputRequest`,
+      {
+        code: "invalid_driver_result",
+        details: value,
+      }
+    );
+  }
+
+  assertOnlyAllowedKeys(value, STRUCTURED_OUTPUT_REQUEST_KEYS, label);
+
+  if (!("schema" in value)) {
+    throw new KrakenValidationError(`${label}.schema is required`, {
+      code: "invalid_driver_result",
+      details: value,
+    });
+  }
+
+  if (
+    ("name" in value &&
+      value.name !== undefined &&
+      typeof value.name !== "string") ||
+    ("strict" in value &&
+      value.strict !== undefined &&
+      typeof value.strict !== "boolean")
+  ) {
+    throw new KrakenValidationError(
+      `${label} must be a valid StructuredOutputRequest`,
+      {
+        code: "invalid_driver_result",
+        details: value,
+      }
+    );
+  }
+}
+
+function assertDriverExtensionsSnapshot(value: unknown, label: string): void {
+  if (value === undefined) {
+    return;
+  }
+
+  if (!Array.isArray(value)) {
+    throw new KrakenValidationError(`${label} must be an array`, {
+      code: "invalid_driver_result",
+      details: value,
+    });
+  }
+
+  for (const [index, extension] of value.entries()) {
+    assertDriverExtensionSnapshot(extension, `${label}[${index}]`);
+  }
+}
+
+function assertDriverExtensionHandlers(
+  value: Record<string, unknown>,
+  label: string
+): void {
+  const handlers = [
+    ["afterIteration", value.afterIteration],
+    ["afterTurn", value.afterTurn],
+    ["aroundModel", value.aroundModel],
+    ["beforeIteration", value.beforeIteration],
+    ["beforeTurn", value.beforeTurn],
+  ] as const;
+
+  for (const [name, handler] of handlers) {
+    if (handler !== undefined && typeof handler !== "function") {
+      throw new KrakenValidationError(
+        `${label}.${name} must be a function when provided`,
+        {
+          code: "invalid_driver_result",
+          details: handler,
+        }
+      );
+    }
+  }
+}
+
+function assertDriverAroundToolSnapshot(value: unknown, label: string): void {
+  if (value === undefined || typeof value === "function") {
+    return;
+  }
+
+  const tools = isRecord(value) ? value.tools : undefined;
+  const handler = isRecord(value) ? value.handler : undefined;
+
+  if (!Array.isArray(tools) || typeof handler !== "function") {
+    throw new KrakenValidationError(`${label} must be a valid AroundToolSpec`, {
+      code: "invalid_driver_result",
+      details: value,
+    });
+  }
+
+  for (const toolName of tools) {
+    if (typeof toolName !== "string") {
+      throw new KrakenValidationError(
+        `${label} must be a valid AroundToolSpec`,
+        {
+          code: "invalid_driver_result",
+          details: value,
+        }
+      );
+    }
+  }
+}
+
+function assertOptionalStringArray(value: unknown, label: string): void {
+  if (value === undefined) {
+    return;
+  }
+
+  if (
+    !Array.isArray(value) ||
+    value.some((entry) => typeof entry !== "string")
+  ) {
+    throw new KrakenValidationError(`${label} must be an array of strings`, {
+      code: "invalid_driver_result",
+      details: value,
+    });
+  }
+}
+
+function assertOptionalRecord(value: unknown, label: string): void {
+  if (value === undefined) {
+    return;
+  }
+
+  if (!isRecord(value)) {
+    throw new KrakenValidationError(`${label} must be a record`, {
+      code: "invalid_driver_result",
+      details: value,
+    });
+  }
+}
+
+function assertOptionalString(value: unknown, label: string): void {
+  if (value === undefined) {
+    return;
+  }
+
+  if (typeof value !== "string") {
+    throw new KrakenValidationError(`${label} must be a string`, {
+      code: "invalid_driver_result",
+      details: value,
+    });
+  }
+}
+
+function assertOptionalStringOrFunction(value: unknown, label: string): void {
+  if (value === undefined) {
+    return;
+  }
+
+  if (typeof value !== "string" && typeof value !== "function") {
+    throw new KrakenValidationError(`${label} must be a string or function`, {
+      code: "invalid_driver_result",
+      details: value,
+    });
+  }
+}
+
+function assertFiniteOptionalNumber(
+  value: unknown,
+  label: string,
+  message: string
+): void {
+  if (value === undefined) {
+    return;
+  }
+
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    throw new KrakenValidationError(`${label} ${message}`, {
+      code: "invalid_driver_result",
+      details: value,
+    });
+  }
+}
+
+function assertToolDefinitions(value: unknown, label: string): void {
+  if (value === undefined) {
+    return;
+  }
+
+  if (!Array.isArray(value)) {
+    throw new KrakenValidationError(`${label} must be an array`, {
+      code: "invalid_driver_result",
+      details: value,
+    });
+  }
+
+  for (const [index, tool] of value.entries()) {
+    assertKrakenToolDefinition(tool, `${label}[${index}]`);
+  }
+}
+
+function assertOnlyAllowedKeys(
+  value: Record<string, unknown>,
+  allowedKeys: ReadonlySet<string>,
+  label: string
+): void {
+  for (const key of Object.keys(value)) {
+    if (!allowedKeys.has(key)) {
+      throw new KrakenValidationError(
+        `${label} must not include unsupported field "${key}"`,
+        {
+          code: "invalid_driver_result",
+          details: value,
+        }
+      );
+    }
+  }
+}
+
+function hasRequestedToolCalls(messages?: KrakenMessage[]): boolean {
+  return (
+    messages?.some(
+      (message) =>
+        message.role === "assistant" &&
+        message.parts.some((part) => part.type === "tool_call")
+    ) ?? false
+  );
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

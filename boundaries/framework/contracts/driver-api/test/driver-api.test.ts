@@ -174,7 +174,7 @@ describe("driver-api", () => {
         activeAgent: "primary",
         resolution: { type: "continue_iteration" },
       })
-    ).toThrow('must not include unsupported driver result field "activeAgent"');
+    ).toThrow('must not include unsupported field "activeAgent"');
 
     expect(() =>
       assertDriverExecutionResult({
@@ -190,7 +190,7 @@ describe("driver-api", () => {
           parts: [{ text: "Visible output", type: "text" }],
         },
       })
-    ).toThrow('must not include unsupported driver result field "response"');
+    ).toThrow('must not include unsupported field "response"');
 
     expect(() =>
       assertDriverExecutionResult({
@@ -270,6 +270,104 @@ describe("driver-api", () => {
         },
       })
     ).toThrow("sourceContext.handoffIntent.targetAgent must match");
+  });
+
+  test("rejects raw handoff plans whose sourceContext agents are not valid AgentConfig snapshots", () => {
+    const context = createDriverExecutionContext();
+
+    expect(() =>
+      assertDriverExecutionResult({
+        resolution: {
+          contextPlan: {
+            ...context.handoff.createContextPlan({
+              reason: "handoff",
+              targetAgent: "reviewer",
+            }),
+            sourceContext: {
+              ...context.handoff.createContextPlan({
+                reason: "handoff",
+                targetAgent: "reviewer",
+              }).sourceContext,
+              targetAgent: {
+                name: "reviewer",
+                tools: 42,
+              },
+            },
+          },
+          targetAgent: "reviewer",
+          type: "handoff",
+        },
+      })
+    ).toThrow("sourceContext.targetAgent.tools must be an array");
+  });
+
+  test("rejects terminal resolutions paired with assistant tool calls", () => {
+    expect(() =>
+      assertDriverExecutionResult({
+        messages: [
+          {
+            parts: [
+              {
+                callId: "call-search",
+                input: { query: "kraken" },
+                name: "search",
+                type: "tool_call",
+              },
+            ],
+            role: "assistant",
+          },
+        ],
+        resolution: {
+          reason: "done",
+          type: "end_turn",
+        },
+        toolExecutionMode: "parallel",
+      })
+    ).toThrow(
+      "resolution must continue iteration when driver messages request tool calls"
+    );
+  });
+
+  test("rejects pause resolutions that are not rooted in assistant tool calls", () => {
+    expect(() =>
+      assertDriverExecutionResult({
+        messages: [
+          {
+            parts: [
+              { text: "Need approval without a tool call", type: "text" },
+            ],
+            role: "assistant",
+          },
+        ],
+        resolution: {
+          approval: {
+            completedResults: [],
+            toolCalls: [
+              {
+                callId: "call-search",
+                decisions: ["approve"],
+                input: { query: "kraken" },
+                message: "Need approval",
+                name: "search",
+              },
+            ],
+          },
+          reason: "approval_required",
+          type: "pause",
+        },
+      })
+    ).toThrow("resolution.pause requires driver messages with tool calls");
+  });
+
+  test("rejects stale nested fields on exact-shape resolutions", () => {
+    expect(() =>
+      assertDriverExecutionResult({
+        resolution: {
+          reason: "stale",
+          type: "continue_iteration",
+        },
+      })
+    ).toThrow('resolution must not include unsupported field "reason"');
   });
 });
 

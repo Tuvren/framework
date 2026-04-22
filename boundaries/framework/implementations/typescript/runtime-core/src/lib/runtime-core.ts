@@ -237,8 +237,6 @@ class FinalizationFailure extends Error {
 }
 
 class RuntimeCore implements KrakenRuntime {
-  private readonly driverCreatedHandoffPlans =
-    new WeakSet<HandoffContextPlan>();
   private readonly options: ResolvedRuntimeCoreOptions;
 
   constructor(options: RuntimeCoreOptions) {
@@ -2048,7 +2046,6 @@ class RuntimeCore implements KrakenRuntime {
       },
       targetAgent: input.targetAgent,
     } satisfies HandoffContextPlan;
-    this.driverCreatedHandoffPlans.add(plan);
     return plan;
   }
 
@@ -2752,24 +2749,21 @@ class RuntimeCore implements KrakenRuntime {
     targetConfig: AgentConfig,
     helpers: ContextEngineeringHelpers
   ): HandoffSourceContext {
-    if (this.driverCreatedHandoffPlans.has(plan)) {
-      return {
-        handoffIntent: cloneValue(plan.sourceContext.handoffIntent),
-        helpers,
-        manifest: cloneValue(headState.manifest),
-        messages: cloneValue(headState.messages),
-        sourceAgent: createFrozenSnapshot(
-          cloneAgentConfigForRequest(loopState.activeConfig)
-        ),
-        targetAgent: createFrozenSnapshot(
-          cloneAgentConfigForRequest(targetConfig)
-        ),
-      };
-    }
-
+    // The shared framework owns the source snapshot handed to every builder.
+    // Raw plans may customize formatting through their builder, but they must
+    // still operate on the latest branch head so the framework-owned handoff
+    // mode semantics cannot be bypassed by caller-supplied stale context.
     return {
-      ...plan.sourceContext,
+      handoffIntent: cloneValue(plan.sourceContext.handoffIntent),
       helpers,
+      manifest: cloneValue(headState.manifest),
+      messages: cloneValue(headState.messages),
+      sourceAgent: createFrozenSnapshot(
+        cloneAgentConfigForRequest(loopState.activeConfig)
+      ),
+      targetAgent: createFrozenSnapshot(
+        cloneAgentConfigForRequest(targetConfig)
+      ),
     };
   }
 
@@ -2955,10 +2949,14 @@ class RuntimeCore implements KrakenRuntime {
       parts: [result],
       role: "tool",
     })) satisfies KrakenMessage[];
+    const rejectionUpdates = [
+      ...loopState.carriedStateUpdates,
+      ...toolBatch.updates,
+    ];
     const manifest = updateContextManifest(
       headState.manifest,
       resumedMessages,
-      toolBatch.updates,
+      rejectionUpdates,
       []
     );
     const manifestHash = await this.stageManifest(runId, manifest);
