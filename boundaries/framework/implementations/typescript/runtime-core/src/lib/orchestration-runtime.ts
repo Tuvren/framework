@@ -344,6 +344,11 @@ class OrchestrationNode {
       ...binding,
       handle: resumedHandle,
     };
+    // Keep the node-level result promise stable across approval replacement so
+    // callers already awaiting this child execution still observe the resumed
+    // subtree outcome. Fresh control and read entrypoints must go through the
+    // replacement handle, which OrchestrationHandleImpl enforces via
+    // active-handle invalidation.
     this.currentBinding = nextBinding;
     this.currentBindingPromise = Promise.resolve(nextBinding);
     this.selfPhase = "running";
