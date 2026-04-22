@@ -24,12 +24,19 @@ import {
   type ToolRegistry,
 } from "@kraken/framework-runtime-api";
 import { KrakenRuntimeError } from "@kraken/shared-core-types";
+import { cloneSnapshotPreservingFunctions } from "./runtime-core-shared.js";
 
 class BasicToolRegistry implements ToolRegistry {
   private readonly tools = new Map<string, KrakenToolDefinition>();
 
   get(name: string): KrakenToolDefinition | undefined {
-    return this.tools.get(name);
+    const tool = this.resolve(name);
+
+    if (tool === undefined) {
+      return undefined;
+    }
+
+    return cloneToolDefinition(tool);
   }
 
   has(name: string): boolean {
@@ -37,7 +44,7 @@ class BasicToolRegistry implements ToolRegistry {
   }
 
   list(): KrakenToolDefinition[] {
-    return [...this.tools.values()];
+    return [...this.tools.values()].map((tool) => cloneToolDefinition(tool));
   }
 
   register(tool: KrakenToolDefinition): void {
@@ -55,7 +62,7 @@ class BasicToolRegistry implements ToolRegistry {
       );
     }
 
-    this.tools.set(tool.name, tool);
+    this.tools.set(tool.name, cloneToolDefinition(tool));
   }
 
   toDefinitions(): RenderedToolDefinition[] {
@@ -65,6 +72,14 @@ class BasicToolRegistry implements ToolRegistry {
       name: tool.name,
     }));
   }
+
+  resolve(name: string): KrakenToolDefinition | undefined {
+    return this.tools.get(name);
+  }
+}
+
+function cloneToolDefinition(tool: KrakenToolDefinition): KrakenToolDefinition {
+  return cloneSnapshotPreservingFunctions(tool);
 }
 
 export function createToolRegistry(
@@ -85,6 +100,17 @@ export function createToolRegistry(
   }
 
   return registry;
+}
+
+export function resolveToolDefinition(
+  registry: ToolRegistry,
+  name: string
+): KrakenToolDefinition | undefined {
+  if (registry instanceof BasicToolRegistry) {
+    return registry.resolve(name);
+  }
+
+  return registry.get(name);
 }
 
 function assertUniqueExtensionNames(extensions: KrakenExtension[]): void {

@@ -262,7 +262,7 @@ function summarizeAssistantMessage(
   for (const part of message.parts) {
     switch (part.type) {
       case "text":
-        summaryParts.push(part.text);
+        summaryParts.push(`Text output: ${summarizeTraceText(part.text)}`);
         break;
       case "structured":
         structuredCount += 1;
@@ -292,6 +292,6 @@ function summarizeAssistantMessage(
   }
 
   return summaryParts.length > 0
-    ? summaryParts.join("\n")
+    ? summaryParts.join("; ")
     : "[Previous agent work omitted for compatibility]";
 }

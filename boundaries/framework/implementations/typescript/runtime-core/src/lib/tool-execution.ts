@@ -63,6 +63,7 @@ import {
   validateToolInput,
   zipStagedToolResults,
 } from "./tool-execution-helpers.js";
+import { resolveToolDefinition } from "./tool-registry.js";
 
 export interface ToolBatchEnvironment {
   activeAgent: string;
@@ -401,7 +402,7 @@ async function resolveExecutableToolCall(
   | { pendingToolCall: PendingToolCall }
   | { result: ToolResultPart }
 > {
-  const tool = environment.toolRegistry.get(toolCall.name);
+  const tool = resolveToolDefinition(environment.toolRegistry, toolCall.name);
 
   if (tool === undefined) {
     return {
@@ -465,7 +466,10 @@ function resolveResumeDecision(
     };
   }
 
-  const tool = environment.toolRegistry.get(pendingToolCall.name);
+  const tool = resolveToolDefinition(
+    environment.toolRegistry,
+    pendingToolCall.name
+  );
 
   if (tool === undefined) {
     return {

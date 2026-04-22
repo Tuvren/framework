@@ -33,6 +33,7 @@ import { type HashString, KrakenRuntimeError } from "@kraken/shared-core-types";
 import type { ErrorObject, ValidateFunction } from "ajv";
 import Ajv from "ajv";
 import type { ExtensionStateUpdate } from "./extension-runtime.js";
+import { cloneSnapshotPreservingFunctions } from "./runtime-core-shared.js";
 import type {
   ExecutableToolCall,
   OrderedExecutableToolCall,
@@ -139,7 +140,10 @@ export function createToolExecutionContext(
         source,
       });
     },
-    metadata: tool.metadata,
+    metadata:
+      tool.metadata === undefined
+        ? undefined
+        : cloneSnapshotPreservingFunctions(tool.metadata),
     name: tool.name,
     signal: timeoutSignal ?? environment.signal,
   };
@@ -177,7 +181,7 @@ export function createAroundToolContext(
     iterationCount: environment.iterationCount,
     manifest: cloneValue(environment.manifest),
     sharedExports: cloneValue(sharedExports),
-    tool: toolCall.tool,
+    tool: cloneSnapshotPreservingFunctions(toolCall.tool),
     toolCall: cloneValue(toolCall.toolCall),
   };
 }

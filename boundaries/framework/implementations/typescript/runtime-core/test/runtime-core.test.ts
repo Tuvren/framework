@@ -173,6 +173,74 @@ describe("framework-runtime-core", () => {
     ).toThrow('extension "shared" is already registered');
   });
 
+  test("tool registries snapshot tool definitions instead of exposing live references", () => {
+    const originalMetadata = {
+      channel: "primary",
+    };
+    const originalTool: KrakenToolDefinition = {
+      approval: true,
+      description: "Search documentation",
+      execute() {
+        return {};
+      },
+      inputSchema: {
+        properties: {
+          query: { type: "string" },
+        },
+        required: ["query"],
+        type: "object",
+      },
+      metadata: originalMetadata,
+      name: "search",
+      timeout: 1000,
+    };
+    const registry = createToolRegistry([originalTool]);
+    const firstRead = registry.get("search");
+    const secondRead = registry.get("search");
+    const listedRead = registry.list()[0];
+
+    if (
+      firstRead === undefined ||
+      secondRead === undefined ||
+      listedRead === undefined
+    ) {
+      throw new Error("expected the registered tool to be readable");
+    }
+
+    expect(firstRead).not.toBe(originalTool);
+    expect(secondRead).not.toBe(originalTool);
+    expect(listedRead).not.toBe(originalTool);
+    expect(secondRead).not.toBe(firstRead);
+    expect(listedRead).not.toBe(firstRead);
+    expect(firstRead.metadata).not.toBe(originalMetadata);
+
+    firstRead.approval = false;
+    firstRead.timeout = 5;
+
+    if (
+      firstRead.metadata !== undefined &&
+      typeof firstRead.metadata === "object" &&
+      !Array.isArray(firstRead.metadata)
+    ) {
+      firstRead.metadata.channel = "mutated";
+    }
+
+    const freshRead = registry.get("search");
+
+    if (freshRead === undefined) {
+      throw new Error("expected the registered tool to remain readable");
+    }
+
+    expect(originalTool.approval).toBe(true);
+    expect(originalTool.timeout).toBe(1000);
+    expect(originalMetadata.channel).toBe("primary");
+    expect(freshRead.approval).toBe(true);
+    expect(freshRead.timeout).toBe(1000);
+    expect(freshRead.metadata).toEqual({
+      channel: "primary",
+    });
+  });
+
   test("allows same-turn user messages without creating new turn boundaries", () => {
     const manifest = createContextManifest([
       {
@@ -6193,6 +6261,12 @@ describe("framework-runtime-core", () => {
     }
 
     const harness = createFakeKernelHarness();
+    const originalMetadata = {
+      channel: "primary",
+    };
+    let sameAroundToolRef = false;
+    let sameAroundMetadataRef = false;
+    let sameExecuteMetadataRef = false;
     const methodExtension: MethodAroundToolExtension = {
       aroundTool(_context, next) {
         this.aroundToolCalls += 1;
@@ -6228,6 +6302,51 @@ describe("framework-runtime-core", () => {
     const specExtension: KrakenExtension = {
       aroundTool: aroundToolSpec,
       name: "spec-around-tool",
+    };
+    const originalTool: KrakenToolDefinition = {
+      description: "Send email",
+      execute(_input, context) {
+        sameExecuteMetadataRef = context.metadata === originalMetadata;
+
+        if (
+          context.metadata !== undefined &&
+          typeof context.metadata === "object" &&
+          !Array.isArray(context.metadata)
+        ) {
+          context.metadata.channel = "mutated-in-execute";
+        }
+
+        return { sent: true };
+      },
+      inputSchema: {
+        properties: {
+          subject: { type: "string" },
+          to: { type: "string" },
+        },
+        required: ["to", "subject"],
+        type: "object",
+      },
+      metadata: originalMetadata,
+      name: "email",
+    };
+    methodExtension.aroundTool = function (context, next) {
+      this.aroundToolCalls += 1;
+      sameAroundToolRef = context.tool === originalTool;
+      sameAroundMetadataRef = context.tool.metadata === originalMetadata;
+
+      if (
+        context.tool.metadata !== undefined &&
+        typeof context.tool.metadata === "object" &&
+        !Array.isArray(context.tool.metadata)
+      ) {
+        context.tool.metadata.channel = "mutated-in-around";
+      }
+
+      if (this.label !== "method" || this.aroundToolCalls !== 1) {
+        throw new Error("lost function-form aroundTool receiver");
+      }
+
+      return next();
     };
     const driver = {
       async execute(context) {
@@ -6290,23 +6409,7 @@ describe("framework-runtime-core", () => {
       config: {
         extensions: [methodExtension, specExtension],
         name: "primary",
-        tools: [
-          {
-            description: "Send email",
-            execute() {
-              return { sent: true };
-            },
-            inputSchema: {
-              properties: {
-                subject: { type: "string" },
-                to: { type: "string" },
-              },
-              required: ["to", "subject"],
-              type: "object",
-            },
-            name: "email",
-          },
-        ],
+        tools: [originalTool],
       },
       signal: textSignal("Exercise aroundTool receivers"),
       threadId: thread.threadId,
@@ -6321,6 +6424,10 @@ describe("framework-runtime-core", () => {
         "aroundTool receivers preserved."
       )
     ).toBe(true);
+    expect(sameAroundToolRef).toBe(false);
+    expect(sameAroundMetadataRef).toBe(false);
+    expect(sameExecuteMetadataRef).toBe(false);
+    expect(originalMetadata.channel).toBe("primary");
   });
 
   test("keeps later resumed tool results when an earlier resumed call pauses again", async () => {
@@ -10519,14 +10626,14 @@ describe("framework-runtime-core", () => {
       "[User] Text request: Please investigate."
     );
     const firstAssistantIndex = handoffText.indexOf(
-      "[Assistant] Visible summary"
+      "[Assistant] Text output: Visible summary"
     );
     const secondUserIndex = handoffText.indexOf(
       "[User] Text request: Please continue carefully.",
       firstUserIndex + 1
     );
     const secondAssistantIndex = handoffText.indexOf(
-      "[Assistant] Second visible summary"
+      "[Assistant] Text output: Second visible summary"
     );
     const toolIndex = handoffText.indexOf(
       '[Tool:search] Returned a result: {"result":"okay"}'
@@ -10545,6 +10652,50 @@ describe("framework-runtime-core", () => {
     expect(handoffText).not.toContain("leak me");
     expect(handoffText).toContain("okay");
     expect(handoffText).not.toContain('"secret":true');
+  });
+
+  test("preserve_trace handoff summarizes assistant text instead of copying it verbatim", () => {
+    let storedMessage: KrakenMessage | null = null;
+    const builder = createPreserveTraceHandoffContextBuilder();
+    const longAssistantText = `First line with spacing\n${"x".repeat(180)}`;
+    const normalizedText = longAssistantText.replace(/\s+/g, " ").trim();
+    const expectedSummary = `${normalizedText.slice(0, 117)}...`;
+
+    builder({
+      handoffIntent: {
+        reason: "delegate",
+        targetAgent: "reviewer",
+      },
+      helpers: {
+        loadMessage() {
+          return null;
+        },
+        storeMessage(message) {
+          storedMessage = message;
+          return "1".repeat(64);
+        },
+        storeMessages() {
+          return [];
+        },
+      },
+      manifest: createContextManifest([]),
+      messages: [
+        {
+          parts: [{ text: longAssistantText, type: "text" }],
+          role: "assistant",
+        },
+      ],
+      sourceAgent: { name: "primary" },
+      targetAgent: { name: "reviewer" },
+    } satisfies HandoffSourceContext);
+
+    const handoffText = extractSingleUserText(storedMessage);
+    const assistantLine = handoffText
+      .split("\n")
+      .find((line) => line.startsWith("[Assistant]"));
+
+    expect(assistantLine).toBe(`[Assistant] Text output: ${expectedSummary}`);
+    expect(handoffText).not.toContain(longAssistantText);
   });
 
   test("driver handoff plans expose full source and target agent configs", async () => {
