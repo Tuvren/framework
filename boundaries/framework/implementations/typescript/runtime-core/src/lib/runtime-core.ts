@@ -964,6 +964,7 @@ class RuntimeCore implements KrakenRuntime {
       );
 
       if (phaseResult.kind === "outcome") {
+        this.publishIterationEnd(handle, loopState, nextIteration);
         return phaseResult.outcome;
       }
 
@@ -1260,7 +1261,7 @@ class RuntimeCore implements KrakenRuntime {
     const driverResponse = synthesizeResponse(
       driverMessages,
       resolution,
-      driverEventsForResponse
+      emittedDriverEvents
     );
     const toolResults: ToolResultPart[] = [];
 
@@ -5223,7 +5224,9 @@ function synthesizeResponse(
     return {
       finishReason:
         lastMessageDoneEvent?.finishReason ??
-        inferFinishReason(assistantMessage),
+        (resolution.type === "fail"
+          ? "error"
+          : inferFinishReason(assistantMessage)),
       parts: assistantMessage.parts,
       providerMetadata: assistantMessage.providerMetadata,
       usage: lastMessageDoneEvent?.usage,

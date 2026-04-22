@@ -1411,6 +1411,7 @@ describe("framework-runtime-core", () => {
     );
 
     expect(handle.status().phase).toBe("failed");
+    expect(events.map((event) => event.type)).toContain("iteration.end");
     expect(errorEvent?.error.code).toBe("invalid_stream_event");
     expect(await harness.readBranchMessages(thread.branchId)).toEqual([
       {
@@ -4261,6 +4262,56 @@ describe("framework-runtime-core", () => {
     await collectEvents(handle.events());
 
     expect(capturedFinishReason).toBe("stop");
+  });
+
+  test("marks synthesized partial assistant failures as error responses in afterIteration", async () => {
+    const harness = createFakeKernelHarness();
+    let capturedFinishReason: string | undefined;
+    const driver = {
+      async execute(_context) {
+        return {
+          messages: [assistantText("Interrupted assistant output.")],
+          partial: true,
+          resolution: {
+            error: new Error("execution interrupted"),
+            fatality: "hard",
+            type: "fail",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        extensions: [
+          {
+            afterIteration(context) {
+              capturedFinishReason = context.response.finishReason;
+              return undefined;
+            },
+            name: "response-capture",
+          },
+        ],
+        name: "primary",
+      },
+      signal: textSignal("Capture partial failure response"),
+      threadId: thread.threadId,
+    });
+
+    await collectEvents(handle.events());
+
+    expect(handle.status().phase).toBe("failed");
+    expect(capturedFinishReason).toBe("error");
   });
 
   test("preserves emitted finish reason, usage, and provider metadata in synthesized afterIteration responses", async () => {
