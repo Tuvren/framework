@@ -6382,6 +6382,125 @@ describe("framework-runtime-core", () => {
     });
   });
 
+  test("canceling a resumed handle before stream consumption still closes the paused run", async () => {
+    const harness = createFakeKernelHarness();
+    let emailCalls = 0;
+    const driver = {
+      async execute(context) {
+        const toolMessages = context.messages.filter(
+          (message) => message.role === "tool"
+        );
+
+        if (toolMessages.length === 0) {
+          return {
+            messages: [
+              assistantToolCalls([
+                {
+                  callId: "call-email",
+                  input: { subject: "Approval needed", to: "ops@example.com" },
+                  name: "email",
+                },
+              ]),
+            ],
+            resolution: {
+              type: "continue_iteration",
+            },
+          };
+        }
+
+        return {
+          messages: [assistantText("This should not resume.")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const pausedHandle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        name: "primary",
+        tools: [
+          {
+            approval: true,
+            description: "Pause for approval",
+            execute() {
+              emailCalls += 1;
+              return {
+                sent: true,
+              };
+            },
+            inputSchema: {
+              properties: {
+                subject: { type: "string" },
+                to: { type: "string" },
+              },
+              required: ["to", "subject"],
+              type: "object",
+            },
+            name: "email",
+          },
+        ],
+      },
+      signal: textSignal("Pause, approve, then cancel lazily"),
+      threadId: thread.threadId,
+    });
+    await collectEvents(pausedHandle.events());
+
+    const resumedHandle = pausedHandle.resolveApproval({
+      decisions: [{ callId: "call-email", type: "approve" }],
+    });
+    resumedHandle.cancel();
+
+    await waitForAsync(async () => {
+      const runtimeStatus = await harness.readBranchRuntimeStatus(
+        thread.branchId
+      );
+
+      return (
+        runtimeStatus !== null &&
+        typeof runtimeStatus === "object" &&
+        "state" in runtimeStatus &&
+        runtimeStatus.state === "failed"
+      );
+    });
+
+    expect(emailCalls).toBe(0);
+    expect(resumedHandle.status().phase).toBe("failed");
+    expect(await harness.readBranchRuntimeStatus(thread.branchId)).toEqual({
+      activeAgent: "primary",
+      state: "failed",
+    });
+    expect(await harness.readBranchMessages(thread.branchId)).toEqual([
+      {
+        parts: [{ text: "Pause, approve, then cancel lazily", type: "text" }],
+        role: "user",
+      },
+      {
+        parts: [
+          {
+            callId: "call-email",
+            input: { subject: "Approval needed", to: "ops@example.com" },
+            name: "email",
+            type: "tool_call",
+          },
+        ],
+        role: "assistant",
+      },
+    ]);
+  });
+
   test("preserves queued steering across approval resume", async () => {
     const harness = createFakeKernelHarness();
     const driver = {

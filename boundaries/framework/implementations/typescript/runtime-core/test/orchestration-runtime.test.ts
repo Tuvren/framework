@@ -33,6 +33,7 @@ import {
   assistantText,
   assistantToolCalls,
   collectEvents,
+  createStaticExecutionHandle,
   createStubExecutionHandle,
   delay,
   detachTestPromise,
@@ -1466,6 +1467,143 @@ describe("orchestration-runtime", () => {
     ]);
     expect(childReviewerEvent?.source?.agent).toBe("reviewer");
     expect(rootReviewerEvent?.source?.agent).toBe("reviewer");
+  });
+
+  test("preserves descendant thread and worker attribution when forwarding child streams", async () => {
+    const rootHandle = createStubExecutionHandle("running");
+    let executeCalls = 0;
+    let nextThreadNumber = 0;
+    const framework = {
+      async createBranch() {
+        throw new Error("createBranch was not expected");
+      },
+      async createThread() {
+        nextThreadNumber += 1;
+        return {
+          branchId: `branch-${nextThreadNumber}`,
+          rootTurnNodeHash: "0".repeat(64),
+          rootTurnTreeHash: "1".repeat(64),
+          threadId: `thread-${nextThreadNumber}`,
+        };
+      },
+      executeTurn() {
+        executeCalls += 1;
+
+        if (executeCalls === 1) {
+          return rootHandle;
+        }
+
+        return createStaticExecutionHandle(
+          [
+            {
+              messageId: "nested-message",
+              role: "assistant",
+              source: {
+                agent: "nested-worker",
+                threadId: "thread-grandchild",
+                workerId: "worker-grandchild",
+              },
+              timestamp: Date.now(),
+              type: "message.start",
+            },
+            {
+              messageId: "nested-message",
+              source: {
+                agent: "nested-worker",
+                threadId: "thread-grandchild",
+                workerId: "worker-grandchild",
+              },
+              text: "Nested worker done.",
+              timestamp: Date.now(),
+              type: "text.done",
+            },
+            {
+              finishReason: "stop",
+              messageId: "nested-message",
+              source: {
+                agent: "nested-worker",
+                threadId: "thread-grandchild",
+                workerId: "worker-grandchild",
+              },
+              timestamp: Date.now(),
+              type: "message.done",
+            },
+          ],
+          {
+            activeAgent: "worker",
+            iterationCount: 0,
+            phase: "completed",
+          }
+        );
+      },
+      async getThread(threadId) {
+        if (threadId === "thread-root") {
+          return {
+            rootTurnNodeHash: "2".repeat(64),
+            schemaId: "kraken.agent.v1",
+            threadId,
+          };
+        }
+
+        return null;
+      },
+      async setBranchHead() {
+        throw new Error("setBranchHead was not expected");
+      },
+    } satisfies KrakenRuntime;
+    const orchestration = createOrchestrationRuntime({
+      agents: {
+        primary: { name: "primary" },
+        worker: { name: "worker" },
+      },
+      framework,
+    });
+    const handle = orchestration.executeTurn({
+      agent: "primary",
+      branchId: "branch-root",
+      signal: textSignal("root"),
+      threadId: "thread-root",
+    });
+    const subtreeCapture = startEventCapture(handle.allEvents());
+
+    await delay(0);
+    const childHandle = handle.spawn({
+      agent: "worker",
+      signal: textSignal("child"),
+    });
+    const childEvents = await collectEvents(childHandle.events());
+    await waitFor(() =>
+      subtreeCapture.events.some(
+        (event) =>
+          event.type === "text.done" && event.text === "Nested worker done."
+      )
+    );
+
+    const childTextEvent = childEvents.find(
+      (event) =>
+        event.type === "text.done" && event.text === "Nested worker done."
+    );
+    const subtreeTextEvent = subtreeCapture.events.find(
+      (event) =>
+        event.type === "text.done" && event.text === "Nested worker done."
+    );
+
+    expect(childTextEvent?.source).toEqual({
+      agent: "nested-worker",
+      threadId: "thread-grandchild",
+      workerId: "worker-grandchild",
+    });
+    expect(subtreeTextEvent?.source).toEqual({
+      agent: "nested-worker",
+      threadId: "thread-grandchild",
+      workerId: "worker-grandchild",
+    });
+
+    rootHandle.cancel();
+    await expect(handle.awaitResult()).rejects.toThrow(
+      "orchestration execution failed"
+    );
+    await subtreeCapture.done;
   });
 
   test("snapshots orchestration agent configs at runtime creation", async () => {

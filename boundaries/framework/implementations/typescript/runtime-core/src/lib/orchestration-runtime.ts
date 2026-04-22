@@ -454,8 +454,8 @@ class OrchestrationNode {
         // hand off mid-turn even though the orchestration worker identity is
         // still the same subtree node.
         agent: event.source?.agent ?? binding.agent,
-        threadId: binding.threadId,
-        workerId: binding.workerId,
+        threadId: event.source?.threadId ?? binding.threadId,
+        workerId: event.source?.workerId ?? binding.workerId,
       },
     };
   }

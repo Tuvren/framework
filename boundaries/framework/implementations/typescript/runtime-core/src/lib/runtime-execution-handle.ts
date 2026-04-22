@@ -116,6 +116,16 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
     }
 
     this.abortController.abort();
+
+    if (!this.started && this.resumedFrom !== undefined) {
+      // A resumed handle still owns the paused run until the resume path closes
+      // it durably. Start the resumed execution shell immediately so cancel()
+      // cannot leave the branch wedged on the old paused run.
+      this.started = true;
+      detachPromise(this.runtime.startExecution(this));
+      return;
+    }
+
     this.runtime.cancelPausedExecution(this);
   }
 
