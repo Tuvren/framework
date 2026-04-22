@@ -29,7 +29,7 @@ import type {
   ToolResultPart,
 } from "@kraken/framework-runtime-api";
 import { assertApprovalRequest } from "@kraken/framework-runtime-api";
-import type { HashString } from "@kraken/shared-core-types";
+import { type HashString, KrakenRuntimeError } from "@kraken/shared-core-types";
 import type { ErrorObject, ValidateFunction } from "ajv";
 import Ajv from "ajv";
 import type { ExtensionStateUpdate } from "./extension-runtime.js";
@@ -426,14 +426,27 @@ export function createExecutionFailureResult(
 export function createErrorToolResult(
   toolCall: ToolCallPart,
   message: string,
-  details?: unknown
+  details?: unknown,
+  decision?: ApprovalDecision
 ): ToolResultPart {
+  const approval =
+    decision?.message === undefined
+      ? undefined
+      : {
+          message: decision.message,
+          type: decision.type,
+        };
+
   return {
     callId: toolCall.callId,
     isError: true,
     name: toolCall.name,
-    output:
-      details === undefined ? { error: message } : { details, error: message },
+    output: {
+      ...(details === undefined
+        ? { error: message }
+        : { details, error: message }),
+      ...(approval === undefined ? {} : { approval }),
+    },
     type: "tool_result",
   };
 }
@@ -604,14 +617,19 @@ export function normalizeAroundToolResult(
 ): Promise<RawSingleToolOutcome> {
   if (isPauseResult(result)) {
     if (nestedResult !== undefined) {
-      return Promise.resolve({
-        result: nestedResult,
-        updates: collectExtensionStateUpdate(
-          extensionName,
-          result.state,
-          nestedUpdates
-        ),
-      });
+      return Promise.reject(
+        new KrakenRuntimeError(
+          `aroundTool extension "${extensionName}" must request approval before calling next()`,
+          {
+            code: "invalid_approval_request",
+            details: {
+              callId: context.callId,
+              extensionName,
+              toolName: context.tool.name,
+            },
+          }
+        )
+      );
     }
 
     return settleToolStartIfNeeded(toolStartState, startBarrier).then(() => {

@@ -479,7 +479,8 @@ function resolveResumeDecision(
         `Tool "${pendingToolCall.name}" is not registered.`,
         {
           decisionType: decision.type,
-        }
+        },
+        decision
       ),
     };
   }
@@ -514,7 +515,8 @@ function resolveResumeDecision(
         `Approval decision "edit" for tool "${pendingToolCall.name}" requires editedInput.`,
         {
           decisionType: decision.type,
-        }
+        },
+        decision
       ),
     };
   }
@@ -534,7 +536,8 @@ function resolveResumeDecision(
         {
           decisionType: decision.type,
           validation: validation.details,
-        }
+        },
+        decision
       ),
     };
   }
@@ -704,7 +707,18 @@ async function executeConcurrentToolCalls(
       throw error;
     })
   );
-  return await Promise.all(outcomes);
+  const settledOutcomes = await Promise.allSettled(outcomes);
+  const successfulOutcomes: SingleToolOutcome[] = [];
+
+  for (const outcome of settledOutcomes) {
+    if (outcome.status === "rejected") {
+      throw outcome.reason;
+    }
+
+    successfulOutcomes.push(outcome.value);
+  }
+
+  return successfulOutcomes;
 }
 
 async function runAroundToolHandlers(

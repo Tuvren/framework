@@ -1315,6 +1315,7 @@ class RuntimeCore implements KrakenRuntime {
       manifest,
       stagedMessageHashes
     );
+    const checkpointedPause = resolution.type === "pause";
     handle.updateStatus({
       activeAgent: loopState.activeConfig.name,
       manifest,
@@ -1330,6 +1331,12 @@ class RuntimeCore implements KrakenRuntime {
       headState.messages,
       stagedMessages,
       manifest
+    );
+    resolution = await this.reconcileCheckpointedPauseResolution(
+      checkpointedPause,
+      iterationRunId,
+      handle.turnId,
+      resolution
     );
     resolution = createCancelledResolution(handle) ?? resolution;
 
@@ -1862,6 +1869,12 @@ class RuntimeCore implements KrakenRuntime {
       });
 
       if (resolution.type !== "pause") {
+        await this.resolveCheckpointedPausedRun(
+          runId,
+          handle.turnId,
+          resolution
+        );
+
         if (resolution.type === "fail" && resolution.fatality === "soft") {
           this.publishProjectedError(
             handle,
@@ -3350,6 +3363,51 @@ class RuntimeCore implements KrakenRuntime {
     await this.options.kernel.branch.setHead(
       handle.request.branchId,
       stableHeadTurnNodeHash
+    );
+  }
+
+  private async reconcileCheckpointedPauseResolution(
+    checkpointedPause: boolean,
+    runId: string,
+    turnId: string,
+    resolution: RuntimeResolution
+  ): Promise<RuntimeResolution> {
+    if (!checkpointedPause || resolution.type === "pause") {
+      return resolution;
+    }
+
+    await this.resolveCheckpointedPausedRun(runId, turnId, resolution);
+    return resolution;
+  }
+
+  private async resolveCheckpointedPausedRun(
+    runId: string,
+    turnId: string,
+    resolution: RuntimeResolution
+  ): Promise<void> {
+    if (resolution.type === "fail") {
+      await this.options.kernel.run.complete(
+        runId,
+        "failed",
+        await this.storeEventRecord({
+          fatality: resolution.fatality,
+          message: resolution.error.message,
+          resolutionType: resolution.type,
+          turnId,
+          type: "paused_run_overridden",
+        })
+      );
+      return;
+    }
+
+    await this.options.kernel.run.complete(
+      runId,
+      "failed",
+      await this.storeEventRecord({
+        resolutionType: resolution.type,
+        turnId,
+        type: "paused_run_overridden",
+      })
     );
   }
 

@@ -5145,6 +5145,106 @@ describe("framework-runtime-core", () => {
     });
   });
 
+  test("finalizes failed runtime status when afterIteration upgrades an approval pause to hard fail", async () => {
+    const harness = createFakeKernelHarness();
+    const driver = {
+      async execute() {
+        return {
+          messages: [
+            assistantToolCalls([
+              {
+                callId: "call-email",
+                input: { subject: "Pause", to: "ops@example.com" },
+                name: "email",
+              },
+            ]),
+          ],
+          resolution: {
+            type: "continue_iteration",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        extensions: [
+          {
+            afterIteration(context) {
+              if (context.resolution.type !== "pause") {
+                return undefined;
+              }
+
+              return {
+                error: new Error("afterIteration rejected the approval pause"),
+                verdict: "hardFail",
+              };
+            },
+            name: "pause-hard-fail",
+          },
+        ],
+        name: "primary",
+        tools: [
+          {
+            approval: true,
+            description: "Pause with approval",
+            execute() {
+              return {
+                sent: true,
+              };
+            },
+            inputSchema: {
+              properties: {
+                subject: { type: "string" },
+                to: { type: "string" },
+              },
+              required: ["to", "subject"],
+              type: "object",
+            },
+            name: "email",
+          },
+        ],
+      },
+      signal: textSignal("Pause then fail"),
+      threadId: thread.threadId,
+    });
+
+    const events = await collectEvents(handle.events());
+    const errorEvent = events.find(
+      (event): event is Extract<(typeof events)[number], { type: "error" }> =>
+        event.type === "error"
+    );
+    const turnEndEvent = events.findLast(
+      (
+        event
+      ): event is Extract<(typeof events)[number], { type: "turn.end" }> =>
+        event.type === "turn.end"
+    );
+
+    expect(handle.status().phase).toBe("failed");
+    expect(events.some((event) => event.type === "approval.requested")).toBe(
+      false
+    );
+    expect(errorEvent?.error.message).toBe(
+      "afterIteration rejected the approval pause"
+    );
+    expect(turnEndEvent?.status).toBe("failed");
+    expect(await harness.readBranchRuntimeStatus(thread.branchId)).toEqual({
+      activeAgent: "primary",
+      state: "failed",
+    });
+  });
+
   test("keeps live handle activeAgent framework-owned while a turn is still running", async () => {
     const harness = createFakeKernelHarness();
     let executeCount = 0;
@@ -6058,6 +6158,183 @@ describe("framework-runtime-core", () => {
     expect(resumedHandle.status().manifest?.toolResults.total).toBe(1);
   });
 
+  test("finalizes failed runtime status when afterIteration upgrades a renewed approval pause to hard fail", async () => {
+    const harness = createFakeKernelHarness();
+    let searchCalls = 0;
+    const driver = {
+      async execute(context) {
+        const toolMessages = context.messages.filter(
+          (message) => message.role === "tool"
+        );
+
+        if (toolMessages.length === 0) {
+          return {
+            messages: [
+              assistantToolCalls([
+                {
+                  callId: "call-review",
+                  input: { item: "proposal" },
+                  name: "review",
+                },
+                {
+                  callId: "call-search",
+                  input: { query: "follow-up" },
+                  name: "search",
+                },
+              ]),
+            ],
+            resolution: {
+              type: "continue_iteration",
+            },
+          };
+        }
+
+        return {
+          messages: [assistantText("This should not be reached.")],
+          resolution: {
+            type: "continue_iteration",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const pausedHandle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        extensions: [
+          {
+            afterIteration(context) {
+              if (
+                context.resolution.type !== "pause" ||
+                (context.toolResults?.length ?? 0) === 0
+              ) {
+                return undefined;
+              }
+
+              return {
+                error: new Error(
+                  "afterIteration rejected the renewed approval"
+                ),
+                verdict: "hardFail",
+              };
+            },
+            name: "pause-hard-fail",
+          },
+          {
+            aroundTool(context, next) {
+              if (
+                context.tool.name === "review" &&
+                context.approvalDecision?.type === "approve"
+              ) {
+                return {
+                  approval: {
+                    completedResults: [],
+                    toolCalls: [
+                      {
+                        callId: context.callId,
+                        decisions: ["approve", "reject"],
+                        input: context.input,
+                        message: "Need a second approval for review.",
+                        name: context.tool.name,
+                      },
+                    ],
+                  },
+                  verdict: "pause",
+                };
+              }
+
+              return next();
+            },
+            name: "review-gate",
+          },
+        ],
+        name: "primary",
+        tools: [
+          {
+            approval: true,
+            description: "Review a proposal",
+            execute() {
+              return {
+                reviewed: true,
+              };
+            },
+            inputSchema: {
+              properties: {
+                item: { type: "string" },
+              },
+              required: ["item"],
+              type: "object",
+            },
+            name: "review",
+          },
+          {
+            approval: true,
+            description: "Run a follow-up search",
+            execute(input: unknown) {
+              searchCalls += 1;
+              return {
+                query: readQueryInput(input),
+                status: "ok",
+              };
+            },
+            inputSchema: {
+              properties: {
+                query: { type: "string" },
+              },
+              required: ["query"],
+              type: "object",
+            },
+            name: "search",
+          },
+        ],
+      },
+      signal: textSignal("Resume both tools then hard fail"),
+      threadId: thread.threadId,
+    });
+
+    await collectEvents(pausedHandle.events());
+    const resumedHandle = pausedHandle.resolveApproval({
+      decisions: [
+        { callId: "call-review", type: "approve" },
+        { callId: "call-search", type: "approve" },
+      ],
+    });
+    const events = await collectEvents(resumedHandle.events());
+    const errorEvent = events.find(
+      (event): event is Extract<(typeof events)[number], { type: "error" }> =>
+        event.type === "error"
+    );
+    const turnEndEvent = events.findLast(
+      (
+        event
+      ): event is Extract<(typeof events)[number], { type: "turn.end" }> =>
+        event.type === "turn.end"
+    );
+
+    expect(searchCalls).toBe(1);
+    expect(resumedHandle.status().phase).toBe("failed");
+    expect(events.some((event) => event.type === "approval.requested")).toBe(
+      false
+    );
+    expect(errorEvent?.error.message).toBe(
+      "afterIteration rejected the renewed approval"
+    );
+    expect(turnEndEvent?.status).toBe("failed");
+    expect(await harness.readBranchRuntimeStatus(thread.branchId)).toEqual({
+      activeAgent: "primary",
+      state: "failed",
+    });
+  });
+
   test("rejects malformed aroundTool approval requests before pause state is published", async () => {
     const harness = createFakeKernelHarness();
     const driver = {
@@ -6405,6 +6682,133 @@ describe("framework-runtime-core", () => {
     expect(handle.status().phase).toBe("failed");
     expect(errorEvent?.error.code).toBe("invalid_approval_request");
     expect(searchSideEffectCount).toBe(0);
+    expect(
+      extractToolMessages(await harness.readBranchMessages(thread.branchId))
+    ).toHaveLength(0);
+  });
+
+  test("waits for non-cooperative sibling tools to settle before surfacing malformed initial approval failures", async () => {
+    const harness = createFakeKernelHarness();
+    let slowSideEffectCount = 0;
+    const driver = {
+      async execute(_context) {
+        return {
+          messages: [
+            assistantToolCalls([
+              {
+                callId: "call-search",
+                input: { query: "slow side effect" },
+                name: "search",
+              },
+              {
+                callId: "call-review",
+                input: { item: "broken approval" },
+                name: "review",
+              },
+            ]),
+          ],
+          resolution: {
+            type: "continue_iteration",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        extensions: [
+          {
+            aroundTool(context, next) {
+              if (context.tool.name === "review") {
+                return {
+                  approval: {
+                    completedResults: [
+                      {
+                        callId: context.callId,
+                        name: context.tool.name,
+                        output: { duplicate: true },
+                        type: "tool_result",
+                      },
+                    ],
+                    toolCalls: [
+                      {
+                        callId: context.callId,
+                        decisions: ["approve"],
+                        input: context.input,
+                        message: "broken initial approval",
+                        name: context.tool.name,
+                      },
+                    ],
+                  },
+                  verdict: "pause",
+                };
+              }
+
+              return next();
+            },
+            name: "broken-initial-review-gate",
+          },
+        ],
+        name: "primary",
+        tools: [
+          {
+            description: "Ignore abort and finish later",
+            async execute() {
+              await delay(40);
+              slowSideEffectCount += 1;
+              return {
+                ok: true,
+              };
+            },
+            inputSchema: {
+              properties: {
+                query: { type: "string" },
+              },
+              required: ["query"],
+              type: "object",
+            },
+            name: "search",
+          },
+          {
+            description: "Review docs",
+            execute() {
+              return {
+                reviewed: true,
+              };
+            },
+            inputSchema: {
+              properties: {
+                item: { type: "string" },
+              },
+              required: ["item"],
+              type: "object",
+            },
+            name: "review",
+          },
+        ],
+      },
+      signal: textSignal("Wait for the slow sibling"),
+      threadId: thread.threadId,
+    });
+    const events = await collectEvents(handle.events());
+    const errorEvent = events.find(
+      (event): event is Extract<(typeof events)[number], { type: "error" }> =>
+        event.type === "error"
+    );
+
+    expect(handle.status().phase).toBe("failed");
+    expect(errorEvent?.error.code).toBe("invalid_approval_request");
+    expect(slowSideEffectCount).toBe(1);
     expect(
       extractToolMessages(await harness.readBranchMessages(thread.branchId))
     ).toHaveLength(0);
@@ -6878,7 +7282,7 @@ describe("framework-runtime-core", () => {
     ]);
   });
 
-  test("returns the executed result when aroundTool pauses after next()", async () => {
+  test("rejects aroundTool pauses returned after next()", async () => {
     const harness = createFakeKernelHarness();
     let executeCalls = 0;
     const driver = {
@@ -6979,16 +7383,24 @@ describe("framework-runtime-core", () => {
     });
 
     const events = await collectEvents(handle.events());
+    const errorEvent = events.find(
+      (event): event is Extract<(typeof events)[number], { type: "error" }> =>
+        event.type === "error"
+    );
 
     expect(executeCalls).toBe(1);
-    expect(handle.status().phase).toBe("completed");
-    expect(handle.status().approval).toBeUndefined();
+    expect(handle.status().phase).toBe("failed");
+    expect(errorEvent?.error.code).toBe("invalid_approval_request");
     expect(events.some((event) => event.type === "approval.requested")).toBe(
       false
     );
-    expect(handle.status().manifest?.extensions["late-pause"]).toEqual({
-      attemptedPauseAfterNext: true,
-    });
+    expect(events.some((event) => event.type === "tool.result")).toBe(false);
+    expect(await harness.readBranchMessages(thread.branchId)).toEqual([
+      {
+        parts: [{ text: "Late pause", type: "text" }],
+        role: "user",
+      },
+    ]);
   });
 
   test("surfaces after-next aroundTool errors without discarding the executed result", async () => {
@@ -8558,6 +8970,120 @@ describe("framework-runtime-core", () => {
     expect(hasAssistantText(messages, "Acknowledged rejected tool.")).toBe(
       true
     );
+    expect(resumedHandle.status().phase).toBe("completed");
+  });
+
+  test("preserves approval commentary on invalid edited approval inputs", async () => {
+    const harness = createFakeKernelHarness();
+    let emailCalls = 0;
+    const driver = {
+      async execute(context) {
+        const toolMessages = context.messages.filter(
+          (message) => message.role === "tool"
+        );
+
+        if (toolMessages.length === 0) {
+          return {
+            messages: [
+              assistantToolCalls([
+                {
+                  callId: "call-email",
+                  input: { subject: "Status update", to: "ops@example.com" },
+                  name: "email",
+                },
+              ]),
+            ],
+            resolution: {
+              type: "continue_iteration",
+            },
+          };
+        }
+
+        return {
+          messages: [assistantText("Acknowledged invalid edit.")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createKrakenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const pausedHandle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        name: "primary",
+        tools: [
+          {
+            approval: true,
+            description: "Send a status email",
+            execute() {
+              emailCalls += 1;
+              return { sent: true };
+            },
+            inputSchema: {
+              properties: {
+                subject: { type: "string" },
+                to: { type: "string" },
+              },
+              required: ["to", "subject"],
+              type: "object",
+            },
+            name: "email",
+          },
+        ],
+      },
+      signal: textSignal("Edit this tool incorrectly"),
+      threadId: thread.threadId,
+    });
+
+    await collectEvents(pausedHandle.events());
+    const resumedHandle = pausedHandle.resolveApproval({
+      decisions: [
+        {
+          callId: "call-email",
+          editedInput: { to: "ops@example.com" },
+          message: "human note",
+          type: "edit",
+        },
+      ],
+    });
+    await collectEvents(resumedHandle.events());
+    const messages = await harness.readBranchMessages(thread.branchId);
+    const editedToolMessage = messages.find(
+      (message): message is Extract<KrakenMessage, { role: "tool" }> =>
+        typeof message === "object" &&
+        message !== null &&
+        "role" in message &&
+        message.role === "tool"
+    );
+
+    expect(emailCalls).toBe(0);
+    expect(editedToolMessage?.parts[0]?.type).toBe("tool_result");
+    if (editedToolMessage?.parts[0]?.type === "tool_result") {
+      expect(editedToolMessage.parts[0].isError).toBe(true);
+      expect(editedToolMessage.parts[0].output).toEqual({
+        approval: {
+          message: "human note",
+          type: "edit",
+        },
+        details: {
+          decisionType: "edit",
+          validation: expect.anything(),
+        },
+        error: "Approved tool input failed validation.",
+      });
+    }
+    expect(hasAssistantText(messages, "Acknowledged invalid edit.")).toBe(true);
     expect(resumedHandle.status().phase).toBe("completed");
   });
 
