@@ -312,6 +312,7 @@ async function runAroundModelChain(
       responseFormat: resolveAroundModelResponseFormat(
         result,
         nextOutcomes,
+        currentContext,
         extensionContext
       ),
       stateUpdates: collectAroundModelStateUpdates(
@@ -470,12 +471,14 @@ function collectAroundModelStateUpdates(
   result: NormalizedAroundModelResult,
   nextOutcomes: ModelExecutionOutcome[]
 ): DriverExtensionStateUpdate[] {
-  const updates = nextOutcomes.flatMap((outcome) =>
-    outcome.stateUpdates.map((update) => ({
-      extensionName: update.extensionName,
-      state: cloneValue(update.state),
-    }))
-  );
+  const lastOutcome = nextOutcomes.at(-1);
+  const updates =
+    lastOutcome === undefined
+      ? []
+      : lastOutcome.stateUpdates.map((update) => ({
+          extensionName: update.extensionName,
+          state: cloneValue(update.state),
+        }));
 
   if (result.state !== undefined) {
     updates.push({
@@ -548,10 +551,22 @@ function hasRequestedToolCalls(response: TuvrenModelResponse): boolean {
 function resolveAroundModelResponseFormat(
   result: NormalizedAroundModelResult,
   nextOutcomes: ModelExecutionOutcome[],
-  currentContext: AroundModelContext
+  initialContext: AroundModelContext,
+  finalContext: AroundModelContext
 ): TuvrenPrompt["responseFormat"] {
+  const finalResponseFormat = finalContext.prompt.responseFormat;
+
   if (nextOutcomes.length === 0) {
-    return cloneValue(currentContext.prompt.responseFormat);
+    return cloneValue(finalResponseFormat);
+  }
+
+  if (
+    !isDeepStrictEqual(
+      stripUndefinedDeep(initialContext.prompt.responseFormat),
+      stripUndefinedDeep(finalResponseFormat)
+    )
+  ) {
+    return cloneValue(finalResponseFormat);
   }
 
   const matchingOutcome = findMatchingNextOutcome(
@@ -563,7 +578,7 @@ function resolveAroundModelResponseFormat(
     return cloneValue(matchingOutcome.responseFormat);
   }
 
-  return cloneValue(nextOutcomes.at(-1)?.responseFormat);
+  return cloneValue(nextOutcomes.at(-1)?.responseFormat ?? finalResponseFormat);
 }
 
 function validateAroundModelRetryDurability(

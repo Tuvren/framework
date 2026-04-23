@@ -556,6 +556,74 @@ describe("driver-react", () => {
     });
   });
 
+  test("honors post-next aroundModel responseFormat removal during validation", async () => {
+    let capturedResponseFormat: TuvrenPrompt["responseFormat"];
+    const provider = {
+      async generate(prompt) {
+        capturedResponseFormat = prompt.responseFormat;
+        return {
+          finishReason: "stop",
+          parts: [{ text: "plain text allowed", type: "text" }],
+        } satisfies TuvrenModelResponse;
+      },
+      id: "provider",
+      async *stream() {
+        yield* [];
+      },
+    } satisfies TuvrenProvider;
+    const driver = createReActDriver({
+      providerCallMode: "generate",
+    }).create();
+
+    const result = await driver.execute(
+      createDriverExecutionContext({
+        config: {
+          extensions: [
+            {
+              async aroundModel(context, next) {
+                const response = await next();
+                context.prompt.responseFormat = undefined;
+                return response;
+              },
+              name: "schema-toggle",
+            },
+          ],
+          model: provider,
+          name: "primary",
+          responseFormat: {
+            name: "answer",
+            schema: {
+              properties: {
+                answer: { type: "string" },
+              },
+              required: ["answer"],
+              type: "object",
+            },
+          },
+        },
+      })
+    );
+
+    expect(capturedResponseFormat).toEqual({
+      name: "answer",
+      schema: {
+        properties: {
+          answer: { type: "string" },
+        },
+        required: ["answer"],
+        type: "object",
+      },
+    });
+    expect(result.resolution).toEqual({
+      reason: "done",
+      type: "end_turn",
+    });
+    expect(result.messages?.[0]).toEqual({
+      parts: [{ text: "plain text allowed", type: "text" }],
+      role: "assistant",
+    });
+  });
+
   test("does not emit a second live assistant sequence when aroundModel replaces a single next() response", async () => {
     const emittedEvents: TuvrenStreamEvent[] = [];
     const provider = {
@@ -804,6 +872,70 @@ describe("driver-react", () => {
         ? result.resolution.error.code
         : undefined
     ).toBe("react_driver_invalid_around_model_retry");
+  });
+
+  test("keeps only the final retry state updates from nested aroundModel executions", async () => {
+    let generateCalls = 0;
+    const provider = {
+      async generate() {
+        generateCalls += 1;
+        return {
+          finishReason: "stop",
+          parts: [{ text: `attempt-${generateCalls}`, type: "text" }],
+        } satisfies TuvrenModelResponse;
+      },
+      id: "provider",
+      async *stream() {
+        yield* [];
+      },
+    } satisfies TuvrenProvider;
+    const driver = createReActDriver({
+      providerCallMode: "generate",
+    }).create();
+
+    const result = await driver.execute(
+      createDriverExecutionContext({
+        config: {
+          extensions: [
+            {
+              async aroundModel(context, next) {
+                await next(context);
+                return await next(context);
+              },
+              name: "retry",
+            },
+            {
+              async aroundModel(context, next) {
+                const response = await next(context);
+                return {
+                  response,
+                  state:
+                    generateCalls === 1
+                      ? { discardedAttempt: true, retainedAttempt: false }
+                      : { retainedAttempt: true },
+                };
+              },
+              name: "budget",
+            },
+          ],
+          model: provider,
+          name: "primary",
+        },
+      })
+    );
+
+    expect(result.resolution).toEqual({
+      reason: "done",
+      type: "end_turn",
+    });
+    expect(result.stateUpdates).toEqual([
+      {
+        extensionName: "budget",
+        state: {
+          retainedAttempt: true,
+        },
+      },
+    ]);
   });
 
   test("maps reasoning and structured parts from streamed provider responses", async () => {
@@ -1660,6 +1792,78 @@ describe("driver-react", () => {
     expect(manifest.extensions).toEqual({
       budget: {
         remainingBudget: 7,
+      },
+    });
+  });
+
+  test("persists only the final retry state updates through the runtime-core checkpoint path", async () => {
+    const harness = createFakeKernelHarness();
+    let generateCalls = 0;
+    const provider = {
+      async generate() {
+        generateCalls += 1;
+        return {
+          finishReason: "stop",
+          parts: [{ text: `attempt-${generateCalls}`, type: "text" }],
+        } satisfies TuvrenModelResponse;
+      },
+      id: "provider",
+      async *stream() {
+        yield* [];
+      },
+    } satisfies TuvrenProvider;
+    const runtime = createTuvrenRuntimeCore({
+      defaultDriverId: REACT_DRIVER_ID,
+      driverRegistry: createDriverRegistry([
+        createReActDriver({
+          providerCallMode: "generate",
+        }),
+      ]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        extensions: [
+          {
+            async aroundModel(context, next) {
+              await next(context);
+              return await next(context);
+            },
+            name: "retry",
+          },
+          {
+            async aroundModel(context, next) {
+              const response = await next(context);
+              return {
+                response,
+                state:
+                  generateCalls === 1
+                    ? { discardedAttempt: true, retainedAttempt: false }
+                    : { retainedAttempt: true },
+              };
+            },
+            name: "budget",
+          },
+        ],
+        model: provider,
+        name: "primary",
+      },
+      signal: textSignal("Track retry state"),
+      threadId: thread.threadId,
+    });
+
+    await collectEvents(handle.events());
+    const manifest = await readBranchContextManifest(
+      harness.kernel,
+      thread.branchId
+    );
+
+    expect(handle.status().phase).toBe("completed");
+    expect(manifest.extensions).toEqual({
+      budget: {
+        retainedAttempt: true,
       },
     });
   });
