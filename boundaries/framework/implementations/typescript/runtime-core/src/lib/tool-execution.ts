@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import type { HashString } from "@tuvren/core-types";
 import type {
   ApprovalDecision,
   ApprovalRequest,
@@ -21,15 +22,14 @@ import type {
   AroundToolHandler,
   ContextManifest,
   EpochMs,
-  KrakenExtension,
-  KrakenStreamEvent,
-  KrakenToolDefinition,
   PendingToolCall,
   ToolCallPart,
   ToolRegistry,
   ToolResultPart,
-} from "@kraken/framework-runtime-api";
-import type { HashString } from "@kraken/shared-core-types";
+  TuvrenExtension,
+  TuvrenStreamEvent,
+  TuvrenToolDefinition,
+} from "@tuvren/runtime-api";
 import { runWithTimeout } from "./execution-timeouts.js";
 import {
   buildSharedExports,
@@ -68,12 +68,12 @@ import { resolveToolDefinition } from "./tool-registry.js";
 export interface ToolBatchEnvironment {
   activeAgent: string;
   branchId: string;
-  extensions: KrakenExtension[];
+  extensions: TuvrenExtension[];
   iterationCount: number;
   manifest: ContextManifest;
   now(): EpochMs;
   publishCustom(event: { data: unknown; name: string }): void;
-  publishEvent(event: KrakenStreamEvent): void;
+  publishEvent(event: TuvrenStreamEvent): void;
   reportSoftError(error: Error): void;
   runId: string;
   signal?: AbortSignal;
@@ -93,7 +93,7 @@ export interface ToolBatchOutcome {
 export interface ExecutableToolCall {
   approvalDecision?: ApprovalDecision;
   input: unknown;
-  tool: KrakenToolDefinition;
+  tool: TuvrenToolDefinition;
   toolCall: ToolCallPart;
 }
 

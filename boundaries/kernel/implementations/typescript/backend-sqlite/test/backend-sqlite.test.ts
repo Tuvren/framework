@@ -34,10 +34,11 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { after, describe, test } from "node:test";
 import { pathToFileURL } from "node:url";
+import { TuvrenPersistenceError } from "@tuvren/core-types";
 import {
   encodeDeterministicKernelRecord,
   type KrakenBackendTx,
-} from "@kraken/kernel-contract-protocol";
+} from "@tuvren/kernel-protocol";
 import {
   createCanonicalKernelTestSchema,
   createCanonicalTurnTreePaths,
@@ -51,8 +52,7 @@ import {
   registerBackendConformanceSuite,
   registerBackendInvariantSuite,
   registerBackendRecoverySuite,
-} from "@kraken/kernel-testkit";
-import { KrakenPersistenceError } from "@kraken/shared-core-types";
+} from "@tuvren/kernel-testkit";
 import Database from "better-sqlite3";
 import { createSqliteBackend } from "../src/index.js";
 
@@ -266,25 +266,25 @@ after(() => {
 registerBackendConformanceSuite({
   createBackend: () =>
     createSqliteBackend({ databasePath: createTempDatabasePath() }),
-  suiteName: "@kraken/backend-sqlite shared conformance",
+  suiteName: "@tuvren/backend-sqlite shared conformance",
   testApi: { describe, test },
 });
 
 registerBackendInvariantSuite({
   createBackend: () =>
     createSqliteBackend({ databasePath: createTempDatabasePath() }),
-  suiteName: "@kraken/backend-sqlite shared invariants",
+  suiteName: "@tuvren/backend-sqlite shared invariants",
   testApi: { describe, test },
 });
 
 registerBackendRecoverySuite({
   createBackend: () =>
     createSqliteBackend({ databasePath: createTempDatabasePath() }),
-  suiteName: "@kraken/backend-sqlite shared recovery",
+  suiteName: "@tuvren/backend-sqlite shared recovery",
   testApi: { describe, test },
 });
 
-describe("@kraken/backend-sqlite", () => {
+describe("@tuvren/backend-sqlite", () => {
   test("enables WAL mode and applies the baseline migration once", async () => {
     const databasePath = createTempDatabasePath();
     const backend = createSqliteBackend({
@@ -1171,7 +1171,7 @@ describe("@kraken/backend-sqlite", () => {
 
     await rejects(
       async () => txHandle.objects.has("0".repeat(64)),
-      KrakenPersistenceError
+      TuvrenPersistenceError
     );
   });
 });

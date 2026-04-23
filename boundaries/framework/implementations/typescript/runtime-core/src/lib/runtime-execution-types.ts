@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
+import type { HashString } from "@tuvren/core-types";
 import type {
   AgentConfig,
   ApprovalRequest,
   ApprovalResponse,
   InputSignal,
-  KrakenModelResponse,
-  KrakenToolDefinition,
   ToolRegistry,
   ToolResultPart,
-} from "@kraken/framework-runtime-api";
-import type { HashString } from "@kraken/shared-core-types";
+  TuvrenModelResponse,
+  TuvrenToolDefinition,
+} from "@tuvren/runtime-api";
 import type { ExtensionStateUpdate } from "./extension-runtime.js";
 import type { ToolExecutionMode } from "./tool-execution.js";
 
@@ -36,12 +36,12 @@ export interface ExecutionSessionRequest {
   schemaId?: string;
   signal: InputSignal;
   threadId: string;
-  tools?: KrakenToolDefinition[];
+  tools?: TuvrenToolDefinition[];
 }
 
 export interface PausedIterationState {
   iterationCount: number;
-  response: KrakenModelResponse;
+  response: TuvrenModelResponse;
   toolExecutionMode: ToolExecutionMode;
   toolResults: ToolResultPart[];
 }

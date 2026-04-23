@@ -31,17 +31,17 @@ export {
   isKernelRecord,
 } from "./lib/kernel-records.js";
 export type {
-  KrakenErrorCode,
-  KrakenErrorOptions,
-} from "./lib/kraken-error.js";
+  TuvrenErrorCode,
+  TuvrenErrorOptions,
+} from "./lib/tuvren-error.js";
 export {
-  assertKrakenErrorCode,
-  isKrakenErrorCode,
-  KrakenError,
-  KrakenLineageError,
-  KrakenPersistenceError,
-  KrakenProviderError,
-  KrakenRecoveryError,
-  KrakenRuntimeError,
-  KrakenValidationError,
-} from "./lib/kraken-error.js";
+  assertTuvrenErrorCode,
+  isTuvrenErrorCode,
+  TuvrenError,
+  TuvrenLineageError,
+  TuvrenPersistenceError,
+  TuvrenProviderError,
+  TuvrenRecoveryError,
+  TuvrenRuntimeError,
+  TuvrenValidationError,
+} from "./lib/tuvren-error.js";

@@ -16,6 +16,11 @@
 
 import { AsyncLocalStorage } from "node:async_hooks";
 import {
+  assertHashString,
+  type EpochMs,
+  TuvrenPersistenceError,
+} from "@tuvren/core-types";
+import {
   assertStoredBranch,
   assertStoredObject,
   assertStoredObjectIdentity,
@@ -49,12 +54,7 @@ import {
   type StoredTurnTree,
   type StoredTurnTreePath,
   type TurnTreeSchema,
-} from "@kraken/kernel-contract-protocol";
-import {
-  assertHashString,
-  type EpochMs,
-  KrakenPersistenceError,
-} from "@kraken/shared-core-types";
+} from "@tuvren/kernel-protocol";
 
 const ORDERED_PATH_CHUNK_THRESHOLD = 32;
 const ORDERED_PATH_CHUNK_SIZE = 32;
@@ -2884,6 +2884,6 @@ function persistenceError(
   message: string,
   code: string,
   details?: unknown
-): KrakenPersistenceError {
-  return new KrakenPersistenceError(message, { code, details });
+): TuvrenPersistenceError {
+  return new TuvrenPersistenceError(message, { code, details });
 }

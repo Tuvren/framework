@@ -7,12 +7,10 @@
     "moduleResolution": "bundler",
     "outDir": "./dist",
     "paths": {
-      "@kraken/shared-core-types": ["../../../shared/contracts/core-types"],
-      "@kraken/framework-runtime-api": ["../runtime-api/dist/index.d.ts"],
-      "@kraken/framework-runtime-api/events": [
-        "../runtime-api/dist/events.d.ts"
-      ],
-      "@kraken/framework-event-stream": ["./src/index.ts"]
+      "@tuvren/core-types": ["../../../shared/contracts/core-types"],
+      "@tuvren/runtime-api": ["../runtime-api/dist/index.d.ts"],
+      "@tuvren/runtime-api/events": ["../runtime-api/dist/events.d.ts"],
+      "@tuvren/event-stream": ["./src/index.ts"]
     },
     "rootDir": "./src",
     "target": "esnext",

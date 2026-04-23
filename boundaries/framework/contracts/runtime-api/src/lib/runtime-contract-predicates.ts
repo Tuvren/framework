@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-import { isEpochMs, isHashString } from "@kraken/shared-core-types";
+import { isEpochMs, isHashString } from "@tuvren/core-types";
 import type {
   ApprovalDecision,
   ApprovalPolicy,
   CustomSchema,
   EventSource,
-  KrakenErrorProjection,
-  KrakenJsonSchema,
-  KrakenJsonValue,
   PendingToolCall,
   ProviderUsage,
+  TuvrenErrorProjection,
+  TuvrenJsonSchema,
+  TuvrenJsonValue,
 } from "./runtime-contracts.js";
 
 const EVENT_SOURCE_KEYS = new Set(["agent", "driver", "threadId", "workerId"]);
@@ -216,7 +216,7 @@ export function isNonNegativeFiniteNumberProperty<
   );
 }
 
-export function isKrakenJsonSchema(value: unknown): value is KrakenJsonSchema {
+export function isTuvrenJsonSchema(value: unknown): value is TuvrenJsonSchema {
   return (
     typeof value === "boolean" ||
     (isKrakenJsonObject(value, new WeakSet()) && isValidJsonSchemaObject(value))
@@ -225,20 +225,20 @@ export function isKrakenJsonSchema(value: unknown): value is KrakenJsonSchema {
 
 export function isSerializableContractValue(
   value: unknown
-): value is KrakenJsonValue {
+): value is TuvrenJsonValue {
   return isKrakenJsonValue(value, new WeakSet());
 }
 
 export function isSerializableRecord(
   value: unknown
-): value is { [key: string]: KrakenJsonValue } {
+): value is { [key: string]: TuvrenJsonValue } {
   return isKrakenJsonObject(value, new WeakSet());
 }
 
 export function isKrakenToolSchema(
   value: unknown
-): value is KrakenJsonSchema | CustomSchema {
-  return isKrakenJsonSchema(value) || isCustomSchema(value);
+): value is TuvrenJsonSchema | CustomSchema {
+  return isTuvrenJsonSchema(value) || isCustomSchema(value);
 }
 
 export function isProviderUsage(value: unknown): value is ProviderUsage {
@@ -372,9 +372,9 @@ export function isEventSource(value: unknown): value is EventSource {
   return true;
 }
 
-export function isKrakenErrorProjection(
+export function isTuvrenErrorProjection(
   value: unknown
-): value is KrakenErrorProjection {
+): value is TuvrenErrorProjection {
   return (
     isPlainObject(value) &&
     hasOnlyAllowedKeys(value, KRAKEN_ERROR_PROJECTION_KEYS) &&
@@ -447,11 +447,11 @@ export function matchesStreamEventVariant(
   return hasOnlyStreamEventKeys(value, eventSpecificKeys) && predicate();
 }
 
-export function hasUniqueKrakenJsonValues(values: KrakenJsonValue[]): boolean {
+export function hasUniqueTuvrenJsonValues(values: TuvrenJsonValue[]): boolean {
   const seenValues = new Set<string>();
 
   for (const value of values) {
-    const canonicalValueKey = toCanonicalKrakenJsonValueKey(value);
+    const canonicalValueKey = toCanonicalTuvrenJsonValueKey(value);
 
     if (seenValues.has(canonicalValueKey)) {
       return false;
@@ -472,7 +472,7 @@ function hasApprovalDecisionCallIdsWithinRequest(
 }
 
 function isValidJsonSchemaObject(value: {
-  [key: string]: KrakenJsonValue;
+  [key: string]: TuvrenJsonValue;
 }): boolean {
   // This is a structural guard for the shared contract seam. It rejects
   // malformed standard keyword shapes without trying to replace a full
@@ -556,7 +556,7 @@ function isValidJsonSchemaObject(value: {
 function isKrakenJsonObject(
   value: unknown,
   activeParents: WeakSet<object>
-): value is { [key: string]: KrakenJsonValue } {
+): value is { [key: string]: TuvrenJsonValue } {
   if (!isPlainObject(value)) {
     return false;
   }
@@ -581,7 +581,7 @@ function isKrakenJsonObject(
 function isKrakenJsonValue(
   value: unknown,
   activeParents: WeakSet<object>
-): value is KrakenJsonValue {
+): value is TuvrenJsonValue {
   if (value === null) {
     return true;
   }
@@ -644,14 +644,14 @@ function isValidJsonSchemaType(value: unknown): boolean {
 }
 
 function hasValidNonNegativeIntegerKeyword(
-  value: { [key: string]: KrakenJsonValue },
+  value: { [key: string]: TuvrenJsonValue },
   key: string
 ): boolean {
   return !(key in value) || isNonNegativeSafeInteger(value[key]);
 }
 
 function hasValidFiniteNumberKeyword(
-  value: { [key: string]: KrakenJsonValue },
+  value: { [key: string]: TuvrenJsonValue },
   key: string,
   options?: { positive?: boolean }
 ): boolean {
@@ -673,21 +673,21 @@ function hasValidFiniteNumberKeyword(
 }
 
 function hasValidBooleanKeyword(
-  value: { [key: string]: KrakenJsonValue },
+  value: { [key: string]: TuvrenJsonValue },
   key: string
 ): boolean {
   return !(key in value) || typeof value[key] === "boolean";
 }
 
 function hasValidStringKeyword(
-  value: { [key: string]: KrakenJsonValue },
+  value: { [key: string]: TuvrenJsonValue },
   key: string
 ): boolean {
   return !(key in value) || typeof value[key] === "string";
 }
 
 function hasValidEnumKeyword(value: {
-  [key: string]: KrakenJsonValue;
+  [key: string]: TuvrenJsonValue;
 }): boolean {
   if (!("enum" in value)) {
     return true;
@@ -699,12 +699,12 @@ function hasValidEnumKeyword(value: {
   return (
     Array.isArray(value.enum) &&
     value.enum.length > 0 &&
-    hasUniqueKrakenJsonValues(value.enum)
+    hasUniqueTuvrenJsonValues(value.enum)
   );
 }
 
 function hasValidUniqueStringArrayKeyword(
-  value: { [key: string]: KrakenJsonValue },
+  value: { [key: string]: TuvrenJsonValue },
   key: string
 ): boolean {
   if (!(key in value)) {
@@ -721,7 +721,7 @@ function hasValidUniqueStringArrayKeyword(
 }
 
 function hasValidUniqueStringArrayRecordKeyword(
-  value: { [key: string]: KrakenJsonValue },
+  value: { [key: string]: TuvrenJsonValue },
   key: string
 ): boolean {
   if (!(key in value)) {
@@ -742,14 +742,14 @@ function hasValidUniqueStringArrayRecordKeyword(
 }
 
 function hasValidSchemaKeyword(
-  value: { [key: string]: KrakenJsonValue },
+  value: { [key: string]: TuvrenJsonValue },
   key: string
 ): boolean {
-  return !(key in value) || isKrakenJsonSchema(value[key]);
+  return !(key in value) || isTuvrenJsonSchema(value[key]);
 }
 
 function hasValidSchemaArrayKeyword(
-  value: { [key: string]: KrakenJsonValue },
+  value: { [key: string]: TuvrenJsonValue },
   key: string,
   options?: { requireNonEmpty?: boolean }
 ): boolean {
@@ -762,12 +762,12 @@ function hasValidSchemaArrayKeyword(
   return (
     Array.isArray(keywordValue) &&
     (!options?.requireNonEmpty || keywordValue.length > 0) &&
-    keywordValue.every(isKrakenJsonSchema)
+    keywordValue.every(isTuvrenJsonSchema)
   );
 }
 
 function hasValidSchemaRecordKeyword(
-  value: { [key: string]: KrakenJsonValue },
+  value: { [key: string]: TuvrenJsonValue },
   key: string
 ): boolean {
   if (!(key in value)) {
@@ -778,7 +778,7 @@ function hasValidSchemaRecordKeyword(
 
   return (
     isKrakenJsonObject(keywordValue, new WeakSet<object>()) &&
-    Object.values(keywordValue).every(isKrakenJsonSchema)
+    Object.values(keywordValue).every(isTuvrenJsonSchema)
   );
 }
 
@@ -792,7 +792,7 @@ function hasOnlyStreamEventKeys(
   );
 }
 
-function toCanonicalKrakenJsonValueKey(value: KrakenJsonValue): string {
+function toCanonicalTuvrenJsonValueKey(value: TuvrenJsonValue): string {
   if (value === null) {
     return "null";
   }
@@ -806,14 +806,14 @@ function toCanonicalKrakenJsonValueKey(value: KrakenJsonValue): string {
       return `string:${JSON.stringify(value)}`;
     case "object":
       if (Array.isArray(value)) {
-        return `array:[${value.map(toCanonicalKrakenJsonValueKey).join(",")}]`;
+        return `array:[${value.map(toCanonicalTuvrenJsonValueKey).join(",")}]`;
       }
 
       return `object:{${Object.keys(value)
         .sort()
         .map(
           (key) =>
-            `${JSON.stringify(key)}:${toCanonicalKrakenJsonValueKey(value[key])}`
+            `${JSON.stringify(key)}:${toCanonicalTuvrenJsonValueKey(value[key])}`
         )
         .join(",")}}`;
     default:

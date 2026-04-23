@@ -28,8 +28,6 @@ export type {
   FileDoneEvent,
   IterationEndEvent,
   IterationStartEvent,
-  KrakenErrorProjection,
-  KrakenStreamEvent,
   MessageDoneEvent,
   MessageStartEvent,
   ReasoningDeltaEvent,
@@ -48,8 +46,10 @@ export type {
   ToolStartEvent,
   TurnEndEvent,
   TurnStartEvent,
-} from "@kraken/framework-runtime-api/events";
+  TuvrenErrorProjection,
+  TuvrenStreamEvent,
+} from "@tuvren/runtime-api/events";
 export {
-  assertKrakenStreamEvent,
-  isKrakenStreamEvent,
-} from "@kraken/framework-runtime-api/events";
+  assertTuvrenStreamEvent,
+  isTuvrenStreamEvent,
+} from "@tuvren/runtime-api/events";

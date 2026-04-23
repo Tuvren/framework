@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-import type { KernelRecord } from "@kraken/shared-core-types";
-import { assertKernelRecord } from "@kraken/shared-core-types";
+import type { KernelRecord } from "@tuvren/core-types";
+import { assertKernelRecord } from "@tuvren/core-types";
 import { Encoder } from "cbor-x";
 
 const deterministicEncoderOptions = {

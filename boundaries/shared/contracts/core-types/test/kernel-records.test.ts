@@ -20,15 +20,15 @@ import {
   assertEpochMs,
   assertHashString,
   assertKernelRecord,
-  assertKrakenErrorCode,
+  assertTuvrenErrorCode,
   isEpochMs,
   isHashString,
   isKernelRecord,
-  isKrakenErrorCode,
-  KrakenPersistenceError,
-  KrakenRuntimeError,
-  KrakenValidationError,
-} from "@kraken/shared-core-types";
+  isTuvrenErrorCode,
+  TuvrenPersistenceError,
+  TuvrenRuntimeError,
+  TuvrenValidationError,
+} from "@tuvren/core-types";
 import {
   deterministicKernelRecordFixture,
   encodeDeterministicKernelRecord,
@@ -286,49 +286,49 @@ describe("KernelRecord", () => {
   });
 });
 
-describe("KrakenError", () => {
+describe("TuvrenError", () => {
   test("accepts lowercase snake_case error codes", () => {
-    expect(isKrakenErrorCode("invalid_schema")).toBe(true);
+    expect(isTuvrenErrorCode("invalid_schema")).toBe(true);
     expect(() =>
-      assertKrakenErrorCode("store_write_failed", "code")
+      assertTuvrenErrorCode("store_write_failed", "code")
     ).not.toThrow();
   });
 
   test("rejects invalid public error code shapes", () => {
-    expect(isKrakenErrorCode("Not_Snake_Case")).toBe(false);
-    expect(() => assertKrakenErrorCode("Not_Snake_Case", "code")).toThrow(
-      "code must be a lowercase snake_case Kraken error code"
+    expect(isTuvrenErrorCode("Not_Snake_Case")).toBe(false);
+    expect(() => assertTuvrenErrorCode("Not_Snake_Case", "code")).toThrow(
+      "code must be a lowercase snake_case Tuvren error code"
     );
     expect(
-      () => new KrakenValidationError("bad", { code: "Not_Snake_Case" })
-    ).toThrow("options.code must be a lowercase snake_case Kraken error code");
+      () => new TuvrenValidationError("bad", { code: "Not_Snake_Case" })
+    ).toThrow("options.code must be a lowercase snake_case Tuvren error code");
   });
 
   test("stores code, details, and cause on the base contract", () => {
     const cause = new Error("root cause");
-    const error = new KrakenValidationError("invalid schema", {
+    const error = new TuvrenValidationError("invalid schema", {
       cause,
       code: "invalid_schema",
       details: { path: "messages" },
     });
 
     expect(error).toBeInstanceOf(Error);
-    expect(error).toBeInstanceOf(KrakenValidationError);
+    expect(error).toBeInstanceOf(TuvrenValidationError);
     expect(error.code).toBe("invalid_schema");
     expect(error.details).toEqual({ path: "messages" });
     expect(error.cause).toBe(cause);
-    expect(error.name).toBe("KrakenValidationError");
+    expect(error.name).toBe("TuvrenValidationError");
   });
 
   test("preserves subclass categories for downstream normalization", () => {
-    const persistenceError = new KrakenPersistenceError("write failed", {
+    const persistenceError = new TuvrenPersistenceError("write failed", {
       code: "store_write_failed",
     });
-    const runtimeError = new KrakenRuntimeError("loop policy failed", {
+    const runtimeError = new TuvrenRuntimeError("loop policy failed", {
       code: "invalid_loop_policy",
     });
 
-    expect(persistenceError).toBeInstanceOf(KrakenPersistenceError);
-    expect(runtimeError).toBeInstanceOf(KrakenRuntimeError);
+    expect(persistenceError).toBeInstanceOf(TuvrenPersistenceError);
+    expect(runtimeError).toBeInstanceOf(TuvrenRuntimeError);
   });
 });

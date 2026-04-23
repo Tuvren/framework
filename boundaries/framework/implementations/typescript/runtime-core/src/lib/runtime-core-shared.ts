@@ -14,20 +14,17 @@
  * limitations under the License.
  */
 
+import { assertKernelRecord, TuvrenRuntimeError } from "@tuvren/core-types";
 import type {
   ExecutionStatus,
   InputSignal,
-  KrakenErrorProjection,
-  KrakenStreamEvent,
-} from "@kraken/framework-runtime-api";
+  TuvrenErrorProjection,
+  TuvrenStreamEvent,
+} from "@tuvren/runtime-api";
 import {
-  assertKrakenMessage,
-  assertKrakenStreamEvent,
-} from "@kraken/framework-runtime-api";
-import {
-  assertKernelRecord,
-  KrakenRuntimeError,
-} from "@kraken/shared-core-types";
+  assertTuvrenMessage,
+  assertTuvrenStreamEvent,
+} from "@tuvren/runtime-api";
 
 export class AsyncEventQueue<T> implements AsyncIterable<T> {
   private closed = false;
@@ -218,7 +215,7 @@ export function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-export function projectError(error: Error): KrakenErrorProjection {
+export function projectError(error: Error): TuvrenErrorProjection {
   const errorRecord = isRecord(error) ? error : undefined;
 
   return {
@@ -242,10 +239,10 @@ export function normalizeInputSignal(
     parts: cloneValue(signal.parts),
     role: "user",
   };
-  assertKrakenMessage(candidateMessage, label);
+  assertTuvrenMessage(candidateMessage, label);
 
   if (candidateMessage.role !== "user") {
-    throw new KrakenRuntimeError(
+    throw new TuvrenRuntimeError(
       "input signals must normalize to user messages",
       {
         code: "invalid_input_signal",
@@ -401,12 +398,12 @@ function freezeSnapshot<T>(value: T, seen = new Set<object>()): T {
   return Object.freeze(value);
 }
 
-export function stripEventSource(event: KrakenStreamEvent): KrakenStreamEvent {
+export function stripEventSource(event: TuvrenStreamEvent): TuvrenStreamEvent {
   if (event.source === undefined) {
     return event;
   }
 
   const { source: _source, ...rest } = event;
-  assertKrakenStreamEvent(rest, "stream event without source");
+  assertTuvrenStreamEvent(rest, "stream event without source");
   return rest;
 }

@@ -7,15 +7,15 @@
     "moduleResolution": "bundler",
     "outDir": "./dist",
     "paths": {
-      "@kraken/shared-core-types": [
+      "@tuvren/core-types": [
         "../../../shared/contracts/core-types/dist/index.d.ts"
       ],
-      "@kraken/framework-runtime-api": ["./src/index.ts"],
-      "@kraken/framework-runtime-api/events": ["./src/events.ts"],
-      "@kraken/framework-runtime-api/execution": ["./src/execution.ts"],
-      "@kraken/framework-runtime-api/orchestration": ["./src/orchestration.ts"],
-      "@kraken/framework-runtime-api/provider": ["./src/provider.ts"],
-      "@kraken/framework-runtime-api/tools": ["./src/tools.ts"]
+      "@tuvren/runtime-api": ["./src/index.ts"],
+      "@tuvren/runtime-api/events": ["./src/events.ts"],
+      "@tuvren/runtime-api/execution": ["./src/execution.ts"],
+      "@tuvren/runtime-api/orchestration": ["./src/orchestration.ts"],
+      "@tuvren/runtime-api/provider": ["./src/provider.ts"],
+      "@tuvren/runtime-api/tools": ["./src/tools.ts"]
     },
     "rootDir": "./src",
     "target": "esnext",

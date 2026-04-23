@@ -20,7 +20,8 @@ import type {
   DriverExecutionResult,
   KrakenDriver,
   KrakenDriverFactory,
-} from "@kraken/framework-driver-api";
+} from "@tuvren/driver-api";
+import type { KrakenKernel, TurnTreeSchema } from "@tuvren/kernel-protocol";
 import type {
   AgentConfig,
   AroundToolContext,
@@ -28,24 +29,20 @@ import type {
   ContextManifest,
   CustomSchema,
   HandoffSourceContext,
-  KrakenExtension,
-  KrakenMessage,
-  KrakenModelResponse,
-  KrakenToolDefinition,
   ToolResultPart,
-} from "@kraken/framework-runtime-api";
-import type {
-  KrakenKernel,
-  TurnTreeSchema,
-} from "@kraken/kernel-contract-protocol";
+  TuvrenExtension,
+  TuvrenMessage,
+  TuvrenModelResponse,
+  TuvrenToolDefinition,
+} from "@tuvren/runtime-api";
 import {
   collectSystemPrompts,
   createDriverRegistry as createBaseDriverRegistry,
   createContextManifest,
-  createKrakenRuntimeCore,
   createLastOutputOnlyHandoffContextBuilder,
   createPreserveTraceHandoffContextBuilder,
   createToolRegistry,
+  createTuvrenRuntimeCore,
   runAfterTurnHooks,
   runBeforeIterationHooks,
   runBeforeTurnHooks,
@@ -177,7 +174,7 @@ describe("framework-runtime-core", () => {
     const originalMetadata = {
       channel: "primary",
     };
-    const originalTool: KrakenToolDefinition = {
+    const originalTool: TuvrenToolDefinition = {
       approval: true,
       description: "Search documentation",
       execute() {
@@ -326,7 +323,7 @@ describe("framework-runtime-core", () => {
   });
 
   test("collectSystemPrompts and intercept hooks preserve extension method receivers", async () => {
-    interface ReceiverExtension extends KrakenExtension {
+    interface ReceiverExtension extends TuvrenExtension {
       afterTurnCalls: number;
       beforeIterationCalls: number;
       beforeTurnCalls: number;
@@ -618,7 +615,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -672,7 +669,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -755,7 +752,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -801,7 +798,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -863,7 +860,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -949,7 +946,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -1004,7 +1001,7 @@ describe("framework-runtime-core", () => {
       },
       id: "fake",
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -1046,7 +1043,7 @@ describe("framework-runtime-core", () => {
       },
       id: "fake",
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -1162,7 +1159,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -1264,7 +1261,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -1351,7 +1348,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -1404,7 +1401,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -1468,7 +1465,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -1529,7 +1526,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -1599,7 +1596,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -1695,7 +1692,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -1762,7 +1759,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -1822,7 +1819,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -1897,7 +1894,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -2001,7 +1998,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -2077,7 +2074,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -2143,7 +2140,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -2214,7 +2211,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -2284,7 +2281,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -2366,7 +2363,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -2453,7 +2450,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -2566,7 +2563,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -2648,7 +2645,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -2694,7 +2691,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -2708,7 +2705,7 @@ describe("framework-runtime-core", () => {
         signal: JSON.parse('{"parts":[123]}'),
         threadId: thread.threadId,
       })
-    ).toThrow("request.signal must be a valid KrakenMessage");
+    ).toThrow("request.signal must be a valid TuvrenMessage");
     expect(await harness.readBranchMessages(thread.branchId)).toEqual([]);
   });
 
@@ -2728,7 +2725,7 @@ describe("framework-runtime-core", () => {
       },
       id: "fake",
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -2768,7 +2765,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -2788,7 +2785,7 @@ describe("framework-runtime-core", () => {
     );
 
     expect(handle.status().phase).toBe("failed");
-    expect(errorEvent?.error.code).toBe("invalid_kraken_message");
+    expect(errorEvent?.error.code).toBe("invalid_tuvren_message");
     expect(await harness.readBranchMessages(thread.branchId)).toEqual([
       {
         parts: [{ text: "Reject malformed driver output", type: "text" }],
@@ -2811,7 +2808,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -2853,7 +2850,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -2911,7 +2908,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -2968,7 +2965,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -3018,7 +3015,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -3113,7 +3110,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -3168,7 +3165,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -3210,7 +3207,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -3230,7 +3227,7 @@ describe("framework-runtime-core", () => {
     );
 
     expect(handle.status().phase).toBe("failed");
-    expect(errorEvent?.error.code).toBe("invalid_kraken_message");
+    expect(errorEvent?.error.code).toBe("invalid_tuvren_message");
     expect(events.some((event) => event.type === "turn.end")).toBe(true);
     expect(await harness.readBranchRuntimeStatus(thread.branchId)).toEqual({
       activeAgent: "primary",
@@ -3284,7 +3281,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -3362,7 +3359,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -3407,7 +3404,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -3484,7 +3481,7 @@ describe("framework-runtime-core", () => {
       },
       id: "fake",
     } satisfies KrakenDriverFactory;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driverFactory]),
       kernel: harness.kernel,
@@ -3520,7 +3517,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -3581,7 +3578,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -3632,7 +3629,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -3707,7 +3704,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenDriver;
 
     await harness.kernel.schema.register(customSchema);
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -3753,7 +3750,7 @@ describe("framework-runtime-core", () => {
       ],
       schemaId: "invalid.custom.agent.v1",
     } satisfies TurnTreeSchema);
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry(),
       kernel: harness.kernel,
@@ -3768,7 +3765,7 @@ describe("framework-runtime-core", () => {
 
   test("finalizes durable runtime status for post-start fatal failures", async () => {
     const harness = createFakeKernelHarness();
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry(),
       kernel: harness.kernel,
@@ -3813,7 +3810,7 @@ describe("framework-runtime-core", () => {
         },
       },
     } satisfies KrakenKernel;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry(),
       kernel,
@@ -3866,7 +3863,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -3916,7 +3913,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -3962,7 +3959,7 @@ describe("framework-runtime-core", () => {
 
   test("deep-clones nested initial extension state before first-turn seeding", async () => {
     const harness = createFakeKernelHarness();
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([
         {
@@ -4017,7 +4014,7 @@ describe("framework-runtime-core", () => {
   });
 
   test("keeps runtime hook receiver state mutable across live extension execution", async () => {
-    interface ReceiverExtension extends KrakenExtension {
+    interface ReceiverExtension extends TuvrenExtension {
       beforeIteration(): undefined;
       beforeTurn(): undefined;
       beforeTurnCalls: number;
@@ -4041,7 +4038,7 @@ describe("framework-runtime-core", () => {
       beforeTurnCalls: 0,
       name: "mutable-receiver",
     };
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([
         {
@@ -4104,7 +4101,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -4160,7 +4157,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -4216,7 +4213,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -4273,7 +4270,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -4343,7 +4340,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -4413,7 +4410,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -4454,7 +4451,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -4512,7 +4509,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -4561,7 +4558,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -4593,7 +4590,7 @@ describe("framework-runtime-core", () => {
 
   test("preserves emitted finish reason, usage, and provider metadata in synthesized afterIteration responses", async () => {
     const harness = createFakeKernelHarness();
-    let capturedResponse: KrakenModelResponse | undefined;
+    let capturedResponse: TuvrenModelResponse | undefined;
     const driver = {
       async execute(context) {
         context.runtime.emit({
@@ -4646,7 +4643,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -4690,7 +4687,7 @@ describe("framework-runtime-core", () => {
     let capturedResponse:
       | {
           finishReason: string;
-          parts: KrakenModelResponse["parts"];
+          parts: TuvrenModelResponse["parts"];
         }
       | undefined;
     const driver = {
@@ -4720,7 +4717,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -4802,7 +4799,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -4909,7 +4906,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -4944,12 +4941,12 @@ describe("framework-runtime-core", () => {
     );
 
     expect(handle.status().phase).toBe("failed");
-    expect(errorEvent?.error.code).toBe("invalid_kraken_message");
+    expect(errorEvent?.error.code).toBe("invalid_tuvren_message");
   });
 
   test("does not let context-engineering plans mutate loaded messages in place", async () => {
     const harness = createFakeKernelHarness();
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([
         {
@@ -5040,7 +5037,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -5129,12 +5126,12 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
     });
-    const tools: KrakenToolDefinition[] = [
+    const tools: TuvrenToolDefinition[] = [
       {
         description: "Search the latest status",
         execute(input: unknown) {
@@ -5302,7 +5299,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -5420,7 +5417,7 @@ describe("framework-runtime-core", () => {
         };
       },
     } satisfies CustomSchema;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -5506,7 +5503,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -5585,7 +5582,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -5655,7 +5652,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -5765,7 +5762,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -5825,7 +5822,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -5882,7 +5879,7 @@ describe("framework-runtime-core", () => {
       },
       id: "fake",
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -5954,7 +5951,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -6074,7 +6071,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -6195,7 +6192,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -6293,7 +6290,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -6425,7 +6422,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -6555,7 +6552,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -6619,7 +6616,7 @@ describe("framework-runtime-core", () => {
   });
 
   test("preserves receiver context for function and object-form aroundTool handlers", async () => {
-    interface MethodAroundToolExtension extends KrakenExtension {
+    interface MethodAroundToolExtension extends TuvrenExtension {
       aroundTool(
         context: AroundToolContext,
         next: (context?: AroundToolContext) => Promise<ToolResultPart>
@@ -6677,11 +6674,11 @@ describe("framework-runtime-core", () => {
       label: "spec",
       tools: ["email"],
     };
-    const specExtension: KrakenExtension = {
+    const specExtension: TuvrenExtension = {
       aroundTool: aroundToolSpec,
       name: "spec-around-tool",
     };
-    const originalTool: KrakenToolDefinition = {
+    const originalTool: TuvrenToolDefinition = {
       description: "Send email",
       execute(_input, context) {
         sameExecuteMetadataRef = context.metadata === originalMetadata;
@@ -6776,7 +6773,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -6851,7 +6848,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -6992,7 +6989,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -7150,7 +7147,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -7254,7 +7251,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -7367,7 +7364,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -7508,7 +7505,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -7647,7 +7644,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -7820,7 +7817,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -7972,7 +7969,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -8112,7 +8109,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -8232,7 +8229,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -8345,7 +8342,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -8478,7 +8475,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -8584,7 +8581,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -8699,7 +8696,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -8813,7 +8810,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -8942,7 +8939,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -9074,7 +9071,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -9195,7 +9192,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -9311,7 +9308,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -9413,7 +9410,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -9504,7 +9501,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -9594,7 +9591,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -9694,7 +9691,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -9735,7 +9732,7 @@ describe("framework-runtime-core", () => {
     const resumedEvents = await collectEvents(resumedHandle.events());
     const messages = await harness.readBranchMessages(thread.branchId);
     const rejectedToolMessage = messages.find(
-      (message): message is Extract<KrakenMessage, { role: "tool" }> =>
+      (message): message is Extract<TuvrenMessage, { role: "tool" }> =>
         typeof message === "object" &&
         message !== null &&
         "role" in message &&
@@ -9803,7 +9800,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -9851,7 +9848,7 @@ describe("framework-runtime-core", () => {
     await collectEvents(resumedHandle.events());
     const messages = await harness.readBranchMessages(thread.branchId);
     const editedToolMessage = messages.find(
-      (message): message is Extract<KrakenMessage, { role: "tool" }> =>
+      (message): message is Extract<TuvrenMessage, { role: "tool" }> =>
         typeof message === "object" &&
         message !== null &&
         "role" in message &&
@@ -9923,7 +9920,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -10062,7 +10059,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -10201,7 +10198,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -10296,7 +10293,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -10374,7 +10371,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([handoffDriver]),
       kernel: harness.kernel,
@@ -10441,7 +10438,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([handoffDriver]),
       kernel: harness.kernel,
@@ -10472,7 +10469,7 @@ describe("framework-runtime-core", () => {
 
   test("lets drivers build valid handoff plans through DriverExecutionContext.handoff", async () => {
     const harness = createFakeKernelHarness();
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([
         {
@@ -10541,7 +10538,7 @@ describe("framework-runtime-core", () => {
         return {
           finishReason: "stop",
           parts: [{ text: "unused primary provider output", type: "text" }],
-        } satisfies KrakenModelResponse;
+        } satisfies TuvrenModelResponse;
       },
       id: "primary-provider",
       async *stream() {
@@ -10554,7 +10551,7 @@ describe("framework-runtime-core", () => {
         return {
           finishReason: "stop",
           parts: [{ text: "unused reviewer provider output", type: "text" }],
-        } satisfies KrakenModelResponse;
+        } satisfies TuvrenModelResponse;
       },
       id: "reviewer-provider",
       async *stream() {
@@ -10571,7 +10568,7 @@ describe("framework-runtime-core", () => {
         name: "reviewer",
       },
     };
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([
         {
@@ -10633,7 +10630,7 @@ describe("framework-runtime-core", () => {
   test("driver helper handoff plans use the latest source context at apply time", async () => {
     const harness = createFakeKernelHarness();
     let capturedSourceContext: HandoffSourceContext | undefined;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([
         {
@@ -10706,7 +10703,7 @@ describe("framework-runtime-core", () => {
 
   test("driver helper last_output_only handoffs forward the just-produced assistant output", async () => {
     const harness = createFakeKernelHarness();
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([
         {
@@ -10837,7 +10834,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([handoffDriver]),
       kernel: harness.kernel,
@@ -10914,7 +10911,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([handoffDriver]),
       kernel: harness.kernel,
@@ -10972,7 +10969,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -11003,7 +11000,7 @@ describe("framework-runtime-core", () => {
   });
 
   test("preserve_trace handoff preserves chronological summarized trace without raw tool traces", () => {
-    let storedMessage: KrakenMessage | null = null;
+    let storedMessage: TuvrenMessage | null = null;
     const builder = createPreserveTraceHandoffContextBuilder();
 
     builder({
@@ -11130,7 +11127,7 @@ describe("framework-runtime-core", () => {
   });
 
   test("preserve_trace handoff summarizes assistant text instead of copying it verbatim", () => {
-    let storedMessage: KrakenMessage | null = null;
+    let storedMessage: TuvrenMessage | null = null;
     const builder = createPreserveTraceHandoffContextBuilder();
     const longAssistantText = `First line with spacing\n${"x".repeat(180)}`;
     const normalizedText = longAssistantText.replace(/\s+/g, " ").trim();
@@ -11192,7 +11189,7 @@ describe("framework-runtime-core", () => {
         type: "object",
       },
       name: "review_draft",
-    } satisfies KrakenToolDefinition;
+    } satisfies TuvrenToolDefinition;
     const agents: Record<string, AgentConfig> = {
       primary: {
         name: "primary",
@@ -11263,7 +11260,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -11353,7 +11350,7 @@ describe("framework-runtime-core", () => {
       },
       id: "fake",
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -11389,7 +11386,7 @@ describe("framework-runtime-core", () => {
   });
 
   test("last_output_only handoff forwards the final visible assistant parts", () => {
-    let storedMessage: KrakenMessage | null = null;
+    let storedMessage: TuvrenMessage | null = null;
     const builder = createLastOutputOnlyHandoffContextBuilder();
     const fileData = new Uint8Array([1, 2, 3]);
 
@@ -11507,7 +11504,7 @@ describe("framework-runtime-core", () => {
   test("global handoff builder overrides do not replace last_output_only semantics", async () => {
     const harness = createFakeKernelHarness();
     let overrideUsed = false;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([
         {
@@ -11607,7 +11604,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([handoffDriver]),
       kernel: harness.kernel,
@@ -11681,7 +11678,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -11702,7 +11699,7 @@ describe("framework-runtime-core", () => {
       )
     );
     expect(() => handle.steer(JSON.parse('{"parts":[123]}'))).toThrow(
-      "steering signal must be a valid KrakenMessage"
+      "steering signal must be a valid TuvrenMessage"
     );
     handle.steer(textSignal("Injected steering"));
     await eventsPromise;
@@ -11797,7 +11794,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,
@@ -11860,7 +11857,7 @@ describe("framework-runtime-core", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenDriver;
-    const runtime = createKrakenRuntimeCore({
+    const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
       kernel: harness.kernel,

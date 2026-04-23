@@ -1,25 +1,25 @@
 # Product Requirements Document
 
 ## 0. Version History & Changelog
-- v0.2.0 - Reframed Kraken as a driver-oriented runtime where the framework can host multiple execution drivers over shared kernel primitives, with ReAct as the initial driver.
+- v0.2.0 - Reframed Tuvren Runtime as a driver-oriented runtime where the framework can host multiple execution drivers over shared kernel primitives, with ReAct as the initial driver.
 - v0.1.0 - Initial PRD synthesized from the existing Kraken kernel/framework specifications and rationale documents.
 - ... [Older history truncated, refer to git logs]
 
 ## 1. Executive Summary & Target Archetype
 - **Target Archetype:** Embeddable stateful agent and workflow runtime kernel plus driver-oriented framework/SDK
-- **Vision:** Kraken becomes a trustworthy substrate for building long-lived agent systems whose progress, state transitions, interruptions, and control transfers remain durable, inspectable, and recoverable instead of opaque and fragile.
+- **Vision:** Tuvren Runtime becomes a trustworthy substrate for building long-lived agent systems whose progress, state transitions, interruptions, and control transfers remain durable, inspectable, and recoverable instead of opaque and fragile.
 - **Problem:** Existing agent runtimes often make state continuity, tool execution, pause/resume, context shaping, and multi-agent control feel incidental or ad hoc, while many workflow systems hard-code one execution style as if it were the whole product. That makes long-running agent work hard to audit, hard to recover after interruption, hard to govern, and hard to adapt cleanly across different execution models.
 - **Jobs to Be Done:** Enable a builder to run durable agent or workflow execution with explicit history; let a host observe and steer execution safely; let a system execute tools, approvals, and handoffs without losing continuity; and let downstream teams reason about what happened, why it happened, and how to resume, redirect, or swap execution strategy without discarding the shared runtime foundation.
 
 ### 1.1 Product Posture
-- Kraken is a runtime product, not just a message wrapper or prompt helper.
-- Kraken must treat durable state continuity as a first-class product outcome, not an implementation detail.
-- Kraken must separate low-level runtime mechanism from higher-level execution policy so that the product can stay stable while agent and workflow behaviors evolve.
-- Kraken must be host-embeddable. The product serves applications, services, CLIs, and protocol adapters rather than replacing them.
-- Kraken must support a shared runtime foundation that can host more than one execution driver over time rather than treating one agent loop as the entire product ontology.
+- Tuvren is the company brand, Tuvren Runtime is the runtime product, and Kraken is the engine identity behind it.
+- Tuvren Runtime must treat durable state continuity as a first-class product outcome, not an implementation detail.
+- Tuvren Runtime must separate low-level runtime mechanism from higher-level execution policy so that the product can stay stable while agent and workflow behaviors evolve.
+- Tuvren Runtime must be host-embeddable. The product serves applications, services, CLIs, and protocol adapters rather than replacing them.
+- Tuvren Runtime must support a shared runtime foundation that can host more than one execution driver over time rather than treating one agent loop as the entire product ontology.
 
 ### 1.2 Success Criteria
-- A builder can embed Kraken as the execution substrate for an agentic product without having to invent custom persistence, pause/resume, or recovery semantics.
+- A builder can embed Tuvren Runtime as the execution substrate for an agentic product without having to invent custom persistence, pause/resume, or recovery semantics.
 - A host can observe execution in real time and still rely on a durable post hoc history of what was committed.
 - A human supervisor can interrupt, approve, reject, or resume sensitive work without corrupting the execution lineage.
 - A multi-agent workflow can delegate, hand off, and continue work while preserving traceability and avoiding ambiguous control transfer.
@@ -34,7 +34,7 @@
 ## 2. Ubiquitous Language (Glossary)
 | Term | Definition | Do Not Use |
 | --- | --- | --- |
-| Kraken Runtime | The overall product surface that enables durable, stateful agent execution and orchestration. | engine, bot framework, wrapper |
+| Tuvren Runtime | The overall product surface that enables durable, stateful agent execution and orchestration. | engine, bot framework, wrapper |
 | Kernel | The mechanism-focused layer that owns durable storage, structural state, lineage, and recovery primitives. | framework core, agent brain |
 | Framework | The shared runtime layer built on the kernel that provides common contracts, services, and integration surfaces used by one or more drivers. | kernel, single agent loop |
 | Driver | A concrete execution model built on the shared framework and kernel primitives. | workflow preset, implementation detail |
@@ -66,7 +66,7 @@
 
 ### 3.2 Host Application Developer
 - **Role:** Host Application Developer
-- **Context:** Exposes Kraken through an API, UI, CLI, editor integration, or protocol bridge.
+- **Context:** Exposes Tuvren Runtime through an API, UI, CLI, editor integration, or protocol bridge.
 - **Goals:** Start turns, consume streamed events, inject steering, route approvals, and surface execution status without owning the runtime semantics.
 - **Frictions:** Needs a clear control surface and event vocabulary instead of reverse-engineering runtime internals.
 
@@ -189,7 +189,7 @@
 - **Priority:** P0
 - **Capability ID:** CAP-P0-019
 - **Capability:** The product must expose a host control surface that can start execution, stream runtime events, cancel work, inject steering, and resolve approvals.
-- **Rationale:** Kraken is meant to be embedded into host systems, so the host contract is part of the product, not a side detail.
+- **Rationale:** Tuvren Runtime is meant to be embedded into host systems, so the host contract is part of the product, not a side detail.
 
 - **Priority:** P0
 - **Capability ID:** CAP-P0-020
@@ -231,7 +231,7 @@
 - **Priority:** P1
 - **Capability ID:** CAP-P1-034
 - **Capability:** The product must ship with one primary driver-first baseline, centered initially on a ReAct-style execution model, while keeping room for future workflow, routing, evaluator, or orchestration-focused drivers.
-- **Rationale:** Kraken needs one strong default execution path now without letting that first choice become an accidental product monopoly.
+- **Rationale:** Tuvren Runtime needs one strong default execution path now without letting that first choice become an accidental product monopoly.
 
 ### Epic: Multi-Agent Orchestration
 - **Priority:** P0
@@ -258,7 +258,7 @@
 - **Priority:** P0
 - **Capability ID:** CAP-P0-030
 - **Capability:** The product must provide a provider-neutral internal model so that agent behavior does not depend on any one provider’s wire format or naming conventions.
-- **Rationale:** Kraken’s product value depends on stable internal semantics even as model ecosystems change.
+- **Rationale:** Tuvren Runtime’s product value depends on stable internal semantics even as model ecosystems change.
 
 - **Priority:** P1
 - **Capability ID:** CAP-P1-031
@@ -272,7 +272,7 @@
 - **Rationale:** A runtime this foundational only becomes adoptable if its conceptual model is teachable and inspectable.
 
 ### 4.1 Scope Notes
-- The PRD intentionally treats persistence, streaming, tool dispatch, approvals, context engineering, and orchestration as product capabilities because they materially define the user-facing value of Kraken as a runtime.
+- The PRD intentionally treats persistence, streaming, tool dispatch, approvals, context engineering, and orchestration as product capabilities because they materially define the user-facing value of Tuvren Runtime as a runtime.
 - The initial active product line is the shared runtime foundation plus the ReAct Driver, not a commitment to implement every possible driver pattern in the first release line.
 - This PRD does not prescribe the concrete storage engine, programming language, packaging layout, or transport stack used to implement those capabilities.
 
@@ -321,10 +321,10 @@
 ```mermaid
 C4Context
 title System Context
-Person(builder, "Runtime Integrator", "Builds agentic products on top of Kraken")
+Person(builder, "Runtime Integrator", "Builds agentic products on top of Tuvren Runtime")
 Person(approver, "Human Approver", "Reviews sensitive actions when approval is required")
-System(runtime, "Kraken Runtime", "Embeddable stateful agent runtime kernel plus framework")
-System_Ext(host, "Host Application", "API, UI, CLI, editor, or service embedding Kraken")
+System(runtime, "Tuvren Runtime", "Embeddable stateful agent runtime kernel plus framework")
+System_Ext(host, "Host Application", "API, UI, CLI, editor, or service embedding Tuvren Runtime")
 System_Ext(modelProviders, "Model Providers", "Generate responses and tool-call intents")
 System_Ext(externalTools, "External Tools and Systems", "Operations invoked by the runtime")
 
@@ -344,7 +344,7 @@ class Turn
 class Run
 class TurnNode
 class TurnTree
-class KrakenMessage
+class TuvrenMessage
 class ContextManifest
 class ApprovalRequest
 class AgentConfig
@@ -356,7 +356,7 @@ Branch "1" --> "*" Turn : hosts
 Turn "1" --> "*" Run : served by
 Branch "1" --> "*" TurnNode : advances through
 TurnNode "1" --> "1" TurnTree : captures
-TurnTree "1" --> "*" KrakenMessage : exposes active messages
+TurnTree "1" --> "*" TuvrenMessage : exposes active messages
 TurnTree "1" --> "1" ContextManifest : summarizes active context
 Run --> "0..1" ApprovalRequest : may pause for
 Run --> "0..1" AgentConfig : executes with

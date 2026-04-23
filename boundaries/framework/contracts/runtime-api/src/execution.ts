@@ -42,18 +42,18 @@ export type {
   InterceptHandler,
   InterceptResult,
   IterationDecision,
-  KrakenExtension,
-  KrakenMessage,
-  KrakenRuntime,
   LoopPolicy,
   RuntimeResolution,
   SystemPromptContext,
   SystemPromptFn,
+  TuvrenExtension,
+  TuvrenMessage,
+  TuvrenRuntime,
 } from "./lib/runtime-contracts.js";
 export {
   assertContextManifest,
   assertExecutionStatus,
-  assertKrakenMessage,
+  assertTuvrenMessage,
   isExecutionStatus,
-  isKrakenMessage,
+  isTuvrenMessage,
 } from "./lib/runtime-contracts.js";

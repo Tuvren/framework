@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-import type { KrakenStreamEvent } from "@kraken/framework-runtime-api/events";
+import type { EpochMs, HashString } from "@tuvren/core-types";
+import { TuvrenValidationError } from "@tuvren/core-types";
+import type { TuvrenStreamEvent } from "@tuvren/runtime-api/events";
 import type {
   AgentConfig,
   ContextManifest,
@@ -22,26 +24,21 @@ import type {
   HandoffContextMode,
   HandoffContextPlan,
   HandoffSourceContext,
-  KrakenMessage,
   RuntimeResolution,
-} from "@kraken/framework-runtime-api/execution";
+  TuvrenMessage,
+} from "@tuvren/runtime-api/execution";
 import {
   assertContextManifest,
-  assertKrakenMessage,
-} from "@kraken/framework-runtime-api/execution";
-import type {
-  ApprovalResponse,
-  ToolRegistry,
-} from "@kraken/framework-runtime-api/tools";
+  assertTuvrenMessage,
+} from "@tuvren/runtime-api/execution";
+import type { ApprovalResponse, ToolRegistry } from "@tuvren/runtime-api/tools";
 import {
   assertApprovalRequest,
-  assertKrakenToolDefinition,
-} from "@kraken/framework-runtime-api/tools";
-import type { EpochMs, HashString } from "@kraken/shared-core-types";
-import { KrakenValidationError } from "@kraken/shared-core-types";
+  assertTuvrenToolDefinition,
+} from "@tuvren/runtime-api/tools";
 
 export interface DriverRuntimePort {
-  emit(event: KrakenStreamEvent): Promise<void> | void;
+  emit(event: TuvrenStreamEvent): Promise<void> | void;
   now(): EpochMs;
 }
 
@@ -64,7 +61,7 @@ export interface DriverExecutionContext {
   handoff: DriverHandoffPort;
   iterationCount: number;
   manifest: Readonly<ContextManifest>;
-  messages: readonly KrakenMessage[];
+  messages: readonly TuvrenMessage[];
   runtime: DriverRuntimePort;
   schemaId: string;
   signal?: AbortSignal;
@@ -84,7 +81,7 @@ export type DriverToolExecutionMode = "parallel" | "sequential";
 // expressed through resolution/messages/partial/toolExecutionMode, treat that
 // as a spec discussion rather than extending the shared contract casually.
 export interface DriverExecutionResult {
-  messages?: KrakenMessage[];
+  messages?: TuvrenMessage[];
   partial?: boolean;
   resolution: RuntimeResolution;
   toolExecutionMode?: DriverToolExecutionMode;
@@ -169,7 +166,7 @@ export function assertKrakenDriver(
   label = "value"
 ): asserts value is KrakenDriver {
   if (!isKrakenDriver(value)) {
-    throw new KrakenValidationError(`${label} must be a valid KrakenDriver`, {
+    throw new TuvrenValidationError(`${label} must be a valid KrakenDriver`, {
       code: "invalid_driver_contract",
       details: value,
     });
@@ -184,7 +181,7 @@ export function assertDriverExecutionResult(
     !isRecord(value) ||
     ("partial" in value && typeof value.partial !== "boolean")
   ) {
-    throw new KrakenValidationError(
+    throw new TuvrenValidationError(
       `${label} must include only valid optional driver metadata fields`,
       {
         code: "invalid_driver_result",
@@ -199,7 +196,7 @@ export function assertDriverExecutionResult(
     value.toolExecutionMode !== "parallel" &&
     value.toolExecutionMode !== "sequential"
   ) {
-    throw new KrakenValidationError(
+    throw new TuvrenValidationError(
       `${label}.toolExecutionMode must be "parallel" or "sequential"`,
       {
         code: "invalid_driver_result",
@@ -247,7 +244,7 @@ export function assertDriverRuntimeResolution(
   label = "value"
 ): asserts value is RuntimeResolution {
   if (!isRecord(value) || typeof value.type !== "string") {
-    throw new KrakenValidationError(`${label} must be a valid resolution`, {
+    throw new TuvrenValidationError(`${label} must be a valid resolution`, {
       code: "invalid_driver_result",
       details: value,
     });
@@ -279,7 +276,7 @@ export function assertDriverRuntimeResolution(
         assertOnlyAllowedKeys(value, HANDOFF_RESOLUTION_KEYS, label);
 
         if (value.contextPlan.targetAgent !== value.targetAgent) {
-          throw new KrakenValidationError(
+          throw new TuvrenValidationError(
             `${label}.targetAgent must match ${label}.contextPlan.targetAgent`,
             {
               code: "invalid_driver_result",
@@ -307,7 +304,7 @@ export function assertDriverRuntimeResolution(
       break;
   }
 
-  throw new KrakenValidationError(`${label} must be a valid resolution`, {
+  throw new TuvrenValidationError(`${label} must be a valid resolution`, {
     code: "invalid_driver_result",
     details: value,
   });
@@ -325,7 +322,7 @@ export function assertDriverHandoffContextPlan(
     typeof value.builder !== "function" ||
     !isRecord(value.sourceContext)
   ) {
-    throw new KrakenValidationError(`${label} must be a valid handoff plan`, {
+    throw new TuvrenValidationError(`${label} must be a valid handoff plan`, {
       code: "invalid_driver_result",
       details: value,
     });
@@ -337,7 +334,7 @@ export function assertDriverHandoffContextPlan(
   );
 
   if (value.sourceContext.handoffIntent.targetAgent !== value.targetAgent) {
-    throw new KrakenValidationError(
+    throw new TuvrenValidationError(
       `${label}.sourceContext.handoffIntent.targetAgent must match ${label}.targetAgent`,
       {
         code: "invalid_driver_result",
@@ -351,7 +348,7 @@ export function assertDriverHandoffContextPlan(
   }
 
   if (value.sourceContext.targetAgent.name !== value.targetAgent) {
-    throw new KrakenValidationError(
+    throw new TuvrenValidationError(
       `${label}.sourceContext.targetAgent.name must match ${label}.targetAgent`,
       {
         code: "invalid_driver_result",
@@ -369,21 +366,21 @@ export function assertDriverHandoffSourceContext(
   label = "value"
 ): asserts value is HandoffSourceContext {
   if (!isRecord(value)) {
-    throw new KrakenValidationError(`${label} must be a valid handoff source`, {
+    throw new TuvrenValidationError(`${label} must be a valid handoff source`, {
       code: "invalid_driver_result",
       details: value,
     });
   }
 
   if (!Array.isArray(value.messages)) {
-    throw new KrakenValidationError(`${label}.messages must be an array`, {
+    throw new TuvrenValidationError(`${label}.messages must be an array`, {
       code: "invalid_driver_result",
       details: value,
     });
   }
 
   for (const [index, message] of value.messages.entries()) {
-    assertKrakenMessage(message, `${label}.messages[${index}]`);
+    assertTuvrenMessage(message, `${label}.messages[${index}]`);
   }
 
   assertContextManifest(value.manifest, `${label}.manifest`);
@@ -396,7 +393,7 @@ export function assertDriverHandoffSourceContext(
     typeof value.helpers.storeMessage !== "function" ||
     typeof value.helpers.storeMessages !== "function"
   ) {
-    throw new KrakenValidationError(`${label} must be a valid handoff source`, {
+    throw new TuvrenValidationError(`${label} must be a valid handoff source`, {
       code: "invalid_driver_result",
       details: value,
     });
@@ -414,9 +411,9 @@ function safePredicate(check: () => boolean): boolean {
   }
 }
 
-function assertDriverMessage(message: KrakenMessage, label: string): void {
+function assertDriverMessage(message: TuvrenMessage, label: string): void {
   if (message.role !== "assistant") {
-    throw new KrakenValidationError(`${label} must be an assistant message`, {
+    throw new TuvrenValidationError(`${label} must be an assistant message`, {
       code: "invalid_driver_result",
       details: message,
     });
@@ -424,7 +421,7 @@ function assertDriverMessage(message: KrakenMessage, label: string): void {
 
   for (const [index, part] of message.parts.entries()) {
     if (part.type === "tool_result") {
-      throw new KrakenValidationError(
+      throw new TuvrenValidationError(
         `${label}.parts[${index}] must not be a tool_result`,
         {
           code: "invalid_driver_result",
@@ -444,19 +441,19 @@ function assertDriverMessages(
   }
 
   if (!Array.isArray(value.messages)) {
-    throw new KrakenValidationError(`${label}.messages must be an array`, {
+    throw new TuvrenValidationError(`${label}.messages must be an array`, {
       code: "invalid_driver_result",
       details: value,
     });
   }
 
   for (const [index, message] of value.messages.entries()) {
-    assertKrakenMessage(message, `${label}.messages[${index}]`);
+    assertTuvrenMessage(message, `${label}.messages[${index}]`);
     assertDriverMessage(message, `${label}.messages[${index}]`);
   }
 
   if (value.messages.length > 1) {
-    throw new KrakenValidationError(
+    throw new TuvrenValidationError(
       `${label}.messages must not contain more than one assistant message`,
       {
         code: "invalid_driver_result",
@@ -468,7 +465,7 @@ function assertDriverMessages(
 
 function assertDriverPartialResult(
   value: {
-    messages?: KrakenMessage[];
+    messages?: TuvrenMessage[];
     partial: boolean;
     resolution: RuntimeResolution;
   },
@@ -479,7 +476,7 @@ function assertDriverPartialResult(
   }
 
   if (value.resolution.type !== "fail") {
-    throw new KrakenValidationError(
+    throw new TuvrenValidationError(
       `${label}.partial is only valid for failed execution results`,
       {
         code: "invalid_driver_result",
@@ -489,7 +486,7 @@ function assertDriverPartialResult(
   }
 
   if (!value.messages?.some((message) => message.role === "assistant")) {
-    throw new KrakenValidationError(
+    throw new TuvrenValidationError(
       `${label}.partial requires a staged assistant message`,
       {
         code: "invalid_driver_result",
@@ -501,7 +498,7 @@ function assertDriverPartialResult(
 
 function assertDriverToolExecutionMode(
   value: {
-    messages?: KrakenMessage[];
+    messages?: TuvrenMessage[];
     toolExecutionMode?: DriverToolExecutionMode;
   },
   label: string
@@ -509,7 +506,7 @@ function assertDriverToolExecutionMode(
   const requestedToolCalls = hasRequestedToolCalls(value.messages);
 
   if (requestedToolCalls && value.toolExecutionMode === undefined) {
-    throw new KrakenValidationError(
+    throw new TuvrenValidationError(
       `${label}.toolExecutionMode is required when driver messages request tool calls`,
       {
         code: "invalid_driver_result",
@@ -519,7 +516,7 @@ function assertDriverToolExecutionMode(
   }
 
   if (!requestedToolCalls && value.toolExecutionMode !== undefined) {
-    throw new KrakenValidationError(
+    throw new TuvrenValidationError(
       `${label}.toolExecutionMode is only valid when driver messages request tool calls`,
       {
         code: "invalid_driver_result",
@@ -531,7 +528,7 @@ function assertDriverToolExecutionMode(
 
 function assertDriverResolutionCompatibility(
   value: {
-    messages?: KrakenMessage[];
+    messages?: TuvrenMessage[];
     resolution: RuntimeResolution;
   },
   label: string
@@ -539,7 +536,7 @@ function assertDriverResolutionCompatibility(
   const requestedToolCalls = hasRequestedToolCalls(value.messages);
 
   if (requestedToolCalls && value.resolution.type !== "continue_iteration") {
-    throw new KrakenValidationError(
+    throw new TuvrenValidationError(
       `${label}.resolution must continue iteration when driver messages request tool calls`,
       {
         code: "invalid_driver_result",
@@ -549,7 +546,7 @@ function assertDriverResolutionCompatibility(
   }
 
   if (!requestedToolCalls && value.resolution.type === "pause") {
-    throw new KrakenValidationError(
+    throw new TuvrenValidationError(
       `${label}.resolution.pause requires driver messages with tool calls`,
       {
         code: "invalid_driver_result",
@@ -564,7 +561,7 @@ function assertDriverAgentConfigSnapshot(
   label: string
 ): asserts value is AgentConfig {
   if (!isRecord(value) || typeof value.name !== "string") {
-    throw new KrakenValidationError(`${label} must be a valid AgentConfig`, {
+    throw new TuvrenValidationError(`${label} must be a valid AgentConfig`, {
       code: "invalid_driver_result",
       details: value,
     });
@@ -593,8 +590,8 @@ function assertDriverAgentConfigSnapshot(
 
 function assertDriverExtensionSnapshot(value: unknown, label: string): void {
   if (!isRecord(value) || typeof value.name !== "string") {
-    throw new KrakenValidationError(
-      `${label} must be a valid KrakenExtension`,
+    throw new TuvrenValidationError(
+      `${label} must be a valid TuvrenExtension`,
       {
         code: "invalid_driver_result",
         details: value,
@@ -626,7 +623,7 @@ function assertDriverContextPolicySnapshot(
   }
 
   if (!isRecord(value) || typeof value.evaluate !== "function") {
-    throw new KrakenValidationError(`${label} must be a valid ContextPolicy`, {
+    throw new TuvrenValidationError(`${label} must be a valid ContextPolicy`, {
       code: "invalid_driver_result",
       details: value,
     });
@@ -641,7 +638,7 @@ function assertDriverLoopPolicySnapshot(value: unknown, label: string): void {
   }
 
   if (!isRecord(value) || typeof value.evaluate !== "function") {
-    throw new KrakenValidationError(`${label} must be a valid LoopPolicy`, {
+    throw new TuvrenValidationError(`${label} must be a valid LoopPolicy`, {
       code: "invalid_driver_result",
       details: value,
     });
@@ -661,15 +658,15 @@ function assertDriverModelSnapshot(value: unknown, label: string): void {
     typeof value.generate !== "function" ||
     typeof value.stream !== "function"
   ) {
-    throw new KrakenValidationError(
-      `${label} must be a string model id or KrakenProvider`,
+    throw new TuvrenValidationError(
+      `${label} must be a string model id or TuvrenProvider`,
       {
         code: "invalid_driver_result",
         details: value,
       }
     );
   }
-  // KrakenProvider is an open runtime object. Shared core only relies on the
+  // TuvrenProvider is an open runtime object. Shared core only relies on the
   // callable provider surface and must not reject provider-owned extra state.
 }
 
@@ -682,7 +679,7 @@ function assertDriverResponseFormatSnapshot(
   }
 
   if (!isRecord(value)) {
-    throw new KrakenValidationError(
+    throw new TuvrenValidationError(
       `${label} must be a valid StructuredOutputRequest`,
       {
         code: "invalid_driver_result",
@@ -694,7 +691,7 @@ function assertDriverResponseFormatSnapshot(
   assertOnlyAllowedKeys(value, STRUCTURED_OUTPUT_REQUEST_KEYS, label);
 
   if (!("schema" in value)) {
-    throw new KrakenValidationError(`${label}.schema is required`, {
+    throw new TuvrenValidationError(`${label}.schema is required`, {
       code: "invalid_driver_result",
       details: value,
     });
@@ -708,7 +705,7 @@ function assertDriverResponseFormatSnapshot(
       value.strict !== undefined &&
       typeof value.strict !== "boolean")
   ) {
-    throw new KrakenValidationError(
+    throw new TuvrenValidationError(
       `${label} must be a valid StructuredOutputRequest`,
       {
         code: "invalid_driver_result",
@@ -724,7 +721,7 @@ function assertDriverExtensionsSnapshot(value: unknown, label: string): void {
   }
 
   if (!Array.isArray(value)) {
-    throw new KrakenValidationError(`${label} must be an array`, {
+    throw new TuvrenValidationError(`${label} must be an array`, {
       code: "invalid_driver_result",
       details: value,
     });
@@ -749,7 +746,7 @@ function assertDriverExtensionHandlers(
 
   for (const [name, handler] of handlers) {
     if (handler !== undefined && typeof handler !== "function") {
-      throw new KrakenValidationError(
+      throw new TuvrenValidationError(
         `${label}.${name} must be a function when provided`,
         {
           code: "invalid_driver_result",
@@ -769,7 +766,7 @@ function assertDriverAroundToolSnapshot(value: unknown, label: string): void {
   const handler = isRecord(value) ? value.handler : undefined;
 
   if (!Array.isArray(tools) || typeof handler !== "function") {
-    throw new KrakenValidationError(`${label} must be a valid AroundToolSpec`, {
+    throw new TuvrenValidationError(`${label} must be a valid AroundToolSpec`, {
       code: "invalid_driver_result",
       details: value,
     });
@@ -777,7 +774,7 @@ function assertDriverAroundToolSnapshot(value: unknown, label: string): void {
 
   for (const toolName of tools) {
     if (typeof toolName !== "string") {
-      throw new KrakenValidationError(
+      throw new TuvrenValidationError(
         `${label} must be a valid AroundToolSpec`,
         {
           code: "invalid_driver_result",
@@ -797,7 +794,7 @@ function assertOptionalStringArray(value: unknown, label: string): void {
     !Array.isArray(value) ||
     value.some((entry) => typeof entry !== "string")
   ) {
-    throw new KrakenValidationError(`${label} must be an array of strings`, {
+    throw new TuvrenValidationError(`${label} must be an array of strings`, {
       code: "invalid_driver_result",
       details: value,
     });
@@ -810,7 +807,7 @@ function assertOptionalRecord(value: unknown, label: string): void {
   }
 
   if (!isRecord(value)) {
-    throw new KrakenValidationError(`${label} must be a record`, {
+    throw new TuvrenValidationError(`${label} must be a record`, {
       code: "invalid_driver_result",
       details: value,
     });
@@ -823,7 +820,7 @@ function assertOptionalString(value: unknown, label: string): void {
   }
 
   if (typeof value !== "string") {
-    throw new KrakenValidationError(`${label} must be a string`, {
+    throw new TuvrenValidationError(`${label} must be a string`, {
       code: "invalid_driver_result",
       details: value,
     });
@@ -836,7 +833,7 @@ function assertOptionalStringOrFunction(value: unknown, label: string): void {
   }
 
   if (typeof value !== "string" && typeof value !== "function") {
-    throw new KrakenValidationError(`${label} must be a string or function`, {
+    throw new TuvrenValidationError(`${label} must be a string or function`, {
       code: "invalid_driver_result",
       details: value,
     });
@@ -853,7 +850,7 @@ function assertFiniteOptionalNumber(
   }
 
   if (typeof value !== "number" || !Number.isFinite(value)) {
-    throw new KrakenValidationError(`${label} ${message}`, {
+    throw new TuvrenValidationError(`${label} ${message}`, {
       code: "invalid_driver_result",
       details: value,
     });
@@ -866,14 +863,14 @@ function assertToolDefinitions(value: unknown, label: string): void {
   }
 
   if (!Array.isArray(value)) {
-    throw new KrakenValidationError(`${label} must be an array`, {
+    throw new TuvrenValidationError(`${label} must be an array`, {
       code: "invalid_driver_result",
       details: value,
     });
   }
 
   for (const [index, tool] of value.entries()) {
-    assertKrakenToolDefinition(tool, `${label}[${index}]`);
+    assertTuvrenToolDefinition(tool, `${label}[${index}]`);
   }
 }
 
@@ -884,7 +881,7 @@ function assertOnlyAllowedKeys(
 ): void {
   for (const key of Object.keys(value)) {
     if (!allowedKeys.has(key)) {
-      throw new KrakenValidationError(
+      throw new TuvrenValidationError(
         `${label} must not include unsupported field "${key}"`,
         {
           code: "invalid_driver_result",
@@ -895,7 +892,7 @@ function assertOnlyAllowedKeys(
   }
 }
 
-function hasRequestedToolCalls(messages?: KrakenMessage[]): boolean {
+function hasRequestedToolCalls(messages?: TuvrenMessage[]): boolean {
   return (
     messages?.some(
       (message) =>

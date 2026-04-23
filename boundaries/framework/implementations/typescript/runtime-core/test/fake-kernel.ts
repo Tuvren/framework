@@ -16,6 +16,7 @@
 
 // biome-ignore-all lint/suspicious/useAwait: The fake kernel mirrors the async production protocol surface.
 import { createHash } from "node:crypto";
+import type { HashString, KernelRecord } from "@tuvren/core-types";
 import {
   type BranchHeadListEntry,
   type BranchRecord,
@@ -34,8 +35,7 @@ import {
   type TurnRecord,
   type TurnTreeManifest,
   type TurnTreeSchema,
-} from "@kraken/kernel-contract-protocol";
-import type { HashString, KernelRecord } from "@kraken/shared-core-types";
+} from "@tuvren/kernel-protocol";
 import {
   createEmptyContextManifest,
   DEFAULT_AGENT_SCHEMA,

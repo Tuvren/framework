@@ -14,7 +14,12 @@
  * limitations under the License.
  */
 
-import type { KrakenDriver } from "@kraken/framework-driver-api";
+import type { KrakenDriver } from "@tuvren/driver-api";
+import {
+  decodeDeterministicKernelRecord,
+  encodeDeterministicKernelRecord,
+  type KrakenKernel,
+} from "@tuvren/kernel-protocol";
 import type {
   AgentConfig,
   ContextManifest,
@@ -24,18 +29,13 @@ import type {
   HandoffSourceContext,
   InputSignal,
   KernelRecord,
-  KrakenMessage,
-  KrakenStreamEvent,
-} from "@kraken/framework-runtime-api";
+  TuvrenMessage,
+  TuvrenStreamEvent,
+} from "@tuvren/runtime-api";
 import {
   assertContextManifest,
-  assertKrakenMessage,
-} from "@kraken/framework-runtime-api";
-import {
-  decodeDeterministicKernelRecord,
-  encodeDeterministicKernelRecord,
-  type KrakenKernel,
-} from "@kraken/kernel-contract-protocol";
+  assertTuvrenMessage,
+} from "@tuvren/runtime-api";
 
 export async function collectEvents<T>(events: AsyncIterable<T>): Promise<T[]> {
   const collected: T[] = [];
@@ -88,9 +88,9 @@ export async function readBranchCheckpointEventTypes(
 
 export function toKrakenMessages(
   messages: readonly unknown[]
-): KrakenMessage[] {
+): TuvrenMessage[] {
   return messages.map((message, index) => {
-    assertKrakenMessage(message, `messages[${index}]`);
+    assertTuvrenMessage(message, `messages[${index}]`);
     return message;
   });
 }
@@ -252,7 +252,7 @@ export function createStubExecutionHandle(
   return handle;
 }
 
-export function assistantText(text: string): KrakenMessage {
+export function assistantText(text: string): TuvrenMessage {
   return {
     parts: [{ text, type: "text" }],
     role: "assistant",
@@ -262,7 +262,7 @@ export function assistantText(text: string): KrakenMessage {
 export function assistantStructured(
   name: string,
   data: unknown
-): KrakenMessage {
+): TuvrenMessage {
   return {
     parts: [{ data, name, type: "structured" }],
     role: "assistant",
@@ -282,7 +282,7 @@ export function assistantToolCalls(
       name: string;
     }>,
   ]
-): KrakenMessage {
+): TuvrenMessage {
   const parts = toNonEmptyArray(
     calls.map((call) => ({
       callId: call.callId,
@@ -348,7 +348,7 @@ export function buildHandoffPlan(
 }
 
 export function createStaticExecutionHandle(
-  events: KrakenStreamEvent[],
+  events: TuvrenStreamEvent[],
   status: ExecutionStatus
 ): ExecutionHandle {
   return {
@@ -455,9 +455,9 @@ export function delay(milliseconds: number): Promise<void> {
 
 export function extractToolMessages(
   messages: readonly unknown[]
-): Extract<KrakenMessage, { role: "tool" }>[] {
+): Extract<TuvrenMessage, { role: "tool" }>[] {
   return messages.filter(
-    (message): message is Extract<KrakenMessage, { role: "tool" }> =>
+    (message): message is Extract<TuvrenMessage, { role: "tool" }> =>
       message !== null &&
       typeof message === "object" &&
       "role" in message &&
@@ -513,7 +513,7 @@ export function hasOkData(value: unknown): value is { ok: boolean } {
   );
 }
 
-export function extractSingleUserText(message: KrakenMessage | null): string {
+export function extractSingleUserText(message: TuvrenMessage | null): string {
   if (message === null || message.role !== "user") {
     throw new Error("expected a captured user handoff message");
   }
@@ -528,8 +528,8 @@ export function extractSingleUserText(message: KrakenMessage | null): string {
 }
 
 export function requireStoredHandoffMessage(
-  message: KrakenMessage | null
-): KrakenMessage {
+  message: TuvrenMessage | null
+): TuvrenMessage {
   if (message === null) {
     throw new Error("expected the handoff builder to store a user message");
   }

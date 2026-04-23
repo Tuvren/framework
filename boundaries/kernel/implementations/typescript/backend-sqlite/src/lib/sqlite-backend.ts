@@ -19,6 +19,12 @@ import { existsSync, mkdirSync, readdirSync, readFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  assertHashString,
+  type EpochMs,
+  TuvrenPersistenceError,
+  TuvrenValidationError,
+} from "@tuvren/core-types";
+import {
   assertStoredBranch,
   assertStoredObject,
   assertStoredObjectIdentity,
@@ -52,13 +58,7 @@ import {
   type StoredTurnTree,
   type StoredTurnTreePath,
   type TurnTreeSchema,
-} from "@kraken/kernel-contract-protocol";
-import {
-  assertHashString,
-  type EpochMs,
-  KrakenPersistenceError,
-  KrakenValidationError,
-} from "@kraken/shared-core-types";
+} from "@tuvren/kernel-protocol";
 import Database from "better-sqlite3";
 
 const ORDERED_PATH_CHUNK_THRESHOLD = 32;
@@ -3063,11 +3063,11 @@ function bufferFromBytes(bytes: Uint8Array): Buffer {
 }
 
 function normalizeBackendError(error: unknown): Error {
-  if (error instanceof KrakenPersistenceError) {
+  if (error instanceof TuvrenPersistenceError) {
     return error;
   }
 
-  if (error instanceof KrakenValidationError) {
+  if (error instanceof TuvrenValidationError) {
     return error;
   }
 
@@ -5302,6 +5302,6 @@ function persistenceError(
   code: string,
   details?: unknown,
   cause?: unknown
-): KrakenPersistenceError {
-  return new KrakenPersistenceError(message, { cause, code, details });
+): TuvrenPersistenceError {
+  return new TuvrenPersistenceError(message, { cause, code, details });
 }

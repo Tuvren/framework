@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import type { EpochMs, HashString } from "@kraken/shared-core-types";
-import { isHashString, KrakenValidationError } from "@kraken/shared-core-types";
+import type { EpochMs, HashString } from "@tuvren/core-types";
+import { isHashString, TuvrenValidationError } from "@tuvren/core-types";
 import {
   hasDistinctApprovalRequestCallIds,
   isApprovalDecision,
@@ -32,7 +32,6 @@ import {
   hasCanonicalEpochMsTimestampAndValidSource,
   hasOnlyAllowedKeys,
   hasUniqueApprovalDecisionCallIds,
-  isKrakenErrorProjection,
   isKrakenToolSchema,
   isNonEmptyArray,
   isNonEmptyStringProperty,
@@ -48,6 +47,7 @@ import {
   isPlainObject,
   isSerializableContractValue,
   isStringProperty,
+  isTuvrenErrorProjection,
   matchesStreamEventVariant,
   safePredicate,
 } from "./runtime-contract-predicates.js";
@@ -159,14 +159,14 @@ const KRAKEN_MODEL_RESPONSE_KEYS = new Set([
   "usage",
 ]);
 
-export type KrakenJsonValue =
+export type TuvrenJsonValue =
   | null
   | boolean
   | number
   | string
-  | KrakenJsonValue[]
-  | { [key: string]: KrakenJsonValue };
-export type KrakenJsonSchema = { [key: string]: KrakenJsonValue } | boolean;
+  | TuvrenJsonValue[]
+  | { [key: string]: TuvrenJsonValue };
+export type TuvrenJsonSchema = { [key: string]: TuvrenJsonValue } | boolean;
 export type ApprovalDecisionType =
   | "approve"
   | "edit"
@@ -232,7 +232,7 @@ export type ContentPart =
   | FilePart
   | StructuredPart;
 
-export type KrakenMessage =
+export type TuvrenMessage =
   | { role: "system"; content: string }
   | { role: "user"; parts: NonEmptyArray<ContentPart> }
   | {
@@ -248,11 +248,11 @@ export interface InputSignal {
 
 export interface RenderedToolDefinition {
   description: string;
-  inputSchema: KrakenJsonSchema;
+  inputSchema: TuvrenJsonSchema;
   name: string;
 }
 
-export interface KrakenModelConfig {
+export interface TuvrenModelConfig {
   model?: string;
   provider?: string;
   settings?: Record<string, unknown>;
@@ -260,13 +260,13 @@ export interface KrakenModelConfig {
 
 export interface StructuredOutputRequest {
   name?: string;
-  schema: KrakenJsonSchema;
+  schema: TuvrenJsonSchema;
   strict?: boolean;
 }
 
-export interface KrakenPrompt {
-  config?: KrakenModelConfig;
-  messages: KrakenMessage[];
+export interface TuvrenPrompt {
+  config?: TuvrenModelConfig;
+  messages: TuvrenMessage[];
   responseFormat?: StructuredOutputRequest;
   tools?: RenderedToolDefinition[];
 }
@@ -303,16 +303,16 @@ export type ProviderStreamChunk =
     }
   | { type: "error"; error: unknown };
 
-export interface KrakenModelResponse {
+export interface TuvrenModelResponse {
   finishReason: "stop" | "tool_call" | "length" | "error" | "content_filter";
   parts: ContentPart[];
   providerMetadata?: Record<string, unknown>;
   usage?: ProviderUsage;
 }
 
-export function isKrakenModelResponse(
+export function isTuvrenModelResponse(
   value: unknown
-): value is KrakenModelResponse {
+): value is TuvrenModelResponse {
   return safePredicate(
     () =>
       isPlainObject(value) &&
@@ -326,22 +326,22 @@ export function isKrakenModelResponse(
   );
 }
 
-export function assertKrakenModelResponse(
+export function assertTuvrenModelResponse(
   value: unknown,
   label = "value"
-): asserts value is KrakenModelResponse {
-  if (!isKrakenModelResponse(value)) {
-    throw new KrakenValidationError(
-      `${label} must be a valid KrakenModelResponse`,
+): asserts value is TuvrenModelResponse {
+  if (!isTuvrenModelResponse(value)) {
+    throw new TuvrenValidationError(
+      `${label} must be a valid TuvrenModelResponse`,
       { code: "invalid_model_response", details: value }
     );
   }
 }
 
-export interface KrakenProvider {
-  generate(prompt: KrakenPrompt): Promise<KrakenModelResponse>;
+export interface TuvrenProvider {
+  generate(prompt: TuvrenPrompt): Promise<TuvrenModelResponse>;
   readonly id: string;
-  stream(prompt: KrakenPrompt): AsyncIterable<ProviderStreamChunk>;
+  stream(prompt: TuvrenPrompt): AsyncIterable<ProviderStreamChunk>;
 }
 
 export interface ContextManifestCounters {
@@ -393,16 +393,16 @@ export interface ApprovalResponse {
 }
 
 export interface ContextEngineeringHelpers {
-  loadMessage(hash: HashString): KrakenMessage | null;
-  storeMessage(message: KrakenMessage): HashString;
-  storeMessages(messages: KrakenMessage[]): HashString[];
+  loadMessage(hash: HashString): TuvrenMessage | null;
+  storeMessage(message: TuvrenMessage): HashString;
+  storeMessages(messages: TuvrenMessage[]): HashString[];
 }
 
 export interface ContextEngineeringContext {
   helpers: ContextEngineeringHelpers;
   manifest: ContextManifest;
   messageHashes: HashString[];
-  messages: KrakenMessage[];
+  messages: TuvrenMessage[];
 }
 
 export interface ContextEngineeringPlan {
@@ -418,7 +418,7 @@ export interface HandoffSourceContext {
   };
   helpers: ContextEngineeringHelpers;
   manifest: Readonly<ContextManifest>;
-  messages: readonly KrakenMessage[];
+  messages: readonly TuvrenMessage[];
   sourceAgent: Readonly<AgentConfig>;
   targetAgent: Readonly<AgentConfig>;
 }
@@ -455,7 +455,7 @@ export interface EventSource {
 
 export type DriverAttributedEventSource = EventSource;
 
-export interface KrakenErrorProjection {
+export interface TuvrenErrorProjection {
   code?: string;
   details?: unknown;
   message: string;
@@ -639,14 +639,14 @@ export interface SteeringIncorporatedEvent {
 }
 
 export interface ErrorEvent {
-  error: KrakenErrorProjection;
+  error: TuvrenErrorProjection;
   fatal: boolean;
   source?: EventSource;
   timestamp: EpochMs;
   type: "error";
 }
 
-export type KrakenStreamEvent =
+export type TuvrenStreamEvent =
   | TurnStartEvent
   | TurnEndEvent
   | IterationStartEvent
@@ -701,7 +701,7 @@ export type ValidationResult =
   | { valid: false; error: ValidationErrorPayload };
 
 export interface CustomSchema {
-  toJSONSchema(): KrakenJsonSchema;
+  toJSONSchema(): TuvrenJsonSchema;
   validate(input: unknown): ValidationResult;
 }
 
@@ -715,7 +715,7 @@ export type ApprovalPolicy =
 export interface ToolExecutionContext {
   callId: string;
   emit?: (event: { name: string; data: unknown }) => void;
-  forward?: (event: KrakenStreamEvent, source: EventSource) => void;
+  forward?: (event: TuvrenStreamEvent, source: EventSource) => void;
   metadata?: Record<string, unknown>;
   name: string;
   signal?: AbortSignal;
@@ -726,11 +726,11 @@ export type ExecuteFunction = (
   context: ToolExecutionContext
 ) => Promise<unknown> | unknown;
 
-export interface KrakenToolDefinition {
+export interface TuvrenToolDefinition {
   approval?: ApprovalPolicy;
   description: string;
   execute: ExecuteFunction;
-  inputSchema: KrakenJsonSchema | CustomSchema;
+  inputSchema: TuvrenJsonSchema | CustomSchema;
   metadata?: Record<string, unknown>;
   name: string;
   timeout?: number;
@@ -744,7 +744,7 @@ export interface ToolDispatchContext {
   turnId: string;
 }
 
-export type KrakenToolResultBatch =
+export type TuvrenToolResultBatch =
   | {
       approval: undefined;
       results: ToolResultPart[];
@@ -756,13 +756,13 @@ export type KrakenToolResultBatch =
       state?: Record<string, unknown>;
     };
 
-export type ToolExecutionResult = KrakenToolResultBatch;
+export type ToolExecutionResult = TuvrenToolResultBatch;
 
 export interface ToolRegistry {
-  get(name: string): KrakenToolDefinition | undefined;
+  get(name: string): TuvrenToolDefinition | undefined;
   has(name: string): boolean;
-  list(): KrakenToolDefinition[];
-  register(tool: KrakenToolDefinition): void;
+  list(): TuvrenToolDefinition[];
+  register(tool: TuvrenToolDefinition): void;
   toDefinitions(): RenderedToolDefinition[];
 }
 
@@ -785,7 +785,7 @@ export interface ContextPolicy {
 
 export interface LoopPolicy {
   evaluate(
-    response: KrakenModelResponse,
+    response: TuvrenModelResponse,
     manifest: ContextManifest,
     iterationCount: number
   ): IterationDecision;
@@ -811,7 +811,7 @@ export interface ExtensionContext {
 }
 
 export interface InterceptContext extends ExtensionContext {
-  messages: KrakenMessage[];
+  messages: TuvrenMessage[];
   runId: string;
   turnId: string;
 }
@@ -840,7 +840,7 @@ export type BeforeIterationHandler = (
 
 export interface AfterIterationContext extends InterceptContext {
   resolution: RuntimeResolution;
-  response: KrakenModelResponse;
+  response: TuvrenModelResponse;
   toolResults?: ToolResultPart[];
 }
 
@@ -849,30 +849,30 @@ export type AfterIterationHandler = (
 ) => InterceptResult | undefined | Promise<InterceptResult | undefined>;
 
 export interface AroundModelContext extends ExtensionContext {
-  config: KrakenModelConfig;
-  messages: KrakenMessage[];
-  prompt: KrakenPrompt;
+  config: TuvrenModelConfig;
+  messages: TuvrenMessage[];
+  prompt: TuvrenPrompt;
   tools: RenderedToolDefinition[];
 }
 
 export type AroundModelResult =
-  | KrakenModelResponse
+  | TuvrenModelResponse
   | {
-      response: KrakenModelResponse;
+      response: TuvrenModelResponse;
       state?: Record<string, unknown>;
     };
 
 export type AroundModelHandler = (
   context: AroundModelContext,
-  next: (context?: AroundModelContext) => Promise<KrakenModelResponse>
+  next: (context?: AroundModelContext) => Promise<TuvrenModelResponse>
 ) => Promise<AroundModelResult> | AroundModelResult;
 
 export interface AroundToolContext extends ExtensionContext {
   approvalDecision?: ApprovalDecision;
   callId: string;
-  forward(event: KrakenStreamEvent, source: EventSource): void;
+  forward(event: TuvrenStreamEvent, source: EventSource): void;
   input: unknown;
-  tool: KrakenToolDefinition;
+  tool: TuvrenToolDefinition;
   toolCall: ToolCallPart;
 }
 
@@ -894,7 +894,7 @@ export type AroundToolSpec =
   | AroundToolHandler
   | { tools: string[]; handler: AroundToolHandler };
 
-export interface KrakenExtension {
+export interface TuvrenExtension {
   afterIteration?: AfterIterationHandler;
   afterTurn?: InterceptHandler;
   aroundModel?: AroundModelHandler;
@@ -906,19 +906,19 @@ export interface KrakenExtension {
   state?: Record<string, unknown>;
   systemPrompt?: string | SystemPromptFn;
   timeout?: number;
-  tools?: KrakenToolDefinition[];
+  tools?: TuvrenToolDefinition[];
 }
 
 export interface AgentConfig {
   contextPolicy?: ContextPolicy;
-  extensions?: KrakenExtension[];
+  extensions?: TuvrenExtension[];
   loopPolicy?: LoopPolicy;
   maxIterations?: number;
-  model?: string | KrakenProvider;
+  model?: string | TuvrenProvider;
   name: string;
   responseFormat?: StructuredOutputRequest;
   systemPrompt?: string;
-  tools?: KrakenToolDefinition[];
+  tools?: TuvrenToolDefinition[];
 }
 
 export interface ExecutionStatus {
@@ -932,14 +932,14 @@ export interface ExecutionStatus {
 
 export interface ExecutionHandle {
   cancel(): void;
-  events(): AsyncIterable<KrakenStreamEvent>;
+  events(): AsyncIterable<TuvrenStreamEvent>;
   resolveApproval(response: ApprovalResponse): ExecutionHandle;
   status(): ExecutionStatus;
   steer(signal: InputSignal): void;
 }
 
 export interface OrchestrationHandle extends ExecutionHandle {
-  allEvents(): AsyncIterable<KrakenStreamEvent>;
+  allEvents(): AsyncIterable<TuvrenStreamEvent>;
   awaitResult(): Promise<unknown>;
   resolveApproval(response: ApprovalResponse): OrchestrationHandle;
   spawn(input: { agent: string; signal: InputSignal }): OrchestrationHandle;
@@ -954,11 +954,11 @@ export interface OrchestrationRuntime {
     schemaId?: string;
     signal: InputSignal;
     threadId: string;
-    tools?: KrakenToolDefinition[];
+    tools?: TuvrenToolDefinition[];
   }): OrchestrationHandle;
 }
 
-export interface KrakenRuntime {
+export interface TuvrenRuntime {
   createBranch(input: {
     branchId?: string;
     threadId: string;
@@ -985,7 +985,7 @@ export interface KrakenRuntime {
     schemaId?: string;
     driverId?: string;
     config: AgentConfig;
-    tools?: KrakenToolDefinition[];
+    tools?: TuvrenToolDefinition[];
     parentTurnId?: string | null;
   }): ExecutionHandle;
   getThread(threadId: string): Promise<{
@@ -1003,7 +1003,7 @@ export interface KrakenRuntime {
   }>;
 }
 
-export function isKrakenMessage(value: unknown): value is KrakenMessage {
+export function isTuvrenMessage(value: unknown): value is TuvrenMessage {
   return safePredicate(() => {
     if (!isPlainObject(value)) {
       return false;
@@ -1047,13 +1047,13 @@ export function isKrakenMessage(value: unknown): value is KrakenMessage {
   });
 }
 
-export function assertKrakenMessage(
+export function assertTuvrenMessage(
   value: unknown,
   label = "value"
-): asserts value is KrakenMessage {
-  if (!isKrakenMessage(value)) {
-    throw new KrakenValidationError(`${label} must be a valid KrakenMessage`, {
-      code: "invalid_kraken_message",
+): asserts value is TuvrenMessage {
+  if (!isTuvrenMessage(value)) {
+    throw new TuvrenValidationError(`${label} must be a valid TuvrenMessage`, {
+      code: "invalid_tuvren_message",
       details: value,
     });
   }
@@ -1087,7 +1087,7 @@ export function assertApprovalRequest(
   label = "value"
 ): asserts value is ApprovalRequest {
   if (!isApprovalRequest(value)) {
-    throw new KrakenValidationError(
+    throw new TuvrenValidationError(
       `${label} must be a valid ApprovalRequest`,
       { code: "invalid_approval_request", details: value }
     );
@@ -1177,16 +1177,16 @@ export function assertProviderStreamChunk(
   label = "value"
 ): asserts value is ProviderStreamChunk {
   if (!isProviderStreamChunk(value)) {
-    throw new KrakenValidationError(
+    throw new TuvrenValidationError(
       `${label} must be a valid ProviderStreamChunk`,
       { code: "invalid_provider_stream_chunk", details: value }
     );
   }
 }
 
-export function isKrakenStreamEvent(
+export function isTuvrenStreamEvent(
   value: unknown
-): value is KrakenStreamEvent {
+): value is TuvrenStreamEvent {
   return safePredicate(() => {
     if (
       !(
@@ -1386,7 +1386,7 @@ function hasValidStreamEventPayload(
         value,
         ["error", "fatal"],
         () =>
-          isKrakenErrorProjection(value.error) &&
+          isTuvrenErrorProjection(value.error) &&
           typeof value.fatal === "boolean"
       );
     case "custom":
@@ -1403,21 +1403,21 @@ function hasValidStreamEventPayload(
   }
 }
 
-export function assertKrakenStreamEvent(
+export function assertTuvrenStreamEvent(
   value: unknown,
   label = "value"
-): asserts value is KrakenStreamEvent {
-  if (!isKrakenStreamEvent(value)) {
-    throw new KrakenValidationError(
-      `${label} must be a valid KrakenStreamEvent`,
+): asserts value is TuvrenStreamEvent {
+  if (!isTuvrenStreamEvent(value)) {
+    throw new TuvrenValidationError(
+      `${label} must be a valid TuvrenStreamEvent`,
       { code: "invalid_stream_event", details: value }
     );
   }
 }
 
-export function isKrakenToolDefinition(
+export function isTuvrenToolDefinition(
   value: unknown
-): value is KrakenToolDefinition {
+): value is TuvrenToolDefinition {
   return safePredicate(
     () =>
       isPlainObject(value) &&
@@ -1432,13 +1432,13 @@ export function isKrakenToolDefinition(
   );
 }
 
-export function assertKrakenToolDefinition(
+export function assertTuvrenToolDefinition(
   value: unknown,
   label = "value"
-): asserts value is KrakenToolDefinition {
-  if (!isKrakenToolDefinition(value)) {
-    throw new KrakenValidationError(
-      `${label} must be a valid KrakenToolDefinition`,
+): asserts value is TuvrenToolDefinition {
+  if (!isTuvrenToolDefinition(value)) {
+    throw new TuvrenValidationError(
+      `${label} must be a valid TuvrenToolDefinition`,
       { code: "invalid_tool_definition", details: value }
     );
   }
@@ -1488,7 +1488,7 @@ export function assertExecutionStatus(
   label = "value"
 ): asserts value is ExecutionStatus {
   if (!isExecutionStatus(value)) {
-    throw new KrakenValidationError(
+    throw new TuvrenValidationError(
       `${label} must be a valid ExecutionStatus`,
       { code: "invalid_execution_status", details: value }
     );
@@ -1528,7 +1528,7 @@ export function assertApprovalResponse(
   label = "value"
 ): asserts value is ApprovalResponse {
   if (!isApprovalResponse(value)) {
-    throw new KrakenValidationError(
+    throw new TuvrenValidationError(
       `${label} must be a valid ApprovalResponse`,
       { code: "invalid_approval_response", details: value }
     );
@@ -1541,7 +1541,7 @@ export function assertApprovalResponseForRequest(
   label = "value"
 ): asserts value is ApprovalResponse {
   if (!isApprovalResponseForRequest(value, request)) {
-    throw new KrakenValidationError(
+    throw new TuvrenValidationError(
       `${label} must be a valid ApprovalResponse for the active approval request`,
       { code: "invalid_approval_response", details: value }
     );
@@ -1560,7 +1560,7 @@ export function assertContextManifest(
   label = "value"
 ): asserts value is ContextManifest {
   if (!isContextManifest(value)) {
-    throw new KrakenValidationError(
+    throw new TuvrenValidationError(
       `${label} must be a valid ContextManifest`,
       { code: "invalid_context_manifest", details: value }
     );

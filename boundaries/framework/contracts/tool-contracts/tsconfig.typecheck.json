@@ -5,12 +5,12 @@
     "rootDir": "../../../../",
     "allowImportingTsExtensions": true,
     "paths": {
-      "@kraken/shared-core-types": [
+      "@tuvren/core-types": [
         "../../../shared/contracts/core-types/src/index.ts"
       ],
-      "@kraken/framework-runtime-api": ["../runtime-api/src/index.ts"],
-      "@kraken/framework-runtime-api/tools": ["../runtime-api/src/tools.ts"],
-      "@kraken/framework-tool-contracts": ["./src/index.ts"]
+      "@tuvren/runtime-api": ["../runtime-api/src/index.ts"],
+      "@tuvren/runtime-api/tools": ["../runtime-api/src/tools.ts"],
+      "@tuvren/tool-contracts": ["./src/index.ts"]
     },
     "types": ["bun"]
   },

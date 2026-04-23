@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-import type { HashString, KernelRecord } from "@kraken/shared-core-types";
+import type { HashString, KernelRecord } from "@tuvren/core-types";
 import {
   assertEpochMs,
   assertHashString,
   assertKernelRecord,
-  KrakenValidationError,
-} from "@kraken/shared-core-types";
+  TuvrenValidationError,
+} from "@tuvren/core-types";
 import { Decoder, Encoder } from "cbor-x";
 import type {
   StagedResult,
@@ -99,7 +99,7 @@ export function decodeDeterministicKernelRecord(
   try {
     decodedValue = deterministicDecoder.decode(bytes);
   } catch (error: unknown) {
-    throw new KrakenValidationError(
+    throw new TuvrenValidationError(
       "decoded kernel record bytes must contain valid deterministic CBOR",
       {
         code: "invalid_decoded_kernel_record",
@@ -119,7 +119,7 @@ export function decodeDeterministicKernelRecord(
   assertKernelRecord(normalizedValue, "decoded kernel record");
 
   if (!areByteArraysEqual(bytes, canonicalBytes)) {
-    throw new KrakenValidationError(
+    throw new TuvrenValidationError(
       "decoded kernel record must already use the canonical deterministic CBOR encoding",
       {
         code: "non_canonical_kernel_record_encoding",
@@ -885,8 +885,8 @@ function assertStagedResultStatusOrThrow(
 function turnNodeIdentityError(
   message: string,
   details: unknown
-): KrakenValidationError {
-  return new KrakenValidationError(message, {
+): TuvrenValidationError {
+  return new TuvrenValidationError(message, {
     code: "invalid_turn_node_hash",
     details,
   });
@@ -895,8 +895,8 @@ function turnNodeIdentityError(
 function turnTreeIdentityError(
   message: string,
   details: unknown
-): KrakenValidationError {
-  return new KrakenValidationError(message, {
+): TuvrenValidationError {
+  return new TuvrenValidationError(message, {
     code: "invalid_turn_tree_hash",
     details,
   });
@@ -956,7 +956,7 @@ function normalizeDecodedKernelValue(
     const normalizedInteger = Number(value);
 
     if (!Number.isSafeInteger(normalizedInteger)) {
-      throw new KrakenValidationError(
+      throw new TuvrenValidationError(
         `${label} decoded to an out-of-range bigint value`,
         {
           code: "invalid_decoded_kernel_record",
@@ -983,7 +983,7 @@ function normalizeDecodedKernelValue(
 
     for (const [entryKey, entryValue] of value) {
       if (typeof entryKey !== "string") {
-        throw new KrakenValidationError(
+        throw new TuvrenValidationError(
           `${label} contains a non-string map key after CBOR decode`,
           {
             code: "invalid_decoded_kernel_record",
@@ -1002,7 +1002,7 @@ function normalizeDecodedKernelValue(
   }
 
   if (typeof value !== "object") {
-    throw new KrakenValidationError(
+    throw new TuvrenValidationError(
       `${label} decoded to an unsupported kernel record type`,
       {
         code: "invalid_decoded_kernel_record",
@@ -1024,7 +1024,7 @@ function normalizeDecodedKernelValue(
     return objectValue;
   }
 
-  throw new KrakenValidationError(
+  throw new TuvrenValidationError(
     `${label} decoded to an unsupported kernel record type`,
     {
       code: "invalid_decoded_kernel_record",
@@ -1043,7 +1043,7 @@ function normalizeDecodedKernelNumber(value: number, label: string): number {
     !Number.isFinite(value) ||
     Object.is(value, -0)
   ) {
-    throw new KrakenValidationError(
+    throw new TuvrenValidationError(
       `${label} decoded to a non-canonical kernel number`,
       {
         code: "invalid_decoded_kernel_record",

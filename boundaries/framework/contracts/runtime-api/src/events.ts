@@ -25,8 +25,6 @@ export type {
   FileDoneEvent,
   IterationEndEvent,
   IterationStartEvent,
-  KrakenErrorProjection,
-  KrakenStreamEvent,
   MessageDoneEvent,
   MessageStartEvent,
   ReasoningDeltaEvent,
@@ -45,8 +43,10 @@ export type {
   ToolStartEvent,
   TurnEndEvent,
   TurnStartEvent,
+  TuvrenErrorProjection,
+  TuvrenStreamEvent,
 } from "./lib/runtime-contracts.js";
 export {
-  assertKrakenStreamEvent,
-  isKrakenStreamEvent,
+  assertTuvrenStreamEvent,
+  isTuvrenStreamEvent,
 } from "./lib/runtime-contracts.js";

@@ -16,17 +16,17 @@
 
 import { deepStrictEqual, rejects } from "node:assert/strict";
 import {
+  TuvrenPersistenceError,
+  TuvrenValidationError,
+} from "@tuvren/core-types";
+import {
   encodeDeterministicKernelRecord,
   type StoredBranch,
   type StoredRun,
   type StoredStagedResult,
   type StoredThread,
   type StoredTurn,
-} from "@kraken/kernel-contract-protocol";
-import {
-  KrakenPersistenceError,
-  KrakenValidationError,
-} from "@kraken/shared-core-types";
+} from "@tuvren/kernel-protocol";
 import type { BackendConformanceSuiteOptions } from "./backend-test-suite-types.js";
 import {
   createCanonicalKernelTestSchema,
@@ -266,7 +266,7 @@ export function registerBackendInvariantSuite(
             await tx.turnTrees.put(turnTree);
             await tx.turnTreePaths.putMany([duplicatePath, duplicatePath]);
           }),
-          KrakenPersistenceError
+          TuvrenPersistenceError
         );
 
         await backend.transact(async (tx) => {
@@ -327,7 +327,7 @@ export function registerBackendInvariantSuite(
               threadId: "thread_schema_mismatch",
             });
           }),
-          KrakenPersistenceError
+          TuvrenPersistenceError
         );
 
         await rejects(
@@ -337,7 +337,7 @@ export function registerBackendInvariantSuite(
               schemaId: schemaB.schemaId,
             });
           }),
-          KrakenValidationError
+          TuvrenValidationError
         );
       }
     );
@@ -450,7 +450,7 @@ export function registerBackendInvariantSuite(
               turnId: "turn_mismatch",
             });
           }),
-          KrakenPersistenceError
+          TuvrenPersistenceError
         );
 
         await rejects(
@@ -477,7 +477,7 @@ export function registerBackendInvariantSuite(
               updatedAtMs: 11,
             });
           }),
-          KrakenPersistenceError
+          TuvrenPersistenceError
         );
       }
     );
@@ -588,7 +588,7 @@ export function registerBackendInvariantSuite(
               updatedAtMs: 10,
             });
           }),
-          KrakenPersistenceError
+          TuvrenPersistenceError
         );
 
         await rejects(
@@ -615,7 +615,7 @@ export function registerBackendInvariantSuite(
               updatedAtMs: 11,
             });
           }),
-          KrakenPersistenceError
+          TuvrenPersistenceError
         );
 
         await rejects(
@@ -640,7 +640,7 @@ export function registerBackendInvariantSuite(
               updatedAtMs: 12,
             });
           }),
-          KrakenPersistenceError
+          TuvrenPersistenceError
         );
 
         await rejects(
@@ -667,7 +667,7 @@ export function registerBackendInvariantSuite(
               updatedAtMs: 13,
             });
           }),
-          KrakenPersistenceError
+          TuvrenPersistenceError
         );
 
         await rejects(
@@ -694,7 +694,7 @@ export function registerBackendInvariantSuite(
               updatedAtMs: 14,
             });
           }),
-          KrakenPersistenceError
+          TuvrenPersistenceError
         );
 
         await rejects(
@@ -742,7 +742,7 @@ export function registerBackendInvariantSuite(
               updatedAtMs: 16,
             });
           }),
-          KrakenPersistenceError
+          TuvrenPersistenceError
         );
 
         await rejects(
@@ -767,7 +767,7 @@ export function registerBackendInvariantSuite(
               updatedAtMs: 17,
             });
           }),
-          KrakenPersistenceError
+          TuvrenPersistenceError
         );
       }
     );
@@ -872,7 +872,7 @@ export function registerBackendInvariantSuite(
               updatedAtMs: 9,
             });
           }),
-          KrakenPersistenceError
+          TuvrenPersistenceError
         );
       }
     );
@@ -984,7 +984,7 @@ export function registerBackendInvariantSuite(
               taskId: "task_after_completion",
             });
           }),
-          KrakenPersistenceError
+          TuvrenPersistenceError
         );
 
         const immutableBackend = options.createBackend();
@@ -1014,7 +1014,7 @@ export function registerBackendInvariantSuite(
               createdAtMs: 10,
             });
           }),
-          KrakenPersistenceError
+          TuvrenPersistenceError
         );
 
         await rejects(
@@ -1024,7 +1024,7 @@ export function registerBackendInvariantSuite(
               status: "failed",
             });
           }),
-          KrakenPersistenceError
+          TuvrenPersistenceError
         );
       }
     );
@@ -1172,7 +1172,7 @@ export function registerBackendInvariantSuite(
               turnId: "turn_null_parent_ambiguous",
             });
           }),
-          KrakenPersistenceError
+          TuvrenPersistenceError
         );
 
         await rejects(
@@ -1183,14 +1183,14 @@ export function registerBackendInvariantSuite(
               turnId: "turn_bad_parent",
             });
           }),
-          KrakenPersistenceError
+          TuvrenPersistenceError
         );
 
         await rejects(
           backend.transact(async (tx) => {
             await tx.turns.set(siblingTurn);
           }),
-          KrakenPersistenceError
+          TuvrenPersistenceError
         );
 
         await rejects(
@@ -1206,7 +1206,7 @@ export function registerBackendInvariantSuite(
               updatedAtMs: 15,
             });
           }),
-          KrakenPersistenceError
+          TuvrenPersistenceError
         );
       }
     );
@@ -1311,7 +1311,7 @@ export function registerBackendInvariantSuite(
               updatedAtMs: 9,
             });
           }),
-          KrakenPersistenceError
+          TuvrenPersistenceError
         );
 
         await rejects(
@@ -1322,7 +1322,7 @@ export function registerBackendInvariantSuite(
               updatedAtMs: 9,
             });
           }),
-          KrakenPersistenceError
+          TuvrenPersistenceError
         );
 
         await rejects(
@@ -1333,7 +1333,7 @@ export function registerBackendInvariantSuite(
               updatedAtMs: 9,
             });
           }),
-          KrakenPersistenceError
+          TuvrenPersistenceError
         );
       }
     );
@@ -1353,7 +1353,7 @@ export function registerBackendInvariantSuite(
             updatedAtMs: 8,
           });
         }),
-        KrakenPersistenceError
+        TuvrenPersistenceError
       );
 
       await rejects(
@@ -1367,7 +1367,7 @@ export function registerBackendInvariantSuite(
             updatedAtMs: 9,
           });
         }),
-        KrakenPersistenceError
+        TuvrenPersistenceError
       );
     });
 
@@ -1399,7 +1399,7 @@ export function registerBackendInvariantSuite(
             updatedAtMs: 9,
           });
         }),
-        KrakenPersistenceError
+        TuvrenPersistenceError
       );
     });
 
@@ -1429,7 +1429,7 @@ export function registerBackendInvariantSuite(
               threadId: "thread_non_genesis_root",
             });
           }),
-          KrakenPersistenceError
+          TuvrenPersistenceError
         );
       }
     );
@@ -1470,7 +1470,7 @@ export function registerBackendInvariantSuite(
               })
             );
           }),
-          KrakenPersistenceError
+          TuvrenPersistenceError
         );
       }
     );
@@ -1510,7 +1510,7 @@ export function registerBackendInvariantSuite(
               },
             ]);
           }),
-          KrakenPersistenceError
+          TuvrenPersistenceError
         );
       }
     );
@@ -1545,7 +1545,7 @@ export function registerBackendInvariantSuite(
               },
             ]);
           }),
-          KrakenPersistenceError
+          TuvrenPersistenceError
         );
       }
     );

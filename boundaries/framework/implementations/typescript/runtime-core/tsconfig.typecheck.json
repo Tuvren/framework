@@ -5,19 +5,27 @@
     "rootDir": "../../../../../",
     "allowImportingTsExtensions": true,
     "paths": {
-      "@kraken/shared-core-types": [
+      "@tuvren/core-types": [
         "../../../../shared/contracts/core-types/src/index.ts"
       ],
-      "@kraken/framework-runtime-api": [
-        "../../../contracts/runtime-api/src/index.ts"
+      "@tuvren/runtime-api": ["../../../contracts/runtime-api/src/index.ts"],
+      "@tuvren/runtime-api/events": [
+        "../../../contracts/runtime-api/src/events.ts"
       ],
-      "@kraken/framework-driver-api": [
-        "../../../contracts/driver-api/src/index.ts"
+      "@tuvren/runtime-api/execution": [
+        "../../../contracts/runtime-api/src/execution.ts"
       ],
-      "@kraken/kernel-contract-protocol": [
+      "@tuvren/runtime-api/provider": [
+        "../../../contracts/runtime-api/src/provider.ts"
+      ],
+      "@tuvren/runtime-api/tools": [
+        "../../../contracts/runtime-api/src/tools.ts"
+      ],
+      "@tuvren/driver-api": ["../../../contracts/driver-api/src/index.ts"],
+      "@tuvren/kernel-protocol": [
         "../../../../kernel/contracts/protocol/src/index.ts"
       ],
-      "@kraken/framework-runtime-core": ["./src/index.ts"]
+      "@tuvren/runtime-core": ["./src/index.ts"]
     },
     "types": ["bun"]
   },

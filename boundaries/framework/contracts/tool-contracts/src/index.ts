@@ -29,9 +29,6 @@ export type {
   AroundToolSpec,
   CustomSchema,
   ExecuteFunction,
-  KrakenJsonSchema,
-  KrakenToolDefinition,
-  KrakenToolResultBatch,
   PendingToolCall,
   RenderedToolDefinition,
   ToolCallPart,
@@ -40,16 +37,19 @@ export type {
   ToolExecutionResult,
   ToolRegistry,
   ToolResultPart,
+  TuvrenJsonSchema,
+  TuvrenToolDefinition,
+  TuvrenToolResultBatch,
   ValidationErrorPayload,
   ValidationResult,
-} from "@kraken/framework-runtime-api/tools";
+} from "@tuvren/runtime-api/tools";
 export {
   assertApprovalRequest,
   assertApprovalResponse,
   assertApprovalResponseForRequest,
-  assertKrakenToolDefinition,
+  assertTuvrenToolDefinition,
   isApprovalRequest,
   isApprovalResponse,
   isApprovalResponseForRequest,
-  isKrakenToolDefinition,
-} from "@kraken/framework-runtime-api/tools";
+  isTuvrenToolDefinition,
+} from "@tuvren/runtime-api/tools";

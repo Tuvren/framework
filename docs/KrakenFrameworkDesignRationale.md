@@ -5,6 +5,8 @@
 
 Read after `KrakenFrameworkSpecification.md`. This document explains decisions; it does not define the contract.
 
+Kraken is the execution engine inside Tuvren Runtime, so this rationale stays intentionally engine-focused rather than product-marketing focused.
+
 ---
 
 ## 1. Cross-Framework Analysis
@@ -106,13 +108,13 @@ Vercel AI SDK wraps this in a do/while. Pi uses nested while loops with steering
 
 **Streaming is not in the content model**: Content types represent complete durable content. Streaming deltas are transport — handled by `stream()`, accumulated into complete types.
 
-**Zero runtime dependencies**: `@kraken/types` contains only interfaces. No Zod, no classes, no serialization.
+**Zero runtime dependencies**: `@tuvren/core-types` contains only interfaces. No Zod, no classes, no serialization.
 
 ### 2.4 Streaming
 
 **The two-path problem**: During a model call, the UI needs tokens immediately (live path) while the framework needs the complete response (durable path). These cannot unify. The framework runs both simultaneously.
 
-**Generator over event bus**: `AsyncIterable<KrakenStreamEvent>` over `EventEmitter` because: no subscription management, natural backpressure, consumer controls iteration, composition is function application (`toAGUI(executeTurn(...))`), matches `provider.stream()`.
+**Generator over event bus**: `AsyncIterable<TuvrenStreamEvent>` over `EventEmitter` because: no subscription management, natural backpressure, consumer controls iteration, composition is function application (`toAGUI(executeTurn(...))`), matches `provider.stream()`.
 
 **Internal vocabulary, external adapters**: Kraken does not define its own client-facing protocol. It defines an internal vocabulary and provides adapters (AG-UI, ACP, Raw SSE). Same principle as the Provider Bridge: one canonical vocabulary, adapters for the many-to-many mapping.
 
@@ -175,7 +177,7 @@ Vercel AI SDK wraps this in a do/while. Pi uses nested while loops with steering
 
 ### 3.7 Streaming Protocol Mapping
 
-| KrakenStreamEvent    | AG-UI                        | ACP                 |
+| TuvrenStreamEvent    | AG-UI                        | ACP                 |
 | -------------------- | ---------------------------- | ------------------- |
 | `turn.start`         | `RUN_STARTED`                | —                   |
 | `turn.end`           | `RUN_FINISHED` / `RUN_ERROR` | —                   |

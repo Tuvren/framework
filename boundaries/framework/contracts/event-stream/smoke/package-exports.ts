@@ -16,10 +16,10 @@
 
 import { describe, expect, test } from "bun:test";
 import {
-  assertKrakenStreamEvent,
+  assertTuvrenStreamEvent,
   type FileDoneEvent,
   type TextDoneEvent,
-} from "@kraken/framework-event-stream";
+} from "@tuvren/event-stream";
 
 describe("framework-event-stream package exports", () => {
   test("resolve from the built package surface", () => {
@@ -30,7 +30,7 @@ describe("framework-event-stream package exports", () => {
       type: "text.done",
     } satisfies TextDoneEvent;
 
-    expect(() => assertKrakenStreamEvent(event)).not.toThrow();
+    expect(() => assertTuvrenStreamEvent(event)).not.toThrow();
   });
 
   test("export file.done event types from the facade surface", () => {
@@ -42,6 +42,6 @@ describe("framework-event-stream package exports", () => {
       type: "file.done",
     } satisfies FileDoneEvent;
 
-    expect(() => assertKrakenStreamEvent(event)).not.toThrow();
+    expect(() => assertTuvrenStreamEvent(event)).not.toThrow();
   });
 });

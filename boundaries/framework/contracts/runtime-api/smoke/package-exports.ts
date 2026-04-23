@@ -18,15 +18,15 @@ import { describe, expect, test } from "bun:test";
 import {
   assertApprovalRequest,
   assertContextManifest,
-  assertKrakenMessage,
-  assertKrakenStreamEvent,
   assertProviderStreamChunk,
-} from "@kraken/framework-runtime-api";
-import { assertKrakenStreamEvent as assertKrakenStreamEventFromEvents } from "@kraken/framework-runtime-api/events";
-import { assertContextManifest as assertContextManifestFromExecution } from "@kraken/framework-runtime-api/execution";
-import type { OrchestrationHandle } from "@kraken/framework-runtime-api/orchestration";
-import { assertProviderStreamChunk as assertProviderStreamChunkFromProvider } from "@kraken/framework-runtime-api/provider";
-import { assertApprovalRequest as assertApprovalRequestFromTools } from "@kraken/framework-runtime-api/tools";
+  assertTuvrenMessage,
+  assertTuvrenStreamEvent,
+} from "@tuvren/runtime-api";
+import { assertTuvrenStreamEvent as assertKrakenStreamEventFromEvents } from "@tuvren/runtime-api/events";
+import { assertContextManifest as assertContextManifestFromExecution } from "@tuvren/runtime-api/execution";
+import type { OrchestrationHandle } from "@tuvren/runtime-api/orchestration";
+import { assertProviderStreamChunk as assertProviderStreamChunkFromProvider } from "@tuvren/runtime-api/provider";
+import { assertApprovalRequest as assertApprovalRequestFromTools } from "@tuvren/runtime-api/tools";
 
 async function* createEmptyEventStream() {
   // Smoke tests only need an async iterable shape, not delivered events.
@@ -89,8 +89,8 @@ describe("runtime-api package exports", () => {
 
     expect(() => assertContextManifest(manifest)).not.toThrow();
     expect(() => assertContextManifestFromExecution(manifest)).not.toThrow();
-    expect(() => assertKrakenMessage(message)).not.toThrow();
-    expect(() => assertKrakenStreamEvent(streamEvent)).not.toThrow();
+    expect(() => assertTuvrenMessage(message)).not.toThrow();
+    expect(() => assertTuvrenStreamEvent(streamEvent)).not.toThrow();
     expect(() => assertKrakenStreamEventFromEvents(streamEvent)).not.toThrow();
     expect(() => assertProviderStreamChunk(providerChunk)).not.toThrow();
     expect(() =>

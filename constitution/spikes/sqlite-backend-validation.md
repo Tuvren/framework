@@ -1,7 +1,7 @@
 # SQLite Backend Validation Spike
 
 - Date: 2026-04-08
-- Package posture: `@kraken/backend-sqlite` uses `better-sqlite3@12.8.0` as the first official SQLite adapter.
+- Package posture: `@tuvren/backend-sqlite` uses `better-sqlite3@12.8.0` as the first official SQLite adapter.
 - Runtime posture: Node.js-first with local filesystem access and native addon support, matching `constitution/TechSpec.md`.
 - Transaction posture: kernel writes use SQLite `BEGIN IMMEDIATE` with atomic commit/rollback semantics.
 - Durability posture: SQLite foreign keys are enabled and file-backed databases run in WAL mode.

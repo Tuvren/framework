@@ -14,10 +14,7 @@
  * limitations under the License.
  */
 
-import type {
-  ContextManifest,
-  KrakenMessage,
-} from "@kraken/framework-runtime-api";
+import type { ContextManifest, TuvrenMessage } from "@tuvren/runtime-api";
 import type { ExtensionStateUpdate } from "./extension-runtime.js";
 
 const TOKEN_ESTIMATE_DIVISOR = 4;
@@ -48,7 +45,7 @@ export function createEmptyContextManifest(): ContextManifest {
 }
 
 export function createContextManifest(
-  messages: KrakenMessage[],
+  messages: TuvrenMessage[],
   extensionState: Record<string, unknown> = {},
   turnBoundaryOffsets: number[] = inferUserTurnBoundaryOffsets(messages)
 ): ContextManifest {
@@ -59,7 +56,7 @@ export function createContextManifest(
 
 export function updateContextManifest(
   manifest: ContextManifest,
-  messages: KrakenMessage[],
+  messages: TuvrenMessage[],
   updates: ExtensionStateUpdate[] = [],
   turnBoundaryOffsets: number[] = inferUserTurnBoundaryOffsets(messages)
 ): ContextManifest {
@@ -107,7 +104,7 @@ export function cloneContextManifest(
 
 function appendMessage(
   manifest: ContextManifest,
-  message: KrakenMessage,
+  message: TuvrenMessage,
   isTurnBoundary: boolean
 ): void {
   const messageIndex = manifest.messageCount;
@@ -152,7 +149,7 @@ function appendMessage(
   }
 }
 
-function estimateMessageTokens(message: KrakenMessage): number {
+function estimateMessageTokens(message: TuvrenMessage): number {
   const textLength =
     message.role === "system"
       ? message.content.length
@@ -224,7 +221,7 @@ function cloneRecord(record: Record<string, unknown>): Record<string, unknown> {
   return globalThis.structuredClone(record);
 }
 
-function inferUserTurnBoundaryOffsets(messages: KrakenMessage[]): number[] {
+function inferUserTurnBoundaryOffsets(messages: TuvrenMessage[]): number[] {
   const turnBoundaryOffsets: number[] = [];
 
   for (const [index, message] of messages.entries()) {

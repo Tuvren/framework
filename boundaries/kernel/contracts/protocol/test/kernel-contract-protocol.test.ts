@@ -15,7 +15,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { KrakenValidationError } from "@kraken/shared-core-types";
+import { TuvrenValidationError } from "@tuvren/core-types";
 import {
   kernelProtocolDeterministicFixtures,
   kernelProtocolInvalidFixtures,
@@ -152,7 +152,7 @@ describe("deterministic identity", () => {
     ).toThrow("must already use the canonical deterministic CBOR encoding");
   });
 
-  test("wraps malformed deterministic CBOR bytes in KrakenValidationError", () => {
+  test("wraps malformed deterministic CBOR bytes in TuvrenValidationError", () => {
     let caughtError: unknown;
 
     try {
@@ -163,17 +163,17 @@ describe("deterministic identity", () => {
       caughtError = error;
     }
 
-    expect(caughtError).toBeInstanceOf(KrakenValidationError);
+    expect(caughtError).toBeInstanceOf(TuvrenValidationError);
     expect(caughtError).toBeInstanceOf(Error);
     expect((caughtError as Error).message).toContain(
       "must contain valid deterministic CBOR"
     );
   });
 
-  test("rejects malformed TurnNode identity inputs with KrakenValidationError", async () => {
+  test("rejects malformed TurnNode identity inputs with TuvrenValidationError", async () => {
     await expect(
       hashTurnNodeIdentity(undefined as never)
-    ).rejects.toBeInstanceOf(KrakenValidationError);
+    ).rejects.toBeInstanceOf(TuvrenValidationError);
     await expect(hashTurnNodeIdentity(undefined as never)).rejects.toThrow(
       "turn node identity input must be a plain object"
     );
@@ -866,7 +866,7 @@ describe("logical contract fixtures", () => {
     ).toThrow("extra is not part of the contract shape");
   });
 
-  test("wraps primitive field failures in KrakenValidationError", () => {
+  test("wraps primitive field failures in TuvrenValidationError", () => {
     let turnNodeError: unknown;
     let storedObjectError: unknown;
 
@@ -888,8 +888,8 @@ describe("logical contract fixtures", () => {
       storedObjectError = error;
     }
 
-    expect(turnNodeError).toBeInstanceOf(KrakenValidationError);
-    expect(storedObjectError).toBeInstanceOf(KrakenValidationError);
+    expect(turnNodeError).toBeInstanceOf(TuvrenValidationError);
+    expect(storedObjectError).toBeInstanceOf(TuvrenValidationError);
   });
 
   test("enforces canonical TurnNode identity hashes", async () => {

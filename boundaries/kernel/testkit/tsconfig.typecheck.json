@@ -5,10 +5,8 @@
     "rootDir": "../../../",
     "allowImportingTsExtensions": true,
     "paths": {
-      "@kraken/shared-core-types": [
-        "../../shared/contracts/core-types/src/index.ts"
-      ],
-      "@kraken/kernel-contract-protocol": ["../contracts/protocol/src/index.ts"]
+      "@tuvren/core-types": ["../../shared/contracts/core-types/src/index.ts"],
+      "@tuvren/kernel-protocol": ["../contracts/protocol/src/index.ts"]
     },
     "types": ["bun", "node"]
   },

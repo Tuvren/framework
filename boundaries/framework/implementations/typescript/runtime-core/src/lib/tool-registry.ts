@@ -14,22 +14,22 @@
  * limitations under the License.
  */
 
+import { TuvrenRuntimeError } from "@tuvren/core-types";
 import {
-  assertKrakenToolDefinition,
+  assertTuvrenToolDefinition,
   type CustomSchema,
-  type KrakenExtension,
-  type KrakenJsonSchema,
-  type KrakenToolDefinition,
   type RenderedToolDefinition,
   type ToolRegistry,
-} from "@kraken/framework-runtime-api";
-import { KrakenRuntimeError } from "@kraken/shared-core-types";
+  type TuvrenExtension,
+  type TuvrenJsonSchema,
+  type TuvrenToolDefinition,
+} from "@tuvren/runtime-api";
 import { cloneSnapshotPreservingFunctions } from "./runtime-core-shared.js";
 
 class BasicToolRegistry implements ToolRegistry {
-  private readonly tools = new Map<string, KrakenToolDefinition>();
+  private readonly tools = new Map<string, TuvrenToolDefinition>();
 
-  get(name: string): KrakenToolDefinition | undefined {
+  get(name: string): TuvrenToolDefinition | undefined {
     const tool = this.resolve(name);
 
     if (tool === undefined) {
@@ -43,15 +43,15 @@ class BasicToolRegistry implements ToolRegistry {
     return this.tools.has(name);
   }
 
-  list(): KrakenToolDefinition[] {
+  list(): TuvrenToolDefinition[] {
     return [...this.tools.values()].map((tool) => cloneToolDefinition(tool));
   }
 
-  register(tool: KrakenToolDefinition): void {
-    assertKrakenToolDefinition(tool, "tool");
+  register(tool: TuvrenToolDefinition): void {
+    assertTuvrenToolDefinition(tool, "tool");
 
     if (this.tools.has(tool.name)) {
-      throw new KrakenRuntimeError(
+      throw new TuvrenRuntimeError(
         `tool "${tool.name}" is already registered`,
         {
           code: "duplicate_tool_registration",
@@ -73,18 +73,18 @@ class BasicToolRegistry implements ToolRegistry {
     }));
   }
 
-  resolve(name: string): KrakenToolDefinition | undefined {
+  resolve(name: string): TuvrenToolDefinition | undefined {
     return this.tools.get(name);
   }
 }
 
-function cloneToolDefinition(tool: KrakenToolDefinition): KrakenToolDefinition {
+function cloneToolDefinition(tool: TuvrenToolDefinition): TuvrenToolDefinition {
   return cloneSnapshotPreservingFunctions(tool);
 }
 
 export function createToolRegistry(
-  explicitTools: KrakenToolDefinition[] = [],
-  extensions: KrakenExtension[] = []
+  explicitTools: TuvrenToolDefinition[] = [],
+  extensions: TuvrenExtension[] = []
 ): ToolRegistry {
   assertUniqueExtensionNames(extensions);
   const registry = new BasicToolRegistry();
@@ -105,7 +105,7 @@ export function createToolRegistry(
 export function resolveToolDefinition(
   registry: ToolRegistry,
   name: string
-): KrakenToolDefinition | undefined {
+): TuvrenToolDefinition | undefined {
   if (registry instanceof BasicToolRegistry) {
     return registry.resolve(name);
   }
@@ -113,12 +113,12 @@ export function resolveToolDefinition(
   return registry.get(name);
 }
 
-function assertUniqueExtensionNames(extensions: KrakenExtension[]): void {
+function assertUniqueExtensionNames(extensions: TuvrenExtension[]): void {
   const names = new Set<string>();
 
   for (const extension of extensions) {
     if (names.has(extension.name)) {
-      throw new KrakenRuntimeError(
+      throw new TuvrenRuntimeError(
         `extension "${extension.name}" is already registered`,
         {
           code: "duplicate_extension_registration",
@@ -134,7 +134,7 @@ function assertUniqueExtensionNames(extensions: KrakenExtension[]): void {
 }
 
 function isCustomSchema(
-  value: KrakenJsonSchema | CustomSchema
+  value: TuvrenJsonSchema | CustomSchema
 ): value is CustomSchema {
   return (
     value !== null &&
@@ -145,7 +145,7 @@ function isCustomSchema(
 }
 
 function toJsonSchema(
-  value: KrakenJsonSchema | CustomSchema
-): KrakenJsonSchema {
+  value: TuvrenJsonSchema | CustomSchema
+): TuvrenJsonSchema {
   return isCustomSchema(value) ? value.toJSONSchema() : value;
 }

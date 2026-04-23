@@ -15,6 +15,7 @@
  */
 
 import { deepStrictEqual, rejects, strictEqual } from "node:assert/strict";
+import { TuvrenPersistenceError } from "@tuvren/core-types";
 import {
   encodeDeterministicKernelRecord,
   type StoredBranch,
@@ -22,8 +23,7 @@ import {
   type StoredStagedResult,
   type StoredThread,
   type StoredTurn,
-} from "@kraken/kernel-contract-protocol";
-import { KrakenPersistenceError } from "@kraken/shared-core-types";
+} from "@tuvren/kernel-protocol";
 import type { BackendConformanceSuiteOptions } from "./backend-test-suite-types.js";
 import {
   createCanonicalKernelTestSchema,
@@ -317,7 +317,7 @@ export function registerBackendConformanceSuite(
               updatedAtMs: 9,
             });
           }),
-          KrakenPersistenceError
+          TuvrenPersistenceError
         );
 
         await rejects(
@@ -331,7 +331,7 @@ export function registerBackendConformanceSuite(
               updatedAtMs: 10,
             });
           }),
-          KrakenPersistenceError
+          TuvrenPersistenceError
         );
       }
     );

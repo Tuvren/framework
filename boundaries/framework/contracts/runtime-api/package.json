@@ -1,5 +1,5 @@
 {
-  "name": "@kraken/framework-runtime-api",
+  "name": "@tuvren/runtime-api",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -38,6 +38,6 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@kraken/shared-core-types": "workspace:*"
+    "@tuvren/core-types": "workspace:*"
   }
 }

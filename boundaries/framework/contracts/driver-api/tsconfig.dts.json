@@ -7,19 +7,13 @@
     "moduleResolution": "bundler",
     "outDir": "./dist",
     "paths": {
-      "@kraken/shared-core-types": ["../../../shared/contracts/core-types"],
-      "@kraken/framework-runtime-api": ["../runtime-api/dist/index.d.ts"],
-      "@kraken/framework-runtime-api/events": [
-        "../runtime-api/dist/events.d.ts"
-      ],
-      "@kraken/framework-runtime-api/execution": [
-        "../runtime-api/dist/execution.d.ts"
-      ],
-      "@kraken/framework-runtime-api/provider": [
-        "../runtime-api/dist/provider.d.ts"
-      ],
-      "@kraken/framework-runtime-api/tools": ["../runtime-api/dist/tools.d.ts"],
-      "@kraken/framework-driver-api": ["./src/index.ts"]
+      "@tuvren/core-types": ["../../../shared/contracts/core-types"],
+      "@tuvren/runtime-api": ["../runtime-api/dist/index.d.ts"],
+      "@tuvren/runtime-api/events": ["../runtime-api/dist/events.d.ts"],
+      "@tuvren/runtime-api/execution": ["../runtime-api/dist/execution.d.ts"],
+      "@tuvren/runtime-api/provider": ["../runtime-api/dist/provider.d.ts"],
+      "@tuvren/runtime-api/tools": ["../runtime-api/dist/tools.d.ts"],
+      "@tuvren/driver-api": ["./src/index.ts"]
     },
     "rootDir": "./src",
     "target": "esnext",

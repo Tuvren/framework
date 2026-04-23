@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-import type { KrakenDriver } from "@kraken/framework-driver-api";
+import { TuvrenRuntimeError } from "@tuvren/core-types";
+import type { KrakenDriver } from "@tuvren/driver-api";
 import type {
   ApprovalResponse,
   ExecutionHandle,
   ExecutionStatus,
   InputSignal,
-  KrakenErrorProjection,
-  KrakenStreamEvent,
-} from "@kraken/framework-runtime-api";
-import { assertApprovalResponseForRequest } from "@kraken/framework-runtime-api";
-import { KrakenRuntimeError } from "@kraken/shared-core-types";
+  TuvrenErrorProjection,
+  TuvrenStreamEvent,
+} from "@tuvren/runtime-api";
+import { assertApprovalResponseForRequest } from "@tuvren/runtime-api";
 import {
   cloneExecutionStatus,
   detachPromise,
@@ -50,8 +50,8 @@ export interface RuntimeExecutionHandleRuntime {
 export class RuntimeExecutionHandle implements ExecutionHandle {
   private activeRunId?: string;
   private readonly abortController = new AbortController();
-  private readonly eventsFanout: EventFanout<KrakenStreamEvent>;
-  private lastErrorProjection?: KrakenErrorProjection;
+  private readonly eventsFanout: EventFanout<TuvrenStreamEvent>;
+  private lastErrorProjection?: TuvrenErrorProjection;
   private materializedDriver?: KrakenDriver;
   private materializedDriverId?: string;
   private pendingPausedCancellation?: Promise<void>;
@@ -78,7 +78,7 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
     this.turnId = turnId;
     this.schemaIdValue = schemaId;
     this.resumedFrom = resumedFrom;
-    this.eventsFanout = new EventFanout<KrakenStreamEvent>(() => {
+    this.eventsFanout = new EventFanout<TuvrenStreamEvent>(() => {
       if (!this.started || this.statusSnapshot.phase !== "running") {
         return;
       }
@@ -94,7 +94,7 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
 
   cancel(): void {
     if (this.replacementHandle !== undefined) {
-      throw new KrakenRuntimeError(
+      throw new TuvrenRuntimeError(
         "cancel() is not valid once approval has been resolved",
         {
           code: "invalid_approval_resolution",
@@ -133,7 +133,7 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
     return this.steeringQueue.shift();
   }
 
-  events(): AsyncIterable<KrakenStreamEvent> {
+  events(): AsyncIterable<TuvrenStreamEvent> {
     const subscription = this.eventsFanout.subscribe();
     let startedConsumption = false;
     const ensureStarted = () => {
@@ -191,11 +191,11 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
     return this.started;
   }
 
-  publish(event: KrakenStreamEvent): void {
+  publish(event: TuvrenStreamEvent): void {
     this.eventsFanout.emit(event);
   }
 
-  rememberError(error: KrakenErrorProjection): void {
+  rememberError(error: TuvrenErrorProjection): void {
     this.lastErrorProjection = error;
   }
 
@@ -249,7 +249,7 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
       this.statusSnapshot.approval === undefined ||
       this.replacementHandle !== undefined
     ) {
-      throw new KrakenRuntimeError(
+      throw new TuvrenRuntimeError(
         "resolveApproval() is only valid while execution is paused",
         {
           code: "invalid_approval_resolution",
@@ -277,7 +277,7 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
     return cloneExecutionStatus(this.statusSnapshot);
   }
 
-  getLastErrorProjection(): KrakenErrorProjection | undefined {
+  getLastErrorProjection(): TuvrenErrorProjection | undefined {
     return this.lastErrorProjection;
   }
 
@@ -300,7 +300,7 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
 
   steer(signal: InputSignal): void {
     if (!this.started || this.statusSnapshot.phase !== "running") {
-      throw new KrakenRuntimeError(
+      throw new TuvrenRuntimeError(
         "steer() is only valid while execution is running",
         {
           code: "invalid_steering_state",

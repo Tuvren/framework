@@ -4,52 +4,52 @@
     "module": "esnext",
     "moduleResolution": "bundler",
     "paths": {
-      "@kraken/shared-core-types": [
+      "@tuvren/core-types": [
         "./boundaries/shared/contracts/core-types/src/index.ts"
       ],
-      "@kraken/kernel-contract-protocol": [
+      "@tuvren/kernel-protocol": [
         "./boundaries/kernel/contracts/protocol/src/index.ts"
       ],
-      "@kraken/framework-runtime-api": [
+      "@tuvren/runtime-api": [
         "./boundaries/framework/contracts/runtime-api/src/index.ts"
       ],
-      "@kraken/framework-runtime-api/events": [
+      "@tuvren/runtime-api/events": [
         "./boundaries/framework/contracts/runtime-api/src/events.ts"
       ],
-      "@kraken/framework-runtime-api/execution": [
+      "@tuvren/runtime-api/execution": [
         "./boundaries/framework/contracts/runtime-api/src/execution.ts"
       ],
-      "@kraken/framework-runtime-api/orchestration": [
+      "@tuvren/runtime-api/orchestration": [
         "./boundaries/framework/contracts/runtime-api/src/orchestration.ts"
       ],
-      "@kraken/framework-runtime-api/provider": [
+      "@tuvren/runtime-api/provider": [
         "./boundaries/framework/contracts/runtime-api/src/provider.ts"
       ],
-      "@kraken/framework-runtime-api/tools": [
+      "@tuvren/runtime-api/tools": [
         "./boundaries/framework/contracts/runtime-api/src/tools.ts"
       ],
-      "@kraken/framework-event-stream": [
+      "@tuvren/event-stream": [
         "./boundaries/framework/contracts/event-stream/src/index.ts"
       ],
-      "@kraken/framework-tool-contracts": [
+      "@tuvren/tool-contracts": [
         "./boundaries/framework/contracts/tool-contracts/src/index.ts"
       ],
-      "@kraken/framework-driver-api": [
+      "@tuvren/driver-api": [
         "./boundaries/framework/contracts/driver-api/src/index.ts"
       ],
-      "@kraken/provider-api": [
+      "@tuvren/provider-api": [
         "./boundaries/providers/contracts/provider-api/src/index.ts"
       ],
-      "@kraken/framework-runtime-core": [
+      "@tuvren/runtime-core": [
         "./boundaries/framework/implementations/typescript/runtime-core/src/index.ts"
       ],
-      "@kraken/backend-memory": [
+      "@tuvren/backend-memory": [
         "./boundaries/kernel/implementations/typescript/backend-memory/src/index.ts"
       ],
-      "@kraken/backend-sqlite": [
+      "@tuvren/backend-sqlite": [
         "./boundaries/kernel/implementations/typescript/backend-sqlite/src/index.ts"
       ],
-      "@kraken/kernel-testkit": ["./boundaries/kernel/testkit/src/index.ts"]
+      "@tuvren/kernel-testkit": ["./boundaries/kernel/testkit/src/index.ts"]
     },
     "strict": true,
     "composite": true,

@@ -16,16 +16,16 @@
 
 // biome-ignore-all lint/performance/noBarrelFile: This package subpath is the intentional focused contract surface.
 export type {
-  KrakenModelResponse,
-  KrakenPrompt,
-  KrakenProvider,
   ProviderStreamChunk,
   ProviderUsage,
   StructuredOutputRequest,
+  TuvrenModelResponse,
+  TuvrenPrompt,
+  TuvrenProvider,
 } from "./lib/runtime-contracts.js";
 export {
-  assertKrakenModelResponse,
   assertProviderStreamChunk,
-  isKrakenModelResponse,
+  assertTuvrenModelResponse,
   isProviderStreamChunk,
+  isTuvrenModelResponse,
 } from "./lib/runtime-contracts.js";

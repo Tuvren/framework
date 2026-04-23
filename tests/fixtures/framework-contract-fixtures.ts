@@ -21,14 +21,14 @@ import type {
   ContextManifest,
   ExecutionHandle,
   ExecutionStatus,
-  KrakenMessage,
-  KrakenRuntime,
-  KrakenStreamEvent,
-  KrakenToolDefinition,
   OrchestrationHandle,
   OrchestrationRuntime,
   ProviderStreamChunk,
-} from "@kraken/framework-runtime-api";
+  TuvrenMessage,
+  TuvrenRuntime,
+  TuvrenStreamEvent,
+  TuvrenToolDefinition,
+} from "@tuvren/runtime-api";
 
 function emptyEvents<T>(): AsyncIterable<T> {
   return (async function* () {
@@ -220,7 +220,7 @@ export const frameworkContractFixtures = {
       },
     ],
     role: "assistant",
-  } satisfies KrakenMessage,
+  } satisfies TuvrenMessage,
   contextManifest: contextManifestFixture,
   executionStatus: {
     activeAgent: "primary",
@@ -269,7 +269,7 @@ export const frameworkContractFixtures = {
     getThread() {
       return Promise.resolve({
         rootTurnNodeHash: "1".repeat(64),
-        schemaId: "kraken.agent.v1",
+        schemaId: "tuvren.agent.v1",
         threadId: "thread_main",
       });
     },
@@ -280,7 +280,7 @@ export const frameworkContractFixtures = {
         headTurnNodeHash: "3".repeat(64),
       });
     },
-  } satisfies KrakenRuntime,
+  } satisfies TuvrenRuntime,
   streamEvent: {
     messageId: "message_1",
     source: {
@@ -291,7 +291,7 @@ export const frameworkContractFixtures = {
     text: "Need approval before continuing.",
     timestamp: 1_717_171_717_171,
     type: "text.done",
-  } satisfies KrakenStreamEvent,
+  } satisfies TuvrenStreamEvent,
   toolDefinition: {
     description: "Search documentation",
     execute() {
@@ -305,7 +305,7 @@ export const frameworkContractFixtures = {
       type: "object",
     },
     name: "search",
-  } satisfies KrakenToolDefinition,
+  } satisfies TuvrenToolDefinition,
 };
 
 export const invalidFrameworkContractFixtures = {

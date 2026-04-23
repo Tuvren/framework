@@ -20,12 +20,12 @@ import {
   assertApprovalRequest,
   assertApprovalResponse,
   assertApprovalResponseForRequest,
-  assertKrakenToolDefinition,
+  assertTuvrenToolDefinition,
   isApprovalRequest,
   isApprovalResponse,
   isApprovalResponseForRequest,
-  isKrakenToolDefinition,
-  type KrakenToolDefinition,
+  isTuvrenToolDefinition,
+  type TuvrenToolDefinition,
 } from "../src/index.ts";
 
 describe("tool-contracts", () => {
@@ -62,13 +62,13 @@ describe("tool-contracts", () => {
         type: "object",
       },
       name: "search",
-    } satisfies KrakenToolDefinition;
+    } satisfies TuvrenToolDefinition;
 
     expect(isApprovalRequest(approvalRequest)).toBe(true);
     expect(
       isApprovalResponse({ decisions: [{ callId: "call-1", type: "approve" }] })
     ).toBe(true);
-    expect(isKrakenToolDefinition(toolDefinition)).toBe(true);
+    expect(isTuvrenToolDefinition(toolDefinition)).toBe(true);
     expect(() => assertApprovalRequest(approvalRequest)).not.toThrow();
     expect(() =>
       assertApprovalResponse({
@@ -87,6 +87,6 @@ describe("tool-contracts", () => {
         approvalRequest
       )
     ).not.toThrow();
-    expect(() => assertKrakenToolDefinition(toolDefinition)).not.toThrow();
+    expect(() => assertTuvrenToolDefinition(toolDefinition)).not.toThrow();
   });
 });

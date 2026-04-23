@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
+import { TuvrenRuntimeError } from "@tuvren/core-types";
 import type {
   AfterIterationContext,
   ContextEngineeringPlan,
   ContextManifest,
   InterceptContext,
   InterceptResult,
-  KrakenExtension,
-  KrakenMessage,
   RuntimeResolution,
-} from "@kraken/framework-runtime-api";
-import { KrakenRuntimeError } from "@kraken/shared-core-types";
+  TuvrenExtension,
+  TuvrenMessage,
+} from "@tuvren/runtime-api";
 import { runWithTimeout } from "./execution-timeouts.js";
 
 export interface ExtensionStateUpdate {
@@ -44,10 +44,10 @@ interface HookRunResult {
 
 interface HookExecutionOptions {
   emit(event: { data: unknown; name: string }): void;
-  extensions: KrakenExtension[];
+  extensions: TuvrenExtension[];
   iterationCount: number;
   manifest: ContextManifest;
-  messages: KrakenMessage[];
+  messages: TuvrenMessage[];
   runId: string;
   turnId: string;
 }
@@ -59,7 +59,7 @@ interface AfterIterationOptions extends HookExecutionOptions {
 }
 
 export function buildSharedExports(
-  extensions: KrakenExtension[],
+  extensions: TuvrenExtension[],
   manifest: ContextManifest
 ): Record<string, Record<string, unknown>> {
   const sharedExports: Record<string, Record<string, unknown>> = {};
@@ -87,7 +87,7 @@ export function buildSharedExports(
 }
 
 export function collectSystemPrompts(
-  extensions: KrakenExtension[],
+  extensions: TuvrenExtension[],
   manifest: ContextManifest,
   iterationCount: number,
   options?: CollectSystemPromptsOptions
@@ -311,7 +311,7 @@ async function runInterceptHooks(
 }
 
 function createInterceptContext(
-  extension: KrakenExtension,
+  extension: TuvrenExtension,
   options: HookExecutionOptions,
   timeoutSignal: AbortSignal
 ): InterceptContext {
@@ -349,7 +349,7 @@ function liftInterceptResult(
   switch (result?.verdict) {
     case "endTurn":
       if (result.reason === undefined) {
-        throw new KrakenRuntimeError("endTurn verdicts require a reason", {
+        throw new TuvrenRuntimeError("endTurn verdicts require a reason", {
           code: "invalid_extension_verdict",
         });
       }
@@ -359,7 +359,7 @@ function liftInterceptResult(
       };
     case "hardFail":
       if (result.error === undefined) {
-        throw new KrakenRuntimeError("hardFail verdicts require an error", {
+        throw new TuvrenRuntimeError("hardFail verdicts require an error", {
           code: "invalid_extension_verdict",
         });
       }
@@ -370,7 +370,7 @@ function liftInterceptResult(
       };
     case "softFail":
       if (result.error === undefined) {
-        throw new KrakenRuntimeError("softFail verdicts require an error", {
+        throw new TuvrenRuntimeError("softFail verdicts require an error", {
           code: "invalid_extension_verdict",
         });
       }
@@ -393,7 +393,7 @@ function asRecord(value: unknown): Record<string, unknown> {
 }
 
 function buildContextSharedExports(
-  extensions: KrakenExtension[],
+  extensions: TuvrenExtension[],
   manifest: ContextManifest
 ): Record<string, Record<string, unknown>> {
   return cloneValue(buildSharedExports(extensions, manifest));

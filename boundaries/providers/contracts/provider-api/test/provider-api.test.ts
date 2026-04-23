@@ -18,8 +18,8 @@ import { describe, expect, test } from "bun:test";
 import {
   assertProviderStreamChunk,
   isProviderStreamChunk,
-  type KrakenProvider,
   type ProviderStreamChunk,
+  type TuvrenProvider,
 } from "../src/index.ts";
 
 describe("provider-api", () => {
@@ -39,7 +39,7 @@ describe("provider-api", () => {
         await Promise.resolve();
         yield chunk;
       },
-    } satisfies KrakenProvider;
+    } satisfies TuvrenProvider;
 
     expect(provider.id).toBe("provider-1");
     expect(isProviderStreamChunk(chunk)).toBe(true);

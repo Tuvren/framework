@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type { KrakenBackend } from "@kraken/kernel-contract-protocol";
+import type { KrakenBackend } from "@tuvren/kernel-protocol";
 
 export interface BackendTestSuiteApi {
   describe(name: string, register: () => void): void;

@@ -20,8 +20,8 @@ import {
   invalidFrameworkContractFixtures,
 } from "../../../../../tests/fixtures/framework-contract-fixtures.js";
 import {
-  assertKrakenStreamEvent as assertKrakenStreamEventFromSubpath,
-  type KrakenStreamEvent as KrakenStreamEventFromSubpath,
+  assertTuvrenStreamEvent as assertKrakenStreamEventFromSubpath,
+  type TuvrenStreamEvent as KrakenStreamEventFromSubpath,
 } from "../src/events.ts";
 import {
   assertExecutionStatus as assertExecutionStatusFromSubpath,
@@ -34,19 +34,19 @@ import {
   assertApprovalResponseForRequest,
   assertContextManifest,
   assertExecutionStatus,
-  assertKrakenMessage,
-  assertKrakenModelResponse,
-  assertKrakenStreamEvent,
-  assertKrakenToolDefinition,
   assertProviderStreamChunk,
+  assertTuvrenMessage,
+  assertTuvrenModelResponse,
+  assertTuvrenStreamEvent,
+  assertTuvrenToolDefinition,
   isApprovalRequest,
   isApprovalResponse,
   isApprovalResponseForRequest,
   isExecutionStatus,
-  isKrakenMessage,
-  isKrakenStreamEvent,
-  isKrakenToolDefinition,
   isProviderStreamChunk,
+  isTuvrenMessage,
+  isTuvrenStreamEvent,
+  isTuvrenToolDefinition,
 } from "../src/index.ts";
 import type { OrchestrationHandle as OrchestrationHandleFromSubpath } from "../src/orchestration.ts";
 import {
@@ -60,7 +60,7 @@ import {
 
 describe("runtime-api contracts", () => {
   test("accepts the canonical framework fixtures", () => {
-    expect(isKrakenMessage(frameworkContractFixtures.assistantMessage)).toBe(
+    expect(isTuvrenMessage(frameworkContractFixtures.assistantMessage)).toBe(
       true
     );
     expect(isApprovalRequest(frameworkContractFixtures.approvalRequest)).toBe(
@@ -69,11 +69,11 @@ describe("runtime-api contracts", () => {
     expect(
       isProviderStreamChunk(frameworkContractFixtures.providerStreamChunk)
     ).toBe(true);
-    expect(isKrakenStreamEvent(frameworkContractFixtures.streamEvent)).toBe(
+    expect(isTuvrenStreamEvent(frameworkContractFixtures.streamEvent)).toBe(
       true
     );
     expect(
-      isKrakenToolDefinition(frameworkContractFixtures.toolDefinition)
+      isTuvrenToolDefinition(frameworkContractFixtures.toolDefinition)
     ).toBe(true);
     expect(isExecutionStatus(frameworkContractFixtures.executionStatus)).toBe(
       true
@@ -83,7 +83,7 @@ describe("runtime-api contracts", () => {
     ).not.toThrow();
 
     expect(() =>
-      assertKrakenMessage(frameworkContractFixtures.assistantMessage)
+      assertTuvrenMessage(frameworkContractFixtures.assistantMessage)
     ).not.toThrow();
     expect(() =>
       assertApprovalRequest(frameworkContractFixtures.approvalRequest)
@@ -92,16 +92,16 @@ describe("runtime-api contracts", () => {
       assertProviderStreamChunk(frameworkContractFixtures.providerStreamChunk)
     ).not.toThrow();
     expect(() =>
-      assertKrakenStreamEvent(frameworkContractFixtures.streamEvent)
+      assertTuvrenStreamEvent(frameworkContractFixtures.streamEvent)
     ).not.toThrow();
     expect(() =>
-      assertKrakenToolDefinition(frameworkContractFixtures.toolDefinition)
+      assertTuvrenToolDefinition(frameworkContractFixtures.toolDefinition)
     ).not.toThrow();
     expect(() =>
       assertExecutionStatus(frameworkContractFixtures.executionStatus)
     ).not.toThrow();
     expect(() =>
-      assertKrakenModelResponse({
+      assertTuvrenModelResponse({
         finishReason: "length",
         parts: [{ text: "partial", type: "text" }],
         providerMetadata: { stop: "max_tokens" },
@@ -208,7 +208,7 @@ describe("runtime-api contracts", () => {
 
   test("rejects malformed contract values", () => {
     expect(
-      isKrakenMessage(invalidFrameworkContractFixtures.malformedMessage)
+      isTuvrenMessage(invalidFrameworkContractFixtures.malformedMessage)
     ).toBe(false);
     expect(
       isApprovalRequest(
@@ -221,10 +221,10 @@ describe("runtime-api contracts", () => {
       )
     ).toBe(false);
     expect(
-      isKrakenStreamEvent(invalidFrameworkContractFixtures.malformedStreamEvent)
+      isTuvrenStreamEvent(invalidFrameworkContractFixtures.malformedStreamEvent)
     ).toBe(false);
     expect(
-      isKrakenToolDefinition(
+      isTuvrenToolDefinition(
         invalidFrameworkContractFixtures.malformedToolDefinition
       )
     ).toBe(false);
@@ -287,7 +287,7 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
 
     expect(
-      isKrakenStreamEvent({
+      isTuvrenStreamEvent({
         finishReason: "stop",
         messageId: "message-1",
         timestamp: 1,
@@ -348,7 +348,7 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
 
     expect(
-      isKrakenMessage({
+      isTuvrenMessage({
         parts: [
           {
             callId: "call-1",
@@ -462,7 +462,7 @@ describe("runtime-api contracts", () => {
     };
 
     expect(() =>
-      isKrakenMessage({
+      isTuvrenMessage({
         parts: [
           {
             providerMetadata: hostileProviderMetadata,
@@ -475,7 +475,7 @@ describe("runtime-api contracts", () => {
     ).not.toThrow();
 
     expect(
-      isKrakenMessage({
+      isTuvrenMessage({
         parts: [
           {
             providerMetadata: hostileProviderMetadata,
@@ -598,12 +598,12 @@ describe("runtime-api contracts", () => {
   });
 
   test("rejects stream events that omit required fields", () => {
-    expect(isKrakenStreamEvent({ type: "turn.end", timestamp: 1 })).toBe(false);
+    expect(isTuvrenStreamEvent({ type: "turn.end", timestamp: 1 })).toBe(false);
   });
 
   test("rejects stream events with empty tool names", () => {
     expect(
-      isKrakenStreamEvent({
+      isTuvrenStreamEvent({
         callId: "call-1",
         input: {},
         name: "",
@@ -615,7 +615,7 @@ describe("runtime-api contracts", () => {
 
   test("rejects stream events with mixed-variant payload fields", () => {
     expect(
-      isKrakenStreamEvent({
+      isTuvrenStreamEvent({
         callId: "call-1",
         input: {},
         messageId: "message-1",
@@ -629,7 +629,7 @@ describe("runtime-api contracts", () => {
 
   test("rejects file parts with empty media types", () => {
     expect(
-      isKrakenMessage({
+      isTuvrenMessage({
         parts: [
           {
             data: "YWJj",
@@ -644,7 +644,7 @@ describe("runtime-api contracts", () => {
 
   test("rejects stream events with empty lifecycle identifiers", () => {
     expect(
-      isKrakenStreamEvent({
+      isTuvrenStreamEvent({
         text: "ok",
         messageId: "",
         timestamp: 1,
@@ -653,7 +653,7 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
 
     expect(
-      isKrakenStreamEvent({
+      isTuvrenStreamEvent({
         resumedFrom: "1".repeat(64),
         threadId: "",
         timestamp: 1,
@@ -665,7 +665,7 @@ describe("runtime-api contracts", () => {
 
   test("rejects stream events with invalid hash references", () => {
     expect(
-      isKrakenStreamEvent({
+      isTuvrenStreamEvent({
         resumedFrom: "not-a-hash",
         threadId: "thread-1",
         timestamp: 1,
@@ -675,7 +675,7 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
 
     expect(
-      isKrakenStreamEvent({
+      isTuvrenStreamEvent({
         iterationCount: 1,
         timestamp: 1,
         turnNodeHash: "not-a-hash",
@@ -686,7 +686,7 @@ describe("runtime-api contracts", () => {
 
   test("rejects negative iteration counters in stream events", () => {
     expect(
-      isKrakenStreamEvent({
+      isTuvrenStreamEvent({
         iterationCount: -1,
         timestamp: 1,
         type: "iteration.start",
@@ -694,7 +694,7 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
 
     expect(
-      isKrakenStreamEvent({
+      isTuvrenStreamEvent({
         iterationCount: -1,
         timestamp: 1,
         turnNodeHash: "1".repeat(64),
@@ -705,7 +705,7 @@ describe("runtime-api contracts", () => {
 
   test("rejects non-canonical epoch timestamps in stream events", () => {
     expect(
-      isKrakenStreamEvent({
+      isTuvrenStreamEvent({
         status: "completed",
         timestamp: -0,
         turnId: "turn-1",
@@ -716,7 +716,7 @@ describe("runtime-api contracts", () => {
 
   test("rejects assistant messages with incomplete content parts", () => {
     expect(
-      isKrakenMessage({
+      isTuvrenMessage({
         parts: [{ type: "text" }],
         role: "assistant",
       })
@@ -725,7 +725,7 @@ describe("runtime-api contracts", () => {
 
   test("rejects messages with undeclared top-level fields", () => {
     expect(
-      isKrakenMessage({
+      isTuvrenMessage({
         extra: 1,
         parts: [{ text: "hi", type: "text" }],
         role: "assistant",
@@ -735,7 +735,7 @@ describe("runtime-api contracts", () => {
 
   test("rejects assistant messages with malformed provider metadata", () => {
     expect(
-      isKrakenMessage({
+      isTuvrenMessage({
         parts: [],
         providerMetadata: 7,
         role: "assistant",
@@ -745,28 +745,28 @@ describe("runtime-api contracts", () => {
 
   test("rejects empty durable messages across roles", () => {
     expect(
-      isKrakenMessage({
+      isTuvrenMessage({
         content: "",
         role: "system",
       })
     ).toBe(false);
 
     expect(
-      isKrakenMessage({
+      isTuvrenMessage({
         parts: [],
         role: "user",
       })
     ).toBe(false);
 
     expect(
-      isKrakenMessage({
+      isTuvrenMessage({
         parts: [],
         role: "assistant",
       })
     ).toBe(false);
 
     expect(
-      isKrakenMessage({
+      isTuvrenMessage({
         parts: [],
         role: "tool",
       })
@@ -775,7 +775,7 @@ describe("runtime-api contracts", () => {
 
   test("rejects content parts with non-serializable payloads", () => {
     expect(
-      isKrakenMessage({
+      isTuvrenMessage({
         parts: [
           {
             callId: "call-1",
@@ -793,7 +793,7 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
 
     expect(
-      isKrakenMessage({
+      isTuvrenMessage({
         parts: [
           {
             data: {
@@ -811,7 +811,7 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
 
     expect(
-      isKrakenMessage({
+      isTuvrenMessage({
         parts: [
           {
             providerMetadata: {
@@ -832,7 +832,7 @@ describe("runtime-api contracts", () => {
 
   test("rejects content parts with mixed-variant fields", () => {
     expect(
-      isKrakenMessage({
+      isTuvrenMessage({
         parts: [
           {
             callId: "call-1",
@@ -847,7 +847,7 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
 
     expect(
-      isKrakenMessage({
+      isTuvrenMessage({
         parts: [
           {
             callId: "call-1",
@@ -862,7 +862,7 @@ describe("runtime-api contracts", () => {
 
   test("rejects empty non-redacted reasoning parts", () => {
     expect(
-      isKrakenMessage({
+      isTuvrenMessage({
         parts: [
           {
             redacted: false,
@@ -888,7 +888,7 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
 
     expect(
-      isKrakenStreamEvent({
+      isTuvrenStreamEvent({
         data: {
           fn() {
             return 1;
@@ -901,7 +901,7 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
 
     expect(
-      isKrakenStreamEvent({
+      isTuvrenStreamEvent({
         callId: "call-1",
         input: {
           fn() {
@@ -1024,7 +1024,7 @@ describe("runtime-api contracts", () => {
 
   test("rejects tool definitions with invalid schemas", () => {
     expect(
-      isKrakenToolDefinition({
+      isTuvrenToolDefinition({
         description: "Search",
         execute() {
           return undefined;
@@ -1037,7 +1037,7 @@ describe("runtime-api contracts", () => {
 
   test("rejects tool definitions with malformed JSON Schema objects", () => {
     expect(
-      isKrakenToolDefinition({
+      isTuvrenToolDefinition({
         description: "Bad required schema",
         execute() {
           return undefined;
@@ -1051,7 +1051,7 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
 
     expect(
-      isKrakenToolDefinition({
+      isTuvrenToolDefinition({
         description: "Bad properties schema",
         execute() {
           return undefined;
@@ -1065,7 +1065,7 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
 
     expect(
-      isKrakenToolDefinition({
+      isTuvrenToolDefinition({
         description: "Bad nested property schema",
         execute() {
           return undefined;
@@ -1081,7 +1081,7 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
 
     expect(
-      isKrakenToolDefinition({
+      isTuvrenToolDefinition({
         description: "Bad schema type",
         execute() {
           return undefined;
@@ -1094,7 +1094,7 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
 
     expect(
-      isKrakenToolDefinition({
+      isTuvrenToolDefinition({
         description: "Bad schema type array",
         execute() {
           return undefined;
@@ -1107,7 +1107,7 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
 
     expect(
-      isKrakenToolDefinition({
+      isTuvrenToolDefinition({
         description: "Bad empty schema type array",
         execute() {
           return undefined;
@@ -1120,7 +1120,7 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
 
     expect(
-      isKrakenToolDefinition({
+      isTuvrenToolDefinition({
         description: "Bad duplicate schema type array",
         execute() {
           return undefined;
@@ -1133,7 +1133,7 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
 
     expect(
-      isKrakenToolDefinition({
+      isTuvrenToolDefinition({
         description: "Bad duplicate required entries",
         execute() {
           return undefined;
@@ -1150,7 +1150,7 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
 
     expect(
-      isKrakenToolDefinition({
+      isTuvrenToolDefinition({
         description: "Bad items schema",
         execute() {
           return undefined;
@@ -1164,7 +1164,7 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
 
     expect(
-      isKrakenToolDefinition({
+      isTuvrenToolDefinition({
         description: "Bad additionalProperties schema",
         execute() {
           return undefined;
@@ -1178,7 +1178,7 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
 
     expect(
-      isKrakenToolDefinition({
+      isTuvrenToolDefinition({
         description: "Bad propertyNames schema",
         execute() {
           return undefined;
@@ -1192,7 +1192,7 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
 
     expect(
-      isKrakenToolDefinition({
+      isTuvrenToolDefinition({
         description: "Bad oneOf schema",
         execute() {
           return undefined;
@@ -1205,7 +1205,7 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
 
     expect(
-      isKrakenToolDefinition({
+      isTuvrenToolDefinition({
         description: "Bad minLength schema",
         execute() {
           return undefined;
@@ -1219,7 +1219,7 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
 
     expect(
-      isKrakenToolDefinition({
+      isTuvrenToolDefinition({
         description: "Bad enum schema",
         execute() {
           return undefined;
@@ -1233,7 +1233,7 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
 
     expect(
-      isKrakenToolDefinition({
+      isTuvrenToolDefinition({
         description: "Bad empty enum schema",
         execute() {
           return undefined;
@@ -1247,7 +1247,7 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
 
     expect(
-      isKrakenToolDefinition({
+      isTuvrenToolDefinition({
         description: "Bad duplicate enum schema",
         execute() {
           return undefined;
@@ -1261,7 +1261,7 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
 
     expect(
-      isKrakenToolDefinition({
+      isTuvrenToolDefinition({
         description: "Bad allOf schema",
         execute() {
           return undefined;
@@ -1275,7 +1275,7 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
 
     expect(
-      isKrakenToolDefinition({
+      isTuvrenToolDefinition({
         description: "Bad anyOf schema",
         execute() {
           return undefined;
@@ -1289,7 +1289,7 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
 
     expect(
-      isKrakenToolDefinition({
+      isTuvrenToolDefinition({
         description: "Bad prefixItems schema",
         execute() {
           return undefined;
@@ -1303,7 +1303,7 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
 
     expect(
-      isKrakenToolDefinition({
+      isTuvrenToolDefinition({
         description: "Bad empty oneOf schema",
         execute() {
           return undefined;
@@ -1316,7 +1316,7 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
 
     expect(
-      isKrakenToolDefinition({
+      isTuvrenToolDefinition({
         description: "Bad $ref schema",
         execute() {
           return undefined;
@@ -1329,7 +1329,7 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
 
     expect(
-      isKrakenToolDefinition({
+      isTuvrenToolDefinition({
         description: "Bad $defs schema",
         execute() {
           return undefined;
@@ -1343,7 +1343,7 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
 
     expect(
-      isKrakenToolDefinition({
+      isTuvrenToolDefinition({
         description: "Bad title schema",
         execute() {
           return undefined;
@@ -1357,7 +1357,7 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
 
     expect(
-      isKrakenToolDefinition({
+      isTuvrenToolDefinition({
         description: "Bad description schema",
         execute() {
           return undefined;
@@ -1390,7 +1390,7 @@ describe("runtime-api contracts", () => {
     }
 
     expect(
-      isKrakenToolDefinition({
+      isTuvrenToolDefinition({
         description: "Class-backed schema tool",
         execute() {
           return undefined;
@@ -1416,7 +1416,7 @@ describe("runtime-api contracts", () => {
     }
 
     expect(
-      isKrakenToolDefinition({
+      isTuvrenToolDefinition({
         description: "Lazy custom schema",
         execute() {
           return undefined;
@@ -1430,7 +1430,7 @@ describe("runtime-api contracts", () => {
 
   test("accepts JSON Schema numeric keywords with fractional values", () => {
     expect(
-      isKrakenToolDefinition({
+      isTuvrenToolDefinition({
         description: "Constrained number tool",
         execute() {
           return undefined;
@@ -1446,7 +1446,7 @@ describe("runtime-api contracts", () => {
 
   test("accepts structurally valid but unsatisfiable JSON Schemas", () => {
     expect(
-      isKrakenToolDefinition({
+      isTuvrenToolDefinition({
         description: "Unsatisfiable numeric bounds",
         execute() {
           return undefined;
@@ -1463,7 +1463,7 @@ describe("runtime-api contracts", () => {
 
   test("rejects tool definitions with undeclared fields", () => {
     expect(
-      isKrakenToolDefinition({
+      isTuvrenToolDefinition({
         description: "Search",
         execute() {
           return undefined;
@@ -1477,7 +1477,7 @@ describe("runtime-api contracts", () => {
 
   test("rejects tool definitions with non-serializable metadata", () => {
     expect(
-      isKrakenToolDefinition({
+      isTuvrenToolDefinition({
         description: "Search",
         execute() {
           return undefined;
@@ -1495,7 +1495,7 @@ describe("runtime-api contracts", () => {
 
   test("rejects tool definitions with malformed optional behavior fields", () => {
     expect(
-      isKrakenToolDefinition({
+      isTuvrenToolDefinition({
         approval: 7,
         description: "Search",
         execute() {
@@ -1507,7 +1507,7 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
 
     expect(
-      isKrakenToolDefinition({
+      isTuvrenToolDefinition({
         description: "Search",
         execute() {
           return undefined;
@@ -1519,7 +1519,7 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
 
     expect(
-      isKrakenToolDefinition({
+      isTuvrenToolDefinition({
         description: "Search",
         execute() {
           return undefined;
@@ -1533,7 +1533,7 @@ describe("runtime-api contracts", () => {
 
   test("rejects approval resolved events with edit decisions missing edited input", () => {
     expect(
-      isKrakenStreamEvent({
+      isTuvrenStreamEvent({
         response: {
           decisions: [{ callId: "call-1", type: "edit" }],
         },
@@ -1744,7 +1744,7 @@ describe("runtime-api contracts", () => {
 
   test("rejects event sources with a non-string workerId", () => {
     expect(
-      isKrakenStreamEvent({
+      isTuvrenStreamEvent({
         source: { agent: "primary", workerId: 7 },
         timestamp: 1,
         type: "turn.end",
@@ -1756,7 +1756,7 @@ describe("runtime-api contracts", () => {
 
   test("rejects event sources and error payloads with undeclared fields", () => {
     expect(
-      isKrakenStreamEvent({
+      isTuvrenStreamEvent({
         source: { agent: "primary", extra: 1 },
         status: "completed",
         timestamp: 1,
@@ -1766,7 +1766,7 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
 
     expect(
-      isKrakenStreamEvent({
+      isTuvrenStreamEvent({
         error: {
           extra: 1,
           message: "boom",
@@ -1786,7 +1786,7 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
 
     expect(
-      isKrakenStreamEvent({
+      isTuvrenStreamEvent({
         messageId: "   ",
         text: "ok",
         timestamp: 1,
@@ -1795,7 +1795,7 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
 
     expect(
-      isKrakenStreamEvent({
+      isTuvrenStreamEvent({
         source: { agent: "" },
         status: "completed",
         timestamp: 1,
@@ -1817,7 +1817,7 @@ describe("runtime-api contracts", () => {
     });
 
     expect(
-      isKrakenMessage({
+      isTuvrenMessage({
         parts: [
           {
             providerMetadata: symbolBackedMetadata,
@@ -1855,7 +1855,7 @@ describe("runtime-api contracts", () => {
 
   test("rejects error events with non-serializable details", () => {
     expect(
-      isKrakenStreamEvent({
+      isTuvrenStreamEvent({
         error: {
           details: {
             fn() {
@@ -2225,7 +2225,7 @@ describe("runtime-api contracts", () => {
 
   test("rejects mixed-shape discriminated messages", () => {
     expect(
-      isKrakenMessage({
+      isTuvrenMessage({
         content: "system",
         parts: [],
         role: "system",
@@ -2246,7 +2246,7 @@ describe("runtime-api contracts", () => {
     ).toBe(false);
 
     expect(
-      isKrakenStreamEvent({
+      isTuvrenStreamEvent({
         finishReason: "stop",
         messageId: "message-1",
         timestamp: 1,

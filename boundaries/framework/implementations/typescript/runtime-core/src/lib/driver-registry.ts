@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
+import { TuvrenRuntimeError } from "@tuvren/core-types";
 import {
   assertKrakenDriver,
   type DriverRegistry,
   type KrakenDriver,
   type KrakenDriverFactory,
-} from "@kraken/framework-driver-api";
-import { KrakenRuntimeError } from "@kraken/shared-core-types";
+} from "@tuvren/driver-api";
 
 type DriverEntry = KrakenDriver | KrakenDriverFactory;
 
@@ -35,7 +35,7 @@ class BasicDriverRegistry implements DriverRegistry {
     const driverId = getDriverId(driver);
 
     if (this.drivers.has(driverId)) {
-      throw new KrakenRuntimeError(
+      throw new TuvrenRuntimeError(
         `driver "${driverId}" is already registered`,
         {
           code: "duplicate_driver_registration",
@@ -81,7 +81,7 @@ function getDriverId(driver: DriverEntry): string {
     return driver.id;
   }
 
-  throw new KrakenRuntimeError("drivers must expose a non-empty id", {
+  throw new TuvrenRuntimeError("drivers must expose a non-empty id", {
     code: "invalid_driver_registration",
     details: {
       driver,

@@ -14,22 +14,22 @@
  * limitations under the License.
  */
 
+import { type HashString, TuvrenRuntimeError } from "@tuvren/core-types";
 import type {
   ApprovalDecision,
   ApprovalRequest,
   AroundToolContext,
   AroundToolResult,
   EventSource,
-  KrakenExtension,
-  KrakenStreamEvent,
-  KrakenToolDefinition,
   PendingToolCall,
   ToolCallPart,
   ToolExecutionContext,
   ToolResultPart,
-} from "@kraken/framework-runtime-api";
-import { assertApprovalRequest } from "@kraken/framework-runtime-api";
-import { type HashString, KrakenRuntimeError } from "@kraken/shared-core-types";
+  TuvrenExtension,
+  TuvrenStreamEvent,
+  TuvrenToolDefinition,
+} from "@tuvren/runtime-api";
+import { assertApprovalRequest } from "@tuvren/runtime-api";
 import type { ErrorObject, ValidateFunction } from "ajv";
 import Ajv from "ajv";
 import type { ExtensionStateUpdate } from "./extension-runtime.js";
@@ -117,7 +117,7 @@ export function createBatchScopedEnvironment(
 
 export function createToolExecutionContext(
   toolCall: ToolCallPart,
-  tool: KrakenToolDefinition,
+  tool: TuvrenToolDefinition,
   environment: ToolBatchEnvironment,
   timeoutSignal: AbortSignal | undefined
 ): ToolExecutionContext {
@@ -130,7 +130,7 @@ export function createToolExecutionContext(
 
       environment.publishCustom(event);
     },
-    forward: (event: KrakenStreamEvent, source: EventSource) => {
+    forward: (event: TuvrenStreamEvent, source: EventSource) => {
       if (timeoutSignal?.aborted) {
         return;
       }
@@ -167,7 +167,7 @@ export function createAroundToolContext(
       environment.publishCustom(event);
     },
     extensionState: cloneRecord(environment.manifest.extensions[extensionName]),
-    forward: (event: KrakenStreamEvent, source: EventSource) => {
+    forward: (event: TuvrenStreamEvent, source: EventSource) => {
       if (timeoutSignal?.aborted) {
         return;
       }
@@ -298,7 +298,7 @@ export function isRejectedPromiseResult(
 }
 
 export async function evaluateApprovalPolicy(
-  policy: NonNullable<KrakenToolDefinition["approval"]>,
+  policy: NonNullable<TuvrenToolDefinition["approval"]>,
   input: unknown,
   context: ToolExecutionContext
 ): Promise<boolean> {
@@ -306,7 +306,7 @@ export async function evaluateApprovalPolicy(
 }
 
 export function validateToolInput(
-  tool: KrakenToolDefinition,
+  tool: TuvrenToolDefinition,
   input: unknown
 ):
   | { details?: unknown; valid: true; value: unknown }
@@ -558,7 +558,7 @@ export function collectExtensionStateUpdate(
 }
 
 export function getAroundToolHandlers(
-  extensions: KrakenExtension[],
+  extensions: TuvrenExtension[],
   toolName: string
 ): Array<{
   extensionName: string;
@@ -622,7 +622,7 @@ export function normalizeAroundToolResult(
   if (isPauseResult(result)) {
     if (nestedResult !== undefined) {
       return Promise.reject(
-        new KrakenRuntimeError(
+        new TuvrenRuntimeError(
           `aroundTool extension "${extensionName}" must request approval before calling next()`,
           {
             code: "invalid_approval_request",
@@ -812,7 +812,7 @@ export function isResultWithState(
 }
 
 function getCompiledValidator(
-  schema: KrakenToolDefinition["inputSchema"]
+  schema: TuvrenToolDefinition["inputSchema"]
 ): ValidateFunction {
   if (typeof schema === "boolean") {
     return ajv.compile(schema);

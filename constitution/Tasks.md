@@ -26,7 +26,7 @@
 
 ### Current Active Scope
 - Implement the first focused ReAct Driver foundation slice in `boundaries/framework/implementations/typescript/drivers/react`.
-- Prove that one concrete driver can render canonical prompts, call a `KrakenProvider`, interpret model responses, and return valid `DriverExecutionResult` values over the now-frozen shared-core boundary.
+- Prove that one concrete driver can render canonical prompts, call a `TuvrenProvider`, interpret model responses, and return valid `DriverExecutionResult` values over the now-frozen shared-core boundary.
 - Close Epic I with fake-provider-backed integration coverage before widening into deeper loop/tool semantics or provider-bridge work.
 
 ### Future / Deferred Scope
@@ -76,12 +76,12 @@ Then the repository contains one bounded concrete driver package with explicit b
 - **Effort:** 5
 - **Dependencies:** KRT-I001
 - **Capability / Contract Mapping:** PRD `CAP-P0-012`, `CAP-P0-019`, `CAP-P0-020`, `CAP-P0-030`, `CAP-P0-033`; Architecture `§2`, `§4.1`; TechSpec `§4.4`, `§4.6`, `§5.4`; Framework Spec `§5.2`, `§6.2`, `§6.3`, `§6.5`
-- **Description:** Implement the ReAct Driver prompt-rendering and provider-call shell so the driver can build canonical prompts from the shared runtime context, render tools and structured-output requests for provider use, invoke `KrakenProvider.generate()` / `stream()`, and produce the canonical assistant stream shape expected by the shared framework.
+- **Description:** Implement the ReAct Driver prompt-rendering and provider-call shell so the driver can build canonical prompts from the shared runtime context, render tools and structured-output requests for provider use, invoke `TuvrenProvider.generate()` / `stream()`, and produce the canonical assistant stream shape expected by the shared framework.
 - **Acceptance Criteria (Gherkin):**
 ```gherkin
 Given the ReAct driver package scaffold exists
 When the prompt renderer and provider call shell are implemented
-Then the driver can invoke a provider through the canonical Kraken provider contract without depending on bridge-specific wire shapes
+Then the driver can invoke a provider through the canonical Tuvren provider contract without depending on bridge-specific wire shapes
 ```
 
 **KRT-I003 Response Interpretation and Result Mapping**
@@ -89,10 +89,10 @@ Then the driver can invoke a provider through the canonical Kraken provider cont
 - **Effort:** 3
 - **Dependencies:** KRT-I002
 - **Capability / Contract Mapping:** PRD `CAP-P0-012`, `CAP-P0-019`, `CAP-P0-020`, `CAP-P0-033`; Architecture `§2`, `§4.1`; TechSpec `§4.6`, `§5.4`; Framework Spec `§3.3`, `§5.6`, `§6.2`, `§6.4`
-- **Description:** Interpret canonical `KrakenModelResponse` values into the minimal driver seam by producing the single durable assistant message, tool-call requests, terminal non-tool responses, and the correct `RuntimeResolution` / `toolExecutionMode` combinations required by the shared framework contracts.
+- **Description:** Interpret canonical `TuvrenModelResponse` values into the minimal driver seam by producing the single durable assistant message, tool-call requests, terminal non-tool responses, and the correct `RuntimeResolution` / `toolExecutionMode` combinations required by the shared framework contracts.
 - **Acceptance Criteria (Gherkin):**
 ```gherkin
-Given the ReAct driver can call a canonical Kraken provider
+Given the ReAct driver can call a canonical Tuvren provider
 When provider responses are interpreted through the driver result mapper
 Then the driver emits valid shared-core driver results for terminal assistant output and tool-call request iterations without leaking provider-specific ontology
 ```

@@ -9,7 +9,7 @@
 ## 1. Stack Specification (Bill of Materials)
 - **Primary Language / Runtime:** TypeScript `6.0.2` is the first authoritative implementation language for the framework and kernel protocol implementation. The kernel protocol remains language-neutral by contract. Core TypeScript packages target portable ESM across Bun, Node.js, and Deno. Bun remains the preferred local development runtime and package manager.
 - **Primary Frameworks / Libraries:** `ai@6.0.142` and `@ai-sdk/provider@3.0.8` for the baseline AI SDK Providers bridge; `ajv@8.18.0` for JSON Schema validation; `cbor-x@1.6.4` for deterministic CBOR encoding and decoding in the TypeScript implementation; `@biomejs/biome@2.4.10` for formatting and linting; `tsup@8.5.1` for package builds.
-- **State Stores / Persistence:** Kraken-owned backend contract first. `@kraken/backend-memory` is the reference development and semantic test backend. `@kraken/backend-sqlite` is the first officially supported persistent backend adapter. Future backends such as PostgreSQL, MySQL/MariaDB, and MongoDB are peer adapters against the same kernel contract, not SQLite-shaped variants.
+- **State Stores / Persistence:** Tuvren Runtime uses a Kraken-owned backend contract first. `@tuvren/backend-memory` is the reference development and semantic test backend. `@tuvren/backend-sqlite` is the first officially supported persistent backend adapter. Future backends such as PostgreSQL, MySQL/MariaDB, and MongoDB are peer adapters against the same kernel contract, not SQLite-shaped variants.
 - **Infrastructure / Tooling:** `devenv` for reproducible development environments, `nx@22.6.3` plus aligned `@nx/*` packages for TypeScript project orchestration, Bun workspaces, root TypeScript project references, `tsup` package builds, structured JSON logging, exact dependency pinning in `package.json` plus `bun.lock`, and environment-variable-based provider credentials at bridge boundaries.
 - **Testing / Quality Tooling:** `bun test`, `tsc --noEmit`, Biome, deterministic CBOR golden-byte tests, hash identity fixtures, shared backend conformance suites, checkpoint/recovery scenario tests, and AI SDK bridge contract fixtures.
 - **Version Pinning / Compatibility Policy:** Versions named in this TechSpec are authoritative for the baseline implementation line and must match the repository manifests. Public package APIs follow semantic versioning. Changes to kernel record encoding, hash algorithm, or durable identity rules are semver-major.
@@ -20,11 +20,11 @@
 - **Portability posture:** Core packages stay runtime-portable where practical; backend packages and provider bridges may have narrower runtime support when their dependencies require it.
 - **Framework posture:** The framework layer is driver-oriented. Shared framework contracts and runtime services stay driver-neutral where practical, while concrete execution semantics live in driver implementations.
 - **Initial driver posture:** The first production-depth driver is the ReAct Driver. It is the baseline implementation, not the whole framework ontology.
-- **Provider posture:** Kraken owns the canonical provider contract. The baseline bridge surface is AI SDK Providers only. LangChain is intentionally out of baseline scope. First-class Kraken provider packages for major providers are expected later.
+- **Provider posture:** Tuvren Runtime owns the canonical provider contract, while Kraken supplies the engine semantics behind it. The baseline bridge surface is AI SDK Providers only. LangChain is intentionally out of baseline scope. First-class Tuvren-scoped provider packages for major providers are expected later.
 - **Backend posture:** All official backends implement one strict kernel-visible contract. Backend-specific optimizations may exist internally, but they must not change kernel semantics or require capability negotiation at the kernel layer in v0.1.
 
 ### 1.2 Current-State vs Target-State
-- **Current repository reality:** The repository already contains the workspace scaffold, `@kraken/shared-core-types`, `@kraken/kernel-contract-protocol`, `@kraken/backend-memory`, `@kraken/backend-sqlite`, `@kraken/kernel-testkit`, `@kraken/framework-runtime-api`, `@kraken/framework-driver-api`, `@kraken/framework-event-stream`, `@kraken/framework-tool-contracts`, `@kraken/provider-api`, and `@kraken/framework-runtime-core`. The first concrete driver, provider bridges, stream adapters, and hosts remain target-state work.
+- **Current repository reality:** The repository already contains the workspace scaffold, `@tuvren/core-types`, `@tuvren/kernel-protocol`, `@tuvren/backend-memory`, `@tuvren/backend-sqlite`, `@tuvren/kernel-testkit`, `@tuvren/runtime-api`, `@tuvren/driver-api`, `@tuvren/event-stream`, `@tuvren/tool-contracts`, `@tuvren/provider-api`, and `@tuvren/runtime-core`. The first concrete driver, provider bridges, stream adapters, and hosts remain target-state work.
 - **Target implementation state:** The package layout and interfaces defined below are the intended implementation target for the first authoritative code line.
 - **Drift rule:** The future codebase must conform to this TechSpec. The TechSpec must not be treated as a loose commentary on whatever structure happens to emerge.
 
@@ -49,26 +49,26 @@
 
 ### ADR-004 The Framework Public Surface Remains Library-First and Driver-Neutral
 - **Status:** accepted
-- **Context:** Kraken is a framework for developers to embed, not a mandatory network service. The architecture’s host boundary is an embedding surface.
-- **Decision:** The primary TypeScript framework surface remains a library API centered on `KrakenRuntime`, `ExecutionHandle`, typed events, driver selection, provider ports, and backend ports.
+- **Context:** Tuvren Runtime is a framework product for developers to embed, while Kraken remains the engine identity behind it. The architecture’s host boundary is an embedding surface.
+- **Decision:** The primary TypeScript framework surface remains a library API centered on `TuvrenRuntime`, `ExecutionHandle`, typed events, driver selection, provider ports, and backend ports.
 - **Consequences:** HTTP, WebSocket, CLI, editor, and protocol adapters are secondary packages layered over the library API. This does not weaken the protocol-first kernel boundary because the library surface sits above it, and it prevents the first driver from becoming the only host-facing abstraction.
 
-### ADR-005 The Baseline Provider Strategy Is Kraken Contract Plus AI SDK Providers Bridge
+### ADR-005 The Baseline Provider Strategy Is Tuvren Provider Contract Plus AI SDK Providers Bridge
 - **Status:** accepted
 - **Context:** The framework owns the canonical provider contract. Supporting multiple bridge ecosystems before the core runtime is proven would add translation surface and semantic drift for little value.
-- **Decision:** The baseline provider integration package is `@kraken/provider-bridge-ai-sdk`, built on `ai@6.0.142` and `@ai-sdk/provider@3.0.8`. LangChain is not part of the baseline implementation. First-class Kraken provider packages are deferred but expected.
-- **Consequences:** The initial provider surface stays narrow and Kraken-native. Future packages such as `@kraken/provider-openai`, `@kraken/provider-anthropic`, and `@kraken/provider-google` can be added later without redefining the framework contract.
+- **Decision:** The baseline provider integration package is `@tuvren/provider-bridge-ai-sdk`, built on `ai@6.0.142` and `@ai-sdk/provider@3.0.8`. LangChain is not part of the baseline implementation. First-class Tuvren-scoped provider packages are deferred but expected.
+- **Consequences:** The initial provider surface stays narrow and Tuvren-scoped while preserving Kraken engine semantics internally. Future packages such as `@tuvren/provider-openai`, `@tuvren/provider-anthropic`, and `@tuvren/provider-google` can be added later without redefining the framework contract.
 
 ### ADR-006 Official Backends Use One Strict Uniform Kernel Contract
 - **Status:** accepted
-- **Context:** Kraken is a framework, not a storage product. Developers must be able to move between backends without kernel-semantic drift.
+- **Context:** Tuvren Runtime is a framework product, not a storage product. Developers must be able to move between backends without kernel-semantic drift.
 - **Decision:** All official backends implement one strict kernel contract. Optional backend capabilities are not exposed at the kernel layer in v0.1.
 - **Consequences:** Shared backend conformance suites remain authoritative. Backend-specific performance tricks stay internal. The framework and future SDKs do not branch on backend feature flags.
 
 ### ADR-007 Memory and SQLite Are the Official Initial Backends
 - **Status:** accepted
 - **Context:** The project needs a usable development backend immediately and a usable persistent backend package without pretending that one backend defines Kraken’s ontology.
-- **Decision:** `@kraken/backend-memory` is the reference non-persistent backend for development and semantic testing. `@kraken/backend-sqlite` is the first officially supported persistent backend adapter.
+- **Decision:** `@tuvren/backend-memory` is the reference non-persistent backend for development and semantic testing. `@tuvren/backend-sqlite` is the first officially supported persistent backend adapter.
 - **Consequences:** SQLite is the first official persistent implementation, but not the canonical physical model for all future backends. PostgreSQL, MySQL/MariaDB, MongoDB, and others remain peer adapters against the same kernel contract.
 
 ### ADR-008 Structured Kernel Records Use Deterministic CBOR and Opaque Objects Hash Raw Bytes
@@ -118,7 +118,7 @@
 - **Framework public API compatibility:** Breaking changes to exported TypeScript library contracts require a semver-major release.
 - **Driver compatibility:** Changes to shared driver-selection semantics or driver-neutral framework contracts are semver-major; adding a new driver is semver-minor unless it changes existing shared contracts.
 - **Backend compatibility:** All official backends must preserve the same kernel semantics. Physical schemas may differ by backend.
-- **Provider compatibility:** AI SDK bridge upgrades may happen in minor releases only if the Kraken-owned provider contract remains unchanged and contract fixtures still pass.
+- **Provider compatibility:** AI SDK bridge upgrades may happen in minor releases only if the Tuvren-owned provider contract remains unchanged and contract fixtures still pass.
 
 ## 3. State & Data Modeling
 ### 3.1 Canonical Kernel Record Profile
@@ -269,7 +269,7 @@ erDiagram
 - **Migration Notes:** Physical chunk policy may evolve without changing the protocol so long as `tree.create`, `tree.incorporate`, `tree.resolve`, `tree.diff`, and `tree.manifest` preserve the same behavior.
 
 ### 3.4 Backend Adapter Model
-- **Purpose:** Define what it means for a backend package to be an official Kraken backend.
+- **Purpose:** Define what it means for a backend package to be an official Tuvren Runtime backend.
 - **Storage Shape:** Each backend package is a concrete implementation of the kernel storage contract. Physical schema is backend-specific.
 - **Constraints / Invariants:**
   - Every official backend implements the full kernel contract.
@@ -277,7 +277,7 @@ erDiagram
   - No official backend may weaken the kernel’s required atomicity, lineage, or recovery guarantees.
   - Backends may optimize internally, but optimization must not change semantics.
 - **Conformance note:** Shared backend contract tests are the authority for semantic conformance.
-- **Product note:** `@kraken/backend-memory` is intentionally non-persistent and must not be described as satisfying the durable-runtime guarantees of the PRD or kernel spec.
+- **Product note:** `@tuvren/backend-memory` is intentionally non-persistent and must not be described as satisfying the durable-runtime guarantees of the PRD or kernel spec.
 - **Indexes / Access Paths:** Backend-specific, but all must satisfy the canonical access patterns named in §§3.1-3.3.
 - **Migration Notes:** Each backend package owns its own migration mechanism and version history.
 
@@ -293,7 +293,7 @@ erDiagram
   - SQLite backend is not an edge/serverless target in v0.1.
   - SQLite is the first official persistent backend, not the canonical physical model for all future backends.
 - **Indexes / Access Paths:** Listed per table below.
-- **Migration Notes:** Forward-only SQL migrations owned by `@kraken/backend-sqlite`.
+- **Migration Notes:** Forward-only SQL migrations owned by `@tuvren/backend-sqlite`.
 
 #### SQLite Tables
 - `objects`
@@ -343,52 +343,52 @@ erDiagram
 ## 4. Interface Contract
 ### 4.0 Shared Error Foundation
 - **Style:** shared cross-boundary TypeScript contract
-- **Ownership:** `@kraken/shared-core-types` owns the shared error base class and category subclasses. Concrete packages own their package-specific `code` values and message text.
-- **Compatibility Strategy:** `KrakenError` shape, subclass names, and stable `code` values are semver-governed public API. Adding a new error subclass is semver-minor. Changing or removing an existing stable `code` is semver-major.
-- **Code policy:** every `KrakenError` carries a stable lowercase snake_case `code`. Category is conveyed by the subclass, not by a required string prefix.
+- **Ownership:** `@tuvren/core-types` owns the shared error base class and category subclasses. Concrete packages own their package-specific `code` values and message text.
+- **Compatibility Strategy:** `TuvrenError` shape, subclass names, and stable `code` values are semver-governed public API. Adding a new error subclass is semver-minor. Changing or removing an existing stable `code` is semver-major.
+- **Code policy:** every `TuvrenError` carries a stable lowercase snake_case `code`. Category is conveyed by the subclass, not by a required string prefix.
 - **Projection rule:** when errors cross logging, streaming, or host boundaries, implementations must preserve at least `name`, `message`, `code`, and optional `details`.
 
 ```ts
-export type KrakenErrorCode = string;
+export type TuvrenErrorCode = string;
 
-export interface KrakenErrorOptions {
-  code: KrakenErrorCode;
+export interface TuvrenErrorOptions {
+  code: TuvrenErrorCode;
   cause?: unknown;
   details?: unknown;
 }
 
-export abstract class KrakenError extends Error {
-  readonly code: KrakenErrorCode;
+export abstract class TuvrenError extends Error {
+  readonly code: TuvrenErrorCode;
   readonly details?: unknown;
   override readonly cause?: unknown;
 
-  protected constructor(message: string, options: KrakenErrorOptions);
+  protected constructor(message: string, options: TuvrenErrorOptions);
 }
 
-export class KrakenValidationError extends KrakenError {}
-export class KrakenPersistenceError extends KrakenError {}
-export class KrakenLineageError extends KrakenError {}
-export class KrakenRecoveryError extends KrakenError {}
-export class KrakenRuntimeError extends KrakenError {}
-export class KrakenProviderError extends KrakenError {}
+export class TuvrenValidationError extends TuvrenError {}
+export class TuvrenPersistenceError extends TuvrenError {}
+export class TuvrenLineageError extends TuvrenError {}
+export class TuvrenRecoveryError extends TuvrenError {}
+export class TuvrenRuntimeError extends TuvrenError {}
+export class TuvrenProviderError extends TuvrenError {}
 ```
 
-Concrete code examples already defined in the authoritative specs such as `structured_output_validation` and `invalid_loop_policy` are `KrakenRuntimeError` codes. Backend-specific failures must normalize to `KrakenPersistenceError` codes before surfacing through shared contracts.
+Concrete code examples already defined in the authoritative specs such as `structured_output_validation` and `invalid_loop_policy` are `TuvrenRuntimeError` codes. Backend-specific failures must normalize to `TuvrenPersistenceError` codes before surfacing through shared contracts.
 
 ### 4.1 Host-Facing TypeScript Framework API
 - **Style:** library API
-- **Authentication / Authorization:** Not built into Kraken. Host applications authenticate and authorize their own callers before exposing runtime operations.
+- **Authentication / Authorization:** Not built into Tuvren Runtime. Host applications authenticate and authorize their own callers before exposing runtime operations.
 - **Compatibility Strategy:** Exported TypeScript framework APIs follow semantic versioning. Additive methods and additive optional fields are minor-compatible.
 - **Validator note:** Runtime `is*` / `assert*` guards treat the current released payload shapes as exact for that version. Minor releases that add optional fields must extend those validators in the same release; older releases are not required to accept newer payloads.
-- **Error model:** Typed `KrakenError` subclasses with stable `code` values plus canonical `error` stream events.
+- **Error model:** Typed `TuvrenError` subclasses with stable `code` values plus canonical `error` stream events.
 - **Driver note:** The host-facing framework API is driver-neutral. Callers may select a concrete driver, but the host surface does not become ReAct-specific.
-- **Package partition note:** `@kraken/framework-runtime-api` is the semantic anchor for shared framework types and the host-facing runtime surface. `@kraken/framework-event-stream`, `@kraken/framework-tool-contracts`, and `@kraken/provider-api` are focused facade packages that expose curated subsets of the same shared contract family.
+- **Package partition note:** `@tuvren/runtime-api` is the semantic anchor for shared framework types and the host-facing runtime surface. `@tuvren/event-stream`, `@tuvren/tool-contracts`, and `@tuvren/provider-api` are focused facade packages that expose curated subsets of the same shared contract family.
 
 ```ts
 export type HashString = string;
 export type EpochMs = number; // must always be a safe integer
 
-export interface KrakenRuntime {
+export interface TuvrenRuntime {
   createThread(input: {
     threadId?: string;
     schemaId?: string;
@@ -432,13 +432,13 @@ export interface KrakenRuntime {
     schemaId?: string;
     driverId?: string;
     config: AgentConfig;
-    tools?: KrakenToolDefinition[];
+    tools?: TuvrenToolDefinition[];
     parentTurnId?: string | null;
   }): ExecutionHandle;
 }
 
 export interface ExecutionHandle {
-  events(): AsyncIterable<KrakenStreamEvent>;
+  events(): AsyncIterable<TuvrenStreamEvent>;
   cancel(): void;
   steer(signal: InputSignal): void;
   resolveApproval(response: ApprovalResponse): ExecutionHandle;
@@ -448,7 +448,7 @@ export interface ExecutionHandle {
 export interface OrchestrationHandle extends ExecutionHandle {
   resolveApproval(response: ApprovalResponse): OrchestrationHandle;
   spawn(input: { agent: string; signal: InputSignal }): OrchestrationHandle;
-  allEvents(): AsyncIterable<KrakenStreamEvent>;
+  allEvents(): AsyncIterable<TuvrenStreamEvent>;
   awaitResult(): Promise<unknown>;
 }
 
@@ -460,7 +460,7 @@ export interface OrchestrationRuntime {
     branchId: string;
     schemaId?: string;
     driverId?: string;
-    tools?: KrakenToolDefinition[];
+    tools?: TuvrenToolDefinition[];
     parentTurnId?: string | null;
   }): OrchestrationHandle;
 }
@@ -482,10 +482,10 @@ export interface ExecutionStatus {
 
 export interface AgentConfig {
   name: string;
-  model?: string | KrakenProvider;
+  model?: string | TuvrenProvider;
   systemPrompt?: string;
-  tools?: KrakenToolDefinition[];
-  extensions?: KrakenExtension[];
+  tools?: TuvrenToolDefinition[];
+  extensions?: TuvrenExtension[];
   loopPolicy?: LoopPolicy;
   contextPolicy?: ContextPolicy;
   responseFormat?: StructuredOutputRequest;
@@ -499,7 +499,7 @@ export interface AgentConfig {
 - **Style:** protocol-shaped library contract for the first TypeScript implementation
 - **Authentication / Authorization:** Internal kernel boundary used by framework packages and backend adapters
 - **Compatibility Strategy:** Protocol-first contract. Breaking changes to record shapes, operation signatures, or validation semantics are semver-major.
-- **Error model:** `KrakenError` with persistence, validation, lineage, and recovery codes
+- **Error model:** `TuvrenError` with persistence, validation, lineage, and recovery codes
 - **Concrete payload rule:** The frozen kernel specification names `ObserveResult.annotations` as `Object[]` and `signals` as `Signal[]`, but does not define their first TypeScript wire shape. The authoritative TypeScript realization is:
   - observe annotations are `KernelObject[]` carried into `run.completeStep`, where the kernel remains responsible for persisting them per the frozen kernel specification
   - observe signals are `KernelRecord[]`, keeping them serializable and boundary-safe within the run lifecycle
@@ -648,7 +648,7 @@ export interface KrakenKernel {
 - **Style:** library API
 - **Authentication / Authorization:** Backends are internal persistence adapters selected by hosts/framework configuration, not end-user entry points
 - **Compatibility Strategy:** Strict shared contract across all official backends
-- **Error model:** backend-specific errors normalized into `KrakenError` persistence codes
+- **Error model:** backend-specific errors normalized into `TuvrenError` persistence codes
 
 ```ts
 export interface KrakenBackend {
@@ -744,14 +744,14 @@ export declare function createMemoryBackend(
 ### 4.4 Provider Bridge Contract
 - **Style:** library API
 - **Authentication / Authorization:** Credentials stay in bridge configuration and host environment resolution; they are never persisted as core runtime state
-- **Compatibility Strategy:** Kraken owns the provider contract; the AI SDK bridge adapts to external package changes behind it
-- **Error model:** Provider and bridge failures normalize into Kraken provider errors with bridge-specific diagnostics
+- **Compatibility Strategy:** Tuvren Runtime owns the provider contract; the AI SDK bridge adapts to external package changes behind it
+- **Error model:** Provider and bridge failures normalize into Tuvren provider errors with bridge-specific diagnostics
 
 ```ts
-export interface KrakenProvider {
+export interface TuvrenProvider {
   readonly id: string;
-  generate(prompt: KrakenPrompt): Promise<KrakenModelResponse>;
-  stream(prompt: KrakenPrompt): AsyncIterable<ProviderStreamChunk>;
+  generate(prompt: TuvrenPrompt): Promise<TuvrenModelResponse>;
+  stream(prompt: TuvrenPrompt): AsyncIterable<ProviderStreamChunk>;
 }
 
 export interface StructuredOutputRequest {
@@ -760,10 +760,10 @@ export interface StructuredOutputRequest {
   strict?: boolean;
 }
 
-export interface KrakenPrompt {
-  messages: KrakenMessage[];
+export interface TuvrenPrompt {
+  messages: TuvrenMessage[];
   tools?: RenderedToolDefinition[];
-  config?: KrakenModelConfig;
+  config?: TuvrenModelConfig;
   responseFormat?: StructuredOutputRequest;
 }
 
@@ -800,7 +800,7 @@ export interface EventSource {
   threadId?: string;
 }
 
-export type KrakenStreamEvent =
+export type TuvrenStreamEvent =
   | { type: "turn.start"; turnId: string; threadId: string; resumedFrom?: HashString; timestamp: EpochMs; source?: EventSource }
   | { type: "turn.end"; turnId: string; status: "completed" | "paused" | "failed"; timestamp: EpochMs; source?: EventSource }
   | { type: "iteration.start" | "iteration.end"; iterationCount: number; timestamp: EpochMs; source?: EventSource }
@@ -831,11 +831,11 @@ export type KrakenStreamEvent =
 - **Style:** library API
 - **Authentication / Authorization:** Internal contract between shared runtime foundations and concrete driver implementations
 - **Compatibility Strategy:** Breaking changes to driver execution entrypoints, driver result semantics, or registry ownership are semver-major because future drivers depend on this seam rather than on `runtime-core` internals
-- **Error model:** Driver implementations return `RuntimeResolution` outcomes and may raise typed `KrakenRuntimeError` failures for invalid driver behavior
+- **Error model:** Driver implementations return `RuntimeResolution` outcomes and may raise typed `TuvrenRuntimeError` failures for invalid driver behavior
 
 ```ts
 export interface DriverRuntimePort {
-  emit(event: KrakenStreamEvent): Promise<void> | void;
+  emit(event: TuvrenStreamEvent): Promise<void> | void;
   now(): EpochMs;
 }
 
@@ -857,7 +857,7 @@ export interface DriverExecutionContext {
   iterationCount: number;
   config: Readonly<AgentConfig>;
   handoff: DriverHandoffPort;
-  messages: ReadonlyArray<KrakenMessage>;
+  messages: ReadonlyArray<TuvrenMessage>;
   manifest: Readonly<ContextManifest>;
   toolRegistry: Readonly<ToolRegistry>;
   signal?: AbortSignal;
@@ -871,7 +871,7 @@ export interface DriverResumeContext extends DriverExecutionContext {
 
 export interface DriverExecutionResult {
   resolution: RuntimeResolution;
-  messages?: KrakenMessage[];
+  messages?: TuvrenMessage[];
   partial?: boolean;
   toolExecutionMode?: "parallel" | "sequential";
 }
@@ -1042,7 +1042,7 @@ Target implementation layout after code generation begins:
 - Nx manages the TypeScript projects in this tree. Nx does not define the repo ontology.
 - `shared/` must remain small and contain only truly cross-boundary primitives. It must not become a semantic dumping ground.
 - Contract-driven components such as backends, provider surfaces, driver contracts, tool contracts, and stream-event vocabulary must have an explicit contract home before any implementation package is added.
-- `@kraken/framework-runtime-api` remains the semantic anchor and compatibility source for shared framework contracts. Focused facade packages remain the preferred public home for event, tool, provider, and driver-specific imports, but compatibility re-exports from `@kraken/framework-runtime-api` are allowed while the partition settles.
+- `@tuvren/runtime-api` remains the semantic anchor and compatibility source for shared framework contracts. Focused facade packages remain the preferred public home for event, tool, provider, and driver-specific imports, but compatibility re-exports from `@tuvren/runtime-api` are allowed while the partition settles.
 
 ### 5.2 Coding Standards
 - **Formatting / Linting:** Use Biome configured to follow the repository’s Ultracite-aligned standards.

@@ -21,12 +21,12 @@ import type {
   DriverExecutionResult,
   KrakenDriver,
   KrakenDriverFactory,
-} from "@kraken/framework-driver-api";
-import type { AgentConfig, KrakenRuntime } from "@kraken/framework-runtime-api";
+} from "@tuvren/driver-api";
+import type { AgentConfig, TuvrenRuntime } from "@tuvren/runtime-api";
 import {
   createDriverRegistry as createBaseDriverRegistry,
-  createKrakenRuntimeCore,
   createOrchestrationRuntime,
+  createTuvrenRuntimeCore,
 } from "../src/index.ts";
 import { createFakeKernelHarness } from "./fake-kernel.ts";
 import {
@@ -46,7 +46,7 @@ import {
 describe("orchestration-runtime", () => {
   test("requires the parent handle to start execution before spawning children", async () => {
     const harness = createFakeKernelHarness();
-    const framework = createKrakenRuntimeCore({
+    const framework = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([
         createStaticDriver((context) => ({
@@ -87,7 +87,7 @@ describe("orchestration-runtime", () => {
   test("does not start orchestration execution when events() is obtained but never consumed", async () => {
     const harness = createFakeKernelHarness();
     let executeCalls = 0;
-    const framework = createKrakenRuntimeCore({
+    const framework = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([
         createStaticDriver((context) => {
@@ -127,7 +127,7 @@ describe("orchestration-runtime", () => {
   test("does not start orchestration execution when allEvents() is obtained but never consumed", async () => {
     const harness = createFakeKernelHarness();
     let executeCalls = 0;
-    const framework = createKrakenRuntimeCore({
+    const framework = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([
         createStaticDriver((context) => {
@@ -167,7 +167,7 @@ describe("orchestration-runtime", () => {
   test("closing orchestration streams before the first pull does not start execution", async () => {
     const harness = createFakeKernelHarness();
     let executeCalls = 0;
-    const framework = createKrakenRuntimeCore({
+    const framework = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([
         createStaticDriver((context) => {
@@ -217,7 +217,7 @@ describe("orchestration-runtime", () => {
 
   test("awaitResult does not satisfy the parent stream-start precondition for spawn", async () => {
     const harness = createFakeKernelHarness();
-    const framework = createKrakenRuntimeCore({
+    const framework = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([
         createStaticDriver(async (context) => {
@@ -292,7 +292,7 @@ describe("orchestration-runtime", () => {
         if (threadId === "thread-root") {
           return {
             rootTurnNodeHash: "2".repeat(64),
-            schemaId: "kraken.agent.v1",
+            schemaId: "tuvren.agent.v1",
             threadId,
           };
         }
@@ -302,7 +302,7 @@ describe("orchestration-runtime", () => {
       async setBranchHead() {
         throw new Error("setBranchHead was not expected");
       },
-    } satisfies KrakenRuntime;
+    } satisfies TuvrenRuntime;
     const orchestration = createOrchestrationRuntime({
       agents: {
         primary: { name: "primary" },
@@ -333,7 +333,7 @@ describe("orchestration-runtime", () => {
 
   test("bridges descendant events through allEvents and does not inject worker_result into parent history", async () => {
     const harness = createFakeKernelHarness();
-    const framework = createKrakenRuntimeCore({
+    const framework = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([
         createStaticDriver(async (context) => {
@@ -416,7 +416,7 @@ describe("orchestration-runtime", () => {
 
   test("awaitResult preserves structured part metadata in the final visible result surface", async () => {
     const harness = createFakeKernelHarness();
-    const framework = createKrakenRuntimeCore({
+    const framework = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([
         createStaticDriver(async (context) => {
@@ -486,7 +486,7 @@ describe("orchestration-runtime", () => {
 
   test("awaitResult resolves persisted assistant output even when the child driver does not stream it explicitly", async () => {
     const harness = createFakeKernelHarness();
-    const framework = createKrakenRuntimeCore({
+    const framework = createTuvrenRuntimeCore({
       defaultDriverId: "raw",
       driverRegistry: createBaseDriverRegistry([
         {
@@ -547,7 +547,7 @@ describe("orchestration-runtime", () => {
 
   test("awaitResult preserves file parts in the final visible result surface", async () => {
     const harness = createFakeKernelHarness();
-    const framework = createKrakenRuntimeCore({
+    const framework = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([
         createStaticDriver(async (context) => {
@@ -619,7 +619,7 @@ describe("orchestration-runtime", () => {
 
   test("awaitResult preserves tool-only child completions in call order", async () => {
     const harness = createFakeKernelHarness();
-    const framework = createKrakenRuntimeCore({
+    const framework = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([
         createStaticDriver(async (context) => {
@@ -742,7 +742,7 @@ describe("orchestration-runtime", () => {
 
   test("keeps existing subtree events flowing while the parent is paused", async () => {
     const harness = createFakeKernelHarness();
-    const framework = createKrakenRuntimeCore({
+    const framework = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([
         createStaticDriver(async (context) => {
@@ -850,7 +850,7 @@ describe("orchestration-runtime", () => {
 
   test("rejects spawning fresh children while the parent is paused", async () => {
     const harness = createFakeKernelHarness();
-    const framework = createKrakenRuntimeCore({
+    const framework = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([
         createStaticDriver(async (context) => {
@@ -933,7 +933,7 @@ describe("orchestration-runtime", () => {
 
   test("resolveApproval returns a fresh child handle and awaitResult resolves through the resumed child", async () => {
     const harness = createFakeKernelHarness();
-    const framework = createKrakenRuntimeCore({
+    const framework = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([
         createStaticDriver(async (context) => {
@@ -1046,7 +1046,7 @@ describe("orchestration-runtime", () => {
 
   test("supports recursive child spawning", async () => {
     const harness = createFakeKernelHarness();
-    const framework = createKrakenRuntimeCore({
+    const framework = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([
         createStaticDriver(async (context) => {
@@ -1131,7 +1131,7 @@ describe("orchestration-runtime", () => {
 
   test("rejects awaitResult when child execution fails", async () => {
     const harness = createFakeKernelHarness();
-    const framework = createKrakenRuntimeCore({
+    const framework = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([
         createStaticDriver(async (context) => {
@@ -1238,7 +1238,7 @@ describe("orchestration-runtime", () => {
         },
       };
     }, "special");
-    const framework = createKrakenRuntimeCore({
+    const framework = createTuvrenRuntimeCore({
       defaultDriverId: "default",
       driverRegistry: createDriverRegistry([defaultDriver, specialDriver]),
       kernel: harness.kernel,
@@ -1348,7 +1348,7 @@ describe("orchestration-runtime", () => {
         if (threadId === "thread-root") {
           return {
             rootTurnNodeHash: "2".repeat(64),
-            schemaId: "kraken.agent.v1",
+            schemaId: "tuvren.agent.v1",
             threadId,
           };
         }
@@ -1358,7 +1358,7 @@ describe("orchestration-runtime", () => {
       async setBranchHead() {
         throw new Error("setBranchHead was not expected");
       },
-    } satisfies KrakenRuntime;
+    } satisfies TuvrenRuntime;
     const orchestration = createOrchestrationRuntime({
       agents: {
         primary: { name: "primary" },
@@ -1428,7 +1428,7 @@ describe("orchestration-runtime", () => {
       beforeTurnCalls: 0,
       name: "orchestration-mutable-receiver",
     };
-    const framework = createKrakenRuntimeCore({
+    const framework = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([
         createStaticDriver(async () => ({
@@ -1483,7 +1483,7 @@ describe("orchestration-runtime", () => {
       reviewer: { name: "reviewer" },
       worker: { name: "worker" },
     };
-    const framework = createKrakenRuntimeCore({
+    const framework = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([
         createStaticDriver(async (context) => {
@@ -1640,7 +1640,7 @@ describe("orchestration-runtime", () => {
         if (threadId === "thread-root") {
           return {
             rootTurnNodeHash: "2".repeat(64),
-            schemaId: "kraken.agent.v1",
+            schemaId: "tuvren.agent.v1",
             threadId,
           };
         }
@@ -1650,7 +1650,7 @@ describe("orchestration-runtime", () => {
       async setBranchHead() {
         throw new Error("setBranchHead was not expected");
       },
-    } satisfies KrakenRuntime;
+    } satisfies TuvrenRuntime;
     const orchestration = createOrchestrationRuntime({
       agents: {
         primary: { name: "primary" },
@@ -1708,7 +1708,7 @@ describe("orchestration-runtime", () => {
 
   test("snapshots orchestration agent configs at runtime creation", async () => {
     const harness = createFakeKernelHarness();
-    const framework = createKrakenRuntimeCore({
+    const framework = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([
         createStaticDriver(async (context) => {

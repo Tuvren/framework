@@ -1,5 +1,5 @@
 {
-  "name": "@kraken/kernel-testkit",
+  "name": "@tuvren/kernel-testkit",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -13,7 +13,7 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@kraken/kernel-contract-protocol": "workspace:*",
-    "@kraken/shared-core-types": "workspace:*"
+    "@tuvren/kernel-protocol": "workspace:*",
+    "@tuvren/core-types": "workspace:*"
   }
 }

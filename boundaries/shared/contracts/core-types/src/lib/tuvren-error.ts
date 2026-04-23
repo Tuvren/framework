@@ -16,36 +16,36 @@
 
 const KRAKEN_ERROR_CODE_PATTERN = /^[a-z0-9]+(?:_[a-z0-9]+)*$/;
 
-export type KrakenErrorCode = string;
+export type TuvrenErrorCode = string;
 
-export interface KrakenErrorOptions {
+export interface TuvrenErrorOptions {
   cause?: unknown;
-  code: KrakenErrorCode;
+  code: TuvrenErrorCode;
   details?: unknown;
 }
 
-export function isKrakenErrorCode(value: unknown): value is KrakenErrorCode {
+export function isTuvrenErrorCode(value: unknown): value is TuvrenErrorCode {
   return typeof value === "string" && KRAKEN_ERROR_CODE_PATTERN.test(value);
 }
 
-export function assertKrakenErrorCode(
+export function assertTuvrenErrorCode(
   value: unknown,
   label = "value"
-): asserts value is KrakenErrorCode {
-  if (!isKrakenErrorCode(value)) {
+): asserts value is TuvrenErrorCode {
+  if (!isTuvrenErrorCode(value)) {
     throw new TypeError(
-      `${label} must be a lowercase snake_case Kraken error code`
+      `${label} must be a lowercase snake_case Tuvren error code`
     );
   }
 }
 
-export abstract class KrakenError extends Error {
-  readonly code: KrakenErrorCode;
+export abstract class TuvrenError extends Error {
+  readonly code: TuvrenErrorCode;
   readonly details?: unknown;
   override readonly cause?: unknown;
 
-  protected constructor(message: string, options: KrakenErrorOptions) {
-    assertKrakenErrorCode(options.code, "options.code");
+  protected constructor(message: string, options: TuvrenErrorOptions) {
+    assertTuvrenErrorCode(options.code, "options.code");
     super(
       message,
       options.cause === undefined ? undefined : { cause: options.cause }
@@ -58,39 +58,39 @@ export abstract class KrakenError extends Error {
   }
 }
 
-export class KrakenValidationError extends KrakenError {
+export class TuvrenValidationError extends TuvrenError {
   // biome-ignore lint/complexity/noUselessConstructor: The shared base constructor is protected, so public subclasses must re-expose construction intentionally.
-  constructor(message: string, options: KrakenErrorOptions) {
+  constructor(message: string, options: TuvrenErrorOptions) {
     super(message, options);
   }
 }
-export class KrakenPersistenceError extends KrakenError {
+export class TuvrenPersistenceError extends TuvrenError {
   // biome-ignore lint/complexity/noUselessConstructor: The shared base constructor is protected, so public subclasses must re-expose construction intentionally.
-  constructor(message: string, options: KrakenErrorOptions) {
+  constructor(message: string, options: TuvrenErrorOptions) {
     super(message, options);
   }
 }
-export class KrakenLineageError extends KrakenError {
+export class TuvrenLineageError extends TuvrenError {
   // biome-ignore lint/complexity/noUselessConstructor: The shared base constructor is protected, so public subclasses must re-expose construction intentionally.
-  constructor(message: string, options: KrakenErrorOptions) {
+  constructor(message: string, options: TuvrenErrorOptions) {
     super(message, options);
   }
 }
-export class KrakenRecoveryError extends KrakenError {
+export class TuvrenRecoveryError extends TuvrenError {
   // biome-ignore lint/complexity/noUselessConstructor: The shared base constructor is protected, so public subclasses must re-expose construction intentionally.
-  constructor(message: string, options: KrakenErrorOptions) {
+  constructor(message: string, options: TuvrenErrorOptions) {
     super(message, options);
   }
 }
-export class KrakenRuntimeError extends KrakenError {
+export class TuvrenRuntimeError extends TuvrenError {
   // biome-ignore lint/complexity/noUselessConstructor: The shared base constructor is protected, so public subclasses must re-expose construction intentionally.
-  constructor(message: string, options: KrakenErrorOptions) {
+  constructor(message: string, options: TuvrenErrorOptions) {
     super(message, options);
   }
 }
-export class KrakenProviderError extends KrakenError {
+export class TuvrenProviderError extends TuvrenError {
   // biome-ignore lint/complexity/noUselessConstructor: The shared base constructor is protected, so public subclasses must re-expose construction intentionally.
-  constructor(message: string, options: KrakenErrorOptions) {
+  constructor(message: string, options: TuvrenErrorOptions) {
     super(message, options);
   }
 }

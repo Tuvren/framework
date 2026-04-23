@@ -15,6 +15,7 @@
  */
 
 import { randomUUID } from "node:crypto";
+import { type EpochMs, TuvrenRuntimeError } from "@tuvren/core-types";
 import type {
   AgentConfig,
   ApprovalResponse,
@@ -22,14 +23,13 @@ import type {
   ExecutionHandle,
   ExecutionStatus,
   InputSignal,
-  KrakenErrorProjection,
-  KrakenRuntime,
-  KrakenStreamEvent,
   OrchestrationHandle,
   OrchestrationRuntime,
   ToolResultPart,
-} from "@kraken/framework-runtime-api";
-import { type EpochMs, KrakenRuntimeError } from "@kraken/shared-core-types";
+  TuvrenErrorProjection,
+  TuvrenRuntime,
+  TuvrenStreamEvent,
+} from "@tuvren/runtime-api";
 import {
   AsyncEventQueue,
   cloneExecutionStatus,
@@ -45,7 +45,7 @@ import {
 
 export interface OrchestrationRuntimeOptions {
   agents: Record<string, AgentConfig>;
-  framework: KrakenRuntime;
+  framework: TuvrenRuntime;
   now?: () => EpochMs;
 }
 
@@ -71,7 +71,7 @@ class OrchestrationNode {
   private activeSubtreeStreams = 0;
   private readonly childForwarders = new Map<
     OrchestrationNode,
-    AsyncIterator<KrakenStreamEvent>
+    AsyncIterator<TuvrenStreamEvent>
   >();
   private readonly children = new Set<OrchestrationNode>();
   private currentBinding?: ExecutionBinding;
@@ -80,7 +80,7 @@ class OrchestrationNode {
   private watchingGeneration?: number;
   private initializationFailed = false;
   private cancelledBeforeReady = false;
-  private lastErrorProjection?: KrakenErrorProjection;
+  private lastErrorProjection?: TuvrenErrorProjection;
   private readonly now: () => EpochMs;
   private readonly pendingSteering: InputSignal[] = [];
   private readonly resultState = createDeferred<unknown>();
@@ -89,7 +89,7 @@ class OrchestrationNode {
   private selfResultResolved = false;
   private selfVisibleResult?: ContentPart[];
   private startedExecution = false;
-  private readonly subtreeEvents = new EventFanout<KrakenStreamEvent>();
+  private readonly subtreeEvents = new EventFanout<TuvrenStreamEvent>();
   private subtreeSettled = false;
   private readonly workerId?: string;
   private readonly localAgent: string;
@@ -147,7 +147,7 @@ class OrchestrationNode {
     }
   }
 
-  allEvents(): AsyncIterable<KrakenStreamEvent> {
+  allEvents(): AsyncIterable<TuvrenStreamEvent> {
     return createLazyObservedStream({
       onClose: async () => {
         this.activeSubtreeStreams -= 1;
@@ -172,7 +172,7 @@ class OrchestrationNode {
 
   async awaitResult(): Promise<unknown> {
     if (!this.startedExecution) {
-      throw new KrakenRuntimeError(
+      throw new TuvrenRuntimeError(
         "awaitResult() requires the orchestration handle to start execution first",
         {
           code: "orchestration_parent_not_started",
@@ -216,11 +216,11 @@ class OrchestrationNode {
     return this.localHandleStatus;
   }
 
-  events(): AsyncIterable<KrakenStreamEvent> {
+  events(): AsyncIterable<TuvrenStreamEvent> {
     return {
       [Symbol.asyncIterator]: () => {
         let finished = false;
-        let iterator: AsyncIterator<KrakenStreamEvent> | undefined;
+        let iterator: AsyncIterator<TuvrenStreamEvent> | undefined;
 
         const finish = (): void => {
           if (finished) {
@@ -237,7 +237,7 @@ class OrchestrationNode {
             return;
           }
 
-          const queue = new AsyncEventQueue<KrakenStreamEvent>(() => {
+          const queue = new AsyncEventQueue<TuvrenStreamEvent>(() => {
             finish();
           });
 
@@ -248,11 +248,11 @@ class OrchestrationNode {
         };
 
         return {
-          next: async (): Promise<IteratorResult<KrakenStreamEvent>> => {
+          next: async (): Promise<IteratorResult<TuvrenStreamEvent>> => {
             start();
 
             if (iterator === undefined) {
-              return createIteratorDoneResult<KrakenStreamEvent>();
+              return createIteratorDoneResult<TuvrenStreamEvent>();
             }
 
             const nextValue = await iterator.next();
@@ -263,14 +263,14 @@ class OrchestrationNode {
 
             return nextValue;
           },
-          return: async (): Promise<IteratorResult<KrakenStreamEvent>> => {
+          return: async (): Promise<IteratorResult<TuvrenStreamEvent>> => {
             if (iterator === undefined) {
-              return createIteratorDoneResult<KrakenStreamEvent>();
+              return createIteratorDoneResult<TuvrenStreamEvent>();
             }
 
             const result =
               iterator.return === undefined
-                ? createIteratorDoneResult<KrakenStreamEvent>()
+                ? createIteratorDoneResult<TuvrenStreamEvent>()
                 : await iterator.return();
             finish();
             return result;
@@ -305,7 +305,7 @@ class OrchestrationNode {
     }
 
     if (!this.startedExecution || this.currentBindingPromise === undefined) {
-      throw new KrakenRuntimeError(
+      throw new TuvrenRuntimeError(
         "steer() requires the orchestration handle to start execution first",
         {
           code: "orchestration_parent_not_started",
@@ -314,7 +314,7 @@ class OrchestrationNode {
     }
 
     if (this.selfPhase !== "running") {
-      throw new KrakenRuntimeError(
+      throw new TuvrenRuntimeError(
         "steer() requires a running orchestration handle",
         {
           code: "orchestration_parent_inactive",
@@ -333,7 +333,7 @@ class OrchestrationNode {
     const status = binding.handle.status();
 
     if (status.phase !== "paused") {
-      throw new KrakenRuntimeError(
+      throw new TuvrenRuntimeError(
         "resolveApproval() is only valid while execution is paused",
         {
           code: "invalid_approval_resolution",
@@ -362,7 +362,7 @@ class OrchestrationNode {
 
   spawn(input: ChildSpawnRequest): OrchestrationNode {
     if (!this.startedExecution) {
-      throw new KrakenRuntimeError(
+      throw new TuvrenRuntimeError(
         "spawn() requires the orchestration handle to start execution first",
         {
           code: "orchestration_parent_not_started",
@@ -377,7 +377,7 @@ class OrchestrationNode {
             const phase = binding.handle.status().phase;
 
             if (phase !== "running") {
-              throw new KrakenRuntimeError(
+              throw new TuvrenRuntimeError(
                 "spawn() requires a running orchestration handle",
                 {
                   code: "orchestration_parent_inactive",
@@ -398,7 +398,7 @@ class OrchestrationNode {
             const phase = this.currentBinding.handle.status().phase;
 
             if (phase !== "running") {
-              throw new KrakenRuntimeError(
+              throw new TuvrenRuntimeError(
                 "spawn() requires a running orchestration handle",
                 {
                   code: "orchestration_parent_inactive",
@@ -440,9 +440,9 @@ class OrchestrationNode {
   }
 
   private decorateEvent(
-    event: KrakenStreamEvent,
+    event: TuvrenStreamEvent,
     binding: ExecutionBinding
-  ): KrakenStreamEvent {
+  ): TuvrenStreamEvent {
     if (binding.workerId === undefined) {
       return event;
     }
@@ -497,7 +497,7 @@ class OrchestrationNode {
   }
 
   private async forwardCurrentGenerationEvents(
-    queue: AsyncEventQueue<KrakenStreamEvent>
+    queue: AsyncEventQueue<TuvrenStreamEvent>
   ): Promise<void> {
     try {
       const binding = await this.requireCurrentBindingAsync("events");
@@ -562,7 +562,7 @@ class OrchestrationNode {
 
   private requireCurrentBinding(methodName: string): ExecutionBinding {
     if (this.currentBinding === undefined) {
-      throw new KrakenRuntimeError(
+      throw new TuvrenRuntimeError(
         `${methodName}() requires the orchestration handle to start execution first`,
         {
           code: "orchestration_parent_not_started",
@@ -577,7 +577,7 @@ class OrchestrationNode {
     methodName: string
   ): Promise<ExecutionBinding> {
     if (this.currentBindingPromise === undefined) {
-      throw new KrakenRuntimeError(
+      throw new TuvrenRuntimeError(
         `${methodName}() requires the orchestration handle to start execution first`,
         {
           code: "orchestration_parent_not_started",
@@ -666,7 +666,7 @@ class OrchestrationNode {
   private async stopAllChildForwarders(): Promise<void> {
     const iterators = [...this.childForwarders.values()];
     this.childForwarders.clear();
-    const stopTasks: Promise<IteratorResult<KrakenStreamEvent>>[] = [];
+    const stopTasks: Promise<IteratorResult<TuvrenStreamEvent>>[] = [];
 
     for (const iterator of iterators) {
       if (iterator.return !== undefined) {
@@ -692,7 +692,7 @@ class OrchestrationNode {
   }
 
   private trackVisibleResult(
-    event: KrakenStreamEvent,
+    event: TuvrenStreamEvent,
     state: {
       assistantParts: ContentPart[];
       lastVisible: ContentPart[] | undefined;
@@ -844,7 +844,7 @@ class OrchestrationHandleImpl implements OrchestrationHandle {
     this.node = node;
   }
 
-  allEvents(): AsyncIterable<KrakenStreamEvent> {
+  allEvents(): AsyncIterable<TuvrenStreamEvent> {
     this.assertActive("allEvents");
     return this.node.allEvents();
   }
@@ -859,7 +859,7 @@ class OrchestrationHandleImpl implements OrchestrationHandle {
     this.node.cancel();
   }
 
-  events(): AsyncIterable<KrakenStreamEvent> {
+  events(): AsyncIterable<TuvrenStreamEvent> {
     this.assertActive("events");
     return this.node.events();
   }
@@ -898,7 +898,7 @@ class OrchestrationHandleImpl implements OrchestrationHandle {
 
   private assertActive(methodName: string): void {
     if (!this.active) {
-      throw new KrakenRuntimeError(
+      throw new TuvrenRuntimeError(
         `${methodName}() requires the current orchestration handle`,
         {
           code: "invalid_orchestration_handle",
@@ -921,11 +921,11 @@ class OrchestrationHandleImpl implements OrchestrationHandle {
 
 class OrchestrationRuntimeImpl implements OrchestrationRuntime {
   private readonly agents: Record<string, AgentConfig>;
-  private readonly framework: KrakenRuntime;
+  private readonly framework: TuvrenRuntime;
   private readonly now: () => EpochMs;
 
   constructor(
-    framework: KrakenRuntime,
+    framework: TuvrenRuntime,
     agents: Record<string, AgentConfig>,
     now: () => EpochMs
   ) {
@@ -980,7 +980,7 @@ class OrchestrationRuntimeImpl implements OrchestrationRuntime {
     const parentThread = await this.framework.getThread(parentBinding.threadId);
 
     if (parentThread === null) {
-      throw new KrakenRuntimeError(
+      throw new TuvrenRuntimeError(
         "orchestration could not resolve the parent thread before spawning a child",
         {
           code: "invalid_orchestration_parent",
@@ -1027,7 +1027,7 @@ class OrchestrationRuntimeImpl implements OrchestrationRuntime {
     const config = this.agents[agentName];
 
     if (config === undefined) {
-      throw new KrakenRuntimeError(
+      throw new TuvrenRuntimeError(
         `orchestration agent "${agentName}" is not defined`,
         {
           code: "unknown_orchestration_agent",

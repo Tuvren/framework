@@ -1,5 +1,5 @@
 {
-  "name": "@kraken/framework-driver-api",
+  "name": "@tuvren/driver-api",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -13,7 +13,7 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@kraken/framework-runtime-api": "workspace:*",
-    "@kraken/shared-core-types": "workspace:*"
+    "@tuvren/runtime-api": "workspace:*",
+    "@tuvren/core-types": "workspace:*"
   }
 }

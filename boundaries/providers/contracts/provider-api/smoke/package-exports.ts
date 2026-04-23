@@ -16,12 +16,12 @@
 
 import { describe, expect, test } from "bun:test";
 import {
-  assertKrakenModelResponse,
   assertProviderStreamChunk,
-  isKrakenModelResponse,
-  type KrakenModelResponse,
+  assertTuvrenModelResponse,
+  isTuvrenModelResponse,
   type ProviderStreamChunk,
-} from "@kraken/provider-api";
+  type TuvrenModelResponse,
+} from "@tuvren/provider-api";
 
 describe("provider-api package exports", () => {
   test("resolve from the built package surface", () => {
@@ -37,9 +37,9 @@ describe("provider-api package exports", () => {
     const response = {
       finishReason: "stop",
       parts: [{ text: "ok", type: "text" }],
-    } satisfies KrakenModelResponse;
+    } satisfies TuvrenModelResponse;
 
-    expect(isKrakenModelResponse(response)).toBe(true);
-    expect(() => assertKrakenModelResponse(response)).not.toThrow();
+    expect(isTuvrenModelResponse(response)).toBe(true);
+    expect(() => assertTuvrenModelResponse(response)).not.toThrow();
   });
 });

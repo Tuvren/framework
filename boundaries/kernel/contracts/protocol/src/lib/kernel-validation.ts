@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-import type { KernelObject, KernelRecord } from "@kraken/shared-core-types";
+import type { KernelObject, KernelRecord } from "@tuvren/core-types";
 import {
   assertEpochMs as assertSharedEpochMs,
   assertHashString as assertSharedHashString,
   assertKernelRecord as assertSharedKernelRecord,
   isEpochMs,
   isHashString,
-  KrakenValidationError,
-} from "@kraken/shared-core-types";
+  TuvrenValidationError,
+} from "@tuvren/core-types";
 import {
   decodeDeterministicKernelRecord,
   hashKernelRecord,
@@ -2622,8 +2622,8 @@ function validationError(
   message: string,
   code: string,
   details?: unknown
-): KrakenValidationError {
-  return new KrakenValidationError(message, {
+): TuvrenValidationError {
+  return new TuvrenValidationError(message, {
     code,
     details,
   });

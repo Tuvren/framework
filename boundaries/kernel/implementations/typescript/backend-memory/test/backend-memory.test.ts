@@ -15,7 +15,8 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { createMemoryBackend } from "@kraken/backend-memory";
+import { createMemoryBackend } from "@tuvren/backend-memory";
+import { TuvrenPersistenceError } from "@tuvren/core-types";
 import {
   decodeDeterministicKernelRecord,
   encodeDeterministicKernelRecord,
@@ -29,7 +30,7 @@ import {
   type StoredTurnTree,
   type StoredTurnTreePath,
   type TurnTreeManifest,
-} from "@kraken/kernel-contract-protocol";
+} from "@tuvren/kernel-protocol";
 import {
   createHashFromIndex,
   createHashSequence,
@@ -45,28 +46,27 @@ import {
   registerBackendConformanceSuite,
   registerBackendInvariantSuite,
   registerBackendRecoverySuite,
-} from "@kraken/kernel-testkit";
-import { KrakenPersistenceError } from "@kraken/shared-core-types";
+} from "@tuvren/kernel-testkit";
 
 registerBackendConformanceSuite({
   createBackend: () => createMemoryBackend(),
-  suiteName: "@kraken/backend-memory shared conformance",
+  suiteName: "@tuvren/backend-memory shared conformance",
   testApi: { describe, test },
 });
 
 registerBackendInvariantSuite({
   createBackend: () => createMemoryBackend(),
-  suiteName: "@kraken/backend-memory shared invariants",
+  suiteName: "@tuvren/backend-memory shared invariants",
   testApi: { describe, test },
 });
 
 registerBackendRecoverySuite({
   createBackend: () => createMemoryBackend(),
-  suiteName: "@kraken/backend-memory shared recovery",
+  suiteName: "@tuvren/backend-memory shared recovery",
   testApi: { describe, test },
 });
 
-describe("@kraken/backend-memory", () => {
+describe("@tuvren/backend-memory", () => {
   test("rolls back failed transactions and clones stored bytes defensively", async () => {
     const backend = createMemoryBackend();
     const objectRecord = await createStoredObject(new Uint8Array([1, 2, 3]), 1);
@@ -151,7 +151,7 @@ describe("@kraken/backend-memory", () => {
     }
 
     await expect(txHandle.objects.put(objectRecord)).rejects.toBeInstanceOf(
-      KrakenPersistenceError
+      TuvrenPersistenceError
     );
 
     await backend.transact(async (tx) => {
@@ -507,7 +507,7 @@ describe("@kraken/backend-memory", () => {
       backend.transact(async (tx) => {
         await tx.objects.put(sameBytesDifferentMediaType);
       })
-    ).rejects.toBeInstanceOf(KrakenPersistenceError);
+    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
   });
 
   test("rejects turns whose start or head lineage is illegal", async () => {
@@ -592,7 +592,7 @@ describe("@kraken/backend-memory", () => {
           updatedAtMs: 8,
         });
       })
-    ).rejects.toBeInstanceOf(KrakenPersistenceError);
+    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
 
     await expect(
       backend.transact(async (tx) => {
@@ -607,7 +607,7 @@ describe("@kraken/backend-memory", () => {
           updatedAtMs: 9,
         });
       })
-    ).rejects.toBeInstanceOf(KrakenPersistenceError);
+    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
   });
 
   test("rejects runs whose start turn node falls outside the referenced turn span", async () => {
@@ -703,7 +703,7 @@ describe("@kraken/backend-memory", () => {
           updatedAtMs: 9,
         });
       })
-    ).rejects.toBeInstanceOf(KrakenPersistenceError);
+    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
   });
 
   test("rejects runs whose created turn node list references missing nodes", async () => {
@@ -780,7 +780,7 @@ describe("@kraken/backend-memory", () => {
           updatedAtMs: 7,
         });
       })
-    ).rejects.toBeInstanceOf(KrakenPersistenceError);
+    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
   });
 
   test("rejects runs whose created turn nodes cross thread lineage", async () => {
@@ -884,7 +884,7 @@ describe("@kraken/backend-memory", () => {
           updatedAtMs: 10,
         });
       })
-    ).rejects.toBeInstanceOf(KrakenPersistenceError);
+    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
   });
 
   test("rejects runs whose created turn nodes move beyond the turn head", async () => {
@@ -979,7 +979,7 @@ describe("@kraken/backend-memory", () => {
           updatedAtMs: 9,
         });
       })
-    ).rejects.toBeInstanceOf(KrakenPersistenceError);
+    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
   });
 
   test("keeps historical completed runs valid after branch head advances", async () => {
@@ -1221,7 +1221,7 @@ describe("@kraken/backend-memory", () => {
           updatedAtMs: 11,
         });
       })
-    ).rejects.toBeInstanceOf(KrakenPersistenceError);
+    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
 
     await expect(
       backend.transact(async (tx) => {
@@ -1236,7 +1236,7 @@ describe("@kraken/backend-memory", () => {
           updatedAtMs: 11,
         });
       })
-    ).rejects.toBeInstanceOf(KrakenPersistenceError);
+    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
   });
 
   test("rejects terminal or paused runs that still retain staged results", async () => {
@@ -1331,7 +1331,7 @@ describe("@kraken/backend-memory", () => {
           updatedAtMs: 10,
         });
       })
-    ).rejects.toBeInstanceOf(KrakenPersistenceError);
+    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
   });
 
   test("rejects illegal run status rewrites", async () => {
@@ -1448,7 +1448,7 @@ describe("@kraken/backend-memory", () => {
           updatedAtMs: 10,
         });
       })
-    ).rejects.toBeInstanceOf(KrakenPersistenceError);
+    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
 
     const pausedBackend = createMemoryBackend();
     await pausedBackend.transact(async (tx) => {
@@ -1473,7 +1473,7 @@ describe("@kraken/backend-memory", () => {
           updatedAtMs: 11,
         });
       })
-    ).rejects.toBeInstanceOf(KrakenPersistenceError);
+    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
   });
 
   test("rejects run updates that rewind step progress or rewrite created turn nodes", async () => {
@@ -1580,7 +1580,7 @@ describe("@kraken/backend-memory", () => {
           updatedAtMs: 10,
         });
       })
-    ).rejects.toBeInstanceOf(KrakenPersistenceError);
+    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
 
     await expect(
       backend.transact(async (tx) => {
@@ -1592,7 +1592,7 @@ describe("@kraken/backend-memory", () => {
           updatedAtMs: 10,
         });
       })
-    ).rejects.toBeInstanceOf(KrakenPersistenceError);
+    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
   });
 
   test("rejects rewriting immutable turn creation fields", async () => {
@@ -1665,7 +1665,7 @@ describe("@kraken/backend-memory", () => {
           updatedAtMs: 8,
         });
       })
-    ).rejects.toBeInstanceOf(KrakenPersistenceError);
+    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
   });
 
   test("rejects turns whose parent is not the immediate predecessor or contiguous start", async () => {
@@ -1772,7 +1772,7 @@ describe("@kraken/backend-memory", () => {
           updatedAtMs: 11,
         });
       })
-    ).rejects.toBeInstanceOf(KrakenPersistenceError);
+    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
 
     await expect(
       backend.transact(async (tx) => {
@@ -1787,7 +1787,7 @@ describe("@kraken/backend-memory", () => {
           updatedAtMs: 12,
         });
       })
-    ).rejects.toBeInstanceOf(KrakenPersistenceError);
+    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
   });
 
   test("rejects null parent turns when a branch-local predecessor exists", async () => {
@@ -1873,7 +1873,7 @@ describe("@kraken/backend-memory", () => {
           updatedAtMs: 9,
         });
       })
-    ).rejects.toBeInstanceOf(KrakenPersistenceError);
+    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
   });
 
   test("rejects cross-branch parent links and stale same-branch parent links", async () => {
@@ -2011,7 +2011,7 @@ describe("@kraken/backend-memory", () => {
       backend.transact(async (tx) => {
         await tx.turns.set(siblingTurn);
       })
-    ).rejects.toBeInstanceOf(KrakenPersistenceError);
+    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
 
     await expect(
       backend.transact(async (tx) => {
@@ -2026,7 +2026,7 @@ describe("@kraken/backend-memory", () => {
           updatedAtMs: 14,
         });
       })
-    ).rejects.toBeInstanceOf(KrakenPersistenceError);
+    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
   });
 
   test("rejects metadata drift on immutable hash-addressed records", async () => {
@@ -2077,7 +2077,7 @@ describe("@kraken/backend-memory", () => {
           createdAtMs: 999,
         });
       })
-    ).rejects.toBeInstanceOf(KrakenPersistenceError);
+    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
 
     await expect(
       backend.transact(async (tx) => {
@@ -2086,7 +2086,7 @@ describe("@kraken/backend-memory", () => {
           createdAtMs: 999,
         });
       })
-    ).rejects.toBeInstanceOf(KrakenPersistenceError);
+    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
 
     await expect(
       backend.transact(async (tx) => {
@@ -2095,7 +2095,7 @@ describe("@kraken/backend-memory", () => {
           createdAtMs: 999,
         });
       })
-    ).rejects.toBeInstanceOf(KrakenPersistenceError);
+    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
 
     await expect(
       backend.transact(async (tx) => {
@@ -2104,7 +2104,7 @@ describe("@kraken/backend-memory", () => {
           createdAtMs: 999,
         });
       })
-    ).rejects.toBeInstanceOf(KrakenPersistenceError);
+    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
 
     await expect(
       backend.transact(async (tx) => {
@@ -2113,7 +2113,7 @@ describe("@kraken/backend-memory", () => {
           createdAtMs: 999,
         });
       })
-    ).rejects.toBeInstanceOf(KrakenPersistenceError);
+    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
 
     await expect(
       backend.transact(async (tx) => {
@@ -2122,7 +2122,7 @@ describe("@kraken/backend-memory", () => {
           createdAtMs: 999,
         });
       })
-    ).rejects.toBeInstanceOf(KrakenPersistenceError);
+    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
   });
 
   test("rejects metadata drift for staged results with the same run and task identity", async () => {
@@ -2216,7 +2216,7 @@ describe("@kraken/backend-memory", () => {
           createdAtMs: 999,
         });
       })
-    ).rejects.toBeInstanceOf(KrakenPersistenceError);
+    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
   });
   test("allows replacement runs to be created before a paused run is failed within one transaction", async () => {
     const backend = createMemoryBackend();
@@ -2618,7 +2618,7 @@ describe("@kraken/backend-memory", () => {
           updatedAtMs: 10,
         });
       })
-    ).rejects.toBeInstanceOf(KrakenPersistenceError);
+    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
   });
 
   test("rejects threads that reuse another thread's root turn node", async () => {
@@ -2660,7 +2660,7 @@ describe("@kraken/backend-memory", () => {
           threadId: "thread_duplicate_root_b",
         });
       })
-    ).rejects.toBeInstanceOf(KrakenPersistenceError);
+    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
   });
 
   test("rejects runs whose created turn nodes are not lineage ordered", async () => {
@@ -2756,7 +2756,7 @@ describe("@kraken/backend-memory", () => {
           updatedAtMs: 9,
         });
       })
-    ).rejects.toBeInstanceOf(KrakenPersistenceError);
+    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
   });
 
   test("rejects runs whose created turn nodes repeat hashes", async () => {
@@ -2843,7 +2843,7 @@ describe("@kraken/backend-memory", () => {
           updatedAtMs: 8,
         });
       })
-    ).rejects.toBeInstanceOf(KrakenPersistenceError);
+    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
   });
 
   test("rejects runs whose created turn node ledger skips intermediate nodes", async () => {
@@ -2938,7 +2938,7 @@ describe("@kraken/backend-memory", () => {
           updatedAtMs: 9,
         });
       })
-    ).rejects.toBeInstanceOf(KrakenPersistenceError);
+    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
   });
 
   test("rejects chunked ordered paths that have not crossed the promotion threshold", async () => {
@@ -2978,7 +2978,7 @@ describe("@kraken/backend-memory", () => {
           chunkedPath,
         ]);
       })
-    ).rejects.toBeInstanceOf(KrakenPersistenceError);
+    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
   });
 
   test("rejects chunked ordered paths whose chunks do not use the fixed storage layout", async () => {
@@ -3018,7 +3018,7 @@ describe("@kraken/backend-memory", () => {
           chunkedPath,
         ]);
       })
-    ).rejects.toBeInstanceOf(KrakenPersistenceError);
+    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
   });
 
   test("rejects archive branches whose source branch was created in the same transaction", async () => {
@@ -3081,7 +3081,7 @@ describe("@kraken/backend-memory", () => {
         await tx.branches.set(sourceBranch);
         await tx.branches.set(archiveBranch);
       })
-    ).rejects.toBeInstanceOf(KrakenPersistenceError);
+    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
   });
 
   test("rejects backward rollback transactions that leave active runs on the archived segment via created turn nodes", async () => {
@@ -3196,7 +3196,7 @@ describe("@kraken/backend-memory", () => {
           updatedAtMs: 10,
         });
       })
-    ).rejects.toBeInstanceOf(KrakenPersistenceError);
+    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
   });
 });
 

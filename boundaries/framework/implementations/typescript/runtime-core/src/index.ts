@@ -38,7 +38,7 @@ export type { OrchestrationRuntimeOptions } from "./lib/orchestration-runtime.js
 export { createOrchestrationRuntime } from "./lib/orchestration-runtime.js";
 export type { RuntimeCoreOptions } from "./lib/runtime-core.js";
 export {
-  createKrakenRuntimeCore,
+  createTuvrenRuntimeCore,
   DEFAULT_AGENT_SCHEMA,
   DEFAULT_AGENT_SCHEMA_ID,
 } from "./lib/runtime-core.js";

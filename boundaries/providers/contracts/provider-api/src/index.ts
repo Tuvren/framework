@@ -19,16 +19,16 @@
 // contract family. It now tracks the matching runtime-api subpath instead of
 // the broad root facade so the dependency shape stays as narrow as the surface.
 export type {
-  KrakenModelResponse,
-  KrakenPrompt,
-  KrakenProvider,
   ProviderStreamChunk,
   ProviderUsage,
   StructuredOutputRequest,
-} from "@kraken/framework-runtime-api/provider";
+  TuvrenModelResponse,
+  TuvrenPrompt,
+  TuvrenProvider,
+} from "@tuvren/runtime-api/provider";
 export {
-  assertKrakenModelResponse,
   assertProviderStreamChunk,
-  isKrakenModelResponse,
+  assertTuvrenModelResponse,
   isProviderStreamChunk,
-} from "@kraken/framework-runtime-api/provider";
+  isTuvrenModelResponse,
+} from "@tuvren/runtime-api/provider";

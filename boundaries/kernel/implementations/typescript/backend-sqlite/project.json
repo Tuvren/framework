@@ -23,7 +23,7 @@
     },
     "test": {
       "executor": "nx:run-commands",
-      "dependsOn": ["smoke-native"],
+      "dependsOn": ["^build", "smoke-native"],
       "options": {
         "cwd": "boundaries/kernel/implementations/typescript/backend-sqlite",
         "command": "rm -rf .tmp-tests && bunx --bun tsc --project tsconfig.test.json --pretty false && mkdir -p .tmp-tests/boundaries/kernel/implementations/typescript/backend-sqlite/migrations && cp migrations/*.sql .tmp-tests/boundaries/kernel/implementations/typescript/backend-sqlite/migrations/ && node --test .tmp-tests/boundaries/kernel/implementations/typescript/backend-sqlite/test/backend-sqlite.test.js"

@@ -1,5 +1,5 @@
 {
-  "name": "@kraken/framework-runtime-core",
+  "name": "@tuvren/runtime-core",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -13,10 +13,10 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@kraken/framework-driver-api": "workspace:*",
-    "@kraken/framework-runtime-api": "workspace:*",
-    "@kraken/kernel-contract-protocol": "workspace:*",
-    "@kraken/shared-core-types": "workspace:*",
+    "@tuvren/driver-api": "workspace:*",
+    "@tuvren/runtime-api": "workspace:*",
+    "@tuvren/kernel-protocol": "workspace:*",
+    "@tuvren/core-types": "workspace:*",
     "ajv": "8.18.0"
   }
 }

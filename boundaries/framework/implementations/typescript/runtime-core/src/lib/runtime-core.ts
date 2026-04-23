@@ -16,12 +16,29 @@
 
 import { createHash, randomUUID } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
+import {
+  assertKernelRecord,
+  type EpochMs,
+  type HashString,
+  type KernelRecord,
+  TuvrenLineageError,
+  TuvrenRuntimeError,
+} from "@tuvren/core-types";
 import type {
   DriverExecutionContext,
   DriverRegistry,
   KrakenDriver,
-} from "@kraken/framework-driver-api";
-import { assertDriverExecutionResult } from "@kraken/framework-driver-api";
+} from "@tuvren/driver-api";
+import { assertDriverExecutionResult } from "@tuvren/driver-api";
+import {
+  decodeDeterministicKernelRecord,
+  encodeDeterministicKernelRecord,
+  type KrakenKernel,
+  type PathValue,
+  type RunCompletionStatus,
+  type TurnNode,
+  type TurnTreeSchema,
+} from "@tuvren/kernel-protocol";
 import type {
   AgentConfig,
   ApprovalRequest,
@@ -36,40 +53,23 @@ import type {
   HandoffContextPlan,
   HandoffSourceContext,
   InputSignal,
-  KrakenExtension,
-  KrakenMessage,
-  KrakenModelResponse,
-  KrakenRuntime,
-  KrakenStreamEvent,
-  KrakenToolDefinition,
   RuntimeResolution,
   ToolCallPart,
   ToolRegistry,
   ToolResultPart,
   TurnEndEvent,
-} from "@kraken/framework-runtime-api";
+  TuvrenExtension,
+  TuvrenMessage,
+  TuvrenModelResponse,
+  TuvrenRuntime,
+  TuvrenStreamEvent,
+  TuvrenToolDefinition,
+} from "@tuvren/runtime-api";
 import {
   assertContextManifest,
-  assertKrakenMessage,
-  assertKrakenStreamEvent,
-} from "@kraken/framework-runtime-api";
-import {
-  decodeDeterministicKernelRecord,
-  encodeDeterministicKernelRecord,
-  type KrakenKernel,
-  type PathValue,
-  type RunCompletionStatus,
-  type TurnNode,
-  type TurnTreeSchema,
-} from "@kraken/kernel-contract-protocol";
-import {
-  assertKernelRecord,
-  type EpochMs,
-  type HashString,
-  type KernelRecord,
-  KrakenLineageError,
-  KrakenRuntimeError,
-} from "@kraken/shared-core-types";
+  assertTuvrenMessage,
+  assertTuvrenStreamEvent,
+} from "@tuvren/runtime-api";
 import {
   createContextManifest,
   createEmptyContextManifest,
@@ -112,7 +112,7 @@ import {
 } from "./tool-execution.js";
 import { createToolRegistry } from "./tool-registry.js";
 
-export const DEFAULT_AGENT_SCHEMA_ID = "kraken.agent.v1";
+export const DEFAULT_AGENT_SCHEMA_ID = "tuvren.agent.v1";
 export const DEFAULT_AGENT_SCHEMA: TurnTreeSchema = {
   incorporationRules: [
     { objectType: "message", targetPath: "messages" },
@@ -163,7 +163,7 @@ interface HeadState {
   branchHeadHash: HashString;
   manifest: ContextManifest;
   messageHashes: HashString[];
-  messages: KrakenMessage[];
+  messages: TuvrenMessage[];
   turnNode: TurnNode;
 }
 
@@ -187,7 +187,7 @@ interface IterationPreparationResult {
 }
 
 interface ExecutedIterationResult {
-  driverResponse: KrakenModelResponse;
+  driverResponse: TuvrenModelResponse;
   iterationRunId: string;
   partial: boolean;
   requestedToolCalls: ToolCallPart[];
@@ -237,7 +237,7 @@ class FinalizationFailure extends Error {
   }
 }
 
-class RuntimeCore implements KrakenRuntime {
+class RuntimeCore implements TuvrenRuntime {
   private readonly options: ResolvedRuntimeCoreOptions;
 
   constructor(options: RuntimeCoreOptions) {
@@ -490,7 +490,7 @@ class RuntimeCore implements KrakenRuntime {
     );
 
     if (branch === null) {
-      throw new KrakenLineageError(
+      throw new TuvrenLineageError(
         `branch "${handle.request.branchId}" does not exist`,
         {
           code: "missing_branch",
@@ -499,7 +499,7 @@ class RuntimeCore implements KrakenRuntime {
     }
 
     if (branch.threadId !== handle.request.threadId) {
-      throw new KrakenLineageError(
+      throw new TuvrenLineageError(
         `branch "${handle.request.branchId}" belongs to thread "${branch.threadId}", not "${handle.request.threadId}"`,
         {
           code: "branch_thread_mismatch",
@@ -1221,7 +1221,7 @@ class RuntimeCore implements KrakenRuntime {
     iterationCount: number
   ): Promise<IterationPhaseResult> {
     if (headState === undefined) {
-      throw new KrakenRuntimeError("iteration execution requires head state", {
+      throw new TuvrenRuntimeError("iteration execution requires head state", {
         code: "missing_head_state",
       });
     }
@@ -1249,7 +1249,7 @@ class RuntimeCore implements KrakenRuntime {
     );
     await this.options.kernel.run.beginStep(iterationRunId, "iterate");
 
-    const emittedDriverEvents: KrakenStreamEvent[] = [];
+    const emittedDriverEvents: TuvrenStreamEvent[] = [];
     const driverResult = await this.executeDriver(
       driver,
       this.createDriverExecutionContext(
@@ -1452,12 +1452,12 @@ class RuntimeCore implements KrakenRuntime {
   private findInvalidDriverResolution(
     requestedToolCallCount: number,
     resolution: RuntimeResolution
-  ): KrakenRuntimeError | undefined {
+  ): TuvrenRuntimeError | undefined {
     if (
       requestedToolCallCount > 0 &&
       resolution.type !== "continue_iteration"
     ) {
-      return new KrakenRuntimeError(
+      return new TuvrenRuntimeError(
         "drivers must not return executable tool calls with a terminal resolution",
         {
           code: "invalid_driver_resolution",
@@ -1471,7 +1471,7 @@ class RuntimeCore implements KrakenRuntime {
     }
 
     if (requestedToolCallCount === 0 && resolution.type === "pause") {
-      return new KrakenRuntimeError(
+      return new TuvrenRuntimeError(
         "shared core only permits approval pauses that originate from requested tool calls",
         {
           code: "invalid_driver_resolution",
@@ -1498,7 +1498,7 @@ class RuntimeCore implements KrakenRuntime {
       return undefined;
     }
 
-    const invalidPauseResolution = new KrakenRuntimeError(
+    const invalidPauseResolution = new TuvrenRuntimeError(
       "shared core only permits approval pauses that originate from requested tool calls",
       {
         code: "invalid_driver_resolution",
@@ -1531,7 +1531,7 @@ class RuntimeCore implements KrakenRuntime {
     loopState: LoopState,
     headState: HeadState,
     iterationCount: number,
-    emittedDriverEvents: KrakenStreamEvent[]
+    emittedDriverEvents: TuvrenStreamEvent[]
   ): DriverExecutionContext {
     const toolRegistrySnapshot = createReadonlyDriverToolRegistry(
       loopState.activeToolRegistry
@@ -1552,12 +1552,12 @@ class RuntimeCore implements KrakenRuntime {
       messages: createFrozenSnapshot(headState.messages),
       runtime: {
         emit: (event) => {
-          let clonedEvent: KrakenStreamEvent;
+          let clonedEvent: TuvrenStreamEvent;
 
           try {
             clonedEvent = cloneValue(event);
           } catch (error: unknown) {
-            throw new KrakenRuntimeError(
+            throw new TuvrenRuntimeError(
               "driver-emitted stream events must be cloneable",
               {
                 code: "invalid_stream_event",
@@ -1584,13 +1584,13 @@ class RuntimeCore implements KrakenRuntime {
 
   private async stageDriverMessages(
     runId: string,
-    messages: KrakenMessage[],
+    messages: TuvrenMessage[],
     iterationCount: number
   ): Promise<HashString[]> {
     const stagedMessageHashes: HashString[] = [];
 
     for (const [index, driverMessage] of messages.entries()) {
-      assertKrakenMessage(driverMessage, `driverResult.messages[${index}]`);
+      assertTuvrenMessage(driverMessage, `driverResult.messages[${index}]`);
       stagedMessageHashes.push(
         await this.stageMessage(
           runId,
@@ -1695,10 +1695,10 @@ class RuntimeCore implements KrakenRuntime {
     iterationCount: number,
     runId: string,
     resolution: RuntimeResolution,
-    response: KrakenModelResponse,
+    response: TuvrenModelResponse,
     toolResults: ToolResultPart[],
-    headMessages: KrakenMessage[],
-    stagedMessages: KrakenMessage[],
+    headMessages: TuvrenMessage[],
+    stagedMessages: TuvrenMessage[],
     manifest: ContextManifest
   ): Promise<RuntimeResolution> {
     const afterIteration = await runAfterIterationHooks({
@@ -1764,7 +1764,7 @@ class RuntimeCore implements KrakenRuntime {
 
     if (result.resolution.type === "pause") {
       if (result.turnNodeHash === undefined) {
-        throw new KrakenRuntimeError(
+        throw new TuvrenRuntimeError(
           "paused iterations must commit a durable pause checkpoint",
           {
             code: "missing_pause_checkpoint",
@@ -1872,7 +1872,7 @@ class RuntimeCore implements KrakenRuntime {
     const resumedMessages = toolBatch.results.map((result) => ({
       parts: [result],
       role: "tool",
-    })) satisfies KrakenMessage[];
+    })) satisfies TuvrenMessage[];
     const manifest = updateContextManifest(
       headState.manifest,
       resumedMessages,
@@ -1974,7 +1974,7 @@ class RuntimeCore implements KrakenRuntime {
       }
 
       if (turnNodeHash === undefined) {
-        throw new KrakenRuntimeError(
+        throw new TuvrenRuntimeError(
           "paused approval resumes must commit a durable pause checkpoint",
           {
             code: "missing_pause_checkpoint",
@@ -2247,7 +2247,7 @@ class RuntimeCore implements KrakenRuntime {
           createPreserveTraceHandoffContextBuilder()
         );
       default:
-        throw new KrakenRuntimeError(
+        throw new TuvrenRuntimeError(
           `handoff mode "${mode}" requires an explicit builder`,
           {
             code: "invalid_handoff_mode",
@@ -2266,7 +2266,7 @@ class RuntimeCore implements KrakenRuntime {
   ): Promise<void> {
     const runId = this.createId();
     const headState = await this.loadHeadState(handle.request.branchId);
-    const userMessage: KrakenMessage = {
+    const userMessage: TuvrenMessage = {
       parts: handle.request.signal.parts,
       role: "user",
     };
@@ -2340,7 +2340,7 @@ class RuntimeCore implements KrakenRuntime {
   ): Promise<void> {
     const runId = this.createId();
     const headState = await this.loadHeadState(handle.request.branchId);
-    const steeringMessage: KrakenMessage = {
+    const steeringMessage: TuvrenMessage = {
       parts: signal.parts,
       role: "user",
     };
@@ -2581,7 +2581,7 @@ class RuntimeCore implements KrakenRuntime {
     const targetConfig = this.options.resolveAgentConfig?.(plan.targetAgent);
 
     if (targetConfig === undefined) {
-      throw new KrakenRuntimeError(
+      throw new TuvrenRuntimeError(
         `handoff target "${plan.targetAgent}" could not be resolved`,
         {
           code: "unknown_handoff_target",
@@ -2742,14 +2742,14 @@ class RuntimeCore implements KrakenRuntime {
 
   private createContextEngineeringHelpers(
     messageHashes: HashString[],
-    messages: KrakenMessage[]
+    messages: TuvrenMessage[]
   ): HelperBundle {
     const kernel = this.options.kernel;
-    const existingMessages = new Map<HashString, KrakenMessage>();
-    const pendingMessages = new Map<HashString, KrakenMessage>();
+    const existingMessages = new Map<HashString, TuvrenMessage>();
+    const pendingMessages = new Map<HashString, TuvrenMessage>();
     const pendingRecords = new Map<
       HashString,
-      { message: KrakenMessage; record: Uint8Array }
+      { message: TuvrenMessage; record: Uint8Array }
     >();
     const resolvedHashes = new Map<HashString, HashString>();
 
@@ -2779,11 +2779,11 @@ class RuntimeCore implements KrakenRuntime {
             return null;
           }
 
-          assertKrakenMessage(message, `message "${hash}"`);
+          assertTuvrenMessage(message, `message "${hash}"`);
           return cloneValue(message);
         },
         storeMessage(message) {
-          assertKrakenMessage(message, "context engineering helper message");
+          assertTuvrenMessage(message, "context engineering helper message");
           const encoded = encodeKernelRecord(message, "message");
           const storedMessage = cloneValue(message);
           const provisionalHash = createPendingKernelHash(encoded);
@@ -2796,7 +2796,7 @@ class RuntimeCore implements KrakenRuntime {
         },
         storeMessages(messagesToStore) {
           return messagesToStore.map((message) => {
-            assertKrakenMessage(message, "context engineering helper message");
+            assertTuvrenMessage(message, "context engineering helper message");
             const encoded = encodeKernelRecord(message, "message");
             const storedMessage = cloneValue(message);
             const provisionalHash = createPendingKernelHash(encoded);
@@ -2843,14 +2843,14 @@ class RuntimeCore implements KrakenRuntime {
   private materializeContextMessages(
     hashes: HashString[],
     helpers: ContextEngineeringHelpers
-  ): KrakenMessage[] {
-    const messages: KrakenMessage[] = [];
+  ): TuvrenMessage[] {
+    const messages: TuvrenMessage[] = [];
 
     for (const hash of hashes) {
       const message = helpers.loadMessage(hash);
 
       if (message === null) {
-        throw new KrakenLineageError(`message "${hash}" does not exist`, {
+        throw new TuvrenLineageError(`message "${hash}" does not exist`, {
           code: "missing_message",
           details: {
             hash,
@@ -3021,7 +3021,7 @@ class RuntimeCore implements KrakenRuntime {
     const resumedMessages = toolBatch.results.map((result) => ({
       parts: [result],
       role: "tool",
-    })) satisfies KrakenMessage[];
+    })) satisfies TuvrenMessage[];
     const rejectionUpdates = [
       ...loopState.carriedStateUpdates,
       ...toolBatch.updates,
@@ -3065,7 +3065,7 @@ class RuntimeCore implements KrakenRuntime {
     const branch = await this.options.kernel.branch.get(branchId);
 
     if (branch === null) {
-      throw new KrakenLineageError(`branch "${branchId}" does not exist`, {
+      throw new TuvrenLineageError(`branch "${branchId}" does not exist`, {
         code: "missing_branch",
       });
     }
@@ -3075,7 +3075,7 @@ class RuntimeCore implements KrakenRuntime {
     );
 
     if (turnNode === null) {
-      throw new KrakenLineageError(
+      throw new TuvrenLineageError(
         `turn node "${branch.headTurnNodeHash}" does not exist`,
         {
           code: "missing_turn_node",
@@ -3110,7 +3110,7 @@ class RuntimeCore implements KrakenRuntime {
     const payload = await this.options.kernel.store.get(hash);
 
     if (payload === null) {
-      throw new KrakenLineageError(`manifest "${hash}" does not exist`, {
+      throw new TuvrenLineageError(`manifest "${hash}" does not exist`, {
         code: "missing_manifest",
         details: {
           hash,
@@ -3123,8 +3123,8 @@ class RuntimeCore implements KrakenRuntime {
     return manifest;
   }
 
-  private async readMessages(hashes: HashString[]): Promise<KrakenMessage[]> {
-    const messages: KrakenMessage[] = [];
+  private async readMessages(hashes: HashString[]): Promise<TuvrenMessage[]> {
+    const messages: TuvrenMessage[] = [];
 
     for (const hash of hashes) {
       messages.push(await this.readMessage(hash));
@@ -3133,11 +3133,11 @@ class RuntimeCore implements KrakenRuntime {
     return messages;
   }
 
-  private async readMessage(hash: HashString): Promise<KrakenMessage> {
+  private async readMessage(hash: HashString): Promise<TuvrenMessage> {
     const payload = await this.options.kernel.store.get(hash);
 
     if (payload === null) {
-      throw new KrakenLineageError(`message "${hash}" does not exist`, {
+      throw new TuvrenLineageError(`message "${hash}" does not exist`, {
         code: "missing_message",
         details: {
           hash,
@@ -3188,7 +3188,7 @@ class RuntimeCore implements KrakenRuntime {
     );
 
     if (parentTurnId !== expectedParentTurnId) {
-      throw new KrakenLineageError(
+      throw new TuvrenLineageError(
         `parent turn "${parentTurnId}" is not the active branch parent for branch "${branchId}"`,
         {
           code: "invalid_parent_turn",
@@ -3209,7 +3209,7 @@ class RuntimeCore implements KrakenRuntime {
     const parentTurn = await this.options.kernel.turn.get(parentTurnId);
 
     if (parentTurn === null) {
-      throw new KrakenLineageError(
+      throw new TuvrenLineageError(
         `parent turn "${parentTurnId}" does not exist`,
         {
           code: "invalid_parent_turn",
@@ -3223,7 +3223,7 @@ class RuntimeCore implements KrakenRuntime {
     }
 
     if (parentTurn.threadId !== threadId) {
-      throw new KrakenLineageError(
+      throw new TuvrenLineageError(
         `parent turn "${parentTurnId}" must stay on thread "${threadId}"`,
         {
           code: "invalid_parent_turn",
@@ -3530,7 +3530,7 @@ class RuntimeCore implements KrakenRuntime {
     const driverEntry = this.options.driverRegistry.resolve(driverId);
 
     if (driverEntry === undefined) {
-      throw new KrakenRuntimeError(`driver "${driverId}" is not registered`, {
+      throw new TuvrenRuntimeError(`driver "${driverId}" is not registered`, {
         code: "unknown_driver",
         details: {
           driverId,
@@ -3572,7 +3572,7 @@ class RuntimeCore implements KrakenRuntime {
     }
 
     if (resolvedSchemaId !== DEFAULT_AGENT_SCHEMA_ID) {
-      throw new KrakenRuntimeError(
+      throw new TuvrenRuntimeError(
         `schema "${resolvedSchemaId}" is not registered`,
         {
           code: "unknown_schema",
@@ -3603,7 +3603,7 @@ class RuntimeCore implements KrakenRuntime {
 
   private async stageMessage(
     runId: string,
-    message: KrakenMessage,
+    message: TuvrenMessage,
     taskId: string
   ): Promise<HashString> {
     const staged = await this.options.kernel.staging.stage(
@@ -3689,7 +3689,7 @@ class RuntimeCore implements KrakenRuntime {
 
   private publishEvent(
     handle: RuntimeExecutionHandle,
-    event: KrakenStreamEvent,
+    event: TuvrenStreamEvent,
     loopState: LoopState
   ): void {
     handle.publish(this.createPublishedEvent(handle, event, loopState));
@@ -3697,9 +3697,9 @@ class RuntimeCore implements KrakenRuntime {
 
   private createPublishedEvent(
     handle: RuntimeExecutionHandle,
-    event: KrakenStreamEvent,
+    event: TuvrenStreamEvent,
     loopState: LoopState
-  ): KrakenStreamEvent {
+  ): TuvrenStreamEvent {
     const publishedEvent = {
       ...event,
       source: event.source ?? {
@@ -3708,15 +3708,15 @@ class RuntimeCore implements KrakenRuntime {
         threadId: handle.request.threadId,
       },
     };
-    assertKrakenStreamEvent(publishedEvent, "stream event");
+    assertTuvrenStreamEvent(publishedEvent, "stream event");
     return publishedEvent;
   }
 
   private createDriverPublishedEvent(
     handle: RuntimeExecutionHandle,
-    event: KrakenStreamEvent,
+    event: TuvrenStreamEvent,
     loopState: LoopState
-  ): KrakenStreamEvent {
+  ): TuvrenStreamEvent {
     assertDriverRuntimeEvent(event);
     return this.createPublishedEvent(
       handle,
@@ -3734,7 +3734,7 @@ class RuntimeCore implements KrakenRuntime {
 
   private flushBufferedDriverEvents(
     handle: RuntimeExecutionHandle,
-    events: KrakenStreamEvent[]
+    events: TuvrenStreamEvent[]
   ): void {
     for (const event of events) {
       handle.publish(event);
@@ -3744,8 +3744,8 @@ class RuntimeCore implements KrakenRuntime {
   private flushBufferedDriverEventsIfNeeded(
     handle: RuntimeExecutionHandle,
     resolution: RuntimeResolution,
-    events: KrakenStreamEvent[]
-  ): KrakenStreamEvent[] {
+    events: TuvrenStreamEvent[]
+  ): TuvrenStreamEvent[] {
     if (shouldSuppressBufferedDriverEvents(resolution)) {
       return [];
     }
@@ -3756,12 +3756,12 @@ class RuntimeCore implements KrakenRuntime {
 
   private ensureDriverAssistantEvents(
     handle: RuntimeExecutionHandle,
-    messages: KrakenMessage[],
-    emittedEvents: KrakenStreamEvent[],
+    messages: TuvrenMessage[],
+    emittedEvents: TuvrenStreamEvent[],
     loopState: LoopState
-  ): KrakenStreamEvent[] {
+  ): TuvrenStreamEvent[] {
     const assistantMessage = messages.find(
-      (message): message is Extract<KrakenMessage, { role: "assistant" }> =>
+      (message): message is Extract<TuvrenMessage, { role: "assistant" }> =>
         message.role === "assistant"
     );
 
@@ -3781,10 +3781,10 @@ class RuntimeCore implements KrakenRuntime {
   }
 
   private synthesizeAssistantMessageEvents(
-    message: Extract<KrakenMessage, { role: "assistant" }>
-  ): KrakenStreamEvent[] {
+    message: Extract<TuvrenMessage, { role: "assistant" }>
+  ): TuvrenStreamEvent[] {
     const messageId = this.createId();
-    const events: KrakenStreamEvent[] = [
+    const events: TuvrenStreamEvent[] = [
       {
         messageId,
         role: "assistant",
@@ -3952,9 +3952,9 @@ class RuntimeCore implements KrakenRuntime {
   }
 }
 
-export function createKrakenRuntimeCore(
+export function createTuvrenRuntimeCore(
   options: RuntimeCoreOptions
-): KrakenRuntime {
+): TuvrenRuntime {
   return new RuntimeCore(options);
 }
 
@@ -3973,7 +3973,7 @@ function composeResolutions(
 }
 
 function createActiveToolRegistry(
-  requestTools: KrakenToolDefinition[] | undefined,
+  requestTools: TuvrenToolDefinition[] | undefined,
   config: AgentConfig
 ): ToolRegistry {
   const activeTools = requestTools ?? config.tools ?? [];
@@ -4007,7 +4007,7 @@ function createReadonlyDriverToolRegistry(
       return [...toolSnapshots];
     },
     register(tool) {
-      throw new KrakenRuntimeError(
+      throw new TuvrenRuntimeError(
         `drivers must not mutate the execution tool registry with "${tool.name}"`,
         {
           code: "invalid_driver_result",
@@ -4039,13 +4039,13 @@ function createDriverAgentConfigSnapshot(config: AgentConfig): AgentConfig {
 }
 
 function createDriverToolDefinitionSnapshot(
-  tool: KrakenToolDefinition
-): KrakenToolDefinition {
+  tool: TuvrenToolDefinition
+): TuvrenToolDefinition {
   return {
     approval: tool.approval,
     description: tool.description,
     execute() {
-      throw new KrakenRuntimeError(
+      throw new TuvrenRuntimeError(
         `drivers must not execute tool "${tool.name}" from the read-only tool snapshot`,
         {
           code: "invalid_driver_result",
@@ -4075,7 +4075,7 @@ function encodeKernelRecord(value: unknown, label: string): Uint8Array {
 }
 
 function collectInitialExtensionStateUpdates(
-  extensions: KrakenExtension[],
+  extensions: TuvrenExtension[],
   manifest: ContextManifest
 ): ExtensionStateUpdate[] {
   const updates: ExtensionStateUpdate[] = [];
@@ -4098,7 +4098,7 @@ function collectInitialExtensionStateUpdates(
 }
 
 function extractToolCallsFromMessages(
-  messages: KrakenMessage[]
+  messages: TuvrenMessage[]
 ): ToolCallPart[] {
   const calls: ToolCallPart[] = [];
 
@@ -4124,7 +4124,7 @@ function createPendingKernelHash(value: Uint8Array): HashString {
   // These hashes are provisional helper ids only; the kernel's store hash remains
   // authoritative once the record is flushed through `store.put()`.
   return createHash("sha256")
-    .update("kraken-runtime-pending:")
+    .update("tuvren-runtime-pending:")
     .update(value)
     .digest("hex");
 }
@@ -4139,7 +4139,7 @@ async function readBranchHeadState(
   const branch = await kernel.branch.get(branchId);
 
   if (branch === null) {
-    throw new KrakenLineageError(`branch "${branchId}" does not exist`, {
+    throw new TuvrenLineageError(`branch "${branchId}" does not exist`, {
       code: "missing_branch",
     });
   }
@@ -4147,7 +4147,7 @@ async function readBranchHeadState(
   const turnNode = await kernel.node.get(branch.headTurnNodeHash);
 
   if (turnNode === null) {
-    throw new KrakenLineageError(
+    throw new TuvrenLineageError(
       `turn node "${branch.headTurnNodeHash}" does not exist`,
       {
         code: "missing_turn_node",
@@ -4177,7 +4177,7 @@ async function readBranchActiveTurnId(
   const payload = await kernel.store.get(lineageHash);
 
   if (payload === null) {
-    throw new KrakenLineageError(
+    throw new TuvrenLineageError(
       `turn lineage "${lineageHash}" does not exist`,
       {
         code: "missing_turn_lineage",
@@ -4195,7 +4195,7 @@ async function readBranchActiveTurnId(
     return decoded.activeTurnId;
   }
 
-  throw new KrakenLineageError(
+  throw new TuvrenLineageError(
     `branch "${branchId}" turn lineage must carry an activeTurnId`,
     {
       code: "invalid_turn_lineage",
@@ -4209,7 +4209,7 @@ async function readBranchActiveTurnId(
 }
 
 function inferFinishReason(
-  message: Extract<KrakenMessage, { role: "assistant" }>
+  message: Extract<TuvrenMessage, { role: "assistant" }>
 ): "content_filter" | "error" | "length" | "stop" | "tool_call" {
   return message.parts.some((part) => part.type === "tool_call")
     ? "tool_call"
@@ -4225,9 +4225,9 @@ function isContextEngineeringPlan(
 function decodeKrakenMessageRecord(
   payload: Uint8Array,
   label: string
-): KrakenMessage {
+): TuvrenMessage {
   const decoded = decodeDeterministicKernelRecord(payload);
-  assertKrakenMessage(decoded, label);
+  assertTuvrenMessage(decoded, label);
   return decoded;
 }
 
@@ -4283,7 +4283,7 @@ function shouldSuppressBufferedDriverEvents(
 }
 
 function isAssistantContentStreamEvent(
-  type: KrakenStreamEvent["type"]
+  type: TuvrenStreamEvent["type"]
 ): boolean {
   switch (type) {
     case "message.start":
@@ -4304,7 +4304,7 @@ function isAssistantContentStreamEvent(
   }
 }
 
-function isAssistantValidationEvent(type: KrakenStreamEvent["type"]): boolean {
+function isAssistantValidationEvent(type: TuvrenStreamEvent["type"]): boolean {
   switch (type) {
     case "message.start":
     case "text.done":
@@ -4320,7 +4320,7 @@ function isAssistantValidationEvent(type: KrakenStreamEvent["type"]): boolean {
   }
 }
 
-function assertDriverRuntimeEvent(event: KrakenStreamEvent): void {
+function assertDriverRuntimeEvent(event: TuvrenStreamEvent): void {
   switch (event.type) {
     case "custom":
     case "message.start":
@@ -4337,7 +4337,7 @@ function assertDriverRuntimeEvent(event: KrakenStreamEvent): void {
     case "message.done":
       return;
     default:
-      throw new KrakenRuntimeError(
+      throw new TuvrenRuntimeError(
         `drivers must not emit shared-core event type "${event.type}" directly`,
         {
           code: "invalid_stream_event",
@@ -4350,9 +4350,9 @@ function assertDriverRuntimeEvent(event: KrakenStreamEvent): void {
 }
 
 function validateDriverAssistantEvents(
-  messages: KrakenMessage[],
-  emittedEvents: KrakenStreamEvent[]
-): KrakenRuntimeError | undefined {
+  messages: TuvrenMessage[],
+  emittedEvents: TuvrenStreamEvent[]
+): TuvrenRuntimeError | undefined {
   const assistantEvents = emittedEvents.filter((event) =>
     isAssistantContentStreamEvent(event.type)
   );
@@ -4362,12 +4362,12 @@ function validateDriverAssistantEvents(
   }
 
   const assistantMessage = messages.find(
-    (message): message is Extract<KrakenMessage, { role: "assistant" }> =>
+    (message): message is Extract<TuvrenMessage, { role: "assistant" }> =>
       message.role === "assistant"
   );
 
   if (assistantMessage === undefined) {
-    return new KrakenRuntimeError(
+    return new TuvrenRuntimeError(
       "drivers must not emit assistant content events without returning a durable assistant message",
       {
         code: "invalid_stream_event",
@@ -4378,7 +4378,7 @@ function validateDriverAssistantEvents(
   const assistantSequencesOrError =
     splitAssistantEventSequences(assistantEvents);
 
-  if (assistantSequencesOrError instanceof KrakenRuntimeError) {
+  if (assistantSequencesOrError instanceof TuvrenRuntimeError) {
     return assistantSequencesOrError;
   }
 
@@ -4410,7 +4410,7 @@ function validateDriverAssistantEvents(
   );
 
   if (actualEvents.length !== expectedEvents.length) {
-    return new KrakenRuntimeError(
+    return new TuvrenRuntimeError(
       "driver-emitted assistant event sequences must be complete and match the durable assistant message",
       {
         code: "invalid_stream_event",
@@ -4425,7 +4425,7 @@ function validateDriverAssistantEvents(
       expectedEvent === undefined ||
       !assistantValidationEventsMatch(actualEvent, expectedEvent)
     ) {
-      return new KrakenRuntimeError(
+      return new TuvrenRuntimeError(
         "driver-emitted assistant events must match the durable assistant message",
         {
           code: "invalid_stream_event",
@@ -4447,9 +4447,9 @@ function validateDriverAssistantEvents(
 }
 
 function validateDriverAssistantDeltas(
-  message: Extract<KrakenMessage, { role: "assistant" }>,
-  assistantEvents: KrakenStreamEvent[]
-): KrakenRuntimeError | undefined {
+  message: Extract<TuvrenMessage, { role: "assistant" }>,
+  assistantEvents: TuvrenStreamEvent[]
+): TuvrenRuntimeError | undefined {
   const state: AssistantDeltaValidationState = {
     completed: false,
     currentMessageId: undefined,
@@ -4510,13 +4510,13 @@ interface AssistantDeltaValidationState {
 }
 
 interface AssistantBoundaryValidation {
-  error?: KrakenRuntimeError;
+  error?: TuvrenRuntimeError;
   handled: boolean;
 }
 
 function validateAssistantMessageBoundary(
-  event: KrakenStreamEvent,
-  expectedFinishReason: KrakenModelResponse["finishReason"],
+  event: TuvrenStreamEvent,
+  expectedFinishReason: TuvrenModelResponse["finishReason"],
   state: AssistantDeltaValidationState
 ): AssistantBoundaryValidation {
   if (!state.started) {
@@ -4580,7 +4580,7 @@ function validateAssistantMessageBoundary(
 }
 
 function assistantEventBelongsToCurrentMessage(
-  event: KrakenStreamEvent,
+  event: TuvrenStreamEvent,
   currentMessageId: string | undefined
 ): boolean {
   const eventMessageId = getAssistantEventMessageId(event);
@@ -4589,7 +4589,7 @@ function assistantEventBelongsToCurrentMessage(
 }
 
 function getAssistantEventMessageId(
-  event: KrakenStreamEvent
+  event: TuvrenStreamEvent
 ): string | undefined {
   switch (event.type) {
     case "file.done":
@@ -4609,10 +4609,10 @@ function getAssistantEventMessageId(
 }
 
 function validateDriverAssistantDeltaEvent(
-  parts: Extract<KrakenMessage, { role: "assistant" }>["parts"],
-  event: KrakenStreamEvent,
+  parts: Extract<TuvrenMessage, { role: "assistant" }>["parts"],
+  event: TuvrenStreamEvent,
   state: AssistantDeltaValidationState
-): KrakenRuntimeError | undefined {
+): TuvrenRuntimeError | undefined {
   const currentPart = parts[state.partIndex];
 
   if (currentPart === undefined) {
@@ -4636,9 +4636,9 @@ function validateDriverAssistantDeltaEvent(
 }
 
 function validateFileAssistantDeltaEvent(
-  event: KrakenStreamEvent,
+  event: TuvrenStreamEvent,
   state: AssistantDeltaValidationState
-): KrakenRuntimeError | undefined {
+): TuvrenRuntimeError | undefined {
   if (event.type !== "file.done") {
     return createAssistantDeltaValidationError();
   }
@@ -4649,9 +4649,9 @@ function validateFileAssistantDeltaEvent(
 
 function validateReasoningAssistantDeltaEvent(
   part: Extract<ContentPart, { type: "reasoning" }>,
-  event: KrakenStreamEvent,
+  event: TuvrenStreamEvent,
   state: AssistantDeltaValidationState
-): KrakenRuntimeError | undefined {
+): TuvrenRuntimeError | undefined {
   if (event.type === "reasoning.delta") {
     state.deltaBuffer += event.delta;
     state.sawDelta = true;
@@ -4681,9 +4681,9 @@ function validateReasoningAssistantDeltaEvent(
 
 function validateStructuredAssistantDeltaEvent(
   part: Extract<ContentPart, { type: "structured" }>,
-  event: KrakenStreamEvent,
+  event: TuvrenStreamEvent,
   state: AssistantDeltaValidationState
-): KrakenRuntimeError | undefined {
+): TuvrenRuntimeError | undefined {
   if (event.type === "structured.delta") {
     state.deltaBuffer += event.delta;
     state.sawDelta = true;
@@ -4711,9 +4711,9 @@ function validateStructuredAssistantDeltaEvent(
 
 function validateTextAssistantDeltaEvent(
   part: Extract<ContentPart, { type: "text" }>,
-  event: KrakenStreamEvent,
+  event: TuvrenStreamEvent,
   state: AssistantDeltaValidationState
-): KrakenRuntimeError | undefined {
+): TuvrenRuntimeError | undefined {
   if (event.type === "text.delta") {
     state.deltaBuffer += event.delta;
     state.sawDelta = true;
@@ -4736,9 +4736,9 @@ function validateTextAssistantDeltaEvent(
 
 function validateToolCallAssistantDeltaEvent(
   part: Extract<ContentPart, { type: "tool_call" }>,
-  event: KrakenStreamEvent,
+  event: TuvrenStreamEvent,
   state: AssistantDeltaValidationState
-): KrakenRuntimeError | undefined {
+): TuvrenRuntimeError | undefined {
   if (!state.toolCallStarted) {
     if (event.type !== "tool_call.start") {
       return createAssistantDeltaValidationError();
@@ -4783,10 +4783,10 @@ function validateToolCallAssistantDeltaEvent(
 }
 
 function splitAssistantEventSequences(
-  assistantEvents: KrakenStreamEvent[]
-): KrakenRuntimeError | KrakenStreamEvent[][] {
-  const sequences: KrakenStreamEvent[][] = [];
-  let currentSequence: KrakenStreamEvent[] | undefined;
+  assistantEvents: TuvrenStreamEvent[]
+): TuvrenRuntimeError | TuvrenStreamEvent[][] {
+  const sequences: TuvrenStreamEvent[][] = [];
+  let currentSequence: TuvrenStreamEvent[] | undefined;
 
   for (const event of assistantEvents) {
     if (event.type === "message.start") {
@@ -4843,8 +4843,8 @@ interface StandaloneAssistantValidationState {
 }
 
 function validateStandaloneAssistantSequence(
-  assistantEvents: KrakenStreamEvent[]
-): KrakenRuntimeError | undefined {
+  assistantEvents: TuvrenStreamEvent[]
+): TuvrenRuntimeError | undefined {
   const firstEvent = assistantEvents[0];
   const lastEvent = assistantEvents.at(-1);
 
@@ -4890,9 +4890,9 @@ function validateStandaloneAssistantSequence(
 }
 
 function validateStandaloneAssistantPartEvent(
-  event: KrakenStreamEvent,
+  event: TuvrenStreamEvent,
   state: StandaloneAssistantValidationState
-): KrakenRuntimeError | undefined {
+): TuvrenRuntimeError | undefined {
   if (event.type === "message.start" || event.type === "message.done") {
     return createAssistantDeltaValidationError();
   }
@@ -4914,9 +4914,9 @@ function validateStandaloneAssistantPartEvent(
 }
 
 function validateStandaloneIdleAssistantEvent(
-  event: KrakenStreamEvent,
+  event: TuvrenStreamEvent,
   state: StandaloneAssistantValidationState
-): KrakenRuntimeError | undefined {
+): TuvrenRuntimeError | undefined {
   switch (event.type) {
     case "file.done":
       return undefined;
@@ -4959,9 +4959,9 @@ function validateStandaloneIdleAssistantEvent(
 }
 
 function validateStandaloneReasoningAssistantEvent(
-  event: KrakenStreamEvent,
+  event: TuvrenStreamEvent,
   state: StandaloneAssistantValidationState
-): KrakenRuntimeError | undefined {
+): TuvrenRuntimeError | undefined {
   if (state.partState.kind !== "reasoning") {
     return createAssistantDeltaValidationError();
   }
@@ -4981,9 +4981,9 @@ function validateStandaloneReasoningAssistantEvent(
 }
 
 function validateStandaloneStructuredAssistantEvent(
-  event: KrakenStreamEvent,
+  event: TuvrenStreamEvent,
   state: StandaloneAssistantValidationState
-): KrakenRuntimeError | undefined {
+): TuvrenRuntimeError | undefined {
   if (state.partState.kind !== "structured") {
     return createAssistantDeltaValidationError();
   }
@@ -5007,9 +5007,9 @@ function validateStandaloneStructuredAssistantEvent(
 }
 
 function validateStandaloneTextAssistantEvent(
-  event: KrakenStreamEvent,
+  event: TuvrenStreamEvent,
   state: StandaloneAssistantValidationState
-): KrakenRuntimeError | undefined {
+): TuvrenRuntimeError | undefined {
   if (state.partState.kind !== "text") {
     return createAssistantDeltaValidationError();
   }
@@ -5033,9 +5033,9 @@ function validateStandaloneTextAssistantEvent(
 }
 
 function validateStandaloneToolCallAssistantEvent(
-  event: KrakenStreamEvent,
+  event: TuvrenStreamEvent,
   state: StandaloneAssistantValidationState
-): KrakenRuntimeError | undefined {
+): TuvrenRuntimeError | undefined {
   if (state.partState.kind !== "tool_call") {
     return createAssistantDeltaValidationError();
   }
@@ -5065,10 +5065,10 @@ function validateStandaloneToolCallAssistantEvent(
 }
 
 function synthesizeAssistantValidationEvents(
-  message: Extract<KrakenMessage, { role: "assistant" }>,
+  message: Extract<TuvrenMessage, { role: "assistant" }>,
   messageId: string
-): KrakenStreamEvent[] {
-  const events: KrakenStreamEvent[] = [
+): TuvrenStreamEvent[] {
+  const events: TuvrenStreamEvent[] = [
     {
       messageId,
       role: "assistant",
@@ -5148,8 +5148,8 @@ function synthesizeAssistantValidationEvents(
 }
 
 function assistantValidationEventsMatch(
-  actualEvent: KrakenStreamEvent,
-  expectedEvent: KrakenStreamEvent
+  actualEvent: TuvrenStreamEvent,
+  expectedEvent: TuvrenStreamEvent
 ): boolean {
   if (actualEvent.type !== expectedEvent.type) {
     return false;
@@ -5216,8 +5216,8 @@ function assistantValidationEventsMatch(
 }
 
 function doesFinishReasonMatchAssistantContent(
-  actualFinishReason: KrakenModelResponse["finishReason"],
-  expectedFinishReason: KrakenModelResponse["finishReason"]
+  actualFinishReason: TuvrenModelResponse["finishReason"],
+  expectedFinishReason: TuvrenModelResponse["finishReason"]
 ): boolean {
   if (expectedFinishReason === "tool_call") {
     return actualFinishReason === "tool_call";
@@ -5227,7 +5227,7 @@ function doesFinishReasonMatchAssistantContent(
 }
 
 function doesFinishReasonMatchToolCallPresence(
-  finishReason: KrakenModelResponse["finishReason"],
+  finishReason: TuvrenModelResponse["finishReason"],
   hasToolCallPart: boolean
 ): boolean {
   if (hasToolCallPart) {
@@ -5274,8 +5274,8 @@ function serializeAssistantDeltaValue(value: unknown): string {
   return JSON.stringify(value) ?? "null";
 }
 
-function createAssistantDeltaValidationError(): KrakenRuntimeError {
-  return new KrakenRuntimeError(
+function createAssistantDeltaValidationError(): TuvrenRuntimeError {
+  return new TuvrenRuntimeError(
     "driver-emitted assistant deltas must match the durable assistant message",
     {
       code: "invalid_stream_event",
@@ -5322,12 +5322,12 @@ function resolutionToPhase(
 }
 
 function synthesizeResponse(
-  messages: KrakenMessage[],
+  messages: TuvrenMessage[],
   resolution: RuntimeResolution,
-  emittedEvents: KrakenStreamEvent[]
-): KrakenModelResponse {
+  emittedEvents: TuvrenStreamEvent[]
+): TuvrenModelResponse {
   const assistantMessage = messages.find(
-    (message): message is Extract<KrakenMessage, { role: "assistant" }> =>
+    (message): message is Extract<TuvrenMessage, { role: "assistant" }> =>
       message.role === "assistant"
   );
   const lastMessageDoneEvent = findLastMessageDoneEvent(emittedEvents);
@@ -5352,8 +5352,8 @@ function synthesizeResponse(
 }
 
 function findLastMessageDoneEvent(
-  events: KrakenStreamEvent[]
-): Extract<KrakenStreamEvent, { type: "message.done" }> | undefined {
+  events: TuvrenStreamEvent[]
+): Extract<TuvrenStreamEvent, { type: "message.done" }> | undefined {
   for (let index = events.length - 1; index >= 0; index -= 1) {
     const event = events[index];
 
@@ -5392,7 +5392,7 @@ function toOptionalHash(value: PathValue): HashString | null {
     return null;
   }
 
-  throw new KrakenRuntimeError("expected a single-hash path value", {
+  throw new TuvrenRuntimeError("expected a single-hash path value", {
     code: "invalid_path_value_shape",
     details: {
       value,
@@ -5405,7 +5405,7 @@ function toOrderedHashArray(value: PathValue): HashString[] {
     return value;
   }
 
-  throw new KrakenRuntimeError("expected an ordered hash array path value", {
+  throw new TuvrenRuntimeError("expected an ordered hash array path value", {
     code: "invalid_path_value_shape",
     details: {
       value,
@@ -5417,7 +5417,7 @@ function isTurnLineageRecord(value: unknown): value is TurnLineageRecord {
   return isRecord(value) && typeof value.activeTurnId === "string";
 }
 
-function hasAssistantOutputMessages(messages: KrakenMessage[]): boolean {
+function hasAssistantOutputMessages(messages: TuvrenMessage[]): boolean {
   return messages.some((message) => message.role === "assistant");
 }
 
@@ -5441,7 +5441,7 @@ function assertFrameworkSchemaCompatibility(schema: TurnTreeSchema): void {
     );
 
     if (definition?.collection !== collection) {
-      throw new KrakenRuntimeError(
+      throw new TuvrenRuntimeError(
         `schema "${schema.schemaId}" must define ${collection} path "${path}"`,
         {
           code: "invalid_framework_schema",
@@ -5460,7 +5460,7 @@ function assertFrameworkSchemaCompatibility(schema: TurnTreeSchema): void {
     );
 
     if (rule?.targetPath !== targetPath) {
-      throw new KrakenRuntimeError(
+      throw new TuvrenRuntimeError(
         `schema "${schema.schemaId}" must incorporate "${objectType}" into "${targetPath}"`,
         {
           code: "invalid_framework_schema",

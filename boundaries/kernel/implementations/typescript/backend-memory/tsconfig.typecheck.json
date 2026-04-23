@@ -5,14 +5,12 @@
     "rootDir": "../../../../../",
     "allowImportingTsExtensions": true,
     "paths": {
-      "@kraken/shared-core-types": [
+      "@tuvren/core-types": [
         "../../../../shared/contracts/core-types/src/index.ts"
       ],
-      "@kraken/kernel-contract-protocol": [
-        "../../../contracts/protocol/src/index.ts"
-      ],
-      "@kraken/kernel-testkit": ["../../../testkit/src/index.ts"],
-      "@kraken/backend-memory": ["./src/index.ts"]
+      "@tuvren/kernel-protocol": ["../../../contracts/protocol/src/index.ts"],
+      "@tuvren/kernel-testkit": ["../../../testkit/src/index.ts"],
+      "@tuvren/backend-memory": ["./src/index.ts"]
     },
     "types": ["bun", "node"]
   },

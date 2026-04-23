@@ -16,8 +16,8 @@
 
 import { describe, expect, test } from "bun:test";
 import {
-  assertKrakenStreamEvent,
-  isKrakenStreamEvent,
+  assertTuvrenStreamEvent,
+  isTuvrenStreamEvent,
   type TextDoneEvent,
 } from "../src/index.ts";
 
@@ -35,7 +35,7 @@ describe("event-stream contracts", () => {
       type: "text.done",
     } satisfies TextDoneEvent;
 
-    expect(isKrakenStreamEvent(event)).toBe(true);
-    expect(() => assertKrakenStreamEvent(event)).not.toThrow();
+    expect(isTuvrenStreamEvent(event)).toBe(true);
+    expect(() => assertTuvrenStreamEvent(event)).not.toThrow();
   });
 });

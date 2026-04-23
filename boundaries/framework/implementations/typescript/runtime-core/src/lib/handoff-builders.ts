@@ -16,11 +16,11 @@
 
 import type {
   HandoffContextBuilder,
-  KrakenMessage,
   ToolResultPart,
-} from "@kraken/framework-runtime-api";
+  TuvrenMessage,
+} from "@tuvren/runtime-api";
 
-type UserMessageParts = Extract<KrakenMessage, { role: "user" }>["parts"];
+type UserMessageParts = Extract<TuvrenMessage, { role: "user" }>["parts"];
 
 export function createPreserveTraceHandoffContextBuilder(): HandoffContextBuilder {
   return (context) => {
@@ -41,7 +41,7 @@ export function createPreserveTraceHandoffContextBuilder(): HandoffContextBuilde
         },
       ],
       role: "user",
-    } satisfies KrakenMessage;
+    } satisfies TuvrenMessage;
 
     return [context.helpers.storeMessage(handoffMessage)];
   };
@@ -55,14 +55,14 @@ export function createLastOutputOnlyHandoffContextBuilder(): HandoffContextBuild
     const handoffMessage = {
       parts: extractLastVisibleAssistantOutputParts(context.messages),
       role: "user",
-    } satisfies KrakenMessage;
+    } satisfies TuvrenMessage;
 
     return [context.helpers.storeMessage(handoffMessage)];
   };
 }
 
 function extractChronologicalTrace(
-  messages: readonly KrakenMessage[]
+  messages: readonly TuvrenMessage[]
 ): string[] {
   const excerpts: string[] = [];
 
@@ -73,7 +73,7 @@ function extractChronologicalTrace(
   return excerpts;
 }
 
-function summarizeChronologicalMessage(message: KrakenMessage): string[] {
+function summarizeChronologicalMessage(message: TuvrenMessage): string[] {
   switch (message.role) {
     case "assistant": {
       return [formatTraceLine("Assistant", summarizeAssistantMessage(message))];
@@ -130,7 +130,7 @@ function summarizeTraceValue(value: unknown): string {
 }
 
 function extractLastVisibleAssistantOutputParts(
-  messages: readonly KrakenMessage[]
+  messages: readonly TuvrenMessage[]
 ): UserMessageParts {
   for (let index = messages.length - 1; index >= 0; index -= 1) {
     const message = messages[index];
@@ -149,7 +149,7 @@ function extractLastVisibleAssistantOutputParts(
 }
 
 function cloneVisibleAssistantParts(
-  parts: Extract<KrakenMessage, { role: "assistant" }>["parts"]
+  parts: Extract<TuvrenMessage, { role: "assistant" }>["parts"]
 ): UserMessageParts[number][] {
   const visibleParts: UserMessageParts[number][] = [];
 
@@ -202,7 +202,7 @@ function toNonEmptyArray<T>(values: T[]): [T, ...T[]] | undefined {
 }
 
 function summarizeUserMessage(
-  message: Extract<KrakenMessage, { role: "user" }>
+  message: Extract<TuvrenMessage, { role: "user" }>
 ): string {
   const summaryParts: string[] = [];
   let structuredCount = 0;
@@ -253,7 +253,7 @@ function summarizeToolResult(part: ToolResultPart): string {
 }
 
 function summarizeAssistantMessage(
-  message: Extract<KrakenMessage, { role: "assistant" }>
+  message: Extract<TuvrenMessage, { role: "assistant" }>
 ): string {
   const summaryParts: string[] = [];
   let structuredCount = 0;

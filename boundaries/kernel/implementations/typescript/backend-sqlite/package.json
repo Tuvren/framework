@@ -1,5 +1,5 @@
 {
-  "name": "@kraken/backend-sqlite",
+  "name": "@tuvren/backend-sqlite",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -13,12 +13,12 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@kraken/kernel-contract-protocol": "workspace:*",
-    "@kraken/shared-core-types": "workspace:*",
+    "@tuvren/kernel-protocol": "workspace:*",
+    "@tuvren/core-types": "workspace:*",
     "better-sqlite3": "12.8.0"
   },
   "devDependencies": {
-    "@kraken/kernel-testkit": "workspace:*",
+    "@tuvren/kernel-testkit": "workspace:*",
     "@types/better-sqlite3": "7.6.13"
   }
 }

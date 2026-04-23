@@ -16,7 +16,7 @@
 
 import { describe, expect, test } from "bun:test";
 import { deepStrictEqual, strictEqual } from "node:assert/strict";
-import { encodeDeterministicKernelRecord } from "@kraken/kernel-contract-protocol";
+import { encodeDeterministicKernelRecord } from "@tuvren/kernel-protocol";
 import {
   createCanonicalKernelTestSchema,
   createCanonicalTurnTreePaths,
@@ -30,7 +30,7 @@ import {
   registerBackendRecoverySuite,
 } from "../src/index.ts";
 
-describe("@kraken/kernel-testkit fixtures", () => {
+describe("@tuvren/kernel-testkit fixtures", () => {
   test("creates the canonical kernel test schema", () => {
     deepStrictEqual(createCanonicalKernelTestSchema(), {
       incorporationRules: [

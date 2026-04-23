@@ -1,5 +1,5 @@
 {
-  "name": "@kraken/kernel-contract-protocol",
+  "name": "@tuvren/kernel-protocol",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -13,7 +13,7 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@kraken/shared-core-types": "workspace:*",
+    "@tuvren/core-types": "workspace:*",
     "cbor-x": "1.6.4"
   }
 }

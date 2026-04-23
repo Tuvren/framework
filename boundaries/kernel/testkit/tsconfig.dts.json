@@ -7,12 +7,10 @@
     "moduleResolution": "bundler",
     "outDir": "./dist",
     "paths": {
-      "@kraken/shared-core-types": [
+      "@tuvren/core-types": [
         "../../shared/contracts/core-types/dist/index.d.ts"
       ],
-      "@kraken/kernel-contract-protocol": [
-        "../contracts/protocol/dist/index.d.ts"
-      ]
+      "@tuvren/kernel-protocol": ["../contracts/protocol/dist/index.d.ts"]
     },
     "rootDir": "./src",
     "target": "esnext",

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import type { KernelRecord } from "@tuvren/core-types";
 import {
   encodeDeterministicKernelRecord,
   hashKernelRecord,
@@ -29,8 +30,7 @@ import {
   type StoredTurnTreePath,
   type TurnTreeManifest,
   type TurnTreeSchema,
-} from "@kraken/kernel-contract-protocol";
-import type { KernelRecord } from "@kraken/shared-core-types";
+} from "@tuvren/kernel-protocol";
 
 export function createCanonicalKernelTestSchema(): TurnTreeSchema {
   return {

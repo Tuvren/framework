@@ -4,14 +4,14 @@
     "rootDir": "./src",
     "outDir": "./dist",
     "paths": {
-      "@kraken/framework-runtime-api": [
+      "@tuvren/runtime-api": [
         "../../../framework/contracts/runtime-api/dist/index.d.ts"
       ],
-      "@kraken/framework-runtime-api/provider": [
+      "@tuvren/runtime-api/provider": [
         "../../../framework/contracts/runtime-api/dist/provider.d.ts"
       ],
-      "@kraken/shared-core-types": ["../../../shared/contracts/core-types"],
-      "@kraken/provider-api": ["./src/index.ts"]
+      "@tuvren/core-types": ["../../../shared/contracts/core-types"],
+      "@tuvren/provider-api": ["./src/index.ts"]
     }
   },
   "include": ["src/**/*.ts"]

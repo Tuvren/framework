@@ -3,16 +3,16 @@
 ## 0. Version History & Changelog
 - v0.3.0 - Narrowed shared-core orchestration to a minimal handle/tree primitive, moved ordered pipelines out of core semantics, and aligned approval/cancel responsibilities with the docs-first HITL model.
 - v0.2.0 - Reframed the runtime around shared framework services plus pluggable drivers, with the current execution semantics treated as the initial ReAct-oriented driver.
-- v0.1.0 - Initial architecture derived from PRD v0.1.0, establishing the logical container model, critical flows, and resilience posture for Kraken Runtime.
+- v0.1.0 - Initial architecture derived from PRD v0.1.0, establishing the logical container model, critical flows, and resilience posture for Tuvren Runtime.
 - ... [Older history truncated, refer to git logs]
 
 ## 1. Architectural Strategy & Archetype Alignment
 - **Architectural Pattern:** Layered modular runtime with a narrow kernel boundary, shared framework services, pluggable drivers, and explicit adapter edges
-- **Why this pattern fits the PRD:** Kraken must be embeddable, durable, provider-neutral, and capable of supporting more than one execution style over time without redefining its durable core. A layered modular runtime preserves a stable mechanism foundation while letting shared framework services and individual drivers evolve independently.
+- **Why this pattern fits the PRD:** Tuvren Runtime must be embeddable, durable, provider-neutral, and capable of supporting more than one execution style over time without redefining its durable core. A layered modular runtime preserves a stable mechanism foundation while letting shared framework services and individual drivers evolve independently.
 - **Core trade-offs accepted:** The design prioritizes explicit boundaries, recoverability, and inspectability over minimum surface area; it accepts more internal structure than a lightweight prompt wrapper; and it rejects distributed topology until the product proves that one in-process runtime can no longer carry the scope.
 
 ### 1.1 Problem Context
-- Kraken is a runtime substrate, not a single agent application and not one fixed control-flow style.
+- Tuvren Runtime is a runtime substrate, not a single agent application and not one fixed control-flow style.
 - The architecture therefore has to satisfy three needs at once: durable execution truth, clean embedding into hosts, and room for more than one runtime driver over shared primitives.
 - The product’s defining value comes from preserving execution truth across interruption, redirection, governance, orchestration, and future driver variation. The architecture must center that truth in one authoritative durable boundary while preventing the first driver from becoming the whole ontology.
 
@@ -41,7 +41,7 @@
 ## 2. System Containers
 ### Host Integration Boundary
 - **Logical Type:** External boundary adapter
-- **Responsibility:** Expose Kraken to embedding environments, initiate turns, consume event streams, surface status, deliver steering, route approvals, and trigger cancellation.
+- **Responsibility:** Expose Tuvren Runtime to embedding environments, initiate turns, consume event streams, surface status, deliver steering, route approvals, and trigger cancellation.
 - **Inputs:** User or system signals, approval responses, steering signals, cancellation requests, runtime events.
 - **Outputs:** Turn-start requests, control signals, translated protocol events, host-visible execution status.
 - **Depends on:** Framework Shared Services, Event Stream Adapter Layer.
@@ -140,7 +140,7 @@
 C4Container
 title Container Diagram
 Person(hostUser, "Host / Integrator", "Starts turns, observes execution, resolves control decisions")
-System_Boundary(kraken, "Kraken Runtime") {
+System_Boundary(tuvren_runtime, "Tuvren Runtime") {
   Container(hostBoundary, "Host Integration Boundary", "Boundary Adapter", "Entry point for turns, steering, approval, cancellation, and status")
   Container(frameworkServices, "Framework Shared Services", "Application Service Layer", "Stable host-facing services, runtime control shell, context manifest handling, driver selection, and event publication")
   Container(driverRuntime, "Driver Runtime", "Execution Strategy Boundary", "Concrete execution model; initial baseline is the ReAct-oriented driver")
@@ -290,7 +290,7 @@ Framework-->>Driver: continue with updated control ownership or child coordinati
 ```
 
 ## 5. Resilience & Cross-Cutting Concerns
-- **Security / Identity Strategy:** Host applications authenticate and authorize their own callers before exposing Kraken controls; Kraken itself treats host commands, provider responses, and tool outputs as boundary inputs that require validation and normalization.
+- **Security / Identity Strategy:** Host applications authenticate and authorize their own callers before exposing Tuvren Runtime controls; the Kraken engine itself treats host commands, provider responses, and tool outputs as boundary inputs that require validation and normalization.
 - **Failure Handling Strategy:** The kernel and durable state boundary preserve committed progress, staged tool results, and lineage so interruption, pause/resume, rollback, and replacement-run behavior can be realized without history corruption.
 - **Observability Strategy:** Canonical runtime events are emitted from shared framework services and translated outward by stream adapters; driver attribution must remain visible so hosts can tell shared-runtime events from driver-specific behavior.
 - **Configuration Strategy:** Driver selection, provider choice, tool registry, extension activation, and backend configuration are runtime-selected concerns above the kernel; the kernel remains unaware of provider and host semantics.

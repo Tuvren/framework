@@ -19,7 +19,7 @@ import type {
   HashString,
   KernelObject,
   KernelRecord,
-} from "@kraken/shared-core-types";
+} from "@tuvren/core-types";
 
 export type PathCollectionKind = "ordered" | "single";
 export type PathValue = HashString[] | HashString | null;

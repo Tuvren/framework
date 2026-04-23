@@ -5,11 +5,13 @@
 
 Read this before the framework specification. This document freezes the kernel primitives only.
 
+Kraken is the execution engine inside Tuvren Runtime. This specification is therefore an engine-layer document, not the public product definition.
+
 ---
 
 ## Purpose
 
-The kernel is the structural persistence engine of the Kraken stateful agent runtime. It applies the model of content-addressed storage, parent-linked history, and movable references — as seen in Git's internals — to continuous runtime checkpointing rather than manual source control.
+The kernel is the structural persistence engine of the Kraken execution engine inside Tuvren Runtime. It applies the model of content-addressed storage, parent-linked history, and movable references — as seen in Git's internals — to continuous runtime checkpointing rather than manual source control.
 
 The kernel provides mechanism without policy: immutable content storage, structured state snapshots, a history DAG, durable write-ahead tracking, and stepwise execution with declarative checkpointing. It does not know what a "model call" is, what a "tool" is, or what "context assembly" means.
 
