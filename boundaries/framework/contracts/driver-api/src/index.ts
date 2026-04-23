@@ -18,8 +18,8 @@
 export type {
   DriverAssistantEventReconciliation,
   DriverExecutionContext,
-  DriverExtensionStateUpdate,
   DriverExecutionResult,
+  DriverExtensionStateUpdate,
   DriverHandoffPort,
   DriverRegistry,
   DriverResumeContext,

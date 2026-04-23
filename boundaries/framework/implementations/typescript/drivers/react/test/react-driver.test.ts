@@ -14,22 +14,24 @@
  * limitations under the License.
  */
 
+// biome-ignore-all lint/suspicious/useAwait: Test doubles intentionally match async provider and extension contracts.
 import { describe, expect, test } from "bun:test";
 import type { DriverExecutionContext } from "@tuvren/driver-api";
 import type {
   ContextManifest,
   InputSignal,
-  TuvrenPrompt,
+  ToolRegistry,
   TuvrenExtension,
   TuvrenMessage,
   TuvrenModelResponse,
+  TuvrenPrompt,
   TuvrenProvider,
   TuvrenStreamEvent,
   TuvrenToolDefinition,
-  ToolRegistry,
 } from "@tuvren/runtime-api";
 import {
   createDriverRegistry,
+  createContextManifest as createRuntimeContextManifest,
   createTuvrenRuntimeCore,
 } from "@tuvren/runtime-core";
 import { createFakeKernelHarness } from "../../../runtime-core/test/fake-kernel.ts";
@@ -496,6 +498,71 @@ describe("driver-react", () => {
       ])
     );
     expect(capturedToolsLength).toBe(0);
+  });
+
+  test("does not let aroundModel next() mutate manifest snapshots or shared exports seen by inner handlers", async () => {
+    let observedManifestSource: Record<string, unknown> | undefined;
+    let observedSharedExport: unknown;
+    const provider = {
+      async generate() {
+        return {
+          finishReason: "stop",
+          parts: [{ text: "isolated snapshots", type: "text" }],
+        } satisfies TuvrenModelResponse;
+      },
+      id: "provider",
+      async *stream() {
+        yield* [];
+      },
+    } satisfies TuvrenProvider;
+    const driver = createReActDriver({
+      providerCallMode: "generate",
+    }).create();
+
+    await driver.execute(
+      createDriverExecutionContext({
+        config: {
+          extensions: [
+            {
+              exports: ["exported"],
+              name: "source",
+            },
+            {
+              async aroundModel(context, next) {
+                context.manifest.extensions.source = {
+                  exported: "mutated-manifest",
+                };
+                context.sharedExports.source.exported = "mutated-shared";
+                return await next(context);
+              },
+              name: "outer",
+            },
+            {
+              async aroundModel(context, next) {
+                observedManifestSource = toRecord(
+                  context.manifest.extensions.source
+                );
+                observedSharedExport = context.sharedExports.source?.exported;
+                return await next(context);
+              },
+              name: "observer",
+            },
+          ],
+          model: provider,
+          name: "primary",
+        },
+        manifest: createRuntimeContextManifest([], {
+          source: {
+            exported: "persisted-shared",
+          },
+        }),
+      })
+    );
+
+    expect(observedManifestSource).toEqual({
+      exported: "persisted-shared",
+    });
+    expect(observedSharedExport).toBe("persisted-shared");
   });
 
   test("uses the effective aroundModel responseFormat instead of the original agent config", async () => {
@@ -2100,6 +2167,7 @@ describe("driver-react", () => {
 function createDriverExecutionContext(input?: {
   config?: DriverExecutionContext["config"];
   emittedEvents?: TuvrenStreamEvent[];
+  manifest?: ContextManifest;
   toolDefinitions?: TuvrenToolDefinition[];
 }): DriverExecutionContext {
   const emittedEvents = input?.emittedEvents ?? [];
@@ -2147,7 +2215,7 @@ function createDriverExecutionContext(input?: {
       },
     },
     iterationCount: 1,
-    manifest: createContextManifest(),
+    manifest: input?.manifest ?? createContextManifest(),
     messages: [
       {
         parts: [{ text: "Hello", type: "text" }],
@@ -2298,7 +2366,9 @@ async function waitFor(predicate: () => boolean): Promise<void> {
       return;
     }
 
-    await Bun.sleep(1);
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 1);
+    });
   }
 
   throw new Error("condition was not met before timeout");

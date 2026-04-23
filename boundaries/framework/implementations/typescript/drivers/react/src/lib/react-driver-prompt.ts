@@ -141,10 +141,10 @@ export function normalizeNextAroundModelContext(
 
   return createAroundModelContextSnapshot({
     config: resolvedConfig,
-    emit: nextContext.emit,
-    extensionState: nextContext.extensionState,
-    iterationCount: nextContext.iterationCount,
-    manifest: nextContext.manifest,
+    emit: currentContext.emit,
+    extensionState: currentContext.extensionState,
+    iterationCount: currentContext.iterationCount,
+    manifest: currentContext.manifest,
     messages: resolvedMessages,
     prompt: {
       responseFormat: cloneValue(nextContext.prompt.responseFormat),
@@ -155,7 +155,7 @@ export function normalizeNextAroundModelContext(
         tools: resolvedTools,
       }),
     },
-    sharedExports: nextContext.sharedExports,
+    sharedExports: currentContext.sharedExports,
     tools: resolvedTools,
   });
 }

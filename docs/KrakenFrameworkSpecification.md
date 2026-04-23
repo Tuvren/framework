@@ -1285,7 +1285,7 @@ The `aroundModel` wrapper receives the complete `TuvrenModelResponse` from `next
 
 **Short-circuit**: If aroundModel returns without calling `next()` (cache hit, static response), no streaming events were emitted during the call. The driver detects this via `accumulator.hasContent()` and synthesizes events from the returned response using the same mechanism as the non-streaming fallback (§6.3). The consumer sees one complete message sequence.
 
-**Replacement**: If aroundModel modifies the response after calling `next()`, stream events from `next()` are already emitted and cannot be recalled. The durable path uses the modified response. Minor inconsistency between live and durable paths — acceptable because modifications are typically metadata or minor adjustments, not content replacement.
+**Replacement**: If aroundModel modifies the response after calling `next()`, stream events from `next()` are already emitted and cannot be recalled. The durable path uses the modified response, even when that differs materially from the already-emitted live assistant content. This live-versus-durable divergence is intentional for post-stream replacement and is validated through the explicit `assistantEventReconciliation` contract rather than by forcing the durable checkpoint to match the earlier live stream.
 
 **Retry**: If aroundModel calls `next()` multiple times (fallback to different provider), each call produces its own stream event sequence with a new `messageId`. The consumer sees multiple message sequences. Only the final response (from the last `next()` call) is staged on the durable path.
 

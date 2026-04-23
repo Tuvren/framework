@@ -18,7 +18,6 @@ import { randomUUID } from "node:crypto";
 import type { EpochMs } from "@tuvren/core-types";
 import { TuvrenProviderError, TuvrenRuntimeError } from "@tuvren/core-types";
 import type { DriverRuntimePort } from "@tuvren/driver-api";
-import type { TuvrenMessage, TuvrenStreamEvent } from "@tuvren/runtime-api";
 import type {
   ProviderStreamChunk,
   TuvrenModelResponse,
@@ -26,6 +25,7 @@ import type {
   TuvrenProvider,
 } from "@tuvren/provider-api";
 import { assertProviderStreamChunk } from "@tuvren/provider-api";
+import type { TuvrenMessage, TuvrenStreamEvent } from "@tuvren/runtime-api";
 
 export interface BufferedAssistantSequence {
   events: TuvrenStreamEvent[];
@@ -306,11 +306,13 @@ class StreamAccumulator {
     | Extract<ProviderStreamChunk, { type: "finish" }>
     | undefined;
   private messageDonePublished = false;
+  private readonly messageId: string;
+  private readonly now: () => EpochMs;
 
-  constructor(
-    private readonly messageId: string,
-    private readonly now: () => EpochMs
-  ) {}
+  constructor(messageId: string, now: () => EpochMs) {
+    this.messageId = messageId;
+    this.now = now;
+  }
 
   absorb(chunk: ProviderStreamChunk): TuvrenStreamEvent[] {
     switch (chunk.type) {

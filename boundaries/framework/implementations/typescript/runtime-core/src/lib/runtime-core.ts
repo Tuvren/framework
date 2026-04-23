@@ -35,8 +35,8 @@ import { assertDriverExecutionResult } from "@tuvren/driver-api";
 import {
   decodeDeterministicKernelRecord,
   encodeDeterministicKernelRecord,
-  type PathValue,
   type RuntimeKernel as KrakenKernel,
+  type PathValue,
   type RunCompletionStatus,
   type TurnNode,
   type TurnTreeSchema,
@@ -1284,54 +1284,22 @@ class RuntimeCore implements TuvrenRuntime {
       driverResult.partial === true ||
       (cancellationResolution !== undefined &&
         hasAssistantOutputMessages(driverMessages));
-    const invalidDriverResolutionError =
-      cancellationResolution === undefined
-        ? this.findInvalidDriverResolution(
-            requestedToolCalls.length,
-            resolution
-          )
-        : undefined;
-
-    if (invalidDriverResolutionError !== undefined) {
-      await this.completeTrackedRun(handle, iterationRunId, "completed");
-      return {
-        kind: "outcome",
-        outcome: {
-          resolution: {
-            error: invalidDriverResolutionError,
-            fatality: "hard",
-            type: "fail",
-          },
-        },
-      };
-    }
-
-    if (assistantEventValidationError !== undefined) {
-      await this.completeTrackedRun(handle, iterationRunId, "completed");
-      return {
-        kind: "outcome",
-        outcome: {
-          resolution: {
-            error: assistantEventValidationError,
-            fatality: "hard",
-            type: "fail",
-          },
-        },
-      };
-    }
-
-    const invalidDriverStateUpdateError = this.findInvalidDriverStateUpdateError(
+    const invalidDriverError = this.findInvalidDriverExecutionError(
       loopState.activeConfig.extensions ?? [],
+      requestedToolCalls.length,
+      resolution,
+      cancellationResolution,
+      assistantEventValidationError,
       driverResult.stateUpdates
     );
 
-    if (invalidDriverStateUpdateError !== undefined) {
+    if (invalidDriverError !== undefined) {
       await this.completeTrackedRun(handle, iterationRunId, "completed");
       return {
         kind: "outcome",
         outcome: {
           resolution: {
-            error: invalidDriverStateUpdateError,
+            error: invalidDriverError,
             fatality: "hard",
             type: "fail",
           },
@@ -1339,14 +1307,7 @@ class RuntimeCore implements TuvrenRuntime {
       };
     }
 
-    if (driverResult.stateUpdates !== undefined) {
-      loopState.carriedStateUpdates.push(
-        ...driverResult.stateUpdates.map((update) => ({
-          extensionName: update.extensionName,
-          state: cloneValue(update.state),
-        }))
-      );
-    }
+    this.applyDriverStateUpdates(loopState, driverResult.stateUpdates);
 
     this.flushBufferedDriverEventsIfNeeded(
       handle,
@@ -1521,6 +1482,51 @@ class RuntimeCore implements TuvrenRuntime {
     }
 
     return undefined;
+  }
+
+  private findInvalidDriverExecutionError(
+    activeExtensions: TuvrenExtension[],
+    requestedToolCallCount: number,
+    resolution: RuntimeResolution,
+    cancellationResolution: RuntimeResolution | undefined,
+    assistantEventValidationError: TuvrenRuntimeError | undefined,
+    stateUpdates: DriverExecutionResult["stateUpdates"]
+  ): TuvrenRuntimeError | undefined {
+    if (cancellationResolution === undefined) {
+      const invalidDriverResolutionError = this.findInvalidDriverResolution(
+        requestedToolCallCount,
+        resolution
+      );
+
+      if (invalidDriverResolutionError !== undefined) {
+        return invalidDriverResolutionError;
+      }
+    }
+
+    if (assistantEventValidationError !== undefined) {
+      return assistantEventValidationError;
+    }
+
+    return this.findInvalidDriverStateUpdateError(
+      activeExtensions,
+      stateUpdates
+    );
+  }
+
+  private applyDriverStateUpdates(
+    loopState: LoopState,
+    stateUpdates: DriverExecutionResult["stateUpdates"]
+  ): void {
+    if (stateUpdates === undefined) {
+      return;
+    }
+
+    loopState.carriedStateUpdates.push(
+      ...stateUpdates.map((update) => ({
+        extensionName: update.extensionName,
+        state: cloneValue(update.state),
+      }))
+    );
   }
 
   private findInvalidDriverStateUpdateError(

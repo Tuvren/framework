@@ -15,7 +15,6 @@
  */
 
 import { isDeepStrictEqual } from "node:util";
-import Ajv from "ajv";
 import {
   TuvrenProviderError,
   TuvrenRuntimeError,
@@ -30,6 +29,7 @@ import type {
   RuntimeDriver,
   RuntimeDriverFactory,
 } from "@tuvren/driver-api";
+import { assertTuvrenModelResponse } from "@tuvren/provider-api";
 import type {
   AgentConfig,
   AroundModelContext,
@@ -40,21 +40,21 @@ import type {
   TuvrenPrompt,
   TuvrenProvider,
 } from "@tuvren/runtime-api";
-import { assertTuvrenModelResponse } from "@tuvren/provider-api";
+import Ajv from "ajv";
 import {
-  type NormalizedAroundModelResult,
   createAroundModelContextSnapshot,
   createExtensionStateSnapshot,
-  normalizeNextAroundModelContext,
+  type NormalizedAroundModelResult,
   normalizeAroundModelResult,
+  normalizeNextAroundModelContext,
   preparePromptState,
 } from "./react-driver-prompt.js";
 import {
+  type BufferedAssistantSequence,
   createBufferedAssistantSequence,
   executeGenerateCall,
   executeStreamCall,
   flushBufferedAssistantSequences,
-  type BufferedAssistantSequence,
 } from "./react-driver-stream.js";
 
 const AJV = new Ajv({
@@ -102,8 +102,11 @@ interface ModelExecutionOutcome {
 
 class ReActDriver implements RuntimeDriver {
   readonly id = REACT_DRIVER_ID;
+  private readonly options: ResolvedReActDriverOptions;
 
-  constructor(private readonly options: ResolvedReActDriverOptions) {}
+  constructor(options: ResolvedReActDriverOptions) {
+    this.options = options;
+  }
 
   async execute(
     context: DriverExecutionContext
