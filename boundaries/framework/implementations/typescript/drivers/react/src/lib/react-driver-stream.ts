@@ -28,6 +28,7 @@ import type {
 
 export interface BufferedAssistantSequence {
   events: TuvrenStreamEvent[];
+  published: boolean;
   response: TuvrenModelResponse;
 }
 
@@ -35,39 +36,53 @@ export async function executeGenerateCall(input: {
   now: () => EpochMs;
   prompt: TuvrenPrompt;
   provider: TuvrenProvider;
+  runtime: DriverRuntimePort;
 }): Promise<BufferedAssistantSequence> {
-  const response = cloneValue(await input.provider.generate(cloneValue(input.prompt)));
-  return createBufferedAssistantSequence(response, input.now);
+  const response = cloneValue(
+    await input.provider.generate(cloneValue(input.prompt))
+  );
+  const sequence = createBufferedAssistantSequence(response, input.now);
+  await publishBufferedAssistantSequence(sequence, input.runtime);
+  return sequence;
 }
 
 export async function executeStreamCall(input: {
   now: () => EpochMs;
   prompt: TuvrenPrompt;
   provider: TuvrenProvider;
+  runtime: DriverRuntimePort;
 }): Promise<BufferedAssistantSequence> {
   const messageId = randomUUID();
   const accumulator = new StreamAccumulator(messageId, input.now);
-  const events: TuvrenStreamEvent[] = [
+  const events: TuvrenStreamEvent[] = [];
+  await appendAndEmit(
+    events,
     {
       messageId,
       role: "assistant",
       timestamp: input.now(),
       type: "message.start",
     },
-  ];
+    input.runtime
+  );
 
   for await (const chunk of input.provider.stream(cloneValue(input.prompt))) {
-    events.push(...accumulator.absorb(chunk));
+    await appendAllAndEmit(events, accumulator.absorb(chunk), input.runtime);
   }
 
   const response = accumulator.finalize();
 
   if (!accumulator.messageDoneEmitted) {
-    events.push(...accumulator.createTerminalEvents(response));
+    await appendAllAndEmit(
+      events,
+      accumulator.createTerminalEvents(response),
+      input.runtime
+    );
   }
 
   return {
     events,
+    published: true,
     response,
   };
 }
@@ -88,6 +103,7 @@ export function createBufferedAssistantSequence(
       },
       ...synthesizeAssistantEvents(response, messageId, now),
     ],
+    published: false,
     response: cloneValue(response),
   };
 }
@@ -97,9 +113,7 @@ export async function flushBufferedAssistantSequences(
   runtime: DriverRuntimePort
 ): Promise<void> {
   for (const sequence of sequences) {
-    for (const event of sequence.events) {
-      await runtime.emit(cloneValue(event));
-    }
+    await publishBufferedAssistantSequence(sequence, runtime);
   }
 }
 
@@ -224,6 +238,40 @@ function synthesizeAssistantEvents(
   });
 
   return events;
+}
+
+async function publishBufferedAssistantSequence(
+  sequence: BufferedAssistantSequence,
+  runtime: DriverRuntimePort
+): Promise<void> {
+  if (sequence.published) {
+    return;
+  }
+
+  for (const event of sequence.events) {
+    await runtime.emit(cloneValue(event));
+  }
+
+  sequence.published = true;
+}
+
+async function appendAndEmit(
+  events: TuvrenStreamEvent[],
+  event: TuvrenStreamEvent,
+  runtime: DriverRuntimePort
+): Promise<void> {
+  events.push(event);
+  await runtime.emit(cloneValue(event));
+}
+
+async function appendAllAndEmit(
+  events: TuvrenStreamEvent[],
+  emittedEvents: readonly TuvrenStreamEvent[],
+  runtime: DriverRuntimePort
+): Promise<void> {
+  for (const event of emittedEvents) {
+    await appendAndEmit(events, event, runtime);
+  }
 }
 
 interface PendingToolCall {
@@ -393,7 +441,9 @@ class StreamAccumulator {
     return {
       finishReason:
         this.finishChunk?.finishReason ??
-        (parts.some((part) => part.type === "tool_call") ? "tool_call" : "stop"),
+        (parts.some((part) => part.type === "tool_call")
+          ? "tool_call"
+          : "stop"),
       parts,
       providerMetadata: cloneValue(this.finishChunk?.providerMetadata),
       usage: cloneValue(this.finishChunk?.usage),
@@ -608,12 +658,15 @@ class StreamAccumulator {
       return state;
     }
 
-    throw new TuvrenRuntimeError("tool call chunks must start before args or done", {
-      code: "react_driver_invalid_provider_stream",
-      details: {
-        providerCallId,
-      },
-    });
+    throw new TuvrenRuntimeError(
+      "tool call chunks must start before args or done",
+      {
+        code: "react_driver_invalid_provider_stream",
+        details: {
+          providerCallId,
+        },
+      }
+    );
   }
 }
 

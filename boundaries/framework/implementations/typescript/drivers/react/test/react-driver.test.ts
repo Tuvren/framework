@@ -127,6 +127,65 @@ describe("driver-react", () => {
     });
   });
 
+  test("ignores failing systemPrompt callbacks and keeps rendering remaining prompts", async () => {
+    let capturedMessages: TuvrenMessage[] = [];
+    const provider = {
+      async generate(prompt) {
+        capturedMessages = prompt.messages;
+        return {
+          finishReason: "stop",
+          parts: [{ text: "Rendered prompt", type: "text" }],
+        } satisfies TuvrenModelResponse;
+      },
+      id: "provider",
+      async *stream() {
+        yield* [];
+      },
+    } satisfies TuvrenProvider;
+    const driver = createReActDriver({
+      providerCallMode: "generate",
+    }).create();
+
+    const result = await driver.execute(
+      createDriverExecutionContext({
+        config: {
+          extensions: [
+            {
+              name: "broken",
+              systemPrompt() {
+                throw new Error("prompt render failed");
+              },
+            },
+            {
+              name: "healthy",
+              systemPrompt: "Healthy guidance",
+            },
+          ],
+          model: provider,
+          name: "primary",
+          systemPrompt: "Host guidance",
+        },
+      })
+    );
+
+    expect(result.resolution).toEqual({
+      reason: "done",
+      type: "end_turn",
+    });
+    expect(
+      capturedMessages
+        .filter(
+          (
+            message
+          ): message is Extract<
+            TuvrenMessage,
+            { role: "system"; content: string }
+          > => message.role === "system"
+        )
+        .map((message) => message.content)
+    ).toEqual(["Healthy guidance", "Host guidance"]);
+  });
+
   test("keeps provider call mode and tool execution mode host-configurable", async () => {
     let generateCalls = 0;
     let streamCalls = 0;
@@ -249,6 +308,68 @@ describe("driver-react", () => {
     ]);
   });
 
+  test("emits streamed assistant events before the provider stream finishes", async () => {
+    const emittedEvents: TuvrenStreamEvent[] = [];
+    let releaseStream: (() => void) | undefined;
+    let settled = false;
+    const streamGate = new Promise<void>((resolve) => {
+      releaseStream = resolve;
+    });
+    const provider = {
+      async generate() {
+        throw new Error("generate should not be called");
+      },
+      id: "provider",
+      async *stream() {
+        yield {
+          text: "live output",
+          type: "text_delta",
+        } as const;
+        await streamGate;
+        yield {
+          finishReason: "stop",
+          type: "finish",
+        } as const;
+      },
+    } satisfies TuvrenProvider;
+    const driver = createReActDriver({
+      providerCallMode: "stream",
+    }).create();
+
+    const execution = driver
+      .execute(
+        createDriverExecutionContext({
+          config: {
+            model: provider,
+            name: "primary",
+          },
+          emittedEvents,
+        })
+      )
+      .finally(() => {
+        settled = true;
+      });
+
+    await waitFor(() =>
+      emittedEvents.some((event) => event.type === "text.delta")
+    );
+
+    expect(settled).toBe(false);
+    expect(emittedEvents.map((event) => event.type)).toEqual([
+      "message.start",
+      "text.delta",
+    ]);
+
+    releaseStream?.();
+
+    const result = await execution;
+
+    expect(result.resolution).toEqual({
+      reason: "done",
+      type: "end_turn",
+    });
+  });
+
   test("lets aroundModel short-circuit without touching the provider", async () => {
     let providerCalls = 0;
     const provider = {
@@ -290,11 +411,66 @@ describe("driver-react", () => {
     );
 
     expect(providerCalls).toBe(0);
-    expect(emittedEvents).toEqual([]);
+    expect(emittedEvents.map((event) => event.type)).toEqual([
+      "message.start",
+      "text.delta",
+      "text.done",
+      "message.done",
+    ]);
     expect(result.messages?.[0]).toEqual({
       parts: [{ text: "short-circuit", type: "text" }],
       role: "assistant",
     });
+  });
+
+  test("uses in-place aroundModel context mutations when next() is called without an explicit context", async () => {
+    let capturedMessages: TuvrenMessage[] = [];
+    const provider = {
+      async generate(prompt) {
+        capturedMessages = prompt.messages;
+        return {
+          finishReason: "stop",
+          parts: [{ text: "mutated prompt", type: "text" }],
+        } satisfies TuvrenModelResponse;
+      },
+      id: "provider",
+      async *stream() {
+        yield* [];
+      },
+    } satisfies TuvrenProvider;
+    const driver = createReActDriver({
+      providerCallMode: "generate",
+    }).create();
+
+    await driver.execute(
+      createDriverExecutionContext({
+        config: {
+          extensions: [
+            {
+              async aroundModel(context, next) {
+                context.prompt.messages.push({
+                  content: "Injected guidance",
+                  role: "system",
+                });
+                return await next();
+              },
+              name: "mutator",
+            },
+          ],
+          model: provider,
+          name: "primary",
+        },
+      })
+    );
+
+    expect(capturedMessages).toEqual(
+      expect.arrayContaining([
+        {
+          content: "Injected guidance",
+          role: "system",
+        },
+      ])
+    );
   });
 
   test("supports aroundModel retry with distinct generated assistant sequences", async () => {
@@ -461,9 +637,11 @@ describe("driver-react", () => {
     }
 
     expect(result.resolution.fatality).toBe("hard");
-    expect("code" in result.resolution.error ? result.resolution.error.code : undefined).toBe(
-      "react_driver_missing_provider"
-    );
+    expect(
+      "code" in result.resolution.error
+        ? result.resolution.error.code
+        : undefined
+    ).toBe("react_driver_missing_provider");
   });
 
   test("fails hard when structured output violates the requested schema", async () => {
@@ -514,9 +692,11 @@ describe("driver-react", () => {
       throw new Error("expected a fail resolution");
     }
 
-    expect("code" in result.resolution.error ? result.resolution.error.code : undefined).toBe(
-      "structured_output_validation"
-    );
+    expect(
+      "code" in result.resolution.error
+        ? result.resolution.error.code
+        : undefined
+    ).toBe("structured_output_validation");
   });
 
   test("fails hard when a structured response request ends with plain text only", async () => {
@@ -561,9 +741,11 @@ describe("driver-react", () => {
       throw new Error("expected a fail resolution");
     }
 
-    expect("code" in result.resolution.error ? result.resolution.error.code : undefined).toBe(
-      "structured_output_validation"
-    );
+    expect(
+      "code" in result.resolution.error
+        ? result.resolution.error.code
+        : undefined
+    ).toBe("structured_output_validation");
   });
 
   test("fails hard when provider emits an error chunk", async () => {
@@ -598,9 +780,11 @@ describe("driver-react", () => {
       throw new Error("expected a fail resolution");
     }
 
-    expect("code" in result.resolution.error ? result.resolution.error.code : undefined).toBe(
-      "react_driver_provider_failure"
-    );
+    expect(
+      "code" in result.resolution.error
+        ? result.resolution.error.code
+        : undefined
+    ).toBe("react_driver_provider_failure");
   });
 
   test("fails hard when streamed structured output cannot be parsed", async () => {
@@ -639,9 +823,11 @@ describe("driver-react", () => {
       throw new Error("expected a fail resolution");
     }
 
-    expect("code" in result.resolution.error ? result.resolution.error.code : undefined).toBe(
-      "react_driver_invalid_provider_stream"
-    );
+    expect(
+      "code" in result.resolution.error
+        ? result.resolution.error.code
+        : undefined
+    ).toBe("react_driver_invalid_provider_stream");
   });
 
   test("executes end to end through runtime-core with a generated terminal response", async () => {
@@ -691,6 +877,74 @@ describe("driver-react", () => {
         },
       ])
     );
+  });
+
+  test("streams assistant events through runtime-core before the provider finishes", async () => {
+    const harness = createFakeKernelHarness();
+    let releaseStream: (() => void) | undefined;
+    const streamGate = new Promise<void>((resolve) => {
+      releaseStream = resolve;
+    });
+    const provider = {
+      async generate() {
+        throw new Error("generate should not be called");
+      },
+      id: "provider",
+      async *stream() {
+        yield {
+          text: "live output",
+          type: "text_delta",
+        } as const;
+        await streamGate;
+        yield {
+          finishReason: "stop",
+          type: "finish",
+        } as const;
+      },
+    } satisfies TuvrenProvider;
+    const runtime = createTuvrenRuntimeCore({
+      defaultDriverId: REACT_DRIVER_ID,
+      driverRegistry: createDriverRegistry([
+        createReActDriver({
+          providerCallMode: "stream",
+        }),
+      ]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        model: provider,
+        name: "primary",
+      },
+      signal: textSignal("Stream live"),
+      threadId: thread.threadId,
+    });
+    const iterator = handle.events()[Symbol.asyncIterator]();
+    const streamedEvents = await collectUntil(
+      iterator,
+      (event) => event.type === "text.delta"
+    );
+
+    expect(streamedEvents.some((event) => event.type === "message.start")).toBe(
+      true
+    );
+    expect(streamedEvents.some((event) => event.type === "text.delta")).toBe(
+      true
+    );
+    expect(handle.status().phase).toBe("running");
+
+    releaseStream?.();
+
+    const remainingEvents = await collectRemaining(iterator);
+
+    expect(
+      [...streamedEvents, ...remainingEvents].some(
+        (event) => event.type === "message.done"
+      )
+    ).toBe(true);
+    expect(handle.status().phase).toBe("completed");
   });
 
   test("executes end to end through runtime-core for aroundModel short-circuit synthesis", async () => {
@@ -957,6 +1211,7 @@ describe("driver-react", () => {
           event.error.code === "react_driver_provider_failure"
       )
     ).toBe(true);
+    expect(events.some((event) => event.type === "text.delta")).toBe(true);
     expect(
       events.some(
         (event) =>
@@ -1132,6 +1387,53 @@ async function collectEvents<T>(events: AsyncIterable<T>): Promise<T[]> {
   return collected;
 }
 
+async function collectRemaining<T>(iterator: AsyncIterator<T>): Promise<T[]> {
+  const collected: T[] = [];
+
+  while (true) {
+    const result = await iterator.next();
+
+    if (result.done) {
+      return collected;
+    }
+
+    collected.push(result.value);
+  }
+}
+
+async function collectUntil<T>(
+  iterator: AsyncIterator<T>,
+  predicate: (value: T) => boolean
+): Promise<T[]> {
+  const collected: T[] = [];
+
+  while (true) {
+    const result = await iterator.next();
+
+    if (result.done) {
+      return collected;
+    }
+
+    collected.push(result.value);
+
+    if (predicate(result.value)) {
+      return collected;
+    }
+  }
+}
+
+async function waitFor(predicate: () => boolean): Promise<void> {
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    if (predicate()) {
+      return;
+    }
+
+    await Bun.sleep(1);
+  }
+
+  throw new Error("condition was not met before timeout");
+}
+
 function toRecord(value: unknown): Record<string, unknown> {
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     return {};
@@ -1154,7 +1456,10 @@ function toToolInputSchema(
 
 function isCustomSchema(
   inputSchema: TuvrenToolDefinition["inputSchema"]
-): inputSchema is Extract<TuvrenToolDefinition["inputSchema"], { toJSONSchema(): unknown }> {
+): inputSchema is Extract<
+  TuvrenToolDefinition["inputSchema"],
+  { toJSONSchema(): unknown }
+> {
   return (
     inputSchema !== null &&
     typeof inputSchema === "object" &&

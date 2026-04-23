@@ -1830,6 +1830,8 @@ aroundModel and aroundTool interact with the streaming system as defined in §6.
 - aroundModel receives the complete `TuvrenModelResponse`, not streaming events. Stream events are emitted by the driver during the provider stream, before aroundModel sees the response.
 - Short-circuit (no `next()` call): driver synthesizes events from the returned response.
 - Retry (multiple `next()` calls): each produces a stream sequence with a new `messageId`. Only the final response is durable.
+- If a provider call fails after streaming has started and no durable assistant message is checkpointed, the already-emitted assistant content remains visible as an interrupted partial sequence and is followed by failure handling.
+- Live publication is not retractable: if later shared-core validation fails, the prior ephemeral stream remains visible and the Turn fails with the corresponding contract error.
 - aroundTool is invisible to the event stream. One `tool.start` and one `tool.result` regardless of internal retries.
 
 `emit` is available on all handler contexts. `forward` is available only on `AroundToolContext` and `ToolExecutionContext`.

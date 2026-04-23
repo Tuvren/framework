@@ -1554,7 +1554,7 @@ describe("framework-runtime-core", () => {
       events.some(
         (event) => event.type === "text.done" && event.text === "ghost output"
       )
-    ).toBe(false);
+    ).toBe(true);
     expect(await harness.readBranchMessages(thread.branchId)).toEqual([
       {
         parts: [{ text: "Reject ghost assistant output", type: "text" }],
@@ -2239,7 +2239,7 @@ describe("framework-runtime-core", () => {
       events.some(
         (event) => event.type === "text.delta" && event.delta === "out-of-order"
       )
-    ).toBe(false);
+    ).toBe(true);
   });
 
   test("rejects reasoning deltas that do not reconcile to the durable assistant message", async () => {
@@ -2311,7 +2311,7 @@ describe("framework-runtime-core", () => {
           event.type === "reasoning.delta" &&
           event.delta === "secret reasoning leak"
       )
-    ).toBe(false);
+    ).toBe(true);
     expect(await harness.readBranchMessages(thread.branchId)).toEqual([
       {
         parts: [{ text: "Reject leaked reasoning delta", type: "text" }],
@@ -2493,7 +2493,7 @@ describe("framework-runtime-core", () => {
     expect(handle.status().phase).toBe("failed");
     expect(errorEvent?.error.code).toBe("invalid_stream_event");
     expect(events.some((event) => event.type === "tool_call.args_delta")).toBe(
-      false
+      true
     );
     expect(
       events.some(
@@ -5851,7 +5851,7 @@ describe("framework-runtime-core", () => {
     });
   });
 
-  test("suppresses buffered driver events when the driver returns an invalid resolution", async () => {
+  test("fails invalid driver resolutions even when earlier custom events were published live", async () => {
     const harness = createFakeKernelHarness();
     const driver = {
       async execute(context) {
@@ -5904,7 +5904,7 @@ describe("framework-runtime-core", () => {
       events.some(
         (event) => event.type === "custom" && event.name === "ghost.output"
       )
-    ).toBe(false);
+    ).toBe(true);
     expect(handle.status().phase).toBe("failed");
     expect(errorEvent?.error.code).toBe("invalid_driver_result");
     expect(await harness.readBranchMessages(thread.branchId)).toEqual([

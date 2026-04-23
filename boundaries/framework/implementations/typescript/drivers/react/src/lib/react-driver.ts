@@ -100,7 +100,9 @@ class ReActDriver implements RuntimeDriver {
 
   constructor(private readonly options: ResolvedReActDriverOptions) {}
 
-  async execute(context: DriverExecutionContext): Promise<DriverExecutionResult> {
+  async execute(
+    context: DriverExecutionContext
+  ): Promise<DriverExecutionResult> {
     try {
       return await executeIteration(context, this.options);
     } catch (error: unknown) {
@@ -175,12 +177,15 @@ async function executeIteration(
   }
 
   if (response.parts.length === 0) {
-    throw new TuvrenRuntimeError("provider responses must contain assistant output", {
-      code: "react_driver_empty_response",
-      details: {
-        response,
-      },
-    });
+    throw new TuvrenRuntimeError(
+      "provider responses must contain assistant output",
+      {
+        code: "react_driver_empty_response",
+        details: {
+          response,
+        },
+      }
+    );
   }
 
   const assistantMessage: Extract<TuvrenMessage, { role: "assistant" }> = {
@@ -238,7 +243,9 @@ async function runAroundModelChain(
   initialContext: AroundModelContext
 ): Promise<ModelExecutionOutcome> {
   const handlers = (context.config.extensions ?? []).filter(
-    (extension): extension is TuvrenExtension & {
+    (
+      extension
+    ): extension is TuvrenExtension & {
       aroundModel: NonNullable<TuvrenExtension["aroundModel"]>;
     } => extension.aroundModel !== undefined
   );
@@ -261,19 +268,16 @@ async function runAroundModelChain(
       ),
     } satisfies AroundModelContext;
     const result = normalizeAroundModelResult(
-      await extension.aroundModel(
-        extensionContext,
-        async (nextContext) => {
-          const nextOutcome = await invokeAt(
-            index + 1,
-            nextContext === undefined
-              ? cloneAroundModelContext(currentContext)
-              : cloneAroundModelContext(nextContext)
-          );
-          nextOutcomes.push(nextOutcome);
-          return cloneValue(nextOutcome.response);
-        }
-      )
+      await extension.aroundModel(extensionContext, async (nextContext) => {
+        const nextOutcome = await invokeAt(
+          index + 1,
+          nextContext === undefined
+            ? cloneAroundModelContext(extensionContext)
+            : cloneAroundModelContext(nextContext)
+        );
+        nextOutcomes.push(nextOutcome);
+        return cloneValue(nextOutcome.response);
+      })
     );
 
     return {
@@ -311,11 +315,13 @@ async function callProvider(
           now: context.runtime.now,
           prompt: aroundContext.prompt,
           provider,
+          runtime: context.runtime,
         })
       : await executeStreamCall({
           now: context.runtime.now,
           prompt: aroundContext.prompt,
           provider,
+          runtime: context.runtime,
         });
 
   return {
@@ -460,7 +466,7 @@ function finalizeAroundModelSequences(
   now: () => number
 ): BufferedAssistantSequence[] {
   if (nextOutcomes.length === 0) {
-    return [];
+    return [createBufferedAssistantSequence(result.response, now)];
   }
 
   const priorSequences = nextOutcomes
@@ -490,6 +496,7 @@ function cloneAssistantSequences(
 ): BufferedAssistantSequence[] {
   return sequences.map((sequence) => ({
     events: sequence.events.map((event) => cloneValue(event)),
+    published: sequence.published,
     response: cloneValue(sequence.response),
   }));
 }
@@ -523,9 +530,12 @@ function toNonEmptyParts(
   const [firstPart, ...remainingParts] = cloneValue(parts);
 
   if (firstPart === undefined) {
-    throw new TuvrenRuntimeError("assistant output must include at least one part", {
-      code: "react_driver_empty_response",
-    });
+    throw new TuvrenRuntimeError(
+      "assistant output must include at least one part",
+      {
+        code: "react_driver_empty_response",
+      }
+    );
   }
 
   return [firstPart, ...remainingParts];

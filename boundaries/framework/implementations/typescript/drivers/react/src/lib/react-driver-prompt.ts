@@ -45,6 +45,7 @@ export function preparePromptState(input: {
   iterationCount: number;
   manifest: Readonly<ContextManifest>;
   messages: readonly TuvrenMessage[];
+  onSystemPromptError?(input: { error: Error; extensionName: string }): void;
   tools: RenderedToolDefinition[];
 }): PreparedPromptState {
   const extensions = input.config.extensions ?? [];
@@ -54,7 +55,8 @@ export function preparePromptState(input: {
     input.config.systemPrompt,
     input.manifest,
     input.iterationCount,
-    sharedExports
+    sharedExports,
+    input.onSystemPromptError
   );
   const baseMessages = [
     ...systemMessages,
@@ -103,8 +105,7 @@ export function normalizeAroundModelResult(
   if ("response" in result) {
     return {
       response: result.response,
-      state:
-        result.state === undefined ? undefined : cloneRecord(result.state),
+      state: result.state === undefined ? undefined : cloneRecord(result.state),
     };
   }
 
@@ -125,7 +126,8 @@ function collectSystemMessages(
   basePrompt: string | undefined,
   manifest: Readonly<ContextManifest>,
   iterationCount: number,
-  sharedExports: Record<string, Record<string, unknown>>
+  sharedExports: Record<string, Record<string, unknown>>,
+  onError?: (input: { error: Error; extensionName: string }) => void
 ): TuvrenMessage[] {
   const messages: TuvrenMessage[] = [];
 
@@ -136,23 +138,30 @@ function collectSystemMessages(
       continue;
     }
 
-    const prompt =
-      typeof contribution === "string"
-        ? contribution
-        : contribution.call(extension, {
-            extensionState: createExtensionStateSnapshot(
-              manifest,
-              extension.name
-            ),
-            iterationCount,
-            manifest: cloneValue(manifest),
-            sharedExports: cloneValue(sharedExports),
-          });
+    try {
+      const prompt =
+        typeof contribution === "string"
+          ? contribution
+          : contribution.call(extension, {
+              extensionState: createExtensionStateSnapshot(
+                manifest,
+                extension.name
+              ),
+              iterationCount,
+              manifest: cloneValue(manifest),
+              sharedExports: cloneValue(sharedExports),
+            });
 
-    if (prompt !== undefined) {
-      messages.push({
-        content: prompt,
-        role: "system",
+      if (prompt !== undefined) {
+        messages.push({
+          content: prompt,
+          role: "system",
+        });
+      }
+    } catch (error: unknown) {
+      onError?.({
+        error: normalizeError(error),
+        extensionName: extension.name,
       });
     }
   }
@@ -223,4 +232,8 @@ function asRecord(value: unknown): Record<string, unknown> {
 
 function cloneValue<T>(value: T): T {
   return structuredClone(value);
+}
+
+function normalizeError(error: unknown): Error {
+  return error instanceof Error ? error : new Error(String(error));
 }

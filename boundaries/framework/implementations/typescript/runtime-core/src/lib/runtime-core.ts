@@ -1263,11 +1263,13 @@ class RuntimeCore implements TuvrenRuntime {
     );
     let resolution = driverResult.resolution;
     const driverMessages = [...(driverResult.messages ?? [])];
+    const cancellationResolution = createCancelledResolution(handle);
     const assistantEventValidationError = validateDriverAssistantEvents(
       driverMessages,
-      emittedDriverEvents
+      emittedDriverEvents,
+      cancellationResolution ?? resolution
     );
-    const emittedEvents = this.ensureDriverAssistantEvents(
+    const synthesizedAssistantEvents = this.ensureDriverAssistantEvents(
       handle,
       driverMessages,
       emittedDriverEvents,
@@ -1275,7 +1277,6 @@ class RuntimeCore implements TuvrenRuntime {
     );
     const requestedToolCalls = extractToolCallsFromMessages(driverMessages);
     const toolExecutionMode = driverResult.toolExecutionMode ?? "parallel";
-    const cancellationResolution = createCancelledResolution(handle);
     const partial =
       driverResult.partial === true ||
       (cancellationResolution !== undefined &&
@@ -1325,7 +1326,11 @@ class RuntimeCore implements TuvrenRuntime {
       );
     }
 
-    this.flushBufferedDriverEventsIfNeeded(handle, resolution, emittedEvents);
+    this.flushBufferedDriverEventsIfNeeded(
+      handle,
+      resolution,
+      synthesizedAssistantEvents
+    );
 
     const stagedMessages = [...driverMessages];
     const stagedMessageHashes = await this.stageDriverMessages(
@@ -1577,9 +1582,13 @@ class RuntimeCore implements TuvrenRuntime {
             );
           }
 
-          emittedDriverEvents.push(
-            this.createDriverPublishedEvent(handle, clonedEvent, loopState)
+          const publishedEvent = this.createDriverPublishedEvent(
+            handle,
+            clonedEvent,
+            loopState
           );
+          emittedDriverEvents.push(publishedEvent);
+          handle.publish(publishedEvent);
         },
         now: () => this.now(),
       },
@@ -3778,15 +3787,12 @@ class RuntimeCore implements TuvrenRuntime {
       assistantMessage === undefined ||
       emittedEvents.some((event) => isAssistantContentStreamEvent(event.type))
     ) {
-      return emittedEvents;
+      return [];
     }
 
-    return [
-      ...emittedEvents,
-      ...this.synthesizeAssistantMessageEvents(assistantMessage).map((event) =>
-        this.createPublishedEvent(handle, event, loopState)
-      ),
-    ];
+    return this.synthesizeAssistantMessageEvents(assistantMessage).map(
+      (event) => this.createPublishedEvent(handle, event, loopState)
+    );
   }
 
   private synthesizeAssistantMessageEvents(
@@ -4360,7 +4366,8 @@ function assertDriverRuntimeEvent(event: TuvrenStreamEvent): void {
 
 function validateDriverAssistantEvents(
   messages: TuvrenMessage[],
-  emittedEvents: TuvrenStreamEvent[]
+  emittedEvents: TuvrenStreamEvent[],
+  resolution: RuntimeResolution
 ): TuvrenRuntimeError | undefined {
   const assistantEvents = emittedEvents.filter((event) =>
     isAssistantContentStreamEvent(event.type)
@@ -4376,12 +4383,14 @@ function validateDriverAssistantEvents(
   );
 
   if (assistantMessage === undefined) {
-    return new TuvrenRuntimeError(
-      "drivers must not emit assistant content events without returning a durable assistant message",
-      {
-        code: "invalid_stream_event",
-      }
-    );
+    return resolution.type === "fail"
+      ? validateFailedDriverAssistantEvents(assistantEvents)
+      : new TuvrenRuntimeError(
+          "drivers must not emit assistant content events without returning a durable assistant message",
+          {
+            code: "invalid_stream_event",
+          }
+        );
   }
 
   const assistantSequencesOrError =
@@ -4893,6 +4902,58 @@ function validateStandaloneAssistantSequence(
     )
   ) {
     return createAssistantDeltaValidationError();
+  }
+
+  return undefined;
+}
+
+function validateFailedDriverAssistantEvents(
+  assistantEvents: TuvrenStreamEvent[]
+): TuvrenRuntimeError | undefined {
+  let state: StandaloneAssistantValidationState | undefined;
+
+  for (const event of assistantEvents) {
+    if (state === undefined) {
+      if (event.type !== "message.start") {
+        return createAssistantDeltaValidationError();
+      }
+
+      state = {
+        currentMessageId: event.messageId,
+        partState: { kind: "idle" },
+        sawToolCallPart: false,
+      };
+      continue;
+    }
+
+    if (!assistantEventBelongsToCurrentMessage(event, state.currentMessageId)) {
+      return createAssistantDeltaValidationError();
+    }
+
+    if (event.type === "message.start") {
+      return createAssistantDeltaValidationError();
+    }
+
+    if (event.type === "message.done") {
+      if (
+        state.partState.kind !== "idle" ||
+        !doesFinishReasonMatchToolCallPresence(
+          event.finishReason,
+          state.sawToolCallPart
+        )
+      ) {
+        return createAssistantDeltaValidationError();
+      }
+
+      state = undefined;
+      continue;
+    }
+
+    const validationError = validateStandaloneAssistantPartEvent(event, state);
+
+    if (validationError !== undefined) {
+      return validationError;
+    }
   }
 
   return undefined;
