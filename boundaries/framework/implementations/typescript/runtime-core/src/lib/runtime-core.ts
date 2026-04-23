@@ -1325,7 +1325,8 @@ class RuntimeCore implements TuvrenRuntime {
     const driverResponse = synthesizeResponse(
       driverMessages,
       resolution,
-      emittedDriverEvents
+      emittedDriverEvents,
+      driverResult.assistantEventReconciliation
     );
     const toolResults: ToolResultPart[] = [];
 
@@ -4538,6 +4539,18 @@ function validateDriverAssistantEvents(
       );
     }
 
+    if (
+      assistantMessage.parts.some((part) => part.type === "tool_call") ||
+      assistantSequenceRequestsTools(finalAssistantSequence)
+    ) {
+      return new TuvrenRuntimeError(
+        'assistantEventReconciliation "allow_final_sequence_divergence" is not valid for tool-call assistant output',
+        {
+          code: "invalid_stream_event",
+        }
+      );
+    }
+
     return validateStandaloneAssistantSequence(finalAssistantSequence);
   }
 
@@ -5440,6 +5453,16 @@ function doesFinishReasonMatchToolCallPresence(
   return finishReason !== "tool_call";
 }
 
+function assistantSequenceRequestsTools(events: TuvrenStreamEvent[]): boolean {
+  return events.some(
+    (event) =>
+      event.type === "tool_call.start" ||
+      event.type === "tool_call.args_delta" ||
+      event.type === "tool_call.done" ||
+      (event.type === "message.done" && event.finishReason === "tool_call")
+  );
+}
+
 function areStreamEventValuesEqual(left: unknown, right: unknown): boolean {
   if (left instanceof Uint8Array && right instanceof Uint8Array) {
     if (left.length !== right.length) {
@@ -5527,7 +5550,8 @@ function resolutionToPhase(
 function synthesizeResponse(
   messages: TuvrenMessage[],
   resolution: RuntimeResolution,
-  emittedEvents: TuvrenStreamEvent[]
+  emittedEvents: TuvrenStreamEvent[],
+  assistantEventReconciliation: DriverAssistantEventReconciliation | undefined
 ): TuvrenModelResponse {
   const assistantMessage = messages.find(
     (message): message is Extract<TuvrenMessage, { role: "assistant" }> =>
@@ -5536,12 +5560,17 @@ function synthesizeResponse(
   const lastMessageDoneEvent = findLastMessageDoneEvent(emittedEvents);
 
   if (assistantMessage !== undefined) {
+    const durableFinishReason =
+      resolution.type === "fail"
+        ? "error"
+        : inferFinishReason(assistantMessage);
+    const finishReason =
+      assistantEventReconciliation === "allow_final_sequence_divergence"
+        ? durableFinishReason
+        : (lastMessageDoneEvent?.finishReason ?? durableFinishReason);
+
     return {
-      finishReason:
-        lastMessageDoneEvent?.finishReason ??
-        (resolution.type === "fail"
-          ? "error"
-          : inferFinishReason(assistantMessage)),
+      finishReason,
       parts: assistantMessage.parts,
       providerMetadata: assistantMessage.providerMetadata,
       usage: lastMessageDoneEvent?.usage,

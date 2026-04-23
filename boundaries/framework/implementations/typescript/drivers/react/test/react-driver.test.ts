@@ -328,6 +328,39 @@ describe("driver-react", () => {
     });
   });
 
+  test("fails hard with a stable contract error when generate returns a malformed response", async () => {
+    const provider = {
+      async generate() {
+        return JSON.parse('{"finishReason":"stop"}');
+      },
+      id: "provider",
+      async *stream() {
+        yield* [];
+      },
+    } satisfies TuvrenProvider;
+    const driver = createReActDriver({
+      providerCallMode: "generate",
+    }).create();
+
+    const result = await driver.execute(
+      createDriverExecutionContext({
+        config: {
+          model: provider,
+          name: "primary",
+        },
+      })
+    );
+
+    expect(result.resolution.type).toBe("fail");
+    if (result.resolution.type !== "fail") {
+      throw new Error("expected a failed resolution");
+    }
+    expect(result.resolution.fatality).toBe("hard");
+    expect(result.resolution.error).toMatchObject({
+      code: "invalid_model_response",
+    });
+  });
+
   test("streams canonical tool-call events and preserves provider call metadata", async () => {
     const emittedEvents: TuvrenStreamEvent[] = [];
     const provider = {

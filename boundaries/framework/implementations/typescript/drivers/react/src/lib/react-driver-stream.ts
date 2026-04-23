@@ -24,7 +24,10 @@ import type {
   TuvrenPrompt,
   TuvrenProvider,
 } from "@tuvren/provider-api";
-import { assertProviderStreamChunk } from "@tuvren/provider-api";
+import {
+  assertProviderStreamChunk,
+  assertTuvrenModelResponse,
+} from "@tuvren/provider-api";
 import type { TuvrenMessage, TuvrenStreamEvent } from "@tuvren/runtime-api";
 
 export interface BufferedAssistantSequence {
@@ -41,6 +44,7 @@ export async function executeGenerateCall(input: {
   const response = cloneValue(
     await input.provider.generate(cloneValue(input.prompt))
   );
+  assertTuvrenModelResponse(response, "provider generate response");
   return createBufferedAssistantSequence(response, input.now);
 }
 

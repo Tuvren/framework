@@ -1864,6 +1864,194 @@ describe("framework-runtime-core", () => {
     ]);
   });
 
+  test("passes a coherent durable response into afterIteration when final assistant divergence is allowed", async () => {
+    const harness = createFakeKernelHarness();
+    let capturedResponse:
+      | {
+          finishReason: string;
+          parts: TuvrenModelResponse["parts"];
+          usage: TuvrenModelResponse["usage"];
+        }
+      | undefined;
+    const driver = {
+      async execute(context) {
+        context.runtime.emit({
+          messageId: "assistant-streamed",
+          role: "assistant",
+          timestamp: context.runtime.now(),
+          type: "message.start",
+        });
+        context.runtime.emit({
+          delta: "live",
+          messageId: "assistant-streamed",
+          timestamp: context.runtime.now(),
+          type: "text.delta",
+        });
+        context.runtime.emit({
+          messageId: "assistant-streamed",
+          text: "live",
+          timestamp: context.runtime.now(),
+          type: "text.done",
+        });
+        context.runtime.emit({
+          finishReason: "length",
+          messageId: "assistant-streamed",
+          timestamp: context.runtime.now(),
+          type: "message.done",
+          usage: {
+            inputTokens: 3,
+            outputTokens: 5,
+          },
+        });
+
+        return {
+          assistantEventReconciliation: "allow_final_sequence_divergence",
+          messages: [assistantText("durable replacement")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createTuvrenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        extensions: [
+          {
+            afterIteration(context) {
+              capturedResponse = {
+                finishReason: context.response.finishReason,
+                parts: context.response.parts,
+                usage: context.response.usage,
+              };
+              return undefined;
+            },
+            async aroundModel(_context, next) {
+              return await next();
+            },
+            name: "capture",
+          },
+        ],
+        name: "primary",
+      },
+      signal: textSignal("Capture durable divergence response"),
+      threadId: thread.threadId,
+    });
+
+    await collectEvents(handle.events());
+
+    expect(handle.status().phase).toBe("completed");
+    expect(capturedResponse).toEqual({
+      finishReason: "stop",
+      parts: [{ text: "durable replacement", type: "text" }],
+      usage: {
+        inputTokens: 3,
+        outputTokens: 5,
+      },
+    });
+  });
+
+  test("rejects final tool-call divergence even when aroundModel is active", async () => {
+    const harness = createFakeKernelHarness();
+    const driver = {
+      async execute(context) {
+        context.runtime.emit({
+          messageId: "assistant-streamed",
+          role: "assistant",
+          timestamp: context.runtime.now(),
+          type: "message.start",
+        });
+        context.runtime.emit({
+          callId: "call-search",
+          messageId: "assistant-streamed",
+          name: "search",
+          timestamp: context.runtime.now(),
+          type: "tool_call.start",
+        });
+        context.runtime.emit({
+          callId: "call-search",
+          delta: '{"query":"docs"}',
+          timestamp: context.runtime.now(),
+          type: "tool_call.args_delta",
+        });
+        context.runtime.emit({
+          callId: "call-search",
+          input: { query: "docs" },
+          name: "search",
+          timestamp: context.runtime.now(),
+          type: "tool_call.done",
+        });
+        context.runtime.emit({
+          finishReason: "tool_call",
+          messageId: "assistant-streamed",
+          timestamp: context.runtime.now(),
+          type: "message.done",
+        });
+
+        return {
+          assistantEventReconciliation: "allow_final_sequence_divergence",
+          messages: [assistantText("durable text")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createTuvrenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        extensions: [
+          {
+            async aroundModel(_context, next) {
+              return await next();
+            },
+            name: "rewriter",
+          },
+        ],
+        name: "primary",
+      },
+      signal: textSignal("Reject tool-call divergence"),
+      threadId: thread.threadId,
+    });
+
+    const events = await collectEvents(handle.events());
+    const errorEvent = events.find(
+      (event): event is Extract<(typeof events)[number], { type: "error" }> =>
+        event.type === "error"
+    );
+
+    expect(handle.status().phase).toBe("failed");
+    expect(errorEvent?.error.code).toBe("invalid_stream_event");
+    expect(await harness.readBranchMessages(thread.branchId)).toEqual([
+      {
+        parts: [{ text: "Reject tool-call divergence", type: "text" }],
+        role: "user",
+      },
+    ]);
+  });
+
   test("allows multiple assistant message sequences when only the final retry response becomes durable", async () => {
     const harness = createFakeKernelHarness();
     const driver = {
