@@ -6393,6 +6393,20 @@ describe("framework-runtime-core", () => {
         role: "user",
       },
     ]);
+    expect(
+      (await harness.readBranchRuns(thread.branchId)).some(
+        (run) =>
+          run.status === "failed" &&
+          run.stepSequence.some((step) => step.id === "iterate")
+      )
+    ).toBe(true);
+    expect(
+      (await harness.readBranchRuns(thread.branchId)).some(
+        (run) =>
+          run.status === "completed" &&
+          run.stepSequence.some((step) => step.id === "iterate")
+      )
+    ).toBe(false);
   });
 
   test("fails the resumed turn instead of rewriting approval into rejection when the fresh resumed handle is canceled before start", async () => {

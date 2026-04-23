@@ -16,6 +16,7 @@
 
 // biome-ignore-all lint/suspicious/useAwait: Test doubles intentionally match async provider and extension contracts.
 import { describe, expect, test } from "bun:test";
+import { TuvrenProviderError } from "@tuvren/core-types";
 import type { DriverExecutionContext } from "@tuvren/driver-api";
 import type {
   ContextManifest,
@@ -358,6 +359,130 @@ describe("driver-react", () => {
     expect(result.resolution.fatality).toBe("hard");
     expect(result.resolution.error).toMatchObject({
       code: "invalid_model_response",
+    });
+  });
+
+  test("fails hard with a stable contract error when generate returns an uncloneable malformed response", async () => {
+    const provider = {
+      async generate() {
+        const response = JSON.parse('{"finishReason":"stop"}');
+        response.uncloneable = () => "invalid";
+        return response;
+      },
+      id: "provider",
+      async *stream() {
+        yield* [];
+      },
+    } satisfies TuvrenProvider;
+    const driver = createReActDriver({
+      providerCallMode: "generate",
+    }).create();
+
+    const result = await driver.execute(
+      createDriverExecutionContext({
+        config: {
+          model: provider,
+          name: "primary",
+        },
+      })
+    );
+
+    expect(result.resolution.type).toBe("fail");
+    if (result.resolution.type !== "fail") {
+      throw new Error("expected a failed resolution");
+    }
+    expect(result.resolution.fatality).toBe("hard");
+    expect(result.resolution.error).toMatchObject({
+      code: "invalid_model_response",
+    });
+  });
+
+  test("does not call generate when the driver signal is already aborted", async () => {
+    const controller = new AbortController();
+    let generateCalls = 0;
+    const provider = {
+      async generate() {
+        generateCalls += 1;
+        return {
+          finishReason: "stop",
+          parts: [{ text: "should not run", type: "text" }],
+        } satisfies TuvrenModelResponse;
+      },
+      id: "provider",
+      async *stream() {
+        yield* [];
+      },
+    } satisfies TuvrenProvider;
+    const driver = createReActDriver({
+      providerCallMode: "generate",
+    }).create();
+    controller.abort(new Error("cancelled before provider call"));
+
+    const result = await driver.execute(
+      createDriverExecutionContext({
+        config: {
+          model: provider,
+          name: "primary",
+        },
+        signal: controller.signal,
+      })
+    );
+
+    expect(generateCalls).toBe(0);
+    expect(result.resolution.type).toBe("fail");
+    if (result.resolution.type !== "fail") {
+      throw new Error("expected a failed resolution");
+    }
+    expect(result.resolution.fatality).toBe("hard");
+    expect(result.resolution.error).toMatchObject({
+      code: "react_driver_execution_cancelled",
+    });
+  });
+
+  test("stops waiting for generate when the driver signal aborts during the provider call", async () => {
+    const controller = new AbortController();
+    const provider = {
+      async generate() {
+        controller.abort(new Error("cancelled during provider call"));
+        await wait(1000);
+        return {
+          finishReason: "stop",
+          parts: [{ text: "too late", type: "text" }],
+        } satisfies TuvrenModelResponse;
+      },
+      id: "provider",
+      async *stream() {
+        yield* [];
+      },
+    } satisfies TuvrenProvider;
+    const driver = createReActDriver({
+      providerCallMode: "generate",
+    }).create();
+
+    const result = await Promise.race([
+      driver.execute(
+        createDriverExecutionContext({
+          config: {
+            model: provider,
+            name: "primary",
+          },
+          signal: controller.signal,
+        })
+      ),
+      wait(100).then(() => "timed_out"),
+    ]);
+
+    if (typeof result === "string") {
+      throw new Error("driver did not stop waiting after abort");
+    }
+
+    expect(result.resolution.type).toBe("fail");
+    if (result.resolution.type !== "fail") {
+      throw new Error("expected a failed resolution");
+    }
+    expect(result.resolution.fatality).toBe("hard");
+    expect(result.resolution.error).toMatchObject({
+      code: "react_driver_execution_cancelled",
     });
   });
 
@@ -1617,6 +1742,51 @@ describe("driver-react", () => {
     ).toBe("react_driver_provider_failure");
   });
 
+  test("preserves provider error codes from stream error chunks", async () => {
+    const provider = {
+      async generate() {
+        throw new Error("generate should not be called");
+      },
+      id: "provider",
+      async *stream() {
+        yield {
+          error: new TuvrenProviderError("provider quota exceeded", {
+            code: "provider_quota_exceeded",
+            details: {
+              bucket: "tokens",
+            },
+          }),
+          type: "error",
+        };
+      },
+    } satisfies TuvrenProvider;
+    const driver = createReActDriver({
+      providerCallMode: "stream",
+    }).create();
+
+    const result = await driver.execute(
+      createDriverExecutionContext({
+        config: {
+          model: provider,
+          name: "primary",
+        },
+      })
+    );
+
+    expect(result.resolution.type).toBe("fail");
+
+    if (result.resolution.type !== "fail") {
+      throw new Error("expected a fail resolution");
+    }
+
+    expect(result.resolution.error).toMatchObject({
+      code: "provider_quota_exceeded",
+      details: {
+        bucket: "tokens",
+      },
+    });
+  });
+
   test("fails hard when provider.stream yields an invalid chunk shape", async () => {
     const emittedEvents: TuvrenStreamEvent[] = [];
     const provider = {
@@ -1658,6 +1828,177 @@ describe("driver-react", () => {
         : undefined
     ).toBe("invalid_provider_stream_chunk");
     expect(emittedEvents.map((event) => event.type)).toEqual(["message.start"]);
+  });
+
+  test("fails hard when provider.stream yields an uncloneable invalid chunk shape", async () => {
+    const emittedEvents: TuvrenStreamEvent[] = [];
+    const provider = {
+      async generate() {
+        throw new Error("generate should not be called");
+      },
+      id: "provider",
+      async *stream() {
+        const chunk = JSON.parse(
+          '{"finishReason":"stop","type":"finish","unexpected":true}'
+        );
+        chunk.uncloneable = () => "invalid";
+        yield chunk;
+      },
+    } satisfies TuvrenProvider;
+    const driver = createReActDriver({
+      providerCallMode: "stream",
+    }).create();
+
+    const result = await driver.execute(
+      createDriverExecutionContext({
+        config: {
+          model: provider,
+          name: "primary",
+        },
+        emittedEvents,
+      })
+    );
+
+    expect(result.resolution.type).toBe("fail");
+
+    if (result.resolution.type !== "fail") {
+      throw new Error("expected a fail resolution");
+    }
+
+    expect(result.resolution.error).toMatchObject({
+      code: "invalid_provider_stream_chunk",
+    });
+    expect(emittedEvents.map((event) => event.type)).toEqual(["message.start"]);
+  });
+
+  test("returns a partial failed assistant message when stream aborts after live output", async () => {
+    const emittedEvents: TuvrenStreamEvent[] = [];
+    const controller = new AbortController();
+    const provider = {
+      async generate() {
+        throw new Error("generate should not be called");
+      },
+      id: "provider",
+      async *stream() {
+        yield {
+          text: "partial",
+          type: "text_delta",
+        };
+        controller.abort(new Error("cancelled during stream"));
+        await wait(1000);
+      },
+    } satisfies TuvrenProvider;
+    const driver = createReActDriver({
+      providerCallMode: "stream",
+    }).create();
+
+    const result = await Promise.race([
+      driver.execute(
+        createDriverExecutionContext({
+          config: {
+            model: provider,
+            name: "primary",
+          },
+          emittedEvents,
+          signal: controller.signal,
+        })
+      ),
+      wait(100).then(() => "timed_out"),
+    ]);
+
+    if (typeof result === "string") {
+      throw new Error("driver did not stop waiting after stream abort");
+    }
+
+    expect(result.resolution.type).toBe("fail");
+
+    if (result.resolution.type !== "fail") {
+      throw new Error("expected a fail resolution");
+    }
+
+    expect(result.partial).toBe(true);
+    expect(result.messages).toEqual([
+      {
+        parts: [{ text: "partial", type: "text" }],
+        role: "assistant",
+      },
+    ]);
+    expect(emittedEvents.map((event) => event.type)).toEqual([
+      "message.start",
+      "text.delta",
+      "text.done",
+      "message.done",
+    ]);
+  });
+
+  test("runtime-core cancellation stops a pending provider stream and checkpoints partial output", async () => {
+    const harness = createFakeKernelHarness();
+    const provider = {
+      async generate() {
+        throw new Error("generate should not be called");
+      },
+      id: "provider",
+      async *stream() {
+        yield {
+          text: "partial",
+          type: "text_delta",
+        };
+        await wait(1000);
+      },
+    } satisfies TuvrenProvider;
+    const runtime = createTuvrenRuntimeCore({
+      defaultDriverId: REACT_DRIVER_ID,
+      driverRegistry: createDriverRegistry([
+        createReActDriver({
+          providerCallMode: "stream",
+        }),
+      ]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        model: provider,
+        name: "primary",
+      },
+      signal: textSignal("Cancel this stream"),
+      threadId: thread.threadId,
+    });
+    const iterator = handle.events()[Symbol.asyncIterator]();
+    const firstEvents = await collectUntil(
+      iterator,
+      (event) => event.type === "text.delta"
+    );
+
+    handle.cancel();
+    const remainingEvents = await Promise.race([
+      collectRemaining(iterator),
+      wait(100).then(() => "timed_out"),
+    ]);
+
+    if (typeof remainingEvents === "string") {
+      throw new Error("runtime did not stop waiting after cancellation");
+    }
+
+    const events = [...firstEvents, ...remainingEvents];
+
+    expect(handle.status().phase).toBe("failed");
+    expect(
+      events.some(
+        (event) => event.type === "turn.end" && event.status === "failed"
+      )
+    ).toBe(true);
+    expect(await harness.readBranchMessages(thread.branchId)).toEqual([
+      {
+        parts: [{ text: "Cancel this stream", type: "text" }],
+        role: "user",
+      },
+      {
+        parts: [{ text: "partial", type: "text" }],
+        role: "assistant",
+      },
+    ]);
   });
 
   test("fails hard when streamed structured output cannot be parsed", async () => {
@@ -2468,6 +2809,7 @@ function createDriverExecutionContext(input?: {
   config?: DriverExecutionContext["config"];
   emittedEvents?: TuvrenStreamEvent[];
   manifest?: ContextManifest;
+  signal?: AbortSignal;
   toolDefinitions?: TuvrenToolDefinition[];
 }): DriverExecutionContext {
   const emittedEvents = input?.emittedEvents ?? [];
@@ -2531,6 +2873,7 @@ function createDriverExecutionContext(input?: {
       },
     },
     schemaId: "tuvren.agent.v1",
+    signal: input?.signal,
     threadId: "thread-1",
     toolRegistry: createToolRegistry(toolDefinitions),
     turnId: "turn-1",
@@ -2613,6 +2956,12 @@ function textSignal(text: string): InputSignal {
   return {
     parts: [{ text, type: "text" }],
   };
+}
+
+function wait(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, milliseconds);
+  });
 }
 
 async function collectEvents<T>(events: AsyncIterable<T>): Promise<T[]> {

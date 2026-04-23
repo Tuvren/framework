@@ -124,6 +124,7 @@ interface ResolvedReActDriverOptions {
 interface ModelExecutionOutcome {
   assistantEventReconciliation?: DriverAssistantEventReconciliation;
   assistantSequences: BufferedAssistantSequence[];
+  cancelled?: boolean;
   response: TuvrenModelResponse;
   responseFormat?: TuvrenPrompt["responseFormat"];
   stateUpdates: DriverExtensionStateUpdate[];
@@ -188,11 +189,14 @@ async function executeIteration(
     aroundModelContext
   );
   const response = execution.response;
+  const cancelled = execution.cancelled === true;
 
   assertTuvrenModelResponse(response, "response");
-  validateStructuredOutput(execution.responseFormat, response);
+  if (!cancelled) {
+    validateStructuredOutput(execution.responseFormat, response);
+  }
 
-  if (response.finishReason === "error") {
+  if (response.finishReason === "error" && !cancelled) {
     throw new TuvrenProviderError("provider returned an error finish reason", {
       code: "react_driver_provider_failure",
       details: {
@@ -214,6 +218,13 @@ async function executeIteration(
   }
 
   if (response.parts.length === 0) {
+    if (cancelled) {
+      return {
+        partial: false,
+        resolution: createExecutionCancelledResolution(),
+      };
+    }
+
     throw new TuvrenRuntimeError(
       "provider responses must contain assistant output",
       {
@@ -244,6 +255,21 @@ async function executeIteration(
           extensionName: update.extensionName,
           state: cloneValue(update.state),
         }));
+  if (cancelled) {
+    return {
+      ...(execution.assistantEventReconciliation === undefined
+        ? {}
+        : {
+            assistantEventReconciliation:
+              execution.assistantEventReconciliation,
+          }),
+      messages: [assistantMessage],
+      partial: true,
+      resolution: createExecutionCancelledResolution(),
+      stateUpdates,
+    };
+  }
+
   const driverResult: DriverExecutionResult = requestsTools
     ? {
         ...(execution.assistantEventReconciliation === undefined
@@ -346,6 +372,7 @@ async function runAroundModelChain(
         nextOutcomes,
         context.runtime.now
       ),
+      cancelled: resolveAroundModelCancellation(result, nextOutcomes),
       response: result.response,
       responseFormat: resolveAroundModelResponseFormat(
         result,
@@ -382,17 +409,20 @@ async function callProvider(
           now: context.runtime.now,
           prompt,
           provider,
+          signal: context.signal,
         })
       : await executeStreamCall({
           now: context.runtime.now,
           prompt,
           provider,
           runtime: context.runtime,
+          signal: context.signal,
         });
 
   return {
     assistantEventReconciliation: undefined,
     assistantSequences: [sequence],
+    cancelled: sequence.cancelled,
     response: sequence.response,
     responseFormat: cloneValue(prompt.responseFormat),
     stateUpdates: [],
@@ -421,6 +451,19 @@ function createAroundModelContext(
     sharedExports: cloneValue(promptState.sharedExports),
     tools: cloneValue(promptState.tools),
   });
+}
+
+function createExecutionCancelledResolution(): Extract<
+  DriverExecutionResult["resolution"],
+  { type: "fail" }
+> {
+  return {
+    error: new TuvrenRuntimeError("execution cancelled", {
+      code: "react_driver_execution_cancelled",
+    }),
+    fatality: "hard",
+    type: "fail",
+  };
 }
 
 function resolveProvider(model: AgentConfig["model"]): TuvrenProvider {
@@ -764,6 +807,19 @@ function resolveAssistantEventReconciliation(
   }
 
   return lastOutcome.assistantEventReconciliation;
+}
+
+function resolveAroundModelCancellation(
+  result: NormalizedAroundModelResult,
+  nextOutcomes: ModelExecutionOutcome[]
+): boolean | undefined {
+  return nextOutcomes.some(
+    (outcome) =>
+      outcome.cancelled === true &&
+      responsesMatch(outcome.response, result.response)
+  )
+    ? true
+    : undefined;
 }
 
 function findMatchingNextOutcome(

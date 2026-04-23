@@ -1295,7 +1295,11 @@ class RuntimeCore implements TuvrenRuntime {
     );
 
     if (invalidDriverError !== undefined) {
-      await this.completeTrackedRun(handle, iterationRunId, "completed");
+      await this.failTrackedRunWithoutBranchAdvance(
+        handle,
+        iterationRunId,
+        headState.branchHeadHash
+      );
       return {
         kind: "outcome",
         outcome: {

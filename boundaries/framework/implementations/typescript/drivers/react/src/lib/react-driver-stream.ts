@@ -31,6 +31,7 @@ import {
 import type { TuvrenMessage, TuvrenStreamEvent } from "@tuvren/runtime-api";
 
 export interface BufferedAssistantSequence {
+  cancelled?: boolean;
   events: TuvrenStreamEvent[];
   published: boolean;
   response: TuvrenModelResponse;
@@ -40,12 +41,16 @@ export async function executeGenerateCall(input: {
   now: () => EpochMs;
   prompt: TuvrenPrompt;
   provider: TuvrenProvider;
+  signal?: AbortSignal;
 }): Promise<BufferedAssistantSequence> {
-  const response = cloneValue(
-    await input.provider.generate(cloneValue(input.prompt))
+  throwIfAborted(input.signal);
+  const response = await waitForAbortable(
+    input.provider.generate(cloneValue(input.prompt)),
+    input.signal
   );
+  throwIfAborted(input.signal);
   assertTuvrenModelResponse(response, "provider generate response");
-  return createBufferedAssistantSequence(response, input.now);
+  return createBufferedAssistantSequence(cloneValue(response), input.now);
 }
 
 export async function executeStreamCall(input: {
@@ -53,7 +58,9 @@ export async function executeStreamCall(input: {
   prompt: TuvrenPrompt;
   provider: TuvrenProvider;
   runtime: DriverRuntimePort;
+  signal?: AbortSignal;
 }): Promise<BufferedAssistantSequence> {
+  throwIfAborted(input.signal);
   const messageId = randomUUID();
   const accumulator = new StreamAccumulator(messageId, input.now);
   const events: TuvrenStreamEvent[] = [];
@@ -68,14 +75,47 @@ export async function executeStreamCall(input: {
     input.runtime
   );
 
-  for await (const chunk of input.provider.stream(cloneValue(input.prompt))) {
-    const validatedChunk = cloneValue(chunk);
-    assertProviderStreamChunk(validatedChunk, "provider stream chunk");
-    await appendAllAndEmit(
+  const iterator = input.provider
+    .stream(cloneValue(input.prompt))
+    [Symbol.asyncIterator]();
+
+  try {
+    while (true) {
+      const iteration = await waitForAbortable(iterator.next(), input.signal);
+      throwIfAborted(input.signal);
+
+      if (iteration.done === true) {
+        break;
+      }
+
+      const chunk = iteration.value;
+      assertProviderStreamChunk(chunk, "provider stream chunk");
+      await appendAllAndEmit(events, accumulator.absorb(chunk), input.runtime);
+    }
+  } catch (error: unknown) {
+    if (!isExecutionCancelledError(error)) {
+      throw error;
+    }
+
+    const response = accumulator.finalize({
+      finishReason: "error",
+      partial: true,
+    });
+
+    if (!accumulator.messageDoneEmitted) {
+      await appendAllAndEmit(
+        events,
+        accumulator.createTerminalEvents(response, { partial: true }),
+        input.runtime
+      );
+    }
+
+    return {
+      cancelled: true,
       events,
-      accumulator.absorb(validatedChunk),
-      input.runtime
-    );
+      published: true,
+      response,
+    };
   }
 
   const response = accumulator.finalize();
@@ -399,16 +439,23 @@ class StreamAccumulator {
     }
   }
 
-  finalize(): TuvrenModelResponse {
-    const parts = this.parts.map((part) => {
+  finalize(options?: {
+    finishReason?: TuvrenModelResponse["finishReason"];
+    partial?: boolean;
+  }): TuvrenModelResponse {
+    const parts: TuvrenModelResponse["parts"] = [];
+
+    for (const part of this.parts) {
       switch (part.kind) {
-        case "text":
-          return {
+        case "text": {
+          parts.push({
             text: part.text,
             type: "text",
-          } satisfies TuvrenModelResponse["parts"][number];
-        case "reasoning":
-          return {
+          });
+          break;
+        }
+        case "reasoning": {
+          parts.push({
             providerMetadata:
               part.signature === undefined
                 ? undefined
@@ -418,33 +465,47 @@ class StreamAccumulator {
             redacted: false,
             text: part.text,
             type: "reasoning",
-          } satisfies TuvrenModelResponse["parts"][number];
-        case "structured":
-          return {
-            data: part.data ?? parseStructuredValue(part.delta),
-            name: part.name,
-            type: "structured",
-          } satisfies TuvrenModelResponse["parts"][number];
-        case "tool_call":
-          return {
-            callId: part.state.callId,
-            input:
-              part.state.input ?? parseStructuredValue(part.state.argsDelta),
-            name: part.state.name,
-            providerMetadata: {
-              providerCallId: part.state.providerCallId,
-            },
-            type: "tool_call",
-          } satisfies TuvrenModelResponse["parts"][number];
+          });
+          break;
+        }
+        case "structured": {
+          const data = parsePartialStructuredPart(part, options?.partial);
+
+          if (data !== undefined) {
+            parts.push({
+              data,
+              name: part.name,
+              type: "structured",
+            });
+          }
+          break;
+        }
+        case "tool_call": {
+          const input = parsePartialToolCallInput(part.state, options?.partial);
+
+          if (input !== undefined) {
+            parts.push({
+              callId: part.state.callId,
+              input,
+              name: part.state.name,
+              providerMetadata: {
+                providerCallId: part.state.providerCallId,
+              },
+              type: "tool_call",
+            });
+          }
+          break;
+        }
         default:
           throw new TuvrenRuntimeError("unsupported accumulated content part", {
             code: "react_driver_invalid_model_response",
           });
       }
-    });
+    }
 
     return {
       finishReason:
+        options?.finishReason ??
         this.finishChunk?.finishReason ??
         (parts.some((part) => part.type === "tool_call")
           ? "tool_call"
@@ -459,9 +520,14 @@ class StreamAccumulator {
     return this.messageDonePublished;
   }
 
-  createTerminalEvents(response: TuvrenModelResponse): TuvrenStreamEvent[] {
+  createTerminalEvents(
+    response: TuvrenModelResponse,
+    options?: { partial?: boolean }
+  ): TuvrenStreamEvent[] {
     return [
-      ...this.createCompletionEvents(),
+      ...(options?.partial === true
+        ? this.createPartialCompletionEvents(response)
+        : this.createCompletionEvents()),
       {
         finishReason: response.finishReason,
         messageId: this.messageId,
@@ -616,6 +682,54 @@ class StreamAccumulator {
     return events;
   }
 
+  private createPartialCompletionEvents(
+    response: TuvrenModelResponse
+  ): TuvrenStreamEvent[] {
+    const events: TuvrenStreamEvent[] = [];
+
+    for (const part of response.parts) {
+      switch (part.type) {
+        case "text":
+          events.push({
+            messageId: this.messageId,
+            text: part.text,
+            timestamp: this.now(),
+            type: "text.done",
+          });
+          break;
+        case "reasoning":
+          events.push({
+            messageId: this.messageId,
+            timestamp: this.now(),
+            type: "reasoning.done",
+          });
+          break;
+        case "structured":
+          events.push({
+            data: cloneValue(part.data),
+            messageId: this.messageId,
+            name: part.name,
+            timestamp: this.now(),
+            type: "structured.done",
+          });
+          break;
+        case "tool_call":
+          events.push({
+            callId: part.callId,
+            input: cloneValue(part.input),
+            name: part.name,
+            timestamp: this.now(),
+            type: "tool_call.done",
+          });
+          break;
+        default:
+          break;
+      }
+    }
+
+    return events;
+  }
+
   private createTerminalEventsFromFinish(
     finish: Extract<ProviderStreamChunk, { type: "finish" }>
   ): TuvrenStreamEvent[] {
@@ -722,6 +836,109 @@ function parseStructuredValue(value: string): unknown {
       },
     });
   }
+}
+
+function parsePartialStructuredPart(
+  part: Extract<AccumulatedPart, { kind: "structured" }>,
+  partial?: boolean
+): unknown {
+  if (part.data !== undefined) {
+    return part.data;
+  }
+
+  if (partial === true) {
+    return parsePartialStructuredValue(part.delta);
+  }
+
+  return parseStructuredValue(part.delta);
+}
+
+function parsePartialToolCallInput(
+  state: PendingToolCall,
+  partial?: boolean
+): unknown {
+  if (state.input !== undefined) {
+    return state.input;
+  }
+
+  if (partial === true) {
+    return parsePartialStructuredValue(state.argsDelta);
+  }
+
+  return parseStructuredValue(state.argsDelta);
+}
+
+function parsePartialStructuredValue(value: string): unknown {
+  if (value.length === 0) {
+    return undefined;
+  }
+
+  try {
+    return JSON.parse(value);
+  } catch {
+    return undefined;
+  }
+}
+
+async function waitForAbortable<T>(
+  operation: Promise<T>,
+  signal: AbortSignal | undefined
+): Promise<T> {
+  throwIfAborted(signal);
+
+  if (signal === undefined) {
+    return await operation;
+  }
+
+  return await new Promise<T>((resolve, reject) => {
+    const cleanup = (): void => {
+      signal.removeEventListener("abort", onAbort);
+    };
+    const onAbort = (): void => {
+      cleanup();
+      reject(createExecutionCancelledError(signal));
+    };
+
+    signal.addEventListener("abort", onAbort, { once: true });
+    operation.then(
+      (value) => {
+        cleanup();
+
+        if (signal.aborted) {
+          reject(createExecutionCancelledError(signal));
+          return;
+        }
+
+        resolve(value);
+      },
+      (error: unknown) => {
+        cleanup();
+        reject(error);
+      }
+    );
+  });
+}
+
+function throwIfAborted(signal: AbortSignal | undefined): void {
+  if (signal?.aborted === true) {
+    throw createExecutionCancelledError(signal);
+  }
+}
+
+function createExecutionCancelledError(
+  signal: AbortSignal | undefined
+): TuvrenRuntimeError {
+  return new TuvrenRuntimeError("execution cancelled", {
+    code: "react_driver_execution_cancelled",
+    details: normalizeUnknownError(signal?.reason),
+  });
+}
+
+function isExecutionCancelledError(error: unknown): boolean {
+  return (
+    error instanceof TuvrenRuntimeError &&
+    error.code === "react_driver_execution_cancelled"
+  );
 }
 
 function toProviderError(error: unknown): TuvrenProviderError {
