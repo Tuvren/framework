@@ -1053,7 +1053,7 @@ export function assertTuvrenMessage(
 ): asserts value is TuvrenMessage {
   if (!isTuvrenMessage(value)) {
     throw new TuvrenValidationError(`${label} must be a valid TuvrenMessage`, {
-      code: "invalid_kraken_message",
+      code: "invalid_tuvren_message",
       details: value,
     });
   }

@@ -34,7 +34,7 @@ export function assertTuvrenErrorCode(
 ): asserts value is TuvrenErrorCode {
   if (!isTuvrenErrorCode(value)) {
     throw new TypeError(
-      `${label} must be a lowercase snake_case Kraken error code`
+      `${label} must be a lowercase snake_case Tuvren error code`
     );
   }
 }

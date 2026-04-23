@@ -112,7 +112,7 @@ import {
 } from "./tool-execution.js";
 import { createToolRegistry } from "./tool-registry.js";
 
-export const DEFAULT_AGENT_SCHEMA_ID = "kraken.agent.v1";
+export const DEFAULT_AGENT_SCHEMA_ID = "tuvren.agent.v1";
 export const DEFAULT_AGENT_SCHEMA: TurnTreeSchema = {
   incorporationRules: [
     { objectType: "message", targetPath: "messages" },

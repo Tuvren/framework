@@ -2785,7 +2785,7 @@ describe("framework-runtime-core", () => {
     );
 
     expect(handle.status().phase).toBe("failed");
-    expect(errorEvent?.error.code).toBe("invalid_kraken_message");
+    expect(errorEvent?.error.code).toBe("invalid_tuvren_message");
     expect(await harness.readBranchMessages(thread.branchId)).toEqual([
       {
         parts: [{ text: "Reject malformed driver output", type: "text" }],
@@ -3227,7 +3227,7 @@ describe("framework-runtime-core", () => {
     );
 
     expect(handle.status().phase).toBe("failed");
-    expect(errorEvent?.error.code).toBe("invalid_kraken_message");
+    expect(errorEvent?.error.code).toBe("invalid_tuvren_message");
     expect(events.some((event) => event.type === "turn.end")).toBe(true);
     expect(await harness.readBranchRuntimeStatus(thread.branchId)).toEqual({
       activeAgent: "primary",
@@ -4941,7 +4941,7 @@ describe("framework-runtime-core", () => {
     );
 
     expect(handle.status().phase).toBe("failed");
-    expect(errorEvent?.error.code).toBe("invalid_kraken_message");
+    expect(errorEvent?.error.code).toBe("invalid_tuvren_message");
   });
 
   test("does not let context-engineering plans mutate loaded messages in place", async () => {

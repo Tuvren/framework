@@ -269,7 +269,7 @@ export const frameworkContractFixtures = {
     getThread() {
       return Promise.resolve({
         rootTurnNodeHash: "1".repeat(64),
-        schemaId: "kraken.agent.v1",
+        schemaId: "tuvren.agent.v1",
         threadId: "thread_main",
       });
     },

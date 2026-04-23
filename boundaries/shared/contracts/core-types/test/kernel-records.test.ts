@@ -297,11 +297,11 @@ describe("TuvrenError", () => {
   test("rejects invalid public error code shapes", () => {
     expect(isTuvrenErrorCode("Not_Snake_Case")).toBe(false);
     expect(() => assertTuvrenErrorCode("Not_Snake_Case", "code")).toThrow(
-      "code must be a lowercase snake_case Kraken error code"
+      "code must be a lowercase snake_case Tuvren error code"
     );
     expect(
       () => new TuvrenValidationError("bad", { code: "Not_Snake_Case" })
-    ).toThrow("options.code must be a lowercase snake_case Kraken error code");
+    ).toThrow("options.code must be a lowercase snake_case Tuvren error code");
   });
 
   test("stores code, details, and cause on the base contract", () => {

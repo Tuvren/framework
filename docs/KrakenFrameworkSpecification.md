@@ -360,7 +360,7 @@ CustomEvent            { type: "custom", name: string, data: unknown, timestamp 
 
 ```
 DefaultAgentSchema
-├─ schemaId: "kraken.agent.v1"
+├─ schemaId: "tuvren.agent.v1"
 ├─ paths:
 │    messages              ordered     // conversation in natural order
 │    context.manifest      single      // structural index

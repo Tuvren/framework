@@ -292,7 +292,7 @@ describe("orchestration-runtime", () => {
         if (threadId === "thread-root") {
           return {
             rootTurnNodeHash: "2".repeat(64),
-            schemaId: "kraken.agent.v1",
+            schemaId: "tuvren.agent.v1",
             threadId,
           };
         }
@@ -1348,7 +1348,7 @@ describe("orchestration-runtime", () => {
         if (threadId === "thread-root") {
           return {
             rootTurnNodeHash: "2".repeat(64),
-            schemaId: "kraken.agent.v1",
+            schemaId: "tuvren.agent.v1",
             threadId,
           };
         }
@@ -1640,7 +1640,7 @@ describe("orchestration-runtime", () => {
         if (threadId === "thread-root") {
           return {
             rootTurnNodeHash: "2".repeat(64),
-            schemaId: "kraken.agent.v1",
+            schemaId: "tuvren.agent.v1",
             threadId,
           };
         }
