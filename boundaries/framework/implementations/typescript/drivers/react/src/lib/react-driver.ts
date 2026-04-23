@@ -33,6 +33,8 @@ import { assertTuvrenModelResponse } from "@tuvren/provider-api";
 import type {
   AgentConfig,
   AroundModelContext,
+  AroundModelResult,
+  CustomEvent,
   StructuredPart,
   TuvrenExtension,
   TuvrenJsonSchema,
@@ -42,8 +44,8 @@ import type {
   TuvrenProvider,
 } from "@tuvren/runtime-api";
 import Ajv from "ajv";
-import Ajv2019 from "ajv/dist/2019";
-import Ajv2020 from "ajv/dist/2020";
+import Ajv2019 from "ajv/dist/2019.js";
+import Ajv2020 from "ajv/dist/2020.js";
 import {
   createAroundModelContextSnapshot,
   createExtensionStateSnapshot,
@@ -358,17 +360,35 @@ async function runAroundModelChain(
       sharedExports: currentContext.sharedExports,
       tools: currentContext.tools,
     });
-    const result = normalizeAroundModelResult(
-      await extension.aroundModel(extensionContext, async (nextContext) => {
-        const normalizedNextContext = normalizeNextAroundModelContext(
-          currentContext,
-          nextContext ?? extensionContext
-        );
-        const nextOutcome = await invokeAt(index + 1, normalizedNextContext);
-        nextOutcomes.push(nextOutcome);
-        return cloneValue(nextOutcome.response);
-      })
-    );
+    let rawResult: AroundModelResult;
+
+    try {
+      rawResult = await extension.aroundModel(
+        extensionContext,
+        async (nextContext) => {
+          const normalizedNextContext = normalizeNextAroundModelContext(
+            currentContext,
+            nextContext ?? extensionContext
+          );
+          const nextOutcome = await invokeAt(index + 1, normalizedNextContext);
+          nextOutcomes.push(nextOutcome);
+          return cloneValue(nextOutcome.response);
+        }
+      );
+    } catch (error: unknown) {
+      if (nextOutcomes.length === 0) {
+        throw error;
+      }
+
+      await emitPostNextAroundModelError(context, extension.name, error);
+      return createPostNextAroundModelFallbackOutcome(
+        extension.name,
+        nextOutcomes,
+        context.runtime.now
+      );
+    }
+
+    const result = normalizeAroundModelResult(rawResult);
     validateAroundModelRetryDurability(result, nextOutcomes);
 
     return {
@@ -473,6 +493,31 @@ function createExecutionCancelledResolution(): Extract<
     fatality: "hard",
     type: "fail",
   };
+}
+
+async function emitPostNextAroundModelError(
+  context: DriverExecutionContext,
+  extensionName: string,
+  error: unknown
+): Promise<void> {
+  const normalizedError = normalizeExecutionError(error);
+  const event: CustomEvent = {
+    data: {
+      extensionName,
+      message: normalizedError.message,
+      name: normalizedError.name,
+      phase: "post_next",
+    },
+    name: "react_driver.around_model_error",
+    timestamp: context.runtime.now(),
+    type: "custom",
+  };
+
+  try {
+    await context.runtime.emit(event);
+  } catch {
+    // Logging must not turn a recovered post-next wrapper failure into a model failure.
+  }
 }
 
 function resolveProvider(model: AgentConfig["model"]): TuvrenProvider {
@@ -687,6 +732,43 @@ function collectAroundModelStateUpdates(
   }
 
   return updates;
+}
+
+function createPostNextAroundModelFallbackOutcome(
+  extensionName: string,
+  nextOutcomes: ModelExecutionOutcome[],
+  now: () => number
+): ModelExecutionOutcome {
+  const lastOutcome = nextOutcomes.at(-1);
+
+  if (lastOutcome === undefined) {
+    throw new TuvrenRuntimeError(
+      "post-next aroundModel recovery requires a next() outcome",
+      {
+        code: "react_driver_invalid_around_model_recovery",
+      }
+    );
+  }
+
+  const result: NormalizedAroundModelResult = {
+    response: cloneValue(lastOutcome.response),
+  };
+
+  return {
+    assistantEventReconciliation: resolveAssistantEventReconciliation(
+      result,
+      nextOutcomes
+    ),
+    assistantSequences: finalizeAroundModelSequences(result, nextOutcomes, now),
+    cancelled: resolveAroundModelCancellation(result, nextOutcomes),
+    response: result.response,
+    responseFormat: cloneValue(lastOutcome.responseFormat),
+    stateUpdates: collectAroundModelStateUpdates(
+      extensionName,
+      result,
+      nextOutcomes
+    ),
+  };
 }
 
 function finalizeAroundModelSequences(

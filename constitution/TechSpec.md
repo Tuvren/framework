@@ -786,6 +786,8 @@ export type ProviderStreamChunk =
   | { type: "error"; error: unknown };
 ```
 
+On normal stream completion, `finish` is only valid after any started structured-output or tool-call part has been completed by its corresponding `structured_done` or `tool_call_done` chunk. Cancellation partial finalization is the only path that may preserve incomplete accumulated content.
+
 ### 4.5 Canonical Event Stream Contract
 - **Style:** library API
 - **Authentication / Authorization:** Controlled by the host embedding layer

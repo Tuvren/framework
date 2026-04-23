@@ -476,7 +476,7 @@ StreamAccumulator
 ├─ hasContent(): boolean
 ```
 
-`absorb` processes one chunk: appends text deltas, accumulates tool call arguments, accumulates structured output deltas, captures usage and metadata. `finalize` produces the complete `TuvrenModelResponse` with all parts assembled, arguments parsed, structured output parsed into `StructuredPart.data`, and metadata merged. If structured output cannot be parsed (malformed JSON or equivalent), `finalize` produces an error response. `hasContent` returns whether any chunks have been absorbed — used by the driver to detect aroundModel short-circuits that need synthetic event generation (§6.5).
+`absorb` processes one chunk: appends text deltas, accumulates tool call arguments, accumulates structured output deltas, captures usage and metadata. `finalize` produces the complete `TuvrenModelResponse` with all parts assembled, arguments parsed, structured output parsed into `StructuredPart.data`, and metadata merged. On normal stream completion, unfinished structured-output and tool-call parts are provider stream errors; only cancellation partial finalization may preserve incomplete accumulated content. If structured output cannot be parsed (malformed JSON or equivalent), `finalize` produces an error response. `hasContent` returns whether any chunks have been absorbed — used by the driver to detect aroundModel short-circuits that need synthetic event generation (§6.5).
 
 ### 3.4 Adapter Strategy
 

@@ -1006,6 +1006,70 @@ describe("driver-react", () => {
     });
   });
 
+  test("keeps the next() response when aroundModel throws after next", async () => {
+    const emittedEvents: TuvrenStreamEvent[] = [];
+    const provider = {
+      async generate() {
+        return {
+          finishReason: "stop",
+          parts: [{ text: "provider response", type: "text" }],
+        } satisfies TuvrenModelResponse;
+      },
+      id: "provider",
+      async *stream() {
+        yield* [];
+      },
+    } satisfies TuvrenProvider;
+    const driver = createReActDriver({
+      providerCallMode: "generate",
+    }).create();
+
+    const result = await driver.execute(
+      createDriverExecutionContext({
+        config: {
+          extensions: [
+            {
+              async aroundModel(_context, next) {
+                await next();
+                throw new Error("telemetry write failed");
+              },
+              name: "telemetry",
+            },
+          ],
+          model: provider,
+          name: "primary",
+        },
+        emittedEvents,
+      })
+    );
+
+    expect(result.resolution).toEqual({
+      reason: "done",
+      type: "end_turn",
+    });
+    expect(result.messages?.[0]).toEqual({
+      parts: [{ text: "provider response", type: "text" }],
+      role: "assistant",
+    });
+    expect(
+      emittedEvents.find(
+        (event): event is Extract<TuvrenStreamEvent, { type: "custom" }> =>
+          event.type === "custom"
+      )
+    ).toMatchObject({
+      data: {
+        extensionName: "telemetry",
+        message: "telemetry write failed",
+        phase: "post_next",
+      },
+      name: "react_driver.around_model_error",
+      type: "custom",
+    });
+    expect(
+      emittedEvents.filter((event) => event.type === "message.start")
+    ).toHaveLength(1);
+  });
+
   test("supports aroundModel retry with distinct generated assistant sequences", async () => {
     const emittedEvents: TuvrenStreamEvent[] = [];
     let generateCalls = 0;
@@ -1400,6 +1464,103 @@ describe("driver-react", () => {
     ).toMatchObject({
       delta: '{"query":"runtime"}',
     });
+  });
+
+  test("fails hard when a provider stream finishes before tool_call_done", async () => {
+    const emittedEvents: TuvrenStreamEvent[] = [];
+    const provider = {
+      async generate() {
+        throw new Error("generate should not be called");
+      },
+      id: "provider",
+      async *stream() {
+        yield {
+          providerCallId: "native-call-1",
+          name: "search",
+          type: "tool_call_start",
+        } as const;
+        yield {
+          finishReason: "tool_call",
+          type: "finish",
+        } as const;
+      },
+    } satisfies TuvrenProvider;
+    const driver = createReActDriver({
+      providerCallMode: "stream",
+    }).create();
+
+    const result = await driver.execute(
+      createDriverExecutionContext({
+        config: {
+          model: provider,
+          name: "primary",
+        },
+        emittedEvents,
+      })
+    );
+
+    expect(result.resolution.type).toBe("fail");
+
+    if (result.resolution.type !== "fail") {
+      throw new Error("expected a fail resolution");
+    }
+
+    expect(result.resolution.fatality).toBe("hard");
+    expect(result.resolution.error).toMatchObject({
+      code: "react_driver_invalid_provider_stream",
+    });
+    expect(emittedEvents.map((event) => event.type)).toEqual([
+      "message.start",
+      "tool_call.start",
+    ]);
+  });
+
+  test("fails hard when a provider stream finishes before structured_done", async () => {
+    const emittedEvents: TuvrenStreamEvent[] = [];
+    const provider = {
+      async generate() {
+        throw new Error("generate should not be called");
+      },
+      id: "provider",
+      async *stream() {
+        yield {
+          delta: '{"answer":"yes"}',
+          type: "structured_delta",
+        } as const;
+        yield {
+          finishReason: "stop",
+          type: "finish",
+        } as const;
+      },
+    } satisfies TuvrenProvider;
+    const driver = createReActDriver({
+      providerCallMode: "stream",
+    }).create();
+
+    const result = await driver.execute(
+      createDriverExecutionContext({
+        config: {
+          model: provider,
+          name: "primary",
+        },
+        emittedEvents,
+      })
+    );
+
+    expect(result.resolution.type).toBe("fail");
+
+    if (result.resolution.type !== "fail") {
+      throw new Error("expected a fail resolution");
+    }
+
+    expect(result.resolution.fatality).toBe("hard");
+    expect(result.resolution.error).toMatchObject({
+      code: "react_driver_invalid_provider_stream",
+    });
+    expect(emittedEvents.map((event) => event.type)).toEqual([
+      "message.start",
+      "structured.delta",
+    ]);
   });
 
   test("fails hard when config.model is not a concrete provider", async () => {

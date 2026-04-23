@@ -430,6 +430,7 @@ class StreamAccumulator {
         );
       case "finish":
         this.finishChunk = cloneValue(chunk);
+        this.assertCompletedProviderParts();
         this.messageDonePublished = true;
         return this.createTerminalEventsFromFinish(chunk);
       case "error":
@@ -444,6 +445,11 @@ class StreamAccumulator {
     partial?: boolean;
   }): TuvrenModelResponse {
     const parts: TuvrenModelResponse["parts"] = [];
+    const partial = options?.partial === true;
+
+    if (!partial) {
+      this.assertCompletedProviderParts();
+    }
 
     for (const part of this.parts) {
       switch (part.kind) {
@@ -469,7 +475,7 @@ class StreamAccumulator {
           break;
         }
         case "structured": {
-          const data = parsePartialStructuredPart(part, options?.partial);
+          const data = parsePartialStructuredPart(part, partial);
 
           if (data !== undefined) {
             parts.push({
@@ -481,7 +487,7 @@ class StreamAccumulator {
           break;
         }
         case "tool_call": {
-          const input = parsePartialToolCallInput(part.state, options?.partial);
+          const input = parsePartialToolCallInput(part.state, partial);
 
           if (input !== undefined) {
             parts.push({
@@ -514,6 +520,38 @@ class StreamAccumulator {
       providerMetadata: cloneValue(this.finishChunk?.providerMetadata),
       usage: cloneValue(this.finishChunk?.usage),
     };
+  }
+
+  private assertCompletedProviderParts(): void {
+    for (const part of this.parts) {
+      switch (part.kind) {
+        case "structured":
+          if (!part.done) {
+            throw new TuvrenProviderError(
+              "provider stream finished before structured output completed",
+              {
+                code: "react_driver_invalid_provider_stream",
+              }
+            );
+          }
+          break;
+        case "tool_call":
+          if (!part.state.done) {
+            throw new TuvrenProviderError(
+              "provider stream finished before tool call completed",
+              {
+                code: "react_driver_invalid_provider_stream",
+                details: {
+                  providerCallId: part.state.providerCallId,
+                },
+              }
+            );
+          }
+          break;
+        default:
+          break;
+      }
+    }
   }
 
   get messageDoneEmitted(): boolean {
