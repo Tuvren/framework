@@ -9,7 +9,8 @@
   "workspaces": [
     "boundaries/*/contracts/*",
     "boundaries/*/implementations/*/*",
-    "boundaries/*/testkit"
+    "boundaries/*/testkit",
+    "boundaries/framework/implementations/typescript/drivers/*"
   ],
   "scripts": {
     "lint": "bunx --bun @biomejs/biome check .",

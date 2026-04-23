@@ -46,6 +46,20 @@
         "@tuvren/runtime-api": "workspace:*",
       },
     },
+    "boundaries/framework/implementations/typescript/drivers/react": {
+      "name": "@tuvren/driver-react",
+      "version": "0.0.0",
+      "dependencies": {
+        "@tuvren/core-types": "workspace:*",
+        "@tuvren/driver-api": "workspace:*",
+        "@tuvren/provider-api": "workspace:*",
+        "@tuvren/runtime-api": "workspace:*",
+        "ajv": "8.18.0",
+      },
+      "devDependencies": {
+        "@tuvren/runtime-core": "workspace:*",
+      },
+    },
     "boundaries/framework/implementations/typescript/runtime-core": {
       "name": "@tuvren/runtime-core",
       "version": "0.0.0",
@@ -582,6 +596,8 @@
     "@tuvren/core-types": ["@tuvren/core-types@workspace:boundaries/shared/contracts/core-types"],
 
     "@tuvren/driver-api": ["@tuvren/driver-api@workspace:boundaries/framework/contracts/driver-api"],
+
+    "@tuvren/driver-react": ["@tuvren/driver-react@workspace:boundaries/framework/implementations/typescript/drivers/react"],
 
     "@tuvren/event-stream": ["@tuvren/event-stream@workspace:boundaries/framework/contracts/event-stream"],
 
