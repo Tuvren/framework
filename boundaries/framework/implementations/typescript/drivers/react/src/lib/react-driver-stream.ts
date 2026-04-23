@@ -15,6 +15,7 @@
  */
 
 import { randomUUID } from "node:crypto";
+import type { EpochMs } from "@tuvren/core-types";
 import { TuvrenProviderError, TuvrenRuntimeError } from "@tuvren/core-types";
 import type { DriverRuntimePort } from "@tuvren/driver-api";
 import type { TuvrenMessage, TuvrenStreamEvent } from "@tuvren/runtime-api";
@@ -25,73 +26,80 @@ import type {
   TuvrenProvider,
 } from "@tuvren/provider-api";
 
+export interface BufferedAssistantSequence {
+  events: TuvrenStreamEvent[];
+  response: TuvrenModelResponse;
+}
+
 export async function executeGenerateCall(input: {
+  now: () => EpochMs;
   prompt: TuvrenPrompt;
   provider: TuvrenProvider;
-  runtime: DriverRuntimePort;
-}): Promise<TuvrenModelResponse> {
-  const response = await input.provider.generate(cloneValue(input.prompt));
-  await emitAssistantResponseEvents(response, input.runtime);
-  return cloneValue(response);
+}): Promise<BufferedAssistantSequence> {
+  const response = cloneValue(await input.provider.generate(cloneValue(input.prompt)));
+  return createBufferedAssistantSequence(response, input.now);
 }
 
 export async function executeStreamCall(input: {
+  now: () => EpochMs;
   prompt: TuvrenPrompt;
   provider: TuvrenProvider;
-  runtime: DriverRuntimePort;
-}): Promise<TuvrenModelResponse> {
-  const runtime = input.runtime;
+}): Promise<BufferedAssistantSequence> {
   const messageId = randomUUID();
-  const accumulator = new StreamAccumulator(messageId);
-
-  await runtime.emit({
-    messageId,
-    role: "assistant",
-    timestamp: runtime.now(),
-    type: "message.start",
-  });
+  const accumulator = new StreamAccumulator(messageId, input.now);
+  const events: TuvrenStreamEvent[] = [
+    {
+      messageId,
+      role: "assistant",
+      timestamp: input.now(),
+      type: "message.start",
+    },
+  ];
 
   for await (const chunk of input.provider.stream(cloneValue(input.prompt))) {
-    const events = accumulator.absorb(chunk);
-
-    for (const event of events) {
-      await runtime.emit({
-        ...event,
-        timestamp: runtime.now(),
-      });
-    }
+    events.push(...accumulator.absorb(chunk));
   }
 
   const response = accumulator.finalize();
 
   if (!accumulator.messageDoneEmitted) {
-    await runtime.emit({
-      finishReason: response.finishReason,
-      messageId,
-      timestamp: runtime.now(),
-      type: "message.done",
-      usage: response.usage,
-    });
+    events.push(...accumulator.createTerminalEvents(response));
   }
 
-  return response;
+  return {
+    events,
+    response,
+  };
 }
 
-export async function emitAssistantResponseEvents(
+export function createBufferedAssistantSequence(
   response: TuvrenModelResponse,
-  runtime: DriverRuntimePort
-): Promise<void> {
+  now: () => EpochMs
+): BufferedAssistantSequence {
   const messageId = randomUUID();
 
-  await runtime.emit({
-    messageId,
-    role: "assistant",
-    timestamp: runtime.now(),
-    type: "message.start",
-  });
+  return {
+    events: [
+      {
+        messageId,
+        role: "assistant",
+        timestamp: now(),
+        type: "message.start",
+      },
+      ...synthesizeAssistantEvents(response, messageId, now),
+    ],
+    response: cloneValue(response),
+  };
+}
 
-  for (const event of synthesizeAssistantEvents(response, messageId, runtime)) {
-    await runtime.emit(event);
+export async function flushBufferedAssistantSequences(
+  sequences: readonly BufferedAssistantSequence[],
+  runtime: DriverRuntimePort
+): Promise<void> {
+  for (const sequence of sequences) {
+    for (const event of sequence.events) {
+      await runtime.emit(cloneValue(event));
+    }
   }
 }
 
@@ -106,7 +114,7 @@ export function inferAssistantFinishReason(
 function synthesizeAssistantEvents(
   response: TuvrenModelResponse,
   messageId: string,
-  runtime: DriverRuntimePort
+  now: () => EpochMs
 ): TuvrenStreamEvent[] {
   const events: TuvrenStreamEvent[] = [];
 
@@ -116,13 +124,13 @@ function synthesizeAssistantEvents(
         events.push({
           delta: part.text,
           messageId,
-          timestamp: runtime.now(),
+          timestamp: now(),
           type: "text.delta",
         });
         events.push({
           messageId,
           text: part.text,
-          timestamp: runtime.now(),
+          timestamp: now(),
           type: "text.done",
         });
         break;
@@ -131,14 +139,14 @@ function synthesizeAssistantEvents(
           events.push({
             delta: part.text,
             messageId,
-            timestamp: runtime.now(),
+            timestamp: now(),
             type: "reasoning.delta",
           });
         }
 
         events.push({
           messageId,
-          timestamp: runtime.now(),
+          timestamp: now(),
           type: "reasoning.done",
         });
         break;
@@ -146,14 +154,14 @@ function synthesizeAssistantEvents(
         events.push({
           delta: JSON.stringify(part.data) ?? "null",
           messageId,
-          timestamp: runtime.now(),
+          timestamp: now(),
           type: "structured.delta",
         });
         events.push({
           data: cloneValue(part.data),
           messageId,
           name: part.name,
-          timestamp: runtime.now(),
+          timestamp: now(),
           type: "structured.done",
         });
         break;
@@ -166,7 +174,7 @@ function synthesizeAssistantEvents(
           filename: part.filename,
           mediaType: part.mediaType,
           messageId,
-          timestamp: runtime.now(),
+          timestamp: now(),
           type: "file.done",
         });
         break;
@@ -175,20 +183,20 @@ function synthesizeAssistantEvents(
           callId: part.callId,
           messageId,
           name: part.name,
-          timestamp: runtime.now(),
+          timestamp: now(),
           type: "tool_call.start",
         });
         events.push({
           callId: part.callId,
           delta: JSON.stringify(part.input) ?? "null",
-          timestamp: runtime.now(),
+          timestamp: now(),
           type: "tool_call.args_delta",
         });
         events.push({
           callId: part.callId,
           input: cloneValue(part.input),
           name: part.name,
-          timestamp: runtime.now(),
+          timestamp: now(),
           type: "tool_call.done",
         });
         break;
@@ -210,7 +218,7 @@ function synthesizeAssistantEvents(
   events.push({
     finishReason: response.finishReason,
     messageId,
-    timestamp: runtime.now(),
+    timestamp: now(),
     type: "message.done",
     usage: response.usage,
   });
@@ -221,6 +229,7 @@ function synthesizeAssistantEvents(
 interface PendingToolCall {
   argsDelta: string;
   callId: string;
+  done: boolean;
   input?: unknown;
   name: string;
   providerCallId: string;
@@ -228,8 +237,14 @@ interface PendingToolCall {
 
 type AccumulatedPart =
   | { kind: "text"; text: string }
-  | { kind: "reasoning"; text: string; signature?: string }
-  | { kind: "structured"; data?: unknown; delta: string; name?: string }
+  | { done: boolean; kind: "reasoning"; text: string; signature?: string }
+  | {
+      data?: unknown;
+      delta: string;
+      done: boolean;
+      kind: "structured";
+      name?: string;
+    }
   | { kind: "tool_call"; state: PendingToolCall };
 
 class StreamAccumulator {
@@ -240,7 +255,10 @@ class StreamAccumulator {
     | undefined;
   private messageDonePublished = false;
 
-  constructor(private readonly messageId: string) {}
+  constructor(
+    private readonly messageId: string,
+    private readonly now: () => EpochMs
+  ) {}
 
   absorb(chunk: ProviderStreamChunk): TuvrenStreamEvent[] {
     switch (chunk.type) {
@@ -250,7 +268,7 @@ class StreamAccumulator {
           {
             delta: chunk.text,
             messageId: this.messageId,
-            timestamp: 0,
+            timestamp: this.now(),
             type: "text.delta",
           },
         ];
@@ -260,15 +278,16 @@ class StreamAccumulator {
           {
             delta: chunk.text,
             messageId: this.messageId,
-            timestamp: 0,
+            timestamp: this.now(),
             type: "reasoning.delta",
           },
         ];
       case "reasoning_done":
+        this.completeReasoning();
         return [
           {
             messageId: this.messageId,
-            timestamp: 0,
+            timestamp: this.now(),
             type: "reasoning.done",
           },
         ];
@@ -278,7 +297,7 @@ class StreamAccumulator {
           {
             delta: chunk.delta,
             messageId: this.messageId,
-            timestamp: 0,
+            timestamp: this.now(),
             type: "structured.delta",
           },
         ];
@@ -289,7 +308,7 @@ class StreamAccumulator {
             data: cloneValue(chunk.data),
             messageId: this.messageId,
             name: chunk.name,
-            timestamp: 0,
+            timestamp: this.now(),
             type: "structured.done",
           },
         ];
@@ -301,7 +320,7 @@ class StreamAccumulator {
           {
             callId: this.requireToolCall(chunk.providerCallId).callId,
             delta: chunk.delta,
-            timestamp: 0,
+            timestamp: this.now(),
             type: "tool_call.args_delta",
           },
         ];
@@ -312,23 +331,14 @@ class StreamAccumulator {
             callId: this.requireToolCall(chunk.providerCallId).callId,
             input: cloneValue(chunk.input),
             name: chunk.name,
-            timestamp: 0,
+            timestamp: this.now(),
             type: "tool_call.done",
           },
         ];
       case "finish":
         this.finishChunk = cloneValue(chunk);
         this.messageDonePublished = true;
-        return [
-          ...this.createCompletionEvents(),
-          {
-            finishReason: chunk.finishReason,
-            messageId: this.messageId,
-            timestamp: 0,
-            type: "message.done",
-            usage: cloneValue(chunk.usage),
-          },
-        ];
+        return this.createTerminalEventsFromFinish(chunk);
       case "error":
         throw toProviderError(chunk.error);
       default:
@@ -394,6 +404,19 @@ class StreamAccumulator {
     return this.messageDonePublished;
   }
 
+  createTerminalEvents(response: TuvrenModelResponse): TuvrenStreamEvent[] {
+    return [
+      ...this.createCompletionEvents(),
+      {
+        finishReason: response.finishReason,
+        messageId: this.messageId,
+        timestamp: this.now(),
+        type: "message.done",
+        usage: response.usage,
+      },
+    ];
+  }
+
   private appendText(delta: string): void {
     const lastPart = this.parts.at(-1);
 
@@ -418,31 +441,19 @@ class StreamAccumulator {
     }
 
     this.parts.push({
+      done: false,
       kind: "reasoning",
       signature,
       text: delta,
     });
   }
 
-  private createCompletionEvents(): TuvrenStreamEvent[] {
-    const events: TuvrenStreamEvent[] = [];
+  private completeReasoning(): void {
+    const lastPart = this.parts.at(-1);
 
-    for (const part of this.parts) {
-      switch (part.kind) {
-        case "text":
-          events.push({
-            messageId: this.messageId,
-            text: part.text,
-            timestamp: 0,
-            type: "text.done",
-          });
-          break;
-        default:
-          break;
-      }
+    if (lastPart?.kind === "reasoning") {
+      lastPart.done = true;
     }
-
-    return events;
   }
 
   private appendStructuredDelta(delta: string): void {
@@ -455,6 +466,7 @@ class StreamAccumulator {
 
     this.parts.push({
       delta,
+      done: false,
       kind: "structured",
     });
   }
@@ -464,6 +476,7 @@ class StreamAccumulator {
 
     if (lastPart?.kind === "structured") {
       lastPart.data = cloneValue(data);
+      lastPart.done = true;
       lastPart.name = name;
       return;
     }
@@ -471,6 +484,7 @@ class StreamAccumulator {
     this.parts.push({
       data: cloneValue(data),
       delta: "",
+      done: true,
       kind: "structured",
       name,
     });
@@ -483,6 +497,7 @@ class StreamAccumulator {
     const state: PendingToolCall = {
       argsDelta: "",
       callId: randomUUID(),
+      done: false,
       name,
       providerCallId,
     };
@@ -495,7 +510,7 @@ class StreamAccumulator {
       callId: state.callId,
       messageId: this.messageId,
       name,
-      timestamp: 0,
+      timestamp: this.now(),
       type: "tool_call.start",
     };
   }
@@ -510,8 +525,80 @@ class StreamAccumulator {
     name: string
   ): void {
     const state = this.requireToolCall(providerCallId);
+    state.done = true;
     state.input = cloneValue(input);
     state.name = name;
+  }
+
+  private createTerminalEventsFromFinish(
+    finish: Extract<ProviderStreamChunk, { type: "finish" }>
+  ): TuvrenStreamEvent[] {
+    return [
+      ...this.createCompletionEvents(),
+      {
+        finishReason: finish.finishReason,
+        messageId: this.messageId,
+        timestamp: this.now(),
+        type: "message.done",
+        usage: cloneValue(finish.usage),
+      },
+    ];
+  }
+
+  private createCompletionEvents(): TuvrenStreamEvent[] {
+    const events: TuvrenStreamEvent[] = [];
+
+    for (const part of this.parts) {
+      switch (part.kind) {
+        case "text":
+          events.push({
+            messageId: this.messageId,
+            text: part.text,
+            timestamp: this.now(),
+            type: "text.done",
+          });
+          break;
+        case "reasoning":
+          if (!part.done) {
+            events.push({
+              messageId: this.messageId,
+              timestamp: this.now(),
+              type: "reasoning.done",
+            });
+            part.done = true;
+          }
+          break;
+        case "structured":
+          if (!part.done) {
+            events.push({
+              data: cloneValue(part.data ?? parseStructuredValue(part.delta)),
+              messageId: this.messageId,
+              name: part.name,
+              timestamp: this.now(),
+              type: "structured.done",
+            });
+            part.done = true;
+          }
+          break;
+        case "tool_call":
+          if (!part.state.done) {
+            events.push({
+              callId: part.state.callId,
+              input:
+                part.state.input ?? parseStructuredValue(part.state.argsDelta),
+              name: part.state.name,
+              timestamp: this.now(),
+              type: "tool_call.done",
+            });
+            part.state.done = true;
+          }
+          break;
+        default:
+          break;
+      }
+    }
+
+    return events;
   }
 
   private requireToolCall(providerCallId: string): PendingToolCall {

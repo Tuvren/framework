@@ -1,9 +1,9 @@
 # Technical Specification
 
 ## 0. Version History & Changelog
+- v0.4.1 - Extended the shared driver result seam with explicit extension state updates so concrete drivers can preserve `aroundModel` state through the shared-core checkpoint path.
 - v0.4.0 - Advanced the post-runtime-core roadmap into narrower deferred epics by splitting the old ReAct/bridge/adapter/host path into smaller slices beginning with a focused ReAct Driver foundation epic.
 - v0.3.3 - Realigned the shared framework contract layer to the docs-first minimal core model: lineage path, minimal runtime status, handle/tree orchestration, and a reduced driver result seam.
-- v0.3.2 - Synced the published orchestration contract to the runtime-core reality by adding session-local worker state, worker approval resolution, parent-qualified worker launch, and narrowed orchestration resume typing.
 - ... [Older history truncated, refer to git logs]
 
 ## 1. Stack Specification (Bill of Materials)
@@ -869,10 +869,16 @@ export interface DriverResumeContext extends DriverExecutionContext {
   resumedFrom?: HashString;
 }
 
+export interface DriverExtensionStateUpdate {
+  extensionName: string;
+  state: Record<string, unknown>;
+}
+
 export interface DriverExecutionResult {
   resolution: RuntimeResolution;
   messages?: TuvrenMessage[];
   partial?: boolean;
+  stateUpdates?: DriverExtensionStateUpdate[];
   toolExecutionMode?: "parallel" | "sequential";
 }
 
@@ -894,7 +900,7 @@ export interface DriverRegistry {
 }
 ```
 
-`DriverExecutionResult` may contain at most one assistant message per iteration. `toolExecutionMode` is required when that assistant message requests tool calls and omitted otherwise. This keeps sequential-vs-parallel selection on the shared driver boundary instead of on runtime-core construction options. Approval resume remains framework-owned; any driver `resume(...)` method is optional and not part of the current shared-core execution path.
+`DriverExecutionResult` may contain at most one assistant message per iteration. `toolExecutionMode` is required when that assistant message requests tool calls and omitted otherwise. `stateUpdates` carries per-extension manifest updates collected by concrete driver-owned `aroundModel` execution so the shared core can apply them at the same checkpoint that commits the assistant message and manifest. This keeps sequential-vs-parallel selection and extension-state durability on the shared driver boundary instead of on runtime-core construction options. Approval resume remains framework-owned; any driver `resume(...)` method is optional and not part of the current shared-core execution path.
 
 `runtime.emit(...)` is limited to driver-owned stream content and custom events. Framework-owned lifecycle events such as `turn.*`, `iteration.*`, `tool.*`, `approval.*`, `state.*`, and `error` remain shared-core responsibilities and are rejected if a driver tries to emit them directly. If a driver emits assistant content events, that emitted assistant sequence must reconcile to the durable assistant message in `DriverExecutionResult.messages`, including incremental delta payloads such as `text.delta`, `reasoning.delta`, `structured.delta`, and `tool_call.args_delta`, stable event identity (`messageId`, `callId`), canonical message-start/message-done ordering, and the final `finishReason`; otherwise runtime-core rejects it as an invalid stream event. When a driver returns a durable assistant message without emitting matching assistant content events, runtime-core synthesizes those missing assistant stream events from the durable message so the public stream and persisted history stay aligned.
 

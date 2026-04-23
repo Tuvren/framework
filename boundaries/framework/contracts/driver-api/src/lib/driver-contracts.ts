@@ -77,13 +77,20 @@ export interface DriverResumeContext extends DriverExecutionContext {
 
 export type DriverToolExecutionMode = "parallel" | "sequential";
 
+export interface DriverExtensionStateUpdate {
+  extensionName: string;
+  state: Record<string, unknown>;
+}
+
 // Keep the result seam intentionally minimal. If a future need cannot be
-// expressed through resolution/messages/partial/toolExecutionMode, treat that
-// as a spec discussion rather than extending the shared contract casually.
+// expressed through resolution/messages/partial/toolExecutionMode/stateUpdates,
+// treat that as a spec discussion rather than extending the shared contract
+// casually.
 export interface DriverExecutionResult {
   messages?: TuvrenMessage[];
   partial?: boolean;
   resolution: RuntimeResolution;
+  stateUpdates?: DriverExtensionStateUpdate[];
   toolExecutionMode?: DriverToolExecutionMode;
 }
 
@@ -108,8 +115,10 @@ const DRIVER_RESULT_KEYS = new Set([
   "messages",
   "partial",
   "resolution",
+  "stateUpdates",
   "toolExecutionMode",
 ]);
+const EXTENSION_STATE_UPDATE_KEYS = new Set(["extensionName", "state"]);
 const CONTINUE_RESOLUTION_KEYS = new Set(["type"]);
 const END_TURN_RESOLUTION_KEYS = new Set(["reason", "type"]);
 const PAUSE_RESOLUTION_KEYS = new Set(["approval", "reason", "type"]);
@@ -205,6 +214,7 @@ export function assertDriverExecutionResult(
     );
   }
 
+  assertDriverStateUpdates(value.stateUpdates, `${label}.stateUpdates`);
   assertDriverMessages(value, label);
 
   assertOnlyAllowedKeys(value, DRIVER_RESULT_KEYS, label);
@@ -811,6 +821,41 @@ function assertOptionalRecord(value: unknown, label: string): void {
       code: "invalid_driver_result",
       details: value,
     });
+  }
+}
+
+function assertDriverStateUpdates(value: unknown, label: string): void {
+  if (value === undefined) {
+    return;
+  }
+
+  if (!Array.isArray(value)) {
+    throw new TuvrenValidationError(`${label} must be an array`, {
+      code: "invalid_driver_result",
+      details: value,
+    });
+  }
+
+  for (const [index, update] of value.entries()) {
+    if (
+      !isRecord(update) ||
+      typeof update.extensionName !== "string" ||
+      !isRecord(update.state)
+    ) {
+      throw new TuvrenValidationError(
+        `${label}[${index}] must be a valid DriverExtensionStateUpdate`,
+        {
+          code: "invalid_driver_result",
+          details: update,
+        }
+      );
+    }
+
+    assertOnlyAllowedKeys(
+      update,
+      EXTENSION_STATE_UPDATE_KEYS,
+      `${label}[${index}]`
+    );
   }
 }
 

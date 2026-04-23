@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import { isDeepStrictEqual } from "node:util";
 import Ajv from "ajv";
 import {
   TuvrenProviderError,
@@ -23,6 +24,7 @@ import {
 import type {
   DriverExecutionContext,
   DriverExecutionResult,
+  DriverExtensionStateUpdate,
   DriverToolExecutionMode,
   RuntimeDriver,
   RuntimeDriverFactory,
@@ -31,19 +33,26 @@ import type {
   AgentConfig,
   AroundModelContext,
   StructuredPart,
+  TuvrenExtension,
   TuvrenMessage,
   TuvrenModelResponse,
   TuvrenProvider,
-  TuvrenExtension,
 } from "@tuvren/runtime-api";
 import { assertTuvrenModelResponse } from "@tuvren/provider-api";
 import {
+  type NormalizedAroundModelResult,
   cloneAroundModelContext,
   createExtensionStateSnapshot,
   normalizeAroundModelResult,
   preparePromptState,
 } from "./react-driver-prompt.js";
-import { executeGenerateCall, executeStreamCall } from "./react-driver-stream.js";
+import {
+  createBufferedAssistantSequence,
+  executeGenerateCall,
+  executeStreamCall,
+  flushBufferedAssistantSequences,
+  type BufferedAssistantSequence,
+} from "./react-driver-stream.js";
 
 const AJV = new Ajv({
   allErrors: true,
@@ -80,6 +89,12 @@ interface ResolvedReActDriverOptions {
   toolExecutionMode: ReActDriverToolExecutionModeResolver;
 }
 
+interface ModelExecutionOutcome {
+  assistantSequences: BufferedAssistantSequence[];
+  response: TuvrenModelResponse;
+  stateUpdates: DriverExtensionStateUpdate[];
+}
+
 class ReActDriver implements RuntimeDriver {
   readonly id = REACT_DRIVER_ID;
 
@@ -87,8 +102,7 @@ class ReActDriver implements RuntimeDriver {
 
   async execute(context: DriverExecutionContext): Promise<DriverExecutionResult> {
     try {
-      const execution = await executeIteration(context, this.options);
-      return execution;
+      return await executeIteration(context, this.options);
     } catch (error: unknown) {
       return {
         resolution: {
@@ -129,7 +143,12 @@ async function executeIteration(
     tools: context.toolRegistry.toDefinitions(),
   });
   const aroundModelContext = createAroundModelContext(context, promptState);
-  const response = await runAroundModelChain(context, options, aroundModelContext);
+  const execution = await runAroundModelChain(
+    context,
+    options,
+    aroundModelContext
+  );
+  const response = execution.response;
 
   assertTuvrenModelResponse(response, "response");
   validateStructuredOutput(context, response);
@@ -176,13 +195,20 @@ async function executeIteration(
   const requestsTools = assistantMessage.parts.some(
     (part) => part.type === "tool_call"
   );
-
-  return requestsTools
+  const stateUpdates =
+    execution.stateUpdates.length === 0
+      ? undefined
+      : execution.stateUpdates.map((update) => ({
+          extensionName: update.extensionName,
+          state: cloneValue(update.state),
+        }));
+  const driverResult: DriverExecutionResult = requestsTools
     ? {
         messages: [assistantMessage],
         resolution: {
           type: "continue_iteration",
         },
+        stateUpdates,
         toolExecutionMode: resolveToolExecutionMode(
           options.toolExecutionMode,
           context,
@@ -195,14 +221,22 @@ async function executeIteration(
           reason: "done",
           type: "end_turn",
         },
+        stateUpdates,
       };
+
+  await flushBufferedAssistantSequences(
+    execution.assistantSequences,
+    context.runtime
+  );
+
+  return driverResult;
 }
 
 async function runAroundModelChain(
   context: DriverExecutionContext,
   options: ResolvedReActDriverOptions,
   initialContext: AroundModelContext
-): Promise<TuvrenModelResponse> {
+): Promise<ModelExecutionOutcome> {
   const handlers = (context.config.extensions ?? []).filter(
     (extension): extension is TuvrenExtension & {
       aroundModel: NonNullable<TuvrenExtension["aroundModel"]>;
@@ -212,12 +246,13 @@ async function runAroundModelChain(
   const invokeAt = async (
     index: number,
     currentContext: AroundModelContext
-  ): Promise<TuvrenModelResponse> => {
+  ): Promise<ModelExecutionOutcome> => {
     if (index >= handlers.length) {
       return await callProvider(currentContext, context, options);
     }
 
     const extension = handlers[index];
+    const nextOutcomes: ModelExecutionOutcome[] = [];
     const extensionContext = {
       ...cloneAroundModelContext(currentContext),
       extensionState: createExtensionStateSnapshot(
@@ -225,18 +260,35 @@ async function runAroundModelChain(
         extension.name
       ),
     } satisfies AroundModelContext;
-    const result = await extension.aroundModel(
-      extensionContext,
-      async (nextContext) =>
-        await invokeAt(
-          index + 1,
-          nextContext === undefined
-            ? cloneAroundModelContext(currentContext)
-            : cloneAroundModelContext(nextContext)
-        )
+    const result = normalizeAroundModelResult(
+      await extension.aroundModel(
+        extensionContext,
+        async (nextContext) => {
+          const nextOutcome = await invokeAt(
+            index + 1,
+            nextContext === undefined
+              ? cloneAroundModelContext(currentContext)
+              : cloneAroundModelContext(nextContext)
+          );
+          nextOutcomes.push(nextOutcome);
+          return cloneValue(nextOutcome.response);
+        }
+      )
     );
 
-    return normalizeAroundModelResult(result);
+    return {
+      assistantSequences: finalizeAroundModelSequences(
+        result,
+        nextOutcomes,
+        context.runtime.now
+      ),
+      response: result.response,
+      stateUpdates: collectAroundModelStateUpdates(
+        extension.name,
+        result,
+        nextOutcomes
+      ),
+    };
   };
 
   return await invokeAt(0, initialContext);
@@ -246,25 +298,31 @@ async function callProvider(
   aroundContext: AroundModelContext,
   context: DriverExecutionContext,
   options: ResolvedReActDriverOptions
-): Promise<TuvrenModelResponse> {
+): Promise<ModelExecutionOutcome> {
   const provider = resolveProvider(context.config.model);
   const providerCallMode = resolveProviderCallMode(
     options.providerCallMode,
     context,
     provider
   );
+  const sequence =
+    providerCallMode === "generate"
+      ? await executeGenerateCall({
+          now: context.runtime.now,
+          prompt: aroundContext.prompt,
+          provider,
+        })
+      : await executeStreamCall({
+          now: context.runtime.now,
+          prompt: aroundContext.prompt,
+          provider,
+        });
 
-  return providerCallMode === "generate"
-    ? await executeGenerateCall({
-        prompt: aroundContext.prompt,
-        provider,
-        runtime: context.runtime,
-      })
-    : await executeStreamCall({
-        prompt: aroundContext.prompt,
-        provider,
-        runtime: context.runtime,
-      });
+  return {
+    assistantSequences: [sequence],
+    response: sequence.response,
+    stateUpdates: [],
+  };
 }
 
 function createAroundModelContext(
@@ -345,10 +403,21 @@ function validateStructuredOutput(
     return;
   }
 
-  const validator = AJV.compile(request.schema);
   const structuredParts = response.parts.filter(
     (part): part is StructuredPart => part.type === "structured"
   );
+
+  if (structuredParts.length === 0 && !hasRequestedToolCalls(response)) {
+    throw new TuvrenProviderError("structured output validation failed", {
+      code: "structured_output_validation",
+      details: {
+        reason: "missing_structured_part",
+        response,
+      },
+    });
+  }
+
+  const validator = AJV.compile(request.schema);
 
   for (const part of structuredParts) {
     if (!validator(part.data)) {
@@ -361,6 +430,79 @@ function validateStructuredOutput(
       });
     }
   }
+}
+
+function collectAroundModelStateUpdates(
+  extensionName: string,
+  result: NormalizedAroundModelResult,
+  nextOutcomes: ModelExecutionOutcome[]
+): DriverExtensionStateUpdate[] {
+  const updates = nextOutcomes.flatMap((outcome) =>
+    outcome.stateUpdates.map((update) => ({
+      extensionName: update.extensionName,
+      state: cloneValue(update.state),
+    }))
+  );
+
+  if (result.state !== undefined) {
+    updates.push({
+      extensionName,
+      state: cloneValue(result.state),
+    });
+  }
+
+  return updates;
+}
+
+function finalizeAroundModelSequences(
+  result: NormalizedAroundModelResult,
+  nextOutcomes: ModelExecutionOutcome[],
+  now: () => number
+): BufferedAssistantSequence[] {
+  if (nextOutcomes.length === 0) {
+    return [];
+  }
+
+  const priorSequences = nextOutcomes
+    .slice(0, -1)
+    .flatMap((outcome) => cloneAssistantSequences(outcome.assistantSequences));
+  const lastOutcome = nextOutcomes.at(-1);
+
+  if (lastOutcome === undefined) {
+    return priorSequences;
+  }
+
+  if (responsesMatch(lastOutcome.response, result.response)) {
+    return [
+      ...priorSequences,
+      ...cloneAssistantSequences(lastOutcome.assistantSequences),
+    ];
+  }
+
+  return [
+    ...priorSequences,
+    createBufferedAssistantSequence(result.response, now),
+  ];
+}
+
+function cloneAssistantSequences(
+  sequences: readonly BufferedAssistantSequence[]
+): BufferedAssistantSequence[] {
+  return sequences.map((sequence) => ({
+    events: sequence.events.map((event) => cloneValue(event)),
+    response: cloneValue(sequence.response),
+  }));
+}
+
+function responsesMatch(
+  left: TuvrenModelResponse,
+  right: TuvrenModelResponse
+): boolean {
+  return isDeepStrictEqual(stripUndefinedDeep(left), stripUndefinedDeep(right));
+}
+
+function hasRequestedToolCalls(response: TuvrenModelResponse): boolean {
+  return response.parts.some((part) => part.type === "tool_call");
 }
 
 function normalizeExecutionError(error: unknown): Error {

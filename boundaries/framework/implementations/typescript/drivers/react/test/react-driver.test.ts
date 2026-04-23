@@ -32,6 +32,7 @@ import {
   createTuvrenRuntimeCore,
 } from "@tuvren/runtime-core";
 import { createFakeKernelHarness } from "../../../runtime-core/test/fake-kernel.ts";
+import { readBranchContextManifest } from "../../../runtime-core/test/runtime-core-test-helpers.ts";
 import { createReActDriver, REACT_DRIVER_ID } from "../src/index.ts";
 
 describe("driver-react", () => {
@@ -82,6 +83,48 @@ describe("driver-react", () => {
       { content: "Host guidance", role: "system" },
     ]);
     expect(capturedToolsLength).toBe(1);
+  });
+
+  test("binds method-style systemPrompt callbacks to their extension receiver", async () => {
+    let capturedMessages: TuvrenMessage[] = [];
+    const provider = {
+      async generate(prompt) {
+        capturedMessages = prompt.messages;
+        return {
+          finishReason: "stop",
+          parts: [{ text: "Rendered prompt", type: "text" }],
+        } satisfies TuvrenModelResponse;
+      },
+      id: "provider",
+      async *stream() {
+        yield* [];
+      },
+    } satisfies TuvrenProvider;
+    const extension = {
+      name: "capsule",
+      promptLabel: "Bound guidance",
+      systemPrompt() {
+        return this.promptLabel;
+      },
+    } satisfies TuvrenExtension & { promptLabel: string };
+    const driver = createReActDriver({
+      providerCallMode: "generate",
+    }).create();
+
+    await driver.execute(
+      createDriverExecutionContext({
+        config: {
+          extensions: [extension],
+          model: provider,
+          name: "primary",
+        },
+      })
+    );
+
+    expect(capturedMessages[0]).toEqual({
+      content: "Bound guidance",
+      role: "system",
+    });
   });
 
   test("keeps provider call mode and tool execution mode host-configurable", async () => {
@@ -476,6 +519,53 @@ describe("driver-react", () => {
     );
   });
 
+  test("fails hard when a structured response request ends with plain text only", async () => {
+    const provider = {
+      async generate() {
+        return {
+          finishReason: "stop",
+          parts: [{ text: "plain text fallback", type: "text" }],
+        } satisfies TuvrenModelResponse;
+      },
+      id: "provider",
+      async *stream() {
+        yield* [];
+      },
+    } satisfies TuvrenProvider;
+    const driver = createReActDriver({
+      providerCallMode: "generate",
+    }).create();
+
+    const result = await driver.execute(
+      createDriverExecutionContext({
+        config: {
+          model: provider,
+          name: "primary",
+          responseFormat: {
+            name: "answer",
+            schema: {
+              properties: {
+                answer: { type: "string" },
+              },
+              required: ["answer"],
+              type: "object",
+            },
+          },
+        },
+      })
+    );
+
+    expect(result.resolution.type).toBe("fail");
+
+    if (result.resolution.type !== "fail") {
+      throw new Error("expected a fail resolution");
+    }
+
+    expect("code" in result.resolution.error ? result.resolution.error.code : undefined).toBe(
+      "structured_output_validation"
+    );
+  });
+
   test("fails hard when provider emits an error chunk", async () => {
     const provider = {
       async generate() {
@@ -666,6 +756,68 @@ describe("driver-react", () => {
     );
   });
 
+  test("persists aroundModel state updates through the runtime-core checkpoint path", async () => {
+    const harness = createFakeKernelHarness();
+    const provider = {
+      async generate() {
+        return {
+          finishReason: "stop",
+          parts: [{ text: "Stateful response", type: "text" }],
+        } satisfies TuvrenModelResponse;
+      },
+      id: "provider",
+      async *stream() {
+        yield* [];
+      },
+    } satisfies TuvrenProvider;
+    const runtime = createTuvrenRuntimeCore({
+      defaultDriverId: REACT_DRIVER_ID,
+      driverRegistry: createDriverRegistry([
+        createReActDriver({
+          providerCallMode: "generate",
+        }),
+      ]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        extensions: [
+          {
+            async aroundModel(_context, next) {
+              const response = await next();
+              return {
+                response,
+                state: {
+                  remainingBudget: 7,
+                },
+              };
+            },
+            name: "budget",
+          },
+        ],
+        model: provider,
+        name: "primary",
+      },
+      signal: textSignal("Track budget"),
+      threadId: thread.threadId,
+    });
+
+    await collectEvents(handle.events());
+    const manifest = await readBranchContextManifest(
+      harness.kernel,
+      thread.branchId
+    );
+
+    expect(handle.status().phase).toBe("completed");
+    expect(manifest.extensions).toEqual({
+      budget: {
+        remainingBudget: 7,
+      },
+    });
+  });
+
   test("executes end to end through runtime-core for streamed tool calls with host-selected sequential mode", async () => {
     const harness = createFakeKernelHarness();
     let iteration = 0;
@@ -754,6 +906,69 @@ describe("driver-react", () => {
         },
       ])
     );
+  });
+
+  test("surfaces provider stream failures through runtime-core without invalid assistant stream errors", async () => {
+    const harness = createFakeKernelHarness();
+    const provider = {
+      async generate() {
+        throw new Error("generate should not be called");
+      },
+      id: "provider",
+      async *stream() {
+        yield {
+          text: "partial output",
+          type: "text_delta",
+        } as const;
+        yield {
+          error: new Error("provider transport failed"),
+          type: "error",
+        } as const;
+      },
+    } satisfies TuvrenProvider;
+    const runtime = createTuvrenRuntimeCore({
+      defaultDriverId: REACT_DRIVER_ID,
+      driverRegistry: createDriverRegistry([
+        createReActDriver({
+          providerCallMode: "stream",
+        }),
+      ]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        model: provider,
+        name: "primary",
+      },
+      signal: textSignal("Trigger provider failure"),
+      threadId: thread.threadId,
+    });
+
+    const events = await collectEvents(handle.events());
+    const messages = await harness.readBranchMessages(thread.branchId);
+
+    expect(handle.status().phase).toBe("failed");
+    expect(
+      events.some(
+        (event) =>
+          event.type === "error" &&
+          event.error.code === "react_driver_provider_failure"
+      )
+    ).toBe(true);
+    expect(
+      events.some(
+        (event) =>
+          event.type === "error" && event.error.code === "invalid_stream_event"
+      )
+    ).toBe(false);
+    expect(messages).toEqual([
+      {
+        parts: [{ text: "Trigger provider failure", type: "text" }],
+        role: "user",
+      },
+    ]);
   });
 });
 

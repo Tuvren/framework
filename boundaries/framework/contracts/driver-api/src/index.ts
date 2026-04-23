@@ -17,6 +17,7 @@
 // biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public contract surface.
 export type {
   DriverExecutionContext,
+  DriverExtensionStateUpdate,
   DriverExecutionResult,
   DriverHandoffPort,
   DriverRegistry,

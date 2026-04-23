@@ -35,6 +35,11 @@ export interface PreparedPromptState {
   tools: RenderedToolDefinition[];
 }
 
+export interface NormalizedAroundModelResult {
+  response: TuvrenModelResponse;
+  state?: Record<string, unknown>;
+}
+
 export function preparePromptState(input: {
   config: Readonly<AgentConfig>;
   iterationCount: number;
@@ -94,8 +99,18 @@ export function cloneAroundModelContext(
 
 export function normalizeAroundModelResult(
   result: AroundModelResult
-): TuvrenModelResponse {
-  return "response" in result ? result.response : result;
+): NormalizedAroundModelResult {
+  if ("response" in result) {
+    return {
+      response: result.response,
+      state:
+        result.state === undefined ? undefined : cloneRecord(result.state),
+    };
+  }
+
+  return {
+    response: result,
+  };
 }
 
 export function createExtensionStateSnapshot(
@@ -124,7 +139,7 @@ function collectSystemMessages(
     const prompt =
       typeof contribution === "string"
         ? contribution
-        : contribution({
+        : contribution.call(extension, {
             extensionState: createExtensionStateSnapshot(
               manifest,
               extension.name

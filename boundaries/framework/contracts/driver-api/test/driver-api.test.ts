@@ -101,6 +101,22 @@ describe("driver-api", () => {
     ).not.toThrow();
   });
 
+  test("accepts driver state updates for extension-owned manifest namespaces", () => {
+    expect(() =>
+      assertDriverExecutionResult({
+        resolution: { reason: "done", type: "end_turn" },
+        stateUpdates: [
+          {
+            extensionName: "budget",
+            state: {
+              remaining: 3,
+            },
+          },
+        ],
+      })
+    ).not.toThrow();
+  });
+
   test("rejects driver results with more than one assistant message", () => {
     expect(() =>
       assertDriverExecutionResult({
@@ -200,6 +216,18 @@ describe("driver-api", () => {
     ).toThrow(
       "toolExecutionMode is only valid when driver messages request tool calls"
     );
+
+    expect(() =>
+      assertDriverExecutionResult({
+        resolution: { reason: "done", type: "end_turn" },
+        stateUpdates: [
+          {
+            extensionName: "budget",
+            unexpected: true,
+          },
+        ],
+      })
+    ).toThrow("must be a valid DriverExtensionStateUpdate");
   });
 
   test("requires toolExecutionMode when assistant messages request tool calls", () => {

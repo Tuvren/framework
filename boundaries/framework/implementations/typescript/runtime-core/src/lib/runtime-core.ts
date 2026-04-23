@@ -1316,6 +1316,15 @@ class RuntimeCore implements TuvrenRuntime {
       };
     }
 
+    if (driverResult.stateUpdates !== undefined) {
+      loopState.carriedStateUpdates.push(
+        ...driverResult.stateUpdates.map((update) => ({
+          extensionName: update.extensionName,
+          state: cloneValue(update.state),
+        }))
+      );
+    }
+
     this.flushBufferedDriverEventsIfNeeded(handle, resolution, emittedEvents);
 
     const stagedMessages = [...driverMessages];

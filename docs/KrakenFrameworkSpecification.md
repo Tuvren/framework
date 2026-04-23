@@ -1151,10 +1151,11 @@ DriverExecutionResult
 ├─ resolution: RuntimeResolution
 ├─ messages?: TuvrenMessage[]
 ├─ partial?: boolean
+├─ stateUpdates?: DriverExtensionStateUpdate[]
 └─ toolExecutionMode?: "parallel" | "sequential"
 ```
 
-The driver does not mutate framework-owned state by aliasing context objects in place. If a driver needs to influence framework state, it does so through explicit returned outputs such as `messages`, `resolution`, and `partial`, not through mutation of the execution context.
+The driver does not mutate framework-owned state by aliasing context objects in place. If a driver needs to influence framework state, it does so through explicit returned outputs such as `messages`, `resolution`, `partial`, and `stateUpdates`, not through mutation of the execution context.
 
 The shared core does not require a driver-owned approval-resume path. Approval resume is handled by the framework around the paused tool batch, so any driver `resume(...)` method is optional and outside the current shared-core execution path.
 
@@ -1167,6 +1168,7 @@ The shared core does not require a driver-owned approval-resume path. Approval r
 - `messages` may contain at most one assistant message per iteration
 - `messages` may be absent only for pure control outcomes with no durable assistant-history contribution, or for failures before any durable assistant output was staged
 - `partial` is valid only for failed execution results that stage an assistant message
+- `stateUpdates` carries per-extension manifest updates that must be merged at the same checkpoint that commits the assistant message and updated manifest
 - `toolExecutionMode` is required when the driver requests tool calls through assistant messages, and invalid otherwise
 
 The shared driver seam does **not** carry a generic raw `response` object. Richer transient iteration artifacts belong in driver-local or runtime-internal layers unless a future shared-core need proves otherwise.
