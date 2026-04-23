@@ -1563,6 +1563,84 @@ describe("framework-runtime-core", () => {
     ]);
   });
 
+  test("rejects assistant stream events without a durable assistant message on soft driver failures", async () => {
+    const harness = createFakeKernelHarness();
+    let driverCalls = 0;
+    const driver = {
+      async execute(context) {
+        driverCalls += 1;
+
+        if (driverCalls === 1) {
+          context.runtime.emit({
+            messageId: "assistant-soft-fail",
+            role: "assistant",
+            timestamp: context.runtime.now(),
+            type: "message.start",
+          });
+          context.runtime.emit({
+            delta: "partial",
+            messageId: "assistant-soft-fail",
+            timestamp: context.runtime.now(),
+            type: "text.delta",
+          });
+
+          return {
+            resolution: {
+              error: new Error("soft retry"),
+              fatality: "soft",
+              type: "fail",
+            },
+          };
+        }
+
+        return {
+          messages: [assistantText("second iteration should not run")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createTuvrenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: { name: "primary" },
+      signal: textSignal("Reject soft-fail assistant leak"),
+      threadId: thread.threadId,
+    });
+
+    const events = await collectEvents(handle.events());
+    const errorEvent = events.find(
+      (event): event is Extract<(typeof events)[number], { type: "error" }> =>
+        event.type === "error"
+    );
+
+    expect(driverCalls).toBe(1);
+    expect(handle.status().phase).toBe("failed");
+    expect(errorEvent?.error.code).toBe("invalid_stream_event");
+    expect(
+      events.some(
+        (event) => event.type === "text.delta" && event.delta === "partial"
+      )
+    ).toBe(true);
+    expect(await harness.readBranchMessages(thread.branchId)).toEqual([
+      {
+        parts: [{ text: "Reject soft-fail assistant leak", type: "text" }],
+        role: "user",
+      },
+    ]);
+  });
+
   test("rejects assistant stream events that do not match the durable assistant message", async () => {
     const harness = createFakeKernelHarness();
     const driver = {
@@ -3275,6 +3353,63 @@ describe("framework-runtime-core", () => {
     expect(await harness.readBranchMessages(thread.branchId)).toEqual([
       {
         parts: [{ text: "Reject terminal tool call", type: "text" }],
+        role: "user",
+      },
+    ]);
+  });
+
+  test("rejects driver state updates for extensions that are not active in the current turn", async () => {
+    const harness = createFakeKernelHarness();
+    const driver = {
+      async execute() {
+        return {
+          messages: [assistantText("ghost state")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+          stateUpdates: [
+            {
+              extensionName: "ghost-extension",
+              state: { leaked: true },
+            },
+          ],
+        } satisfies DriverExecutionResult;
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createTuvrenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: { name: "primary" },
+      signal: textSignal("Reject ghost extension state"),
+      threadId: thread.threadId,
+    });
+
+    const events = await collectEvents(handle.events());
+    const errorEvent = events.find(
+      (event): event is Extract<(typeof events)[number], { type: "error" }> =>
+        event.type === "error"
+    );
+    const manifest = await readBranchContextManifest(
+      harness.kernel,
+      thread.branchId
+    );
+
+    expect(handle.status().phase).toBe("failed");
+    expect(errorEvent?.error.code).toBe("invalid_driver_result");
+    expect(manifest.extensions).toEqual({});
+    expect(await harness.readBranchMessages(thread.branchId)).toEqual([
+      {
+        parts: [{ text: "Reject ghost extension state", type: "text" }],
         role: "user",
       },
     ]);

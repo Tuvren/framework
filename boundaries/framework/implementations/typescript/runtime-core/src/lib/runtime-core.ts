@@ -27,6 +27,7 @@ import {
 import type {
   DriverAssistantEventReconciliation,
   DriverExecutionContext,
+  DriverExecutionResult,
   DriverRegistry,
   RuntimeDriver as KrakenDriver,
 } from "@tuvren/driver-api";
@@ -1319,6 +1320,25 @@ class RuntimeCore implements TuvrenRuntime {
       };
     }
 
+    const invalidDriverStateUpdateError = this.findInvalidDriverStateUpdateError(
+      loopState.activeConfig.extensions ?? [],
+      driverResult.stateUpdates
+    );
+
+    if (invalidDriverStateUpdateError !== undefined) {
+      await this.completeTrackedRun(handle, iterationRunId, "completed");
+      return {
+        kind: "outcome",
+        outcome: {
+          resolution: {
+            error: invalidDriverStateUpdateError,
+            fatality: "hard",
+            type: "fail",
+          },
+        },
+      };
+    }
+
     if (driverResult.stateUpdates !== undefined) {
       loopState.carriedStateUpdates.push(
         ...driverResult.stateUpdates.map((update) => ({
@@ -1495,6 +1515,37 @@ class RuntimeCore implements TuvrenRuntime {
             pauseRequiresToolCalls: true,
             resolutionType: resolution.type,
             toolCallCount: requestedToolCallCount,
+          },
+        }
+      );
+    }
+
+    return undefined;
+  }
+
+  private findInvalidDriverStateUpdateError(
+    activeExtensions: TuvrenExtension[],
+    stateUpdates: DriverExecutionResult["stateUpdates"]
+  ): TuvrenRuntimeError | undefined {
+    if (stateUpdates === undefined || stateUpdates.length === 0) {
+      return undefined;
+    }
+
+    const activeExtensionNames = new Set(
+      activeExtensions.map((extension) => extension.name)
+    );
+
+    for (const update of stateUpdates) {
+      if (activeExtensionNames.has(update.extensionName)) {
+        continue;
+      }
+
+      return new TuvrenRuntimeError(
+        "driver state updates must target extensions active in the current agent config",
+        {
+          code: "invalid_driver_result",
+          details: {
+            extensionName: update.extensionName,
           },
         }
       );
@@ -4386,7 +4437,7 @@ function validateDriverAssistantEvents(
   );
 
   if (assistantMessage === undefined) {
-    return resolution.type === "fail"
+    return resolution.type === "fail" && resolution.fatality === "hard"
       ? validateFailedDriverAssistantEvents(assistantEvents)
       : new TuvrenRuntimeError(
           "drivers must not emit assistant content events without returning a durable assistant message",
