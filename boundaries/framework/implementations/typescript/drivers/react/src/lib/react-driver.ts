@@ -22,6 +22,7 @@ import {
   TuvrenValidationError,
 } from "@tuvren/core-types";
 import type {
+  DriverAssistantEventReconciliation,
   DriverExecutionContext,
   DriverExecutionResult,
   DriverExtensionStateUpdate,
@@ -36,6 +37,7 @@ import type {
   TuvrenExtension,
   TuvrenMessage,
   TuvrenModelResponse,
+  TuvrenPrompt,
   TuvrenProvider,
 } from "@tuvren/runtime-api";
 import { assertTuvrenModelResponse } from "@tuvren/provider-api";
@@ -92,8 +94,10 @@ interface ResolvedReActDriverOptions {
 }
 
 interface ModelExecutionOutcome {
+  assistantEventReconciliation?: DriverAssistantEventReconciliation;
   assistantSequences: BufferedAssistantSequence[];
   response: TuvrenModelResponse;
+  responseFormat?: TuvrenPrompt["responseFormat"];
   stateUpdates: DriverExtensionStateUpdate[];
 }
 
@@ -155,7 +159,7 @@ async function executeIteration(
   const response = execution.response;
 
   assertTuvrenModelResponse(response, "response");
-  validateStructuredOutput(context, response);
+  validateStructuredOutput(execution.responseFormat, response);
 
   if (response.finishReason === "error") {
     throw new TuvrenProviderError("provider returned an error finish reason", {
@@ -211,6 +215,12 @@ async function executeIteration(
         }));
   const driverResult: DriverExecutionResult = requestsTools
     ? {
+        ...(execution.assistantEventReconciliation === undefined
+          ? {}
+          : {
+              assistantEventReconciliation:
+                execution.assistantEventReconciliation,
+            }),
         messages: [assistantMessage],
         resolution: {
           type: "continue_iteration",
@@ -223,6 +233,12 @@ async function executeIteration(
         ),
       }
     : {
+        ...(execution.assistantEventReconciliation === undefined
+          ? {}
+          : {
+              assistantEventReconciliation:
+                execution.assistantEventReconciliation,
+            }),
         messages: [assistantMessage],
         resolution: {
           reason: "done",
@@ -282,12 +298,21 @@ async function runAroundModelChain(
     );
 
     return {
+      assistantEventReconciliation: resolveAssistantEventReconciliation(
+        result,
+        nextOutcomes
+      ),
       assistantSequences: finalizeAroundModelSequences(
         result,
         nextOutcomes,
         context.runtime.now
       ),
       response: result.response,
+      responseFormat: resolveAroundModelResponseFormat(
+        result,
+        nextOutcomes,
+        extensionContext
+      ),
       stateUpdates: collectAroundModelStateUpdates(
         extension.name,
         result,
@@ -310,24 +335,26 @@ async function callProvider(
     context,
     provider
   );
+  const prompt = createProviderPrompt(aroundContext);
   const sequence =
     providerCallMode === "generate"
       ? await executeGenerateCall({
           now: context.runtime.now,
-          prompt: createProviderPrompt(aroundContext),
+          prompt,
           provider,
-          runtime: context.runtime,
         })
       : await executeStreamCall({
           now: context.runtime.now,
-          prompt: createProviderPrompt(aroundContext),
+          prompt,
           provider,
           runtime: context.runtime,
         });
 
   return {
+    assistantEventReconciliation: undefined,
     assistantSequences: [sequence],
     response: sequence.response,
+    responseFormat: cloneValue(prompt.responseFormat),
     stateUpdates: [],
   };
 }
@@ -401,11 +428,9 @@ function resolveToolExecutionMode(
 }
 
 function validateStructuredOutput(
-  context: DriverExecutionContext,
+  request: TuvrenPrompt["responseFormat"],
   response: TuvrenModelResponse
 ): void {
-  const request = context.config.responseFormat;
-
   if (request === undefined) {
     return;
   }
@@ -517,6 +542,66 @@ function responsesMatch(
 
 function hasRequestedToolCalls(response: TuvrenModelResponse): boolean {
   return response.parts.some((part) => part.type === "tool_call");
+}
+
+function resolveAroundModelResponseFormat(
+  result: NormalizedAroundModelResult,
+  nextOutcomes: ModelExecutionOutcome[],
+  currentContext: AroundModelContext
+): TuvrenPrompt["responseFormat"] {
+  if (nextOutcomes.length === 0) {
+    return cloneValue(currentContext.prompt.responseFormat);
+  }
+
+  const matchingOutcome = findMatchingNextOutcome(
+    result.response,
+    nextOutcomes
+  );
+
+  if (matchingOutcome !== undefined) {
+    return cloneValue(matchingOutcome.responseFormat);
+  }
+
+  return cloneValue(nextOutcomes.at(-1)?.responseFormat);
+}
+
+function resolveAssistantEventReconciliation(
+  result: NormalizedAroundModelResult,
+  nextOutcomes: ModelExecutionOutcome[]
+): DriverAssistantEventReconciliation | undefined {
+  if (nextOutcomes.length === 0) {
+    return undefined;
+  }
+
+  const lastOutcome = nextOutcomes.at(-1);
+
+  if (lastOutcome === undefined) {
+    return undefined;
+  }
+
+  if (
+    !responsesMatch(lastOutcome.response, result.response) &&
+    lastOutcome.assistantSequences.some((sequence) => sequence.published)
+  ) {
+    return "allow_final_sequence_divergence";
+  }
+
+  return lastOutcome.assistantEventReconciliation;
+}
+
+function findMatchingNextOutcome(
+  response: TuvrenModelResponse,
+  nextOutcomes: ModelExecutionOutcome[]
+): ModelExecutionOutcome | undefined {
+  for (let index = nextOutcomes.length - 1; index >= 0; index -= 1) {
+    const outcome = nextOutcomes[index];
+
+    if (outcome !== undefined && responsesMatch(outcome.response, response)) {
+      return outcome;
+    }
+  }
+
+  return undefined;
 }
 
 function createProviderPrompt(aroundContext: AroundModelContext) {

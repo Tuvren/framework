@@ -498,13 +498,14 @@ describe("driver-react", () => {
     expect(capturedToolsLength).toBe(0);
   });
 
-  test("does not emit a second live assistant sequence when aroundModel replaces a single next() response", async () => {
-    const emittedEvents: TuvrenStreamEvent[] = [];
+  test("uses the effective aroundModel responseFormat instead of the original agent config", async () => {
+    let capturedResponseFormat: TuvrenPrompt["responseFormat"];
     const provider = {
-      async generate() {
+      async generate(prompt) {
+        capturedResponseFormat = prompt.responseFormat;
         return {
           finishReason: "stop",
-          parts: [{ text: "provider", type: "text" }],
+          parts: [{ text: "plain text allowed", type: "text" }],
         } satisfies TuvrenModelResponse;
       },
       id: "provider",
@@ -514,6 +515,67 @@ describe("driver-react", () => {
     } satisfies TuvrenProvider;
     const driver = createReActDriver({
       providerCallMode: "generate",
+    }).create();
+
+    const result = await driver.execute(
+      createDriverExecutionContext({
+        config: {
+          extensions: [
+            {
+              async aroundModel(context, next) {
+                context.prompt.responseFormat = undefined;
+                return await next();
+              },
+              name: "schema-toggle",
+            },
+          ],
+          model: provider,
+          name: "primary",
+          responseFormat: {
+            name: "answer",
+            schema: {
+              properties: {
+                answer: { type: "string" },
+              },
+              required: ["answer"],
+              type: "object",
+            },
+          },
+        },
+      })
+    );
+
+    expect(capturedResponseFormat).toBeUndefined();
+    expect(result.resolution).toEqual({
+      reason: "done",
+      type: "end_turn",
+    });
+    expect(result.messages?.[0]).toEqual({
+      parts: [{ text: "plain text allowed", type: "text" }],
+      role: "assistant",
+    });
+  });
+
+  test("does not emit a second live assistant sequence when aroundModel replaces a single next() response", async () => {
+    const emittedEvents: TuvrenStreamEvent[] = [];
+    const provider = {
+      async generate() {
+        throw new Error("generate should not be called");
+      },
+      id: "provider",
+      async *stream() {
+        yield {
+          text: "provider",
+          type: "text_delta",
+        } as const;
+        yield {
+          finishReason: "stop",
+          type: "finish",
+        } as const;
+      },
+    } satisfies TuvrenProvider;
+    const driver = createReActDriver({
+      providerCallMode: "stream",
     }).create();
 
     const result = await driver.execute(
@@ -1025,6 +1087,70 @@ describe("driver-react", () => {
     );
   });
 
+  test("does not publish generated assistant events before validation succeeds", async () => {
+    const harness = createFakeKernelHarness();
+    const provider = {
+      async generate() {
+        return {
+          finishReason: "stop",
+          parts: [{ text: "plain text fallback", type: "text" }],
+        } satisfies TuvrenModelResponse;
+      },
+      id: "provider",
+      async *stream() {
+        yield* [];
+      },
+    } satisfies TuvrenProvider;
+    const runtime = createTuvrenRuntimeCore({
+      defaultDriverId: REACT_DRIVER_ID,
+      driverRegistry: createDriverRegistry([
+        createReActDriver({
+          providerCallMode: "generate",
+        }),
+      ]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        model: provider,
+        name: "primary",
+        responseFormat: {
+          name: "answer",
+          schema: {
+            properties: {
+              answer: { type: "string" },
+            },
+            required: ["answer"],
+            type: "object",
+          },
+        },
+      },
+      signal: textSignal("Require structured output"),
+      threadId: thread.threadId,
+    });
+
+    const events = await collectEvents(handle.events());
+    const messages = await harness.readBranchMessages(thread.branchId);
+
+    expect(handle.status().phase).toBe("failed");
+    expect(events.some((event) => event.type === "message.start")).toBe(false);
+    expect(
+      events.some(
+        (event) =>
+          event.type === "error" &&
+          event.error.code === "structured_output_validation"
+      )
+    ).toBe(true);
+    expect(messages).toEqual([
+      {
+        parts: [{ text: "Require structured output", type: "text" }],
+        role: "user",
+      },
+    ]);
+  });
+
   test("streams assistant events through runtime-core before the provider finishes", async () => {
     const harness = createFakeKernelHarness();
     let releaseStream: (() => void) | undefined;
@@ -1160,21 +1286,25 @@ describe("driver-react", () => {
     const harness = createFakeKernelHarness();
     const provider = {
       async generate() {
-        return {
-          finishReason: "stop",
-          parts: [{ text: "provider", type: "text" }],
-        } satisfies TuvrenModelResponse;
+        throw new Error("generate should not be called");
       },
       id: "provider",
       async *stream() {
-        yield* [];
+        yield {
+          text: "provider",
+          type: "text_delta",
+        } as const;
+        yield {
+          finishReason: "stop",
+          type: "finish",
+        } as const;
       },
     } satisfies TuvrenProvider;
     const runtime = createTuvrenRuntimeCore({
       defaultDriverId: REACT_DRIVER_ID,
       driverRegistry: createDriverRegistry([
         createReActDriver({
-          providerCallMode: "generate",
+          providerCallMode: "stream",
         }),
       ]),
       kernel: harness.kernel,

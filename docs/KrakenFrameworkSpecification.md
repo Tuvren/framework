@@ -1151,6 +1151,7 @@ DriverExecutionResult
 ├─ resolution: RuntimeResolution
 ├─ messages?: TuvrenMessage[]
 ├─ partial?: boolean
+├─ assistantEventReconciliation?: "allow_final_sequence_divergence"
 ├─ stateUpdates?: DriverExtensionStateUpdate[]
 └─ toolExecutionMode?: "parallel" | "sequential"
 ```
@@ -1159,7 +1160,7 @@ The driver does not mutate framework-owned state by aliasing context objects in 
 
 The shared core does not require a driver-owned approval-resume path. Approval resume is handled by the framework around the paused tool batch, so any driver `resume(...)` method is optional and outside the current shared-core execution path.
 
-`runtime.emit(...)` is a driver-owned streaming surface, not a framework-lifecycle backdoor. Drivers may use it for custom events and assistant/provider stream-content events only. Shared-core lifecycle events such as `turn.*`, `iteration.*`, `tool.*`, `approval.*`, `state.*`, `error`, and similar framework-owned control events are emitted only by shared core itself. If a driver emits assistant content events, that emitted assistant sequence must normally reconcile to the same durable assistant message returned in `DriverExecutionResult.messages`, including incremental delta payloads such as `text.delta`, `reasoning.delta`, `structured.delta`, and `tool_call.args_delta`, stable event identity (`messageId`, `callId`), canonical message-start/message-done ordering, and the final `finishReason`; otherwise shared core rejects the result as an invalid stream event. The one intentional exception is `aroundModel` post-stream replacement after `next()`: once a live assistant sequence has already been emitted, the wrapper may still replace the durable assistant checkpoint, and shared core validates those emitted assistant sequences as standalone assistant messages rather than requiring equality with the final durable assistant message. If a driver returns a durable assistant message without emitting matching assistant content events, shared core synthesizes the missing assistant stream events from that durable message so the public event stream still reflects the committed assistant output.
+`runtime.emit(...)` is a driver-owned streaming surface, not a framework-lifecycle backdoor. Drivers may use it for custom events and assistant/provider stream-content events only. Shared-core lifecycle events such as `turn.*`, `iteration.*`, `tool.*`, `approval.*`, `state.*`, `error`, and similar framework-owned control events are emitted only by shared core itself. If a driver emits assistant content events, that emitted assistant sequence must normally reconcile to the same durable assistant message returned in `DriverExecutionResult.messages`, including incremental delta payloads such as `text.delta`, `reasoning.delta`, `structured.delta`, and `tool_call.args_delta`, stable event identity (`messageId`, `callId`), canonical message-start/message-done ordering, and the final `finishReason`; otherwise shared core rejects the result as an invalid stream event. The one intentional exception is `aroundModel` post-stream replacement after `next()`: once a live assistant sequence has already been emitted, the wrapper may still replace the durable assistant checkpoint, and the driver must opt into that narrower validation path by returning `assistantEventReconciliation: "allow_final_sequence_divergence"`. Shared core then validates those emitted assistant sequences as standalone assistant messages rather than requiring equality with the final durable assistant message. If a driver returns a durable assistant message without emitting matching assistant content events, shared core synthesizes the missing assistant stream events from that durable message so the public event stream still reflects the committed assistant output.
 
 `DriverExecutionResult` is intentionally minimal:
 
@@ -1168,6 +1169,7 @@ The shared core does not require a driver-owned approval-resume path. Approval r
 - `messages` may contain at most one assistant message per iteration
 - `messages` may be absent only for pure control outcomes with no durable assistant-history contribution, or for failures before any durable assistant output was staged
 - `partial` is valid only for failed execution results that stage an assistant message
+- `assistantEventReconciliation` is optional and only valid for explicit driver-signaled cases such as `aroundModel` post-stream durable replacement
 - `stateUpdates` carries per-extension manifest updates that must be merged at the same checkpoint that commits the assistant message and updated manifest
 - `toolExecutionMode` is required when the driver requests tool calls through assistant messages, and invalid otherwise
 

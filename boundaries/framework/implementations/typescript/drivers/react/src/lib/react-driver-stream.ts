@@ -36,14 +36,11 @@ export async function executeGenerateCall(input: {
   now: () => EpochMs;
   prompt: TuvrenPrompt;
   provider: TuvrenProvider;
-  runtime: DriverRuntimePort;
 }): Promise<BufferedAssistantSequence> {
   const response = cloneValue(
     await input.provider.generate(cloneValue(input.prompt))
   );
-  const sequence = createBufferedAssistantSequence(response, input.now);
-  await publishBufferedAssistantSequence(sequence, input.runtime);
-  return sequence;
+  return createBufferedAssistantSequence(response, input.now);
 }
 
 export async function executeStreamCall(input: {

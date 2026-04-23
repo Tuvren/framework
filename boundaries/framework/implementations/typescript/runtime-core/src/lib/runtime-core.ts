@@ -25,6 +25,7 @@ import {
   TuvrenRuntimeError,
 } from "@tuvren/core-types";
 import type {
+  DriverAssistantEventReconciliation,
   DriverExecutionContext,
   DriverRegistry,
   RuntimeDriver as KrakenDriver,
@@ -1264,14 +1265,11 @@ class RuntimeCore implements TuvrenRuntime {
     let resolution = driverResult.resolution;
     const driverMessages = [...(driverResult.messages ?? [])];
     const cancellationResolution = createCancelledResolution(handle);
-    const allowsAroundModelDivergence = (
-      loopState.activeConfig.extensions ?? []
-    ).some((extension) => extension.aroundModel !== undefined);
     const assistantEventValidationError = validateDriverAssistantEvents(
       driverMessages,
       emittedDriverEvents,
       cancellationResolution ?? resolution,
-      allowsAroundModelDivergence
+      driverResult.assistantEventReconciliation
     );
     const synthesizedAssistantEvents = this.ensureDriverAssistantEvents(
       handle,
@@ -4372,7 +4370,7 @@ function validateDriverAssistantEvents(
   messages: TuvrenMessage[],
   emittedEvents: TuvrenStreamEvent[],
   resolution: RuntimeResolution,
-  allowsDurableAssistantDivergence: boolean
+  assistantEventReconciliation: DriverAssistantEventReconciliation | undefined
 ): TuvrenRuntimeError | undefined {
   const assistantEvents = emittedEvents.filter((event) =>
     isAssistantContentStreamEvent(event.type)
@@ -4420,7 +4418,7 @@ function validateDriverAssistantEvents(
     }
   }
 
-  if (allowsDurableAssistantDivergence) {
+  if (assistantEventReconciliation === "allow_final_sequence_divergence") {
     return validateStandaloneAssistantSequence(finalAssistantSequence);
   }
 

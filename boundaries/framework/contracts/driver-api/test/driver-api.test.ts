@@ -117,6 +117,21 @@ describe("driver-api", () => {
     ).not.toThrow();
   });
 
+  test("accepts explicit assistant event reconciliation when an assistant message is returned", () => {
+    expect(() =>
+      assertDriverExecutionResult({
+        assistantEventReconciliation: "allow_final_sequence_divergence",
+        messages: [
+          {
+            parts: [{ text: "Durable output", type: "text" }],
+            role: "assistant",
+          },
+        ],
+        resolution: { reason: "done", type: "end_turn" },
+      })
+    ).not.toThrow();
+  });
+
   test("rejects driver results with more than one assistant message", () => {
     expect(() =>
       assertDriverExecutionResult({
@@ -228,6 +243,15 @@ describe("driver-api", () => {
         ],
       })
     ).toThrow("must be a valid DriverExtensionStateUpdate");
+
+    expect(() =>
+      assertDriverExecutionResult({
+        assistantEventReconciliation: "bad-value",
+        resolution: { reason: "done", type: "end_turn" },
+      })
+    ).toThrow(
+      'assistantEventReconciliation must be "allow_final_sequence_divergence"'
+    );
   });
 
   test("requires toolExecutionMode when assistant messages request tool calls", () => {
@@ -251,6 +275,15 @@ describe("driver-api", () => {
     ).toThrow(
       "toolExecutionMode is required when driver messages request tool calls"
     );
+  });
+
+  test("requires an assistant message when assistant event reconciliation is set", () => {
+    expect(() =>
+      assertDriverExecutionResult({
+        assistantEventReconciliation: "allow_final_sequence_divergence",
+        resolution: { reason: "done", type: "end_turn" },
+      })
+    ).toThrow("assistantEventReconciliation requires an assistant message");
   });
 
   test("rejects handoff resolutions whose targetAgent contradicts the context plan", () => {
