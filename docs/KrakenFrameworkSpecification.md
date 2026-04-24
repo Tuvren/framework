@@ -1190,6 +1190,8 @@ Three distinct surfaces exist for streaming. Each has one role.
 
 **Protocol adapter consumption** (public): Adapters receive `AsyncIterable<TuvrenStreamEvent>` from `handle.events()` and transform it into external formats. Adapters never touch the handle.
 
+`events()` is a single-consumer stream for a given `ExecutionHandle`. Hosts that need multiple downstream consumers own teeing, multicast, filtering, buffering, replay, and backpressure policy outside shared core.
+
 ```
 Internal driver (generator)
   └─→ ExecutionHandle.events()  ←─ host iterates this
@@ -1275,6 +1277,8 @@ for each toolCall in executingTools run concurrently:
 // At checkpoint time the framework materializes the final messages path in the
 // original tool-call order so durable conversation order remains deterministic.
 ```
+
+The shared runtime applies a host-configurable cap to concurrently executing parallel tool calls. Default: `10`. `AgentConfig.maxParallelToolCalls` may override that default for the active agent. When a parallel batch has more executable calls than the cap, execution proceeds in waves: all `tool.start` events for a wave are emitted before any `tool.result` in that wave, then the next wave begins. Durable result ordering still follows the original tool-call order.
 
 For any batch mode, non-executed outcomes that are already known (for example invalid input, unknown tool, or explicit rejection) may emit and stage `tool.result` as soon as they are known; they are not artificially delayed behind slower executable siblings.
 
@@ -1377,7 +1381,7 @@ ExecutionHandle
 └─ status(): ExecutionStatus
 ```
 
-**`events()`** — the primary output. The host iterates this to receive all execution events. Iteration drives execution — the driver advances as the consumer pulls events. If the last consumer abandons a still-running `events()` stream without calling `cancel()` separately, shared core treats that stream abandonment as cancellation of the running execution. Paused Handles remain explicit control surfaces: abandoning an already-paused stream does not synthesize rejection.
+**`events()`** — the primary output. The host iterates this to receive all execution events. Iteration drives execution — the driver advances as the consumer pulls events. The stream is single-consumer per handle; calling `events()` again after consumption starts is invalid. If the only consumer abandons a still-running `events()` stream without calling `cancel()` separately, shared core treats that stream abandonment as cancellation of the running execution. Paused Handles remain explicit control surfaces: abandoning an already-paused stream does not synthesize rejection.
 
 **`cancel()`** — while the Turn is running, triggers the AbortSignal. The driver handles staging partial content and failing the Run. If the Turn is already paused for approval, `cancel()` is treated as rejection of the pending tool calls rather than as an automatic failed terminal state. The shared-core `cancel()` path stages those rejection outcomes durably and stops the paused execution without re-entering the model on the same Turn. This is distinct from `resolveApproval(...)` with explicit `reject` decisions, which continues the same Turn through the normal iteration loop.
 
@@ -1550,7 +1554,7 @@ For each tool call in the batch:
 
 **Execution mode selection**: The driver chooses whether a batch executes sequentially or in parallel. The shared framework core owns the canonical ordering and durability semantics for the chosen mode (§6.4).
 
-**Parallel execution**: Steps 1–3 synchronously for all calls. Split into approved and pending sets. Steps 4–5 concurrently for approved tools via aroundTool chain. If pending set is non-empty, return partial result with `ApprovalRequest` containing `completedResults` (from approved tools) and `toolCalls` (pending).
+**Parallel execution**: Steps 1–3 synchronously for all calls. Split into approved and pending sets. Steps 4–5 concurrently for approved tools via aroundTool chain, subject to the active max-parallel-tool-call cap. If pending set is non-empty, return partial result with `ApprovalRequest` containing `completedResults` (from approved tools) and `toolCalls` (pending).
 
 **Sequential execution**: All steps one call at a time. First approval-gated tool encountered triggers pause with results from previously completed tools.
 
@@ -1642,6 +1646,8 @@ The optional `exports` field declares which keys from that persisted namespace a
 #### Reading and Updating
 
 All handlers receive `ctx.extensionState` (their own persisted extension namespace, deserialized from the manifest). Handler contexts also expose `sharedExports`, a read-only projection of other extensions' declared export keys over the latest persisted extension state. Intercepts and arounds return state updates via the generic `state` field in their return value. Updates are collected per phase and applied at the next checkpoint.
+
+The framework may warn hosts when an extension namespace grows past an implementation-defined manifest budget, but this is advisory only. There is no hard manifest-state cap in the core contract; hosts keep agency over their persistence and performance tradeoffs.
 
 When multiple state update maps are pending before the next checkpoint, the framework merges them deterministically by key, with the later update winning.
 
@@ -1882,7 +1888,8 @@ AgentConfig
 ├─ loopPolicy?: LoopPolicy
 ├─ contextPolicy?: ContextPolicy
 ├─ responseFormat?: StructuredOutputRequest
-└─ maxIterations?: number
+├─ maxIterations?: number
+└─ maxParallelToolCalls?: number
 ```
 
 Agent configs are static for the lifetime of the orchestration. On handoff, the framework swaps the active config and continues on the same Branch.
