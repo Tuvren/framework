@@ -94,9 +94,11 @@ export async function executeStreamCall(input: {
     }
   } catch (error: unknown) {
     if (!isExecutionCancelledError(error)) {
+      closeProviderIterator(iterator);
       throw error;
     }
 
+    closeProviderIterator(iterator);
     const response = accumulator.finalize({
       finishReason: "error",
       partial: true,
@@ -871,6 +873,26 @@ class StreamAccumulator {
       }
     );
   }
+}
+
+function closeProviderIterator(
+  iterator: AsyncIterator<ProviderStreamChunk>
+): void {
+  if (iterator.return === undefined) {
+    return;
+  }
+
+  try {
+    detachCleanup(iterator.return());
+  } catch {
+    // Cleanup errors must not mask the provider/cancellation outcome already in flight.
+  }
+}
+
+function detachCleanup(promise: PromiseLike<unknown>): void {
+  Promise.resolve(promise).catch(() => {
+    // Cleanup errors must not mask the provider/cancellation outcome already in flight.
+  });
 }
 
 function parseStructuredValue(value: string): unknown {

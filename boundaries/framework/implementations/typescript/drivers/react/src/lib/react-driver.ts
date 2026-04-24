@@ -62,18 +62,11 @@ import {
   flushBufferedAssistantSequences,
 } from "./react-driver-stream.js";
 
-const DRAFT_7_AJV = new Ajv({
+const STRUCTURED_OUTPUT_AJV_OPTIONS = {
+  addUsedSchema: false,
   allErrors: true,
   strict: false,
-});
-const DRAFT_2019_09_AJV = new Ajv2019({
-  allErrors: true,
-  strict: false,
-});
-const DRAFT_2020_12_AJV = new Ajv2020({
-  allErrors: true,
-  strict: false,
-});
+};
 const JSON_SCHEMA_DRAFT_7_URIS = new Set([
   "http://json-schema.org/draft-07/schema",
   "http://json-schema.org/draft-07/schema#",
@@ -649,7 +642,7 @@ function validateStructuredOutput(
 }
 
 function compileStructuredOutputSchema(schema: TuvrenJsonSchema) {
-  const ajv = selectStructuredOutputAjv(schema);
+  const ajv = createStructuredOutputAjv(schema);
 
   try {
     return ajv.compile(schema);
@@ -665,7 +658,7 @@ function compileStructuredOutputSchema(schema: TuvrenJsonSchema) {
   }
 }
 
-function selectStructuredOutputAjv(
+function createStructuredOutputAjv(
   schema: TuvrenJsonSchema
 ): Ajv | Ajv2019 | Ajv2020 {
   const schemaDialect = getStructuredOutputSchemaDialect(schema);
@@ -674,15 +667,15 @@ function selectStructuredOutputAjv(
     schemaDialect === undefined ||
     JSON_SCHEMA_DRAFT_7_URIS.has(schemaDialect)
   ) {
-    return DRAFT_7_AJV;
+    return new Ajv(STRUCTURED_OUTPUT_AJV_OPTIONS);
   }
 
   if (JSON_SCHEMA_DRAFT_2019_09_URIS.has(schemaDialect)) {
-    return DRAFT_2019_09_AJV;
+    return new Ajv2019(STRUCTURED_OUTPUT_AJV_OPTIONS);
   }
 
   if (JSON_SCHEMA_DRAFT_2020_12_URIS.has(schemaDialect)) {
-    return DRAFT_2020_12_AJV;
+    return new Ajv2020(STRUCTURED_OUTPUT_AJV_OPTIONS);
   }
 
   throw new TuvrenProviderError("structured output validation failed", {

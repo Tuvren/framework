@@ -24,6 +24,7 @@ import {
 import type {
   ContextManifest,
   InputSignal,
+  ProviderStreamChunk,
   ToolRegistry,
   TuvrenExtension,
   TuvrenMessage,
@@ -1729,6 +1730,82 @@ describe("driver-react", () => {
     ]);
   });
 
+  test("validates dynamic structured schemas with reused ids independently", async () => {
+    let generateCalls = 0;
+    const provider = {
+      async generate() {
+        generateCalls += 1;
+        return {
+          finishReason: "stop",
+          parts: [
+            {
+              data: generateCalls === 1 ? { answer: "alpha" } : { answer: 42 },
+              name: "answer",
+              type: "structured",
+            },
+          ],
+        } satisfies TuvrenModelResponse;
+      },
+      id: "provider",
+      async *stream() {
+        yield* [];
+      },
+    } satisfies TuvrenProvider;
+    const driver = createReActDriver({
+      providerCallMode: "generate",
+    }).create();
+
+    const firstResult = await driver.execute(
+      createDriverExecutionContext({
+        config: {
+          model: provider,
+          name: "primary",
+          responseFormat: {
+            name: "answer",
+            schema: {
+              $id: "urn:tuvren:test:answer",
+              additionalProperties: false,
+              properties: {
+                answer: { type: "string" },
+              },
+              required: ["answer"],
+              type: "object",
+            },
+          },
+        },
+      })
+    );
+    const secondResult = await driver.execute(
+      createDriverExecutionContext({
+        config: {
+          model: provider,
+          name: "primary",
+          responseFormat: {
+            name: "answer",
+            schema: {
+              $id: "urn:tuvren:test:answer",
+              additionalProperties: false,
+              properties: {
+                answer: { type: "number" },
+              },
+              required: ["answer"],
+              type: "object",
+            },
+          },
+        },
+      })
+    );
+
+    expect(firstResult.resolution).toEqual({
+      reason: "done",
+      type: "end_turn",
+    });
+    expect(secondResult.resolution).toEqual({
+      reason: "done",
+      type: "end_turn",
+    });
+  });
+
   test("validates draft 2019-09 structured output using the declared schema dialect", async () => {
     const provider = {
       async generate() {
@@ -2113,6 +2190,91 @@ describe("driver-react", () => {
         role: "assistant",
       },
     ]);
+    expect(emittedEvents.map((event) => event.type)).toEqual([
+      "message.start",
+      "text.delta",
+      "text.done",
+      "message.done",
+    ]);
+  });
+
+  test("closes the provider stream iterator when a pending stream read aborts", async () => {
+    const emittedEvents: TuvrenStreamEvent[] = [];
+    const controller = new AbortController();
+    let nextCalls = 0;
+    let releasePendingRead: (() => void) | undefined;
+    let returnCalls = 0;
+    const stream = {
+      [Symbol.asyncIterator](): AsyncIterator<ProviderStreamChunk> {
+        return {
+          async next() {
+            nextCalls += 1;
+
+            if (nextCalls === 1) {
+              return {
+                done: false,
+                value: {
+                  text: "partial",
+                  type: "text_delta",
+                },
+              };
+            }
+
+            controller.abort(new Error("cancelled during stream"));
+            await new Promise<void>((resolve) => {
+              releasePendingRead = resolve;
+            });
+
+            return {
+              done: true,
+              value: undefined,
+            };
+          },
+          async return() {
+            returnCalls += 1;
+            releasePendingRead?.();
+
+            return {
+              done: true,
+              value: undefined,
+            };
+          },
+        };
+      },
+    };
+    const provider = {
+      async generate() {
+        throw new Error("generate should not be called");
+      },
+      id: "provider",
+      stream() {
+        return stream;
+      },
+    } satisfies TuvrenProvider;
+    const driver = createReActDriver({
+      providerCallMode: "stream",
+    }).create();
+
+    const result = await Promise.race([
+      driver.execute(
+        createDriverExecutionContext({
+          config: {
+            model: provider,
+            name: "primary",
+          },
+          emittedEvents,
+          signal: controller.signal,
+        })
+      ),
+      wait(100).then(() => "timed_out"),
+    ]);
+
+    if (typeof result === "string") {
+      throw new Error("driver did not stop waiting after stream abort");
+    }
+
+    expect(returnCalls).toBe(1);
+    expect(result.resolution.type).toBe("fail");
     expect(emittedEvents.map((event) => event.type)).toEqual([
       "message.start",
       "text.delta",
