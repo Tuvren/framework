@@ -36,9 +36,15 @@ import {
 } from "../src/index.ts";
 import { buildSharedExports } from "../src/lib/extension-runtime.ts";
 import {
+  AsyncEventQueue,
+  cloneValue,
   createFrozenSnapshot,
-  EventFanout,
 } from "../src/lib/runtime-core-shared.ts";
+import {
+  RuntimeExecutionHandle,
+  type RuntimeExecutionHandleRuntime,
+} from "../src/lib/runtime-execution-handle.ts";
+import type { ExecutionSessionRequest } from "../src/lib/runtime-execution-types.ts";
 import type {
   ExecutableToolCall,
   ToolBatchEnvironment,
@@ -103,16 +109,16 @@ const cases: BenchmarkCase[] = [
   },
   {
     iterations: 3000,
-    name: "event fanout to one subscriber",
+    name: "execution handle single-consumer event queue",
     run(iterations) {
-      return runFanoutBench(iterations, 1);
+      return runExecutionHandleEventQueueBench(iterations);
     },
   },
   {
     iterations: 3000,
-    name: "event fanout to four subscribers",
+    name: "subtree queue forwarding to four queues",
     run(iterations) {
-      return runFanoutBench(iterations, 4);
+      return runSubtreeForwardingBench(iterations, 4);
     },
   },
   {
@@ -245,6 +251,18 @@ const cases: BenchmarkCase[] = [
   },
 ];
 
+const benchmarkExecutionHandleRuntime: RuntimeExecutionHandleRuntime = {
+  cancelPausedExecution() {
+    return undefined;
+  },
+  createResumedExecutionHandle() {
+    throw new Error("resume is not used by the event queue benchmark");
+  },
+  startExecution() {
+    return Promise.resolve();
+  },
+};
+
 await main();
 
 async function main(): Promise<void> {
@@ -290,26 +308,63 @@ function writeResult(result: BenchmarkResult): void {
   );
 }
 
-async function runFanoutBench(
-  iterations: number,
-  subscriberCount: number
+async function runExecutionHandleEventQueueBench(
+  iterations: number
 ): Promise<void> {
-  const fanout = new EventFanout<TuvrenStreamEvent>();
-  const iterators: AsyncIterator<TuvrenStreamEvent>[] = [];
-
-  for (let index = 0; index < subscriberCount; index += 1) {
-    iterators.push(fanout.subscribe()[Symbol.asyncIterator]());
-  }
+  const handle = new RuntimeExecutionHandle(
+    benchmarkExecutionHandleRuntime,
+    createBenchmarkExecutionRequest(),
+    "turn-bench",
+    "schema-bench"
+  );
+  const iterator = handle.events()[Symbol.asyncIterator]();
 
   for (let index = 0; index < iterations; index += 1) {
-    fanout.emit(streamEventFixture);
-
-    for (const iterator of iterators) {
-      await iterator.next();
-    }
+    const nextEvent = iterator.next();
+    handle.publish(streamEventFixture);
+    await nextEvent;
   }
 
-  fanout.close();
+  handle.finish();
+  await iterator.return?.();
+}
+
+async function runSubtreeForwardingBench(
+  iterations: number,
+  queueCount: number
+): Promise<void> {
+  const queues = Array.from(
+    { length: queueCount },
+    () => new AsyncEventQueue<TuvrenStreamEvent>()
+  );
+  const iterators = queues.map((queue) => queue[Symbol.asyncIterator]());
+
+  for (let index = 0; index < iterations; index += 1) {
+    const nextEvents = iterators.map((iterator) => iterator.next());
+
+    for (const queue of queues) {
+      queue.push(cloneValue(streamEventFixture));
+    }
+
+    await Promise.all(nextEvents);
+  }
+
+  for (const queue of queues) {
+    queue.close();
+  }
+}
+
+function createBenchmarkExecutionRequest(): ExecutionSessionRequest {
+  return {
+    branchId: "branch-bench",
+    config: {
+      name: "agent",
+    },
+    signal: {
+      parts: [{ text: "benchmark", type: "text" }],
+    },
+    threadId: "thread-bench",
+  };
 }
 
 function createStructuredStreamEvent(payloadSize: number): TuvrenStreamEvent {
