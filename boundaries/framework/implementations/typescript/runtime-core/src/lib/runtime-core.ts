@@ -25,7 +25,9 @@ import {
   TuvrenRuntimeError,
 } from "@tuvren/core-types";
 import type {
+  DriverAssistantEventReconciliation,
   DriverExecutionContext,
+  DriverExecutionResult,
   DriverRegistry,
   RuntimeDriver as KrakenDriver,
 } from "@tuvren/driver-api";
@@ -33,8 +35,8 @@ import { assertDriverExecutionResult } from "@tuvren/driver-api";
 import {
   decodeDeterministicKernelRecord,
   encodeDeterministicKernelRecord,
-  type PathValue,
   type RuntimeKernel as KrakenKernel,
+  type PathValue,
   type RunCompletionStatus,
   type TurnNode,
   type TurnTreeSchema,
@@ -1263,11 +1265,15 @@ class RuntimeCore implements TuvrenRuntime {
     );
     let resolution = driverResult.resolution;
     const driverMessages = [...(driverResult.messages ?? [])];
+    const cancellationResolution = createCancelledResolution(handle);
     const assistantEventValidationError = validateDriverAssistantEvents(
       driverMessages,
-      emittedDriverEvents
+      emittedDriverEvents,
+      cancellationResolution ?? resolution,
+      driverResult.assistantEventReconciliation,
+      loopState.activeConfig.extensions ?? []
     );
-    const emittedEvents = this.ensureDriverAssistantEvents(
+    const synthesizedAssistantEvents = this.ensureDriverAssistantEvents(
       handle,
       driverMessages,
       emittedDriverEvents,
@@ -1275,26 +1281,31 @@ class RuntimeCore implements TuvrenRuntime {
     );
     const requestedToolCalls = extractToolCallsFromMessages(driverMessages);
     const toolExecutionMode = driverResult.toolExecutionMode ?? "parallel";
-    const cancellationResolution = createCancelledResolution(handle);
     const partial =
       driverResult.partial === true ||
       (cancellationResolution !== undefined &&
         hasAssistantOutputMessages(driverMessages));
-    const invalidDriverResolutionError =
-      cancellationResolution === undefined
-        ? this.findInvalidDriverResolution(
-            requestedToolCalls.length,
-            resolution
-          )
-        : undefined;
+    const invalidDriverError = this.findInvalidDriverExecutionError(
+      loopState.activeConfig.extensions ?? [],
+      requestedToolCalls.length,
+      resolution,
+      cancellationResolution,
+      partial,
+      assistantEventValidationError,
+      driverResult.stateUpdates
+    );
 
-    if (invalidDriverResolutionError !== undefined) {
-      await this.completeTrackedRun(handle, iterationRunId, "completed");
+    if (invalidDriverError !== undefined) {
+      await this.failTrackedRunWithoutBranchAdvance(
+        handle,
+        iterationRunId,
+        headState.branchHeadHash
+      );
       return {
         kind: "outcome",
         outcome: {
           resolution: {
-            error: invalidDriverResolutionError,
+            error: invalidDriverError,
             fatality: "hard",
             type: "fail",
           },
@@ -1302,21 +1313,13 @@ class RuntimeCore implements TuvrenRuntime {
       };
     }
 
-    if (assistantEventValidationError !== undefined) {
-      await this.completeTrackedRun(handle, iterationRunId, "completed");
-      return {
-        kind: "outcome",
-        outcome: {
-          resolution: {
-            error: assistantEventValidationError,
-            fatality: "hard",
-            type: "fail",
-          },
-        },
-      };
-    }
+    this.applyDriverStateUpdates(loopState, driverResult.stateUpdates);
 
-    this.flushBufferedDriverEventsIfNeeded(handle, resolution, emittedEvents);
+    this.flushBufferedDriverEventsIfNeeded(
+      handle,
+      resolution,
+      synthesizedAssistantEvents
+    );
 
     const stagedMessages = [...driverMessages];
     const stagedMessageHashes = await this.stageDriverMessages(
@@ -1327,53 +1330,33 @@ class RuntimeCore implements TuvrenRuntime {
     const driverResponse = synthesizeResponse(
       driverMessages,
       resolution,
-      emittedDriverEvents
+      emittedDriverEvents,
+      driverResult.assistantEventReconciliation
     );
     const toolResults: ToolResultPart[] = [];
 
-    if (cancellationResolution !== undefined) {
-      resolution = cancellationResolution;
-    }
+    resolution = cancellationResolution ?? resolution;
+    const toolBatchResult = await this.applyRequestedToolBatchIfNeeded({
+      handle,
+      headState,
+      iterationCount,
+      loopState,
+      requestedToolCalls,
+      resolution,
+      runId: iterationRunId,
+      stagedMessageHashes,
+      stagedMessages,
+      toolExecutionMode,
+      toolResults,
+    });
 
-    if (
-      resolution.type === "continue_iteration" &&
-      requestedToolCalls.length > 0
-    ) {
-      const toolBatch = await this.executeRequestedToolBatch(
-        handle,
-        loopState,
-        headState,
-        iterationCount,
-        iterationRunId,
-        requestedToolCalls,
-        toolExecutionMode
-      );
-
-      if ("outcome" in toolBatch) {
-        return {
-          kind: "outcome",
-          outcome: toolBatch.outcome,
-        };
-      }
-
-      toolResults.push(...toolBatch.results);
-      stagedMessageHashes.push(...toolBatch.resultHashes);
-      loopState.carriedStateUpdates.push(...toolBatch.updates);
-
-      for (const result of toolBatch.results) {
-        stagedMessages.push({
-          parts: [result],
-          role: "tool",
-        });
-      }
-
-      if (toolBatch.approval !== undefined) {
-        resolution = {
-          approval: toolBatch.approval,
-          reason: "approval_required",
-          type: "pause",
-        };
-      }
+    if ("type" in toolBatchResult) {
+      resolution = toolBatchResult;
+    } else {
+      return {
+        kind: "outcome",
+        outcome: toolBatchResult,
+      };
     }
 
     resolution = createCancelledResolution(handle) ?? resolution;
@@ -1451,11 +1434,13 @@ class RuntimeCore implements TuvrenRuntime {
 
   private findInvalidDriverResolution(
     requestedToolCallCount: number,
-    resolution: RuntimeResolution
+    resolution: RuntimeResolution,
+    partial: boolean
   ): TuvrenRuntimeError | undefined {
     if (
       requestedToolCallCount > 0 &&
-      resolution.type !== "continue_iteration"
+      resolution.type !== "continue_iteration" &&
+      !(partial && resolution.type === "fail")
     ) {
       return new TuvrenRuntimeError(
         "drivers must not return executable tool calls with a terminal resolution",
@@ -1479,6 +1464,84 @@ class RuntimeCore implements TuvrenRuntime {
             pauseRequiresToolCalls: true,
             resolutionType: resolution.type,
             toolCallCount: requestedToolCallCount,
+          },
+        }
+      );
+    }
+
+    return undefined;
+  }
+
+  private findInvalidDriverExecutionError(
+    activeExtensions: TuvrenExtension[],
+    requestedToolCallCount: number,
+    resolution: RuntimeResolution,
+    cancellationResolution: RuntimeResolution | undefined,
+    partial: boolean,
+    assistantEventValidationError: TuvrenRuntimeError | undefined,
+    stateUpdates: DriverExecutionResult["stateUpdates"]
+  ): TuvrenRuntimeError | undefined {
+    if (cancellationResolution === undefined) {
+      const invalidDriverResolutionError = this.findInvalidDriverResolution(
+        requestedToolCallCount,
+        resolution,
+        partial
+      );
+
+      if (invalidDriverResolutionError !== undefined) {
+        return invalidDriverResolutionError;
+      }
+    }
+
+    if (assistantEventValidationError !== undefined) {
+      return assistantEventValidationError;
+    }
+
+    return this.findInvalidDriverStateUpdateError(
+      activeExtensions,
+      stateUpdates
+    );
+  }
+
+  private applyDriverStateUpdates(
+    loopState: LoopState,
+    stateUpdates: DriverExecutionResult["stateUpdates"]
+  ): void {
+    if (stateUpdates === undefined) {
+      return;
+    }
+
+    loopState.carriedStateUpdates.push(
+      ...stateUpdates.map((update) => ({
+        extensionName: update.extensionName,
+        state: cloneValue(update.state),
+      }))
+    );
+  }
+
+  private findInvalidDriverStateUpdateError(
+    activeExtensions: TuvrenExtension[],
+    stateUpdates: DriverExecutionResult["stateUpdates"]
+  ): TuvrenRuntimeError | undefined {
+    if (stateUpdates === undefined || stateUpdates.length === 0) {
+      return undefined;
+    }
+
+    const activeExtensionNames = new Set(
+      activeExtensions.map((extension) => extension.name)
+    );
+
+    for (const update of stateUpdates) {
+      if (activeExtensionNames.has(update.extensionName)) {
+        continue;
+      }
+
+      return new TuvrenRuntimeError(
+        "driver state updates must target extensions active in the current agent config",
+        {
+          code: "invalid_driver_result",
+          details: {
+            extensionName: update.extensionName,
           },
         }
       );
@@ -1568,9 +1631,13 @@ class RuntimeCore implements TuvrenRuntime {
             );
           }
 
-          emittedDriverEvents.push(
-            this.createDriverPublishedEvent(handle, clonedEvent, loopState)
+          const publishedEvent = this.createDriverPublishedEvent(
+            handle,
+            clonedEvent,
+            loopState
           );
+          emittedDriverEvents.push(publishedEvent);
+          handle.publish(publishedEvent);
         },
         now: () => this.now(),
       },
@@ -1640,6 +1707,62 @@ class RuntimeCore implements TuvrenRuntime {
         },
       };
     }
+  }
+
+  private async applyRequestedToolBatchIfNeeded(input: {
+    handle: RuntimeExecutionHandle;
+    headState: HeadState;
+    iterationCount: number;
+    loopState: LoopState;
+    requestedToolCalls: ToolCallPart[];
+    resolution: RuntimeResolution;
+    runId: string;
+    stagedMessageHashes: HashString[];
+    stagedMessages: TuvrenMessage[];
+    toolExecutionMode: ToolExecutionMode;
+    toolResults: ToolResultPart[];
+  }): Promise<LoopOutcome | RuntimeResolution> {
+    if (
+      input.resolution.type !== "continue_iteration" ||
+      input.requestedToolCalls.length === 0
+    ) {
+      return input.resolution;
+    }
+
+    const toolBatch = await this.executeRequestedToolBatch(
+      input.handle,
+      input.loopState,
+      input.headState,
+      input.iterationCount,
+      input.runId,
+      input.requestedToolCalls,
+      input.toolExecutionMode
+    );
+
+    if ("outcome" in toolBatch) {
+      return toolBatch.outcome;
+    }
+
+    input.toolResults.push(...toolBatch.results);
+    input.stagedMessageHashes.push(...toolBatch.resultHashes);
+    input.loopState.carriedStateUpdates.push(...toolBatch.updates);
+
+    for (const result of toolBatch.results) {
+      input.stagedMessages.push({
+        parts: [result],
+        role: "tool",
+      });
+    }
+
+    if (toolBatch.approval === undefined) {
+      return input.resolution;
+    }
+
+    return {
+      approval: toolBatch.approval,
+      reason: "approval_required",
+      type: "pause",
+    };
   }
 
   private async completeIterationArtifacts(
@@ -3769,15 +3892,12 @@ class RuntimeCore implements TuvrenRuntime {
       assistantMessage === undefined ||
       emittedEvents.some((event) => isAssistantContentStreamEvent(event.type))
     ) {
-      return emittedEvents;
+      return [];
     }
 
-    return [
-      ...emittedEvents,
-      ...this.synthesizeAssistantMessageEvents(assistantMessage).map((event) =>
-        this.createPublishedEvent(handle, event, loopState)
-      ),
-    ];
+    return this.synthesizeAssistantMessageEvents(assistantMessage).map(
+      (event) => this.createPublishedEvent(handle, event, loopState)
+    );
   }
 
   private synthesizeAssistantMessageEvents(
@@ -4351,13 +4471,25 @@ function assertDriverRuntimeEvent(event: TuvrenStreamEvent): void {
 
 function validateDriverAssistantEvents(
   messages: TuvrenMessage[],
-  emittedEvents: TuvrenStreamEvent[]
+  emittedEvents: TuvrenStreamEvent[],
+  resolution: RuntimeResolution,
+  assistantEventReconciliation: DriverAssistantEventReconciliation | undefined,
+  activeExtensions: TuvrenExtension[]
 ): TuvrenRuntimeError | undefined {
   const assistantEvents = emittedEvents.filter((event) =>
     isAssistantContentStreamEvent(event.type)
   );
 
   if (assistantEvents.length === 0) {
+    if (assistantEventReconciliation !== undefined) {
+      return new TuvrenRuntimeError(
+        "assistantEventReconciliation requires emitted assistant content events",
+        {
+          code: "invalid_stream_event",
+        }
+      );
+    }
+
     return undefined;
   }
 
@@ -4367,12 +4499,14 @@ function validateDriverAssistantEvents(
   );
 
   if (assistantMessage === undefined) {
-    return new TuvrenRuntimeError(
-      "drivers must not emit assistant content events without returning a durable assistant message",
-      {
-        code: "invalid_stream_event",
-      }
-    );
+    return resolution.type === "fail" && resolution.fatality === "hard"
+      ? validateFailedDriverAssistantEvents(assistantEvents)
+      : new TuvrenRuntimeError(
+          "drivers must not emit assistant content events without returning a durable assistant message",
+          {
+            code: "invalid_stream_event",
+          }
+        );
   }
 
   const assistantSequencesOrError =
@@ -4397,6 +4531,54 @@ function validateDriverAssistantEvents(
     }
   }
 
+  const finalSequenceMatchError = validateAssistantSequenceAgainstMessage(
+    assistantMessage,
+    finalAssistantSequence
+  );
+
+  if (assistantEventReconciliation === "allow_final_sequence_divergence") {
+    if (
+      !activeExtensions.some((extension) => extension.aroundModel !== undefined)
+    ) {
+      return new TuvrenRuntimeError(
+        'assistantEventReconciliation "allow_final_sequence_divergence" requires an active aroundModel extension',
+        {
+          code: "invalid_stream_event",
+        }
+      );
+    }
+
+    if (finalSequenceMatchError === undefined) {
+      return new TuvrenRuntimeError(
+        'assistantEventReconciliation "allow_final_sequence_divergence" is only valid when the final emitted assistant sequence differs from the durable assistant message',
+        {
+          code: "invalid_stream_event",
+        }
+      );
+    }
+
+    if (
+      assistantMessage.parts.some((part) => part.type === "tool_call") ||
+      assistantSequenceRequestsTools(finalAssistantSequence)
+    ) {
+      return new TuvrenRuntimeError(
+        'assistantEventReconciliation "allow_final_sequence_divergence" is not valid for tool-call assistant output',
+        {
+          code: "invalid_stream_event",
+        }
+      );
+    }
+
+    return validateStandaloneAssistantSequence(finalAssistantSequence);
+  }
+
+  return finalSequenceMatchError;
+}
+
+function validateAssistantSequenceAgainstMessage(
+  assistantMessage: Extract<TuvrenMessage, { role: "assistant" }>,
+  finalAssistantSequence: TuvrenStreamEvent[]
+): TuvrenRuntimeError | undefined {
   const actualEvents = finalAssistantSequence.filter((event) =>
     isAssistantValidationEvent(event.type)
   );
@@ -4889,6 +5071,58 @@ function validateStandaloneAssistantSequence(
   return undefined;
 }
 
+function validateFailedDriverAssistantEvents(
+  assistantEvents: TuvrenStreamEvent[]
+): TuvrenRuntimeError | undefined {
+  let state: StandaloneAssistantValidationState | undefined;
+
+  for (const event of assistantEvents) {
+    if (state === undefined) {
+      if (event.type !== "message.start") {
+        return createAssistantDeltaValidationError();
+      }
+
+      state = {
+        currentMessageId: event.messageId,
+        partState: { kind: "idle" },
+        sawToolCallPart: false,
+      };
+      continue;
+    }
+
+    if (!assistantEventBelongsToCurrentMessage(event, state.currentMessageId)) {
+      return createAssistantDeltaValidationError();
+    }
+
+    if (event.type === "message.start") {
+      return createAssistantDeltaValidationError();
+    }
+
+    if (event.type === "message.done") {
+      if (
+        state.partState.kind !== "idle" ||
+        !doesFinishReasonMatchToolCallPresence(
+          event.finishReason,
+          state.sawToolCallPart
+        )
+      ) {
+        return createAssistantDeltaValidationError();
+      }
+
+      state = undefined;
+      continue;
+    }
+
+    const validationError = validateStandaloneAssistantPartEvent(event, state);
+
+    if (validationError !== undefined) {
+      return validationError;
+    }
+  }
+
+  return undefined;
+}
+
 function validateStandaloneAssistantPartEvent(
   event: TuvrenStreamEvent,
   state: StandaloneAssistantValidationState
@@ -5237,6 +5471,16 @@ function doesFinishReasonMatchToolCallPresence(
   return finishReason !== "tool_call";
 }
 
+function assistantSequenceRequestsTools(events: TuvrenStreamEvent[]): boolean {
+  return events.some(
+    (event) =>
+      event.type === "tool_call.start" ||
+      event.type === "tool_call.args_delta" ||
+      event.type === "tool_call.done" ||
+      (event.type === "message.done" && event.finishReason === "tool_call")
+  );
+}
+
 function areStreamEventValuesEqual(left: unknown, right: unknown): boolean {
   if (left instanceof Uint8Array && right instanceof Uint8Array) {
     if (left.length !== right.length) {
@@ -5324,7 +5568,8 @@ function resolutionToPhase(
 function synthesizeResponse(
   messages: TuvrenMessage[],
   resolution: RuntimeResolution,
-  emittedEvents: TuvrenStreamEvent[]
+  emittedEvents: TuvrenStreamEvent[],
+  assistantEventReconciliation: DriverAssistantEventReconciliation | undefined
 ): TuvrenModelResponse {
   const assistantMessage = messages.find(
     (message): message is Extract<TuvrenMessage, { role: "assistant" }> =>
@@ -5333,12 +5578,17 @@ function synthesizeResponse(
   const lastMessageDoneEvent = findLastMessageDoneEvent(emittedEvents);
 
   if (assistantMessage !== undefined) {
+    const durableFinishReason =
+      resolution.type === "fail"
+        ? "error"
+        : inferFinishReason(assistantMessage);
+    const finishReason =
+      assistantEventReconciliation === "allow_final_sequence_divergence"
+        ? durableFinishReason
+        : (lastMessageDoneEvent?.finishReason ?? durableFinishReason);
+
     return {
-      finishReason:
-        lastMessageDoneEvent?.finishReason ??
-        (resolution.type === "fail"
-          ? "error"
-          : inferFinishReason(assistantMessage)),
+      finishReason,
       parts: assistantMessage.parts,
       providerMetadata: assistantMessage.providerMetadata,
       usage: lastMessageDoneEvent?.usage,

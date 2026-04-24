@@ -1554,10 +1554,88 @@ describe("framework-runtime-core", () => {
       events.some(
         (event) => event.type === "text.done" && event.text === "ghost output"
       )
-    ).toBe(false);
+    ).toBe(true);
     expect(await harness.readBranchMessages(thread.branchId)).toEqual([
       {
         parts: [{ text: "Reject ghost assistant output", type: "text" }],
+        role: "user",
+      },
+    ]);
+  });
+
+  test("rejects assistant stream events without a durable assistant message on soft driver failures", async () => {
+    const harness = createFakeKernelHarness();
+    let driverCalls = 0;
+    const driver = {
+      async execute(context) {
+        driverCalls += 1;
+
+        if (driverCalls === 1) {
+          context.runtime.emit({
+            messageId: "assistant-soft-fail",
+            role: "assistant",
+            timestamp: context.runtime.now(),
+            type: "message.start",
+          });
+          context.runtime.emit({
+            delta: "partial",
+            messageId: "assistant-soft-fail",
+            timestamp: context.runtime.now(),
+            type: "text.delta",
+          });
+
+          return {
+            resolution: {
+              error: new Error("soft retry"),
+              fatality: "soft",
+              type: "fail",
+            },
+          };
+        }
+
+        return {
+          messages: [assistantText("second iteration should not run")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createTuvrenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: { name: "primary" },
+      signal: textSignal("Reject soft-fail assistant leak"),
+      threadId: thread.threadId,
+    });
+
+    const events = await collectEvents(handle.events());
+    const errorEvent = events.find(
+      (event): event is Extract<(typeof events)[number], { type: "error" }> =>
+        event.type === "error"
+    );
+
+    expect(driverCalls).toBe(1);
+    expect(handle.status().phase).toBe("failed");
+    expect(errorEvent?.error.code).toBe("invalid_stream_event");
+    expect(
+      events.some(
+        (event) => event.type === "text.delta" && event.delta === "partial"
+      )
+    ).toBe(true);
+    expect(await harness.readBranchMessages(thread.branchId)).toEqual([
+      {
+        parts: [{ text: "Reject soft-fail assistant leak", type: "text" }],
         role: "user",
       },
     ]);
@@ -1624,6 +1702,408 @@ describe("framework-runtime-core", () => {
     expect(await harness.readBranchMessages(thread.branchId)).toEqual([
       {
         parts: [{ text: "Reject mismatched assistant stream", type: "text" }],
+        role: "user",
+      },
+    ]);
+  });
+
+  test("does not allow durable/live assistant divergence from a no-op aroundModel alone", async () => {
+    const harness = createFakeKernelHarness();
+    const driver = {
+      async execute(context) {
+        context.runtime.emit({
+          messageId: "assistant-streamed",
+          role: "assistant",
+          timestamp: context.runtime.now(),
+          type: "message.start",
+        });
+        context.runtime.emit({
+          delta: "live",
+          messageId: "assistant-streamed",
+          timestamp: context.runtime.now(),
+          type: "text.delta",
+        });
+        context.runtime.emit({
+          messageId: "assistant-streamed",
+          text: "live",
+          timestamp: context.runtime.now(),
+          type: "text.done",
+        });
+        context.runtime.emit({
+          finishReason: "stop",
+          messageId: "assistant-streamed",
+          timestamp: context.runtime.now(),
+          type: "message.done",
+        });
+
+        return {
+          messages: [assistantText("durable mismatch")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createTuvrenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        extensions: [
+          {
+            async aroundModel(_context, next) {
+              return await next();
+            },
+            name: "noop-around",
+          },
+        ],
+        name: "primary",
+      },
+      signal: textSignal("Reject inferred aroundModel divergence"),
+      threadId: thread.threadId,
+    });
+
+    const events = await collectEvents(handle.events());
+    const errorEvent = events.find(
+      (event): event is Extract<(typeof events)[number], { type: "error" }> =>
+        event.type === "error"
+    );
+
+    expect(handle.status().phase).toBe("failed");
+    expect(errorEvent?.error.code).toBe("invalid_stream_event");
+    expect(await harness.readBranchMessages(thread.branchId)).toEqual([
+      {
+        parts: [
+          { text: "Reject inferred aroundModel divergence", type: "text" },
+        ],
+        role: "user",
+      },
+    ]);
+  });
+
+  test("does not allow assistantEventReconciliation divergence without active aroundModel extensions", async () => {
+    const harness = createFakeKernelHarness();
+    const driver = {
+      async execute(context) {
+        context.runtime.emit({
+          messageId: "assistant-streamed",
+          role: "assistant",
+          timestamp: context.runtime.now(),
+          type: "message.start",
+        });
+        context.runtime.emit({
+          delta: "live",
+          messageId: "assistant-streamed",
+          timestamp: context.runtime.now(),
+          type: "text.delta",
+        });
+        context.runtime.emit({
+          messageId: "assistant-streamed",
+          text: "live",
+          timestamp: context.runtime.now(),
+          type: "text.done",
+        });
+        context.runtime.emit({
+          finishReason: "stop",
+          messageId: "assistant-streamed",
+          timestamp: context.runtime.now(),
+          type: "message.done",
+        });
+
+        return {
+          assistantEventReconciliation: "allow_final_sequence_divergence",
+          messages: [assistantText("durable mismatch")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createTuvrenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        name: "primary",
+      },
+      signal: textSignal("Reject reconciliation escape hatch"),
+      threadId: thread.threadId,
+    });
+
+    const events = await collectEvents(handle.events());
+    const errorEvent = events.find(
+      (event): event is Extract<(typeof events)[number], { type: "error" }> =>
+        event.type === "error"
+    );
+
+    expect(handle.status().phase).toBe("failed");
+    expect(errorEvent?.error.code).toBe("invalid_stream_event");
+    expect(await harness.readBranchMessages(thread.branchId)).toEqual([
+      {
+        parts: [{ text: "Reject reconciliation escape hatch", type: "text" }],
+        role: "user",
+      },
+    ]);
+  });
+
+  test("does not allow assistantEventReconciliation without emitted assistant events", async () => {
+    const harness = createFakeKernelHarness();
+    const driver = {
+      async execute() {
+        return {
+          assistantEventReconciliation: "allow_final_sequence_divergence",
+          messages: [assistantText("durable only")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createTuvrenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        extensions: [
+          {
+            async aroundModel(_context, next) {
+              return await next();
+            },
+            name: "noop-around",
+          },
+        ],
+        name: "primary",
+      },
+      signal: textSignal("Reject unused reconciliation flag"),
+      threadId: thread.threadId,
+    });
+
+    const events = await collectEvents(handle.events());
+    const errorEvent = events.find(
+      (event): event is Extract<(typeof events)[number], { type: "error" }> =>
+        event.type === "error"
+    );
+
+    expect(handle.status().phase).toBe("failed");
+    expect(errorEvent?.error.code).toBe("invalid_stream_event");
+    expect(await harness.readBranchMessages(thread.branchId)).toEqual([
+      {
+        parts: [{ text: "Reject unused reconciliation flag", type: "text" }],
+        role: "user",
+      },
+    ]);
+  });
+
+  test("passes a coherent durable response into afterIteration when final assistant divergence is allowed", async () => {
+    const harness = createFakeKernelHarness();
+    let capturedResponse:
+      | {
+          finishReason: string;
+          parts: TuvrenModelResponse["parts"];
+          usage: TuvrenModelResponse["usage"];
+        }
+      | undefined;
+    const driver = {
+      async execute(context) {
+        context.runtime.emit({
+          messageId: "assistant-streamed",
+          role: "assistant",
+          timestamp: context.runtime.now(),
+          type: "message.start",
+        });
+        context.runtime.emit({
+          delta: "live",
+          messageId: "assistant-streamed",
+          timestamp: context.runtime.now(),
+          type: "text.delta",
+        });
+        context.runtime.emit({
+          messageId: "assistant-streamed",
+          text: "live",
+          timestamp: context.runtime.now(),
+          type: "text.done",
+        });
+        context.runtime.emit({
+          finishReason: "length",
+          messageId: "assistant-streamed",
+          timestamp: context.runtime.now(),
+          type: "message.done",
+          usage: {
+            inputTokens: 3,
+            outputTokens: 5,
+          },
+        });
+
+        return {
+          assistantEventReconciliation: "allow_final_sequence_divergence",
+          messages: [assistantText("durable replacement")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createTuvrenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        extensions: [
+          {
+            afterIteration(context) {
+              capturedResponse = {
+                finishReason: context.response.finishReason,
+                parts: context.response.parts,
+                usage: context.response.usage,
+              };
+              return undefined;
+            },
+            async aroundModel(_context, next) {
+              return await next();
+            },
+            name: "capture",
+          },
+        ],
+        name: "primary",
+      },
+      signal: textSignal("Capture durable divergence response"),
+      threadId: thread.threadId,
+    });
+
+    await collectEvents(handle.events());
+
+    expect(handle.status().phase).toBe("completed");
+    expect(capturedResponse).toEqual({
+      finishReason: "stop",
+      parts: [{ text: "durable replacement", type: "text" }],
+      usage: {
+        inputTokens: 3,
+        outputTokens: 5,
+      },
+    });
+  });
+
+  test("rejects final tool-call divergence even when aroundModel is active", async () => {
+    const harness = createFakeKernelHarness();
+    const driver = {
+      async execute(context) {
+        context.runtime.emit({
+          messageId: "assistant-streamed",
+          role: "assistant",
+          timestamp: context.runtime.now(),
+          type: "message.start",
+        });
+        context.runtime.emit({
+          callId: "call-search",
+          messageId: "assistant-streamed",
+          name: "search",
+          timestamp: context.runtime.now(),
+          type: "tool_call.start",
+        });
+        context.runtime.emit({
+          callId: "call-search",
+          delta: '{"query":"docs"}',
+          timestamp: context.runtime.now(),
+          type: "tool_call.args_delta",
+        });
+        context.runtime.emit({
+          callId: "call-search",
+          input: { query: "docs" },
+          name: "search",
+          timestamp: context.runtime.now(),
+          type: "tool_call.done",
+        });
+        context.runtime.emit({
+          finishReason: "tool_call",
+          messageId: "assistant-streamed",
+          timestamp: context.runtime.now(),
+          type: "message.done",
+        });
+
+        return {
+          assistantEventReconciliation: "allow_final_sequence_divergence",
+          messages: [assistantText("durable text")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createTuvrenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        extensions: [
+          {
+            async aroundModel(_context, next) {
+              return await next();
+            },
+            name: "rewriter",
+          },
+        ],
+        name: "primary",
+      },
+      signal: textSignal("Reject tool-call divergence"),
+      threadId: thread.threadId,
+    });
+
+    const events = await collectEvents(handle.events());
+    const errorEvent = events.find(
+      (event): event is Extract<(typeof events)[number], { type: "error" }> =>
+        event.type === "error"
+    );
+
+    expect(handle.status().phase).toBe("failed");
+    expect(errorEvent?.error.code).toBe("invalid_stream_event");
+    expect(await harness.readBranchMessages(thread.branchId)).toEqual([
+      {
+        parts: [{ text: "Reject tool-call divergence", type: "text" }],
         role: "user",
       },
     ]);
@@ -2239,7 +2719,7 @@ describe("framework-runtime-core", () => {
       events.some(
         (event) => event.type === "text.delta" && event.delta === "out-of-order"
       )
-    ).toBe(false);
+    ).toBe(true);
   });
 
   test("rejects reasoning deltas that do not reconcile to the durable assistant message", async () => {
@@ -2311,7 +2791,7 @@ describe("framework-runtime-core", () => {
           event.type === "reasoning.delta" &&
           event.delta === "secret reasoning leak"
       )
-    ).toBe(false);
+    ).toBe(true);
     expect(await harness.readBranchMessages(thread.branchId)).toEqual([
       {
         parts: [{ text: "Reject leaked reasoning delta", type: "text" }],
@@ -2493,7 +2973,7 @@ describe("framework-runtime-core", () => {
     expect(handle.status().phase).toBe("failed");
     expect(errorEvent?.error.code).toBe("invalid_stream_event");
     expect(events.some((event) => event.type === "tool_call.args_delta")).toBe(
-      false
+      true
     );
     expect(
       events.some(
@@ -3192,6 +3672,63 @@ describe("framework-runtime-core", () => {
     expect(await harness.readBranchMessages(thread.branchId)).toEqual([
       {
         parts: [{ text: "Reject terminal tool call", type: "text" }],
+        role: "user",
+      },
+    ]);
+  });
+
+  test("rejects driver state updates for extensions that are not active in the current turn", async () => {
+    const harness = createFakeKernelHarness();
+    const driver = {
+      async execute() {
+        return {
+          messages: [assistantText("ghost state")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+          stateUpdates: [
+            {
+              extensionName: "ghost-extension",
+              state: { leaked: true },
+            },
+          ],
+        } satisfies DriverExecutionResult;
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createTuvrenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: { name: "primary" },
+      signal: textSignal("Reject ghost extension state"),
+      threadId: thread.threadId,
+    });
+
+    const events = await collectEvents(handle.events());
+    const errorEvent = events.find(
+      (event): event is Extract<(typeof events)[number], { type: "error" }> =>
+        event.type === "error"
+    );
+    const manifest = await readBranchContextManifest(
+      harness.kernel,
+      thread.branchId
+    );
+
+    expect(handle.status().phase).toBe("failed");
+    expect(errorEvent?.error.code).toBe("invalid_driver_result");
+    expect(manifest.extensions).toEqual({});
+    expect(await harness.readBranchMessages(thread.branchId)).toEqual([
+      {
+        parts: [{ text: "Reject ghost extension state", type: "text" }],
         role: "user",
       },
     ]);
@@ -4591,6 +5128,64 @@ describe("framework-runtime-core", () => {
     expect(capturedFinishReason).toBe("error");
   });
 
+  test("checkpoints failed partial tool-call messages without executing tools", async () => {
+    const harness = createFakeKernelHarness();
+    const partialToolCall = assistantToolCalls([
+      {
+        callId: "call-search",
+        input: { query: "interrupted" },
+        name: "search",
+      },
+    ]);
+    const driver = {
+      async execute(_context) {
+        return {
+          messages: [partialToolCall],
+          partial: true,
+          resolution: {
+            error: new Error("execution interrupted"),
+            fatality: "hard",
+            type: "fail",
+          },
+          toolExecutionMode: "sequential",
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createTuvrenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: { name: "primary" },
+      signal: textSignal("Cancel during tool call"),
+      threadId: thread.threadId,
+    });
+
+    const events = await collectEvents(handle.events());
+    const errorEvent = events.find(
+      (event): event is Extract<(typeof events)[number], { type: "error" }> =>
+        event.type === "error"
+    );
+
+    expect(handle.status().phase).toBe("failed");
+    expect(errorEvent?.error.code).not.toBe("invalid_driver_resolution");
+    expect(events.some((event) => event.type === "tool.start")).toBe(false);
+    expect(await harness.readBranchMessages(thread.branchId)).toEqual([
+      {
+        parts: [{ text: "Cancel during tool call", type: "text" }],
+        role: "user",
+      },
+      partialToolCall,
+    ]);
+  });
+
   test("preserves emitted finish reason, usage, and provider metadata in synthesized afterIteration responses", async () => {
     const harness = createFakeKernelHarness();
     let capturedResponse: TuvrenModelResponse | undefined;
@@ -5851,7 +6446,7 @@ describe("framework-runtime-core", () => {
     });
   });
 
-  test("suppresses buffered driver events when the driver returns an invalid resolution", async () => {
+  test("fails invalid driver resolutions even when earlier custom events were published live", async () => {
     const harness = createFakeKernelHarness();
     const driver = {
       async execute(context) {
@@ -5904,7 +6499,7 @@ describe("framework-runtime-core", () => {
       events.some(
         (event) => event.type === "custom" && event.name === "ghost.output"
       )
-    ).toBe(false);
+    ).toBe(true);
     expect(handle.status().phase).toBe("failed");
     expect(errorEvent?.error.code).toBe("invalid_driver_result");
     expect(await harness.readBranchMessages(thread.branchId)).toEqual([
@@ -5913,6 +6508,20 @@ describe("framework-runtime-core", () => {
         role: "user",
       },
     ]);
+    expect(
+      (await harness.readBranchRuns(thread.branchId)).some(
+        (run) =>
+          run.status === "failed" &&
+          run.stepSequence.some((step) => step.id === "iterate")
+      )
+    ).toBe(true);
+    expect(
+      (await harness.readBranchRuns(thread.branchId)).some(
+        (run) =>
+          run.status === "completed" &&
+          run.stepSequence.some((step) => step.id === "iterate")
+      )
+    ).toBe(false);
   });
 
   test("fails the resumed turn instead of rewriting approval into rejection when the fresh resumed handle is canceled before start", async () => {

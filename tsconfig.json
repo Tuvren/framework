@@ -13,6 +13,9 @@
     },
     {
       "path": "./boundaries/kernel/testkit/tsconfig.json"
+    },
+    {
+      "path": "./boundaries/framework/implementations/typescript/drivers/react"
     }
   ]
 }

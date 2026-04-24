@@ -77,13 +77,25 @@ export interface DriverResumeContext extends DriverExecutionContext {
 
 export type DriverToolExecutionMode = "parallel" | "sequential";
 
+export type DriverAssistantEventReconciliation =
+  "allow_final_sequence_divergence";
+
+export interface DriverExtensionStateUpdate {
+  extensionName: string;
+  state: Record<string, unknown>;
+}
+
 // Keep the result seam intentionally minimal. If a future need cannot be
-// expressed through resolution/messages/partial/toolExecutionMode, treat that
-// as a spec discussion rather than extending the shared contract casually.
+// expressed through resolution/messages/partial/toolExecutionMode/stateUpdates/
+// assistantEventReconciliation,
+// treat that as a spec discussion rather than extending the shared contract
+// casually.
 export interface DriverExecutionResult {
+  assistantEventReconciliation?: DriverAssistantEventReconciliation;
   messages?: TuvrenMessage[];
   partial?: boolean;
   resolution: RuntimeResolution;
+  stateUpdates?: DriverExtensionStateUpdate[];
   toolExecutionMode?: DriverToolExecutionMode;
 }
 
@@ -105,11 +117,14 @@ export interface DriverRegistry {
 }
 
 const DRIVER_RESULT_KEYS = new Set([
+  "assistantEventReconciliation",
   "messages",
   "partial",
   "resolution",
+  "stateUpdates",
   "toolExecutionMode",
 ]);
+const EXTENSION_STATE_UPDATE_KEYS = new Set(["extensionName", "state"]);
 const CONTINUE_RESOLUTION_KEYS = new Set(["type"]);
 const END_TURN_RESOLUTION_KEYS = new Set(["reason", "type"]);
 const PAUSE_RESOLUTION_KEYS = new Set(["approval", "reason", "type"]);
@@ -191,6 +206,20 @@ export function assertDriverExecutionResult(
   }
 
   if (
+    "assistantEventReconciliation" in value &&
+    value.assistantEventReconciliation !== undefined &&
+    value.assistantEventReconciliation !== "allow_final_sequence_divergence"
+  ) {
+    throw new TuvrenValidationError(
+      `${label}.assistantEventReconciliation must be "allow_final_sequence_divergence" when provided`,
+      {
+        code: "invalid_driver_result",
+        details: value,
+      }
+    );
+  }
+
+  if (
     "toolExecutionMode" in value &&
     value.toolExecutionMode !== undefined &&
     value.toolExecutionMode !== "parallel" &&
@@ -205,6 +234,7 @@ export function assertDriverExecutionResult(
     );
   }
 
+  assertDriverStateUpdates(value.stateUpdates, `${label}.stateUpdates`);
   assertDriverMessages(value, label);
 
   assertOnlyAllowedKeys(value, DRIVER_RESULT_KEYS, label);
@@ -232,7 +262,12 @@ export function assertDriverExecutionResult(
   );
   assertDriverResolutionCompatibility(
     {
+      assistantEventReconciliation:
+        value.assistantEventReconciliation === "allow_final_sequence_divergence"
+          ? value.assistantEventReconciliation
+          : undefined,
       messages: Array.isArray(value.messages) ? value.messages : undefined,
+      partial: value.partial === true,
       resolution: value.resolution,
     },
     `${label}`
@@ -528,14 +563,22 @@ function assertDriverToolExecutionMode(
 
 function assertDriverResolutionCompatibility(
   value: {
+    assistantEventReconciliation?: DriverAssistantEventReconciliation;
     messages?: TuvrenMessage[];
+    partial: boolean;
     resolution: RuntimeResolution;
   },
   label: string
 ): void {
   const requestedToolCalls = hasRequestedToolCalls(value.messages);
+  const failedPartialToolCall =
+    value.partial && value.resolution.type === "fail";
 
-  if (requestedToolCalls && value.resolution.type !== "continue_iteration") {
+  if (
+    requestedToolCalls &&
+    value.resolution.type !== "continue_iteration" &&
+    !failedPartialToolCall
+  ) {
     throw new TuvrenValidationError(
       `${label}.resolution must continue iteration when driver messages request tool calls`,
       {
@@ -548,6 +591,19 @@ function assertDriverResolutionCompatibility(
   if (!requestedToolCalls && value.resolution.type === "pause") {
     throw new TuvrenValidationError(
       `${label}.resolution.pause requires driver messages with tool calls`,
+      {
+        code: "invalid_driver_result",
+        details: value,
+      }
+    );
+  }
+
+  if (
+    value.assistantEventReconciliation !== undefined &&
+    !value.messages?.some((message) => message.role === "assistant")
+  ) {
+    throw new TuvrenValidationError(
+      `${label}.assistantEventReconciliation requires an assistant message`,
       {
         code: "invalid_driver_result",
         details: value,
@@ -811,6 +867,41 @@ function assertOptionalRecord(value: unknown, label: string): void {
       code: "invalid_driver_result",
       details: value,
     });
+  }
+}
+
+function assertDriverStateUpdates(value: unknown, label: string): void {
+  if (value === undefined) {
+    return;
+  }
+
+  if (!Array.isArray(value)) {
+    throw new TuvrenValidationError(`${label} must be an array`, {
+      code: "invalid_driver_result",
+      details: value,
+    });
+  }
+
+  for (const [index, update] of value.entries()) {
+    if (
+      !isRecord(update) ||
+      typeof update.extensionName !== "string" ||
+      !isRecord(update.state)
+    ) {
+      throw new TuvrenValidationError(
+        `${label}[${index}] must be a valid DriverExtensionStateUpdate`,
+        {
+          code: "invalid_driver_result",
+          details: update,
+        }
+      );
+    }
+
+    assertOnlyAllowedKeys(
+      update,
+      EXTENSION_STATE_UPDATE_KEYS,
+      `${label}[${index}]`
+    );
   }
 }
 

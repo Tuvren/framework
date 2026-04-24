@@ -1,0 +1,43 @@
+{
+  "compilerOptions": {
+    "declaration": true,
+    "declarationMap": false,
+    "emitDeclarationOnly": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "outDir": "./dist",
+    "paths": {
+      "@tuvren/core-types": [
+        "../../../../../shared/contracts/core-types/dist/index.d.ts"
+      ],
+      "@tuvren/runtime-api": [
+        "../../../../../framework/contracts/runtime-api/dist/index.d.ts"
+      ],
+      "@tuvren/runtime-api/events": [
+        "../../../../../framework/contracts/runtime-api/dist/events.d.ts"
+      ],
+      "@tuvren/runtime-api/execution": [
+        "../../../../../framework/contracts/runtime-api/dist/execution.d.ts"
+      ],
+      "@tuvren/runtime-api/provider": [
+        "../../../../../framework/contracts/runtime-api/dist/provider.d.ts"
+      ],
+      "@tuvren/runtime-api/tools": [
+        "../../../../../framework/contracts/runtime-api/dist/tools.d.ts"
+      ],
+      "@tuvren/driver-api": [
+        "../../../../../framework/contracts/driver-api/dist/index.d.ts"
+      ],
+      "@tuvren/provider-api": [
+        "../../../../../providers/contracts/provider-api/dist/index.d.ts"
+      ],
+      "@tuvren/runtime-core": ["../../runtime-core/dist/index.d.ts"],
+      "@tuvren/driver-react": ["./src/index.ts"]
+    },
+    "rootDir": "./src",
+    "target": "esnext",
+    "types": ["node"],
+    "verbatimModuleSyntax": true
+  },
+  "include": ["src/**/*.ts"]
+}

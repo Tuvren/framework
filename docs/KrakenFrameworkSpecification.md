@@ -133,7 +133,7 @@ StructuredOutputRequest
 └─ strict?: boolean                 // enforcement hint for providers that support native schema enforcement
 ```
 
-`StructuredOutputRequest` is the provider-neutral contract for requesting schema-constrained model output. `schema` is the JSON Schema the response must satisfy. `name` is an optional identifier for the schema (mapped to provider-native name fields where applicable). `strict` is an enforcement hint — providers that support native structured output enforcement (OpenAI’s strict mode, Google’s `responseSchema`) apply it at generation time; providers that do not support native enforcement must either reject with a clear error or fall back through a documented compatibility path (e.g., schema-in-prompt instruction).
+`StructuredOutputRequest` is the provider-neutral contract for requesting schema-constrained model output. `schema` is the JSON Schema the response must satisfy. Draft-07 is the default dialect when `schema.$schema` is absent; schemas that use draft-2019-09 or draft-2020-12 keywords must declare the matching `$schema` URI so the framework validator can select the correct dialect. `name` is an optional identifier for the schema (mapped to provider-native name fields where applicable). `strict` is an enforcement hint — providers that support native structured output enforcement (OpenAI’s strict mode, Google’s `responseSchema`) apply it at generation time; providers that do not support native enforcement must either reject with a clear error or fall back through a documented compatibility path (e.g., schema-in-prompt instruction).
 
 ```
 TuvrenPrompt
@@ -476,7 +476,7 @@ StreamAccumulator
 ├─ hasContent(): boolean
 ```
 
-`absorb` processes one chunk: appends text deltas, accumulates tool call arguments, accumulates structured output deltas, captures usage and metadata. `finalize` produces the complete `TuvrenModelResponse` with all parts assembled, arguments parsed, structured output parsed into `StructuredPart.data`, and metadata merged. If structured output cannot be parsed (malformed JSON or equivalent), `finalize` produces an error response. `hasContent` returns whether any chunks have been absorbed — used by the driver to detect aroundModel short-circuits that need synthetic event generation (§6.5).
+`absorb` processes one chunk: appends text deltas, accumulates tool call arguments, accumulates structured output deltas, captures usage and metadata. `finalize` produces the complete `TuvrenModelResponse` with all parts assembled, arguments parsed, structured output parsed into `StructuredPart.data`, and metadata merged. On normal stream completion, unfinished structured-output and tool-call parts are provider stream errors; only cancellation partial finalization may preserve incomplete accumulated content. If structured output cannot be parsed (malformed JSON or equivalent), `finalize` produces an error response. `hasContent` returns whether any chunks have been absorbed — used by the driver to detect aroundModel short-circuits that need synthetic event generation (§6.5).
 
 ### 3.4 Adapter Strategy
 
@@ -513,7 +513,7 @@ Inbound: the adapter maps the provider's structured response into a `StructuredP
 
 Structured output follows the same two-path model as text content:
 
-**Live path**: Provider stream chunks of type `structured_delta` are translated into `structured.delta` framework events and yielded to the output iterable immediately. The consumer sees the raw structured content building incrementally. When the provider emits `structured_done`, the driver yields `structured.done` with the final parsed data.
+**Live path**: Provider stream chunks of type `structured_delta` are translated into `structured.delta` framework events and yielded to the output iterable immediately. The consumer sees the raw structured content building incrementally. When the provider emits `structured_done`, the driver yields `structured.done` with the final parsed data. If a provider emits `structured_done` without any prior `structured_delta`, the driver first synthesizes a `structured.delta` from the serialized final data so the live stream still satisfies the canonical delta/done contract.
 
 **Durable path**: The same chunks are accumulated by the `StreamAccumulator`. On `finalize`, the accumulator parses the accumulated content into a `StructuredPart` with the complete parsed `data`. This complete part is what gets staged as part of the durable assistant message.
 
@@ -525,7 +525,7 @@ When `provider.generate()` is used instead of `provider.stream()`, the driver sy
 
 **Parse responsibility**: The `StreamAccumulator` parses raw structured output into `StructuredPart.data`. If parsing fails (malformed JSON or equivalent), the accumulator produces an error response and the driver treats it as a model call failure.
 
-**Schema validation**: After the `aroundModel` chain returns (whether it called `next` or not), the driver validates the `StructuredPart.data` against the `schema` from the prompt's `StructuredOutputRequest`. Provider-side enforcement via the `strict` flag is the first line of defense — providers that support native schema enforcement apply it at generation time. The framework validates after receipt regardless. This is consistent with the "framework always normalizes, never trusts the wire" principle applied to tool call argument parsing.
+**Schema validation**: After the `aroundModel` chain returns (whether it called `next` or not), the driver validates the `StructuredPart.data` against the `schema` from the prompt's `StructuredOutputRequest`. The validator uses draft-07 when `$schema` is absent or declares draft-07, draft-2019-09 when `$schema` declares that dialect, and draft-2020-12 when `$schema` declares that dialect. Dynamic request schemas are compiled in an isolated validator context so repeated `$id` values from different host requests do not collide across turns. Unsupported `$schema` dialects and schema compilation failures produce `structured_output_validation`. Provider-side enforcement via the `strict` flag is the first line of defense — providers that support native schema enforcement apply it at generation time. The framework validates after receipt regardless. This is consistent with the "framework always normalizes, never trusts the wire" principle applied to tool call argument parsing.
 
 **Failure behavior**: Schema mismatch produces `fail(hard)` with error code `structured_output_validation`. This is a defined runtime outcome, not a silent acceptance or best-effort parse. The error is staged and the Run fails through the standard `failIteration` path. The model does not see the invalid output on the next iteration — the Turn terminates.
 
@@ -1151,14 +1151,16 @@ DriverExecutionResult
 ├─ resolution: RuntimeResolution
 ├─ messages?: TuvrenMessage[]
 ├─ partial?: boolean
+├─ assistantEventReconciliation?: "allow_final_sequence_divergence"
+├─ stateUpdates?: DriverExtensionStateUpdate[]
 └─ toolExecutionMode?: "parallel" | "sequential"
 ```
 
-The driver does not mutate framework-owned state by aliasing context objects in place. If a driver needs to influence framework state, it does so through explicit returned outputs such as `messages`, `resolution`, and `partial`, not through mutation of the execution context.
+The driver does not mutate framework-owned state by aliasing context objects in place. If a driver needs to influence framework state, it does so through explicit returned outputs such as `messages`, `resolution`, `partial`, and `stateUpdates`, not through mutation of the execution context.
 
 The shared core does not require a driver-owned approval-resume path. Approval resume is handled by the framework around the paused tool batch, so any driver `resume(...)` method is optional and outside the current shared-core execution path.
 
-`runtime.emit(...)` is a driver-owned streaming surface, not a framework-lifecycle backdoor. Drivers may use it for custom events and assistant/provider stream-content events only. Shared-core lifecycle events such as `turn.*`, `iteration.*`, `tool.*`, `approval.*`, `state.*`, `error`, and similar framework-owned control events are emitted only by shared core itself. If a driver emits assistant content events, that emitted assistant sequence must reconcile to the same durable assistant message returned in `DriverExecutionResult.messages`, including incremental delta payloads such as `text.delta`, `reasoning.delta`, `structured.delta`, and `tool_call.args_delta`, stable event identity (`messageId`, `callId`), canonical message-start/message-done ordering, and the final `finishReason`; otherwise shared core rejects the result as an invalid stream event. If a driver returns a durable assistant message without emitting matching assistant content events, shared core synthesizes the missing assistant stream events from that durable message so the public event stream still reflects the committed assistant output.
+`runtime.emit(...)` is a driver-owned streaming surface, not a framework-lifecycle backdoor. Drivers may use it for custom events and assistant/provider stream-content events only. Shared-core lifecycle events such as `turn.*`, `iteration.*`, `tool.*`, `approval.*`, `state.*`, `error`, and similar framework-owned control events are emitted only by shared core itself. If a driver emits assistant content events, that emitted assistant sequence must normally reconcile to the same durable assistant message returned in `DriverExecutionResult.messages`, including incremental delta payloads such as `text.delta`, `reasoning.delta`, `structured.delta`, and `tool_call.args_delta`, stable event identity (`messageId`, `callId`), canonical message-start/message-done ordering, and the final `finishReason`; otherwise shared core rejects the result as an invalid stream event. The one intentional exception is `aroundModel` post-stream replacement after `next()`: once a live assistant sequence has already been emitted, the wrapper may still replace the durable assistant checkpoint, and the driver must opt into that narrower validation path by returning `assistantEventReconciliation: "allow_final_sequence_divergence"`. Shared core honors that exception only when the active agent config includes at least one `aroundModel` handler, assistant content events were actually emitted, the final emitted assistant sequence actually diverges from the durable assistant message, and neither the final live sequence nor the durable assistant message requests tools; in that case it validates the emitted assistant sequence as a standalone assistant message rather than requiring equality with the final durable assistant message. AfterIteration hooks still receive a coherent `TuvrenModelResponse` synthesized from the durable assistant checkpoint, with provider usage preserved when available. Because publication is live, later contract failures such as streamed structured-output validation errors do not retract already-forwarded assistant events; the Turn fails with the corresponding validation error instead. If a driver returns a durable assistant message without emitting matching assistant content events, shared core synthesizes the missing assistant stream events from that durable message so the public event stream still reflects the committed assistant output.
 
 `DriverExecutionResult` is intentionally minimal:
 
@@ -1167,7 +1169,10 @@ The shared core does not require a driver-owned approval-resume path. Approval r
 - `messages` may contain at most one assistant message per iteration
 - `messages` may be absent only for pure control outcomes with no durable assistant-history contribution, or for failures before any durable assistant output was staged
 - `partial` is valid only for failed execution results that stage an assistant message
+- `assistantEventReconciliation` is optional and only valid for explicit driver-signaled cases such as `aroundModel` post-stream durable replacement
+- `stateUpdates` carries per-extension manifest updates that must be merged at the same checkpoint that commits the assistant message and updated manifest
 - `toolExecutionMode` is required when the driver requests tool calls through assistant messages, and invalid otherwise
+- failed `partial` results may include interrupted tool-call content; those calls are durable context only, still require `toolExecutionMode` for contract completeness, and are not executed because the resolution is failed
 
 The shared driver seam does **not** carry a generic raw `response` object. Richer transient iteration artifacts belong in driver-local or runtime-internal layers unless a future shared-core need proves otherwise.
 
@@ -1281,7 +1286,7 @@ The `aroundModel` wrapper receives the complete `TuvrenModelResponse` from `next
 
 **Short-circuit**: If aroundModel returns without calling `next()` (cache hit, static response), no streaming events were emitted during the call. The driver detects this via `accumulator.hasContent()` and synthesizes events from the returned response using the same mechanism as the non-streaming fallback (§6.3). The consumer sees one complete message sequence.
 
-**Replacement**: If aroundModel modifies the response after calling `next()`, stream events from `next()` are already emitted and cannot be recalled. The durable path uses the modified response. Minor inconsistency between live and durable paths — acceptable because modifications are typically metadata or minor adjustments, not content replacement.
+**Replacement**: If aroundModel modifies the response after calling `next()`, stream events from `next()` are already emitted and cannot be recalled. The durable path uses the modified response, even when that differs materially from the already-emitted live assistant content. This live-versus-durable divergence is intentional for post-stream replacement and is validated through the explicit `assistantEventReconciliation` contract rather than by forcing the durable checkpoint to match the earlier live stream. This exception is limited to non-tool-call assistant content; if either the final live sequence or the durable replacement requests tools, shared core rejects the result as an invalid stream event.
 
 **Retry**: If aroundModel calls `next()` multiple times (fallback to different provider), each call produces its own stream event sequence with a new `messageId`. The consumer sees multiple message sequences. Only the final response (from the last `next()` call) is staged on the durable path.
 
@@ -1827,7 +1832,10 @@ aroundModel and aroundTool interact with the streaming system as defined in §6.
 
 - aroundModel receives the complete `TuvrenModelResponse`, not streaming events. Stream events are emitted by the driver during the provider stream, before aroundModel sees the response.
 - Short-circuit (no `next()` call): driver synthesizes events from the returned response.
+- Single-call replacement after `next()`: if the wrapper returns a different durable response after one streamed `next()` call, the already-emitted live assistant sequence stays visible and only the durable checkpoint changes.
 - Retry (multiple `next()` calls): each produces a stream sequence with a new `messageId`. Only the final response is durable.
+- If a provider call fails after streaming has started and no durable assistant message is checkpointed, the already-emitted assistant content remains visible as an interrupted partial sequence and is followed by failure handling.
+- Live publication is not retractable: if later shared-core validation fails, including post-stream structured-output validation, the prior ephemeral stream remains visible and the Turn fails with the corresponding contract error.
 - aroundTool is invisible to the event stream. One `tool.start` and one `tool.result` regardless of internal retries.
 
 `emit` is available on all handler contexts. `forward` is available only on `AroundToolContext` and `ToolExecutionContext`.

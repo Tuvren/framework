@@ -72,6 +72,7 @@ export interface FakeKernelHarness {
   kernel: KrakenKernel;
   readBranchManifest(branchId: string): Promise<TurnTreeManifest>;
   readBranchMessages(branchId: string): Promise<unknown[]>;
+  readBranchRuns(branchId: string): Promise<RunRecord[]>;
   readBranchRuntimeStatus(branchId: string): Promise<unknown | null>;
   readRunningStagedMessages(branchId: string): Promise<unknown[]>;
 }
@@ -494,6 +495,11 @@ export function createFakeKernelHarness(): FakeKernelHarness {
       return payload === undefined
         ? null
         : decodeDeterministicKernelRecord(payload);
+    },
+    async readBranchRuns(branchId) {
+      return [...state.runs.values()]
+        .filter((run) => run.branchId === branchId)
+        .map(cloneRun);
     },
     async readRunningStagedMessages(branchId) {
       const run = [...state.runs.values()].find(
