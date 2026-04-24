@@ -216,7 +216,7 @@ function synthesizeAssistantEvents(
         break;
       case "structured":
         events.push({
-          delta: JSON.stringify(part.data) ?? "null",
+          delta: serializeAssistantDeltaValue(part.data),
           messageId,
           timestamp: now(),
           type: "structured.delta",
@@ -402,16 +402,7 @@ class StreamAccumulator {
           },
         ];
       case "structured_done":
-        this.completeStructured(chunk.data, chunk.name);
-        return [
-          {
-            data: cloneValue(chunk.data),
-            messageId: this.messageId,
-            name: chunk.name,
-            timestamp: this.now(),
-            type: "structured.done",
-          },
-        ];
+        return this.completeStructuredAndCreateEvents(chunk.data, chunk.name);
       case "tool_call_start":
         return [this.startToolCall(chunk.providerCallId, chunk.name)];
       case "tool_call_args_delta":
@@ -639,23 +630,57 @@ class StreamAccumulator {
     });
   }
 
-  private completeStructured(data: unknown, name?: string): void {
+  private completeStructured(
+    data: unknown,
+    name?: string
+  ): Extract<AccumulatedPart, { kind: "structured" }> {
     const lastPart = this.parts.at(-1);
 
     if (lastPart?.kind === "structured") {
       lastPart.data = cloneValue(data);
       lastPart.done = true;
       lastPart.name = name;
-      return;
+      return lastPart;
     }
 
-    this.parts.push({
+    const part: Extract<AccumulatedPart, { kind: "structured" }> = {
       data: cloneValue(data),
       delta: "",
       done: true,
       kind: "structured",
       name,
+    };
+    this.parts.push(part);
+    return part;
+  }
+
+  private completeStructuredAndCreateEvents(
+    data: unknown,
+    name?: string
+  ): TuvrenStreamEvent[] {
+    const part = this.completeStructured(data, name);
+    const events: TuvrenStreamEvent[] = [];
+
+    if (part.delta === "") {
+      const synthesizedDelta = serializeAssistantDeltaValue(data);
+      part.delta = synthesizedDelta;
+      events.push({
+        delta: synthesizedDelta,
+        messageId: this.messageId,
+        timestamp: this.now(),
+        type: "structured.delta",
+      });
+    }
+
+    events.push({
+      data: cloneValue(data),
+      messageId: this.messageId,
+      name,
+      timestamp: this.now(),
+      type: "structured.done",
     });
+
+    return events;
   }
 
   private startToolCall(
@@ -708,7 +733,7 @@ class StreamAccumulator {
     const events: TuvrenStreamEvent[] = [];
 
     if (state.argsDelta === "") {
-      const synthesizedArgsDelta = JSON.stringify(input) ?? "null";
+      const synthesizedArgsDelta = serializeAssistantDeltaValue(input);
       state.argsDelta = synthesizedArgsDelta;
       events.push({
         callId: state.callId,
@@ -973,6 +998,10 @@ function parsePartialStructuredValue(value: string): unknown {
   } catch {
     return undefined;
   }
+}
+
+function serializeAssistantDeltaValue(value: unknown): string {
+  return JSON.stringify(value) ?? "null";
 }
 
 async function waitForAbortable<T>(

@@ -513,7 +513,7 @@ Inbound: the adapter maps the provider's structured response into a `StructuredP
 
 Structured output follows the same two-path model as text content:
 
-**Live path**: Provider stream chunks of type `structured_delta` are translated into `structured.delta` framework events and yielded to the output iterable immediately. The consumer sees the raw structured content building incrementally. When the provider emits `structured_done`, the driver yields `structured.done` with the final parsed data.
+**Live path**: Provider stream chunks of type `structured_delta` are translated into `structured.delta` framework events and yielded to the output iterable immediately. The consumer sees the raw structured content building incrementally. When the provider emits `structured_done`, the driver yields `structured.done` with the final parsed data. If a provider emits `structured_done` without any prior `structured_delta`, the driver first synthesizes a `structured.delta` from the serialized final data so the live stream still satisfies the canonical delta/done contract.
 
 **Durable path**: The same chunks are accumulated by the `StreamAccumulator`. On `finalize`, the accumulator parses the accumulated content into a `StructuredPart` with the complete parsed `data`. This complete part is what gets staged as part of the durable assistant message.
 

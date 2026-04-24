@@ -1403,6 +1403,76 @@ describe("driver-react", () => {
     ]);
   });
 
+  test("synthesizes structured deltas when provider streams final structured data only", async () => {
+    const emittedEvents: TuvrenStreamEvent[] = [];
+    const provider = {
+      async generate() {
+        throw new Error("generate should not be called");
+      },
+      id: "provider",
+      async *stream() {
+        const structuredDone = {
+          data: { answer: "ok" },
+          name: "answer",
+          type: "structured_done",
+        } satisfies ProviderStreamChunk;
+        const finish = {
+          finishReason: "stop",
+          type: "finish",
+        } satisfies ProviderStreamChunk;
+
+        yield structuredDone;
+        yield finish;
+      },
+    } satisfies TuvrenProvider;
+    const driver = createReActDriver({
+      providerCallMode: "stream",
+    }).create();
+
+    const result = await driver.execute(
+      createDriverExecutionContext({
+        config: {
+          model: provider,
+          name: "primary",
+        },
+        emittedEvents,
+      })
+    );
+
+    expect(result.resolution).toEqual({
+      reason: "done",
+      type: "end_turn",
+    });
+    expect(result.messages).toEqual([
+      {
+        parts: [
+          {
+            data: { answer: "ok" },
+            name: "answer",
+            type: "structured",
+          },
+        ],
+        role: "assistant",
+      },
+    ]);
+    expect(emittedEvents.map((event) => event.type)).toEqual([
+      "message.start",
+      "structured.delta",
+      "structured.done",
+      "message.done",
+    ]);
+    expect(
+      emittedEvents.find(
+        (
+          event
+        ): event is Extract<TuvrenStreamEvent, { type: "structured.delta" }> =>
+          event.type === "structured.delta"
+      )
+    ).toMatchObject({
+      delta: '{"answer":"ok"}',
+    });
+  });
+
   test("synthesizes tool-call args deltas when provider streams complete tool calls without incremental args chunks", async () => {
     const emittedEvents: TuvrenStreamEvent[] = [];
     const provider = {
@@ -2466,6 +2536,7 @@ describe("driver-react", () => {
       "message.start",
       "reasoning.delta",
       "reasoning.done",
+      "structured.delta",
       "structured.done",
       "message.done",
     ]);
@@ -2616,6 +2687,69 @@ describe("driver-react", () => {
         role: "user",
       },
     ]);
+  });
+
+  test("runtime-core accepts final-only streamed structured output", async () => {
+    const harness = createFakeKernelHarness();
+    const provider = {
+      async generate() {
+        throw new Error("generate should not be called");
+      },
+      id: "provider",
+      async *stream() {
+        const structuredDone = {
+          data: { answer: "ok" },
+          name: "answer",
+          type: "structured_done",
+        } satisfies ProviderStreamChunk;
+        const finish = {
+          finishReason: "stop",
+          type: "finish",
+        } satisfies ProviderStreamChunk;
+
+        yield structuredDone;
+        yield finish;
+      },
+    } satisfies TuvrenProvider;
+    const runtime = createTuvrenRuntimeCore({
+      defaultDriverId: REACT_DRIVER_ID,
+      driverRegistry: createDriverRegistry([
+        createReActDriver({
+          providerCallMode: "stream",
+        }),
+      ]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        model: provider,
+        name: "primary",
+      },
+      signal: textSignal("Return structured output"),
+      threadId: thread.threadId,
+    });
+
+    const events = await collectEvents(handle.events());
+    const messages = await harness.readBranchMessages(thread.branchId);
+
+    expect(handle.status().phase).toBe("completed");
+    expect(events.map((event) => event.type)).toContain("structured.delta");
+    expect(messages).toEqual(
+      expect.arrayContaining([
+        {
+          parts: [
+            {
+              data: { answer: "ok" },
+              name: "answer",
+              type: "structured",
+            },
+          ],
+          role: "assistant",
+        },
+      ])
+    );
   });
 
   test("fails hard when streamed structured output cannot be parsed", async () => {
@@ -2973,6 +3107,148 @@ describe("driver-react", () => {
       expect.arrayContaining([
         {
           parts: [{ text: "modified", type: "text" }],
+          role: "assistant",
+        },
+      ])
+    );
+  });
+
+  test("does not request final sequence divergence for metadata-only aroundModel changes", async () => {
+    const emittedEvents: TuvrenStreamEvent[] = [];
+    const provider = {
+      async generate() {
+        throw new Error("generate should not be called");
+      },
+      id: "provider",
+      async *stream() {
+        const textDelta = {
+          text: "provider",
+          type: "text_delta",
+        } satisfies ProviderStreamChunk;
+        const finish = {
+          finishReason: "stop",
+          type: "finish",
+        } satisfies ProviderStreamChunk;
+
+        yield textDelta;
+        yield finish;
+      },
+    } satisfies TuvrenProvider;
+    const driver = createReActDriver({
+      providerCallMode: "stream",
+    }).create();
+
+    const result = await driver.execute(
+      createDriverExecutionContext({
+        config: {
+          extensions: [
+            {
+              async aroundModel(_context, next) {
+                const response = await next();
+
+                return {
+                  ...response,
+                  providerMetadata: {
+                    cache: "hit",
+                  },
+                } satisfies TuvrenModelResponse;
+              },
+              name: "metadata",
+            },
+          ],
+          model: provider,
+          name: "primary",
+        },
+        emittedEvents,
+      })
+    );
+
+    expect(result.assistantEventReconciliation).toBeUndefined();
+    expect(result.messages).toEqual([
+      {
+        parts: [{ text: "provider", type: "text" }],
+        providerMetadata: {
+          cache: "hit",
+        },
+        role: "assistant",
+      },
+    ]);
+    expect(emittedEvents.map((event) => event.type)).toEqual([
+      "message.start",
+      "text.delta",
+      "text.done",
+      "message.done",
+    ]);
+  });
+
+  test("executes end to end when aroundModel only changes response metadata after streamed next", async () => {
+    const harness = createFakeKernelHarness();
+    const provider = {
+      async generate() {
+        throw new Error("generate should not be called");
+      },
+      id: "provider",
+      async *stream() {
+        const textDelta = {
+          text: "provider",
+          type: "text_delta",
+        } satisfies ProviderStreamChunk;
+        const finish = {
+          finishReason: "stop",
+          type: "finish",
+        } satisfies ProviderStreamChunk;
+
+        yield textDelta;
+        yield finish;
+      },
+    } satisfies TuvrenProvider;
+    const runtime = createTuvrenRuntimeCore({
+      defaultDriverId: REACT_DRIVER_ID,
+      driverRegistry: createDriverRegistry([
+        createReActDriver({
+          providerCallMode: "stream",
+        }),
+      ]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        extensions: [
+          {
+            async aroundModel(_context, next) {
+              const response = await next();
+
+              return {
+                ...response,
+                providerMetadata: {
+                  cache: "hit",
+                },
+              } satisfies TuvrenModelResponse;
+            },
+            name: "metadata",
+          },
+        ],
+        model: provider,
+        name: "primary",
+      },
+      signal: textSignal("Annotate output"),
+      threadId: thread.threadId,
+    });
+
+    const events = await collectEvents(handle.events());
+    const messages = await harness.readBranchMessages(thread.branchId);
+
+    expect(handle.status().phase).toBe("completed");
+    expect(events.some((event) => event.type === "error")).toBe(false);
+    expect(messages).toEqual(
+      expect.arrayContaining([
+        {
+          parts: [{ text: "provider", type: "text" }],
+          providerMetadata: {
+            cache: "hit",
+          },
           role: "assistant",
         },
       ])

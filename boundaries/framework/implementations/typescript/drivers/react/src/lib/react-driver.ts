@@ -818,6 +818,95 @@ function responsesMatch(
   return isDeepStrictEqual(stripUndefinedDeep(left), stripUndefinedDeep(right));
 }
 
+function responsesEmitEquivalentAssistantEvents(
+  liveResponse: TuvrenModelResponse,
+  durableResponse: TuvrenModelResponse
+): boolean {
+  if (
+    !finishReasonMatchesDurableAssistantContent(
+      liveResponse.finishReason,
+      durableResponse.parts
+    )
+  ) {
+    return false;
+  }
+
+  if (liveResponse.parts.length !== durableResponse.parts.length) {
+    return false;
+  }
+
+  for (const [index, livePart] of liveResponse.parts.entries()) {
+    const durablePart = durableResponse.parts[index];
+
+    if (durablePart === undefined) {
+      return false;
+    }
+
+    if (!partsEmitEquivalentAssistantEvents(livePart, durablePart)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function finishReasonMatchesDurableAssistantContent(
+  finishReason: TuvrenModelResponse["finishReason"],
+  parts: TuvrenModelResponse["parts"]
+): boolean {
+  if (parts.some((part) => part.type === "tool_call")) {
+    return finishReason === "tool_call";
+  }
+
+  return finishReason !== "tool_call";
+}
+
+function partsEmitEquivalentAssistantEvents(
+  livePart: TuvrenModelResponse["parts"][number],
+  durablePart: TuvrenModelResponse["parts"][number]
+): boolean {
+  switch (livePart.type) {
+    case "file":
+      return (
+        durablePart.type === "file" &&
+        livePart.filename === durablePart.filename &&
+        livePart.mediaType === durablePart.mediaType &&
+        isDeepStrictEqual(livePart.data, durablePart.data)
+      );
+    case "reasoning":
+      return (
+        durablePart.type === "reasoning" &&
+        livePart.redacted === durablePart.redacted &&
+        (livePart.redacted || livePart.text === durablePart.text)
+      );
+    case "structured":
+      return (
+        durablePart.type === "structured" &&
+        livePart.name === durablePart.name &&
+        isDeepStrictEqual(livePart.data, durablePart.data)
+      );
+    case "text":
+      return durablePart.type === "text" && livePart.text === durablePart.text;
+    case "tool_call":
+      return (
+        durablePart.type === "tool_call" &&
+        livePart.callId === durablePart.callId &&
+        livePart.name === durablePart.name &&
+        isDeepStrictEqual(livePart.input, durablePart.input)
+      );
+    case "tool_result":
+      return (
+        durablePart.type === "tool_result" &&
+        isDeepStrictEqual(
+          stripUndefinedDeep(livePart),
+          stripUndefinedDeep(durablePart)
+        )
+      );
+    default:
+      return false;
+  }
+}
+
 function hasRequestedToolCalls(response: TuvrenModelResponse): boolean {
   return response.parts.some((part) => part.type === "tool_call");
 }
@@ -901,7 +990,10 @@ function resolveAssistantEventReconciliation(
   }
 
   if (
-    !responsesMatch(lastOutcome.response, result.response) &&
+    !responsesEmitEquivalentAssistantEvents(
+      lastOutcome.response,
+      result.response
+    ) &&
     lastOutcome.assistantSequences.some((sequence) => sequence.published)
   ) {
     return "allow_final_sequence_divergence";
