@@ -14,6 +14,13 @@
         "command": "bunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false && node --input-type=module -e \"await import('./dist/index.js')\""
       }
     },
+    "bench": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "boundaries/framework/implementations/typescript/drivers/react",
+        "command": "bun bench/react-stream.bench.ts"
+      }
+    },
     "test": {
       "executor": "nx:run-commands",
       "options": {

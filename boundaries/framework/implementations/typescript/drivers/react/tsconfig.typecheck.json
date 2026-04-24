@@ -35,6 +35,7 @@
     "types": ["bun"]
   },
   "include": [
+    "bench/**/*.ts",
     "src/**/*.ts",
     "test/**/*.ts",
     "../../../../../framework/contracts/runtime-api/src/**/*.ts",

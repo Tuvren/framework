@@ -14,6 +14,13 @@
         "command": "bunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false"
       }
     },
+    "bench": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "boundaries/framework/implementations/typescript/runtime-core",
+        "command": "bun bench/runtime-boundary.bench.ts"
+      }
+    },
     "test": {
       "executor": "nx:run-commands",
       "options": {
