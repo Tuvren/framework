@@ -4481,6 +4481,15 @@ function validateDriverAssistantEvents(
   );
 
   if (assistantEvents.length === 0) {
+    if (assistantEventReconciliation !== undefined) {
+      return new TuvrenRuntimeError(
+        "assistantEventReconciliation requires emitted assistant content events",
+        {
+          code: "invalid_stream_event",
+        }
+      );
+    }
+
     return undefined;
   }
 

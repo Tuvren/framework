@@ -564,10 +564,17 @@ class StreamAccumulator {
     response: TuvrenModelResponse,
     options?: { partial?: boolean }
   ): TuvrenStreamEvent[] {
-    return [
-      ...(options?.partial === true
+    const contentEvents =
+      options?.partial === true
         ? this.createPartialCompletionEvents()
-        : this.createCompletionEvents()),
+        : this.createCompletionEvents();
+
+    if (options?.partial === true && this.hasOpenPartialContent()) {
+      return contentEvents;
+    }
+
+    return [
+      ...contentEvents,
       {
         finishReason: response.finishReason,
         messageId: this.messageId,
@@ -783,6 +790,19 @@ class StreamAccumulator {
     }
 
     return events;
+  }
+
+  private hasOpenPartialContent(): boolean {
+    return this.parts.some((part) => {
+      switch (part.kind) {
+        case "structured":
+          return !part.done;
+        case "tool_call":
+          return !part.state.done;
+        default:
+          return false;
+      }
+    });
   }
 
   private createTerminalEventsFromFinish(

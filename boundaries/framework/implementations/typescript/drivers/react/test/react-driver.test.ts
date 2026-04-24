@@ -2360,6 +2360,59 @@ describe("driver-react", () => {
     ).toHaveLength(1);
   });
 
+  test("leaves incomplete tool-call streams open when cancellation arrives before args", async () => {
+    const emittedEvents: TuvrenStreamEvent[] = [];
+    const controller = new AbortController();
+    const provider = {
+      async generate() {
+        throw new Error("generate should not be called");
+      },
+      id: "provider",
+      async *stream() {
+        const startChunk = {
+          providerCallId: "native-call-1",
+          name: "search",
+          type: "tool_call_start",
+        } satisfies ProviderStreamChunk;
+
+        yield startChunk;
+        controller.abort(new Error("cancelled during stream"));
+        await wait(1000);
+      },
+    } satisfies TuvrenProvider;
+    const driver = createReActDriver({
+      providerCallMode: "stream",
+      toolExecutionMode: "sequential",
+    }).create();
+
+    const result = await Promise.race([
+      driver.execute(
+        createDriverExecutionContext({
+          config: {
+            model: provider,
+            name: "primary",
+          },
+          emittedEvents,
+          signal: controller.signal,
+        })
+      ),
+      wait(100).then(() => "timed_out"),
+    ]);
+
+    if (typeof result === "string") {
+      throw new Error("driver did not stop waiting after stream abort");
+    }
+
+    expect(() => assertDriverExecutionResult(result)).not.toThrow();
+    expect(result.partial).toBe(false);
+    expect(result.messages).toBeUndefined();
+    expect(result.resolution.type).toBe("fail");
+    expect(emittedEvents.map((event) => event.type)).toEqual([
+      "message.start",
+      "tool_call.start",
+    ]);
+  });
+
   test("does not replay completed reasoning or structured done events during stream cancellation", async () => {
     const emittedEvents: TuvrenStreamEvent[] = [];
     const controller = new AbortController();
@@ -2490,6 +2543,77 @@ describe("driver-react", () => {
       {
         parts: [{ text: "partial", type: "text" }],
         role: "assistant",
+      },
+    ]);
+  });
+
+  test("runtime-core cancellation after tool_call.start keeps the cancellation error", async () => {
+    const harness = createFakeKernelHarness();
+    const provider = {
+      async generate() {
+        throw new Error("generate should not be called");
+      },
+      id: "provider",
+      async *stream() {
+        const startChunk = {
+          providerCallId: "native-call-1",
+          name: "search",
+          type: "tool_call_start",
+        } satisfies ProviderStreamChunk;
+
+        yield startChunk;
+        await wait(1000);
+      },
+    } satisfies TuvrenProvider;
+    const runtime = createTuvrenRuntimeCore({
+      defaultDriverId: REACT_DRIVER_ID,
+      driverRegistry: createDriverRegistry([
+        createReActDriver({
+          providerCallMode: "stream",
+        }),
+      ]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        model: provider,
+        name: "primary",
+      },
+      signal: textSignal("Cancel this tool call"),
+      threadId: thread.threadId,
+    });
+    const iterator = handle.events()[Symbol.asyncIterator]();
+    const firstEvents = await collectUntil(
+      iterator,
+      (event) => event.type === "tool_call.start"
+    );
+
+    handle.cancel();
+    const remainingEvents = await Promise.race([
+      collectRemaining(iterator),
+      wait(100).then(() => "timed_out"),
+    ]);
+
+    if (typeof remainingEvents === "string") {
+      throw new Error("runtime did not stop waiting after cancellation");
+    }
+
+    const events = [...firstEvents, ...remainingEvents];
+    const errorEvent = events.find(
+      (event): event is Extract<(typeof events)[number], { type: "error" }> =>
+        event.type === "error"
+    );
+
+    expect(handle.status().phase).toBe("failed");
+    expect(errorEvent?.error.code).not.toBe("invalid_stream_event");
+    expect(errorEvent?.error.message).toBe("execution cancelled");
+    expect(events.some((event) => event.type === "message.done")).toBe(false);
+    expect(await harness.readBranchMessages(thread.branchId)).toEqual([
+      {
+        parts: [{ text: "Cancel this tool call", type: "text" }],
+        role: "user",
       },
     ]);
   });

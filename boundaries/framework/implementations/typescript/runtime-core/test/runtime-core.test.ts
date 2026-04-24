@@ -1864,6 +1864,63 @@ describe("framework-runtime-core", () => {
     ]);
   });
 
+  test("does not allow assistantEventReconciliation without emitted assistant events", async () => {
+    const harness = createFakeKernelHarness();
+    const driver = {
+      async execute() {
+        return {
+          assistantEventReconciliation: "allow_final_sequence_divergence",
+          messages: [assistantText("durable only")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createTuvrenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        extensions: [
+          {
+            async aroundModel(_context, next) {
+              return await next();
+            },
+            name: "noop-around",
+          },
+        ],
+        name: "primary",
+      },
+      signal: textSignal("Reject unused reconciliation flag"),
+      threadId: thread.threadId,
+    });
+
+    const events = await collectEvents(handle.events());
+    const errorEvent = events.find(
+      (event): event is Extract<(typeof events)[number], { type: "error" }> =>
+        event.type === "error"
+    );
+
+    expect(handle.status().phase).toBe("failed");
+    expect(errorEvent?.error.code).toBe("invalid_stream_event");
+    expect(await harness.readBranchMessages(thread.branchId)).toEqual([
+      {
+        parts: [{ text: "Reject unused reconciliation flag", type: "text" }],
+        role: "user",
+      },
+    ]);
+  });
+
   test("passes a coherent durable response into afterIteration when final assistant divergence is allowed", async () => {
     const harness = createFakeKernelHarness();
     let capturedResponse:
