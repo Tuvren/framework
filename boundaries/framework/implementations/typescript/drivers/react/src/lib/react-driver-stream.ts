@@ -299,7 +299,7 @@ async function publishBufferedAssistantSequence(
   }
 
   for (const event of sequence.events) {
-    await runtime.emit(cloneValue(event));
+    await runtime.emit(event);
   }
 
   sequence.published = true;
@@ -311,7 +311,7 @@ async function appendAndEmit(
   runtime: DriverRuntimePort
 ): Promise<void> {
   events.push(event);
-  await runtime.emit(cloneValue(event));
+  await runtime.emit(event);
 }
 
 async function appendAllAndEmit(

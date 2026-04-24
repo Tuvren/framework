@@ -71,6 +71,7 @@ export interface ToolBatchEnvironment {
   extensions: TuvrenExtension[];
   iterationCount: number;
   manifest: ContextManifest;
+  maxParallelToolCalls: number;
   now(): EpochMs;
   publishCustom(event: { data: unknown; name: string }): void;
   publishEvent(event: TuvrenStreamEvent): void;
@@ -674,6 +675,39 @@ async function executeConcurrentToolCalls(
     environment,
     batchAbortController.signal
   );
+  const outcomes: SingleToolOutcome[] = [];
+
+  for (
+    let index = 0;
+    index < executable.length;
+    index += environment.maxParallelToolCalls
+  ) {
+    const wave = executable.slice(
+      index,
+      index + environment.maxParallelToolCalls
+    );
+    const waveStartBarrier =
+      index === 0 ? startBarrier : createToolStartBarrier(wave.length);
+
+    outcomes.push(
+      ...(await executeToolCallWave(
+        wave,
+        scopedEnvironment,
+        waveStartBarrier,
+        batchAbortController
+      ))
+    );
+  }
+
+  return outcomes;
+}
+
+async function executeToolCallWave(
+  executable: OrderedExecutableToolCall[],
+  environment: ToolBatchEnvironment,
+  startBarrier: ToolStartBarrier,
+  batchAbortController: AbortController
+): Promise<SingleToolOutcome[]> {
   let previousTurn = Promise.resolve();
   const toolStartStates = executable.map(() => {
     let releaseTurn: (() => void) | undefined;
@@ -700,7 +734,7 @@ async function executeConcurrentToolCalls(
     executeSingleTool(
       toolCall.executable,
       toolCall.index,
-      scopedEnvironment,
+      environment,
       startBarrier,
       toolStartStates[index]
     ).catch((error: unknown) => {

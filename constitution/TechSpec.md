@@ -490,10 +490,15 @@ export interface AgentConfig {
   contextPolicy?: ContextPolicy;
   responseFormat?: StructuredOutputRequest;
   maxIterations?: number;
+  maxParallelToolCalls?: number;
 }
 ```
 
 `ApprovalDecision.message` is optional operator commentary for every approval decision type. When present, runtime implementations must attach it to the resulting `ToolResultPart` produced by approval resolution rather than staging it as a separate `user` message or treating it as steering input. Reject and custom decisions therefore remain structurally valid without a message, but the runtime must synthesize a default error explanation when one is omitted.
+
+`AgentConfig.maxParallelToolCalls` is an optional positive safe integer override for the shared runtime's parallel tool execution cap. When omitted, runtime-core uses its host-configured `defaultMaxParallelToolCalls`, which defaults to `10`.
+
+Runtime-core options include `defaultMaxParallelToolCalls?: number`, `manifestExtensionStateWarningBudgetBytes?: number | false`, and `onWarning?: (warning: RuntimeWarning) => void`. Manifest state budget warnings are advisory host callbacks, not execution events and not hard limits. The default warning budget is `256 KiB` per extension namespace; `false` disables budget checks.
 
 ### 4.2 Kernel Protocol Surface
 - **Style:** protocol-shaped library contract for the first TypeScript implementation

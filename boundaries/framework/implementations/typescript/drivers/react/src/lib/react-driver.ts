@@ -459,7 +459,7 @@ function createAroundModelContext(
     config: cloneValue(promptState.config),
     emit: (event) => {
       context.runtime.emit({
-        data: cloneValue(event.data),
+        data: event.data,
         name: event.name,
         timestamp: context.runtime.now(),
         type: "custom",

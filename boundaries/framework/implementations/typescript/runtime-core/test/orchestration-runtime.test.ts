@@ -414,6 +414,78 @@ describe("orchestration-runtime", () => {
     ).toBe(false);
   });
 
+  test("keeps child allEvents available when the parent subtree stream is already active", async () => {
+    const harness = createFakeKernelHarness();
+    const framework = createTuvrenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([
+        createStaticDriver(async (context) => {
+          if (context.config.name === "worker") {
+            await delay(5);
+            return {
+              messages: [assistantText("Worker complete.")],
+              resolution: {
+                reason: "done",
+                type: "end_turn",
+              },
+            };
+          }
+
+          await delay(20);
+          return {
+            messages: [assistantText("Parent complete.")],
+            resolution: {
+              reason: "done",
+              type: "end_turn",
+            },
+          };
+        }),
+      ]),
+      kernel: harness.kernel,
+    });
+    const orchestration = createOrchestrationRuntime({
+      agents: {
+        primary: { name: "primary" },
+        worker: { name: "worker" },
+      },
+      framework,
+    });
+    const thread = await framework.createThread({});
+    const handle = orchestration.executeTurn({
+      agent: "primary",
+      branchId: thread.branchId,
+      signal: textSignal("Start root"),
+      threadId: thread.threadId,
+    });
+
+    const parentEventsPromise = collectEvents(handle.allEvents());
+    await delay(0);
+    const childHandle = handle.spawn({
+      agent: "worker",
+      signal: textSignal("research"),
+    });
+    const childEventsPromise = collectEvents(childHandle.allEvents());
+    const [parentEvents, childEvents] = await Promise.all([
+      parentEventsPromise,
+      childEventsPromise,
+    ]);
+
+    expect(
+      parentEvents.some(
+        (event) =>
+          event.type === "text.done" &&
+          event.source?.workerId !== undefined &&
+          event.text === "Worker complete."
+      )
+    ).toBe(true);
+    expect(
+      childEvents.some(
+        (event) =>
+          event.type === "text.done" && event.text === "Worker complete."
+      )
+    ).toBe(true);
+  });
+
   test("awaitResult preserves structured part metadata in the final visible result surface", async () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntimeCore({
@@ -1105,14 +1177,17 @@ describe("orchestration-runtime", () => {
       agent: "worker",
       signal: textSignal("child"),
     });
-    detachTestPromise(collectEvents(childHandle.allEvents()));
+    const childEventsPromise = collectEvents(childHandle.allEvents());
     await delay(0);
     const grandchildHandle = childHandle.spawn({
       agent: "worker-2",
       signal: textSignal("grandchild"),
     });
     const grandchildResult = await grandchildHandle.awaitResult();
-    const allEvents = await allEventsPromise;
+    const [allEvents, childEvents] = await Promise.all([
+      allEventsPromise,
+      childEventsPromise,
+    ]);
 
     expect(grandchildResult).toEqual([
       {
@@ -1127,6 +1202,12 @@ describe("orchestration-runtime", () => {
           .filter((workerId): workerId is string => workerId !== undefined)
       ).size
     ).toBeGreaterThanOrEqual(2);
+    expect(
+      childEvents.some(
+        (event) =>
+          event.type === "text.done" && event.text === "Grandchild complete."
+      )
+    ).toBe(true);
   });
 
   test("rejects awaitResult when child execution fails", async () => {

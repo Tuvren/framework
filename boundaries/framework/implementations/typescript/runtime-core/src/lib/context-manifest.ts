@@ -204,6 +204,10 @@ function applyExtensionStateUpdates(
   currentState: Record<string, unknown>,
   updates: ExtensionStateUpdate[]
 ): Record<string, unknown> {
+  if (updates.length === 0) {
+    return currentState;
+  }
+
   const nextState = cloneRecord(currentState);
 
   for (const update of updates) {

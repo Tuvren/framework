@@ -914,6 +914,7 @@ export interface AgentConfig {
   extensions?: TuvrenExtension[];
   loopPolicy?: LoopPolicy;
   maxIterations?: number;
+  maxParallelToolCalls?: number;
   model?: string | TuvrenProvider;
   name: string;
   responseFormat?: StructuredOutputRequest;

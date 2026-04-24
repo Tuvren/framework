@@ -34,10 +34,10 @@ import {
   AsyncEventQueue,
   cloneExecutionStatus,
   cloneSnapshotPreservingFunctions,
+  cloneValue,
   createDeferred,
   createFrozenSnapshot,
   detachPromise,
-  EventFanout,
   normalizeError,
   normalizeInputSignal,
   projectError,
@@ -86,10 +86,16 @@ class OrchestrationNode {
   private readonly resultState = createDeferred<unknown>();
   private readonly runtime: OrchestrationRuntimeImpl;
   private selfPhase: ExecutionStatus["phase"] = "running";
+  private selfEventsClaimed = false;
+  private selfEventsQueue?: AsyncEventQueue<TuvrenStreamEvent>;
   private selfResultResolved = false;
   private selfVisibleResult?: ContentPart[];
   private startedExecution = false;
-  private readonly subtreeEvents = new EventFanout<TuvrenStreamEvent>();
+  private readonly subtreeEventSubscribers = new Set<
+    AsyncEventQueue<TuvrenStreamEvent>
+  >();
+  private subtreeEventsClaimed = false;
+  private subtreeEventsQueue?: AsyncEventQueue<TuvrenStreamEvent>;
   private subtreeSettled = false;
   private readonly workerId?: string;
   private readonly localAgent: string;
@@ -148,25 +154,22 @@ class OrchestrationNode {
   }
 
   allEvents(): AsyncIterable<TuvrenStreamEvent> {
-    return createLazyObservedStream({
+    return createSingleConsumerLazyStream({
+      alreadyConsumedCode: "event_stream_already_consumed",
+      alreadyConsumedMessage:
+        "allEvents() can only be consumed once for an orchestration handle",
+      isClaimed: () => this.subtreeEventsClaimed,
+      onClaim: () => {
+        this.subtreeEventsClaimed = true;
+      },
       onClose: async () => {
-        this.activeSubtreeStreams -= 1;
-
-        if (this.activeSubtreeStreams === 0) {
-          await this.stopAllChildForwarders();
-        }
-
-        this.maybeCancelUnobservedExecution();
+        this.subtreeEventsQueue = undefined;
+        await this.closeSubtreeConsumer();
       },
-      onStart: () => {
-        this.activeSubtreeStreams += 1;
-        this.startExecution();
-
-        if (this.activeSubtreeStreams === 1) {
-          this.startChildForwardingForAllChildren();
-        }
+      onStart: (queue) => {
+        this.subtreeEventsQueue = queue;
+        this.startSubtreeConsumer(queue);
       },
-      subscribe: () => this.subtreeEvents.subscribe(),
     });
   }
 
@@ -217,67 +220,25 @@ class OrchestrationNode {
   }
 
   events(): AsyncIterable<TuvrenStreamEvent> {
-    return {
-      [Symbol.asyncIterator]: () => {
-        let finished = false;
-        let iterator: AsyncIterator<TuvrenStreamEvent> | undefined;
-
-        const finish = (): void => {
-          if (finished) {
-            return;
-          }
-
-          finished = true;
-          this.activeEventStreams -= 1;
-          this.maybeCancelUnobservedExecution();
-        };
-
-        const start = (): void => {
-          if (iterator !== undefined) {
-            return;
-          }
-
-          const queue = new AsyncEventQueue<TuvrenStreamEvent>(() => {
-            finish();
-          });
-
-          iterator = queue[Symbol.asyncIterator]();
-          this.activeEventStreams += 1;
-          this.startExecution();
-          detachPromise(this.forwardCurrentGenerationEvents(queue));
-        };
-
-        return {
-          next: async (): Promise<IteratorResult<TuvrenStreamEvent>> => {
-            start();
-
-            if (iterator === undefined) {
-              return createIteratorDoneResult<TuvrenStreamEvent>();
-            }
-
-            const nextValue = await iterator.next();
-
-            if (nextValue.done) {
-              finish();
-            }
-
-            return nextValue;
-          },
-          return: async (): Promise<IteratorResult<TuvrenStreamEvent>> => {
-            if (iterator === undefined) {
-              return createIteratorDoneResult<TuvrenStreamEvent>();
-            }
-
-            const result =
-              iterator.return === undefined
-                ? createIteratorDoneResult<TuvrenStreamEvent>()
-                : await iterator.return();
-            finish();
-            return result;
-          },
-        };
+    return createSingleConsumerLazyStream({
+      alreadyConsumedCode: "event_stream_already_consumed",
+      alreadyConsumedMessage:
+        "events() can only be consumed once for an orchestration handle",
+      isClaimed: () => this.selfEventsClaimed,
+      onClaim: () => {
+        this.selfEventsClaimed = true;
       },
-    };
+      onClose: () => {
+        this.selfEventsQueue = undefined;
+        this.activeEventStreams -= 1;
+        this.maybeCancelUnobservedExecution();
+      },
+      onStart: (queue) => {
+        this.selfEventsQueue = queue;
+        this.activeEventStreams += 1;
+        this.startExecution();
+      },
+    });
   }
 
   hasStartedExecution(): boolean {
@@ -356,6 +317,12 @@ class OrchestrationNode {
     this.selfPhase = "running";
     this.bindingGeneration += 1;
     this.watchingGeneration = undefined;
+    if (this.selfEventsQueue === undefined) {
+      this.selfEventsClaimed = false;
+    }
+    if (this.subtreeEventsQueue === undefined) {
+      this.subtreeEventsClaimed = false;
+    }
     this.ensureWatchingCurrentBinding();
     return this;
   }
@@ -496,36 +463,6 @@ class OrchestrationNode {
     this.maybeCloseSubtree();
   }
 
-  private async forwardCurrentGenerationEvents(
-    queue: AsyncEventQueue<TuvrenStreamEvent>
-  ): Promise<void> {
-    try {
-      const binding = await this.requireCurrentBindingAsync("events");
-
-      for await (const event of binding.handle.events()) {
-        queue.push(this.decorateEvent(event, binding));
-      }
-    } catch (error: unknown) {
-      queue.push({
-        error: projectError(normalizeError(error)),
-        fatal: true,
-        source:
-          this.workerId === undefined
-            ? {
-                agent: this.localAgent,
-              }
-            : {
-                agent: this.localAgent,
-                workerId: this.workerId,
-              },
-        timestamp: this.now(),
-        type: "error",
-      });
-    } finally {
-      queue.close();
-    }
-  }
-
   private maybeCloseSubtree(): void {
     if (this.subtreeSettled) {
       return;
@@ -540,7 +477,17 @@ class OrchestrationNode {
     }
 
     this.subtreeSettled = true;
-    this.subtreeEvents.close();
+    this.closeSubtreeEventStreams();
+  }
+
+  private async closeSubtreeConsumer(): Promise<void> {
+    this.activeSubtreeStreams -= 1;
+
+    if (this.activeSubtreeStreams === 0) {
+      await this.stopAllChildForwarders();
+    }
+
+    this.maybeCancelUnobservedExecution();
   }
 
   private maybeCancelUnobservedExecution(): void {
@@ -634,7 +581,7 @@ class OrchestrationNode {
       return;
     }
 
-    const iterator = child.allEvents()[Symbol.asyncIterator]();
+    const iterator = child.subscribeInternalSubtreeEvents();
     this.childForwarders.set(child, iterator);
     detachPromise(
       (async () => {
@@ -646,7 +593,7 @@ class OrchestrationNode {
               return;
             }
 
-            this.subtreeEvents.emit(nextEvent.value);
+            this.publishSubtreeEvent(nextEvent.value);
           }
         } finally {
           if (this.childForwarders.get(child) === iterator) {
@@ -661,6 +608,56 @@ class OrchestrationNode {
     for (const child of this.children) {
       this.startChildForwarding(child);
     }
+  }
+
+  private closeSubtreeEventStreams(): void {
+    this.subtreeEventsQueue?.close();
+
+    for (const subscriber of [...this.subtreeEventSubscribers]) {
+      subscriber.close();
+    }
+  }
+
+  private publishSubtreeEvent(event: TuvrenStreamEvent): void {
+    this.subtreeEventsQueue?.push(cloneValue(event));
+
+    for (const subscriber of this.subtreeEventSubscribers) {
+      subscriber.push(cloneValue(event));
+    }
+  }
+
+  private startSubtreeConsumer(
+    queue: AsyncEventQueue<TuvrenStreamEvent>
+  ): void {
+    this.activeSubtreeStreams += 1;
+    this.startExecution();
+
+    if (this.subtreeSettled) {
+      queue.close();
+      return;
+    }
+
+    this.startChildForwardingForAllChildren();
+  }
+
+  private subscribeInternalSubtreeEvents(): AsyncIterator<TuvrenStreamEvent> {
+    let closed = false;
+    const close = async (): Promise<void> => {
+      if (closed) {
+        return;
+      }
+
+      closed = true;
+      this.subtreeEventSubscribers.delete(queue);
+      await this.closeSubtreeConsumer();
+    };
+    const queue = new AsyncEventQueue<TuvrenStreamEvent>(() => {
+      detachPromise(close());
+    });
+
+    this.subtreeEventSubscribers.add(queue);
+    this.startSubtreeConsumer(queue);
+    return queue[Symbol.asyncIterator]();
   }
 
   private async stopAllChildForwarders(): Promise<void> {
@@ -788,10 +785,12 @@ class OrchestrationNode {
 
         const decoratedEvent = this.decorateEvent(event, binding);
         this.trackVisibleResult(event, visibleState);
-        this.subtreeEvents.emit(decoratedEvent);
+        this.selfEventsQueue?.push(cloneValue(decoratedEvent));
+        this.publishSubtreeEvent(decoratedEvent);
       }
 
       this.selfVisibleResult = visibleState.lastVisible;
+      this.selfEventsQueue?.close();
 
       if (generation !== this.bindingGeneration) {
         return;
@@ -805,7 +804,7 @@ class OrchestrationNode {
 
       const normalizedError = normalizeError(error);
       this.lastErrorProjection = projectError(normalizedError);
-      this.subtreeEvents.emit({
+      const event: TuvrenStreamEvent = {
         error: this.lastErrorProjection,
         fatal: true,
         source:
@@ -819,7 +818,10 @@ class OrchestrationNode {
               },
         timestamp: this.now(),
         type: "error",
-      });
+      };
+      this.selfEventsQueue?.push(cloneValue(event));
+      this.publishSubtreeEvent(event);
+      this.selfEventsQueue?.close();
       this.selfPhase = "failed";
       this.settleResultFailure(normalizedError);
       this.maybeCloseSubtree();
@@ -1052,15 +1054,19 @@ export function createOrchestrationRuntime(
   );
 }
 
-function createLazyObservedStream<T>(input: {
+function createSingleConsumerLazyStream<T>(input: {
+  alreadyConsumedCode: string;
+  alreadyConsumedMessage: string;
+  isClaimed(): boolean;
+  onClaim(): void;
   onClose: () => Promise<void> | void;
-  onStart: () => void;
-  subscribe: () => AsyncIterable<T>;
+  onStart: (queue: AsyncEventQueue<T>) => void;
 }): AsyncIterable<T> {
   return {
     [Symbol.asyncIterator](): AsyncIterator<T, undefined> {
       let closed = false;
       let iterator: AsyncIterator<T> | undefined;
+      let queue: AsyncEventQueue<T> | undefined;
       let started = false;
 
       const close = async (): Promise<void> => {
@@ -1077,19 +1083,24 @@ function createLazyObservedStream<T>(input: {
           return;
         }
 
-        const subscriptionIterator = input.subscribe()[Symbol.asyncIterator]();
-
-        try {
-          input.onStart();
-        } catch (error: unknown) {
-          detachPromise(
-            subscriptionIterator.return?.() ?? Promise.resolve(undefined)
-          );
-          throw error;
+        if (input.isClaimed()) {
+          throw new TuvrenRuntimeError(input.alreadyConsumedMessage, {
+            code: input.alreadyConsumedCode,
+          });
         }
 
-        iterator = subscriptionIterator;
-        started = true;
+        try {
+          input.onClaim();
+          queue = new AsyncEventQueue<T>(() => {
+            detachPromise(close());
+          });
+          iterator = queue[Symbol.asyncIterator]();
+          started = true;
+          input.onStart(queue);
+        } catch (error: unknown) {
+          queue?.close();
+          throw error;
+        }
       };
 
       return {

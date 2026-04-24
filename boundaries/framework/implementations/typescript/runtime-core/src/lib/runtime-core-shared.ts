@@ -109,60 +109,6 @@ export class AsyncEventQueue<T> implements AsyncIterable<T> {
   }
 }
 
-export class EventFanout<T> {
-  private closed = false;
-  private onEmpty?: () => void;
-  private readonly subscribers = new Set<AsyncEventQueue<T>>();
-
-  constructor(onEmpty?: () => void) {
-    this.onEmpty = onEmpty;
-  }
-
-  close(): void {
-    if (this.closed) {
-      return;
-    }
-
-    this.closed = true;
-
-    for (const subscriber of this.subscribers) {
-      subscriber.close();
-    }
-
-    this.subscribers.clear();
-    this.onEmpty = undefined;
-  }
-
-  emit(item: T): void {
-    if (this.closed) {
-      return;
-    }
-
-    for (const subscriber of this.subscribers) {
-      subscriber.push(cloneValue(item));
-    }
-  }
-
-  subscribe(): AsyncIterable<T> {
-    let queue: AsyncEventQueue<T>;
-    queue = new AsyncEventQueue<T>(() => {
-      this.subscribers.delete(queue);
-
-      if (!this.closed && this.subscribers.size === 0) {
-        this.onEmpty?.();
-      }
-    });
-
-    if (this.closed) {
-      queue.close();
-      return queue;
-    }
-
-    this.subscribers.add(queue);
-    return queue;
-  }
-}
-
 export function cloneExecutionStatus(status: ExecutionStatus): ExecutionStatus {
   return {
     activeAgent: status.activeAgent,
