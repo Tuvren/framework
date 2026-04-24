@@ -36,6 +36,7 @@ import type {
   TuvrenExtension,
   TuvrenMessage,
   TuvrenModelResponse,
+  TuvrenStreamEvent,
   TuvrenToolDefinition,
 } from "@tuvren/runtime-api";
 import {
@@ -46,6 +47,7 @@ import {
   createPreserveTraceHandoffContextBuilder,
   createToolRegistry,
   createTuvrenRuntimeCore,
+  type RuntimeWarning,
   runAfterTurnHooks,
   runBeforeIterationHooks,
   runBeforeTurnHooks,
@@ -9149,6 +9151,127 @@ describe("framework-runtime-core", () => {
     ]);
   });
 
+  test("caps parallel tool execution with wave-ordered tool events", async () => {
+    const harness = createFakeKernelHarness();
+    const activeCalls = new Set<string>();
+    let maxActiveCalls = 0;
+    const completions: string[] = [];
+    const driver = {
+      async execute(context) {
+        const toolMessages = context.messages.filter(
+          (message) => message.role === "tool"
+        );
+
+        if (toolMessages.length === 0) {
+          return {
+            messages: [
+              assistantToolCalls([
+                {
+                  callId: "call-a",
+                  input: { delay: 20, id: "a" },
+                  name: "work",
+                },
+                {
+                  callId: "call-b",
+                  input: { delay: 5, id: "b" },
+                  name: "work",
+                },
+                {
+                  callId: "call-c",
+                  input: { delay: 1, id: "c" },
+                  name: "work",
+                },
+              ]),
+            ],
+            resolution: {
+              type: "continue_iteration",
+            },
+          };
+        }
+
+        return {
+          messages: [assistantText("Capped tools finished.")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createTuvrenRuntimeCore({
+      defaultDriverId: "fake",
+      defaultMaxParallelToolCalls: 1,
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        maxParallelToolCalls: 2,
+        name: "primary",
+        tools: [
+          {
+            description: "Track bounded work",
+            async execute(input: unknown) {
+              const record = toOptionalRecord(input);
+
+              if (
+                record === undefined ||
+                typeof record.id !== "string" ||
+                typeof record.delay !== "number"
+              ) {
+                throw new Error("invalid work input");
+              }
+
+              activeCalls.add(record.id);
+              maxActiveCalls = Math.max(maxActiveCalls, activeCalls.size);
+              await delay(record.delay);
+              activeCalls.delete(record.id);
+              completions.push(record.id);
+              return {
+                id: record.id,
+              };
+            },
+            inputSchema: {
+              properties: {
+                delay: { type: "number" },
+                id: { type: "string" },
+              },
+              required: ["id", "delay"],
+              type: "object",
+            },
+            name: "work",
+          },
+        ],
+      },
+      signal: textSignal("Run capped tools"),
+      threadId: thread.threadId,
+    });
+
+    const events = await collectEvents(handle.events());
+    const toolTimeline = events
+      .filter(
+        (event) => event.type === "tool.start" || event.type === "tool.result"
+      )
+      .map((event) => `${event.type}:${event.callId}`);
+
+    expect(maxActiveCalls).toBe(2);
+    expect(completions).toEqual(["b", "a", "c"]);
+    expect(toolTimeline).toEqual([
+      "tool.start:call-a",
+      "tool.start:call-b",
+      "tool.result:call-b",
+      "tool.result:call-a",
+      "tool.start:call-c",
+      "tool.result:call-c",
+    ]);
+  });
+
   test("runs tool batches sequentially when the driver selects sequential mode", async () => {
     const harness = createFakeKernelHarness();
     const driver = {
@@ -10879,7 +11002,71 @@ describe("framework-runtime-core", () => {
     expect(secondStatus.manifest?.byRole.user).toBe(1);
   });
 
-  test("isolates event payloads between concurrent subscribers", async () => {
+  test("warns without blocking when extension manifest state exceeds the host budget", async () => {
+    const harness = createFakeKernelHarness();
+    const warnings: RuntimeWarning[] = [];
+    const driver = {
+      async execute() {
+        return {
+          messages: [assistantText("Oversized state persisted.")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createTuvrenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+      manifestExtensionStateWarningBudgetBytes: 32,
+      onWarning(warning) {
+        warnings.push(warning);
+        throw new Error("warning callbacks must not fail execution");
+      },
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        extensions: [
+          {
+            name: "large-state",
+            state: {
+              payload: "x".repeat(128),
+            },
+          },
+        ],
+        name: "primary",
+      },
+      signal: textSignal("Persist large state"),
+      threadId: thread.threadId,
+    });
+
+    const events = await collectEvents(handle.events());
+
+    expect(handle.status().phase).toBe("completed");
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toMatchObject({
+      activeAgent: "primary",
+      budgetBytes: 32,
+      code: "manifest_extension_state_budget_exceeded",
+      extensionName: "large-state",
+      threadId: thread.threadId,
+      turnId: extractTurnId(events),
+    });
+    expect(warnings[0]?.observedBytes).toBeGreaterThan(32);
+    expect(handle.status().manifest?.extensions["large-state"]).toEqual({
+      payload: "x".repeat(128),
+    });
+  });
+
+  test("rejects a second event stream consumer for one execution handle", async () => {
     const harness = createFakeKernelHarness();
     const driver = {
       async execute(context) {
@@ -10918,31 +11105,61 @@ describe("framework-runtime-core", () => {
       threadId: thread.threadId,
     });
 
-    const [eventsA, eventsB] = await Promise.all([
-      collectEvents(handle.events()),
-      collectEvents(handle.events()),
-    ]);
-    const customEventA = eventsA.find(
-      (event): event is Extract<(typeof eventsA)[number], { type: "custom" }> =>
-        event.type === "custom" && event.name === "shared.payload"
-    );
-    const customEventB = eventsB.find(
-      (event): event is Extract<(typeof eventsB)[number], { type: "custom" }> =>
-        event.type === "custom" && event.name === "shared.payload"
-    );
+    const eventStream = handle.events();
+    const firstIterator = eventStream[Symbol.asyncIterator]();
+    const firstEvent = await firstIterator.next();
 
-    if (
-      customEventA === undefined ||
-      customEventB === undefined ||
-      !hasCountData(customEventA.data) ||
-      !hasCountData(customEventB.data)
-    ) {
-      throw new Error("expected both subscribers to receive the payload event");
+    expect(firstEvent.done).toBe(false);
+
+    try {
+      eventStream[Symbol.asyncIterator]();
+      throw new Error("expected the shared iterable consumer to be rejected");
+    } catch (error: unknown) {
+      expect(error).toBeInstanceOf(Error);
+      expect((error as { code?: string }).code).toBe(
+        "event_stream_already_consumed"
+      );
     }
 
-    customEventA.data.count = 99;
+    try {
+      await collectEvents(handle.events());
+      throw new Error("expected the second consumer to be rejected");
+    } catch (error: unknown) {
+      expect(error).toBeInstanceOf(Error);
+      expect((error as { code?: string }).code).toBe(
+        "event_stream_already_consumed"
+      );
+    }
 
-    expect(customEventB.data.count).toBe(1);
+    const remainingEvents: TuvrenStreamEvent[] = [];
+
+    for (;;) {
+      const nextEvent = await firstIterator.next();
+
+      if (nextEvent.done) {
+        break;
+      }
+
+      remainingEvents.push(nextEvent.value);
+    }
+
+    const customEvent = remainingEvents.find(
+      (
+        event
+      ): event is Extract<
+        (typeof remainingEvents)[number],
+        { type: "custom" }
+      > => event.type === "custom" && event.name === "shared.payload"
+    );
+
+    if (customEvent === undefined || !hasCountData(customEvent.data)) {
+      throw new Error(
+        "expected the canonical stream to emit the payload event"
+      );
+    }
+
+    customEvent.data.count = 99;
+    expect(handle.status().phase).toBe("completed");
   });
 
   test("applies handoffs through the shared runtime layer and swaps active agents", async () => {

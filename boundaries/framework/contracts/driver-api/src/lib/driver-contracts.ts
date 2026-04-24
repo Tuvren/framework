@@ -135,6 +135,7 @@ const AGENT_CONFIG_KEYS = new Set([
   "extensions",
   "loopPolicy",
   "maxIterations",
+  "maxParallelToolCalls",
   "model",
   "name",
   "responseFormat",
@@ -634,6 +635,10 @@ function assertDriverAgentConfigSnapshot(
     `${label}.maxIterations`,
     "must be a finite number"
   );
+  assertPositiveSafeIntegerOptionalNumber(
+    value.maxParallelToolCalls,
+    `${label}.maxParallelToolCalls`
+  );
   assertDriverModelSnapshot(value.model, `${label}.model`);
   assertDriverResponseFormatSnapshot(
     value.responseFormat,
@@ -945,6 +950,25 @@ function assertFiniteOptionalNumber(
       code: "invalid_driver_result",
       details: value,
     });
+  }
+}
+
+function assertPositiveSafeIntegerOptionalNumber(
+  value: unknown,
+  label: string
+): void {
+  if (value === undefined) {
+    return;
+  }
+
+  if (typeof value !== "number" || !Number.isSafeInteger(value) || value <= 0) {
+    throw new TuvrenValidationError(
+      `${label} must be a positive safe integer`,
+      {
+        code: "invalid_driver_result",
+        details: value,
+      }
+    );
   }
 }
 

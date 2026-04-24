@@ -516,7 +516,9 @@ export async function stageImmediateResultsWhileExecuting(
     startBarrier: ToolStartBarrier
   ) => Promise<SingleToolOutcome[]>
 ): Promise<SingleToolOutcome[]> {
-  const startBarrier = createToolStartBarrier(executable.length);
+  const startBarrier = createToolStartBarrier(
+    Math.min(executable.length, environment.maxParallelToolCalls)
+  );
   const executablePromise = executeConcurrent(
     executable,
     environment,

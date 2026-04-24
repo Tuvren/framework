@@ -26,9 +26,10 @@ import type {
 } from "@tuvren/runtime-api";
 import { assertApprovalResponseForRequest } from "@tuvren/runtime-api";
 import {
+  AsyncEventQueue,
   cloneExecutionStatus,
+  cloneValue,
   detachPromise,
-  EventFanout,
   normalizeInputSignal,
 } from "./runtime-core-shared.js";
 import type {
@@ -50,7 +51,8 @@ export interface RuntimeExecutionHandleRuntime {
 export class RuntimeExecutionHandle implements ExecutionHandle {
   private activeRunId?: string;
   private readonly abortController = new AbortController();
-  private readonly eventsFanout: EventFanout<TuvrenStreamEvent>;
+  private readonly eventsQueue: AsyncEventQueue<TuvrenStreamEvent>;
+  private eventStreamClaimed = false;
   private lastErrorProjection?: TuvrenErrorProjection;
   private materializedDriver?: KrakenDriver;
   private materializedDriverId?: string;
@@ -78,7 +80,7 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
     this.turnId = turnId;
     this.schemaIdValue = schemaId;
     this.resumedFrom = resumedFrom;
-    this.eventsFanout = new EventFanout<TuvrenStreamEvent>(() => {
+    this.eventsQueue = new AsyncEventQueue<TuvrenStreamEvent>(() => {
       if (!this.started || this.statusSnapshot.phase !== "running") {
         return;
       }
@@ -134,26 +136,32 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
   }
 
   events(): AsyncIterable<TuvrenStreamEvent> {
-    const subscription = this.eventsFanout.subscribe();
-    let startedConsumption = false;
-    const ensureStarted = () => {
-      if (startedConsumption || this.started) {
-        startedConsumption = true;
-        return;
-      }
-
-      startedConsumption = true;
-      this.started = true;
-      detachPromise(this.runtime.startExecution(this));
-    };
-
     return {
       [Symbol.asyncIterator]: () => {
-        const iterator = subscription[Symbol.asyncIterator]();
+        this.claimEventStream();
+
+        const iterator = this.eventsQueue[Symbol.asyncIterator]();
+        let startedConsumption = false;
+
+        const ensureStarted = () => {
+          if (startedConsumption) {
+            return;
+          }
+
+          startedConsumption = true;
+
+          if (this.started) {
+            return;
+          }
+
+          this.started = true;
+          detachPromise(this.runtime.startExecution(this));
+        };
 
         return {
           next: async () => {
             ensureStarted();
+
             return await iterator.next();
           },
           return: async () => {
@@ -172,7 +180,7 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
   }
 
   finish(): void {
-    this.eventsFanout.close();
+    this.eventsQueue.close();
   }
 
   get abortSignal(): AbortSignal {
@@ -192,7 +200,7 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
   }
 
   publish(event: TuvrenStreamEvent): void {
-    this.eventsFanout.emit(event);
+    this.eventsQueue.push(cloneValue(event));
   }
 
   rememberError(error: TuvrenErrorProjection): void {
@@ -353,5 +361,18 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
   reuseDriverCache(previousHandle: RuntimeExecutionHandle): void {
     this.materializedDriver = previousHandle.materializedDriver;
     this.materializedDriverId = previousHandle.materializedDriverId;
+  }
+
+  private claimEventStream(): void {
+    if (this.eventStreamClaimed) {
+      throw new TuvrenRuntimeError(
+        "events() can only be consumed once for an execution handle",
+        {
+          code: "event_stream_already_consumed",
+        }
+      );
+    }
+
+    this.eventStreamClaimed = true;
   }
 }

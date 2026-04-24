@@ -115,6 +115,8 @@ import {
 import { createToolRegistry } from "./tool-registry.js";
 
 export const DEFAULT_AGENT_SCHEMA_ID = "tuvren.agent.v1";
+export const DEFAULT_MAX_PARALLEL_TOOL_CALLS = 10;
+export const DEFAULT_MANIFEST_EXTENSION_STATE_WARNING_BUDGET_BYTES = 256 * 1024;
 export const DEFAULT_AGENT_SCHEMA: TurnTreeSchema = {
   incorporationRules: [
     { objectType: "message", targetPath: "messages" },
@@ -131,14 +133,22 @@ export const DEFAULT_AGENT_SCHEMA: TurnTreeSchema = {
   schemaId: DEFAULT_AGENT_SCHEMA_ID,
 };
 
+const readonlyDriverToolRegistryCache = new WeakMap<
+  ToolRegistry,
+  ToolRegistry
+>();
+
 export interface RuntimeCoreOptions {
   createId?: () => string;
   defaultDriverId: string;
+  defaultMaxParallelToolCalls?: number;
   driverRegistry?: DriverRegistry;
   enableStateObservability?: boolean;
   handoffContextBuilder?: HandoffContextBuilder;
   kernel: KrakenKernel;
+  manifestExtensionStateWarningBudgetBytes?: false | number;
   now?: () => EpochMs;
+  onWarning?: (warning: RuntimeWarning) => void;
   resolveAgentConfig?: (agentName: string) => AgentConfig | undefined;
   resolveParentTurnId?: (
     threadId: string,
@@ -149,16 +159,30 @@ export interface RuntimeCoreOptions {
 interface ResolvedRuntimeCoreOptions {
   createId: () => string;
   defaultDriverId: string;
+  defaultMaxParallelToolCalls: number;
   driverRegistry: DriverRegistry;
   enableStateObservability: boolean;
   handoffContextBuilder?: HandoffContextBuilder;
   kernel: KrakenKernel;
+  manifestExtensionStateWarningBudgetBytes: false | number;
   now: () => EpochMs;
+  onWarning?: (warning: RuntimeWarning) => void;
   resolveAgentConfig?: (agentName: string) => AgentConfig | undefined;
   resolveParentTurnId?: (
     threadId: string,
     branchId: string
   ) => Promise<string | null> | string | null;
+}
+
+export interface RuntimeWarning {
+  activeAgent: string;
+  budgetBytes: number;
+  code: "manifest_extension_state_budget_exceeded";
+  extensionName: string;
+  observedBytes: number;
+  runId: string;
+  threadId: string;
+  turnId: string;
 }
 
 interface HeadState {
@@ -240,17 +264,29 @@ class FinalizationFailure extends Error {
 }
 
 class RuntimeCore implements TuvrenRuntime {
+  private readonly manifestExtensionStateWarningKeys = new Set<string>();
   private readonly options: ResolvedRuntimeCoreOptions;
 
   constructor(options: RuntimeCoreOptions) {
     this.options = {
       createId: options.createId ?? randomUUID,
       defaultDriverId: options.defaultDriverId,
+      defaultMaxParallelToolCalls: normalizeMaxParallelToolCalls(
+        options.defaultMaxParallelToolCalls ?? DEFAULT_MAX_PARALLEL_TOOL_CALLS,
+        "defaultMaxParallelToolCalls"
+      ),
       driverRegistry: options.driverRegistry ?? createDriverRegistry(),
       enableStateObservability: options.enableStateObservability ?? true,
       handoffContextBuilder: options.handoffContextBuilder,
       kernel: options.kernel,
+      manifestExtensionStateWarningBudgetBytes:
+        options.manifestExtensionStateWarningBudgetBytes === undefined
+          ? DEFAULT_MANIFEST_EXTENSION_STATE_WARNING_BUDGET_BYTES
+          : normalizeManifestExtensionStateWarningBudget(
+              options.manifestExtensionStateWarningBudgetBytes
+            ),
       now: options.now ?? Date.now,
+      onWarning: options.onWarning,
       resolveAgentConfig: options.resolveAgentConfig,
       resolveParentTurnId: options.resolveParentTurnId,
     };
@@ -1776,7 +1812,10 @@ class RuntimeCore implements TuvrenRuntime {
     manifest: ContextManifest,
     appendedMessageHashes: HashString[]
   ): Promise<HashString | undefined> {
-    const manifestHash = await this.stageManifest(runId, manifest);
+    const manifestHash = await this.stageManifest(runId, manifest, {
+      handle,
+      loopState,
+    });
     const runtimeStatusHash =
       resolution.type === "pause"
         ? await this.stageRuntimeStatus(
@@ -2002,7 +2041,10 @@ class RuntimeCore implements TuvrenRuntime {
       toolBatch.updates,
       []
     );
-    const manifestHash = await this.stageManifest(runId, manifest);
+    const manifestHash = await this.stageManifest(runId, manifest, {
+      handle,
+      loopState,
+    });
 
     let resolution: RuntimeResolution;
 
@@ -2165,6 +2207,10 @@ class RuntimeCore implements TuvrenRuntime {
       extensions: loopState.activeConfig.extensions ?? [],
       iterationCount,
       manifest,
+      maxParallelToolCalls: resolveActiveMaxParallelToolCalls(
+        loopState.activeConfig,
+        this.options.defaultMaxParallelToolCalls
+      ),
       now: () => this.now(),
       publishCustom: (event) => {
         this.publishCustomEvent(handle, event, loopState);
@@ -2420,7 +2466,10 @@ class RuntimeCore implements TuvrenRuntime {
     );
     await this.options.kernel.run.beginStep(runId, "incorporate_input");
     await this.stageMessage(runId, userMessage, "input_message");
-    await this.stageManifest(runId, manifest);
+    await this.stageManifest(runId, manifest, {
+      handle,
+      loopState,
+    });
     await this.stageTurnLineage(runId, handle.turnId, "turn_lineage");
     await this.stageRuntimeStatus(
       runId,
@@ -2497,7 +2546,10 @@ class RuntimeCore implements TuvrenRuntime {
       steeringMessage,
       "steering_message"
     );
-    await this.stageManifest(runId, manifest);
+    await this.stageManifest(runId, manifest, {
+      handle,
+      loopState,
+    });
     const stepResult = await this.options.kernel.run.completeStep(
       runId,
       "incorporate_steering",
@@ -2568,7 +2620,10 @@ class RuntimeCore implements TuvrenRuntime {
       ]
     );
     await this.options.kernel.run.beginStep(runId, "commit_extension_state");
-    await this.stageManifest(runId, manifest);
+    await this.stageManifest(runId, manifest, {
+      handle,
+      loopState,
+    });
     const stepResult = await this.options.kernel.run.completeStep(
       runId,
       "commit_extension_state",
@@ -3155,7 +3210,10 @@ class RuntimeCore implements TuvrenRuntime {
       rejectionUpdates,
       []
     );
-    const manifestHash = await this.stageManifest(runId, manifest);
+    const manifestHash = await this.stageManifest(runId, manifest, {
+      handle,
+      loopState,
+    });
     const nextTreeHash = await this.createIterationTree(
       handle.schemaId,
       headState.turnNode.turnTreeHash,
@@ -3477,7 +3535,11 @@ class RuntimeCore implements TuvrenRuntime {
     if (loopState.carriedStateUpdates.length > 0) {
       changes["context.manifest"] = await this.stageManifest(
         runId,
-        nextManifest
+        nextManifest,
+        {
+          handle,
+          loopState,
+        }
       );
     }
 
@@ -3711,8 +3773,21 @@ class RuntimeCore implements TuvrenRuntime {
 
   private async stageManifest(
     runId: string,
-    manifest: ContextManifest
+    manifest: ContextManifest,
+    warningContext?: {
+      handle: RuntimeExecutionHandle;
+      loopState: LoopState;
+    }
   ): Promise<HashString> {
+    if (warningContext !== undefined) {
+      this.warnManifestExtensionStateBudgetIfNeeded(
+        warningContext.handle,
+        warningContext.loopState,
+        runId,
+        manifest
+      );
+    }
+
     const staged = await this.options.kernel.staging.stage(
       runId,
       encodeKernelRecord(manifest, "manifest"),
@@ -3722,6 +3797,57 @@ class RuntimeCore implements TuvrenRuntime {
     );
 
     return staged.objectHash;
+  }
+
+  private warnManifestExtensionStateBudgetIfNeeded(
+    handle: RuntimeExecutionHandle,
+    loopState: LoopState,
+    runId: string,
+    manifest: ContextManifest
+  ): void {
+    const budget = this.options.manifestExtensionStateWarningBudgetBytes;
+
+    if (budget === false || this.options.onWarning === undefined) {
+      return;
+    }
+
+    for (const [extensionName, extensionState] of Object.entries(
+      manifest.extensions
+    )) {
+      const observedBytes = approximateSerializedByteLength(extensionState);
+
+      if (observedBytes === undefined || observedBytes <= budget) {
+        continue;
+      }
+
+      const warningKey = [handle.turnId, extensionName, String(budget)].join(
+        ":"
+      );
+
+      if (this.manifestExtensionStateWarningKeys.has(warningKey)) {
+        continue;
+      }
+
+      this.manifestExtensionStateWarningKeys.add(warningKey);
+      this.emitWarning({
+        activeAgent: loopState.activeConfig.name,
+        budgetBytes: budget,
+        code: "manifest_extension_state_budget_exceeded",
+        extensionName,
+        observedBytes,
+        runId,
+        threadId: handle.request.threadId,
+        turnId: handle.turnId,
+      });
+    }
+  }
+
+  private emitWarning(warning: RuntimeWarning): void {
+    try {
+      this.options.onWarning?.(warning);
+    } catch {
+      return;
+    }
   }
 
   private async stageMessage(
@@ -4101,9 +4227,74 @@ function createActiveToolRegistry(
   return createToolRegistry(activeTools, config.extensions ?? []);
 }
 
+function resolveActiveMaxParallelToolCalls(
+  config: AgentConfig,
+  defaultMaxParallelToolCalls: number
+): number {
+  return normalizeMaxParallelToolCalls(
+    config.maxParallelToolCalls ?? defaultMaxParallelToolCalls,
+    "AgentConfig.maxParallelToolCalls"
+  );
+}
+
+function normalizeMaxParallelToolCalls(value: number, label: string): number {
+  if (!Number.isSafeInteger(value) || value <= 0) {
+    throw new TuvrenRuntimeError(`${label} must be a positive safe integer`, {
+      code: "invalid_runtime_options",
+      details: {
+        [label]: value,
+      },
+    });
+  }
+
+  return value;
+}
+
+function normalizeManifestExtensionStateWarningBudget(
+  value: false | number
+): false | number {
+  if (value === false) {
+    return false;
+  }
+
+  if (!Number.isSafeInteger(value) || value <= 0) {
+    throw new TuvrenRuntimeError(
+      "manifestExtensionStateWarningBudgetBytes must be false or a positive safe integer",
+      {
+        code: "invalid_runtime_options",
+        details: {
+          manifestExtensionStateWarningBudgetBytes: value,
+        },
+      }
+    );
+  }
+
+  return value;
+}
+
+function approximateSerializedByteLength(value: unknown): number | undefined {
+  try {
+    const serialized = JSON.stringify(value);
+
+    if (serialized === undefined) {
+      return undefined;
+    }
+
+    return new TextEncoder().encode(serialized).byteLength;
+  } catch {
+    return undefined;
+  }
+}
+
 function createReadonlyDriverToolRegistry(
   registry: ToolRegistry
 ): ToolRegistry {
+  const cachedRegistry = readonlyDriverToolRegistryCache.get(registry);
+
+  if (cachedRegistry !== undefined) {
+    return cachedRegistry;
+  }
+
   // Drivers only inspect a frozen tool snapshot here. Framework-owned execution
   // always goes through the live registry used by the shared tool executor.
   const toolSnapshots = registry
@@ -4116,7 +4307,7 @@ function createReadonlyDriverToolRegistry(
     .toDefinitions()
     .map((tool) => cloneValue(tool));
 
-  return Object.freeze({
+  const readonlyRegistry = Object.freeze({
     get(name) {
       return toolsByName.get(name);
     },
@@ -4141,6 +4332,8 @@ function createReadonlyDriverToolRegistry(
       return renderedDefinitions.map((tool) => cloneValue(tool));
     },
   } satisfies ToolRegistry);
+  readonlyDriverToolRegistryCache.set(registry, readonlyRegistry);
+  return readonlyRegistry;
 }
 
 function createDriverAgentConfigSnapshot(config: AgentConfig): AgentConfig {
