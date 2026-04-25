@@ -40,23 +40,34 @@ without rediscovering AI SDK provider behavior.
   - assistant messages map from text, reasoning, file, and client-executed
     tool-call/tool-result parts
   - tool messages map from durable `tool_result` parts
-  - assistant message metadata and content-part metadata that already match AI
-    SDK `providerOptions` replay on the matching prompt message or prompt part
+  - the baseline bridge replays only continuity-safe assistant content metadata
+    back into AI SDK `providerOptions`: Anthropic reasoning `signature` /
+    `redactedData`, Google or Vertex `thoughtSignature`, and OpenAI/Azure
+    `reasoningEncryptedContent`
   - flat durable reasoning `providerMetadata.signature` from the shared stream
     seam is normalized back into Anthropic reasoning `providerOptions` on
     replay so streamed continuity tokens survive prompt history
+  - assistant response-level metadata, synthetic `aiSdkBridge` metadata,
+    request IDs, and other output-only namespaces are not replayed as prompt
+    options
 - Structured output:
   - outbound structured requests use AI SDK JSON response format
   - inbound structured output is synthesized from returned JSON text and
     validated in isolated Ajv validator contexts
   - draft-07 is the default dialect, with explicit draft-2019-09 and
     draft-2020-12 support when `$schema` names them
+  - `StructuredOutputRequest.strict` is rejected in the baseline bridge with
+    `invalid_ai_sdk_bridge_config` because `LanguageModelV3` has no generic
+    strict field; the host must use explicit provider-specific options instead
 - Non-stream output mapping:
   - supported AI SDK content: text, reasoning, file, and client-executed
     `tool-call`
   - canonical generated text, reasoning, file, tool-call, and synthesized
     structured parts preserve AI SDK `providerMetadata` where the shared
     durable content seam exposes a matching field
+  - structured-output turns may legitimately return only `tool_call` parts when
+    the provider finishes with `tool-calls`; the bridge does not require JSON
+    output until the final structured answer turn
   - response metadata, warnings, sources, and detailed usage stay under
     `providerMetadata.aiSdkBridge`
 - Stream mapping:
@@ -70,11 +81,15 @@ without rediscovering AI SDK provider behavior.
     canonical `tool_call_*` stream chunks, and `tool-input-end` may synthesize
     `tool_call_done` from buffered JSON input when the provider does not send a
     separate complete `tool-call` part
+  - structured-output turns may legitimately finish with `tool-calls` before
+    any structured JSON text is emitted
   - when a provider emits both incremental `tool-input-*` parts and a complete
     `tool-call`, the bridge expects the same provider call identity for both
     surfaces, and the final complete `tool-call` name/input must match the
     buffered incremental state for that identity; mismatches fail fast instead
     of duplicating or mutating a canonical tool call
+  - the bridge fails fast if the provider finishes the stream before every
+    started tool call reaches `tool_call_done`
   - `stream-start`, `response-metadata`, `source`, `raw`, and detailed usage are
     preserved under finish metadata
   - streamed non-signature part metadata that cannot cross the current shared

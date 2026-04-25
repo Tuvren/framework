@@ -126,6 +126,16 @@ interface StreamMappingState {
   toolStates: Map<string, StreamToolState>;
 }
 
+const ASSISTANT_REASONING_REPLAY_PROVIDER_KEYS = {
+  anthropic: new Set(["redactedData", "signature"]),
+  azure: new Set(["reasoningEncryptedContent"]),
+  openai: new Set(["reasoningEncryptedContent"]),
+} as const;
+const ASSISTANT_TEXT_REPLAY_PROVIDER_KEYS = {
+  google: new Set(["thoughtSignature"]),
+  vertex: new Set(["thoughtSignature"]),
+} as const;
+
 export interface AiSdkProviderBridgeOptions {
   defaultHeaders?: Record<string, string | undefined>;
   defaultProviderOptions?: SharedV3ProviderOptions;
@@ -701,7 +711,8 @@ function createFinishStreamChunks(
     chunks.push(structuredChunk);
   }
 
-  ensureStructuredStreamCompleted(state);
+  ensureToolCallsCompleted(state);
+  ensureStructuredStreamCompleted(state, part.finishReason.unified);
   const usage = mapUsage(part.usage);
   const providerMetadata = buildStreamFinishProviderMetadata(
     part.providerMetadata,
@@ -795,8 +806,18 @@ function createStructuredStreamDoneChunk(
   };
 }
 
-function ensureStructuredStreamCompleted(state: StreamMappingState): void {
-  if (state.responseFormat === undefined || state.structuredDoneEmitted) {
+function ensureStructuredStreamCompleted(
+  state: StreamMappingState,
+  finishReason: Extract<
+    LanguageModelV3StreamPart,
+    { type: "finish" }
+  >["finishReason"]["unified"]
+): void {
+  if (
+    state.responseFormat === undefined ||
+    state.structuredDoneEmitted ||
+    canOmitStructuredStreamOutput(state, finishReason)
+  ) {
     return;
   }
 
@@ -810,6 +831,45 @@ function ensureStructuredStreamCompleted(state: StreamMappingState): void {
   );
 }
 
+function canOmitStructuredStreamOutput(
+  state: StreamMappingState,
+  finishReason: Extract<
+    LanguageModelV3StreamPart,
+    { type: "finish" }
+  >["finishReason"]["unified"]
+): boolean {
+  if (finishReason !== "tool-calls" || state.toolStates.size === 0) {
+    return false;
+  }
+
+  for (const toolState of state.toolStates.values()) {
+    if (!toolState.doneEmitted) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function ensureToolCallsCompleted(state: StreamMappingState): void {
+  for (const [providerCallId, toolState] of state.toolStates.entries()) {
+    if (toolState.doneEmitted) {
+      continue;
+    }
+
+    throw bridgeError(
+      "AI SDK stream finished before tool call completed",
+      "unsupported_ai_sdk_stream_part",
+      {
+        modelId: state.model.modelId,
+        provider: state.model.provider,
+        providerCallId,
+        toolName: toolState.name,
+      }
+    );
+  }
+}
+
 function createCallOptions(input: {
   bridgeId: string;
   defaultHeaders?: Record<string, string | undefined>;
@@ -821,6 +881,7 @@ function createCallOptions(input: {
   const settings = normalizeBridgeSettings(input.prompt);
   const requestedModel = input.prompt.config?.model;
   const requestedProvider = input.prompt.config?.provider;
+  const responseFormat = input.prompt.responseFormat;
 
   if (
     typeof requestedModel === "string" &&
@@ -850,6 +911,18 @@ function createCallOptions(input: {
         expectedProvider: input.model.provider,
         requestedProvider,
         tuvrenProviderId: input.bridgeId,
+      }
+    );
+  }
+
+  if (responseFormat?.strict === true) {
+    throw bridgeError(
+      "StructuredOutputRequest.strict is not supported by the AI SDK bridge baseline; use provider-specific options or disable strict",
+      "invalid_ai_sdk_bridge_config",
+      {
+        modelId: input.model.modelId,
+        provider: input.model.provider,
+        responseFormatName: responseFormat.name,
       }
     );
   }
@@ -893,12 +966,12 @@ function createCallOptions(input: {
       : {
           providerOptions,
         }),
-    ...(input.prompt.responseFormat === undefined
+    ...(responseFormat === undefined
       ? {}
       : {
           responseFormat: {
-            name: input.prompt.responseFormat.name,
-            schema: cloneJsonSchema(input.prompt.responseFormat.schema),
+            name: responseFormat.name,
+            schema: cloneJsonSchema(responseFormat.schema),
             type: "json",
           },
         }),
@@ -963,17 +1036,8 @@ function mapPromptMessage(message: TuvrenMessage): LanguageModelV3Message {
     }
 
     case "assistant": {
-      const providerOptions = mapPromptProviderOptions(
-        message.providerMetadata
-      );
-
       return {
         content: message.parts.map((part) => mapAssistantPart(part)),
-        ...(providerOptions === undefined
-          ? {}
-          : {
-              providerOptions,
-            }),
         role: "assistant",
       };
     }
@@ -1072,7 +1136,7 @@ function mapUserPart(part: TuvrenPromptPart) {
 function mapAssistantPart(part: TuvrenPromptPart) {
   switch (part.type) {
     case "text": {
-      const providerOptions = mapPromptProviderOptions(part.providerMetadata);
+      const providerOptions = mapAssistantReplayProviderOptions(part);
 
       return {
         ...(providerOptions === undefined
@@ -1089,7 +1153,7 @@ function mapAssistantPart(part: TuvrenPromptPart) {
     }
 
     case "reasoning": {
-      const providerOptions = mapPromptProviderOptions(part.providerMetadata);
+      const providerOptions = mapAssistantReplayProviderOptions(part);
 
       return {
         ...(providerOptions === undefined
@@ -1106,7 +1170,7 @@ function mapAssistantPart(part: TuvrenPromptPart) {
     }
 
     case "file": {
-      const providerOptions = mapPromptProviderOptions(part.providerMetadata);
+      const providerOptions = mapAssistantReplayProviderOptions(part);
 
       return {
         data: cloneFileData(part.data),
@@ -1129,7 +1193,7 @@ function mapAssistantPart(part: TuvrenPromptPart) {
     }
 
     case "tool_call": {
-      const providerOptions = mapPromptProviderOptions(part.providerMetadata);
+      const providerOptions = mapAssistantReplayProviderOptions(part);
 
       return {
         input: cloneMetadataValue(part.input),
@@ -1152,7 +1216,7 @@ function mapAssistantPart(part: TuvrenPromptPart) {
     }
 
     case "structured": {
-      const providerOptions = mapPromptProviderOptions(part.providerMetadata);
+      const providerOptions = mapAssistantReplayProviderOptions(part);
 
       return {
         ...(providerOptions === undefined
@@ -1254,7 +1318,7 @@ function mapGenerateResult(
     appendGenerateContentPart(contentPart, state, result);
   }
 
-  finalizeGenerateStructuredOutput(state);
+  finalizeGenerateStructuredOutput(state, result.finishReason.unified);
 
   const usage = mapUsage(result.usage);
   const providerMetadata = buildGenerateProviderMetadata(
@@ -1373,12 +1437,19 @@ function mapGeneratedToolCallPart(
   };
 }
 
-function finalizeGenerateStructuredOutput(state: GenerateResultState): void {
+function finalizeGenerateStructuredOutput(
+  state: GenerateResultState,
+  finishReason: LanguageModelV3GenerateResult["finishReason"]["unified"]
+): void {
   if (state.responseFormat === undefined) {
     return;
   }
 
   if (state.structuredChunks.length === 0) {
+    if (canOmitStructuredOutputForToolCallTurn(state.parts, finishReason)) {
+      return;
+    }
+
     throw bridgeError(
       "AI SDK generate result did not include structured output text",
       "structured_output_validation"
@@ -1402,6 +1473,16 @@ function finalizeGenerateStructuredOutput(state: GenerateResultState): void {
         }),
     type: "structured",
   });
+}
+
+function canOmitStructuredOutputForToolCallTurn(
+  parts: TuvrenModelResponse["parts"],
+  finishReason: LanguageModelV3GenerateResult["finishReason"]["unified"]
+): boolean {
+  return (
+    finishReason === "tool-calls" &&
+    parts.some((part) => part.type === "tool_call")
+  );
 }
 
 function mapGeneratedTextPart(
@@ -1928,6 +2009,45 @@ function mapPromptProviderOptions(
     : cloneProviderOptions(normalized);
 }
 
+function mapAssistantReplayProviderOptions(
+  part: TuvrenPromptPart
+): SharedV3ProviderOptions | undefined {
+  const sanitized = sanitizeRecord(part.providerMetadata);
+
+  if (sanitized === undefined) {
+    return undefined;
+  }
+
+  switch (part.type) {
+    case "text":
+      return cloneProviderOptionsOrUndefined(
+        collectAssistantReplayProviderOptions(
+          sanitized,
+          ASSISTANT_TEXT_REPLAY_PROVIDER_KEYS
+        )
+      );
+    case "reasoning": {
+      const normalized = collectAssistantReplayProviderOptions(
+        sanitized,
+        ASSISTANT_REASONING_REPLAY_PROVIDER_KEYS
+      );
+
+      if (typeof sanitized.signature === "string") {
+        normalized.anthropic = mergePromptProviderNamespace(
+          normalized.anthropic,
+          {
+            signature: sanitized.signature,
+          }
+        );
+      }
+
+      return cloneProviderOptionsOrUndefined(normalized);
+    }
+    default:
+      return undefined;
+  }
+}
+
 function normalizePromptProviderMetadata(
   providerMetadata: Record<string, unknown>
 ): Record<string, unknown> | undefined {
@@ -1953,6 +2073,47 @@ function normalizePromptProviderMetadata(
   }
 
   return hasProviderOptions ? normalized : undefined;
+}
+
+function cloneProviderOptionsOrUndefined(
+  providerOptions: Record<string, unknown>
+): SharedV3ProviderOptions | undefined {
+  return Object.keys(providerOptions).length === 0
+    ? undefined
+    : cloneProviderOptions(providerOptions);
+}
+
+function collectAssistantReplayProviderOptions(
+  providerMetadata: Record<string, unknown>,
+  allowedProviderKeys: Record<string, Set<string>>
+): Record<string, unknown> {
+  const normalized: Record<string, unknown> = {};
+
+  for (const [providerName, allowedKeys] of Object.entries(
+    allowedProviderKeys
+  )) {
+    const providerValue = providerMetadata[providerName];
+
+    if (!isPlainObject(providerValue)) {
+      continue;
+    }
+
+    const filteredProviderMetadata: Record<string, unknown> = {};
+
+    for (const key of allowedKeys) {
+      const value = providerValue[key];
+
+      if (value !== undefined) {
+        filteredProviderMetadata[key] = cloneMetadataValue(value);
+      }
+    }
+
+    if (Object.keys(filteredProviderMetadata).length > 0) {
+      normalized[providerName] = filteredProviderMetadata;
+    }
+  }
+
+  return normalized;
 }
 
 function mergePromptProviderNamespace(

@@ -132,6 +132,11 @@ describe("provider-bridge-ai-sdk", () => {
         },
         {
           providerMetadata: {
+            aiSdkBridge: {
+              requestBody: {
+                replayed: false,
+              },
+            },
             openai: {
               responseId: "resp-history",
             },
@@ -279,11 +284,6 @@ describe("provider-bridge-ai-sdk", () => {
       {
         content: [
           {
-            providerOptions: {
-              openai: {
-                encryptedContent: "enc-history",
-              },
-            },
             text: "Previously answered",
             type: "text",
           },
@@ -305,11 +305,6 @@ describe("provider-bridge-ai-sdk", () => {
             type: "tool-call",
           },
         ],
-        providerOptions: {
-          openai: {
-            responseId: "resp-history",
-          },
-        },
         role: "assistant",
       },
       {
@@ -666,6 +661,293 @@ describe("provider-bridge-ai-sdk", () => {
     ]);
   });
 
+  test("does not replay output-only assistant metadata into provider options", async () => {
+    let capturedOptions: LanguageModelV3CallOptions | undefined;
+    const bridge = createAiSdkProviderBridge({
+      model: createMockModel({
+        async doGenerate(options) {
+          await Promise.resolve();
+          capturedOptions = options;
+          return createGenerateResult();
+        },
+      }),
+    });
+
+    await bridge.generate({
+      messages: [
+        {
+          providerMetadata: {
+            aiSdkBridge: {
+              requestBody: {
+                replayed: false,
+              },
+            },
+            mockProvider: {
+              requestId: "req-1",
+            },
+          },
+          parts: [
+            {
+              providerMetadata: {
+                mockProvider: {
+                  requestId: "part-1",
+                },
+              },
+              text: "hello",
+              type: "text",
+            },
+            {
+              providerMetadata: {
+                signature: "sig-2",
+              },
+              redacted: false,
+              text: "thinking",
+              type: "reasoning",
+            },
+          ],
+          role: "assistant",
+        },
+        {
+          parts: [{ text: "Continue", type: "text" }],
+          role: "user",
+        },
+      ],
+    });
+
+    expect(capturedOptions?.prompt).toEqual([
+      {
+        content: [
+          {
+            text: "hello",
+            type: "text",
+          },
+          {
+            providerOptions: {
+              anthropic: {
+                signature: "sig-2",
+              },
+            },
+            text: "thinking",
+            type: "reasoning",
+          },
+        ],
+        role: "assistant",
+      },
+      {
+        content: [{ text: "Continue", type: "text" }],
+        role: "user",
+      },
+    ]);
+  });
+
+  test("allows tool-call-only generate turns when structured output is requested", async () => {
+    const bridge = createAiSdkProviderBridge({
+      model: createMockModel({
+        async doGenerate() {
+          await Promise.resolve();
+          return createGenerateResult({
+            content: [
+              {
+                input: '{"query":"docs"}',
+                toolCallId: "call-1",
+                toolName: "search",
+                type: "tool-call",
+              },
+            ],
+            finishReason: {
+              raw: "tool-calls",
+              unified: "tool-calls",
+            },
+          });
+        },
+      }),
+    });
+
+    const response = await bridge.generate({
+      messages: [
+        {
+          parts: [{ text: "Search", type: "text" }],
+          role: "user",
+        },
+      ],
+      responseFormat: {
+        name: "answer",
+        schema: {
+          properties: {
+            answer: {
+              type: "string",
+            },
+          },
+          required: ["answer"],
+          type: "object",
+        },
+      },
+    });
+
+    expect(response).toEqual(
+      expect.objectContaining({
+        finishReason: "tool_call",
+        parts: [
+          {
+            callId: "call-1",
+            input: {
+              query: "docs",
+            },
+            name: "search",
+            type: "tool_call",
+          },
+        ],
+      })
+    );
+  });
+
+  test("allows tool-call-only streamed turns when structured output is requested", async () => {
+    const bridge = createAiSdkProviderBridge({
+      model: createMockModel({
+        async doStream() {
+          await Promise.resolve();
+          return {
+            stream: streamFromParts([
+              {
+                id: "call-1",
+                toolName: "search",
+                type: "tool-input-start",
+              },
+              {
+                delta: '{"query":"docs"}',
+                id: "call-1",
+                type: "tool-input-delta",
+              },
+              {
+                id: "call-1",
+                type: "tool-input-end",
+              },
+              {
+                finishReason: {
+                  raw: "tool-calls",
+                  unified: "tool-calls",
+                },
+                type: "finish",
+                usage: createUsage(4, 2),
+              },
+            ]),
+          };
+        },
+      }),
+    });
+
+    const chunks = await collectAsyncIterable(
+      bridge.stream({
+        messages: [
+          {
+            parts: [{ text: "Search", type: "text" }],
+            role: "user",
+          },
+        ],
+        responseFormat: {
+          name: "answer",
+          schema: {
+            properties: {
+              answer: {
+                type: "string",
+              },
+            },
+            required: ["answer"],
+            type: "object",
+          },
+        },
+      })
+    );
+
+    expect(chunks).toEqual([
+      {
+        name: "search",
+        providerCallId: "call-1",
+        type: "tool_call_start",
+      },
+      {
+        delta: '{"query":"docs"}',
+        providerCallId: "call-1",
+        type: "tool_call_args_delta",
+      },
+      {
+        input: {
+          query: "docs",
+        },
+        name: "search",
+        providerCallId: "call-1",
+        type: "tool_call_done",
+      },
+      {
+        finishReason: "tool_call",
+        providerMetadata: {
+          aiSdkBridge: {
+            rawParts: [],
+            rawUsage: {
+              inputTokens: {
+                cacheRead: 1,
+                cacheWrite: 0,
+                noCache: 3,
+                total: 4,
+              },
+              outputTokens: {
+                reasoning: 0,
+                text: 2,
+                total: 2,
+              },
+              raw: {
+                provider: "mock-provider",
+              },
+            },
+            requestBody: undefined,
+            response: {
+              headers: undefined,
+              metadata: undefined,
+            },
+            sources: [],
+            streamPartMetadata: [],
+            warnings: [],
+          },
+        },
+        type: "finish",
+        usage: {
+          inputTokens: 4,
+          outputTokens: 2,
+        },
+      },
+    ]);
+  });
+
+  test("rejects strict structured-output requests in the bridge baseline", async () => {
+    const bridge = createAiSdkProviderBridge({
+      model: createMockModel(),
+    });
+
+    await expect(
+      bridge.generate({
+        messages: [
+          {
+            parts: [{ text: "Hello", type: "text" }],
+            role: "user",
+          },
+        ],
+        responseFormat: {
+          name: "answer",
+          schema: {
+            properties: {
+              answer: {
+                type: "string",
+              },
+            },
+            required: ["answer"],
+            type: "object",
+          },
+          strict: true,
+        },
+      })
+    ).rejects.toThrow("StructuredOutputRequest.strict is not supported");
+  });
+
   test("rejects unsupported provider-owned tool results in the baseline bridge", async () => {
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
@@ -833,6 +1115,46 @@ describe("provider-bridge-ai-sdk", () => {
     ).rejects.toThrow(
       'AI SDK stream part "tool-approval-request" is out of scope'
     );
+  });
+
+  test("rejects streamed finishes before tool calls complete", async () => {
+    const bridge = createAiSdkProviderBridge({
+      model: createMockModel({
+        async doStream() {
+          await Promise.resolve();
+          return {
+            stream: streamFromParts([
+              {
+                id: "call-1",
+                toolName: "search",
+                type: "tool-input-start",
+              },
+              {
+                finishReason: {
+                  raw: "tool-calls",
+                  unified: "tool-calls",
+                },
+                type: "finish",
+                usage: createUsage(3, 1),
+              },
+            ]),
+          };
+        },
+      }),
+    });
+
+    await expect(
+      collectAsyncIterable(
+        bridge.stream({
+          messages: [
+            {
+              parts: [{ text: "Hello", type: "text" }],
+              role: "user",
+            },
+          ],
+        })
+      )
+    ).rejects.toThrow("AI SDK stream finished before tool call completed");
   });
 
   test("rejects provider-executed streamed tool inputs in the baseline bridge", async () => {
