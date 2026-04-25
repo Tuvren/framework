@@ -864,6 +864,7 @@ class TransactionWriteTracker {
   readonly stagedResultRunIds = new Set<string>();
   readonly threadIds = new Set<string>();
   readonly turnIds = new Set<string>();
+  readonly turnIdsForDependentValidation = new Set<string>();
   readonly turnNodeHashes = new Set<string>();
   readonly turnTreeHashes = new Set<string>();
 
@@ -905,6 +906,7 @@ class TransactionWriteTracker {
 
   recordRunSet(before: StoredRun | null, after: StoredRun): void {
     this.runIds.add(after.runId);
+    this.stagedResultRunIds.add(after.runId);
     this.branchIdsForActiveRunValidation.add(after.branchId);
 
     if (before !== null) {
@@ -926,9 +928,13 @@ class TransactionWriteTracker {
     this.threadIds.add(record.threadId);
   }
 
-  recordTurnSet(record: StoredTurn): void {
-    this.turnIds.add(record.turnId);
-    this.branchIdsForActiveRunValidation.add(record.branchId);
+  recordTurnSet(before: StoredTurn | null, after: StoredTurn): void {
+    this.turnIds.add(after.turnId);
+    this.branchIdsForActiveRunValidation.add(after.branchId);
+
+    if (before !== null && before.headTurnNodeHash !== after.headTurnNodeHash) {
+      this.turnIdsForDependentValidation.add(after.turnId);
+    }
   }
 
   recordTurnNodePut(record: StoredTurnNode): void {
@@ -1714,7 +1720,7 @@ function createRepositories(
           record.createdAtMs,
           record.updatedAtMs
         );
-        writeTracker.recordTurnSet(record);
+        writeTracker.recordTurnSet(existingTurn, record);
 
         return Promise.resolve();
       },
@@ -2499,6 +2505,10 @@ function validateTransactionWriteSet(
     validateTurnInDatabase(db, turnId);
   }
 
+  for (const turnId of writeTracker.turnIdsForDependentValidation) {
+    validateTurnDependentsInDatabase(db, turnId);
+  }
+
   for (const [branchId] of writeTracker.branchWrites) {
     validateBranchInDatabase(db, writeTracker, branchId);
   }
@@ -2626,6 +2636,7 @@ function validateBranchInDatabase(
   if (headMoveDirection === "backward") {
     assertBackwardBranchMoveIsArchivedInDatabase(
       db,
+      writeTracker,
       trackedBranch.before,
       branch
     );
@@ -2868,6 +2879,19 @@ function validateTurnInDatabase(db: Database.Database, turnId: string): void {
     "turn.headTurnNodeHash"
   );
   assertTurnParentLinkInDatabase(db, turn, "turn.parentTurnId");
+}
+
+function validateTurnDependentsInDatabase(
+  db: Database.Database,
+  turnId: string
+): void {
+  for (const dependentTurn of selectTurnsByParentTurnId(db, turnId)) {
+    validateTurnInDatabase(db, dependentTurn.turnId);
+  }
+
+  for (const run of selectRunsByTurn(db, turnId)) {
+    validateRunInDatabase(db, run.runId);
+  }
 }
 
 function validateRunInDatabase(db: Database.Database, runId: string): void {
@@ -3330,6 +3354,15 @@ function selectRun(db: Database.Database, runId: string): StoredRun | null {
   return row === undefined ? null : decodeRunRow(row);
 }
 
+function selectRunsByTurn(db: Database.Database, turnId: string): StoredRun[] {
+  const rows = db
+    .prepare(
+      "SELECT * FROM runs WHERE turn_id = ? ORDER BY created_at_ms, run_id"
+    )
+    .all(turnId) as SqliteRunRow[];
+  return rows.map(decodeRunRow);
+}
+
 function selectRunsByBranch(
   db: Database.Database,
   branchId: string
@@ -3340,6 +3373,23 @@ function selectRunsByBranch(
     )
     .all(branchId) as SqliteRunRow[];
   return rows.map(decodeRunRow);
+}
+
+function selectTurnsByParentTurnId(
+  db: Database.Database,
+  parentTurnId: string
+): StoredTurn[] {
+  const rows = db
+    .prepare(
+      `
+        SELECT *
+        FROM turns
+        WHERE parent_turn_id = ?
+        ORDER BY created_at_ms, turn_id
+      `
+    )
+    .all(parentTurnId) as SqliteTurnRow[];
+  return rows.map(decodeTurnRow);
 }
 
 function selectActiveRunsByBranch(
@@ -5478,27 +5528,30 @@ function assertBackwardBranchMoveIsArchived(
 
 function assertBackwardBranchMoveIsArchivedInDatabase(
   db: Database.Database,
+  writeTracker: TransactionWriteTracker,
   previousBranch: StoredBranch,
   nextBranch: StoredBranch
 ): void {
-  const archiveBranch = db
-    .prepare(
-      `
-        SELECT *
-        FROM branches
-        WHERE archived_from_branch_id = ?
-          AND branch_id <> ?
-          AND head_turn_node_hash = ?
-        LIMIT 1
-      `
-    )
-    .get(
-      nextBranch.branchId,
-      nextBranch.branchId,
-      previousBranch.headTurnNodeHash
-    ) as SqliteBranchRow | undefined;
+  let archiveBranchFound = false;
 
-  if (archiveBranch === undefined) {
+  for (const [branchId, trackedBranch] of writeTracker.branchWrites) {
+    if (branchId === nextBranch.branchId || trackedBranch.before !== null) {
+      continue;
+    }
+
+    const archiveBranch = trackedBranch.after;
+
+    if (
+      archiveBranch !== null &&
+      archiveBranch.archivedFromBranchId === nextBranch.branchId &&
+      archiveBranch.headTurnNodeHash === previousBranch.headTurnNodeHash
+    ) {
+      archiveBranchFound = true;
+      break;
+    }
+  }
+
+  if (!archiveBranchFound) {
     throw persistenceError(
       "stored backward branch moves must preserve the abandoned head as an archive branch",
       "sqlite_backend_backward_branch_move_missing_archive",

@@ -74,8 +74,12 @@ const SCHEMA_MISMATCH_ERROR_PATTERN =
   /column contract does not match|foreign-key contract does not match/u;
 const UNKNOWN_MIGRATION_ERROR_PATTERN = /does not recognize/u;
 const MULTIPLE_ACTIVE_RUNS_ERROR_PATTERN = /more than one active run/u;
+const BACKWARD_ARCHIVE_ERROR_PATTERN = /archive branch/u;
 const RUN_STATUS_ERROR_PATTERN = /valid run status/u;
 const RUN_SHAPE_ERROR_PATTERN = /currentStepIndex/u;
+const RUN_STAGED_RESULT_ERROR_PATTERN =
+  /staged results may only exist for running runs|terminal or paused runs must not retain staged results/u;
+const RUN_TURN_SPAN_ERROR_PATTERN = /referenced turn head|turn span/u;
 const STAGED_RESULT_ROW_ERROR_PATTERN =
   /valid staged result status|interrupt_payload_cbor/u;
 const TURN_TREE_PATH_ROW_ERROR_PATTERN = /valid ordered or single variant/u;
@@ -83,6 +87,7 @@ const LINEAGE_METADATA_ERROR_PATTERN = /lineage metadata/u;
 const ORDERED_CARDINALITY_ERROR_PATTERN =
   /orderedCount aligned|item_count aligned|decoded item count/u;
 const OBJECT_ROW_ERROR_PATTERN = /byteLength|SHA-256 digest/u;
+const TURN_PARENT_ERROR_PATTERN = /chain contiguously/u;
 const TURN_NODE_ROW_ERROR_PATTERN = /consumedStagedResultsCbor/u;
 const THREAD_ROW_ERROR_PATTERN = /createdAtMs|epoch millisecond value/u;
 const BRANCH_ROW_ERROR_PATTERN = /updatedAtMs/u;
@@ -117,6 +122,7 @@ function linkWorkspaceNodeModules(targetDirectory: string): void {
 interface CorruptionSeed {
   databasePath: string;
   objectHash: string;
+  rootTurnNodeHash: string;
   runId: string;
   runStartTurnNodeHash: string;
   turnTreeHash: string;
@@ -283,6 +289,7 @@ async function seedCorruptionDatabase(
   return {
     databasePath,
     objectHash: objectRecord.hash,
+    rootTurnNodeHash: rootTurnNode.hash,
     runId: run.runId,
     runStartTurnNodeHash: run.startTurnNodeHash,
     turnTreeHash: turnTree.hash,
@@ -746,6 +753,202 @@ describe("@tuvren/backend-sqlite", () => {
       throw new Error("expected unhealthy status");
     }
     strictEqual(MULTIPLE_ACTIVE_RUNS_ERROR_PATTERN.test(health.reason), true);
+  });
+
+  test("rejects run status updates that leave staged results attached", async () => {
+    const seeded = await seedCorruptionDatabase();
+    const backend = createSqliteBackend({ databasePath: seeded.databasePath });
+
+    await backend.transact(async (tx) => {
+      await tx.stagedResults.set({
+        createdAtMs: 10,
+        objectHash: seeded.objectHash,
+        objectType: "message",
+        runId: seeded.runId,
+        status: "completed",
+        taskId: "staged_before_pause",
+      });
+    });
+
+    await rejects(
+      backend.transact(async (tx) => {
+        const run = await tx.runs.get(seeded.runId);
+
+        if (run === null) {
+          throw new Error("expected seeded run");
+        }
+
+        await tx.runs.set({
+          ...run,
+          status: "failed",
+          updatedAtMs: 11,
+        });
+      }),
+      RUN_STAGED_RESULT_ERROR_PATTERN
+    );
+
+    deepStrictEqual(await backend.health(), { ok: true });
+  });
+
+  test("rejects turn head rewrites that break child turn parent links", async () => {
+    const seeded = await seedCorruptionDatabase();
+    const backend = createSqliteBackend({ databasePath: seeded.databasePath });
+    const childTurnNode = await createStoredTurnNodeRecord({
+      consumedStagedResults: [],
+      createdAtMs: 12,
+      eventHash: null,
+      previousTurnNodeHash: seeded.runStartTurnNodeHash,
+      schemaId: "schema_main",
+      turnTreeHash: seeded.turnTreeHash,
+    });
+
+    await backend.transact(async (tx) => {
+      const run = await tx.runs.get(seeded.runId);
+
+      if (run === null) {
+        throw new Error("expected seeded run");
+      }
+
+      await tx.runs.set({
+        ...run,
+        status: "failed",
+        updatedAtMs: 10,
+      });
+      await tx.turnNodes.put(childTurnNode);
+      await tx.turns.set({
+        branchId: "branch_corruption",
+        createdAtMs: 12,
+        headTurnNodeHash: childTurnNode.hash,
+        parentTurnId: "turn_corruption",
+        startTurnNodeHash: seeded.runStartTurnNodeHash,
+        threadId: "thread_corruption",
+        turnId: "turn_child_corruption",
+        updatedAtMs: 12,
+      });
+      await tx.branches.set({
+        branchId: "branch_corruption",
+        createdAtMs: 7,
+        headTurnNodeHash: childTurnNode.hash,
+        threadId: "thread_corruption",
+        updatedAtMs: 12,
+      });
+    });
+
+    await rejects(
+      backend.transact(async (tx) => {
+        const parentTurn = await tx.turns.get("turn_corruption");
+
+        if (parentTurn === null) {
+          throw new Error("expected parent turn");
+        }
+
+        await tx.turns.set({
+          ...parentTurn,
+          headTurnNodeHash: seeded.rootTurnNodeHash,
+          updatedAtMs: 13,
+        });
+      }),
+      TURN_PARENT_ERROR_PATTERN
+    );
+
+    deepStrictEqual(await backend.health(), { ok: true });
+  });
+
+  test("rejects turn head rewrites that break terminal run spans", async () => {
+    const seeded = await seedCorruptionDatabase();
+    const backend = createSqliteBackend({ databasePath: seeded.databasePath });
+
+    await backend.transact(async (tx) => {
+      const run = await tx.runs.get(seeded.runId);
+
+      if (run === null) {
+        throw new Error("expected seeded run");
+      }
+
+      await tx.runs.set({
+        ...run,
+        status: "failed",
+        updatedAtMs: 10,
+      });
+    });
+
+    await rejects(
+      backend.transact(async (tx) => {
+        const turn = await tx.turns.get("turn_corruption");
+
+        if (turn === null) {
+          throw new Error("expected seeded turn");
+        }
+
+        await tx.turns.set({
+          ...turn,
+          headTurnNodeHash: seeded.rootTurnNodeHash,
+          updatedAtMs: 11,
+        });
+      }),
+      RUN_TURN_SPAN_ERROR_PATTERN
+    );
+
+    deepStrictEqual(await backend.health(), { ok: true });
+  });
+
+  test("requires a new archive branch for every rollback transaction", async () => {
+    const seeded = await seedCorruptionDatabase();
+    const backend = createSqliteBackend({ databasePath: seeded.databasePath });
+
+    await backend.transact(async (tx) => {
+      const run = await tx.runs.get(seeded.runId);
+
+      if (run === null) {
+        throw new Error("expected seeded run");
+      }
+
+      await tx.runs.set({
+        ...run,
+        status: "failed",
+        updatedAtMs: 10,
+      });
+      await tx.branches.set({
+        archivedFromBranchId: "branch_corruption",
+        branchId: "branch_corruption_archive_1",
+        createdAtMs: 10,
+        headTurnNodeHash: seeded.runStartTurnNodeHash,
+        threadId: "thread_corruption",
+        updatedAtMs: 10,
+      });
+      await tx.branches.set({
+        branchId: "branch_corruption",
+        createdAtMs: 7,
+        headTurnNodeHash: seeded.rootTurnNodeHash,
+        threadId: "thread_corruption",
+        updatedAtMs: 10,
+      });
+    });
+
+    await backend.transact(async (tx) => {
+      await tx.branches.set({
+        branchId: "branch_corruption",
+        createdAtMs: 7,
+        headTurnNodeHash: seeded.runStartTurnNodeHash,
+        threadId: "thread_corruption",
+        updatedAtMs: 11,
+      });
+    });
+
+    await rejects(
+      backend.transact(async (tx) => {
+        await tx.branches.set({
+          branchId: "branch_corruption",
+          createdAtMs: 7,
+          headTurnNodeHash: seeded.rootTurnNodeHash,
+          threadId: "thread_corruption",
+          updatedAtMs: 12,
+        });
+      }),
+      BACKWARD_ARCHIVE_ERROR_PATTERN
+    );
+
+    deepStrictEqual(await backend.health(), { ok: true });
   });
 
   test("reports unhealthy status when required schema tables are missing", async () => {
