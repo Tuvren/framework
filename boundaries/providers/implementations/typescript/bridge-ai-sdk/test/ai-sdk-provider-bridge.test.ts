@@ -540,6 +540,28 @@ describe("provider-bridge-ai-sdk", () => {
     ).rejects.toBeInstanceOf(TuvrenProviderError);
   });
 
+  test("rejects mismatched prompt providers", async () => {
+    const bridge = createAiSdkProviderBridge({
+      model: createMockModel(),
+    });
+
+    await expect(
+      bridge.generate({
+        config: {
+          provider: "different-provider",
+        },
+        messages: [
+          {
+            parts: [{ text: "Hello", type: "text" }],
+            role: "user",
+          },
+        ],
+      })
+    ).rejects.toThrow(
+      "TuvrenPrompt.config.provider does not match the bound AI SDK provider"
+    );
+  });
+
   test("creates a bridge from ProviderV3 model lookup", async () => {
     const model = createMockModel({
       async doGenerate() {

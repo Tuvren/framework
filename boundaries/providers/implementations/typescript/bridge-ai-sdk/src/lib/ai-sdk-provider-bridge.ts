@@ -158,6 +158,7 @@ class AiSdkProviderBridge implements TuvrenProvider {
     try {
       const result = await this.model.doGenerate(
         createCallOptions({
+          bridgeId: this.id,
           defaultHeaders: this.defaultHeaders,
           defaultProviderOptions: this.defaultProviderOptions,
           model: this.model,
@@ -176,6 +177,7 @@ class AiSdkProviderBridge implements TuvrenProvider {
 
   async *stream(prompt: TuvrenPrompt): AsyncIterable<ProviderStreamChunk> {
     const callOptions = createCallOptions({
+      bridgeId: this.id,
       defaultHeaders: this.defaultHeaders,
       defaultProviderOptions: this.defaultProviderOptions,
       includeRawChunks: true,
@@ -729,6 +731,7 @@ function ensureStructuredStreamCompleted(state: StreamMappingState): void {
 }
 
 function createCallOptions(input: {
+  bridgeId: string;
   defaultHeaders?: Record<string, string | undefined>;
   defaultProviderOptions?: SharedV3ProviderOptions;
   includeRawChunks?: boolean;
@@ -737,6 +740,7 @@ function createCallOptions(input: {
 }): LanguageModelV3CallOptions {
   const settings = normalizeBridgeSettings(input.prompt);
   const requestedModel = input.prompt.config?.model;
+  const requestedProvider = input.prompt.config?.provider;
 
   if (
     typeof requestedModel === "string" &&
@@ -749,6 +753,23 @@ function createCallOptions(input: {
       {
         expectedModel: input.model.modelId,
         requestedModel,
+      }
+    );
+  }
+
+  if (
+    typeof requestedProvider === "string" &&
+    requestedProvider.trim().length > 0 &&
+    requestedProvider !== input.model.provider &&
+    requestedProvider !== input.bridgeId
+  ) {
+    throw bridgeError(
+      "TuvrenPrompt.config.provider does not match the bound AI SDK provider",
+      "invalid_ai_sdk_bridge_config",
+      {
+        expectedProvider: input.model.provider,
+        requestedProvider,
+        tuvrenProviderId: input.bridgeId,
       }
     );
   }
