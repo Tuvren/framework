@@ -666,6 +666,70 @@ const INITIAL_SCHEMA_INDEX_DEFINITIONS = {
   (typeof INITIAL_SCHEMA_REQUIRED_INDEXES)[number],
   ExpectedSqliteIndexSchema
 >;
+const TARGETED_VALIDATION_TABLE_DEFINITIONS = {
+  turn_node_lineage_roots: {
+    columns: [
+      {
+        name: "turn_node_hash",
+        notNull: false,
+        primaryKeyOrder: 1,
+        type: "TEXT",
+      },
+      {
+        name: "root_turn_node_hash",
+        notNull: true,
+        primaryKeyOrder: 0,
+        type: "TEXT",
+      },
+      {
+        name: "depth",
+        notNull: true,
+        primaryKeyOrder: 0,
+        type: "INTEGER",
+      },
+    ],
+    foreignKeys: [
+      {
+        columns: ["turn_node_hash"],
+        referencedColumns: ["hash"],
+        referencedTable: "turn_nodes",
+      },
+      {
+        columns: ["root_turn_node_hash"],
+        referencedColumns: ["hash"],
+        referencedTable: "turn_nodes",
+      },
+    ],
+  },
+} as const satisfies Record<
+  (typeof TARGETED_VALIDATION_REQUIRED_TABLES)[number],
+  ExpectedSqliteTableSchema
+>;
+const TARGETED_VALIDATION_INDEX_DEFINITIONS = {
+  idx_branches_archived_from_branch_id: {
+    columns: ["archived_from_branch_id"],
+    tableName: "branches",
+    unique: false,
+  },
+  idx_threads_root_turn_node_hash: {
+    columns: ["root_turn_node_hash"],
+    tableName: "threads",
+    unique: true,
+  },
+  idx_turn_node_lineage_roots_root_depth: {
+    columns: ["root_turn_node_hash", "depth"],
+    tableName: "turn_node_lineage_roots",
+    unique: false,
+  },
+  idx_turns_thread_branch_head_turn_node: {
+    columns: ["thread_id", "branch_id", "head_turn_node_hash"],
+    tableName: "turns",
+    unique: false,
+  },
+} as const satisfies Record<
+  (typeof TARGETED_VALIDATION_REQUIRED_INDEXES)[number],
+  ExpectedSqliteIndexSchema
+>;
 
 interface BackendState {
   branches: Map<string, StoredBranch>;
@@ -1984,11 +2048,15 @@ function validateMigrationState(db: Database.Database): void {
   }
 
   const latestAppliedMigrationName = appliedMigrationNames.at(-1);
-  if (latestAppliedMigrationName !== INITIAL_SCHEMA_MIGRATION_NAME) {
+  if (latestAppliedMigrationName === INITIAL_SCHEMA_MIGRATION_NAME) {
+    validateBaselineSchemaShape(db);
     return;
   }
 
-  validateBaselineSchemaShape(db);
+  if (latestAppliedMigrationName === TARGETED_VALIDATION_MIGRATION_NAME) {
+    validateBaselineSchemaShape(db);
+    validateTargetedValidationSchemaShape(db);
+  }
 }
 
 function loadAppliedMigrationNames(db: Database.Database): string[] {
@@ -2068,20 +2136,35 @@ function validateTargetedValidationSchemaPresence(db: Database.Database): void {
 }
 
 function validateBaselineSchemaShape(db: Database.Database): void {
-  for (const tableName of INITIAL_SCHEMA_REQUIRED_TABLES) {
-    validateBaselineTableSchema(
-      db,
-      tableName,
-      INITIAL_SCHEMA_TABLE_DEFINITIONS[tableName]
-    );
+  validateSqliteSchemaShape(
+    db,
+    INITIAL_SCHEMA_MIGRATION_NAME,
+    INITIAL_SCHEMA_TABLE_DEFINITIONS,
+    INITIAL_SCHEMA_INDEX_DEFINITIONS
+  );
+}
+
+function validateTargetedValidationSchemaShape(db: Database.Database): void {
+  validateSqliteSchemaShape(
+    db,
+    TARGETED_VALIDATION_MIGRATION_NAME,
+    TARGETED_VALIDATION_TABLE_DEFINITIONS,
+    TARGETED_VALIDATION_INDEX_DEFINITIONS
+  );
+}
+
+function validateSqliteSchemaShape(
+  db: Database.Database,
+  migrationName: string,
+  tableDefinitions: Readonly<Record<string, ExpectedSqliteTableSchema>>,
+  indexDefinitions: Readonly<Record<string, ExpectedSqliteIndexSchema>>
+): void {
+  for (const [tableName, tableSchema] of Object.entries(tableDefinitions)) {
+    validateSqliteTableSchema(db, migrationName, tableName, tableSchema);
   }
 
-  for (const indexName of INITIAL_SCHEMA_REQUIRED_INDEXES) {
-    validateBaselineIndexSchema(
-      db,
-      indexName,
-      INITIAL_SCHEMA_INDEX_DEFINITIONS[indexName]
-    );
+  for (const [indexName, indexSchema] of Object.entries(indexDefinitions)) {
+    validateSqliteIndexSchema(db, migrationName, indexName, indexSchema);
   }
 }
 
@@ -2106,8 +2189,9 @@ function listMigrationFiles(migrationDirectory: string): string[] {
     .sort((left, right) => left.localeCompare(right));
 }
 
-function validateBaselineTableSchema(
+function validateSqliteTableSchema(
   db: Database.Database,
+  migrationName: string,
   tableName: string,
   expectedSchema: ExpectedSqliteTableSchema
 ): void {
@@ -2127,12 +2211,12 @@ function validateBaselineTableSchema(
 
   if (!areExpectedColumnsEqual(actualColumns, expectedColumns)) {
     throw persistenceError(
-      "sqlite backend found a baseline table whose column contract does not match the package schema",
+      "sqlite backend found an applied migration table whose column contract does not match the package schema",
       "sqlite_backend_applied_migration_schema_mismatch",
       {
         actualColumns,
         expectedColumns,
-        migrationName: INITIAL_SCHEMA_MIGRATION_NAME,
+        migrationName,
         tableName,
       }
     );
@@ -2146,20 +2230,21 @@ function validateBaselineTableSchema(
     !areExpectedForeignKeysEqual(actualForeignKeys, expectedSchema.foreignKeys)
   ) {
     throw persistenceError(
-      "sqlite backend found a baseline table whose foreign-key contract does not match the package schema",
+      "sqlite backend found an applied migration table whose foreign-key contract does not match the package schema",
       "sqlite_backend_applied_migration_schema_mismatch",
       {
         actualForeignKeys,
         expectedForeignKeys: expectedSchema.foreignKeys,
-        migrationName: INITIAL_SCHEMA_MIGRATION_NAME,
+        migrationName,
         tableName,
       }
     );
   }
 }
 
-function validateBaselineIndexSchema(
+function validateSqliteIndexSchema(
   db: Database.Database,
+  migrationName: string,
   indexName: string,
   expectedSchema: ExpectedSqliteIndexSchema
 ): void {
@@ -2175,7 +2260,7 @@ function validateBaselineIndexSchema(
       "sqlite_backend_applied_migration_index_missing",
       {
         indexName,
-        migrationName: INITIAL_SCHEMA_MIGRATION_NAME,
+        migrationName,
       }
     );
   }
@@ -2203,13 +2288,13 @@ function validateBaselineIndexSchema(
 
   if (!areExpectedIndexDefinitionsEqual(actualIndex, expectedIndex)) {
     throw persistenceError(
-      "sqlite backend found a baseline index whose definition does not match the package schema",
+      "sqlite backend found an applied migration index whose definition does not match the package schema",
       "sqlite_backend_applied_migration_index_mismatch",
       {
         actualIndex,
         expectedIndex,
         indexName,
-        migrationName: INITIAL_SCHEMA_MIGRATION_NAME,
+        migrationName,
       }
     );
   }

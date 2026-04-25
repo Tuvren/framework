@@ -25,6 +25,7 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
   symlinkSync,
@@ -72,6 +73,7 @@ const NORMALIZED_SQLITE_ERROR_PATTERN =
   /required schema tables|missing schema tables/u;
 const SCHEMA_MISMATCH_ERROR_PATTERN =
   /column contract does not match|foreign-key contract does not match/u;
+const INDEX_MISMATCH_ERROR_PATTERN = /index whose definition does not match/u;
 const UNKNOWN_MIGRATION_ERROR_PATTERN = /does not recognize/u;
 const MULTIPLE_ACTIVE_RUNS_ERROR_PATTERN = /more than one active run/u;
 const BACKWARD_ARCHIVE_ERROR_PATTERN = /archive branch/u;
@@ -154,13 +156,22 @@ function getBaselineMigrationSql(): string {
   );
 }
 
+function getTargetedValidationMigrationSql(): string {
+  return readFileSync(
+    join(process.cwd(), "migrations", "0002_targeted_validation_indexes.sql"),
+    "utf8"
+  );
+}
+
 function copyCurrentPackageMigrations(targetDirectory: string): void {
-  for (const fileName of [
-    "0001_initial_schema.sql",
-    "0002_targeted_validation_indexes.sql",
-  ]) {
+  const migrationsDirectory = join(process.cwd(), "migrations");
+  const migrationFiles = readdirSync(migrationsDirectory)
+    .filter((fileName) => fileName.endsWith(".sql"))
+    .sort((left, right) => left.localeCompare(right));
+
+  for (const fileName of migrationFiles) {
     copyFileSync(
-      join(process.cwd(), "migrations", fileName),
+      join(migrationsDirectory, fileName),
       join(targetDirectory, fileName)
     );
   }
@@ -1199,6 +1210,88 @@ describe("@tuvren/backend-sqlite", () => {
     throws(
       () => createSqliteBackend({ databasePath }),
       SCHEMA_MISMATCH_ERROR_PATTERN
+    );
+  });
+
+  test("rejects databases whose targeted validation table definitions no longer match the package schema", () => {
+    const databasePath = createTempDatabasePath();
+    const seed = new Database(databasePath);
+    const malformedTargetedValidationSql =
+      getTargetedValidationMigrationSql().replace(
+        "  depth INTEGER NOT NULL,",
+        "  depth TEXT NOT NULL,"
+      );
+
+    seed.exec(`
+      CREATE TABLE backend_sqlite_migrations (
+        name TEXT PRIMARY KEY,
+        applied_at_ms INTEGER NOT NULL
+      )
+    `);
+    seed
+      .prepare(
+        `
+          INSERT INTO backend_sqlite_migrations (name, applied_at_ms)
+          VALUES (?, ?)
+        `
+      )
+      .run("0001_initial_schema.sql", 1);
+    seed
+      .prepare(
+        `
+          INSERT INTO backend_sqlite_migrations (name, applied_at_ms)
+          VALUES (?, ?)
+        `
+      )
+      .run("0002_targeted_validation_indexes.sql", 2);
+    seed.exec(getBaselineMigrationSql());
+    seed.exec(malformedTargetedValidationSql);
+    seed.close();
+
+    throws(
+      () => createSqliteBackend({ databasePath }),
+      SCHEMA_MISMATCH_ERROR_PATTERN
+    );
+  });
+
+  test("rejects databases whose targeted validation index definitions no longer match the package schema", () => {
+    const databasePath = createTempDatabasePath();
+    const seed = new Database(databasePath);
+    const malformedTargetedValidationSql =
+      getTargetedValidationMigrationSql().replace(
+        "ON turn_node_lineage_roots(root_turn_node_hash, depth);",
+        "ON turn_node_lineage_roots(depth, root_turn_node_hash);"
+      );
+
+    seed.exec(`
+      CREATE TABLE backend_sqlite_migrations (
+        name TEXT PRIMARY KEY,
+        applied_at_ms INTEGER NOT NULL
+      )
+    `);
+    seed
+      .prepare(
+        `
+          INSERT INTO backend_sqlite_migrations (name, applied_at_ms)
+          VALUES (?, ?)
+        `
+      )
+      .run("0001_initial_schema.sql", 1);
+    seed
+      .prepare(
+        `
+          INSERT INTO backend_sqlite_migrations (name, applied_at_ms)
+          VALUES (?, ?)
+        `
+      )
+      .run("0002_targeted_validation_indexes.sql", 2);
+    seed.exec(getBaselineMigrationSql());
+    seed.exec(malformedTargetedValidationSql);
+    seed.close();
+
+    throws(
+      () => createSqliteBackend({ databasePath }),
+      INDEX_MISMATCH_ERROR_PATTERN
     );
   });
 
