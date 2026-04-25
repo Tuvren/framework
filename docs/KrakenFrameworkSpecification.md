@@ -789,16 +789,13 @@ function executeIteration(turnId, branchId, schemaId, toolRegistry, config, iter
   response = modelResult.response
   iterationStateUpdates = mergeStateUpdates(iterationStateUpdates, modelResult.state ?? {})
 
-  // ── Capture handoff intent before durable staging ──
-  handoffIntents = extractHandoffIntents(response.parts)
-  if handoffIntents.length > 1:
-    return failIteration(new Error("invalid_handoff_composition: multiple handoff intents in one response"))
-
-  if handoffIntents.length == 1 && extractNonHandoffToolCalls(response.parts).length > 0:
-    return failIteration(new Error("invalid_handoff_composition: handoff may not be combined with executable tool calls"))
-
-  handoffIntent = handoffIntents[0] ?? null
-  assistantParts = stripHandoffIntent(response.parts)
+  // ── Resolve loop outcome before durable staging ──
+  // The current provider-neutral content model does not define a dedicated
+  // handoff content part. A concrete driver that already knows about a
+  // provider-native or higher-layer handoff signal maps it directly into
+  // RuntimeResolution.handoff and returns only conversational assistant parts
+  // for durable staging.
+  assistantParts = response.parts
 
   // ── Stage assistant message ──
   if assistantParts.length > 0:
@@ -810,14 +807,13 @@ function executeIteration(turnId, branchId, schemaId, toolRegistry, config, iter
 
   // ── Loop policy → resolution composition ──
   decision = config.loopPolicy.evaluate({ ...response, parts: assistantParts }, manifest, iterationCount)
-  toolCalls = extractToolCalls(response).filter(call => !isHandoffCall(call))
-  if toolCalls.length > 0 && decision.continue && !decision.executeTools:
+  toolCalls = extractToolCalls({ ...response, parts: assistantParts })
+  if toolCalls.length > 0 && (!decision.continue || !decision.executeTools):
     return failIteration(new Error("invalid_loop_policy"))
 
-  resolution = handoffIntent
-    ? { type: "handoff", targetAgent: handoffIntent.targetAgent,
-        contextPlan: buildHandoffPlan(handoffIntent, messages, manifest, config) }
-    : decisionToResolution(decision)
+  resolution = decisionToResolution(decision)
+  // A concrete driver that has already identified a handoff overrides this
+  // loop-policy outcome with RuntimeResolution.handoff before checkpointing.
 
   if resolution.type == "fail" && resolution.fatality == "hard":
     return failIteration(resolution.error, "hard")
@@ -1101,7 +1097,12 @@ Default: `continue = true, executeTools = true` when `finishReason == "tool_call
 
 `IterationDecision` maps to `RuntimeResolution` during resolution composition.
 
-Invalid combinations are rejected. If the model response contains executable tool calls and the loop policy returns `continue: true` with `executeTools: false`, the framework MUST convert the decision to `fail(hard)` with error code `invalid_loop_policy`.
+Invalid combinations are rejected. Under the current shared driver seam,
+assistant responses that contain executable tool calls may only proceed when the
+loop policy returns `continue: true` and `executeTools: true`. A tool-call
+response paired with `continue: true, executeTools: false` or with
+`continue: false` MUST convert to `fail(hard)` with error code
+`invalid_loop_policy`.
 
 ### 5.4 Tool Executor
 
@@ -1976,10 +1977,17 @@ Any higher-layer projection of child completion into parent context should be ba
 
 #### Agent-Signaled Handoff
 
-Provider APIs may express handoff intent through a tool-like response, but the framework captures the intent and canonicalizes it into `RuntimeResolution.handoff`. Agent-signaled handoff is therefore a control transition, not ordinary tool execution.
+Agent-signaled handoff is preserved through the shared driver seam as
+`RuntimeResolution.handoff`, not as an ordinary conversational history entry.
+The current provider-neutral content model does not define a dedicated handoff
+content part, so baseline drivers must not invent one inside
+`TuvrenModelResponse.parts` in v0.1. If a provider bridge or higher layer can
+recognize a provider-native tool-like handoff signal, it maps that signal into
+the existing handoff resolution contract instead of persisting a literal
+handoff tool call as ordinary conversation history.
 
-1. Detects handoff intent in the model response.
-1. Does **not** persist the literal handoff `tool_call` as conversation history.
+1. Recognizes or receives handoff intent through the concrete driver / provider integration path.
+1. Does **not** persist a literal provider-native handoff control token as ordinary conversation history.
 1. Stages any remaining assistant content that is still semantically conversational.
 1. Executes handoff context engineering as a separate Run.
 1. Rewrites the active `messages` path for the receiving agent.
@@ -1991,7 +1999,7 @@ The Turn does not end. The Branch does not change. History is preserved.
 
 Before the next iteration begins, the framework MUST rebuild the active execution scope from the new `AgentConfig`: tool registry, extension composition, system prompt contributions, renderer inputs, loop policy, context policy, and any other per-agent framework contracts. The receiving agent MUST NOT continue with the previous agent’s tool or extension surface.
 
-The framework rejects multiple handoff intents in one response. A response that combines handoff intent with ordinary executable tool calls is rejected as invalid handoff composition.
+The framework rejects multiple handoff intents in one iteration. A detected handoff intent that is combined with ordinary executable tool calls is rejected as invalid handoff composition.
 
 #### Handoff Context Engineering
 

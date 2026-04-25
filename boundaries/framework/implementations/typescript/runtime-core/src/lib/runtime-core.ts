@@ -92,6 +92,7 @@ import {
 import {
   cloneSnapshotPreservingFunctions,
   cloneValue,
+  createExecutionCancelledError,
   createFrozenSnapshot,
   detachPromise,
   isRecord,
@@ -428,7 +429,7 @@ class RuntimeCore implements TuvrenRuntime {
     const cancellationTask = this.finalizePausedCancellation(
       handle,
       pauseContext,
-      new Error("execution cancelled")
+      createExecutionCancelledError()
     );
     handle.rememberPausedCancellation(cancellationTask);
     detachPromise(cancellationTask);
@@ -4581,7 +4582,10 @@ function createCancelledResolution(
   }
 
   return {
-    error: new Error("execution cancelled"),
+    error:
+      handle.abortSignal.reason instanceof Error
+        ? handle.abortSignal.reason
+        : createExecutionCancelledError(),
     fatality: "hard",
     type: "fail",
   };

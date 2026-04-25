@@ -240,6 +240,157 @@ describe("driver-react", () => {
     });
   });
 
+  test("allows loopPolicy to continue after a non-tool assistant response", async () => {
+    let generateCalls = 0;
+    const provider = {
+      async generate() {
+        generateCalls += 1;
+        return {
+          finishReason: "stop",
+          parts: [{ text: "Keep going", type: "text" }],
+        } satisfies TuvrenModelResponse;
+      },
+      id: "provider",
+      async *stream() {
+        yield* [];
+      },
+    } satisfies TuvrenProvider;
+    const driver = createReActDriver({
+      providerCallMode: "generate",
+    }).create();
+
+    const result = await driver.execute(
+      createDriverExecutionContext({
+        config: {
+          loopPolicy: {
+            evaluate(response) {
+              return {
+                continue:
+                  response.parts.some(
+                    (part) => part.type === "text" && part.text === "Keep going"
+                  ),
+                executeTools: false,
+                reason: "custom_continue",
+              };
+            },
+          },
+          model: provider,
+          name: "primary",
+        },
+      })
+    );
+
+    expect(generateCalls).toBe(1);
+    expect(result.resolution).toEqual({
+      type: "continue_iteration",
+    });
+    expect(result.toolExecutionMode).toBeUndefined();
+  });
+
+  test("fails hard with invalid_loop_policy when loopPolicy disables tool execution for tool-call responses", async () => {
+    const provider = {
+      async generate() {
+        return {
+          finishReason: "tool_call",
+          parts: [
+            {
+              callId: "tool-1",
+              input: { query: "docs" },
+              name: "search",
+              type: "tool_call",
+            },
+          ],
+        } satisfies TuvrenModelResponse;
+      },
+      id: "provider",
+      async *stream() {
+        yield* [];
+      },
+    } satisfies TuvrenProvider;
+    const driver = createReActDriver({
+      providerCallMode: "generate",
+    }).create();
+
+    const result = await driver.execute(
+      createDriverExecutionContext({
+        config: {
+          loopPolicy: {
+            evaluate() {
+              return {
+                continue: true,
+                executeTools: false,
+                reason: "never_run_tools",
+              };
+            },
+          },
+          model: provider,
+          name: "primary",
+        },
+      })
+    );
+
+    expect(result.resolution.type).toBe("fail");
+    if (result.resolution.type !== "fail") {
+      throw new Error("expected a failed resolution");
+    }
+    expect(result.resolution.fatality).toBe("hard");
+    expect(result.resolution.error).toMatchObject({
+      code: "invalid_loop_policy",
+    });
+  });
+
+  test("fails hard with invalid_loop_policy when loopPolicy returns a terminal decision for tool-call responses", async () => {
+    const provider = {
+      async generate() {
+        return {
+          finishReason: "tool_call",
+          parts: [
+            {
+              callId: "tool-1",
+              input: { query: "docs" },
+              name: "search",
+              type: "tool_call",
+            },
+          ],
+        } satisfies TuvrenModelResponse;
+      },
+      id: "provider",
+      async *stream() {
+        yield* [];
+      },
+    } satisfies TuvrenProvider;
+    const driver = createReActDriver({
+      providerCallMode: "generate",
+    }).create();
+
+    const result = await driver.execute(
+      createDriverExecutionContext({
+        config: {
+          loopPolicy: {
+            evaluate() {
+              return {
+                continue: false,
+                executeTools: false,
+                reason: "stop_now",
+              };
+            },
+          },
+          model: provider,
+          name: "primary",
+        },
+      })
+    );
+
+    expect(result.resolution.type).toBe("fail");
+    if (result.resolution.type !== "fail") {
+      throw new Error("expected a failed resolution");
+    }
+    expect(result.resolution.fatality).toBe("hard");
+    expect(result.resolution.error).toMatchObject({
+      code: "invalid_loop_policy",
+    });
+  });
+
   test("fails hard when providerCallMode resolves to an invalid value", async () => {
     let generateCalls = 0;
     let streamCalls = 0;
@@ -330,6 +481,47 @@ describe("driver-react", () => {
     expect(result.resolution.fatality).toBe("hard");
     expect(result.resolution.error).toMatchObject({
       code: "react_driver_invalid_tool_execution_mode",
+    });
+  });
+
+  test("fails hard when loopPolicy returns a malformed IterationDecision", async () => {
+    const provider = {
+      async generate() {
+        return {
+          finishReason: "stop",
+          parts: [{ text: "bad decision", type: "text" }],
+        } satisfies TuvrenModelResponse;
+      },
+      id: "provider",
+      async *stream() {
+        yield* [];
+      },
+    } satisfies TuvrenProvider;
+    const driver = createReActDriver({
+      providerCallMode: "generate",
+    }).create();
+
+    const result = await driver.execute(
+      createDriverExecutionContext({
+        config: {
+          loopPolicy: {
+            evaluate() {
+              return JSON.parse('{"continue":"yes","executeTools":false}');
+            },
+          },
+          model: provider,
+          name: "primary",
+        },
+      })
+    );
+
+    expect(result.resolution.type).toBe("fail");
+    if (result.resolution.type !== "fail") {
+      throw new Error("expected a failed resolution");
+    }
+    expect(result.resolution.fatality).toBe("hard");
+    expect(result.resolution.error).toMatchObject({
+      code: "invalid_loop_policy",
     });
   });
 
@@ -2599,13 +2791,23 @@ describe("driver-react", () => {
     }
 
     const events = [...firstEvents, ...remainingEvents];
+    const errorEvent = events.find(
+      (event): event is Extract<(typeof events)[number], { type: "error" }> =>
+        event.type === "error"
+    );
 
     expect(handle.status().phase).toBe("failed");
+    expect(errorEvent?.error.code).toBe("runtime_execution_cancelled");
     expect(
       events.some(
         (event) => event.type === "turn.end" && event.status === "failed"
       )
     ).toBe(true);
+    expect(await harness.readBranchRuntimeStatus(thread.branchId)).toEqual({
+      activeAgent: "primary",
+      partial: true,
+      state: "failed",
+    });
     expect(await harness.readBranchMessages(thread.branchId)).toEqual([
       {
         parts: [{ text: "Cancel this stream", type: "text" }],
@@ -2678,9 +2880,13 @@ describe("driver-react", () => {
     );
 
     expect(handle.status().phase).toBe("failed");
-    expect(errorEvent?.error.code).not.toBe("invalid_stream_event");
+    expect(errorEvent?.error.code).toBe("runtime_execution_cancelled");
     expect(errorEvent?.error.message).toBe("execution cancelled");
     expect(events.some((event) => event.type === "message.done")).toBe(false);
+    expect(await harness.readBranchRuntimeStatus(thread.branchId)).toEqual({
+      activeAgent: "primary",
+      state: "failed",
+    });
     expect(await harness.readBranchMessages(thread.branchId)).toEqual([
       {
         parts: [{ text: "Cancel this tool call", type: "text" }],
@@ -2750,6 +2956,87 @@ describe("driver-react", () => {
         },
       ])
     );
+  });
+
+  test("runtime-core executes another iteration when ReAct loopPolicy requests continuation after plain assistant output", async () => {
+    const harness = createFakeKernelHarness();
+    let generateCalls = 0;
+    const provider = {
+      async generate() {
+        generateCalls += 1;
+        return {
+          finishReason: "stop",
+          parts: [
+            {
+              text:
+                generateCalls === 1
+                  ? "Continue once more."
+                  : "Now we can stop.",
+              type: "text",
+            },
+          ],
+        } satisfies TuvrenModelResponse;
+      },
+      id: "provider",
+      async *stream() {
+        yield* [];
+      },
+    } satisfies TuvrenProvider;
+    const runtime = createTuvrenRuntimeCore({
+      defaultDriverId: REACT_DRIVER_ID,
+      driverRegistry: createDriverRegistry([
+        createReActDriver({
+          providerCallMode: "generate",
+        }),
+      ]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        loopPolicy: {
+          evaluate(response, _manifest, iterationCount) {
+            return {
+              continue:
+                iterationCount === 1 &&
+                response.parts.some(
+                  (part) =>
+                    part.type === "text" && part.text === "Continue once more."
+                ),
+              executeTools: false,
+              reason: "done",
+            };
+          },
+        },
+        model: provider,
+        name: "primary",
+      },
+      signal: textSignal("Follow the loop policy"),
+      threadId: thread.threadId,
+    });
+
+    const events = await collectEvents(handle.events());
+
+    expect(generateCalls).toBe(2);
+    expect(events.filter((event) => event.type === "iteration.start")).toHaveLength(
+      2
+    );
+    expect(handle.status().phase).toBe("completed");
+    expect(await harness.readBranchMessages(thread.branchId)).toEqual([
+      {
+        parts: [{ text: "Follow the loop policy", type: "text" }],
+        role: "user",
+      },
+      {
+        parts: [{ text: "Continue once more.", type: "text" }],
+        role: "assistant",
+      },
+      {
+        parts: [{ text: "Now we can stop.", type: "text" }],
+        role: "assistant",
+      },
+    ]);
   });
 
   test("fails hard when streamed structured output cannot be parsed", async () => {

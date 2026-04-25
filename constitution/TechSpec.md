@@ -1,9 +1,9 @@
 # Technical Specification
 
 ## 0. Version History & Changelog
+- v0.4.4 - Closed the remaining Epic K loop-policy gap: baseline ReAct now honors `AgentConfig.loopPolicy` for iterative continuation while rejecting unsupported tool-call policy combinations as `invalid_loop_policy`, and clarified the handoff seam against the current provider-neutral content contract.
+- v0.4.3 - Clarified the Epic K handoff seam: the current provider-neutral content contract does not define a dedicated handoff part, so baseline ReAct handoff preservation remains on `RuntimeResolution.handoff` plus `DriverHandoffPort` without widening `TuvrenModelResponse`.
 - v0.4.2 - Split the post-foundation ReAct roadmap into bounded ReAct loop, streaming/provider semantics, and tool/approval integration epics, with AI SDK bridge and host protocol work deferred as next-focus topics.
-- v0.4.1 - Extended the shared driver result seam with explicit extension state updates plus `assistantEventReconciliation`, and documented the corresponding live-publication validation contract so concrete drivers can preserve `aroundModel` state and intentionally signal post-stream durable divergence through the shared-core checkpoint path.
-- v0.4.0 - Advanced the post-runtime-core roadmap into narrower deferred epics by splitting the old ReAct/bridge/adapter/host path into smaller slices beginning with a focused ReAct Driver foundation epic.
 - ... [Older history truncated, refer to git logs]
 
 ## 1. Stack Specification (Bill of Materials)
@@ -931,6 +931,24 @@ export interface DriverRegistry {
 ```
 
 `DriverExecutionResult` may contain at most one assistant message per iteration. `toolExecutionMode` is required when that assistant message requests tool calls and omitted otherwise. A failed `partial` result may still contain interrupted tool-call content; those calls are staged as durable context only and are not executed while the resolution remains failed. `stateUpdates` carries per-extension manifest updates collected by concrete driver-owned `aroundModel` execution so the shared core can apply them at the same checkpoint that commits the assistant message and manifest. `assistantEventReconciliation` is optional and reserved for explicit driver-signaled streaming cases such as `aroundModel` post-stream durable replacement. This keeps sequential-vs-parallel selection, extension-state durability, and narrow assistant-stream validation policy on the shared driver boundary instead of on runtime-core construction options. Approval resume remains framework-owned; any driver `resume(...)` method is optional and not part of the current shared-core execution path.
+
+The current provider-neutral content contract does not define a dedicated
+handoff content part inside `TuvrenModelResponse.parts`. Baseline Epic K
+handoff preservation therefore remains on the existing shared driver seam:
+concrete drivers return `RuntimeResolution.handoff` and build the associated
+`HandoffContextPlan` through `DriverHandoffPort` when a higher layer or
+provider-native integration has already identified a handoff. Provider-native
+tool-like handoff detection remains a future bridge or contract concern and is
+not introduced into the current provider-neutral content model in this pass.
+
+Baseline ReAct also evaluates `AgentConfig.loopPolicy` during iteration
+resolution composition. For assistant responses without executable tool calls,
+`loopPolicy` may request either continuation or turn termination. For assistant
+responses that do request executable tool calls, the current shared driver seam
+requires `continue: true` and `executeTools: true`; any custom policy that
+returns a non-continuing or non-executing decision for executable tool calls is
+rejected as `invalid_loop_policy` rather than producing a partial or
+terminal-with-tools driver result shape that the shared core does not support.
 
 `runtime.emit(...)` is limited to driver-owned stream content and custom events. Framework-owned lifecycle events such as `turn.*`, `iteration.*`, `tool.*`, `approval.*`, `state.*`, and `error` remain shared-core responsibilities and are rejected if a driver tries to emit them directly. Shared core publishes driver-emitted content and custom events as they occur, while still retaining them for post-call validation and response synthesis. Because publication is live, already-forwarded driver events are not retracted if a later validation step fails, including post-stream structured-output validation; instead the turn terminates with the relevant contract error. If a driver emits assistant content events for a successful durable assistant response, that emitted assistant sequence must normally reconcile to the durable assistant message in `DriverExecutionResult.messages`, including incremental delta payloads such as `text.delta`, `reasoning.delta`, `structured.delta`, and `tool_call.args_delta`, stable event identity (`messageId`, `callId`), canonical message-start/message-done ordering, and the final `finishReason`; otherwise runtime-core rejects it as an invalid stream event. The one intentional exception is `aroundModel` post-stream response replacement: when an `aroundModel` wrapper has already allowed a live assistant sequence to stream via `next()` and then returns a different final durable response, the driver must return `assistantEventReconciliation: "allow_final_sequence_divergence"` so shared core validates the emitted assistant sequences as complete standalone assistant messages instead of requiring equality with the checkpointed durable assistant message. Shared core honors that exception only when the active agent config includes at least one `aroundModel` handler, assistant content events were actually emitted, the final emitted assistant sequence actually diverges from the durable assistant message, and neither side requests tools. In that divergence case, shared core still synthesizes the `AfterIterationContext.response` value from the durable assistant checkpoint so hook-visible `TuvrenModelResponse` values remain internally coherent even when the live stream differed. On terminal `fail` paths before a durable assistant message exists, emitted assistant content may remain as an interrupted partial sequence; shared core validates that sequence for allowed event shapes and ordering, but does not require durable-message equality in that failure case. When a driver returns a durable assistant message without emitting matching assistant content events, runtime-core synthesizes those missing assistant stream events from the durable message so the public stream and persisted history stay aligned.
 

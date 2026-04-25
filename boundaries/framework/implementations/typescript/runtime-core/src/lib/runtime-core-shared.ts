@@ -153,6 +153,12 @@ export function detachPromise(task: Promise<unknown>): void {
   task.catch(() => undefined);
 }
 
+export function createExecutionCancelledError(): TuvrenRuntimeError {
+  return new TuvrenRuntimeError("execution cancelled", {
+    code: "runtime_execution_cancelled",
+  });
+}
+
 export function normalizeError(error: unknown): Error {
   return error instanceof Error ? error : new Error(String(error));
 }

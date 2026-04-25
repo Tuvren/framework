@@ -6393,6 +6393,164 @@ describe("framework-runtime-core", () => {
     expect(handle.status().phase).toBe("completed");
   });
 
+  test("ends the loop at maxIterations and finalizes completed runtime status", async () => {
+    const harness = createFakeKernelHarness();
+    let executeCount = 0;
+    const driver = {
+      async execute() {
+        executeCount += 1;
+        return {
+          messages: [assistantText(`Iteration ${executeCount} complete.`)],
+          resolution: {
+            type: "continue_iteration",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createTuvrenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        maxIterations: 2,
+        name: "primary",
+      },
+      signal: textSignal("Stop at the loop limit"),
+      threadId: thread.threadId,
+    });
+
+    const events = await collectEvents(handle.events());
+    const turnEndEvent = events.find(
+      (event): event is Extract<(typeof events)[number], { type: "turn.end" }> =>
+        event.type === "turn.end"
+    );
+
+    expect(executeCount).toBe(2);
+    expect(
+      events.filter((event) => event.type === "iteration.start").length
+    ).toBe(2);
+    expect(events.filter((event) => event.type === "iteration.end").length).toBe(
+      2
+    );
+    expect(turnEndEvent?.status).toBe("completed");
+    expect(handle.status().phase).toBe("completed");
+    expect(await harness.readBranchRuntimeStatus(thread.branchId)).toEqual({
+      activeAgent: "primary",
+      state: "completed",
+    });
+    expect(await harness.readBranchMessages(thread.branchId)).toEqual([
+      {
+        parts: [{ text: "Stop at the loop limit", type: "text" }],
+        role: "user",
+      },
+      {
+        parts: [{ text: "Iteration 1 complete.", type: "text" }],
+        role: "assistant",
+      },
+      {
+        parts: [{ text: "Iteration 2 complete.", type: "text" }],
+        role: "assistant",
+      },
+    ]);
+  });
+
+  test("stops the iteration loop after cancellation without entering another pass", async () => {
+    const harness = createFakeKernelHarness();
+    let executeCount = 0;
+    const driver = {
+      async execute(context) {
+        executeCount += 1;
+
+        if (executeCount === 1) {
+          return {
+            messages: [assistantText("First pass complete.")],
+            resolution: {
+              type: "continue_iteration",
+            },
+          };
+        }
+
+        await waitForAbort(context.signal);
+        return {
+          messages: [assistantText("Interrupted second pass.")],
+          partial: true,
+          resolution: {
+            error: new Error("driver noticed cancellation"),
+            fatality: "hard",
+            type: "fail",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createTuvrenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: { name: "primary" },
+      signal: textSignal("Cancel during the second pass"),
+      threadId: thread.threadId,
+    });
+    const capture = startEventCapture(handle.events());
+
+    await waitFor(() => handle.status().phase === "running");
+    await waitFor(() => handle.status().iterationCount === 2);
+
+    handle.cancel();
+    await capture.done;
+
+    const errorEvent = capture.events.find(
+      (
+        event
+      ): event is Extract<(typeof capture.events)[number], { type: "error" }> =>
+        event.type === "error"
+    );
+
+    expect(executeCount).toBe(2);
+    expect(handle.status().phase).toBe("failed");
+    expect(
+      capture.events.filter((event) => event.type === "iteration.start").length
+    ).toBe(2);
+    expect(
+      capture.events.filter((event) => event.type === "iteration.end").length
+    ).toBe(2);
+    expect(errorEvent?.error.code).toBe("runtime_execution_cancelled");
+    expect(await harness.readBranchRuntimeStatus(thread.branchId)).toEqual({
+      activeAgent: "primary",
+      partial: true,
+      state: "failed",
+    });
+    expect(await harness.readBranchMessages(thread.branchId)).toEqual([
+      {
+        parts: [{ text: "Cancel during the second pass", type: "text" }],
+        role: "user",
+      },
+      {
+        parts: [{ text: "First pass complete.", type: "text" }],
+        role: "assistant",
+      },
+      {
+        parts: [{ text: "Interrupted second pass.", type: "text" }],
+        role: "assistant",
+      },
+    ]);
+  });
+
   test("rejects driver-provided pause resolutions that are not rooted in tool approvals", async () => {
     const harness = createFakeKernelHarness();
     const driver = {

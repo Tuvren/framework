@@ -35,6 +35,7 @@ import type {
   AroundModelContext,
   AroundModelResult,
   CustomEvent,
+  IterationDecision,
   StructuredPart,
   TuvrenExtension,
   TuvrenJsonSchema,
@@ -274,6 +275,14 @@ async function executeIteration(
     };
   }
 
+  const iterationDecision = resolveIterationDecision(
+    context.config,
+    response,
+    context.manifest,
+    context.iterationCount,
+    requestsTools
+  );
+
   const driverResult: DriverExecutionResult = requestsTools
     ? {
         ...(execution.assistantEventReconciliation === undefined
@@ -283,9 +292,7 @@ async function executeIteration(
                 execution.assistantEventReconciliation,
             }),
         messages: [assistantMessage],
-        resolution: {
-          type: "continue_iteration",
-        },
+        resolution: iterationDecisionToResolution(iterationDecision),
         stateUpdates,
         toolExecutionMode: resolveToolExecutionMode(
           options.toolExecutionMode,
@@ -301,10 +308,7 @@ async function executeIteration(
                 execution.assistantEventReconciliation,
             }),
         messages: [assistantMessage],
-        resolution: {
-          reason: "done",
-          type: "end_turn",
-        },
+        resolution: iterationDecisionToResolution(iterationDecision),
         stateUpdates,
       };
 
@@ -602,6 +606,86 @@ function resolveToolExecutionMode(
       },
     }
   );
+}
+
+function resolveIterationDecision(
+  config: Readonly<AgentConfig>,
+  response: TuvrenModelResponse,
+  manifest: DriverExecutionContext["manifest"],
+  iterationCount: number,
+  requestsTools: boolean
+): IterationDecision {
+  const decision =
+    config.loopPolicy?.evaluate(
+      cloneValue(response),
+      cloneValue(manifest),
+      iterationCount
+    ) ?? defaultIterationDecision(response);
+
+  if (
+    typeof decision.continue !== "boolean" ||
+    typeof decision.executeTools !== "boolean" ||
+    (decision.reason !== undefined && typeof decision.reason !== "string")
+  ) {
+    throw new TuvrenRuntimeError(
+      "loopPolicy.evaluate() must return a valid IterationDecision",
+      {
+        code: "invalid_loop_policy",
+        details: {
+          decision,
+        },
+      }
+    );
+  }
+
+  if (requestsTools) {
+    if (!decision.continue || !decision.executeTools) {
+      throw new TuvrenRuntimeError(
+        "tool-call responses require loopPolicy to continue and execute tools",
+        {
+          code: "invalid_loop_policy",
+          details: {
+            decision,
+            finishReason: response.finishReason,
+          },
+        }
+      );
+    }
+  }
+
+  return decision;
+}
+
+function defaultIterationDecision(
+  response: TuvrenModelResponse
+): IterationDecision {
+  if (response.finishReason === "tool_call") {
+    return {
+      continue: true,
+      executeTools: true,
+    };
+  }
+
+  return {
+    continue: false,
+    executeTools: false,
+    reason: "done",
+  };
+}
+
+function iterationDecisionToResolution(
+  decision: IterationDecision
+): DriverExecutionResult["resolution"] {
+  if (decision.continue) {
+    return {
+      type: "continue_iteration",
+    };
+  }
+
+  return {
+    reason: decision.reason ?? "done",
+    type: "end_turn",
+  };
 }
 
 function validateStructuredOutput(

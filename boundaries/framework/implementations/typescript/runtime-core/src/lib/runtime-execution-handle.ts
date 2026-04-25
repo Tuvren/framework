@@ -29,6 +29,7 @@ import {
   AsyncEventQueue,
   cloneExecutionStatus,
   cloneValue,
+  createExecutionCancelledError,
   detachPromise,
   normalizeInputSignal,
 } from "./runtime-core-shared.js";
@@ -109,7 +110,7 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
       this.resumedFrom === undefined &&
       this.statusSnapshot.phase === "running"
     ) {
-      this.abortController.abort();
+      this.abortController.abort(createExecutionCancelledError());
       this.replaceStatus({
         ...this.statusSnapshot,
         phase: "failed",
@@ -117,7 +118,7 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
       return;
     }
 
-    this.abortController.abort();
+    this.abortController.abort(createExecutionCancelledError());
 
     if (!this.started && this.resumedFrom !== undefined) {
       // A resumed handle still owns the paused run until the resume path closes
