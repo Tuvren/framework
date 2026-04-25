@@ -1,22 +1,22 @@
 # Engineering Execution Plan
 
 ## 0. Version History & Changelog
+- v0.6.2 - Closed Epic M against brownfield repo reality, added the explicit tool-and-approval inventory artifact, and archived Epics K-M so the next planning pass can start from Epic N.
 - v0.6.1 - Reframed Epic L as a brownfield closure and Epic M readiness pass, adding an explicit parity inventory artifact and handoff-focused acceptance criteria while preserving the existing epic IDs and dependency order.
 - v0.6.0 - Selected bounded active Epics K, L, and M for ReAct loop completion, streaming/provider semantics, and tool/approval integration while deferring AI SDK bridge and host protocol work as next-focus topics.
-- v0.5.1 - Closed Epic J with SQLite hot-path cleanup, localized validation coverage, Run liveness spec deltas, and retention topology proof.
-- v0.5.0 - Rebased active scope after Epic I completion and inserted Runtime Foundation Hardening before deeper ReAct/runtime expansion.
 - ... [Older history truncated, refer to git logs]
 
 ## 1. Executive Summary & Active Critical Path
-- **Total Active Story Points:** 50
-- **Critical Path:** KRT-K001 -> KRT-K002 -> KRT-K003/KRT-K004 -> KRT-L001 -> KRT-L002 -> KRT-L003/KRT-L004 -> KRT-M001 -> KRT-M002 -> KRT-M003 -> KRT-M004 -> KRT-M005
-- **Planning Assumptions:** Epic J is complete. The focused ReAct Driver foundation slice exists in repo reality, but the production-depth ReAct path must be completed in bounded engineering epics that stay below the `10,000` LOC warning threshold and aim near `5,000` LOC when possible. Runtime/model streaming semantics are driver/provider implementation work, not host adapter work.
+- **Total Active Story Points:** 0
+- **Critical Path:** None. Epics K-M are closed in current repo reality; the next critical path begins only when a separate planning pass activates Epic N.
+- **Planning Assumptions:** Epics J-M are complete. The canonical ReAct driver/provider/runtime-core path is now implementation-proven, while AI SDK bridge and host protocol work remain intentionally deferred.
 
 ### Brownfield Continuity Note
 - The current codebase already contains the workspace scaffold, shared core types, kernel protocol package, memory backend, SQLite backend, kernel testkit, shared framework contract packages, provider contract package, `runtime-core`, and the ReAct Driver foundation package.
-- Current repository reality already includes broad ReAct streaming and runtime-core reconciliation coverage in `framework-driver-react` and `framework-runtime-core`; Epic L now closes, records, and hardens that behavior for a safe handoff into Epic M.
-- This revision activates the next ReAct implementation band as three bounded epics: loop correctness first, streaming/provider semantics second, and tool/approval integration third.
-- AI SDK bridge and host protocol/playground work remain intentionally deferred until K-M prove the canonical ReAct execution path.
+- Current repository reality now includes closed Epic K, L, and M behavior with explicit closure artifacts in `constitution/spikes/epic-k-react-loop-cancellation-inventory.md`, `constitution/spikes/epic-l-parity-inventory.md`, and `constitution/spikes/epic-m-tool-approval-gap-inventory.md`.
+- Shared runtime-core and ReAct driver validation now covers loop closure, streaming/provider semantics, tool continuation, approval pause/resume, edited/rejected decisions, and durable audit trace behavior for edited approvals.
+- The graph and ticket list below are retained as archived execution traceability for K-M; they no longer represent live active implementation scope.
+- AI SDK bridge and host protocol/playground work remain intentionally deferred until a new planning pass activates them.
 
 ### Planning Heuristic
 - Prefer epic slices that look likely to land comfortably below roughly `5,000` lines of new code and treat roughly `10,000` lines as a warning threshold.
@@ -28,9 +28,8 @@
 - This section uses "iteration strategy" only because the planning framework requires that heading; the content below is dependency phasing and scope partitioning, not a commitment to Scrum-style iterations.
 
 ### Current Active Scope
-- Epic K completes the ReAct loop over the existing provider-neutral contract and shared runtime-core execution shell.
-- Epic L closes and codifies runtime/model streaming semantics in the ReAct driver and provider contract path, including an explicit parity inventory and the handoff invariants Epic M will rely on.
-- Epic M completes ReAct tool continuation and approval integration through shared runtime-core services.
+- No active implementation epic is open in this plan revision.
+- Epics K-M are archived as complete and validated; the next active scope begins with Epic N when the repo is ready to activate provider-bridge work.
 
 ### Future / Deferred Scope
 - Epic N will focus next on the AI SDK provider bridge baseline after K-M prove the canonical driver/provider path. It must begin with compatibility verification for the pinned `ai@6.0.142` and `@ai-sdk/provider@3.0.8` surface before bridge implementation.
@@ -48,6 +47,9 @@
 - Epic H delivered the docs-first shared framework foundations, including the minimal shared-core contract realignment and `runtime-core`.
 - Epic I delivered the first focused ReAct Driver foundation slice.
 - Epic J delivered Runtime Foundation Hardening: SQLite hot-path characterization, localized transaction validation, backend-local lineage metadata and indexes, explicit diagnostic validation, Run liveness spec deltas, and retention topology proof.
+- Epic K delivered ReAct loop completion, cancellation boundaries, and the loop-closure inventory artifact.
+- Epic L delivered streaming/provider parity closure and the parity inventory artifact.
+- Epic M delivered ReAct tool continuation, approval pause/resume, edited and rejected approval handling, partial batch durability, and the tool-and-approval inventory artifact.
 
 ## 3. Build Order (Mermaid)
 ```mermaid

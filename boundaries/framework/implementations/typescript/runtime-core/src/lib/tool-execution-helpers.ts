@@ -35,6 +35,7 @@ import Ajv from "ajv";
 import type { ExtensionStateUpdate } from "./extension-runtime.js";
 import { cloneSnapshotPreservingFunctions } from "./runtime-core-shared.js";
 import type {
+  EditedApprovalAudit,
   ExecutableToolCall,
   OrderedExecutableToolCall,
   RawSingleToolOutcome,
@@ -51,6 +52,13 @@ const ajv = new Ajv({
   strict: false,
 });
 const validatorCache = new WeakMap<object, ValidateFunction>();
+
+interface ApprovalResultMetadata {
+  editedInput?: unknown;
+  message?: string;
+  originalInput?: unknown;
+  type: string;
+}
 
 // This remains throw-based intentionally: aroundTool handlers receive
 // `next(): Promise<ToolResultPart>`, so a nested pause has no value-level way to
@@ -195,6 +203,7 @@ export function toExecutableToolCall(
   }
 
   return {
+    approvalAudit: base.approvalAudit,
     approvalDecision: nextContext.approvalDecision ?? base.approvalDecision,
     input: nextContext.input,
     tool: nextContext.tool,
@@ -355,11 +364,14 @@ export function validateToolInput(
 
 export function applyApprovalDecisionMetadata(
   result: ToolResultPart,
-  decision: ApprovalDecision | undefined
+  decision: ApprovalDecision | undefined,
+  audit: EditedApprovalAudit | undefined
 ): ToolResultPart {
+  const approval = createApprovalResultMetadata(decision, audit);
+
   if (
+    approval === undefined ||
     decision === undefined ||
-    decision.message === undefined ||
     decision.type === "reject" ||
     !isExecutableApprovalDecision(decision)
   ) {
@@ -369,10 +381,7 @@ export function applyApprovalDecisionMetadata(
   return {
     ...result,
     output: {
-      approval: {
-        message: decision.message,
-        type: decision.type,
-      },
+      approval,
       result: result.output,
     },
   };
@@ -403,17 +412,12 @@ export function createRejectedToolResult(
 export function createExecutionFailureResult(
   toolCall: ToolCallPart,
   error: unknown,
-  decision: ApprovalDecision | undefined
+  decision: ApprovalDecision | undefined,
+  audit: EditedApprovalAudit | undefined
 ): ToolResultPart {
   const message =
     error instanceof Error ? error.message : `Tool "${toolCall.name}" failed.`;
-  const approval =
-    decision === undefined
-      ? undefined
-      : {
-          message: decision.message,
-          type: decision.type,
-        };
+  const approval = createApprovalResultMetadata(decision, audit);
 
   return {
     callId: toolCall.callId,
@@ -431,15 +435,10 @@ export function createErrorToolResult(
   toolCall: ToolCallPart,
   message: string,
   details?: unknown,
-  decision?: ApprovalDecision
+  decision?: ApprovalDecision,
+  audit?: EditedApprovalAudit
 ): ToolResultPart {
-  const approval =
-    decision?.message === undefined
-      ? undefined
-      : {
-          message: decision.message,
-          type: decision.type,
-        };
+  const approval = createApprovalResultMetadata(decision, audit);
 
   return {
     callId: toolCall.callId,
@@ -452,6 +451,37 @@ export function createErrorToolResult(
       ...(approval === undefined ? {} : { approval }),
     },
     type: "tool_result",
+  };
+}
+
+function createApprovalResultMetadata(
+  decision: ApprovalDecision | undefined,
+  audit: EditedApprovalAudit | undefined
+): ApprovalResultMetadata | undefined {
+  if (decision === undefined) {
+    return undefined;
+  }
+
+  if (decision.type === "edit") {
+    return {
+      ...(audit === undefined
+        ? {}
+        : {
+            editedInput: cloneValue(audit.editedInput),
+            originalInput: cloneValue(audit.originalInput),
+          }),
+      ...(decision.message === undefined ? {} : { message: decision.message }),
+      type: decision.type,
+    };
+  }
+
+  if (decision.message === undefined) {
+    return undefined;
+  }
+
+  return {
+    message: decision.message,
+    type: decision.type,
   };
 }
 

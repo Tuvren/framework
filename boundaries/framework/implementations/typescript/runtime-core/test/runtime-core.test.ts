@@ -10756,7 +10756,12 @@ describe("framework-runtime-core", () => {
       expect(editedToolMessage.parts[0].isError).toBe(true);
       expect(editedToolMessage.parts[0].output).toEqual({
         approval: {
+          editedInput: { to: "ops@example.com" },
           message: "human note",
+          originalInput: {
+            subject: "Status update",
+            to: "ops@example.com",
+          },
           type: "edit",
         },
         details: {
@@ -10767,6 +10772,165 @@ describe("framework-runtime-core", () => {
       });
     }
     expect(hasAssistantText(messages, "Acknowledged invalid edit.")).toBe(true);
+    expect(resumedHandle.status().phase).toBe("completed");
+  });
+
+  test("executes edited approvals with the edited input and a durable audit trace", async () => {
+    const harness = createFakeKernelHarness();
+    const executedInputs: unknown[] = [];
+    const originalInput = {
+      subject: "Status update",
+      to: "ops@example.com",
+    };
+    const editedInput = {
+      subject: "Reviewed status update",
+      to: "review@example.com",
+    };
+    const driver = {
+      async execute(context) {
+        const toolMessages = context.messages.filter(
+          (message) => message.role === "tool"
+        );
+
+        if (toolMessages.length === 0) {
+          return {
+            messages: [
+              assistantToolCalls([
+                {
+                  callId: "call-email",
+                  input: originalInput,
+                  name: "email",
+                },
+              ]),
+            ],
+            resolution: {
+              type: "continue_iteration",
+            },
+          };
+        }
+
+        return {
+          messages: [assistantText("Acknowledged edited tool.")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createTuvrenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const pausedHandle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        name: "primary",
+        tools: [
+          {
+            approval: true,
+            description: "Send a status email",
+            execute(input) {
+              executedInputs.push(input);
+              return {
+                sent: true,
+                to:
+                  input !== null &&
+                  typeof input === "object" &&
+                  "to" in input &&
+                  typeof input.to === "string"
+                    ? input.to
+                    : "unknown",
+              };
+            },
+            inputSchema: {
+              properties: {
+                subject: { type: "string" },
+                to: { type: "string" },
+              },
+              required: ["to", "subject"],
+              type: "object",
+            },
+            name: "email",
+          },
+        ],
+      },
+      signal: textSignal("Edit this tool correctly"),
+      threadId: thread.threadId,
+    });
+
+    await collectEvents(pausedHandle.events());
+    const resumedHandle = pausedHandle.resolveApproval({
+      decisions: [
+        {
+          callId: "call-email",
+          editedInput,
+          message: "Use the reviewed recipient instead.",
+          type: "edit",
+        },
+      ],
+    });
+    const resumedEvents = await collectEvents(resumedHandle.events());
+    const messages = await harness.readBranchMessages(thread.branchId);
+    const assistantToolMessage = messages.find(
+      (message): message is Extract<TuvrenMessage, { role: "assistant" }> =>
+        typeof message === "object" &&
+        message !== null &&
+        "role" in message &&
+        message.role === "assistant" &&
+        "parts" in message &&
+        Array.isArray(message.parts) &&
+        message.parts.some(
+          (part) =>
+            part !== null &&
+            typeof part === "object" &&
+            "type" in part &&
+            part.type === "tool_call"
+        )
+    );
+    const editedToolMessage = messages.find(
+      (message): message is Extract<TuvrenMessage, { role: "tool" }> =>
+        typeof message === "object" &&
+        message !== null &&
+        "role" in message &&
+        message.role === "tool"
+    );
+
+    expect(executedInputs).toEqual([editedInput]);
+    expect(
+      resumedEvents.some(
+        (event) =>
+          event.type === "tool.start" &&
+          event.callId === "call-email" &&
+          JSON.stringify(event.input) === JSON.stringify(editedInput)
+      )
+    ).toBe(true);
+    expect(assistantToolMessage?.parts[0]?.type).toBe("tool_call");
+    if (assistantToolMessage?.parts[0]?.type === "tool_call") {
+      expect(assistantToolMessage.parts[0].input).toEqual(originalInput);
+    }
+    expect(editedToolMessage?.parts[0]?.type).toBe("tool_result");
+    if (editedToolMessage?.parts[0]?.type === "tool_result") {
+      expect(editedToolMessage.parts[0].output).toEqual({
+        approval: {
+          editedInput,
+          message: "Use the reviewed recipient instead.",
+          originalInput,
+          type: "edit",
+        },
+        result: {
+          sent: true,
+          to: "review@example.com",
+        },
+      });
+    }
+    expect(hasAssistantText(messages, "Acknowledged edited tool.")).toBe(true);
     expect(resumedHandle.status().phase).toBe("completed");
   });
 

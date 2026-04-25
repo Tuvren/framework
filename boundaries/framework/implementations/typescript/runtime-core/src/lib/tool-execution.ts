@@ -91,7 +91,13 @@ export interface ToolBatchOutcome {
   updates: ExtensionStateUpdate[];
 }
 
+export interface EditedApprovalAudit {
+  editedInput: unknown;
+  originalInput: unknown;
+}
+
 export interface ExecutableToolCall {
+  approvalAudit?: EditedApprovalAudit;
   approvalDecision?: ApprovalDecision;
   input: unknown;
   tool: TuvrenToolDefinition;
@@ -485,7 +491,13 @@ function resolveResumeDecision(
         {
           decisionType: decision.type,
         },
-        decision
+        decision,
+        decision.type === "edit"
+          ? {
+              editedInput: decision.editedInput,
+              originalInput: pendingToolCall.input,
+            }
+          : undefined
       ),
     };
   }
@@ -542,13 +554,21 @@ function resolveResumeDecision(
           decisionType: decision.type,
           validation: validation.details,
         },
-        decision
+        decision,
+        {
+          editedInput: input,
+          originalInput: pendingToolCall.input,
+        }
       ),
     };
   }
 
   return {
     executable: {
+      approvalAudit: {
+        editedInput: input,
+        originalInput: pendingToolCall.input,
+      },
       approvalDecision: decision,
       input: validation.value,
       tool,
@@ -609,7 +629,8 @@ async function executeSingleTool(
 
     const result = applyApprovalDecisionMetadata(
       outcome.result,
-      toolCall.approvalDecision
+      toolCall.approvalDecision,
+      toolCall.approvalAudit
     );
     const resultHash = await stageAndEmitResult(
       environment,
@@ -647,7 +668,8 @@ async function executeSingleTool(
     const result = createExecutionFailureResult(
       toolCall.toolCall,
       error,
-      toolCall.approvalDecision
+      toolCall.approvalDecision,
+      toolCall.approvalAudit
     );
     await settleToolStartIfNeeded(toolStartState, startBarrier);
     const resultHash = await stageAndEmitResult(
@@ -902,9 +924,10 @@ async function runAroundToolHandlers(
 
     return {
       result: createExecutionFailureResult(
-        context.toolCall,
+        toolCall.toolCall,
         error,
-        context.approvalDecision
+        toolCall.approvalDecision,
+        toolCall.approvalAudit
       ),
       updates: nestedUpdates,
     };

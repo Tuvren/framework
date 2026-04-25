@@ -3260,9 +3260,7 @@ describe("driver-react", () => {
     const events = await collectEvents(handle.events());
     const messages = await harness.readBranchMessages(thread.branchId);
     const messageDoneEvent = events.find(
-      (
-        event
-      ): event is Extract<TuvrenStreamEvent, { type: "message.done" }> =>
+      (event): event is Extract<TuvrenStreamEvent, { type: "message.done" }> =>
         event.type === "message.done"
     );
 
