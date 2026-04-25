@@ -541,7 +541,7 @@ describe("provider-bridge-ai-sdk", () => {
     ).rejects.toBeInstanceOf(TuvrenProviderError);
   });
 
-  test("rejects non-JSON default provider options", async () => {
+  test("rejects non-JSON default provider options", () => {
     expect(() =>
       createAiSdkProviderBridge({
         defaultProviderOptions: {
@@ -551,9 +551,7 @@ describe("provider-bridge-ai-sdk", () => {
         } as unknown as SharedV3ProviderOptions,
         model: createMockModel(),
       })
-    ).toThrow(
-      "AI SDK bridge JSON object values must be JSON-serializable"
-    );
+    ).toThrow("AI SDK bridge JSON object values must be JSON-serializable");
   });
 
   test("rejects mismatched prompt providers", async () => {
@@ -795,6 +793,55 @@ describe("provider-bridge-ai-sdk", () => {
       )
     ).rejects.toThrow(
       "AI SDK stream emitted a complete tool-call with a mismatched incremental tool-input id"
+    );
+  });
+
+  test("rejects same-id complete streamed tool calls that conflict with buffered incremental input", async () => {
+    const bridge = createAiSdkProviderBridge({
+      model: createMockModel({
+        async doStream() {
+          await Promise.resolve();
+          return {
+            stream: streamFromParts([
+              {
+                id: "call-1",
+                toolName: "search",
+                type: "tool-input-start",
+              },
+              {
+                delta: '{"query":"draft"}',
+                id: "call-1",
+                type: "tool-input-delta",
+              },
+              {
+                id: "call-1",
+                type: "tool-input-end",
+              },
+              {
+                input: '{"query":"final"}',
+                toolCallId: "call-1",
+                toolName: "search",
+                type: "tool-call",
+              },
+            ]),
+          };
+        },
+      }),
+    });
+
+    await expect(
+      collectAsyncIterable(
+        bridge.stream({
+          messages: [
+            {
+              parts: [{ text: "Hello", type: "text" }],
+              role: "user",
+            },
+          ],
+        })
+      )
+    ).rejects.toThrow(
+      "AI SDK stream emitted a complete tool-call that conflicts with the incremental tool-input state"
     );
   });
 

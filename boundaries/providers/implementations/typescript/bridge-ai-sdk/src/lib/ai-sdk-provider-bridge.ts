@@ -544,8 +544,29 @@ function assertToolCallCorrelation(
   part: Extract<LanguageModelV3StreamPart, { type: "tool-call" }>,
   state: StreamMappingState
 ): void {
-  if (state.toolStates.has(part.toolCallId)) {
-    return;
+  const existingState = state.toolStates.get(part.toolCallId);
+
+  if (existingState != null) {
+    if (
+      existingState.name === part.toolName &&
+      existingState.inputBuffer === part.input
+    ) {
+      return;
+    }
+
+    throw bridgeError(
+      "AI SDK stream emitted a complete tool-call that conflicts with the incremental tool-input state",
+      "unsupported_ai_sdk_stream_part",
+      {
+        expectedInput: existingState.inputBuffer,
+        expectedToolName: existingState.name,
+        modelId: state.model.modelId,
+        provider: state.model.provider,
+        receivedInput: part.input,
+        receivedToolCallId: part.toolCallId,
+        receivedToolName: part.toolName,
+      }
+    );
   }
 
   const correlatedIds = [...state.toolStates.entries()]

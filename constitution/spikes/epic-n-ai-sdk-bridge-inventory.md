@@ -61,7 +61,9 @@ without rediscovering AI SDK provider behavior.
     separate complete `tool-call` part
   - when a provider emits both incremental `tool-input-*` parts and a complete
     `tool-call`, the bridge expects the same provider call identity for both
-    surfaces; mismatches fail fast instead of duplicating a canonical tool call
+    surfaces, and the final complete `tool-call` name/input must match the
+    buffered incremental state for that identity; mismatches fail fast instead
+    of duplicating or mutating a canonical tool call
   - `stream-start`, `response-metadata`, `source`, `raw`, and detailed usage are
     preserved under finish metadata
 
@@ -91,5 +93,9 @@ without rediscovering AI SDK provider behavior.
   files requires a new upstream contract change before adapter work begins.
 
 ## Validation Targets
+- `bun run lint`
+- `bun run typecheck`
 - `bun run nx run providers-bridge-ai-sdk:typecheck`
 - `bun run nx run providers-bridge-ai-sdk:test`
+- `bun run nx run providers-bridge-ai-sdk:exports-smoke`
+- `bun run nx run framework-runtime-core:test`
