@@ -616,13 +616,16 @@ function resolveIterationDecision(
   requestsTools: boolean
 ): IterationDecision {
   const decision =
-    config.loopPolicy?.evaluate(
-      cloneValue(response),
-      cloneValue(manifest),
-      iterationCount
-    ) ?? defaultIterationDecision(response);
+    config.loopPolicy === undefined
+      ? defaultIterationDecision(response)
+      : config.loopPolicy.evaluate(
+          cloneValue(response),
+          cloneValue(manifest),
+          iterationCount
+        );
 
   if (
+    !isRecord(decision) ||
     typeof decision.continue !== "boolean" ||
     typeof decision.executeTools !== "boolean" ||
     (decision.reason !== undefined && typeof decision.reason !== "string")

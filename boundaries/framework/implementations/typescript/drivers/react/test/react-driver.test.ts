@@ -524,6 +524,47 @@ describe("driver-react", () => {
     });
   });
 
+  test("fails hard when loopPolicy returns a non-object value", async () => {
+    const provider = {
+      async generate() {
+        return {
+          finishReason: "stop",
+          parts: [{ text: "bad primitive decision", type: "text" }],
+        } satisfies TuvrenModelResponse;
+      },
+      id: "provider",
+      async *stream() {
+        yield* [];
+      },
+    } satisfies TuvrenProvider;
+    const driver = createReActDriver({
+      providerCallMode: "generate",
+    }).create();
+
+    const result = await driver.execute(
+      createDriverExecutionContext({
+        config: {
+          loopPolicy: {
+            evaluate() {
+              return JSON.parse("null");
+            },
+          },
+          model: provider,
+          name: "primary",
+        },
+      })
+    );
+
+    expect(result.resolution.type).toBe("fail");
+    if (result.resolution.type !== "fail") {
+      throw new Error("expected a failed resolution");
+    }
+    expect(result.resolution.fatality).toBe("hard");
+    expect(result.resolution.error).toMatchObject({
+      code: "invalid_loop_policy",
+    });
+  });
+
   test("fails hard with a stable contract error when generate returns a malformed response", async () => {
     const provider = {
       async generate() {
