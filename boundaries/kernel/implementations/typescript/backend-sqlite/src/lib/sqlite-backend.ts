@@ -1359,8 +1359,14 @@ function createRepositories(
     stagedResults: {
       clearRun(runId) {
         assertTransactionActive();
-        db.prepare("DELETE FROM staged_results WHERE run_id = ?").run(runId);
-        writeTracker.recordStagedResultClear(runId);
+        const result = db
+          .prepare("DELETE FROM staged_results WHERE run_id = ?")
+          .run(runId);
+
+        if (result.changes > 0) {
+          writeTracker.recordStagedResultClear(runId);
+        }
+
         return Promise.resolve();
       },
       get(runId, taskId) {
@@ -2808,23 +2814,31 @@ function computeExpectedTurnNodeLineageMetadataInDatabase(
   db: Database.Database,
   turnNode: StoredTurnNode
 ): TurnNodeLineageMetadata {
-  if (turnNode.previousTurnNodeHash === null) {
-    return {
-      depth: 0,
-      rootTurnNodeHash: turnNode.hash,
-      turnNodeHash: turnNode.hash,
-    };
+  const visitedTurnNodeHashes = new Set<string>();
+  let currentTurnNode = turnNode;
+  let depth = 0;
+
+  while (currentTurnNode.previousTurnNodeHash !== null) {
+    if (visitedTurnNodeHashes.has(currentTurnNode.hash)) {
+      throw persistenceError(
+        "turn node lineage must not contain cycles",
+        "sqlite_backend_turn_node_lineage_cycle",
+        { turnNodeHash: turnNode.hash }
+      );
+    }
+
+    visitedTurnNodeHashes.add(currentTurnNode.hash);
+    currentTurnNode = ensureTurnNodeExistsInDatabase(
+      db,
+      currentTurnNode.previousTurnNodeHash,
+      "turnNode.previousTurnNodeHash"
+    );
+    depth += 1;
   }
 
-  const previousMetadata = ensureTurnNodeLineageMetadataInDatabase(
-    db,
-    turnNode.previousTurnNodeHash,
-    "turnNode.previousTurnNodeHash"
-  );
-
   return {
-    depth: previousMetadata.depth + 1,
-    rootTurnNodeHash: previousMetadata.rootTurnNodeHash,
+    depth,
+    rootTurnNodeHash: currentTurnNode.hash,
     turnNodeHash: turnNode.hash,
   };
 }
@@ -3754,10 +3768,9 @@ function insertTurnNodeLineageMetadata(
   const previousMetadata =
     record.previousTurnNodeHash === null
       ? null
-      : ensureTurnNodeLineageMetadataInDatabase(
+      : getValidatedTurnNodeLineageMetadataInDatabase(
           db,
-          record.previousTurnNodeHash,
-          "record.previousTurnNodeHash"
+          record.previousTurnNodeHash
         );
   const metadata: TurnNodeLineageMetadata = {
     depth: previousMetadata === null ? 0 : previousMetadata.depth + 1,
@@ -3777,6 +3790,23 @@ function insertTurnNodeLineageMetadata(
       ) VALUES (?, ?, ?)
     `
   ).run(metadata.turnNodeHash, metadata.rootTurnNodeHash, metadata.depth);
+}
+
+function getValidatedTurnNodeLineageMetadataInDatabase(
+  db: Database.Database,
+  turnNodeHash: string
+): TurnNodeLineageMetadata {
+  const turnNode = ensureTurnNodeExistsInDatabase(
+    db,
+    turnNodeHash,
+    "record.previousTurnNodeHash"
+  );
+  validateTurnNodeLineageMetadataInDatabase(db, turnNode);
+  return ensureTurnNodeLineageMetadataInDatabase(
+    db,
+    turnNodeHash,
+    "record.previousTurnNodeHash"
+  );
 }
 
 function decodeObjectRow(row: SqliteObjectRow): StoredObject {

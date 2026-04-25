@@ -132,6 +132,7 @@ function createBenchmarkCases(
   let forwardBranchCounter = 0;
   let membershipBranchCounter = 0;
   let nonRootForwardBranchCounter = 0;
+  let objectWriteCounter = 0;
   let rollbackArchiveCounter = 0;
   let rollbackBranchCounter = 0;
   const rollbackBranches: Array<{
@@ -157,9 +158,15 @@ function createBenchmarkCases(
       name: "single object write transaction",
       async run(iterations) {
         for (let index = 0; index < iterations; index += 1) {
+          const objectIndex = objectWriteCounter;
+          objectWriteCounter += 1;
           const objectRecord = await createStoredObjectRecord(
-            new Uint8Array([historySize % 251, index % 251]),
-            10_000 + historySize + index
+            new Uint8Array([
+              historySize % 251,
+              objectIndex % 251,
+              Math.floor(objectIndex / 251) % 251,
+            ]),
+            10_000 + historySize * 1000 + objectIndex
           );
           await backend.transact(async (tx) => {
             await tx.objects.put(objectRecord);

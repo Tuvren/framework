@@ -951,6 +951,69 @@ describe("@tuvren/backend-sqlite", () => {
     deepStrictEqual(await backend.health(), { ok: true });
   });
 
+  test("keeps missing-run staged result clears idempotent", async () => {
+    const databasePath = createTempDatabasePath();
+    const backend = createSqliteBackend({ databasePath });
+
+    await backend.transact(async (tx) => {
+      await tx.stagedResults.clearRun("missing_run");
+    });
+
+    deepStrictEqual(await backend.health(), { ok: true });
+  });
+
+  test("rejects appending turn nodes from stale lineage metadata", async () => {
+    const seeded = await seedCorruptionDatabase();
+    const backend = createSqliteBackend({ databasePath: seeded.databasePath });
+    const childTurnNode = await createStoredTurnNodeRecord({
+      consumedStagedResults: [],
+      createdAtMs: 12,
+      eventHash: null,
+      previousTurnNodeHash: seeded.runStartTurnNodeHash,
+      schemaId: "schema_main",
+      turnTreeHash: seeded.turnTreeHash,
+    });
+    const probe = new Database(seeded.databasePath);
+    probe
+      .prepare(
+        `
+          UPDATE turn_node_lineage_roots
+          SET root_turn_node_hash = turn_node_hash,
+              depth = 0
+          WHERE turn_node_hash = ?
+        `
+      )
+      .run(seeded.runStartTurnNodeHash);
+    probe.close();
+
+    await rejects(
+      backend.transact(async (tx) => {
+        await tx.turnNodes.put(childTurnNode);
+      }),
+      LINEAGE_METADATA_ERROR_PATTERN
+    );
+
+    const readonlyProbe = new Database(seeded.databasePath, { readonly: true });
+    try {
+      strictEqual(
+        readonlyProbe
+          .prepare("SELECT 1 FROM turn_nodes WHERE hash = ?")
+          .get(childTurnNode.hash),
+        undefined
+      );
+      strictEqual(
+        readonlyProbe
+          .prepare(
+            "SELECT 1 FROM turn_node_lineage_roots WHERE turn_node_hash = ?"
+          )
+          .get(childTurnNode.hash),
+        undefined
+      );
+    } finally {
+      readonlyProbe.close();
+    }
+  });
+
   test("reports unhealthy status when required schema tables are missing", async () => {
     const databasePath = createTempDatabasePath();
     const backend = createSqliteBackend({ databasePath });

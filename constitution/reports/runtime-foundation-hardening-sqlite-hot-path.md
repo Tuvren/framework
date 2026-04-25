@@ -30,7 +30,9 @@ bun run nx run backend-sqlite:bench
 The target compiles the TypeScript benchmark with `tsc` and runs the emitted
 JavaScript with Node.js because `better-sqlite3@12.8.0` is a native Node addon
 binding. The benchmark prints human-readable lines and a JSON summary with
-best, median, p95, and average timings.
+best, median, p95, and average timings. The single-object write case generates
+fresh object hashes across warmup and timed samples so the measured write path
+is a new object write rather than an idempotent existing-object put.
 
 ## Benchmark Results
 
@@ -40,14 +42,14 @@ landed.
 
 | Case | History | Baseline best per iter | After best per iter |
 | --- | ---: | ---: | ---: |
-| no-op transaction | 0 TurnNodes | 3.886ms | 13.974us |
-| single object write transaction | 0 TurnNodes | 5.671ms | 400.607us |
-| no-op transaction | 100 TurnNodes | 20.866ms | 12.431us |
-| single object write transaction | 100 TurnNodes | 21.767ms | 345.953us |
-| no-op transaction | 500 TurnNodes | 87.783ms | 10.888us |
-| single object write transaction | 500 TurnNodes | 83.864ms | 353.061us |
-| no-op transaction | 1000 TurnNodes | 164.985ms | 11.107us |
-| single object write transaction | 1000 TurnNodes | 161.297ms | 308.258us |
+| no-op transaction | 0 TurnNodes | 3.886ms | 14.148us |
+| single object write transaction | 0 TurnNodes | 5.671ms | 423.467us |
+| no-op transaction | 100 TurnNodes | 20.866ms | 13.105us |
+| single object write transaction | 100 TurnNodes | 21.767ms | 328.726us |
+| no-op transaction | 500 TurnNodes | 87.783ms | 6.575us |
+| single object write transaction | 500 TurnNodes | 83.864ms | 197.743us |
+| no-op transaction | 1000 TurnNodes | 164.985ms | 6.531us |
+| single object write transaction | 1000 TurnNodes | 161.297ms | 185.088us |
 
 The target claim is narrow: ordinary transactions no longer pay for a full
 database reload and full-state validation. Lineage-sensitive operations are
@@ -62,27 +64,27 @@ path remains visible over time.
 
 | Case | History | After best per iter |
 | --- | ---: | ---: |
-| deep branch membership transaction | 0 TurnNodes | 375.589us |
-| deep branch forward transaction | 0 TurnNodes | 520.383us |
-| deep branch non-root forward transaction | 0 TurnNodes | 513.357us |
-| deep branch non-root rollback transaction | 0 TurnNodes | 326.480us |
-| deep branch membership transaction | 100 TurnNodes | 338.513us |
-| deep branch forward transaction | 100 TurnNodes | 577.918us |
-| deep branch non-root forward transaction | 100 TurnNodes | 857.717us |
-| deep branch non-root rollback transaction | 100 TurnNodes | 1.332ms |
-| deep branch membership transaction | 500 TurnNodes | 322.393us |
-| deep branch forward transaction | 500 TurnNodes | 537.660us |
-| deep branch non-root forward transaction | 500 TurnNodes | 1.332ms |
-| deep branch non-root rollback transaction | 500 TurnNodes | 2.052ms |
-| deep branch membership transaction | 1000 TurnNodes | 320.788us |
-| deep branch forward transaction | 1000 TurnNodes | 527.045us |
-| deep branch non-root forward transaction | 1000 TurnNodes | 1.966ms |
-| deep branch non-root rollback transaction | 1000 TurnNodes | 3.027ms |
+| deep branch membership transaction | 0 TurnNodes | 376.745us |
+| deep branch forward transaction | 0 TurnNodes | 525.368us |
+| deep branch non-root forward transaction | 0 TurnNodes | 507.016us |
+| deep branch non-root rollback transaction | 0 TurnNodes | 331.600us |
+| deep branch membership transaction | 100 TurnNodes | 327.950us |
+| deep branch forward transaction | 100 TurnNodes | 561.919us |
+| deep branch non-root forward transaction | 100 TurnNodes | 843.066us |
+| deep branch non-root rollback transaction | 100 TurnNodes | 1.295ms |
+| deep branch membership transaction | 500 TurnNodes | 195.418us |
+| deep branch forward transaction | 500 TurnNodes | 307.386us |
+| deep branch non-root forward transaction | 500 TurnNodes | 801.723us |
+| deep branch non-root rollback transaction | 500 TurnNodes | 1.192ms |
+| deep branch membership transaction | 1000 TurnNodes | 228.236us |
+| deep branch forward transaction | 1000 TurnNodes | 328.644us |
+| deep branch non-root forward transaction | 1000 TurnNodes | 1.278ms |
+| deep branch non-root rollback transaction | 1000 TurnNodes | 1.829ms |
 
 The first recursive-CTE-only lineage run measured `2.891ms/iter` for 1000-depth
 membership and `8.154ms/iter` for 1000-depth forward Branch movement. The
-lineage root/depth index reduced those cases to `320.788us/iter` and
-`527.045us/iter`, respectively, in the latest run.
+lineage root/depth index reduced those cases to `228.236us/iter` and
+`328.644us/iter`, respectively, in the latest run.
 
 Non-root ancestry checks can still require bounded parent-chain traversal. The
 benchmark now includes non-root forward and rollback cases so that bounded CTE
