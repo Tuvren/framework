@@ -65,6 +65,8 @@ const ORDERED_PATH_CHUNK_THRESHOLD = 32;
 const ORDERED_PATH_CHUNK_SIZE = 32;
 const SQLITE_BUSY_TIMEOUT_MS = 5000;
 const INITIAL_SCHEMA_MIGRATION_NAME = "0001_initial_schema.sql";
+const TARGETED_VALIDATION_MIGRATION_NAME =
+  "0002_targeted_validation_indexes.sql";
 const INITIAL_SCHEMA_REQUIRED_TABLES = [
   "objects",
   "schemas",
@@ -93,6 +95,15 @@ const INITIAL_SCHEMA_REQUIRED_INDEXES = [
   "idx_runs_branch_id_status",
   "idx_staged_results_run_id_status",
   "idx_staged_results_object_hash",
+] as const;
+const TARGETED_VALIDATION_REQUIRED_TABLES = [
+  "turn_node_lineage_roots",
+] as const;
+const TARGETED_VALIDATION_REQUIRED_INDEXES = [
+  "idx_turn_node_lineage_roots_root_depth",
+  "idx_threads_root_turn_node_hash",
+  "idx_branches_archived_from_branch_id",
+  "idx_turns_thread_branch_head_turn_node",
 ] as const;
 const SQLITE_TRANSIENT_MEMORY_PATH = ":memory:";
 
@@ -655,6 +666,70 @@ const INITIAL_SCHEMA_INDEX_DEFINITIONS = {
   (typeof INITIAL_SCHEMA_REQUIRED_INDEXES)[number],
   ExpectedSqliteIndexSchema
 >;
+const TARGETED_VALIDATION_TABLE_DEFINITIONS = {
+  turn_node_lineage_roots: {
+    columns: [
+      {
+        name: "turn_node_hash",
+        notNull: false,
+        primaryKeyOrder: 1,
+        type: "TEXT",
+      },
+      {
+        name: "root_turn_node_hash",
+        notNull: true,
+        primaryKeyOrder: 0,
+        type: "TEXT",
+      },
+      {
+        name: "depth",
+        notNull: true,
+        primaryKeyOrder: 0,
+        type: "INTEGER",
+      },
+    ],
+    foreignKeys: [
+      {
+        columns: ["turn_node_hash"],
+        referencedColumns: ["hash"],
+        referencedTable: "turn_nodes",
+      },
+      {
+        columns: ["root_turn_node_hash"],
+        referencedColumns: ["hash"],
+        referencedTable: "turn_nodes",
+      },
+    ],
+  },
+} as const satisfies Record<
+  (typeof TARGETED_VALIDATION_REQUIRED_TABLES)[number],
+  ExpectedSqliteTableSchema
+>;
+const TARGETED_VALIDATION_INDEX_DEFINITIONS = {
+  idx_branches_archived_from_branch_id: {
+    columns: ["archived_from_branch_id"],
+    tableName: "branches",
+    unique: false,
+  },
+  idx_threads_root_turn_node_hash: {
+    columns: ["root_turn_node_hash"],
+    tableName: "threads",
+    unique: true,
+  },
+  idx_turn_node_lineage_roots_root_depth: {
+    columns: ["root_turn_node_hash", "depth"],
+    tableName: "turn_node_lineage_roots",
+    unique: false,
+  },
+  idx_turns_thread_branch_head_turn_node: {
+    columns: ["thread_id", "branch_id", "head_turn_node_hash"],
+    tableName: "turns",
+    unique: false,
+  },
+} as const satisfies Record<
+  (typeof TARGETED_VALIDATION_REQUIRED_INDEXES)[number],
+  ExpectedSqliteIndexSchema
+>;
 
 interface BackendState {
   branches: Map<string, StoredBranch>;
@@ -668,6 +743,12 @@ interface BackendState {
   turns: Map<string, StoredTurn>;
   turnTreePaths: Map<string, Map<string, StoredTurnTreePath>>;
   turnTrees: Map<string, StoredTurnTree>;
+}
+
+interface TurnNodeLineageMetadata {
+  depth: number;
+  rootTurnNodeHash: string;
+  turnNodeHash: string;
 }
 
 interface MutableRepositories extends KrakenBackendTx {
@@ -761,6 +842,18 @@ interface SqliteTurnNodeRow {
   turn_tree_hash: string;
 }
 
+interface SqliteTurnNodeLineageRootRow {
+  depth: number;
+  root_turn_node_hash: string;
+  turn_node_hash: string;
+}
+
+interface SqliteTurnNodeLineageProofRow {
+  depth: number;
+  hash: string;
+  previous_turn_node_hash: string | null;
+}
+
 interface SqliteThreadRow {
   created_at_ms: number;
   root_turn_node_hash: string;
@@ -829,6 +922,104 @@ export interface SqliteBackendOptions {
   now?: () => EpochMs;
 }
 
+interface TrackedRecord<T> {
+  after: T | null;
+  before: T | null;
+}
+
+class TransactionWriteTracker {
+  readonly branchIdsForActiveRunValidation = new Set<string>();
+  readonly branchWrites = new Map<string, TrackedRecord<StoredBranch>>();
+  readonly runIds = new Set<string>();
+  readonly stagedResultRunIds = new Set<string>();
+  readonly threadIds = new Set<string>();
+  readonly turnIds = new Set<string>();
+  readonly turnIdsForDependentValidation = new Set<string>();
+  readonly turnNodeHashes = new Set<string>();
+  readonly turnTreeHashes = new Set<string>();
+
+  captureBranchBaseline(
+    db: Database.Database,
+    branchId: string
+  ): StoredBranch | null {
+    const existing = this.branchWrites.get(branchId);
+
+    if (existing !== undefined) {
+      return existing.before === null
+        ? null
+        : cloneStoredBranch(existing.before);
+    }
+
+    const before = selectBranch(db, branchId);
+    this.branchWrites.set(branchId, {
+      after: before === null ? null : cloneStoredBranch(before),
+      before: before === null ? null : cloneStoredBranch(before),
+    });
+
+    return before === null ? null : cloneStoredBranch(before);
+  }
+
+  recordBranchSet(before: StoredBranch | null, after: StoredBranch): void {
+    const existing = this.branchWrites.get(after.branchId);
+    this.branchWrites.set(after.branchId, {
+      after: cloneStoredBranch(after),
+      before:
+        existing?.before ??
+        (before === null ? null : cloneStoredBranch(before)),
+    });
+    this.branchIdsForActiveRunValidation.add(after.branchId);
+
+    if (after.archivedFromBranchId !== undefined) {
+      this.branchIdsForActiveRunValidation.add(after.archivedFromBranchId);
+    }
+  }
+
+  recordRunSet(before: StoredRun | null, after: StoredRun): void {
+    this.runIds.add(after.runId);
+    this.stagedResultRunIds.add(after.runId);
+    this.branchIdsForActiveRunValidation.add(after.branchId);
+
+    if (before !== null) {
+      this.branchIdsForActiveRunValidation.add(before.branchId);
+    }
+  }
+
+  recordStagedResultSet(record: StoredStagedResult): void {
+    this.stagedResultRunIds.add(record.runId);
+    this.runIds.add(record.runId);
+  }
+
+  recordStagedResultClear(runId: string): void {
+    this.stagedResultRunIds.add(runId);
+    this.runIds.add(runId);
+  }
+
+  recordThreadPut(record: StoredThread): void {
+    this.threadIds.add(record.threadId);
+  }
+
+  recordTurnSet(before: StoredTurn | null, after: StoredTurn): void {
+    this.turnIds.add(after.turnId);
+    this.branchIdsForActiveRunValidation.add(after.branchId);
+
+    if (before !== null && before.headTurnNodeHash !== after.headTurnNodeHash) {
+      this.turnIdsForDependentValidation.add(after.turnId);
+    }
+  }
+
+  recordTurnNodePut(record: StoredTurnNode): void {
+    this.turnNodeHashes.add(record.hash);
+  }
+
+  recordTurnTreePathWrite(turnTreeHash: string): void {
+    this.turnTreeHashes.add(turnTreeHash);
+  }
+
+  recordTurnTreePut(record: StoredTurnTree): void {
+    this.turnTreeHashes.add(record.hash);
+  }
+}
+
 class SqliteBackend implements KrakenBackend {
   private readonly db: Database.Database;
   private readonly now: () => number;
@@ -890,12 +1081,13 @@ class SqliteBackend implements KrakenBackend {
       let active = false;
       try {
         this.db.exec("BEGIN IMMEDIATE");
-        const baseState = await loadValidatedState(this.db);
+        const writeTracker = new TransactionWriteTracker();
         active = true;
         const repositories = createRepositories(
           this.db,
           this.now,
-          () => active && this.transactionContext.getStore() === true
+          () => active && this.transactionContext.getStore() === true,
+          writeTracker
         );
 
         try {
@@ -903,7 +1095,7 @@ class SqliteBackend implements KrakenBackend {
             work(repositories)
           );
           active = false;
-          await loadValidatedState(this.db, baseState);
+          validateTransactionWriteSet(this.db, writeTracker);
           this.db.exec("COMMIT");
           return result;
         } catch (error: unknown) {
@@ -940,7 +1132,8 @@ export function createSqliteBackend(
 function createRepositories(
   db: Database.Database,
   now: () => number,
-  isTransactionActive: () => boolean
+  isTransactionActive: () => boolean,
+  writeTracker: TransactionWriteTracker
 ): MutableRepositories {
   const assertTransactionActive = (): void => {
     if (!isTransactionActive()) {
@@ -981,6 +1174,7 @@ function createRepositories(
             record.archivedFromBranchId,
             "record.archivedFromBranchId"
           );
+          writeTracker.captureBranchBaseline(db, record.archivedFromBranchId);
         }
 
         const existingBranch = selectBranch(db, record.branchId);
@@ -1039,6 +1233,7 @@ function createRepositories(
           record.createdAtMs,
           record.updatedAtMs
         );
+        writeTracker.recordBranchSet(existingBranch, record);
 
         return Promise.resolve();
       },
@@ -1189,6 +1384,7 @@ function createRepositories(
           record.createdAtMs,
           record.updatedAtMs
         );
+        writeTracker.recordRunSet(existingRun, record);
 
         return Promise.resolve();
       },
@@ -1233,7 +1429,14 @@ function createRepositories(
     stagedResults: {
       clearRun(runId) {
         assertTransactionActive();
-        db.prepare("DELETE FROM staged_results WHERE run_id = ?").run(runId);
+        const result = db
+          .prepare("DELETE FROM staged_results WHERE run_id = ?")
+          .run(runId);
+
+        if (result.changes > 0) {
+          writeTracker.recordStagedResultClear(runId);
+        }
+
         return Promise.resolve();
       },
       get(runId, taskId) {
@@ -1293,6 +1496,7 @@ function createRepositories(
             : null,
           record.createdAtMs
         );
+        writeTracker.recordStagedResultSet(record);
 
         return Promise.resolve();
       },
@@ -1341,6 +1545,7 @@ function createRepositories(
           record.rootTurnNodeHash,
           record.createdAtMs
         );
+        writeTracker.recordThreadPut(record);
 
         return Promise.resolve();
       },
@@ -1409,6 +1614,8 @@ function createRepositories(
           record.eventHash,
           record.createdAtMs
         );
+        insertTurnNodeLineageMetadata(db, record);
+        writeTracker.recordTurnNodePut(record);
       },
     },
     turnTreePaths: {
@@ -1441,6 +1648,7 @@ function createRepositories(
 
           seenCompositeKeys.add(compositeKey);
           await insertTurnTreePathBatchEntry(db, record, now);
+          writeTracker.recordTurnTreePathWrite(record.turnTreeHash);
         }
       },
     },
@@ -1488,6 +1696,7 @@ function createRepositories(
           bufferFromBytes(record.manifestCbor),
           record.createdAtMs
         );
+        writeTracker.recordTurnTreePut(record);
       },
     },
     turns: {
@@ -1587,6 +1796,7 @@ function createRepositories(
           record.createdAtMs,
           record.updatedAtMs
         );
+        writeTracker.recordTurnSet(existingTurn, record);
 
         return Promise.resolve();
       },
@@ -1781,6 +1991,8 @@ function runMigrations(db: Database.Database, now: () => number): void {
   const migrationDirectory = resolveMigrationDirectory();
   const migrationFiles = listMigrationFiles(migrationDirectory);
 
+  validateMigrationState(db);
+
   for (const fileName of migrationFiles) {
     if (applied.has(fileName)) {
       continue;
@@ -1837,12 +2049,20 @@ function validateMigrationState(db: Database.Database): void {
 
   validateBaselineSchemaPresence(db);
 
+  if (appliedMigrations.has(TARGETED_VALIDATION_MIGRATION_NAME)) {
+    validateTargetedValidationSchemaPresence(db);
+  }
+
   const latestAppliedMigrationName = appliedMigrationNames.at(-1);
-  if (latestAppliedMigrationName !== INITIAL_SCHEMA_MIGRATION_NAME) {
+  if (latestAppliedMigrationName === INITIAL_SCHEMA_MIGRATION_NAME) {
+    validateBaselineSchemaShape(db);
     return;
   }
 
-  validateBaselineSchemaShape(db);
+  if (latestAppliedMigrationName === TARGETED_VALIDATION_MIGRATION_NAME) {
+    validateBaselineSchemaShape(db);
+    validateTargetedValidationSchemaShape(db);
+  }
 }
 
 function loadAppliedMigrationNames(db: Database.Database): string[] {
@@ -1887,21 +2107,70 @@ function validateBaselineSchemaPresence(db: Database.Database): void {
   }
 }
 
-function validateBaselineSchemaShape(db: Database.Database): void {
-  for (const tableName of INITIAL_SCHEMA_REQUIRED_TABLES) {
-    validateBaselineTableSchema(
-      db,
-      tableName,
-      INITIAL_SCHEMA_TABLE_DEFINITIONS[tableName]
+function validateTargetedValidationSchemaPresence(db: Database.Database): void {
+  const existingTables = loadSqliteMasterNames(db, "table");
+  const missingTables = TARGETED_VALIDATION_REQUIRED_TABLES.filter(
+    (tableName) => !existingTables.has(tableName)
+  );
+
+  if (missingTables.length > 0) {
+    throw persistenceError(
+      "sqlite backend found an applied migration without its targeted validation tables",
+      "sqlite_backend_applied_migration_schema_missing",
+      {
+        migrationName: TARGETED_VALIDATION_MIGRATION_NAME,
+        missingTables,
+      }
     );
   }
 
-  for (const indexName of INITIAL_SCHEMA_REQUIRED_INDEXES) {
-    validateBaselineIndexSchema(
-      db,
-      indexName,
-      INITIAL_SCHEMA_INDEX_DEFINITIONS[indexName]
+  const existingIndexes = loadSqliteMasterNames(db, "index");
+  const missingIndexes = TARGETED_VALIDATION_REQUIRED_INDEXES.filter(
+    (indexName) => !existingIndexes.has(indexName)
+  );
+
+  if (missingIndexes.length > 0) {
+    throw persistenceError(
+      "sqlite backend found an applied migration without its targeted validation indexes",
+      "sqlite_backend_applied_migration_index_missing",
+      {
+        migrationName: TARGETED_VALIDATION_MIGRATION_NAME,
+        missingIndexes,
+      }
     );
+  }
+}
+
+function validateBaselineSchemaShape(db: Database.Database): void {
+  validateSqliteSchemaShape(
+    db,
+    INITIAL_SCHEMA_MIGRATION_NAME,
+    INITIAL_SCHEMA_TABLE_DEFINITIONS,
+    INITIAL_SCHEMA_INDEX_DEFINITIONS
+  );
+}
+
+function validateTargetedValidationSchemaShape(db: Database.Database): void {
+  validateSqliteSchemaShape(
+    db,
+    TARGETED_VALIDATION_MIGRATION_NAME,
+    TARGETED_VALIDATION_TABLE_DEFINITIONS,
+    TARGETED_VALIDATION_INDEX_DEFINITIONS
+  );
+}
+
+function validateSqliteSchemaShape(
+  db: Database.Database,
+  migrationName: string,
+  tableDefinitions: Readonly<Record<string, ExpectedSqliteTableSchema>>,
+  indexDefinitions: Readonly<Record<string, ExpectedSqliteIndexSchema>>
+): void {
+  for (const [tableName, tableSchema] of Object.entries(tableDefinitions)) {
+    validateSqliteTableSchema(db, migrationName, tableName, tableSchema);
+  }
+
+  for (const [indexName, indexSchema] of Object.entries(indexDefinitions)) {
+    validateSqliteIndexSchema(db, migrationName, indexName, indexSchema);
   }
 }
 
@@ -1926,8 +2195,9 @@ function listMigrationFiles(migrationDirectory: string): string[] {
     .sort((left, right) => left.localeCompare(right));
 }
 
-function validateBaselineTableSchema(
+function validateSqliteTableSchema(
   db: Database.Database,
+  migrationName: string,
   tableName: string,
   expectedSchema: ExpectedSqliteTableSchema
 ): void {
@@ -1947,12 +2217,12 @@ function validateBaselineTableSchema(
 
   if (!areExpectedColumnsEqual(actualColumns, expectedColumns)) {
     throw persistenceError(
-      "sqlite backend found a baseline table whose column contract does not match the package schema",
+      "sqlite backend found an applied migration table whose column contract does not match the package schema",
       "sqlite_backend_applied_migration_schema_mismatch",
       {
         actualColumns,
         expectedColumns,
-        migrationName: INITIAL_SCHEMA_MIGRATION_NAME,
+        migrationName,
         tableName,
       }
     );
@@ -1966,20 +2236,21 @@ function validateBaselineTableSchema(
     !areExpectedForeignKeysEqual(actualForeignKeys, expectedSchema.foreignKeys)
   ) {
     throw persistenceError(
-      "sqlite backend found a baseline table whose foreign-key contract does not match the package schema",
+      "sqlite backend found an applied migration table whose foreign-key contract does not match the package schema",
       "sqlite_backend_applied_migration_schema_mismatch",
       {
         actualForeignKeys,
         expectedForeignKeys: expectedSchema.foreignKeys,
-        migrationName: INITIAL_SCHEMA_MIGRATION_NAME,
+        migrationName,
         tableName,
       }
     );
   }
 }
 
-function validateBaselineIndexSchema(
+function validateSqliteIndexSchema(
   db: Database.Database,
+  migrationName: string,
   indexName: string,
   expectedSchema: ExpectedSqliteIndexSchema
 ): void {
@@ -1995,7 +2266,7 @@ function validateBaselineIndexSchema(
       "sqlite_backend_applied_migration_index_missing",
       {
         indexName,
-        migrationName: INITIAL_SCHEMA_MIGRATION_NAME,
+        migrationName,
       }
     );
   }
@@ -2023,13 +2294,13 @@ function validateBaselineIndexSchema(
 
   if (!areExpectedIndexDefinitionsEqual(actualIndex, expectedIndex)) {
     throw persistenceError(
-      "sqlite backend found a baseline index whose definition does not match the package schema",
+      "sqlite backend found an applied migration index whose definition does not match the package schema",
       "sqlite_backend_applied_migration_index_mismatch",
       {
         actualIndex,
         expectedIndex,
         indexName,
-        migrationName: INITIAL_SCHEMA_MIGRATION_NAME,
+        migrationName,
       }
     );
   }
@@ -2306,8 +2577,747 @@ async function loadValidatedState(
   validateMigrationState(db);
   const state = loadState(db);
   await validateLoadedState(state);
+  validateTurnNodeLineageRootIndex(db, state);
   validateCommittedState(state, priorState ?? state);
   return state;
+}
+
+function validateTransactionWriteSet(
+  db: Database.Database,
+  writeTracker: TransactionWriteTracker
+): void {
+  for (const threadId of writeTracker.threadIds) {
+    validateThreadInDatabase(db, threadId);
+  }
+
+  for (const turnTreeHash of writeTracker.turnTreeHashes) {
+    validateTurnTreePathsInDatabase(db, turnTreeHash);
+  }
+
+  for (const turnNodeHash of writeTracker.turnNodeHashes) {
+    validateTurnNodeInDatabase(db, turnNodeHash);
+  }
+
+  for (const turnId of writeTracker.turnIds) {
+    validateTurnInDatabase(db, turnId);
+  }
+
+  for (const turnId of writeTracker.turnIdsForDependentValidation) {
+    validateTurnDependentsInDatabase(db, turnId);
+  }
+
+  for (const [branchId] of writeTracker.branchWrites) {
+    validateBranchInDatabase(db, writeTracker, branchId);
+  }
+
+  for (const runId of writeTracker.runIds) {
+    validateRunInDatabase(db, runId);
+  }
+
+  for (const runId of writeTracker.stagedResultRunIds) {
+    validateStagedResultsForRunInDatabase(db, runId);
+  }
+
+  for (const branchId of writeTracker.branchIdsForActiveRunValidation) {
+    validateActiveRunsForBranchInDatabase(db, branchId);
+  }
+}
+
+function validateThreadInDatabase(
+  db: Database.Database,
+  threadId: string
+): void {
+  const thread = selectThread(db, threadId);
+
+  if (thread === null) {
+    return;
+  }
+
+  const rootTurnNode = ensureTurnNodeExistsInDatabase(
+    db,
+    thread.rootTurnNodeHash,
+    "thread.rootTurnNodeHash"
+  );
+  validateTurnNodeLineageMetadataInDatabase(db, rootTurnNode);
+
+  if (rootTurnNode.schemaId !== thread.schemaId) {
+    throw persistenceError(
+      "stored threads must use the schema of their root turn node",
+      "sqlite_backend_thread_schema_mismatch",
+      {
+        rootTurnNodeHash: thread.rootTurnNodeHash,
+        threadId: thread.threadId,
+        threadSchemaId: thread.schemaId,
+        turnNodeSchemaId: rootTurnNode.schemaId,
+      }
+    );
+  }
+
+  if (rootTurnNode.previousTurnNodeHash !== null) {
+    throw persistenceError(
+      "stored thread roots must be genesis turn nodes",
+      "sqlite_backend_thread_root_not_genesis",
+      {
+        previousTurnNodeHash: rootTurnNode.previousTurnNodeHash,
+        rootTurnNodeHash: rootTurnNode.hash,
+        threadId: thread.threadId,
+      }
+    );
+  }
+
+  const duplicateRootThread = db
+    .prepare(
+      `
+        SELECT thread_id
+        FROM threads
+        WHERE root_turn_node_hash = ? AND thread_id <> ?
+        LIMIT 1
+      `
+    )
+    .get(thread.rootTurnNodeHash, thread.threadId) as
+    | { thread_id: string }
+    | undefined;
+
+  if (duplicateRootThread !== undefined) {
+    throw persistenceError(
+      "stored thread roots must be unique across threads",
+      "sqlite_backend_thread_root_not_unique",
+      {
+        existingOwnerThreadId: duplicateRootThread.thread_id,
+        rootTurnNodeHash: thread.rootTurnNodeHash,
+        threadId: thread.threadId,
+      }
+    );
+  }
+}
+
+function validateBranchInDatabase(
+  db: Database.Database,
+  writeTracker: TransactionWriteTracker,
+  branchId: string
+): void {
+  const branch = selectBranch(db, branchId);
+
+  if (branch === null) {
+    return;
+  }
+
+  const thread = ensureThreadExistsInDatabase(
+    db,
+    branch.threadId,
+    "branch.threadId"
+  );
+  assertTurnNodeBelongsToThreadInDatabase(
+    db,
+    branch.headTurnNodeHash,
+    thread,
+    "branch.headTurnNodeHash"
+  );
+
+  if (branch.archivedFromBranchId !== undefined) {
+    validateArchiveBranchInDatabase(db, writeTracker, branch);
+  }
+
+  const trackedBranch = writeTracker.branchWrites.get(branch.branchId);
+
+  if (trackedBranch?.before === null || trackedBranch?.before === undefined) {
+    return;
+  }
+
+  const headMoveDirection = classifyTurnNodeRelationshipInDatabase(
+    db,
+    trackedBranch.before.headTurnNodeHash,
+    branch.headTurnNodeHash
+  );
+
+  if (headMoveDirection === "backward") {
+    assertBackwardBranchMoveIsArchivedInDatabase(
+      db,
+      writeTracker,
+      trackedBranch.before,
+      branch
+    );
+  }
+}
+
+function validateArchiveBranchInDatabase(
+  db: Database.Database,
+  writeTracker: TransactionWriteTracker,
+  branch: StoredBranch
+): void {
+  if (branch.archivedFromBranchId === undefined) {
+    return;
+  }
+
+  const sourceBranch = ensureBranchExistsInDatabase(
+    db,
+    branch.archivedFromBranchId,
+    "branch.archivedFromBranchId"
+  );
+
+  if (sourceBranch.threadId !== branch.threadId) {
+    throw persistenceError(
+      "stored branches must archive only from branches in the same thread",
+      "sqlite_backend_branch_archive_thread_mismatch",
+      {
+        archivedFromBranchId: sourceBranch.branchId,
+        branchId: branch.branchId,
+        branchThreadId: branch.threadId,
+        sourceThreadId: sourceBranch.threadId,
+      }
+    );
+  }
+
+  const trackedArchive = writeTracker.branchWrites.get(branch.branchId);
+
+  if (trackedArchive?.before !== null) {
+    return;
+  }
+
+  const trackedSource = writeTracker.branchWrites.get(
+    branch.archivedFromBranchId
+  );
+  const sourceBranchBeforeTransaction =
+    trackedSource?.before ??
+    writeTracker.captureBranchBaseline(db, branch.archivedFromBranchId);
+
+  if (sourceBranchBeforeTransaction === null) {
+    throw persistenceError(
+      "new archive branches must reference a source branch that existed before the transaction",
+      "sqlite_backend_branch_archive_source_missing_before_transaction",
+      {
+        archivedFromBranchId: branch.archivedFromBranchId,
+        branchId: branch.branchId,
+      }
+    );
+  }
+
+  if (
+    branch.headTurnNodeHash !== sourceBranchBeforeTransaction.headTurnNodeHash
+  ) {
+    throw persistenceError(
+      "new archive branches must preserve the pre-rollback source branch head",
+      "sqlite_backend_branch_archive_head_mismatch",
+      {
+        archivedFromBranchId: branch.archivedFromBranchId,
+        archiveHeadTurnNodeHash: branch.headTurnNodeHash,
+        sourceHeadTurnNodeHash: sourceBranchBeforeTransaction.headTurnNodeHash,
+      }
+    );
+  }
+
+  if (
+    classifyTurnNodeRelationshipInDatabase(
+      db,
+      sourceBranchBeforeTransaction.headTurnNodeHash,
+      sourceBranch.headTurnNodeHash
+    ) !== "backward"
+  ) {
+    throw persistenceError(
+      "new archive branches must be paired with a backward move on their source branch",
+      "sqlite_backend_branch_archive_without_backward_move",
+      {
+        archivedFromBranchId: branch.archivedFromBranchId,
+        branchId: branch.branchId,
+        sourceBranchHeadTurnNodeHash: sourceBranch.headTurnNodeHash,
+        sourceBranchPreviousHeadTurnNodeHash:
+          sourceBranchBeforeTransaction.headTurnNodeHash,
+      }
+    );
+  }
+}
+
+function validateTurnNodeInDatabase(
+  db: Database.Database,
+  turnNodeHash: string
+): void {
+  const turnNode = selectTurnNode(db, turnNodeHash);
+
+  if (turnNode === null) {
+    return;
+  }
+
+  const turnTree = ensureTurnTreeExistsInDatabase(
+    db,
+    turnNode.turnTreeHash,
+    "turnNode.turnTreeHash"
+  );
+
+  if (turnTree.schemaId !== turnNode.schemaId) {
+    throw persistenceError(
+      "stored turn nodes must use the schema of their referenced turn tree",
+      "sqlite_backend_turn_node_schema_mismatch",
+      {
+        turnNodeHash: turnNode.hash,
+        turnNodeSchemaId: turnNode.schemaId,
+        turnTreeHash: turnTree.hash,
+        turnTreeSchemaId: turnTree.schemaId,
+      }
+    );
+  }
+
+  validateTurnNodeLineageMetadataInDatabase(db, turnNode);
+
+  for (const objectHash of decodeTurnNodeConsumedStagedResultObjectHashes(
+    turnNode
+  )) {
+    ensureObjectExistsInDatabase(
+      db,
+      objectHash,
+      "turnNode.consumedStagedResultsCbor"
+    );
+  }
+}
+
+function validateTurnNodeLineageMetadataInDatabase(
+  db: Database.Database,
+  turnNode: StoredTurnNode,
+  label = "turnNode.hash"
+): TurnNodeLineageMetadata {
+  const actualMetadata = ensureTurnNodeLineageMetadataInDatabase(
+    db,
+    turnNode.hash,
+    label
+  );
+  const lineageProof = selectBoundedTurnNodeLineageProofInDatabase(
+    db,
+    turnNode.hash,
+    actualMetadata.depth
+  );
+
+  if (
+    lineageProof === undefined ||
+    lineageProof.depth !== actualMetadata.depth ||
+    lineageProof.hash !== actualMetadata.rootTurnNodeHash ||
+    lineageProof.previous_turn_node_hash !== null
+  ) {
+    throw persistenceError(
+      "turn node lineage metadata must match the parent-linked turn node chain",
+      "sqlite_backend_turn_node_lineage_metadata_mismatch",
+      {
+        actualDepth: actualMetadata.depth,
+        actualRootTurnNodeHash: actualMetadata.rootTurnNodeHash,
+        expectedDepth: lineageProof?.depth ?? null,
+        expectedRootHasParent:
+          lineageProof === undefined
+            ? null
+            : lineageProof.previous_turn_node_hash !== null,
+        expectedRootTurnNodeHash: lineageProof?.hash ?? null,
+        turnNodeHash: turnNode.hash,
+      }
+    );
+  }
+
+  return actualMetadata;
+}
+
+function selectBoundedTurnNodeLineageProofInDatabase(
+  db: Database.Database,
+  turnNodeHash: string,
+  depth: number
+): SqliteTurnNodeLineageProofRow | undefined {
+  return db
+    .prepare(
+      `
+        WITH RECURSIVE lineage(hash, previous_turn_node_hash, depth) AS (
+          SELECT
+            hash,
+            previous_turn_node_hash,
+            0 AS depth
+          FROM turn_nodes
+          WHERE hash = ?
+          UNION ALL
+          SELECT
+            parent.hash,
+            parent.previous_turn_node_hash,
+            lineage.depth + 1
+          FROM turn_nodes AS parent
+          JOIN lineage ON parent.hash = lineage.previous_turn_node_hash
+          WHERE lineage.depth < ?
+        )
+        SELECT hash, previous_turn_node_hash, depth
+        FROM lineage
+        ORDER BY depth DESC
+        LIMIT 1
+      `
+    )
+    .get(turnNodeHash, depth) as SqliteTurnNodeLineageProofRow | undefined;
+}
+
+function validateTurnInDatabase(db: Database.Database, turnId: string): void {
+  const turn = selectTurn(db, turnId);
+
+  if (turn === null) {
+    return;
+  }
+
+  const thread = ensureThreadExistsInDatabase(
+    db,
+    turn.threadId,
+    "turn.threadId"
+  );
+  const branch = ensureBranchExistsInDatabase(
+    db,
+    turn.branchId,
+    "turn.branchId"
+  );
+
+  if (branch.threadId !== thread.threadId) {
+    throw persistenceError(
+      "stored turns must reference a branch on the same thread",
+      "sqlite_backend_turn_branch_thread_mismatch",
+      {
+        branchId: branch.branchId,
+        branchThreadId: branch.threadId,
+        threadId: thread.threadId,
+        turnId: turn.turnId,
+      }
+    );
+  }
+
+  assertTurnNodeBelongsToThreadInDatabase(
+    db,
+    turn.startTurnNodeHash,
+    thread,
+    "turn.startTurnNodeHash"
+  );
+  assertTurnNodeBelongsToThreadInDatabase(
+    db,
+    turn.headTurnNodeHash,
+    thread,
+    "turn.headTurnNodeHash"
+  );
+  assertTurnNodeDescendsFromInDatabase(
+    db,
+    turn.headTurnNodeHash,
+    turn.startTurnNodeHash,
+    "turn.headTurnNodeHash"
+  );
+  assertTurnParentLinkInDatabase(db, turn, "turn.parentTurnId");
+}
+
+function validateTurnDependentsInDatabase(
+  db: Database.Database,
+  turnId: string
+): void {
+  for (const dependentTurn of selectTurnsByParentTurnId(db, turnId)) {
+    validateTurnInDatabase(db, dependentTurn.turnId);
+  }
+
+  for (const run of selectRunsByTurn(db, turnId)) {
+    validateRunInDatabase(db, run.runId);
+  }
+}
+
+function validateRunInDatabase(db: Database.Database, runId: string): void {
+  const run = selectRun(db, runId);
+
+  if (run === null) {
+    return;
+  }
+
+  const branch = ensureBranchExistsInDatabase(db, run.branchId, "run.branchId");
+  const turn = ensureTurnExistsInDatabase(db, run.turnId, "run.turnId");
+  const startTurnNode = ensureTurnNodeExistsInDatabase(
+    db,
+    run.startTurnNodeHash,
+    "run.startTurnNodeHash"
+  );
+  const thread = ensureThreadExistsInDatabase(
+    db,
+    turn.threadId,
+    "turn.threadId"
+  );
+
+  if (turn.branchId !== branch.branchId) {
+    throw persistenceError(
+      "stored runs must reference a turn on the same branch",
+      "sqlite_backend_run_branch_mismatch",
+      {
+        branchId: branch.branchId,
+        runId: run.runId,
+        turnBranchId: turn.branchId,
+        turnId: turn.turnId,
+      }
+    );
+  }
+
+  assertTurnNodeBelongsToThreadInDatabase(
+    db,
+    run.startTurnNodeHash,
+    thread,
+    "run.startTurnNodeHash"
+  );
+
+  if (startTurnNode.schemaId !== run.schemaId) {
+    throw persistenceError(
+      "stored runs must use the schema of their start turn node",
+      "sqlite_backend_run_schema_mismatch",
+      {
+        runId: run.runId,
+        runSchemaId: run.schemaId,
+        startTurnNodeHash: startTurnNode.hash,
+        turnNodeSchemaId: startTurnNode.schemaId,
+      }
+    );
+  }
+
+  assertRunStartTurnNodeWithinTurnSpanInDatabase(
+    db,
+    turn,
+    run.startTurnNodeHash,
+    "run.startTurnNodeHash"
+  );
+
+  for (const turnNodeHash of decodeRunCreatedTurnNodeHashes(run)) {
+    const createdTurnNode = ensureTurnNodeExistsInDatabase(
+      db,
+      turnNodeHash,
+      "run.createdTurnNodesCbor"
+    );
+    assertTurnNodeBelongsToThreadInDatabase(
+      db,
+      turnNodeHash,
+      thread,
+      "run.createdTurnNodesCbor"
+    );
+    assertRunCreatedTurnNodeWithinTurnSpanInDatabase(
+      db,
+      turn,
+      createdTurnNode,
+      "run.createdTurnNodesCbor"
+    );
+  }
+
+  assertRunCreatedTurnNodesAreCanonicalInDatabase(db, run);
+
+  if (run.status === "running" || run.status === "paused") {
+    assertActiveRunHeadAlignmentInDatabase(run, branch, turn);
+  }
+}
+
+function validateStagedResultsForRunInDatabase(
+  db: Database.Database,
+  runId: string
+): void {
+  const run = ensureRunExistsInDatabase(db, runId, "stagedResults.runId");
+  const stagedResultCount = countStagedResultsByRun(db, runId);
+
+  if (run.status !== "running" && stagedResultCount > 0) {
+    throw persistenceError(
+      "stored terminal or paused runs must not retain staged results",
+      "sqlite_backend_run_has_terminal_staged_results",
+      {
+        runId: run.runId,
+        stagedResultCount,
+        status: run.status,
+      }
+    );
+  }
+}
+
+function validateActiveRunsForBranchInDatabase(
+  db: Database.Database,
+  branchId: string
+): void {
+  const branch = selectBranch(db, branchId);
+
+  if (branch === null) {
+    return;
+  }
+
+  const activeRuns = selectActiveRunsByBranch(db, branch.branchId);
+
+  if (activeRuns.length > 1) {
+    throw persistenceError(
+      "stored branches must not have more than one active run",
+      "sqlite_backend_multiple_active_runs",
+      {
+        activeRunCount: activeRuns.length,
+        branchId: branch.branchId,
+      }
+    );
+  }
+
+  for (const run of activeRuns) {
+    const turn = ensureTurnExistsInDatabase(db, run.turnId, "run.turnId");
+    assertActiveRunHeadAlignmentInDatabase(run, branch, turn);
+  }
+}
+
+function validateTurnTreePathsInDatabase(
+  db: Database.Database,
+  turnTreeHash: string
+): void {
+  const turnTree = selectTurnTree(db, turnTreeHash);
+
+  if (turnTree === null) {
+    return;
+  }
+
+  const state = createEmptyState();
+  const schemaRecord = ensureSchemaExistsInDatabase(
+    db,
+    turnTree.schemaId,
+    "turnTree.schemaId"
+  );
+  const storedPaths = selectTurnTreePathsByTurnTree(db, turnTree.hash);
+  const pathMap = new Map<string, StoredTurnTreePath>();
+
+  state.schemas.set(schemaRecord.schemaId, schemaRecord);
+  state.turnTrees.set(turnTree.hash, turnTree);
+
+  for (const storedPath of storedPaths) {
+    pathMap.set(storedPath.path, storedPath);
+
+    if (storedPath.collectionKind !== "ordered") {
+      continue;
+    }
+
+    if (storedPath.orderedEncoding !== "chunked") {
+      continue;
+    }
+
+    for (const chunkHash of decodeHashStringArray(
+      storedPath.orderedChunkListCbor,
+      "storedPath.orderedChunkListCbor"
+    )) {
+      const chunk = ensureOrderedPathChunkExistsInDatabase(
+        db,
+        chunkHash,
+        "storedPath.orderedChunkListCbor"
+      );
+      state.orderedPathChunks.set(chunk.chunkHash, chunk);
+    }
+  }
+
+  if (pathMap.size > 0) {
+    state.turnTreePaths.set(turnTree.hash, pathMap);
+  }
+
+  validateTurnTreePathInvariants(state);
+}
+
+function validateTurnNodeLineageRootIndex(
+  db: Database.Database,
+  state: BackendState
+): void {
+  const actualMetadataByTurnNodeHash = new Map<
+    string,
+    TurnNodeLineageMetadata
+  >();
+
+  for (const row of db
+    .prepare("SELECT * FROM turn_node_lineage_roots")
+    .all() as SqliteTurnNodeLineageRootRow[]) {
+    const metadata = decodeTurnNodeLineageMetadataRow(row);
+    setUniqueLoadedRecord(
+      actualMetadataByTurnNodeHash,
+      metadata.turnNodeHash,
+      metadata,
+      "turn node lineage metadata",
+      { turnNodeHash: metadata.turnNodeHash }
+    );
+  }
+
+  for (const metadata of actualMetadataByTurnNodeHash.values()) {
+    if (!state.turnNodes.has(metadata.turnNodeHash)) {
+      throw persistenceError(
+        "turn node lineage metadata must reference an existing turn node",
+        "sqlite_backend_orphan_turn_node_lineage_metadata",
+        { turnNodeHash: metadata.turnNodeHash }
+      );
+    }
+
+    if (!state.turnNodes.has(metadata.rootTurnNodeHash)) {
+      throw persistenceError(
+        "turn node lineage metadata must reference an existing root turn node",
+        "sqlite_backend_orphan_turn_node_lineage_metadata",
+        {
+          rootTurnNodeHash: metadata.rootTurnNodeHash,
+          turnNodeHash: metadata.turnNodeHash,
+        }
+      );
+    }
+  }
+
+  for (const turnNode of state.turnNodes.values()) {
+    const actualMetadata = actualMetadataByTurnNodeHash.get(turnNode.hash);
+
+    if (actualMetadata === undefined) {
+      throw persistenceError(
+        "turn nodes must have lineage root metadata",
+        "sqlite_backend_missing_turn_node_lineage_metadata",
+        { turnNodeHash: turnNode.hash }
+      );
+    }
+
+    const expectedMetadata = computeExpectedTurnNodeLineageMetadata(
+      state,
+      turnNode
+    );
+
+    if (
+      actualMetadata.rootTurnNodeHash !== expectedMetadata.rootTurnNodeHash ||
+      actualMetadata.depth !== expectedMetadata.depth
+    ) {
+      throw persistenceError(
+        "turn node lineage metadata must match the parent-linked turn node chain",
+        "sqlite_backend_turn_node_lineage_metadata_mismatch",
+        {
+          actualDepth: actualMetadata.depth,
+          actualRootTurnNodeHash: actualMetadata.rootTurnNodeHash,
+          expectedDepth: expectedMetadata.depth,
+          expectedRootTurnNodeHash: expectedMetadata.rootTurnNodeHash,
+          turnNodeHash: turnNode.hash,
+        }
+      );
+    }
+  }
+}
+
+function computeExpectedTurnNodeLineageMetadata(
+  state: BackendState,
+  turnNode: StoredTurnNode
+): TurnNodeLineageMetadata {
+  const visitedTurnNodeHashes = new Set<string>();
+  let currentTurnNode = turnNode;
+  let depth = 0;
+
+  while (currentTurnNode.previousTurnNodeHash !== null) {
+    if (visitedTurnNodeHashes.has(currentTurnNode.hash)) {
+      throw persistenceError(
+        "turn node lineage must not contain cycles",
+        "sqlite_backend_turn_node_lineage_cycle",
+        { turnNodeHash: turnNode.hash }
+      );
+    }
+
+    visitedTurnNodeHashes.add(currentTurnNode.hash);
+    const previousTurnNode = state.turnNodes.get(
+      currentTurnNode.previousTurnNodeHash
+    );
+
+    if (previousTurnNode === undefined) {
+      throw persistenceError(
+        "turn node lineage metadata requires complete turn node parent links",
+        "sqlite_backend_missing_turn_node_reference",
+        {
+          previousTurnNodeHash: currentTurnNode.previousTurnNodeHash,
+          turnNodeHash: turnNode.hash,
+        }
+      );
+    }
+
+    currentTurnNode = previousTurnNode;
+    depth += 1;
+  }
+
+  return {
+    depth,
+    rootTurnNodeHash: currentTurnNode.hash,
+    turnNodeHash: turnNode.hash,
+  };
 }
 
 function setUniqueLoadedRecord<T>(
@@ -2403,6 +3413,16 @@ function selectTurnNode(
   return row === undefined ? null : decodeTurnNodeRow(row);
 }
 
+function selectTurnNodeLineageMetadata(
+  db: Database.Database,
+  turnNodeHash: string
+): TurnNodeLineageMetadata | null {
+  const row = db
+    .prepare("SELECT * FROM turn_node_lineage_roots WHERE turn_node_hash = ?")
+    .get(turnNodeHash) as SqliteTurnNodeLineageRootRow | undefined;
+  return row === undefined ? null : decodeTurnNodeLineageMetadataRow(row);
+}
+
 function selectThread(
   db: Database.Database,
   threadId: string
@@ -2449,6 +3469,15 @@ function selectRun(db: Database.Database, runId: string): StoredRun | null {
   return row === undefined ? null : decodeRunRow(row);
 }
 
+function selectRunsByTurn(db: Database.Database, turnId: string): StoredRun[] {
+  const rows = db
+    .prepare(
+      "SELECT * FROM runs WHERE turn_id = ? ORDER BY created_at_ms, run_id"
+    )
+    .all(turnId) as SqliteRunRow[];
+  return rows.map(decodeRunRow);
+}
+
 function selectRunsByBranch(
   db: Database.Database,
   branchId: string
@@ -2456,6 +3485,40 @@ function selectRunsByBranch(
   const rows = db
     .prepare(
       "SELECT * FROM runs WHERE branch_id = ? ORDER BY created_at_ms, run_id"
+    )
+    .all(branchId) as SqliteRunRow[];
+  return rows.map(decodeRunRow);
+}
+
+function selectTurnsByParentTurnId(
+  db: Database.Database,
+  parentTurnId: string
+): StoredTurn[] {
+  const rows = db
+    .prepare(
+      `
+        SELECT *
+        FROM turns
+        WHERE parent_turn_id = ?
+        ORDER BY created_at_ms, turn_id
+      `
+    )
+    .all(parentTurnId) as SqliteTurnRow[];
+  return rows.map(decodeTurnRow);
+}
+
+function selectActiveRunsByBranch(
+  db: Database.Database,
+  branchId: string
+): StoredRun[] {
+  const rows = db
+    .prepare(
+      `
+        SELECT *
+        FROM runs
+        WHERE branch_id = ? AND status IN ('running', 'paused')
+        ORDER BY created_at_ms, run_id
+      `
     )
     .all(branchId) as SqliteRunRow[];
   return rows.map(decodeRunRow);
@@ -2484,6 +3547,13 @@ function selectStagedResultsByRun(
   return rows.map(decodeStagedResultRow);
 }
 
+function countStagedResultsByRun(db: Database.Database, runId: string): number {
+  const row = db
+    .prepare("SELECT COUNT(*) AS count FROM staged_results WHERE run_id = ?")
+    .get(runId) as { count: number } | undefined;
+  return row?.count ?? 0;
+}
+
 function ensureObjectExistsInDatabase(
   db: Database.Database,
   hash: string,
@@ -2495,6 +3565,22 @@ function ensureObjectExistsInDatabase(
       `${label} must reference an existing object`,
       "sqlite_backend_missing_object_reference",
       { hash, label }
+    );
+  }
+  return record;
+}
+
+function ensureOrderedPathChunkExistsInDatabase(
+  db: Database.Database,
+  chunkHash: string,
+  label: string
+): StoredOrderedPathChunk {
+  const record = selectOrderedPathChunk(db, chunkHash);
+  if (record === null) {
+    throw persistenceError(
+      `${label} must reference an existing ordered path chunk`,
+      "sqlite_backend_missing_ordered_path_chunk_reference",
+      { chunkHash, label }
     );
   }
   return record;
@@ -2546,6 +3632,22 @@ function ensureTurnNodeExistsInDatabase(
     );
   }
   return record;
+}
+
+function ensureTurnNodeLineageMetadataInDatabase(
+  db: Database.Database,
+  turnNodeHash: string,
+  label: string
+): TurnNodeLineageMetadata {
+  const metadata = selectTurnNodeLineageMetadata(db, turnNodeHash);
+  if (metadata === null) {
+    throw persistenceError(
+      `${label} must have lineage root metadata`,
+      "sqlite_backend_missing_turn_node_lineage_metadata",
+      { label, turnNodeHash }
+    );
+  }
+  return metadata;
 }
 
 function ensureThreadExistsInDatabase(
@@ -2760,6 +3862,57 @@ function insertOrderedPathChunk(
   );
 }
 
+function insertTurnNodeLineageMetadata(
+  db: Database.Database,
+  record: StoredTurnNode
+): void {
+  const previousMetadata =
+    record.previousTurnNodeHash === null
+      ? null
+      : getValidatedTurnNodeLineageMetadataInDatabase(
+          db,
+          record.previousTurnNodeHash
+        );
+  const metadata: TurnNodeLineageMetadata = {
+    depth: previousMetadata === null ? 0 : previousMetadata.depth + 1,
+    rootTurnNodeHash:
+      previousMetadata === null
+        ? record.hash
+        : previousMetadata.rootTurnNodeHash,
+    turnNodeHash: record.hash,
+  };
+
+  db.prepare(
+    `
+      INSERT INTO turn_node_lineage_roots (
+        turn_node_hash,
+        root_turn_node_hash,
+        depth
+      ) VALUES (?, ?, ?)
+    `
+  ).run(metadata.turnNodeHash, metadata.rootTurnNodeHash, metadata.depth);
+}
+
+function getValidatedTurnNodeLineageMetadataInDatabase(
+  db: Database.Database,
+  turnNodeHash: string
+): TurnNodeLineageMetadata {
+  return ensureValidatedTurnNodeLineageMetadataInDatabase(
+    db,
+    turnNodeHash,
+    "record.previousTurnNodeHash"
+  );
+}
+
+function ensureValidatedTurnNodeLineageMetadataInDatabase(
+  db: Database.Database,
+  turnNodeHash: string,
+  label: string
+): TurnNodeLineageMetadata {
+  const turnNode = ensureTurnNodeExistsInDatabase(db, turnNodeHash, label);
+  return validateTurnNodeLineageMetadataInDatabase(db, turnNode, label);
+}
+
 function decodeObjectRow(row: SqliteObjectRow): StoredObject {
   const record: StoredObject = {
     byteLength: row.byte_length,
@@ -2899,6 +4052,25 @@ function decodeTurnNodeRow(row: SqliteTurnNodeRow): StoredTurnNode {
   };
   assertStoredTurnNode(record, "stored turn node row");
   return record;
+}
+
+function decodeTurnNodeLineageMetadataRow(
+  row: SqliteTurnNodeLineageRootRow
+): TurnNodeLineageMetadata {
+  const turnNodeHash = validateHashString(row.turn_node_hash);
+  const rootTurnNodeHash = validateHashString(row.root_turn_node_hash);
+  const depth = decodeStoredNonNegativeInteger(
+    row.depth,
+    "depth",
+    "sqlite_backend_invalid_turn_node_lineage_metadata_row",
+    { rootTurnNodeHash, turnNodeHash }
+  );
+
+  return {
+    depth,
+    rootTurnNodeHash,
+    turnNodeHash,
+  };
 }
 
 function decodeThreadRow(row: SqliteThreadRow): StoredThread {
@@ -4488,6 +5660,423 @@ function assertBackwardBranchMoveIsArchived(
   }
 }
 
+function assertBackwardBranchMoveIsArchivedInDatabase(
+  db: Database.Database,
+  writeTracker: TransactionWriteTracker,
+  previousBranch: StoredBranch,
+  nextBranch: StoredBranch
+): void {
+  let archiveBranchFound = false;
+
+  for (const [branchId, trackedBranch] of writeTracker.branchWrites) {
+    if (branchId === nextBranch.branchId || trackedBranch.before !== null) {
+      continue;
+    }
+
+    const archiveBranch = trackedBranch.after;
+
+    if (
+      archiveBranch !== null &&
+      archiveBranch.archivedFromBranchId === nextBranch.branchId &&
+      archiveBranch.headTurnNodeHash === previousBranch.headTurnNodeHash
+    ) {
+      archiveBranchFound = true;
+      break;
+    }
+  }
+
+  if (!archiveBranchFound) {
+    throw persistenceError(
+      "stored backward branch moves must preserve the abandoned head as an archive branch",
+      "sqlite_backend_backward_branch_move_missing_archive",
+      {
+        branchId: nextBranch.branchId,
+        nextHeadTurnNodeHash: nextBranch.headTurnNodeHash,
+        previousHeadTurnNodeHash: previousBranch.headTurnNodeHash,
+      }
+    );
+  }
+
+  for (const run of selectActiveRunsByBranch(db, nextBranch.branchId)) {
+    const activeTurnNodeHash = getRunActiveTurnNodeHash(run);
+
+    if (activeTurnNodeHash === nextBranch.headTurnNodeHash) {
+      continue;
+    }
+
+    throw persistenceError(
+      "stored backward branch moves must fail active runs from the abandoned segment",
+      "sqlite_backend_backward_branch_move_active_run_not_failed",
+      {
+        activeTurnNodeHash,
+        branchHeadTurnNodeHash: nextBranch.headTurnNodeHash,
+        branchId: nextBranch.branchId,
+        runId: run.runId,
+        startTurnNodeHash: run.startTurnNodeHash,
+        status: run.status,
+      }
+    );
+  }
+}
+
+function assertTurnNodeBelongsToThreadInDatabase(
+  db: Database.Database,
+  turnNodeHash: string,
+  thread: StoredThread,
+  label: string
+): void {
+  const metadata = ensureValidatedTurnNodeLineageMetadataInDatabase(
+    db,
+    turnNodeHash,
+    label
+  );
+
+  if (metadata.rootTurnNodeHash === thread.rootTurnNodeHash) {
+    return;
+  }
+
+  throw persistenceError(
+    `${label} must belong to the referenced thread by lineage walk`,
+    "sqlite_backend_thread_lineage_mismatch",
+    {
+      threadId: thread.threadId,
+      threadRootTurnNodeHash: thread.rootTurnNodeHash,
+      turnNodeHash,
+    }
+  );
+}
+
+function assertTurnNodeDescendsFromInDatabase(
+  db: Database.Database,
+  descendantTurnNodeHash: string,
+  ancestorTurnNodeHash: string,
+  label: string
+): void {
+  if (
+    isTurnNodeDescendantOfInDatabase(
+      db,
+      descendantTurnNodeHash,
+      ancestorTurnNodeHash
+    )
+  ) {
+    return;
+  }
+
+  throw persistenceError(
+    `${label} must be a descendant of the referenced start turn node`,
+    "sqlite_backend_turn_node_not_descendant",
+    {
+      ancestorTurnNodeHash,
+      descendantTurnNodeHash,
+    }
+  );
+}
+
+function assertTurnParentLinkInDatabase(
+  db: Database.Database,
+  turn: StoredTurn,
+  label: string
+): void {
+  const candidateTurns = selectCandidateParentTurns(db, turn);
+  const immediatelyPreviousTurn = candidateTurns.at(-1);
+
+  if (turn.parentTurnId === null) {
+    if (immediatelyPreviousTurn === undefined) {
+      return;
+    }
+
+    throw persistenceError(
+      `${label} must reference the previous semantic turn when one exists`,
+      "sqlite_backend_turn_parent_required",
+      {
+        candidateParentTurnIds: candidateTurns.map(
+          (candidateTurn) => candidateTurn.turnId
+        ),
+        startTurnNodeHash: turn.startTurnNodeHash,
+        turnId: turn.turnId,
+      }
+    );
+  }
+
+  const parentTurn = ensureTurnExistsInDatabase(db, turn.parentTurnId, label);
+
+  if (parentTurn.threadId !== turn.threadId) {
+    throw persistenceError(
+      "stored turns must reference a parent turn on the same thread",
+      "sqlite_backend_turn_parent_thread_mismatch",
+      {
+        parentThreadId: parentTurn.threadId,
+        threadId: turn.threadId,
+        turnId: turn.turnId,
+      }
+    );
+  }
+
+  if (parentTurn.branchId !== turn.branchId) {
+    throw persistenceError(
+      "stored turns must reference a parent turn on the same branch",
+      "sqlite_backend_turn_parent_branch_mismatch",
+      {
+        branchId: turn.branchId,
+        parentBranchId: parentTurn.branchId,
+        parentTurnId: parentTurn.turnId,
+        turnId: turn.turnId,
+      }
+    );
+  }
+
+  if (parentTurn.headTurnNodeHash !== turn.startTurnNodeHash) {
+    throw persistenceError(
+      `${label} must chain contiguously into record.startTurnNodeHash`,
+      "sqlite_backend_turn_parent_start_turn_node_mismatch",
+      {
+        parentTurnHeadTurnNodeHash: parentTurn.headTurnNodeHash,
+        parentTurnId: parentTurn.turnId,
+        startTurnNodeHash: turn.startTurnNodeHash,
+        turnId: turn.turnId,
+      }
+    );
+  }
+
+  if (candidateTurns.length === 0) {
+    throw persistenceError(
+      `${label} must reference a contiguous previous semantic turn`,
+      "sqlite_backend_turn_parent_missing_predecessor",
+      {
+        parentTurnId: parentTurn.turnId,
+        startTurnNodeHash: turn.startTurnNodeHash,
+        turnId: turn.turnId,
+      }
+    );
+  }
+
+  if (
+    immediatelyPreviousTurn === undefined ||
+    immediatelyPreviousTurn.turnId !== parentTurn.turnId
+  ) {
+    throw persistenceError(
+      `${label} must reference the immediately previous semantic turn on the same branch`,
+      "sqlite_backend_turn_parent_not_immediate_predecessor",
+      {
+        candidateParentTurnIds: candidateTurns.map(
+          (candidateTurn) => candidateTurn.turnId
+        ),
+        expectedParentTurnId: immediatelyPreviousTurn?.turnId ?? null,
+        parentTurnId: parentTurn.turnId,
+        turnId: turn.turnId,
+      }
+    );
+  }
+}
+
+function selectCandidateParentTurns(
+  db: Database.Database,
+  turn: StoredTurn
+): StoredTurn[] {
+  const rows = db
+    .prepare(
+      `
+        SELECT *
+        FROM turns
+        WHERE thread_id = ?
+          AND branch_id = ?
+          AND head_turn_node_hash = ?
+          AND turn_id <> ?
+        ORDER BY created_at_ms, turn_id
+      `
+    )
+    .all(
+      turn.threadId,
+      turn.branchId,
+      turn.startTurnNodeHash,
+      turn.turnId
+    ) as SqliteTurnRow[];
+  return rows.map(decodeTurnRow);
+}
+
+function assertRunStartTurnNodeWithinTurnSpanInDatabase(
+  db: Database.Database,
+  turn: StoredTurn,
+  startTurnNodeHash: string,
+  label: string
+): void {
+  const relationshipToTurnStart = classifyTurnNodeRelationshipInDatabase(
+    db,
+    turn.startTurnNodeHash,
+    startTurnNodeHash
+  );
+
+  if (
+    relationshipToTurnStart !== "same" &&
+    relationshipToTurnStart !== "forward"
+  ) {
+    throw persistenceError(
+      `${label} must lie within the referenced turn span`,
+      "sqlite_backend_run_turn_span_mismatch",
+      {
+        startTurnNodeHash,
+        turnId: turn.turnId,
+        turnStartTurnNodeHash: turn.startTurnNodeHash,
+      }
+    );
+  }
+
+  const relationshipToTurnHead = classifyTurnNodeRelationshipInDatabase(
+    db,
+    startTurnNodeHash,
+    turn.headTurnNodeHash
+  );
+
+  if (
+    relationshipToTurnHead !== "same" &&
+    relationshipToTurnHead !== "forward"
+  ) {
+    throw persistenceError(
+      `${label} must not move past the referenced turn head`,
+      "sqlite_backend_run_turn_span_mismatch",
+      {
+        startTurnNodeHash,
+        turnHeadTurnNodeHash: turn.headTurnNodeHash,
+        turnId: turn.turnId,
+      }
+    );
+  }
+}
+
+function assertRunCreatedTurnNodeWithinTurnSpanInDatabase(
+  db: Database.Database,
+  turn: StoredTurn,
+  createdTurnNode: StoredTurnNode,
+  label: string
+): void {
+  const relationshipToTurnStart = classifyTurnNodeRelationshipInDatabase(
+    db,
+    turn.startTurnNodeHash,
+    createdTurnNode.hash
+  );
+
+  if (
+    relationshipToTurnStart !== "same" &&
+    relationshipToTurnStart !== "forward"
+  ) {
+    throw persistenceError(
+      `${label} entries must remain within the referenced turn span`,
+      "sqlite_backend_run_created_turn_node_outside_turn_span",
+      {
+        createdTurnNodeHash: createdTurnNode.hash,
+        turnId: turn.turnId,
+        turnStartTurnNodeHash: turn.startTurnNodeHash,
+      }
+    );
+  }
+
+  const relationshipToTurnHead = classifyTurnNodeRelationshipInDatabase(
+    db,
+    createdTurnNode.hash,
+    turn.headTurnNodeHash
+  );
+
+  if (
+    relationshipToTurnHead !== "same" &&
+    relationshipToTurnHead !== "forward"
+  ) {
+    throw persistenceError(
+      `${label} entries must not move beyond the referenced turn head`,
+      "sqlite_backend_run_created_turn_node_outside_turn_span",
+      {
+        createdTurnNodeHash: createdTurnNode.hash,
+        turnHeadTurnNodeHash: turn.headTurnNodeHash,
+        turnId: turn.turnId,
+      }
+    );
+  }
+}
+
+function assertRunCreatedTurnNodesAreCanonicalInDatabase(
+  db: Database.Database,
+  run: StoredRun
+): void {
+  const createdTurnNodeHashes = decodeRunCreatedTurnNodeHashes(run);
+  const seenTurnNodeHashes = new Set<string>();
+  let previousTurnNodeHash = run.startTurnNodeHash;
+
+  for (const [index, turnNodeHash] of createdTurnNodeHashes.entries()) {
+    if (seenTurnNodeHashes.has(turnNodeHash)) {
+      throw persistenceError(
+        "stored runs must keep createdTurnNodesCbor unique",
+        "sqlite_backend_run_created_turn_nodes_duplicate",
+        {
+          duplicateTurnNodeHash: turnNodeHash,
+          index,
+          runId: run.runId,
+        }
+      );
+    }
+
+    const createdTurnNode = ensureTurnNodeExistsInDatabase(
+      db,
+      turnNodeHash,
+      "run.createdTurnNodesCbor"
+    );
+    const isImmediateNextTurnNode =
+      createdTurnNode.previousTurnNodeHash === previousTurnNodeHash;
+
+    if (!isImmediateNextTurnNode) {
+      throw persistenceError(
+        "stored runs must keep createdTurnNodesCbor as a canonical contiguous lineage",
+        "sqlite_backend_run_created_turn_nodes_not_contiguous",
+        {
+          createdTurnNodePreviousTurnNodeHash:
+            createdTurnNode.previousTurnNodeHash,
+          index,
+          previousTurnNodeHash,
+          runId: run.runId,
+          turnNodeHash,
+        }
+      );
+    }
+
+    seenTurnNodeHashes.add(turnNodeHash);
+    previousTurnNodeHash = turnNodeHash;
+  }
+}
+
+function assertActiveRunHeadAlignmentInDatabase(
+  run: StoredRun,
+  branch: StoredBranch,
+  turn: StoredTurn
+): void {
+  const activeTurnNodeHash = getRunActiveTurnNodeHash(run);
+
+  if (activeTurnNodeHash !== branch.headTurnNodeHash) {
+    throw persistenceError(
+      "stored active runs must stay aligned with the current branch head",
+      "sqlite_backend_active_run_branch_head_mismatch",
+      {
+        activeTurnNodeHash,
+        branchHeadTurnNodeHash: branch.headTurnNodeHash,
+        branchId: branch.branchId,
+        runId: run.runId,
+        status: run.status,
+      }
+    );
+  }
+
+  if (activeTurnNodeHash !== turn.headTurnNodeHash) {
+    throw persistenceError(
+      "stored active runs must stay aligned with the current turn head",
+      "sqlite_backend_active_run_turn_head_mismatch",
+      {
+        activeTurnNodeHash,
+        runId: run.runId,
+        status: run.status,
+        turnHeadTurnNodeHash: turn.headTurnNodeHash,
+        turnId: turn.turnId,
+      }
+    );
+  }
+}
+
 function assertBranchHeadMoveIsLinearInDatabase(
   db: Database.Database,
   previousHeadTurnNodeHash: string,
@@ -4523,19 +6112,121 @@ function classifyTurnNodeRelationshipInDatabase(
     return "same";
   }
 
-  if (
-    isTurnNodeDescendantOfInDatabase(db, targetTurnNodeHash, sourceTurnNodeHash)
-  ) {
-    return "forward";
+  const sourceMetadata = ensureValidatedTurnNodeLineageMetadataInDatabase(
+    db,
+    sourceTurnNodeHash,
+    "sourceTurnNodeHash"
+  );
+  const targetMetadata = ensureValidatedTurnNodeLineageMetadataInDatabase(
+    db,
+    targetTurnNodeHash,
+    "targetTurnNodeHash"
+  );
+
+  if (sourceMetadata.rootTurnNodeHash !== targetMetadata.rootTurnNodeHash) {
+    return "lateral";
   }
 
-  if (
-    isTurnNodeDescendantOfInDatabase(db, sourceTurnNodeHash, targetTurnNodeHash)
-  ) {
-    return "backward";
+  if (targetMetadata.depth > sourceMetadata.depth) {
+    if (
+      sourceMetadata.depth === 0 &&
+      targetMetadata.rootTurnNodeHash === sourceTurnNodeHash
+    ) {
+      return "forward";
+    }
+
+    return isTurnNodeDescendantOfInDatabase(
+      db,
+      targetTurnNodeHash,
+      sourceTurnNodeHash
+    )
+      ? "forward"
+      : "lateral";
+  }
+
+  if (targetMetadata.depth < sourceMetadata.depth) {
+    if (
+      targetMetadata.depth === 0 &&
+      sourceMetadata.rootTurnNodeHash === targetTurnNodeHash
+    ) {
+      return "backward";
+    }
+
+    return isTurnNodeDescendantOfInDatabase(
+      db,
+      sourceTurnNodeHash,
+      targetTurnNodeHash
+    )
+      ? "backward"
+      : "lateral";
   }
 
   return "lateral";
+}
+
+function isTurnNodeDescendantOfInDatabase(
+  db: Database.Database,
+  descendantTurnNodeHash: string,
+  ancestorTurnNodeHash: string
+): boolean {
+  if (descendantTurnNodeHash === ancestorTurnNodeHash) {
+    return true;
+  }
+
+  const descendantMetadata = ensureValidatedTurnNodeLineageMetadataInDatabase(
+    db,
+    descendantTurnNodeHash,
+    "descendantTurnNodeHash"
+  );
+  const ancestorMetadata = ensureValidatedTurnNodeLineageMetadataInDatabase(
+    db,
+    ancestorTurnNodeHash,
+    "ancestorTurnNodeHash"
+  );
+
+  if (
+    descendantMetadata.rootTurnNodeHash !== ancestorMetadata.rootTurnNodeHash ||
+    descendantMetadata.depth < ancestorMetadata.depth
+  ) {
+    return false;
+  }
+
+  if (
+    ancestorMetadata.depth === 0 &&
+    descendantMetadata.rootTurnNodeHash === ancestorTurnNodeHash
+  ) {
+    return true;
+  }
+
+  const row = db
+    .prepare(
+      `
+        WITH RECURSIVE lineage(hash, previous_turn_node_hash, remaining_depth) AS (
+          SELECT hash, previous_turn_node_hash, ? AS remaining_depth
+          FROM turn_nodes
+          WHERE hash = ?
+          UNION ALL
+          SELECT
+            turn_nodes.hash,
+            turn_nodes.previous_turn_node_hash,
+            lineage.remaining_depth - 1
+          FROM turn_nodes
+          JOIN lineage ON turn_nodes.hash = lineage.previous_turn_node_hash
+          WHERE lineage.remaining_depth > 0
+        )
+        SELECT 1 AS found
+        FROM lineage
+        WHERE hash = ?
+        LIMIT 1
+      `
+    )
+    .get(
+      descendantMetadata.depth - ancestorMetadata.depth,
+      descendantTurnNodeHash,
+      ancestorTurnNodeHash
+    ) as { found: number } | undefined;
+
+  return row !== undefined;
 }
 
 function classifyTurnNodeRelationship(
@@ -4556,41 +6247,6 @@ function classifyTurnNodeRelationship(
   }
 
   return "lateral";
-}
-
-function isTurnNodeDescendantOfInDatabase(
-  db: Database.Database,
-  descendantTurnNodeHash: string,
-  ancestorTurnNodeHash: string
-): boolean {
-  const visitedTurnNodes = new Set<string>();
-  let currentTurnNodeHash: string | null = descendantTurnNodeHash;
-
-  while (currentTurnNodeHash !== null) {
-    if (visitedTurnNodes.has(currentTurnNodeHash)) {
-      throw persistenceError(
-        "turn node lineage must not contain cycles",
-        "sqlite_backend_cyclic_turn_node_lineage",
-        {
-          ancestorTurnNodeHash,
-          descendantTurnNodeHash,
-        }
-      );
-    }
-
-    if (currentTurnNodeHash === ancestorTurnNodeHash) {
-      return true;
-    }
-
-    visitedTurnNodes.add(currentTurnNodeHash);
-    currentTurnNodeHash = ensureTurnNodeExistsInDatabase(
-      db,
-      currentTurnNodeHash,
-      "turn node lineage"
-    ).previousTurnNodeHash;
-  }
-
-  return false;
 }
 
 function isTurnNodeDescendantOf(

@@ -318,7 +318,7 @@ The archive Branch preserves abandoned TurnNodes. No TurnNodes are ever orphaned
 
 ### 4.3 Lineage and Containment
 
-The kernel proves Thread membership and directional relationships through **lineage walks** — traversals of the `previousTurnNodeHash` chain back to the Thread's `rootTurnNodeHash`.
+The kernel proves Thread membership and directional relationships through **lineage proofs** over the `previousTurnNodeHash` chain back to the Thread's `rootTurnNodeHash`.
 
 **Membership proof**: A TurnNode belongs to a Thread if and only if walking `previousTurnNodeHash` from that node reaches the Thread's `rootTurnNodeHash`.
 
@@ -326,7 +326,7 @@ The kernel proves Thread membership and directional relationships through **line
 
 **Cross-thread rejection**: If a lineage walk reaches a root that doesn't match the expected Thread's `rootTurnNodeHash`, the operation is rejected.
 
-This single mechanism serves all containment and direction validation across the kernel.
+This single logical mechanism serves all containment and direction validation across the kernel. Implementations may maintain backend-local derived indexes, such as root/depth metadata, to accelerate lineage proofs. Those indexes are not canonical kernel records and are valid only while they are derived from, and validated against, the immutable parent-linked TurnNode chain. If an implementation detects disagreement between a derived index and the TurnNode chain, the TurnNode chain is authoritative and the derived index is corrupt.
 
 ### 4.4 TurnSequence
 
@@ -375,11 +375,41 @@ Run
 
 - **One active Run per Branch.** `run.create` rejects if any `running` or `paused` Run exists on the target Branch.
 - **Paused is blocking.** A paused Run holds its Branch until explicitly resolved.
+- **Running is execution-owned.** A `running` Run represents active execution ownership, not merely a historical status label. Implementations that claim durable stale-run recovery MUST attach an execution owner, renewable lease expiry, and fencing token to `running` ownership.
+- **Paused is approval-owned.** A `paused` Run represents intentional approval suspension. It blocks the Branch, but it is not an execution lease and MUST NOT be preempted merely because an execution-owner heartbeat expired.
 - **Paused resolution is one-way.** A paused Run may be explicitly resolved only to `failed`; this is the mechanism the framework uses to abandon a pause point before creating a replacement Run on the same Branch.
 - **Terminal statuses**: `completed` and `failed`. Rollback-caused termination uses `failed`.
 - Multiple Runs may serve the same Turn (pause/resume creates new Run from pause point).
 
 Each Run explicitly declares `schemaId` and `branchId`. The kernel validates at `run.create` that the Branch's current Head matches `startTurnNodeHash`.
+
+#### Run Execution Leases
+
+Execution leases are the kernel-visible stale-`running` recovery mechanism. They are required before any backend or framework may claim recovery from process death while a Run is durably `running`.
+
+A leased `running` Run has:
+
+- an execution owner identity supplied by the framework/host
+- a monotonically changing fencing token for compare-and-swap ownership checks
+- a lease expiry timestamp in kernel time
+- renewal semantics that keep the Run `running` only while the current owner can prove possession of the latest token
+
+Lease renewal succeeds only for the current owner/token pair and only while the Run remains `running`. Renewal never applies to `paused`, `completed`, or `failed` Runs.
+
+#### Stale Running Preemption
+
+When a `running` Run's lease has expired, a framework/host owner may preempt it through an explicit kernel operation. Preemption is not cooperative cancellation; it is recovery from an owner that may be dead.
+
+Preemption MUST be atomic:
+
+1. Verify the Run is still `running`.
+2. Verify the previous lease has expired.
+3. Install a new fencing token or record the preempting owner.
+4. Preserve durable staged work using the same reactive-checkpoint rule as `run.complete(...)` when staged work is verifiably complete.
+5. Mark the superseded Run as `failed` with a durable preemption reason.
+6. Return recovery state for creating a replacement Run from the resulting Branch head.
+
+The replacement execution MUST be a new Run. Reopening the stale Run is illegal because it weakens the Run status transition model and makes audit history ambiguous.
 
 ### 5.3 Turn
 
@@ -492,6 +522,9 @@ Orphaned Object — harmless (immutable, content-addressed). Re-execution produc
 Detectable via `store.has(objectHash)`. Invalid StagedResults treated as incomplete. Task re-executes.
 
 **Convergence rule**: If the kernel cannot verify that work is fully durable (Object + StagedResult + TurnNode all exist), treat as incomplete and re-execute. Content-addressing makes re-execution safe.
+
+**Class 8: Process death leaves a leased `running` Run.**
+If the execution lease is still valid, another owner must not take over. If the lease is expired, stale-running preemption (§5.2) is the only valid takeover path. `paused` Runs are excluded from this crash class because they represent approval ownership, not execution ownership.
 
 ### 5.8 Execution Model
 
@@ -695,7 +728,7 @@ The kernel defines its persistence requirements as **observable behavioral guara
 - **Durable visibility**: once committed, subsequent reads see the committed state, even after process restart.
 - **Read-after-write consistency**: within the same writer, reads after a committed write always reflect the write.
 
-**Implementation freedom**: The kernel does not prescribe a storage engine, schema shape, or deployment model. A single embedded database, a distributed store with coordination, a multi-backend architecture splitting objects from metadata — all are valid choices provided the behavioral guarantees hold. Concrete technologies (SQLite, PostgreSQL, S3, etc.) are illustrative examples, not normative anchors.
+**Implementation freedom**: The kernel does not prescribe a storage engine, schema shape, or deployment model. A single embedded database, a distributed store with coordination, a multi-backend architecture splitting objects from metadata — all are valid choices provided the behavioral guarantees hold. Concrete technologies (SQLite, PostgreSQL, S3, etc.) are illustrative examples, not normative anchors. Backends may maintain derived indexes for access paths such as lineage proof acceleration, but those indexes must be rebuildable from canonical records and must not change observable kernel semantics.
 
 **Non-transactional backends**: Storage substrates that do not natively provide the required atomicity or durability guarantees are acceptable only when wrapped in an adapter or coordination layer that restores those guarantees at the boundary the kernel observes. The kernel contract is satisfied by the observable behavior of the storage surface it calls, not by the internal properties of any individual component behind that surface.
 
@@ -718,7 +751,7 @@ Backend choice is an implementation concern. Correctness semantics are not.
 13. **Explicit scoping.** Every run-scoped operation carries `runId`. No ambient state.
 14. **Structural containment.** Branches belong to Threads. One Head per Branch. Threads bootstrap atomically.
 15. **Durable staging.** StagedResults survive crashes for parallel work safety.
-16. **Lineage-proven membership.** Every TurnNode reference validated by walk to Thread root. Cross-thread references rejected.
+16. **Lineage-proven membership.** Every TurnNode reference validated against the parent-linked path to the Thread root. Cross-thread references rejected.
 17. **No orphaned TurnNodes.** Backward `branch.setHead` archives abandoned segment.
 18. **Paused blocks Branch.** No new Run creation on a Branch with a `paused` or `running` Run.
 
@@ -748,6 +781,7 @@ Backend choice is an implementation concern. Correctness semantics are not.
 | —       | running   | `run.create`                                                                 |
 | running | completed | `run.complete(runId, completed, ...)`                                        |
 | running | failed    | `run.complete(runId, failed, ...)` or archival rollback                      |
+| running | failed    | stale-running preemption after lease expiry                                  |
 | running | paused    | `run.complete(runId, paused, ...)`                                           |
 | paused  | failed    | Framework explicitly resolves the paused Run as failed, or archival rollback |
 

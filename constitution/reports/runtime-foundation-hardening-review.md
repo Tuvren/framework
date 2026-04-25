@@ -94,9 +94,35 @@ The hardening epic should include:
 4. Run liveness and stale active-run recovery specification.
 5. Retention roots and GC reachability topology design.
 
+## Epic J Closure Status
+
+Epic J has implemented or specified the accepted actions from this review:
+
+- SQLite transaction hot-path characterization, benchmark output, and localized
+  validation landed in `constitution/reports/runtime-foundation-hardening-sqlite-hot-path.md`
+  and the SQLite backend implementation.
+- Lineage checks now use backend-local lineage root/depth metadata for common
+  membership and root-to-head proofs, with bounded recursive CTE fallback for
+  non-root ancestry. Query-plan regression coverage protects the targeted access
+  paths.
+- Run liveness is now specified in the Kernel Spec, Framework Spec, and
+  TechSpec as a lease/preemption extension gate. No partial lease schema or
+  stale-run implementation is introduced in this pass.
+- Retention roots and reachability topology are documented in
+  `constitution/reports/runtime-foundation-hardening-retention-topology.md`, and
+  `bun run nx run backend-sqlite:retention-dry-run` proves the mark-only SQLite
+  traversal without destructive cleanup.
+
+After Epic J, the project may claim that the SQLite normal transaction path no
+longer performs whole-database validation and that explicit health diagnostics
+retain full-state corruption checks. It still must not claim durable recovery
+from process death for active Runs or bounded storage growth until future
+implementation epics add the lease/preemption and retention mechanics specified
+by this hardening pass.
+
 ## Production Claim Gate
 
-Until the above work is complete, the project should not claim:
+Before Epic J closure, the project should not claim:
 
 - SQLite-backed production performance
 - durable recovery from process death for active Runs

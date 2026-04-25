@@ -981,6 +981,22 @@ For `approve` and `edit` decisions, unfinished tool calls resume through the nor
 
 At the kernel layer, closing a paused Run still uses the kernel's `paused -> failed` transition before the continuation Run begins. That is a Run-lifecycle bookkeeping step required by the kernel contract; it MUST NOT be interpreted as a Turn-level approval failure or as a contradiction of the framework's approval semantics.
 
+#### Running Lease Ownership
+
+Framework implementations that claim durable recovery of `running` Runs MUST configure an execution owner identity and lease policy before creating leased Runs. The owner identity is a host/framework runtime identity, not a model/provider identity.
+
+While a Turn is running, shared core is responsible for renewing the active Run lease before expiry. If renewal fails because the fencing token is stale, the active `ExecutionHandle` is invalidated: it MUST stop producing ordinary progress, surface a fatal runtime error, and must not attempt to persist further work under the stale owner token.
+
+Lease ownership applies only to `running` Runs. Approval pause/resume uses the approval control surface below and MUST NOT be represented as execution-heartbeat renewal.
+
+#### Stale Running Recovery
+
+On startup or recovery, the framework scans for Branch-blocking `running` Runs whose leases have expired. For each stale Run it intends to recover, it calls the kernel stale-running preemption operation, observes the returned recovery state, and creates a replacement Run from the resulting Branch head.
+
+The framework MUST treat preemption as a recovery event, not as user cancellation. Durable staged work from the stale Run is recovered through the kernel recovery state; unverified in-memory provider stream state is not assumed to exist. A replacement Run re-enters the appropriate framework phase from durable state only.
+
+Paused approval Runs are not stale-running candidates. Host-configured approval timeouts, if any, must be modeled as explicit approval rejection, abandonment, or a future approval-expiry outcome; they are not execution lease expiry.
+
 ### 4.9 Recovery Protocol
 
 **Crash during input incorporation**: If TurnNode exists, input is durable — proceed. If not, re-incorporate from original signal.
@@ -996,6 +1012,8 @@ At the kernel layer, closing a paused Run still uses the kernel's `paused -> fai
 **Crash during iteration (mid tool execution)**: Completed tool results that were incrementally staged before the crash may survive as durable uncommitted staged work for individual `tool` messages. If a TurnNode exists, those results are committed history. If not, recovery reads them from `run.recover()`, skips completed tool calls by `callId`, and resumes only unfinished calls. The framework MUST NOT assume they were already incorporated into the `messages` path unless the checkpoint succeeded.
 
 **Crash between iterations**: Clean state. Resume from current Branch Head.
+
+**Crash leaving a leased `running` Run**: If the lease remains valid, another owner must not resume the Run. If the lease is expired, shared core may recover only through kernel stale-running preemption, then creates a replacement Run from returned recovery state. Paused approval Runs are excluded from this path.
 
 ### 4.10 Error Handling
 
@@ -1382,6 +1400,8 @@ ExecutionHandle
 ```
 
 **`events()`** — the primary output. The host iterates this to receive all execution events. Iteration drives execution — the driver advances as the consumer pulls events. The stream is single-consumer per handle; calling `events()` again after consumption starts is invalid. If the only consumer abandons a still-running `events()` stream without calling `cancel()` separately, shared core treats that stream abandonment as cancellation of the running execution. Paused Handles remain explicit control surfaces: abandoning an already-paused stream does not synthesize rejection.
+
+If the active Run lease is lost or preempted, `events()` terminates through the framework's fatal error path. The handle becomes invalid for further control calls because its owner token can no longer safely persist progress.
 
 **`cancel()`** — while the Turn is running, triggers the AbortSignal. The driver handles staging partial content and failing the Run. If the Turn is already paused for approval, `cancel()` is treated as rejection of the pending tool calls rather than as an automatic failed terminal state. The shared-core `cancel()` path stages those rejection outcomes durably and stops the paused execution without re-entering the model on the same Turn. This is distinct from `resolveApproval(...)` with explicit `reject` decisions, which continues the same Turn through the normal iteration loop.
 

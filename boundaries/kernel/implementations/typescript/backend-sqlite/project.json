@@ -14,6 +14,20 @@
         "command": "bunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false && mkdir -p dist/migrations && cp migrations/*.sql dist/migrations/"
       }
     },
+    "bench": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "boundaries/kernel/implementations/typescript/backend-sqlite",
+        "command": "rm -rf .tmp-bench && bunx --bun tsc --project tsconfig.bench.json --pretty false && mkdir -p .tmp-bench/boundaries/kernel/implementations/typescript/backend-sqlite/migrations && cp migrations/*.sql .tmp-bench/boundaries/kernel/implementations/typescript/backend-sqlite/migrations/ && node .tmp-bench/boundaries/kernel/implementations/typescript/backend-sqlite/bench/sqlite-hot-path.bench.js"
+      }
+    },
+    "retention-dry-run": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "boundaries/kernel/implementations/typescript/backend-sqlite",
+        "command": "rm -rf .tmp-bench && bunx --bun tsc --project tsconfig.bench.json --pretty false && mkdir -p .tmp-bench/boundaries/kernel/implementations/typescript/backend-sqlite/migrations && cp migrations/*.sql .tmp-bench/boundaries/kernel/implementations/typescript/backend-sqlite/migrations/ && node .tmp-bench/boundaries/kernel/implementations/typescript/backend-sqlite/bench/sqlite-retention-dry-run.js"
+      }
+    },
     "smoke-native": {
       "executor": "nx:run-commands",
       "options": {

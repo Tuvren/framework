@@ -9,6 +9,7 @@ coverage
 .direnv
 .cache
 .tmp-tests
+.tmp-bench
 .env
 .env.*
 .codex

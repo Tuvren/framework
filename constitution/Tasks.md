@@ -1,15 +1,16 @@
 # Engineering Execution Plan
 
 ## 0. Version History & Changelog
+- v0.5.1 - Closed Epic J with SQLite hot-path cleanup, localized validation coverage, Run liveness spec deltas, and retention topology proof.
 - v0.5.0 - Rebased active scope after Epic I completion and inserted Runtime Foundation Hardening before deeper ReAct/runtime expansion.
 - v0.4.0 - Advanced the active backlog past Epic H by splitting the post-runtime-core roadmap into narrower epics and making Epic I a focused ReAct Driver foundation slice.
 - v0.3.1 - Narrowed Epic H around the docs-first minimal shared-core model by removing sequence semantics from core scope, reducing orchestration to handle/tree primitives, and shrinking the shared driver contract surface.
 - ... [Older history truncated, refer to git logs]
 
 ## 1. Executive Summary & Active Critical Path
-- **Total Active Story Points:** 16
-- **Critical Path:** `KRT-J001 -> KRT-J002 -> KRT-J003`
-- **Planning Assumptions:** Epic I is complete in repo reality. Before deeper ReAct loop/tool work resumes, the active scope is a bounded Runtime Foundation Hardening pass focused on confirmed persistence, run-liveness, and retention code smells. SQLite remains one backend implementation, not the runtime ontology; hardening work must preserve backend-neutral kernel semantics.
+- **Total Active Story Points:** 0
+- **Critical Path:** Epic J is complete; no next active epic is selected in this document.
+- **Planning Assumptions:** Epic I is complete in repo reality. Epic J has closed the bounded Runtime Foundation Hardening pass focused on confirmed persistence, run-liveness, and retention code smells. SQLite remains one backend implementation, not the runtime ontology; hardening work preserved backend-neutral kernel semantics.
 
 ### Brownfield Continuity Note
 - The current codebase already contains the workspace scaffold, shared core types, kernel protocol package, memory backend, SQLite backend, kernel testkit, shared framework contract packages, `runtime-core`, and the completed ReAct Driver foundation slice.
@@ -26,10 +27,7 @@
 - This section uses "iteration strategy" only because the planning framework requires that heading; the content below is dependency phasing and scope partitioning, not a commitment to Scrum-style iterations.
 
 ### Current Active Scope
-- Remove whole-database SQLite validation from the normal transaction hot path without weakening backend conformance.
-- Establish a backend-local lineage validation strategy that avoids global scans and is explicit about depth-sensitive behavior.
-- Specify run liveness and stale active-run recovery semantics before introducing schema or runtime contract changes.
-- Define retention roots and GC reachability topology so future cleanup work preserves audit semantics.
+- No open Epic J scope remains.
 
 ### Future / Deferred Scope
 - Epic K will extend the ReAct Driver through full loop and tool integration, including deeper ReAct-specific continuation behavior beyond the initial foundation slice.
@@ -49,6 +47,7 @@
 - Epic G delivered the shared framework contract partition across runtime, driver, event, tool, and provider surfaces.
 - Epic H delivered the docs-first shared framework foundations, including the minimal shared-core contract realignment and `runtime-core`.
 - Epic I delivered the first focused ReAct Driver foundation slice.
+- Epic J delivered Runtime Foundation Hardening: SQLite hot-path characterization, localized transaction validation, backend-local lineage metadata and indexes, explicit diagnostic validation, Run liveness spec deltas, and retention topology proof.
 
 ## 3. Build Order (Mermaid)
 ```mermaid
@@ -63,6 +62,7 @@ flowchart LR
 ### Epic J — Runtime Foundation Hardening (RFH)
 
 **KRT-J001 SQLite Hot-Path Characterization**
+- **Status:** Completed
 - **Type:** Spike
 - **Effort:** 2
 - **Dependencies:** None
@@ -74,8 +74,10 @@ Given the SQLite backend currently validates loaded state inside normal transact
 When the hot-path characterization is completed
 Then the repository contains a short findings note or benchmark output identifying the global validation entrypoints, the affected write operations, and the observed scaling risk
 ```
+- **Closure Evidence:** `constitution/reports/runtime-foundation-hardening-sqlite-hot-path.md` records the global validation entrypoints and benchmark results. `bun run nx run backend-sqlite:bench` reproduces the measurement.
 
 **KRT-J002 Localized SQLite Validation Design**
+- **Status:** Completed
 - **Type:** Spike
 - **Effort:** 3
 - **Dependencies:** KRT-J001
@@ -87,8 +89,10 @@ Given the hot-path characterization identifies global validation in normal SQLit
 When the localized validation design is completed
 Then the design names the invariant checks that remain in the write path, the checks moved to diagnostics or tests, and the lineage query strategy required before implementation
 ```
+- **Closure Evidence:** `constitution/reports/runtime-foundation-hardening-sqlite-hot-path.md` records the localized write-set validation design, diagnostic boundary, lineage root/depth metadata strategy, bounded CTE fallback, and targeted index coverage.
 
 **KRT-J003 SQLite Transaction Hot-Path Cleanup**
+- **Status:** Completed
 - **Type:** Chore
 - **Effort:** 5
 - **Dependencies:** KRT-J002
@@ -100,8 +104,10 @@ Given the localized SQLite validation design is accepted
 When the SQLite transaction hot path is cleaned up
 Then normal backend transactions no longer reload and validate the full database while explicit diagnostics and shared backend suites continue to detect persisted corruption
 ```
+- **Closure Evidence:** `@tuvren/backend-sqlite` transactions now validate touched records and references without normal-path full database reloads, while `backend.health()` keeps explicit full-state diagnostics. The SQLite suite includes regression coverage for health-only corruption detection, missing required schema/indexes, corrupted lineage metadata, and targeted query plans.
 
 **KRT-J004 Run Liveness and Stale Active-Run Semantics**
+- **Status:** Completed
 - **Type:** Spike
 - **Effort:** 3
 - **Dependencies:** None
@@ -113,8 +119,10 @@ Given active Runs currently block Branches until completed, failed, paused, or e
 When the liveness semantics spike is completed
 Then the resulting recommendation identifies required Kernel Spec, Framework Spec, TechSpec, and contract changes before any lease or preemption implementation begins
 ```
+- **Closure Evidence:** `constitution/reports/runtime-foundation-hardening-run-liveness.md`, `docs/KrakenKernelSpecification.md`, `docs/KrakenFrameworkSpecification.md`, and `constitution/TechSpec.md` define the lease/preemption semantics and implementation gate. No partial liveness schema is introduced.
 
 **KRT-J005 Retention Roots and GC Topology**
+- **Status:** Completed
 - **Type:** Spike
 - **Effort:** 3
 - **Dependencies:** KRT-J002
@@ -126,3 +134,4 @@ Given the kernel preserves committed history and archives abandoned branch segme
 When the retention topology spike is completed
 Then the repository contains the proposed retention roots, reachability query strategy, and any SQLite index gaps without implementing destructive cleanup
 ```
+- **Closure Evidence:** `constitution/reports/runtime-foundation-hardening-retention-topology.md` defines retention roots, reachability topology, and destructive-cleanup guardrails. `bun run nx run backend-sqlite:retention-dry-run` proves a mark-only SQLite traversal without changing row counts.

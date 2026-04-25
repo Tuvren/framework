@@ -37,3 +37,6 @@ If a change makes ordinary library consumers type `Kraken*`, treat that as a bou
 
 ## Testing Guidelines
 Tests use Bun (`bun test`) and, for some Node-bound targets, package-specific Nx commands. Keep test files near the package they verify under `test/`, and run the narrowest relevant target first before broadening to workspace checks.
+
+## Pull Request Follow-Up
+When review feedback changes behavior, validation scope, docs, or follow-up context, update the PR body before merge so it reflects the final branch rather than the initial submission.
