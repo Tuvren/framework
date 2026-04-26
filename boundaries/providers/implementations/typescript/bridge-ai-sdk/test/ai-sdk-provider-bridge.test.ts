@@ -661,6 +661,65 @@ describe("provider-bridge-ai-sdk", () => {
     ]);
   });
 
+  test("replays Google reasoning thought signatures on assistant reasoning parts", async () => {
+    let capturedOptions: LanguageModelV3CallOptions | undefined;
+    const bridge = createAiSdkProviderBridge({
+      model: createMockModel({
+        async doGenerate(options) {
+          await Promise.resolve();
+          capturedOptions = options;
+          return createGenerateResult();
+        },
+        provider: "google",
+      }),
+    });
+
+    await bridge.generate({
+      messages: [
+        {
+          parts: [
+            {
+              providerMetadata: {
+                google: {
+                  thoughtSignature: "thought-1",
+                },
+              },
+              redacted: false,
+              text: "Thinking",
+              type: "reasoning",
+            },
+          ],
+          role: "assistant",
+        },
+        {
+          parts: [{ text: "Continue", type: "text" }],
+          role: "user",
+        },
+      ],
+    });
+
+    expect(capturedOptions?.prompt).toEqual([
+      {
+        content: [
+          {
+            providerOptions: {
+              google: {
+                thoughtSignature: "thought-1",
+              },
+            },
+            text: "Thinking",
+            type: "reasoning",
+          },
+        ],
+        role: "assistant",
+      },
+      {
+        content: [{ text: "Continue", type: "text" }],
+        role: "user",
+      },
+    ]);
+  });
+
   test("does not replay output-only assistant metadata into provider options", async () => {
     let capturedOptions: LanguageModelV3CallOptions | undefined;
     const bridge = createAiSdkProviderBridge({
@@ -801,6 +860,51 @@ describe("provider-bridge-ai-sdk", () => {
     );
   });
 
+  test("marks generated Anthropic redacted thinking as redacted reasoning", async () => {
+    const bridge = createAiSdkProviderBridge({
+      model: createMockModel({
+        async doGenerate() {
+          await Promise.resolve();
+          return createGenerateResult({
+            content: [
+              {
+                providerMetadata: {
+                  anthropic: {
+                    redactedData: "redacted-thinking",
+                  },
+                },
+                text: "",
+                type: "reasoning",
+              },
+            ],
+          });
+        },
+      }),
+    });
+
+    const response = await bridge.generate({
+      messages: [
+        {
+          parts: [{ text: "Think", type: "text" }],
+          role: "user",
+        },
+      ],
+    });
+
+    expect(response.parts).toEqual([
+      {
+        providerMetadata: {
+          anthropic: {
+            redactedData: "redacted-thinking",
+          },
+        },
+        redacted: true,
+        text: "",
+        type: "reasoning",
+      },
+    ]);
+  });
+
   test("allows tool-call-only streamed turns when structured output is requested", async () => {
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
@@ -912,6 +1016,130 @@ describe("provider-bridge-ai-sdk", () => {
         type: "finish",
         usage: {
           inputTokens: 4,
+          outputTokens: 2,
+        },
+      },
+    ]);
+  });
+
+  test("preserves streamed Google reasoning thought signatures in reasoning chunks", async () => {
+    const bridge = createAiSdkProviderBridge({
+      model: createMockModel({
+        async doStream() {
+          await Promise.resolve();
+          return {
+            stream: streamFromParts([
+              {
+                id: "reasoning-1",
+                providerMetadata: {
+                  google: {
+                    thoughtSignature: "thought-2",
+                  },
+                },
+                type: "reasoning-start",
+              },
+              {
+                delta: "Reasoning",
+                id: "reasoning-1",
+                providerMetadata: {
+                  google: {
+                    thoughtSignature: "thought-2",
+                  },
+                },
+                type: "reasoning-delta",
+              },
+              {
+                id: "reasoning-1",
+                type: "reasoning-end",
+              },
+              {
+                finishReason: {
+                  raw: "stop",
+                  unified: "stop",
+                },
+                type: "finish",
+                usage: createUsage(3, 2),
+              },
+            ]),
+          };
+        },
+        provider: "google",
+      }),
+    });
+
+    const chunks = await collectAsyncIterable(
+      bridge.stream({
+        messages: [
+          {
+            parts: [{ text: "Think", type: "text" }],
+            role: "user",
+          },
+        ],
+      })
+    );
+
+    expect(chunks).toEqual([
+      {
+        signature: "thought-2",
+        text: "Reasoning",
+        type: "reasoning_delta",
+      },
+      {
+        type: "reasoning_done",
+      },
+      {
+        finishReason: "stop",
+        providerMetadata: {
+          aiSdkBridge: {
+            rawParts: [],
+            rawUsage: {
+              inputTokens: {
+                cacheRead: 1,
+                cacheWrite: 0,
+                noCache: 2,
+                total: 3,
+              },
+              outputTokens: {
+                reasoning: 0,
+                text: 2,
+                total: 2,
+              },
+              raw: {
+                provider: "mock-provider",
+              },
+            },
+            requestBody: undefined,
+            response: {
+              headers: undefined,
+              metadata: undefined,
+            },
+            sources: [],
+            streamPartMetadata: [
+              {
+                id: "reasoning-1",
+                providerMetadata: {
+                  google: {
+                    thoughtSignature: "thought-2",
+                  },
+                },
+                type: "reasoning-start",
+              },
+              {
+                id: "reasoning-1",
+                providerMetadata: {
+                  google: {
+                    thoughtSignature: "thought-2",
+                  },
+                },
+                type: "reasoning-delta",
+              },
+            ],
+            warnings: [],
+          },
+        },
+        type: "finish",
+        usage: {
+          inputTokens: 3,
           outputTokens: 2,
         },
       },
@@ -1519,6 +1747,82 @@ describe("provider-bridge-ai-sdk", () => {
               },
               redacted: false,
               text: "Thinking",
+              type: "reasoning",
+            },
+          ],
+          role: "assistant",
+        }),
+      ])
+    );
+  });
+
+  test("preserves streamed Anthropic redacted thinking on canonical assistant history", async () => {
+    const harness = createFakeKernelHarness();
+    const bridge = createAiSdkProviderBridge({
+      model: createMockModel({
+        async doStream() {
+          await Promise.resolve();
+          return {
+            stream: streamFromParts([
+              {
+                id: "reasoning-1",
+                providerMetadata: {
+                  anthropic: {
+                    redactedData: "redacted-stream",
+                  },
+                },
+                type: "reasoning-start",
+              },
+              {
+                id: "reasoning-1",
+                type: "reasoning-end",
+              },
+              {
+                finishReason: {
+                  raw: "stop",
+                  unified: "stop",
+                },
+                type: "finish",
+                usage: createUsage(4, 3),
+              },
+            ]),
+          };
+        },
+      }),
+    });
+    const runtime = createTuvrenRuntimeCore({
+      defaultDriverId: "react",
+      driverRegistry: createDriverRegistry([createReActDriver()]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        model: bridge,
+        name: "primary",
+      },
+      signal: {
+        parts: [{ text: "Think", type: "text" }],
+      },
+      threadId: thread.threadId,
+    });
+
+    await collectAsyncIterable(handle.events());
+    const committedMessages = await harness.readBranchMessages(thread.branchId);
+
+    expect(committedMessages).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          parts: [
+            {
+              providerMetadata: {
+                anthropic: {
+                  redactedData: "redacted-stream",
+                },
+              },
+              redacted: true,
+              text: "",
               type: "reasoning",
             },
           ],

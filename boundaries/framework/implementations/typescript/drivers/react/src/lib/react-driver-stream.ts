@@ -374,14 +374,16 @@ class StreamAccumulator {
         ];
       case "reasoning_delta":
         this.appendReasoning(chunk.text, chunk.signature);
-        return [
-          {
-            delta: chunk.text,
-            messageId: this.messageId,
-            timestamp: this.now(),
-            type: "reasoning.delta",
-          },
-        ];
+        return chunk.text.length === 0
+          ? []
+          : [
+              {
+                delta: chunk.text,
+                messageId: this.messageId,
+                timestamp: this.now(),
+                type: "reasoning.delta",
+              },
+            ];
       case "reasoning_done":
         this.completeReasoning();
         return [
@@ -439,66 +441,23 @@ class StreamAccumulator {
   }): TuvrenModelResponse {
     const parts: TuvrenModelResponse["parts"] = [];
     const partial = options?.partial === true;
+    const pendingRedactedReasoningMetadata = collectRedactedReasoningMetadata(
+      this.finishChunk?.providerMetadata
+    );
 
     if (!partial) {
       this.assertCompletedProviderParts();
     }
 
     for (const part of this.parts) {
-      switch (part.kind) {
-        case "text": {
-          parts.push({
-            text: part.text,
-            type: "text",
-          });
-          break;
-        }
-        case "reasoning": {
-          parts.push({
-            providerMetadata:
-              part.signature === undefined
-                ? undefined
-                : {
-                    signature: part.signature,
-                  },
-            redacted: false,
-            text: part.text,
-            type: "reasoning",
-          });
-          break;
-        }
-        case "structured": {
-          const data = parsePartialStructuredPart(part, partial);
+      const finalizedPart = finalizeAccumulatedPart({
+        part,
+        partial,
+        pendingRedactedReasoningMetadata,
+      });
 
-          if (data !== undefined) {
-            parts.push({
-              data,
-              name: part.name,
-              type: "structured",
-            });
-          }
-          break;
-        }
-        case "tool_call": {
-          const input = parsePartialToolCallInput(part.state, partial);
-
-          if (input !== undefined) {
-            parts.push({
-              callId: part.state.callId,
-              input,
-              name: part.state.name,
-              providerMetadata: {
-                providerCallId: part.state.providerCallId,
-              },
-              type: "tool_call",
-            });
-          }
-          break;
-        }
-        default:
-          throw new TuvrenRuntimeError("unsupported accumulated content part", {
-            code: "react_driver_invalid_model_response",
-          });
+      if (finalizedPart !== undefined) {
+        parts.push(finalizedPart);
       }
     }
 
@@ -920,6 +879,144 @@ class StreamAccumulator {
   }
 }
 
+function finalizeAccumulatedPart(input: {
+  part: AccumulatedPart;
+  partial: boolean;
+  pendingRedactedReasoningMetadata: Record<string, unknown>[];
+}): TuvrenModelResponse["parts"][number] | undefined {
+  switch (input.part.kind) {
+    case "text":
+      return {
+        text: input.part.text,
+        type: "text",
+      };
+    case "reasoning":
+      return finalizeReasoningPart(
+        input.part,
+        input.pendingRedactedReasoningMetadata
+      );
+    case "structured":
+      return finalizeStructuredPart(input.part, input.partial);
+    case "tool_call":
+      return finalizeToolCallPart(input.part, input.partial);
+    default:
+      throw new TuvrenRuntimeError("unsupported accumulated content part", {
+        code: "react_driver_invalid_model_response",
+      });
+  }
+}
+
+function finalizeReasoningPart(
+  part: Extract<AccumulatedPart, { kind: "reasoning" }>,
+  pendingRedactedReasoningMetadata: Record<string, unknown>[]
+): Extract<TuvrenModelResponse["parts"][number], { type: "reasoning" }> {
+  const redactedReasoningMetadata =
+    part.text.length === 0 && part.signature === undefined
+      ? pendingRedactedReasoningMetadata.shift()
+      : undefined;
+
+  if (
+    part.text.length === 0 &&
+    part.signature === undefined &&
+    redactedReasoningMetadata === undefined
+  ) {
+    throw new TuvrenProviderError(
+      "provider stream produced empty reasoning without redacted metadata",
+      {
+        code: "react_driver_invalid_provider_stream",
+      }
+    );
+  }
+
+  return {
+    providerMetadata:
+      redactedReasoningMetadata ??
+      (part.signature === undefined
+        ? undefined
+        : {
+            signature: part.signature,
+          }),
+    redacted: redactedReasoningMetadata !== undefined,
+    text: part.text,
+    type: "reasoning",
+  };
+}
+
+function finalizeStructuredPart(
+  part: Extract<AccumulatedPart, { kind: "structured" }>,
+  partial: boolean
+):
+  | Extract<TuvrenModelResponse["parts"][number], { type: "structured" }>
+  | undefined {
+  const data = parsePartialStructuredPart(part, partial);
+
+  return data === undefined
+    ? undefined
+    : {
+        data,
+        name: part.name,
+        type: "structured",
+      };
+}
+
+function finalizeToolCallPart(
+  part: Extract<AccumulatedPart, { kind: "tool_call" }>,
+  partial: boolean
+):
+  | Extract<TuvrenModelResponse["parts"][number], { type: "tool_call" }>
+  | undefined {
+  const input = parsePartialToolCallInput(part.state, partial);
+
+  return input === undefined
+    ? undefined
+    : {
+        callId: part.state.callId,
+        input,
+        name: part.state.name,
+        providerMetadata: {
+          providerCallId: part.state.providerCallId,
+        },
+        type: "tool_call",
+      };
+}
+
+function collectRedactedReasoningMetadata(
+  providerMetadata: Record<string, unknown> | undefined
+): Record<string, unknown>[] {
+  const aiSdkBridge = isPlainObject(providerMetadata?.aiSdkBridge)
+    ? providerMetadata.aiSdkBridge
+    : undefined;
+  const streamPartMetadata = Array.isArray(aiSdkBridge?.streamPartMetadata)
+    ? aiSdkBridge.streamPartMetadata
+    : [];
+  const redactedMetadata: Record<string, unknown>[] = [];
+
+  for (const entry of streamPartMetadata) {
+    if (!isPlainObject(entry) || entry.type !== "reasoning-start") {
+      continue;
+    }
+
+    const entryProviderMetadata = isPlainObject(entry.providerMetadata)
+      ? entry.providerMetadata
+      : undefined;
+    const anthropicMetadata = isPlainObject(entryProviderMetadata?.anthropic)
+      ? entryProviderMetadata.anthropic
+      : undefined;
+
+    if (typeof anthropicMetadata?.redactedData !== "string") {
+      continue;
+    }
+
+    redactedMetadata.push({
+      anthropic: {
+        redactedData: anthropicMetadata.redactedData,
+      },
+    });
+  }
+
+  return redactedMetadata;
+}
+
 function closeProviderIterator(
   iterator: AsyncIterator<ProviderStreamChunk>
 ): void {
@@ -1091,6 +1188,10 @@ function normalizeUnknownError(error: unknown): {
   return {
     message: String(error),
   };
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function cloneValue<T>(value: T): T {

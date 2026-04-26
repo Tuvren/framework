@@ -129,7 +129,9 @@ interface StreamMappingState {
 const ASSISTANT_REASONING_REPLAY_PROVIDER_KEYS = {
   anthropic: new Set(["redactedData", "signature"]),
   azure: new Set(["reasoningEncryptedContent"]),
+  google: new Set(["thoughtSignature"]),
   openai: new Set(["reasoningEncryptedContent"]),
+  vertex: new Set(["thoughtSignature"]),
 } as const;
 const ASSISTANT_TEXT_REPLAY_PROVIDER_KEYS = {
   google: new Set(["thoughtSignature"]),
@@ -406,7 +408,7 @@ function handleReasoningStreamPart(
 ): ProviderStreamChunk[] | undefined {
   switch (part.type) {
     case "reasoning-start":
-      return [];
+      return createReasoningStartChunks(part);
     case "reasoning-delta":
       return [createReasoningDeltaChunk(part)];
     case "reasoning-end":
@@ -418,6 +420,19 @@ function handleReasoningStreamPart(
     default:
       return undefined;
   }
+}
+
+function createReasoningStartChunks(
+  part: Extract<LanguageModelV3StreamPart, { type: "reasoning-start" }>
+): ProviderStreamChunk[] {
+  return hasAnthropicRedactedReasoningMetadata(part.providerMetadata)
+    ? [
+        {
+          text: "",
+          type: "reasoning_delta",
+        },
+      ]
+    : [];
 }
 
 function createReasoningDeltaChunk(
@@ -960,7 +975,7 @@ function createCallOptions(input: {
           presencePenalty: settings.presencePenalty,
         }
       : {}),
-    prompt: mapPromptMessages(input.prompt.messages),
+    prompt: mapPromptMessages(input.model.provider, input.prompt.messages),
     ...(providerOptions === undefined
       ? {}
       : {
@@ -1014,12 +1029,16 @@ function createCallOptions(input: {
 }
 
 function mapPromptMessages(
+  activeProvider: string,
   messages: TuvrenPrompt["messages"]
 ): LanguageModelV3Prompt {
-  return messages.map((message) => mapPromptMessage(message));
+  return messages.map((message) => mapPromptMessage(activeProvider, message));
 }
 
-function mapPromptMessage(message: TuvrenMessage): LanguageModelV3Message {
+function mapPromptMessage(
+  activeProvider: string,
+  message: TuvrenMessage
+): LanguageModelV3Message {
   switch (message.role) {
     case "system": {
       return {
@@ -1037,7 +1056,9 @@ function mapPromptMessage(message: TuvrenMessage): LanguageModelV3Message {
 
     case "assistant": {
       return {
-        content: message.parts.map((part) => mapAssistantPart(part)),
+        content: message.parts.map((part) =>
+          mapAssistantPart(activeProvider, part)
+        ),
         role: "assistant",
       };
     }
@@ -1133,10 +1154,13 @@ function mapUserPart(part: TuvrenPromptPart) {
   }
 }
 
-function mapAssistantPart(part: TuvrenPromptPart) {
+function mapAssistantPart(activeProvider: string, part: TuvrenPromptPart) {
   switch (part.type) {
     case "text": {
-      const providerOptions = mapAssistantReplayProviderOptions(part);
+      const providerOptions = mapAssistantReplayProviderOptions(
+        activeProvider,
+        part
+      );
 
       return {
         ...(providerOptions === undefined
@@ -1153,7 +1177,10 @@ function mapAssistantPart(part: TuvrenPromptPart) {
     }
 
     case "reasoning": {
-      const providerOptions = mapAssistantReplayProviderOptions(part);
+      const providerOptions = mapAssistantReplayProviderOptions(
+        activeProvider,
+        part
+      );
 
       return {
         ...(providerOptions === undefined
@@ -1170,7 +1197,10 @@ function mapAssistantPart(part: TuvrenPromptPart) {
     }
 
     case "file": {
-      const providerOptions = mapAssistantReplayProviderOptions(part);
+      const providerOptions = mapAssistantReplayProviderOptions(
+        activeProvider,
+        part
+      );
 
       return {
         data: cloneFileData(part.data),
@@ -1193,7 +1223,10 @@ function mapAssistantPart(part: TuvrenPromptPart) {
     }
 
     case "tool_call": {
-      const providerOptions = mapAssistantReplayProviderOptions(part);
+      const providerOptions = mapAssistantReplayProviderOptions(
+        activeProvider,
+        part
+      );
 
       return {
         input: cloneMetadataValue(part.input),
@@ -1216,7 +1249,10 @@ function mapAssistantPart(part: TuvrenPromptPart) {
     }
 
     case "structured": {
-      const providerOptions = mapAssistantReplayProviderOptions(part);
+      const providerOptions = mapAssistantReplayProviderOptions(
+        activeProvider,
+        part
+      );
 
       return {
         ...(providerOptions === undefined
@@ -1508,16 +1544,33 @@ function mapGeneratedReasoningPart(
     { type: "reasoning" }
   >
 ): Extract<TuvrenModelResponse["parts"][number], { type: "reasoning" }> {
+  const providerMetadata = sanitizeRecord(contentPart.providerMetadata);
+
   return {
-    ...(contentPart.providerMetadata === undefined
+    ...(providerMetadata === undefined
       ? {}
       : {
-          providerMetadata: sanitizeRecord(contentPart.providerMetadata),
+          providerMetadata,
         }),
-    redacted: false,
+    redacted: isAnthropicRedactedReasoningPart(providerMetadata),
     text: contentPart.text,
     type: "reasoning",
   };
+}
+
+function isAnthropicRedactedReasoningPart(
+  providerMetadata: Record<string, unknown> | undefined
+): boolean {
+  if (providerMetadata === undefined) {
+    return false;
+  }
+
+  const anthropicMetadata = providerMetadata.anthropic;
+
+  return (
+    isPlainObject(anthropicMetadata) &&
+    typeof anthropicMetadata.redactedData === "string"
+  );
 }
 
 function buildGenerateProviderMetadata(
@@ -2010,6 +2063,7 @@ function mapPromptProviderOptions(
 }
 
 function mapAssistantReplayProviderOptions(
+  activeProvider: string,
   part: TuvrenPromptPart
 ): SharedV3ProviderOptions | undefined {
   const sanitized = sanitizeRecord(part.providerMetadata);
@@ -2033,11 +2087,10 @@ function mapAssistantReplayProviderOptions(
       );
 
       if (typeof sanitized.signature === "string") {
-        normalized.anthropic = mergePromptProviderNamespace(
-          normalized.anthropic,
-          {
-            signature: sanitized.signature,
-          }
+        applyFlatReasoningSignature(
+          normalized,
+          activeProvider,
+          sanitized.signature
         );
       }
 
@@ -2046,6 +2099,40 @@ function mapAssistantReplayProviderOptions(
     default:
       return undefined;
   }
+}
+
+function applyFlatReasoningSignature(
+  providerOptions: Record<string, unknown>,
+  activeProvider: string,
+  signature: string
+): void {
+  const providerNamespace =
+    getFlatReasoningSignatureProviderNamespace(activeProvider);
+
+  providerOptions[providerNamespace] = mergePromptProviderNamespace(
+    providerOptions[providerNamespace],
+    providerNamespace === "anthropic"
+      ? {
+          signature,
+        }
+      : {
+          thoughtSignature: signature,
+        }
+  );
+}
+
+function getFlatReasoningSignatureProviderNamespace(
+  activeProvider: string
+): "anthropic" | "google" | "vertex" {
+  if (activeProvider.includes("vertex")) {
+    return "vertex";
+  }
+
+  if (activeProvider.includes("google")) {
+    return "google";
+  }
+
+  return "anthropic";
 }
 
 function normalizePromptProviderMetadata(
@@ -2245,11 +2332,44 @@ function readReasoningStreamSignature(
   }
 
   const anthropicMetadata = sanitized.anthropic;
+  const googleMetadata = sanitized.google;
+  const vertexMetadata = sanitized.vertex;
 
-  return isPlainObject(anthropicMetadata) &&
+  if (
+    isPlainObject(anthropicMetadata) &&
     typeof anthropicMetadata.signature === "string"
-    ? anthropicMetadata.signature
+  ) {
+    return anthropicMetadata.signature;
+  }
+
+  if (
+    isPlainObject(googleMetadata) &&
+    typeof googleMetadata.thoughtSignature === "string"
+  ) {
+    return googleMetadata.thoughtSignature;
+  }
+
+  return isPlainObject(vertexMetadata) &&
+    typeof vertexMetadata.thoughtSignature === "string"
+    ? vertexMetadata.thoughtSignature
     : undefined;
+}
+
+function hasAnthropicRedactedReasoningMetadata(
+  providerMetadata: Record<string, unknown> | undefined
+): boolean {
+  const sanitized = sanitizeRecord(providerMetadata);
+
+  if (sanitized === undefined) {
+    return false;
+  }
+
+  const anthropicMetadata = sanitized.anthropic;
+
+  return (
+    isPlainObject(anthropicMetadata) &&
+    typeof anthropicMetadata.redactedData === "string"
+  );
 }
 
 function sanitizeRecord(

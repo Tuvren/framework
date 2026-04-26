@@ -42,11 +42,12 @@ without rediscovering AI SDK provider behavior.
   - tool messages map from durable `tool_result` parts
   - the baseline bridge replays only continuity-safe assistant content metadata
     back into AI SDK `providerOptions`: Anthropic reasoning `signature` /
-    `redactedData`, Google or Vertex `thoughtSignature`, and OpenAI/Azure
-    `reasoningEncryptedContent`
-  - flat durable reasoning `providerMetadata.signature` from the shared stream
-    seam is normalized back into Anthropic reasoning `providerOptions` on
-    replay so streamed continuity tokens survive prompt history
+    `redactedData`, Google or Vertex `thoughtSignature` on text or reasoning
+    parts, and OpenAI/Azure `reasoningEncryptedContent`
+  - flat durable streamed reasoning `providerMetadata.signature` from the
+    shared stream seam is normalized back into Anthropic `signature` or
+    Google/Vertex `thoughtSignature` based on the active bridge provider so
+    streamed continuity tokens survive prompt history
   - assistant response-level metadata, synthetic `aiSdkBridge` metadata,
     request IDs, and other output-only namespaces are not replayed as prompt
     options
@@ -74,9 +75,11 @@ without rediscovering AI SDK provider behavior.
   - `text-*` maps to `text_delta`, or to synthesized `structured_delta` /
     `structured_done` when a structured response format is active
   - `reasoning-*` maps to `reasoning_delta` / `reasoning_done`, and
-    Anthropic-style streamed reasoning signatures cross the shared stream seam
-    through `reasoning_delta.signature` so ReAct can persist them on canonical
-    reasoning parts
+    Anthropic or Google/Vertex streamed reasoning continuity tokens cross the
+    shared stream seam through `reasoning_delta.signature`
+  - Anthropic streamed `redacted_thinking` survives as a canonical redacted
+    reasoning part through the existing finish metadata trail without widening
+    `ProviderStreamChunk`
   - `tool-input-*` plus client-executed complete `tool-call` map to the
     canonical `tool_call_*` stream chunks, and `tool-input-end` may synthesize
     `tool_call_done` from buffered JSON input when the provider does not send a
