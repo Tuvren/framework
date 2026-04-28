@@ -21,10 +21,17 @@ import type {
   LanguageModelV3GenerateResult,
   LanguageModelV3StreamPart,
   ProviderV3,
-  SharedV3ProviderOptions,
 } from "@ai-sdk/provider";
 import { TuvrenProviderError } from "@tuvren/core-types";
 import { createReActDriver } from "@tuvren/driver-react";
+import {
+  assertProviderChunkTypes,
+  assertProviderFinishChunk,
+  assertProviderStructuredDoneChunk,
+  verifyProviderGenerate,
+  verifyProviderRejects,
+  verifyProviderStream,
+} from "@tuvren/provider-testkit";
 import {
   createDriverRegistry,
   createTuvrenRuntimeCore,
@@ -97,122 +104,125 @@ describe("provider-bridge-ai-sdk", () => {
       }),
     });
 
-    const response = await bridge.generate({
-      config: {
-        model: "mock-model",
-        provider: "mock-provider",
-        settings: {
-          headers: {
-            "x-trace-id": "trace-1",
-          },
-          maxOutputTokens: 128,
-          providerOptions: {
-            openai: {
-              reasoningEffort: "low",
+    const response = await verifyProviderGenerate({
+      provider: bridge,
+      prompt: {
+        config: {
+          model: "mock-model",
+          provider: "mock-provider",
+          settings: {
+            headers: {
+              "x-trace-id": "trace-1",
             },
-          },
-          toolChoice: "required",
-        },
-      },
-      messages: [
-        {
-          content: "You are helpful",
-          role: "system",
-        },
-        {
-          parts: [
-            { text: "Search the docs", type: "text" },
-            {
-              data: "ZmlsZQ==",
-              mediaType: "text/plain",
-              type: "file",
-            },
-          ],
-          role: "user",
-        },
-        {
-          providerMetadata: {
-            aiSdkBridge: {
-              requestBody: {
-                replayed: false,
+            maxOutputTokens: 128,
+            providerOptions: {
+              openai: {
+                reasoningEffort: "low",
               },
             },
-            openai: {
-              responseId: "resp-history",
-            },
+            toolChoice: "required",
           },
-          parts: [
-            {
-              providerMetadata: {
-                openai: {
-                  encryptedContent: "enc-history",
+        },
+        messages: [
+          {
+            content: "You are helpful",
+            role: "system",
+          },
+          {
+            parts: [
+              { text: "Search the docs", type: "text" },
+              {
+                data: "ZmlsZQ==",
+                mediaType: "text/plain",
+                type: "file",
+              },
+            ],
+            role: "user",
+          },
+          {
+            providerMetadata: {
+              aiSdkBridge: {
+                requestBody: {
+                  replayed: false,
                 },
               },
-              text: "Previously answered",
-              type: "text",
+              openai: {
+                responseId: "resp-history",
+              },
             },
-            {
-              providerMetadata: {
-                anthropic: {
-                  signature: "sig-history",
+            parts: [
+              {
+                providerMetadata: {
+                  openai: {
+                    encryptedContent: "enc-history",
+                  },
                 },
+                text: "Previously answered",
+                type: "text",
               },
-              redacted: false,
-              text: "considering options",
-              type: "reasoning",
-            },
-            {
-              callId: "call-1",
-              input: {
-                query: "docs",
+              {
+                providerMetadata: {
+                  anthropic: {
+                    signature: "sig-history",
+                  },
+                },
+                redacted: false,
+                text: "considering options",
+                type: "reasoning",
               },
-              name: "search",
-              type: "tool_call",
-            },
-          ],
-          role: "assistant",
-        },
-        {
-          parts: [
-            {
-              callId: "call-1",
-              name: "search",
-              output: {
-                docs: ["bridge"],
+              {
+                callId: "call-1",
+                input: {
+                  query: "docs",
+                },
+                name: "search",
+                type: "tool_call",
               },
-              type: "tool_result",
-            },
-          ],
-          role: "tool",
-        },
-      ],
-      responseFormat: {
-        name: "answer",
-        schema: {
-          properties: {
-            answer: {
-              type: "string",
-            },
+            ],
+            role: "assistant",
           },
-          required: ["answer"],
-          type: "object",
-        },
-      },
-      tools: [
-        {
-          description: "Search docs",
-          inputSchema: {
+          {
+            parts: [
+              {
+                callId: "call-1",
+                name: "search",
+                output: {
+                  docs: ["bridge"],
+                },
+                type: "tool_result",
+              },
+            ],
+            role: "tool",
+          },
+        ],
+        responseFormat: {
+          name: "answer",
+          schema: {
             properties: {
-              query: {
+              answer: {
                 type: "string",
               },
             },
-            required: ["query"],
+            required: ["answer"],
             type: "object",
           },
-          name: "search",
         },
-      ],
+        tools: [
+          {
+            description: "Search docs",
+            inputSchema: {
+              properties: {
+                query: {
+                  type: "string",
+                },
+              },
+              required: ["query"],
+              type: "object",
+            },
+            name: "search",
+          },
+        ],
+      },
     });
 
     expect(capturedOptions).toEqual(
@@ -461,8 +471,9 @@ describe("provider-bridge-ai-sdk", () => {
       }),
     });
 
-    const chunks = await collectAsyncIterable(
-      bridge.stream({
+    const chunks = await verifyProviderStream({
+      provider: bridge,
+      prompt: {
         messages: [
           {
             parts: [{ text: "Return json", type: "text" }],
@@ -481,8 +492,21 @@ describe("provider-bridge-ai-sdk", () => {
             type: "object",
           },
         },
-      })
-    );
+      },
+    });
+
+    assertProviderChunkTypes(chunks, [
+      "structured_delta",
+      "structured_done",
+      "finish",
+    ]);
+    expect(assertProviderStructuredDoneChunk(chunks, "answer").data).toEqual({
+      answer: "ready",
+    });
+    expect(assertProviderFinishChunk(chunks, "stop").usage).toEqual({
+      inputTokens: 7,
+      outputTokens: 2,
+    });
 
     expect(chunks).toEqual([
       {
@@ -1213,29 +1237,32 @@ describe("provider-bridge-ai-sdk", () => {
       model: createMockModel(),
     });
 
-    await expect(
-      bridge.generate({
-        messages: [
-          {
-            parts: [{ text: "Hello", type: "text" }],
-            role: "user",
-          },
-        ],
-        responseFormat: {
-          name: "answer",
-          schema: {
-            properties: {
-              answer: {
-                type: "string",
-              },
+    await verifyProviderRejects({
+      expectedMessage: "StructuredOutputRequest.strict is not supported",
+      run: async () => {
+        await bridge.generate({
+          messages: [
+            {
+              parts: [{ text: "Hello", type: "text" }],
+              role: "user",
             },
-            required: ["answer"],
-            type: "object",
+          ],
+          responseFormat: {
+            name: "answer",
+            schema: {
+              properties: {
+                answer: {
+                  type: "string",
+                },
+              },
+              required: ["answer"],
+              type: "object",
+            },
+            strict: true,
           },
-          strict: true,
-        },
-      })
-    ).rejects.toThrow("StructuredOutputRequest.strict is not supported");
+        });
+      },
+    });
   });
 
   test("rejects unsupported provider-owned tool results in the baseline bridge", async () => {
@@ -1276,9 +1303,9 @@ describe("provider-bridge-ai-sdk", () => {
       createAiSdkProviderBridge({
         defaultProviderOptions: {
           openai: {
-            requestedAt: new Date("2026-01-03T00:00:00.000Z"),
+            requestedAt: Number.NaN,
           },
-        } as unknown as SharedV3ProviderOptions,
+        },
         model: createMockModel(),
       })
     ).toThrow("AI SDK bridge JSON object values must be JSON-serializable");

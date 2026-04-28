@@ -1,5 +1,5 @@
 {
-  "name": "@tuvren/stream-sse",
+  "name": "@tuvren/provider-testkit",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -13,10 +13,6 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@tuvren/event-stream": "workspace:*",
-    "@tuvren/stream-core": "workspace:*"
-  },
-  "devDependencies": {
-    "@tuvren/framework-testkit": "workspace:*"
+    "@tuvren/provider-api": "workspace:*"
   }
 }

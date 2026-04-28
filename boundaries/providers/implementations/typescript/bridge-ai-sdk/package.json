@@ -22,6 +22,7 @@
   },
   "devDependencies": {
     "@tuvren/driver-react": "workspace:*",
+    "@tuvren/provider-testkit": "workspace:*",
     "@tuvren/runtime-core": "workspace:*",
     "@types/json-schema": "^7.0.15"
   }

@@ -1,0 +1,24 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "paths": {
+      "@tuvren/core-types": [
+        "../../shared/contracts/core-types/dist/index.d.ts"
+      ],
+      "@tuvren/event-stream": ["../contracts/event-stream/dist/index.d.ts"],
+      "@tuvren/runtime-api": ["../contracts/runtime-api/dist/index.d.ts"],
+      "@tuvren/runtime-api/events": [
+        "../contracts/runtime-api/dist/events.d.ts"
+      ]
+    },
+    "types": ["node"]
+  },
+  "include": ["src/**/*.ts"],
+  "references": [
+    {
+      "path": "../contracts/event-stream/tsconfig.lib.json"
+    }
+  ]
+}

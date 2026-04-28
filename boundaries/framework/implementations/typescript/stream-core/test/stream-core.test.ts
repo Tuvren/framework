@@ -17,11 +17,15 @@
 import { describe, expect, test } from "bun:test";
 import type { TuvrenStreamEvent } from "@tuvren/event-stream";
 import {
+  collectStreamValues,
+  frameworkStreamTestFixtures,
+  waitForAsyncTurn,
+} from "@tuvren/framework-testkit";
+import {
   cloneTuvrenStreamEvent,
   createFixtureStream,
   createStreamAdapterWarningReporter,
   serializeTuvrenStreamEvent,
-  streamAdapterFixtures,
   teeTuvrenStreamEvents,
 } from "../src/index.ts";
 
@@ -37,7 +41,7 @@ describe("stream-core", () => {
     const source = (async function* (): AsyncIterable<TuvrenStreamEvent> {
       started = true;
 
-      for (const event of streamAdapterFixtures.completedTurn) {
+      for (const event of frameworkStreamTestFixtures.completedTurn) {
         yield cloneTuvrenStreamEvent(event);
       }
     })();
@@ -45,16 +49,16 @@ describe("stream-core", () => {
 
     expect(started).toBe(false);
 
-    const leftEventsPromise = collectEvents(leftBranch);
-    const rightEventsPromise = collectEvents(rightBranch);
+    const leftEventsPromise = collectStreamValues(leftBranch);
+    const rightEventsPromise = collectStreamValues(rightBranch);
     const [leftEvents, rightEvents] = await Promise.all([
       leftEventsPromise,
       rightEventsPromise,
     ]);
 
     expect(started).toBe(true);
-    expect(leftEvents).toEqual([...streamAdapterFixtures.completedTurn]);
-    expect(rightEvents).toEqual([...streamAdapterFixtures.completedTurn]);
+    expect(leftEvents).toEqual([...frameworkStreamTestFixtures.completedTurn]);
+    expect(rightEvents).toEqual([...frameworkStreamTestFixtures.completedTurn]);
     expect(leftEvents[0]).not.toBe(rightEvents[0]);
 
     if (
@@ -101,7 +105,7 @@ describe("stream-core", () => {
   });
 
   test("serializes Uint8Array payloads into JSON-safe marker objects", async () => {
-    const [event] = await collectEvents(
+    const [event] = await collectStreamValues(
       createFixtureStream([
         {
           data: new Uint8Array([1, 2, 3]),
@@ -133,14 +137,14 @@ describe("stream-core", () => {
 
   test("stops the source when the only active branch returns and siblings were never claimed", async () => {
     const source = createInstrumentedSource(
-      streamAdapterFixtures.completedTurn
+      frameworkStreamTestFixtures.completedTurn
     );
     const [activeBranch] = teeTuvrenStreamEvents(source.events, 2);
     const iterator = activeBranch[Symbol.asyncIterator]();
 
     expect(await iterator.next()).toMatchObject({
       done: false,
-      value: streamAdapterFixtures.completedTurn[0],
+      value: frameworkStreamTestFixtures.completedTurn[0],
     });
 
     await iterator.return?.();
@@ -152,7 +156,7 @@ describe("stream-core", () => {
 
   test("applies backpressure to claimed branches that have not started polling yet", async () => {
     const source = createInstrumentedSource(
-      streamAdapterFixtures.completedTurn
+      frameworkStreamTestFixtures.completedTurn
     );
     const [leftBranch, rightBranch] = teeTuvrenStreamEvents(source.events, 2);
     const leftIterator = leftBranch[Symbol.asyncIterator]();
@@ -160,7 +164,7 @@ describe("stream-core", () => {
 
     expect(await leftIterator.next()).toMatchObject({
       done: false,
-      value: streamAdapterFixtures.completedTurn[0],
+      value: frameworkStreamTestFixtures.completedTurn[0],
     });
     await waitForAsyncTurn();
 
@@ -170,7 +174,7 @@ describe("stream-core", () => {
 
     expect(await rightIterator.next()).toMatchObject({
       done: false,
-      value: streamAdapterFixtures.completedTurn[0],
+      value: frameworkStreamTestFixtures.completedTurn[0],
     });
 
     await Promise.all([leftIterator.return?.(), rightIterator.return?.()]);
@@ -180,7 +184,7 @@ describe("stream-core", () => {
 
   test("replays the full prefix for branches that subscribe before source start and poll later", async () => {
     const source = createInstrumentedSource(
-      streamAdapterFixtures.completedTurn
+      frameworkStreamTestFixtures.completedTurn
     );
     const [leftBranch, rightBranch] = teeTuvrenStreamEvents(source.events, 2);
     const leftIterator = leftBranch[Symbol.asyncIterator]();
@@ -189,7 +193,7 @@ describe("stream-core", () => {
 
     expect(leftFirst).toMatchObject({
       done: false,
-      value: streamAdapterFixtures.completedTurn[0],
+      value: frameworkStreamTestFixtures.completedTurn[0],
     });
     await waitForAsyncTurn();
 
@@ -201,14 +205,14 @@ describe("stream-core", () => {
     ]);
 
     expect([leftFirst.value, ...leftRest]).toEqual([
-      ...streamAdapterFixtures.completedTurn,
+      ...frameworkStreamTestFixtures.completedTurn,
     ]);
-    expect(rightEvents).toEqual([...streamAdapterFixtures.completedTurn]);
+    expect(rightEvents).toEqual([...frameworkStreamTestFixtures.completedTurn]);
   });
 
   test("rejects branches that subscribe after source consumption has started", async () => {
     const source = createInstrumentedSource(
-      streamAdapterFixtures.completedTurn
+      frameworkStreamTestFixtures.completedTurn
     );
     const [leftBranch, rightBranch] = teeTuvrenStreamEvents(source.events, 2);
     const leftIterator = leftBranch[Symbol.asyncIterator]();
@@ -225,24 +229,12 @@ describe("stream-core", () => {
       throw new Error("expected late tee subscription to fail");
     } catch (error: unknown) {
       expect(error).toBeInstanceOf(Error);
-      expect((error as { code?: string }).code).toBe(
-        "event_stream_subscription_too_late"
-      );
+      expect(readErrorCode(error)).toBe("event_stream_subscription_too_late");
     }
 
     await leftIterator.return?.();
   });
 });
-
-async function collectEvents<T>(events: AsyncIterable<T>): Promise<T[]> {
-  const collected: T[] = [];
-
-  for await (const event of events) {
-    collected.push(event);
-  }
-
-  return collected;
-}
 
 async function collectIteratorEvents<T>(
   iterator: AsyncIterator<T>
@@ -258,6 +250,14 @@ async function collectIteratorEvents<T>(
 
     collected.push(nextEvent.value);
   }
+}
+
+function readErrorCode(error: unknown): unknown {
+  if (typeof error !== "object" || error === null || !("code" in error)) {
+    return undefined;
+  }
+
+  return error.code;
 }
 
 function createInstrumentedSource(events: readonly TuvrenStreamEvent[]): {
@@ -310,10 +310,4 @@ function createInstrumentedSource(events: readonly TuvrenStreamEvent[]): {
       return returned;
     },
   };
-}
-
-async function waitForAsyncTurn(): Promise<void> {
-  await new Promise<void>((resolve) => {
-    setTimeout(resolve, 0);
-  });
 }

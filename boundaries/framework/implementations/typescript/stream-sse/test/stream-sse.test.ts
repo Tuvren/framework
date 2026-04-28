@@ -17,16 +17,20 @@
 import { describe, expect, test } from "bun:test";
 import type { TuvrenStreamEvent } from "@tuvren/event-stream";
 import {
-  createFixtureStream,
-  streamAdapterFixtures,
-  teeTuvrenStreamEvents,
-} from "@tuvren/stream-core";
+  collectStreamValues,
+  createFixtureEventStream,
+  frameworkStreamTestFixtures,
+  waitForAsyncTurn,
+} from "@tuvren/framework-testkit";
+import { teeTuvrenStreamEvents } from "@tuvren/stream-core";
 import { toSseFrames, toSseResponse } from "../src/index.ts";
 
 describe("stream-sse", () => {
   test("projects canonical events into EventSource-compatible frames", async () => {
-    const frames = await collectEvents(
-      toSseFrames(createFixtureStream(streamAdapterFixtures.completedTurn))
+    const frames = await collectStreamValues(
+      toSseFrames(
+        createFixtureEventStream(frameworkStreamTestFixtures.completedTurn)
+      )
     );
 
     expect(frames[0]).toEqual({
@@ -44,7 +48,7 @@ describe("stream-sse", () => {
 
   test("creates streaming SSE responses with default headers and caller overrides", async () => {
     const response = toSseResponse(
-      createFixtureStream(streamAdapterFixtures.completedTurn),
+      createFixtureEventStream(frameworkStreamTestFixtures.completedTurn),
       {
         headers: {
           "cache-control": "private, no-store",
@@ -68,23 +72,21 @@ describe("stream-sse", () => {
 
   test("warns when binary file payloads need JSON-safe encoding", async () => {
     const warnings: string[] = [];
-    const frames = await collectEvents(
-      toSseFrames(
-        createFixtureStream([
-          {
-            data: new Uint8Array([7, 8]),
-            mediaType: "application/octet-stream",
-            messageId: "message-binary",
-            timestamp: 99,
-            type: "file.done",
-          },
-        ] satisfies readonly TuvrenStreamEvent[]),
-        {
-          onWarning(warning) {
-            warnings.push(warning.code);
-          },
-        }
-      )
+    const binaryFileEvents: readonly TuvrenStreamEvent[] = [
+      {
+        data: new Uint8Array([7, 8]),
+        mediaType: "application/octet-stream",
+        messageId: "message-binary",
+        timestamp: 99,
+        type: "file.done",
+      },
+    ];
+    const frames = await collectStreamValues(
+      toSseFrames(createFixtureEventStream(binaryFileEvents), {
+        onWarning(warning) {
+          warnings.push(warning.code);
+        },
+      })
     );
 
     expect(warnings).toEqual(["sse_binary_payload_json_encoded"]);
@@ -102,7 +104,7 @@ describe("stream-sse", () => {
 
   test("subscribes eagerly so delayed SSE consumption still receives turn.start", async () => {
     const [sseBranch, directBranch] = teeTuvrenStreamEvents(
-      createFixtureStream(streamAdapterFixtures.completedTurn),
+      createFixtureEventStream(frameworkStreamTestFixtures.completedTurn),
       2
     );
     const sseFrames = toSseFrames(sseBranch);
@@ -110,31 +112,15 @@ describe("stream-sse", () => {
 
     expect(await directIterator.next()).toMatchObject({
       done: false,
-      value: streamAdapterFixtures.completedTurn[0],
+      value: frameworkStreamTestFixtures.completedTurn[0],
     });
     await waitForAsyncTurn();
     await directIterator.return?.();
 
-    const frames = await collectEvents(sseFrames);
+    const frames = await collectStreamValues(sseFrames);
 
     expect(frames[0]).toMatchObject({
       event: "turn.start",
     });
   });
 });
-
-async function collectEvents<T>(events: AsyncIterable<T>): Promise<T[]> {
-  const collected: T[] = [];
-
-  for await (const event of events) {
-    collected.push(event);
-  }
-
-  return collected;
-}
-
-async function waitForAsyncTurn(): Promise<void> {
-  await new Promise<void>((resolve) => {
-    setTimeout(resolve, 0);
-  });
-}

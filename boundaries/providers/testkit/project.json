@@ -1,0 +1,41 @@
+{
+  "name": "providers-testkit",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "root": "boundaries/providers/testkit",
+  "sourceRoot": "boundaries/providers/testkit/src",
+  "projectType": "library",
+  "tags": ["boundary:providers", "layer:testkit"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["^build"],
+      "options": {
+        "cwd": "boundaries/providers/testkit",
+        "command": "bunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false"
+      }
+    },
+    "exports-smoke": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "options": {
+        "cwd": "boundaries/providers/testkit",
+        "command": "bun test ./smoke/package-exports.ts"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "boundaries/providers/testkit",
+        "command": "bun test"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["^build"],
+      "options": {
+        "cwd": "boundaries/providers/testkit",
+        "command": "bunx --bun tsc --project tsconfig.lib.json --noEmit --pretty false && bunx --bun tsc --project tsconfig.typecheck.json --noEmit --pretty false && bunx --bun tsc --project tsconfig.dts.json --noEmit --pretty false"
+      }
+    }
+  }
+}

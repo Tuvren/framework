@@ -75,6 +75,7 @@
       },
       "devDependencies": {
         "@ag-ui/core": "0.0.52",
+        "@tuvren/framework-testkit": "workspace:*",
         "@tuvren/stream-agui": "workspace:*",
         "@tuvren/stream-core": "workspace:*",
         "@tuvren/stream-sse": "workspace:*",
@@ -89,6 +90,9 @@
         "@tuvren/event-stream": "workspace:*",
         "@tuvren/stream-core": "workspace:*",
       },
+      "devDependencies": {
+        "@tuvren/framework-testkit": "workspace:*",
+      },
     },
     "boundaries/framework/implementations/typescript/stream-core": {
       "name": "@tuvren/stream-core",
@@ -97,6 +101,9 @@
         "@tuvren/core-types": "workspace:*",
         "@tuvren/event-stream": "workspace:*",
       },
+      "devDependencies": {
+        "@tuvren/framework-testkit": "workspace:*",
+      },
     },
     "boundaries/framework/implementations/typescript/stream-sse": {
       "name": "@tuvren/stream-sse",
@@ -104,6 +111,16 @@
       "dependencies": {
         "@tuvren/event-stream": "workspace:*",
         "@tuvren/stream-core": "workspace:*",
+      },
+      "devDependencies": {
+        "@tuvren/framework-testkit": "workspace:*",
+      },
+    },
+    "boundaries/framework/testkit": {
+      "name": "@tuvren/framework-testkit",
+      "version": "0.0.0",
+      "dependencies": {
+        "@tuvren/event-stream": "workspace:*",
       },
     },
     "boundaries/hosts/implementations/typescript/playground": {
@@ -117,6 +134,7 @@
         "@tuvren/core-types": "workspace:*",
         "@tuvren/driver-react": "workspace:*",
         "@tuvren/event-stream": "workspace:*",
+        "@tuvren/framework-testkit": "workspace:*",
         "@tuvren/kernel-protocol": "workspace:*",
         "@tuvren/provider-bridge-ai-sdk": "workspace:*",
         "@tuvren/runtime-api": "workspace:*",
@@ -186,8 +204,16 @@
       },
       "devDependencies": {
         "@tuvren/driver-react": "workspace:*",
+        "@tuvren/provider-testkit": "workspace:*",
         "@tuvren/runtime-core": "workspace:*",
         "@types/json-schema": "^7.0.15",
+      },
+    },
+    "boundaries/providers/testkit": {
+      "name": "@tuvren/provider-testkit",
+      "version": "0.0.0",
+      "dependencies": {
+        "@tuvren/provider-api": "workspace:*",
       },
     },
     "boundaries/shared/contracts/core-types": {
@@ -685,6 +711,8 @@
 
     "@tuvren/event-stream": ["@tuvren/event-stream@workspace:boundaries/framework/contracts/event-stream"],
 
+    "@tuvren/framework-testkit": ["@tuvren/framework-testkit@workspace:boundaries/framework/testkit"],
+
     "@tuvren/kernel-protocol": ["@tuvren/kernel-protocol@workspace:boundaries/kernel/contracts/protocol"],
 
     "@tuvren/kernel-testkit": ["@tuvren/kernel-testkit@workspace:boundaries/kernel/testkit"],
@@ -694,6 +722,8 @@
     "@tuvren/provider-api": ["@tuvren/provider-api@workspace:boundaries/providers/contracts/provider-api"],
 
     "@tuvren/provider-bridge-ai-sdk": ["@tuvren/provider-bridge-ai-sdk@workspace:boundaries/providers/implementations/typescript/bridge-ai-sdk"],
+
+    "@tuvren/provider-testkit": ["@tuvren/provider-testkit@workspace:boundaries/providers/testkit"],
 
     "@tuvren/runtime-api": ["@tuvren/runtime-api@workspace:boundaries/framework/contracts/runtime-api"],
 

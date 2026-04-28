@@ -18,6 +18,7 @@
         "../../../../kernel/contracts/protocol/src/index.ts"
       ],
       "@tuvren/provider-api": ["../../../contracts/provider-api/src/index.ts"],
+      "@tuvren/provider-testkit": ["../../../testkit/src/index.ts"],
       "@tuvren/runtime-api": [
         "../../../../framework/contracts/runtime-api/src/index.ts"
       ],
@@ -43,6 +44,7 @@
     "src/**/*.ts",
     "test/**/*.ts",
     "../../../contracts/provider-api/src/**/*.ts",
+    "../../../testkit/src/**/*.ts",
     "../../../../framework/contracts/driver-api/src/**/*.ts",
     "../../../../framework/contracts/runtime-api/src/**/*.ts",
     "../../../../framework/implementations/typescript/drivers/react/src/**/*.ts",

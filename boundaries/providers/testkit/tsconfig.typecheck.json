@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.lib.json",
+  "compilerOptions": {
+    "composite": false,
+    "rootDir": "../../../",
+    "allowImportingTsExtensions": true,
+    "paths": {
+      "@tuvren/provider-api": ["../contracts/provider-api/src/index.ts"]
+    },
+    "types": ["bun", "node"]
+  },
+  "include": [
+    "src/**/*.ts",
+    "test/**/*.ts",
+    "../contracts/provider-api/src/**/*.ts"
+  ]
+}

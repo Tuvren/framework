@@ -17,7 +17,8 @@
 // biome-ignore-all lint/suspicious/useAwait: Test drivers intentionally match the async framework driver contract.
 import { describe, expect, test } from "bun:test";
 import { EventType } from "@ag-ui/core";
-import type { RuntimeDriver as KrakenDriver } from "@tuvren/driver-api";
+import type { RuntimeDriver } from "@tuvren/driver-api";
+import { startAsyncCapture } from "@tuvren/framework-testkit";
 import type { TuvrenToolDefinition } from "@tuvren/runtime-api";
 import { toAgUiEvents } from "@tuvren/stream-agui";
 import { teeTuvrenStreamEvents } from "@tuvren/stream-core";
@@ -30,7 +31,6 @@ import {
   assistantToolCalls,
   collectEvents,
   hasAssistantText,
-  startEventCapture,
   textSignal,
   waitFor,
   waitForAbort,
@@ -40,7 +40,7 @@ import {
 describe("stream adapter integration", () => {
   test("fans one completed execution stream into canonical, SSE, and AG-UI consumers", async () => {
     const harness = createFakeKernelHarness();
-    const driver = {
+    const driver: RuntimeDriver = {
       async execute(context) {
         context.runtime.emit({
           data: {
@@ -63,7 +63,7 @@ describe("stream adapter integration", () => {
       async resume() {
         throw new Error("resume was not expected");
       },
-    } satisfies KrakenDriver;
+    };
     const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
@@ -120,7 +120,7 @@ describe("stream adapter integration", () => {
       throw new Error("expected the handle stream to remain single-consumer");
     } catch (error: unknown) {
       expect(error).toBeInstanceOf(Error);
-      expect((error as { code?: string }).code).toBe(
+      expect(readStringProperty(error, "code")).toBe(
         "event_stream_already_consumed"
       );
     }
@@ -130,7 +130,7 @@ describe("stream adapter integration", () => {
     const harness = createFakeKernelHarness();
     let emailCalls = 0;
     let searchCalls = 0;
-    const driver = {
+    const driver: RuntimeDriver = {
       async execute(context) {
         const toolMessageCount = context.messages.filter(
           (message) => message.role === "tool"
@@ -173,7 +173,7 @@ describe("stream adapter integration", () => {
       async resume() {
         throw new Error("resume was not expected");
       },
-    } satisfies KrakenDriver;
+    };
     const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
@@ -185,7 +185,7 @@ describe("stream adapter integration", () => {
         execute(input: unknown) {
           searchCalls += 1;
           return {
-            query: (input as { query: string }).query,
+            query: readStringProperty(input, "query"),
             status: "ok",
           };
         },
@@ -205,7 +205,7 @@ describe("stream adapter integration", () => {
           emailCalls += 1;
           return {
             sent: true,
-            to: (input as { to: string }).to,
+            to: readStringProperty(input, "to"),
           };
         },
         inputSchema: {
@@ -304,7 +304,7 @@ describe("stream adapter integration", () => {
 
   test("projects structured output turns through SSE and AG-UI fallbacks", async () => {
     const harness = createFakeKernelHarness();
-    const driver = {
+    const driver: RuntimeDriver = {
       async execute() {
         return {
           messages: [assistantStructured("summary", { status: "ready" })],
@@ -318,7 +318,7 @@ describe("stream adapter integration", () => {
       async resume() {
         throw new Error("resume was not expected");
       },
-    } satisfies KrakenDriver;
+    };
     const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
@@ -358,7 +358,7 @@ describe("stream adapter integration", () => {
 
   test("surfaces steering incorporation through tee branches", async () => {
     const harness = createFakeKernelHarness();
-    const driver = {
+    const driver: RuntimeDriver = {
       async execute(context) {
         const steeringMessage = context.messages.find(
           (message) =>
@@ -390,7 +390,7 @@ describe("stream adapter integration", () => {
       async resume() {
         throw new Error("resume was not expected");
       },
-    } satisfies KrakenDriver;
+    };
     const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
@@ -407,8 +407,8 @@ describe("stream adapter integration", () => {
       handle.events(),
       2
     );
-    const canonicalCapture = startEventCapture(canonicalBranch);
-    const aguiCapture = startEventCapture(toAgUiEvents(aguiBranch));
+    const canonicalCapture = startAsyncCapture(canonicalBranch);
+    const aguiCapture = startAsyncCapture(toAgUiEvents(aguiBranch));
 
     await waitForAsync(async () =>
       hasAssistantText(
@@ -437,7 +437,7 @@ describe("stream adapter integration", () => {
   test("projects cancelled executions into SSE and AG-UI terminal errors", async () => {
     const harness = createFakeKernelHarness();
     let executeCount = 0;
-    const driver = {
+    const driver: RuntimeDriver = {
       async execute(context) {
         executeCount += 1;
 
@@ -465,7 +465,7 @@ describe("stream adapter integration", () => {
       async resume() {
         throw new Error("resume was not expected");
       },
-    } satisfies KrakenDriver;
+    };
     const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
       driverRegistry: createDriverRegistry([driver]),
@@ -482,9 +482,9 @@ describe("stream adapter integration", () => {
       handle.events(),
       3
     );
-    const canonicalCapture = startEventCapture(canonicalBranch);
-    const sseCapture = startEventCapture(toSseFrames(sseBranch));
-    const aguiCapture = startEventCapture(toAgUiEvents(aguiBranch));
+    const canonicalCapture = startAsyncCapture(canonicalBranch);
+    const sseCapture = startAsyncCapture(toSseFrames(sseBranch));
+    const aguiCapture = startAsyncCapture(toAgUiEvents(aguiBranch));
 
     await waitFor(() => handle.status().phase === "running");
     await waitFor(() => handle.status().iterationCount === 2);
@@ -512,3 +512,16 @@ describe("stream adapter integration", () => {
     ).toBe(true);
   });
 });
+
+function readStringProperty(value: unknown, propertyName: string): string {
+  if (typeof value !== "object" || value === null) {
+    throw new Error(`${propertyName} input must be an object`);
+  }
+
+  const propertyValue = Reflect.get(value, propertyName);
+  if (typeof propertyValue !== "string") {
+    throw new Error(`${propertyName} input must be a string`);
+  }
+
+  return propertyValue;
+}

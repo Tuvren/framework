@@ -22,6 +22,7 @@
         "../../../contracts/runtime-api/src/tools.ts"
       ],
       "@tuvren/driver-api": ["../../../contracts/driver-api/src/index.ts"],
+      "@tuvren/framework-testkit": ["../../../testkit/src/index.ts"],
       "@tuvren/kernel-protocol": [
         "../../../../kernel/contracts/protocol/src/index.ts"
       ],
@@ -36,6 +37,7 @@
     "bench/**/*.ts",
     "src/**/*.ts",
     "test/**/*.ts",
+    "../../../testkit/src/**/*.ts",
     "../../../contracts/runtime-api/src/**/*.ts",
     "../../../contracts/driver-api/src/**/*.ts",
     "../../../../kernel/contracts/protocol/src/**/*.ts",

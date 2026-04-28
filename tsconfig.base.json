@@ -40,6 +40,9 @@
       "@tuvren/provider-api": [
         "./boundaries/providers/contracts/provider-api/src/index.ts"
       ],
+      "@tuvren/provider-testkit": [
+        "./boundaries/providers/testkit/src/index.ts"
+      ],
       "@tuvren/runtime-core": [
         "./boundaries/framework/implementations/typescript/runtime-core/src/index.ts"
       ],
@@ -59,6 +62,9 @@
         "./boundaries/kernel/implementations/typescript/backend-sqlite/src/index.ts"
       ],
       "@tuvren/kernel-testkit": ["./boundaries/kernel/testkit/src/index.ts"],
+      "@tuvren/framework-testkit": [
+        "./boundaries/framework/testkit/src/index.ts"
+      ],
       "@tuvren/playground-host": [
         "./boundaries/hosts/implementations/typescript/playground/src/index.ts"
       ]

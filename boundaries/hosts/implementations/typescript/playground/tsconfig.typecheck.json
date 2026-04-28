@@ -20,6 +20,9 @@
       "@tuvren/event-stream": [
         "../../../../framework/contracts/event-stream/src/index.ts"
       ],
+      "@tuvren/framework-testkit": [
+        "../../../../framework/testkit/src/index.ts"
+      ],
       "@tuvren/kernel-protocol": [
         "../../../../kernel/contracts/protocol/src/index.ts"
       ],
@@ -56,6 +59,7 @@
     "../../../../framework/contracts/runtime-api/src/**/*.ts",
     "../../../../framework/contracts/event-stream/src/**/*.ts",
     "../../../../framework/contracts/driver-api/src/**/*.ts",
+    "../../../../framework/testkit/src/**/*.ts",
     "../../../../framework/implementations/typescript/runtime-core/src/**/*.ts",
     "../../../../framework/implementations/typescript/drivers/react/src/**/*.ts",
     "../../../../framework/implementations/typescript/stream-core/src/**/*.ts",

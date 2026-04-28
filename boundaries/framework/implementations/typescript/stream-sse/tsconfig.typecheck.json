@@ -6,6 +6,7 @@
     "allowImportingTsExtensions": true,
     "paths": {
       "@tuvren/event-stream": ["../../../contracts/event-stream/src/index.ts"],
+      "@tuvren/framework-testkit": ["../../../testkit/src/index.ts"],
       "@tuvren/stream-core": ["../stream-core/src/index.ts"],
       "@tuvren/stream-sse": ["./src/index.ts"]
     },
@@ -15,6 +16,7 @@
     "src/**/*.ts",
     "test/**/*.ts",
     "smoke/**/*.ts",
+    "../../../testkit/src/**/*.ts",
     "../../../contracts/event-stream/src/**/*.ts",
     "../stream-core/src/**/*.ts"
   ]

@@ -17,6 +17,8 @@
     "format": "bunx --bun @biomejs/biome check --write .",
     "nx": "bun ./tools/run-nx.mjs",
     "typecheck": "bun run nx run-many -t typecheck",
+    "verify": "bun tools/scripts/verify.ts",
+    "release-check": "bun tools/scripts/release-check.ts",
     "graph": "bun run nx graph"
   },
   "devDependencies": {

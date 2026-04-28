@@ -2,9 +2,9 @@
 
 ## 0. Version History & Changelog
 
+- v0.7.5 - Closed Epic Q in current repo reality, adding provider/framework testkits, release and portability tooling, the checked-in portability matrix, and the final release-hardening closure inventory.
 - v0.7.4 - Closed `KRT-Q001` in current repo reality, added the Epic Q hardening gap inventory, advanced the active critical path to `KRT-Q002`, and corrected the remaining active story-point total for the open Epic Q scope.
 - v0.7.3 - Closed Epic P in repo reality, added the playground host closure inventory, advanced the active critical path to Epic Q, recorded the Node-backed SQLite scenario validation path, and aligned forked-branch parent validation across runtime, memory, and SQLite backends.
-- v0.7.2 - Closed Epic O in repo reality, added the stream adapter closure inventory, advanced the active critical path to Epic P, and archived the host stream adapter line as implementation-proven.
 - v0.7.1 - Closed Epic N in repo reality, corrected the AI SDK bridge plan to the stable shared stream seam, added the Epic N closure inventory, and advanced the active critical path to Epic O.
 - v0.7.0 - Activated sequential Epics N-Q for the post-ReAct implementation line: `LanguageModelV3` AI SDK provider bridge, host stream protocol adapters, playground host harness, and testkit/release hardening.
 - v0.6.2 - Closed Epic M against brownfield repo reality, added the explicit tool-and-approval inventory artifact, and archived Epics K-M so the next planning pass can start from Epic N.
@@ -12,16 +12,16 @@
 
 ## 1. Executive Summary & Active Critical Path
 
-- **Total Active Story Points:** 14
-- **Critical Path:** KRT-Q002 -> KRT-Q003 -> KRT-Q004 -> KRT-Q005 -> KRT-Q006
-- **Planning Assumptions:** Epics A-P are closed in current repo reality. TechSpec v0.5.4 keeps the baseline AI SDK bridge on `LanguageModelV3` / `ProviderV3` from `@ai-sdk/provider@3.0.8`, pins the AG-UI adapter to `@ag-ui/core@0.0.52`, preserves the existing `ProviderStreamChunk` seam, treats tee-based fanout above `ExecutionHandle.events()` as the sanctioned multi-consumer host path when every required tee branch subscribes before the first pull, records SQLite playground validation as a Node-backed path because `@tuvren/backend-sqlite` uses `better-sqlite3`, and uses `constitution/spikes/epic-q-hardening-gap-inventory.md` as the authoritative extraction, release, and portability handoff for the remaining Epic Q work.
+- **Total Active Story Points:** 0
+- **Critical Path:** Closed through Epic Q; the next active path requires a future planning revision.
+- **Planning Assumptions:** Epics A-Q are closed in current repo reality. TechSpec v0.5.5 keeps the baseline AI SDK bridge on `LanguageModelV3` / `ProviderV3` from `@ai-sdk/provider@3.0.8`, pins the AG-UI adapter to `@ag-ui/core@0.0.52`, preserves the existing `ProviderStreamChunk` seam, treats tee-based fanout above `ExecutionHandle.events()` as the sanctioned multi-consumer host path when every required tee branch subscribes before the first pull, records SQLite playground validation as a Node-backed path because `@tuvren/backend-sqlite` uses `better-sqlite3`, and closes the post-ReAct implementation line through `constitution/spikes/epic-q-release-hardening-inventory.md`.
 
 ### Brownfield Continuity Note
 
 - The current codebase already contains the workspace scaffold, shared core types, kernel protocol package, memory backend, SQLite backend, kernel testkit, shared framework contract packages, provider contract package, `runtime-core`, and the ReAct Driver foundation package.
 - Current repository reality includes closed Epic K, L, M, N, O, and P behavior with explicit closure artifacts in `constitution/spikes/epic-k-react-loop-cancellation-inventory.md`, `constitution/spikes/epic-l-parity-inventory.md`, `constitution/spikes/epic-m-tool-approval-gap-inventory.md`, `constitution/spikes/epic-n-ai-sdk-bridge-inventory.md`, `constitution/spikes/epic-o-stream-adapter-inventory.md`, and `constitution/spikes/epic-p-playground-host-inventory.md`.
 - `KRT-Q001` is now closed in current repo reality through `constitution/spikes/epic-q-hardening-gap-inventory.md`, which inventories the extraction targets, release-check targets, portability matrix, deferred Deno work, and remaining hardening gaps for the rest of Epic Q.
-- The remaining active target packages are the testkit packages under `boundaries/framework/testkit` and `boundaries/providers/testkit`, plus release/verification scripts named in TechSpec.
+- The Epic Q target packages now exist under `boundaries/framework/testkit` and `boundaries/providers/testkit`, with release/verification scripts under `tools/scripts`.
 - Planning verification confirmed `ai@6.0.142` and `@ai-sdk/provider@3.0.8` are available and that `@ai-sdk/provider@3.0.8` exports `LanguageModelV3`, `ProviderV3`, `LanguageModelV3CallOptions`, `LanguageModelV3GenerateResult`, and `LanguageModelV3StreamPart`.
 - Epic N now extends repo reality beyond those planning notes: the bridge package exists and the closure artifact above is the authoritative upstream seam for Epic O.
 - Epic O now extends repo reality beyond those planning notes: `@tuvren/stream-core`, `@tuvren/stream-sse`, and `@tuvren/stream-agui` exist, `constitution/spikes/epic-o-stream-adapter-inventory.md` is the authoritative adapter mapping record, and Epic P must treat tee-based fanout plus the documented `tuvren.runtime.*` AG-UI custom namespace as the handoff surface rather than rediscovering protocol gaps or resubscription hazards.
@@ -29,8 +29,7 @@
 
 ### Sequential Scope Rule
 
-- Epic Q is active, `KRT-Q001` is closed, and `KRT-Q002` may begin.
-- Inside each epic, ticket dependencies are linear unless a future planning revision explicitly changes this file and the TechSpec together.
+- Epic Q is closed. The next implementation line must begin from a future Tasks/TechSpec revision rather than continuing hidden Epic Q scope.
 
 ### Planning Heuristic
 
@@ -46,7 +45,7 @@
 
 ### Current Active Scope
 
-- Epic Q now centers on provider/framework testkit extraction plus release and portability hardening for internal implementation-line readiness, with the gap inventory already recorded and the remaining execution line running from `KRT-Q002` through `KRT-Q006`.
+- No active implementation scope remains in this Tasks revision. Epic Q has closed provider/framework testkit extraction, release-check tooling, package export smoke coverage, Bun/Node portability import checks, and the final closure inventory.
 
 ### Future / Deferred Scope
 
@@ -74,6 +73,7 @@
 - Epic N delivered the baseline AI SDK provider bridge on `LanguageModelV3` / `ProviderV3`, preserved the shared `ProviderStreamChunk` seam, synthesized structured output from JSON text, and recorded the unsupported provider-owned tool/file surfaces in the Epic N bridge inventory artifact.
 - Epic O delivered `@tuvren/stream-core`, `@tuvren/stream-sse`, and `@tuvren/stream-agui`, proved tee-based host fanout over canonical `ExecutionHandle.events()` streams, pinned AG-UI to `@ag-ui/core@0.0.52`, and recorded the lossy/custom fallback matrix in the Epic O stream adapter inventory artifact.
 - Epic P delivered `@tuvren/playground-host`, proved local host embedding across memory and Node-backed SQLite reload, exercised canonical/SSE/AG-UI stream projection, structured output, tool calls, provider metadata, approval pause/resume, steering, branching from a completed source head, cancellation, deterministic fixture provider mode, AI SDK mock provider mode, and recorded downstream hardening assumptions in the Epic P playground host inventory artifact.
+- Epic Q delivered `@tuvren/provider-testkit`, `@tuvren/framework-testkit`, `tools/scripts/verify.ts`, `tools/scripts/release-check.ts`, `tools/scripts/portability-check.ts`, package export smoke coverage for the new testkits, explicit Bun/Node portability import checks, the checked-in portability matrix, and the release-hardening closure inventory artifact.
 
 ## 3. Build Order (Mermaid)
 
@@ -216,11 +216,12 @@ Then the closure inventory records implemented host flows, deterministic fixture
 
 ### Epic Q - Testkit, Portability, and Release Hardening (TPR)
 
-- `KRT-Q001` is closed in current repo reality.
+- Epic Q is closed in current repo reality.
 - Hardening inventory artifact: `constitution/spikes/epic-q-hardening-gap-inventory.md`
+- Closure inventory artifact: `constitution/spikes/epic-q-release-hardening-inventory.md`
 - Durable outcome:
-  - the repository now has an authoritative inventory of provider-contract-first testkit targets, stream/control-focused framework testkit targets, package export smoke coverage, release-check targets that still include the private playground proof, portability expectations, deferred Deno work, and the remaining Epic Q gaps
-  - the next active dependency is `KRT-Q002`, not a fresh replay of Epic P or an unscoped hardening pass
+  - the repository now has extracted provider-contract and framework stream/control testkits, package export smoke coverage, release-check tooling that still includes the private playground proof, explicit Bun/Node portability import validation, a checked-in portability matrix, and final Epic Q closure evidence
+  - the next active dependency is a future Tasks/TechSpec revision, not hidden continuation work inside Epic Q
 
 **KRT-Q001 Hardening Gap Inventory**
 

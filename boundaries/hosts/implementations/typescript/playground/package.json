@@ -20,6 +20,7 @@
     "@tuvren/core-types": "workspace:*",
     "@tuvren/driver-react": "workspace:*",
     "@tuvren/event-stream": "workspace:*",
+    "@tuvren/framework-testkit": "workspace:*",
     "@tuvren/kernel-protocol": "workspace:*",
     "@tuvren/provider-bridge-ai-sdk": "workspace:*",
     "@tuvren/runtime-api": "workspace:*",
