@@ -2,6 +2,7 @@
 
 ## 0. Version History & Changelog
 
+- v0.7.4 - Closed `KRT-Q001` in current repo reality, added the Epic Q hardening gap inventory, advanced the active critical path to `KRT-Q002`, and corrected the remaining active story-point total for the open Epic Q scope.
 - v0.7.3 - Closed Epic P in repo reality, added the playground host closure inventory, advanced the active critical path to Epic Q, recorded the Node-backed SQLite scenario validation path, and aligned forked-branch parent validation across runtime, memory, and SQLite backends.
 - v0.7.2 - Closed Epic O in repo reality, added the stream adapter closure inventory, advanced the active critical path to Epic P, and archived the host stream adapter line as implementation-proven.
 - v0.7.1 - Closed Epic N in repo reality, corrected the AI SDK bridge plan to the stable shared stream seam, added the Epic N closure inventory, and advanced the active critical path to Epic O.
@@ -11,14 +12,15 @@
 
 ## 1. Executive Summary & Active Critical Path
 
-- **Total Active Story Points:** 15
-- **Critical Path:** KRT-Q001 -> KRT-Q002 -> KRT-Q003 -> KRT-Q004 -> KRT-Q005 -> KRT-Q006
-- **Planning Assumptions:** Epics A-P are closed in current repo reality. TechSpec v0.5.3 keeps the baseline AI SDK bridge on `LanguageModelV3` / `ProviderV3` from `@ai-sdk/provider@3.0.8`, pins the AG-UI adapter to `@ag-ui/core@0.0.52`, preserves the existing `ProviderStreamChunk` seam, treats tee-based fanout above `ExecutionHandle.events()` as the sanctioned multi-consumer host path when every required tee branch subscribes before the first pull, and records SQLite playground validation as a Node-backed path because `@tuvren/backend-sqlite` uses `better-sqlite3`. Epic Q is now the active hardening line.
+- **Total Active Story Points:** 14
+- **Critical Path:** KRT-Q002 -> KRT-Q003 -> KRT-Q004 -> KRT-Q005 -> KRT-Q006
+- **Planning Assumptions:** Epics A-P are closed in current repo reality. TechSpec v0.5.4 keeps the baseline AI SDK bridge on `LanguageModelV3` / `ProviderV3` from `@ai-sdk/provider@3.0.8`, pins the AG-UI adapter to `@ag-ui/core@0.0.52`, preserves the existing `ProviderStreamChunk` seam, treats tee-based fanout above `ExecutionHandle.events()` as the sanctioned multi-consumer host path when every required tee branch subscribes before the first pull, records SQLite playground validation as a Node-backed path because `@tuvren/backend-sqlite` uses `better-sqlite3`, and uses `constitution/spikes/epic-q-hardening-gap-inventory.md` as the authoritative extraction, release, and portability handoff for the remaining Epic Q work.
 
 ### Brownfield Continuity Note
 
 - The current codebase already contains the workspace scaffold, shared core types, kernel protocol package, memory backend, SQLite backend, kernel testkit, shared framework contract packages, provider contract package, `runtime-core`, and the ReAct Driver foundation package.
 - Current repository reality includes closed Epic K, L, M, N, O, and P behavior with explicit closure artifacts in `constitution/spikes/epic-k-react-loop-cancellation-inventory.md`, `constitution/spikes/epic-l-parity-inventory.md`, `constitution/spikes/epic-m-tool-approval-gap-inventory.md`, `constitution/spikes/epic-n-ai-sdk-bridge-inventory.md`, `constitution/spikes/epic-o-stream-adapter-inventory.md`, and `constitution/spikes/epic-p-playground-host-inventory.md`.
+- `KRT-Q001` is now closed in current repo reality through `constitution/spikes/epic-q-hardening-gap-inventory.md`, which inventories the extraction targets, release-check targets, portability matrix, deferred Deno work, and remaining hardening gaps for the rest of Epic Q.
 - The remaining active target packages are the testkit packages under `boundaries/framework/testkit` and `boundaries/providers/testkit`, plus release/verification scripts named in TechSpec.
 - Planning verification confirmed `ai@6.0.142` and `@ai-sdk/provider@3.0.8` are available and that `@ai-sdk/provider@3.0.8` exports `LanguageModelV3`, `ProviderV3`, `LanguageModelV3CallOptions`, `LanguageModelV3GenerateResult`, and `LanguageModelV3StreamPart`.
 - Epic N now extends repo reality beyond those planning notes: the bridge package exists and the closure artifact above is the authoritative upstream seam for Epic O.
@@ -27,7 +29,7 @@
 
 ### Sequential Scope Rule
 
-- Epic Q may begin; Epic P is closed.
+- Epic Q is active, `KRT-Q001` is closed, and `KRT-Q002` may begin.
 - Inside each epic, ticket dependencies are linear unless a future planning revision explicitly changes this file and the TechSpec together.
 
 ### Planning Heuristic
@@ -44,7 +46,7 @@
 
 ### Current Active Scope
 
-- Epic Q extracts testkits and hardens release, package export, and Bun/Node portability checks after the playground host has proven the public host path.
+- Epic Q now centers on provider/framework testkit extraction plus release and portability hardening for internal implementation-line readiness, with the gap inventory already recorded and the remaining execution line running from `KRT-Q002` through `KRT-Q006`.
 
 ### Future / Deferred Scope
 
@@ -83,7 +85,7 @@ flowchart LR
   KRTP004 --> KRTP005[KRT-P005 Persistent Scenario Matrix]
   KRTP005 --> KRTP006[KRT-P006 Playground Closure Inventory]
   KRTP006 --> KRTQ001[KRT-Q001 Hardening Gap Inventory]
-  KRTQ001 --> KRTQ002[KRT-Q002 Provider Bridge Testkit Extraction]
+  KRTQ001 --> KRTQ002[KRT-Q002 Provider Contract Testkit Extraction]
   KRTQ002 --> KRTQ003[KRT-Q003 Framework Adapter Testkit Extraction]
   KRTQ003 --> KRTQ004[KRT-Q004 Release and Verify Tooling]
   KRTQ004 --> KRTQ005[KRT-Q005 Bun and Node Portability Matrix]
@@ -214,13 +216,19 @@ Then the closure inventory records implemented host flows, deterministic fixture
 
 ### Epic Q - Testkit, Portability, and Release Hardening (TPR)
 
+- `KRT-Q001` is closed in current repo reality.
+- Hardening inventory artifact: `constitution/spikes/epic-q-hardening-gap-inventory.md`
+- Durable outcome:
+  - the repository now has an authoritative inventory of provider-contract-first testkit targets, stream/control-focused framework testkit targets, package export smoke coverage, release-check targets that still include the private playground proof, portability expectations, deferred Deno work, and the remaining Epic Q gaps
+  - the next active dependency is `KRT-Q002`, not a fresh replay of Epic P or an unscoped hardening pass
+
 **KRT-Q001 Hardening Gap Inventory**
 
 - **Type:** Spike
 - **Effort:** 2
 - **Dependencies:** KRT-P006
 - **Capability / Contract Mapping:** PRD `CAP-P0-012`, `CAP-P0-020`, `CAP-P0-030`, `CAP-P1-032`; Architecture `5`; TechSpec `5.1`, `5.2`, `5.3`, `5.4.1`
-- **Description:** Inventory provider bridge fixtures, stream adapter fixtures, playground scenarios, package export smoke tests, release checks, and runtime portability gaps that must be closed before the post-ReAct line can be treated as implementation-ready.
+- **Description:** Inventory provider-contract fixture sources, stream adapter fixtures, playground scenarios, package export smoke tests, release checks, and runtime portability gaps that must be closed before the post-ReAct line can be treated as internally implementation-ready.
 - **Acceptance Criteria (Gherkin):**
 
 ```gherkin
@@ -229,19 +237,21 @@ When the hardening gap inventory is completed
 Then the repository records the testkit extraction targets, release-check targets, portability matrix, package export smoke tests, deferred Deno work, and any remaining gaps that must close inside Epic Q
 ```
 
-**KRT-Q002 Provider Bridge Testkit Extraction**
+**KRT-Q002 Provider Contract Testkit Extraction**
 
 - **Type:** Feature
 - **Effort:** 3
 - **Dependencies:** KRT-Q001
 - **Capability / Contract Mapping:** PRD `CAP-P0-012`, `CAP-P0-030`; Architecture `5`; TechSpec `4.4`, `5.1`, `5.2`; Framework Spec `3`, `6`
-- **Description:** Extract reusable provider bridge fixtures and conformance helpers under `boundaries/providers/testkit`, focused on `LanguageModelV3` generate/stream behavior, mappings, errors, metadata, and cancellation.
+- **Description:** Extract reusable provider-contract fixtures and conformance helpers under `boundaries/providers/testkit`, using the AI SDK bridge as the first proving implementation while keeping the shared testkit surface aligned with future contract stabilization and language-agnostic provider work.
 - **Acceptance Criteria (Gherkin):**
 
 ```gherkin
 Given the AI SDK bridge has package-local fixture coverage
 When provider testkit extraction is complete
-Then reusable testkit helpers can verify LanguageModelV3 generate and stream mappings, metadata preservation, errors, cancellation, and tool/structured-output behavior without requiring runtime-core to know about AI SDK types
+Then reusable testkit helpers can verify provider-contract generate and stream behavior, metadata preservation, errors, cancellation, and tool/structured-output behavior
+And the shared testkit surface does not require runtime-core or future provider implementations to know about AI SDK-specific types
+And the AI SDK bridge remains the first proving implementation of that shared provider testkit surface
 ```
 
 **KRT-Q003 Framework Adapter Testkit Extraction**
@@ -250,13 +260,14 @@ Then reusable testkit helpers can verify LanguageModelV3 generate and stream map
 - **Effort:** 3
 - **Dependencies:** KRT-Q002
 - **Capability / Contract Mapping:** PRD `CAP-P0-020`, `CAP-P1-024`; Architecture `5`; TechSpec `4.5`, `4.7`, `5.1`, `5.2`; Framework Spec `6`, `9`
-- **Description:** Extract reusable framework adapter and host-flow fixtures under `boundaries/framework/testkit`, covering canonical event streams, stream adapters, runtime controls, approvals, and playground scenario reuse.
+- **Description:** Extract reusable framework stream and control-flow fixtures under `boundaries/framework/testkit`, covering canonical event streams, stream adapters, runtime controls, approvals, and terminal-status behavior without turning the testkit into a hidden host harness.
 - **Acceptance Criteria (Gherkin):**
 
 ```gherkin
 Given stream adapters and the playground have local scenario coverage
 When framework testkit extraction is complete
 Then reusable fixtures can verify canonical event ordering, SSE output, AG-UI output, cancellation, steering, approval, error, and terminal-status behavior without depending on playground internals
+And resumed continuation coverage preserves the documented canonical/SSE-only projection when AG-UI lacks a complete turn lifecycle
 ```
 
 **KRT-Q004 Release and Verify Tooling**
@@ -265,13 +276,16 @@ Then reusable fixtures can verify canonical event ordering, SSE output, AG-UI ou
 - **Effort:** 3
 - **Dependencies:** KRT-Q003
 - **Capability / Contract Mapping:** PRD `CAP-P1-032`; Architecture `5`; TechSpec `5.1`, `5.2`, `5.3`
-- **Description:** Add or refresh release/verification tooling under `tools/scripts`, including workspace verification, package export smoke tests, build/typecheck/test orchestration, and release-check reporting.
+- **Description:** Add or refresh release/verification tooling under `tools/scripts`, including workspace verification, package export smoke tests, build/typecheck/test orchestration, and release-check reporting for internal implementation-line readiness rather than public package publication.
 - **Acceptance Criteria (Gherkin):**
 
 ```gherkin
 Given provider, framework, stream, and playground packages are present
 When the release and verification scripts run
-Then they build and typecheck the relevant packages, run package export smoke tests, execute targeted test suites, report failures clearly, and avoid relying on untracked local state or provider credentials
+Then they build and typecheck the relevant packages, run package export smoke tests, and execute the targeted test suites for the active Epic Q surface
+And the verification surface includes the Node-backed `host-playground:scenario-sqlite` proof alongside the private playground package checks
+And failures and declared-versus-observed runtime-version drift are reported clearly without making drift alone a failing result
+And the verification surface avoids relying on untracked local state or provider credentials
 ```
 
 **KRT-Q005 Bun and Node Portability Matrix**
@@ -280,13 +294,17 @@ Then they build and typecheck the relevant packages, run package export smoke te
 - **Effort:** 3
 - **Dependencies:** KRT-Q004
 - **Capability / Contract Mapping:** PRD `CAP-P0-030`, `CAP-P1-032`; Architecture `5`; TechSpec `1`, `3.5`, `5.2`
-- **Description:** Validate the core non-native packages across Bun and Node.js, explicitly documenting narrower runtime support for native or dependency-constrained packages such as SQLite and provider bridges.
+- **Description:** Validate the clearly portable core non-native packages across Bun and Node.js, and record an explicit checked-in portability matrix that documents narrower runtime support for native or dependency-constrained packages such as SQLite and any provider-facing surfaces that do not yet earn broader claims.
 - **Acceptance Criteria (Gherkin):**
 
 ```gherkin
 Given the post-ReAct packages are wired into verification tooling
 When Bun and Node portability checks run
-Then portable core packages pass in both runtimes, narrower packages document their supported runtime constraints, native SQLite behavior is not misrepresented as edge/serverless support, and Deno remains explicitly deferred
+Then the repository records an explicit portability matrix naming each Epic Q package surface as Bun-and-Node validated, mixed-runtime validated, Node-only, or deferred
+And portable core packages pass in both runtimes
+And narrower packages document their supported runtime constraints without overstating Bun, Node, edge, or serverless support
+And native SQLite behavior is not misrepresented as edge/serverless support
+And Deno remains explicitly deferred
 ```
 
 **KRT-Q006 Post-ReAct Implementation Line Closure**
@@ -295,11 +313,11 @@ Then portable core packages pass in both runtimes, narrower packages document th
 - **Effort:** 2
 - **Dependencies:** KRT-Q005
 - **Capability / Contract Mapping:** PRD `CAP-P0-001`, `CAP-P0-012`, `CAP-P0-020`, `CAP-P0-030`, `CAP-P1-032`; Architecture `5`; TechSpec `5.3`, `5.4.1`
-- **Description:** Record Epic Q closure evidence, package matrix, verification commands, portability status, residual risks, and release-readiness conclusions in `constitution/spikes/epic-q-release-hardening-inventory.md`.
+- **Description:** Record Epic Q closure evidence, package matrix, verification commands, portability status, residual risks, and internal implementation-line readiness conclusions in `constitution/spikes/epic-q-release-hardening-inventory.md`.
 - **Acceptance Criteria (Gherkin):**
 
 ```gherkin
 Given Epics N-Q are complete and verified
 When the post-ReAct implementation line is closed
-Then the closure inventory records implemented packages, testkits, release tooling, portability results, residual risks, deferred scopes, and the TechSpec and Tasks status language needed for the next planning pass
+Then the closure inventory records implemented packages, testkits, release tooling, portability classifications, residual risks, deferred scopes, internal implementation-line readiness conclusions, and the TechSpec and Tasks status language needed for the next planning pass
 ```
