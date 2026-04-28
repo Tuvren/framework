@@ -15,7 +15,8 @@ assumptions that Epic P inherits.
   `TuvrenStreamEvent` and `ProviderStreamChunk` were not widened.
 - `ExecutionHandle.events()` remains single-consumer. Epic O closes the host/test
   fanout gap with `teeTuvrenStreamEvents(...)` instead of relaxing the runtime
-  contract.
+  contract. Tee branches must subscribe before the first upstream pull; late
+  subscriptions fail explicitly instead of silently missing the consumed prefix.
 
 ## Selected Protocol Versions
 - SSE baseline: EventSource-compatible text/event-stream framing over canonical
@@ -139,6 +140,10 @@ cannot fail adapter execution by throwing inside `onWarning`.
 - Hosts must call `handle.events()` once and fan out with
   `teeTuvrenStreamEvents(...)` if they need canonical, SSE, and AG-UI views at
   the same time.
+- Hosts must subscribe every required tee branch before the first consumer pull.
+  `toSseFrames(...)`, `toSseResponse(...)`, and `toAgUiEvents(...)` now reserve
+  their tee branch eagerly at adapter construction time to make that contract
+  practical for the standard host fanout path.
 - SSE is the lossless host transport for canonical event semantics.
 - AG-UI is intentionally lossy and must be treated as a UI-oriented transport
   with `tuvren.runtime.*` custom events for Tuvren-specific control semantics.

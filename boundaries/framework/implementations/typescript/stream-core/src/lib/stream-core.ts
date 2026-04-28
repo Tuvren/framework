@@ -285,6 +285,7 @@ export function teeTuvrenStreamEvents(
     })
   );
   let sourceClosed = false;
+  let sourceReadStarted = false;
   let sourceStarted = false;
   let sourceReturning = false;
 
@@ -348,6 +349,7 @@ export function teeTuvrenStreamEvents(
           return;
         }
 
+        sourceReadStarted = true;
         const nextEvent = await sourceIterator.next();
 
         if (nextEvent.done) {
@@ -405,6 +407,19 @@ export function teeTuvrenStreamEvents(
           "tee branch event streams may only be consumed once",
           {
             code: "event_stream_already_consumed",
+          }
+        );
+      }
+
+      // Tee fanout cannot reconstruct the already-consumed prefix for a branch
+      // once the source iterator has started advancing without buffering the
+      // entire upstream stream. We therefore allow subscriptions during setup
+      // but fail any branch that joins after the first upstream read begins.
+      if (sourceReadStarted) {
+        throw new TuvrenRuntimeError(
+          "tee branches must subscribe before source consumption begins",
+          {
+            code: "event_stream_subscription_too_late",
           }
         );
       }

@@ -27,6 +27,8 @@ import {
 
 const EVENT_STREAMS_CONSUMED_PATTERN =
   /event streams may only be consumed once/;
+const LATE_SUBSCRIPTION_PATTERN =
+  /must subscribe before source consumption begins/;
 
 describe("stream-core", () => {
   test("tees one canonical stream into isolated single-consumer branches", async () => {
@@ -175,6 +177,61 @@ describe("stream-core", () => {
     await waitForAsyncTurn();
     expect(source.returned).toBe(1);
   });
+
+  test("replays the full prefix for branches that subscribe before source start and poll later", async () => {
+    const source = createInstrumentedSource(
+      streamAdapterFixtures.completedTurn
+    );
+    const [leftBranch, rightBranch] = teeTuvrenStreamEvents(source.events, 2);
+    const leftIterator = leftBranch[Symbol.asyncIterator]();
+    const rightIterator = rightBranch[Symbol.asyncIterator]();
+    const leftFirst = await leftIterator.next();
+
+    expect(leftFirst).toMatchObject({
+      done: false,
+      value: streamAdapterFixtures.completedTurn[0],
+    });
+    await waitForAsyncTurn();
+
+    expect(source.produced).toBe(1);
+
+    const [leftRest, rightEvents] = await Promise.all([
+      collectIteratorEvents(leftIterator),
+      collectIteratorEvents(rightIterator),
+    ]);
+
+    expect([leftFirst.value, ...leftRest]).toEqual([
+      ...streamAdapterFixtures.completedTurn,
+    ]);
+    expect(rightEvents).toEqual([...streamAdapterFixtures.completedTurn]);
+  });
+
+  test("rejects branches that subscribe after source consumption has started", async () => {
+    const source = createInstrumentedSource(
+      streamAdapterFixtures.completedTurn
+    );
+    const [leftBranch, rightBranch] = teeTuvrenStreamEvents(source.events, 2);
+    const leftIterator = leftBranch[Symbol.asyncIterator]();
+
+    await leftIterator.next();
+    await waitForAsyncTurn();
+
+    expect(() => rightBranch[Symbol.asyncIterator]()).toThrow(
+      LATE_SUBSCRIPTION_PATTERN
+    );
+
+    try {
+      rightBranch[Symbol.asyncIterator]();
+      throw new Error("expected late tee subscription to fail");
+    } catch (error: unknown) {
+      expect(error).toBeInstanceOf(Error);
+      expect((error as { code?: string }).code).toBe(
+        "event_stream_subscription_too_late"
+      );
+    }
+
+    await leftIterator.return?.();
+  });
 });
 
 async function collectEvents<T>(events: AsyncIterable<T>): Promise<T[]> {
@@ -185,6 +242,22 @@ async function collectEvents<T>(events: AsyncIterable<T>): Promise<T[]> {
   }
 
   return collected;
+}
+
+async function collectIteratorEvents<T>(
+  iterator: AsyncIterator<T>
+): Promise<T[]> {
+  const collected: T[] = [];
+
+  for (;;) {
+    const nextEvent = await iterator.next();
+
+    if (nextEvent.done) {
+      return collected;
+    }
+
+    collected.push(nextEvent.value);
+  }
 }
 
 function createInstrumentedSource(events: readonly TuvrenStreamEvent[]): {

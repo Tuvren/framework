@@ -56,8 +56,20 @@ const CUSTOM_FALLBACK_WARNING_CODES = {
   toolExecution: "agui_tool_execution_custom_fallback",
 } as const;
 
+export function toAgUiEvents(
+  events: AsyncIterable<TuvrenStreamEvent>,
+  options?: StreamAdapterOptions
+): AsyncIterable<AGUIEvent> {
+  // Claim tee-backed sources immediately so sibling adapter branches can still
+  // subscribe before any one consumer starts pulling the shared source stream.
+  return toAgUiEventsSubscribed(
+    createIteratorIterable(events[Symbol.asyncIterator]()),
+    options
+  );
+}
+
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Protocol projection intentionally keeps the canonical-to-AG-UI mapping table in one switch.
-export async function* toAgUiEvents(
+async function* toAgUiEventsSubscribed(
   events: AsyncIterable<TuvrenStreamEvent>,
   options?: StreamAdapterOptions
 ): AsyncIterable<AGUIEvent> {
@@ -729,4 +741,14 @@ function throwUnreachableEvent(event: never): never {
       details: event,
     }
   );
+}
+
+function createIteratorIterable<T>(
+  iterator: AsyncIterator<T>
+): AsyncIterable<T> {
+  return {
+    [Symbol.asyncIterator](): AsyncIterator<T> {
+      return iterator;
+    },
+  };
 }

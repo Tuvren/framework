@@ -35,7 +35,19 @@ export interface TuvrenSseFrame {
   retry?: number;
 }
 
-export async function* toSseFrames(
+export function toSseFrames(
+  events: AsyncIterable<TuvrenStreamEvent>,
+  options?: StreamAdapterOptions
+): AsyncIterable<TuvrenSseFrame> {
+  // Claim tee-backed sources immediately so sibling adapter branches can still
+  // subscribe before any one consumer starts pulling the shared source stream.
+  return toSseFramesSubscribed(
+    createIteratorIterable(events[Symbol.asyncIterator]()),
+    options
+  );
+}
+
+async function* toSseFramesSubscribed(
   events: AsyncIterable<TuvrenStreamEvent>,
   options?: StreamAdapterOptions
 ): AsyncIterable<TuvrenSseFrame> {
@@ -142,4 +154,14 @@ function mergeSseHeaders(headersInit: HeadersInit | undefined): Headers {
 
 function sanitizeSseField(value: string): string {
   return value.replaceAll(/\r?\n/gu, " ");
+}
+
+function createIteratorIterable<T>(
+  iterator: AsyncIterator<T>
+): AsyncIterable<T> {
+  return {
+    [Symbol.asyncIterator](): AsyncIterator<T> {
+      return iterator;
+    },
+  };
 }

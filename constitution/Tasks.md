@@ -10,7 +10,7 @@
 ## 1. Executive Summary & Active Critical Path
 - **Total Active Story Points:** 36
 - **Critical Path:** KRT-P001 -> KRT-P002 -> KRT-P003 -> KRT-P004 -> KRT-P005 -> KRT-P006 -> KRT-Q001 -> KRT-Q002 -> KRT-Q003 -> KRT-Q004 -> KRT-Q005 -> KRT-Q006
-- **Planning Assumptions:** Epics A-O are closed in current repo reality. TechSpec v0.5.2 keeps the baseline AI SDK bridge on `LanguageModelV3` / `ProviderV3` from `@ai-sdk/provider@3.0.8`, pins the AG-UI adapter to `@ag-ui/core@0.0.52`, preserves the existing `ProviderStreamChunk` seam, and treats tee-based fanout above `ExecutionHandle.events()` as the sanctioned multi-consumer host path. Epics P-Q remain intentionally sequential: playground host second, hardening third.
+- **Planning Assumptions:** Epics A-O are closed in current repo reality. TechSpec v0.5.2 keeps the baseline AI SDK bridge on `LanguageModelV3` / `ProviderV3` from `@ai-sdk/provider@3.0.8`, pins the AG-UI adapter to `@ag-ui/core@0.0.52`, preserves the existing `ProviderStreamChunk` seam, and treats tee-based fanout above `ExecutionHandle.events()` as the sanctioned multi-consumer host path when every required tee branch subscribes before the first pull. Epics P-Q remain intentionally sequential: playground host second, hardening third.
 
 ### Brownfield Continuity Note
 - The current codebase already contains the workspace scaffold, shared core types, kernel protocol package, memory backend, SQLite backend, kernel testkit, shared framework contract packages, provider contract package, `runtime-core`, and the ReAct Driver foundation package.
@@ -18,7 +18,7 @@
 - The remaining active target packages are the local playground host harness, the testkit packages under `boundaries/framework/testkit` and `boundaries/providers/testkit`, and release/verification scripts named in TechSpec.
 - Planning verification confirmed `ai@6.0.142` and `@ai-sdk/provider@3.0.8` are available and that `@ai-sdk/provider@3.0.8` exports `LanguageModelV3`, `ProviderV3`, `LanguageModelV3CallOptions`, `LanguageModelV3GenerateResult`, and `LanguageModelV3StreamPart`.
 - Epic N now extends repo reality beyond those planning notes: the bridge package exists and the closure artifact above is the authoritative upstream seam for Epic O.
-- Epic O now extends repo reality beyond those planning notes: `@tuvren/stream-core`, `@tuvren/stream-sse`, and `@tuvren/stream-agui` exist, `constitution/spikes/epic-o-stream-adapter-inventory.md` is the authoritative adapter mapping record, and Epic P must treat tee-based fanout plus the documented `tuvren.runtime.*` AG-UI custom namespace as the handoff surface rather than rediscovering protocol gaps.
+- Epic O now extends repo reality beyond those planning notes: `@tuvren/stream-core`, `@tuvren/stream-sse`, and `@tuvren/stream-agui` exist, `constitution/spikes/epic-o-stream-adapter-inventory.md` is the authoritative adapter mapping record, and Epic P must treat tee-based fanout plus the documented `tuvren.runtime.*` AG-UI custom namespace as the handoff surface rather than rediscovering protocol gaps or resubscription hazards.
 
 ### Sequential Scope Rule
 - Epic Q must not begin until Epic P closes.

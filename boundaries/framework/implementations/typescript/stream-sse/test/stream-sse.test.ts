@@ -19,6 +19,7 @@ import type { TuvrenStreamEvent } from "@tuvren/event-stream";
 import {
   createFixtureStream,
   streamAdapterFixtures,
+  teeTuvrenStreamEvents,
 } from "@tuvren/stream-core";
 import { toSseFrames, toSseResponse } from "../src/index.ts";
 
@@ -98,6 +99,28 @@ describe("stream-sse", () => {
       type: "file.done",
     });
   });
+
+  test("subscribes eagerly so delayed SSE consumption still receives turn.start", async () => {
+    const [sseBranch, directBranch] = teeTuvrenStreamEvents(
+      createFixtureStream(streamAdapterFixtures.completedTurn),
+      2
+    );
+    const sseFrames = toSseFrames(sseBranch);
+    const directIterator = directBranch[Symbol.asyncIterator]();
+
+    expect(await directIterator.next()).toMatchObject({
+      done: false,
+      value: streamAdapterFixtures.completedTurn[0],
+    });
+    await waitForAsyncTurn();
+    await directIterator.return?.();
+
+    const frames = await collectEvents(sseFrames);
+
+    expect(frames[0]).toMatchObject({
+      event: "turn.start",
+    });
+  });
 });
 
 async function collectEvents<T>(events: AsyncIterable<T>): Promise<T[]> {
@@ -108,4 +131,10 @@ async function collectEvents<T>(events: AsyncIterable<T>): Promise<T[]> {
   }
 
   return collected;
+}
+
+async function waitForAsyncTurn(): Promise<void> {
+  await new Promise<void>((resolve) => {
+    setTimeout(resolve, 0);
+  });
 }

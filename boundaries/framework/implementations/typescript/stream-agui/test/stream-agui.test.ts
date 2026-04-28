@@ -20,6 +20,7 @@ import type { TuvrenStreamEvent } from "@tuvren/event-stream";
 import {
   createFixtureStream,
   streamAdapterFixtures,
+  teeTuvrenStreamEvents,
 } from "@tuvren/stream-core";
 import { toAgUiEvents } from "../src/index.ts";
 
@@ -335,6 +336,28 @@ describe("stream-agui", () => {
       );
     }
   });
+
+  test("subscribes eagerly so delayed AG-UI consumption still receives RUN_STARTED", async () => {
+    const [aguiBranch, directBranch] = teeTuvrenStreamEvents(
+      createFixtureStream(streamAdapterFixtures.completedTurn),
+      2
+    );
+    const aguiEvents = toAgUiEvents(aguiBranch);
+    const directIterator = directBranch[Symbol.asyncIterator]();
+
+    expect(await directIterator.next()).toMatchObject({
+      done: false,
+      value: streamAdapterFixtures.completedTurn[0],
+    });
+    await waitForAsyncTurn();
+    await directIterator.return?.();
+
+    const events = await collectEvents(aguiEvents);
+
+    expect(events[0]).toMatchObject({
+      type: EventType.RUN_STARTED,
+    });
+  });
 });
 
 async function collectEvents<T>(events: AsyncIterable<T>): Promise<T[]> {
@@ -345,4 +368,10 @@ async function collectEvents<T>(events: AsyncIterable<T>): Promise<T[]> {
   }
 
   return collected;
+}
+
+async function waitForAsyncTurn(): Promise<void> {
+  await new Promise<void>((resolve) => {
+    setTimeout(resolve, 0);
+  });
 }
