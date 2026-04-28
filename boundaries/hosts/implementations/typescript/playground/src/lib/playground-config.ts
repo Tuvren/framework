@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+import { randomUUID } from "node:crypto";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { TuvrenRuntimeError } from "@tuvren/core-types";
 import type {
   PlaygroundBackendMode,
@@ -21,6 +24,8 @@ import type {
   PlaygroundProviderMode,
   PlaygroundScenarioName,
 } from "./playground-types.js";
+
+const AUTO_SQLITE_PATH_VALUE = "auto";
 
 export const DEFAULT_PLAYGROUND_SCENARIOS: readonly PlaygroundScenarioName[] = [
   "streaming",
@@ -48,7 +53,9 @@ export function loadPlaygroundConfig(
   const providerMode = parseProviderMode(
     options.provider ?? env.TUVREN_PLAYGROUND_PROVIDER_MODE
   );
-  const sqlitePath = options.sqlitePath ?? env.TUVREN_PLAYGROUND_SQLITE_PATH;
+  const sqlitePath = normalizeSqlitePath(
+    options.sqlitePath ?? env.TUVREN_PLAYGROUND_SQLITE_PATH
+  );
 
   if (backend === "sqlite" && sqlitePath === undefined) {
     throw new TuvrenRuntimeError(
@@ -65,6 +72,16 @@ export function loadPlaygroundConfig(
     scenario,
     sqlitePath,
   };
+}
+
+function normalizeSqlitePath(value: string | undefined): string | undefined {
+  if (value !== AUTO_SQLITE_PATH_VALUE) {
+    return value;
+  }
+
+  // The Nx SQLite smoke target passes "auto" so repeated validation cannot
+  // inherit stale durable state from a previous run.
+  return join(tmpdir(), `tuvren-playground-${randomUUID()}.sqlite`);
 }
 
 function parseArgs(argv: readonly string[]): Record<string, string> {

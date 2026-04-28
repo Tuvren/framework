@@ -308,6 +308,9 @@ async function runReloadScenario(
   const sourceThread = withHead(thread, projection);
 
   if (config.backend !== "sqlite") {
+    // Reload evidence is meaningful only across a fresh durable host; memory
+    // mode reports explicit failed checks so CLI callers do not mistake it for
+    // a partial reload validation.
     return createReport({
       checks: {
         completedBeforeReload: handle.status().phase === "completed",

@@ -15,6 +15,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
+import { tmpdir } from "node:os";
 import {
   loadPlaygroundConfig,
   runPlaygroundScenario,
@@ -30,6 +31,20 @@ describe("playground host scenarios", () => {
       scenario: "streaming",
       sqlitePath: undefined,
     });
+  });
+
+  test("allocates disposable SQLite smoke paths on demand", () => {
+    const config = loadPlaygroundConfig({}, [
+      "--backend",
+      "sqlite",
+      "--sqlite-path",
+      "auto",
+    ]);
+
+    expect(config.backend).toBe("sqlite");
+    expect(config.sqlitePath?.startsWith(tmpdir())).toBe(true);
+    expect(config.sqlitePath?.includes("tuvren-playground-")).toBe(true);
+    expect(config.sqlitePath?.endsWith(".sqlite")).toBe(true);
   });
 
   test("runs the streaming scenario through canonical, SSE, and AG-UI outputs", async () => {

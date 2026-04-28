@@ -35,7 +35,7 @@
       "dependsOn": ["build"],
       "options": {
         "cwd": "boundaries/hosts/implementations/typescript/playground",
-        "command": "node dist/cli.js --scenario reload --backend sqlite --sqlite-path /tmp/tuvren-playground-epic-p.sqlite"
+        "command": "node dist/cli.js --scenario reload --backend sqlite --sqlite-path auto"
       }
     },
     "test": {
