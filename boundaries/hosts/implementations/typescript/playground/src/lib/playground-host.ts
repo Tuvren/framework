@@ -88,6 +88,12 @@ export function createPlaygroundHost(config: PlaygroundConfig): PlaygroundHost {
     async project(handle) {
       return await projectHandle(handle);
     },
+    async readBranchMessages(branchId) {
+      return await harness.readBranchMessages(branchId);
+    },
+    async readBranchStatus(branchId) {
+      return await harness.readBranchStatus(branchId);
+    },
     runtime,
     steer(handle, signal) {
       handle.steer(signal);

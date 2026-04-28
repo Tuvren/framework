@@ -10,8 +10,8 @@
 ## Implemented Host Surface
 
 - Embedded runtime host creation over `createTuvrenRuntimeCore`, the ReAct Driver, memory backend, SQLite backend, and deterministic playground providers.
-- Public host operations for thread creation, branch creation from a head turn node, turn execution, approval resolution, cancellation, steering passthrough, runtime access, and stream projection.
-- CLI scenario runner through `src/cli.ts`, with environment and argument parsing for backend, provider mode, scenario, and SQLite path.
+- Public host operations for thread creation, branch creation from a head turn node, turn execution, approval resolution, cancellation, steering, runtime access, durable branch message/status inspection, and stream projection.
+- CLI scenario runner through `src/cli.ts`, with environment and argument parsing for backend, provider mode, scenario, and SQLite path. The CLI exits non-zero when any boolean scenario check reports `false`.
 - Package export smoke coverage for the private package entrypoint.
 
 ## Scenario Matrix
@@ -19,11 +19,12 @@
 - `streaming`: canonical stream, SSE frames, and AG-UI events over a full turn lifecycle.
 - `tools`: deterministic tool-call and tool-result flow.
 - `approval`: approval pause, edited approval decision, resumed continuation, and durable tool continuation.
-- `metadata`: AI SDK mock provider mode without credentials.
+- `metadata`: AI SDK mock provider mode without credentials plus durable provider-metadata evidence.
 - `structured`: structured-output scenario hook for the deterministic fixture provider.
 - `branching`: branch creation and alternate branch execution.
 - `cancel`: active turn cancellation and failed terminal stream observation.
-- `reload`: SQLite reload through a fresh host instance after a completed turn.
+- `steering`: host `steer` control path, durable steering message incorporation, and provider response to the injected steering signal.
+- `reload`: SQLite reload through a fresh host instance after a completed turn, durable message visibility after reload, branch-head advancement, root preservation, and successful follow-up execution from the reloaded host.
 
 ## Backend Notes
 

@@ -14,8 +14,13 @@
  * limitations under the License.
  */
 
+import { TuvrenRuntimeError } from "@tuvren/core-types";
 import type { TuvrenStreamEvent } from "@tuvren/event-stream";
-import type { ExecutionHandle, LoopPolicy } from "@tuvren/runtime-api";
+import type {
+  ExecutionHandle,
+  InputSignal,
+  LoopPolicy,
+} from "@tuvren/runtime-api";
 import { toAgUiEvents } from "@tuvren/stream-agui";
 import { teeTuvrenStreamEvents } from "@tuvren/stream-core";
 import { toSseFrames } from "@tuvren/stream-sse";
@@ -23,6 +28,7 @@ import { createPlaygroundHost } from "./playground-host.js";
 import { createPlaygroundTools, textSignal } from "./playground-tools.js";
 import type {
   PlaygroundConfig,
+  PlaygroundHost,
   PlaygroundScenarioReport,
   PlaygroundStreamProjection,
   PlaygroundThreadSummary,
@@ -55,6 +61,8 @@ export async function runPlaygroundScenario(
       return await runSingleTurnScenario(config);
     case "reload":
       return await runReloadScenario(config);
+    case "steering":
+      return await runSteeringScenario(config);
     default:
       return await runSingleTurnScenario(config);
   }
@@ -75,12 +83,16 @@ async function runSingleTurnScenario(
     threadId: thread.threadId,
   });
   const projection = await host.project(handle);
+  const messages = await host.readBranchMessages(thread.branchId);
 
   return createReport({
     checks: {
       aguiObserved: projection.agui.length > 0,
       canonicalObserved: projection.canonical.length > 0,
       completed: handle.status().phase === "completed",
+      metadataObserved:
+        config.scenario !== "metadata" ||
+        messages.some(hasProviderMetadataEvidence),
       sseObserved: projection.sse.length > 0,
       structuredObserved:
         config.scenario !== "structured" ||
@@ -118,6 +130,14 @@ async function runApprovalScenario(
     throw new Error("approval scenario did not pause for approval");
   }
 
+  const emailApproval = approval.toolCalls.find(
+    (toolCall) => toolCall.name === "email"
+  );
+
+  if (emailApproval === undefined) {
+    throw new Error("approval scenario did not request email approval");
+  }
+
   const resumedHandle = host.approve(pausedHandle, {
     decisions: approval.toolCalls.map((toolCall) => {
       if (toolCall.name === "email") {
@@ -153,7 +173,8 @@ async function runApprovalScenario(
       pausedFirst: pausedHandle.status().phase === "paused",
       resumedCompleted: resumedHandle.status().phase === "completed",
       toolResultAfterResume: resumedProjection.canonical.some(
-        (event) => event.type === "tool.result" && event.callId === "call-email"
+        (event) =>
+          event.type === "tool.result" && event.callId === emailApproval.callId
       ),
     },
     config,
@@ -194,6 +215,42 @@ async function runBranchingScenario(
     },
     config,
     handle: branchHandle,
+    projection,
+    thread: withHead(thread, projection),
+  });
+}
+
+async function runSteeringScenario(
+  config: PlaygroundConfig
+): Promise<PlaygroundScenarioReport> {
+  const host = createPlaygroundHost(config);
+  const thread = await host.createThread();
+  const handle = host.executeTurn({
+    branchId: thread.branchId,
+    signal: textSignal("Run steering source"),
+    threadId: thread.threadId,
+  });
+  const capture = startProjectionCapture(handle);
+
+  await steerWhenRunning(host, handle, textSignal("Injected steering"));
+
+  const projection = await capture;
+  const messages = await host.readBranchMessages(thread.branchId);
+
+  return createReport({
+    checks: {
+      completed: handle.status().phase === "completed",
+      steeringEventObserved: projection.canonical.some(
+        (event) => event.type === "steering.incorporated"
+      ),
+      steeringMessageDurable: messages.some(hasInjectedSteeringMessage),
+      steeringResponseObserved: projection.canonical.some(
+        (event) =>
+          event.type === "text.done" && event.text === "Steering incorporated."
+      ),
+    },
+    config,
+    handle,
     projection,
     thread: withHead(thread, projection),
   });
@@ -248,19 +305,59 @@ async function runReloadScenario(
     threadId: thread.threadId,
   });
   const projection = await host.project(handle);
+  const sourceThread = withHead(thread, projection);
+
+  if (config.backend !== "sqlite") {
+    return createReport({
+      checks: {
+        completedBeforeReload: handle.status().phase === "completed",
+        continuedAfterReload: false,
+        durableMessagesVisibleAfterReload: false,
+        headAdvancedAfterReload: false,
+        rootPreservedAfterReload: false,
+        sqliteReloadAttempted: false,
+        threadVisibleAfterReload: false,
+      },
+      config,
+      handle,
+      projection,
+      thread: sourceThread,
+    });
+  }
+
   const reloadedHost = createPlaygroundHost(config);
   const reloadedThread = await reloadedHost.runtime.getThread(thread.threadId);
+  const reloadedMessages = await reloadedHost.readBranchMessages(
+    thread.branchId
+  );
+  const continuationHandle = reloadedHost.executeTurn({
+    branchId: thread.branchId,
+    signal: textSignal("Run reload continuation"),
+    threadId: thread.threadId,
+  });
+  const continuationProjection = await reloadedHost.project(continuationHandle);
+  const projectionAfterReload = mergeProjections(
+    projection,
+    continuationProjection
+  );
+  const continuedThread = withHead(sourceThread, continuationProjection);
 
   return createReport({
     checks: {
       completedBeforeReload: handle.status().phase === "completed",
+      continuedAfterReload: continuationHandle.status().phase === "completed",
+      durableMessagesVisibleAfterReload: reloadedMessages.length >= 2,
+      headAdvancedAfterReload:
+        sourceThread.headTurnNodeHash !== continuedThread.headTurnNodeHash,
+      rootPreservedAfterReload:
+        reloadedThread?.rootTurnNodeHash === thread.rootTurnNodeHash,
       sqliteReloadAttempted: config.backend === "sqlite",
       threadVisibleAfterReload: reloadedThread !== null,
     },
     config,
-    handle,
-    projection,
-    thread: withHead(thread, projection),
+    handle: continuationHandle,
+    projection: projectionAfterReload,
+    thread: continuedThread,
   });
 }
 
@@ -353,6 +450,52 @@ function withHead(
   };
 }
 
+function hasProviderMetadataEvidence(value: unknown): boolean {
+  if (!isPlainRecord(value)) {
+    return false;
+  }
+
+  const providerMetadata = value.providerMetadata;
+
+  if (
+    isPlainRecord(providerMetadata) &&
+    (isPlainRecord(providerMetadata.playground) ||
+      isPlainRecord(providerMetadata.fixture) ||
+      isPlainRecord(providerMetadata.aiSdkBridge))
+  ) {
+    return true;
+  }
+
+  return Object.values(value).some((entry) => {
+    if (Array.isArray(entry)) {
+      return entry.some(hasProviderMetadataEvidence);
+    }
+
+    return hasProviderMetadataEvidence(entry);
+  });
+}
+
+function hasInjectedSteeringMessage(value: unknown): boolean {
+  if (!isPlainRecord(value)) {
+    return false;
+  }
+
+  if (value.role !== "user" || !Array.isArray(value.parts)) {
+    return false;
+  }
+
+  return value.parts.some(
+    (part) =>
+      isPlainRecord(part) &&
+      part.type === "text" &&
+      part.text === "Injected steering"
+  );
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 async function collect<T>(events: AsyncIterable<T>): Promise<T[]> {
   const output: T[] = [];
 
@@ -372,6 +515,40 @@ async function waitFor(
   while (!condition()) {
     if (Date.now() - startedAt >= timeoutMilliseconds) {
       throw new Error("timed out waiting for playground condition");
+    }
+
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 5);
+    });
+  }
+}
+
+async function steerWhenRunning(
+  host: PlaygroundHost,
+  handle: ExecutionHandle,
+  signal: InputSignal,
+  timeoutMilliseconds = 1000
+): Promise<void> {
+  const startedAt = Date.now();
+
+  while (true) {
+    try {
+      host.steer(handle, signal);
+      return;
+    } catch (error: unknown) {
+      if (
+        !(
+          error instanceof TuvrenRuntimeError &&
+          error.code === "invalid_steering_state" &&
+          handle.status().phase === "running"
+        )
+      ) {
+        throw error;
+      }
+    }
+
+    if (Date.now() - startedAt >= timeoutMilliseconds) {
+      throw new Error("timed out waiting for playground steering acceptance");
     }
 
     await new Promise<void>((resolve) => {

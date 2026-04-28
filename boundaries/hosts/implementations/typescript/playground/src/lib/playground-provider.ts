@@ -66,6 +66,12 @@ async function* streamFixtureChunks(
 ): AsyncIterable<ProviderStreamChunk> {
   await Promise.resolve();
 
+  if (scenario === "steering") {
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 25);
+    });
+  }
+
   const response = createFixtureResponse(prompt, scenario);
 
   for (const part of response.parts) {

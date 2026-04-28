@@ -20,3 +20,7 @@ const config = loadPlaygroundConfig(process.env, process.argv.slice(2));
 const report = await runPlaygroundScenario(config);
 
 process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+
+if (Object.values(report.checks).some((value) => value === false)) {
+  process.exitCode = 1;
+}

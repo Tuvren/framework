@@ -40,6 +40,7 @@ describe("playground host scenarios", () => {
     });
 
     expect(report.status.phase).toBe("completed");
+    expectScenarioChecksPassed(report.checks);
     expect(report.checks.completed).toBe(true);
     expect(report.events.canonicalTypes).toContain("turn.start");
     expect(report.events.sseEvents).toContain("turn.start");
@@ -53,6 +54,7 @@ describe("playground host scenarios", () => {
       scenario: "approval",
     });
 
+    expectScenarioChecksPassed(report.checks);
     expect(report.checks.approvalRequested).toBe(true);
     expect(report.checks.approvalResolved).toBe(true);
     expect(report.checks.resumedCompleted).toBe(true);
@@ -68,7 +70,28 @@ describe("playground host scenarios", () => {
     });
 
     expect(report.status.phase).toBe("completed");
+    expectScenarioChecksPassed(report.checks);
     expect(report.providerMode).toBe("ai-sdk-mock");
     expect(report.events.canonicalTypes).toContain("message.done");
   });
+
+  test("runs steering through the host control path", async () => {
+    const report = await runPlaygroundScenario({
+      backend: "memory",
+      providerMode: "fixture",
+      scenario: "steering",
+    });
+
+    expect(report.status.phase).toBe("completed");
+    expectScenarioChecksPassed(report.checks);
+    expect(report.events.canonicalTypes).toContain("steering.incorporated");
+  });
 });
+
+function expectScenarioChecksPassed(
+  checks: Record<string, boolean | number | string>
+): void {
+  for (const [name, value] of Object.entries(checks)) {
+    expect(`${name}:${String(value === false)}`).toBe(`${name}:false`);
+  }
+}

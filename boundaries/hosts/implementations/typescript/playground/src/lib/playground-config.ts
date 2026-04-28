@@ -30,6 +30,7 @@ export const DEFAULT_PLAYGROUND_SCENARIOS: readonly PlaygroundScenarioName[] = [
   "cancel",
   "metadata",
   "branching",
+  "steering",
   "reload",
 ];
 
@@ -135,6 +136,7 @@ function parseScenario(value: string | undefined): PlaygroundScenarioName {
     case "cancel":
     case "metadata":
     case "reload":
+    case "steering":
     case "streaming":
     case "structured":
     case "tools":

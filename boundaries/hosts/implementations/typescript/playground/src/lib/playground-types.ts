@@ -35,6 +35,7 @@ export type PlaygroundScenarioName =
   | "cancel"
   | "metadata"
   | "reload"
+  | "steering"
   | "streaming"
   | "structured"
   | "tools";
@@ -97,6 +98,8 @@ export interface PlaygroundHost {
   createThread(): Promise<PlaygroundThreadSummary>;
   executeTurn(input: PlaygroundTurnInput): ExecutionHandle;
   project(handle: ExecutionHandle): Promise<PlaygroundStreamProjection>;
+  readBranchMessages(branchId: string): Promise<unknown[]>;
+  readBranchStatus(branchId: string): Promise<unknown | null>;
   runtime: TuvrenRuntime;
   steer(handle: ExecutionHandle, signal: InputSignal): void;
 }
