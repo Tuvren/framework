@@ -40,16 +40,16 @@ The baseline was captured after adding the benchmark harness and before the
 transaction cleanup. The after numbers were captured after localized validation
 landed.
 
-| Case | History | Baseline best per iter | After best per iter |
-| --- | ---: | ---: | ---: |
-| no-op transaction | 0 TurnNodes | 3.886ms | 8.538us |
-| single object write transaction | 0 TurnNodes | 5.671ms | 237.195us |
-| no-op transaction | 100 TurnNodes | 20.866ms | 8.509us |
-| single object write transaction | 100 TurnNodes | 21.767ms | 212.636us |
-| no-op transaction | 500 TurnNodes | 87.783ms | 6.728us |
-| single object write transaction | 500 TurnNodes | 83.864ms | 198.782us |
-| no-op transaction | 1000 TurnNodes | 164.985ms | 6.712us |
-| single object write transaction | 1000 TurnNodes | 161.297ms | 165.602us |
+| Case                            |        History | Baseline best per iter | After best per iter |
+| ------------------------------- | -------------: | ---------------------: | ------------------: |
+| no-op transaction               |    0 TurnNodes |                3.886ms |             8.538us |
+| single object write transaction |    0 TurnNodes |                5.671ms |           237.195us |
+| no-op transaction               |  100 TurnNodes |               20.866ms |             8.509us |
+| single object write transaction |  100 TurnNodes |               21.767ms |           212.636us |
+| no-op transaction               |  500 TurnNodes |               87.783ms |             6.728us |
+| single object write transaction |  500 TurnNodes |               83.864ms |           198.782us |
+| no-op transaction               | 1000 TurnNodes |              164.985ms |             6.712us |
+| single object write transaction | 1000 TurnNodes |              161.297ms |           165.602us |
 
 The target claim is narrow: ordinary transactions no longer pay for a full
 database reload and full-state validation. Lineage-sensitive operations are
@@ -62,24 +62,24 @@ No-op and small object writes still do not scale with persisted history.
 The benchmark also includes depth-sensitive lineage cases so the recursive CTE
 path remains visible over time.
 
-| Case | History | After best per iter |
-| --- | ---: | ---: |
-| deep branch membership transaction | 0 TurnNodes | 310.661us |
-| deep branch forward transaction | 0 TurnNodes | 426.735us |
-| deep branch non-root forward transaction | 0 TurnNodes | 391.742us |
-| deep branch non-root rollback transaction | 0 TurnNodes | 292.633us |
-| deep branch membership transaction | 100 TurnNodes | 374.701us |
-| deep branch forward transaction | 100 TurnNodes | 947.669us |
-| deep branch non-root forward transaction | 100 TurnNodes | 1.727ms |
-| deep branch non-root rollback transaction | 100 TurnNodes | 2.840ms |
-| deep branch membership transaction | 500 TurnNodes | 766.662us |
-| deep branch forward transaction | 500 TurnNodes | 2.113ms |
-| deep branch non-root forward transaction | 500 TurnNodes | 4.707ms |
-| deep branch non-root rollback transaction | 500 TurnNodes | 7.073ms |
-| deep branch membership transaction | 1000 TurnNodes | 1.239ms |
-| deep branch forward transaction | 1000 TurnNodes | 3.585ms |
-| deep branch non-root forward transaction | 1000 TurnNodes | 8.624ms |
-| deep branch non-root rollback transaction | 1000 TurnNodes | 12.811ms |
+| Case                                      |        History | After best per iter |
+| ----------------------------------------- | -------------: | ------------------: |
+| deep branch membership transaction        |    0 TurnNodes |           310.661us |
+| deep branch forward transaction           |    0 TurnNodes |           426.735us |
+| deep branch non-root forward transaction  |    0 TurnNodes |           391.742us |
+| deep branch non-root rollback transaction |    0 TurnNodes |           292.633us |
+| deep branch membership transaction        |  100 TurnNodes |           374.701us |
+| deep branch forward transaction           |  100 TurnNodes |           947.669us |
+| deep branch non-root forward transaction  |  100 TurnNodes |             1.727ms |
+| deep branch non-root rollback transaction |  100 TurnNodes |             2.840ms |
+| deep branch membership transaction        |  500 TurnNodes |           766.662us |
+| deep branch forward transaction           |  500 TurnNodes |             2.113ms |
+| deep branch non-root forward transaction  |  500 TurnNodes |             4.707ms |
+| deep branch non-root rollback transaction |  500 TurnNodes |             7.073ms |
+| deep branch membership transaction        | 1000 TurnNodes |             1.239ms |
+| deep branch forward transaction           | 1000 TurnNodes |             3.585ms |
+| deep branch non-root forward transaction  | 1000 TurnNodes |             8.624ms |
+| deep branch non-root rollback transaction | 1000 TurnNodes |            12.811ms |
 
 The first recursive-CTE-only lineage run measured `2.891ms/iter` for 1000-depth
 membership and `8.154ms/iter` for 1000-depth forward Branch movement. The

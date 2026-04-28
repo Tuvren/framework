@@ -5,6 +5,7 @@ records the adapter contracts, warning policy, coverage, and downstream
 assumptions that Epic P inherits.
 
 ## Current Repo Reality
+
 - `@tuvren/stream-core` now exists at
   `boundaries/framework/implementations/typescript/stream-core`.
 - `@tuvren/stream-sse` now exists at
@@ -19,6 +20,7 @@ assumptions that Epic P inherits.
   subscriptions fail explicitly instead of silently missing the consumed prefix.
 
 ## Selected Protocol Versions
+
 - SSE baseline: EventSource-compatible text/event-stream framing over canonical
   `TuvrenStreamEvent` JSON payloads.
 - AG-UI baseline: `@ag-ui/core@0.0.52`.
@@ -27,6 +29,7 @@ assumptions that Epic P inherits.
 - ACP or any additional host protocol remains explicitly deferred.
 
 ## Package Exports
+
 - `@tuvren/stream-core`
   - `StreamProtocolAdapter<T>`
   - `StreamAdapterWarning`
@@ -45,7 +48,9 @@ assumptions that Epic P inherits.
   - `toAgUiEvents(...): AsyncIterable<AGUIEvent>`
 
 ## Mapping Matrix
+
 ### SSE
+
 - Every canonical event becomes one SSE frame.
 - `frame.event` is the original `TuvrenStreamEvent.type`.
 - `frame.data` is the serialized canonical event JSON.
@@ -53,6 +58,7 @@ assumptions that Epic P inherits.
   `{ type: "Uint8Array", data: number[] }`, with a warning.
 
 ### AG-UI direct mappings
+
 - `turn.start` -> `RUN_STARTED`
   - `runId = turnId`
   - resumed streams preserve `parentRunId = resumedFrom`
@@ -78,6 +84,7 @@ assumptions that Epic P inherits.
 - canonical `custom` -> AG-UI `CUSTOM` with the original custom name and data
 
 ### AG-UI custom-fallback mappings
+
 - `approval.requested` -> `CUSTOM tuvren.runtime.approval.requested`
 - `approval.resolved` -> `CUSTOM tuvren.runtime.approval.resolved`
 - `turn.end` paused -> `CUSTOM tuvren.runtime.turn.paused` plus `RUN_FINISHED`
@@ -92,6 +99,7 @@ assumptions that Epic P inherits.
 - `message.done` -> `CUSTOM tuvren.runtime.message.done`
 
 ## Warning Codes
+
 - `sse_binary_payload_json_encoded`
 - `agui_approval_custom_fallback`
 - `agui_file_output_custom_fallback`
@@ -107,6 +115,7 @@ Warnings are deduped once per code per adapter stream instance. Host observers
 cannot fail adapter execution by throwing inside `onWarning`.
 
 ## Known Lossy Cases
+
 - AG-UI has no first-class approval, pause, checkpoint, structured-output,
   file-output, tool-execution-start, steering, or nonfatal-error event model
   matching Tuvren’s richer canonical vocabulary. These cases intentionally flow
@@ -120,6 +129,7 @@ cannot fail adapter execution by throwing inside `onWarning`.
   values directly.
 
 ## Fixture And Integration Coverage
+
 - Package-local tests:
   - `stream-core`: tee fanout, warning dedupe, JSON-safe binary serialization
   - `stream-sse`: frame mapping, response headers, binary warning path
@@ -137,6 +147,7 @@ cannot fail adapter execution by throwing inside `onWarning`.
     and AG-UI adapter consumers
 
 ## Downstream Assumptions For Epic P
+
 - Hosts must call `handle.events()` once and fan out with
   `teeTuvrenStreamEvents(...)` if they need canonical, SSE, and AG-UI views at
   the same time.
@@ -156,6 +167,7 @@ cannot fail adapter execution by throwing inside `onWarning`.
   or live provider file streaming exist in canonical runtime output.
 
 ## Validation Performed
+
 - `bun run nx run framework-runtime-core:build`
 - `bun run nx run framework-runtime-core:typecheck`
 - `bun run typecheck`

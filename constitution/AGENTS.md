@@ -17,17 +17,17 @@ This project separates concerns into four distinct layers. Understand where your
 
 To conserve your context window and improve accuracy, use this lookup table to find the right source of truth quickly:
 
-| If you need to know... | Target File | Specific Section to Parse |
-| :--------------------- | :---------- | :------------------------ |
-| **What task to do next?** | `Tasks.md` | `Executive Summary & Active Critical Path`, `Build Order`, and the relevant ticket in `Ticket List` |
-| **How to test if a task is done?** | `Tasks.md` | `Acceptance Criteria (Gherkin)` under the specific Ticket ID |
-| **What exact tech/library to use?** | `TechSpec.md` | `Stack Specification (Bill of Materials)` and `Implementation Guidelines` |
-| **What the persisted records and backend schema are?** | `TechSpec.md` | `State & Data Modeling`, especially `Canonical Entity Shapes` and `SQLite Backend Schema` when relevant |
-| **What the required public and internal contracts are?** | `TechSpec.md` | `Interface Contract` |
-| **How runtime boundaries communicate?** | `Architecture.md` | `System Containers`, `Communication Relationships`, and `Critical Execution Flows` |
-| **What a specific business/runtime term means?** | `PRD.md` | `Ubiquitous Language (Glossary)` |
-| **Whether a feature belongs in scope at all?** | `PRD.md` | `Functional Capabilities`, `Success Criteria`, and `Scope Distinctions That Must Remain Stable` |
-| **What the kernel and framework behavior mean semantically?** | `../docs/KrakenKernelSpecification.md` and `../docs/KrakenFrameworkSpecification.md` | Read the relevant normative sections directly |
+| If you need to know...                                        | Target File                                                                          | Specific Section to Parse                                                                               |
+| :------------------------------------------------------------ | :----------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------ |
+| **What task to do next?**                                     | `Tasks.md`                                                                           | `Executive Summary & Active Critical Path`, `Build Order`, and the relevant ticket in `Ticket List`     |
+| **How to test if a task is done?**                            | `Tasks.md`                                                                           | `Acceptance Criteria (Gherkin)` under the specific Ticket ID                                            |
+| **What exact tech/library to use?**                           | `TechSpec.md`                                                                        | `Stack Specification (Bill of Materials)` and `Implementation Guidelines`                               |
+| **What the persisted records and backend schema are?**        | `TechSpec.md`                                                                        | `State & Data Modeling`, especially `Canonical Entity Shapes` and `SQLite Backend Schema` when relevant |
+| **What the required public and internal contracts are?**      | `TechSpec.md`                                                                        | `Interface Contract`                                                                                    |
+| **How runtime boundaries communicate?**                       | `Architecture.md`                                                                    | `System Containers`, `Communication Relationships`, and `Critical Execution Flows`                      |
+| **What a specific business/runtime term means?**              | `PRD.md`                                                                             | `Ubiquitous Language (Glossary)`                                                                        |
+| **Whether a feature belongs in scope at all?**                | `PRD.md`                                                                             | `Functional Capabilities`, `Success Criteria`, and `Scope Distinctions That Must Remain Stable`         |
+| **What the kernel and framework behavior mean semantically?** | `../docs/KrakenKernelSpecification.md` and `../docs/KrakenFrameworkSpecification.md` | Read the relevant normative sections directly                                                           |
 
 ---
 

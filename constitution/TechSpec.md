@@ -1,6 +1,7 @@
 # Technical Specification
 
 ## 0. Version History & Changelog
+
 - v0.5.2 - Closed Epic O in current repo reality, pinning the AG-UI adapter to `@ag-ui/core@0.0.52`, tightening the AG-UI adapter surface to the official `AGUIEvent` union, and recording tee-based host fanout as the sanctioned multi-consumer path when all required branches subscribe before the first pull.
 - v0.5.1 - Closed Epic N in current repo reality, correcting the AI SDK bridge baseline to the stable `ProviderStreamChunk` seam, synthesizing structured output from JSON text, and explicitly deferring streamed files and provider-owned tool governance.
 - v0.5.0 - Activated the post-ReAct implementation line, locking the AI SDK bridge baseline to `LanguageModelV3` and defining sequential Epics N-Q for provider bridge, stream adapters, playground host, and release hardening.
@@ -8,6 +9,7 @@
 - ... [Older history truncated, refer to git logs]
 
 ## 1. Stack Specification (Bill of Materials)
+
 - **Primary Language / Runtime:** TypeScript `6.0.2` is the first authoritative implementation language for the framework and kernel protocol implementation. The kernel protocol remains language-neutral by contract. Core TypeScript packages target portable ESM across Bun, Node.js, and Deno. Bun remains the preferred local development runtime and package manager.
 - **Primary Frameworks / Libraries:** `ai@6.0.142` and `@ai-sdk/provider@3.0.8` for the baseline AI SDK Providers bridge, using the `LanguageModelV3` / `ProviderV3` surface only in the baseline bridge; `@ag-ui/core@0.0.52` for the baseline AG-UI event union and runtime validation surface; `ajv@8.18.0` for JSON Schema validation; `cbor-x@1.6.4` for deterministic CBOR encoding and decoding in the TypeScript implementation; `@biomejs/biome@2.4.10` for formatting and linting; `tsup@8.5.1` for package builds.
 - **State Stores / Persistence:** Tuvren Runtime uses a Kraken-owned backend contract first. `@tuvren/backend-memory` is the reference development and semantic test backend. `@tuvren/backend-sqlite` is the first officially supported persistent backend adapter. Future backends such as PostgreSQL, MySQL/MariaDB, and MongoDB are peer adapters against the same kernel contract, not SQLite-shaped variants.
@@ -16,6 +18,7 @@
 - **Version Pinning / Compatibility Policy:** Versions named in this TechSpec are authoritative for the baseline implementation line and must match the repository manifests. Public package APIs follow semantic versioning. Changes to kernel record encoding, hash algorithm, or durable identity rules are semver-major.
 
 ### 1.1 Implementation Posture
+
 - **Authoritative center:** The kernel boundary is a protocol of serializable data, not an in-process callback API.
 - **First implementation choice:** TypeScript is the first authoritative implementation of that protocol for speed of validation, not a claim that the kernel is fundamentally JavaScript-bound.
 - **Portability posture:** Core packages stay runtime-portable where practical; backend packages and provider bridges may have narrower runtime support when their dependencies require it.
@@ -25,96 +28,113 @@
 - **Backend posture:** All official backends implement one strict kernel-visible contract. Backend-specific optimizations may exist internally, but they must not change kernel semantics or require capability negotiation at the kernel layer in v0.1.
 
 ### 1.2 Current-State vs Target-State
+
 - **Current repository reality:** The repository already contains the workspace scaffold, `@tuvren/core-types`, `@tuvren/kernel-protocol`, `@tuvren/backend-memory`, `@tuvren/backend-sqlite`, `@tuvren/kernel-testkit`, `@tuvren/runtime-api`, `@tuvren/driver-api`, `@tuvren/event-stream`, `@tuvren/tool-contracts`, `@tuvren/provider-api`, `@tuvren/runtime-core`, the ReAct Driver baseline with implementation-proven loop completion, streaming/provider semantics, and shared runtime-core tool/approval integration, `@tuvren/provider-bridge-ai-sdk` as the first concrete provider bridge, and the host stream adapter line `@tuvren/stream-core`, `@tuvren/stream-sse`, and `@tuvren/stream-agui`. The next target-state packages are the playground host harness and test/release hardening packages and scripts.
 - **Target implementation state:** The package layout and interfaces defined below are the intended implementation target for the first authoritative code line.
 - **Drift rule:** The future codebase must conform to this TechSpec. The TechSpec must not be treated as a loose commentary on whatever structure happens to emerge.
 
 ## 2. Architecture Decision Records (ADRs)
+
 ### ADR-001 The Kernel Boundary Is Protocol-First and Data-Only
+
 - **Status:** accepted
 - **Context:** The frozen kernel specification explicitly defines the kernel-framework boundary as a protocol where everything crossing the boundary is serializable data. Future multi-language SDKs and future non-TypeScript kernel implementations depend on preserving this narrow waist.
 - **Decision:** The authoritative kernel boundary is a language-neutral protocol of concrete data structures and operations. No callbacks, framework types, or runtime-specific object identities cross the boundary.
 - **Consequences:** The TechSpec must define exact record shapes, byte encoding, hashing, and operation signatures. TypeScript APIs above the kernel are framework SDK surfaces, not substitutes for the kernel protocol.
 
 ### ADR-002 TypeScript Is the First Authoritative Implementation, Not the Long-Term Kernel Monopoly
+
 - **Status:** accepted
 - **Context:** The project needs a fast path to validating the kernel and framework semantics, but the protocol must remain suitable for future Rust, Wasm, or other implementations.
 - **Decision:** Use TypeScript `6.0.2` for the first authoritative implementation of the framework and kernel protocol. Treat it as the reference implementation of the protocol, not as a license to collapse protocol boundaries into JavaScript-only assumptions.
 - **Consequences:** The implementation can progress quickly, while future Rust or Wasm implementations remain possible if they pass the same protocol fixtures and semantic test suites.
 
 ### ADR-003 Ship as a Modular Monorepo of Boundary-Owned Projects, Not as Multiple Services
+
 - **Status:** accepted
 - **Context:** The architecture is explicitly modular but intentionally in-process and solo-developer-friendly.
 - **Decision:** Realize the approved logical containers as projects in one monorepo, grouped first by architectural boundary and then by contract versus implementation, rather than as separate deployable services.
 - **Consequences:** Boundary discipline is preserved without adding network topology, deployment orchestration, or remote protocol complexity before it is justified. The repository structure mirrors the architecture docs instead of centering JavaScript package-manager conventions.
 
 ### ADR-004 The Framework Public Surface Remains Library-First and Driver-Neutral
+
 - **Status:** accepted
 - **Context:** Tuvren Runtime is a framework product for developers to embed, while Kraken remains the engine identity behind it. The architecture’s host boundary is an embedding surface.
 - **Decision:** The primary TypeScript framework surface remains a library API centered on `TuvrenRuntime`, `ExecutionHandle`, typed events, driver selection, provider ports, and backend ports.
 - **Consequences:** HTTP, WebSocket, CLI, editor, and protocol adapters are secondary packages layered over the library API. This does not weaken the protocol-first kernel boundary because the library surface sits above it, and it prevents the first driver from becoming the only host-facing abstraction.
 
 ### ADR-005 The Baseline Provider Strategy Is Tuvren Provider Contract Plus AI SDK Providers Bridge
+
 - **Status:** accepted
 - **Context:** The framework owns the canonical provider contract. Supporting multiple bridge ecosystems before the core runtime is proven would add translation surface and semantic drift for little value.
 - **Decision:** The baseline provider integration package is `@tuvren/provider-bridge-ai-sdk`, built on `ai@6.0.142` and `@ai-sdk/provider@3.0.8`. The baseline bridge adapts `LanguageModelV3` and `ProviderV3` only. `LanguageModelV2` compatibility, AI SDK agent loops, AI SDK UI message protocols, LangChain bridges, and first-class Tuvren-scoped provider packages are deferred.
 - **Consequences:** The initial provider surface stays narrow and Tuvren-scoped while preserving Kraken engine semantics internally. The bridge treats AI SDK as a provider/model source, not as the runtime loop, tool governance layer, host protocol, or durable state owner. Future packages such as `@tuvren/provider-openai`, `@tuvren/provider-anthropic`, and `@tuvren/provider-google` can be added later without redefining the framework contract.
 
 ### ADR-006 Official Backends Use One Strict Uniform Kernel Contract
+
 - **Status:** accepted
 - **Context:** Tuvren Runtime is a framework product, not a storage product. Developers must be able to move between backends without kernel-semantic drift.
 - **Decision:** All official backends implement one strict kernel contract. Optional backend capabilities are not exposed at the kernel layer in v0.1.
 - **Consequences:** Shared backend conformance suites remain authoritative. Backend-specific performance tricks stay internal. The framework and future SDKs do not branch on backend feature flags.
 
 ### ADR-007 Memory and SQLite Are the Official Initial Backends
+
 - **Status:** accepted
 - **Context:** The project needs a usable development backend immediately and a usable persistent backend package without pretending that one backend defines Kraken’s ontology.
 - **Decision:** `@tuvren/backend-memory` is the reference non-persistent backend for development and semantic testing. `@tuvren/backend-sqlite` is the first officially supported persistent backend adapter.
 - **Consequences:** SQLite is the first official persistent implementation, but not the canonical physical model for all future backends. PostgreSQL, MySQL/MariaDB, MongoDB, and others remain peer adapters against the same kernel contract.
 
 ### ADR-008 Structured Kernel Records Use Deterministic CBOR and Opaque Objects Hash Raw Bytes
+
 - **Status:** accepted
 - **Context:** Kernel identity needs a compact, deterministic, multi-language-friendly encoding. Canonical JSON is human-readable, but it carries JSON number and ECMAScript canonicalization constraints that are not ideal for durable kernel identity.
 - **Decision:** Structured kernel records are encoded as deterministic CBOR before hashing. Opaque stored objects are hashed from raw bytes without re-encoding.
 - **Consequences:** The kernel’s identity format is binary, deterministic, and language-neutral. JSON remains a debugging, export, and tooling format, not the canonical storage identity format.
 
 ### ADR-009 SHA-256 Is the Canonical Hash Algorithm
+
 - **Status:** accepted
 - **Context:** Durable identity must work cleanly across TypeScript, Python, Go, Rust, Bun, Node.js, Deno, and edge/Wasm-friendly environments with minimal dependency friction.
 - **Decision:** Kraken uses SHA-256 as the canonical hash algorithm for both opaque object bytes and deterministic-CBOR structured records.
 - **Consequences:** Hash identity uses ubiquitous primitives available in WebCrypto and standard libraries. Faster alternatives such as BLAKE3 are intentionally not used for canonical identity in v0.1.
 
 ### ADR-010 Core Kernel Records Use a Restricted Integer-Oriented Data Model
+
 - **Status:** accepted
 - **Context:** Cross-language deterministic encoding gets riskier when floats, tags, and broad dynamic types are allowed into core kernel records.
 - **Decision:** Core kernel records are restricted to maps with string keys, arrays, text, byte strings, booleans, nulls, and integers. Floating-point values are not allowed in normative kernel records. Persisted timestamps are signed Unix epoch millisecond integers.
 - **Consequences:** Deterministic CBOR encoding remains simple and predictable. Float-bearing data, if ever needed, must live in opaque objects, extension state, or higher-layer provider/application payloads, not in core kernel records.
 
 ### ADR-011 TurnTree Storage Is Path-Granular with Threshold-Based Chunking for Ordered Paths
+
 - **Status:** accepted
 - **Context:** The kernel contract is expressed in path values, not in generic subtree fragments. Ordered paths such as `messages` can grow large enough that flat rewrites become expensive, but a fully generic Merkle-fragment engine would overfit the problem.
 - **Decision:** TurnTree semantics remain path-granular. Ordered paths are logically `Hash[]`; single paths are logically `Hash | null`. Internally, ordered paths start flat and may promote to append-optimized fixed-size chunked storage after crossing an implementation-defined threshold. Chunking is invisible at the protocol layer.
 - **Consequences:** The public model stays simple while long ordered paths avoid pathological rewrite amplification. Numeric threshold and chunk-size values remain implementation constants, not protocol constants.
 
 ### ADR-012 TypeScript Tooling Uses Biome and tsup
+
 - **Status:** accepted
 - **Context:** The project explicitly prefers Bun-based workflows, Biome, and `tsup`.
 - **Decision:** Use `@biomejs/biome@2.4.10` for linting and formatting and `tsup@8.5.1` for package builds.
 - **Consequences:** The implementation posture is no longer ambiguous or tool-default-driven. Config, scripts, and examples must reflect this choice directly.
 
 ### ADR-013 Workspace Orchestration Uses devenv and Nx
+
 - **Status:** accepted
 - **Context:** The project explicitly fixed `devenv + nx` as non-negotiable workspace tooling and the repository now uses a boundary-grouped architecture-first layout.
 - **Decision:** Use `devenv` as the reproducible developer environment entry point and pin `nx@22.6.3` with aligned `@nx/workspace@22.6.3` and `@nx/js@22.6.3` for orchestration of the TypeScript subtree.
 - **Consequences:** Environment pinning lives in Nix/devenv configuration rather than npm manifests alone. Nx project orchestration is first-class, but limited to the TypeScript subtree and does not define the overall repository ontology.
 
 ### ADR-014 The Framework Is Driver-Oriented and ReAct Is the Initial Driver
+
 - **Status:** accepted
 - **Context:** The architecture now distinguishes shared framework services from concrete execution models. The current behavioral specification is strongly ReAct-shaped, but the product must support future workflow-oriented drivers over the same durable runtime foundation.
 - **Decision:** Implement the framework as shared contracts plus shared runtime services, with concrete drivers as explicit implementation packages. The first driver is the ReAct Driver.
 - **Consequences:** Package structure, task planning, and future implementation sequencing must separate shared framework logic from driver-specific logic. Future drivers can be added without redefining the kernel, host API, or provider-neutral content model.
 
 ### 2.1 Compatibility Record
+
 - **Kernel identity compatibility:** Changes to deterministic CBOR profile, SHA-256 usage, hash string representation, or durable record shapes are semver-major.
 - **Framework public API compatibility:** Breaking changes to exported TypeScript library contracts require a semver-major release.
 - **Driver compatibility:** Changes to shared driver-selection semantics or driver-neutral framework contracts are semver-major; adding a new driver is semver-minor unless it changes existing shared contracts.
@@ -122,7 +142,9 @@
 - **Provider compatibility:** AI SDK bridge upgrades may happen in minor releases only if the Tuvren-owned provider contract remains unchanged and contract fixtures still pass. Baseline AI SDK bridge compatibility is anchored to `LanguageModelV3`; adding `LanguageModelV2` compatibility later is additive only if it does not widen or weaken the Tuvren-owned provider contract.
 
 ## 3. State & Data Modeling
+
 ### 3.1 Canonical Kernel Record Profile
+
 - **Purpose:** Define the durable data profile that all kernel implementations and backends must preserve.
 - **Storage Shape:** Structured kernel records are deterministic CBOR maps with string keys. Opaque objects remain raw bytes plus media type metadata.
 - **Constraints / Invariants:**
@@ -136,6 +158,7 @@
 - **Migration Notes:** Record profile changes are protocol changes and therefore semver-major.
 
 #### Primitive Aliases
+
 - `HashString`
   - lowercase hex string of a 32-byte SHA-256 digest
 - `EpochMs`
@@ -144,6 +167,7 @@
   - deterministic-CBOR-encodable value using the restricted profile above
 
 ### 3.2 Canonical Entity Shapes
+
 - **Purpose:** Define the exact logical records the TypeScript implementation persists and hashes.
 - **Storage Shape:** Immutable records encoded with deterministic CBOR unless the item is an opaque Object blob.
 - **Constraints / Invariants:**
@@ -155,6 +179,7 @@
 - **Migration Notes:** Field additions require explicit compatibility handling; field removals or semantic changes are semver-major.
 
 #### Canonical Entity Definitions
+
 - `StoredObject`
   - `hash: HashString`
   - `mediaType: string`
@@ -239,6 +264,7 @@
   - `createdAtMs: EpochMs`
 
 #### Run Liveness Extension Gate
+
 - **Purpose:** Define the required implementation delta before Tuvren Runtime can claim durable recovery of stale `running` Runs.
 - **Storage Shape:** Leased Run ownership extends `StoredRun` with backend-neutral fields equivalent to `executionOwnerId`, `leaseExpiresAtMs`, `fencingToken`, and `preemptionReason`.
 - **Constraints / Invariants:**
@@ -266,6 +292,7 @@ erDiagram
 ```
 
 ### 3.3 TurnTree Physical Realization
+
 - **Purpose:** Concretize how the first implementation realizes path-granular TurnTrees without changing the frozen protocol.
 - **Storage Shape:** Path-granular manifests plus internal ordered-path chunk storage where needed.
 - **Constraints / Invariants:**
@@ -283,6 +310,7 @@ erDiagram
 - **Migration Notes:** Physical chunk policy may evolve without changing the protocol so long as `tree.create`, `tree.incorporate`, `tree.resolve`, `tree.diff`, and `tree.manifest` preserve the same behavior.
 
 ### 3.4 Backend Adapter Model
+
 - **Purpose:** Define what it means for a backend package to be an official Tuvren Runtime backend.
 - **Storage Shape:** Each backend package is a concrete implementation of the kernel storage contract. Physical schema is backend-specific.
 - **Constraints / Invariants:**
@@ -296,6 +324,7 @@ erDiagram
 - **Migration Notes:** Each backend package owns its own migration mechanism and version history.
 
 ### 3.5 SQLite Backend Schema
+
 - **Purpose:** Specify the first official persistent backend package concretely enough to implement without guesswork.
 - **Storage Shape:** Embedded in-process SQLite database using WAL mode and `BEGIN IMMEDIATE` transactions for kernel writes.
 - **Constraints / Invariants:**
@@ -313,6 +342,7 @@ erDiagram
 - **Migration Notes:** Forward-only SQL migrations owned by `@tuvren/backend-sqlite`.
 
 #### SQLite Tables
+
 - `objects`
   - columns: `hash TEXT PRIMARY KEY`, `media_type TEXT NOT NULL`, `bytes BLOB NOT NULL`, `byte_length INTEGER NOT NULL`, `created_at_ms INTEGER NOT NULL`
   - indexes: primary key on `hash`
@@ -363,7 +393,9 @@ erDiagram
   - indexes: primary key, secondary on `(run_id, status)`, `object_hash`
 
 ## 4. Interface Contract
+
 ### 4.0 Shared Error Foundation
+
 - **Style:** shared cross-boundary TypeScript contract
 - **Ownership:** `@tuvren/core-types` owns the shared error base class and category subclasses. Concrete packages own their package-specific `code` values and message text.
 - **Compatibility Strategy:** `TuvrenError` shape, subclass names, and stable `code` values are semver-governed public API. Adding a new error subclass is semver-minor. Changing or removing an existing stable `code` is semver-major.
@@ -398,6 +430,7 @@ export class TuvrenProviderError extends TuvrenError {}
 Concrete code examples already defined in the authoritative specs such as `structured_output_validation` and `invalid_loop_policy` are `TuvrenRuntimeError` codes. Backend-specific failures must normalize to `TuvrenPersistenceError` codes before surfacing through shared contracts.
 
 ### 4.1 Host-Facing TypeScript Framework API
+
 - **Style:** library API
 - **Authentication / Authorization:** Not built into Tuvren Runtime. Host applications authenticate and authorize their own callers before exposing runtime operations.
 - **Compatibility Strategy:** Exported TypeScript framework APIs follow semantic versioning. Additive methods and additive optional fields are minor-compatible.
@@ -523,6 +556,7 @@ export interface AgentConfig {
 Runtime-core options include `defaultMaxParallelToolCalls?: number`, `manifestExtensionStateWarningBudgetBytes?: number | false`, and `onWarning?: (warning: RuntimeWarning) => void`. Manifest state budget warnings are advisory host callbacks, not execution events and not hard limits. The default warning budget is `256 KiB` per extension namespace; `false` disables budget checks.
 
 ### 4.2 Kernel Protocol Surface
+
 - **Style:** protocol-shaped library contract for the first TypeScript implementation
 - **Authentication / Authorization:** Internal kernel boundary used by framework packages and backend adapters
 - **Compatibility Strategy:** Protocol-first contract. Breaking changes to record shapes, operation signatures, or validation semantics are semver-major.
@@ -572,19 +606,19 @@ export interface RuntimeKernel {
     create(
       schemaId: string,
       changes: Record<string, HashString[] | HashString | null>,
-      baseTurnTreeHash?: HashString
+      baseTurnTreeHash?: HashString,
     ): Promise<HashString>;
     incorporate(
       baseTurnTreeHash: HashString,
-      stagedResults: StagedResult[]
+      stagedResults: StagedResult[],
     ): Promise<HashString>;
     diff(treeHashA: HashString, treeHashB: HashString): Promise<string[]>;
     resolve(
       treeHash: HashString,
-      path: string
+      path: string,
     ): Promise<HashString[] | HashString | null>;
     manifest(
-      treeHash: HashString
+      treeHash: HashString,
     ): Promise<Record<string, HashString[] | HashString | null>>;
   };
 
@@ -597,7 +631,7 @@ export interface RuntimeKernel {
     create(
       threadId: string,
       schemaId: string,
-      initialBranchId: string
+      initialBranchId: string,
     ): Promise<ThreadCreateResult>;
     get(threadId: string): Promise<ThreadRecord | null>;
   };
@@ -606,13 +640,10 @@ export interface RuntimeKernel {
     create(
       branchId: string,
       threadId: string,
-      fromTurnNodeHash: HashString
+      fromTurnNodeHash: HashString,
     ): Promise<BranchRecord>;
     get(branchId: string): Promise<BranchRecord | null>;
-    setHead(
-      branchId: string,
-      turnNodeHash: HashString
-    ): Promise<SetHeadResult>;
+    setHead(branchId: string, turnNodeHash: HashString): Promise<SetHeadResult>;
     list(threadId: string): Promise<Array<[string, HashString]>>;
   };
 
@@ -623,7 +654,7 @@ export interface RuntimeKernel {
       taskId: string,
       objectType: string,
       status: "completed" | "failed" | "interrupted",
-      interruptPayload?: KernelRecord
+      interruptPayload?: KernelRecord,
     ): Promise<{ objectHash: HashString; stagedResult: StagedResult }>;
     current(runId: string): Promise<StagedResult[]>;
   };
@@ -635,7 +666,7 @@ export interface RuntimeKernel {
       branchId: string,
       schemaId: string,
       startTurnNodeHash: HashString,
-      steps: StepDeclaration[]
+      steps: StepDeclaration[],
     ): Promise<RunRecord>;
     beginStep(runId: string, stepId: string): Promise<StepContext>;
     completeStep(
@@ -643,12 +674,12 @@ export interface RuntimeKernel {
       stepId: string,
       eventHash?: HashString,
       observeResults?: ObserveResult[],
-      treeHash?: HashString
+      treeHash?: HashString,
     ): Promise<{ checkpointed: boolean; turnNodeHash?: HashString }>;
     complete(
       runId: string,
       status: "completed" | "failed" | "paused",
-      eventHash?: HashString
+      eventHash?: HashString,
     ): Promise<{ turnNodeHash?: HashString }>;
     recover(runId: string): Promise<RecoveryState>;
   };
@@ -663,7 +694,7 @@ export interface RuntimeKernel {
       threadId: string,
       branchId: string,
       parentTurnId: string | null | undefined,
-      startTurnNodeHash: HashString
+      startTurnNodeHash: HashString,
     ): Promise<TurnRecord>;
     get(turnId: string): Promise<TurnRecord | null>;
     updateHead(turnId: string, headTurnNodeHash: HashString): Promise<void>;
@@ -672,6 +703,7 @@ export interface RuntimeKernel {
 ```
 
 ### 4.3 Backend Adapter Contract
+
 - **Style:** library API
 - **Authentication / Authorization:** Backends are internal persistence adapters selected by hosts/framework configuration, not end-user entry points
 - **Compatibility Strategy:** Strict shared contract across all official backends
@@ -702,7 +734,7 @@ export interface TurnTreeRepository {
 export interface TurnTreePathRepository {
   get(
     turnTreeHash: HashString,
-    path: string
+    path: string,
   ): Promise<StoredTurnTreePath | null>;
   listByTurnTree(turnTreeHash: HashString): Promise<StoredTurnTreePath[]>;
   putMany(records: StoredTurnTreePath[]): Promise<void>;
@@ -761,14 +793,13 @@ export interface RuntimeBackendTx {
   stagedResults: StagedResultRepository;
 }
 
-export declare function createMemoryBackend(
-  options?: {
-    now?: () => EpochMs;
-  }
-): RuntimeBackend;
+export declare function createMemoryBackend(options?: {
+  now?: () => EpochMs;
+}): RuntimeBackend;
 ```
 
 ### 4.4 Provider Bridge Contract
+
 - **Style:** library API
 - **Authentication / Authorization:** Credentials stay in bridge configuration and host environment resolution; they are never persisted as core runtime state
 - **Compatibility Strategy:** Tuvren Runtime owns the provider contract; the AI SDK bridge adapts to external package changes behind it
@@ -802,18 +833,20 @@ export interface AiSdkProviderBridgeOptions {
   defaultProviderOptions?: SharedV3ProviderOptions;
 }
 
-export interface AiSdkProviderBridgeFromProviderOptions
-  extends Omit<AiSdkProviderBridgeOptions, "model"> {
+export interface AiSdkProviderBridgeFromProviderOptions extends Omit<
+  AiSdkProviderBridgeOptions,
+  "model"
+> {
   provider: ProviderV3;
   modelId: string;
 }
 
 export declare function createAiSdkProviderBridge(
-  options: AiSdkProviderBridgeOptions
+  options: AiSdkProviderBridgeOptions,
 ): TuvrenProvider;
 
 export declare function createAiSdkProviderBridgeFromProvider(
-  options: AiSdkProviderBridgeFromProviderOptions
+  options: AiSdkProviderBridgeFromProviderOptions,
 ): TuvrenProvider;
 
 export interface StructuredOutputRequest {
@@ -837,10 +870,20 @@ export type ProviderStreamChunk =
   | { type: "structured_done"; data: unknown; name?: string }
   | { type: "tool_call_start"; providerCallId: string; name: string }
   | { type: "tool_call_args_delta"; providerCallId: string; delta: string }
-  | { type: "tool_call_done"; providerCallId: string; name: string; input: unknown }
+  | {
+      type: "tool_call_done";
+      providerCallId: string;
+      name: string;
+      input: unknown;
+    }
   | {
       type: "finish";
-      finishReason: "stop" | "tool_call" | "length" | "error" | "content_filter";
+      finishReason:
+        | "stop"
+        | "tool_call"
+        | "length"
+        | "error"
+        | "content_filter";
       usage?: { inputTokens: number; outputTokens: number };
       providerMetadata?: Record<string, unknown>;
     }
@@ -850,6 +893,7 @@ export type ProviderStreamChunk =
 On normal stream completion, `finish` is only valid after any started structured-output or tool-call part has been completed by its corresponding `structured_done` or `tool_call_done` chunk. A final-only `structured_done` chunk is valid; the driver synthesizes the missing `structured.delta` from the final data before publishing `structured.done`, matching the generated-response event shape. Cancellation partial finalization is the only path that may preserve incomplete accumulated content.
 
 ### 4.5 Canonical Event Stream Contract
+
 - **Style:** library API
 - **Authentication / Authorization:** Controlled by the host embedding layer
 - **Compatibility Strategy:** Existing event types and required fields are stable within a major version; minor releases may add event types or optional fields
@@ -865,33 +909,187 @@ export interface EventSource {
 }
 
 export type TuvrenStreamEvent =
-  | { type: "turn.start"; turnId: string; threadId: string; resumedFrom?: HashString; timestamp: EpochMs; source?: EventSource }
-  | { type: "turn.end"; turnId: string; status: "completed" | "paused" | "failed"; timestamp: EpochMs; source?: EventSource }
-  | { type: "iteration.start" | "iteration.end"; iterationCount: number; timestamp: EpochMs; source?: EventSource }
-  | { type: "message.start"; messageId: string; role: "assistant"; timestamp: EpochMs; source?: EventSource }
-  | { type: "file.done"; messageId: string; data: string | Uint8Array; filename?: string; mediaType: string; timestamp: EpochMs; source?: EventSource }
-  | { type: "text.delta"; messageId: string; delta: string; timestamp: EpochMs; source?: EventSource }
-  | { type: "text.done"; messageId: string; text: string; timestamp: EpochMs; source?: EventSource }
-  | { type: "reasoning.delta"; messageId: string; delta: string; timestamp: EpochMs; source?: EventSource }
-  | { type: "reasoning.done"; messageId: string; timestamp: EpochMs; source?: EventSource }
-  | { type: "structured.delta"; messageId: string; delta: string; timestamp: EpochMs; source?: EventSource }
-  | { type: "structured.done"; messageId: string; data: unknown; name?: string; timestamp: EpochMs; source?: EventSource }
-  | { type: "tool_call.start"; messageId: string; callId: string; name: string; timestamp: EpochMs; source?: EventSource }
-  | { type: "tool_call.args_delta"; callId: string; delta: string; timestamp: EpochMs; source?: EventSource }
-  | { type: "tool_call.done"; callId: string; name: string; input: unknown; timestamp: EpochMs; source?: EventSource }
-  | { type: "message.done"; messageId: string; finishReason: "stop" | "tool_call" | "length" | "error" | "content_filter"; usage?: { inputTokens: number; outputTokens: number }; timestamp: EpochMs; source?: EventSource }
-  | { type: "tool.start"; callId: string; name: string; input: unknown; timestamp: EpochMs; source?: EventSource }
-  | { type: "tool.result"; callId: string; name: string; output: unknown; isError?: boolean; timestamp: EpochMs; source?: EventSource }
-  | { type: "approval.requested"; request: ApprovalRequest; timestamp: EpochMs; source?: EventSource }
-  | { type: "approval.resolved"; response: ApprovalResponse; timestamp: EpochMs; source?: EventSource }
-  | { type: "steering.incorporated"; messageId: string; timestamp: EpochMs; source?: EventSource }
-  | { type: "state.snapshot"; manifest: ContextManifest; timestamp: EpochMs; source?: EventSource }
-  | { type: "state.checkpoint"; turnNodeHash: HashString; iterationCount: number; timestamp: EpochMs; source?: EventSource }
-  | { type: "error"; error: { message: string; code?: string; details?: unknown }; fatal: boolean; timestamp: EpochMs; source?: EventSource }
-  | { type: "custom"; name: string; data: unknown; timestamp: EpochMs; source?: EventSource };
+  | {
+      type: "turn.start";
+      turnId: string;
+      threadId: string;
+      resumedFrom?: HashString;
+      timestamp: EpochMs;
+      source?: EventSource;
+    }
+  | {
+      type: "turn.end";
+      turnId: string;
+      status: "completed" | "paused" | "failed";
+      timestamp: EpochMs;
+      source?: EventSource;
+    }
+  | {
+      type: "iteration.start" | "iteration.end";
+      iterationCount: number;
+      timestamp: EpochMs;
+      source?: EventSource;
+    }
+  | {
+      type: "message.start";
+      messageId: string;
+      role: "assistant";
+      timestamp: EpochMs;
+      source?: EventSource;
+    }
+  | {
+      type: "file.done";
+      messageId: string;
+      data: string | Uint8Array;
+      filename?: string;
+      mediaType: string;
+      timestamp: EpochMs;
+      source?: EventSource;
+    }
+  | {
+      type: "text.delta";
+      messageId: string;
+      delta: string;
+      timestamp: EpochMs;
+      source?: EventSource;
+    }
+  | {
+      type: "text.done";
+      messageId: string;
+      text: string;
+      timestamp: EpochMs;
+      source?: EventSource;
+    }
+  | {
+      type: "reasoning.delta";
+      messageId: string;
+      delta: string;
+      timestamp: EpochMs;
+      source?: EventSource;
+    }
+  | {
+      type: "reasoning.done";
+      messageId: string;
+      timestamp: EpochMs;
+      source?: EventSource;
+    }
+  | {
+      type: "structured.delta";
+      messageId: string;
+      delta: string;
+      timestamp: EpochMs;
+      source?: EventSource;
+    }
+  | {
+      type: "structured.done";
+      messageId: string;
+      data: unknown;
+      name?: string;
+      timestamp: EpochMs;
+      source?: EventSource;
+    }
+  | {
+      type: "tool_call.start";
+      messageId: string;
+      callId: string;
+      name: string;
+      timestamp: EpochMs;
+      source?: EventSource;
+    }
+  | {
+      type: "tool_call.args_delta";
+      callId: string;
+      delta: string;
+      timestamp: EpochMs;
+      source?: EventSource;
+    }
+  | {
+      type: "tool_call.done";
+      callId: string;
+      name: string;
+      input: unknown;
+      timestamp: EpochMs;
+      source?: EventSource;
+    }
+  | {
+      type: "message.done";
+      messageId: string;
+      finishReason:
+        | "stop"
+        | "tool_call"
+        | "length"
+        | "error"
+        | "content_filter";
+      usage?: { inputTokens: number; outputTokens: number };
+      timestamp: EpochMs;
+      source?: EventSource;
+    }
+  | {
+      type: "tool.start";
+      callId: string;
+      name: string;
+      input: unknown;
+      timestamp: EpochMs;
+      source?: EventSource;
+    }
+  | {
+      type: "tool.result";
+      callId: string;
+      name: string;
+      output: unknown;
+      isError?: boolean;
+      timestamp: EpochMs;
+      source?: EventSource;
+    }
+  | {
+      type: "approval.requested";
+      request: ApprovalRequest;
+      timestamp: EpochMs;
+      source?: EventSource;
+    }
+  | {
+      type: "approval.resolved";
+      response: ApprovalResponse;
+      timestamp: EpochMs;
+      source?: EventSource;
+    }
+  | {
+      type: "steering.incorporated";
+      messageId: string;
+      timestamp: EpochMs;
+      source?: EventSource;
+    }
+  | {
+      type: "state.snapshot";
+      manifest: ContextManifest;
+      timestamp: EpochMs;
+      source?: EventSource;
+    }
+  | {
+      type: "state.checkpoint";
+      turnNodeHash: HashString;
+      iterationCount: number;
+      timestamp: EpochMs;
+      source?: EventSource;
+    }
+  | {
+      type: "error";
+      error: { message: string; code?: string; details?: unknown };
+      fatal: boolean;
+      timestamp: EpochMs;
+      source?: EventSource;
+    }
+  | {
+      type: "custom";
+      name: string;
+      data: unknown;
+      timestamp: EpochMs;
+      source?: EventSource;
+    };
 ```
 
 ### 4.6 Driver Runtime Contract
+
 - **Style:** library API
 - **Authentication / Authorization:** Internal contract between shared runtime foundations and concrete driver implementations
 - **Compatibility Strategy:** Breaking changes to driver execution entrypoints, driver result semantics, or registry ownership are semver-major because future drivers depend on this seam rather than on `runtime-core` internals
@@ -988,6 +1186,7 @@ terminal-with-tools driver result shape that the shared core does not support.
 `runtime.emit(...)` is limited to driver-owned stream content and custom events. Framework-owned lifecycle events such as `turn.*`, `iteration.*`, `tool.*`, `approval.*`, `state.*`, and `error` remain shared-core responsibilities and are rejected if a driver tries to emit them directly. Shared core publishes driver-emitted content and custom events as they occur, while still retaining them for post-call validation and response synthesis. Because publication is live, already-forwarded driver events are not retracted if a later validation step fails, including post-stream structured-output validation; instead the turn terminates with the relevant contract error. If a driver emits assistant content events for a successful durable assistant response, that emitted assistant sequence must normally reconcile to the durable assistant message in `DriverExecutionResult.messages`, including incremental delta payloads such as `text.delta`, `reasoning.delta`, `structured.delta`, and `tool_call.args_delta`, stable event identity (`messageId`, `callId`), canonical message-start/message-done ordering, and the final `finishReason`; otherwise runtime-core rejects it as an invalid stream event. The one intentional exception is `aroundModel` post-stream response replacement: when an `aroundModel` wrapper has already allowed a live assistant sequence to stream via `next()` and then returns a different final durable response, the driver must return `assistantEventReconciliation: "allow_final_sequence_divergence"` so shared core validates the emitted assistant sequences as complete standalone assistant messages instead of requiring equality with the checkpointed durable assistant message. Shared core honors that exception only when the active agent config includes at least one `aroundModel` handler, assistant content events were actually emitted, the final emitted assistant sequence actually diverges from the durable assistant message, and neither side requests tools. In that divergence case, shared core still synthesizes the `AfterIterationContext.response` value from the durable assistant checkpoint so hook-visible `TuvrenModelResponse` values remain internally coherent even when the live stream differed. On terminal `fail` paths before a durable assistant message exists, emitted assistant content may remain as an interrupted partial sequence; shared core validates that sequence for allowed event shapes and ordering, but does not require durable-message equality in that failure case. When a driver returns a durable assistant message without emitting matching assistant content events, runtime-core synthesizes those missing assistant stream events from the durable message so the public stream and persisted history stay aligned.
 
 ### 4.7 Host Stream Adapter, Playground, and Hardening Contracts
+
 - **Style:** library adapters plus local host harness
 - **Authentication / Authorization:** Stream adapters and the playground do not implement product authentication. Hosts remain responsible for authenticating external callers before exposing runtime operations, provider credentials, or approval controls.
 - **Compatibility Strategy:** `TuvrenStreamEvent` remains the canonical internal event vocabulary. Adapter packages translate it outward and may add adapter-local metadata, but they must not change runtime event meaning, event order, stream single-consumer behavior, cancellation semantics, approval semantics, or durable state.
@@ -995,7 +1194,7 @@ terminal-with-tools driver result shape that the shared core does not support.
 
 ```ts
 export type StreamProtocolAdapter<T> = (
-  events: AsyncIterable<TuvrenStreamEvent>
+  events: AsyncIterable<TuvrenStreamEvent>,
 ) => AsyncIterable<T>;
 
 export interface StreamAdapterWarning {
@@ -1010,7 +1209,7 @@ export interface StreamAdapterOptions {
 
 export declare function teeTuvrenStreamEvents(
   events: AsyncIterable<TuvrenStreamEvent>,
-  branchCount: number
+  branchCount: number,
 ): readonly AsyncIterable<TuvrenStreamEvent>[];
 
 export interface TuvrenSseFrame {
@@ -1022,17 +1221,17 @@ export interface TuvrenSseFrame {
 
 export declare function toSseFrames(
   events: AsyncIterable<TuvrenStreamEvent>,
-  options?: StreamAdapterOptions
+  options?: StreamAdapterOptions,
 ): AsyncIterable<TuvrenSseFrame>;
 
 export declare function toSseResponse(
   events: AsyncIterable<TuvrenStreamEvent>,
-  options?: StreamAdapterOptions & ResponseInit
+  options?: StreamAdapterOptions & ResponseInit,
 ): Response;
 
 export declare function toAgUiEvents(
   events: AsyncIterable<TuvrenStreamEvent>,
-  options?: StreamAdapterOptions
+  options?: StreamAdapterOptions,
 ): AsyncIterable<AGUIEvent>;
 ```
 
@@ -1043,7 +1242,9 @@ export declare function toAgUiEvents(
 - The hardening line owns testkit extraction, release-check tooling, package export smoke tests, and portability validation for core non-native packages across Bun and Node. Deno checks remain deferred until package surfaces stabilize enough to avoid testing scaffolding churn.
 
 ## 5. Implementation Guidelines
+
 ### 5.1 Project Structure
+
 Target implementation layout after code generation begins:
 
 ```text
@@ -1179,6 +1380,7 @@ Target implementation layout after code generation begins:
 ```
 
 ### 5.1.1 Structure Rules
+
 - The repository is architecture-first and language-neutral at the top level.
 - `boundaries/` is the authoritative implementation tree.
 - Each architectural boundary owns its own contracts and implementations.
@@ -1189,6 +1391,7 @@ Target implementation layout after code generation begins:
 - `@tuvren/runtime-api` remains the semantic anchor and compatibility source for shared framework contracts. Focused facade packages remain the preferred public home for event, tool, provider, and driver-specific imports, but compatibility re-exports from `@tuvren/runtime-api` are allowed while the partition settles.
 
 ### 5.2 Coding Standards
+
 - **Formatting / Linting:** Use Biome configured to follow the repository’s Ultracite-aligned standards.
 - **Workspace Tooling:** Use `devenv` for reproducible developer environments and `nx@22.6.3` with aligned `@nx/*` packages for project orchestration, affected-graph analysis, caching, generators, and task coordination across the TypeScript subtree.
 - **Build Tooling:** Use `tsup` for TypeScript package builds. Core packages emit ESM-first builds and do not publish JavaScript sourcemaps or TypeScript declaration maps by default.
@@ -1229,6 +1432,7 @@ Target implementation layout after code generation begins:
   - provider bridges must keep provider-specific details out of core hot paths
 
 ### 5.3 Documentation Drift Prevention
+
 - `docs/KrakenKernelSpecification.md` and `docs/KrakenFrameworkSpecification.md` remain the authoritative behavioral sources that this TechSpec realizes physically.
 - `constitution/PRD.md`, `constitution/Architecture.md`, and `constitution/TechSpec.md` remain the governing artifacts for product, logical architecture, and technical implementation posture.
 - Changes to provider posture, backend posture, record encoding, hash algorithm, or public framework contracts require a TechSpec update in the same change.
@@ -1236,6 +1440,7 @@ Target implementation layout after code generation begins:
 - New backend adapters require updates to backend conformance documentation and compatibility notes.
 
 ### 5.4 Initial Build Sequence
+
 1. Scaffold `devenv`, `nx`, the Bun workspace, root TypeScript configuration, Biome configuration, and the boundary-grouped monorepo layout.
 2. Implement `boundaries/shared/contracts/core-types` with the small set of truly cross-boundary primitives.
 3. Implement `boundaries/kernel/contracts/protocol` with exact protocol data types, deterministic CBOR utilities, SHA-256 hashing helpers, validation rules, and shared semantic fixtures.
@@ -1256,6 +1461,7 @@ Target implementation layout after code generation begins:
 18. Add backend conformance suites for future peer adapters such as PostgreSQL and MySQL/MariaDB before expanding the official backend set.
 
 ### 5.4.1 ReAct Epic Partition Status
+
 - **Epic K — ReAct Loop Completion:** Closed in current repo reality. Loop correctness, cancellation boundaries, partial assistant durability, and the current handoff seam are implemented and recorded in `constitution/spikes/epic-k-react-loop-cancellation-inventory.md`.
 - **Epic L — ReAct Streaming and Provider Semantics:** Closed in current repo reality. Streaming parity, assistant event reconciliation, structured output streaming, and opaque provider metadata preservation are implemented and recorded in `constitution/spikes/epic-l-parity-inventory.md`.
 - **Epic M — ReAct Tool and Approval Integration:** Closed in current repo reality. Shared runtime-core now owns durable tool-result feedback, approval pause/resume primitives, edited/rejected decision recording, partial batch durability, and recovery-oriented coverage. Edited approvals execute with the approved edited input while preserving a durable audit trace of the original and edited values on the resulting tool result. Closure evidence is recorded in `constitution/spikes/epic-m-tool-approval-gap-inventory.md`.

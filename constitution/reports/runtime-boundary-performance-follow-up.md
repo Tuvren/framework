@@ -252,21 +252,21 @@ Measured on 2026-04-24 after committing the benchmark harness, stashing the impl
 
 The deltas below use best per-iteration timings from the repeated-run benchmark output. Lower is better.
 
-| Benchmark | Before | After | Delta |
-| --- | ---: | ---: | ---: |
-| Stream boundary clone and validation | `66.01us` | `67.67us` | `+2.5%` |
-| Event fanout to one subscriber | `28.32us` | `28.02us` | `-1.1%` |
-| Event fanout to four subscribers | `111.50us` | `112.59us` | `+1.0%` |
-| Extension beforeIteration context snapshots | `1.84ms` | `1.83ms` | `-0.6%` |
-| Extension afterIteration context snapshots | `1.86ms` | `1.85ms` | `-0.6%` |
-| Tool execution and around-tool context snapshots | `240.20us` | `236.46us` | `-1.6%` |
-| Manifest append-only incremental updates | `347.46us` | `180.18us` | `-48.1%` |
-| Manifest extension state merge updates | `371.47us` | `372.83us` | `+0.4%` |
-| Driver immutable snapshot creation | `459.99us` | `461.67us` | `+0.4%` |
-| React stream publication with shared-core clone simulation | `549.83us` | `442.35us` | `-19.5%` |
+| Benchmark                                                       |     Before |      After |    Delta |
+| --------------------------------------------------------------- | ---------: | ---------: | -------: |
+| Stream boundary clone and validation                            |  `66.01us` |  `67.67us` |  `+2.5%` |
+| Event fanout to one subscriber                                  |  `28.32us` |  `28.02us` |  `-1.1%` |
+| Event fanout to four subscribers                                | `111.50us` | `112.59us` |  `+1.0%` |
+| Extension beforeIteration context snapshots                     |   `1.84ms` |   `1.83ms` |  `-0.6%` |
+| Extension afterIteration context snapshots                      |   `1.86ms` |   `1.85ms` |  `-0.6%` |
+| Tool execution and around-tool context snapshots                | `240.20us` | `236.46us` |  `-1.6%` |
+| Manifest append-only incremental updates                        | `347.46us` | `180.18us` | `-48.1%` |
+| Manifest extension state merge updates                          | `371.47us` | `372.83us` |  `+0.4%` |
+| Driver immutable snapshot creation                              | `459.99us` | `461.67us` |  `+0.4%` |
+| React stream publication with shared-core clone simulation      | `549.83us` | `442.35us` | `-19.5%` |
 | React generate buffered flush with shared-core clone simulation | `161.25us` | `136.04us` | `-15.6%` |
-| Deterministic CBOR encode canonical nested record | `4.16ms` | `4.15ms` | `-0.3%` |
-| Deterministic CBOR encode and SHA-256 hash | `4.40ms` | `4.40ms` | `-0.1%` |
+| Deterministic CBOR encode canonical nested record               |   `4.16ms` |   `4.15ms` |  `-0.3%` |
+| Deterministic CBOR encode and SHA-256 hash                      |   `4.40ms` |   `4.40ms` |  `-0.1%` |
 
 The event fanout rows above came from the initial benchmark harness used for the measured before/after run. A later review pass replaced that legacy `EventFanout` utility coverage with benchmarks for the current single-consumer execution-handle queue and subtree-forwarding queue paths, so future benchmark runs intentionally use updated names for that stream-lifecycle area.
 

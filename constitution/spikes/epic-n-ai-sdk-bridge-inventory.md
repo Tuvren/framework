@@ -5,6 +5,7 @@ records the contract, mapping, and handoff seams that Epic O may depend on
 without rediscovering AI SDK provider behavior.
 
 ## Current Repo Reality
+
 - `@tuvren/provider-bridge-ai-sdk` now exists at
   `boundaries/providers/implementations/typescript/bridge-ai-sdk`.
 - The bridge is locked to `LanguageModelV3` and `ProviderV3` from
@@ -17,6 +18,7 @@ without rediscovering AI SDK provider behavior.
   widened to accommodate provider-owned tool or file streaming.
 
 ## Contract Homes
+
 - Shared provider contract:
   `boundaries/framework/contracts/runtime-api/src/lib/runtime-contracts.ts`
 - Public provider seam re-export:
@@ -27,6 +29,7 @@ without rediscovering AI SDK provider behavior.
   `boundaries/framework/implementations/typescript/drivers/react/src/lib/react-driver.ts`
 
 ## Implemented Baseline
+
 - Prompt/config mapping:
   - `TuvrenPrompt.config.settings` supports only `maxOutputTokens`,
     `temperature`, `topP`, `topK`, `stopSequences`, `presencePenalty`,
@@ -107,6 +110,7 @@ without rediscovering AI SDK provider behavior.
     `providerMetadata.aiSdkBridge.streamPartMetadata`
 
 ## Explicit Unsupported Surfaces
+
 - Provider-executed tools remain out of scope in Epic N:
   - AI SDK `tool-approval-request`
   - AI SDK `tool-result`
@@ -118,6 +122,7 @@ without rediscovering AI SDK provider behavior.
   they are not silently dropped and do not widen shared runtime contracts.
 
 ## Downstream Handoff To Epic O
+
 - Epic O may treat `TuvrenStreamEvent` output from bridge-backed ReAct turns as
   canonical and stable for:
   - text lifecycle events
@@ -132,6 +137,7 @@ without rediscovering AI SDK provider behavior.
   files requires a new upstream contract change before adapter work begins.
 
 ## Validation Targets
+
 - `bun run lint`
 - `bun run typecheck`
 - `bun run nx run providers-bridge-ai-sdk:typecheck`

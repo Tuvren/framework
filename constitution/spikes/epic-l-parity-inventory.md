@@ -4,6 +4,7 @@ This file closes `KRT-L001` against current brownfield reality and defines the
 streaming and provider-semantics invariants that Epic M may assume.
 
 ## Current Repo Reality
+
 - `framework-driver-react` and `framework-runtime-core` already implement and
   test most of Epic L behavior.
 - Verification baseline at the time of this inventory:
@@ -13,6 +14,7 @@ streaming and provider-semantics invariants that Epic M may assume.
   - `bun run nx run framework-runtime-core:typecheck`
 
 ## Contract Homes
+
 - Provider contract:
   `boundaries/framework/contracts/runtime-api/src/lib/runtime-contracts.ts`
   and `boundaries/providers/contracts/provider-api/src/index.ts`
@@ -24,7 +26,9 @@ streaming and provider-semantics invariants that Epic M may assume.
   `boundaries/framework/implementations/typescript/runtime-core/src/lib/runtime-core.ts`
 
 ## Parity Inventory
+
 ### Text
+
 - `provider.generate()` returns a complete `TextPart`; the driver synthesizes
   `message.start`, `text.delta`, `text.done`, and `message.done`.
 - `provider.stream()` emits `text_delta`; the accumulator publishes live
@@ -33,6 +37,7 @@ streaming and provider-semantics invariants that Epic M may assume.
   message content and finish-reason semantics.
 
 ### Reasoning
+
 - Streamed reasoning uses `reasoning_delta` and `reasoning_done`.
 - The accumulator preserves Anthropic-style thinking continuity tokens in
   `ReasoningPart.providerMetadata.signature`.
@@ -42,6 +47,7 @@ streaming and provider-semantics invariants that Epic M may assume.
   provider continuity tokens stay opaque in part-level `providerMetadata`.
 
 ### Structured Output
+
 - Generated structured output synthesizes `structured.delta` from serialized
   final data followed by `structured.done`.
 - Streamed structured output supports both incremental `structured_delta` plus
@@ -54,6 +60,7 @@ streaming and provider-semantics invariants that Epic M may assume.
   checkpointing.
 
 ### File Content
+
 - Canonical assistant events include `file.done`.
 - Generated or synthesized durable assistant messages can emit `file.done`.
 - The current `ProviderStreamChunk` contract has no file-specific chunk
@@ -63,6 +70,7 @@ streaming and provider-semantics invariants that Epic M may assume.
   synthesis, not through a provider-native stream chunk.
 
 ### Tool-Call Previews
+
 - Generated tool calls synthesize `tool_call.start`, `tool_call.args_delta`,
   `tool_call.done`, and `message.done`.
 - Streamed tool calls accept incremental `tool_call_args_delta` or final-only
@@ -71,6 +79,7 @@ streaming and provider-semantics invariants that Epic M may assume.
   durable `ToolCallPart` shape before runtime-core begins tool execution.
 
 ### Finish Reason and Usage
+
 - Generate mode takes `finishReason` and optional `usage` from the durable
   `TuvrenModelResponse` and publishes them via synthesized `message.done`.
 - Stream mode takes `finishReason`, `usage`, and response-level
@@ -81,6 +90,7 @@ streaming and provider-semantics invariants that Epic M may assume.
   `usage` must survive into hook-visible synthesized responses.
 
 ### Response-Level and Part-Level Provider Metadata
+
 - Assistant-message-level `providerMetadata` remains provider-shaped and opaque.
 - Part-level `providerMetadata` remains provider-shaped and opaque on text,
   reasoning, structured, file, tool-call, and tool-result parts.
@@ -90,6 +100,7 @@ streaming and provider-semantics invariants that Epic M may assume.
   Epic L.
 
 ### Failure and Cancellation
+
 - Provider stream failures become typed provider failures and do not get masked
   as `invalid_stream_event` failures.
 - Cancellation may checkpoint partial assistant content only when the accumulated
@@ -100,6 +111,7 @@ streaming and provider-semantics invariants that Epic M may assume.
   ephemeral provider chunk fragments.
 
 ### aroundModel Divergence
+
 - `assistantEventReconciliation: "allow_final_sequence_divergence"` is valid
   only when there is an active `aroundModel`, assistant content was emitted, the
   final emitted sequence truly differs from the durable assistant message, and
@@ -108,13 +120,16 @@ streaming and provider-semantics invariants that Epic M may assume.
   inputs and does not need to handle live-versus-durable tool-call divergence.
 
 ## Provider-Shaped Continuity Fields To Preserve Opaquely
+
 ### OpenAI
+
 - Response and message identity such as response IDs and item IDs
 - Function `call_id`
 - Reasoning `encrypted_content`
 - Usage detail counters beyond the canonical `inputTokens` and `outputTokens`
 
 ### Anthropic
+
 - Message IDs
 - `stop_reason`
 - Tool-use IDs
@@ -123,6 +138,7 @@ streaming and provider-semantics invariants that Epic M may assume.
 - Thinking `signature`
 
 ### Google / Gemini
+
 - Function-call `id`
 - `thoughtSignature`
 - `groundingMetadata`
@@ -130,6 +146,7 @@ streaming and provider-semantics invariants that Epic M may assume.
 - Session or grounding continuity fields returned by the provider
 
 ## Epic M Handoff Gates
+
 - Runtime-owned durable tool identity is `ToolCallPart.callId`; provider-native
   IDs remain opaque in `providerMetadata`.
 - Generated and streamed assistant tool calls must produce the same durable
@@ -144,6 +161,7 @@ streaming and provider-semantics invariants that Epic M may assume.
   field.
 
 ## Verification Evidence
+
 - Driver coverage lives primarily in
   `boundaries/framework/implementations/typescript/drivers/react/test/react-driver.test.ts`
 - Runtime validation coverage lives primarily in
