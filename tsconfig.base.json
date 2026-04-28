@@ -58,7 +58,10 @@
       "@tuvren/backend-sqlite": [
         "./boundaries/kernel/implementations/typescript/backend-sqlite/src/index.ts"
       ],
-      "@tuvren/kernel-testkit": ["./boundaries/kernel/testkit/src/index.ts"]
+      "@tuvren/kernel-testkit": ["./boundaries/kernel/testkit/src/index.ts"],
+      "@tuvren/playground-host": [
+        "./boundaries/hosts/implementations/typescript/playground/src/index.ts"
+      ]
     },
     "strict": true,
     "composite": true,

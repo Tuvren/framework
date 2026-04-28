@@ -1,0 +1,53 @@
+{
+  "compilerOptions": {
+    "declaration": true,
+    "declarationMap": false,
+    "emitDeclarationOnly": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "outDir": "./dist",
+    "paths": {
+      "@tuvren/backend-memory": [
+        "../../../../kernel/implementations/typescript/backend-memory/dist/index.d.ts"
+      ],
+      "@tuvren/backend-sqlite": [
+        "../../../../kernel/implementations/typescript/backend-sqlite/dist/index.d.ts"
+      ],
+      "@tuvren/core-types": [
+        "../../../../shared/contracts/core-types/dist/index.d.ts"
+      ],
+      "@tuvren/driver-react": [
+        "../../../../framework/implementations/typescript/drivers/react/dist/index.d.ts"
+      ],
+      "@tuvren/event-stream": [
+        "../../../../framework/contracts/event-stream/dist/index.d.ts"
+      ],
+      "@tuvren/kernel-protocol": [
+        "../../../../kernel/contracts/protocol/dist/index.d.ts"
+      ],
+      "@tuvren/provider-bridge-ai-sdk": [
+        "../../../../providers/implementations/typescript/bridge-ai-sdk/dist/index.d.ts"
+      ],
+      "@tuvren/runtime-api": [
+        "../../../../framework/contracts/runtime-api/dist/index.d.ts"
+      ],
+      "@tuvren/runtime-core": [
+        "../../../../framework/implementations/typescript/runtime-core/dist/index.d.ts"
+      ],
+      "@tuvren/stream-agui": [
+        "../../../../framework/implementations/typescript/stream-agui/dist/index.d.ts"
+      ],
+      "@tuvren/stream-core": [
+        "../../../../framework/implementations/typescript/stream-core/dist/index.d.ts"
+      ],
+      "@tuvren/stream-sse": [
+        "../../../../framework/implementations/typescript/stream-sse/dist/index.d.ts"
+      ]
+    },
+    "rootDir": "./src",
+    "target": "esnext",
+    "types": ["node"],
+    "verbatimModuleSyntax": true
+  },
+  "include": ["src/**/*.ts"]
+}

@@ -1,0 +1,38 @@
+{
+  "extends": "../../../../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "rootDir": "./src",
+    "outDir": "./dist"
+  },
+  "include": ["src/**/*.ts"],
+  "references": [
+    {
+      "path": "../../../../framework/contracts/event-stream/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../../framework/implementations/typescript/runtime-core/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../../framework/implementations/typescript/drivers/react/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../../framework/implementations/typescript/stream-core/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../../framework/implementations/typescript/stream-sse/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../../framework/implementations/typescript/stream-agui/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../../kernel/implementations/typescript/backend-memory/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../../kernel/implementations/typescript/backend-sqlite/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../../providers/implementations/typescript/bridge-ai-sdk/tsconfig.lib.json"
+    }
+  ]
+}

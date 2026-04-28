@@ -106,6 +106,26 @@
         "@tuvren/stream-core": "workspace:*",
       },
     },
+    "boundaries/hosts/implementations/typescript/playground": {
+      "name": "@tuvren/playground-host",
+      "version": "0.0.0",
+      "dependencies": {
+        "@ag-ui/core": "0.0.52",
+        "@ai-sdk/provider": "3.0.8",
+        "@tuvren/backend-memory": "workspace:*",
+        "@tuvren/backend-sqlite": "workspace:*",
+        "@tuvren/core-types": "workspace:*",
+        "@tuvren/driver-react": "workspace:*",
+        "@tuvren/event-stream": "workspace:*",
+        "@tuvren/kernel-protocol": "workspace:*",
+        "@tuvren/provider-bridge-ai-sdk": "workspace:*",
+        "@tuvren/runtime-api": "workspace:*",
+        "@tuvren/runtime-core": "workspace:*",
+        "@tuvren/stream-agui": "workspace:*",
+        "@tuvren/stream-core": "workspace:*",
+        "@tuvren/stream-sse": "workspace:*",
+      },
+    },
     "boundaries/kernel/contracts/protocol": {
       "name": "@tuvren/kernel-protocol",
       "version": "0.0.0",
@@ -669,6 +689,8 @@
 
     "@tuvren/kernel-testkit": ["@tuvren/kernel-testkit@workspace:boundaries/kernel/testkit"],
 
+    "@tuvren/playground-host": ["@tuvren/playground-host@workspace:boundaries/hosts/implementations/typescript/playground"],
+
     "@tuvren/provider-api": ["@tuvren/provider-api@workspace:boundaries/providers/contracts/provider-api"],
 
     "@tuvren/provider-bridge-ai-sdk": ["@tuvren/provider-bridge-ai-sdk@workspace:boundaries/providers/implementations/typescript/bridge-ai-sdk"],
@@ -1211,9 +1233,7 @@
 
     "yargs-parser": ["yargs-parser@21.1.1", "", {}, "sha512-tVpsJW7DdjecAiFpbIB1e3qxIQsE6NoPc5/eTdrbbIC4h0LVsWhnoa3g+m2HclBIujHzsxZ4VJVA+GUuc2/LBw=="],
 
-    "zod": ["zod@4.3.6", "", {}, "sha512-rftlrkhHZOcjDwkGlnUtZZkvaPHCsDATp4pGpuOOMDaTdDDXF91wuVDJoWoPsKX/3YPQ5fHuF3STjcYyKr+Qhg=="],
-
-    "@ag-ui/core/zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
+    "zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
 
     "@babel/core/semver": ["semver@6.3.1", "", { "bin": { "semver": "bin/semver.js" } }, "sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA=="],
 
