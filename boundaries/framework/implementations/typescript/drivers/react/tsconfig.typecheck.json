@@ -30,6 +30,9 @@
         "../../../../../providers/contracts/provider-api/src/index.ts"
       ],
       "@tuvren/runtime-core": ["../../runtime-core/src/index.ts"],
+      "@tuvren/stream-agui": ["../../stream-agui/src/index.ts"],
+      "@tuvren/stream-core": ["../../stream-core/src/index.ts"],
+      "@tuvren/stream-sse": ["../../stream-sse/src/index.ts"],
       "@tuvren/driver-react": ["./src/index.ts"]
     },
     "types": ["bun"]
@@ -43,6 +46,9 @@
     "../../../../../providers/contracts/provider-api/src/**/*.ts",
     "../../../../../shared/contracts/core-types/src/**/*.ts",
     "../../runtime-core/src/**/*.ts",
-    "../../runtime-core/test/**/*.ts"
+    "../../runtime-core/test/**/*.ts",
+    "../../stream-agui/src/**/*.ts",
+    "../../stream-core/src/**/*.ts",
+    "../../stream-sse/src/**/*.ts"
   ]
 }

@@ -1,0 +1,28 @@
+{
+  "extends": "./tsconfig.lib.json",
+  "compilerOptions": {
+    "composite": false,
+    "rootDir": "../../../../../",
+    "allowImportingTsExtensions": true,
+    "paths": {
+      "@tuvren/core-types": [
+        "../../../../shared/contracts/core-types/src/index.ts"
+      ],
+      "@tuvren/stream-core": ["./src/index.ts"],
+      "@tuvren/event-stream": ["../../../contracts/event-stream/src/index.ts"],
+      "@tuvren/runtime-api": ["../../../contracts/runtime-api/src/index.ts"],
+      "@tuvren/runtime-api/events": [
+        "../../../contracts/runtime-api/src/events.ts"
+      ]
+    },
+    "types": ["bun"]
+  },
+  "include": [
+    "src/**/*.ts",
+    "test/**/*.ts",
+    "smoke/**/*.ts",
+    "../../../contracts/event-stream/src/**/*.ts",
+    "../../../contracts/runtime-api/src/**/*.ts",
+    "../../../../shared/contracts/core-types/src/**/*.ts"
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "name": "@tuvren/stream-agui",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "dependencies": {
+    "@ag-ui/core": "0.0.52",
+    "@tuvren/core-types": "workspace:*",
+    "@tuvren/event-stream": "workspace:*",
+    "@tuvren/stream-core": "workspace:*"
+  }
+}

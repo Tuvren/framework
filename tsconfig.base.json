@@ -43,6 +43,15 @@
       "@tuvren/runtime-core": [
         "./boundaries/framework/implementations/typescript/runtime-core/src/index.ts"
       ],
+      "@tuvren/stream-core": [
+        "./boundaries/framework/implementations/typescript/stream-core/src/index.ts"
+      ],
+      "@tuvren/stream-sse": [
+        "./boundaries/framework/implementations/typescript/stream-sse/src/index.ts"
+      ],
+      "@tuvren/stream-agui": [
+        "./boundaries/framework/implementations/typescript/stream-agui/src/index.ts"
+      ],
       "@tuvren/backend-memory": [
         "./boundaries/kernel/implementations/typescript/backend-memory/src/index.ts"
       ],

@@ -18,5 +18,11 @@
     "@tuvren/kernel-protocol": "workspace:*",
     "@tuvren/core-types": "workspace:*",
     "ajv": "8.18.0"
+  },
+  "devDependencies": {
+    "@ag-ui/core": "0.0.52",
+    "@tuvren/stream-agui": "workspace:*",
+    "@tuvren/stream-core": "workspace:*",
+    "@tuvren/stream-sse": "workspace:*"
   }
 }

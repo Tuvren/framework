@@ -1,0 +1,17 @@
+{
+  "extends": "../../../../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "rootDir": "./src",
+    "outDir": "./dist"
+  },
+  "include": ["src/**/*.ts"],
+  "references": [
+    {
+      "path": "../../../../shared/contracts/core-types/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../contracts/event-stream/tsconfig.lib.json"
+    }
+  ]
+}

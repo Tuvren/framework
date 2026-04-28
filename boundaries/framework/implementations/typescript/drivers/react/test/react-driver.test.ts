@@ -39,6 +39,9 @@ import {
   createContextManifest as createRuntimeContextManifest,
   createTuvrenRuntimeCore,
 } from "@tuvren/runtime-core";
+import { toAgUiEvents } from "@tuvren/stream-agui";
+import { teeTuvrenStreamEvents } from "@tuvren/stream-core";
+import { toSseFrames } from "@tuvren/stream-sse";
 import { createFakeKernelHarness } from "../../../runtime-core/test/fake-kernel.ts";
 import { readBranchContextManifest } from "../../../runtime-core/test/runtime-core-test-helpers.ts";
 import { createReActDriver, REACT_DRIVER_ID } from "../src/index.ts";
@@ -2823,6 +2826,11 @@ describe("driver-react", () => {
     expect(result.partial).toBe(false);
     expect(result.messages).toBeUndefined();
     expect(result.resolution.type).toBe("fail");
+
+    if (result.resolution.type !== "fail") {
+      throw new Error("expected cancelled stream to fail");
+    }
+
     expect(result.resolution.error.message).toBe("execution cancelled");
     expect(emittedEvents.map((event) => event.type)).toEqual([
       "message.start",
@@ -4385,6 +4393,138 @@ describe("driver-react", () => {
         role: "user",
       },
     ]);
+  });
+
+  test("projects provider-backed streamed completions through tee fanout adapters", async () => {
+    const harness = createFakeKernelHarness();
+    const provider = {
+      async generate() {
+        throw new Error("generate should not be called");
+      },
+      id: "provider",
+      async *stream() {
+        yield {
+          text: "Provider-backed streamed completion.",
+          type: "text_delta",
+        } as const;
+        yield {
+          finishReason: "stop",
+          type: "finish",
+        } as const;
+      },
+    } satisfies TuvrenProvider;
+    const runtime = createTuvrenRuntimeCore({
+      defaultDriverId: REACT_DRIVER_ID,
+      driverRegistry: createDriverRegistry([
+        createReActDriver({
+          providerCallMode: "stream",
+        }),
+      ]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        model: provider,
+        name: "primary",
+      },
+      signal: textSignal("Complete through provider stream"),
+      threadId: thread.threadId,
+    });
+    const [canonicalBranch, sseBranch, aguiBranch] = teeTuvrenStreamEvents(
+      handle.events(),
+      3
+    );
+    const [canonicalEvents, sseFrames, aguiEvents] = await Promise.all([
+      collectEvents(canonicalBranch),
+      collectEvents(toSseFrames(sseBranch)),
+      collectEvents(toAgUiEvents(aguiBranch)),
+    ]);
+
+    expect(handle.status().phase).toBe("completed");
+    expect(canonicalEvents.some((event) => event.type === "text.delta")).toBe(
+      true
+    );
+    expect(sseFrames.some((frame) => frame.event === "text.delta")).toBe(true);
+    expect(
+      aguiEvents.some((event) => event.type === "TEXT_MESSAGE_START")
+    ).toBe(true);
+    expect(
+      aguiEvents.some((event) => event.type === "TEXT_MESSAGE_CONTENT")
+    ).toBe(true);
+    expect(aguiEvents.some((event) => event.type === "TEXT_MESSAGE_END")).toBe(
+      true
+    );
+    expect(aguiEvents.some((event) => event.type === "RUN_FINISHED")).toBe(
+      true
+    );
+  });
+
+  test("flushes provider-backed failed text streams before adapter RUN_ERROR", async () => {
+    const harness = createFakeKernelHarness();
+    const provider = {
+      async generate() {
+        throw new Error("generate should not be called");
+      },
+      id: "provider",
+      async *stream() {
+        yield {
+          text: "Partial provider output",
+          type: "text_delta",
+        } as const;
+        yield {
+          error: new Error("provider transport failed"),
+          type: "error",
+        } as const;
+      },
+    } satisfies TuvrenProvider;
+    const runtime = createTuvrenRuntimeCore({
+      defaultDriverId: REACT_DRIVER_ID,
+      driverRegistry: createDriverRegistry([
+        createReActDriver({
+          providerCallMode: "stream",
+        }),
+      ]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        model: provider,
+        name: "primary",
+      },
+      signal: textSignal("Fail through provider stream"),
+      threadId: thread.threadId,
+    });
+    const [canonicalBranch, sseBranch, aguiBranch] = teeTuvrenStreamEvents(
+      handle.events(),
+      3
+    );
+    const [canonicalEvents, sseFrames, aguiEvents] = await Promise.all([
+      collectEvents(canonicalBranch),
+      collectEvents(toSseFrames(sseBranch)),
+      collectEvents(toAgUiEvents(aguiBranch)),
+    ]);
+    const textEndIndex = aguiEvents.findIndex(
+      (event) => event.type === "TEXT_MESSAGE_END"
+    );
+    const runErrorIndex = aguiEvents.findIndex(
+      (event) => event.type === "RUN_ERROR"
+    );
+
+    expect(handle.status().phase).toBe("failed");
+    expect(
+      canonicalEvents.some(
+        (event) =>
+          event.type === "error" &&
+          event.error.code === "react_driver_provider_failure"
+      )
+    ).toBe(true);
+    expect(sseFrames.some((frame) => frame.event === "error")).toBe(true);
+    expect(textEndIndex).toBeGreaterThanOrEqual(0);
+    expect(runErrorIndex).toBeGreaterThan(textEndIndex);
   });
 });
 

@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "declaration": true,
+    "declarationMap": false,
+    "emitDeclarationOnly": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "outDir": "./dist",
+    "paths": {
+      "@tuvren/event-stream": [
+        "../../../contracts/event-stream/dist/index.d.ts"
+      ],
+      "@tuvren/stream-core": ["../stream-core/dist/index.d.ts"]
+    },
+    "rootDir": "./src",
+    "target": "esnext",
+    "types": ["node"],
+    "verbatimModuleSyntax": true
+  },
+  "include": ["src/**/*.ts"]
+}

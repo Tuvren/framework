@@ -58,6 +58,9 @@
       },
       "devDependencies": {
         "@tuvren/runtime-core": "workspace:*",
+        "@tuvren/stream-agui": "workspace:*",
+        "@tuvren/stream-core": "workspace:*",
+        "@tuvren/stream-sse": "workspace:*",
       },
     },
     "boundaries/framework/implementations/typescript/runtime-core": {
@@ -69,6 +72,38 @@
         "@tuvren/kernel-protocol": "workspace:*",
         "@tuvren/runtime-api": "workspace:*",
         "ajv": "8.18.0",
+      },
+      "devDependencies": {
+        "@ag-ui/core": "0.0.52",
+        "@tuvren/stream-agui": "workspace:*",
+        "@tuvren/stream-core": "workspace:*",
+        "@tuvren/stream-sse": "workspace:*",
+      },
+    },
+    "boundaries/framework/implementations/typescript/stream-agui": {
+      "name": "@tuvren/stream-agui",
+      "version": "0.0.0",
+      "dependencies": {
+        "@ag-ui/core": "0.0.52",
+        "@tuvren/core-types": "workspace:*",
+        "@tuvren/event-stream": "workspace:*",
+        "@tuvren/stream-core": "workspace:*",
+      },
+    },
+    "boundaries/framework/implementations/typescript/stream-core": {
+      "name": "@tuvren/stream-core",
+      "version": "0.0.0",
+      "dependencies": {
+        "@tuvren/core-types": "workspace:*",
+        "@tuvren/event-stream": "workspace:*",
+      },
+    },
+    "boundaries/framework/implementations/typescript/stream-sse": {
+      "name": "@tuvren/stream-sse",
+      "version": "0.0.0",
+      "dependencies": {
+        "@tuvren/event-stream": "workspace:*",
+        "@tuvren/stream-core": "workspace:*",
       },
     },
     "boundaries/kernel/contracts/protocol": {
@@ -144,6 +179,8 @@
     "better-sqlite3",
   ],
   "packages": {
+    "@ag-ui/core": ["@ag-ui/core@0.0.52", "", { "dependencies": { "zod": "^3.22.4" } }, "sha512-Xo0bUaNV56EqylzcrAuhUkQX7et7+SZIrqZZtEByGwEq/I1EHny6ZMkWHLkKR7UNi0FJZwJyhKYmKJS3B2SEgA=="],
+
     "@ai-sdk/gateway": ["@ai-sdk/gateway@3.0.84", "", { "dependencies": { "@ai-sdk/provider": "3.0.8", "@ai-sdk/provider-utils": "4.0.21", "@vercel/oidc": "3.1.0" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-RnUw6UNvkaw9MEaJU9cIjA+WBP+ZR5+M/9nfbfJHcGKtTbcWXijJuYKx9nYRnm+qU+iiakb0XvQA/vvho6lTsw=="],
 
     "@ai-sdk/provider": ["@ai-sdk/provider@3.0.8", "", { "dependencies": { "json-schema": "^0.4.0" } }, "sha512-oGMAgGoQdBXbZqNG0Ze56CHjDZ1IDYOwGYxYjO5KLSlz5HiNQ9udIXsPZ61VWaHGZ5XW/jyjmr6t2xz2jGVwbQ=="],
@@ -639,6 +676,12 @@
     "@tuvren/runtime-api": ["@tuvren/runtime-api@workspace:boundaries/framework/contracts/runtime-api"],
 
     "@tuvren/runtime-core": ["@tuvren/runtime-core@workspace:boundaries/framework/implementations/typescript/runtime-core"],
+
+    "@tuvren/stream-agui": ["@tuvren/stream-agui@workspace:boundaries/framework/implementations/typescript/stream-agui"],
+
+    "@tuvren/stream-core": ["@tuvren/stream-core@workspace:boundaries/framework/implementations/typescript/stream-core"],
+
+    "@tuvren/stream-sse": ["@tuvren/stream-sse@workspace:boundaries/framework/implementations/typescript/stream-sse"],
 
     "@tuvren/tool-contracts": ["@tuvren/tool-contracts@workspace:boundaries/framework/contracts/tool-contracts"],
 
@@ -1169,6 +1212,8 @@
     "yargs-parser": ["yargs-parser@21.1.1", "", {}, "sha512-tVpsJW7DdjecAiFpbIB1e3qxIQsE6NoPc5/eTdrbbIC4h0LVsWhnoa3g+m2HclBIujHzsxZ4VJVA+GUuc2/LBw=="],
 
     "zod": ["zod@4.3.6", "", {}, "sha512-rftlrkhHZOcjDwkGlnUtZZkvaPHCsDATp4pGpuOOMDaTdDDXF91wuVDJoWoPsKX/3YPQ5fHuF3STjcYyKr+Qhg=="],
+
+    "@ag-ui/core/zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
 
     "@babel/core/semver": ["semver@6.3.1", "", { "bin": { "semver": "bin/semver.js" } }, "sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA=="],
 

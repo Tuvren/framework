@@ -1,0 +1,41 @@
+{
+  "name": "framework-stream-sse",
+  "$schema": "../../../../../node_modules/nx/schemas/project-schema.json",
+  "root": "boundaries/framework/implementations/typescript/stream-sse",
+  "sourceRoot": "boundaries/framework/implementations/typescript/stream-sse/src",
+  "projectType": "library",
+  "tags": ["boundary:framework", "layer:implementation"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["^build"],
+      "options": {
+        "cwd": "boundaries/framework/implementations/typescript/stream-sse",
+        "command": "bunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false"
+      }
+    },
+    "exports-smoke": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "options": {
+        "cwd": "boundaries/framework/implementations/typescript/stream-sse",
+        "command": "bun test ./smoke/package-exports.ts"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "boundaries/framework/implementations/typescript/stream-sse",
+        "command": "bun test"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["^build"],
+      "options": {
+        "cwd": "boundaries/framework/implementations/typescript/stream-sse",
+        "command": "bunx --bun tsc --project tsconfig.lib.json --noEmit --pretty false && bunx --bun tsc --project tsconfig.typecheck.json --noEmit --pretty false && bunx --bun tsc --project tsconfig.dts.json --noEmit --pretty false"
+      }
+    }
+  }
+}

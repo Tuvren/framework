@@ -25,7 +25,10 @@
       "@tuvren/kernel-protocol": [
         "../../../../kernel/contracts/protocol/src/index.ts"
       ],
-      "@tuvren/runtime-core": ["./src/index.ts"]
+      "@tuvren/runtime-core": ["./src/index.ts"],
+      "@tuvren/stream-core": ["../stream-core/src/index.ts"],
+      "@tuvren/stream-sse": ["../stream-sse/src/index.ts"],
+      "@tuvren/stream-agui": ["../stream-agui/src/index.ts"]
     },
     "types": ["bun"]
   },
@@ -36,6 +39,9 @@
     "../../../contracts/runtime-api/src/**/*.ts",
     "../../../contracts/driver-api/src/**/*.ts",
     "../../../../kernel/contracts/protocol/src/**/*.ts",
-    "../../../../shared/contracts/core-types/src/**/*.ts"
+    "../../../../shared/contracts/core-types/src/**/*.ts",
+    "../stream-core/src/**/*.ts",
+    "../stream-sse/src/**/*.ts",
+    "../stream-agui/src/**/*.ts"
   ]
 }

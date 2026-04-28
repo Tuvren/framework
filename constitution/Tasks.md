@@ -1,25 +1,26 @@
 # Engineering Execution Plan
 
 ## 0. Version History & Changelog
+- v0.7.2 - Closed Epic O in repo reality, added the stream adapter closure inventory, advanced the active critical path to Epic P, and archived the host stream adapter line as implementation-proven.
 - v0.7.1 - Closed Epic N in repo reality, corrected the AI SDK bridge plan to the stable shared stream seam, added the Epic N closure inventory, and advanced the active critical path to Epic O.
 - v0.7.0 - Activated sequential Epics N-Q for the post-ReAct implementation line: `LanguageModelV3` AI SDK provider bridge, host stream protocol adapters, playground host harness, and testkit/release hardening.
 - v0.6.2 - Closed Epic M against brownfield repo reality, added the explicit tool-and-approval inventory artifact, and archived Epics K-M so the next planning pass can start from Epic N.
 - ... [Older history truncated, refer to git logs]
 
 ## 1. Executive Summary & Active Critical Path
-- **Total Active Story Points:** 54
-- **Critical Path:** KRT-O001 -> KRT-O002 -> KRT-O003 -> KRT-O004 -> KRT-O005 -> KRT-O006 -> KRT-P001 -> KRT-P002 -> KRT-P003 -> KRT-P004 -> KRT-P005 -> KRT-P006 -> KRT-Q001 -> KRT-Q002 -> KRT-Q003 -> KRT-Q004 -> KRT-Q005 -> KRT-Q006
-- **Planning Assumptions:** Epics A-N are closed in current repo reality. TechSpec v0.5.1 keeps the baseline AI SDK bridge on `LanguageModelV3` / `ProviderV3` from `@ai-sdk/provider@3.0.8` while preserving the existing `ProviderStreamChunk` seam. Epics O-Q remain intentionally sequential: stream adapters first, playground host second, hardening third.
+- **Total Active Story Points:** 36
+- **Critical Path:** KRT-P001 -> KRT-P002 -> KRT-P003 -> KRT-P004 -> KRT-P005 -> KRT-P006 -> KRT-Q001 -> KRT-Q002 -> KRT-Q003 -> KRT-Q004 -> KRT-Q005 -> KRT-Q006
+- **Planning Assumptions:** Epics A-O are closed in current repo reality. TechSpec v0.5.2 keeps the baseline AI SDK bridge on `LanguageModelV3` / `ProviderV3` from `@ai-sdk/provider@3.0.8`, pins the AG-UI adapter to `@ag-ui/core@0.0.52`, preserves the existing `ProviderStreamChunk` seam, and treats tee-based fanout above `ExecutionHandle.events()` as the sanctioned multi-consumer host path when every required tee branch subscribes before the first pull. Epics P-Q remain intentionally sequential: playground host second, hardening third.
 
 ### Brownfield Continuity Note
 - The current codebase already contains the workspace scaffold, shared core types, kernel protocol package, memory backend, SQLite backend, kernel testkit, shared framework contract packages, provider contract package, `runtime-core`, and the ReAct Driver foundation package.
 - Current repository reality includes closed Epic K, L, M, and N behavior with explicit closure artifacts in `constitution/spikes/epic-k-react-loop-cancellation-inventory.md`, `constitution/spikes/epic-l-parity-inventory.md`, `constitution/spikes/epic-m-tool-approval-gap-inventory.md`, and `constitution/spikes/epic-n-ai-sdk-bridge-inventory.md`.
-- The remaining active target packages are `@tuvren/stream-core`, `@tuvren/stream-sse`, `@tuvren/stream-agui`, the testkit packages under `boundaries/framework/testkit` and `boundaries/providers/testkit`, the local playground host harness, and release/verification scripts named in TechSpec.
+- The remaining active target packages are the local playground host harness, the testkit packages under `boundaries/framework/testkit` and `boundaries/providers/testkit`, and release/verification scripts named in TechSpec.
 - Planning verification confirmed `ai@6.0.142` and `@ai-sdk/provider@3.0.8` are available and that `@ai-sdk/provider@3.0.8` exports `LanguageModelV3`, `ProviderV3`, `LanguageModelV3CallOptions`, `LanguageModelV3GenerateResult`, and `LanguageModelV3StreamPart`.
-- Epic N now extends repo reality beyond those planning notes: the bridge package exists and the closure artifact above is the authoritative handoff surface for Epic O.
+- Epic N now extends repo reality beyond those planning notes: the bridge package exists and the closure artifact above is the authoritative upstream seam for Epic O.
+- Epic O now extends repo reality beyond those planning notes: `@tuvren/stream-core`, `@tuvren/stream-sse`, and `@tuvren/stream-agui` exist, `constitution/spikes/epic-o-stream-adapter-inventory.md` is the authoritative adapter mapping record, and Epic P must treat tee-based fanout plus the documented `tuvren.runtime.*` AG-UI custom namespace as the handoff surface rather than rediscovering protocol gaps or resubscription hazards.
 
 ### Sequential Scope Rule
-- Epic P must not begin until Epic O closes.
 - Epic Q must not begin until Epic P closes.
 - Inside each epic, ticket dependencies are linear unless a future planning revision explicitly changes this file and the TechSpec together.
 
@@ -33,7 +34,6 @@
 - This section uses "iteration strategy" only because the planning framework requires that heading; the content below is dependency phasing and scope partitioning, not a commitment to Scrum-style iterations.
 
 ### Current Active Scope
-- Epic O implements host stream protocol adapters over canonical `TuvrenStreamEvent` output.
 - Epic P implements the local TypeScript playground host harness after the adapter path exists.
 - Epic Q extracts testkits and hardens release, package export, and Bun/Node portability checks.
 
@@ -59,6 +59,7 @@
 - Epic L delivered streaming/provider parity closure and the parity inventory artifact.
 - Epic M delivered ReAct tool continuation, approval pause/resume, edited and rejected approval handling, partial batch durability, and the tool-and-approval inventory artifact.
 - Epic N delivered the baseline AI SDK provider bridge on `LanguageModelV3` / `ProviderV3`, preserved the shared `ProviderStreamChunk` seam, synthesized structured output from JSON text, and recorded the unsupported provider-owned tool/file surfaces in the Epic N bridge inventory artifact.
+- Epic O delivered `@tuvren/stream-core`, `@tuvren/stream-sse`, and `@tuvren/stream-agui`, proved tee-based host fanout over canonical `ExecutionHandle.events()` streams, pinned AG-UI to `@ag-ui/core@0.0.52`, and recorded the lossy/custom fallback matrix in the Epic O stream adapter inventory artifact.
 
 ## 3. Build Order (Mermaid)
 ```mermaid
@@ -92,6 +93,12 @@ flowchart LR
   - streamed AI SDK files, provider-executed tool results, and provider-owned approvals remain explicitly deferred and must not leak into Epic O as implicit adapter debt.
 
 ### Epic O - Host Stream Protocol Adapters (HSA)
+- Closed in current repo reality.
+- Closure artifact: `constitution/spikes/epic-o-stream-adapter-inventory.md`
+- Durable outcome:
+  - `@tuvren/stream-core` now owns shared adapter types, event cloning, tee/fanout helpers, fixture streams, and warning projection.
+  - `@tuvren/stream-sse` now owns EventSource-compatible framing plus `Response` helper support over canonical event streams.
+  - `@tuvren/stream-agui` now owns AG-UI translation on `@ag-ui/core@0.0.52`, including documented `tuvren.runtime.*` custom fallbacks for unsupported Tuvren-only semantics.
 
 **KRT-O001 Stream Adapter Protocol Inventory**
 - **Type:** Spike

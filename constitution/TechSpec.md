@@ -1,6 +1,7 @@
 # Technical Specification
 
 ## 0. Version History & Changelog
+- v0.5.2 - Closed Epic O in current repo reality, pinning the AG-UI adapter to `@ag-ui/core@0.0.52`, tightening the AG-UI adapter surface to the official `AGUIEvent` union, and recording tee-based host fanout as the sanctioned multi-consumer path when all required branches subscribe before the first pull.
 - v0.5.1 - Closed Epic N in current repo reality, correcting the AI SDK bridge baseline to the stable `ProviderStreamChunk` seam, synthesizing structured output from JSON text, and explicitly deferring streamed files and provider-owned tool governance.
 - v0.5.0 - Activated the post-ReAct implementation line, locking the AI SDK bridge baseline to `LanguageModelV3` and defining sequential Epics N-Q for provider bridge, stream adapters, playground host, and release hardening.
 - v0.4.5 - Closed Epic M in current repo reality, recording shared runtime-core tool and approval integration as implementation-proven and preserving a durable audit trace for edited approvals.
@@ -8,7 +9,7 @@
 
 ## 1. Stack Specification (Bill of Materials)
 - **Primary Language / Runtime:** TypeScript `6.0.2` is the first authoritative implementation language for the framework and kernel protocol implementation. The kernel protocol remains language-neutral by contract. Core TypeScript packages target portable ESM across Bun, Node.js, and Deno. Bun remains the preferred local development runtime and package manager.
-- **Primary Frameworks / Libraries:** `ai@6.0.142` and `@ai-sdk/provider@3.0.8` for the baseline AI SDK Providers bridge, using the `LanguageModelV3` / `ProviderV3` surface only in the baseline bridge; `ajv@8.18.0` for JSON Schema validation; `cbor-x@1.6.4` for deterministic CBOR encoding and decoding in the TypeScript implementation; `@biomejs/biome@2.4.10` for formatting and linting; `tsup@8.5.1` for package builds.
+- **Primary Frameworks / Libraries:** `ai@6.0.142` and `@ai-sdk/provider@3.0.8` for the baseline AI SDK Providers bridge, using the `LanguageModelV3` / `ProviderV3` surface only in the baseline bridge; `@ag-ui/core@0.0.52` for the baseline AG-UI event union and runtime validation surface; `ajv@8.18.0` for JSON Schema validation; `cbor-x@1.6.4` for deterministic CBOR encoding and decoding in the TypeScript implementation; `@biomejs/biome@2.4.10` for formatting and linting; `tsup@8.5.1` for package builds.
 - **State Stores / Persistence:** Tuvren Runtime uses a Kraken-owned backend contract first. `@tuvren/backend-memory` is the reference development and semantic test backend. `@tuvren/backend-sqlite` is the first officially supported persistent backend adapter. Future backends such as PostgreSQL, MySQL/MariaDB, and MongoDB are peer adapters against the same kernel contract, not SQLite-shaped variants.
 - **Infrastructure / Tooling:** `devenv` for reproducible development environments, `nx@22.6.3` plus aligned `@nx/*` packages for TypeScript project orchestration, Bun workspaces, root TypeScript project references, `tsup` package builds, structured JSON logging, exact dependency pinning in `package.json` plus `bun.lock`, and environment-variable-based provider credentials at bridge boundaries.
 - **Testing / Quality Tooling:** `bun test`, `tsc --noEmit`, Biome, deterministic CBOR golden-byte tests, hash identity fixtures, shared backend conformance suites, checkpoint/recovery scenario tests, and AI SDK bridge contract fixtures.
@@ -24,7 +25,7 @@
 - **Backend posture:** All official backends implement one strict kernel-visible contract. Backend-specific optimizations may exist internally, but they must not change kernel semantics or require capability negotiation at the kernel layer in v0.1.
 
 ### 1.2 Current-State vs Target-State
-- **Current repository reality:** The repository already contains the workspace scaffold, `@tuvren/core-types`, `@tuvren/kernel-protocol`, `@tuvren/backend-memory`, `@tuvren/backend-sqlite`, `@tuvren/kernel-testkit`, `@tuvren/runtime-api`, `@tuvren/driver-api`, `@tuvren/event-stream`, `@tuvren/tool-contracts`, `@tuvren/provider-api`, `@tuvren/runtime-core`, the ReAct Driver baseline with implementation-proven loop completion, streaming/provider semantics, and shared runtime-core tool/approval integration, plus `@tuvren/provider-bridge-ai-sdk` as the first concrete provider bridge. The next target-state packages are the host stream adapters, playground host harness, and test/release hardening packages and scripts.
+- **Current repository reality:** The repository already contains the workspace scaffold, `@tuvren/core-types`, `@tuvren/kernel-protocol`, `@tuvren/backend-memory`, `@tuvren/backend-sqlite`, `@tuvren/kernel-testkit`, `@tuvren/runtime-api`, `@tuvren/driver-api`, `@tuvren/event-stream`, `@tuvren/tool-contracts`, `@tuvren/provider-api`, `@tuvren/runtime-core`, the ReAct Driver baseline with implementation-proven loop completion, streaming/provider semantics, and shared runtime-core tool/approval integration, `@tuvren/provider-bridge-ai-sdk` as the first concrete provider bridge, and the host stream adapter line `@tuvren/stream-core`, `@tuvren/stream-sse`, and `@tuvren/stream-agui`. The next target-state packages are the playground host harness and test/release hardening packages and scripts.
 - **Target implementation state:** The package layout and interfaces defined below are the intended implementation target for the first authoritative code line.
 - **Drift rule:** The future codebase must conform to this TechSpec. The TechSpec must not be treated as a loose commentary on whatever structure happens to emerge.
 
@@ -1007,6 +1008,11 @@ export interface StreamAdapterOptions {
   onWarning?: (warning: StreamAdapterWarning) => void;
 }
 
+export declare function teeTuvrenStreamEvents(
+  events: AsyncIterable<TuvrenStreamEvent>,
+  branchCount: number
+): readonly AsyncIterable<TuvrenStreamEvent>[];
+
 export interface TuvrenSseFrame {
   event?: string;
   id?: string;
@@ -1027,12 +1033,12 @@ export declare function toSseResponse(
 export declare function toAgUiEvents(
   events: AsyncIterable<TuvrenStreamEvent>,
   options?: StreamAdapterOptions
-): AsyncIterable<unknown>;
+): AsyncIterable<AGUIEvent>;
 ```
 
-- `@tuvren/stream-core` owns shared adapter helpers: event cloning, adapter-local warning projection, stream transform utilities, fixture helpers, and no-op pass-through transforms used by tests.
+- `@tuvren/stream-core` owns shared adapter helpers: event cloning, tee/fanout for host or test multi-consumer flows, adapter-local warning projection, stream transform utilities, fixture helpers, and no-op pass-through transforms used by tests.
 - `@tuvren/stream-sse` owns EventSource-compatible Server-Sent Events framing. Each SSE frame must preserve the original `TuvrenStreamEvent.type` as the default event name and serialize the complete canonical event as JSON in `data`.
-- `@tuvren/stream-agui` owns AG-UI protocol translation. Epic O must lock the exact AG-UI package or protocol version before implementation. If the chosen AG-UI package exposes a stable TypeScript event union, the adapter must use it; otherwise `stream-agui` owns a local typed event union grounded in the selected protocol revision.
+- `@tuvren/stream-agui` owns AG-UI protocol translation. The baseline implementation is pinned to `@ag-ui/core@0.0.52` and uses its exported `AGUIEvent` union, `EventType`, and `EventSchemas` validator. Tuvren-only semantics that AG-UI cannot represent directly must flow through a documented `CUSTOM` namespace instead of inventing first-class AG-UI state.
 - The initial playground lives under `boundaries/hosts/implementations/typescript/playground`. It is a local TypeScript host harness for exercising runtime embedding, provider bridge configuration, stream adapter output, cancellation, steering, approval resolution, status inspection, and persistent backend reloads. It is not a production web application or authentication boundary.
 - The hardening line owns testkit extraction, release-check tooling, package export smoke tests, and portability validation for core non-native packages across Bun and Node. Deno checks remain deferred until package surfaces stabilize enough to avoid testing scaffolding churn.
 
@@ -1254,7 +1260,7 @@ Target implementation layout after code generation begins:
 - **Epic L — ReAct Streaming and Provider Semantics:** Closed in current repo reality. Streaming parity, assistant event reconciliation, structured output streaming, and opaque provider metadata preservation are implemented and recorded in `constitution/spikes/epic-l-parity-inventory.md`.
 - **Epic M — ReAct Tool and Approval Integration:** Closed in current repo reality. Shared runtime-core now owns durable tool-result feedback, approval pause/resume primitives, edited/rejected decision recording, partial batch durability, and recovery-oriented coverage. Edited approvals execute with the approved edited input while preserving a durable audit trace of the original and edited values on the resulting tool result. Closure evidence is recorded in `constitution/spikes/epic-m-tool-approval-gap-inventory.md`.
 - **Epic N — AI SDK Provider Bridge Baseline:** Closed in current repo reality. `@tuvren/provider-bridge-ai-sdk` now owns the `LanguageModelV3` / `ProviderV3` bridge on `@ai-sdk/provider@3.0.8`, keeps all AI SDK-specific imports, guards, mappings, errors, and compatibility drift inside the package, preserves the existing `ProviderStreamChunk` seam, synthesizes structured output from JSON text, and records the unsupported provider-owned tool/file surfaces in `constitution/spikes/epic-n-ai-sdk-bridge-inventory.md`.
-- **Epic O — Host Stream Protocol Adapters:** Sequentially after Epic N. This covers `@tuvren/stream-core`, `@tuvren/stream-sse`, and `@tuvren/stream-agui` translation over canonical `TuvrenStreamEvent` output. ACP or any additional host protocol is out of scope until a future TechSpec update names it.
+- **Epic O — Host Stream Protocol Adapters:** Closed in current repo reality. `@tuvren/stream-core`, `@tuvren/stream-sse`, and `@tuvren/stream-agui` now translate canonical `TuvrenStreamEvent` output for hosts, use tee-based fanout as the sanctioned multi-consumer path above `ExecutionHandle.events()` when required branches subscribe before the first pull, pin AG-UI to `@ag-ui/core@0.0.52`, and record the lossy/custom fallback matrix in `constitution/spikes/epic-o-stream-adapter-inventory.md`.
 - **Epic P — Playground Host Harness:** Sequentially after Epic O. This covers the local TypeScript host harness only; it exercises embedding, stream adapters, provider configuration, runtime controls, approval flow, and backend reload behavior without becoming a production web application or authentication boundary.
 - **Epic Q — Testkit, Portability, and Release Hardening:** Sequentially after Epic P. This covers provider/framework testkit extraction, release-check tooling, package export smoke tests, and Bun/Node portability validation. Deno checks remain deferred until package surfaces stabilize enough to avoid scaffolding churn.
 - **Later driver, backend, provider, and host protocol expansion:** Deferred beyond Epic Q unless the TechSpec is revised. This includes `LanguageModelV2` compatibility, provider-native tools, AI SDK agent loops/UI transports, LangChain bridge work, first-class Tuvren provider packages, ACP, future non-ReAct drivers, and future official backends.
