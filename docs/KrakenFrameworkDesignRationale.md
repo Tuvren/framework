@@ -116,7 +116,7 @@ Vercel AI SDK wraps this in a do/while. Pi uses nested while loops with steering
 
 **Generator over event bus**: `AsyncIterable<TuvrenStreamEvent>` over `EventEmitter` because: no subscription management, natural backpressure, consumer controls iteration, composition is function application (`toAGUI(executeTurn(...))`), matches `provider.stream()`.
 
-**Internal vocabulary, external adapters**: Kraken does not define its own client-facing protocol. It defines an internal vocabulary and provides adapters (AG-UI, ACP, Raw SSE). Same principle as the Provider Bridge: one canonical vocabulary, adapters for the many-to-many mapping.
+**Internal vocabulary, external adapters**: Kraken does not define its own client-facing protocol. It defines an internal vocabulary and provides adapters. Epic O finalized the first adapter line as `@tuvren/stream-core`, `@tuvren/stream-sse`, and `@tuvren/stream-agui`: SSE preserves the full canonical event stream, while AG-UI intentionally projects into UI protocol events and carries Tuvren-specific cases through `tuvren.runtime.*` custom events. Same principle as the Provider Bridge: one canonical vocabulary, adapters for the many-to-many mapping.
 
 ### 2.5 Multi-Agent
 

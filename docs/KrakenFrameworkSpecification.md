@@ -1209,12 +1209,12 @@ Three distinct surfaces exist for streaming. Each has one role.
 
 **Protocol adapter consumption** (public): Adapters receive `AsyncIterable<TuvrenStreamEvent>` from `handle.events()` and transform it into external formats. Adapters never touch the handle.
 
-`events()` is a single-consumer stream for a given `ExecutionHandle`. Hosts that need multiple downstream consumers own teeing, multicast, filtering, buffering, replay, and backpressure policy outside shared core.
+`events()` is a single-consumer stream for a given `ExecutionHandle`. Hosts that need multiple downstream consumers own teeing, multicast, filtering, buffering, replay, and backpressure policy outside shared core. Epic O finalized the baseline host tee path in `@tuvren/stream-core`: every required tee branch must subscribe before the first upstream pull, while the SSE and AG-UI adapters reserve their branches eagerly when constructed.
 
 ```
 Internal driver (generator)
   └─→ ExecutionHandle.events()  ←─ host iterates this
-        └─→ ProtocolAdapter(events)  ←─ transforms to AG-UI / ACP / SSE
+        └─→ ProtocolAdapter(events)  ←─ transforms to AG-UI / SSE
 ```
 
 Kraken's event stream plays the same architectural role on the outbound side that provider adapters play on the inbound side: one canonical internal interface, many bridges.
@@ -1351,7 +1351,7 @@ type ProtocolAdapter<T> = (events: AsyncIterable<TuvrenStreamEvent>) → AsyncIt
 type ProtocolSink = (events: AsyncIterable<TuvrenStreamEvent>) → Promise<void>
 ```
 
-Package topology: `@tuvren/stream-agui`, `@tuvren/stream-acp`, `@tuvren/stream-sse`. Multiple adapters can consume the same stream via tee or multicast at the host layer.
+Package topology finalized by Epic O: `@tuvren/stream-core`, `@tuvren/stream-agui`, and `@tuvren/stream-sse`. `@tuvren/stream-sse` is the lossless EventSource projection. `@tuvren/stream-agui` is the UI-oriented projection pinned to `@ag-ui/core@0.0.52`; Tuvren-only semantics use the documented `tuvren.runtime.*` AG-UI custom-event namespace. Multiple adapters can consume the same canonical stream through the `@tuvren/stream-core` tee helper when all branches subscribe before the first pull.
 
 ### 6.10 Cancellation
 

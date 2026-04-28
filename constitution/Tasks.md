@@ -17,7 +17,7 @@
 ### Brownfield Continuity Note
 
 - The current codebase already contains the workspace scaffold, shared core types, kernel protocol package, memory backend, SQLite backend, kernel testkit, shared framework contract packages, provider contract package, `runtime-core`, and the ReAct Driver foundation package.
-- Current repository reality includes closed Epic K, L, M, and N behavior with explicit closure artifacts in `constitution/spikes/epic-k-react-loop-cancellation-inventory.md`, `constitution/spikes/epic-l-parity-inventory.md`, `constitution/spikes/epic-m-tool-approval-gap-inventory.md`, and `constitution/spikes/epic-n-ai-sdk-bridge-inventory.md`.
+- Current repository reality includes closed Epic K, L, M, N, and O behavior with explicit closure artifacts in `constitution/spikes/epic-k-react-loop-cancellation-inventory.md`, `constitution/spikes/epic-l-parity-inventory.md`, `constitution/spikes/epic-m-tool-approval-gap-inventory.md`, `constitution/spikes/epic-n-ai-sdk-bridge-inventory.md`, and `constitution/spikes/epic-o-stream-adapter-inventory.md`.
 - The remaining active target packages are the local playground host harness, the testkit packages under `boundaries/framework/testkit` and `boundaries/providers/testkit`, and release/verification scripts named in TechSpec.
 - Planning verification confirmed `ai@6.0.142` and `@ai-sdk/provider@3.0.8` are available and that `@ai-sdk/provider@3.0.8` exports `LanguageModelV3`, `ProviderV3`, `LanguageModelV3CallOptions`, `LanguageModelV3GenerateResult`, and `LanguageModelV3StreamPart`.
 - Epic N now extends repo reality beyond those planning notes: the bridge package exists and the closure artifact above is the authoritative upstream seam for Epic O.
@@ -75,13 +75,7 @@
 
 ```mermaid
 flowchart LR
-  KRTO001[KRT-O001 Stream Adapter Protocol Inventory] --> KRTO002[KRT-O002 Stream-Core Adapter Utilities]
-  KRTO002 --> KRTO003[KRT-O003 SSE Adapter Baseline]
-  KRTO003 --> KRTO004[KRT-O004 AG-UI Adapter Baseline]
-  KRTO004 --> KRTO005[KRT-O005 Runtime Stream Adapter Integration Coverage]
-  KRTO005 --> KRTO006[KRT-O006 Stream Adapter Closure Inventory]
-  KRTO006 --> KRTP001[KRT-P001 Playground Host Scope Inventory]
-  KRTP001 --> KRTP002[KRT-P002 Playground Package Scaffold]
+  KRTP001[KRT-P001 Playground Host Scope Inventory] --> KRTP002[KRT-P002 Playground Package Scaffold]
   KRTP002 --> KRTP003[KRT-P003 Thread Turn and Backend Host Flows]
   KRTP003 --> KRTP004[KRT-P004 Streaming Controls and Approval Host Flows]
   KRTP004 --> KRTP005[KRT-P005 Persistent Scenario Matrix]
@@ -114,103 +108,13 @@ flowchart LR
   - `@tuvren/stream-sse` now owns EventSource-compatible framing plus `Response` helper support over canonical event streams.
   - `@tuvren/stream-agui` now owns AG-UI translation on `@ag-ui/core@0.0.52`, including documented `tuvren.runtime.*` custom fallbacks for unsupported Tuvren-only semantics.
 
-**KRT-O001 Stream Adapter Protocol Inventory**
-
-- **Type:** Spike
-- **Effort:** 2
-- **Dependencies:** None
-- **Capability / Contract Mapping:** PRD `CAP-P0-020`, `CAP-P0-023`, `CAP-P1-024`; Architecture `5`; TechSpec `4.5`, `4.7`, `5.4.1`; Framework Spec `6`, `9`
-- **Description:** Inventory the canonical `TuvrenStreamEvent` surface against SSE and AG-UI translation needs, lock the exact AG-UI package or protocol revision, identify lossy mappings and warning cases, and confirm ACP remains out of scope for this plan.
-- **Acceptance Criteria (Gherkin):**
-
-```gherkin
-Given Epic N has proven canonical provider-backed runtime events
-When stream adapter protocol inventory is completed
-Then the repository records the selected AG-UI revision, SSE framing rules, event mapping matrix, lossy translation warnings, fixture coverage plan, and explicit exclusion of ACP or additional host protocols
-```
-
-**KRT-O002 Stream-Core Adapter Utilities**
-
-- **Type:** Feature
-- **Effort:** 3
-- **Dependencies:** KRT-O001
-- **Capability / Contract Mapping:** PRD `CAP-P0-020`, `CAP-P1-024`; Architecture `5`; TechSpec `4.5`, `4.7`, `5.1`; Framework Spec `6`
-- **Description:** Implement `@tuvren/stream-core` with shared adapter types, event cloning/projection helpers, warning callbacks, fixture helpers, and transform utilities that do not alter runtime semantics.
-- **Acceptance Criteria (Gherkin):**
-
-```gherkin
-Given canonical TuvrenStreamEvent fixtures
-When stream-core transforms or projects events for adapter packages
-Then it preserves event order and meaning, reports adapter-local warnings through the configured callback, avoids mutating source events, and remains free of protocol-specific output dependencies
-```
-
-**KRT-O003 SSE Adapter Baseline**
-
-- **Type:** Feature
-- **Effort:** 3
-- **Dependencies:** KRT-O002
-- **Capability / Contract Mapping:** PRD `CAP-P0-020`, `CAP-P1-024`; Architecture `5`; TechSpec `4.5`, `4.7`; Framework Spec `6`, `9`
-- **Description:** Implement `@tuvren/stream-sse` with EventSource-compatible frame generation and `Response` helper support over canonical `TuvrenStreamEvent` streams.
-- **Acceptance Criteria (Gherkin):**
-
-```gherkin
-Given a host passes canonical TuvrenStreamEvent output into the SSE adapter
-When the adapter emits SSE frames or a Response
-Then each frame uses the source event type as the event name, serializes the complete canonical event as JSON data, preserves ordering and terminal errors, and respects stream cancellation/backpressure behavior
-```
-
-**KRT-O004 AG-UI Adapter Baseline**
-
-- **Type:** Feature
-- **Effort:** 5
-- **Dependencies:** KRT-O003
-- **Capability / Contract Mapping:** PRD `CAP-P0-020`, `CAP-P0-023`, `CAP-P1-024`; Architecture `5`; TechSpec `4.5`, `4.7`; Framework Spec `6`, `9`
-- **Description:** Implement `@tuvren/stream-agui` using the selected AG-UI revision, mapping lifecycle, message, text, reasoning, structured output, tool call, tool result, approval, state, custom, and error events as far as the protocol allows.
-- **Acceptance Criteria (Gherkin):**
-
-```gherkin
-Given a canonical runtime event stream contains lifecycle, assistant, tool, approval, state, custom, and error events
-When the AG-UI adapter translates the stream
-Then it emits AG-UI-compatible events for supported cases, preserves Tuvren source attribution where possible, reports documented warnings for lossy or unsupported mappings, and never invents runtime state that was not present in the canonical event stream
-```
-
-**KRT-O005 Runtime Stream Adapter Integration Coverage**
-
-- **Type:** Feature
-- **Effort:** 3
-- **Dependencies:** KRT-O004
-- **Capability / Contract Mapping:** PRD `CAP-P0-005`, `CAP-P0-020`, `CAP-P1-024`; Architecture `4.1`, `5`; TechSpec `4.1`, `4.5`, `4.7`; Framework Spec `6`, `8`, `9`
-- **Description:** Prove stream adapters against real `ExecutionHandle.events()` flows, including single-consumer behavior, cancellation, approval pause/resume, steering incorporation, tool execution, and provider-backed completion.
-- **Acceptance Criteria (Gherkin):**
-
-```gherkin
-Given runtime-core produces ExecutionHandle event streams for normal, cancelled, paused, resumed, steered, and failed turns
-When those streams are consumed through SSE and AG-UI adapters
-Then adapter output remains ordered, terminal status is visible, cancellation propagates, approval and steering events are represented, and adapters do not consume or replay streams in a way that violates the runtime contract
-```
-
-**KRT-O006 Stream Adapter Closure Inventory**
-
-- **Type:** Chore
-- **Effort:** 2
-- **Dependencies:** KRT-O005
-- **Capability / Contract Mapping:** PRD `CAP-P0-020`, `CAP-P1-024`; Architecture `5`; TechSpec `4.7`, `5.3`, `5.4.1`
-- **Description:** Record Epic O closure evidence, selected AG-UI revision, mapping matrix, package exports, fixture coverage, limitations, and downstream assumptions in `constitution/spikes/epic-o-stream-adapter-inventory.md`.
-- **Acceptance Criteria (Gherkin):**
-
-```gherkin
-Given the stream adapter packages and integration coverage are complete
-When Epic O is closed
-Then the closure inventory records implemented mappings, lossy cases, warnings, selected protocol versions, test coverage, downstream assumptions for Epic P, and any required TechSpec or Tasks status updates
-```
-
 ### Epic P - Playground Host Harness (PHH)
 
 **KRT-P001 Playground Host Scope Inventory**
 
 - **Type:** Spike
 - **Effort:** 2
-- **Dependencies:** KRT-O006
+- **Dependencies:** Closed Epic O stream adapter inventory
 - **Capability / Contract Mapping:** PRD `CAP-P0-001`, `CAP-P0-005`, `CAP-P0-020`, `CAP-P0-023`; Architecture `1.4`, `4.1`, `5`; TechSpec `4.1`, `4.7`, `5.1`; Framework Spec `7`, `8`, `9`
 - **Description:** Define the local playground host harness scope, scenarios, environment variables, provider bridge configuration, backend choices, stream adapters, controls, and fixture mode boundaries without turning the harness into a production web app.
 - **Acceptance Criteria (Gherkin):**
