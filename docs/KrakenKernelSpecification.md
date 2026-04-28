@@ -879,7 +879,7 @@ Backend choice is an implementation concern. Correctness semantics are not.
 
 ### Turn Lifecycle
 
-**`turn.create(id, threadId, branchId, parentTurnId?, startTurnNodeHash)`** — `id` unique. `threadId` exists. `branchId` exists and belongs to the same Thread. If `parentTurnId`: must exist and belong to the same Thread. `startTurnNodeHash` must exist and belong to Thread by lineage walk.
+**`turn.create(id, threadId, branchId, parentTurnId?, startTurnNodeHash)`** — `id` unique. `threadId` exists. `branchId` exists and belongs to the same Thread. If `parentTurnId`: must exist, belong to the same Thread, and chain contiguously into `startTurnNodeHash`; forked Branches may reference the source Branch head Turn as their first semantic parent. `startTurnNodeHash` must exist and belong to Thread by lineage walk.
 
 **`turn.get(id)`** — Returns Turn or null.
 

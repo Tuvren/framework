@@ -4114,6 +4114,99 @@ function decodeTurnRow(row: SqliteTurnRow): StoredTurn {
   return record;
 }
 
+function decodeUnknownTurnRow(row: unknown): StoredTurn {
+  const label = "stored turn query row";
+
+  if (!isUnknownRecord(row)) {
+    throw persistenceError(
+      `${label} must be an object`,
+      "sqlite_backend_invalid_turn_row",
+      {}
+    );
+  }
+
+  return decodeTurnRow({
+    branch_id: readSqliteStringColumn(row, "branch_id", label),
+    created_at_ms: readSqliteNumberColumn(row, "created_at_ms", label),
+    head_turn_node_hash: readSqliteStringColumn(
+      row,
+      "head_turn_node_hash",
+      label
+    ),
+    parent_turn_id: readSqliteNullableStringColumn(
+      row,
+      "parent_turn_id",
+      label
+    ),
+    start_turn_node_hash: readSqliteStringColumn(
+      row,
+      "start_turn_node_hash",
+      label
+    ),
+    thread_id: readSqliteStringColumn(row, "thread_id", label),
+    turn_id: readSqliteStringColumn(row, "turn_id", label),
+    updated_at_ms: readSqliteNumberColumn(row, "updated_at_ms", label),
+  });
+}
+
+function readSqliteStringColumn(
+  row: Record<string, unknown>,
+  column: string,
+  label: string
+): string {
+  const value = row[column];
+
+  if (typeof value === "string") {
+    return value;
+  }
+
+  throw persistenceError(
+    `${label} column "${column}" must be a string`,
+    "sqlite_backend_invalid_turn_row",
+    { column }
+  );
+}
+
+function readSqliteNullableStringColumn(
+  row: Record<string, unknown>,
+  column: string,
+  label: string
+): string | null {
+  const value = row[column];
+
+  if (value === null || typeof value === "string") {
+    return value;
+  }
+
+  throw persistenceError(
+    `${label} column "${column}" must be a string or null`,
+    "sqlite_backend_invalid_turn_row",
+    { column }
+  );
+}
+
+function readSqliteNumberColumn(
+  row: Record<string, unknown>,
+  column: string,
+  label: string
+): number {
+  const value = row[column];
+
+  if (typeof value === "number") {
+    return value;
+  }
+
+  throw persistenceError(
+    `${label} column "${column}" must be a number`,
+    "sqlite_backend_invalid_turn_row",
+    { column }
+  );
+}
+
+function isUnknownRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 function decodeRunRow(row: SqliteRunRow): StoredRun {
   const status = decodeStoredRunStatus(row.status, row.run_id);
 
@@ -5494,19 +5587,20 @@ function assertTurnParentLink(
   turn: StoredTurn,
   label: string
 ): void {
-  const candidateTurns = listTurnsByThread(
+  const candidateTurnsAtStart = listTurnsByThread(
     state,
     turn.threadId,
     turn.turnId
   ).filter(
-    (candidateTurn) =>
-      candidateTurn.branchId === turn.branchId &&
-      candidateTurn.headTurnNodeHash === turn.startTurnNodeHash
+    (candidateTurn) => candidateTurn.headTurnNodeHash === turn.startTurnNodeHash
   );
-  const immediatelyPreviousTurn = candidateTurns.at(-1);
+  const sameBranchCandidateTurns = candidateTurnsAtStart.filter(
+    (candidateTurn) => candidateTurn.branchId === turn.branchId
+  );
+  const immediatelyPreviousSameBranchTurn = sameBranchCandidateTurns.at(-1);
 
   if (turn.parentTurnId === null) {
-    if (immediatelyPreviousTurn === undefined) {
+    if (candidateTurnsAtStart.length === 0) {
       return;
     }
 
@@ -5514,7 +5608,7 @@ function assertTurnParentLink(
       `${label} must reference the previous semantic turn when one exists`,
       "sqlite_backend_turn_parent_required",
       {
-        candidateParentTurnIds: candidateTurns.map(
+        candidateParentTurnIds: candidateTurnsAtStart.map(
           (candidateTurn) => candidateTurn.turnId
         ),
         startTurnNodeHash: turn.startTurnNodeHash,
@@ -5537,19 +5631,6 @@ function assertTurnParentLink(
     );
   }
 
-  if (parentTurn.branchId !== turn.branchId) {
-    throw persistenceError(
-      "stored turns must reference a parent turn on the same branch",
-      "sqlite_backend_turn_parent_branch_mismatch",
-      {
-        branchId: turn.branchId,
-        parentBranchId: parentTurn.branchId,
-        parentTurnId: parentTurn.turnId,
-        turnId: turn.turnId,
-      }
-    );
-  }
-
   if (parentTurn.headTurnNodeHash !== turn.startTurnNodeHash) {
     throw persistenceError(
       `${label} must chain contiguously into record.startTurnNodeHash`,
@@ -5563,30 +5644,22 @@ function assertTurnParentLink(
     );
   }
 
-  if (candidateTurns.length === 0) {
-    throw persistenceError(
-      `${label} must reference a contiguous previous semantic turn`,
-      "sqlite_backend_turn_parent_missing_predecessor",
-      {
-        parentTurnId: parentTurn.turnId,
-        startTurnNodeHash: turn.startTurnNodeHash,
-        turnId: turn.turnId,
-      }
-    );
+  if (parentTurn.branchId !== turn.branchId) {
+    return;
   }
 
   if (
-    immediatelyPreviousTurn === undefined ||
-    immediatelyPreviousTurn.turnId !== parentTurn.turnId
+    immediatelyPreviousSameBranchTurn === undefined ||
+    immediatelyPreviousSameBranchTurn.turnId !== parentTurn.turnId
   ) {
     throw persistenceError(
-      `${label} must reference the immediately previous semantic turn on the same branch`,
+      `${label} must reference the immediately previous semantic turn at record.startTurnNodeHash`,
       "sqlite_backend_turn_parent_not_immediate_predecessor",
       {
-        candidateParentTurnIds: candidateTurns.map(
+        candidateParentTurnIds: sameBranchCandidateTurns.map(
           (candidateTurn) => candidateTurn.turnId
         ),
-        expectedParentTurnId: immediatelyPreviousTurn?.turnId ?? null,
+        expectedParentTurnId: immediatelyPreviousSameBranchTurn?.turnId ?? null,
         parentTurnId: parentTurn.turnId,
         turnId: turn.turnId,
       }
@@ -5778,10 +5851,13 @@ function assertTurnParentLinkInDatabase(
   label: string
 ): void {
   const candidateTurns = selectCandidateParentTurns(db, turn);
-  const immediatelyPreviousTurn = candidateTurns.at(-1);
+  const sameBranchCandidateTurns = candidateTurns.filter(
+    (candidateTurn) => candidateTurn.branchId === turn.branchId
+  );
+  const immediatelyPreviousSameBranchTurn = sameBranchCandidateTurns.at(-1);
 
   if (turn.parentTurnId === null) {
-    if (immediatelyPreviousTurn === undefined) {
+    if (candidateTurns.length === 0) {
       return;
     }
 
@@ -5812,19 +5888,6 @@ function assertTurnParentLinkInDatabase(
     );
   }
 
-  if (parentTurn.branchId !== turn.branchId) {
-    throw persistenceError(
-      "stored turns must reference a parent turn on the same branch",
-      "sqlite_backend_turn_parent_branch_mismatch",
-      {
-        branchId: turn.branchId,
-        parentBranchId: parentTurn.branchId,
-        parentTurnId: parentTurn.turnId,
-        turnId: turn.turnId,
-      }
-    );
-  }
-
   if (parentTurn.headTurnNodeHash !== turn.startTurnNodeHash) {
     throw persistenceError(
       `${label} must chain contiguously into record.startTurnNodeHash`,
@@ -5838,30 +5901,22 @@ function assertTurnParentLinkInDatabase(
     );
   }
 
-  if (candidateTurns.length === 0) {
-    throw persistenceError(
-      `${label} must reference a contiguous previous semantic turn`,
-      "sqlite_backend_turn_parent_missing_predecessor",
-      {
-        parentTurnId: parentTurn.turnId,
-        startTurnNodeHash: turn.startTurnNodeHash,
-        turnId: turn.turnId,
-      }
-    );
+  if (parentTurn.branchId !== turn.branchId) {
+    return;
   }
 
   if (
-    immediatelyPreviousTurn === undefined ||
-    immediatelyPreviousTurn.turnId !== parentTurn.turnId
+    immediatelyPreviousSameBranchTurn === undefined ||
+    immediatelyPreviousSameBranchTurn.turnId !== parentTurn.turnId
   ) {
     throw persistenceError(
-      `${label} must reference the immediately previous semantic turn on the same branch`,
+      `${label} must reference the immediately previous semantic turn at record.startTurnNodeHash`,
       "sqlite_backend_turn_parent_not_immediate_predecessor",
       {
-        candidateParentTurnIds: candidateTurns.map(
+        candidateParentTurnIds: sameBranchCandidateTurns.map(
           (candidateTurn) => candidateTurn.turnId
         ),
-        expectedParentTurnId: immediatelyPreviousTurn?.turnId ?? null,
+        expectedParentTurnId: immediatelyPreviousSameBranchTurn?.turnId ?? null,
         parentTurnId: parentTurn.turnId,
         turnId: turn.turnId,
       }
@@ -5879,19 +5934,13 @@ function selectCandidateParentTurns(
         SELECT *
         FROM turns
         WHERE thread_id = ?
-          AND branch_id = ?
           AND head_turn_node_hash = ?
           AND turn_id <> ?
         ORDER BY created_at_ms, turn_id
       `
     )
-    .all(
-      turn.threadId,
-      turn.branchId,
-      turn.startTurnNodeHash,
-      turn.turnId
-    ) as SqliteTurnRow[];
-  return rows.map(decodeTurnRow);
+    .all(turn.threadId, turn.startTurnNodeHash, turn.turnId);
+  return rows.map(decodeUnknownTurnRow);
 }
 
 function assertRunStartTurnNodeWithinTurnSpanInDatabase(

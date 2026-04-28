@@ -1982,19 +1982,20 @@ function assertTurnParentLink(
   turn: StoredTurn,
   label: string
 ): void {
-  const candidateTurns = listTurnsByThread(
+  const candidateTurnsAtStart = listTurnsByThread(
     state,
     turn.threadId,
     turn.turnId
   ).filter(
-    (candidateTurn) =>
-      candidateTurn.branchId === turn.branchId &&
-      candidateTurn.headTurnNodeHash === turn.startTurnNodeHash
+    (candidateTurn) => candidateTurn.headTurnNodeHash === turn.startTurnNodeHash
   );
-  const immediatelyPreviousTurn = candidateTurns.at(-1);
+  const sameBranchCandidateTurns = candidateTurnsAtStart.filter(
+    (candidateTurn) => candidateTurn.branchId === turn.branchId
+  );
+  const immediatelyPreviousSameBranchTurn = sameBranchCandidateTurns.at(-1);
 
   if (turn.parentTurnId === null) {
-    if (immediatelyPreviousTurn === undefined) {
+    if (candidateTurnsAtStart.length === 0) {
       return;
     }
 
@@ -2002,7 +2003,7 @@ function assertTurnParentLink(
       `${label} must reference the previous semantic turn when one exists`,
       "memory_backend_turn_parent_required",
       {
-        candidateParentTurnIds: candidateTurns.map(
+        candidateParentTurnIds: candidateTurnsAtStart.map(
           (candidateTurn) => candidateTurn.turnId
         ),
         startTurnNodeHash: turn.startTurnNodeHash,
@@ -2025,19 +2026,6 @@ function assertTurnParentLink(
     );
   }
 
-  if (parentTurn.branchId !== turn.branchId) {
-    throw persistenceError(
-      "stored turns must reference a parent turn on the same branch",
-      "memory_backend_turn_parent_branch_mismatch",
-      {
-        branchId: turn.branchId,
-        parentBranchId: parentTurn.branchId,
-        parentTurnId: parentTurn.turnId,
-        turnId: turn.turnId,
-      }
-    );
-  }
-
   if (parentTurn.headTurnNodeHash !== turn.startTurnNodeHash) {
     throw persistenceError(
       `${label} must chain contiguously into record.startTurnNodeHash`,
@@ -2051,30 +2039,22 @@ function assertTurnParentLink(
     );
   }
 
-  if (candidateTurns.length === 0) {
-    throw persistenceError(
-      `${label} must reference a contiguous previous semantic turn`,
-      "memory_backend_turn_parent_missing_predecessor",
-      {
-        parentTurnId: parentTurn.turnId,
-        startTurnNodeHash: turn.startTurnNodeHash,
-        turnId: turn.turnId,
-      }
-    );
+  if (parentTurn.branchId !== turn.branchId) {
+    return;
   }
 
   if (
-    immediatelyPreviousTurn === undefined ||
-    immediatelyPreviousTurn.turnId !== parentTurn.turnId
+    immediatelyPreviousSameBranchTurn === undefined ||
+    immediatelyPreviousSameBranchTurn.turnId !== parentTurn.turnId
   ) {
     throw persistenceError(
-      `${label} must reference the immediately previous semantic turn on the same branch`,
+      `${label} must reference the immediately previous semantic turn at record.startTurnNodeHash`,
       "memory_backend_turn_parent_not_immediate_predecessor",
       {
-        candidateParentTurnIds: candidateTurns.map(
+        candidateParentTurnIds: sameBranchCandidateTurns.map(
           (candidateTurn) => candidateTurn.turnId
         ),
-        expectedParentTurnId: immediatelyPreviousTurn?.turnId ?? null,
+        expectedParentTurnId: immediatelyPreviousSameBranchTurn?.turnId ?? null,
         parentTurnId: parentTurn.turnId,
         turnId: turn.turnId,
       }

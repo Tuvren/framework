@@ -195,22 +195,34 @@ async function runBranchingScenario(
     threadId: thread.threadId,
   });
   const firstProjection = await host.project(firstHandle);
+  const sourceThread = withHead(thread, firstProjection);
   const branch = await host.branchFromHead({
     threadId: thread.threadId,
-    turnNodeHash: thread.rootTurnNodeHash,
+    turnNodeHash: sourceThread.headTurnNodeHash ?? thread.rootTurnNodeHash,
   });
+  const branchMessagesBeforeTurn = await host.readBranchMessages(
+    branch.branchId
+  );
   const branchHandle = host.executeTurn({
     branchId: branch.branchId,
     signal: textSignal("Run alternate branch"),
     threadId: thread.threadId,
   });
   const branchProjection = await host.project(branchHandle);
+  const branchMessagesAfterTurn = await host.readBranchMessages(
+    branch.branchId
+  );
   const projection = mergeProjections(firstProjection, branchProjection);
 
   return createReport({
     checks: {
       branchCreated: branch.branchId !== thread.branchId,
       branchCompleted: branchHandle.status().phase === "completed",
+      branchedFromSourceHead:
+        branch.headTurnNodeHash === sourceThread.headTurnNodeHash,
+      branchMessagesAdvanced:
+        branchMessagesAfterTurn.length > branchMessagesBeforeTurn.length,
+      branchMessagesVisible: branchMessagesBeforeTurn.length > 0,
       sourceCompleted: firstHandle.status().phase === "completed",
     },
     config,

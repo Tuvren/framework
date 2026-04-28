@@ -933,7 +933,7 @@ function executeTurn(input):
 
 `driverId` is optional. When omitted, the framework resolves its configured default driver before execution begins. In the current baseline, the default driver is ReAct. Hosts may pass an explicit `driverId` when they need a concrete driver instead of the configured default.
 
-For a Thread's first semantic Turn, `parentTurnId` is `null`. For every subsequent semantic Turn, `parentTurnId` MUST identify the immediately previous semantic Turn on the active Branch and still belong to the same Thread. When the framework resolves this parent implicitly, the resolver must be branch-aware (`resolveParentTurnId(threadId, branchId)`), so branching and rollback do not make semantic lineage ambiguous. Approval resumes stay within the existing Turn and do not create a new Turn.
+For a Thread's first semantic Turn, `parentTurnId` is `null`. For every subsequent semantic Turn, `parentTurnId` MUST identify the active semantic parent recorded at the Branch Head and still belong to the same Thread. On a newly forked Branch, that active parent can be the source Branch's head Turn; later Turns on the fork use the immediately previous Turn on the fork itself. When the framework resolves this parent implicitly, the resolver must be branch-aware (`resolveParentTurnId(threadId, branchId)`), so branching and rollback do not make semantic lineage ambiguous. Approval resumes stay within the existing Turn and do not create a new Turn.
 
 ### 4.8 Pause and Resume
 

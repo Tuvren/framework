@@ -703,6 +703,8 @@ export interface RuntimeKernel {
 }
 ```
 
+Turn parent validation is branch-aware through the active head lineage rather than branch-id equality alone: the first Turn on a forked Branch may use the source Branch head Turn as `parentTurnId` when both Turns share a Thread and the parent head matches `startTurnNodeHash`; subsequent Turns on that fork use the immediately previous Turn on the fork.
+
 ### 4.3 Backend Adapter Contract
 
 - **Style:** library API

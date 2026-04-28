@@ -17,6 +17,7 @@
 import { describe, expect, test } from "bun:test";
 import { tmpdir } from "node:os";
 import {
+  DEFAULT_PLAYGROUND_SCENARIOS,
   loadPlaygroundConfig,
   runPlaygroundScenario,
 } from "@tuvren/playground-host";
@@ -45,6 +46,25 @@ describe("playground host scenarios", () => {
     expect(config.sqlitePath?.startsWith(tmpdir())).toBe(true);
     expect(config.sqlitePath?.includes("tuvren-playground-")).toBe(true);
     expect(config.sqlitePath?.endsWith(".sqlite")).toBe(true);
+  });
+
+  test("runs every non-reload fixture scenario under the memory backend", async () => {
+    for (const scenario of DEFAULT_PLAYGROUND_SCENARIOS) {
+      if (scenario === "reload") {
+        // Reload is the one scenario whose evidence must cross a fresh durable
+        // host, so the Node-backed SQLite smoke target owns that path.
+        continue;
+      }
+
+      const report = await runPlaygroundScenario({
+        backend: "memory",
+        providerMode: "fixture",
+        scenario,
+      });
+
+      expect(report.scenario).toBe(scenario);
+      expectScenarioChecksPassed(report.checks);
+    }
   });
 
   test("runs the streaming scenario through canonical, SSE, and AG-UI outputs", async () => {

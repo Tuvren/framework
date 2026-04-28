@@ -21,17 +21,17 @@
 - `approval`: approval pause, edited approval decision, resumed continuation, and durable tool continuation.
 - `metadata`: AI SDK mock provider mode without credentials plus durable provider-metadata evidence.
 - `structured`: structured-output scenario hook for the deterministic fixture provider.
-- `branching`: branch creation and alternate branch execution.
+- `branching`: branch creation from a completed source head, durable branch message inspection, and alternate branch execution.
 - `cancel`: active turn cancellation and failed terminal stream observation.
 - `steering`: host `steer` control path, durable steering message incorporation, and provider response to the injected steering signal.
 - `reload`: SQLite reload through a fresh host instance after a completed turn, durable message visibility after reload, branch-head advancement, root preservation, and successful follow-up execution from the reloaded host.
 
 ## Backend Notes
 
-- Memory backend scenarios run under Bun tests.
+- Non-reload memory backend scenarios run under Bun tests; reload evidence is reserved for the Node-backed SQLite smoke target.
 - SQLite reload is validated through the built Node CLI target because `@tuvren/backend-sqlite` depends on `better-sqlite3`, which is Node-first and does not load under Bun.
 - The playground kernel facade stores content-addressed objects, turn trees, and turn nodes idempotently by checking their hashes before writing, so replayed continuation records and repeated scenario runs do not collide on fresh timestamps.
-- Root turn nodes include a per-thread bootstrap event hash. This preserves an empty initial manifest while satisfying SQLite's unique root-node constraint across repeated scenario runs against a stable database file.
+- Root turn nodes include a per-thread bootstrap event hash. This preserves an empty initial manifest while satisfying SQLite's unique root-node constraint across repeated scenario runs.
 - Run step indexes respect backend validation: running runs keep `currentStepIndex` on an available step, while completed runs store `currentStepIndex` equal to the declared step count.
 
 ## Stream Adapter Handoff

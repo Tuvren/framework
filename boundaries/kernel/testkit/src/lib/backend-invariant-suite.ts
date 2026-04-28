@@ -1186,12 +1186,9 @@ export function registerBackendInvariantSuite(
           TuvrenPersistenceError
         );
 
-        await rejects(
-          backend.transact(async (tx) => {
-            await tx.turns.set(siblingTurn);
-          }),
-          TuvrenPersistenceError
-        );
+        await backend.transact(async (tx) => {
+          await tx.turns.set(siblingTurn);
+        });
 
         await rejects(
           backend.transact(async (tx) => {

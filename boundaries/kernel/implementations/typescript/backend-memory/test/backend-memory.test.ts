@@ -1876,7 +1876,7 @@ describe("@tuvren/backend-memory", () => {
     ).rejects.toBeInstanceOf(TuvrenPersistenceError);
   });
 
-  test("rejects cross-branch parent links and stale same-branch parent links", async () => {
+  test("accepts fork parent links and rejects stale same-branch parent links", async () => {
     const backend = createMemoryBackend();
     const schema = createSchema();
     const schemaRecord = createStoredSchema(schema, 1);
@@ -2007,11 +2007,9 @@ describe("@tuvren/backend-memory", () => {
       });
     });
 
-    await expect(
-      backend.transact(async (tx) => {
-        await tx.turns.set(siblingTurn);
-      })
-    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
+    await backend.transact(async (tx) => {
+      await tx.turns.set(siblingTurn);
+    });
 
     await expect(
       backend.transact(async (tx) => {
