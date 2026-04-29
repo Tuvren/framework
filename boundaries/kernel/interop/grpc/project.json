@@ -7,6 +7,16 @@
   "targets": {
     "codegen": {
       "executor": "nx:run-commands",
+      "inputs": [
+        "default",
+        "^production",
+        "{workspaceRoot}/tools/scripts/kernel-interop-governance.ts",
+        "{workspaceRoot}/tools/scripts/lib/command-runner.ts",
+        "{workspaceRoot}/buf.yaml",
+        "{workspaceRoot}/buf.gen.yaml",
+        "{workspaceRoot}/devenv.nix",
+        "{workspaceRoot}/devenv.lock"
+      ],
       "outputs": [
         "{workspaceRoot}/boundaries/framework/implementations/typescript/runtime-core/.generated/kernel-interop"
       ],
@@ -17,6 +27,7 @@
     },
     "breaking": {
       "executor": "nx:run-commands",
+      "cache": false,
       "options": {
         "cwd": ".",
         "command": "bun tools/scripts/kernel-interop-governance.ts breaking"
@@ -31,6 +42,13 @@
     },
     "lint": {
       "executor": "nx:run-commands",
+      "inputs": [
+        "default",
+        "{workspaceRoot}/biome.jsonc",
+        "{workspaceRoot}/tools/scripts/kernel-interop-governance.ts",
+        "{workspaceRoot}/tools/scripts/lib/command-runner.ts",
+        "{workspaceRoot}/buf.yaml"
+      ],
       "options": {
         "cwd": ".",
         "command": "bun tools/scripts/kernel-interop-governance.ts lint && bunx --bun @biomejs/biome check boundaries/kernel/interop/grpc tools/scripts/kernel-interop-governance.ts"

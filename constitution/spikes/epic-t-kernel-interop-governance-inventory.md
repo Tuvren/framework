@@ -23,6 +23,8 @@ implement a Rust kernel or a TypeScript remote-kernel client.
 - Root Buf generation configuration now lives in `buf.gen.yaml`.
 - Devenv now declares the native Buf and Protobuf-ES generator CLIs through
   `pkgs.buf` and `pkgs.protoc-gen-es`.
+- `@tuvren/runtime-core` declares `@bufbuild/protobuf@2.11.0` so generated
+  Protobuf-ES bindings can typecheck from their consuming implementation tree.
 - The authored Protobuf authority lives under
   `boundaries/kernel/interop/grpc/proto/`.
 - Generated TypeScript bindings are emitted under the consuming framework
