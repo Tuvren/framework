@@ -1,0 +1,4 @@
+templates:
+  - template: "resolved-registry.json.j2"
+    application_mode: single
+    file_name: "resolved-registry.json"

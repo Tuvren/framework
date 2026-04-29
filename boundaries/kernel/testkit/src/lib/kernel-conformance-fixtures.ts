@@ -52,21 +52,12 @@ export interface KernelProtocolLogicalFixtureSet {
   turnTreeChangeSet: TurnTreeChangeSet;
 }
 
-const CANONICAL_SCHEMA_PATH_SEGMENTS = [
-  "conformance",
-  "fixtures",
-  "canonical-turn-tree-schema.json",
-];
-const DETERMINISTIC_FIXTURE_PATH_SEGMENTS = [
-  "conformance",
-  "fixtures",
-  "kernel-protocol-deterministic.json",
-];
-const LOGICAL_FIXTURE_PATH_SEGMENTS = [
-  "conformance",
-  "fixtures",
-  "kernel-protocol-logical.json",
-];
+interface KernelConformanceFixtureIndex {
+  canonicalSchemaPath: string;
+  deterministicFixturePath: string;
+  logicalFixturePath: string;
+}
+
 const MANIFEST_PATH_SEGMENTS = [
   "conformance",
   "scenarios",
@@ -74,6 +65,7 @@ const MANIFEST_PATH_SEGMENTS = [
 ];
 const LOWERCASE_HEX_PATTERN = /^[0-9a-f]+$/u;
 const ajv = new Ajv2020({ allErrors: true, strict: false });
+const kernelConformanceFixtureIndex = loadKernelConformanceFixtureIndex();
 
 export const canonicalKernelTestSchemaFixture: TurnTreeSchema =
   loadCanonicalKernelTestSchema();
@@ -83,13 +75,8 @@ export const kernelProtocolLogicalFixtures: KernelProtocolLogicalFixtureSet =
   loadKernelProtocolLogicalFixtures();
 
 function loadCanonicalKernelTestSchema(): TurnTreeSchema {
-  const manifestPath = resolveFixturePath(
-    import.meta.url,
-    MANIFEST_PATH_SEGMENTS
-  );
-  assertKernelFixtureIndexSchema(manifestPath);
   const fixtureText = readFileSync(
-    resolveFixturePath(import.meta.url, CANONICAL_SCHEMA_PATH_SEGMENTS),
+    kernelConformanceFixtureIndex.canonicalSchemaPath,
     "utf8"
   );
   const parsedFixture = JSON.parse(fixtureText);
@@ -99,7 +86,7 @@ function loadCanonicalKernelTestSchema(): TurnTreeSchema {
 
 function loadKernelProtocolDeterministicFixtures(): KernelProtocolDeterministicFixtureSet {
   const fixtureText = readFileSync(
-    resolveFixturePath(import.meta.url, DETERMINISTIC_FIXTURE_PATH_SEGMENTS),
+    kernelConformanceFixtureIndex.deterministicFixturePath,
     "utf8"
   );
   const parsedFixture = JSON.parse(fixtureText);
@@ -109,7 +96,7 @@ function loadKernelProtocolDeterministicFixtures(): KernelProtocolDeterministicF
 
 function loadKernelProtocolLogicalFixtures(): KernelProtocolLogicalFixtureSet {
   const fixtureText = readFileSync(
-    resolveFixturePath(import.meta.url, LOGICAL_FIXTURE_PATH_SEGMENTS),
+    kernelConformanceFixtureIndex.logicalFixturePath,
     "utf8"
   );
   const parsedFixture = JSON.parse(fixtureText);
@@ -139,7 +126,11 @@ function resolveFixturePath(
   );
 }
 
-function assertKernelFixtureIndexSchema(manifestPath: string): void {
+function loadKernelConformanceFixtureIndex(): KernelConformanceFixtureIndex {
+  const manifestPath = resolveFixturePath(
+    import.meta.url,
+    MANIFEST_PATH_SEGMENTS
+  );
   const manifestText = readFileSync(manifestPath, "utf8");
   const parsedManifest = JSON.parse(manifestText);
 
@@ -151,7 +142,7 @@ function assertKernelFixtureIndexSchema(manifestPath: string): void {
     throw new Error("kernel conformance manifest is invalid");
   }
 
-  const fixtureIndex = readKernelFixtureIndex(parsedManifest.fixtures);
+  const relativeFixtureIndex = readKernelFixtureIndex(parsedManifest.fixtures);
   const schemaPath = join(
     dirname(manifestPath),
     parsedManifest.fixtureSchemaPath
@@ -160,16 +151,29 @@ function assertKernelFixtureIndexSchema(manifestPath: string): void {
   const parsedSchema = readJsonSchema(JSON.parse(schemaText));
   const validate = ajv.compile(parsedSchema);
 
-  // The kernel suite spans multiple seed files, so the manifest-declared JSON
-  // Schema validates the fixture index while the typed assertions below guard
-  // each decoded payload in detail.
-  if (validate(fixtureIndex)) {
-    return;
+  // The boundary-owned manifest is the kernel suite's file-path authority too.
+  // The JSON Schema validates the multi-file fixture index, and the typed
+  // assertions below still verify each decoded payload in detail.
+  if (!validate(relativeFixtureIndex)) {
+    throw new Error(
+      `kernel conformance fixture index failed JSON Schema validation: ${ajv.errorsText(validate.errors)}`
+    );
   }
 
-  throw new Error(
-    `kernel conformance fixture index failed JSON Schema validation: ${ajv.errorsText(validate.errors)}`
-  );
+  return {
+    canonicalSchemaPath: join(
+      dirname(manifestPath),
+      relativeFixtureIndex.canonicalSchemaPath
+    ),
+    deterministicFixturePath: join(
+      dirname(manifestPath),
+      relativeFixtureIndex.deterministicFixturePath
+    ),
+    logicalFixturePath: join(
+      dirname(manifestPath),
+      relativeFixtureIndex.logicalFixturePath
+    ),
+  };
 }
 
 function readJsonSchema(value: unknown): AnySchema {
@@ -180,11 +184,9 @@ function readJsonSchema(value: unknown): AnySchema {
   throw new Error("kernel conformance schema must be an object or boolean");
 }
 
-function readKernelFixtureIndex(fixtures: readonly unknown[]): {
-  canonicalSchemaPath: string;
-  deterministicFixturePath: string;
-  logicalFixturePath: string;
-} {
+function readKernelFixtureIndex(
+  fixtures: readonly unknown[]
+): KernelConformanceFixtureIndex {
   const pathById = new Map<string, string>();
 
   for (const fixture of fixtures) {

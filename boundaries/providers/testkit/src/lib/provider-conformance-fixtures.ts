@@ -153,6 +153,9 @@ function assertTuvrenPrompt(
     throw new Error(`${label} must be an object`);
   }
 
+  // The manifest-declared JSON Schema above owns the full prompt shape. This
+  // focused guard keeps the loader's TypeScript narrowing explicit until the
+  // public provider contract exports a dedicated prompt assertion helper.
   if (!Array.isArray(value.messages) || value.messages.length === 0) {
     throw new Error(`${label}.messages must be a non-empty array`);
   }

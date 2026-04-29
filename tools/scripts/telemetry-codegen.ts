@@ -47,6 +47,8 @@ interface TelemetryGeneratorTarget {
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const SEMCONV_REGISTRY_PATH = "telemetry/semconv";
+const WEAVER_TEMPLATE_ROOT = resolve(REPO_ROOT, "tools/generators/telemetry");
+const WEAVER_RESOLVED_REGISTRY_TARGET = "resolved-registry";
 const GENERATOR_PLAN_PATH = resolve(
   REPO_ROOT,
   "tools/generators/telemetry/generator-plan.json"
@@ -78,7 +80,7 @@ async function main(): Promise<void> {
   );
 
   try {
-    const resolvedRegistry = await resolveWeaverRegistry(
+    const resolvedRegistry = await generateResolvedWeaverRegistry(
       temporaryDirectory,
       await readRegistrySchemaUrl()
     );
@@ -201,25 +203,26 @@ async function runWeaverRegistryCheck(): Promise<void> {
   }
 }
 
-async function resolveWeaverRegistry(
+async function generateResolvedWeaverRegistry(
   outputDirectory: string,
   schemaUrl: string
 ): Promise<ResolvedTelemetryRegistry> {
-  // The repo-pinned Weaver build already supports JSON output here, so Epic R
-  // avoids parsing incidental YAML formatting even though the broader
-  // resolve-to-generate migration remains a later toolchain follow-up.
+  // Upstream Weaver deprecated `registry resolve`, but the repo-pinned build
+  // in this workspace does not yet ship `registry package`. Epic R therefore
+  // stays on the supported `registry generate` family with a repo-owned target
+  // that emits the resolved-registry JSON we consume below.
   const result = await runCommand(
     [
       "weaver",
       "registry",
-      "resolve",
+      "generate",
+      "--future",
       "-r",
       SEMCONV_REGISTRY_PATH,
-      "--future",
-      "--format",
-      "json",
-      "-o",
-      resolve(outputDirectory, "resolved.json"),
+      "-t",
+      WEAVER_TEMPLATE_ROOT,
+      WEAVER_RESOLVED_REGISTRY_TARGET,
+      outputDirectory,
     ],
     {
       captureOutput: true,
@@ -229,16 +232,41 @@ async function resolveWeaverRegistry(
 
   if (result.code !== 0) {
     throw new Error(
-      result.stderr || result.stdout || "weaver registry resolve failed"
+      result.stderr || result.stdout || "weaver registry generate failed"
     );
   }
 
   const resolvedJson = await readFile(
-    resolve(outputDirectory, "resolved.json"),
+    resolve(outputDirectory, "resolved-registry.json"),
     "utf8"
   );
 
   return parseResolvedTelemetryRegistry(resolvedJson, schemaUrl);
+}
+
+async function readRegistrySchemaUrl(): Promise<string> {
+  const manifestText = await readFile(REGISTRY_MANIFEST_PATH, "utf8");
+  let schemaBaseUrl = "";
+  let semconvVersion = "";
+
+  for (const line of manifestText.split(NEWLINE_PATTERN)) {
+    if (line.startsWith("schema_base_url: ")) {
+      schemaBaseUrl = line.slice("schema_base_url: ".length);
+      continue;
+    }
+
+    if (line.startsWith("semconv_version: ")) {
+      semconvVersion = line.slice("semconv_version: ".length);
+    }
+  }
+
+  if (schemaBaseUrl.length === 0 || semconvVersion.length === 0) {
+    throw new Error(
+      "registry_manifest.yaml must define schema_base_url and semconv_version"
+    );
+  }
+
+  return `${schemaBaseUrl}${semconvVersion}`;
 }
 
 async function formatGeneratedOutputs(
@@ -292,31 +320,6 @@ function parseResolvedTelemetryRegistry(
     registryUrl: parsedRegistry.registry_url,
     schemaUrl,
   };
-}
-
-async function readRegistrySchemaUrl(): Promise<string> {
-  const manifestText = await readFile(REGISTRY_MANIFEST_PATH, "utf8");
-  let schemaBaseUrl = "";
-  let semconvVersion = "";
-
-  for (const line of manifestText.split(NEWLINE_PATTERN)) {
-    if (line.startsWith("schema_base_url: ")) {
-      schemaBaseUrl = line.slice("schema_base_url: ".length);
-      continue;
-    }
-
-    if (line.startsWith("semconv_version: ")) {
-      semconvVersion = line.slice("semconv_version: ".length);
-    }
-  }
-
-  if (schemaBaseUrl.length === 0 || semconvVersion.length === 0) {
-    throw new Error(
-      "registry_manifest.yaml must define schema_base_url and semconv_version"
-    );
-  }
-
-  return `${schemaBaseUrl}${semconvVersion}`;
 }
 
 function normalizeResolvedTelemetryAttribute(
