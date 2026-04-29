@@ -82,7 +82,6 @@ async function main(): Promise<void> {
       temporaryDirectory,
       await readRegistrySchemaUrl()
     );
-    const generatedAtMs = Date.now();
 
     await mkdir(dirname(MARKDOWN_OUTPUT_PATH), { recursive: true });
     await mkdir(dirname(JSON_OUTPUT_PATH), { recursive: true });
@@ -90,14 +89,13 @@ async function main(): Promise<void> {
 
     await writeFile(
       MARKDOWN_OUTPUT_PATH,
-      renderTelemetryMarkdown(resolvedRegistry, generatedAtMs)
+      renderTelemetryMarkdown(resolvedRegistry)
     );
     await writeFile(
       JSON_OUTPUT_PATH,
       `${JSON.stringify(
         {
           attributes: resolvedRegistry.attributes,
-          generatedAtMs,
           registryUrl: resolvedRegistry.registryUrl,
           schemaUrl: resolvedRegistry.schemaUrl,
         },
@@ -381,10 +379,7 @@ function collectResolvedTelemetryAttributes(
   return attributes;
 }
 
-function renderTelemetryMarkdown(
-  registry: ResolvedTelemetryRegistry,
-  generatedAtMs: number
-): string {
+function renderTelemetryMarkdown(registry: ResolvedTelemetryRegistry): string {
   const tableRows = registry.attributes
     .map(
       (attribute) =>
@@ -400,7 +395,6 @@ Generated from \`telemetry/semconv/tuvren-runtime.yaml\` via \`weaver\`.
 
 - Schema URL: \`${registry.schemaUrl}\`
 - Resolved registry: \`${registry.registryUrl}\`
-- Generated at: \`${generatedAtMs}\`
 
 | Attribute | Type | Stability | Brief | Examples |
 | --- | --- | --- | --- | --- |

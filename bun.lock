@@ -121,6 +121,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@tuvren/event-stream": "workspace:*",
+        "ajv": "8.18.0",
       },
     },
     "boundaries/hosts/implementations/typescript/playground": {
@@ -188,6 +189,7 @@
       "dependencies": {
         "@tuvren/core-types": "workspace:*",
         "@tuvren/kernel-protocol": "workspace:*",
+        "ajv": "8.18.0",
       },
     },
     "boundaries/providers/contracts/provider-api": {
@@ -220,6 +222,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@tuvren/provider-api": "workspace:*",
+        "ajv": "8.18.0",
       },
     },
     "boundaries/shared/contracts/core-types": {

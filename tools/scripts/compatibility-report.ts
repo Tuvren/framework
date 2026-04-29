@@ -20,10 +20,8 @@ import { fileURLToPath } from "node:url";
 import { runCommand } from "./lib/command-runner.js";
 
 interface CompatibilityMatrix {
-  generatedAtMs: number;
   implementations: CompatibilityImplementation[];
   interop: [];
-  sourceRevision: string;
   suites: CompatibilitySuite[];
 }
 
@@ -93,8 +91,6 @@ const CONFORMANCE_RUNNERS: readonly ConformanceRunner[] = [
 await main();
 
 async function main(): Promise<void> {
-  const generatedAtMs = Date.now();
-  const sourceRevision = await readSourceRevision();
   await mkdir(EVIDENCE_DIRECTORY, { recursive: true });
 
   const suites: CompatibilitySuite[] = [];
@@ -106,11 +102,7 @@ async function main(): Promise<void> {
     const implementationVersion = await readPackageVersion(
       runner.packageJsonPath
     );
-    const result = await runConformanceTarget(
-      runner,
-      suiteManifest,
-      generatedAtMs
-    );
+    const result = await runConformanceTarget(runner, suiteManifest);
 
     suites.push({
       boundary: suiteManifest.boundary,
@@ -133,12 +125,10 @@ async function main(): Promise<void> {
   }
 
   const matrix: CompatibilityMatrix = {
-    generatedAtMs,
     implementations,
     // Real interop evidence does not exist until later epics wire an actual
     // cross-process lane, so Epic R records no placeholder pass claims here.
     interop: [],
-    sourceRevision,
     suites,
   };
 
@@ -155,35 +145,6 @@ async function main(): Promise<void> {
   if (hasFailure) {
     throw new Error("one or more conformance targets failed");
   }
-}
-
-async function readSourceRevision(): Promise<string> {
-  // A checked-in generated artifact cannot stably embed its own final commit
-  // hash: committing the updated file changes the hash again. Use the symbolic
-  // ref when available so provenance stays meaningful without pretending to be
-  // a self-referential exact commit identity.
-  const symbolicRefResult = await runCommand(
-    ["git", "symbolic-ref", "--quiet", "HEAD"],
-    {
-      captureOutput: true,
-      cwd: REPO_ROOT,
-    }
-  );
-
-  if (symbolicRefResult.code === 0) {
-    return symbolicRefResult.stdout.trim();
-  }
-
-  const detachedHeadResult = await runCommand(["git", "rev-parse", "HEAD"], {
-    captureOutput: true,
-    cwd: REPO_ROOT,
-  });
-
-  if (detachedHeadResult.code !== 0) {
-    return "unknown";
-  }
-
-  return detachedHeadResult.stdout.trim();
 }
 
 async function readSuiteManifest(manifestPath: string): Promise<SuiteManifest> {
@@ -222,8 +183,7 @@ async function readPackageVersion(packageJsonPath: string): Promise<string> {
 
 async function runConformanceTarget(
   runner: ConformanceRunner,
-  suiteManifest: SuiteManifest,
-  generatedAtMs: number
+  suiteManifest: SuiteManifest
 ): Promise<{
   matrixResult: CompatibilityImplementationResult;
 }> {
@@ -255,12 +215,9 @@ async function runConformanceTarget(
         boundary: suiteManifest.boundary,
         command,
         exitCode: commandResult.code,
-        generatedAtMs,
         implementationId: runner.implementationId,
         project: runner.project,
         status,
-        stderr: commandResult.stderr,
-        stdout: commandResult.stdout,
         suiteId: suiteManifest.suiteId,
         suiteVersion: suiteManifest.suiteVersion,
       },
@@ -308,16 +265,6 @@ async function formatGeneratedOutputs(): Promise<void> {
 function assertCompatibilityMatrix(
   value: CompatibilityMatrix
 ): asserts value is CompatibilityMatrix {
-  if (!Number.isSafeInteger(value.generatedAtMs)) {
-    throw new Error(
-      "compatibility matrix generatedAtMs must be a safe integer"
-    );
-  }
-
-  if (value.sourceRevision.length === 0) {
-    throw new Error("compatibility matrix sourceRevision must be non-empty");
-  }
-
   for (const suite of value.suites) {
     if (
       suite.boundary.length === 0 ||

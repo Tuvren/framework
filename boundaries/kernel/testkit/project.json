@@ -21,6 +21,14 @@
         "command": "bun test"
       }
     },
+    "exports-smoke": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "options": {
+        "cwd": "boundaries/kernel/testkit",
+        "command": "bun test ./smoke/package-exports.ts"
+      }
+    },
     "lint": {
       "executor": "nx:run-commands",
       "options": {

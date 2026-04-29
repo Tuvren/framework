@@ -13,6 +13,7 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@tuvren/provider-api": "workspace:*"
+    "@tuvren/provider-api": "workspace:*",
+    "ajv": "8.18.0"
   }
 }

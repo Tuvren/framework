@@ -68,6 +68,7 @@ export const WORKSPACE_BUILD_PROJECTS: readonly string[] = [
 ];
 
 export const WORKSPACE_EXPORT_SMOKE_PROJECTS: readonly string[] = [
+  "kernel-testkit",
   "framework-driver-api",
   "framework-event-stream",
   "framework-runtime-api",

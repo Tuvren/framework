@@ -2,19 +2,8 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://tuvren.dev/schemas/reports/compatibility/compatibility-matrix.schema.json",
   "type": "object",
-  "required": [
-    "generatedAtMs",
-    "sourceRevision",
-    "suites",
-    "implementations",
-    "interop"
-  ],
+  "required": ["suites", "implementations", "interop"],
   "properties": {
-    "generatedAtMs": { "type": "integer" },
-    "sourceRevision": {
-      "type": "string",
-      "description": "Git provenance reference captured during generation. This is a symbolic ref when available because a checked-in artifact cannot stably self-embed its own final commit hash."
-    },
     "suites": {
       "type": "array",
       "items": {
