@@ -14,6 +14,7 @@
         "{workspaceRoot}/tools/generators/**/*",
         "{workspaceRoot}/tools/scripts/**/*",
         "{workspaceRoot}/boundaries/*/conformance/**/*",
+        "{workspaceRoot}/boundaries/*/interop/**/*",
         "{workspaceRoot}/boundaries/*/implementations/typescript/conformance-runner/**/*",
         "{workspaceRoot}/boundaries/*/testkit/src/**/*",
         "{workspaceRoot}/boundaries/*/testkit/test/**/*",
@@ -29,10 +30,24 @@
         "^production",
         "{workspaceRoot}/tests/**/*",
         "{workspaceRoot}/boundaries/*/conformance/**/*",
+        "{workspaceRoot}/boundaries/*/interop/**/*",
         "{workspaceRoot}/boundaries/*/implementations/typescript/conformance-runner/**/*",
         "{workspaceRoot}/boundaries/*/testkit/src/**/*",
         "{workspaceRoot}/boundaries/*/testkit/test/**/*",
         "{workspaceRoot}/boundaries/*/testkit/package.json"
+      ]
+    },
+    "interop-smoke": {
+      "cache": false,
+      "inputs": [
+        "default",
+        "^production",
+        "{workspaceRoot}/tools/scripts/**/*",
+        "{workspaceRoot}/boundaries/*/interop/**/*",
+        "{workspaceRoot}/devenv.nix",
+        "{workspaceRoot}/devenv.lock",
+        "{workspaceRoot}/buf.yaml",
+        "{workspaceRoot}/buf.gen.yaml"
       ]
     },
     "lint": {

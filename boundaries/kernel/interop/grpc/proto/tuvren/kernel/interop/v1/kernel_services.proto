@@ -1,0 +1,341 @@
+syntax = "proto3";
+
+package tuvren.kernel.interop.v1;
+
+import "tuvren/kernel/interop/v1/kernel_types.proto";
+
+service KernelStoreService {
+  rpc StorePut(StorePutRequest) returns (StorePutResponse);
+  rpc StoreGet(StoreGetRequest) returns (StoreGetResponse);
+  rpc StoreHas(StoreHasRequest) returns (StoreHasResponse);
+}
+
+service KernelSchemaService {
+  rpc SchemaRegister(SchemaRegisterRequest) returns (SchemaRegisterResponse);
+  rpc SchemaGet(SchemaGetRequest) returns (SchemaGetResponse);
+}
+
+service KernelTreeService {
+  rpc TreeCreate(TreeCreateRequest) returns (TreeCreateResponse);
+  rpc TreeIncorporate(TreeIncorporateRequest) returns (TreeIncorporateResponse);
+  rpc TreeDiff(TreeDiffRequest) returns (TreeDiffResponse);
+  rpc TreeResolve(TreeResolveRequest) returns (TreeResolveResponse);
+  rpc TreeManifest(TreeManifestRequest) returns (TreeManifestResponse);
+}
+
+service KernelNodeService {
+  rpc NodeGet(NodeGetRequest) returns (NodeGetResponse);
+  // Lineage walks can be unbounded, so this is the one streaming RPC in the
+  // initial kernel surface; all other Epic T operations remain unary.
+  rpc NodeWalkBack(NodeWalkBackRequest) returns (stream NodeWalkBackResponse);
+}
+
+service KernelThreadService {
+  rpc ThreadCreate(ThreadCreateRequest) returns (ThreadCreateResponse);
+  rpc ThreadGet(ThreadGetRequest) returns (ThreadGetResponse);
+}
+
+service KernelBranchService {
+  rpc BranchCreate(BranchCreateRequest) returns (BranchCreateResponse);
+  rpc BranchGet(BranchGetRequest) returns (BranchGetResponse);
+  rpc BranchSetHead(BranchSetHeadRequest) returns (BranchSetHeadResponse);
+  rpc BranchList(BranchListRequest) returns (BranchListResponse);
+}
+
+service KernelStagingService {
+  rpc StagingStage(StagingStageRequest) returns (StagingStageResponse);
+  rpc StagingCurrent(StagingCurrentRequest) returns (StagingCurrentResponse);
+}
+
+service KernelRunService {
+  rpc RunCreate(RunCreateRequest) returns (RunCreateResponse);
+  rpc RunBeginStep(RunBeginStepRequest) returns (RunBeginStepResponse);
+  rpc RunCompleteStep(RunCompleteStepRequest) returns (RunCompleteStepResponse);
+  rpc RunComplete(RunCompleteRequest) returns (RunCompleteResponse);
+  rpc RunRecover(RunRecoverRequest) returns (RunRecoverResponse);
+}
+
+service KernelTurnService {
+  rpc TurnCreate(TurnCreateRequest) returns (TurnCreateResponse);
+  rpc TurnGet(TurnGetRequest) returns (TurnGetResponse);
+  rpc TurnUpdateHead(TurnUpdateHeadRequest) returns (TurnUpdateHeadResponse);
+}
+
+service KernelVerdictsService {
+  // Verdict composition is kernel policy state, not a framework approval or
+  // ExecutionHandle control surface.
+  rpc VerdictsCompose(VerdictsComposeRequest) returns (VerdictsComposeResponse);
+}
+
+message StorePutRequest {
+  bytes blob = 1;
+  optional string media_type = 2;
+}
+
+message StorePutResponse {
+  string object_hash = 1;
+}
+
+message StoreGetRequest {
+  string hash = 1;
+}
+
+message StoreGetResponse {
+  bool found = 1;
+  bytes blob = 2;
+}
+
+message StoreHasRequest {
+  string hash = 1;
+}
+
+message StoreHasResponse {
+  bool exists = 1;
+}
+
+message SchemaRegisterRequest {
+  TurnTreeSchema schema = 1;
+}
+
+message SchemaRegisterResponse {
+  string schema_id = 1;
+}
+
+message SchemaGetRequest {
+  string schema_id = 1;
+}
+
+message SchemaGetResponse {
+  bool found = 1;
+  TurnTreeSchema schema = 2;
+}
+
+message TreeCreateRequest {
+  string schema_id = 1;
+  repeated PathValueEntry changes = 2;
+  optional string base_turn_tree_hash = 3;
+}
+
+message TreeCreateResponse {
+  string tree_hash = 1;
+}
+
+message TreeIncorporateRequest {
+  string base_turn_tree_hash = 1;
+  repeated StagedResult staged_results = 2;
+}
+
+message TreeIncorporateResponse {
+  string tree_hash = 1;
+}
+
+message TreeDiffRequest {
+  string tree_hash_a = 1;
+  string tree_hash_b = 2;
+}
+
+message TreeDiffResponse {
+  repeated string paths = 1;
+}
+
+message TreeResolveRequest {
+  string tree_hash = 1;
+  string path = 2;
+}
+
+message TreeResolveResponse {
+  PathValue value = 1;
+}
+
+message TreeManifestRequest {
+  string tree_hash = 1;
+}
+
+message TreeManifestResponse {
+  repeated PathValueEntry entries = 1;
+}
+
+message NodeGetRequest {
+  string hash = 1;
+}
+
+message NodeGetResponse {
+  bool found = 1;
+  TurnNode node = 2;
+}
+
+message NodeWalkBackRequest {
+  string from_hash = 1;
+}
+
+message NodeWalkBackResponse {
+  TurnNode node = 1;
+}
+
+message ThreadCreateRequest {
+  string thread_id = 1;
+  string schema_id = 2;
+  string initial_branch_id = 3;
+}
+
+message ThreadCreateResponse {
+  ThreadCreateResult result = 1;
+}
+
+message ThreadGetRequest {
+  string thread_id = 1;
+}
+
+message ThreadGetResponse {
+  bool found = 1;
+  ThreadRecord thread = 2;
+}
+
+message BranchCreateRequest {
+  string branch_id = 1;
+  string thread_id = 2;
+  string from_turn_node_hash = 3;
+}
+
+message BranchCreateResponse {
+  BranchRecord branch = 1;
+}
+
+message BranchGetRequest {
+  string branch_id = 1;
+}
+
+message BranchGetResponse {
+  bool found = 1;
+  BranchRecord branch = 2;
+}
+
+message BranchSetHeadRequest {
+  string branch_id = 1;
+  string turn_node_hash = 2;
+}
+
+message BranchSetHeadResponse {
+  SetHeadResult result = 1;
+}
+
+message BranchListRequest {
+  string thread_id = 1;
+}
+
+message BranchListResponse {
+  repeated BranchHeadListEntry entries = 1;
+}
+
+message StagingStageRequest {
+  string run_id = 1;
+  bytes blob = 2;
+  string task_id = 3;
+  string object_type = 4;
+  StagedResultStatus status = 5;
+  optional bytes interrupt_payload_cbor = 6;
+}
+
+message StagingStageResponse {
+  string object_hash = 1;
+  StagedResult staged_result = 2;
+}
+
+message StagingCurrentRequest {
+  string run_id = 1;
+}
+
+message StagingCurrentResponse {
+  repeated StagedResult staged_results = 1;
+}
+
+message RunCreateRequest {
+  string run_id = 1;
+  string turn_id = 2;
+  string branch_id = 3;
+  string schema_id = 4;
+  string start_turn_node_hash = 5;
+  repeated StepDeclaration steps = 6;
+}
+
+message RunCreateResponse {
+  RunRecord run = 1;
+}
+
+message RunBeginStepRequest {
+  string run_id = 1;
+  string step_id = 2;
+}
+
+message RunBeginStepResponse {
+  StepContext context = 1;
+}
+
+message RunCompleteStepRequest {
+  string run_id = 1;
+  string step_id = 2;
+  // The event hash records durable framework event bytes without moving
+  // framework event vocabulary into the kernel transport.
+  optional string event_hash = 3;
+  repeated ObserveResult observe_results = 4;
+  optional string tree_hash = 5;
+}
+
+message RunCompleteStepResponse {
+  bool checkpointed = 1;
+  optional string turn_node_hash = 2;
+}
+
+message RunCompleteRequest {
+  string run_id = 1;
+  RunCompletionStatus status = 2;
+  optional string event_hash = 3;
+}
+
+message RunCompleteResponse {
+  optional string turn_node_hash = 1;
+}
+
+message RunRecoverRequest {
+  string run_id = 1;
+}
+
+message RunRecoverResponse {
+  RecoveryState recovery_state = 1;
+}
+
+message TurnCreateRequest {
+  string turn_id = 1;
+  string thread_id = 2;
+  string branch_id = 3;
+  optional string parent_turn_id = 4;
+  string start_turn_node_hash = 5;
+}
+
+message TurnCreateResponse {
+  TurnRecord turn = 1;
+}
+
+message TurnGetRequest {
+  string turn_id = 1;
+}
+
+message TurnGetResponse {
+  bool found = 1;
+  TurnRecord turn = 2;
+}
+
+message TurnUpdateHeadRequest {
+  string turn_id = 1;
+  string head_turn_node_hash = 2;
+}
+
+message TurnUpdateHeadResponse {}
+
+message VerdictsComposeRequest {
+  repeated Verdict verdicts = 1;
+}
+
+message VerdictsComposeResponse {
+  Verdict verdict = 1;
+}

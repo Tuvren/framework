@@ -1,0 +1,40 @@
+{
+  "name": "kernel-interop-grpc",
+  "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
+  "root": "boundaries/kernel/interop/grpc",
+  "projectType": "library",
+  "tags": ["boundary:kernel", "layer:interop"],
+  "targets": {
+    "codegen": {
+      "executor": "nx:run-commands",
+      "outputs": [
+        "{workspaceRoot}/boundaries/framework/implementations/typescript/runtime-core/.generated/kernel-interop"
+      ],
+      "options": {
+        "cwd": ".",
+        "command": "bun tools/scripts/kernel-interop-governance.ts codegen"
+      }
+    },
+    "breaking": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bun tools/scripts/kernel-interop-governance.ts breaking"
+      }
+    },
+    "interop-smoke": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bun tools/scripts/kernel-interop-governance.ts interop-smoke"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bun tools/scripts/kernel-interop-governance.ts lint && bunx --bun @biomejs/biome check boundaries/kernel/interop/grpc tools/scripts/kernel-interop-governance.ts"
+      }
+    }
+  }
+}
