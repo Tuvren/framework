@@ -2,6 +2,7 @@
 
 ## 0. Version History & Changelog
 
+- v0.7.6 - Recorded the user-directed playground-owned aimock/OpenAI E2E validation lane for streamed text, structured output, tool continuation, approval pause/resume, provider metadata, cancellation, provider failure, malformed responses, and unmatched fixtures as post-Epic-Q repository reality without reopening the closed Epic Q implementation scope.
 - v0.7.5 - Closed Epic Q in current repo reality, adding provider/framework testkits, release and portability tooling, the checked-in portability matrix, and the final release-hardening closure inventory.
 - v0.7.4 - Closed `KRT-Q001` in current repo reality, added the Epic Q hardening gap inventory, advanced the active critical path to `KRT-Q002`, and corrected the remaining active story-point total for the open Epic Q scope.
 - v0.7.3 - Closed Epic P in repo reality, added the playground host closure inventory, advanced the active critical path to Epic Q, recorded the Node-backed SQLite scenario validation path, and aligned forked-branch parent validation across runtime, memory, and SQLite backends.
@@ -14,7 +15,7 @@
 
 - **Total Active Story Points:** 0
 - **Critical Path:** Closed through Epic Q; the next active path requires a future planning revision.
-- **Planning Assumptions:** Epics A-Q are closed in current repo reality. TechSpec v0.5.5 keeps the baseline AI SDK bridge on `LanguageModelV3` / `ProviderV3` from `@ai-sdk/provider@3.0.8`, pins the AG-UI adapter to `@ag-ui/core@0.0.52`, preserves the existing `ProviderStreamChunk` seam, treats tee-based fanout above `ExecutionHandle.events()` as the sanctioned multi-consumer host path when every required tee branch subscribes before the first pull, records SQLite playground validation as a Node-backed path because `@tuvren/backend-sqlite` uses `better-sqlite3`, and closes the post-ReAct implementation line through `constitution/spikes/epic-q-release-hardening-inventory.md`.
+- **Planning Assumptions:** Epics A-Q are closed in current repo reality. TechSpec v0.5.6 keeps the baseline AI SDK bridge on `LanguageModelV3` / `ProviderV3` from `@ai-sdk/provider@3.0.8`, pins the AG-UI adapter to `@ag-ui/core@0.0.52`, preserves the existing `ProviderStreamChunk` seam, treats tee-based fanout above `ExecutionHandle.events()` as the sanctioned multi-consumer host path when every required tee branch subscribes before the first pull, records SQLite playground validation as a Node-backed path because `@tuvren/backend-sqlite` uses `better-sqlite3`, records the playground-owned aimock/OpenAI E2E lane as local validation rather than a public provider contract, and closes the post-ReAct implementation line through `constitution/spikes/epic-q-release-hardening-inventory.md`.
 
 ### Brownfield Continuity Note
 
@@ -22,6 +23,7 @@
 - Current repository reality includes closed Epic K, L, M, N, O, and P behavior with explicit closure artifacts in `constitution/spikes/epic-k-react-loop-cancellation-inventory.md`, `constitution/spikes/epic-l-parity-inventory.md`, `constitution/spikes/epic-m-tool-approval-gap-inventory.md`, `constitution/spikes/epic-n-ai-sdk-bridge-inventory.md`, `constitution/spikes/epic-o-stream-adapter-inventory.md`, and `constitution/spikes/epic-p-playground-host-inventory.md`.
 - `KRT-Q001` is now closed in current repo reality through `constitution/spikes/epic-q-hardening-gap-inventory.md`, which inventories the extraction targets, release-check targets, portability matrix, deferred Deno work, and remaining hardening gaps for the rest of Epic Q.
 - The Epic Q target packages now exist under `boundaries/framework/testkit` and `boundaries/providers/testkit`, with release/verification scripts under `tools/scripts`.
+- The private playground host now also owns an aimock/OpenAI E2E validation lane that exercises `@tuvren/provider-bridge-ai-sdk` through a local OpenAI-compatible HTTP mock server without provider credentials, covering streamed text, structured output, tool continuation, approval pause/resume, provider metadata, cancellation, provider failure, malformed responses, and unmatched fixtures.
 - Planning verification confirmed `ai@6.0.142` and `@ai-sdk/provider@3.0.8` are available and that `@ai-sdk/provider@3.0.8` exports `LanguageModelV3`, `ProviderV3`, `LanguageModelV3CallOptions`, `LanguageModelV3GenerateResult`, and `LanguageModelV3StreamPart`.
 - Epic N now extends repo reality beyond those planning notes: the bridge package exists and the closure artifact above is the authoritative upstream seam for Epic O.
 - Epic O now extends repo reality beyond those planning notes: `@tuvren/stream-core`, `@tuvren/stream-sse`, and `@tuvren/stream-agui` exist, `constitution/spikes/epic-o-stream-adapter-inventory.md` is the authoritative adapter mapping record, and Epic P must treat tee-based fanout plus the documented `tuvren.runtime.*` AG-UI custom namespace as the handoff surface rather than rediscovering protocol gaps or resubscription hazards.

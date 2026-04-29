@@ -53,6 +53,8 @@ export function loadPlaygroundConfig(
   const providerMode = parseProviderMode(
     options.provider ?? env.TUVREN_PLAYGROUND_PROVIDER_MODE
   );
+  const aimockBaseUrl =
+    options.aimockBaseUrl ?? env.TUVREN_PLAYGROUND_AIMOCK_BASE_URL;
   const sqlitePath = normalizeSqlitePath(
     options.sqlitePath ?? env.TUVREN_PLAYGROUND_SQLITE_PATH
   );
@@ -67,6 +69,7 @@ export function loadPlaygroundConfig(
   }
 
   return {
+    aimockBaseUrl,
     backend,
     providerMode,
     scenario,
@@ -131,6 +134,7 @@ function parseProviderMode(value: string | undefined): PlaygroundProviderMode {
   const normalized = value ?? "fixture";
 
   switch (normalized) {
+    case "aimock-openai":
     case "ai-sdk-mock":
     case "fixture":
       return normalized;

@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
+import { createOpenAI } from "@ai-sdk/openai";
 import type {
   LanguageModelV3,
   LanguageModelV3CallOptions,
   LanguageModelV3GenerateResult,
   LanguageModelV3StreamPart,
 } from "@ai-sdk/provider";
+import { TuvrenRuntimeError } from "@tuvren/core-types";
 import { createAiSdkProviderBridge } from "@tuvren/provider-bridge-ai-sdk";
 import type {
   ProviderStreamChunk,
@@ -33,9 +35,31 @@ import type {
 } from "./playground-types.js";
 
 export function createPlaygroundProvider(input: {
+  aimockBaseUrl?: string;
   mode: PlaygroundProviderMode;
   scenario: PlaygroundScenarioName;
 }): TuvrenProvider {
+  if (input.mode === "aimock-openai") {
+    if (input.aimockBaseUrl === undefined) {
+      throw new TuvrenRuntimeError(
+        "aimock-openai playground provider requires --aimock-base-url or TUVREN_PLAYGROUND_AIMOCK_BASE_URL",
+        {
+          code: "invalid_playground_config",
+        }
+      );
+    }
+
+    const openai = createOpenAI({
+      apiKey: "mock",
+      baseURL: input.aimockBaseUrl,
+    });
+
+    return createAiSdkProviderBridge({
+      id: "playground:aimock-openai",
+      model: openai.chat("gpt-4o-mini"),
+    });
+  }
+
   if (input.mode === "ai-sdk-mock") {
     return createAiSdkProviderBridge({
       id: "playground:ai-sdk-mock",

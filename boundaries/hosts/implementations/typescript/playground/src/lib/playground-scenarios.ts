@@ -77,6 +77,20 @@ async function runSingleTurnScenario(
     branchId: thread.branchId,
     config: {
       name: "primary",
+      responseFormat:
+        config.scenario === "structured"
+          ? {
+              name: "playground_summary",
+              schema: {
+                properties: {
+                  scenario: { type: "string" },
+                  status: { type: "string" },
+                },
+                required: ["scenario", "status"],
+                type: "object",
+              },
+            }
+          : undefined,
       tools: createPlaygroundTools(),
     },
     signal: textSignal(`Run ${config.scenario}`),

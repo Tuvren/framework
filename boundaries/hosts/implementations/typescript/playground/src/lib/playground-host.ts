@@ -40,6 +40,7 @@ export function createPlaygroundHost(config: PlaygroundConfig): PlaygroundHost {
   const backend = createBackend(config);
   const harness = createPlaygroundKernel({ backend });
   const provider = createPlaygroundProvider({
+    aimockBaseUrl: config.aimockBaseUrl,
     mode: config.providerMode,
     scenario: config.scenario,
   });

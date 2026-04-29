@@ -28,7 +28,10 @@ import type {
 import type { TuvrenSseFrame } from "@tuvren/stream-sse";
 
 export type PlaygroundBackendMode = "memory" | "sqlite";
-export type PlaygroundProviderMode = "fixture" | "ai-sdk-mock";
+export type PlaygroundProviderMode =
+  | "aimock-openai"
+  | "ai-sdk-mock"
+  | "fixture";
 export type PlaygroundScenarioName =
   | "approval"
   | "branching"
@@ -41,6 +44,7 @@ export type PlaygroundScenarioName =
   | "tools";
 
 export interface PlaygroundConfig {
+  aimockBaseUrl?: string;
   backend: PlaygroundBackendMode;
   providerMode: PlaygroundProviderMode;
   scenario: PlaygroundScenarioName;

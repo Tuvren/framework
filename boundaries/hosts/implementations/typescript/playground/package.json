@@ -13,8 +13,9 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@ai-sdk/provider": "3.0.8",
     "@ag-ui/core": "0.0.52",
+    "@ai-sdk/openai": "3.0.53",
+    "@ai-sdk/provider": "3.0.8",
     "@tuvren/backend-memory": "workspace:*",
     "@tuvren/backend-sqlite": "workspace:*",
     "@tuvren/core-types": "workspace:*",
@@ -28,5 +29,8 @@
     "@tuvren/stream-agui": "workspace:*",
     "@tuvren/stream-core": "workspace:*",
     "@tuvren/stream-sse": "workspace:*"
+  },
+  "devDependencies": {
+    "@copilotkit/aimock": "1.15.1"
   }
 }
