@@ -1,0 +1,23 @@
+{
+  "incorporationRules": [
+    {
+      "objectType": "message",
+      "targetPath": "messages"
+    },
+    {
+      "objectType": "context_manifest",
+      "targetPath": "context.manifest"
+    }
+  ],
+  "paths": [
+    {
+      "collection": "ordered",
+      "path": "messages"
+    },
+    {
+      "collection": "single",
+      "path": "context.manifest"
+    }
+  ],
+  "schemaId": "schema_main"
+}

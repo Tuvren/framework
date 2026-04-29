@@ -29,6 +29,13 @@
         "command": "bun test ./smoke/package-exports.ts"
       }
     },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bunx --bun @biomejs/biome check boundaries/framework/contracts/event-stream"
+      }
+    },
     "typecheck": {
       "executor": "nx:run-commands",
       "dependsOn": ["^build"],

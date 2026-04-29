@@ -31,31 +31,10 @@ import {
   type TurnTreeManifest,
   type TurnTreeSchema,
 } from "@tuvren/kernel-protocol";
+import { canonicalKernelTestSchemaFixture } from "./kernel-conformance-fixtures.js";
 
 export function createCanonicalKernelTestSchema(): TurnTreeSchema {
-  return {
-    incorporationRules: [
-      {
-        objectType: "message",
-        targetPath: "messages",
-      },
-      {
-        objectType: "context_manifest",
-        targetPath: "context.manifest",
-      },
-    ],
-    paths: [
-      {
-        collection: "ordered",
-        path: "messages",
-      },
-      {
-        collection: "single",
-        path: "context.manifest",
-      },
-    ],
-    schemaId: "schema_main",
-  };
+  return structuredClone(canonicalKernelTestSchemaFixture);
 }
 
 export function createStoredSchemaRecord(

@@ -1,0 +1,20 @@
+{
+  "suiteId": "tuvren.kernel.protocol-seed",
+  "suiteVersion": "0.1.0",
+  "boundary": "kernel",
+  "fixtureSchemaPath": "../schemas/kernel-fixture-index.schema.json",
+  "fixtures": [
+    {
+      "id": "canonical-turn-tree-schema",
+      "path": "../fixtures/canonical-turn-tree-schema.json"
+    },
+    {
+      "id": "kernel-protocol-deterministic",
+      "path": "../fixtures/kernel-protocol-deterministic.json"
+    },
+    {
+      "id": "kernel-protocol-logical",
+      "path": "../fixtures/kernel-protocol-logical.json"
+    }
+  ]
+}

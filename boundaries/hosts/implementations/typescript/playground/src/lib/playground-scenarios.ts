@@ -368,7 +368,6 @@ async function runSteeringScenario(
     threadId: thread.threadId,
   });
   const capture = startProjectionCapture(handle);
-
   await steerWhenRunning(host, handle, textSignal("Injected steering"));
 
   const projection = await capture;

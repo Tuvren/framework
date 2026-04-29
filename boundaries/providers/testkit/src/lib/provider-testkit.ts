@@ -24,6 +24,7 @@ import {
   assertProviderStreamChunk,
   assertTuvrenModelResponse,
 } from "@tuvren/provider-api";
+import { providerTestkitFixtures as loadedProviderTestkitFixtures } from "./provider-conformance-fixtures.js";
 
 export interface ProviderGenerateVerification {
   check?: (response: TuvrenModelResponse) => Promise<void> | void;
@@ -60,63 +61,8 @@ export interface ProviderTestkitFixtureSet {
   toolPrompt: TuvrenPrompt;
 }
 
-export const providerTestkitFixtures: ProviderTestkitFixtureSet = {
-  prompt: {
-    messages: [
-      {
-        parts: [{ text: "Return a concise answer.", type: "text" }],
-        role: "user",
-      },
-    ],
-  },
-  response: {
-    finishReason: "stop",
-    parts: [{ text: "ready", type: "text" }],
-    usage: {
-      inputTokens: 4,
-      outputTokens: 1,
-    },
-  },
-  structuredPrompt: {
-    messages: [
-      {
-        parts: [{ text: "Return JSON.", type: "text" }],
-        role: "user",
-      },
-    ],
-    responseFormat: {
-      name: "answer",
-      schema: {
-        properties: {
-          answer: { type: "string" },
-        },
-        required: ["answer"],
-        type: "object",
-      },
-    },
-  },
-  toolPrompt: {
-    messages: [
-      {
-        parts: [{ text: "Search the docs.", type: "text" }],
-        role: "user",
-      },
-    ],
-    tools: [
-      {
-        description: "Search docs",
-        inputSchema: {
-          properties: {
-            query: { type: "string" },
-          },
-          required: ["query"],
-          type: "object",
-        },
-        name: "search",
-      },
-    ],
-  },
-};
+export const providerTestkitFixtures: ProviderTestkitFixtureSet =
+  loadedProviderTestkitFixtures;
 
 export async function verifyProviderGenerate(
   verification: ProviderGenerateVerification

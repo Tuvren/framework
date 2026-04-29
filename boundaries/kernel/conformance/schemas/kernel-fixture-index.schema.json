@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/kernel/conformance/kernel-fixture-index.schema.json",
+  "type": "object",
+  "required": [
+    "canonicalSchemaPath",
+    "deterministicFixturePath",
+    "logicalFixturePath"
+  ],
+  "properties": {
+    "canonicalSchemaPath": { "type": "string" },
+    "deterministicFixturePath": { "type": "string" },
+    "logicalFixturePath": { "type": "string" }
+  },
+  "additionalProperties": false
+}

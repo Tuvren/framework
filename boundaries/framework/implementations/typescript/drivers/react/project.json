@@ -21,6 +21,13 @@
         "command": "bun bench/react-stream.bench.ts"
       }
     },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bunx --bun @biomejs/biome check boundaries/framework/implementations/typescript/drivers/react"
+      }
+    },
     "test": {
       "executor": "nx:run-commands",
       "options": {

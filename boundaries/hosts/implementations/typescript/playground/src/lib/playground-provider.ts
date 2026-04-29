@@ -165,8 +165,11 @@ async function* streamFixtureChunks(
   await Promise.resolve();
 
   if (scenario === "steering") {
+    // Keep a deterministic steering window wide enough for the full Nx verify
+    // lane. A shorter delay was fast in isolation but too tight once the
+    // broader workspace load and stream fanout were active.
     await new Promise<void>((resolve) => {
-      setTimeout(resolve, 25);
+      setTimeout(resolve, 100);
     });
   }
 

@@ -1,0 +1,27 @@
+{
+  "name": "compatibility-reporting",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "root": "reports/compatibility",
+  "projectType": "library",
+  "tags": ["boundary:reports", "layer:tooling"],
+  "targets": {
+    "codegen": {
+      "executor": "nx:run-commands",
+      "outputs": [
+        "{workspaceRoot}/reports/compatibility/compatibility-matrix.json",
+        "{workspaceRoot}/reports/compatibility/evidence"
+      ],
+      "options": {
+        "cwd": ".",
+        "command": "bun tools/scripts/compatibility-report.ts"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bunx --bun @biomejs/biome check reports/compatibility tools/scripts/compatibility-report.ts tools/scripts/telemetry-codegen.ts tools/scripts/lib"
+      }
+    }
+  }
+}

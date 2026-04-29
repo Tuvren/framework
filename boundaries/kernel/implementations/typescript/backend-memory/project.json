@@ -14,6 +14,13 @@
         "command": "bunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false"
       }
     },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bunx --bun @biomejs/biome check boundaries/kernel/implementations/typescript/backend-memory"
+      }
+    },
     "test": {
       "executor": "nx:run-commands",
       "options": {

@@ -1,0 +1,75 @@
+groups:
+  - id: tuvren.runtime.identity
+    type: attribute_group
+    brief: Runtime identity and correlation attributes for Tuvren Runtime telemetry.
+    stability: development
+    attributes:
+      - id: tuvren.runtime.run.id
+        type: string
+        brief: The Tuvren runtime run identifier.
+        examples: ["run_main"]
+        stability: development
+        requirement_level: recommended
+      - id: tuvren.runtime.turn.id
+        type: string
+        brief: The Tuvren runtime turn identifier.
+        examples: ["turn_main"]
+        stability: development
+        requirement_level: recommended
+      - id: tuvren.runtime.branch.id
+        type: string
+        brief: The Tuvren runtime branch identifier.
+        examples: ["branch_main"]
+        stability: development
+        requirement_level: recommended
+      - id: tuvren.runtime.driver.id
+        type: string
+        brief: The active driver identifier for the runtime execution.
+        examples: ["react"]
+        stability: development
+        requirement_level: recommended
+      - id: tuvren.runtime.tool_call.id
+        type: string
+        brief: The current tool call identifier when the execution is inside tool work.
+        examples: ["tool_call_1"]
+        stability: development
+        requirement_level: opt_in
+      - id: tuvren.runtime.checkpoint.hash
+        type: string
+        brief: The current checkpoint hash observed during runtime progression.
+        examples:
+          [
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          ]
+        stability: development
+        requirement_level: recommended
+      - id: tuvren.runtime.parent_checkpoint.hash
+        type: string
+        brief: The parent checkpoint hash that the current checkpoint extends from.
+        examples:
+          [
+            "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          ]
+        stability: development
+        requirement_level: opt_in
+      - id: tuvren.runtime.resumed_from.hash
+        type: string
+        brief: The checkpoint hash that a resumed execution continued from.
+        examples:
+          [
+            "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          ]
+        stability: development
+        requirement_level: opt_in
+      - id: tuvren.runtime.backend.id
+        type: string
+        brief: The backend implementation identifier selected by the runtime.
+        examples: ["sqlite"]
+        stability: development
+        requirement_level: recommended
+      - id: tuvren.runtime.provider.id
+        type: string
+        brief: The provider bridge or provider identifier used for model work.
+        examples: ["ai-sdk-openai"]
+        stability: development
+        requirement_level: recommended

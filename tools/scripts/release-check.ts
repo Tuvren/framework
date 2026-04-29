@@ -32,7 +32,7 @@ const PACKAGE_JSON_PATH = new URL("../../package.json", import.meta.url);
 
 const runtimeReport = await readRuntimeVersionReport();
 
-console.log("Epic Q release check");
+console.log("Transition release check");
 console.log(`- declared Bun: ${runtimeReport.declaredBunVersion ?? "unknown"}`);
 console.log(`- observed Bun: ${runtimeReport.observedBunVersion ?? "unknown"}`);
 console.log(`- observed Node: ${runtimeReport.observedNodeVersion}`);
@@ -54,7 +54,7 @@ if (hasVerificationFailure(results)) {
   process.exitCode = 1;
 } else {
   console.log("");
-  console.log("Epic Q release check completed successfully.");
+  console.log("Transition release check completed successfully.");
 }
 
 async function readRuntimeVersionReport(): Promise<RuntimeVersionReport> {

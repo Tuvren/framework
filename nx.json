@@ -6,6 +6,24 @@
     "production": ["default"]
   },
   "targetDefaults": {
+    "codegen": {
+      "cache": true,
+      "inputs": [
+        "default",
+        "^production",
+        "{workspaceRoot}/tools/scripts/**/*",
+        "{workspaceRoot}/devenv.nix",
+        "{workspaceRoot}/devenv.lock"
+      ]
+    },
+    "conformance": {
+      "cache": true,
+      "inputs": ["default", "^production", "{workspaceRoot}/tests/**/*"]
+    },
+    "lint": {
+      "cache": true,
+      "inputs": ["default", "{workspaceRoot}/biome.jsonc"]
+    },
     "typecheck": {
       "cache": true,
       "inputs": [

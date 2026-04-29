@@ -22,6 +22,13 @@
         "command": "bun test ./smoke/package-exports.ts"
       }
     },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bunx --bun @biomejs/biome check boundaries/hosts/implementations/typescript/playground"
+      }
+    },
     "scenario": {
       "executor": "nx:run-commands",
       "dependsOn": ["build"],
@@ -43,7 +50,7 @@
       "dependsOn": ["build"],
       "options": {
         "cwd": "boundaries/hosts/implementations/typescript/playground",
-        "command": "node dist/cli.js --scenario reload --backend sqlite --sqlite-path auto"
+        "command": "node dist/cli.js --scenario reload --backend sqlite --provider fixture --sqlite-path auto"
       }
     },
     "test": {

@@ -1,0 +1,5 @@
+name: tuvren-runtime
+description: Semantic conventions for Tuvren Runtime correlation attributes.
+semconv_version: 0.1.0
+schema_base_url: https://tuvren.dev/schemas/telemetry/
+dependencies: []

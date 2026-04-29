@@ -1,0 +1,12 @@
+{
+  "suiteId": "tuvren.providers.api-fixtures",
+  "suiteVersion": "0.1.0",
+  "boundary": "providers",
+  "fixtureSchemaPath": "../schemas/provider-fixture-set.schema.json",
+  "fixtures": [
+    {
+      "id": "provider-fixtures",
+      "path": "../fixtures/provider-fixtures.json"
+    }
+  ]
+}

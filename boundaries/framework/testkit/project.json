@@ -14,12 +14,26 @@
         "command": "bunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false"
       }
     },
+    "conformance": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "boundaries/framework/testkit",
+        "command": "bun test"
+      }
+    },
     "exports-smoke": {
       "executor": "nx:run-commands",
       "dependsOn": ["build"],
       "options": {
         "cwd": "boundaries/framework/testkit",
         "command": "bun test ./smoke/package-exports.ts"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bunx --bun @biomejs/biome check boundaries/framework/testkit boundaries/framework/conformance"
       }
     },
     "test": {

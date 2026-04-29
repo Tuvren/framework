@@ -21,6 +21,13 @@
         "command": "bun bench/kernel-identity.bench.ts"
       }
     },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bunx --bun @biomejs/biome check boundaries/kernel/contracts/protocol"
+      }
+    },
     "test": {
       "executor": "nx:run-commands",
       "options": {

@@ -1,0 +1,11 @@
+{
+  "typescript": {
+    "outputPath": "boundaries/framework/implementations/typescript/runtime-core/src/lib/generated/tuvren-runtime-telemetry.ts",
+    "templatePath": "tools/generators/telemetry/templates/typescript-helper.ts.tpl"
+  },
+  "rust": {
+    "enabled": false,
+    "outputPath": "boundaries/kernel/implementations/rust/runtime-core/src/lib/generated/tuvren-runtime-telemetry.rs",
+    "templatePath": "tools/generators/telemetry/templates/rust-helper.rs.tpl"
+  }
+}

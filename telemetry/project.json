@@ -1,0 +1,28 @@
+{
+  "name": "telemetry-semconv",
+  "$schema": "../node_modules/nx/schemas/project-schema.json",
+  "root": "telemetry",
+  "projectType": "library",
+  "tags": ["boundary:telemetry", "layer:tooling"],
+  "targets": {
+    "codegen": {
+      "executor": "nx:run-commands",
+      "outputs": [
+        "{workspaceRoot}/telemetry/semantic-conventions.md",
+        "{workspaceRoot}/telemetry/otel-attributes.json",
+        "{workspaceRoot}/boundaries/framework/implementations/typescript/runtime-core/src/lib/generated/tuvren-runtime-telemetry.ts"
+      ],
+      "options": {
+        "cwd": ".",
+        "command": "bun tools/scripts/telemetry-codegen.ts"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bunx --bun @biomejs/biome check telemetry tools/generators/telemetry tools/scripts/telemetry-codegen.ts tools/scripts/lib"
+      }
+    }
+  }
+}

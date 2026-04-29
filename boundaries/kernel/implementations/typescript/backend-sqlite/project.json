@@ -35,6 +35,13 @@
         "command": "node -e \"const Database=require('better-sqlite3'); const db=new Database(':memory:'); console.log(db.prepare('SELECT 1 AS value').get().value); db.close();\""
       }
     },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bunx --bun @biomejs/biome check boundaries/kernel/implementations/typescript/backend-sqlite"
+      }
+    },
     "test": {
       "executor": "nx:run-commands",
       "dependsOn": ["^build", "smoke-native"],

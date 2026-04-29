@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/providers/conformance/provider-fixture-set.schema.json",
+  "type": "object",
+  "required": ["prompt", "response", "structuredPrompt", "toolPrompt"],
+  "properties": {
+    "prompt": { "type": "object", "additionalProperties": true },
+    "response": { "type": "object", "additionalProperties": true },
+    "structuredPrompt": { "type": "object", "additionalProperties": true },
+    "toolPrompt": { "type": "object", "additionalProperties": true }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/reports/compatibility/compatibility-matrix.schema.json",
+  "type": "object",
+  "required": [
+    "generatedAtMs",
+    "sourceRevision",
+    "suites",
+    "implementations",
+    "interop"
+  ],
+  "properties": {
+    "generatedAtMs": { "type": "integer" },
+    "sourceRevision": { "type": "string" },
+    "suites": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["suiteId", "suiteVersion", "boundary"],
+        "properties": {
+          "suiteId": { "type": "string" },
+          "suiteVersion": { "type": "string" },
+          "boundary": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "implementations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["implementationId", "language", "version", "results"],
+        "properties": {
+          "implementationId": { "type": "string" },
+          "language": { "type": "string" },
+          "version": { "type": "string" },
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["suiteId", "suiteVersion", "status", "evidencePath"],
+              "properties": {
+                "suiteId": { "type": "string" },
+                "suiteVersion": { "type": "string" },
+                "status": {
+                  "type": "string",
+                  "enum": ["pass", "fail"]
+                },
+                "evidencePath": { "type": "string" }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "interop": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "pairId",
+          "suiteId",
+          "suiteVersion",
+          "status",
+          "evidencePath"
+        ],
+        "properties": {
+          "pairId": { "type": "string" },
+          "suiteId": { "type": "string" },
+          "suiteVersion": { "type": "string" },
+          "status": {
+            "type": "string",
+            "enum": ["pass", "fail"]
+          },
+          "evidencePath": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

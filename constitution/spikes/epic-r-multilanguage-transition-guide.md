@@ -9,9 +9,11 @@ implementations.
 ## Status
 
 - `KRT-R001` is closed in current repo reality.
-- Epic R remains active through `KRT-R002` to `KRT-R004`.
-- Downstream Epics S-V depend on this guide; Epic W stays deferred until those
-  epics close.
+- Epic R is now closed in current repo reality through
+  `constitution/spikes/epic-r-multilanguage-transition-foundation-inventory.md`.
+- Epic S is the next active implementation line.
+- Downstream Epics S-V depend on this guide plus the Epic R foundation
+  inventory; Epic W stays deferred until those epics close.
 
 ## Core Rule
 

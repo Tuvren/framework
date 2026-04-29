@@ -1,0 +1,12 @@
+{
+  "suiteId": "tuvren.framework.stream-events",
+  "suiteVersion": "0.1.0",
+  "boundary": "framework",
+  "fixtureSchemaPath": "../schemas/fixture-set.schema.json",
+  "fixtures": [
+    {
+      "id": "stream-events",
+      "path": "../fixtures/stream-events.json"
+    }
+  ]
+}
