@@ -59,6 +59,10 @@ Top-level directories outside `boundaries/` are reserved for global authority,
 repo-global tooling, root workspace files, observability conventions, or
 generated reports.
 
+The current repo-root `tests/` tree is a deliberate transitional exception to
+that posture until normative fixtures and scenarios are migrated into
+boundary-owned `conformance/` trees.
+
 ### Keep native toolchains authoritative
 
 The repo stays orchestrated together, but native toolchains remain authoritative
@@ -125,6 +129,8 @@ The repo root owns only global concerns:
 - `tools/`
 - root workspace files such as `package.json`, `nx.json`, `buf.yaml`,
   `buf.gen.yaml`, and future Rust workspace files
+- the repo-root `tests/` tree only as a deliberate transitional exception until
+  normative assets move into boundary-owned `conformance/` trees
 
 ### Boundary-owned responsibilities
 

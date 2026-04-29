@@ -2,6 +2,7 @@
 
 ## 0. Version History & Changelog
 
+- v0.8.2 - Aligned the critical-path summary with the actual dependency graph, corrected the deferred-scope gate to stay beyond Epic W, and trimmed a duplicate active-scope bullet.
 - v0.8.1 - Tightened the transition execution line with pre-Rust telemetry semantic-convention work, strict Buf `FILE` governance, stronger peer-runner conformance language, and a near-public compatibility-matrix posture.
 - v0.8.0 - Activated the multi-language transition line after Epic Q, closed `KRT-R001` in current repo reality, and defined Epics R-V plus deferred Epic W for artifact foundation, kernel interop, Rust kernel work, and cross-language stabilization.
 - v0.7.6 - Recorded the user-directed playground-owned aimock/OpenAI E2E validation lane for streamed text, structured output, tool continuation, approval pause/resume, provider metadata, cancellation, provider failure, malformed responses, and unmatched fixtures as post-Epic-Q repository reality without reopening the closed Epic Q implementation scope.
@@ -10,7 +11,7 @@
 ## 1. Executive Summary & Active Critical Path
 
 - **Total Active Story Points:** 66
-- **Critical Path:** `KRT-R002 -> KRT-R003 -> KRT-S001 -> KRT-S002 -> KRT-S004 -> KRT-T001 -> KRT-T002 -> KRT-T003 -> KRT-U001 -> KRT-U002 -> KRT-U003 -> KRT-U004 -> KRT-V001 -> KRT-V002 -> KRT-V003 -> KRT-V004`
+- **Critical Path:** `KRT-R002 -> KRT-R003 -> KRT-S001 -> (KRT-S002 and KRT-S003) -> KRT-S004 -> KRT-T001 -> KRT-T002 -> (KRT-U001 -> KRT-U002 -> KRT-U004 -> KRT-V001) and (KRT-U002 -> KRT-U003) -> KRT-V002 -> KRT-V003 -> KRT-V004`
 - **Planning Assumptions:** Epics A-Q are closed in current repo reality. `KRT-R001` is now closed in current repo reality through `constitution/spikes/epic-r-multilanguage-transition-guide.md`. TechSpec v0.6.1 keeps the baseline AI SDK bridge on `LanguageModelV3` / `ProviderV3` from `@ai-sdk/provider@3.0.8`, pins the AG-UI adapter to `@ag-ui/core@0.0.52`, preserves the existing `ProviderStreamChunk` seam, treats tee-based fanout above `ExecutionHandle.events()` as the sanctioned multi-consumer host path when every required tee branch subscribes before the first pull, records SQLite playground validation as a Node-backed path because `@tuvren/backend-sqlite` uses `better-sqlite3`, keeps the playground-owned aimock/OpenAI E2E lane as local validation rather than a public provider contract, requires a formal telemetry semantic-convention source before Rust implementation work begins, treats Buf `FILE` compatibility as the default interop gate from the first `.proto` merge, and treats the compatibility matrix as a conservative near-public readiness signal rather than a private scratch report.
 
 ### Brownfield Continuity Note
@@ -45,7 +46,6 @@
 
 ### Current Active Scope
 
-- Epic R activates the boundary-owned transition foundation after Epic Q: repo scaffolding, canonical target vocabulary, telemetry conventions, and compatibility placeholders.
 - Epic R activates the boundary-owned transition foundation after Epic Q: substantial early target-shape scaffolding, canonical target vocabulary, a formal telemetry semantic-convention source, and compatibility foundations.
 - Epic S promotes selected framework/provider contracts plus kernel record grammar into explicit machine-readable authored sources and splits the transitional TypeScript testkits into shared conformance assets plus TypeScript runners.
 - Epic T defines the narrow kernel-only interop transport, Buf-governed `.proto` ownership, and interop-smoke/codegen orchestration.
@@ -58,7 +58,7 @@
 - `LanguageModelV2` / `ProviderV2` compatibility is deferred.
 - AI SDK agent loops, AI SDK UI message protocols, AI SDK transport helpers, LangChain bridges, provider-native tool support, and first-class Tuvren provider packages are deferred.
 - ACP or any additional host protocol beyond SSE and AG-UI is deferred until a future TechSpec revision names it.
-- Future concrete drivers beyond ReAct, official peer backends beyond memory/SQLite, and future language lines beyond Rust are deferred beyond Epic V unless a later TechSpec revision activates them.
+- Future concrete drivers beyond ReAct, official peer backends beyond memory/SQLite, and future language lines beyond Rust are deferred beyond Epic W unless a later TechSpec revision activates them.
 - FFI-based Rust embedding is deferred until after the process-boundary kernel seam is proven boring and durable.
 - Deno portability checks are deferred until public package surfaces stabilize enough to avoid testing scaffolding churn.
 
