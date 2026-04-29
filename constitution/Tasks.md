@@ -2,20 +2,17 @@
 
 ## 0. Version History & Changelog
 
+- v0.8.2 - Aligned the critical-path summary with the actual dependency graph, corrected the deferred-scope gate to stay beyond Epic W, and trimmed a duplicate active-scope bullet.
+- v0.8.1 - Tightened the transition execution line with pre-Rust telemetry semantic-convention work, strict Buf `FILE` governance, stronger peer-runner conformance language, and a near-public compatibility-matrix posture.
+- v0.8.0 - Activated the multi-language transition line after Epic Q, closed `KRT-R001` in current repo reality, and defined Epics R-V plus deferred Epic W for artifact foundation, kernel interop, Rust kernel work, and cross-language stabilization.
 - v0.7.6 - Recorded the user-directed playground-owned aimock/OpenAI E2E validation lane for streamed text, structured output, tool continuation, approval pause/resume, provider metadata, cancellation, provider failure, malformed responses, and unmatched fixtures as post-Epic-Q repository reality without reopening the closed Epic Q implementation scope.
-- v0.7.5 - Closed Epic Q in current repo reality, adding provider/framework testkits, release and portability tooling, the checked-in portability matrix, and the final release-hardening closure inventory.
-- v0.7.4 - Closed `KRT-Q001` in current repo reality, added the Epic Q hardening gap inventory, advanced the active critical path to `KRT-Q002`, and corrected the remaining active story-point total for the open Epic Q scope.
-- v0.7.3 - Closed Epic P in repo reality, added the playground host closure inventory, advanced the active critical path to Epic Q, recorded the Node-backed SQLite scenario validation path, and aligned forked-branch parent validation across runtime, memory, and SQLite backends.
-- v0.7.1 - Closed Epic N in repo reality, corrected the AI SDK bridge plan to the stable shared stream seam, added the Epic N closure inventory, and advanced the active critical path to Epic O.
-- v0.7.0 - Activated sequential Epics N-Q for the post-ReAct implementation line: `LanguageModelV3` AI SDK provider bridge, host stream protocol adapters, playground host harness, and testkit/release hardening.
-- v0.6.2 - Closed Epic M against brownfield repo reality, added the explicit tool-and-approval inventory artifact, and archived Epics K-M so the next planning pass can start from Epic N.
 - ... [Older history truncated, refer to git logs]
 
 ## 1. Executive Summary & Active Critical Path
 
-- **Total Active Story Points:** 0
-- **Critical Path:** Closed through Epic Q; the next active path requires a future planning revision.
-- **Planning Assumptions:** Epics A-Q are closed in current repo reality. TechSpec v0.5.6 keeps the baseline AI SDK bridge on `LanguageModelV3` / `ProviderV3` from `@ai-sdk/provider@3.0.8`, pins the AG-UI adapter to `@ag-ui/core@0.0.52`, preserves the existing `ProviderStreamChunk` seam, treats tee-based fanout above `ExecutionHandle.events()` as the sanctioned multi-consumer host path when every required tee branch subscribes before the first pull, records SQLite playground validation as a Node-backed path because `@tuvren/backend-sqlite` uses `better-sqlite3`, records the playground-owned aimock/OpenAI E2E lane as local validation rather than a public provider contract, and closes the post-ReAct implementation line through `constitution/spikes/epic-q-release-hardening-inventory.md`.
+- **Total Active Story Points:** 66
+- **Critical Path:** `KRT-R002 -> KRT-R003 -> KRT-S001 -> (KRT-S002 and KRT-S003) -> KRT-S004 -> KRT-T001 -> KRT-T002 -> (KRT-U001 -> KRT-U002 -> KRT-U004 -> KRT-V001) and (KRT-U002 -> KRT-U003) -> KRT-V002 -> KRT-V003 -> KRT-V004`
+- **Planning Assumptions:** Epics A-Q are closed in current repo reality. `KRT-R001` is now closed in current repo reality through `constitution/spikes/epic-r-multilanguage-transition-guide.md`. TechSpec v0.6.1 keeps the baseline AI SDK bridge on `LanguageModelV3` / `ProviderV3` from `@ai-sdk/provider@3.0.8`, pins the AG-UI adapter to `@ag-ui/core@0.0.52`, preserves the existing `ProviderStreamChunk` seam, treats tee-based fanout above `ExecutionHandle.events()` as the sanctioned multi-consumer host path when every required tee branch subscribes before the first pull, records SQLite playground validation as a Node-backed path because `@tuvren/backend-sqlite` uses `better-sqlite3`, keeps the playground-owned aimock/OpenAI E2E lane as local validation rather than a public provider contract, requires a formal telemetry semantic-convention source before Rust implementation work begins, treats Buf `FILE` compatibility as the default interop gate from the first `.proto` merge, and treats the compatibility matrix as a conservative near-public readiness signal rather than a private scratch report.
 
 ### Brownfield Continuity Note
 
@@ -23,15 +20,17 @@
 - Current repository reality includes closed Epic K, L, M, N, O, and P behavior with explicit closure artifacts in `constitution/spikes/epic-k-react-loop-cancellation-inventory.md`, `constitution/spikes/epic-l-parity-inventory.md`, `constitution/spikes/epic-m-tool-approval-gap-inventory.md`, `constitution/spikes/epic-n-ai-sdk-bridge-inventory.md`, `constitution/spikes/epic-o-stream-adapter-inventory.md`, and `constitution/spikes/epic-p-playground-host-inventory.md`.
 - `KRT-Q001` is now closed in current repo reality through `constitution/spikes/epic-q-hardening-gap-inventory.md`, which inventories the extraction targets, release-check targets, portability matrix, deferred Deno work, and remaining hardening gaps for the rest of Epic Q.
 - The Epic Q target packages now exist under `boundaries/framework/testkit` and `boundaries/providers/testkit`, with release/verification scripts under `tools/scripts`.
+- Those Epic Q testkit packages are now explicitly transitional and must be demoted from implicit authority into shared boundary-owned conformance assets plus peer implementation runners.
 - The private playground host now also owns an aimock/OpenAI E2E validation lane that exercises `@tuvren/provider-bridge-ai-sdk` through a local OpenAI-compatible HTTP mock server without provider credentials, covering streamed text, structured output, tool continuation, approval pause/resume, provider metadata, cancellation, provider failure, malformed responses, and unmatched fixtures.
 - Planning verification confirmed `ai@6.0.142` and `@ai-sdk/provider@3.0.8` are available and that `@ai-sdk/provider@3.0.8` exports `LanguageModelV3`, `ProviderV3`, `LanguageModelV3CallOptions`, `LanguageModelV3GenerateResult`, and `LanguageModelV3StreamPart`.
 - Epic N now extends repo reality beyond those planning notes: the bridge package exists and the closure artifact above is the authoritative upstream seam for Epic O.
 - Epic O now extends repo reality beyond those planning notes: `@tuvren/stream-core`, `@tuvren/stream-sse`, and `@tuvren/stream-agui` exist, `constitution/spikes/epic-o-stream-adapter-inventory.md` is the authoritative adapter mapping record, and Epic P must treat tee-based fanout plus the documented `tuvren.runtime.*` AG-UI custom namespace as the handoff surface rather than rediscovering protocol gaps or resubscription hazards.
 - Epic P now extends repo reality beyond those planning notes: `@tuvren/playground-host` exists under `boundaries/hosts/implementations/typescript/playground`, `constitution/spikes/epic-p-playground-host-inventory.md` is the authoritative playground handoff, full-turn streams cover canonical/SSE/AG-UI fanout, approval resume continuation is projected to canonical/SSE only, non-reload memory scenarios run under Bun tests, branching is validated from a completed source head, and SQLite reload is validated through the built Node CLI path.
+- `KRT-R001` now extends repo reality beyond those planning notes: the repository has an explicit multi-language transition guide in `constitution/spikes/epic-r-multilanguage-transition-guide.md`, and the next active scope begins with boundary-owned artifact scaffolding rather than ad hoc Rust experimentation.
 
 ### Sequential Scope Rule
 
-- Epic Q is closed. The next implementation line must begin from a future Tasks/TechSpec revision rather than continuing hidden Epic Q scope.
+- Epic Q is closed. The next implementation line begins with Epic R boundary-owned transition work and must not skip directly to Rust implementation work before the contract, conformance, interop, telemetry, and compatibility foundations exist.
 
 ### Planning Heuristic
 
@@ -47,280 +46,396 @@
 
 ### Current Active Scope
 
-- No active implementation scope remains in this Tasks revision. Epic Q has closed provider/framework testkit extraction, release-check tooling, package export smoke coverage, Bun/Node portability import checks, and the final closure inventory.
+- Epic R activates the boundary-owned transition foundation after Epic Q: substantial early target-shape scaffolding, canonical target vocabulary, a formal telemetry semantic-convention source, and compatibility foundations.
+- Epic S promotes selected framework/provider contracts plus kernel record grammar into explicit machine-readable authored sources and splits the transitional TypeScript testkits into shared conformance assets plus TypeScript runners.
+- Epic T defines the narrow kernel-only interop transport, Buf-governed `.proto` ownership, and interop-smoke/codegen orchestration.
+- Epic U introduces the root Cargo workspace and the first Rust implementation only inside the kernel boundary.
+- Epic V stabilizes real TypeScript framework to Rust kernel interoperability, compatibility-ledger generation, and cross-language telemetry/CI posture.
 
 ### Future / Deferred Scope
 
+- Rust framework implementation work is deferred until Epic V closes.
 - `LanguageModelV2` / `ProviderV2` compatibility is deferred.
 - AI SDK agent loops, AI SDK UI message protocols, AI SDK transport helpers, LangChain bridges, provider-native tool support, and first-class Tuvren provider packages are deferred.
 - ACP or any additional host protocol beyond SSE and AG-UI is deferred until a future TechSpec revision names it.
-- Future concrete drivers beyond ReAct and official peer backends beyond memory/SQLite are deferred beyond Epic Q.
+- Future concrete drivers beyond ReAct, official peer backends beyond memory/SQLite, and future language lines beyond Rust are deferred beyond Epic W unless a later TechSpec revision activates them.
+- FFI-based Rust embedding is deferred until after the process-boundary kernel seam is proven boring and durable.
 - Deno portability checks are deferred until public package surfaces stabilize enough to avoid testing scaffolding churn.
 
 ### Archived or Already Completed Scope
 
-- Epic A delivered the root workspace scaffold and boundary-first monorepo structure.
-- Epic B delivered the shared primitive package plus deterministic identity spike validation.
-- Epic C delivered the kernel protocol contracts, deterministic CBOR/SHA helpers, and semantic fixtures.
-- Epic D delivered the semantic reference memory backend.
-- Epic E delivered the reusable kernel backend conformance, invariant, and recovery harness and closed the memory backend against it.
-- Epic F delivered the SQLite backend, migrations, repository logic, and conformance closure.
-- Epic G delivered the shared framework contract partition across runtime, driver, event, tool, and provider surfaces.
-- Epic H delivered the docs-first shared framework foundations, including the minimal shared-core contract realignment and `runtime-core`.
-- Epic I delivered the first focused ReAct Driver foundation slice.
-- Epic J delivered Runtime Foundation Hardening: SQLite hot-path characterization, localized transaction validation, backend-local lineage metadata and indexes, explicit diagnostic validation, Run liveness spec deltas, and retention topology proof.
-- Epic K delivered ReAct loop completion, cancellation boundaries, and the loop-closure inventory artifact.
-- Epic L delivered streaming/provider parity closure and the parity inventory artifact.
-- Epic M delivered ReAct tool continuation, approval pause/resume, edited and rejected approval handling, partial batch durability, and the tool-and-approval inventory artifact.
-- Epic N delivered the baseline AI SDK provider bridge on `LanguageModelV3` / `ProviderV3`, preserved the shared `ProviderStreamChunk` seam, synthesized structured output from JSON text, and recorded the unsupported provider-owned tool/file surfaces in the Epic N bridge inventory artifact.
-- Epic O delivered `@tuvren/stream-core`, `@tuvren/stream-sse`, and `@tuvren/stream-agui`, proved tee-based host fanout over canonical `ExecutionHandle.events()` streams, pinned AG-UI to `@ag-ui/core@0.0.52`, and recorded the lossy/custom fallback matrix in the Epic O stream adapter inventory artifact.
-- Epic P delivered `@tuvren/playground-host`, proved local host embedding across memory and Node-backed SQLite reload, exercised canonical/SSE/AG-UI stream projection, structured output, tool calls, provider metadata, approval pause/resume, steering, branching from a completed source head, cancellation, deterministic fixture provider mode, AI SDK mock provider mode, and recorded downstream hardening assumptions in the Epic P playground host inventory artifact.
-- Epic Q delivered `@tuvren/provider-testkit`, `@tuvren/framework-testkit`, `tools/scripts/verify.ts`, `tools/scripts/release-check.ts`, `tools/scripts/portability-check.ts`, package export smoke coverage for the new testkits, explicit Bun/Node portability import checks, the checked-in portability matrix, and the release-hardening closure inventory artifact.
+- Epics A-J established the architecture-first monorepo, shared core types, kernel protocol, memory and SQLite backends, shared framework contracts, `runtime-core`, the first ReAct driver slice, and the runtime-foundation hardening line.
+- Epics K-M closed the first production-depth ReAct loop, streaming/provider parity, and tool/approval integration; authoritative closure evidence lives in `constitution/spikes/epic-k-react-loop-cancellation-inventory.md`, `constitution/spikes/epic-l-parity-inventory.md`, and `constitution/spikes/epic-m-tool-approval-gap-inventory.md`.
+- Epics N-Q closed the post-ReAct TypeScript expansion line for the AI SDK bridge, host stream adapters, playground host harness, and release/portability hardening; authoritative closure evidence lives in `constitution/spikes/epic-n-ai-sdk-bridge-inventory.md`, `constitution/spikes/epic-o-stream-adapter-inventory.md`, `constitution/spikes/epic-p-playground-host-inventory.md`, and `constitution/spikes/epic-q-release-hardening-inventory.md`.
+- `KRT-R001` delivered the multi-language transition constitution pass and the planning handoff artifact `constitution/spikes/epic-r-multilanguage-transition-guide.md`.
 
 ## 3. Build Order (Mermaid)
 
 ```mermaid
-flowchart LR
-  KRTP001[KRT-P001 Playground Host Scope Inventory] --> KRTP002[KRT-P002 Playground Package Scaffold]
-  KRTP002 --> KRTP003[KRT-P003 Thread Turn and Backend Host Flows]
-  KRTP003 --> KRTP004[KRT-P004 Streaming Controls and Approval Host Flows]
-  KRTP004 --> KRTP005[KRT-P005 Persistent Scenario Matrix]
-  KRTP005 --> KRTP006[KRT-P006 Playground Closure Inventory]
-  KRTP006 --> KRTQ001[KRT-Q001 Hardening Gap Inventory]
-  KRTQ001 --> KRTQ002[KRT-Q002 Provider Contract Testkit Extraction]
-  KRTQ002 --> KRTQ003[KRT-Q003 Framework Adapter Testkit Extraction]
-  KRTQ003 --> KRTQ004[KRT-Q004 Release and Verify Tooling]
-  KRTQ004 --> KRTQ005[KRT-Q005 Bun and Node Portability Matrix]
-  KRTQ005 --> KRTQ006[KRT-Q006 Post-ReAct Implementation Line Closure]
+flowchart TD
+  KRTR001[KRT-R001 Multilanguage Transition Guide] --> KRTR002[KRT-R002 Boundary-Owned Transition Scaffolding]
+  KRTR002 --> KRTR003[KRT-R003 Canonical Target Vocabulary and Tool Wrappers]
+  KRTR003 --> KRTR004[KRT-R004 Telemetry Semantic-Convention Source and Compatibility Contract]
+  KRTR003 --> KRTS001[KRT-S001 Contract Promotion Inventory]
+  KRTS001 --> KRTS002[KRT-S002 Framework and Provider TypeSpec Promotion]
+  KRTS001 --> KRTS003[KRT-S003 Kernel CDDL Grammar]
+  KRTS002 --> KRTS004[KRT-S004 Conformance Asset Split and TS Runners]
+  KRTS003 --> KRTS004
+  KRTS004 --> KRTT001[KRT-T001 Kernel Interop Surface Inventory]
+  KRTT001 --> KRTT002[KRT-T002 Proto and Buf Governance]
+  KRTR003 --> KRTT003[KRT-T003 Interop-Smoke Target Wiring]
+  KRTT002 --> KRTT003
+  KRTT002 --> KRTU001[KRT-U001 Cargo Workspace Integration]
+  KRTR004 --> KRTU002[KRT-U002 Rust Kernel Core Scaffold]
+  KRTS003 --> KRTU002[KRT-U002 Rust Kernel Core Scaffold]
+  KRTU001 --> KRTU002
+  KRTS004 --> KRTU003[KRT-U003 Rust Conformance Runner]
+  KRTU002 --> KRTU003
+  KRTT002 --> KRTU004[KRT-U004 Rust gRPC Kernel Service]
+  KRTU002 --> KRTU004
+  KRTU004 --> KRTV001[KRT-V001 TypeScript Transport Client and Runtime Switch]
+  KRTU003 --> KRTV002[KRT-V002 Cross-Language Interop and Compatibility Matrix]
+  KRTV001 --> KRTV002
+  KRTR004 --> KRTV003[KRT-V003 Telemetry Conventions and CI Lane Separation]
+  KRTV002 --> KRTV003
+  KRTV003 --> KRTV004[KRT-V004 Interop Closure Inventory]
 ```
 
 ## 4. Ticket List
 
-### Epic N - AI SDK Provider Bridge Baseline (APB)
+### Epic R - Multilanguage Transition Foundation (MTF)
 
-- Closed in current repo reality.
-- Closure artifact: `constitution/spikes/epic-n-ai-sdk-bridge-inventory.md`
+- `KRT-R001` is closed in current repo reality.
+- Closure artifact: `constitution/spikes/epic-r-multilanguage-transition-guide.md`
 - Durable outcome:
-  - `@tuvren/provider-bridge-ai-sdk` now owns the `LanguageModelV3` / `ProviderV3` bridge.
-  - shared runtime contracts stayed stable for Epic O: `ProviderStreamChunk` and `TuvrenStreamEvent` were not widened.
-  - streamed AI SDK files, provider-executed tool results, and provider-owned approvals remain explicitly deferred and must not leak into Epic O as implicit adapter debt.
+  - the constitution now records the authority stack, target repo shape, migration phases, and Rust-kernel-first transition rule
+  - the next active work begins with boundary-owned artifact scaffolding rather than language-specific implementation drift
 
-### Epic O - Host Stream Protocol Adapters (HSA)
-
-- Closed in current repo reality.
-- Closure artifact: `constitution/spikes/epic-o-stream-adapter-inventory.md`
-- Durable outcome:
-  - `@tuvren/stream-core` now owns shared adapter types, event cloning, tee/fanout helpers, fixture streams, and warning projection.
-  - `@tuvren/stream-sse` now owns EventSource-compatible framing plus `Response` helper support over canonical event streams.
-  - `@tuvren/stream-agui` now owns AG-UI translation on `@ag-ui/core@0.0.52`, including documented `tuvren.runtime.*` custom fallbacks for unsupported Tuvren-only semantics.
-
-### Epic P - Playground Host Harness (PHH)
-
-- Closed in current repo reality.
-- Closure artifact: `constitution/spikes/epic-p-playground-host-inventory.md`
-- Durable outcome:
-  - `@tuvren/playground-host` now owns the private local host harness under `boundaries/hosts/implementations/typescript/playground`.
-  - the scenario matrix covers streaming, structured output, tools, approval pause/resume, cancellation, metadata, branching, steering, and SQLite reload with explicit report checks that fail the CLI when false.
-  - non-reload memory scenarios run under Bun tests; SQLite reload runs through the built Node CLI target, matching the Node-first `better-sqlite3` backend dependency.
-  - full-turn playground streams prove tee-based canonical, SSE, and AG-UI projection over public runtime handles; approval resume continuation remains canonical/SSE-projected because AG-UI requires a complete turn lifecycle.
-  - branching is validated from the completed source head with durable branch-message inspection, and forked-branch parent validation is aligned across runtime-core, memory, SQLite, and the shared backend invariant suite.
-  - provider metadata and steering are asserted against durable/runtime evidence rather than only generic turn completion.
-
-**KRT-P001 Playground Host Scope Inventory**
+**KRT-R001 Multilanguage Transition Guide**
 
 - **Type:** Spike
 - **Effort:** 2
-- **Dependencies:** Closed Epic O stream adapter inventory
-- **Capability / Contract Mapping:** PRD `CAP-P0-001`, `CAP-P0-005`, `CAP-P0-020`, `CAP-P0-023`; Architecture `1.4`, `4.1`, `5`; TechSpec `4.1`, `4.7`, `5.1`; Framework Spec `7`, `8`, `9`
-- **Description:** Define the local playground host harness scope, scenarios, environment variables, provider bridge configuration, backend choices, stream adapters, controls, and fixture mode boundaries without turning the harness into a production web app.
+- **Dependencies:** KRT-Q006
+- **Capability / Contract Mapping:** PRD `CAP-P1-035`, `CAP-P1-036`; Architecture `1.2`, `2`, `4.5`; TechSpec `1.1`, `3.6`, `5.4.1`
+- **Description:** Formalize the multi-language transition guide into the constitution so the next implementation line begins from explicit repo-owned authority instead of ad hoc portability assumptions.
 - **Acceptance Criteria (Gherkin):**
 
 ```gherkin
-Given Epic O has proven stream adapters
-When playground host scope inventory is completed
-Then the repository records supported runtime flows, provider configuration modes, backend matrix, stream adapter outputs, controls, fixture scenarios, non-goals, and host-owned authentication assumptions
+Given Epic Q is closed in current repo reality
+When the multilanguage transition guide is formalized
+Then the constitution records the authority stack, target repo shape, migration phases, immediate guardrails, and the Tasks and TechSpec status language for the next implementation line
 ```
 
-**KRT-P002 Playground Package Scaffold**
+**KRT-R002 Boundary-Owned Transition Scaffolding**
 
 - **Type:** Chore
 - **Effort:** 3
-- **Dependencies:** KRT-P001
-- **Capability / Contract Mapping:** PRD `CAP-P0-001`, `CAP-P0-020`; Architecture `1.4`, `5`; TechSpec `4.7`, `5.1`
-- **Description:** Create `boundaries/hosts/implementations/typescript/playground` with package/Nx/tsconfig wiring, local scripts, fixtures, environment handling, and imports through public package surfaces.
+- **Dependencies:** KRT-R001
+- **Capability / Contract Mapping:** PRD `CAP-P1-035`, `CAP-P1-036`; Architecture `2`, `5`; TechSpec `3.6`, `5.1`, `5.1.1`
+- **Description:** Add the first substantial boundary-owned `conformance/`, `interop/`, `telemetry/`, and `reports/compatibility/` scaffolding needed by the transition line while preserving current TypeScript package behavior.
 - **Acceptance Criteria (Gherkin):**
 
 ```gherkin
-Given the playground scope is documented
-When the playground host harness is scaffolded
-Then it builds and runs through workspace tooling, reads provider/backend configuration from host-owned environment inputs, imports only public package surfaces, and includes deterministic fixture mode for local validation without provider credentials
+Given the transition guide is the new planning handoff
+When boundary-owned transition scaffolding is added
+Then the owning boundaries and repo root have the planned artifact homes for conformance, interop, telemetry, and compatibility reporting
+And the new structure creates a meaningful early slice of the target repo shape rather than only placeholder stubs
+And the existing TypeScript implementation path still builds and tests without semantic rewrites
 ```
 
-**KRT-P003 Thread Turn and Backend Host Flows**
-
-- **Type:** Feature
-- **Effort:** 5
-- **Dependencies:** KRT-P002
-- **Capability / Contract Mapping:** PRD `CAP-P0-001`, `CAP-P0-004`, `CAP-P0-006`, `CAP-P0-019`; Architecture `1.2`, `4.1`; TechSpec `4.1`, `4.2`, `4.7`; Framework Spec `7`
-- **Description:** Implement playground flows for creating/getting threads, creating branches, executing turns, selecting memory or SQLite backends, and inspecting durable status and branch/head state.
-- **Acceptance Criteria (Gherkin):**
-
-```gherkin
-Given a developer runs the playground host harness with memory or SQLite backend configuration
-When they create a thread, create a branch, execute a turn, and inspect status
-Then the host path uses public runtime APIs, durable branch/head state is visible, backend-specific configuration stays outside runtime contracts, and fixture mode produces deterministic output
-```
-
-**KRT-P004 Streaming Controls and Approval Host Flows**
-
-- **Type:** Feature
-- **Effort:** 5
-- **Dependencies:** KRT-P003
-- **Capability / Contract Mapping:** PRD `CAP-P0-005`, `CAP-P0-013`, `CAP-P0-016`, `CAP-P0-017`, `CAP-P0-020`; Architecture `4.1`, `4.2`, `5`; TechSpec `4.1`, `4.3`, `4.5`, `4.7`; Framework Spec `6`, `8`, `9`
-- **Description:** Add host flows for consuming SSE and AG-UI adapter output, cancelling active turns, steering input into a run, resolving approvals, inspecting paused/completed/failed status, and verifying tool execution continuity.
-- **Acceptance Criteria (Gherkin):**
-
-```gherkin
-Given a playground turn streams assistant output and reaches host-controlled states
-When the host cancels, steers, resolves approvals, or observes completion/failure
-Then the harness shows canonical status transitions, adapter output, approval decisions, tool results, and durable continuation behavior without embedding authentication or provider-specific policy in runtime packages
-```
-
-**KRT-P005 Persistent Scenario Matrix**
+**KRT-R003 Canonical Target Vocabulary and Tool Wrappers**
 
 - **Type:** Feature
 - **Effort:** 3
-- **Dependencies:** KRT-P004
-- **Capability / Contract Mapping:** PRD `CAP-P0-006`, `CAP-P0-019`, `CAP-P0-020`, `CAP-P0-023`; Architecture `1.2`, `4.1`, `5`; TechSpec `3.4`, `3.5`, `4.7`; Framework Spec `7`, `8`
-- **Description:** Add scenario coverage for structured output, tool calls, provider metadata, approval pause/resume, SQLite reload, branch inspection, and fixture-provider operation.
+- **Dependencies:** KRT-R002
+- **Capability / Contract Mapping:** PRD `CAP-P1-035`; Architecture `2.1`, `5`; TechSpec `1.1`, `5.1.1`, `5.2`
+- **Description:** Define the canonical repo-wide target vocabulary and wire Nx/tool wrappers so `build`, `test`, `lint`, `typecheck`, `conformance`, `codegen`, and `interop-smoke` delegate to the native toolchain for each active ecosystem.
 - **Acceptance Criteria (Gherkin):**
 
 ```gherkin
-Given the playground supports memory and SQLite backends
-When persistent scenarios run for structured output, tools, metadata, approval resume, reload, and branch inspection
-Then the same public runtime behavior is observable after SQLite reload, fixture-provider scenarios stay deterministic, and provider-backed scenarios remain optional host configuration
+Given the transition scaffolding exists
+When canonical targets and wrappers are introduced
+Then relevant projects expose the shared target vocabulary
+And each target delegates to Bun, Cargo, Buf, or another native tool rather than replacing it with TypeScript-specific orchestration logic
 ```
 
-**KRT-P006 Playground Closure Inventory**
+**KRT-R004 Telemetry Semantic-Convention Source and Compatibility Contract**
 
 - **Type:** Chore
 - **Effort:** 2
-- **Dependencies:** KRT-P005
-- **Capability / Contract Mapping:** PRD `CAP-P0-001`, `CAP-P0-005`, `CAP-P0-020`; Architecture `1.4`, `5`; TechSpec `4.7`, `5.3`, `5.4.1`
-- **Description:** Record Epic P closure evidence, host flows, scenario matrix, known limitations, provider/backend setup notes, and downstream assumptions in `constitution/spikes/epic-p-playground-host-inventory.md`.
+- **Dependencies:** KRT-R003
+- **Capability / Contract Mapping:** PRD `CAP-P1-036`; Architecture `4.5`, `5`; TechSpec `3.6`, `4.10`, `5.2`
+- **Description:** Add the formal telemetry semantic-convention source plus the compatibility-ledger contract so later cross-language work has a stable evidence surface before Rust code lands.
 - **Acceptance Criteria (Gherkin):**
 
 ```gherkin
-Given the playground host harness and scenarios are complete
-When Epic P is closed
-Then the closure inventory records implemented host flows, deterministic fixture paths, optional provider-backed paths, backend reload behavior, limitations, downstream assumptions for Epic Q, and any required TechSpec or Tasks status updates
+Given the transition foundation is active
+When the telemetry semantic-convention source and compatibility contract are added
+Then the repository contains an authored OpenTelemetry semantic-convention source plus reviewed compatibility-ledger shape definitions
+And the telemetry source is ready to drive generated TypeScript and Rust constants or helpers before Rust implementation work begins
+And no hand-authored pass or fail claims are recorded in place of measured suite evidence
 ```
 
-### Epic Q - Testkit, Portability, and Release Hardening (TPR)
+### Epic S - Boundary Contract and Conformance Artifactization (BCA)
 
-- Epic Q is closed in current repo reality.
-- Hardening inventory artifact: `constitution/spikes/epic-q-hardening-gap-inventory.md`
-- Closure inventory artifact: `constitution/spikes/epic-q-release-hardening-inventory.md`
-- Durable outcome:
-  - the repository now has extracted provider-contract and framework stream/control testkits, package export smoke coverage, release-check tooling that still includes the private playground proof, explicit Bun/Node portability import validation, a checked-in portability matrix, and final Epic Q closure evidence
-  - the next active dependency is a future Tasks/TechSpec revision, not hidden continuation work inside Epic Q
+- Planned. This epic promotes machine-readable authored sources and shared conformance assets before any Rust implementation becomes authoritative.
 
-**KRT-Q001 Hardening Gap Inventory**
+**KRT-S001 Contract Promotion Inventory**
 
 - **Type:** Spike
 - **Effort:** 2
-- **Dependencies:** KRT-P006
-- **Capability / Contract Mapping:** PRD `CAP-P0-012`, `CAP-P0-020`, `CAP-P0-030`, `CAP-P1-032`; Architecture `5`; TechSpec `5.1`, `5.2`, `5.3`, `5.4.1`
-- **Description:** Inventory provider-contract fixture sources, stream adapter fixtures, playground scenarios, package export smoke tests, release checks, and runtime portability gaps that must be closed before the post-ReAct line can be treated as internally implementation-ready.
+- **Dependencies:** KRT-R003
+- **Capability / Contract Mapping:** PRD `CAP-P1-035`, `CAP-P1-036`; Architecture `2`, `4.5`; TechSpec `3.6`, `4.8`, `5.1`
+- **Description:** Inventory which framework and provider contract packages should promote TypeSpec now, which should remain unchanged for now, and how current testkit responsibilities map onto future boundary-owned conformance assets.
 - **Acceptance Criteria (Gherkin):**
 
 ```gherkin
-Given Epics N, O, and P are closed
-When the hardening gap inventory is completed
-Then the repository records the testkit extraction targets, release-check targets, portability matrix, package export smoke tests, deferred Deno work, and any remaining gaps that must close inside Epic Q
+Given the transition scaffolding and target vocabulary exist
+When the contract promotion inventory is completed
+Then the repository records which contract packages adopt TypeSpec now, which stay unchanged, which artifacts each emits, and how current testkit responsibilities map into future conformance ownership
 ```
 
-**KRT-Q002 Provider Contract Testkit Extraction**
+**KRT-S002 Framework and Provider TypeSpec Promotion**
+
+- **Type:** Feature
+- **Effort:** 5
+- **Dependencies:** KRT-S001
+- **Capability / Contract Mapping:** PRD `CAP-P0-019`, `CAP-P0-020`, `CAP-P1-035`; Architecture `2`, `5`; TechSpec `3.6`, `4.8`, `5.2`
+- **Description:** Promote the selected framework and provider contract packages to authored TypeSpec sources and emit reviewed JSON Schema/OpenAPI artifacts without changing the shared semantic meaning of their public contracts.
+- **Acceptance Criteria (Gherkin):**
+
+```gherkin
+Given the promotion inventory names the first contract packages
+When TypeSpec promotion is complete
+Then each selected contract package contains boundary-owned TypeSpec sources and emitted JSON Schema and OpenAPI artifacts
+And the public contract meaning stays aligned with the existing runtime semantics and docs
+```
+
+**KRT-S003 Kernel CDDL Grammar**
 
 - **Type:** Feature
 - **Effort:** 3
-- **Dependencies:** KRT-Q001
-- **Capability / Contract Mapping:** PRD `CAP-P0-012`, `CAP-P0-030`; Architecture `5`; TechSpec `4.4`, `5.1`, `5.2`; Framework Spec `3`, `6`
-- **Description:** Extract reusable provider-contract fixtures and conformance helpers under `boundaries/providers/testkit`, using the AI SDK bridge as the first proving implementation while keeping the shared testkit surface aligned with future contract stabilization and language-agnostic provider work.
+- **Dependencies:** KRT-S001
+- **Capability / Contract Mapping:** PRD `CAP-P0-001`, `CAP-P0-004`, `CAP-P1-035`; Architecture `2`, `4.5`; TechSpec `3.1`, `3.6`, `4.8`
+- **Description:** Add CDDL-authored kernel record grammar for the canonical protocol records, manifests, runs, and recovery-shaped payloads without treating grammar as semantic authority over behavior.
 - **Acceptance Criteria (Gherkin):**
 
 ```gherkin
-Given the AI SDK bridge has package-local fixture coverage
-When provider testkit extraction is complete
-Then reusable testkit helpers can verify provider-contract generate and stream behavior, metadata preservation, errors, cancellation, and tool/structured-output behavior
-And the shared testkit surface does not require runtime-core or future provider implementations to know about AI SDK-specific types
-And the AI SDK bridge remains the first proving implementation of that shared provider testkit surface
+Given the transition inventory has named the kernel artifact work
+When kernel CDDL grammar is added
+Then canonical kernel record families are represented under boundary-owned CDDL
+And the grammar aligns with current protocol shapes without redefining recovery or lineage semantics in place of the docs
 ```
 
-**KRT-Q003 Framework Adapter Testkit Extraction**
+**KRT-S004 Conformance Asset Split and TypeScript Runners**
+
+- **Type:** Feature
+- **Effort:** 5
+- **Dependencies:** KRT-S002, KRT-S003
+- **Capability / Contract Mapping:** PRD `CAP-P0-005`, `CAP-P1-036`; Architecture `2`, `4.5`; TechSpec `3.6`, `4.8`, `5.2`
+- **Description:** Split the current TypeScript-first testkit responsibilities into boundary-owned conformance schemas, fixtures, and scenarios plus TypeScript-specific runners that consume those suites as one peer implementation path among many.
+- **Acceptance Criteria (Gherkin):**
+
+```gherkin
+Given contract packages and kernel grammar have authored machine-readable sources
+When the conformance split is complete
+Then the owning boundaries contain shared conformance schemas, fixtures, and scenarios
+And the TypeScript implementation runs those suites through implementation-specific runners instead of treating testkit helpers as the semantic authority
+And the resulting structure makes TypeScript one peer consumer of the shared behavioral corpus rather than the root implementation authority
+```
+
+### Epic T - Kernel Interop Governance (KIG)
+
+- Planned. This epic defines the first cross-language transport seam before any Rust kernel implementation is treated as real.
+
+**KRT-T001 Kernel Interop Surface Inventory**
+
+- **Type:** Spike
+- **Effort:** 2
+- **Dependencies:** KRT-S004
+- **Capability / Contract Mapping:** PRD `CAP-P1-035`, `CAP-P1-036`; Architecture `2`, `4.5`; TechSpec `4.9`, `5.4.1`
+- **Description:** Inventory the narrow kernel-only interop surface, transport non-goals, versioning posture, and event/error envelope boundaries before authoring `.proto` files, including the existing thread/branch/head operations the framework must preserve over a remote kernel path.
+- **Acceptance Criteria (Gherkin):**
+
+```gherkin
+Given boundary-owned conformance assets now exist
+When the kernel interop surface inventory is completed
+Then the repository records the kernel operations, event and error envelopes, transport non-goals, and the rule that the initial interop seam is narrower than the full framework API
+And the inventory explicitly includes the thread, branch, turn, and run lifecycle operations needed to preserve the current runtime surface over a remote kernel path
+And the inventory explicitly excludes framework-owned ExecutionHandle controls such as cancel, steer, and approval resolution from the kernel transport
+```
+
+**KRT-T002 Proto and Buf Governance**
+
+- **Type:** Feature
+- **Effort:** 5
+- **Dependencies:** KRT-T001
+- **Capability / Contract Mapping:** PRD `CAP-P1-035`, `CAP-P1-036`; Architecture `2`, `5`; TechSpec `4.9`, `5.2`
+- **Description:** Add kernel `.proto` ownership plus root Buf v2 configuration so the first transport surface has lint, generation, and breaking-change governance from the start without widening into framework handle controls.
+- **Acceptance Criteria (Gherkin):**
+
+```gherkin
+Given the kernel interop surface has been inventoried
+When proto and Buf governance is added
+Then the repository contains boundary-owned kernel `.proto` files plus root Buf configuration
+And transport changes are gated by lint and breaking-change checks rather than ad hoc review alone
+And Buf `FILE` compatibility is the default breaking gate from the first `.proto` merge onward
+```
+
+**KRT-T003 Interop-Smoke Target Wiring and Binding Placement**
 
 - **Type:** Feature
 - **Effort:** 3
-- **Dependencies:** KRT-Q002
-- **Capability / Contract Mapping:** PRD `CAP-P0-020`, `CAP-P1-024`; Architecture `5`; TechSpec `4.5`, `4.7`, `5.1`, `5.2`; Framework Spec `6`, `9`
-- **Description:** Extract reusable framework stream and control-flow fixtures under `boundaries/framework/testkit`, covering canonical event streams, stream adapters, runtime controls, approvals, and terminal-status behavior without turning the testkit into a hidden host harness.
+- **Dependencies:** KRT-R003, KRT-T002
+- **Capability / Contract Mapping:** PRD `CAP-P1-036`; Architecture `2.1`, `4.5`; TechSpec `4.9`, `5.1.1`, `5.2`
+- **Description:** Wire `codegen` and `interop-smoke` targets plus generated-binding placement rules so transport support code stays with the consuming implementation tree and the repo can exercise real cross-process checks later.
 - **Acceptance Criteria (Gherkin):**
 
 ```gherkin
-Given stream adapters and the playground have local scenario coverage
-When framework testkit extraction is complete
-Then reusable fixtures can verify canonical event ordering, SSE output, AG-UI output, cancellation, steering, approval, error, and terminal-status behavior without depending on playground internals
-And resumed continuation coverage preserves the documented canonical/SSE-only projection when AG-UI lacks a complete turn lifecycle
+Given the kernel `.proto` surface is Buf-governed
+When interop-smoke target wiring is complete
+Then generated bindings live under the consuming implementation tree
+And the repo exposes `codegen` and `interop-smoke` targets that invoke the native generators and smoke paths for the active ecosystems
 ```
 
-**KRT-Q004 Release and Verify Tooling**
+### Epic U - Rust Kernel Baseline (RKB)
+
+- Planned. This epic introduces Rust only under the kernel boundary and only after the artifact-backed seam exists.
+
+**KRT-U001 Cargo Workspace and Rust Toolchain Integration**
 
 - **Type:** Chore
 - **Effort:** 3
-- **Dependencies:** KRT-Q003
-- **Capability / Contract Mapping:** PRD `CAP-P1-032`; Architecture `5`; TechSpec `5.1`, `5.2`, `5.3`
-- **Description:** Add or refresh release/verification tooling under `tools/scripts`, including workspace verification, package export smoke tests, build/typecheck/test orchestration, and release-check reporting for internal implementation-line readiness rather than public package publication.
+- **Dependencies:** KRT-T002
+- **Capability / Contract Mapping:** PRD `CAP-P1-035`; Architecture `2`, `5`; TechSpec `1`, `5.1`, `5.2`
+- **Description:** Introduce the root Cargo workspace and Rust toolchain files plus repo wrappers so Rust tasks join the monorepo without redefining boundary ownership or replacing Nx orchestration.
 - **Acceptance Criteria (Gherkin):**
 
 ```gherkin
-Given provider, framework, stream, and playground packages are present
-When the release and verification scripts run
-Then they build and typecheck the relevant packages, run package export smoke tests, and execute the targeted test suites for the active Epic Q surface
-And the verification surface includes the Node-backed `host-playground:scenario-sqlite` proof alongside the private playground package checks
-And failures and declared-versus-observed runtime-version drift are reported clearly without making drift alone a failing result
-And the verification surface avoids relying on untracked local state or provider credentials
+Given the kernel transport surface is governed
+When Rust workspace integration is added
+Then the repository contains the root Cargo workspace and toolchain files
+And repo orchestration can invoke Rust-native build and test flows without redefining the boundary-owned layout
 ```
 
-**KRT-Q005 Bun and Node Portability Matrix**
+**KRT-U002 Rust Kernel Core Scaffold**
 
-- **Type:** Chore
+- **Type:** Feature
+- **Effort:** 5
+- **Dependencies:** KRT-R004, KRT-S003, KRT-U001
+- **Capability / Contract Mapping:** PRD `CAP-P0-001`, `CAP-P0-005`, `CAP-P1-035`; Architecture `2`, `4.5`; TechSpec `3.1`, `3.6`, `5.4.1`
+- **Description:** Implement the first Rust kernel core scaffold against the shared protocol profile, deterministic identity rules, and kernel-visible operations without widening semantics or transport scope.
+- **Acceptance Criteria (Gherkin):**
+
+```gherkin
+Given the Rust workspace exists and kernel grammar is authored
+When the Rust kernel core scaffold is complete
+Then Rust implements the required protocol record and validation baselines for the first conformance phase
+And the Rust kernel does not widen the shared semantics or depend on framework-specific shortcuts
+And Rust implementation work consumes the preexisting telemetry semantic-convention source instead of inventing a second observability vocabulary
+```
+
+**KRT-U003 Rust Conformance Runner**
+
+- **Type:** Feature
+- **Effort:** 5
+- **Dependencies:** KRT-S004, KRT-U002
+- **Capability / Contract Mapping:** PRD `CAP-P0-005`, `CAP-P1-036`; Architecture `4.5`; TechSpec `3.6`, `5.2`, `5.4.1`
+- **Description:** Add a Rust conformance runner that consumes the shared boundary-owned protocol and recovery suites using the same suite naming and reporting discipline as TypeScript.
+- **Acceptance Criteria (Gherkin):**
+
+```gherkin
+Given the Rust kernel core and shared conformance assets exist
+When the Rust conformance runner is added
+Then the protocol and recovery suites run against Rust through the shared suite contract
+And the reported results are comparable with the TypeScript runner outputs without bespoke interpretation
+```
+
+**KRT-U004 Rust gRPC Kernel Service**
+
+- **Type:** Feature
+- **Effort:** 5
+- **Dependencies:** KRT-T002, KRT-U002
+- **Capability / Contract Mapping:** PRD `CAP-P1-035`, `CAP-P1-036`; Architecture `2`, `4.5`; TechSpec `4.9`, `5.4.1`
+- **Description:** Expose the Rust kernel over the governed transport contract as the first real cross-process runtime seam.
+- **Acceptance Criteria (Gherkin):**
+
+```gherkin
+Given the Rust kernel core and governed transport surface exist
+When the Rust gRPC kernel service is implemented
+Then the kernel operations and stable event and error payloads are available over the defined process boundary
+And the service remains limited to the kernel scope rather than reimplementing the framework surface
+```
+
+### Epic V - TypeScript Framework and Rust Kernel Interop Stabilization (TRI)
+
+- Planned. This epic proves the boring day-two story before any Rust framework work is allowed to start.
+
+**KRT-V001 TypeScript Transport Client and Runtime Switch**
+
+- **Type:** Feature
+- **Effort:** 5
+- **Dependencies:** KRT-U004
+- **Capability / Contract Mapping:** PRD `CAP-P0-019`, `CAP-P1-035`; Architecture `2.1`, `4.5`; TechSpec `4.1`, `4.9`, `5.4.1`
+- **Description:** Add the TypeScript-side transport client and explicit runtime selection seam so the framework can target either the in-process TypeScript kernel or the Rust kernel service without changing host-facing semantics.
+- **Acceptance Criteria (Gherkin):**
+
+```gherkin
+Given the Rust kernel service exists
+When the TypeScript transport client and runtime switch are added
+Then the framework can target either the local TypeScript kernel or the Rust kernel through an explicit seam
+And host-facing runtime behavior stays aligned with the existing public contracts
+```
+
+**KRT-V002 Cross-Language Interop and Compatibility Matrix**
+
+- **Type:** Feature
+- **Effort:** 5
+- **Dependencies:** KRT-U003, KRT-V001
+- **Capability / Contract Mapping:** PRD `CAP-P1-036`; Architecture `4.5`; TechSpec `4.10`, `5.2`, `5.4.1`
+- **Description:** Run real TS framework to Rust kernel scenarios and generate the compatibility matrix from the resulting conformance and interop-smoke evidence as a conservative near-public readiness signal.
+- **Acceptance Criteria (Gherkin):**
+
+```gherkin
+Given the Rust kernel passes its conformance runner and the TypeScript framework can target the transport seam
+When cross-language interop scenarios run
+Then named TS framework to Rust kernel smoke suites pass or fail explicitly
+And the repository generates a compatibility matrix that records implementation ids, suite ids, suite versions, statuses, and evidence paths from those measured results
+And the resulting report is worded conservatively enough to function as a near-public readiness signal rather than an internal-only scratch artifact
+```
+
+**KRT-V003 Telemetry Conventions and CI Lane Separation**
+
+- **Type:** Feature
 - **Effort:** 3
-- **Dependencies:** KRT-Q004
-- **Capability / Contract Mapping:** PRD `CAP-P0-030`, `CAP-P1-032`; Architecture `5`; TechSpec `1`, `3.5`, `5.2`
-- **Description:** Validate the clearly portable core non-native packages across Bun and Node.js, and record an explicit checked-in portability matrix that documents narrower runtime support for native or dependency-constrained packages such as SQLite and any provider-facing surfaces that do not yet earn broader claims.
+- **Dependencies:** KRT-R004, KRT-V002
+- **Capability / Contract Mapping:** PRD `CAP-P1-036`; Architecture `5`; TechSpec `3.6`, `4.10`, `5.2`
+- **Description:** Apply the shared telemetry vocabulary across TypeScript and Rust interop paths and separate CI into repo-global, language-native, and cross-language validation lanes.
 - **Acceptance Criteria (Gherkin):**
 
 ```gherkin
-Given the post-ReAct packages are wired into verification tooling
-When Bun and Node portability checks run
-Then the repository records an explicit portability matrix naming each Epic Q package surface as Bun-and-Node validated, mixed-runtime validated, Node-only, or deferred
-And portable core packages pass in both runtimes
-And narrower packages document their supported runtime constraints without overstating Bun, Node, edge, or serverless support
-And native SQLite behavior is not misrepresented as edge/serverless support
-And Deno remains explicitly deferred
+Given cross-language interop scenarios now exist
+When telemetry conventions and CI lane separation are implemented
+Then TypeScript and Rust interop traces and reports use the shared runtime attribute vocabulary
+And both implementation lines consume helpers or constants derived from the preexisting telemetry semantic-convention source
+And CI clearly separates repo-global checks, language-native checks, and cross-language parity checks
 ```
 
-**KRT-Q006 Post-ReAct Implementation Line Closure**
+**KRT-V004 Interop Closure Inventory**
 
 - **Type:** Chore
 - **Effort:** 2
-- **Dependencies:** KRT-Q005
-- **Capability / Contract Mapping:** PRD `CAP-P0-001`, `CAP-P0-012`, `CAP-P0-020`, `CAP-P0-030`, `CAP-P1-032`; Architecture `5`; TechSpec `5.3`, `5.4.1`
-- **Description:** Record Epic Q closure evidence, package matrix, verification commands, portability status, residual risks, and internal implementation-line readiness conclusions in `constitution/spikes/epic-q-release-hardening-inventory.md`.
+- **Dependencies:** KRT-V003
+- **Capability / Contract Mapping:** PRD `CAP-P1-035`, `CAP-P1-036`; Architecture `5`, `6`; TechSpec `4.10`, `5.3`, `5.4.1`
+- **Description:** Record parity status, residual gaps, and the readiness gate for any future Rust framework work in a closure inventory and update the planning artifacts for the next revision.
 - **Acceptance Criteria (Gherkin):**
 
 ```gherkin
-Given Epics N-Q are complete and verified
-When the post-ReAct implementation line is closed
-Then the closure inventory records implemented packages, testkits, release tooling, portability classifications, residual risks, deferred scopes, internal implementation-line readiness conclusions, and the TechSpec and Tasks status language needed for the next planning pass
+Given the TS framework to Rust kernel seam has conformance, interop, telemetry, and compatibility evidence
+When the interop closure inventory is recorded
+Then the repository documents measured parity status, remaining gaps, Rust framework start prerequisites, and the TechSpec and Tasks status updates for the next planning pass
 ```
+
+### Epic W - Rust Framework Start (RFS)
+
+- Deferred until Epic V closes. No implementation tickets are authorized in this Tasks revision.

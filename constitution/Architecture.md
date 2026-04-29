@@ -2,9 +2,9 @@
 
 ## 0. Version History & Changelog
 
+- v0.4.0 - Added the multi-implementation asset boundaries, the cross-language conformance and compatibility flow, and the semantic-authority posture for the post-TypeScript transition line.
 - v0.3.0 - Narrowed shared-core orchestration to a minimal handle/tree primitive, moved ordered pipelines out of core semantics, and aligned approval/cancel responsibilities with the docs-first HITL model.
 - v0.2.0 - Reframed the runtime around shared framework services plus pluggable drivers, with the current execution semantics treated as the initial ReAct-oriented driver.
-- v0.1.0 - Initial architecture derived from PRD v0.1.0, establishing the logical container model, critical flows, and resilience posture for Tuvren Runtime.
 - ... [Older history truncated, refer to git logs]
 
 ## 1. Architectural Strategy & Archetype Alignment
@@ -25,6 +25,7 @@
 - **Single source of execution truth:** Durable lineage and state are authoritative; streams, wrappers, and provider-native representations are informative but non-authoritative.
 - **In-process modularity first:** Containers are logical boundaries inside one embeddable runtime system, aligning with solo-dev realism and avoiding premature service decomposition.
 - **Adapter edges at trust boundaries:** Hosts, model providers, and external tools connect through explicit boundary adapters rather than leaking their protocols inward.
+- **Artifact-backed semantic authority:** Human semantic authority lives in the docs and constitution, while machine-readable contract, conformance, and interop assets make those semantics executable across implementations.
 - **History-preserving correction:** Rollback, steering, handoff, and context engineering create new lineage rather than rewriting the past.
 - **Driver plurality without product sprawl:** The architecture must support multiple drivers conceptually, but only one driver needs to be implemented to production depth at a time.
 
@@ -35,6 +36,7 @@
 - **Untrusted provider boundary:** Model provider outputs are advisory inputs that must be normalized before affecting durable execution.
 - **Partially trusted host boundary:** Hosts may start, steer, cancel, and resolve approvals, but they do not become the source of runtime truth.
 - **High-risk tool boundary:** External tool execution is where side effects happen and where approval, staging, and recovery protections matter most.
+- **Trusted semantic assets:** Boundary-owned contract and conformance assets are trusted to carry machine-readable meaning, while generated bindings and reports are evidence rather than primary authority.
 
 ### 1.4 Failure Classes
 
@@ -43,6 +45,7 @@
 - **Context divergence risk:** Active context is reshaped, handed off, or steered in ways that could become unintelligible without explicit lineage.
 - **Driver lock-in risk:** Shared framework services accidentally absorb assumptions that only one driver actually needs.
 - **Boundary translation risk:** Provider-native or host-native representations conflict with Kraken’s canonical model unless normalized at the edge.
+- **Cross-language drift risk:** Human specs, machine-readable artifacts, and implementation lines diverge enough that “same runtime” stops meaning the same thing across languages or processes.
 
 ## 2. System Containers
 
@@ -134,6 +137,38 @@
 - **Outputs:** Protocol-ready event streams for host consumers.
 - **Depends on:** Framework Shared Services, Extension Runtime, Orchestration Runtime.
 
+### Contract Authority Assets
+
+- **Logical Type:** Boundary-owned specification surface
+- **Responsibility:** Capture machine-readable shape contracts owned by a boundary, including public payload shapes, protocol grammars, and reviewed generated artifacts derived from authored sources.
+- **Inputs:** Human-approved semantic changes from the docs and constitution, boundary-owned schema sources, and implementation feedback when promoting a shape to normative status.
+- **Outputs:** Machine-readable contract artifacts consumed by validation, code generation, and later implementation lines.
+- **Depends on:** None.
+
+### Behavioral Conformance Assets
+
+- **Logical Type:** Boundary-owned behavior corpus
+- **Responsibility:** Capture versioned fixtures, schemas, and scenario definitions that express observable behavior independently of any single implementation.
+- **Inputs:** Human-approved behavioral expectations, boundary-owned fixture definitions, and implementation evidence when promoting a behavior to normative status.
+- **Outputs:** Shared conformance suites consumed by language-specific runners and compatibility reporting.
+- **Depends on:** Contract Authority Assets.
+
+### Interop Transport Boundary
+
+- **Logical Type:** Cross-process boundary contract
+- **Responsibility:** Define the narrow transport surface used when kernel or other runtime boundaries cross process and language seams.
+- **Inputs:** Canonical boundary operations, stable event and error envelopes, and host/runtime control requirements.
+- **Outputs:** Versioned transport exchanges and implementation-facing transport contracts.
+- **Depends on:** Kernel Boundary, Contract Authority Assets.
+
+### Compatibility Reporting Boundary
+
+- **Logical Type:** Generated evidence boundary
+- **Responsibility:** Aggregate conformance and interop results into machine-readable compatibility reports without becoming semantic authority itself.
+- **Inputs:** Language-specific runner results, interop smoke results, and suite metadata.
+- **Outputs:** Compatibility matrices and health reports for maintainers and CI.
+- **Depends on:** Behavioral Conformance Assets, Interop Transport Boundary.
+
 ### 2.1 Communication Relationships
 
 - Host Integration Boundary -> Framework Shared Services: synchronous execution commands and control signals
@@ -146,6 +181,10 @@
 - Orchestration Runtime <-> Framework Shared Services: in-process worker launch, handoff, and resume coordination
 - Kernel Boundary -> Durable State Boundary: atomic persistence transactions
 - Framework Shared Services / Orchestration Runtime / Extension Runtime -> Event Stream Adapter Layer: canonical event publication
+- Framework Shared Services / Provider Gateway / Kernel Boundary -> Contract Authority Assets: consume boundary-owned machine-readable shapes for validation and generated support
+- Language-specific runners -> Behavioral Conformance Assets: execute shared suites without redefining semantics locally
+- Host Integration Boundary / Framework Shared Services <-> Interop Transport Boundary: use transport contracts when a runtime boundary spans processes or languages
+- Behavioral Conformance Assets / Interop Transport Boundary -> Compatibility Reporting Boundary: publish suite and interop results for implementation parity reporting
 
 ### 2.2 Boundary Notes
 
@@ -154,6 +193,8 @@
 - Driver Runtime is a logical boundary, not a promise that every future driver needs a separate process or deployment unit.
 - The current active driver is ReAct-oriented, but the architecture keeps room for future workflow-oriented drivers such as pipeline, router, evaluator-optimizer, or orchestrator-worker patterns.
 - Ordered multi-agent pipelines are not a shared-core semantic. If they remain in scope, they belong above the shared handoff/orchestration primitives as driver-level policy.
+- Contract authority, behavioral conformance, and interop transport are separate containers on purpose; no single artifact type is allowed to silently become the meaning of the runtime.
+- Native language toolchains may differ, but their outputs must still fit the same boundary-owned contract, conformance, and compatibility system.
 
 ## 3. Container Diagram (Mermaid)
 
@@ -173,6 +214,10 @@ System_Boundary(tuvren_runtime, "Tuvren Runtime") {
   Container(eventAdapter, "Event Stream Adapter Layer", "Outbound Adapter", "Canonical event translation for hosts")
   Container(kernelBoundary, "Kernel Boundary", "Mechanism Core", "Durable objects, staging, trees, lineage, runs, branches")
   ContainerDb(stateBoundary, "Durable State Boundary", "Persistence Boundary", "Atomic durable storage substrate")
+  Container(contractAssets, "Contract Authority Assets", "Specification Surface", "Boundary-owned machine-readable shape contracts and reviewed generated artifacts")
+  Container(conformanceAssets, "Behavioral Conformance Assets", "Behavior Corpus", "Boundary-owned fixtures, schemas, and scenarios shared across implementations")
+  Container(interopBoundary, "Interop Transport Boundary", "Cross-Process Contract", "Transport surface for runtime boundaries that span processes or languages")
+  Container(compatibilityReporting, "Compatibility Reporting Boundary", "Generated Evidence", "Aggregates suite and interop results into compatibility reports")
 }
 System_Ext(modelProviders, "Model Providers", "External generation systems")
 System_Ext(externalTools, "External Tools and Systems", "External side-effecting capabilities")
@@ -194,6 +239,13 @@ Rel(frameworkServices, eventAdapter, "Canonical runtime events")
 Rel(orchestrationRuntime, eventAdapter, "Descendant-attributed orchestration events")
 Rel(extensionRuntime, eventAdapter, "Custom events")
 Rel(eventAdapter, hostBoundary, "Host-facing event streams")
+Rel(frameworkServices, contractAssets, "Consumes contract shapes")
+Rel(providerGateway, contractAssets, "Consumes provider/runtime shapes")
+Rel(kernelBoundary, contractAssets, "Consumes protocol grammars")
+Rel(conformanceAssets, compatibilityReporting, "Publishes suite results")
+Rel(interopBoundary, compatibilityReporting, "Publishes interop results")
+Rel(hostBoundary, interopBoundary, "Uses transport when boundaries span processes")
+Rel(frameworkServices, interopBoundary, "Uses transport client/server contracts")
 ```
 
 ## 4. Critical Execution Flows
@@ -319,13 +371,38 @@ Orch-->>Framework: child execution handle plus aggregated subtree events
 Framework-->>Driver: continue with updated control ownership or child coordination primitives
 ```
 
+### 4.5 Multi-Implementation Conformance and Compatibility Validation
+
+- **Maps to PRD capability:** CAP-P1-035, CAP-P1-036
+
+```mermaid
+sequenceDiagram
+participant Maintainer as Runtime Implementation Maintainer
+participant Contract as Contract Authority Assets
+participant Conf as Behavioral Conformance Assets
+participant Ts as TypeScript Implementation
+participant Rust as Rust Kernel Implementation
+participant Interop as Interop Transport Boundary
+participant Report as Compatibility Reporting Boundary
+
+Maintainer->>Contract: promote boundary-owned contract sources and reviewed artifacts
+Maintainer->>Conf: promote fixture schemas and normative scenarios
+Ts->>Conf: run shared conformance suites
+Rust->>Conf: run the same suites
+Ts->>Interop: execute real framework-to-kernel interop smoke path
+Rust->>Interop: serve kernel boundary over transport
+Conf-->>Report: publish suite results and suite versions
+Interop-->>Report: publish interop-smoke evidence
+Report-->>Maintainer: compatibility matrix and remaining parity gaps
+```
+
 ## 5. Resilience & Cross-Cutting Concerns
 
 - **Security / Identity Strategy:** Host applications authenticate and authorize their own callers before exposing Tuvren Runtime controls; the Kraken engine itself treats host commands, provider responses, and tool outputs as boundary inputs that require validation and normalization.
 - **Failure Handling Strategy:** The kernel and durable state boundary preserve committed progress, staged tool results, and lineage so interruption, pause/resume, rollback, and replacement-run behavior can be realized without history corruption.
-- **Observability Strategy:** Canonical runtime events are emitted from shared framework services and translated outward by stream adapters; driver attribution must remain visible so hosts can tell shared-runtime events from driver-specific behavior.
-- **Configuration Strategy:** Driver selection, provider choice, tool registry, extension activation, and backend configuration are runtime-selected concerns above the kernel; the kernel remains unaware of provider and host semantics.
-- **Data Integrity / Consistency Notes:** Kernel-visible semantics remain uniform across backends; drivers may differ in control flow but must still rely on the same durable object, staging, lineage, and checkpoint rules.
+- **Observability Strategy:** Canonical runtime events are emitted from shared framework services and translated outward by stream adapters; driver attribution must remain visible so hosts can tell shared-runtime events from driver-specific behavior; and future cross-language execution must share one telemetry vocabulary plus compatibility-report evidence.
+- **Configuration Strategy:** Driver selection, provider choice, tool registry, extension activation, and backend configuration are runtime-selected concerns above the kernel; the kernel remains unaware of provider and host semantics; and native toolchain configuration remains authoritative inside each implementation subtree.
+- **Data Integrity / Consistency Notes:** Kernel-visible semantics remain uniform across backends; drivers may differ in control flow but must still rely on the same durable object, staging, lineage, and checkpoint rules; and machine-readable contract/conformance assets must stay aligned with the docs and constitution instead of drifting into a parallel truth system.
 
 ## 6. Logical Risks & Technical Debt
 
@@ -340,3 +417,11 @@ Framework-->>Driver: continue with updated control ownership or child coordinati
 - **Risk:** Host-facing contracts and event vocabulary drift if adapters or drivers bypass shared framework services.
 - **Why it matters:** Different hosts would observe different runtime truths, weakening portability and operability.
 - **Mitigation or follow-up:** Route host controls and canonical event publication through the shared framework layer even when a driver has specialized execution behavior.
+
+- **Risk:** TypeScript-first repo structure or test tooling becomes a permanent exception that later languages have to work around.
+- **Why it matters:** A one-off structure would turn every future implementation into an adapter to historical accidents instead of a peer in one boundary-owned semantic system.
+- **Mitigation or follow-up:** Normalize TypeScript into the same final contract/conformance/interop structure expected of later languages before Rust or any other implementation line becomes authoritative.
+
+- **Risk:** Machine-readable artifacts drift away from the human semantic sources in `docs/` and `constitution/`.
+- **Why it matters:** Cross-language parity collapses quickly when schemas, fixtures, or reports become de facto truth without matching the normative specs.
+- **Mitigation or follow-up:** Treat docs and constitution as the human authority chain, require boundary-owned review for artifact changes, and generate compatibility reports from actual suite evidence rather than hand-authored claims.

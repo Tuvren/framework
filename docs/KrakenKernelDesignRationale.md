@@ -46,7 +46,10 @@ The boundary is a protocol, not an API. The kernel never calls framework code fo
 - Schema interpretation (the kernel has the schema as data)
 - Step-specific logic (the kernel has step declarations as data)
 
-This enables the kernel to be implemented in a native language (Rust, Go, C) with the framework as an SDK in a higher-level language (TypeScript, Python). The FFI boundary is data-in, data-out.
+This enables the kernel to be implemented in a native language (Rust, Go, C)
+with the framework as an SDK in a higher-level language (TypeScript, Python).
+The cross-language seam stays data-in, data-out whether it is realized as an
+FFI boundary or a process transport.
 
 ### 1.5 Why Events Were Demoted
 

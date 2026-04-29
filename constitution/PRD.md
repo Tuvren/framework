@@ -2,6 +2,7 @@
 
 ## 0. Version History & Changelog
 
+- v0.3.0 - Added the multi-implementation portability posture, the runtime implementation maintainer actor, and explicit language-neutral semantic parity capabilities for the post-TypeScript transition line.
 - v0.2.0 - Reframed Tuvren Runtime as a driver-oriented runtime where the framework can host multiple execution drivers over shared kernel primitives, with ReAct as the initial driver.
 - v0.1.0 - Initial PRD synthesized from the existing Kraken kernel/framework specifications and rationale documents.
 - ... [Older history truncated, refer to git logs]
@@ -20,6 +21,7 @@
 - Tuvren Runtime must separate low-level runtime mechanism from higher-level execution policy so that the product can stay stable while agent and workflow behaviors evolve.
 - Tuvren Runtime must be host-embeddable. The product serves applications, services, CLIs, and protocol adapters rather than replacing them.
 - Tuvren Runtime must support a shared runtime foundation that can host more than one execution driver over time rather than treating one agent loop as the entire product ontology.
+- Tuvren Runtime must preserve a language-neutral semantic core so future implementations can share one runtime meaning without turning the first TypeScript line into the permanent oracle.
 
 ### 1.2 Success Criteria
 
@@ -27,6 +29,7 @@
 - A host can observe execution in real time and still rely on a durable post hoc history of what was committed.
 - A human supervisor can interrupt, approve, reject, or resume sensitive work without corrupting the execution lineage.
 - A multi-agent workflow can delegate, hand off, and continue work while preserving traceability and avoiding ambiguous control transfer.
+- A runtime maintainer can introduce a new implementation language against shared contracts and behavioral fixtures without redefining the product’s semantic model.
 
 ### 1.3 Scope Distinctions That Must Remain Stable
 
@@ -99,6 +102,13 @@
 - **Context:** Coordinates specialists, workers, or pipelines that need to share responsibility without collapsing traceability.
 - **Goals:** Delegate subtasks, hand off control, forward worker signals, and preserve execution lineage across agent boundaries.
 - **Frictions:** Many systems conflate delegation with transfer of control or make multi-agent behavior impossible to inspect after the fact.
+
+### 3.6 Runtime Implementation Maintainer
+
+- **Role:** Runtime Implementation Maintainer
+- **Context:** Must extend or maintain Tuvren Runtime in a new language, runtime, or process boundary without weakening the kernel/framework semantics already promised to hosts and builders.
+- **Goals:** Consume stable contracts, prove behavior against shared fixtures, preserve observability and compatibility signals, and add new implementation lines without creating a shadow specification.
+- **Frictions:** Ports often drift into rewrites, language-specific toolchains often leak into semantic boundaries, and shared behavior usually becomes folklore unless parity is enforced mechanically.
 
 ## 4. Functional Capabilities
 
@@ -289,6 +299,16 @@
 - **Capability:** The product must preserve opaque provider continuity artifacts when needed for correct multi-turn operation without promoting provider-specific concepts into the core product language.
 - **Rationale:** Portability requires a neutral core, but operational correctness may still depend on carrying provider-specific continuity data through the system.
 
+- **Priority:** P1
+- **Capability ID:** CAP-P1-035
+- **Capability:** The product must preserve language-neutral semantic seams so future TypeScript, Rust, Go, Python, Zig, or other implementations can share one runtime meaning rather than drifting behind per-language wrappers.
+- **Rationale:** Long-term portability only matters if multiple implementations can remain part of one semantic ecosystem instead of becoming parallel products.
+
+- **Priority:** P1
+- **Capability ID:** CAP-P1-036
+- **Capability:** The product must let implementations prove parity through shared machine-readable contracts and behavioral fixtures instead of relying on one language codebase as the long-term oracle.
+- **Rationale:** Durable multi-language portability needs executable semantic evidence, not only prose promises or reference-implementation folklore.
+
 ### Epic: Reader and Operator Clarity
 
 - **Priority:** P1
@@ -301,12 +321,14 @@
 - The PRD intentionally treats persistence, streaming, tool dispatch, approvals, context engineering, and orchestration as product capabilities because they materially define the user-facing value of Tuvren Runtime as a runtime.
 - The initial active product line is the shared runtime foundation plus the ReAct Driver, not a commitment to implement every possible driver pattern in the first release line.
 - This PRD does not prescribe the concrete storage engine, programming language, packaging layout, or transport stack used to implement those capabilities.
+- Long-term portability is a boundary-preservation goal, not a rewrite mandate; future implementation lines must extend the shared semantic system rather than replace it wholesale.
 
 ### 4.2 Distinction Notes
 
 - A paused turn is not a completed turn and not a failed turn; it represents approval-gated continuation of already-started work.
 - A handoff is not a worker result and not a branch creation; it is a control transfer within the same ongoing work item.
 - Context engineering changes the active working set, not the fact that prior committed history still exists.
+- Semantic neutrality is not toolchain neutrality; implementations may use native package and build workflows while preserving shared runtime meaning at the boundary seams.
 
 ## 5. Non-Functional Constraints
 
@@ -314,7 +336,7 @@
 - **Reliability:** The product must make committed progress durable, distinguish incomplete work from committed work, and converge safely after interruptions without ambiguous replay.
 - **Security & Privacy:** Sensitive actions must be governable through approval workflows; provider-specific continuity artifacts must be preserved only as required for correct operation; runtime state and event surfaces must remain inspectable enough for supervision and audit.
 - **Operability:** The product must be embeddable into different host surfaces, support real-time observation, and expose explicit control points for cancellation, steering, approval, and status inspection.
-- **Domain-specific Constraints:** The product must preserve a clear separation between low-level runtime mechanism and higher-level agent policy; the canonical runtime language must remain provider-neutral; history-preserving correction must be preferred over destructive overwrite; and active-context reshaping must never imply that prior committed history ceased to exist.
+- **Domain-specific Constraints:** The product must preserve a clear separation between low-level runtime mechanism and higher-level agent policy; the canonical runtime language must remain provider-neutral; history-preserving correction must be preferred over destructive overwrite; active-context reshaping must never imply that prior committed history ceased to exist; and future implementation languages must prove parity against shared semantic assets rather than reinterpret the product independently.
 
 ### Prohibited Patterns
 
@@ -336,6 +358,7 @@
 - Extension and policy composition at defined lifecycle points
 - Provider-neutral model integration with canonical streaming and non-streaming behavior
 - Multi-agent orchestration patterns including workers, handoffs, and sequences
+- A language-neutral semantic foundation that can support more than one implementation line over time through shared contracts, conformance artifacts, and compatibility evidence
 
 ### Out of Scope
 
@@ -347,6 +370,7 @@
 - Worker process scheduling, infrastructure supervision, or operating-system-level orchestration
 - Garbage-collection policy for historical data or archival branches
 - Domain-specific business tools, vertical workflows, or provider-exclusive capabilities as core product requirements
+- A simultaneous full-framework port across multiple languages before the shared semantic system is artifact-backed and stable
 
 ## 7. Conceptual Diagrams (Mermaid)
 

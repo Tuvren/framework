@@ -2,38 +2,39 @@
 
 ## 0. Version History & Changelog
 
+- v0.6.1 - Tightened the multi-language transition posture with strict Buf `FILE` governance, a near-public compatibility-ledger posture, and a formal pre-Rust telemetry semantic-convention source plus generated helper contract.
+- v0.6.0 - Activated the multi-language transition foundation after Epic Q, adding boundary-owned contract/conformance/interop governance, the Rust-kernel-first transition target, and the compatibility-ledger posture.
 - v0.5.6 - Added the playground-owned aimock OpenAI E2E validation lane, using `@copilotkit/aimock@1.15.1` plus `@ai-sdk/openai@3.0.53` to exercise streamed text, structured output, tool continuation, approval pause/resume, provider metadata, cancellation, provider failure, malformed responses, and unmatched fixtures across an actual local HTTP provider boundary without real provider credentials.
-- v0.5.5 - Closed Epic Q in current repo reality, adding provider/framework testkits, release and portability tooling, the checked-in portability matrix, and the final release-hardening closure inventory.
-- v0.5.4 - Closed `KRT-Q001` in current repo reality, added the Epic Q hardening gap inventory, and anchored the remaining testkit, release, and portability work to that inventory instead of leaving it implicit.
-- v0.5.3 - Closed Epic P in current repo reality, adding the private playground host harness, recording Node-backed SQLite reload validation, and preserving AG-UI projection for complete turn lifecycles while canonical/SSE handle approval continuation fragments.
-- v0.5.2 - Closed Epic O in current repo reality, pinning the AG-UI adapter to `@ag-ui/core@0.0.52`, tightening the AG-UI adapter surface to the official `AGUIEvent` union, and recording tee-based host fanout as the sanctioned multi-consumer path when all required branches subscribe before the first pull.
-- v0.5.1 - Closed Epic N in current repo reality, correcting the AI SDK bridge baseline to the stable `ProviderStreamChunk` seam, synthesizing structured output from JSON text, and explicitly deferring streamed files and provider-owned tool governance.
-- v0.5.0 - Activated the post-ReAct implementation line, locking the AI SDK bridge baseline to `LanguageModelV3` and defining sequential Epics N-Q for provider bridge, stream adapters, playground host, and release hardening.
 - ... [Older history truncated, refer to git logs]
 
 ## 1. Stack Specification (Bill of Materials)
 
-- **Primary Language / Runtime:** TypeScript `6.0.2` is the first authoritative implementation language for the framework and kernel protocol implementation. The kernel protocol remains language-neutral by contract. Core TypeScript packages target portable ESM across Bun, Node.js, and Deno. Bun remains the preferred local development runtime and package manager.
-- **Primary Frameworks / Libraries:** `ai@6.0.142` and `@ai-sdk/provider@3.0.8` for the baseline AI SDK Providers bridge, using the `LanguageModelV3` / `ProviderV3` surface only in the baseline bridge; `@ag-ui/core@0.0.52` for the baseline AG-UI event union and runtime validation surface; `ajv@8.18.0` for JSON Schema validation; `cbor-x@1.6.4` for deterministic CBOR encoding and decoding in the TypeScript implementation; `@biomejs/biome@2.4.10` for formatting and linting; `tsup@8.5.1` for package builds.
+- **Primary Language / Runtime:** TypeScript `6.0.2` is the first authoritative implementation language for the framework and kernel protocol implementation. The kernel protocol remains language-neutral by contract. Core TypeScript packages target portable ESM across Bun, Node.js, and Deno. Bun remains the preferred local development runtime and package manager. Rust enters only when the multi-language transition line activates its kernel-first phase, using a root Cargo workspace plus `rust-toolchain.toml`; future Go, Python, or Zig implementations must use their native workspace files when and only when their boundary work is authorized.
+- **Primary Frameworks / Libraries:** `ai@6.0.142` and `@ai-sdk/provider@3.0.8` for the baseline AI SDK Providers bridge, using the `LanguageModelV3` / `ProviderV3` surface only in the baseline bridge; `@ag-ui/core@0.0.52` for the baseline AG-UI event union and runtime validation surface; `ajv@8.18.0` for JSON Schema validation; `cbor-x@1.6.4` for deterministic CBOR encoding and decoding in the TypeScript implementation; `@biomejs/biome@2.4.10` for formatting and linting; `tsup@8.5.1` for package builds. The transition line also standardizes on TypeSpec emitters for JSON Schema/OpenAPI contract generation, CDDL for kernel record grammar, Protobuf plus gRPC for the first cross-language kernel process boundary, Buf v2 configuration for `.proto` governance, and OpenTelemetry semantic conventions for cross-language observability. Exact package and plugin versions for those future additions must be pinned in the activation change that introduces them.
 - **State Stores / Persistence:** Tuvren Runtime uses a Kraken-owned backend contract first. `@tuvren/backend-memory` is the reference development and semantic test backend. `@tuvren/backend-sqlite` is the first officially supported persistent backend adapter. Future backends such as PostgreSQL, MySQL/MariaDB, and MongoDB are peer adapters against the same kernel contract, not SQLite-shaped variants.
-- **Infrastructure / Tooling:** `devenv` for reproducible development environments, `nx@22.6.3` plus aligned `@nx/*` packages for TypeScript project orchestration, Bun workspaces, root TypeScript project references, `tsup` package builds, structured JSON logging, exact dependency pinning in `package.json` plus `bun.lock`, and environment-variable-based provider credentials at bridge boundaries.
-- **Testing / Quality Tooling:** `bun test`, `tsc --noEmit`, Biome, deterministic CBOR golden-byte tests, hash identity fixtures, shared backend conformance suites, checkpoint/recovery scenario tests, AI SDK bridge contract fixtures, and private playground-owned E2E validation through `@copilotkit/aimock@1.15.1` plus `@ai-sdk/openai@3.0.53` against a local OpenAI-compatible mock server for success, control, and provider-failure paths.
-- **Version Pinning / Compatibility Policy:** Versions named in this TechSpec are authoritative for the baseline implementation line and must match the repository manifests. Public package APIs follow semantic versioning. Changes to kernel record encoding, hash algorithm, or durable identity rules are semver-major.
+- **Infrastructure / Tooling:** `devenv` for reproducible development environments, `nx@22.6.3` plus aligned `@nx/*` packages for TypeScript project orchestration, Bun workspaces, root TypeScript project references, `tsup` package builds, structured JSON logging, exact dependency pinning in `package.json` plus `bun.lock`, and environment-variable-based provider credentials at bridge boundaries. The repo root also remains the home for repo-global orchestration, Buf configs, future Rust workspace files, `telemetry/`, `reports/compatibility/`, and `tools/` wrappers that coordinate native toolchains without replacing them.
+- **Testing / Quality Tooling:** `bun test`, `tsc --noEmit`, Biome, deterministic CBOR golden-byte tests, hash identity fixtures, shared backend conformance suites, checkpoint/recovery scenario tests, AI SDK bridge contract fixtures, and private playground-owned E2E validation through `@copilotkit/aimock@1.15.1` plus `@ai-sdk/openai@3.0.53` against a local OpenAI-compatible mock server for success, control, and provider-failure paths. The transition line adds boundary-owned JSON conformance fixtures, JSON Schema 2020-12 fixture validation, compatibility-matrix generation, Buf breaking-change checks when `.proto` surfaces exist, and real interop-smoke validation between the TypeScript framework line and future Rust kernel services.
+- **Version Pinning / Compatibility Policy:** Versions named in this TechSpec are authoritative for the baseline implementation line and must match the repository manifests. Public package APIs follow semantic versioning. Changes to kernel record encoding, hash algorithm, or durable identity rules are semver-major. Semantic surface versions for kernel protocol, framework contracts, event vocabulary, error vocabulary, conformance suites, and interop transport are tracked independently from npm package versions or future crate versions.
 
 ### 1.1 Implementation Posture
 
 - **Authoritative center:** The kernel boundary is a protocol of serializable data, not an in-process callback API.
 - **First implementation choice:** TypeScript is the first authoritative implementation of that protocol for speed of validation, not a claim that the kernel is fundamentally JavaScript-bound.
+- **Semantic authority posture:** `docs/` and `constitution/` are the human semantic authorities. Boundary-owned machine-readable contract, conformance, and interop assets are downstream projections of that authority unless explicitly promoted as normative in the same change.
 - **Portability posture:** Core packages stay runtime-portable where practical; backend packages and provider bridges may have narrower runtime support when their dependencies require it.
+- **Multilanguage posture:** Tuvren is one semantic ecosystem with multiple implementations, not multiple independent ports. Shape contracts, behavioral conformance, and cross-process transport are separate authority layers.
 - **Framework posture:** The framework layer is driver-oriented. Shared framework contracts and runtime services stay driver-neutral where practical, while concrete execution semantics live in driver implementations.
 - **Initial driver posture:** The first production-depth driver is the ReAct Driver. It is the baseline implementation, not the whole framework ontology.
 - **Provider posture:** Tuvren Runtime owns the canonical provider contract, while Kraken supplies the engine semantics behind it. The baseline bridge surface is AI SDK Providers only. LangChain is intentionally out of baseline scope. First-class Tuvren-scoped provider packages for major providers are expected later.
 - **Backend posture:** All official backends implement one strict kernel-visible contract. Backend-specific optimizations may exist internally, but they must not change kernel semantics or require capability negotiation at the kernel layer in v0.1.
+- **Toolchain posture:** Nx orchestrates repo-wide target names and dependency flow, but Bun, Cargo, Buf, and future language-native tools remain authoritative inside their ecosystems.
+- **Interop posture:** The first cross-language seam is a process boundary around the kernel. FFI remains explicitly out of the first Rust phase.
 
 ### 1.2 Current-State vs Target-State
 
 - **Current repository reality:** The repository already contains the workspace scaffold, `@tuvren/core-types`, `@tuvren/kernel-protocol`, `@tuvren/backend-memory`, `@tuvren/backend-sqlite`, `@tuvren/kernel-testkit`, `@tuvren/runtime-api`, `@tuvren/driver-api`, `@tuvren/event-stream`, `@tuvren/tool-contracts`, `@tuvren/provider-api`, `@tuvren/runtime-core`, the ReAct Driver baseline with implementation-proven loop completion, streaming/provider semantics, and shared runtime-core tool/approval integration, `@tuvren/provider-bridge-ai-sdk` as the first concrete provider bridge, the host stream adapter line `@tuvren/stream-core`, `@tuvren/stream-sse`, and `@tuvren/stream-agui`, the private playground host harness `@tuvren/playground-host`, a playground-owned aimock/OpenAI E2E validation lane for the local provider HTTP boundary, the hardening testkits `@tuvren/provider-testkit` and `@tuvren/framework-testkit`, release and portability scripts under `tools/scripts`, the checked-in Epic Q portability matrix, and the Epic Q release-hardening closure inventory.
-- **Target implementation state:** The package layout and interfaces defined below are the intended implementation target for the first authoritative code line.
+- **Current gap posture:** The repository does not yet have top-level `telemetry/` or `reports/compatibility/` trees, root `buf.yaml` / `buf.gen.yaml`, root Rust workspace files, boundary-owned `conformance/` trees, or boundary-owned `interop/` trees. The current `boundaries/*/testkit` packages are transitional and must be split into shared conformance assets plus implementation-specific runners before later implementation lines become authoritative.
+- **Target implementation state:** The package layout and interfaces defined below are the intended implementation target for the first authoritative TypeScript line plus the post-Epic-Q multi-language transition foundation.
 - **Drift rule:** The future codebase must conform to this TechSpec. The TechSpec must not be treated as a loose commentary on whatever structure happens to emerge.
 
 ## 2. Architecture Decision Records (ADRs)
@@ -136,6 +137,48 @@
 - **Decision:** Implement the framework as shared contracts plus shared runtime services, with concrete drivers as explicit implementation packages. The first driver is the ReAct Driver.
 - **Consequences:** Package structure, task planning, and future implementation sequencing must separate shared framework logic from driver-specific logic. Future drivers can be added without redefining the kernel, host API, or provider-neutral content model.
 
+### ADR-015 Semantic Authority Flows from Human Specs into Boundary-Owned Machine Artifacts
+
+- **Status:** accepted
+- **Context:** The multi-language transition needs machine-readable contract, conformance, and interop assets, but those assets cannot become an unreviewed parallel spec.
+- **Decision:** `docs/` and `constitution/` remain the human semantic authorities. Boundary-owned machine-readable assets under `contracts/`, `conformance/`, and `interop/` are downstream authority layers that must be updated in lockstep when they become normative.
+- **Consequences:** Generated code, helper wrappers, and compatibility reports are evidence or implementation support, not semantic source of truth. Contract or behavior drift must be resolved by updating the human and machine artifacts together.
+
+### ADR-016 Shape Contracts, Behavioral Conformance, and Interop Transport Stay Separate
+
+- **Status:** accepted
+- **Context:** A single technology cannot cleanly express every kind of runtime authority Tuvren needs across framework contracts, kernel records, behavior fixtures, and cross-process transport.
+- **Decision:** Keep shape contracts, behavioral conformance, and interop transport as separate layers. Framework/provider shape contracts use boundary-owned contract packages; kernel record grammar uses boundary-owned protocol grammar; observable behavior uses boundary-owned conformance suites; and cross-process transport uses boundary-owned interop contracts only where a boundary actually crosses process or language seams.
+- **Consequences:** No schema language or transport definition silently becomes the meaning of the runtime. Implementations must satisfy both shape and behavior requirements, and interop may evolve on its own version track when needed.
+
+### ADR-017 Native Toolchains Remain Authoritative Inside Each Implementation Tree
+
+- **Status:** accepted
+- **Context:** A language-neutral runtime does not imply a fake universal toolchain. TypeScript, Rust, and later languages each have real package, build, and test workflows that must stay first-class if the repo is to remain honest and maintainable.
+- **Decision:** Nx provides repo-wide orchestration and canonical target names, but Bun, Cargo, Buf, and future language-native tools execute the actual build, test, conformance, code-generation, and interop work for their ecosystems.
+- **Consequences:** Repo tooling coordinates rather than replaces native tooling. New language lines must bring their own authoritative workspace files, and implementation plans must avoid TypeScript-centric assumptions at the semantic seams.
+
+### ADR-018 Rust Enters Through a Kernel-Only Process Boundary, Not FFI
+
+- **Status:** accepted
+- **Context:** The first non-TypeScript implementation needs a durable, inspectable, versioned seam that can later serve more than one language pair. FFI would couple early Rust work to the current embedding model and make versioning, observability, and process isolation harder.
+- **Decision:** The first Rust phase is limited to the kernel boundary and exposes that boundary through a process transport contract rather than FFI. The framework remains TypeScript-first until the kernel transport and parity story are routine.
+- **Consequences:** The first Rust implementation proves language-neutral kernel semantics without forcing an immediate Rust framework port. Performance optimization through tighter embedding can be reconsidered later only after the process-boundary contract is proven.
+
+### ADR-019 Multi-Implementation Compatibility Is Proven by Shared Suites and a Generated Ledger
+
+- **Status:** accepted
+- **Context:** Comparing TypeScript and Rust directly would make the first implementation the oracle and hide which semantic surfaces actually pass or fail.
+- **Decision:** Implementations prove parity by running the same boundary-owned conformance suites and interop-smoke checks, then publishing their status to a generated compatibility ledger under `reports/compatibility/`.
+- **Consequences:** Compatibility claims become inspectable and versioned. The ledger records implementation reality without becoming semantic authority itself, and CI can separate repo-global, language-native, and cross-language validation lanes cleanly.
+
+### ADR-020 TypeScript Must Adopt the Final Artifact and Conformance Structure First
+
+- **Status:** accepted
+- **Context:** The current repository still contains TypeScript-first structural shortcuts such as testkit packages standing in for a future language-neutral conformance system.
+- **Decision:** Where the transition defines a stable language-neutral pattern, TypeScript adopts it first. Boundary-owned conformance assets, interop definitions, target naming, and compatibility reporting must normalize the TypeScript line before later implementations inherit the structure.
+- **Consequences:** Later languages inherit a real system instead of a special case. Transition work may relocate or split current TypeScript-only helpers, but it must do so without weakening the existing TypeScript delivery path.
+
 ### 2.1 Compatibility Record
 
 - **Kernel identity compatibility:** Changes to deterministic CBOR profile, SHA-256 usage, hash string representation, or durable record shapes are semver-major.
@@ -143,6 +186,10 @@
 - **Driver compatibility:** Changes to shared driver-selection semantics or driver-neutral framework contracts are semver-major; adding a new driver is semver-minor unless it changes existing shared contracts.
 - **Backend compatibility:** All official backends must preserve the same kernel semantics. Physical schemas may differ by backend.
 - **Provider compatibility:** AI SDK bridge upgrades may happen in minor releases only if the Tuvren-owned provider contract remains unchanged and contract fixtures still pass. Baseline AI SDK bridge compatibility is anchored to `LanguageModelV3`; adding `LanguageModelV2` compatibility later is additive only if it does not widen or weaken the Tuvren-owned provider contract.
+- **Contract artifact compatibility:** Framework/provider contract versions, emitted JSON Schema artifacts, and emitted OpenAPI artifacts follow their owning boundary’s compatibility rules and are reviewed outputs of authored sources rather than independent contracts.
+- **Conformance compatibility:** Normative fixture schemas, scenario identity, and suite semantics version independently from implementation packages. Behavior changes require explicit suite-version or compatibility-policy updates.
+- **Interop transport compatibility:** Cross-process transport versions evolve independently from npm package or crate versions. Buf breaking policy must guard `.proto` changes once the interop surface exists.
+- **Compatibility ledger posture:** `reports/compatibility/` records measured implementation parity and is not a public support matrix unless a later release policy explicitly promotes it.
 
 ## 3. State & Data Modeling
 
@@ -394,6 +441,25 @@ erDiagram
   - primary key: `(run_id, task_id)`
   - foreign keys: `run_id -> runs(run_id)`, `object_hash -> objects(hash)`
   - indexes: primary key, secondary on `(run_id, status)`, `object_hash`
+
+### 3.6 Boundary-Owned Contract, Conformance, and Compatibility Assets
+
+- **Purpose:** Define the machine-readable assets that preserve one semantic system across TypeScript and future implementation lines.
+- **Storage Shape:** Boundary-owned authored sources under `contracts/spec/`, `conformance/`, and `interop/`; reviewed generated artifacts under boundary-owned `artifacts/`; generated compatibility output under `reports/compatibility/`; and observability conventions under `telemetry/`.
+- **Constraints / Invariants:**
+  - Authored sources are primary. This includes `.tsp`, `.cddl`, `.proto`, JSON conformance fixtures, and conformance fixture schemas.
+  - Framework- and provider-facing shape contracts may promote TypeSpec to the authored source and emit JSON Schema 2020-12 plus OpenAPI artifacts under the owning contract package.
+  - Kernel record grammar is authored under boundary-owned CDDL and does not replace the human semantic authority of `docs/KrakenKernelSpecification.md`.
+  - Boundary-owned conformance suites contain language-neutral schemas, fixtures, and scenarios with stable identity and explicit versioning.
+  - Boundary-owned conformance assets are the behavioral source of truth for implementation parity. TypeScript runners consume them as one peer implementation path and do not retain special semantic authority after the split.
+  - Checked-in generated language bindings, if they exist, must live under the consuming implementation tree rather than a shared root generated directory.
+  - `reports/compatibility/compatibility-matrix.json` is generated from actual suite and interop results, is never hand-authored as a semantic claim, and should be suitable for near-public readiness scrutiny once the measured evidence exists.
+  - `telemetry/semconv/tuvren-runtime.yaml` is the authored observability source before any Rust implementation work begins; reviewed summaries and generated language helpers are downstream outputs of that source.
+- **Indexes / Access Paths:**
+  - by boundary ownership: `boundaries/<area>/contracts/...`, `boundaries/<area>/conformance/...`, `boundaries/<area>/interop/...`
+  - by repo-global generated outputs: `reports/compatibility/...`
+  - by repo-global observability conventions: `telemetry/...`
+- **Migration Notes:** Existing `boundaries/*/testkit` packages are transitional. The transition line must split them into shared conformance assets plus implementation-specific runners before Rust or other non-TypeScript implementations become authoritative.
 
 ## 4. Interface Contract
 
@@ -1246,160 +1312,276 @@ export declare function toAgUiEvents(
 - The initial playground lives under `boundaries/hosts/implementations/typescript/playground`. It is a local TypeScript host harness for exercising runtime embedding, provider bridge configuration, stream adapter output, cancellation, steering, approval resolution, status inspection, and persistent backend reloads. It is not a production web application or authentication boundary.
 - The hardening line owns the extracted provider/framework testkits, release-check tooling that still includes the private playground host proof, package export smoke tests, and explicit portability-matrix validation for clearly portable core non-native packages across Bun and Node. `constitution/spikes/epic-q-release-hardening-inventory.md` is the authoritative closure record for that work. Epic Q certifies internal implementation-line readiness rather than public package publication. Deno checks remain deferred until package surfaces stabilize enough to avoid testing scaffolding churn.
 
+### 4.8 Boundary-Owned Contract and Conformance Asset Surface
+
+- **Style:** mixed machine-readable artifact surface
+- **Authentication / Authorization:** Not a runtime auth boundary. These assets are repo-owned and reviewed through normal source-control and CI policy.
+- **Compatibility Strategy:** Each boundary owns its own contract, conformance, and artifact outputs. Shape contracts, behavioral fixtures, and generated artifacts may version independently, but none may silently contradict the human semantic sources.
+- **Error model:** Validation, generation, or suite-shape failures stop CI or local verification and do not count as runtime behavior.
+
+```text
+boundaries/<area>/contracts/<surface>/
+  spec/
+    typespec/        # when TypeSpec is the authored contract source
+    cddl/            # when CDDL is the authored record-grammar source
+  artifacts/
+    json-schema/
+    openapi/
+  src/
+  test/
+
+boundaries/<area>/conformance/
+  schemas/
+  fixtures/
+  scenarios/
+```
+
+- TypeSpec is the preferred authored source for framework- and provider-facing machine-readable shape contracts when a contract package is promoted to that level.
+- Kernel protocol record grammar is authored under `boundaries/kernel/contracts/protocol/spec/cddl/`.
+- Conformance fixture schemas use JSON Schema 2020-12 and validate language-neutral fixtures and scenarios.
+- Generated contract artifacts such as JSON Schema, OpenAPI, and compatibility reports may be checked in when they are useful reviewed outputs.
+- Generated implementation bindings should generally not be checked in; when they are, they belong under the consuming implementation tree.
+
+### 4.9 Kernel Interop Transport Contract
+
+- **Style:** gRPC/RPC
+- **Authentication / Authorization:** The interop transport is an internal runtime boundary. Any external authentication remains host-owned when the transport is exposed beyond local development or CI.
+- **Compatibility Strategy:** The first interop surface is kernel-only, versioned independently from npm package or future crate versions, and governed mechanically through Buf lint and breaking-change checks once `.proto` files are introduced. Buf `FILE` compatibility is the required default gate from the first `.proto` merge onward, and any relaxation requires an explicit future TechSpec revision rather than local convenience.
+- **Error model:** Transport errors carry stable kernel/runtime error payloads rather than language-native exception types as the cross-process contract.
+
+The first transport surface mirrors the kernel-only subsystem operations the
+TypeScript framework already depends on through `RuntimeKernel`. It must
+include the thread, branch, turn, and run lifecycle operations needed to
+preserve the current `TuvrenRuntime` surface over a remote kernel path, while
+keeping framework-owned `ExecutionHandle` controls such as `cancel()`,
+`steer(...)`, `resolveApproval(...)`, and driver-loop execution out of the
+kernel transport entirely.
+
+```proto
+service KernelThreadService {
+  rpc ThreadCreate(ThreadCreateRequest) returns (ThreadCreateResponse);
+  rpc ThreadGet(ThreadGetRequest) returns (ThreadGetResponse);
+}
+
+service KernelBranchService {
+  rpc BranchCreate(BranchCreateRequest) returns (BranchCreateResponse);
+  rpc BranchGet(BranchGetRequest) returns (BranchGetResponse);
+  rpc BranchSetHead(BranchSetHeadRequest) returns (BranchSetHeadResponse);
+  rpc BranchList(BranchListRequest) returns (BranchListResponse);
+}
+
+service KernelTurnService {
+  rpc TurnCreate(TurnCreateRequest) returns (TurnCreateResponse);
+  rpc TurnGet(TurnGetRequest) returns (TurnGetResponse);
+  rpc TurnUpdateHead(TurnUpdateHeadRequest) returns (TurnUpdateHeadResponse);
+}
+
+service KernelRunService {
+  rpc RunCreate(RunCreateRequest) returns (RunCreateResponse);
+  rpc RunBeginStep(RunBeginStepRequest) returns (RunBeginStepResponse);
+  rpc RunCompleteStep(RunCompleteStepRequest)
+      returns (RunCompleteStepResponse);
+  rpc RunComplete(RunCompleteRequest) returns (RunCompleteResponse);
+  rpc RunRecover(RunRecoverRequest) returns (RunRecoverResponse);
+}
+```
+
+- Authored `.proto` files live under `boundaries/kernel/interop/grpc/proto/`.
+- Event envelopes and stable error payloads are part of the transport surface where real cross-process execution needs them.
+- The interop surface must stay narrower than the full framework API during the first Rust phase and must not absorb host or driver-owned control semantics in order to make the remote kernel path convenient.
+
+### 4.10 Compatibility Ledger Contract
+
+- **Style:** generated JSON report
+- **Authentication / Authorization:** None. This is a repo-generated report artifact.
+- **Compatibility Strategy:** The ledger records measured implementation parity by suite and version. It is designed as a conservative, reviewable near-public readiness signal, not merely a private maintainer scratchpad.
+- **Error model:** Missing, stale, or contradictory suite results are report-generation failures, not silent compatibility claims.
+
+```json
+{
+  "generatedAtMs": 0,
+  "sourceRevision": "",
+  "suites": [
+    {
+      "suiteId": "",
+      "suiteVersion": "",
+      "boundary": ""
+    }
+  ],
+  "implementations": [
+    {
+      "implementationId": "",
+      "language": "",
+      "version": "",
+      "results": [
+        {
+          "suiteId": "",
+          "suiteVersion": "",
+          "status": "pass",
+          "evidencePath": ""
+        }
+      ]
+    }
+  ],
+  "interop": [
+    {
+      "pairId": "",
+      "suiteId": "",
+      "suiteVersion": "",
+      "status": "pass",
+      "evidencePath": ""
+    }
+  ]
+}
+```
+
+- `reports/compatibility/compatibility-matrix.json` is generated from actual conformance and interop-smoke runs.
+- The ledger must answer whether a named implementation passes a named suite version, whether a named cross-language pairing passes its interop-smoke suite, and which evidence artifact supports each claim.
+- Ledger wording must stay conservative and measured enough that the file can move toward external readiness signaling without later semantic cleanup.
+
 ## 5. Implementation Guidelines
 
 ### 5.1 Project Structure
 
-Target implementation layout after code generation begins:
+Target implementation layout for the first authoritative TypeScript line plus
+the multi-language transition foundation:
 
 ```text
 .
 ├── constitution/
-│   ├── Architecture.md
-│   ├── PRD.md
-│   └── TechSpec.md
 ├── docs/
+├── telemetry/
+│   ├── semconv/
+│   │   └── tuvren-runtime.yaml
+│   ├── semantic-conventions.md
+│   └── otel-attributes.json
+├── reports/
+│   └── compatibility/
+├── tools/
+│   ├── generators/
+│   ├── nx/
+│   └── scripts/
 ├── devenv.nix
 ├── devenv.yaml
-├── nx.json
+├── biome.jsonc
 ├── package.json
 ├── bun.lock
+├── nx.json
 ├── tsconfig.base.json
 ├── tsconfig.json
-├── biome.jsonc
+├── buf.yaml                # when kernel interop activates
+├── buf.gen.yaml            # when kernel interop activates
+├── Cargo.toml              # when Rust is introduced
+├── Cargo.lock              # when Rust is introduced
+├── rust-toolchain.toml     # when Rust is introduced
 ├── boundaries/
-│   ├── kernel/
+│   ├── framework/
 │   │   ├── contracts/
-│   │   │   └── protocol/
-│   │   │       ├── package.json
-│   │   │       ├── project.json
+│   │   │   ├── driver-api/
+│   │   │   ├── event-stream/
+│   │   │   ├── runtime-api/
+│   │   │   └── tool-contracts/
+│   │   │       ├── spec/
+│   │   │       ├── artifacts/
 │   │   │       ├── src/
 │   │   │       └── test/
 │   │   ├── implementations/
-│   │   │   └── typescript/
-│   │   │       ├── backend-memory/
-│   │   │       │   ├── package.json
-│   │   │       │   ├── project.json
-│   │   │       │   ├── src/
-│   │   │       │   └── test/
-│   │   │       └── backend-sqlite/
-│   │   │           ├── package.json
-│   │   │           ├── project.json
-│   │   │           ├── migrations/
-│   │   │           ├── src/
-│   │   │           └── test/
-│   │   └── testkit/
-│   │       ├── package.json
-│   │       ├── project.json
-│   │       └── src/
-│   ├── framework/
+│   │   │   ├── typescript/
+│   │   │   │   ├── drivers/
+│   │   │   │   │   └── react/
+│   │   │   │   ├── runtime-core/
+│   │   │   │   ├── stream-core/
+│   │   │   │   ├── stream-sse/
+│   │   │   │   ├── stream-agui/
+│   │   │   │   └── conformance-runner/
+│   │   │   └── rust/
+│   │   │       └── conformance-runner/
+│   │   └── conformance/
+│   │       ├── schemas/
+│   │       ├── fixtures/
+│   │       └── scenarios/
+│   ├── kernel/
 │   │   ├── contracts/
-│   │   │   ├── runtime-api/
-│   │   │   │   ├── package.json
-│   │   │   │   ├── project.json
-│   │   │   │   └── src/
-│   │   │   ├── driver-api/
-│   │   │   │   ├── package.json
-│   │   │   │   ├── project.json
-│   │   │   │   └── src/
-│   │   │   ├── event-stream/
-│   │   │   │   ├── package.json
-│   │   │   │   ├── project.json
-│   │   │   │   └── src/
-│   │   │   └── tool-contracts/
-│   │   │       ├── package.json
-│   │   │       ├── project.json
-│   │   │       └── src/
+│   │   │   └── protocol/
+│   │   │       ├── spec/
+│   │   │       │   └── cddl/
+│   │   │       ├── artifacts/
+│   │   │       ├── src/
+│   │   │       └── test/
+│   │   ├── interop/
+│   │   │   └── grpc/
+│   │   │       └── proto/
 │   │   ├── implementations/
-│   │   │   └── typescript/
-│   │   │       ├── runtime-core/
-│   │   │       │   ├── package.json
-│   │   │       │   ├── project.json
-│   │   │       │   ├── src/
-│   │   │       │   └── test/
-│   │   │       ├── drivers/
-│   │   │       │   └── react/
-│   │   │       │       ├── package.json
-│   │   │       │       ├── project.json
-│   │   │       │       ├── src/
-│   │   │       │       └── test/
-│   │   │       ├── stream-core/
-│   │   │       │   ├── package.json
-│   │   │       │   ├── project.json
-│   │   │       │   └── src/
-│   │   │       ├── stream-sse/
-│   │   │       │   ├── package.json
-│   │   │       │   ├── project.json
-│   │   │       │   └── src/
-│   │   │       └── stream-agui/
-│   │   │           ├── package.json
-│   │   │           ├── project.json
-│   │   │           └── src/
-│   │   └── testkit/
-│   │       ├── package.json
-│   │       ├── project.json
-│   │       └── src/
+│   │   │   ├── typescript/
+│   │   │   │   ├── backend-memory/
+│   │   │   │   ├── backend-sqlite/
+│   │   │   │   └── conformance-runner/
+│   │   │   └── rust/
+│   │   │       ├── kernel/
+│   │   │       ├── grpc-service/
+│   │   │       └── conformance-runner/
+│   │   └── conformance/
+│   │       ├── schemas/
+│   │       ├── fixtures/
+│   │       └── scenarios/
 │   ├── providers/
 │   │   ├── contracts/
 │   │   │   └── provider-api/
-│   │   │       ├── package.json
-│   │   │       ├── project.json
-│   │   │       └── src/
+│   │   │       ├── spec/
+│   │   │       │   └── typespec/
+│   │   │       ├── artifacts/
+│   │   │       ├── src/
+│   │   │       └── test/
 │   │   ├── implementations/
-│   │   │   └── typescript/
-│   │   │       └── bridge-ai-sdk/
-│   │   │           ├── package.json
-│   │   │           ├── project.json
-│   │   │           ├── src/
-│   │   │           └── test/
-│   │   └── testkit/
-│   │       ├── package.json
-│   │       ├── project.json
-│   │       └── src/
+│   │   │   ├── typescript/
+│   │   │   │   └── bridge-ai-sdk/
+│   │   │   └── rust/
+│   │   └── conformance/
+│   │       ├── schemas/
+│   │       ├── fixtures/
+│   │       └── scenarios/
 │   ├── shared/
-│   │   ├── contracts/
-│   │   │   └── core-types/
-│   │   │       ├── package.json
-│   │   │       ├── project.json
-│   │   │       └── src/
-│   │   └── implementations/
-│   │       └── typescript/
+│   │   └── contracts/
+│   │       └── core-types/
+│   │           ├── spec/
+│   │           ├── artifacts/
+│   │           ├── src/
+│   │           └── test/
 │   └── hosts/
 │       └── implementations/
 │           └── typescript/
 │               └── playground/
-│                   ├── package.json
-│                   ├── project.json
-│                   └── src/
-├── tools/
-│   ├── nx/
-│   ├── scripts/
-│   │   ├── verify.ts
-│   │   ├── backend-contract.ts
-│   │   ├── cbor-fixtures.ts
-│   │   └── release-check.ts
-│   └── generators/
-└── tests/
-    ├── fixtures/
-    └── scenarios/
+└── tests/                   # transitional until normative assets are migrated
 ```
+
+Each contract package in the target tree adopts the same conceptual
+`spec/`, `artifacts/`, `src/`, and `test/` shape once it is promoted to an
+authored machine-readable source.
 
 ### 5.1.1 Structure Rules
 
 - The repository is architecture-first and language-neutral at the top level.
-- `boundaries/` is the authoritative implementation tree.
-- Each architectural boundary owns its own contracts and implementations.
-- Language-specific code lives under `implementations/<language>/...`.
-- Nx manages the TypeScript projects in this tree. Nx does not define the repo ontology.
-- `shared/` must remain small and contain only truly cross-boundary primitives. It must not become a semantic dumping ground.
-- Contract-driven components such as backends, provider surfaces, driver contracts, tool contracts, and stream-event vocabulary must have an explicit contract home before any implementation package is added.
+- `boundaries/` is the universal home for boundary-owned implementation code plus boundary-owned machine-readable contract, conformance, and interop assets.
+- Top-level directories outside `boundaries/` are reserved for global human authority (`docs/`, `constitution/`), repo-global tooling (`tools/`), repo-global observability conventions (`telemetry/`), root workspace files, and generated reports (`reports/`).
+- The current repo-root `tests/` tree is a deliberate transitional exception to that top-level posture until its normative assets are migrated into boundary-owned `conformance/` trees.
+- Each architectural boundary owns its own `contracts/`, `implementations/`, `conformance/`, and `interop/` trees when those concerns exist for that boundary.
+- Language-specific code lives under `implementations/<language>/...`, and any checked-in generated language bindings belong under the consuming implementation tree rather than a shared root generated directory.
+- Nx manages orchestration and target naming. Nx does not define the repo ontology and must delegate actual work to the native toolchain for the language or artifact family involved.
+- `shared/` must remain small and contain only truly cross-boundary primitives. It must not become a semantic dumping ground or a backdoor TypeScript convenience layer.
+- Contract-driven components such as backends, provider surfaces, driver contracts, tool contracts, event vocabulary, conformance suites, and interop seams must have an explicit boundary-owned home before any new implementation package is added.
 - `@tuvren/runtime-api` remains the semantic anchor and compatibility source for shared framework contracts. Focused facade packages remain the preferred public home for event, tool, provider, and driver-specific imports, but compatibility re-exports from `@tuvren/runtime-api` are allowed while the partition settles.
+- Where a stable language-neutral structure exists, TypeScript adopts it first so later languages inherit a real system rather than a permanent TypeScript exception.
 
 ### 5.2 Coding Standards
 
 - **Formatting / Linting:** Use Biome configured to follow the repository’s Ultracite-aligned standards.
-- **Workspace Tooling:** Use `devenv` for reproducible developer environments and `nx@22.6.3` with aligned `@nx/*` packages for project orchestration, affected-graph analysis, caching, generators, and task coordination across the TypeScript subtree.
+- **Workspace Tooling:** Use `devenv` for reproducible developer environments and `nx@22.6.3` with aligned `@nx/*` packages for project orchestration, affected-graph analysis, caching, generators, and task coordination across the TypeScript subtree. Canonical repo-wide target names are `build`, `test`, `lint`, `typecheck`, `conformance`, `codegen`, `interop-smoke`, and later `bench` where benchmarking becomes a first-class concern.
 - **Build Tooling:** Use `tsup` for TypeScript package builds. Core packages emit ESM-first builds and do not publish JavaScript sourcemaps or TypeScript declaration maps by default.
+- **Contract / Artifact Rules:**
+  - TypeSpec emits JSON Schema 2020-12 and OpenAPI artifacts only from boundary-owned contract packages that have explicitly promoted TypeSpec to the authored source.
+  - Kernel record grammar is authored in CDDL and validated separately from runtime behavior.
+  - `.proto` definitions lint, generate, and run breaking-change checks through Buf once the interop surface exists, with Buf `FILE` compatibility as the default breaking gate.
+  - JSON conformance fixtures are reviewed like code and validated by boundary-owned fixture schemas.
 - **TypeScript Settings:**
   - `"strict": true`
   - `"module": "esnext"`
@@ -1420,11 +1602,17 @@ Target implementation layout after code generation begins:
   - recovery and checkpoint scenario tests covering pause/resume, reactive checkpointing, and rollback archival
   - driver contract and framework-runtime integration tests that keep shared framework services distinct from ReAct-specific behavior
   - AI SDK bridge contract tests
+  - boundary-owned conformance runners that consume shared fixture suites without redefining semantics locally
+  - compatibility-matrix generation from actual conformance and interop-smoke results
   - runtime portability tests for core packages on Bun and Node; Deno compatibility tests for core non-native packages as soon as package surfaces stabilize
 - **Observability Hooks:**
   - structured logger interface injected at runtime boundaries
   - event tee support for tests and host adapters
   - stable metric names for turn count, iteration count, provider latency, tool latency, checkpoint count, and recovery count
+  - `telemetry/semconv/tuvren-runtime.yaml` is the authored OpenTelemetry semantic-convention source and must exist before Rust implementation work begins
+  - reviewed outputs such as `telemetry/semantic-conventions.md` and `telemetry/otel-attributes.json` are derived from that source
+  - generated TypeScript and Rust constants or helpers derived from the telemetry semantic-convention source belong under the consuming implementation trees, not under a shared root generated directory
+  - OpenTelemetry attribute conventions cover run id, turn id, branch id, driver id, tool call id, checkpoint hash, parent checkpoint hash, resumed-from hash, backend id, and provider id
 - **Migration / Deployment Notes:**
   - `kernel/implementations/typescript/backend-memory` has no persisted migration surface
   - `kernel/implementations/typescript/backend-sqlite` ships forward-only SQL migrations
@@ -1443,35 +1631,29 @@ Target implementation layout after code generation begins:
 - Changes to provider posture, backend posture, record encoding, hash algorithm, or public framework contracts require a TechSpec update in the same change.
 - Changes that alter the driver model, driver-neutral framework surface, or the ReAct Driver’s role as the initial baseline require a TechSpec update in the same change.
 - New backend adapters require updates to backend conformance documentation and compatibility notes.
+- Changes that promote or revise boundary-owned contract, conformance, interop, telemetry, or compatibility-ledger authority require TechSpec updates in the same change.
+- When a shared contract adds a host-owned control or policy seam, the baseline ReAct/runtime path must either wire it through in the same change or document the limitation explicitly in `docs/` and `constitution/`.
 
 ### 5.4 Initial Build Sequence
 
-1. Scaffold `devenv`, `nx`, the Bun workspace, root TypeScript configuration, Biome configuration, and the boundary-grouped monorepo layout.
-2. Implement `boundaries/shared/contracts/core-types` with the small set of truly cross-boundary primitives.
-3. Implement `boundaries/kernel/contracts/protocol` with exact protocol data types, deterministic CBOR utilities, SHA-256 hashing helpers, validation rules, and shared semantic fixtures.
-4. Implement `boundaries/kernel/implementations/typescript/backend-memory` as the reference semantic backend.
-5. Implement `boundaries/kernel/implementations/typescript/backend-sqlite` with WAL mode, migrations, and full backend contract conformance.
-6. Implement the shared framework contract packages under `boundaries/framework/contracts/`, including the driver contract surface.
-7. Implement `boundaries/providers/contracts/provider-api` as the canonical provider-neutral model contract.
-8. Implement `boundaries/framework/implementations/typescript/runtime-core` as the shared framework-services layer above the kernel and below concrete drivers.
-9. Implement `boundaries/framework/implementations/typescript/drivers/react` as a focused ReAct Driver foundation slice: package scaffold, canonical prompt rendering, provider-call shell, and response/result mapping against the shared runtime and provider/tool contracts.
-10. Complete the ReAct loop behavior in `boundaries/framework/implementations/typescript/drivers/react` and `boundaries/framework/implementations/typescript/runtime-core` without widening provider bridge or host adapter scope.
-11. Harden ReAct provider streaming and non-streaming semantics in the driver/provider contract path, including live assistant event publication, durable response reconciliation, structured output validation, cancellation partials, usage/metadata preservation, and provider error normalization.
-12. Complete ReAct tool and approval integration through shared runtime-core services: tool result continuation, sequential/parallel batch execution, approval pause/resume, edit/reject decisions, and partial batch durability.
-13. Implement `boundaries/providers/implementations/typescript/bridge-ai-sdk` as the baseline provider bridge on `LanguageModelV3` / `ProviderV3`, with `LanguageModelV2`, provider-native tools, AI SDK agent loops, AI SDK UI message transports, LangChain, and first-class Tuvren provider packages deferred.
-14. Implement host-facing stream protocol adapters after the provider bridge is proven: `boundaries/framework/implementations/typescript/stream-core`, `stream-sse`, and `stream-agui`. Runtime/model streaming semantics belong to the driver/provider implementation path above; adapter packages only translate canonical `TuvrenStreamEvent` output for hosts.
-15. Implemented the local playground host harness under `boundaries/hosts/implementations/typescript/playground` after stream adapters exist, covering embedded runtime flows, provider bridge configuration, stream adapter output, cancellation, steering, approval resolution, status inspection, and persistent backend reloads. SQLite reload validation runs through the built Node CLI path because `@tuvren/backend-sqlite` depends on `better-sqlite3`.
-16. Extract provider/framework testkits and add release/portability hardening after the playground harness proves the public host path: reusable fixtures, package export smoke tests, release checks, and Bun/Node portability coverage for core non-native packages.
-17. Add future concrete drivers beyond ReAct only after the first driver, provider bridge, host-facing adapter path, playground host harness, and hardening line are proven.
-18. Add backend conformance suites for future peer adapters such as PostgreSQL and MySQL/MariaDB before expanding the official backend set.
+1. The baseline TypeScript implementation line is already closed through Epic Q. Historical implementation detail lives in the closure artifacts cited in `5.4.1` rather than in a preserved closed backlog here.
+2. Formalize the multi-language transition foundation without weakening the TypeScript delivery path: add boundary-owned `spec/`, `artifacts/`, `conformance/`, and `interop/` homes, substantial early target-shape scaffolding, `telemetry/`, `reports/compatibility/`, and canonical Nx target names that delegate to native toolchains.
+3. Promote framework and provider contract packages to boundary-owned contract-package shape where TypeSpec becomes the authored source, and emit reviewed JSON Schema/OpenAPI artifacts from those packages.
+4. Add kernel protocol CDDL grammar plus boundary-owned conformance schemas, fixtures, and scenarios, then split the current TypeScript testkits into shared conformance assets and implementation-specific runners so TypeScript becomes one peer consumer of the shared suites rather than their root authority.
+5. Introduce the kernel interop transport surface under `boundaries/kernel/interop/grpc/proto/`, add root Buf configuration, and wire code-generation plus interop-smoke orchestration through repo-global tooling.
+6. Formalize the telemetry semantic-convention source and generated helper contract before Rust implementation work begins.
+7. Introduce root Cargo workspace files and the first Rust implementation only under the kernel boundary: kernel core, gRPC service, and conformance runner.
+8. Stabilize TypeScript framework to Rust kernel interop, cross-language telemetry attributes, generated telemetry helpers, and compatibility-ledger generation before any Rust framework implementation begins.
+9. Add a Rust framework implementation only after the kernel transport, conformance, interop-smoke, telemetry, and compatibility-reporting path is routine.
+10. Add future concrete drivers, peer backends such as PostgreSQL and MySQL/MariaDB, or additional host protocols only after the artifact-backed semantic system is stable enough to absorb them without drift.
 
-### 5.4.1 ReAct Epic Partition Status
+### 5.4.1 ReAct and Multilanguage Epic Partition Status
 
-- **Epic K — ReAct Loop Completion:** Closed in current repo reality. Loop correctness, cancellation boundaries, partial assistant durability, and the current handoff seam are implemented and recorded in `constitution/spikes/epic-k-react-loop-cancellation-inventory.md`.
-- **Epic L — ReAct Streaming and Provider Semantics:** Closed in current repo reality. Streaming parity, assistant event reconciliation, structured output streaming, and opaque provider metadata preservation are implemented and recorded in `constitution/spikes/epic-l-parity-inventory.md`.
-- **Epic M — ReAct Tool and Approval Integration:** Closed in current repo reality. Shared runtime-core now owns durable tool-result feedback, approval pause/resume primitives, edited/rejected decision recording, partial batch durability, and recovery-oriented coverage. Edited approvals execute with the approved edited input while preserving a durable audit trace of the original and edited values on the resulting tool result. Closure evidence is recorded in `constitution/spikes/epic-m-tool-approval-gap-inventory.md`.
-- **Epic N — AI SDK Provider Bridge Baseline:** Closed in current repo reality. `@tuvren/provider-bridge-ai-sdk` now owns the `LanguageModelV3` / `ProviderV3` bridge on `@ai-sdk/provider@3.0.8`, keeps all AI SDK-specific imports, guards, mappings, errors, and compatibility drift inside the package, preserves the existing `ProviderStreamChunk` seam, synthesizes structured output from JSON text, and records the unsupported provider-owned tool/file surfaces in `constitution/spikes/epic-n-ai-sdk-bridge-inventory.md`.
-- **Epic O — Host Stream Protocol Adapters:** Closed in current repo reality. `@tuvren/stream-core`, `@tuvren/stream-sse`, and `@tuvren/stream-agui` now translate canonical `TuvrenStreamEvent` output for hosts, use tee-based fanout as the sanctioned multi-consumer path above `ExecutionHandle.events()` when required branches subscribe before the first pull, pin AG-UI to `@ag-ui/core@0.0.52`, and record the lossy/custom fallback matrix in `constitution/spikes/epic-o-stream-adapter-inventory.md`.
-- **Epic P — Playground Host Harness:** Closed in current repo reality. `@tuvren/playground-host` now owns the private local TypeScript host harness, exercises embedding, stream adapters, provider configuration, runtime controls, approval flow, branching, cancellation, AI SDK mock provider mode, and backend reload behavior without becoming a production web application or authentication boundary. Full-turn streams cover canonical/SSE/AG-UI fanout; approval resume continuation is projected to canonical/SSE only because AG-UI translation requires a complete turn lifecycle. Closure evidence is recorded in `constitution/spikes/epic-p-playground-host-inventory.md`.
-- **Epic Q — Testkit, Portability, and Release Hardening:** Closed in current repo reality. `@tuvren/provider-testkit` extracts provider-contract-first fixtures with the AI SDK bridge as the first proving implementation, `@tuvren/framework-testkit` extracts stream/control fixtures while preserving the documented canonical/SSE-only resumed-continuation limit for AG-UI, `tools/scripts/verify.ts` and `tools/scripts/release-check.ts` own internal release readiness checks, `tools/scripts/portability-check.ts` validates conservative Bun/Node import portability, and closure evidence is recorded in `constitution/spikes/epic-q-release-hardening-inventory.md`. Deno checks remain deferred until package surfaces stabilize enough to avoid scaffolding churn.
-- **Later driver, backend, provider, and host protocol expansion:** Deferred beyond Epic Q unless the TechSpec is revised. This includes `LanguageModelV2` compatibility, provider-native tools, AI SDK agent loops/UI transports, LangChain bridge work, first-class Tuvren provider packages, ACP, future non-ReAct drivers, and future official backends.
+- **Epics K-Q — Closed baseline TypeScript line:** The ReAct loop, provider bridge, host stream adapters, playground host harness, and release/portability hardening are already closed in current repo reality. Authoritative closure evidence lives in `constitution/spikes/epic-k-react-loop-cancellation-inventory.md`, `constitution/spikes/epic-l-parity-inventory.md`, `constitution/spikes/epic-m-tool-approval-gap-inventory.md`, `constitution/spikes/epic-n-ai-sdk-bridge-inventory.md`, `constitution/spikes/epic-o-stream-adapter-inventory.md`, `constitution/spikes/epic-p-playground-host-inventory.md`, and `constitution/spikes/epic-q-release-hardening-inventory.md`.
+- **Epic R — Multilanguage Transition Foundation:** `KRT-R001` is closed in current repo reality through `constitution/spikes/epic-r-multilanguage-transition-guide.md`. The remaining Epic R work establishes substantial early boundary-owned scaffolding, the formal telemetry semantic-convention source, compatibility-ledger foundations, and canonical target vocabulary without weakening the current TypeScript implementation line.
+- **Epic S — Boundary Contract and Conformance Artifactization:** Planned. This epic promotes selected contract packages to authored machine-readable sources, adds kernel CDDL grammar, and splits current testkits into boundary-owned conformance assets plus TypeScript runners.
+- **Epic T — Kernel Interop Governance:** Planned. This epic defines the narrow kernel-only transport surface, adds strictly Buf-governed `.proto` ownership on the `FILE` compatibility setting, and wires code-generation plus interop-smoke orchestration.
+- **Epic U — Rust Kernel Baseline:** Planned. This epic introduces the root Cargo workspace, Rust kernel implementation, Rust gRPC service, and Rust conformance runner while keeping framework ownership TypeScript-first.
+- **Epic V — TypeScript Framework and Rust Kernel Interop Stabilization:** Planned. This epic proves real TS framework to Rust kernel interoperability, near-public compatibility-ledger generation, and cross-language telemetry conventions.
+- **Epic W — Rust Framework Start:** Deferred until Epic V closes and the TypeScript-to-Rust kernel seam is routine.
+- **Later driver, backend, provider, language, and host protocol expansion:** Deferred beyond Epic W unless the TechSpec is revised. This includes `LanguageModelV2` compatibility, provider-native tools, AI SDK agent loops/UI transports, LangChain bridge work, first-class Tuvren provider packages, ACP, future non-ReAct drivers, future official backends, and future language lines beyond Rust.
