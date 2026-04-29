@@ -1,5 +1,5 @@
 {
-  "generatedAtMs": 1777450243727,
+  "generatedAtMs": 1777451870635,
   "implementations": [
     {
       "implementationId": "typescript-framework",
@@ -42,7 +42,7 @@
     }
   ],
   "interop": [],
-  "sourceRevision": "faa2fed2aa85100ddfa5b079cbad5147484b1416",
+  "sourceRevision": "refs/heads/feat/epic-r-mtf-foundation",
   "suites": [
     {
       "boundary": "framework",

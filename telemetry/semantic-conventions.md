@@ -4,7 +4,7 @@ Generated from `telemetry/semconv/tuvren-runtime.yaml` via `weaver`.
 
 - Schema URL: `https://tuvren.dev/schemas/telemetry/0.1.0`
 - Resolved registry: `telemetry/semconv`
-- Generated at: `1777450243811`
+- Generated at: `1777451870718`
 
 | Attribute | Type | Stability | Brief | Examples |
 | --- | --- | --- | --- | --- |

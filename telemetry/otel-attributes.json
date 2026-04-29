@@ -77,7 +77,7 @@
       "type": "string"
     }
   ],
-  "generatedAtMs": 1777450243811,
+  "generatedAtMs": 1777451870718,
   "registryUrl": "telemetry/semconv",
   "schemaUrl": "https://tuvren.dev/schemas/telemetry/0.1.0"
 }

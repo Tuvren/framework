@@ -158,16 +158,32 @@ async function main(): Promise<void> {
 }
 
 async function readSourceRevision(): Promise<string> {
-  const result = await runCommand(["git", "rev-parse", "HEAD"], {
+  // A checked-in generated artifact cannot stably embed its own final commit
+  // hash: committing the updated file changes the hash again. Use the symbolic
+  // ref when available so provenance stays meaningful without pretending to be
+  // a self-referential exact commit identity.
+  const symbolicRefResult = await runCommand(
+    ["git", "symbolic-ref", "--quiet", "HEAD"],
+    {
+      captureOutput: true,
+      cwd: REPO_ROOT,
+    }
+  );
+
+  if (symbolicRefResult.code === 0) {
+    return symbolicRefResult.stdout.trim();
+  }
+
+  const detachedHeadResult = await runCommand(["git", "rev-parse", "HEAD"], {
     captureOutput: true,
     cwd: REPO_ROOT,
   });
 
-  if (result.code !== 0) {
+  if (detachedHeadResult.code !== 0) {
     return "unknown";
   }
 
-  return result.stdout.trim();
+  return detachedHeadResult.stdout.trim();
 }
 
 async function readSuiteManifest(manifestPath: string): Promise<SuiteManifest> {
@@ -211,7 +227,16 @@ async function runConformanceTarget(
 ): Promise<{
   matrixResult: CompatibilityImplementationResult;
 }> {
-  const command = ["bun", "run", "nx", "run", `${runner.project}:conformance`];
+  // The compatibility matrix is meant to be measured evidence, not replayed
+  // cached console output, so each conformance lane is forced to execute.
+  const command = [
+    "bun",
+    "run",
+    "nx",
+    "run",
+    `${runner.project}:conformance`,
+    "--skipNxCache",
+  ];
   const commandResult = await runCommand(command, {
     captureOutput: true,
     cwd: REPO_ROOT,

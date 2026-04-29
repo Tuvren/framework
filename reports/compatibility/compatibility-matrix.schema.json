@@ -11,7 +11,10 @@
   ],
   "properties": {
     "generatedAtMs": { "type": "integer" },
-    "sourceRevision": { "type": "string" },
+    "sourceRevision": {
+      "type": "string",
+      "description": "Git provenance reference captured during generation. This is a symbolic ref when available because a checked-in artifact cannot stably self-embed its own final commit hash."
+    },
     "suites": {
       "type": "array",
       "items": {

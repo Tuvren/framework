@@ -19,8 +19,87 @@ import { providerTestkitFixtures } from "../src/index.ts";
 
 describe("@tuvren/provider-testkit conformance assets", () => {
   test("loads boundary-owned provider fixtures", () => {
-    expect(providerTestkitFixtures.prompt.messages).toHaveLength(1);
-    expect(providerTestkitFixtures.response.finishReason).toBe("stop");
-    expect(providerTestkitFixtures.toolPrompt.tools).toHaveLength(1);
+    // This suite is the first language-agnostic provider seed corpus, so the
+    // conformance assertions cover the exact prompt, response, structured, and
+    // tool shapes that the compatibility matrix is claiming to measure.
+    expect(providerTestkitFixtures.prompt).toEqual({
+      messages: [
+        {
+          parts: [
+            {
+              text: "Return a concise answer.",
+              type: "text",
+            },
+          ],
+          role: "user",
+        },
+      ],
+    });
+    expect(providerTestkitFixtures.response).toEqual({
+      finishReason: "stop",
+      parts: [
+        {
+          text: "ready",
+          type: "text",
+        },
+      ],
+      usage: {
+        inputTokens: 4,
+        outputTokens: 1,
+      },
+    });
+    expect(providerTestkitFixtures.structuredPrompt).toEqual({
+      messages: [
+        {
+          parts: [
+            {
+              text: "Return JSON.",
+              type: "text",
+            },
+          ],
+          role: "user",
+        },
+      ],
+      responseFormat: {
+        name: "answer",
+        schema: {
+          properties: {
+            answer: {
+              type: "string",
+            },
+          },
+          required: ["answer"],
+          type: "object",
+        },
+      },
+    });
+    expect(providerTestkitFixtures.toolPrompt).toEqual({
+      messages: [
+        {
+          parts: [
+            {
+              text: "Search the docs.",
+              type: "text",
+            },
+          ],
+          role: "user",
+        },
+      ],
+      tools: [
+        {
+          description: "Search docs",
+          inputSchema: {
+            properties: {
+              query: {
+                type: "string",
+              },
+            },
+            required: ["query"],
+            type: "object",
+          },
+          name: "search",
+        },
+      ],
+    });
   });
 });

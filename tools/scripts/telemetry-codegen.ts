@@ -207,6 +207,9 @@ async function resolveWeaverRegistry(
   outputDirectory: string,
   schemaUrl: string
 ): Promise<ResolvedTelemetryRegistry> {
+  // The repo-pinned Weaver build already supports JSON output here, so Epic R
+  // avoids parsing incidental YAML formatting even though the broader
+  // resolve-to-generate migration remains a later toolchain follow-up.
   const result = await runCommand(
     [
       "weaver",
@@ -215,8 +218,10 @@ async function resolveWeaverRegistry(
       "-r",
       SEMCONV_REGISTRY_PATH,
       "--future",
+      "--format",
+      "json",
       "-o",
-      resolve(outputDirectory, "resolved.yaml"),
+      resolve(outputDirectory, "resolved.json"),
     ],
     {
       captureOutput: true,
@@ -230,12 +235,12 @@ async function resolveWeaverRegistry(
     );
   }
 
-  const resolvedYaml = await readFile(
-    resolve(outputDirectory, "resolved.yaml"),
+  const resolvedJson = await readFile(
+    resolve(outputDirectory, "resolved.json"),
     "utf8"
   );
 
-  return parseResolvedTelemetryRegistry(resolvedYaml, schemaUrl);
+  return parseResolvedTelemetryRegistry(resolvedJson, schemaUrl);
 }
 
 async function formatGeneratedOutputs(
@@ -268,67 +273,25 @@ async function formatGeneratedOutputs(
 }
 
 function parseResolvedTelemetryRegistry(
-  yamlText: string,
+  jsonText: string,
   schemaUrl: string
 ): ResolvedTelemetryRegistry {
-  const lines = yamlText.split(NEWLINE_PATTERN);
-  const attributes: ResolvedTelemetryAttribute[] = [];
-  let currentAttribute: Partial<ResolvedTelemetryAttribute> | null = null;
-  let collectingExamples = false;
-  let registryUrl = "";
+  const parsedRegistry = JSON.parse(jsonText);
 
-  for (const line of lines) {
-    if (line.startsWith("registry_url: ")) {
-      registryUrl = line.slice("registry_url: ".length);
-      continue;
-    }
-
-    if (line.startsWith("  - name: ")) {
-      if (currentAttribute !== null) {
-        attributes.push(normalizeResolvedTelemetryAttribute(currentAttribute));
-      }
-
-      currentAttribute = {
-        examples: [],
-        key: line.slice("  - name: ".length),
-      };
-      collectingExamples = false;
-      continue;
-    }
-
-    if (line.startsWith("  lineage:")) {
-      break;
-    }
-
-    if (currentAttribute === null) {
-      continue;
-    }
-
-    if (line.trim() === "examples:") {
-      collectingExamples = true;
-      continue;
-    }
-
-    if (collectingExamples && line.startsWith("    - ")) {
-      currentAttribute.examples?.push(line.slice("    - ".length));
-      continue;
-    }
-
-    collectingExamples = false;
-    updateResolvedAttribute(currentAttribute, line);
+  if (!isRecord(parsedRegistry)) {
+    throw new Error("resolved telemetry registry must be an object");
   }
 
-  if (currentAttribute !== null) {
-    attributes.push(normalizeResolvedTelemetryAttribute(currentAttribute));
-  }
-
-  if (registryUrl.length === 0) {
+  if (
+    typeof parsedRegistry.registry_url !== "string" ||
+    parsedRegistry.registry_url.length === 0
+  ) {
     throw new Error("resolved telemetry registry is missing registry_url");
   }
 
   return {
-    attributes,
-    registryUrl,
+    attributes: collectResolvedTelemetryAttributes(parsedRegistry.groups),
+    registryUrl: parsedRegistry.registry_url,
     schemaUrl,
   };
 }
@@ -358,25 +321,6 @@ async function readRegistrySchemaUrl(): Promise<string> {
   return `${schemaBaseUrl}${semconvVersion}`;
 }
 
-function updateResolvedAttribute(
-  currentAttribute: Partial<ResolvedTelemetryAttribute>,
-  line: string
-): void {
-  if (line.startsWith("    type: ")) {
-    currentAttribute.type = line.slice("    type: ".length);
-    return;
-  }
-
-  if (line.startsWith("    brief: ")) {
-    currentAttribute.brief = line.slice("    brief: ".length);
-    return;
-  }
-
-  if (line.startsWith("    stability: ")) {
-    currentAttribute.stability = line.slice("    stability: ".length);
-  }
-}
-
 function normalizeResolvedTelemetryAttribute(
   value: Partial<ResolvedTelemetryAttribute>
 ): ResolvedTelemetryAttribute {
@@ -401,6 +345,40 @@ function normalizeResolvedTelemetryAttribute(
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function collectResolvedTelemetryAttributes(
+  groups: unknown
+): ResolvedTelemetryAttribute[] {
+  if (!Array.isArray(groups)) {
+    throw new Error("resolved telemetry registry groups must be an array");
+  }
+
+  const attributes: ResolvedTelemetryAttribute[] = [];
+
+  for (const group of groups) {
+    if (!(isRecord(group) && Array.isArray(group.attributes))) {
+      continue;
+    }
+
+    for (const attribute of group.attributes) {
+      if (!isRecord(attribute)) {
+        continue;
+      }
+
+      attributes.push(
+        normalizeResolvedTelemetryAttribute({
+          brief: attribute.brief,
+          examples: attribute.examples,
+          key: attribute.name,
+          stability: attribute.stability,
+          type: attribute.type,
+        })
+      );
+    }
+  }
+
+  return attributes;
 }
 
 function renderTelemetryMarkdown(
