@@ -31,6 +31,10 @@ implement a Rust kernel or a TypeScript remote-kernel client.
   implementation tree at
   `boundaries/framework/implementations/typescript/runtime-core/.generated/kernel-interop/`
   and are intentionally ignored by source control.
+- Generated TypeScript bindings are typechecked through
+  `boundaries/framework/implementations/typescript/runtime-core/tsconfig.kernel-interop.generated.json`
+  during kernel interop codegen because the normal runtime-core typecheck
+  excludes `.generated/`.
 
 ## Transport Scope
 
@@ -40,6 +44,8 @@ implement a Rust kernel or a TypeScript remote-kernel client.
 - Flexible kernel payloads such as records, verdict metadata, observe payloads,
   interrupt payloads, and error details travel as deterministic kernel CBOR
   bytes.
+- Path values, verdicts, and staged-result outcomes use Protobuf `oneof`
+  envelopes to preserve kernel union semantics in the transport authority.
 - `node.walkBack` is server-streaming; all other initial RPCs are unary.
 - `KernelErrorPayload` gives the transport a stable error envelope without
   leaking language-native exception shapes.

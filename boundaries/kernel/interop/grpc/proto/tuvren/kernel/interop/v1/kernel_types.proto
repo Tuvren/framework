@@ -17,17 +17,20 @@ enum PathCollectionKind {
   PATH_COLLECTION_KIND_SINGLE = 2;
 }
 
-enum PathValueKind {
-  PATH_VALUE_KIND_UNSPECIFIED = 0;
-  PATH_VALUE_KIND_NULL = 1;
-  PATH_VALUE_KIND_SINGLE_HASH = 2;
-  PATH_VALUE_KIND_ORDERED_HASHES = 3;
+message NullPathValue {}
+
+message OrderedPathHashes {
+  repeated string hashes = 1;
 }
 
 message PathValue {
-  PathValueKind kind = 1;
-  string single_hash = 2;
-  repeated string ordered_hashes = 3;
+  // The oneof preserves the kernel protocol union: null, one hash, or an
+  // ordered hash list. Do not replace it with parallel optional fields.
+  oneof value {
+    NullPathValue null_value = 1;
+    string single_hash = 2;
+    OrderedPathHashes ordered_hashes = 3;
+  }
 }
 
 message PathValueEntry {
@@ -73,38 +76,65 @@ enum VerdictDisposition {
   VERDICT_DISPOSITION_END_TURN = 3;
 }
 
-enum VerdictKind {
-  VERDICT_KIND_UNSPECIFIED = 0;
-  VERDICT_KIND_PROCEED = 1;
-  VERDICT_KIND_ABORT = 2;
-  VERDICT_KIND_MODIFY = 3;
-  VERDICT_KIND_PAUSE = 4;
-  VERDICT_KIND_RETRY = 5;
+message ProceedVerdict {}
+
+message AbortVerdict {
+  VerdictDisposition disposition = 1;
+  string reason = 2;
+}
+
+message ModifyVerdict {
+  bytes transform_cbor = 1;
+}
+
+message PauseVerdict {
+  string reason = 1;
+  bytes resumption_schema_cbor = 2;
+}
+
+message RetryVerdict {
+  bytes adjustment_cbor = 1;
 }
 
 message Verdict {
-  VerdictKind kind = 1;
-  VerdictDisposition disposition = 2;
-  string reason = 3;
-  optional bytes transform_cbor = 4;
-  optional bytes resumption_schema_cbor = 5;
-  optional bytes adjustment_cbor = 6;
+  // Verdicts are a discriminated union in the kernel contract. The oneof keeps
+  // invalid cross-variant field mixtures out of the transport baseline.
+  oneof verdict {
+    ProceedVerdict proceed = 1;
+    AbortVerdict abort = 2;
+    ModifyVerdict modify = 3;
+    PauseVerdict pause = 4;
+    RetryVerdict retry = 5;
+  }
 }
 
 enum StagedResultStatus {
   STAGED_RESULT_STATUS_UNSPECIFIED = 0;
   STAGED_RESULT_STATUS_COMPLETED = 1;
   STAGED_RESULT_STATUS_FAILED = 2;
-  STAGED_RESULT_STATUS_INTERRUPTED = 3;
+}
+
+message SettledStagedResult {
+  StagedResultStatus status = 1;
+}
+
+message InterruptedStagedResult {
+  bytes interrupt_payload_cbor = 1;
 }
 
 message StagedResult {
   string object_hash = 1;
   string object_type = 2;
   string task_id = 3;
+  // Protobuf-ES exposes int64 as bigint. Future TypeScript adapters must check
+  // this value before narrowing it to the current safe-integer EpochMs type.
   int64 timestamp_ms = 4;
-  StagedResultStatus status = 5;
-  optional bytes interrupt_payload_cbor = 6;
+  // The oneof enforces that only interrupted results carry an interrupt
+  // payload, while completed/failed results stay payload-free.
+  oneof outcome {
+    SettledStagedResult settled = 5;
+    InterruptedStagedResult interrupted = 6;
+  }
 }
 
 message TurnNode {

@@ -1390,6 +1390,9 @@ service KernelRunService {
 
 - Authored `.proto` files live under `boundaries/kernel/interop/grpc/proto/`.
 - Event envelopes and stable error payloads are part of the transport surface where real cross-process execution needs them.
+- Path values, verdicts, and staged-result outcomes must preserve the kernel
+  contract's union semantics in Protobuf with `oneof` envelopes rather than
+  parallel optional fields.
 - The interop surface must stay narrower than the full framework API during the first Rust phase and must not absorb host or driver-owned control semantics in order to make the remote kernel path convenient.
 
 ### 4.10 Compatibility Ledger Contract

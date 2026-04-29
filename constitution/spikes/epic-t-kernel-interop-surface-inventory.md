@@ -38,8 +38,11 @@ subsystem contract the framework can call remotely later, not a remote
 - `KernelRecord`, `KernelObject`, verdict metadata, observe annotations,
   observe signals, interrupt payloads, and similarly flexible payloads travel as
   deterministic kernel CBOR bytes.
-- `PathValue` travels as an explicit typed envelope so `null`, single hashes,
+- `PathValue` travels as an explicit `oneof` envelope so `null`, single hashes,
   and ordered hash arrays are not confused across languages.
+- Verdicts and staged-result outcomes also use `oneof` transport shapes so the
+  first baseline preserves the TypeScript discriminated-union invariants rather
+  than depending on every implementation to reject mixed optional fields.
 - `node.walkBack` is the only server-streaming RPC in the initial surface; all
   other RPCs are unary.
 

@@ -14,6 +14,9 @@
         "{workspaceRoot}/tools/scripts/lib/command-runner.ts",
         "{workspaceRoot}/buf.yaml",
         "{workspaceRoot}/buf.gen.yaml",
+        "{workspaceRoot}/boundaries/framework/implementations/typescript/runtime-core/package.json",
+        "{workspaceRoot}/boundaries/framework/implementations/typescript/runtime-core/tsconfig.kernel-interop.generated.json",
+        "{workspaceRoot}/bun.lock",
         "{workspaceRoot}/devenv.nix",
         "{workspaceRoot}/devenv.lock"
       ],

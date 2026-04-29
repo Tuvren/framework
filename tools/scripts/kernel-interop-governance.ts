@@ -24,6 +24,8 @@ const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const PROTO_ROOT = "boundaries/kernel/interop/grpc/proto";
 const GENERATED_ROOT =
   "boundaries/framework/implementations/typescript/runtime-core/.generated/kernel-interop";
+const GENERATED_TSCONFIG =
+  "boundaries/framework/implementations/typescript/runtime-core/tsconfig.kernel-interop.generated.json";
 const REQUIRED_GENERATED_FILES: readonly string[] = [
   `${GENERATED_ROOT}/tuvren/kernel/interop/v1/kernel_services_pb.ts`,
   `${GENERATED_ROOT}/tuvren/kernel/interop/v1/kernel_types_pb.ts`,
@@ -67,6 +69,7 @@ async function runBufLint(): Promise<void> {
 async function runCodegen(): Promise<void> {
   await runRequiredCommand(["buf", "generate"]);
   await assertGeneratedBindings();
+  await runGeneratedBindingsTypecheck();
 }
 
 async function runBreakingCheck(): Promise<void> {
@@ -163,6 +166,19 @@ async function assertNoCheckedInGeneratedBindings(): Promise<void> {
       `generated kernel interop bindings must not be checked in:\n${result.stdout.trim()}`
     );
   }
+}
+
+async function runGeneratedBindingsTypecheck(): Promise<void> {
+  // Runtime-core does not include `.generated` in its normal package
+  // typecheck, so the interop governance lane compiles generated bindings
+  // explicitly before claiming codegen is healthy.
+  await runRequiredCommand([
+    "bunx",
+    "--bun",
+    "tsc",
+    "--project",
+    GENERATED_TSCONFIG,
+  ]);
 }
 
 async function listFiles(directory: string): Promise<string[]> {

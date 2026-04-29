@@ -232,8 +232,12 @@ message StagingStageRequest {
   bytes blob = 2;
   string task_id = 3;
   string object_type = 4;
-  StagedResultStatus status = 5;
-  optional bytes interrupt_payload_cbor = 6;
+  // Reuse the same oneof as persisted staged results so callers cannot attach
+  // interrupt payloads to completed or failed work.
+  oneof outcome {
+    SettledStagedResult settled = 5;
+    InterruptedStagedResult interrupted = 6;
+  }
 }
 
 message StagingStageResponse {
