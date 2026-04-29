@@ -472,7 +472,7 @@ async function runReloadScenario(
 }
 
 function createReport(input: {
-  checks: Record<string, boolean | number | string>;
+  checks: Record<string, boolean>;
   config: PlaygroundConfig;
   error?: {
     code?: string;
@@ -571,6 +571,7 @@ function createScenarioProvider(
 ): TuvrenProvider {
   const provider = createPlaygroundProvider({
     aimockBaseUrl: config.aimockBaseUrl,
+    googleApiKey: config.googleApiKey,
     modelId: config.modelId,
     mode: config.providerMode,
     scenario: config.scenario,

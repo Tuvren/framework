@@ -81,7 +81,7 @@ export interface PlaygroundStreamProjection {
 
 export interface PlaygroundScenarioReport {
   backend: PlaygroundBackendMode;
-  checks: Record<string, boolean | number | string>;
+  checks: Record<string, boolean>;
   error?: {
     code?: string;
     message: string;

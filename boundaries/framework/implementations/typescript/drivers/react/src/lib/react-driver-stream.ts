@@ -1035,7 +1035,15 @@ function mergeProviderMetadata(
   const merged = cloneValue(current);
 
   for (const [providerName, providerValue] of Object.entries(next)) {
-    merged[providerName] = cloneValue(providerValue);
+    const currentProviderValue = merged[providerName];
+
+    // Provider namespaces such as google/vertex can accrete continuity tokens
+    // across multiple stream chunks. Merge nested objects recursively so later
+    // chunks cannot erase earlier keys that still matter for replay.
+    merged[providerName] =
+      isPlainObject(currentProviderValue) && isPlainObject(providerValue)
+        ? mergeProviderMetadata(currentProviderValue, providerValue)
+        : cloneValue(providerValue);
   }
 
   return merged;

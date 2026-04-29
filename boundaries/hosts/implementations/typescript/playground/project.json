@@ -48,7 +48,7 @@
     },
     "test": {
       "executor": "nx:run-commands",
-      "dependsOn": ["^build"],
+      "dependsOn": ["build", "^build"],
       "options": {
         "cwd": "boundaries/hosts/implementations/typescript/playground",
         "command": "bun test"

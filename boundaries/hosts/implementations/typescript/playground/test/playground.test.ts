@@ -307,6 +307,43 @@ describe("playground host scenarios", () => {
     );
   });
 
+  test("uses parsed Gemini credentials through the tools scenario wrapper", async () => {
+    const config = loadPlaygroundConfig(
+      {
+        GEMINI_API_KEY: "gemini-key",
+        TUVREN_PLAYGROUND_PROVIDER_MODE: "ai-sdk-google",
+        TUVREN_PLAYGROUND_SCENARIO: "tools",
+      },
+      []
+    );
+    const previousFetch = globalThis.fetch;
+    let fetchCalled = false;
+
+    globalThis.fetch = (_input, _init) => {
+      fetchCalled = true;
+      return Promise.reject(new Error("playground test fetch sentinel"));
+    };
+    try {
+      await withTemporaryEnvAsync(
+        {
+          GEMINI_API_KEY: undefined,
+          GOOGLE_GENERATIVE_AI_API_KEY: undefined,
+        },
+        async () => {
+          const report = await runPlaygroundScenario(config);
+
+          expect(fetchCalled).toBe(true);
+          expect(report.status.phase).toBe("failed");
+          expect(report.error?.message).toContain(
+            "playground test fetch sentinel"
+          );
+        }
+      );
+    } finally {
+      globalThis.fetch = previousFetch;
+    }
+  });
+
   test("rejects the Gemini playground host when no key is present", async () => {
     await withTemporaryEnvAsync(
       {
@@ -1254,11 +1291,9 @@ describe("playground host scenarios", () => {
   });
 });
 
-function expectScenarioChecksPassed(
-  checks: Record<string, boolean | number | string>
-): void {
+function expectScenarioChecksPassed(checks: Record<string, boolean>): void {
   for (const [name, value] of Object.entries(checks)) {
-    expect(`${name}:${String(value === false)}`).toBe(`${name}:false`);
+    expect(`${name}:${String(value)}`).toBe(`${name}:true`);
   }
 }
 

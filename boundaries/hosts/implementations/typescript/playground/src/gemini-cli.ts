@@ -22,13 +22,9 @@ import {
 
 const config = loadPlaygroundConfig(process.env, process.argv.slice(2));
 const report = await runPlaygroundScenarioMatrix({
-  config: {
-    aimockBaseUrl: config.aimockBaseUrl,
-    backend: config.backend,
-    modelId: config.modelId,
-    providerMode: config.providerMode,
-    sqlitePath: config.sqlitePath,
-  },
+  // Forward the parsed config wholesale so new private config fields such as
+  // resolved credentials cannot drift out of the Gemini matrix path.
+  config,
   scenarios: DEFAULT_GEMINI_PLAYGROUND_SCENARIOS,
 });
 
