@@ -1273,6 +1273,10 @@ describe("playground host scenarios", () => {
     expect(haveAllChecksPassed(report.reports[0]?.checks ?? {})).toBe(true);
   });
 
+  test("treats empty check sets as failed matrix state", () => {
+    expect(haveAllChecksPassed({})).toBe(false);
+  });
+
   test("aggregates matrix failures for reload on memory", async () => {
     const report = await runPlaygroundScenarioMatrix({
       config: {

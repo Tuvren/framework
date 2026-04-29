@@ -538,22 +538,10 @@ function handleToolInputEndPart(
     toolState.providerMetadata,
     readStreamToolPartProviderMetadata(part)
   );
-
-  if (toolState.doneEmitted) {
-    return [];
-  }
-
-  toolState.doneEmitted = true;
-
-  return [
-    createToolCallDoneChunk(
-      part.id,
-      toolState.name,
-      toolState.inputBuffer,
-      state.model,
-      toolState.providerMetadata
-    ),
-  ];
+  // Some adapters finish the incremental input first and attach continuity
+  // metadata only on a later complete `tool-call`. Keep the call buffered here
+  // so that later metadata can merge before the canonical `tool_call.done`.
+  return [];
 }
 
 function handleToolCallStreamPart(
@@ -571,6 +559,7 @@ function handleToolCallStreamPart(
   );
 
   if (existingState?.doneEmitted === true) {
+    existingState.providerMetadata = providerMetadata;
     return chunks;
   }
 
@@ -751,7 +740,7 @@ function createFinishStreamChunks(
   part: Extract<LanguageModelV3StreamPart, { type: "finish" }>,
   state: StreamMappingState
 ): ProviderStreamChunk[] {
-  const chunks: ProviderStreamChunk[] = [];
+  const chunks = flushCompletedToolCalls(state);
   const structuredChunk = createStructuredStreamDoneChunk(state);
 
   if (structuredChunk !== undefined) {
@@ -783,6 +772,31 @@ function createFinishStreamChunks(
         }),
     type: "finish",
   });
+
+  return chunks;
+}
+
+function flushCompletedToolCalls(
+  state: StreamMappingState
+): ProviderStreamChunk[] {
+  const chunks: ProviderStreamChunk[] = [];
+
+  for (const [providerCallId, toolState] of state.toolStates.entries()) {
+    if (toolState.doneEmitted || !toolState.ended) {
+      continue;
+    }
+
+    toolState.doneEmitted = true;
+    chunks.push(
+      createToolCallDoneChunk(
+        providerCallId,
+        toolState.name,
+        toolState.inputBuffer,
+        state.model,
+        toolState.providerMetadata
+      )
+    );
+  }
 
   return chunks;
 }
@@ -2202,6 +2216,7 @@ function captureStreamPartMetadata(
     sanitizeMetadataValue({
       id: "id" in part ? part.id : undefined,
       providerMetadata: part.providerMetadata,
+      toolCallId: "toolCallId" in part ? part.toolCallId : undefined,
       type: part.type,
     })
   );

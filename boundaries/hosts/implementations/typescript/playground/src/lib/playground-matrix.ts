@@ -58,5 +58,7 @@ export async function runPlaygroundScenarioMatrix(input: {
 }
 
 export function haveAllChecksPassed(checks: Record<string, boolean>): boolean {
-  return Object.values(checks).every((value) => value);
+  const values = Object.values(checks);
+
+  return values.length > 0 && values.every((value) => value);
 }

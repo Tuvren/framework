@@ -54,6 +54,13 @@
         "command": "bun test"
       }
     },
+    "test-local": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "boundaries/hosts/implementations/typescript/playground",
+        "command": "bun test"
+      }
+    },
     "typecheck": {
       "executor": "nx:run-commands",
       "dependsOn": ["^build"],
