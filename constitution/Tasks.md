@@ -254,13 +254,15 @@ And the resulting structure makes TypeScript one peer consumer of the shared beh
 - **Effort:** 2
 - **Dependencies:** KRT-S004
 - **Capability / Contract Mapping:** PRD `CAP-P1-035`, `CAP-P1-036`; Architecture `2`, `4.5`; TechSpec `4.9`, `5.4.1`
-- **Description:** Inventory the narrow kernel-only interop surface, transport non-goals, versioning posture, and event/error envelope boundaries before authoring `.proto` files.
+- **Description:** Inventory the narrow kernel-only interop surface, transport non-goals, versioning posture, and event/error envelope boundaries before authoring `.proto` files, including the existing thread/branch/head operations the framework must preserve over a remote kernel path.
 - **Acceptance Criteria (Gherkin):**
 
 ```gherkin
 Given boundary-owned conformance assets now exist
 When the kernel interop surface inventory is completed
 Then the repository records the kernel operations, event and error envelopes, transport non-goals, and the rule that the initial interop seam is narrower than the full framework API
+And the inventory explicitly includes the thread, branch, turn, and run lifecycle operations needed to preserve the current runtime surface over a remote kernel path
+And the inventory explicitly excludes framework-owned ExecutionHandle controls such as cancel, steer, and approval resolution from the kernel transport
 ```
 
 **KRT-T002 Proto and Buf Governance**
@@ -269,7 +271,7 @@ Then the repository records the kernel operations, event and error envelopes, tr
 - **Effort:** 5
 - **Dependencies:** KRT-T001
 - **Capability / Contract Mapping:** PRD `CAP-P1-035`, `CAP-P1-036`; Architecture `2`, `5`; TechSpec `4.9`, `5.2`
-- **Description:** Add kernel `.proto` ownership plus root Buf v2 configuration so the first transport surface has lint, generation, and breaking-change governance from the start.
+- **Description:** Add kernel `.proto` ownership plus root Buf v2 configuration so the first transport surface has lint, generation, and breaking-change governance from the start without widening into framework handle controls.
 - **Acceptance Criteria (Gherkin):**
 
 ```gherkin

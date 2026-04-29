@@ -1349,18 +1349,46 @@ boundaries/<area>/conformance/
 - **Compatibility Strategy:** The first interop surface is kernel-only, versioned independently from npm package or future crate versions, and governed mechanically through Buf lint and breaking-change checks once `.proto` files are introduced. Buf `FILE` compatibility is the required default gate from the first `.proto` merge onward, and any relaxation requires an explicit future TechSpec revision rather than local convenience.
 - **Error model:** Transport errors carry stable kernel/runtime error payloads rather than language-native exception types as the cross-process contract.
 
+The first transport surface mirrors the kernel-only subsystem operations the
+TypeScript framework already depends on through `RuntimeKernel`. It must
+include the thread, branch, turn, and run lifecycle operations needed to
+preserve the current `TuvrenRuntime` surface over a remote kernel path, while
+keeping framework-owned `ExecutionHandle` controls such as `cancel()`,
+`steer(...)`, `resolveApproval(...)`, and driver-loop execution out of the
+kernel transport entirely.
+
 ```proto
-service KernelService {
-  rpc CreateThread(CreateThreadRequest) returns (CreateThreadResponse);
-  rpc ExecuteRun(ExecuteRunRequest) returns (ExecuteRunResponse);
-  rpc ResolveApproval(ResolveApprovalRequest) returns (ResolveApprovalResponse);
-  rpc GetRunStatus(GetRunStatusRequest) returns (GetRunStatusResponse);
+service KernelThreadService {
+  rpc ThreadCreate(ThreadCreateRequest) returns (ThreadCreateResponse);
+  rpc ThreadGet(ThreadGetRequest) returns (ThreadGetResponse);
+}
+
+service KernelBranchService {
+  rpc BranchCreate(BranchCreateRequest) returns (BranchCreateResponse);
+  rpc BranchGet(BranchGetRequest) returns (BranchGetResponse);
+  rpc BranchSetHead(BranchSetHeadRequest) returns (BranchSetHeadResponse);
+  rpc BranchList(BranchListRequest) returns (BranchListResponse);
+}
+
+service KernelTurnService {
+  rpc TurnCreate(TurnCreateRequest) returns (TurnCreateResponse);
+  rpc TurnGet(TurnGetRequest) returns (TurnGetResponse);
+  rpc TurnUpdateHead(TurnUpdateHeadRequest) returns (TurnUpdateHeadResponse);
+}
+
+service KernelRunService {
+  rpc RunCreate(RunCreateRequest) returns (RunCreateResponse);
+  rpc RunBeginStep(RunBeginStepRequest) returns (RunBeginStepResponse);
+  rpc RunCompleteStep(RunCompleteStepRequest)
+      returns (RunCompleteStepResponse);
+  rpc RunComplete(RunCompleteRequest) returns (RunCompleteResponse);
+  rpc RunRecover(RunRecoverRequest) returns (RunRecoverResponse);
 }
 ```
 
 - Authored `.proto` files live under `boundaries/kernel/interop/grpc/proto/`.
 - Event envelopes and stable error payloads are part of the transport surface where real cross-process execution needs them.
-- The interop surface must stay narrower than the full framework API during the first Rust phase.
+- The interop surface must stay narrower than the full framework API during the first Rust phase and must not absorb host or driver-owned control semantics in order to make the remote kernel path convenient.
 
 ### 4.10 Compatibility Ledger Contract
 
@@ -1535,6 +1563,7 @@ authored machine-readable source.
 - The repository is architecture-first and language-neutral at the top level.
 - `boundaries/` is the universal home for boundary-owned implementation code plus boundary-owned machine-readable contract, conformance, and interop assets.
 - Top-level directories outside `boundaries/` are reserved for global human authority (`docs/`, `constitution/`), repo-global tooling (`tools/`), repo-global observability conventions (`telemetry/`), root workspace files, and generated reports (`reports/`).
+- The current repo-root `tests/` tree is a deliberate transitional exception to that top-level posture until its normative assets are migrated into boundary-owned `conformance/` trees.
 - Each architectural boundary owns its own `contracts/`, `implementations/`, `conformance/`, and `interop/` trees when those concerns exist for that boundary.
 - Language-specific code lives under `implementations/<language>/...`, and any checked-in generated language bindings belong under the consuming implementation tree rather than a shared root generated directory.
 - Nx manages orchestration and target naming. Nx does not define the repo ontology and must delegate actual work to the native toolchain for the language or artifact family involved.
