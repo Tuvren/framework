@@ -72,6 +72,7 @@ export const WORKSPACE_EXPORT_SMOKE_PROJECTS: readonly string[] = [
   "framework-driver-api",
   "framework-event-stream",
   "framework-runtime-api",
+  "framework-runtime-core",
   "framework-tool-contracts",
   "provider-api",
   "providers-testkit",
@@ -89,7 +90,20 @@ export const DEFAULT_VERIFICATION_STEPS: readonly VerificationStep[] = [
     id: "workspace lint",
   },
   {
-    command: ["bun", "run", "codegen"],
+    command: [
+      "bun",
+      "run",
+      "nx",
+      "run-many",
+      "-t",
+      "codegen",
+      "-p",
+      "telemetry-semconv,compatibility-reporting",
+      // Compatibility codegen shells out to the conformance runners to produce
+      // measured evidence, so verify forces a fresh execution here instead of
+      // accepting cached artifacts from another workspace state.
+      "--skipNxCache",
+    ],
     id: "telemetry and compatibility code generation",
   },
   {

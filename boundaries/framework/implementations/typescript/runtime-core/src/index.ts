@@ -30,6 +30,15 @@ export {
   runBeforeIterationHooks,
   runBeforeTurnHooks,
 } from "./lib/extension-runtime.js";
+export type {
+  TuvrenRuntimeTelemetryAttributeDefinition,
+  TuvrenRuntimeTelemetryAttributeKey,
+} from "./lib/generated/tuvren-runtime-telemetry.js";
+export {
+  TUVREN_RUNTIME_TELEMETRY_ATTRIBUTE_KEYS,
+  TUVREN_RUNTIME_TELEMETRY_ATTRIBUTES,
+  TUVREN_RUNTIME_TELEMETRY_SCHEMA_URL,
+} from "./lib/generated/tuvren-runtime-telemetry.js";
 export {
   createLastOutputOnlyHandoffContextBuilder,
   createPreserveTraceHandoffContextBuilder,
