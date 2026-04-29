@@ -9,7 +9,7 @@
     },
     "data": {},
     "name": {
-      "$ref": "https://tuvren.dev/schemas/providers/provider-api/NonEmptyString.json"
+      "type": "string"
     },
     "providerMetadata": {
       "$ref": "https://tuvren.dev/schemas/providers/provider-api/Metadata.json"

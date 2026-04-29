@@ -104,7 +104,9 @@ model FilePart {
 model StructuredPart {
   type: "structured";
   data: unknown;
-  name?: NonEmptyString;
+  // Mirrors the framework/runtime durable contract: an emitted empty name is
+  // still a valid optional schema identifier, so this must not use NonEmptyString.
+  name?: string;
   providerMetadata?: Metadata;
 }
 

@@ -111,6 +111,10 @@ describe("provider-api", () => {
       ...fixture.response,
       parts: [{ redacted: false, text: "", type: "reasoning" }],
     };
+    const emptyStructuredNameResponse = {
+      ...fixture.response,
+      parts: [{ data: { status: "ok" }, name: "", type: "structured" }],
+    };
     const whitespaceToolPrompt = {
       ...fixture.toolPrompt,
       tools: [{ ...fixture.toolPrompt.tools[0], name: "   " }],
@@ -142,6 +146,13 @@ describe("provider-api", () => {
       ajv,
       "https://tuvren.dev/schemas/providers/provider-api/TuvrenPrompt.json",
       fixture.toolPrompt
+    );
+    // StructuredPart.name mirrors the framework durable contract where an
+    // empty optional schema name is still a valid string, not NonEmptyString.
+    expectSchemaValidation(
+      ajv,
+      "https://tuvren.dev/schemas/providers/provider-api/TuvrenModelResponse.json",
+      emptyStructuredNameResponse
     );
     expectSchemaRejection(
       ajv,

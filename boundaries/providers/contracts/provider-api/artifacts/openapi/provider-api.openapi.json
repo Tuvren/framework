@@ -326,7 +326,7 @@
           },
           "data": {},
           "name": {
-            "$ref": "#/components/schemas/NonEmptyString"
+            "type": "string"
           },
           "providerMetadata": {
             "$ref": "#/components/schemas/Metadata"
