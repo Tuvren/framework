@@ -6,6 +6,9 @@ use serde_json::Value as JsonValue;
 
 use crate::types::{KernelError, KernelRecord, KernelResult};
 
+const MIN_SAFE_KERNEL_INTEGER: i64 = -9_007_199_254_740_991;
+const MAX_SAFE_KERNEL_INTEGER: i64 = 9_007_199_254_740_991;
+
 pub fn encode_deterministic_kernel_record(record: &KernelRecord) -> KernelResult<Vec<u8>> {
     let value = to_cbor_value(record)?;
     let mut bytes = Vec::new();
@@ -47,13 +50,17 @@ pub fn kernel_record_from_json(value: &JsonValue) -> KernelResult<KernelRecord> 
     match value {
         JsonValue::Null => Ok(KernelRecord::Null),
         JsonValue::Bool(value) => Ok(KernelRecord::Bool(*value)),
-        JsonValue::Number(value) => value.as_i64().map(KernelRecord::Integer).ok_or_else(|| {
-            KernelError::new(
-                "invalid_json_kernel_record_number",
-                "kernel record JSON numbers must be signed integers",
-                None,
-            )
-        }),
+        JsonValue::Number(value) => {
+            let integer = value.as_i64().ok_or_else(|| {
+                KernelError::new(
+                    "invalid_json_kernel_record_number",
+                    "kernel record JSON numbers must be signed integers",
+                    None,
+                )
+            })?;
+            validate_kernel_integer(integer)?;
+            Ok(KernelRecord::Integer(integer))
+        }
         JsonValue::String(value) => Ok(KernelRecord::Text(value.clone())),
         JsonValue::Array(values) => values
             .iter()
@@ -72,7 +79,10 @@ fn to_cbor_value(record: &KernelRecord) -> KernelResult<Value> {
     match record {
         KernelRecord::Null => Ok(Value::Null),
         KernelRecord::Bool(value) => Ok(Value::Bool(*value)),
-        KernelRecord::Integer(value) => Ok(Value::Integer(Integer::from(*value))),
+        KernelRecord::Integer(value) => {
+            validate_kernel_integer(*value)?;
+            Ok(Value::Integer(Integer::from(*value)))
+        }
         KernelRecord::Text(value) => Ok(Value::Text(value.clone())),
         KernelRecord::Bytes(value) => Ok(Value::Bytes(value.clone())),
         KernelRecord::Array(values) => values
@@ -126,6 +136,7 @@ fn from_cbor_value(value: Value) -> KernelResult<KernelRecord> {
                     None,
                 )
             })?;
+            validate_kernel_integer(integer)?;
             Ok(KernelRecord::Integer(integer))
         }
         Value::Text(value) => Ok(KernelRecord::Text(value)),
@@ -161,5 +172,17 @@ fn from_cbor_value(value: Value) -> KernelResult<KernelRecord> {
             "kernel record contains an unsupported CBOR value",
             None,
         )),
+    }
+}
+
+fn validate_kernel_integer(value: i64) -> KernelResult<()> {
+    if (MIN_SAFE_KERNEL_INTEGER..=MAX_SAFE_KERNEL_INTEGER).contains(&value) {
+        Ok(())
+    } else {
+        Err(KernelError::new(
+            "invalid_kernel_record_integer",
+            "kernel record integers must be JavaScript-safe integers",
+            None,
+        ))
     }
 }

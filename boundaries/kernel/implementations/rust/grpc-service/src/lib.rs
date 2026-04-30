@@ -499,8 +499,16 @@ impl KernelRunService for KernelGrpcServiceImpl {
             .observe_results
             .into_iter()
             .map(|result| {
+                let annotations = result
+                    .annotations_cbor
+                    .iter()
+                    .map(|bytes| {
+                        decode_deterministic_kernel_record(bytes)
+                            .and_then(|record| encode_deterministic_kernel_record(&record))
+                    })
+                    .collect::<KernelResult<Vec<_>>>()?;
                 Ok(tuvren_kernel_rust::ObserveResult {
-                    annotations: result.annotations_cbor,
+                    annotations,
                     signals: result
                         .signals_cbor
                         .iter()

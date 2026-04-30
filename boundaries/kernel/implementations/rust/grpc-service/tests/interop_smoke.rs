@@ -3,8 +3,13 @@ use tokio_stream::StreamExt;
 use tokio_stream::wrappers::TcpListenerStream;
 use tonic::Request;
 use tonic::transport::Server;
-use tuvren_kernel_rust::InMemoryKernel;
+use tuvren_kernel_rust::{
+    InMemoryKernel, IncorporationRule as RustIncorporationRule,
+    PathCollectionKind as RustPathCollectionKind, PathDefinition as RustPathDefinition,
+    StepDeclaration as RustStepDeclaration, TurnTreeSchema as RustTurnTreeSchema,
+};
 use tuvren_kernel_rust_grpc_service::KernelGrpcServiceImpl;
+use tuvren_kernel_rust_grpc_service::proto::kernel_run_service_server::KernelRunService;
 use tuvren_kernel_rust_grpc_service::proto::kernel_tree_service_server::KernelTreeService;
 use tuvren_kernel_rust_grpc_service::proto::{
     self, IncorporationRule, PathCollectionKind, PathDefinition, RunCompletionStatus,
@@ -198,6 +203,74 @@ async fn tree_create_rejects_duplicate_transport_paths() {
         }))
         .await
         .expect_err("duplicate transport paths are rejected");
+
+    assert_eq!(error.code(), tonic::Code::InvalidArgument);
+}
+
+#[tokio::test]
+async fn run_complete_step_rejects_invalid_annotation_cbor() {
+    let service = KernelGrpcServiceImpl::new(InMemoryKernel::new());
+    service
+        .kernel()
+        .schema_register(RustTurnTreeSchema {
+            incorporation_rules: vec![RustIncorporationRule {
+                object_type: "message".to_string(),
+                target_path: "messages".to_string(),
+            }],
+            paths: vec![RustPathDefinition {
+                collection: RustPathCollectionKind::Ordered,
+                metadata: None,
+                path: "messages".to_string(),
+            }],
+            schema_id: "schema_main".to_string(),
+        })
+        .expect("schema registers");
+    let thread = service
+        .kernel()
+        .thread_create("thread_main", "schema_main", "branch_main")
+        .expect("thread creates");
+    service
+        .kernel()
+        .turn_create(
+            "turn_main",
+            "thread_main",
+            "branch_main",
+            None,
+            &thread.root_turn_node_hash,
+        )
+        .expect("turn creates");
+    service
+        .kernel()
+        .run_create(
+            "run_main",
+            "turn_main",
+            "branch_main",
+            "schema_main",
+            &thread.root_turn_node_hash,
+            vec![RustStepDeclaration {
+                deterministic: false,
+                id: "model_call".to_string(),
+                metadata: None,
+                side_effects: false,
+            }],
+        )
+        .expect("run creates");
+
+    let error = KernelRunService::run_complete_step(
+        &service,
+        Request::new(proto::RunCompleteStepRequest {
+            event_hash: None,
+            observe_results: vec![proto::ObserveResult {
+                annotations_cbor: vec![vec![0xff]],
+                signals_cbor: Vec::new(),
+            }],
+            run_id: "run_main".to_string(),
+            step_id: "model_call".to_string(),
+            tree_hash: None,
+        }),
+    )
+    .await
+    .expect_err("invalid annotation CBOR is rejected");
 
     assert_eq!(error.code(), tonic::Code::InvalidArgument);
 }

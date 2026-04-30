@@ -386,6 +386,14 @@ impl InMemoryKernel {
         let prior_head = branch.head_turn_node_hash.clone();
         let moves_forward =
             prior_head == turn_node_hash || is_ancestor(&state, &prior_head, turn_node_hash)?;
+        if moves_forward && prior_head != turn_node_hash && branch_has_active_run(&state, branch_id)
+        {
+            return Err(KernelError::new(
+                "branch_has_active_run",
+                "branch head cannot move forward while the branch has an active run",
+                None,
+            ));
+        }
         let archive_branch = if moves_forward {
             None
         } else if is_ancestor(&state, turn_node_hash, &prior_head)? {
@@ -457,6 +465,20 @@ impl InMemoryKernel {
             ));
         }
         ensure_node_belongs_to_thread(&state, start_turn_node_hash, thread_id)?;
+        let candidate_parent_turns = state
+            .turns
+            .values()
+            .filter(|turn| {
+                turn.thread_id == thread_id && turn.head_turn_node_hash == start_turn_node_hash
+            })
+            .collect::<Vec<_>>();
+        if parent_turn_id.is_none() && !candidate_parent_turns.is_empty() {
+            return Err(KernelError::new(
+                "turn_parent_required",
+                "turn parent must reference the previous semantic turn when one exists",
+                None,
+            ));
+        }
         if let Some(parent_turn_id) = &parent_turn_id {
             let parent = state
                 .turns
@@ -506,6 +528,13 @@ impl InMemoryKernel {
             return Err(KernelError::new(
                 "turn_head_not_descendant",
                 "turn head must remain on or after the turn start node",
+                None,
+            ));
+        }
+        if !is_ancestor(&state, &turn.head_turn_node_hash, head_turn_node_hash)? {
+            return Err(KernelError::new(
+                "turn_head_lateral_move",
+                "turn head must advance from the current turn head",
                 None,
             ));
         }
@@ -735,6 +764,7 @@ impl InMemoryKernel {
                 None,
             ));
         }
+        ensure_run_active_at_branch_head(&state, &run)?;
         let step = run
             .step_sequence
             .get(run.current_step_index)
@@ -1023,6 +1053,28 @@ fn fail_active_runs_on_branch(state: &mut KernelState, branch_id: &str) {
         state.staged_results.remove(&run_id);
         state.run_signals.remove(&run_id);
     }
+}
+
+fn branch_has_active_run(state: &KernelState, branch_id: &str) -> bool {
+    state.runs.values().any(|run| {
+        run.branch_id == branch_id && matches!(run.status, RunStatus::Running | RunStatus::Paused)
+    })
+}
+
+fn ensure_run_active_at_branch_head(state: &KernelState, run: &RunRecord) -> KernelResult<()> {
+    let branch = state
+        .branches
+        .get(&run.branch_id)
+        .ok_or_else(|| missing("branch_not_found", "run branch does not exist"))?;
+    let active_turn_node_hash = run_active_turn_node_hash(run);
+    if branch.head_turn_node_hash != active_turn_node_hash {
+        return Err(KernelError::new(
+            "run_branch_head_mismatch",
+            "run active turn node must match the current branch head",
+            None,
+        ));
+    }
+    Ok(())
 }
 
 fn next_archive_branch_id(state: &mut KernelState, branch_id: &str) -> String {

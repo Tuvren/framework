@@ -57,6 +57,7 @@ fn main() -> Result<(), KernelError> {
     assert_eq!(recovery_state.consumed_staged_results.len(), 1);
     assert_eq!(recovery_state.step_sequence.len(), 2);
     assert_eq!(recovery_state.uncommitted_staged_results.len(), 1);
+    run_recovery_fixture_scenario(&suite.canonical_schema, &recovery_state)?;
 
     let logical_changes = logical
         .turn_tree_change_set
@@ -72,9 +73,12 @@ fn main() -> Result<(), KernelError> {
         diff,
         vec!["context.manifest".to_string(), "messages".to_string()]
     );
+    let branch_entries = kernel.branch_list("thread_conformance")?;
+    assert_eq!(branch_entries.len(), 1);
+    assert_eq!(branch_entries[0].0, branch_head.0);
 
     println!(
-        "kernel Rust conformance passed: {}@{}",
+        "kernel Rust conformance passed: {}@{} checks=deterministic,logical-diff,branch-list,recovery",
         suite.manifest.suite_id, suite.manifest.suite_version
     );
     Ok(())
@@ -376,6 +380,84 @@ fn parse_path_value(value: &Value) -> Result<PathValue, KernelError> {
             .collect::<Result<Vec<_>, _>>()
             .map(PathValue::Ordered)
     })
+}
+
+fn run_recovery_fixture_scenario(
+    canonical_schema: &Value,
+    expected: &RecoveryState,
+) -> Result<(), KernelError> {
+    let kernel = InMemoryKernel::new();
+    kernel.schema_register(parse_schema(canonical_schema)?)?;
+    let created = kernel.thread_create("thread_recovery", "schema_main", "branch_recovery")?;
+    let turn = kernel.turn_create(
+        "turn_recovery",
+        "thread_recovery",
+        "branch_recovery",
+        None,
+        &created.root_turn_node_hash,
+    )?;
+    kernel.run_create(
+        "run_recovery",
+        &turn.turn_id,
+        "branch_recovery",
+        "schema_main",
+        &created.root_turn_node_hash,
+        expected.step_sequence.clone(),
+    )?;
+    kernel.run_complete_step("run_recovery", "model_call", None, Vec::new(), None)?;
+    let consumed = expected.consumed_staged_results.first().ok_or_else(|| {
+        error(
+            "invalid_recovery_fixture",
+            "fixture must include consumed staged result",
+        )
+    })?;
+    kernel.staging_stage(
+        "run_recovery",
+        b"consumed fixture object".to_vec(),
+        &consumed.task_id,
+        &consumed.object_type,
+        consumed.status.clone(),
+        consumed.interrupt_payload.clone(),
+    )?;
+    kernel.run_complete_step("run_recovery", "tool_execution", None, Vec::new(), None)?;
+    let uncommitted = expected.uncommitted_staged_results.first().ok_or_else(|| {
+        error(
+            "invalid_recovery_fixture",
+            "fixture must include uncommitted staged result",
+        )
+    })?;
+    kernel.staging_stage(
+        "run_recovery",
+        b"uncommitted fixture object".to_vec(),
+        &uncommitted.task_id,
+        &uncommitted.object_type,
+        uncommitted.status.clone(),
+        uncommitted.interrupt_payload.clone(),
+    )?;
+    let actual = kernel.run_recover("run_recovery")?;
+
+    assert_eq!(
+        actual.last_completed_step_id,
+        expected.last_completed_step_id
+    );
+    assert_eq!(actual.step_sequence, expected.step_sequence);
+    assert_eq!(
+        actual.consumed_staged_results.len(),
+        expected.consumed_staged_results.len()
+    );
+    assert_eq!(
+        actual.uncommitted_staged_results.len(),
+        expected.uncommitted_staged_results.len()
+    );
+    assert_eq!(
+        actual.consumed_staged_results[0].task_id,
+        expected.consumed_staged_results[0].task_id
+    );
+    assert_eq!(
+        actual.uncommitted_staged_results[0].task_id,
+        expected.uncommitted_staged_results[0].task_id
+    );
+    Ok(())
 }
 
 fn read_bool(value: Option<&Value>, label: &str) -> Result<bool, KernelError> {

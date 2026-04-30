@@ -5,8 +5,8 @@ use tuvren_kernel_rust::{
     InMemoryKernel, InMemoryKernelOptions, IncorporationRule, KernelRecord, ObserveResult,
     PathCollectionKind, PathDefinition, PathValue, RunCompletionStatus, StagedResult,
     StagedResultStatus, StepDeclaration, TurnNode, TurnTreeSchema, Verdict, VerdictDisposition,
-    decode_deterministic_kernel_record, hash_bytes_to_hex, hash_kernel_record,
-    hash_turn_node_identity, schema_to_record,
+    decode_deterministic_kernel_record, encode_deterministic_kernel_record, hash_bytes_to_hex,
+    hash_kernel_record, hash_turn_node_identity, schema_to_record,
 };
 
 #[test]
@@ -469,6 +469,76 @@ fn branch_rewind_does_not_overwrite_existing_archive_ids() {
 }
 
 #[test]
+fn branch_forward_move_is_rejected_with_active_run() {
+    let kernel = InMemoryKernel::new();
+    kernel
+        .schema_register(canonical_schema())
+        .expect("schema registers");
+    let thread = kernel
+        .thread_create("thread_main", "schema_main", "branch_main")
+        .expect("thread creates");
+    kernel
+        .branch_create("branch_worker", "thread_main", &thread.root_turn_node_hash)
+        .expect("worker branch creates");
+    kernel
+        .turn_create(
+            "turn_main",
+            "thread_main",
+            "branch_main",
+            None,
+            &thread.root_turn_node_hash,
+        )
+        .expect("main turn creates");
+    kernel
+        .turn_create(
+            "turn_worker",
+            "thread_main",
+            "branch_worker",
+            Some("turn_main".to_string()),
+            &thread.root_turn_node_hash,
+        )
+        .expect("worker turn creates");
+    kernel
+        .run_create(
+            "run_main",
+            "turn_main",
+            "branch_main",
+            "schema_main",
+            &thread.root_turn_node_hash,
+            vec![StepDeclaration {
+                deterministic: false,
+                id: "main_step".to_string(),
+                metadata: None,
+                side_effects: false,
+            }],
+        )
+        .expect("main run creates");
+    kernel
+        .run_create(
+            "run_worker",
+            "turn_worker",
+            "branch_worker",
+            "schema_main",
+            &thread.root_turn_node_hash,
+            vec![StepDeclaration {
+                deterministic: false,
+                id: "worker_step".to_string(),
+                metadata: None,
+                side_effects: false,
+            }],
+        )
+        .expect("worker run creates");
+    let (_, worker_node) = kernel
+        .run_complete_step("run_worker", "worker_step", None, Vec::new(), None)
+        .expect("worker step checkpoints");
+    let error = kernel
+        .branch_set_head("branch_main", &worker_node.expect("worker node"))
+        .expect_err("active run blocks external forward branch move");
+
+    assert_eq!(error.payload.code, "branch_has_active_run");
+}
+
+#[test]
 fn staging_stage_requires_running_run() {
     let (kernel, _) = kernel_with_run(StepDeclaration {
         deterministic: false,
@@ -646,6 +716,94 @@ fn turn_update_head_requires_descendant_of_turn_start() {
 }
 
 #[test]
+fn turn_update_head_rejects_lateral_descendant() {
+    let kernel = InMemoryKernel::new();
+    kernel
+        .schema_register(canonical_schema())
+        .expect("schema registers");
+    let thread = kernel
+        .thread_create("thread_main", "schema_main", "branch_main")
+        .expect("thread creates");
+    kernel
+        .turn_create(
+            "turn_main",
+            "thread_main",
+            "branch_main",
+            None,
+            &thread.root_turn_node_hash,
+        )
+        .expect("main turn creates");
+    kernel
+        .run_create(
+            "run_main",
+            "turn_main",
+            "branch_main",
+            "schema_main",
+            &thread.root_turn_node_hash,
+            vec![StepDeclaration {
+                deterministic: false,
+                id: "main_step".to_string(),
+                metadata: None,
+                side_effects: false,
+            }],
+        )
+        .expect("main run creates");
+    let (_, main_node) = kernel
+        .run_complete_step("run_main", "main_step", None, Vec::new(), None)
+        .expect("main step checkpoints");
+    let main_node = main_node.expect("main node");
+    kernel
+        .run_complete("run_main", RunCompletionStatus::Completed, None)
+        .expect("main run completes");
+    kernel
+        .branch_create("branch_alt", "thread_main", &thread.root_turn_node_hash)
+        .expect("alt branch creates");
+    kernel
+        .turn_create(
+            "turn_alt",
+            "thread_main",
+            "branch_alt",
+            None,
+            &thread.root_turn_node_hash,
+        )
+        .expect("alt turn creates");
+    kernel
+        .run_create(
+            "run_alt",
+            "turn_alt",
+            "branch_alt",
+            "schema_main",
+            &thread.root_turn_node_hash,
+            vec![StepDeclaration {
+                deterministic: false,
+                id: "alt_step".to_string(),
+                metadata: None,
+                side_effects: false,
+            }],
+        )
+        .expect("alt run creates");
+    kernel
+        .staging_stage(
+            "run_alt",
+            b"alt branch message".to_vec(),
+            "alt_message",
+            "message",
+            StagedResultStatus::Completed,
+            None,
+        )
+        .expect("alt staged result creates a distinct descendant");
+    let (_, alt_node) = kernel
+        .run_complete_step("run_alt", "alt_step", None, Vec::new(), None)
+        .expect("alt step checkpoints");
+    assert_ne!(main_node, alt_node.clone().expect("alt node"));
+    let error = kernel
+        .turn_update_head("turn_main", &alt_node.expect("alt node"))
+        .expect_err("turn head cannot jump to a lateral descendant");
+
+    assert_eq!(error.payload.code, "turn_head_lateral_move");
+}
+
+#[test]
 fn turn_create_parent_must_chain_to_start() {
     let (kernel, root_hash) = kernel_with_run(StepDeclaration {
         deterministic: false,
@@ -670,6 +828,30 @@ fn turn_create_parent_must_chain_to_start() {
 }
 
 #[test]
+fn turn_create_requires_parent_when_previous_turn_reaches_start() {
+    let (kernel, _root_hash) = kernel_with_run(StepDeclaration {
+        deterministic: false,
+        id: "model_call".to_string(),
+        metadata: None,
+        side_effects: false,
+    });
+    let (_, node_hash) = kernel
+        .run_complete_step("run_main", "model_call", None, Vec::new(), None)
+        .expect("step checkpoints");
+    let error = kernel
+        .turn_create(
+            "turn_child",
+            "thread_main",
+            "branch_main",
+            None,
+            &node_hash.expect("node hash"),
+        )
+        .expect_err("later turn must name its semantic parent");
+
+    assert_eq!(error.payload.code, "turn_parent_required");
+}
+
+#[test]
 fn tree_create_without_base_requires_all_paths() {
     let kernel = InMemoryKernel::new();
     kernel
@@ -682,6 +864,19 @@ fn tree_create_without_base_requires_all_paths() {
         .expect_err("partial base-less tree create is rejected");
 
     assert_eq!(error.payload.code, "incomplete_turn_tree_manifest");
+}
+
+#[test]
+fn kernel_record_integers_are_javascript_safe() {
+    let encode_error =
+        encode_deterministic_kernel_record(&KernelRecord::Integer(9_007_199_254_740_992))
+            .expect_err("out-of-profile integer is rejected on encode");
+    let json_error =
+        tuvren_kernel_rust::kernel_record_from_json(&serde_json::json!(9_007_199_254_740_992_i64))
+            .expect_err("out-of-profile integer is rejected from JSON");
+
+    assert_eq!(encode_error.payload.code, "invalid_kernel_record_integer");
+    assert_eq!(json_error.payload.code, "invalid_kernel_record_integer");
 }
 
 #[test]
