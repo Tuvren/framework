@@ -54,4 +54,6 @@ export {
   DEFAULT_MAX_PARALLEL_TOOL_CALLS,
 } from "./lib/runtime-core.js";
 export type { ExecutionSessionRequest } from "./lib/runtime-execution-types.js";
+export type { GrpcRuntimeKernelOptions } from "./lib/runtime-kernel-grpc.js";
+export { createGrpcRuntimeKernel } from "./lib/runtime-kernel-grpc.js";
 export { createToolRegistry } from "./lib/tool-registry.js";

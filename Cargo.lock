@@ -1072,6 +1072,7 @@ name = "tuvren-kernel-rust-grpc-service"
 version = "0.1.0"
 dependencies = [
  "prost",
+ "prost-types",
  "tokio",
  "tokio-stream",
  "tonic",

@@ -2,8 +2,22 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://tuvren.dev/schemas/reports/compatibility/compatibility-matrix.schema.json",
   "type": "object",
-  "required": ["suites", "implementations", "interop"],
+  "required": [
+    "generatedAtMs",
+    "sourceRevision",
+    "suites",
+    "implementations",
+    "interop"
+  ],
   "properties": {
+    "generatedAtMs": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "sourceRevision": {
+      "type": "string",
+      "minLength": 1
+    },
     "suites": {
       "type": "array",
       "items": {

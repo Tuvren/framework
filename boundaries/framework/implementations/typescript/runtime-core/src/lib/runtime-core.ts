@@ -2368,11 +2368,15 @@ class RuntimeCore implements TuvrenRuntime {
               type: "iteration_completed",
             }
       );
-      turnNodeHash = stepResult.turnNodeHash ?? completion.turnNodeHash;
+      // `run.complete()` may checkpoint a later durable head than
+      // `run.completeStep()` when the kernel persists the terminal event during
+      // completion. Prefer the completion checkpoint so local and remote
+      // kernels converge on the same branch head after a terminal iteration.
+      turnNodeHash = completion.turnNodeHash ?? stepResult.turnNodeHash;
     }
 
     if (turnNodeHash !== undefined) {
-      await this.options.kernel.turn.updateHead(handle.turnId, turnNodeHash);
+      await this.advanceTurnAndBranchHead(handle, turnNodeHash);
       await this.emitStateObservability(
         handle,
         loopState,
@@ -2495,10 +2499,7 @@ class RuntimeCore implements TuvrenRuntime {
     await this.completeTrackedRun(handle, runId, "completed");
 
     if (stepResult.turnNodeHash !== undefined) {
-      await this.options.kernel.turn.updateHead(
-        handle.turnId,
-        stepResult.turnNodeHash
-      );
+      await this.advanceTurnAndBranchHead(handle, stepResult.turnNodeHash);
       await this.emitStateObservability(
         handle,
         loopState,
@@ -2567,10 +2568,7 @@ class RuntimeCore implements TuvrenRuntime {
     await this.completeTrackedRun(handle, runId, "completed");
 
     if (stepResult.turnNodeHash !== undefined) {
-      await this.options.kernel.turn.updateHead(
-        handle.turnId,
-        stepResult.turnNodeHash
-      );
+      await this.advanceTurnAndBranchHead(handle, stepResult.turnNodeHash);
       await this.emitStateObservability(
         handle,
         loopState,
@@ -2640,10 +2638,7 @@ class RuntimeCore implements TuvrenRuntime {
     await this.completeTrackedRun(handle, runId, "completed");
 
     if (stepResult.turnNodeHash !== undefined) {
-      await this.options.kernel.turn.updateHead(
-        handle.turnId,
-        stepResult.turnNodeHash
-      );
+      await this.advanceTurnAndBranchHead(handle, stepResult.turnNodeHash);
       await this.emitStateObservability(
         handle,
         loopState,
@@ -2734,10 +2729,7 @@ class RuntimeCore implements TuvrenRuntime {
     );
     await this.completeTrackedRun(handle, runId, "completed");
     if (stepResult.turnNodeHash !== undefined) {
-      await this.options.kernel.turn.updateHead(
-        handle.turnId,
-        stepResult.turnNodeHash
-      );
+      await this.advanceTurnAndBranchHead(handle, stepResult.turnNodeHash);
       await this.emitStateObservability(
         handle,
         loopState,
@@ -2883,10 +2875,7 @@ class RuntimeCore implements TuvrenRuntime {
     await this.completeTrackedRun(handle, runId, "completed");
 
     if (stepResult.turnNodeHash !== undefined) {
-      await this.options.kernel.turn.updateHead(
-        handle.turnId,
-        stepResult.turnNodeHash
-      );
+      await this.advanceTurnAndBranchHead(handle, stepResult.turnNodeHash);
       await this.emitStateObservability(
         handle,
         {
@@ -3093,10 +3082,7 @@ class RuntimeCore implements TuvrenRuntime {
     await this.completeTrackedRun(handle, runId, "completed");
 
     if (stepResult.turnNodeHash !== undefined) {
-      await this.options.kernel.turn.updateHead(
-        handle.turnId,
-        stepResult.turnNodeHash
-      );
+      await this.advanceTurnAndBranchHead(handle, stepResult.turnNodeHash);
       await this.emitStateObservability(
         handle,
         loopState,
@@ -3567,10 +3553,7 @@ class RuntimeCore implements TuvrenRuntime {
     await this.completeTrackedRun(handle, runId, "completed");
 
     if (stepResult.turnNodeHash !== undefined) {
-      await this.options.kernel.turn.updateHead(
-        handle.turnId,
-        stepResult.turnNodeHash
-      );
+      await this.advanceTurnAndBranchHead(handle, stepResult.turnNodeHash);
 
       const pendingStateObservability = {
         iterationCount,
@@ -3652,6 +3635,17 @@ class RuntimeCore implements TuvrenRuntime {
     }
 
     return completion;
+  }
+
+  private async advanceTurnAndBranchHead(
+    handle: RuntimeExecutionHandle,
+    turnNodeHash: HashString
+  ): Promise<void> {
+    await this.options.kernel.turn.updateHead(handle.turnId, turnNodeHash);
+    await this.options.kernel.branch.setHead(
+      handle.request.branchId,
+      turnNodeHash
+    );
   }
 
   private async failTrackedRunWithoutBranchAdvance(

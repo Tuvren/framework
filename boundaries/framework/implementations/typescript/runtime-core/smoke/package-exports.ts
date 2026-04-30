@@ -16,6 +16,7 @@
 
 import { describe, expect, test } from "bun:test";
 import {
+  createGrpcRuntimeKernel,
   TUVREN_RUNTIME_TELEMETRY_ATTRIBUTE_KEYS,
   TUVREN_RUNTIME_TELEMETRY_ATTRIBUTES,
   TUVREN_RUNTIME_TELEMETRY_SCHEMA_URL,
@@ -37,5 +38,9 @@ describe("@tuvren/runtime-core package exports", () => {
       stability: "development",
       type: "string",
     });
+  });
+
+  test("exposes the gRPC runtime kernel helper from the built package surface", () => {
+    expect(typeof createGrpcRuntimeKernel).toBe("function");
   });
 });

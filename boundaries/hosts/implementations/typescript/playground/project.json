@@ -45,6 +45,14 @@
         "command": "bun dist/gemini-cli.js --provider ai-sdk-google"
       }
     },
+    "interop-smoke": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build", "^build"],
+      "options": {
+        "cwd": ".",
+        "command": "bun tools/scripts/playground-interop-smoke.ts"
+      }
+    },
     "scenario-sqlite": {
       "executor": "nx:run-commands",
       "dependsOn": ["build"],

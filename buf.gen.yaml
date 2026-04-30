@@ -2,6 +2,6 @@ version: v2
 clean: true
 plugins:
   - local: protoc-gen-es
-    out: boundaries/framework/implementations/typescript/runtime-core/.generated/kernel-interop
+    out: boundaries/framework/implementations/typescript/runtime-core/src/lib/generated/kernel-interop
     opt:
       - target=ts

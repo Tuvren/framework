@@ -23,6 +23,10 @@ import type {
   TuvrenPrompt,
   TuvrenProvider,
 } from "@tuvren/runtime-api";
+import {
+  TUVREN_RUNTIME_TELEMETRY_ATTRIBUTE_KEYS,
+  TUVREN_RUNTIME_TELEMETRY_SCHEMA_URL,
+} from "@tuvren/runtime-core";
 import { toAgUiEvents } from "@tuvren/stream-agui";
 import { teeTuvrenStreamEvents } from "@tuvren/stream-core";
 import { toSseFrames } from "@tuvren/stream-sse";
@@ -36,6 +40,7 @@ import type {
   PlaygroundScenarioExecutionPlan,
   PlaygroundScenarioReport,
   PlaygroundStreamProjection,
+  PlaygroundTelemetryEvidence,
   PlaygroundThreadSummary,
 } from "./playground-types.js";
 
@@ -442,19 +447,22 @@ async function runReloadScenario(
   });
   const projection = await host.project(handle);
   const sourceThread = withHead(thread, projection);
+  const supportsReloadPersistence =
+    config.backend === "sqlite" ||
+    (config.kernelMode ?? "typescript-local") === "rust-grpc";
 
-  if (config.backend !== "sqlite") {
-    // Reload evidence is meaningful only across a fresh durable host; memory
-    // mode reports explicit failed checks so CLI callers do not mistake it for
-    // a partial reload validation.
+  if (!supportsReloadPersistence) {
+    // Reload evidence is meaningful only when the runtime state survives a
+    // fresh host instance. That is true for local SQLite and for a live remote
+    // Rust kernel process, but not for the local in-process memory backend.
     return createReport({
       checks: {
         completedBeforeReload: handle.status().phase === "completed",
+        durableReloadAttempted: false,
         continuedAfterReload: false,
         durableMessagesVisibleAfterReload: false,
         headAdvancedAfterReload: false,
         rootPreservedAfterReload: false,
-        sqliteReloadAttempted: false,
         threadVisibleAfterReload: false,
       },
       config,
@@ -484,13 +492,13 @@ async function runReloadScenario(
   return createReport({
     checks: {
       completedBeforeReload: handle.status().phase === "completed",
+      durableReloadAttempted: true,
       continuedAfterReload: continuationHandle.status().phase === "completed",
       durableMessagesVisibleAfterReload: reloadedMessages.length >= 2,
       headAdvancedAfterReload:
         sourceThread.headTurnNodeHash !== continuedThread.headTurnNodeHash,
       rootPreservedAfterReload:
         reloadedThread?.rootTurnNodeHash === thread.rootTurnNodeHash,
-      sqliteReloadAttempted: config.backend === "sqlite",
       threadVisibleAfterReload: reloadedThread !== null,
     },
     config,
@@ -614,11 +622,100 @@ function createReport(input: {
       canonicalTypes: input.projection.canonical.map((event) => event.type),
       sseEvents: input.projection.sse.map((event) => event.event ?? "message"),
     },
+    kernelMode: input.config.kernelMode ?? "typescript-local",
     providerMode: input.config.providerMode,
     scenario: input.config.scenario,
     status: input.handle.status(),
+    telemetry: createTelemetryEvidence(input),
     thread: input.thread,
   };
+}
+
+function createTelemetryEvidence(input: {
+  config: PlaygroundConfig;
+  projection: PlaygroundStreamProjection;
+  thread: PlaygroundThreadSummary;
+}): PlaygroundTelemetryEvidence {
+  const turnStarts = input.projection.canonical.filter(
+    (event): event is Extract<TuvrenStreamEvent, { type: "turn.start" }> =>
+      event.type === "turn.start"
+  );
+  const checkpoints = input.projection.canonical.filter(
+    (
+      event
+    ): event is Extract<TuvrenStreamEvent, { type: "state.checkpoint" }> =>
+      event.type === "state.checkpoint"
+  );
+  const toolCallStarts = input.projection.canonical.filter(
+    (event): event is Extract<TuvrenStreamEvent, { type: "tool_call.start" }> =>
+      event.type === "tool_call.start"
+  );
+  const driverId =
+    turnStarts[0]?.source?.driver ??
+    input.projection.canonical.find(
+      (event) => event.source?.driver !== undefined
+    )?.source?.driver ??
+    null;
+  const runIds = input.projection.agui.flatMap((event) => {
+    if (event.type !== "RUN_STARTED") {
+      return [];
+    }
+
+    return typeof event.runId === "string" ? [event.runId] : [];
+  });
+  const attributes = {
+    "tuvren.runtime.backend.id": input.config.backend,
+    "tuvren.runtime.branch.id": input.thread.branchId,
+    "tuvren.runtime.checkpoint.hash": collapseTelemetryValues(
+      checkpoints.map((event) => event.turnNodeHash)
+    ),
+    "tuvren.runtime.driver.id": driverId,
+    "tuvren.runtime.parent_checkpoint.hash": collapseTelemetryValues(
+      checkpoints.slice(0, -1).map((event) => event.turnNodeHash)
+    ),
+    "tuvren.runtime.provider.id": input.config.providerMode,
+    "tuvren.runtime.resumed_from.hash": collapseTelemetryValues(
+      turnStarts.flatMap((event) =>
+        event.resumedFrom === undefined ? [] : [event.resumedFrom]
+      )
+    ),
+    "tuvren.runtime.run.id": collapseTelemetryValues(runIds),
+    "tuvren.runtime.tool_call.id": collapseTelemetryValues(
+      toolCallStarts.map((event) => event.callId)
+    ),
+    "tuvren.runtime.turn.id": collapseTelemetryValues(
+      turnStarts.map((event) => event.turnId)
+    ),
+  } satisfies PlaygroundTelemetryEvidence["attributes"];
+
+  return {
+    attributes,
+    observedKeys: TUVREN_RUNTIME_TELEMETRY_ATTRIBUTE_KEYS.filter((key) => {
+      const value = attributes[key];
+      return (
+        value !== null &&
+        (!Array.isArray(value) || value.length > 0) &&
+        value !== ""
+      );
+    }),
+    schemaUrl: TUVREN_RUNTIME_TELEMETRY_SCHEMA_URL,
+  };
+}
+
+function collapseTelemetryValues(
+  values: readonly string[]
+): string | string[] | null {
+  const uniqueValues = [...new Set(values)];
+
+  if (uniqueValues.length === 0) {
+    return null;
+  }
+
+  if (uniqueValues.length === 1) {
+    return uniqueValues[0] ?? null;
+  }
+
+  return uniqueValues;
 }
 
 function createScenarioExecutionPlan(

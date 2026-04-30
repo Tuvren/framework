@@ -19,7 +19,7 @@
     "typecheck": "bun run nx run-many -t typecheck",
     "conformance": "bun run nx run-many -t conformance -p kernel-typescript-conformance-runner,kernel-rust-conformance-runner,framework-typescript-conformance-runner,providers-typescript-conformance-runner",
     "codegen": "bun run nx run-many -t codegen -p framework-tool-contracts,provider-api,telemetry-semconv,compatibility-reporting,kernel-interop-grpc",
-    "interop-smoke": "bun run nx run-many -t interop-smoke -p kernel-interop-grpc,kernel-rust-grpc-service --parallel=1",
+    "interop-smoke": "bun run nx run-many -t interop-smoke -p kernel-interop-grpc,kernel-rust-grpc-service,host-playground --parallel=1",
     "verify": "bun tools/scripts/verify.ts",
     "release-check": "bun tools/scripts/release-check.ts",
     "graph": "bun run nx graph"

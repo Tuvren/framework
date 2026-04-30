@@ -29,12 +29,12 @@ implement a Rust kernel or a TypeScript remote-kernel client.
   `boundaries/kernel/interop/grpc/proto/`.
 - Generated TypeScript bindings are emitted under the consuming framework
   implementation tree at
-  `boundaries/framework/implementations/typescript/runtime-core/.generated/kernel-interop/`
+  `boundaries/framework/implementations/typescript/runtime-core/src/lib/generated/kernel-interop/`
   and are intentionally ignored by source control.
 - Generated TypeScript bindings are typechecked through
   `boundaries/framework/implementations/typescript/runtime-core/tsconfig.kernel-interop.generated.json`
   during kernel interop codegen because the normal runtime-core typecheck
-  excludes `.generated/`.
+  excludes the generated subtree.
 
 ## Transport Scope
 
@@ -54,9 +54,10 @@ implement a Rust kernel or a TypeScript remote-kernel client.
 
 - `kernel-interop-grpc` now exposes `lint`, `breaking`, `codegen`, and
   `interop-smoke` targets.
-- The Buf-backed Nx targets enter `devenv shell --` themselves, keeping root
-  `bun run codegen`, `bun run interop-smoke`, and verify usable from a normal
-  checkout while still declaring Buf and `protoc-gen-es` through Devenv.
+- The Buf-backed Nx targets now assume the repo shell is already provisioned
+  through `.envrc` / `devenv`, keeping root `bun run codegen`,
+  `bun run interop-smoke`, and verify usable without wrapping every command in
+  an extra `devenv shell --` hop.
 - Root `bun run codegen` and `bun run interop-smoke` now include
   `kernel-interop-grpc`.
 - `tools/scripts/verify.ts` now includes interop code generation plus the
@@ -68,12 +69,12 @@ implement a Rust kernel or a TypeScript remote-kernel client.
 
 ## Validation Evidence
 
-- `devenv shell -- buf lint`
-- `devenv shell -- protoc-gen-es --version`
-- `devenv shell -- bun tools/scripts/kernel-interop-governance.ts breaking`
-- `devenv shell -- bun tools/scripts/kernel-interop-governance.ts codegen`
-- `devenv shell -- bun run nx run kernel-interop-grpc:interop-smoke --skipNxCache`
-- `devenv shell -- bun tools/scripts/verify.ts`
+- `buf lint`
+- `protoc-gen-es --version`
+- `bun tools/scripts/kernel-interop-governance.ts breaking`
+- `bun tools/scripts/kernel-interop-governance.ts codegen`
+- `bun run nx run kernel-interop-grpc:interop-smoke --skipNxCache`
+- `bun tools/scripts/verify.ts`
 
 ## Residual Transitional Truth
 

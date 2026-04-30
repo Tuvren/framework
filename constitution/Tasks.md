@@ -2,6 +2,7 @@
 
 ## 0. Version History & Changelog
 
+- v0.8.8 - Closed Epic V in current repo reality with the TypeScript gRPC remote-kernel helper, Rust-kernel playground interop matrix, compatibility-ledger interop evidence, and Epic V transport plus closure inventories.
 - v0.8.7 - Closed Epic U in current repo reality with the root Cargo workspace, Devenv Rust toolchain, Rust kernel core, Rust conformance runner, Rust gRPC service, and generated Rust telemetry helper.
 - v0.8.6 - Closed Epic T in current repo reality with kernel-only proto authority, root Buf governance, Devenv-provisioned Buf/protoc tooling, generated binding placement, and the first interop-smoke governance lane.
 - v0.8.5 - Closed Epic S in current repo reality with TypeSpec-authored tool/provider contract artifacts, kernel CDDL grammar, implementation-scoped TypeScript conformance runners, and compatibility evidence sourced from those runners.
@@ -10,9 +11,9 @@
 
 ## 1. Executive Summary & Active Critical Path
 
-- **Total Active Story Points:** 20
-- **Critical Path:** `KRT-V001 -> KRT-V002 -> KRT-V003 -> KRT-V004`
-- **Planning Assumptions:** Epics A-U are closed in current repo reality. Epic U closure evidence now lives in `constitution/spikes/epic-u-rust-kernel-baseline-inventory.md`. TechSpec v0.6.6 keeps the baseline AI SDK bridge on `LanguageModelV3` / `ProviderV3` from `@ai-sdk/provider@3.0.8`, pins the AG-UI adapter to `@ag-ui/core@0.0.52`, preserves the existing `ProviderStreamChunk` seam while documenting the current tool-call metadata continuity requirements, treats tee-based fanout above `ExecutionHandle.events()` as the sanctioned multi-consumer host path when every required tee branch subscribes before the first pull, records SQLite playground validation as a Node-backed path because `@tuvren/backend-sqlite` uses `better-sqlite3`, keeps the playground-owned automated aimock provider lanes across OpenAI, Anthropic, and Gemini as local validation rather than a public provider contract, records the manual Gemini lane as an opt-in local proof rather than default automation, requires the Rust baseline to keep TypeScript transport client and runtime switching out of scope, treats Buf `FILE` compatibility as the default interop gate from the first `.proto` merge, and treats the compatibility matrix as a conservative near-public readiness signal rather than a private scratch report.
+- **Total Active Story Points:** 0
+- **Critical Path:** None. Epic V is closed and no later implementation epic is activated in this Tasks revision.
+- **Planning Assumptions:** Epics A-V are closed in current repo reality. Epic U closure evidence lives in `constitution/spikes/epic-u-rust-kernel-baseline-inventory.md`, and Epic V closure evidence now lives in `constitution/spikes/epic-v-transport-decision-inventory.md` plus `constitution/spikes/epic-v-framework-rust-kernel-interop-closure-inventory.md`. TechSpec v0.6.7 keeps the baseline AI SDK bridge on `LanguageModelV3` / `ProviderV3` from `@ai-sdk/provider@3.0.8`, pins the AG-UI adapter to `@ag-ui/core@0.0.52`, preserves the existing `ProviderStreamChunk` seam while documenting the current tool-call metadata continuity requirements, treats tee-based fanout above `ExecutionHandle.events()` as the sanctioned multi-consumer host path when every required tee branch subscribes before the first pull, records SQLite playground validation as a Node-backed path because `@tuvren/backend-sqlite` uses `better-sqlite3`, keeps the playground-owned automated aimock provider lanes across OpenAI, Anthropic, and Gemini as local validation rather than a public provider contract, records the manual Gemini lane as an opt-in local proof rather than default automation, treats Buf `FILE` compatibility as the default interop gate from the first `.proto` merge, and treats the compatibility matrix as a conservative near-public readiness signal rather than a private scratch report.
 
 ### Brownfield Continuity Note
 
@@ -31,7 +32,7 @@
 
 ### Sequential Scope Rule
 
-- Epic U is closed. The next implementation line begins with Epic V TypeScript framework and Rust kernel interop stabilization and must not skip directly to Rust framework work before the TypeScript transport client, runtime switch, compatibility evidence, and telemetry lanes are authoritative in repo reality.
+- Epic V is closed. Any future Epic W activation must start from the measured compatibility evidence and the Epic V closure inventories rather than re-deciding transport plumbing or replaying the Rust-kernel baseline work.
 
 ### Planning Heuristic
 
@@ -49,11 +50,12 @@
 
 - Epic T is closed and now defines the narrow kernel-only interop transport, Buf-governed `.proto` ownership, and interop-smoke/codegen orchestration.
 - Epic U is closed and now defines the root Cargo workspace plus the first Rust implementation only inside the kernel boundary.
-- Epic V stabilizes real TypeScript framework to Rust kernel interoperability, compatibility-ledger generation, and cross-language telemetry/CI posture.
+- Epic V is closed and now defines the TypeScript remote-kernel helper, playground runtime switch, measured TS-framework-to-Rust-kernel interop evidence, and compatibility-ledger interop entries.
+- No further implementation epic is active in this Tasks revision.
 
 ### Future / Deferred Scope
 
-- Rust framework implementation work is deferred until Epic V closes.
+- Rust framework implementation work is deferred beyond this Tasks revision.
 - `LanguageModelV2` / `ProviderV2` compatibility is deferred.
 - AI SDK agent loops, AI SDK UI message protocols, AI SDK transport helpers, LangChain bridges, provider-native tool support, and first-class Tuvren provider packages are deferred.
 - ACP or any additional host protocol beyond SSE and AG-UI is deferred until a future TechSpec revision names it.
@@ -70,6 +72,7 @@
 - Epic S closed boundary contract and conformance artifactization through `constitution/spikes/epic-s-boundary-contract-conformance-artifactization-inventory.md`, delivering TypeSpec-authored tool/provider artifacts, kernel CDDL grammar, implementation-scoped TypeScript conformance runners, and compatibility evidence sourced from those runners.
 - Epic T closed kernel interop governance through `constitution/spikes/epic-t-kernel-interop-surface-inventory.md` and `constitution/spikes/epic-t-kernel-interop-governance-inventory.md`, delivering the governed kernel-only proto authority and Buf-backed interop governance lane.
 - Epic U closed the Rust kernel baseline through `constitution/spikes/epic-u-rust-kernel-baseline-inventory.md`, delivering the root Cargo workspace, Rust kernel core, Rust conformance runner, runnable Rust gRPC service, and Rust telemetry helper without adding a TypeScript transport client or Rust framework path.
+- Epic V closed TypeScript framework to Rust kernel interop stabilization through `constitution/spikes/epic-v-transport-decision-inventory.md` and `constitution/spikes/epic-v-framework-rust-kernel-interop-closure-inventory.md`, delivering the TypeScript gRPC transport helper, runtime selection seam, real interop-smoke evidence, compatibility-ledger interop entries, and separated cross-language verification.
 
 ## 3. Build Order (Mermaid)
 
@@ -395,12 +398,13 @@ And the service remains limited to the kernel scope rather than reimplementing t
 
 ### Epic V - TypeScript Framework and Rust Kernel Interop Stabilization (TRI)
 
-- Planned. This epic proves the boring day-two story before any Rust framework work is allowed to start.
+- Closed in current repo reality through `constitution/spikes/epic-v-transport-decision-inventory.md` and `constitution/spikes/epic-v-framework-rust-kernel-interop-closure-inventory.md`. This epic proved the boring day-two story before any Rust framework work is allowed to start.
 
 **KRT-V001 TypeScript Transport Client and Runtime Switch**
 
 - **Type:** Feature
 - **Effort:** 5
+- **Status:** Closed in current repo reality.
 - **Dependencies:** KRT-U004
 - **Capability / Contract Mapping:** PRD `CAP-P0-019`, `CAP-P1-035`; Architecture `2.1`, `4.5`; TechSpec `4.1`, `4.9`, `5.4.1`
 - **Description:** Add the TypeScript-side transport client and explicit runtime selection seam so the framework can target either the in-process TypeScript kernel or the Rust kernel service without changing host-facing semantics.
@@ -417,6 +421,7 @@ And host-facing runtime behavior stays aligned with the existing public contract
 
 - **Type:** Feature
 - **Effort:** 5
+- **Status:** Closed in current repo reality.
 - **Dependencies:** KRT-U003, KRT-V001
 - **Capability / Contract Mapping:** PRD `CAP-P1-036`; Architecture `4.5`; TechSpec `4.10`, `5.2`, `5.4.1`
 - **Description:** Run real TS framework to Rust kernel scenarios and generate the compatibility matrix from the resulting conformance and interop-smoke evidence as a conservative near-public readiness signal.
@@ -434,6 +439,7 @@ And the resulting report is worded conservatively enough to function as a near-p
 
 - **Type:** Feature
 - **Effort:** 3
+- **Status:** Closed in current repo reality.
 - **Dependencies:** KRT-R004, KRT-V002
 - **Capability / Contract Mapping:** PRD `CAP-P1-036`; Architecture `5`; TechSpec `3.6`, `4.10`, `5.2`
 - **Description:** Apply the shared telemetry vocabulary across TypeScript and Rust interop paths and separate CI into repo-global, language-native, and cross-language validation lanes.
@@ -451,6 +457,7 @@ And CI clearly separates repo-global checks, language-native checks, and cross-l
 
 - **Type:** Chore
 - **Effort:** 2
+- **Status:** Closed in current repo reality.
 - **Dependencies:** KRT-V003
 - **Capability / Contract Mapping:** PRD `CAP-P1-035`, `CAP-P1-036`; Architecture `5`, `6`; TechSpec `4.10`, `5.3`, `5.4.1`
 - **Description:** Record parity status, residual gaps, and the readiness gate for any future Rust framework work in a closure inventory and update the planning artifacts for the next revision.
@@ -464,4 +471,4 @@ Then the repository documents measured parity status, remaining gaps, Rust frame
 
 ### Epic W - Rust Framework Start (RFS)
 
-- Deferred until Epic V closes. No implementation tickets are authorized in this Tasks revision.
+- Deferred. Epic V is closed, but no Rust-framework implementation tickets are authorized in this Tasks revision.

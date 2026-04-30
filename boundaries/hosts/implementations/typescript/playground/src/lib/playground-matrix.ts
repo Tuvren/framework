@@ -44,6 +44,7 @@ export async function runPlaygroundScenarioMatrix(input: {
 
   return {
     backend: input.config.backend,
+    kernelMode: input.config.kernelMode ?? "typescript-local",
     modelId: input.config.modelId,
     providerMode: input.config.providerMode,
     reports,

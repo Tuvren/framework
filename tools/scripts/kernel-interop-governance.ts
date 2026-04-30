@@ -23,7 +23,7 @@ import { runCommand } from "./lib/command-runner.js";
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const PROTO_ROOT = "boundaries/kernel/interop/grpc/proto";
 const GENERATED_ROOT =
-  "boundaries/framework/implementations/typescript/runtime-core/.generated/kernel-interop";
+  "boundaries/framework/implementations/typescript/runtime-core/src/lib/generated/kernel-interop";
 const GENERATED_TSCONFIG =
   "boundaries/framework/implementations/typescript/runtime-core/tsconfig.kernel-interop.generated.json";
 const REQUIRED_GENERATED_FILES: readonly string[] = [
@@ -34,6 +34,7 @@ const AGAINST_BRANCH_CANDIDATES: readonly string[] = [
   "origin/master",
   "master",
 ];
+const BREAKING_BASELINE_FETCH_TIMEOUT_MS = 30_000;
 
 const mode = process.argv[2] ?? "interop-smoke";
 
@@ -112,7 +113,19 @@ async function refreshRemoteBreakingBaseline(): Promise<void> {
 
   const result = await runCommand(
     ["git", "fetch", "--quiet", "origin", "master:refs/remotes/origin/master"],
-    { captureOutput: true, cwd: REPO_ROOT }
+    {
+      captureOutput: true,
+      cwd: REPO_ROOT,
+      env: {
+        GCM_INTERACTIVE: "never",
+        GIT_ASKPASS: "true",
+        GIT_TERMINAL_PROMPT: "0",
+      },
+      // Governance smoke must fail fast when the remote baseline cannot be
+      // refreshed non-interactively; hanging for credentials would stall the
+      // entire Epic V verify lane without adding useful protocol signal.
+      timeoutMs: BREAKING_BASELINE_FETCH_TIMEOUT_MS,
+    }
   );
 
   if (result.code !== 0) {

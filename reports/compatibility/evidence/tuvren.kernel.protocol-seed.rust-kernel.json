@@ -1,0 +1,17 @@
+{
+  "boundary": "kernel",
+  "command": [
+    "bun",
+    "run",
+    "nx",
+    "run",
+    "kernel-rust-conformance-runner:conformance",
+    "--skipNxCache"
+  ],
+  "exitCode": 0,
+  "implementationId": "rust-kernel",
+  "project": "kernel-rust-conformance-runner",
+  "status": "pass",
+  "suiteId": "tuvren.kernel.protocol-seed",
+  "suiteVersion": "0.1.0"
+}

@@ -29,6 +29,10 @@ import {
   runPlaygroundScenario,
   runPlaygroundScenarioMatrix,
 } from "@tuvren/playground-host";
+import {
+  TUVREN_RUNTIME_TELEMETRY_ATTRIBUTE_KEYS,
+  TUVREN_RUNTIME_TELEMETRY_SCHEMA_URL,
+} from "@tuvren/runtime-core";
 
 const AIMOCK_PROVIDER_CASES: readonly AimockProviderCase[] = [
   {
@@ -73,6 +77,8 @@ describe("playground host scenarios", () => {
       aimockBaseUrl: undefined,
       backend: "memory",
       googleApiKey: undefined,
+      kernelGrpcBaseUrl: undefined,
+      kernelMode: "typescript-local",
       modelId: undefined,
       providerMode: "fixture",
       scenario: "streaming",
@@ -135,6 +141,29 @@ describe("playground host scenarios", () => {
     expect(envConfig.providerMode).toBe("ai-sdk-google");
     expect(envConfig.googleApiKey).toBe("gemini-key");
     expect(envConfig.modelId).toBe("gemini-2.5-flash-lite");
+  });
+
+  test("loads rust-grpc kernel configuration from argv and env", () => {
+    const argvConfig = loadPlaygroundConfig({}, [
+      "--kernel-mode",
+      "rust-grpc",
+      "--kernel-grpc-base-url",
+      " http://127.0.0.1:50051 ",
+    ]);
+
+    expect(argvConfig.kernelMode).toBe("rust-grpc");
+    expect(argvConfig.kernelGrpcBaseUrl).toBe("http://127.0.0.1:50051");
+
+    const envConfig = loadPlaygroundConfig(
+      {
+        TUVREN_PLAYGROUND_KERNEL_GRPC_BASE_URL: "http://127.0.0.1:50052",
+        TUVREN_PLAYGROUND_KERNEL_MODE: "rust-grpc",
+      },
+      []
+    );
+
+    expect(envConfig.kernelMode).toBe("rust-grpc");
+    expect(envConfig.kernelGrpcBaseUrl).toBe("http://127.0.0.1:50052");
   });
 
   test("uses parsed Gemini credentials for programmatic callers without mutating process.env", () => {
@@ -206,6 +235,39 @@ describe("playground host scenarios", () => {
     );
   });
 
+  test("rejects rust-grpc kernel configuration without a usable base URL", () => {
+    expectPlaygroundConfigError(
+      () => loadPlaygroundConfig({}, ["--kernel-mode", "rust-grpc"]),
+      "rust-grpc playground kernel requires --kernel-grpc-base-url or TUVREN_PLAYGROUND_KERNEL_GRPC_BASE_URL"
+    );
+
+    expectPlaygroundConfigError(
+      () =>
+        loadPlaygroundConfig(
+          {
+            TUVREN_PLAYGROUND_KERNEL_GRPC_BASE_URL: " ",
+            TUVREN_PLAYGROUND_KERNEL_MODE: "rust-grpc",
+          },
+          []
+        ),
+      "rust-grpc playground kernel requires --kernel-grpc-base-url or TUVREN_PLAYGROUND_KERNEL_GRPC_BASE_URL"
+    );
+  });
+
+  test("rejects rust-grpc kernel configuration for sqlite backend", () => {
+    expectPlaygroundConfigError(
+      () =>
+        loadPlaygroundConfig(
+          {
+            TUVREN_PLAYGROUND_KERNEL_GRPC_BASE_URL: "http://127.0.0.1:50051",
+            TUVREN_PLAYGROUND_KERNEL_MODE: "rust-grpc",
+          },
+          ["--backend", "sqlite", "--sqlite-path", "auto"]
+        ),
+      "rust-grpc playground kernel currently supports only the memory backend baseline"
+    );
+  });
+
   test("allocates disposable SQLite smoke paths on demand", () => {
     const config = loadPlaygroundConfig({}, [
       "--backend",
@@ -252,6 +314,33 @@ describe("playground host scenarios", () => {
     expect(report.events.canonicalTypes).toContain("turn.start");
     expect(report.events.sseEvents).toContain("turn.start");
     expect(report.events.aguiTypes.length).toBeGreaterThan(0);
+  });
+
+  test("emits telemetry evidence using the generated runtime vocabulary", async () => {
+    const report = await runPlaygroundScenario({
+      backend: "memory",
+      providerMode: "fixture",
+      scenario: "streaming",
+    });
+
+    expect(report.telemetry.schemaUrl).toBe(
+      TUVREN_RUNTIME_TELEMETRY_SCHEMA_URL
+    );
+    expect(report.telemetry.observedKeys.length).toBeGreaterThan(0);
+
+    for (const key of report.telemetry.observedKeys) {
+      expect(TUVREN_RUNTIME_TELEMETRY_ATTRIBUTE_KEYS).toContain(key);
+    }
+
+    expect(report.telemetry.attributes["tuvren.runtime.backend.id"]).toBe(
+      "memory"
+    );
+    expect(report.telemetry.attributes["tuvren.runtime.provider.id"]).toBe(
+      "fixture"
+    );
+    expect(report.telemetry.attributes["tuvren.runtime.branch.id"]).toBe(
+      report.thread.branchId
+    );
   });
 
   test("runs approval pause and edited approval resume", async () => {

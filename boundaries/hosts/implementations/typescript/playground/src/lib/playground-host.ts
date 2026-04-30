@@ -22,12 +22,17 @@ import type { RuntimeBackend } from "@tuvren/kernel-protocol";
 import type { ExecutionHandle } from "@tuvren/runtime-api";
 import {
   createDriverRegistry,
+  createGrpcRuntimeKernel,
   createTuvrenRuntimeCore,
 } from "@tuvren/runtime-core";
 import { toAgUiEvents } from "@tuvren/stream-agui";
 import { teeTuvrenStreamEvents } from "@tuvren/stream-core";
 import { toSseFrames } from "@tuvren/stream-sse";
-import { createPlaygroundKernel } from "./playground-kernel.js";
+import {
+  createPlaygroundKernel,
+  createPlaygroundKernelInspector,
+  type PlaygroundKernelHarness,
+} from "./playground-kernel.js";
 import { createPlaygroundProvider } from "./playground-provider.js";
 import type {
   PlaygroundConfig,
@@ -37,8 +42,7 @@ import type {
 } from "./playground-types.js";
 
 export function createPlaygroundHost(config: PlaygroundConfig): PlaygroundHost {
-  const backend = createBackend(config);
-  const harness = createPlaygroundKernel({ backend });
+  const harness = createKernelHarness(config);
   const provider = createPlaygroundProvider({
     aimockBaseUrl: config.aimockBaseUrl,
     googleApiKey: config.googleApiKey,
@@ -132,6 +136,36 @@ async function projectHandle(
     canonical,
     sse,
   };
+}
+
+function createKernelHarness(
+  config: PlaygroundConfig
+): PlaygroundKernelHarness {
+  if ((config.kernelMode ?? "typescript-local") === "rust-grpc") {
+    if (config.kernelGrpcBaseUrl === undefined) {
+      throw new TuvrenRuntimeError(
+        "rust-grpc playground kernel requires a gRPC base URL",
+        {
+          code: "invalid_playground_config",
+        }
+      );
+    }
+
+    // Epic V keeps the runtime switch below `TuvrenRuntime`: the host swaps
+    // only the `RuntimeKernel` implementation so turn semantics, drivers, and
+    // provider orchestration stay identical across local and remote kernels.
+    const kernel = createGrpcRuntimeKernel({
+      baseUrl: config.kernelGrpcBaseUrl,
+    });
+
+    return {
+      kernel,
+      ...createPlaygroundKernelInspector(kernel),
+    };
+  }
+
+  const backend = createBackend(config);
+  return createPlaygroundKernel({ backend });
 }
 
 function createBackend(config: PlaygroundConfig): RuntimeBackend {

@@ -1707,7 +1707,14 @@ function assertRunUpdateIsLegal(
     "memory_backend_run_updated_at_regressed"
   );
 
-  if (existingRun.status === "running") {
+  if (
+    existingRun.status === "running" ||
+    (existingRun.status === "paused" && nextRun.status === "failed")
+  ) {
+    // Approval resume can surface a terminal failure after a paused run has
+    // already durably recorded prior checkpoints. Keep the append-only and
+    // monotonic checks active for that final transition instead of treating it
+    // like a fully immutable halted record.
     assertMonotonicRunStepIndex(existingRun, nextRun);
     assertAppendOnlyRunCreatedTurnNodes(existingRun, nextRun);
   } else {
@@ -2297,6 +2304,9 @@ function assertRunStatusTransition(
       (nextStatus === "completed" ||
         nextStatus === "failed" ||
         nextStatus === "paused")) ||
+    // A paused run can still fail during resume reconciliation or approval
+    // handling; Epic V relies on both local and remote kernels accepting that
+    // terminal transition consistently.
     (previousStatus === "paused" && nextStatus === "failed");
 
   if (!isLegalTransition) {

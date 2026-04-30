@@ -22,8 +22,10 @@ import Ajv2020 from "ajv/dist/2020.js";
 import { runCommand } from "./lib/command-runner.js";
 
 interface CompatibilityMatrix {
+  generatedAtMs: number;
   implementations: CompatibilityImplementation[];
   interop: CompatibilityInteropResult[];
+  sourceRevision: string;
   suites: CompatibilitySuite[];
 }
 
@@ -49,6 +51,16 @@ interface CompatibilityInteropResult {
   suiteVersion: string;
 }
 
+interface InteropTelemetrySummary {
+  observedKeys: string[];
+  scenarios: Array<{
+    attributes: Record<string, string | string[] | null>;
+    observedKeys: string[];
+    scenario: string;
+  }>;
+  schemaUrl: string;
+}
+
 interface CompatibilitySuite {
   boundary: string;
   suiteId: string;
@@ -57,7 +69,14 @@ interface CompatibilitySuite {
 
 interface ConformanceRunner {
   implementationId: string;
+  language: string;
   manifestPath: string;
+  project: string;
+}
+
+interface InteropRunner {
+  manifestPath: string;
+  pairId: string;
   project: string;
 }
 
@@ -83,22 +102,40 @@ const TRANSITION_IMPLEMENTATION_VERSION = "unreleased-workspace";
 const CONFORMANCE_RUNNERS: readonly ConformanceRunner[] = [
   {
     implementationId: "typescript-framework",
+    language: "typescript",
     manifestPath:
       "boundaries/framework/conformance/scenarios/suite-manifest.json",
     project: "framework-typescript-conformance-runner",
   },
   {
     implementationId: "typescript-kernel",
+    language: "typescript",
     manifestPath: "boundaries/kernel/conformance/scenarios/suite-manifest.json",
     project: "kernel-typescript-conformance-runner",
   },
   {
     implementationId: "typescript-providers",
+    language: "typescript",
     manifestPath:
       "boundaries/providers/conformance/scenarios/suite-manifest.json",
     project: "providers-typescript-conformance-runner",
   },
+  {
+    implementationId: "rust-kernel",
+    language: "rust",
+    manifestPath: "boundaries/kernel/conformance/scenarios/suite-manifest.json",
+    project: "kernel-rust-conformance-runner",
+  },
 ];
+
+const INTEROP_RUNNERS: readonly InteropRunner[] = [
+  {
+    manifestPath:
+      "boundaries/framework/interop/rust-kernel/scenarios/suite-manifest.json",
+    pairId: "typescript-framework__rust-kernel",
+    project: "host-playground:interop-smoke",
+  },
+] as const;
 
 await main();
 
@@ -112,6 +149,7 @@ async function main(): Promise<void> {
   const seenSuiteIds = new Set<string>();
   const suites: CompatibilitySuite[] = [];
   const implementations: CompatibilityImplementation[] = [];
+  const interop: CompatibilityInteropResult[] = [];
   let hasFailure = false;
 
   for (const runner of CONFORMANCE_RUNNERS) {
@@ -131,7 +169,7 @@ async function main(): Promise<void> {
     // treating TypeScript as the semantic root.
     implementations.push({
       implementationId: runner.implementationId,
-      language: "typescript",
+      language: runner.language,
       results: [result.matrixResult],
       // The current TypeScript line is still an unreleased workspace
       // implementation, so the matrix records that explicitly instead of
@@ -144,13 +182,31 @@ async function main(): Promise<void> {
     }
   }
 
+  for (const runner of INTEROP_RUNNERS) {
+    const suiteManifest = await readSuiteManifest(runner.manifestPath);
+
+    if (!seenSuiteIds.has(suiteManifest.suiteId)) {
+      suites.push({
+        boundary: suiteManifest.boundary,
+        suiteId: suiteManifest.suiteId,
+        suiteVersion: suiteManifest.suiteVersion,
+      });
+      seenSuiteIds.add(suiteManifest.suiteId);
+    }
+
+    const result = await runInteropTarget(runner, suiteManifest);
+    interop.push(result.matrixResult);
+
+    if (result.matrixResult.status === "fail") {
+      hasFailure = true;
+    }
+  }
+
   const matrix: CompatibilityMatrix = {
+    generatedAtMs: Date.now(),
     implementations,
-    // Real interop evidence does not exist until later epics wire an actual
-    // cross-process lane, so Epic R records no placeholder pass claims here.
-    // The typed shape still matches the checked-in schema so later epics can
-    // add measured interop entries without first widening this generator.
-    interop: [],
+    interop,
+    sourceRevision: await readSourceRevision(),
     suites,
   };
 
@@ -255,6 +311,162 @@ async function runConformanceTarget(
   };
 }
 
+async function runInteropTarget(
+  runner: InteropRunner,
+  suiteManifest: SuiteManifest
+): Promise<{
+  matrixResult: CompatibilityInteropResult;
+}> {
+  const command = ["bun", "run", "nx", "run", runner.project, "--skipNxCache"];
+  const commandResult = await runCommand(command, {
+    captureOutput: true,
+    cwd: REPO_ROOT,
+  });
+  const evidenceFilePath = resolve(
+    EVIDENCE_DIRECTORY,
+    `${suiteManifest.suiteId}.${runner.pairId}.json`
+  );
+  const relativeEvidencePath = relative(REPO_ROOT, evidenceFilePath);
+  const status: "fail" | "pass" = commandResult.code === 0 ? "pass" : "fail";
+  const evidence: {
+    boundary: string;
+    command: string[];
+    exitCode: number;
+    pairId: string;
+    project: string;
+    status: "fail" | "pass";
+    stderr?: string;
+    stdout?: string;
+    telemetry?: InteropTelemetrySummary;
+    suiteId: string;
+    suiteVersion: string;
+  } = {
+    boundary: suiteManifest.boundary,
+    command,
+    exitCode: commandResult.code,
+    pairId: runner.pairId,
+    project: runner.project,
+    status,
+    suiteId: suiteManifest.suiteId,
+    suiteVersion: suiteManifest.suiteVersion,
+  };
+
+  if (status === "fail") {
+    evidence.stderr = commandResult.stderr;
+    evidence.stdout = commandResult.stdout;
+  } else {
+    const telemetry = readInteropTelemetrySummary(commandResult.stdout);
+
+    if (telemetry !== undefined) {
+      evidence.telemetry = telemetry;
+    }
+  }
+
+  await writeFile(evidenceFilePath, `${JSON.stringify(evidence, null, 2)}\n`);
+
+  return {
+    matrixResult: {
+      evidencePath: relativeEvidencePath,
+      pairId: runner.pairId,
+      status,
+      suiteId: suiteManifest.suiteId,
+      suiteVersion: suiteManifest.suiteVersion,
+    },
+  };
+}
+
+function readInteropTelemetrySummary(
+  stdout: string
+): InteropTelemetrySummary | undefined {
+  // Nx target wrappers may prepend human-readable logs before the final JSON
+  // matrix payload, so the evidence parser intentionally reads the trailing
+  // object instead of assuming stdout is pure JSON from byte zero.
+  const parsed = JSON.parse(extractTrailingJsonObject(stdout));
+
+  if (!(isRecord(parsed) && Array.isArray(parsed.reports))) {
+    return undefined;
+  }
+
+  const scenarios: InteropTelemetrySummary["scenarios"] = [];
+  const observedKeys = new Set<string>();
+  let schemaUrl: string | undefined;
+
+  for (const report of parsed.reports) {
+    if (!isRecord(report) || typeof report.scenario !== "string") {
+      continue;
+    }
+
+    const telemetry = report.telemetry;
+
+    if (!isRecord(telemetry) || typeof telemetry.schemaUrl !== "string") {
+      continue;
+    }
+
+    if (!Array.isArray(telemetry.observedKeys)) {
+      continue;
+    }
+
+    if (!isRecord(telemetry.attributes)) {
+      continue;
+    }
+
+    schemaUrl ??= telemetry.schemaUrl;
+
+    const scenarioObservedKeys = telemetry.observedKeys.filter(
+      (value): value is string => typeof value === "string"
+    );
+
+    for (const key of scenarioObservedKeys) {
+      observedKeys.add(key);
+    }
+
+    scenarios.push({
+      attributes: telemetry.attributes as Record<
+        string,
+        string | string[] | null
+      >,
+      observedKeys: scenarioObservedKeys,
+      scenario: report.scenario,
+    });
+  }
+
+  if (schemaUrl === undefined || scenarios.length === 0) {
+    return undefined;
+  }
+
+  return {
+    observedKeys: [...observedKeys].sort(),
+    scenarios,
+    schemaUrl,
+  };
+}
+
+function extractTrailingJsonObject(stdout: string): string {
+  const prefixedJsonLines = stdout
+    .split("\n")
+    .filter((line) => line.startsWith("host-playground: "))
+    .map((line) => line.slice("host-playground: ".length));
+
+  if (prefixedJsonLines.length > 0) {
+    const jsonStart = prefixedJsonLines.findIndex((line) =>
+      line.trimStart().startsWith("{")
+    );
+
+    if (jsonStart !== -1) {
+      return prefixedJsonLines.slice(jsonStart).join("\n").trim();
+    }
+  }
+
+  const trimmed = stdout.trim();
+  const objectStart = trimmed.lastIndexOf("\n{");
+
+  if (objectStart === -1) {
+    return trimmed;
+  }
+
+  return trimmed.slice(objectStart + 1);
+}
+
 async function formatGeneratedOutputs(): Promise<void> {
   const result = await runCommand(
     [
@@ -311,6 +523,16 @@ function readJsonSchema(value: unknown): AnySchema {
 function assertCompatibilityMatrix(
   value: CompatibilityMatrix
 ): asserts value is CompatibilityMatrix {
+  if (
+    !Number.isSafeInteger(value.generatedAtMs) ||
+    value.generatedAtMs < 0 ||
+    value.sourceRevision.length === 0
+  ) {
+    throw new Error(
+      "compatibility matrix must contain a generatedAtMs timestamp and sourceRevision"
+    );
+  }
+
   for (const suite of value.suites) {
     if (
       suite.boundary.length === 0 ||
@@ -359,6 +581,39 @@ function assertCompatibilityMatrix(
       );
     }
   }
+}
+
+async function readSourceRevision(): Promise<string> {
+  const revisionResult = await runCommand(["git", "rev-parse", "HEAD"], {
+    captureOutput: true,
+    cwd: REPO_ROOT,
+  });
+
+  if (revisionResult.code !== 0) {
+    throw new Error(
+      revisionResult.stderr ||
+        revisionResult.stdout ||
+        "unable to read the current git revision"
+    );
+  }
+
+  const statusResult = await runCommand(["git", "status", "--short"], {
+    captureOutput: true,
+    cwd: REPO_ROOT,
+  });
+
+  if (statusResult.code !== 0) {
+    throw new Error(
+      statusResult.stderr ||
+        statusResult.stdout ||
+        "unable to determine whether the working tree is dirty"
+    );
+  }
+
+  const revision = revisionResult.stdout.trim();
+  return statusResult.stdout.trim().length === 0
+    ? revision
+    : `${revision}-dirty`;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

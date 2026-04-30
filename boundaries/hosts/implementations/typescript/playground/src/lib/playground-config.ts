@@ -21,6 +21,7 @@ import { TuvrenRuntimeError } from "@tuvren/core-types";
 import type {
   PlaygroundBackendMode,
   PlaygroundConfig,
+  PlaygroundKernelMode,
   PlaygroundProviderMode,
   PlaygroundScenarioName,
 } from "./playground-types.js";
@@ -56,6 +57,9 @@ export function loadPlaygroundConfig(
   const backend = parseBackend(
     options.backend ?? env.TUVREN_PLAYGROUND_BACKEND
   );
+  const kernelMode = parseKernelMode(
+    options.kernelMode ?? env.TUVREN_PLAYGROUND_KERNEL_MODE
+  );
   const scenario = parseScenario(
     options.scenario ?? env.TUVREN_PLAYGROUND_SCENARIO
   );
@@ -68,6 +72,9 @@ export function loadPlaygroundConfig(
   const googleApiKey = resolveGoogleApiKey(env);
   const aimockBaseUrl = normalizeAimockBaseUrl(
     options.aimockBaseUrl ?? env.TUVREN_PLAYGROUND_AIMOCK_BASE_URL
+  );
+  const kernelGrpcBaseUrl = normalizeKernelGrpcBaseUrl(
+    options.kernelGrpcBaseUrl ?? env.TUVREN_PLAYGROUND_KERNEL_GRPC_BASE_URL
   );
   const sqlitePath = normalizeSqlitePath(
     options.sqlitePath ?? env.TUVREN_PLAYGROUND_SQLITE_PATH
@@ -100,10 +107,30 @@ export function loadPlaygroundConfig(
     );
   }
 
+  if (kernelMode === "rust-grpc" && kernelGrpcBaseUrl === undefined) {
+    throw new TuvrenRuntimeError(
+      "rust-grpc playground kernel requires --kernel-grpc-base-url or TUVREN_PLAYGROUND_KERNEL_GRPC_BASE_URL",
+      {
+        code: "invalid_playground_config",
+      }
+    );
+  }
+
+  if (kernelMode === "rust-grpc" && backend !== "memory") {
+    throw new TuvrenRuntimeError(
+      "rust-grpc playground kernel currently supports only the memory backend baseline",
+      {
+        code: "invalid_playground_config",
+      }
+    );
+  }
+
   return {
     aimockBaseUrl,
     backend,
     googleApiKey,
+    kernelGrpcBaseUrl,
+    kernelMode,
     modelId:
       providerMode === "ai-sdk-google"
         ? (modelId ?? DEFAULT_GEMINI_PLAYGROUND_MODEL_ID)
@@ -115,6 +142,18 @@ export function loadPlaygroundConfig(
 }
 
 function normalizeAimockBaseUrl(value: string | undefined): string | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  const normalized = value.trim();
+
+  return normalized.length === 0 ? undefined : normalized;
+}
+
+function normalizeKernelGrpcBaseUrl(
+  value: string | undefined
+): string | undefined {
   if (value === undefined) {
     return undefined;
   }
@@ -202,6 +241,23 @@ function parseBackend(value: string | undefined): PlaygroundBackendMode {
     default:
       throw new TuvrenRuntimeError(
         `unsupported playground backend "${normalized}"`,
+        {
+          code: "invalid_playground_config",
+        }
+      );
+  }
+}
+
+function parseKernelMode(value: string | undefined): PlaygroundKernelMode {
+  const normalized = value ?? "typescript-local";
+
+  switch (normalized) {
+    case "rust-grpc":
+    case "typescript-local":
+      return normalized;
+    default:
+      throw new TuvrenRuntimeError(
+        `unsupported playground kernel mode "${normalized}"`,
         {
           code: "invalid_playground_config",
         }

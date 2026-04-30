@@ -19,6 +19,8 @@ import { spawn } from "node:child_process";
 export interface RunCommandOptions {
   captureOutput?: boolean;
   cwd?: string;
+  env?: Record<string, string | undefined>;
+  timeoutMs?: number;
 }
 
 export interface RunCommandResult {
@@ -40,11 +42,27 @@ export function runCommand(
   return new Promise<RunCommandResult>((resolve, reject) => {
     const stdoutChunks: Uint8Array[] = [];
     const stderrChunks: Uint8Array[] = [];
+    let timedOut = false;
     const child = spawn(executable, args, {
       cwd: options.cwd,
-      env: process.env,
+      env: {
+        ...process.env,
+        ...options.env,
+      },
       stdio: options.captureOutput ? "pipe" : "inherit",
     });
+    const timeoutHandle =
+      options.timeoutMs === undefined
+        ? undefined
+        : setTimeout(() => {
+            timedOut = true;
+            child.kill("SIGTERM");
+            setTimeout(() => {
+              if (child.exitCode === null) {
+                child.kill("SIGKILL");
+              }
+            }, 1000).unref();
+          }, options.timeoutMs);
 
     if (options.captureOutput) {
       child.stdout?.on("data", (chunk: Uint8Array) => {
@@ -57,9 +75,18 @@ export function runCommand(
 
     child.once("error", reject);
     child.once("close", (code) => {
+      if (timeoutHandle !== undefined) {
+        clearTimeout(timeoutHandle);
+      }
+
+      const stderr = Buffer.concat(stderrChunks).toString("utf8");
       resolve({
-        code: code ?? 1,
-        stderr: Buffer.concat(stderrChunks).toString("utf8"),
+        code: timedOut ? 124 : (code ?? 1),
+        stderr: timedOut
+          ? [stderr, `command timed out after ${String(options.timeoutMs)}ms`]
+              .filter((value) => value.length > 0)
+              .join("\n")
+          : stderr,
         stdout: Buffer.concat(stdoutChunks).toString("utf8"),
       });
     });

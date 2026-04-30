@@ -168,13 +168,18 @@ export function createFakeKernelHarness(): FakeKernelHarness {
           step,
         } satisfies StepContext;
       },
-      async complete(runId, status) {
+      async complete(runId, status, eventHash) {
         const run = requireRun(state, runId);
         run.status = status;
         state.runs.set(runId, run);
 
-        if (run.stagedResults.length > 0) {
-          const turnNodeHash = await checkpointRun(state, run, clock++);
+        if (run.stagedResults.length > 0 || eventHash !== undefined) {
+          const turnNodeHash = await checkpointRun(
+            state,
+            run,
+            clock++,
+            eventHash ?? null
+          );
           run.stagedResults = [];
           state.runs.set(runId, run);
           return {
@@ -533,7 +538,8 @@ export function createFakeKernelHarness(): FakeKernelHarness {
 async function checkpointRun(
   state: FakeKernelState,
   run: FakeRunState,
-  _timestamp: number
+  _timestamp: number,
+  eventHash: HashString | null
 ): Promise<HashString> {
   const branch = requireBranch(state, run.branchId);
   const headNode = requireTurnNode(state, branch.headTurnNodeHash);
@@ -549,7 +555,7 @@ async function checkpointRun(
     turnTreeHash,
     run.schemaId,
     run.stagedResults,
-    null
+    eventHash
   );
   branch.headTurnNodeHash = turnNodeHash;
   state.branches.set(branch.branchId, branch);

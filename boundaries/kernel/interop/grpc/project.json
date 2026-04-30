@@ -21,11 +21,11 @@
         "{workspaceRoot}/devenv.lock"
       ],
       "outputs": [
-        "{workspaceRoot}/boundaries/framework/implementations/typescript/runtime-core/.generated/kernel-interop"
+        "{workspaceRoot}/boundaries/framework/implementations/typescript/runtime-core/src/lib/generated/kernel-interop"
       ],
       "options": {
         "cwd": ".",
-        "command": "devenv shell -- bun tools/scripts/kernel-interop-governance.ts codegen"
+        "command": "bun tools/scripts/kernel-interop-governance.ts codegen"
       }
     },
     "breaking": {
@@ -33,14 +33,14 @@
       "cache": false,
       "options": {
         "cwd": ".",
-        "command": "devenv shell -- bun tools/scripts/kernel-interop-governance.ts breaking"
+        "command": "bun tools/scripts/kernel-interop-governance.ts breaking"
       }
     },
     "interop-smoke": {
       "executor": "nx:run-commands",
       "options": {
         "cwd": ".",
-        "command": "devenv shell -- bun tools/scripts/kernel-interop-governance.ts interop-smoke"
+        "command": "bun tools/scripts/kernel-interop-governance.ts interop-smoke"
       }
     },
     "lint": {
@@ -54,7 +54,7 @@
       ],
       "options": {
         "cwd": ".",
-        "command": "devenv shell -- bun tools/scripts/kernel-interop-governance.ts lint && bunx --bun @biomejs/biome check boundaries/kernel/interop/grpc tools/scripts/kernel-interop-governance.ts"
+        "command": "bun tools/scripts/kernel-interop-governance.ts lint && bunx --bun @biomejs/biome check boundaries/kernel/interop/grpc tools/scripts/kernel-interop-governance.ts"
       }
     }
   }

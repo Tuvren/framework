@@ -30,6 +30,7 @@ import type {
 import type { TuvrenSseFrame } from "@tuvren/stream-sse";
 
 export type PlaygroundBackendMode = "memory" | "sqlite";
+export type PlaygroundKernelMode = "rust-grpc" | "typescript-local";
 export type PlaygroundProviderMode =
   | "aimock-anthropic"
   | "aimock-google"
@@ -52,6 +53,8 @@ export interface PlaygroundConfig {
   aimockBaseUrl?: string;
   backend: PlaygroundBackendMode;
   googleApiKey?: string;
+  kernelGrpcBaseUrl?: string;
+  kernelMode?: PlaygroundKernelMode;
   modelId?: string;
   providerMode: PlaygroundProviderMode;
   scenario: PlaygroundScenarioName;
@@ -79,6 +82,12 @@ export interface PlaygroundStreamProjection {
   sse: TuvrenSseFrame[];
 }
 
+export interface PlaygroundTelemetryEvidence {
+  attributes: Record<string, string | string[] | null>;
+  observedKeys: string[];
+  schemaUrl: string;
+}
+
 export interface PlaygroundScenarioReport {
   backend: PlaygroundBackendMode;
   checks: Record<string, boolean>;
@@ -91,14 +100,17 @@ export interface PlaygroundScenarioReport {
     canonicalTypes: string[];
     sseEvents: string[];
   };
+  kernelMode: PlaygroundKernelMode;
   providerMode: PlaygroundProviderMode;
   scenario: PlaygroundScenarioName;
   status: ExecutionStatus;
+  telemetry: PlaygroundTelemetryEvidence;
   thread: PlaygroundThreadSummary;
 }
 
 export interface PlaygroundScenarioMatrixReport {
   backend: PlaygroundBackendMode;
+  kernelMode: PlaygroundKernelMode;
   modelId?: string;
   providerMode: PlaygroundProviderMode;
   reports: PlaygroundScenarioReport[];

@@ -34,6 +34,7 @@ export type {
   PlaygroundBackendMode,
   PlaygroundConfig,
   PlaygroundHost,
+  PlaygroundKernelMode,
   PlaygroundProviderMode,
   PlaygroundScenarioMatrixReport,
   PlaygroundScenarioName,

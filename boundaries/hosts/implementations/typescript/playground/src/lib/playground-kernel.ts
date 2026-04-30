@@ -67,6 +67,47 @@ export interface PlaygroundKernelHarness {
   readBranchStatus(branchId: string): Promise<unknown | null>;
 }
 
+export function createPlaygroundKernelInspector(
+  kernel: RuntimeKernel
+): Pick<PlaygroundKernelHarness, "readBranchMessages" | "readBranchStatus"> {
+  return {
+    async readBranchMessages(branchId) {
+      const turnTreeHash = await readBranchTurnTreeHash(kernel, branchId);
+      const messages = await kernel.tree.resolve(turnTreeHash, "messages");
+
+      if (!Array.isArray(messages)) {
+        return [];
+      }
+
+      const output: unknown[] = [];
+
+      for (const hash of messages) {
+        const bytes = await kernel.store.get(hash);
+
+        if (bytes !== null) {
+          output.push(decodeDeterministicKernelRecord(bytes));
+        }
+      }
+
+      return output;
+    },
+    async readBranchStatus(branchId) {
+      const turnTreeHash = await readBranchTurnTreeHash(kernel, branchId);
+      const statusHash = await kernel.tree.resolve(
+        turnTreeHash,
+        "runtime.status"
+      );
+
+      if (typeof statusHash !== "string") {
+        return null;
+      }
+
+      const bytes = await kernel.store.get(statusHash);
+      return bytes === null ? null : decodeDeterministicKernelRecord(bytes);
+    },
+  };
+}
+
 export function createPlaygroundKernel(input: {
   backend: RuntimeBackend;
   now?: () => EpochMs;
@@ -164,29 +205,42 @@ export function createPlaygroundKernel(input: {
           const storedRun = await requireStoredRun(tx, runId);
           const run = decodeStoredRun(storedRun);
           const stagedResults = await listStagedResults(tx, runId);
-          const nextRun = {
+          const shouldCheckpoint =
+            stagedResults.length > 0 || eventHash !== undefined;
+          let turnNodeHash: HashString | undefined;
+
+          if (shouldCheckpoint) {
+            // Remote kernels can checkpoint the terminal event even when no new
+            // staged results were produced, so the local playground kernel does
+            // the same to keep branch-head semantics aligned across transports.
+            turnNodeHash = await checkpointRun(tx, {
+              eventHash: eventHash ?? null,
+              now,
+              run,
+              stagedResults,
+            });
+            await tx.stagedResults.clearRun(runId);
+          }
+
+          const nextCreatedTurnNodes =
+            turnNodeHash === undefined
+              ? run.createdTurnNodes
+              : [...run.createdTurnNodes, turnNodeHash];
+          // Persist any terminal checkpoint before marking the run halted so
+          // backend invariants see the same append-only history the Rust kernel
+          // exposes over gRPC.
+          await tx.runs.set({
             ...storedRun,
+            createdTurnNodesCbor: encodeRecord(nextCreatedTurnNodes),
             currentStepIndex:
               status === "completed"
                 ? run.stepSequence.length
                 : storedRun.currentStepIndex,
             status,
             updatedAtMs: now(),
-          } satisfies StoredRun;
-          await tx.runs.set(nextRun);
-
-          if (stagedResults.length === 0) {
-            return {};
-          }
-
-          const turnNodeHash = await checkpointRun(tx, {
-            eventHash: eventHash ?? null,
-            now,
-            run,
-            stagedResults,
           });
-          await tx.stagedResults.clearRun(runId);
-          return { turnNodeHash };
+
+          return turnNodeHash === undefined ? {} : { turnNodeHash };
         });
       },
       async completeStep(runId, stepId, eventHash, _observeResults, treeHash) {
@@ -562,43 +616,7 @@ export function createPlaygroundKernel(input: {
 
   return {
     kernel,
-    async readBranchMessages(branchId) {
-      return await backend.transact(async (tx) => {
-        const manifest = await readBranchManifest(tx, branchId);
-        const messages = manifest.messages;
-
-        if (!Array.isArray(messages)) {
-          return [];
-        }
-
-        const output: unknown[] = [];
-
-        for (const hash of messages) {
-          const object = await tx.objects.get(hash);
-
-          if (object !== null) {
-            output.push(decodeDeterministicKernelRecord(object.bytes));
-          }
-        }
-
-        return output;
-      });
-    },
-    async readBranchStatus(branchId) {
-      return await backend.transact(async (tx) => {
-        const manifest = await readBranchManifest(tx, branchId);
-        const statusHash = manifest["runtime.status"];
-
-        if (typeof statusHash !== "string") {
-          return null;
-        }
-
-        const object = await tx.objects.get(statusHash);
-        return object === null
-          ? null
-          : decodeDeterministicKernelRecord(object.bytes);
-      });
-    },
+    ...createPlaygroundKernelInspector(kernel),
   };
 }
 
@@ -857,13 +875,30 @@ function toStoredTurnTreePath(
   };
 }
 
-async function readBranchManifest(
-  tx: RuntimeBackendTx,
+async function readBranchTurnTreeHash(
+  kernel: RuntimeKernel,
   branchId: string
-): Promise<TurnTreeManifest> {
-  const branch = await requireBranch(tx, branchId);
-  const node = await requireTurnNode(tx, branch.headTurnNodeHash);
-  return await requireTreeManifest(tx, node.turnTreeHash);
+): Promise<HashString> {
+  const branch = await kernel.branch.get(branchId);
+
+  if (branch === null) {
+    throw new TuvrenRuntimeError(`unknown branch "${branchId}"`, {
+      code: "playground_kernel_missing_branch",
+    });
+  }
+
+  const node = await kernel.node.get(branch.headTurnNodeHash);
+
+  if (node === null) {
+    throw new TuvrenRuntimeError(
+      `unknown turn node "${branch.headTurnNodeHash}"`,
+      {
+        code: "playground_kernel_missing_turn_node",
+      }
+    );
+  }
+
+  return node.turnTreeHash;
 }
 
 async function requireTreeManifest(

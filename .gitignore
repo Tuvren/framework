@@ -11,7 +11,7 @@ target
 .cache
 .tmp-tests
 .tmp-bench
-boundaries/framework/implementations/typescript/runtime-core/.generated/
+boundaries/framework/implementations/typescript/runtime-core/src/lib/generated/kernel-interop/
 .env
 .env.*
 !boundaries/hosts/implementations/typescript/playground/.env.example

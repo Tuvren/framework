@@ -14,6 +14,8 @@
 
 use std::collections::BTreeMap;
 
+use prost::Message;
+use prost_types::Any;
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::codegen::Bytes;
@@ -41,6 +43,19 @@ use proto::kernel_thread_service_server::KernelThreadService;
 use proto::kernel_tree_service_server::KernelTreeService;
 use proto::kernel_turn_service_server::KernelTurnService;
 use proto::kernel_verdicts_service_server::KernelVerdictsService;
+
+const KERNEL_ERROR_PAYLOAD_TYPE_URL: &str =
+    "type.googleapis.com/tuvren.kernel.interop.v1.KernelErrorPayload";
+
+#[derive(Clone, PartialEq, Message)]
+struct GoogleRpcStatus {
+    #[prost(int32, tag = "1")]
+    code: i32,
+    #[prost(string, tag = "2")]
+    message: String,
+    #[prost(message, repeated, tag = "3")]
+    details: Vec<Any>,
+}
 
 #[derive(Clone)]
 pub struct KernelGrpcServiceImpl {
@@ -702,11 +717,23 @@ fn status_from_kernel_error(error: KernelError) -> Status {
         details_cbor,
     };
     let message = format!("{}: {}", payload.code, payload.message);
-    let mut details = Vec::new();
-    // Status details carry the stable proto payload so non-Rust clients do not
-    // need to parse human-readable status messages to recover kernel codes.
-    if prost::Message::encode(&payload, &mut details).is_ok() {
-        return Status::with_details(code, message, Bytes::from(details));
+    let mut payload_bytes = Vec::new();
+    // grpc-status-details-bin must contain a google.rpc.Status envelope, with
+    // concrete error payloads packed as Any details. Raw proto bytes here make
+    // Connect clients fail before they can unpack the stable kernel payload.
+    if payload.encode(&mut payload_bytes).is_ok() {
+        let rich_status = GoogleRpcStatus {
+            code: code as i32,
+            message: message.clone(),
+            details: vec![Any {
+                type_url: KERNEL_ERROR_PAYLOAD_TYPE_URL.to_string(),
+                value: payload_bytes,
+            }],
+        };
+        let mut status_bytes = Vec::new();
+        if rich_status.encode(&mut status_bytes).is_ok() {
+            return Status::with_details(code, message, Bytes::from(status_bytes));
+        }
     }
     Status::new(code, message)
 }
