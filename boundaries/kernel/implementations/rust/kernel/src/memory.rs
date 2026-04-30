@@ -93,6 +93,9 @@ impl InMemoryKernel {
         validate_schema(&schema)?;
         let schema_id = schema.schema_id.clone();
         let mut state = self.lock_state()?;
+        if state.schemas.contains_key(&schema_id) {
+            return Err(duplicate("schema_already_exists", "schema already exists"));
+        }
         state.schemas.insert(schema_id.clone(), schema);
         Ok(schema_id)
     }
@@ -681,7 +684,24 @@ impl InMemoryKernel {
                 },
             );
         }
-        let staged_results = state.staged_results.remove(run_id).unwrap_or_default();
+        let staged_results = state
+            .staged_results
+            .get(run_id)
+            .cloned()
+            .unwrap_or_default();
+        let checkpoint_required = !step.deterministic
+            || step.side_effects
+            || event_hash.is_some()
+            || tree_hash.is_some()
+            || !observe_results.is_empty()
+            || !staged_results.is_empty();
+
+        if !checkpoint_required {
+            run.current_step_index += 1;
+            state.runs.insert(run_id.to_string(), run);
+            return Ok((false, None));
+        }
+
         let prior_node = state
             .turn_nodes
             .get(&run_active_turn_node_hash(&run))
@@ -689,12 +709,7 @@ impl InMemoryKernel {
             .ok_or_else(|| missing("turn_node_not_found", "run active turn node does not exist"))?;
         let next_tree_hash = match tree_hash {
             Some(tree_hash) => {
-                if !state.turn_trees.contains_key(&tree_hash) {
-                    return Err(missing(
-                        "turn_tree_not_found",
-                        "provided turn tree does not exist",
-                    ));
-                }
+                ensure_turn_tree_schema(&state, &tree_hash, &run.schema_id)?;
                 tree_hash
             }
             None => incorporate_locked(&mut state, &prior_node.turn_tree_hash, &staged_results)?,
@@ -712,6 +727,9 @@ impl InMemoryKernel {
         run.created_turn_nodes.push(node.hash.clone());
         run.current_step_index += 1;
         set_run_head_refs(&mut state, &run, &node.hash)?;
+        // Staged results are cleared only after the checkpoint node and head
+        // refs commit, preserving retry/recovery state on validation failures.
+        state.staged_results.remove(run_id);
         state.runs.insert(run_id.to_string(), run);
         Ok((true, Some(node.hash)))
     }
@@ -733,7 +751,14 @@ impl InMemoryKernel {
             RunCompletionStatus::Completed => RunStatus::Completed,
             RunCompletionStatus::Failed => RunStatus::Failed,
         };
-        let terminal_hash = if let Some(event_hash) = event_hash {
+        validate_run_completion_transition(&run.status, &terminal_status)?;
+        let staged_results = state
+            .staged_results
+            .get(run_id)
+            .cloned()
+            .unwrap_or_default();
+        let checkpoint_required = event_hash.is_some() || !staged_results.is_empty();
+        let terminal_hash = if checkpoint_required {
             let prior_node = state
                 .turn_nodes
                 .get(&run_active_turn_node_hash(&run))
@@ -741,18 +766,26 @@ impl InMemoryKernel {
                 .ok_or_else(|| {
                     missing("turn_node_not_found", "run active turn node does not exist")
                 })?;
+            let next_tree_hash = if staged_results.is_empty() {
+                prior_node.turn_tree_hash.clone()
+            } else {
+                incorporate_locked(&mut state, &prior_node.turn_tree_hash, &staged_results)?
+            };
             let mut node = TurnNode {
-                consumed_staged_results: Vec::new(),
-                event_hash: Some(event_hash),
+                consumed_staged_results: staged_results,
+                event_hash,
                 hash: String::new(),
                 previous_turn_node_hash: Some(prior_node.hash),
                 schema_id: run.schema_id.clone(),
-                turn_tree_hash: prior_node.turn_tree_hash,
+                turn_tree_hash: next_tree_hash,
             };
             node.hash = hash_turn_node_identity(&node)?;
             state.turn_nodes.insert(node.hash.clone(), node.clone());
             run.created_turn_nodes.push(node.hash.clone());
             set_run_head_refs(&mut state, &run, &node.hash)?;
+            // Terminal checkpointing consumes unanchored staged work before the
+            // run halts, keeping recovery and branch head state coherent.
+            state.staged_results.remove(run_id);
             Some(node.hash)
         } else {
             None
@@ -886,6 +919,40 @@ fn set_run_head_refs(
     Ok(())
 }
 
+fn ensure_turn_tree_schema(
+    state: &KernelState,
+    tree_hash: &str,
+    schema_id: &str,
+) -> KernelResult<()> {
+    let tree = state
+        .turn_trees
+        .get(tree_hash)
+        .ok_or_else(|| missing("turn_tree_not_found", "provided turn tree does not exist"))?;
+    if tree.schema_id != schema_id {
+        return Err(KernelError::new(
+            "turn_tree_schema_mismatch",
+            "provided turn tree schema must match the run schema",
+            None,
+        ));
+    }
+    Ok(())
+}
+
+fn validate_run_completion_transition(
+    current: &RunStatus,
+    terminal: &RunStatus,
+) -> KernelResult<()> {
+    match (current, terminal) {
+        (RunStatus::Running, RunStatus::Paused | RunStatus::Completed | RunStatus::Failed)
+        | (RunStatus::Paused, RunStatus::Failed) => Ok(()),
+        _ => Err(KernelError::new(
+            "invalid_run_completion_transition",
+            "run completion status transition is not allowed",
+            None,
+        )),
+    }
+}
+
 fn run_active_turn_node_hash(run: &RunRecord) -> HashString {
     run.created_turn_nodes
         .last()
@@ -978,6 +1045,7 @@ fn validate_schema(schema: &TurnTreeSchema) -> KernelResult<()> {
         "schema id must not be empty",
     )?;
     let mut paths = HashSet::new();
+    let mut object_types = HashSet::new();
     for path in &schema.paths {
         validate_non_empty(
             &path.path,
@@ -997,6 +1065,12 @@ fn validate_schema(schema: &TurnTreeSchema) -> KernelResult<()> {
             "invalid_incorporation_rule",
             "incorporation rule object type must not be empty",
         )?;
+        if !object_types.insert(rule.object_type.clone()) {
+            return Err(duplicate(
+                "duplicate_incorporation_rule_object_type",
+                "incorporation rule object types must be unique",
+            ));
+        }
         if !paths.contains(&rule.target_path) {
             return Err(KernelError::new(
                 "invalid_incorporation_rule_target",

@@ -168,6 +168,215 @@ fn in_memory_kernel_runs_checkpoint_and_recovery_flow() {
     assert_eq!(recovery.consumed_staged_results.len(), 1);
 }
 
+#[test]
+fn failed_step_checkpoint_keeps_staged_results_for_retry() {
+    let (kernel, thread_hash) = kernel_with_run(StepDeclaration {
+        deterministic: false,
+        id: "model_call".to_string(),
+        metadata: None,
+        side_effects: false,
+    });
+    kernel
+        .staging_stage(
+            "run_main",
+            b"hello".to_vec(),
+            "msg_assistant",
+            "message",
+            StagedResultStatus::Completed,
+            None,
+        )
+        .expect("stage succeeds");
+    let error = kernel
+        .run_complete_step(
+            "run_main",
+            "model_call",
+            None,
+            Vec::new(),
+            Some("missing_tree".to_string()),
+        )
+        .expect_err("missing tree fails checkpoint");
+
+    assert_eq!(error.payload.code, "turn_tree_not_found");
+    assert_eq!(
+        kernel
+            .staging_current("run_main")
+            .expect("staging remains readable")
+            .len(),
+        1
+    );
+    assert_eq!(
+        kernel
+            .branch_get("branch_main")
+            .expect("branch get")
+            .expect("branch")
+            .head_turn_node_hash,
+        thread_hash
+    );
+}
+
+#[test]
+fn provided_step_tree_must_match_run_schema() {
+    let (kernel, thread_hash) = kernel_with_run(StepDeclaration {
+        deterministic: false,
+        id: "model_call".to_string(),
+        metadata: None,
+        side_effects: false,
+    });
+    let mut other_schema = canonical_schema();
+    other_schema.schema_id = "schema_other".to_string();
+    kernel
+        .schema_register(other_schema)
+        .expect("other schema registers");
+    let other_tree = kernel
+        .tree_create("schema_other", BTreeMap::new(), None)
+        .expect("other tree creates");
+    let error = kernel
+        .run_complete_step("run_main", "model_call", None, Vec::new(), Some(other_tree))
+        .expect_err("schema mismatch fails checkpoint");
+
+    assert_eq!(error.payload.code, "turn_tree_schema_mismatch");
+    assert_eq!(
+        kernel
+            .branch_get("branch_main")
+            .expect("branch get")
+            .expect("branch")
+            .head_turn_node_hash,
+        thread_hash
+    );
+}
+
+#[test]
+fn terminal_completion_checkpoints_unanchored_staged_results() {
+    let (kernel, _) = kernel_with_run(StepDeclaration {
+        deterministic: false,
+        id: "model_call".to_string(),
+        metadata: None,
+        side_effects: false,
+    });
+    kernel
+        .staging_stage(
+            "run_main",
+            b"hello".to_vec(),
+            "msg_assistant",
+            "message",
+            StagedResultStatus::Completed,
+            None,
+        )
+        .expect("stage succeeds");
+    let terminal_hash = kernel
+        .run_complete("run_main", RunCompletionStatus::Completed, None)
+        .expect("run completes")
+        .expect("terminal checkpoint hash");
+    let recovery = kernel.run_recover("run_main").expect("recovery succeeds");
+
+    assert_eq!(recovery.consumed_staged_results.len(), 1);
+    assert!(recovery.uncommitted_staged_results.is_empty());
+    assert_eq!(recovery.last_turn_node_hash, terminal_hash);
+}
+
+#[test]
+fn schema_registration_is_write_once() {
+    let kernel = InMemoryKernel::new();
+    kernel
+        .schema_register(canonical_schema())
+        .expect("schema registers");
+    let error = kernel
+        .schema_register(canonical_schema())
+        .expect_err("duplicate schema is rejected");
+
+    assert_eq!(error.payload.code, "schema_already_exists");
+}
+
+#[test]
+fn deterministic_side_effect_free_step_can_advance_without_checkpoint() {
+    let (kernel, root_hash) = kernel_with_run(StepDeclaration {
+        deterministic: true,
+        id: "pure_step".to_string(),
+        metadata: None,
+        side_effects: false,
+    });
+    let (checkpointed, node_hash) = kernel
+        .run_complete_step("run_main", "pure_step", None, Vec::new(), None)
+        .expect("pure step completes");
+    let recovery = kernel.run_recover("run_main").expect("recovery succeeds");
+
+    assert!(!checkpointed);
+    assert!(node_hash.is_none());
+    assert_eq!(
+        recovery.last_completed_step_id.as_deref(),
+        Some("pure_step")
+    );
+    assert_eq!(recovery.last_turn_node_hash, root_hash);
+}
+
+#[test]
+fn run_completion_rejects_invalid_terminal_transitions() {
+    let (kernel, _) = kernel_with_run(StepDeclaration {
+        deterministic: false,
+        id: "model_call".to_string(),
+        metadata: None,
+        side_effects: false,
+    });
+    kernel
+        .run_complete("run_main", RunCompletionStatus::Paused, None)
+        .expect("run pauses");
+    let error = kernel
+        .run_complete("run_main", RunCompletionStatus::Completed, None)
+        .expect_err("paused run cannot complete");
+
+    assert_eq!(error.payload.code, "invalid_run_completion_transition");
+}
+
+#[test]
+fn duplicate_incorporation_object_types_are_rejected() {
+    let kernel = InMemoryKernel::new();
+    let mut schema = canonical_schema();
+    schema.incorporation_rules.push(IncorporationRule {
+        object_type: "message".to_string(),
+        target_path: "context.manifest".to_string(),
+    });
+    let error = kernel
+        .schema_register(schema)
+        .expect_err("duplicate object type is rejected");
+
+    assert_eq!(
+        error.payload.code,
+        "duplicate_incorporation_rule_object_type"
+    );
+}
+
+fn kernel_with_run(step: StepDeclaration) -> (InMemoryKernel, String) {
+    let kernel = InMemoryKernel::with_options(InMemoryKernelOptions {
+        now: Some(Arc::new(|| 1_717_171_717_171)),
+    });
+    kernel
+        .schema_register(canonical_schema())
+        .expect("schema register succeeds");
+    let thread = kernel
+        .thread_create("thread_main", "schema_main", "branch_main")
+        .expect("thread create succeeds");
+    let turn = kernel
+        .turn_create(
+            "turn_main",
+            "thread_main",
+            "branch_main",
+            None,
+            &thread.root_turn_node_hash,
+        )
+        .expect("turn create succeeds");
+    kernel
+        .run_create(
+            "run_main",
+            &turn.turn_id,
+            "branch_main",
+            "schema_main",
+            &thread.root_turn_node_hash,
+            vec![step],
+        )
+        .expect("run create succeeds");
+    (kernel, thread.root_turn_node_hash)
+}
+
 fn canonical_schema() -> TurnTreeSchema {
     TurnTreeSchema {
         incorporation_rules: vec![
