@@ -404,6 +404,14 @@ fn run_recovery_fixture_scenario(
         &created.root_turn_node_hash,
         expected.step_sequence.clone(),
     )?;
+    kernel.staging_stage(
+        "run_recovery",
+        b"earlier consumed fixture object".to_vec(),
+        "pre_fixture_consumed",
+        "message",
+        StagedResultStatus::Completed,
+        None,
+    )?;
     kernel.run_complete_step("run_recovery", "model_call", None, Vec::new(), None)?;
     let consumed = expected.consumed_staged_results.first().ok_or_else(|| {
         error(
@@ -411,7 +419,7 @@ fn run_recovery_fixture_scenario(
             "fixture must include consumed staged result",
         )
     })?;
-    kernel.staging_stage(
+    let (_, consumed_staged) = kernel.staging_stage(
         "run_recovery",
         b"consumed fixture object".to_vec(),
         &consumed.task_id,
@@ -419,14 +427,15 @@ fn run_recovery_fixture_scenario(
         consumed.status.clone(),
         consumed.interrupt_payload.clone(),
     )?;
-    kernel.run_complete_step("run_recovery", "tool_execution", None, Vec::new(), None)?;
+    let (_, last_turn_node_hash) =
+        kernel.run_complete_step("run_recovery", "tool_execution", None, Vec::new(), None)?;
     let uncommitted = expected.uncommitted_staged_results.first().ok_or_else(|| {
         error(
             "invalid_recovery_fixture",
             "fixture must include uncommitted staged result",
         )
     })?;
-    kernel.staging_stage(
+    let (_, uncommitted_staged) = kernel.staging_stage(
         "run_recovery",
         b"uncommitted fixture object".to_vec(),
         &uncommitted.task_id,
@@ -435,28 +444,22 @@ fn run_recovery_fixture_scenario(
         uncommitted.interrupt_payload.clone(),
     )?;
     let actual = kernel.run_recover("run_recovery")?;
+    let expected_actual = RecoveryState {
+        consumed_staged_results: vec![consumed_staged],
+        last_completed_step_id: expected.last_completed_step_id.clone(),
+        last_turn_node_hash: last_turn_node_hash.ok_or_else(|| {
+            error(
+                "invalid_recovery_fixture",
+                "tool_execution must create a checkpoint",
+            )
+        })?,
+        step_sequence: expected.step_sequence.clone(),
+        uncommitted_staged_results: vec![uncommitted_staged],
+    };
 
-    assert_eq!(
-        actual.last_completed_step_id,
-        expected.last_completed_step_id
-    );
-    assert_eq!(actual.step_sequence, expected.step_sequence);
-    assert_eq!(
-        actual.consumed_staged_results.len(),
-        expected.consumed_staged_results.len()
-    );
-    assert_eq!(
-        actual.uncommitted_staged_results.len(),
-        expected.uncommitted_staged_results.len()
-    );
-    assert_eq!(
-        actual.consumed_staged_results[0].task_id,
-        expected.consumed_staged_results[0].task_id
-    );
-    assert_eq!(
-        actual.uncommitted_staged_results[0].task_id,
-        expected.uncommitted_staged_results[0].task_id
-    );
+    // The scenario intentionally creates an earlier consumed result; recovery
+    // must report the latest TurnNode only, with full staged-result equality.
+    assert_eq!(actual, expected_actual);
     Ok(())
 }
 

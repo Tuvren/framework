@@ -289,6 +289,18 @@ fn schema_registration_is_write_once() {
 }
 
 #[test]
+fn schema_registration_validates_metadata_profile() {
+    let kernel = InMemoryKernel::new();
+    let mut schema = canonical_schema();
+    schema.paths[0].metadata = Some(KernelRecord::Integer(i64::MAX));
+    let error = kernel
+        .schema_register(schema)
+        .expect_err("out-of-profile metadata is rejected");
+
+    assert_eq!(error.payload.code, "invalid_kernel_record_integer");
+}
+
+#[test]
 fn deterministic_side_effect_free_step_can_advance_without_checkpoint() {
     let (kernel, root_hash) = kernel_with_run(StepDeclaration {
         deterministic: true,
@@ -398,7 +410,7 @@ fn branch_rewind_fails_active_runs() {
         .run_complete_step("run_main", "model_call", None, Vec::new(), None)
         .expect("step checkpoints");
     let node_hash = node_hash.expect("checkpoint hash");
-    kernel
+    let (_, staged) = kernel
         .staging_stage(
             "run_main",
             b"uncommitted".to_vec(),
@@ -412,13 +424,14 @@ fn branch_rewind_fails_active_runs() {
     let set_head = kernel
         .branch_set_head("branch_main", &root_hash)
         .expect("rewind archives old head");
-    assert_eq!(
-        set_head
-            .archive_branch
-            .expect("archive branch")
-            .head_turn_node_hash,
-        node_hash
-    );
+    let archive_head = set_head
+        .archive_branch
+        .expect("archive branch")
+        .head_turn_node_hash;
+    assert_ne!(archive_head, node_hash);
+    let recovery = kernel.run_recover("run_main").expect("recovery succeeds");
+    assert_eq!(recovery.last_turn_node_hash, archive_head);
+    assert_eq!(recovery.consumed_staged_results, vec![staged]);
     let error = kernel
         .run_begin_step("run_main", "model_call")
         .expect_err("rewound active run is failed");
@@ -429,6 +442,80 @@ fn branch_rewind_fails_active_runs() {
             .expect("failed run staging remains readable")
             .is_empty()
     );
+}
+
+#[test]
+fn run_recover_reports_last_checkpoint_consumption_only() {
+    let (kernel, _) = kernel_with_steps(vec![
+        StepDeclaration {
+            deterministic: false,
+            id: "first_step".to_string(),
+            metadata: None,
+            side_effects: false,
+        },
+        StepDeclaration {
+            deterministic: false,
+            id: "second_step".to_string(),
+            metadata: None,
+            side_effects: false,
+        },
+    ]);
+    kernel
+        .staging_stage(
+            "run_main",
+            b"first".to_vec(),
+            "shared_task",
+            "message",
+            StagedResultStatus::Completed,
+            None,
+        )
+        .expect("first stage succeeds");
+    kernel
+        .run_complete_step("run_main", "first_step", None, Vec::new(), None)
+        .expect("first step checkpoints");
+    let (_, last_staged) = kernel
+        .staging_stage(
+            "run_main",
+            b"second".to_vec(),
+            "shared_task",
+            "message",
+            StagedResultStatus::Completed,
+            None,
+        )
+        .expect("task ids can be reused after checkpoint consumption");
+    kernel
+        .run_complete_step("run_main", "second_step", None, Vec::new(), None)
+        .expect("second step checkpoints");
+    let recovery = kernel.run_recover("run_main").expect("recovery succeeds");
+
+    assert_eq!(recovery.consumed_staged_results, vec![last_staged]);
+}
+
+#[test]
+fn tree_incorporate_requires_existing_staged_objects() {
+    let kernel = InMemoryKernel::new();
+    kernel
+        .schema_register(canonical_schema())
+        .expect("schema registers");
+    let base_tree = kernel
+        .tree_create("schema_main", empty_canonical_manifest(), None)
+        .expect("base tree creates");
+    let error = kernel
+        .tree_incorporate(
+            &base_tree,
+            &[StagedResult {
+                interrupt_payload: None,
+                object_hash: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                    .to_string(),
+                object_type: "message".to_string(),
+                status: StagedResultStatus::Completed,
+                task_id: "missing_object".to_string(),
+                timestamp_ms: 1,
+            }],
+        )
+        .expect_err("missing staged object is rejected");
+
+    assert_eq!(error.payload.code, "staged_object_not_found");
 }
 
 #[test]

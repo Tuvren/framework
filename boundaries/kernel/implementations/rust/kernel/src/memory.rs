@@ -172,7 +172,7 @@ impl InMemoryKernel {
         let mut manifest = base_tree.manifest;
 
         for staged_result in staged_results {
-            validate_staged_result_shape(staged_result)?;
+            validate_staged_result_durable(&state, staged_result)?;
             let rule = schema
                 .incorporation_rules
                 .iter()
@@ -398,12 +398,14 @@ impl InMemoryKernel {
         let archive_branch = if moves_forward {
             None
         } else if is_ancestor(&state, turn_node_hash, &prior_head)? {
+            let archive_head = reactively_checkpoint_active_runs_on_branch(&mut state, branch_id)?;
             // Backward moves preserve the abandoned head under an archive
-            // branch so branch rewinds do not silently discard reachable work.
+            // branch. Any active run staging is first checkpointed onto that
+            // abandoned lineage so rollback does not erase durable work.
             let archive_id = next_archive_branch_id(&mut state, branch_id);
             let archive = BranchRecord {
                 branch_id: archive_id.clone(),
-                head_turn_node_hash: prior_head,
+                head_turn_node_hash: archive_head,
                 thread_id: branch.thread_id.clone(),
             };
             state.branches.insert(archive_id, archive.clone());
@@ -929,14 +931,18 @@ impl InMemoryKernel {
             .runs
             .get(run_id)
             .ok_or_else(|| missing("run_not_found", "run does not exist"))?;
-        let mut consumed_staged_results = Vec::new();
-        for node_hash in &run.created_turn_nodes {
-            let node = state
-                .turn_nodes
-                .get(node_hash)
-                .ok_or_else(|| missing("turn_node_not_found", "run turn node does not exist"))?;
-            consumed_staged_results.extend(node.consumed_staged_results.clone());
-        }
+        let consumed_staged_results = run
+            .created_turn_nodes
+            .last()
+            .map(|node_hash| {
+                state
+                    .turn_nodes
+                    .get(node_hash)
+                    .ok_or_else(|| missing("turn_node_not_found", "run turn node does not exist"))
+                    .map(|node| node.consumed_staged_results.clone())
+            })
+            .transpose()?
+            .unwrap_or_default();
         let last_completed_step_id = run
             .current_step_index
             .checked_sub(1)
@@ -1004,7 +1010,7 @@ fn incorporate_locked(
         .ok_or_else(|| missing("schema_not_found", "turn tree schema does not exist"))?;
     let mut manifest = base_tree.manifest;
     for staged_result in staged_results {
-        validate_staged_result_shape(staged_result)?;
+        validate_staged_result_durable(state, staged_result)?;
         let rule = schema
             .incorporation_rules
             .iter()
@@ -1027,6 +1033,74 @@ fn incorporate_locked(
         },
     );
     Ok(tree_hash)
+}
+
+fn reactively_checkpoint_active_runs_on_branch(
+    state: &mut KernelState,
+    branch_id: &str,
+) -> KernelResult<HashString> {
+    let run_ids = state
+        .runs
+        .values()
+        .filter(|run| {
+            run.branch_id == branch_id
+                && matches!(run.status, RunStatus::Running | RunStatus::Paused)
+        })
+        .map(|run| run.run_id.clone())
+        .collect::<Vec<_>>();
+    let mut archive_head = state
+        .branches
+        .get(branch_id)
+        .ok_or_else(|| missing("branch_not_found", "branch does not exist"))?
+        .head_turn_node_hash
+        .clone();
+
+    for run_id in run_ids {
+        let staged_results = state
+            .staged_results
+            .get(&run_id)
+            .cloned()
+            .unwrap_or_default();
+        if staged_results.is_empty() {
+            continue;
+        }
+        let run = state
+            .runs
+            .get(&run_id)
+            .cloned()
+            .ok_or_else(|| missing("run_not_found", "run does not exist"))?;
+        let prior_node = state
+            .turn_nodes
+            .get(&run_active_turn_node_hash(&run))
+            .cloned()
+            .ok_or_else(|| missing("turn_node_not_found", "run active turn node does not exist"))?;
+        let next_tree_hash =
+            incorporate_locked(state, &prior_node.turn_tree_hash, &staged_results)?;
+        let mut node = TurnNode {
+            consumed_staged_results: staged_results,
+            event_hash: None,
+            hash: String::new(),
+            previous_turn_node_hash: Some(prior_node.hash),
+            schema_id: run.schema_id.clone(),
+            turn_tree_hash: next_tree_hash,
+        };
+        node.hash = hash_turn_node_identity(&node)?;
+        state.turn_nodes.insert(node.hash.clone(), node.clone());
+        if let Some(run) = state.runs.get_mut(&run_id) {
+            run.created_turn_nodes.push(node.hash.clone());
+        }
+        // The checkpoint becomes the archive head; the original branch is
+        // rewound immediately after archival, so the new node is not lost.
+        let run = state
+            .runs
+            .get(&run_id)
+            .cloned()
+            .ok_or_else(|| missing("run_not_found", "run does not exist"))?;
+        set_run_head_refs(state, &run, &node.hash)?;
+        archive_head = node.hash;
+    }
+
+    Ok(archive_head)
 }
 
 fn set_run_head_refs(
@@ -1268,6 +1342,20 @@ fn validate_staged_result_shape(staged_result: &StagedResult) -> KernelResult<()
     validate_hash_string(&staged_result.object_hash)
 }
 
+fn validate_staged_result_durable(
+    state: &KernelState,
+    staged_result: &StagedResult,
+) -> KernelResult<()> {
+    validate_staged_result_shape(staged_result)?;
+    if !state.objects.contains_key(&staged_result.object_hash) {
+        return Err(missing(
+            "staged_object_not_found",
+            "staged result object hash must reference an existing object",
+        ));
+    }
+    Ok(())
+}
+
 fn validate_hash_string(hash: &str) -> KernelResult<()> {
     if hash.len() == 64
         && hash
@@ -1299,6 +1387,11 @@ fn validate_schema(schema: &TurnTreeSchema) -> KernelResult<()> {
             "invalid_schema_path",
             "schema path must not be empty",
         )?;
+        if let Some(metadata) = &path.metadata {
+            // Schema metadata participates in governed records, so reject
+            // values outside the canonical CBOR profile before registration.
+            encode_deterministic_kernel_record(metadata)?;
+        }
         if !paths.insert(path.path.clone()) {
             return Err(duplicate(
                 "duplicate_schema_path",
@@ -1340,6 +1433,11 @@ fn validate_steps(steps: &[StepDeclaration]) -> KernelResult<()> {
     let mut ids = HashSet::new();
     for step in steps {
         validate_non_empty(&step.id, "invalid_step_id", "step id must not be empty")?;
+        if let Some(metadata) = &step.metadata {
+            // Step declarations are part of the recoverable protocol surface;
+            // validating now keeps later identity/transport encoding total.
+            encode_deterministic_kernel_record(metadata)?;
+        }
         if !ids.insert(step.id.clone()) {
             return Err(duplicate("duplicate_step_id", "step ids must be unique"));
         }
