@@ -101,13 +101,24 @@ export const DEFAULT_VERIFICATION_STEPS: readonly VerificationStep[] = [
       "-t",
       "codegen",
       "-p",
-      "framework-tool-contracts,provider-api,telemetry-semconv,compatibility-reporting",
+      "framework-tool-contracts,provider-api,telemetry-semconv,compatibility-reporting,kernel-interop-grpc",
       // Compatibility codegen shells out to the conformance runners to produce
       // measured evidence, so verify forces a fresh execution here instead of
       // accepting cached artifacts from another workspace state.
       "--skipNxCache",
     ],
-    id: "telemetry and compatibility code generation",
+    id: "telemetry, compatibility, and interop code generation",
+  },
+  {
+    command: [
+      "bun",
+      "run",
+      "nx",
+      "run",
+      "kernel-interop-grpc:interop-smoke",
+      "--skipNxCache",
+    ],
+    id: "kernel interop governance smoke",
   },
   {
     // Telemetry codegen writes a checked-in TypeScript consumer, so verify

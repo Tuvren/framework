@@ -2,16 +2,16 @@
 
 ## 0. Version History & Changelog
 
+- v0.8.6 - Closed Epic T in current repo reality with kernel-only proto authority, root Buf governance, Devenv-provisioned Buf/protoc tooling, generated binding placement, and the first interop-smoke governance lane.
 - v0.8.5 - Closed Epic S in current repo reality with TypeSpec-authored tool/provider contract artifacts, kernel CDDL grammar, implementation-scoped TypeScript conformance runners, and compatibility evidence sourced from those runners.
 - v0.8.4 - Closed Epic R in current repo reality with boundary-owned conformance and contract scaffold, canonical `lint` / `conformance` / `codegen` target vocabulary, a weaver-backed telemetry semantic-convention source and generated helper path, and the first measured TypeScript-only compatibility baseline.
-- v0.8.3 - Recorded the expanded automated aimock provider matrix across OpenAI, Anthropic, and Gemini, the opt-in manual Gemini validation lane on `host-playground:scenario-gemini`, and the provider-shape-aware bridge/playground continuity fixes so the current transition plan reflects the real post-Epic-Q validation surface.
 - ... [Older history truncated, refer to git logs]
 
 ## 1. Executive Summary & Active Critical Path
 
-- **Total Active Story Points:** 43
-- **Critical Path:** `KRT-T001 -> KRT-T002 -> (KRT-U001 -> KRT-U002 -> KRT-U004 -> KRT-V001) and (KRT-U002 -> KRT-U003) -> KRT-V002 -> KRT-V003 -> KRT-V004`
-- **Planning Assumptions:** Epics A-S are closed in current repo reality. Epic S closure evidence now lives in `constitution/spikes/epic-s-boundary-contract-conformance-artifactization-inventory.md`. TechSpec v0.6.4 keeps the baseline AI SDK bridge on `LanguageModelV3` / `ProviderV3` from `@ai-sdk/provider@3.0.8`, pins the AG-UI adapter to `@ag-ui/core@0.0.52`, preserves the existing `ProviderStreamChunk` seam while documenting the current tool-call metadata continuity requirements, treats tee-based fanout above `ExecutionHandle.events()` as the sanctioned multi-consumer host path when every required tee branch subscribes before the first pull, records SQLite playground validation as a Node-backed path because `@tuvren/backend-sqlite` uses `better-sqlite3`, keeps the playground-owned automated aimock provider lanes across OpenAI, Anthropic, and Gemini as local validation rather than a public provider contract, records the manual Gemini lane as an opt-in local proof rather than default automation, requires a formal telemetry semantic-convention source before Rust implementation work begins, treats Buf `FILE` compatibility as the default interop gate from the first `.proto` merge, and treats the compatibility matrix as a conservative near-public readiness signal rather than a private scratch report.
+- **Total Active Story Points:** 33
+- **Critical Path:** `KRT-U001 -> KRT-U002 -> KRT-U004 -> KRT-V001 -> KRT-V002 -> KRT-V003 -> KRT-V004`
+- **Planning Assumptions:** Epics A-T are closed in current repo reality. Epic T closure evidence now lives in `constitution/spikes/epic-t-kernel-interop-governance-inventory.md`. TechSpec v0.6.5 keeps the baseline AI SDK bridge on `LanguageModelV3` / `ProviderV3` from `@ai-sdk/provider@3.0.8`, pins the AG-UI adapter to `@ag-ui/core@0.0.52`, preserves the existing `ProviderStreamChunk` seam while documenting the current tool-call metadata continuity requirements, treats tee-based fanout above `ExecutionHandle.events()` as the sanctioned multi-consumer host path when every required tee branch subscribes before the first pull, records SQLite playground validation as a Node-backed path because `@tuvren/backend-sqlite` uses `better-sqlite3`, keeps the playground-owned automated aimock provider lanes across OpenAI, Anthropic, and Gemini as local validation rather than a public provider contract, records the manual Gemini lane as an opt-in local proof rather than default automation, requires a formal telemetry semantic-convention source before Rust implementation work begins, treats Buf `FILE` compatibility as the default interop gate from the first `.proto` merge, and treats the compatibility matrix as a conservative near-public readiness signal rather than a private scratch report.
 
 ### Brownfield Continuity Note
 
@@ -26,11 +26,11 @@
 - Epic N now extends repo reality beyond those planning notes: the bridge package exists and the closure artifact above is the authoritative upstream seam for Epic O.
 - Epic O now extends repo reality beyond those planning notes: `@tuvren/stream-core`, `@tuvren/stream-sse`, and `@tuvren/stream-agui` exist, `constitution/spikes/epic-o-stream-adapter-inventory.md` is the authoritative adapter mapping record, and Epic P must treat tee-based fanout plus the documented `tuvren.runtime.*` AG-UI custom namespace as the handoff surface rather than rediscovering protocol gaps or resubscription hazards.
 - Epic P now extends repo reality beyond those planning notes: `@tuvren/playground-host` exists under `boundaries/hosts/implementations/typescript/playground`, `constitution/spikes/epic-p-playground-host-inventory.md` is the authoritative playground handoff, full-turn streams cover canonical/SSE/AG-UI fanout, approval resume continuation is projected to canonical/SSE only, non-reload memory scenarios run under Bun tests, branching is validated from a completed source head, and SQLite reload is validated through the built Node CLI path.
-- Epic R now extends repo reality beyond those planning notes: the repository has the explicit multi-language transition guide plus the closure inventory in `constitution/spikes/epic-r-multilanguage-transition-foundation-inventory.md`, and Epic S has since closed the artifact promotion line before kernel interop work begins.
+- Epic R now extends repo reality beyond those planning notes: the repository has the explicit multi-language transition guide plus the closure inventory in `constitution/spikes/epic-r-multilanguage-transition-foundation-inventory.md`, Epic S has since closed the artifact promotion line, and Epic T has since closed the kernel interop governance line before Rust implementation work begins.
 
 ### Sequential Scope Rule
 
-- Epic S is closed. The next implementation line begins with Epic T kernel interop governance work and must not skip directly to Rust implementation work before the transport, Buf governance, interop-smoke, telemetry, and compatibility foundations remain authoritative in repo reality.
+- Epic T is closed. The next implementation line begins with Epic U Rust kernel baseline work and must not skip directly to TypeScript framework to Rust kernel stabilization before the Cargo workspace, Rust kernel core, Rust gRPC service, and Rust conformance runner are authoritative in repo reality.
 
 ### Planning Heuristic
 
@@ -46,7 +46,7 @@
 
 ### Current Active Scope
 
-- Epic T defines the narrow kernel-only interop transport, Buf-governed `.proto` ownership, and interop-smoke/codegen orchestration.
+- Epic T is closed and now defines the narrow kernel-only interop transport, Buf-governed `.proto` ownership, and interop-smoke/codegen orchestration.
 - Epic U introduces the root Cargo workspace and the first Rust implementation only inside the kernel boundary.
 - Epic V stabilizes real TypeScript framework to Rust kernel interoperability, compatibility-ledger generation, and cross-language telemetry/CI posture.
 
@@ -257,12 +257,22 @@ And the resulting structure makes TypeScript one peer consumer of the shared beh
 
 ### Epic T - Kernel Interop Governance (KIG)
 
-- Planned. This epic defines the first cross-language transport seam before any Rust kernel implementation is treated as real.
+- Closed in current repo reality.
+- Closure artifacts:
+  - `constitution/spikes/epic-t-kernel-interop-surface-inventory.md`
+  - `constitution/spikes/epic-t-kernel-interop-governance-inventory.md`
+- Durable outcome:
+  - the repo now contains kernel-only proto authority under `boundaries/kernel/interop/grpc/proto/`
+  - root Buf v2 lint, generation, and `FILE` breaking governance are in place
+  - Devenv declares the native Buf and Protobuf-ES generator tooling
+  - generated bindings are placed under the consuming framework implementation tree and ignored by source control
+  - `kernel-interop-grpc` exposes `codegen` and `interop-smoke` lanes without claiming real Rust interop evidence early
 
 **KRT-T001 Kernel Interop Surface Inventory**
 
 - **Type:** Spike
 - **Effort:** 2
+- **Status:** Closed in current repo reality.
 - **Dependencies:** KRT-S004
 - **Capability / Contract Mapping:** PRD `CAP-P1-035`, `CAP-P1-036`; Architecture `2`, `4.5`; TechSpec `4.9`, `5.4.1`
 - **Description:** Inventory the narrow kernel-only interop surface, transport non-goals, versioning posture, and event/error envelope boundaries before authoring `.proto` files, including the existing thread/branch/head operations the framework must preserve over a remote kernel path.
@@ -280,6 +290,7 @@ And the inventory explicitly excludes framework-owned ExecutionHandle controls s
 
 - **Type:** Feature
 - **Effort:** 5
+- **Status:** Closed in current repo reality.
 - **Dependencies:** KRT-T001
 - **Capability / Contract Mapping:** PRD `CAP-P1-035`, `CAP-P1-036`; Architecture `2`, `5`; TechSpec `4.9`, `5.2`
 - **Description:** Add kernel `.proto` ownership plus root Buf v2 configuration so the first transport surface has lint, generation, and breaking-change governance from the start without widening into framework handle controls.
@@ -297,6 +308,7 @@ And Buf `FILE` compatibility is the default breaking gate from the first `.proto
 
 - **Type:** Feature
 - **Effort:** 3
+- **Status:** Closed in current repo reality.
 - **Dependencies:** KRT-R003, KRT-T002
 - **Capability / Contract Mapping:** PRD `CAP-P1-036`; Architecture `2.1`, `4.5`; TechSpec `4.9`, `5.1.1`, `5.2`
 - **Description:** Wire `codegen` and `interop-smoke` targets plus generated-binding placement rules so transport support code stays with the consuming implementation tree and the repo can exercise real cross-process checks later.

@@ -1,0 +1,227 @@
+syntax = "proto3";
+
+package tuvren.kernel.interop.v1;
+
+// Stable error payload for out-of-band transport errors. RPC success responses
+// stay narrow; gRPC/Connect status details carry this when implementations
+// need to preserve kernel error codes across languages.
+message KernelErrorPayload {
+  string code = 1;
+  string message = 2;
+  optional bytes details_cbor = 3;
+}
+
+enum PathCollectionKind {
+  PATH_COLLECTION_KIND_UNSPECIFIED = 0;
+  PATH_COLLECTION_KIND_ORDERED = 1;
+  PATH_COLLECTION_KIND_SINGLE = 2;
+}
+
+message NullPathValue {}
+
+message OrderedPathHashes {
+  repeated string hashes = 1;
+}
+
+message PathValue {
+  // The oneof preserves the kernel protocol union: null, one hash, or an
+  // ordered hash list. Do not replace it with parallel optional fields.
+  oneof value {
+    NullPathValue null_value = 1;
+    string single_hash = 2;
+    OrderedPathHashes ordered_hashes = 3;
+  }
+}
+
+message PathValueEntry {
+  string path = 1;
+  PathValue value = 2;
+}
+
+message PathDefinition {
+  PathCollectionKind collection = 1;
+  optional bytes metadata_cbor = 2;
+  string path = 3;
+}
+
+message IncorporationRule {
+  string object_type = 1;
+  string target_path = 2;
+}
+
+message TurnTreeSchema {
+  repeated IncorporationRule incorporation_rules = 1;
+  repeated PathDefinition paths = 2;
+  string schema_id = 3;
+}
+
+message StepDeclaration {
+  bool deterministic = 1;
+  string id = 2;
+  // Flexible metadata uses the deterministic kernel CBOR profile rather than
+  // JSON so hashes and recovery data remain byte-stable across runtimes.
+  optional bytes metadata_cbor = 3;
+  bool side_effects = 4;
+}
+
+message ObserveResult {
+  repeated bytes annotations_cbor = 1;
+  repeated bytes signals_cbor = 2;
+}
+
+enum VerdictDisposition {
+  VERDICT_DISPOSITION_UNSPECIFIED = 0;
+  VERDICT_DISPOSITION_HARD_FAIL = 1;
+  VERDICT_DISPOSITION_SOFT_FAIL = 2;
+  VERDICT_DISPOSITION_END_TURN = 3;
+}
+
+message ProceedVerdict {}
+
+message AbortVerdict {
+  VerdictDisposition disposition = 1;
+  string reason = 2;
+}
+
+message ModifyVerdict {
+  bytes transform_cbor = 1;
+}
+
+message PauseVerdict {
+  string reason = 1;
+  bytes resumption_schema_cbor = 2;
+}
+
+message RetryVerdict {
+  bytes adjustment_cbor = 1;
+}
+
+message Verdict {
+  // Verdicts are a discriminated union in the kernel contract. The oneof keeps
+  // invalid cross-variant field mixtures out of the transport baseline.
+  oneof verdict {
+    ProceedVerdict proceed = 1;
+    AbortVerdict abort = 2;
+    ModifyVerdict modify = 3;
+    PauseVerdict pause = 4;
+    RetryVerdict retry = 5;
+  }
+}
+
+enum StagedResultStatus {
+  STAGED_RESULT_STATUS_UNSPECIFIED = 0;
+  STAGED_RESULT_STATUS_COMPLETED = 1;
+  STAGED_RESULT_STATUS_FAILED = 2;
+}
+
+message SettledStagedResult {
+  StagedResultStatus status = 1;
+}
+
+message InterruptedStagedResult {
+  bytes interrupt_payload_cbor = 1;
+}
+
+message StagedResult {
+  string object_hash = 1;
+  string object_type = 2;
+  string task_id = 3;
+  // Protobuf-ES exposes int64 as bigint. Future TypeScript adapters must check
+  // this value before narrowing it to the current safe-integer EpochMs type.
+  int64 timestamp_ms = 4;
+  // The oneof enforces that only interrupted results carry an interrupt
+  // payload, while completed/failed results stay payload-free.
+  oneof outcome {
+    SettledStagedResult settled = 5;
+    InterruptedStagedResult interrupted = 6;
+  }
+}
+
+message TurnNode {
+  repeated StagedResult consumed_staged_results = 1;
+  optional string event_hash = 2;
+  string hash = 3;
+  optional string previous_turn_node_hash = 4;
+  string schema_id = 5;
+  string turn_tree_hash = 6;
+}
+
+message ThreadRecord {
+  string root_turn_node_hash = 1;
+  string schema_id = 2;
+  string thread_id = 3;
+}
+
+message BranchRecord {
+  string branch_id = 1;
+  string head_turn_node_hash = 2;
+  string thread_id = 3;
+}
+
+message TurnRecord {
+  string branch_id = 1;
+  string head_turn_node_hash = 2;
+  optional string parent_turn_id = 3;
+  string start_turn_node_hash = 4;
+  string thread_id = 5;
+  string turn_id = 6;
+}
+
+enum RunStatus {
+  RUN_STATUS_UNSPECIFIED = 0;
+  RUN_STATUS_RUNNING = 1;
+  RUN_STATUS_PAUSED = 2;
+  RUN_STATUS_COMPLETED = 3;
+  RUN_STATUS_FAILED = 4;
+}
+
+enum RunCompletionStatus {
+  RUN_COMPLETION_STATUS_UNSPECIFIED = 0;
+  RUN_COMPLETION_STATUS_PAUSED = 1;
+  RUN_COMPLETION_STATUS_COMPLETED = 2;
+  RUN_COMPLETION_STATUS_FAILED = 3;
+}
+
+message RunRecord {
+  string branch_id = 1;
+  repeated string created_turn_nodes = 2;
+  int32 current_step_index = 3;
+  string run_id = 4;
+  string schema_id = 5;
+  string start_turn_node_hash = 6;
+  RunStatus status = 7;
+  repeated StepDeclaration step_sequence = 8;
+  string turn_id = 9;
+}
+
+message StepContext {
+  string current_turn_node_hash = 1;
+  TurnTreeSchema schema = 2;
+  repeated bytes signals_cbor = 3;
+  StepDeclaration step = 4;
+}
+
+message RecoveryState {
+  repeated StagedResult consumed_staged_results = 1;
+  optional string last_completed_step_id = 2;
+  string last_turn_node_hash = 3;
+  repeated StepDeclaration step_sequence = 4;
+  repeated StagedResult uncommitted_staged_results = 5;
+}
+
+message ThreadCreateResult {
+  string branch_id = 1;
+  string root_turn_node_hash = 2;
+  string root_turn_tree_hash = 3;
+  string thread_id = 4;
+}
+
+message SetHeadResult {
+  optional BranchRecord archive_branch = 1;
+  BranchRecord branch = 2;
+}
+
+message BranchHeadListEntry {
+  string branch_id = 1;
+  string head_turn_node_hash = 2;
+}
