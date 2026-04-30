@@ -12,6 +12,9 @@ use crate::types::{
     Verdict,
 };
 
+const MIN_SAFE_EPOCH_MS: EpochMs = -9_007_199_254_740_991;
+const MAX_SAFE_EPOCH_MS: EpochMs = 9_007_199_254_740_991;
+
 #[derive(Clone)]
 pub struct InMemoryKernel {
     // Epic U deliberately keeps the Rust baseline process-local. Durable
@@ -555,26 +558,19 @@ impl InMemoryKernel {
         status: StagedResultStatus,
         interrupt_payload: Option<KernelRecord>,
     ) -> KernelResult<(HashString, StagedResult)> {
-        validate_non_empty(task_id, "invalid_task_id", "task id must not be empty")?;
-        validate_non_empty(
-            object_type,
-            "invalid_object_type",
-            "object type must not be empty",
-        )?;
-        if matches!(status, StagedResultStatus::Interrupted) != interrupt_payload.is_some() {
-            return Err(KernelError::new(
-                "invalid_staged_result_outcome",
-                "only interrupted staged results may carry interrupt payloads",
-                None,
-            ));
-        }
-        if let Some(interrupt_payload) = interrupt_payload.as_ref() {
-            // Validate run-local payloads before staging so a later checkpoint
-            // cannot discover that already-durable work is unhashable.
-            encode_deterministic_kernel_record(interrupt_payload)?;
-        }
         let object_hash = hash_bytes_to_hex(&blob);
         let timestamp_ms = (self.now)();
+        let staged_result = StagedResult {
+            interrupt_payload,
+            object_hash: object_hash.clone(),
+            object_type: object_type.to_string(),
+            status,
+            task_id: task_id.to_string(),
+            timestamp_ms,
+        };
+        // Validate the complete record before touching the object store so
+        // in-process callers and transport callers share one protocol gate.
+        validate_staged_result_profile(&staged_result)?;
         let mut state = self.lock_state()?;
         let run = state
             .runs
@@ -604,14 +600,6 @@ impl InMemoryKernel {
         state
             .objects
             .insert(object_hash.clone(), ObjectRecord { blob });
-        let staged_result = StagedResult {
-            interrupt_payload,
-            object_hash: object_hash.clone(),
-            object_type: object_type.to_string(),
-            status,
-            task_id: task_id.to_string(),
-            timestamp_ms,
-        };
         let staged_results = state.staged_results.entry(run_id.to_string()).or_default();
         staged_results.push(staged_result.clone());
         Ok((object_hash, staged_result))
@@ -1328,7 +1316,7 @@ fn validate_path_value(collection: PathCollectionKind, value: &PathValue) -> Ker
     }
 }
 
-fn validate_staged_result_shape(staged_result: &StagedResult) -> KernelResult<()> {
+fn validate_staged_result_profile(staged_result: &StagedResult) -> KernelResult<()> {
     validate_non_empty(
         &staged_result.task_id,
         "invalid_task_id",
@@ -1339,14 +1327,31 @@ fn validate_staged_result_shape(staged_result: &StagedResult) -> KernelResult<()
         "invalid_object_type",
         "object type must not be empty",
     )?;
-    validate_hash_string(&staged_result.object_hash)
+    validate_hash_string(&staged_result.object_hash)?;
+    validate_epoch_ms(staged_result.timestamp_ms)?;
+    if matches!(staged_result.status, StagedResultStatus::Interrupted)
+        != staged_result.interrupt_payload.is_some()
+    {
+        return Err(KernelError::new(
+            "invalid_staged_result_outcome",
+            "only interrupted staged results may carry interrupt payloads",
+            None,
+        ));
+    }
+    if let Some(interrupt_payload) = staged_result.interrupt_payload.as_ref() {
+        // Run-local payloads become identity material at checkpoint time; keep
+        // external tree.incorporate inputs inside the same deterministic CBOR
+        // profile enforced by staging_stage.
+        encode_deterministic_kernel_record(interrupt_payload)?;
+    }
+    Ok(())
 }
 
 fn validate_staged_result_durable(
     state: &KernelState,
     staged_result: &StagedResult,
 ) -> KernelResult<()> {
-    validate_staged_result_shape(staged_result)?;
+    validate_staged_result_profile(staged_result)?;
     if !state.objects.contains_key(&staged_result.object_hash) {
         return Err(missing(
             "staged_object_not_found",
@@ -1354,6 +1359,18 @@ fn validate_staged_result_durable(
         ));
     }
     Ok(())
+}
+
+fn validate_epoch_ms(value: EpochMs) -> KernelResult<()> {
+    if (MIN_SAFE_EPOCH_MS..=MAX_SAFE_EPOCH_MS).contains(&value) {
+        Ok(())
+    } else {
+        Err(KernelError::new(
+            "invalid_epoch_ms",
+            "epoch milliseconds must be a JavaScript-safe integer",
+            None,
+        ))
+    }
 }
 
 fn validate_hash_string(hash: &str) -> KernelResult<()> {

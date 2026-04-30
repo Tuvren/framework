@@ -519,6 +519,87 @@ fn tree_incorporate_requires_existing_staged_objects() {
 }
 
 #[test]
+fn tree_incorporate_validates_staged_result_profile() {
+    let kernel = InMemoryKernel::new();
+    kernel
+        .schema_register(canonical_schema())
+        .expect("schema registers");
+    let base_tree = kernel
+        .tree_create("schema_main", empty_canonical_manifest(), None)
+        .expect("base tree creates");
+    let object_hash = kernel
+        .store_put(b"durable object".to_vec(), None)
+        .expect("object stores");
+
+    let completed_payload_error = kernel
+        .tree_incorporate(
+            &base_tree,
+            &[StagedResult {
+                interrupt_payload: Some(KernelRecord::Text("unexpected".to_string())),
+                object_hash: object_hash.clone(),
+                object_type: "message".to_string(),
+                status: StagedResultStatus::Completed,
+                task_id: "completed_payload".to_string(),
+                timestamp_ms: 1,
+            }],
+        )
+        .expect_err("settled results cannot carry interrupt payloads");
+    let missing_payload_error = kernel
+        .tree_incorporate(
+            &base_tree,
+            &[StagedResult {
+                interrupt_payload: None,
+                object_hash: object_hash.clone(),
+                object_type: "message".to_string(),
+                status: StagedResultStatus::Interrupted,
+                task_id: "missing_payload".to_string(),
+                timestamp_ms: 1,
+            }],
+        )
+        .expect_err("interrupted results require payloads");
+    let payload_profile_error = kernel
+        .tree_incorporate(
+            &base_tree,
+            &[StagedResult {
+                interrupt_payload: Some(KernelRecord::Integer(i64::MAX)),
+                object_hash: object_hash.clone(),
+                object_type: "message".to_string(),
+                status: StagedResultStatus::Interrupted,
+                task_id: "unsafe_payload".to_string(),
+                timestamp_ms: 1,
+            }],
+        )
+        .expect_err("interrupt payloads must be deterministic CBOR records");
+    let timestamp_error = kernel
+        .tree_incorporate(
+            &base_tree,
+            &[StagedResult {
+                interrupt_payload: None,
+                object_hash,
+                object_type: "message".to_string(),
+                status: StagedResultStatus::Completed,
+                task_id: "unsafe_timestamp".to_string(),
+                timestamp_ms: i64::MAX,
+            }],
+        )
+        .expect_err("timestamps must stay inside the EpochMs profile");
+
+    assert_eq!(
+        completed_payload_error.payload.code,
+        "invalid_staged_result_outcome"
+    );
+    assert_eq!(
+        missing_payload_error.payload.code,
+        "invalid_staged_result_outcome"
+    );
+    assert_eq!(
+        payload_profile_error.payload.code,
+        "invalid_kernel_record_integer"
+    );
+    assert_eq!(timestamp_error.payload.code, "invalid_epoch_ms");
+}
+
+#[test]
 fn branch_rewind_does_not_overwrite_existing_archive_ids() {
     let (kernel, root_hash) = kernel_with_run(StepDeclaration {
         deterministic: false,
