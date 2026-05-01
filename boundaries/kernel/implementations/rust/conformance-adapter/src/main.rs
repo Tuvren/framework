@@ -267,9 +267,19 @@ fn run_cross_thread_lineage() -> Result<Value, KernelError> {
     let (_, node_a) = kernel.run_complete_step("run_a", "step_a", None, Vec::new(), None)?;
     let node_a = node_a.ok_or_else(|| error("missing_checkpoint", "expected checkpoint hash"))?;
     kernel.thread_create("thread_b", "schema_main", "branch_b")?;
-    let lineage_error = kernel
-        .branch_create("branch_cross_thread", "thread_b", &node_a)
-        .expect_err("thread A node cannot seed thread B branch");
+    // Unexpected acceptance is returned as observation evidence so one check
+    // fails without turning a kernel regression into an adapter process panic.
+    let lineage_error = match kernel.branch_create("branch_cross_thread", "thread_b", &node_a) {
+        Ok(_) => {
+            return Ok(json!({
+                "evidence": {
+                    "errorCode": "unexpected_success",
+                    "diagnostics": ["thread A node unexpectedly seeded thread B branch"]
+                }
+            }));
+        }
+        Err(error) => error,
+    };
 
     Ok(json!({ "evidence": { "errorCode": lineage_error.payload.code } }))
 }
@@ -333,9 +343,19 @@ fn run_lateral_turn_head_guard() -> Result<Value, KernelError> {
     let (_, alt_node) = kernel.run_complete_step("run_alt", "alt_step", None, Vec::new(), None)?;
     let alt_node =
         alt_node.ok_or_else(|| error("missing_checkpoint", "expected alt checkpoint"))?;
-    let lateral_error = kernel
-        .turn_update_head("turn_main", &alt_node)
-        .expect_err("turn head cannot jump to a lateral descendant");
+    // Unexpected acceptance is returned as observation evidence so one check
+    // fails without turning a kernel regression into an adapter process panic.
+    let lateral_error = match kernel.turn_update_head("turn_main", &alt_node) {
+        Ok(_) => {
+            return Ok(json!({
+                "evidence": {
+                    "errorCode": "unexpected_success",
+                    "diagnostics": ["turn head unexpectedly jumped to a lateral descendant"]
+                }
+            }));
+        }
+        Err(error) => error,
+    };
 
     Ok(json!({ "evidence": { "errorCode": lateral_error.payload.code } }))
 }

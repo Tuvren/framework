@@ -149,6 +149,11 @@ export function assertConformanceEvidence(
     value.checkResults,
     `${label}.checkResults`
   );
+  const nonApplicableCheckIds =
+    readOptionalStringArray(
+      value.nonApplicableCheckIds,
+      `${label}.nonApplicableCheckIds`
+    ) ?? [];
   const expectedSummary = createConformanceEvidenceSummary(checkResults);
 
   if (!isRecord(value.summary)) {
@@ -158,10 +163,7 @@ export function assertConformanceEvidence(
   assertSafeInteger(
     value.summary.totalChecks,
     `${label}.summary.totalChecks`,
-    expectedSummary.totalChecks +
-      (typeof value.summary.nonApplicableChecks === "number"
-        ? value.summary.nonApplicableChecks
-        : 0)
+    expectedSummary.totalChecks + nonApplicableCheckIds.length
   );
   assertSafeInteger(
     value.summary.passedChecks,
@@ -173,13 +175,15 @@ export function assertConformanceEvidence(
     `${label}.summary.failedChecks`,
     expectedSummary.failedChecks
   );
-  assertOptionalSafeInteger(
+  assertSafeInteger(
     value.summary.applicableChecks,
-    `${label}.summary.applicableChecks`
+    `${label}.summary.applicableChecks`,
+    checkResults.length
   );
-  assertOptionalSafeInteger(
+  assertSafeInteger(
     value.summary.nonApplicableChecks,
-    `${label}.summary.nonApplicableChecks`
+    `${label}.summary.nonApplicableChecks`,
+    nonApplicableCheckIds.length
   );
 
   const expectedStatus = expectedSummary.failedChecks === 0 ? "pass" : "fail";
@@ -400,8 +404,8 @@ function readCheckResults(
   value: unknown,
   label: string
 ): readonly ConformanceCheckResult[] {
-  if (!Array.isArray(value) || value.length === 0) {
-    throw new Error(`${label} must be a non-empty array`);
+  if (!Array.isArray(value)) {
+    throw new Error(`${label} must be an array`);
   }
 
   const checkResults = value.map((checkResult, index) =>
@@ -560,16 +564,6 @@ function assertSafeInteger(
 ): void {
   if (!Number.isSafeInteger(value) || value !== expectedValue) {
     throw new Error(`${label} must equal ${expectedValue}`);
-  }
-}
-
-function assertOptionalSafeInteger(value: unknown, label: string): void {
-  if (value === undefined) {
-    return;
-  }
-
-  if (!Number.isSafeInteger(value) || value < 0) {
-    throw new Error(`${label} must be a non-negative safe integer`);
   }
 }
 

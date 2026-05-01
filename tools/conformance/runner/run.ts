@@ -26,7 +26,10 @@ import {
   createCheckResult,
   createConformanceEvidenceSummary,
 } from "../../scripts/lib/conformance-contract.js";
-import type { AdapterControls } from "../adapter-protocol/index.js";
+import type {
+  AdapterCapabilities,
+  AdapterControls,
+} from "../adapter-protocol/index.js";
 import {
   type CompiledConformancePlan,
   type CompiledConformancePlanCheck,
@@ -93,30 +96,11 @@ async function main(): Promise<void> {
   const plans = await readPlans(adapterManifest, options);
   const selected = selectChecks(plans, adapterManifest, options);
   const scheduled = applyShard(selected.applicable, options);
-  const client = new JsonRpcAdapterClient({
-    command: adapterManifest.command,
-    cwd: REPO_ROOT,
-  });
-  const results: RunResult[] = [];
-
-  try {
-    for (const group of chunkByConcurrency(scheduled, options.concurrency)) {
-      const groupResults = await Promise.all(
-        group.map(async (scheduledCheck) => ({
-          checkResult: await runCheck(
-            client,
-            adapterManifest,
-            scheduledCheck.plan,
-            scheduledCheck.compiledCheck
-          ),
-          index: scheduledCheck.index,
-        }))
-      );
-      results.push(...groupResults);
-    }
-  } finally {
-    await client.shutdown();
-  }
+  const results = await runScheduledChecks(
+    adapterManifest,
+    scheduled,
+    options.concurrency
+  );
 
   const checkResults = results
     .sort((left, right) => left.index - right.index)
@@ -162,6 +146,50 @@ async function main(): Promise<void> {
   }
 }
 
+async function runScheduledChecks(
+  manifest: AdapterManifest,
+  scheduled: readonly ScheduledCheck[],
+  concurrency: number
+): Promise<RunResult[]> {
+  const results: RunResult[] = [];
+  let nextIndex = 0;
+  const workerCount = Math.min(concurrency, scheduled.length);
+  const workers = Array.from({ length: workerCount }, async () => {
+    const client = new JsonRpcAdapterClient({
+      command: manifest.command,
+      cwd: REPO_ROOT,
+    });
+
+    try {
+      while (nextIndex < scheduled.length) {
+        // Each worker owns one adapter process and runs checks serially inside
+        // that process, preventing stateful adapters from racing inspectState.
+        const scheduledCheck = scheduled[nextIndex];
+        nextIndex += 1;
+
+        if (scheduledCheck === undefined) {
+          break;
+        }
+
+        results.push({
+          checkResult: await runCheck(
+            client,
+            manifest,
+            scheduledCheck.plan,
+            scheduledCheck.compiledCheck
+          ),
+          index: scheduledCheck.index,
+        });
+      }
+    } finally {
+      await client.shutdown();
+    }
+  });
+
+  await Promise.all(workers);
+  return results;
+}
+
 async function runCheck(
   client: JsonRpcAdapterClient,
   manifest: AdapterManifest,
@@ -171,7 +199,11 @@ async function runCheck(
   const check = compiledCheck.check;
 
   try {
-    await client.initialize(plan.plan.packetId, plan.plan.planVersion);
+    const capabilities = await client.initialize(
+      plan.plan.packetId,
+      plan.plan.planVersion
+    );
+    validateAdapterHandshake(capabilities, manifest);
 
     if (Array.isArray(check.steps) && check.steps.length > 0) {
       return await runTraceCheck(client, manifest, plan, compiledCheck);
@@ -248,7 +280,10 @@ async function runTraceCheck(
           trace,
         }),
       };
-      const controls = step.controls ?? {};
+      const controls = {
+        ...createAdapterControls(compiledCheck),
+        ...(step.controls ?? {}),
+      };
       const outcome = await client.dispatch(
         step.operation,
         input,
@@ -384,6 +419,35 @@ function createAdapterControls(
   };
 }
 
+function validateAdapterHandshake(
+  capabilities: AdapterCapabilities,
+  manifest: AdapterManifest
+): void {
+  if (capabilities.adapterId !== manifest.adapterId) {
+    throw new Error(
+      `adapter initialize returned adapterId ${capabilities.adapterId}, expected ${manifest.adapterId}`
+    );
+  }
+
+  const reportedCapabilities = capabilities.capabilities;
+
+  if (!Array.isArray(reportedCapabilities)) {
+    throw new Error("adapter initialize must report capabilities");
+  }
+
+  const expected = [...manifest.capabilities].sort();
+  const actual = [...reportedCapabilities].sort();
+
+  if (
+    expected.length !== actual.length ||
+    expected.some((capability, index) => capability !== actual[index])
+  ) {
+    throw new Error(
+      `adapter initialize capabilities ${actual.join(", ")} do not match manifest ${expected.join(", ")}`
+    );
+  }
+}
+
 async function readPlans(
   adapterManifest: AdapterManifest,
   options: CliOptions
@@ -497,19 +561,6 @@ function applyShard(
   return scheduled.filter(
     (_entry, index) => index % options.shard?.count === options.shard.index
   );
-}
-
-function chunkByConcurrency<T>(
-  values: readonly T[],
-  concurrency: number
-): T[][] {
-  const chunks: T[][] = [];
-
-  for (let index = 0; index < values.length; index += concurrency) {
-    chunks.push(values.slice(index, index + concurrency));
-  }
-
-  return chunks;
 }
 
 async function readAdapterManifest(path: string): Promise<AdapterManifest> {

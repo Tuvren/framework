@@ -17,6 +17,10 @@
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import {
+  assertConformanceEvidence,
+  createCheckResult,
+} from "../../scripts/lib/conformance-contract.js";
 import type {
   CompiledConformancePlanCheck,
   ConformancePlanCheck,
@@ -239,6 +243,7 @@ for (const testCase of cases) {
 }
 
 await runPlanCompilerCases(failures);
+runEvidenceContractCases(failures);
 
 for (let index = 0; index < 1000; index += 1) {
   const syntheticCheck = check(`scale-${index}`, [
@@ -326,5 +331,58 @@ async function runPlanCompilerCases(failures: string[]): Promise<void> {
     }
   } finally {
     await rm(directory, { force: true, recursive: true });
+  }
+}
+
+function runEvidenceContractCases(failures: string[]): void {
+  const checkResult = createCheckResult("meta.evidence", [
+    {
+      assertionId: "meta.evidence.1",
+      status: "pass",
+    },
+  ]);
+  const evidence = {
+    boundary: "meta",
+    checkResults: [checkResult],
+    implementationId: "meta-implementation",
+    language: "typescript",
+    nonApplicableCheckIds: ["meta.skipped"],
+    status: "pass",
+    suiteId: "tuvren.meta",
+    suiteVersion: "0.1.0",
+    summary: {
+      applicableChecks: 1,
+      failedChecks: 0,
+      nonApplicableChecks: 1,
+      passedChecks: 1,
+      totalChecks: 2,
+    },
+  };
+
+  try {
+    assertConformanceEvidence(evidence, "meta evidence");
+  } catch (error: unknown) {
+    failures.push(
+      `valid explicit applicability evidence failed validation: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
+  }
+
+  try {
+    assertConformanceEvidence(
+      {
+        ...evidence,
+        summary: {
+          ...evidence.summary,
+          nonApplicableChecks: 2,
+          totalChecks: 3,
+        },
+      },
+      "malformed meta evidence"
+    );
+    failures.push("malformed applicability counts unexpectedly validated");
+  } catch {
+    // Expected: nonApplicableChecks must match nonApplicableCheckIds exactly.
   }
 }
