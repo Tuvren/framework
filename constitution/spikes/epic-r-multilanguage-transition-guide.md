@@ -11,9 +11,14 @@ implementations.
 - `KRT-R001` is closed in current repo reality.
 - Epic R is now closed in current repo reality through
   `constitution/spikes/epic-r-multilanguage-transition-foundation-inventory.md`.
-- Epic S is the next active implementation line.
-- Downstream Epics S-V depend on this guide plus the Epic R foundation
-  inventory; Epic W stays deferred until those epics close.
+- Historical handoff: Epic S was the next active implementation line when this
+  guide first closed, and downstream Epics S-V depended on this guide plus the
+  Epic R foundation inventory.
+- Current planning has advanced beyond that handoff: Epics S-V are now closed,
+  and Epic W has been reframed as Semantic Ecosystem Maturity rather than Rust
+  framework implementation. Any future Rust framework work must wait for Epic
+  W's coverage matrix, assertion-bearing conformance suites, and compatibility
+  evidence.
 
 ## Core Rule
 
@@ -281,8 +286,10 @@ telemetry/
 
 `telemetry/semconv/tuvren-runtime.yaml` is the authored source. The markdown
 summary, JSON attribute registry, and generated TypeScript and Rust constants or
-helpers are downstream outputs of that source and must exist before Rust
-implementation work begins.
+helpers are downstream outputs of that source. In the original transition
+sequence, those outputs had to exist before the first Rust implementation work;
+in current repo reality, they remain the authored source for current and future
+implementation lines.
 
 Initial stable attributes include:
 
@@ -366,13 +373,13 @@ The TypeScript-heavy line must remain stable first:
 
 ### Phase 1 - Artifactize current truths
 
-Do this before Rust:
+Historical prerequisite before the first Rust kernel work:
 
 - add boundary-owned `spec/`, `artifacts/`, `conformance/`, and `interop/`
   homes
 - add `telemetry/`
 - author the formal telemetry semantic-convention source and generated-helper
-  contract before Rust begins
+  contract for cross-language implementation lines
 - formalize repo-global generators and wrappers under `tools/`
 - normalize TypeScript as the first consumer of the new artifact-backed
   structure
@@ -412,11 +419,16 @@ Prove boring repeatability for:
 - cross-language observability
 - CI separation across repo-global, language-native, and cross-language lanes
 
-### Phase 4 - Begin Rust framework work
+### Phase 4 - Mature the semantic ecosystem before Rust framework work
 
-Only after the kernel and interop seam are boring may Rust framework work
-begin. At that point it can reuse the shared contracts, conformance assets,
-transport definitions, event/error surfaces, and task model.
+Only after the kernel and interop seam are boring may the next transition phase
+begin, but the next phase is not automatically Rust framework work. Current
+repo reality requires a semantic ecosystem maturity pass first: promote
+TypeScript-local normative behavior into boundary-owned conformance suites,
+attach named assertions to compatibility evidence, and prove that TypeScript is
+one peer implementation of the shared ecosystem rather than the hidden oracle.
+Rust framework work can be reconsidered only after that semantic maturity gate
+is closed.
 
 ## Immediate Guardrails To Preserve Now
 
@@ -455,8 +467,10 @@ This guide was aligned against current references before being formalized:
   attribute conventions when existing namespaces do not already cover the
   domain.
 
-## Next Active Dependency
+## Current Active Dependency
 
-The next active implementation work is `KRT-R002`, not Rust coding. The
-transition only remains credible if it starts by building the artifact-backed
-semantic system first.
+Historical handoff from Epic R was `KRT-R002`, not Rust coding. Current repo
+reality has closed Epics R-V, and the next active line is Epic W Semantic
+Ecosystem Maturity. The transition only remains credible if it keeps building
+the artifact-backed semantic system before authorizing any additional
+implementation line.
