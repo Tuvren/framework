@@ -1,5 +1,5 @@
 {
-  "generatedAtMs": 1777604581782,
+  "generatedAtMs": 0,
   "implementations": [
     {
       "implementationId": "typescript-framework",
@@ -132,7 +132,7 @@
       "suiteVersion": "0.2.0"
     }
   ],
-  "sourceRevision": "76b8981fc829a9340189f0eadb85971b7c2230d0-dirty",
+  "sourceRevision": "checked-in-workspace",
   "suites": [
     {
       "boundary": "framework",

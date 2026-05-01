@@ -1413,6 +1413,7 @@ service KernelRunService {
 - **Style:** generated JSON report
 - **Authentication / Authorization:** None. This is a repo-generated report artifact.
 - **Compatibility Strategy:** The ledger records measured implementation parity by suite and version. It is designed as a conservative, reviewable near-public readiness signal, not merely a private maintainer scratchpad.
+- **Determinism note:** Because the ledger is checked in, `generatedAtMs` and `sourceRevision` use stable sentinel metadata inside the JSON payload; Git history remains the authoritative record for when and from which revision that evidence entered the repo.
 - **Error model:** Missing, stale, or contradictory suite results are report-generation failures, not silent compatibility claims.
 
 ```json

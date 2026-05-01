@@ -434,25 +434,6 @@
     ],
     "scenarios": [
       {
-        "attributes": {
-          "tuvren.runtime.backend.id": "memory",
-          "tuvren.runtime.branch.id": "8aff375a-ced0-4c84-bae0-570b6547e901",
-          "tuvren.runtime.checkpoint.hash": [
-            "7e0b1c41a62eb79187fa313359399616ab0078ee494d22901503722922affdc7",
-            "d02c51e87a1f9e5c20e55233222e25e722529722e15f5d31797a7c8ee9a901a8",
-            "a77ff30715cc1e271cd9de5fe45f40158f5208aa681393e5ce269fa5e25782cd"
-          ],
-          "tuvren.runtime.driver.id": "react",
-          "tuvren.runtime.parent_checkpoint.hash": [
-            "7e0b1c41a62eb79187fa313359399616ab0078ee494d22901503722922affdc7",
-            "d02c51e87a1f9e5c20e55233222e25e722529722e15f5d31797a7c8ee9a901a8"
-          ],
-          "tuvren.runtime.provider.id": "fixture",
-          "tuvren.runtime.resumed_from.hash": null,
-          "tuvren.runtime.run.id": "7147505d-3b28-458b-8451-67a76351d38d",
-          "tuvren.runtime.tool_call.id": null,
-          "tuvren.runtime.turn.id": "7147505d-3b28-458b-8451-67a76351d38d"
-        },
         "observedKeys": [
           "tuvren.runtime.backend.id",
           "tuvren.runtime.branch.id",
@@ -466,25 +447,6 @@
         "scenario": "streaming"
       },
       {
-        "attributes": {
-          "tuvren.runtime.backend.id": "memory",
-          "tuvren.runtime.branch.id": "b1213252-357a-4e66-9322-4d661b29f9e2",
-          "tuvren.runtime.checkpoint.hash": [
-            "c99cbde97f4d8f3d2330674e74cb8e7224c18c0397e5f40ad645c60a856c5270",
-            "daabf56333529e149f694b245ef939b4f9797352ee0223cc2c7c30df5c144225",
-            "a112c8b6ad6feeeab32e77684d3d33dfda68aa863c48fe6d27005a1f66cfa9b0"
-          ],
-          "tuvren.runtime.driver.id": "react",
-          "tuvren.runtime.parent_checkpoint.hash": [
-            "c99cbde97f4d8f3d2330674e74cb8e7224c18c0397e5f40ad645c60a856c5270",
-            "daabf56333529e149f694b245ef939b4f9797352ee0223cc2c7c30df5c144225"
-          ],
-          "tuvren.runtime.provider.id": "fixture",
-          "tuvren.runtime.resumed_from.hash": null,
-          "tuvren.runtime.run.id": "f86853d0-1ed1-4510-b5e1-b05df6ff2ce9",
-          "tuvren.runtime.tool_call.id": null,
-          "tuvren.runtime.turn.id": "f86853d0-1ed1-4510-b5e1-b05df6ff2ce9"
-        },
         "observedKeys": [
           "tuvren.runtime.backend.id",
           "tuvren.runtime.branch.id",
@@ -498,27 +460,6 @@
         "scenario": "structured"
       },
       {
-        "attributes": {
-          "tuvren.runtime.backend.id": "memory",
-          "tuvren.runtime.branch.id": "b38218ed-9f9f-4bd4-8364-84056dd8fd03",
-          "tuvren.runtime.checkpoint.hash": [
-            "8a94547642cec09fa4c54d7079623fffba35fefdd55b2d42004a27271fe03127",
-            "569c696df94210f2f0a44d0a3c067b45e34f9e6187162f61ae67c3dffec99ea4",
-            "2bb718ce34e38d2073ce3db755b69a9e317ef7355b5d523eba0901221e648592",
-            "003ddbf0e26e55e7cc787e6f393d61170d18b7d23a7d84ae3911712e00edaa9d"
-          ],
-          "tuvren.runtime.driver.id": "react",
-          "tuvren.runtime.parent_checkpoint.hash": [
-            "8a94547642cec09fa4c54d7079623fffba35fefdd55b2d42004a27271fe03127",
-            "569c696df94210f2f0a44d0a3c067b45e34f9e6187162f61ae67c3dffec99ea4",
-            "2bb718ce34e38d2073ce3db755b69a9e317ef7355b5d523eba0901221e648592"
-          ],
-          "tuvren.runtime.provider.id": "fixture",
-          "tuvren.runtime.resumed_from.hash": null,
-          "tuvren.runtime.run.id": "b1f2b99a-6533-41b5-9ae3-79e1dd41368a",
-          "tuvren.runtime.tool_call.id": "96ace1cf-a1dd-41c3-8cd6-7f659f5eb4f1",
-          "tuvren.runtime.turn.id": "b1f2b99a-6533-41b5-9ae3-79e1dd41368a"
-        },
         "observedKeys": [
           "tuvren.runtime.backend.id",
           "tuvren.runtime.branch.id",
@@ -533,34 +474,6 @@
         "scenario": "tools"
       },
       {
-        "attributes": {
-          "tuvren.runtime.backend.id": "memory",
-          "tuvren.runtime.branch.id": "51a5a306-2b29-422e-9bce-c23a9ae7709f",
-          "tuvren.runtime.checkpoint.hash": [
-            "66325b3d20576fcc54f2f175fc1b7db76d721b77db1a763bb67b311133b796b1",
-            "b8b4412000c7e508a66b635a155c2a7f2d1acc4b7cc8ca95851448a401992401",
-            "b87765e71fe43975cfc53589a47d701747a71803938c7100f7d0319071a3d5a9",
-            "d07cf10f826e9349921960a5d35bfb74318e409103d8f4ec018854d21f33d76e",
-            "d462b71a85ef554e86b10825d5fc68919c8e39a3f3b85e66b1348ffcb7db982f",
-            "109c0137fd61c598f54b64c1c835812eb15adb622eaa4f8c83077af30bdf1aac"
-          ],
-          "tuvren.runtime.driver.id": "react",
-          "tuvren.runtime.parent_checkpoint.hash": [
-            "66325b3d20576fcc54f2f175fc1b7db76d721b77db1a763bb67b311133b796b1",
-            "b8b4412000c7e508a66b635a155c2a7f2d1acc4b7cc8ca95851448a401992401",
-            "b87765e71fe43975cfc53589a47d701747a71803938c7100f7d0319071a3d5a9",
-            "d07cf10f826e9349921960a5d35bfb74318e409103d8f4ec018854d21f33d76e",
-            "d462b71a85ef554e86b10825d5fc68919c8e39a3f3b85e66b1348ffcb7db982f"
-          ],
-          "tuvren.runtime.provider.id": "fixture",
-          "tuvren.runtime.resumed_from.hash": "b8b4412000c7e508a66b635a155c2a7f2d1acc4b7cc8ca95851448a401992401",
-          "tuvren.runtime.run.id": "2e7e5d7a-3791-40a5-9b36-01d8f935f3ff",
-          "tuvren.runtime.tool_call.id": [
-            "0005f030-0fee-4b89-8f93-b7c0a1717fe3",
-            "4d755d56-c3d6-41c8-9ea5-4b14fd30eb46"
-          ],
-          "tuvren.runtime.turn.id": "2e7e5d7a-3791-40a5-9b36-01d8f935f3ff"
-        },
         "observedKeys": [
           "tuvren.runtime.backend.id",
           "tuvren.runtime.branch.id",
@@ -576,27 +489,6 @@
         "scenario": "approval"
       },
       {
-        "attributes": {
-          "tuvren.runtime.backend.id": "memory",
-          "tuvren.runtime.branch.id": "cf0bc656-783b-4992-87de-e0b7f1bd15cf",
-          "tuvren.runtime.checkpoint.hash": [
-            "7b027fb4ddcfe1f6f89c0018c416c2ac3a213505f00d10c3c9ba66e2c1216ea8",
-            "f42fa9fceee9ee27cdeef731679f203c69290ec239ae497454dc3f5da5605f1f",
-            "a88bebe64666286df9b6ca180c6fa165a7803b71efc6aa33aaab179623cfdbf0",
-            "582eafac7c936185b45cff672180d1e471302b6f44c36b095a6db10826a2a622"
-          ],
-          "tuvren.runtime.driver.id": "react",
-          "tuvren.runtime.parent_checkpoint.hash": [
-            "7b027fb4ddcfe1f6f89c0018c416c2ac3a213505f00d10c3c9ba66e2c1216ea8",
-            "f42fa9fceee9ee27cdeef731679f203c69290ec239ae497454dc3f5da5605f1f",
-            "a88bebe64666286df9b6ca180c6fa165a7803b71efc6aa33aaab179623cfdbf0"
-          ],
-          "tuvren.runtime.provider.id": "fixture",
-          "tuvren.runtime.resumed_from.hash": null,
-          "tuvren.runtime.run.id": "87c73264-71de-4641-8d2f-72a4b2764a69",
-          "tuvren.runtime.tool_call.id": null,
-          "tuvren.runtime.turn.id": "87c73264-71de-4641-8d2f-72a4b2764a69"
-        },
         "observedKeys": [
           "tuvren.runtime.backend.id",
           "tuvren.runtime.branch.id",
@@ -610,25 +502,6 @@
         "scenario": "cancel"
       },
       {
-        "attributes": {
-          "tuvren.runtime.backend.id": "memory",
-          "tuvren.runtime.branch.id": "28dba804-1acf-4cc1-bd31-01f7547c0fbc",
-          "tuvren.runtime.checkpoint.hash": [
-            "1bbcb691bc1bc4616ddaab82499a036df656472b71d3384f352054c40aaa0e8e",
-            "36445d9b46fa849080f3c9de955ad61428c3c856216cdf8fb40d40be158f89dd",
-            "638f58ec08f7049b6f0445a2456091421a4c3d782250b6570e80601fc5944963"
-          ],
-          "tuvren.runtime.driver.id": "react",
-          "tuvren.runtime.parent_checkpoint.hash": [
-            "1bbcb691bc1bc4616ddaab82499a036df656472b71d3384f352054c40aaa0e8e",
-            "36445d9b46fa849080f3c9de955ad61428c3c856216cdf8fb40d40be158f89dd"
-          ],
-          "tuvren.runtime.provider.id": "fixture",
-          "tuvren.runtime.resumed_from.hash": null,
-          "tuvren.runtime.run.id": "a6e00f48-4ca2-4ffd-a933-6ee1b8f94162",
-          "tuvren.runtime.tool_call.id": null,
-          "tuvren.runtime.turn.id": "a6e00f48-4ca2-4ffd-a933-6ee1b8f94162"
-        },
         "observedKeys": [
           "tuvren.runtime.backend.id",
           "tuvren.runtime.branch.id",
@@ -642,37 +515,6 @@
         "scenario": "metadata"
       },
       {
-        "attributes": {
-          "tuvren.runtime.backend.id": "memory",
-          "tuvren.runtime.branch.id": "5637c212-9af6-47af-aa4b-43b112f5414e",
-          "tuvren.runtime.checkpoint.hash": [
-            "af8bda41bbb9affaa35b99739ccfe46a005cd1e7079fa2bf61987617c515ea34",
-            "01b5965a912bb41b41bee6085a5a236466053055d69c062907b7f7afa2601dfa",
-            "4a47972e2e58ecfce8066e9d348e1420f55005d05ac3b6e94118e6cacbaa0f4f",
-            "d01f3ce3624bcfceb04a8c50a6b0c7dd6f9a76f1c2cf08645fd98c6a595b91d4",
-            "953b43e4ac0dc65509246f4bd3a760ea2a205a515eb391d8466758423fe20534",
-            "ca461e54620ab3365307fcbd93a8be52bb1b6608afcfdcafca7ed88847ffc23b"
-          ],
-          "tuvren.runtime.driver.id": "react",
-          "tuvren.runtime.parent_checkpoint.hash": [
-            "af8bda41bbb9affaa35b99739ccfe46a005cd1e7079fa2bf61987617c515ea34",
-            "01b5965a912bb41b41bee6085a5a236466053055d69c062907b7f7afa2601dfa",
-            "4a47972e2e58ecfce8066e9d348e1420f55005d05ac3b6e94118e6cacbaa0f4f",
-            "d01f3ce3624bcfceb04a8c50a6b0c7dd6f9a76f1c2cf08645fd98c6a595b91d4",
-            "953b43e4ac0dc65509246f4bd3a760ea2a205a515eb391d8466758423fe20534"
-          ],
-          "tuvren.runtime.provider.id": "fixture",
-          "tuvren.runtime.resumed_from.hash": null,
-          "tuvren.runtime.run.id": [
-            "a984ce0c-fd2b-4440-b53b-4890536b37ef",
-            "8c06dc2c-52a9-4b5e-b2f8-a39f5bcf7f22"
-          ],
-          "tuvren.runtime.tool_call.id": null,
-          "tuvren.runtime.turn.id": [
-            "a984ce0c-fd2b-4440-b53b-4890536b37ef",
-            "8c06dc2c-52a9-4b5e-b2f8-a39f5bcf7f22"
-          ]
-        },
         "observedKeys": [
           "tuvren.runtime.backend.id",
           "tuvren.runtime.branch.id",
@@ -686,27 +528,6 @@
         "scenario": "branching"
       },
       {
-        "attributes": {
-          "tuvren.runtime.backend.id": "memory",
-          "tuvren.runtime.branch.id": "febb0659-bcd4-4250-8d05-23d0efcd947f",
-          "tuvren.runtime.checkpoint.hash": [
-            "85d26d7d0fb2ab3b538d62d00af0db1bd816ca1bf1961fdc3cf396672a3ece22",
-            "20880723d7e64ab159f603b8e555b0604a71c969a84640759284813c81fcba25",
-            "fd606b034ccb8ccf46fc912a0e5bd64033b5c639fd852c7cd40963736d2fb368",
-            "54e64d1b6f9072a3b0e4d43a1098c8f1fa70ae5581b90f67fe71ba877949eb3e"
-          ],
-          "tuvren.runtime.driver.id": "react",
-          "tuvren.runtime.parent_checkpoint.hash": [
-            "85d26d7d0fb2ab3b538d62d00af0db1bd816ca1bf1961fdc3cf396672a3ece22",
-            "20880723d7e64ab159f603b8e555b0604a71c969a84640759284813c81fcba25",
-            "fd606b034ccb8ccf46fc912a0e5bd64033b5c639fd852c7cd40963736d2fb368"
-          ],
-          "tuvren.runtime.provider.id": "fixture",
-          "tuvren.runtime.resumed_from.hash": null,
-          "tuvren.runtime.run.id": "e3790321-e245-406a-ad58-30d961fbfb21",
-          "tuvren.runtime.tool_call.id": null,
-          "tuvren.runtime.turn.id": "e3790321-e245-406a-ad58-30d961fbfb21"
-        },
         "observedKeys": [
           "tuvren.runtime.backend.id",
           "tuvren.runtime.branch.id",
@@ -720,37 +541,6 @@
         "scenario": "steering"
       },
       {
-        "attributes": {
-          "tuvren.runtime.backend.id": "memory",
-          "tuvren.runtime.branch.id": "0c6433c9-b639-415b-bfea-8629d3b19541",
-          "tuvren.runtime.checkpoint.hash": [
-            "acab83251b9a0221281dec51d4b38a903229dfab055d5f46c6980c8ced0ba4be",
-            "b52234bcdb28a1f0282b9c448bc946a17b37126c3f1f63c2bd18498b44fe239e",
-            "63578c52fec341c58a45c444403c1cd748d2017fb6e9546b283dce175f36608b",
-            "28b8736701e0104ef5908f92a91f0ba67cdfc2ffcaf61459db94cbd16a9c447a",
-            "3d5a9892118e6193fb582f6c791475de253e7cb29fc724dc3003b94c021c1361",
-            "8c60e3a412a5e4c58130c0730995023393753fdbef480b6f8ee3601e755b94e6"
-          ],
-          "tuvren.runtime.driver.id": "react",
-          "tuvren.runtime.parent_checkpoint.hash": [
-            "acab83251b9a0221281dec51d4b38a903229dfab055d5f46c6980c8ced0ba4be",
-            "b52234bcdb28a1f0282b9c448bc946a17b37126c3f1f63c2bd18498b44fe239e",
-            "63578c52fec341c58a45c444403c1cd748d2017fb6e9546b283dce175f36608b",
-            "28b8736701e0104ef5908f92a91f0ba67cdfc2ffcaf61459db94cbd16a9c447a",
-            "3d5a9892118e6193fb582f6c791475de253e7cb29fc724dc3003b94c021c1361"
-          ],
-          "tuvren.runtime.provider.id": "fixture",
-          "tuvren.runtime.resumed_from.hash": null,
-          "tuvren.runtime.run.id": [
-            "f41c65da-1b58-4320-a90b-9bee932252e1",
-            "1586e534-7c94-4e43-aed9-4f102301732e"
-          ],
-          "tuvren.runtime.tool_call.id": null,
-          "tuvren.runtime.turn.id": [
-            "f41c65da-1b58-4320-a90b-9bee932252e1",
-            "1586e534-7c94-4e43-aed9-4f102301732e"
-          ]
-        },
         "observedKeys": [
           "tuvren.runtime.backend.id",
           "tuvren.runtime.branch.id",

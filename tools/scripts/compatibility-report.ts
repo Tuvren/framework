@@ -74,10 +74,16 @@ interface CompatibilityCheckSummary {
 interface InteropTelemetrySummary {
   observedKeys: string[];
   scenarios: Array<{
-    attributes: Record<string, string | string[] | null>;
     observedKeys: string[];
     scenario: string;
   }>;
+  schemaUrl: string;
+}
+
+interface RawInteropTelemetry {
+  attributes: Record<string, string | string[] | null>;
+  observedKeys: string[];
+  scenario: string;
   schemaUrl: string;
 }
 
@@ -85,9 +91,7 @@ interface InteropScenarioReport {
   reports: Array<{
     checks: Record<string, boolean>;
     scenario: string;
-    telemetry: InteropTelemetrySummary["scenarios"][number] & {
-      schemaUrl: string;
-    };
+    telemetry: RawInteropTelemetry;
   }>;
   scenarios: string[];
 }
@@ -125,6 +129,10 @@ const EVIDENCE_DIRECTORY = resolve(REPO_ROOT, "reports/compatibility/evidence");
 const ajv = new Ajv2020({ allErrors: true, strict: false });
 const TRANSITION_IMPLEMENTATION_VERSION = "unreleased-workspace";
 const PREFIXED_OUTPUT_PATTERN = /^[A-Za-z0-9_.-]+: /u;
+const COMPATIBILITY_METADATA = {
+  generatedAtMs: 0,
+  sourceRevision: "checked-in-workspace",
+} as const;
 
 const CONFORMANCE_RUNNERS: readonly ConformanceRunner[] = [
   {
@@ -231,10 +239,14 @@ async function main(): Promise<void> {
   }
 
   const matrix: CompatibilityMatrix = {
-    generatedAtMs: Date.now(),
+    // The compatibility ledger is checked in as deterministic evidence. Git
+    // history already records when and from which revision that evidence was
+    // committed, so the JSON payload keeps stable sentinel metadata instead of
+    // embedding wall-clock or HEAD-derived values that would churn on reruns.
+    generatedAtMs: COMPATIBILITY_METADATA.generatedAtMs,
     implementations,
     interop,
-    sourceRevision: await readSourceRevision(),
+    sourceRevision: COMPATIBILITY_METADATA.sourceRevision,
     suites,
   };
 
@@ -649,10 +661,11 @@ function readInteropTelemetryScenarioReport(
     (value): value is string => typeof value === "string"
   );
   const scenario = {
-    attributes: telemetry.attributes as Record<
-      string,
-      string | string[] | null
-    >,
+    // Interop telemetry values include run ids, branch ids, and checkpoint
+    // hashes that are intentionally different on every smoke execution. The
+    // checked-in compatibility evidence keeps only the stable key coverage and
+    // schema identity so reruns stay reviewable instead of churning on known
+    // per-run entropy.
     observedKeys,
     scenario: report.scenario,
   };
@@ -955,39 +968,6 @@ function assertCompatibilityCheckSummary(
       "compatibility matrix check summaries must be internally consistent"
     );
   }
-}
-
-async function readSourceRevision(): Promise<string> {
-  const revisionResult = await runCommand(["git", "rev-parse", "HEAD"], {
-    captureOutput: true,
-    cwd: REPO_ROOT,
-  });
-
-  if (revisionResult.code !== 0) {
-    throw new Error(
-      revisionResult.stderr ||
-        revisionResult.stdout ||
-        "unable to read the current git revision"
-    );
-  }
-
-  const statusResult = await runCommand(["git", "status", "--short"], {
-    captureOutput: true,
-    cwd: REPO_ROOT,
-  });
-
-  if (statusResult.code !== 0) {
-    throw new Error(
-      statusResult.stderr ||
-        statusResult.stdout ||
-        "unable to determine whether the working tree is dirty"
-    );
-  }
-
-  const revision = revisionResult.stdout.trim();
-  return statusResult.stdout.trim().length === 0
-    ? revision
-    : `${revision}-dirty`;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
