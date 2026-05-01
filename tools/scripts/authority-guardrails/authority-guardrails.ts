@@ -530,11 +530,58 @@ function collectPlanEvidenceOracleShapeFailures(
 
     failures.push(
       ...collectEvidencePathOracleFailures(check, planLabel),
-      ...collectAssertionOracleFailures(check, planLabel)
+      ...collectAssertionOracleFailures(check, planLabel),
+      ...collectFixtureSelfCertificationFailures(check, planLabel)
     );
   }
 
   return failures;
+}
+
+function collectFixtureSelfCertificationFailures(
+  check: Record<string, unknown>,
+  planLabel: string
+): GuardrailFailure[] {
+  const operation =
+    typeof check.operation === "string" ? check.operation : undefined;
+
+  if (operation?.endsWith(".fixture-events") === true) {
+    return [
+      {
+        check: "plan-self-certification",
+        message: `${planLabel} check ${String(check.checkId)} replays authority fixture events as implementation conformance`,
+      },
+    ];
+  }
+
+  if (
+    check.fixture !== undefined &&
+    Array.isArray(check.assertions) &&
+    check.assertions.length > 0 &&
+    check.assertions.every(isFixtureEventAssertion)
+  ) {
+    return [
+      {
+        check: "plan-self-certification",
+        message: `${planLabel} check ${String(check.checkId)} asserts only fixture event shape; fixture validation must not count as implementation conformance`,
+      },
+    ];
+  }
+
+  return [];
+}
+
+function isFixtureEventAssertion(assertion: unknown): boolean {
+  if (!isRecord(assertion)) {
+    return false;
+  }
+
+  return (
+    assertion.kind === "eventSequence" ||
+    assertion.kind === "terminalEvent" ||
+    assertion.kind === "ordering" ||
+    assertion.kind === "noEvent"
+  );
 }
 
 function collectEvidencePathOracleFailures(
@@ -873,6 +920,34 @@ async function runFixtureSelfTests(): Promise<GuardrailFailure[]> {
       check: "guardrail-fixture",
       message:
         "boolean-oracle fixture did not trigger the plan-shape guardrail",
+    });
+  }
+
+  const selfCertifyingPlanFailures = collectPlanEvidenceOracleShapeFailures(
+    {
+      checks: [
+        {
+          assertions: [
+            {
+              equals: ["turn.start", "turn.end"],
+              kind: "eventSequence",
+              path: "$.type",
+            },
+          ],
+          checkId: "fixture.self-certifying",
+          fixture: "stream-events",
+          operation: "event-stream.fixture-events",
+        },
+      ],
+    },
+    "fixture self-certifying plan"
+  );
+
+  if (selfCertifyingPlanFailures.length === 0) {
+    failures.push({
+      check: "guardrail-fixture",
+      message:
+        "self-certifying fixture plan did not trigger the plan guardrail",
     });
   }
 

@@ -96,6 +96,10 @@ runner emits structured evidence with `status: "fail"`, the normal
 `conformance`, `codegen`, and `verify` gates must fail; use
 `bun run compatibility:evidence` only when intentionally refreshing checked-in
 evidence for an implementation lane that is expected to remain red.
+Authority fixture validation is not implementation conformance. A promoted
+implementation check may use a boundary fixture as input, but the passing
+evidence must come from implementation code run through the adapter protocol,
+not from replaying the fixture and asserting it against itself.
 
 ## Pull Request Follow-Up
 

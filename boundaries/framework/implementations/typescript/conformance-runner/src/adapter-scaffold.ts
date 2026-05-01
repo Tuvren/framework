@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import { EventSchemas } from "@ag-ui/core";
 import type {
   DriverExecutionContext,
   DriverExecutionResult,
@@ -40,7 +41,11 @@ import {
   assertProviderStreamChunk,
   assertTuvrenMessage,
   assertTuvrenModelResponse,
+  assertTuvrenStreamEvent,
 } from "@tuvren/runtime-api";
+import { toAgUiEvents } from "@tuvren/stream-agui";
+import { teeTuvrenStreamEvents } from "@tuvren/stream-core";
+import { toSseFrames } from "@tuvren/stream-sse";
 import {
   type AdapterCapabilities,
   type AdapterControls,
@@ -92,6 +97,7 @@ export interface ImplementationAdapter {
 }
 
 interface AdapterProjection {
+  events?: readonly unknown[];
   evidence?: Record<string, unknown>;
   result?: unknown;
   state?: Record<string, unknown>;
@@ -274,12 +280,78 @@ export class TypeScriptFrameworkAdapter implements ImplementationAdapter {
         return runDriverResume(input);
       case "driver.checkpoint":
         return runDriverCheckpoint(input);
+      case "event-stream.agui-projection":
+        return runAgUiProjection(input);
+      case "event-stream.sse-eager-subscription":
+        return runSseEagerSubscription(input);
+      case "event-stream.sse-projection":
+        return runSseProjection(input);
       default:
         throw new Error(
           `unsupported promoted framework operation ${operation}`
         );
     }
   }
+}
+
+async function runSseProjection(input: unknown): Promise<AdapterProjection> {
+  const frames = await collectValues(
+    toSseFrames(createFixtureEventStream(readFixtureEvents(input)))
+  );
+
+  return {
+    evidence: {
+      frameEvents: frames.map((frame) => frame.event),
+      framePayloads: frames.map((frame) => parseJsonValue(frame.data)),
+    },
+  };
+}
+
+async function runSseEagerSubscription(
+  input: unknown
+): Promise<AdapterProjection> {
+  const [sseBranch, directBranch] = teeTuvrenStreamEvents(
+    createFixtureEventStream(readFixtureEvents(input)),
+    2
+  );
+  const sseFrames = toSseFrames(sseBranch);
+  const directIterator = directBranch[Symbol.asyncIterator]();
+  const firstDirectEvent = await directIterator.next();
+
+  await Promise.resolve();
+  await directIterator.return?.();
+
+  const frames = await collectValues(sseFrames);
+
+  return {
+    evidence: {
+      firstDirectEventType:
+        firstDirectEvent.done === false
+          ? readRecordString(firstDirectEvent.value, "type")
+          : undefined,
+      firstFrameEvent: frames[0]?.event,
+    },
+  };
+}
+
+async function runAgUiProjection(input: unknown): Promise<AdapterProjection> {
+  const warningCodes: string[] = [];
+  const rawEvents = await collectValues(
+    toAgUiEvents(createFixtureEventStream(readFixtureEvents(input)), {
+      onWarning(warning) {
+        warningCodes.push(warning.code);
+      },
+    })
+  );
+  const events = rawEvents.map((event) => EventSchemas.parse(event));
+
+  return {
+    evidence: {
+      eventTypes: events.map((event) => event.type),
+      events,
+      warningCodes,
+    },
+  };
 }
 
 async function runCompletedRuntimeTurn(): Promise<AdapterProjection> {
@@ -1403,6 +1475,34 @@ function createClock(): () => number {
   return () => now++;
 }
 
+function readFixtureEvents(input: unknown): readonly TuvrenStreamEvent[] {
+  const envelope = readRecord(input, "event-stream.input");
+  const values = readArrayProperty(
+    envelope,
+    "fixture",
+    "event-stream.input.fixture"
+  );
+
+  return values.map((value, index) => {
+    assertTuvrenStreamEvent(value, `event-stream.input.fixture[${index}]`);
+    return structuredClone(value);
+  });
+}
+
+function createFixtureEventStream(
+  events: readonly TuvrenStreamEvent[]
+): AsyncIterable<TuvrenStreamEvent> {
+  return {
+    async *[Symbol.asyncIterator](): AsyncIterator<TuvrenStreamEvent> {
+      await Promise.resolve();
+
+      for (const event of events) {
+        yield structuredClone(event);
+      }
+    },
+  };
+}
+
 async function collectValues<T>(values: AsyncIterable<T>): Promise<T[]> {
   const collected: T[] = [];
 
@@ -1464,6 +1564,16 @@ function readFirstErrorEnvelope(
   }
 
   return undefined;
+}
+
+function readRecordString(value: unknown, key: string): string | undefined {
+  return isRecord(value) && typeof value[key] === "string"
+    ? value[key]
+    : undefined;
+}
+
+function parseJsonValue(value: string): unknown {
+  return JSON.parse(value);
 }
 
 function projectionStatus(projection: AdapterProjection): OperationStatus {

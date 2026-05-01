@@ -10,6 +10,40 @@
       ],
       "checkId": "driver-callable.before-iteration",
       "details": {
+        "adapterOutcome": {
+          "kind": "result",
+          "value": {
+            "evidence": {
+              "driver": {
+                "phase": "completed"
+              },
+              "hooks": {
+                "afterIteration": 2,
+                "aroundModel": 2,
+                "aroundTool": 1,
+                "beforeIteration": 2
+              },
+              "provider": {
+                "generate": {
+                  "callCount": 2
+                }
+              },
+              "tool": {
+                "execution": {
+                  "callCount": 1
+                }
+              }
+            },
+            "state": {
+              "hookCounts": {
+                "afterIteration": 2,
+                "aroundModel": 2,
+                "aroundTool": 1,
+                "beforeIteration": 2
+              }
+            }
+          }
+        },
         "driver": {
           "phase": "completed"
         },
@@ -54,6 +88,40 @@
       ],
       "checkId": "driver-callable.around-model",
       "details": {
+        "adapterOutcome": {
+          "kind": "result",
+          "value": {
+            "evidence": {
+              "driver": {
+                "phase": "completed"
+              },
+              "hooks": {
+                "afterIteration": 2,
+                "aroundModel": 2,
+                "aroundTool": 1,
+                "beforeIteration": 2
+              },
+              "provider": {
+                "generate": {
+                  "callCount": 2
+                }
+              },
+              "tool": {
+                "execution": {
+                  "callCount": 1
+                }
+              }
+            },
+            "state": {
+              "hookCounts": {
+                "afterIteration": 2,
+                "aroundModel": 2,
+                "aroundTool": 1,
+                "beforeIteration": 2
+              }
+            }
+          }
+        },
         "driver": {
           "phase": "completed"
         },
@@ -98,6 +166,40 @@
       ],
       "checkId": "driver-callable.around-tool",
       "details": {
+        "adapterOutcome": {
+          "kind": "result",
+          "value": {
+            "evidence": {
+              "driver": {
+                "phase": "completed"
+              },
+              "hooks": {
+                "afterIteration": 2,
+                "aroundModel": 2,
+                "aroundTool": 1,
+                "beforeIteration": 2
+              },
+              "provider": {
+                "generate": {
+                  "callCount": 2
+                }
+              },
+              "tool": {
+                "execution": {
+                  "callCount": 1
+                }
+              }
+            },
+            "state": {
+              "hookCounts": {
+                "afterIteration": 2,
+                "aroundModel": 2,
+                "aroundTool": 1,
+                "beforeIteration": 2
+              }
+            }
+          }
+        },
         "driver": {
           "phase": "completed"
         },
@@ -142,6 +244,40 @@
       ],
       "checkId": "driver-callable.after-iteration",
       "details": {
+        "adapterOutcome": {
+          "kind": "result",
+          "value": {
+            "evidence": {
+              "driver": {
+                "phase": "completed"
+              },
+              "hooks": {
+                "afterIteration": 2,
+                "aroundModel": 2,
+                "aroundTool": 1,
+                "beforeIteration": 2
+              },
+              "provider": {
+                "generate": {
+                  "callCount": 2
+                }
+              },
+              "tool": {
+                "execution": {
+                  "callCount": 1
+                }
+              }
+            },
+            "state": {
+              "hookCounts": {
+                "afterIteration": 2,
+                "aroundModel": 2,
+                "aroundTool": 1,
+                "beforeIteration": 2
+              }
+            }
+          }
+        },
         "driver": {
           "phase": "completed"
         },
@@ -186,6 +322,19 @@
       ],
       "checkId": "driver-callable.checkpoint",
       "details": {
+        "adapterOutcome": {
+          "kind": "result",
+          "value": {
+            "evidence": {
+              "checkpoint": {
+                "manifestPathCount": 4
+              },
+              "runtime": {
+                "phase": "completed"
+              }
+            }
+          }
+        },
         "checkpoint": {
           "manifestPathCount": 4
         },
@@ -211,6 +360,40 @@
       ],
       "checkId": "driver-api.execute.resolution",
       "details": {
+        "adapterOutcome": {
+          "kind": "result",
+          "value": {
+            "evidence": {
+              "driver": {
+                "phase": "completed"
+              },
+              "hooks": {
+                "afterIteration": 2,
+                "aroundModel": 2,
+                "aroundTool": 1,
+                "beforeIteration": 2
+              },
+              "provider": {
+                "generate": {
+                  "callCount": 2
+                }
+              },
+              "tool": {
+                "execution": {
+                  "callCount": 1
+                }
+              }
+            },
+            "state": {
+              "hookCounts": {
+                "afterIteration": 2,
+                "aroundModel": 2,
+                "aroundTool": 1,
+                "beforeIteration": 2
+              }
+            }
+          }
+        },
         "driver": {
           "phase": "completed"
         },
@@ -255,6 +438,16 @@
       ],
       "checkId": "driver-api.resume.approval",
       "details": {
+        "adapterOutcome": {
+          "kind": "result",
+          "value": {
+            "evidence": {
+              "driver": {
+                "resolutionType": "end_turn"
+              }
+            }
+          }
+        },
         "driver": {
           "resolutionType": "end_turn"
         },
@@ -277,6 +470,17 @@
       ],
       "checkId": "driver-api.error.envelope",
       "details": {
+        "adapterOutcome": {
+          "kind": "result",
+          "value": {
+            "result": {
+              "error": {
+                "code": "driver_execute_error",
+                "message": "driver execution failed"
+              }
+            }
+          }
+        },
         "result": {
           "error": {
             "code": "driver_execute_error",
@@ -290,77 +494,6 @@
             "status": "failed"
           }
         }
-      },
-      "status": "pass"
-    },
-    {
-      "assertionResults": [
-        {
-          "assertionId": "event-stream.completed-turn.sequence.1.eventSequence",
-          "status": "pass"
-        },
-        {
-          "assertionId": "event-stream.completed-turn.sequence.2.terminalEvent",
-          "status": "pass"
-        },
-        {
-          "assertionId": "event-stream.completed-turn.sequence.3.ordering",
-          "status": "pass"
-        }
-      ],
-      "checkId": "event-stream.completed-turn.sequence",
-      "details": {
-        "eventTypes": [
-          "turn.start",
-          "iteration.start",
-          "message.start",
-          "text.delta",
-          "text.done",
-          "tool_call.start",
-          "tool_call.args_delta",
-          "tool_call.done",
-          "tool.start",
-          "tool.result",
-          "state.snapshot",
-          "custom",
-          "message.done",
-          "iteration.end",
-          "turn.end"
-        ]
-      },
-      "status": "pass"
-    },
-    {
-      "assertionResults": [
-        {
-          "assertionId": "event-stream.failed-turn.terminal.1.eventSequence",
-          "status": "pass"
-        },
-        {
-          "assertionId": "event-stream.failed-turn.terminal.2.terminalEvent",
-          "status": "pass"
-        }
-      ],
-      "checkId": "event-stream.failed-turn.terminal",
-      "details": {
-        "eventTypes": ["turn.start", "error", "turn.end"]
-      },
-      "status": "pass"
-    },
-    {
-      "assertionResults": [
-        {
-          "assertionId": "event-stream.paused-turn.approval.1.eventSequence",
-          "status": "pass"
-        },
-        {
-          "assertionId": "event-stream.paused-turn.approval.2.terminalEvent",
-          "status": "pass"
-        }
-      ],
-      "checkId": "event-stream.paused-turn.approval",
-      "details": {
-        "eventTypes": ["turn.start", "approval.requested", "turn.end"]
       },
       "status": "pass"
     },
@@ -381,6 +514,156 @@
       ],
       "checkId": "event-stream.sse.projection",
       "details": {
+        "adapterOutcome": {
+          "kind": "result",
+          "value": {
+            "evidence": {
+              "frameEvents": [
+                "turn.start",
+                "iteration.start",
+                "message.start",
+                "text.delta",
+                "text.done",
+                "tool_call.start",
+                "tool_call.args_delta",
+                "tool_call.done",
+                "tool.start",
+                "tool.result",
+                "state.snapshot",
+                "custom",
+                "message.done",
+                "iteration.end",
+                "turn.end"
+              ],
+              "framePayloads": [
+                {
+                  "threadId": "thread-main",
+                  "timestamp": 1,
+                  "turnId": "turn-main",
+                  "type": "turn.start"
+                },
+                {
+                  "iterationCount": 1,
+                  "timestamp": 2,
+                  "type": "iteration.start"
+                },
+                {
+                  "messageId": "message-main",
+                  "role": "assistant",
+                  "timestamp": 3,
+                  "type": "message.start"
+                },
+                {
+                  "delta": "Hello",
+                  "messageId": "message-main",
+                  "timestamp": 4,
+                  "type": "text.delta"
+                },
+                {
+                  "messageId": "message-main",
+                  "text": "Hello",
+                  "timestamp": 5,
+                  "type": "text.done"
+                },
+                {
+                  "callId": "call-search",
+                  "messageId": "message-main",
+                  "name": "search",
+                  "timestamp": 6,
+                  "type": "tool_call.start"
+                },
+                {
+                  "callId": "call-search",
+                  "delta": "{\"query\":\"docs\"}",
+                  "timestamp": 7,
+                  "type": "tool_call.args_delta"
+                },
+                {
+                  "callId": "call-search",
+                  "input": {
+                    "query": "docs"
+                  },
+                  "name": "search",
+                  "timestamp": 8,
+                  "type": "tool_call.done"
+                },
+                {
+                  "callId": "call-search",
+                  "input": {
+                    "query": "docs"
+                  },
+                  "name": "search",
+                  "timestamp": 9,
+                  "type": "tool.start"
+                },
+                {
+                  "callId": "call-search",
+                  "name": "search",
+                  "output": {
+                    "hits": 2
+                  },
+                  "timestamp": 10,
+                  "type": "tool.result"
+                },
+                {
+                  "manifest": {
+                    "byRole": {
+                      "assistant": 1,
+                      "system": 0,
+                      "tool": 1,
+                      "user": 1
+                    },
+                    "extensions": {},
+                    "lastAssistantMessageIndex": 1,
+                    "lastUserMessageIndex": 0,
+                    "messageCount": 3,
+                    "tokenEstimate": 42,
+                    "toolCalls": {
+                      "byName": {
+                        "search": 1
+                      },
+                      "total": 1
+                    },
+                    "toolResults": {
+                      "byName": {
+                        "search": 1
+                      },
+                      "total": 1
+                    },
+                    "turnBoundaries": [0]
+                  },
+                  "timestamp": 11,
+                  "type": "state.snapshot"
+                },
+                {
+                  "data": {
+                    "ready": true
+                  },
+                  "name": "driver.executed",
+                  "timestamp": 12,
+                  "type": "custom"
+                },
+                {
+                  "finishReason": "stop",
+                  "messageId": "message-main",
+                  "timestamp": 13,
+                  "type": "message.done"
+                },
+                {
+                  "iterationCount": 1,
+                  "timestamp": 14,
+                  "type": "iteration.end"
+                },
+                {
+                  "status": "completed",
+                  "timestamp": 15,
+                  "turnId": "turn-main",
+                  "type": "turn.end"
+                }
+              ]
+            }
+          }
+        },
         "frameEvents": [
           "turn.start",
           "iteration.start",
@@ -523,7 +806,14 @@
             "turnId": "turn-main",
             "type": "turn.end"
           }
-        ]
+        ],
+        "state": {
+          "adapter": {
+            "adapterEvents": 1,
+            "initialized": true,
+            "status": "completed"
+          }
+        }
       },
       "status": "pass"
     },
@@ -540,8 +830,24 @@
       ],
       "checkId": "event-stream.sse.eager-subscription",
       "details": {
+        "adapterOutcome": {
+          "kind": "result",
+          "value": {
+            "evidence": {
+              "firstDirectEventType": "turn.start",
+              "firstFrameEvent": "turn.start"
+            }
+          }
+        },
         "firstDirectEventType": "turn.start",
-        "firstFrameEvent": "turn.start"
+        "firstFrameEvent": "turn.start",
+        "state": {
+          "adapter": {
+            "adapterEvents": 1,
+            "initialized": true,
+            "status": "completed"
+          }
+        }
       },
       "status": "pass"
     },
@@ -562,6 +868,293 @@
       ],
       "checkId": "event-stream.agui.projection",
       "details": {
+        "adapterOutcome": {
+          "kind": "result",
+          "value": {
+            "evidence": {
+              "eventTypes": [
+                "RUN_STARTED",
+                "STEP_STARTED",
+                "TEXT_MESSAGE_START",
+                "TEXT_MESSAGE_CONTENT",
+                "TEXT_MESSAGE_END",
+                "TOOL_CALL_START",
+                "TOOL_CALL_ARGS",
+                "TOOL_CALL_END",
+                "CUSTOM",
+                "TOOL_CALL_RESULT",
+                "STATE_SNAPSHOT",
+                "CUSTOM",
+                "CUSTOM",
+                "STEP_FINISHED",
+                "RUN_FINISHED"
+              ],
+              "events": [
+                {
+                  "type": "RUN_STARTED",
+                  "timestamp": 1,
+                  "rawEvent": {
+                    "threadId": "thread-main",
+                    "timestamp": 1,
+                    "turnId": "turn-main",
+                    "type": "turn.start"
+                  },
+                  "threadId": "thread-main",
+                  "runId": "turn-main"
+                },
+                {
+                  "type": "STEP_STARTED",
+                  "timestamp": 2,
+                  "rawEvent": {
+                    "iterationCount": 1,
+                    "timestamp": 2,
+                    "type": "iteration.start"
+                  },
+                  "stepName": "iteration-1"
+                },
+                {
+                  "type": "TEXT_MESSAGE_START",
+                  "timestamp": 4,
+                  "rawEvent": {
+                    "delta": "Hello",
+                    "messageId": "message-main",
+                    "timestamp": 4,
+                    "type": "text.delta"
+                  },
+                  "messageId": "message-main",
+                  "role": "assistant"
+                },
+                {
+                  "type": "TEXT_MESSAGE_CONTENT",
+                  "timestamp": 4,
+                  "rawEvent": {
+                    "delta": "Hello",
+                    "messageId": "message-main",
+                    "timestamp": 4,
+                    "type": "text.delta"
+                  },
+                  "messageId": "message-main",
+                  "delta": "Hello"
+                },
+                {
+                  "type": "TEXT_MESSAGE_END",
+                  "timestamp": 5,
+                  "rawEvent": {
+                    "messageId": "message-main",
+                    "text": "Hello",
+                    "timestamp": 5,
+                    "type": "text.done"
+                  },
+                  "messageId": "message-main"
+                },
+                {
+                  "type": "TOOL_CALL_START",
+                  "timestamp": 6,
+                  "rawEvent": {
+                    "callId": "call-search",
+                    "messageId": "message-main",
+                    "name": "search",
+                    "timestamp": 6,
+                    "type": "tool_call.start"
+                  },
+                  "toolCallId": "call-search",
+                  "toolCallName": "search",
+                  "parentMessageId": "message-main"
+                },
+                {
+                  "type": "TOOL_CALL_ARGS",
+                  "timestamp": 7,
+                  "rawEvent": {
+                    "callId": "call-search",
+                    "delta": "{\"query\":\"docs\"}",
+                    "timestamp": 7,
+                    "type": "tool_call.args_delta"
+                  },
+                  "toolCallId": "call-search",
+                  "delta": "{\"query\":\"docs\"}"
+                },
+                {
+                  "type": "TOOL_CALL_END",
+                  "timestamp": 8,
+                  "rawEvent": {
+                    "callId": "call-search",
+                    "input": {
+                      "query": "docs"
+                    },
+                    "name": "search",
+                    "timestamp": 8,
+                    "type": "tool_call.done"
+                  },
+                  "toolCallId": "call-search"
+                },
+                {
+                  "type": "CUSTOM",
+                  "timestamp": 9,
+                  "rawEvent": {
+                    "callId": "call-search",
+                    "input": {
+                      "query": "docs"
+                    },
+                    "name": "search",
+                    "timestamp": 9,
+                    "type": "tool.start"
+                  },
+                  "name": "tuvren.runtime.tool.start",
+                  "value": {
+                    "callId": "call-search",
+                    "input": {
+                      "query": "docs"
+                    },
+                    "name": "search",
+                    "timestamp": 9,
+                    "type": "tool.start"
+                  }
+                },
+                {
+                  "type": "TOOL_CALL_RESULT",
+                  "timestamp": 10,
+                  "rawEvent": {
+                    "callId": "call-search",
+                    "name": "search",
+                    "output": {
+                      "hits": 2
+                    },
+                    "timestamp": 10,
+                    "type": "tool.result"
+                  },
+                  "messageId": "tool-result:call-search",
+                  "toolCallId": "call-search",
+                  "content": "{\"hits\":2}",
+                  "role": "tool"
+                },
+                {
+                  "type": "STATE_SNAPSHOT",
+                  "timestamp": 11,
+                  "rawEvent": {
+                    "manifest": {
+                      "byRole": {
+                        "assistant": 1,
+                        "system": 0,
+                        "tool": 1,
+                        "user": 1
+                      },
+                      "extensions": {},
+                      "lastAssistantMessageIndex": 1,
+                      "lastUserMessageIndex": 0,
+                      "messageCount": 3,
+                      "tokenEstimate": 42,
+                      "toolCalls": {
+                        "byName": {
+                          "search": 1
+                        },
+                        "total": 1
+                      },
+                      "toolResults": {
+                        "byName": {
+                          "search": 1
+                        },
+                        "total": 1
+                      },
+                      "turnBoundaries": [0]
+                    },
+                    "timestamp": 11,
+                    "type": "state.snapshot"
+                  },
+                  "snapshot": {
+                    "contextManifest": {
+                      "byRole": {
+                        "assistant": 1,
+                        "system": 0,
+                        "tool": 1,
+                        "user": 1
+                      },
+                      "extensions": {},
+                      "lastAssistantMessageIndex": 1,
+                      "lastUserMessageIndex": 0,
+                      "messageCount": 3,
+                      "tokenEstimate": 42,
+                      "toolCalls": {
+                        "byName": {
+                          "search": 1
+                        },
+                        "total": 1
+                      },
+                      "toolResults": {
+                        "byName": {
+                          "search": 1
+                        },
+                        "total": 1
+                      },
+                      "turnBoundaries": [0]
+                    }
+                  }
+                },
+                {
+                  "type": "CUSTOM",
+                  "timestamp": 12,
+                  "rawEvent": {
+                    "data": {
+                      "ready": true
+                    },
+                    "name": "driver.executed",
+                    "timestamp": 12,
+                    "type": "custom"
+                  },
+                  "name": "driver.executed",
+                  "value": {
+                    "ready": true
+                  }
+                },
+                {
+                  "type": "CUSTOM",
+                  "timestamp": 13,
+                  "rawEvent": {
+                    "finishReason": "stop",
+                    "messageId": "message-main",
+                    "timestamp": 13,
+                    "type": "message.done"
+                  },
+                  "name": "tuvren.runtime.message.done",
+                  "value": {
+                    "finishReason": "stop",
+                    "messageId": "message-main",
+                    "timestamp": 13,
+                    "type": "message.done"
+                  }
+                },
+                {
+                  "type": "STEP_FINISHED",
+                  "timestamp": 14,
+                  "rawEvent": {
+                    "iterationCount": 1,
+                    "timestamp": 14,
+                    "type": "iteration.end"
+                  },
+                  "stepName": "iteration-1"
+                },
+                {
+                  "type": "RUN_FINISHED",
+                  "timestamp": 15,
+                  "rawEvent": {
+                    "status": "completed",
+                    "timestamp": 15,
+                    "turnId": "turn-main",
+                    "type": "turn.end"
+                  },
+                  "threadId": "thread-main",
+                  "runId": "turn-main",
+                  "result": {
+                    "status": "completed"
+                  }
+                }
+              ],
+              "warningCodes": [
+                "agui_tool_execution_custom_fallback",
+                "agui_message_done_custom_fallback"
+              ]
+            }
+          }
+        },
         "eventTypes": [
           "RUN_STARTED",
           "STEP_STARTED",
@@ -841,7 +1434,14 @@
         "warningCodes": [
           "agui_tool_execution_custom_fallback",
           "agui_message_done_custom_fallback"
-        ]
+        ],
+        "state": {
+          "adapter": {
+            "adapterEvents": 1,
+            "initialized": true,
+            "status": "completed"
+          }
+        }
       },
       "status": "pass"
     },
@@ -858,6 +1458,44 @@
       ],
       "checkId": "event-stream.agui.failed-turn-error-projection",
       "details": {
+        "adapterOutcome": {
+          "kind": "result",
+          "value": {
+            "evidence": {
+              "eventTypes": ["RUN_STARTED", "RUN_ERROR"],
+              "events": [
+                {
+                  "type": "RUN_STARTED",
+                  "timestamp": 21,
+                  "rawEvent": {
+                    "threadId": "thread-failed",
+                    "timestamp": 21,
+                    "turnId": "turn-failed",
+                    "type": "turn.start"
+                  },
+                  "threadId": "thread-failed",
+                  "runId": "turn-failed"
+                },
+                {
+                  "type": "RUN_ERROR",
+                  "timestamp": 23,
+                  "rawEvent": {
+                    "error": {
+                      "code": "runtime_execution_cancelled",
+                      "message": "execution cancelled"
+                    },
+                    "fatal": true,
+                    "timestamp": 22,
+                    "type": "error"
+                  },
+                  "message": "execution cancelled",
+                  "code": "runtime_execution_cancelled"
+                }
+              ],
+              "warningCodes": []
+            }
+          }
+        },
         "eventTypes": ["RUN_STARTED", "RUN_ERROR"],
         "events": [
           {
@@ -888,7 +1526,14 @@
             "code": "runtime_execution_cancelled"
           }
         ],
-        "warningCodes": []
+        "warningCodes": [],
+        "state": {
+          "adapter": {
+            "adapterEvents": 1,
+            "initialized": true,
+            "status": "completed"
+          }
+        }
       },
       "status": "pass"
     },
@@ -913,6 +1558,105 @@
       ],
       "checkId": "event-stream.agui.paused-turn-fallback",
       "details": {
+        "adapterOutcome": {
+          "kind": "result",
+          "value": {
+            "evidence": {
+              "eventTypes": ["RUN_STARTED", "CUSTOM", "CUSTOM", "RUN_FINISHED"],
+              "events": [
+                {
+                  "type": "RUN_STARTED",
+                  "timestamp": 31,
+                  "rawEvent": {
+                    "threadId": "thread-paused",
+                    "timestamp": 31,
+                    "turnId": "turn-paused",
+                    "type": "turn.start"
+                  },
+                  "threadId": "thread-paused",
+                  "runId": "turn-paused"
+                },
+                {
+                  "type": "CUSTOM",
+                  "timestamp": 32,
+                  "rawEvent": {
+                    "request": {
+                      "completedResults": [],
+                      "toolCalls": [
+                        {
+                          "callId": "call-email",
+                          "decisions": ["approve", "reject"],
+                          "input": {
+                            "to": "team@example.com"
+                          },
+                          "message": "Approve this email?",
+                          "name": "send_email"
+                        }
+                      ]
+                    },
+                    "timestamp": 32,
+                    "type": "approval.requested"
+                  },
+                  "name": "tuvren.runtime.approval.requested",
+                  "value": {
+                    "request": {
+                      "completedResults": [],
+                      "toolCalls": [
+                        {
+                          "callId": "call-email",
+                          "decisions": ["approve", "reject"],
+                          "input": {
+                            "to": "team@example.com"
+                          },
+                          "message": "Approve this email?",
+                          "name": "send_email"
+                        }
+                      ]
+                    },
+                    "timestamp": 32,
+                    "type": "approval.requested"
+                  }
+                },
+                {
+                  "type": "CUSTOM",
+                  "timestamp": 33,
+                  "rawEvent": {
+                    "status": "paused",
+                    "timestamp": 33,
+                    "turnId": "turn-paused",
+                    "type": "turn.end"
+                  },
+                  "name": "tuvren.runtime.turn.paused",
+                  "value": {
+                    "status": "paused",
+                    "timestamp": 33,
+                    "turnId": "turn-paused",
+                    "type": "turn.end"
+                  }
+                },
+                {
+                  "type": "RUN_FINISHED",
+                  "timestamp": 33,
+                  "rawEvent": {
+                    "status": "paused",
+                    "timestamp": 33,
+                    "turnId": "turn-paused",
+                    "type": "turn.end"
+                  },
+                  "threadId": "thread-paused",
+                  "runId": "turn-paused",
+                  "result": {
+                    "status": "paused"
+                  }
+                }
+              ],
+              "warningCodes": [
+                "agui_approval_custom_fallback",
+                "agui_paused_turn_coerced_to_run_finished"
+              ]
+            }
+          }
+        },
         "eventTypes": ["RUN_STARTED", "CUSTOM", "CUSTOM", "RUN_FINISHED"],
         "events": [
           {
@@ -1004,7 +1748,14 @@
         "warningCodes": [
           "agui_approval_custom_fallback",
           "agui_paused_turn_coerced_to_run_finished"
-        ]
+        ],
+        "state": {
+          "adapter": {
+            "adapterEvents": 1,
+            "initialized": true,
+            "status": "completed"
+          }
+        }
       },
       "status": "pass"
     },
@@ -1025,6 +1776,33 @@
       ],
       "checkId": "runtime-callable.provider-generate",
       "details": {
+        "adapterOutcome": {
+          "kind": "result",
+          "value": {
+            "evidence": {
+              "provider": {
+                "generate": {
+                  "callCount": 1,
+                  "eventTypes": [
+                    "message.start",
+                    "text.delta",
+                    "text.done",
+                    "message.done"
+                  ],
+                  "response": {
+                    "finishReason": "stop",
+                    "parts": [
+                      {
+                        "type": "text",
+                        "text": "generated from shared scenario"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
         "provider": {
           "generate": {
             "callCount": 1,
@@ -1076,6 +1854,34 @@
       ],
       "checkId": "runtime-callable.provider-stream",
       "details": {
+        "adapterOutcome": {
+          "kind": "result",
+          "value": {
+            "evidence": {
+              "provider": {
+                "stream": {
+                  "callCount": 1,
+                  "chunkTypes": ["text_delta", "finish"],
+                  "emittedEventTypes": [
+                    "message.start",
+                    "text.delta",
+                    "text.done",
+                    "message.done"
+                  ],
+                  "response": {
+                    "finishReason": "stop",
+                    "parts": [
+                      {
+                        "text": "streamed from shared scenario",
+                        "type": "text"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
         "provider": {
           "stream": {
             "callCount": 1,
@@ -1132,6 +1938,64 @@
       ],
       "checkId": "runtime-callable.tool-execute",
       "details": {
+        "adapterOutcome": {
+          "kind": "result",
+          "value": {
+            "evidence": {
+              "tool": {
+                "execution": {
+                  "callCount": 1,
+                  "inputs": [
+                    {
+                      "query": "shared docs"
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "ok": true,
+                      "source": "shared scenario"
+                    }
+                  ]
+                }
+              }
+            },
+            "state": {
+              "toolExecution": {
+                "status": {
+                  "activeAgent": "typescript-conformance-agent",
+                  "iterationCount": 2,
+                  "manifest": {
+                    "byRole": {
+                      "tool": 1,
+                      "user": 1,
+                      "system": 0,
+                      "assistant": 2
+                    },
+                    "toolCalls": {
+                      "total": 1,
+                      "byName": {
+                        "search": 1
+                      }
+                    },
+                    "extensions": {},
+                    "toolResults": {
+                      "total": 1,
+                      "byName": {
+                        "search": 1
+                      }
+                    },
+                    "messageCount": 4,
+                    "tokenEstimate": 38,
+                    "turnBoundaries": [0],
+                    "lastUserMessageIndex": 0,
+                    "lastAssistantMessageIndex": 3
+                  },
+                  "phase": "completed"
+                }
+              }
+            }
+          }
+        },
         "tool": {
           "execution": {
             "callCount": 1,
@@ -1212,6 +2076,28 @@
       ],
       "checkId": "runtime-callable.approval-resolve",
       "details": {
+        "adapterOutcome": {
+          "kind": "result",
+          "value": {
+            "evidence": {
+              "approval": {
+                "decisions": [
+                  {
+                    "callId": "call-email",
+                    "type": "approve"
+                  }
+                ],
+                "pausedPhase": "paused",
+                "resumedPhase": "completed"
+              },
+              "tool": {
+                "execution": {
+                  "executedNames": ["search", "email"]
+                }
+              }
+            }
+          }
+        },
         "approval": {
           "decisions": [
             {
@@ -1246,6 +2132,19 @@
       ],
       "checkId": "runtime-callable.validation-failure",
       "details": {
+        "adapterOutcome": {
+          "kind": "result",
+          "value": {
+            "evidence": {
+              "validation": {
+                "error": {
+                  "message": "structured output validation failed"
+                },
+                "resolutionType": "fail"
+              }
+            }
+          }
+        },
         "validation": {
           "error": {
             "message": "structured output validation failed"
@@ -1275,6 +2174,27 @@
       ],
       "checkId": "runtime-callable.timeout-retry-cancellation-idempotency",
       "details": {
+        "adapterOutcome": {
+          "kind": "result",
+          "value": {
+            "evidence": {
+              "controls": {
+                "cancelAfterEvent": "turn.start",
+                "deadlineMs": 1000
+              },
+              "runtime": {
+                "iterationCount": 2,
+                "phase": "failed"
+              }
+            },
+            "result": {
+              "error": {
+                "code": "runtime_execution_cancelled",
+                "message": "execution cancelled"
+              }
+            }
+          }
+        },
         "controls": {
           "cancelAfterEvent": "turn.start",
           "deadlineMs": 1000
@@ -1308,6 +2228,17 @@
       ],
       "checkId": "runtime-api.execute-turn.lifecycle",
       "details": {
+        "adapterOutcome": {
+          "kind": "result",
+          "value": {
+            "evidence": {
+              "runtime": {
+                "eventCount": 13,
+                "phase": "completed"
+              }
+            }
+          }
+        },
         "runtime": {
           "eventCount": 13,
           "phase": "completed"
@@ -1331,6 +2262,26 @@
       ],
       "checkId": "runtime-api.cancel-execution.failure",
       "details": {
+        "adapterOutcome": {
+          "kind": "result",
+          "value": {
+            "evidence": {
+              "controls": {
+                "deadlineMs": 1000
+              },
+              "runtime": {
+                "iterationCount": 2,
+                "phase": "failed"
+              }
+            },
+            "result": {
+              "error": {
+                "code": "runtime_execution_cancelled",
+                "message": "execution cancelled"
+              }
+            }
+          }
+        },
         "controls": {
           "deadlineMs": 1000
         },
@@ -1367,6 +2318,28 @@
       ],
       "checkId": "runtime-api.approval-resolve.paused-resume",
       "details": {
+        "adapterOutcome": {
+          "kind": "result",
+          "value": {
+            "evidence": {
+              "approval": {
+                "decisions": [
+                  {
+                    "callId": "call-email",
+                    "type": "approve"
+                  }
+                ],
+                "pausedPhase": "paused",
+                "resumedPhase": "completed"
+              },
+              "tool": {
+                "execution": {
+                  "executedNames": ["search", "email"]
+                }
+              }
+            }
+          }
+        },
         "approval": {
           "decisions": [
             {
@@ -1405,6 +2378,19 @@
       ],
       "checkId": "runtime-api.branch-create.recovery",
       "details": {
+        "adapterOutcome": {
+          "kind": "result",
+          "value": {
+            "state": {
+              "branch": {
+                "createdBranchId": "conformance-id-3",
+                "createdHeadTurnNodeHash": "59968d93c8a85042e36db0214b7c0aa71d22e3d9453c9441e9c408bc799e89a3",
+                "sourceBranchId": "conformance-id-2",
+                "sourceHeadTurnNodeHash": "59968d93c8a85042e36db0214b7c0aa71d22e3d9453c9441e9c408bc799e89a3"
+              }
+            }
+          }
+        },
         "state": {
           "branch": {
             "createdBranchId": "conformance-id-3",
@@ -1438,6 +2424,34 @@
       ],
       "checkId": "runtime-api.context-transform.shared-summary",
       "details": {
+        "adapterOutcome": {
+          "kind": "result",
+          "value": {
+            "evidence": {
+              "context": {
+                "messageCount": 3,
+                "summaryText": "Shared context engineering summary."
+              },
+              "runtime": {
+                "phase": "completed"
+              }
+            },
+            "state": {
+              "context": {
+                "manifest": {
+                  "context.manifest": "5cd1a1349eecc3c0153029d60a021af2fce3e2ca92dbad14b6cbd06a9712f959",
+                  "runtime.status": "954a679c205c84fccfac68cae2621adb2abecd1caf996c4e4d8238ae9d9682bd",
+                  "turn.lineage": "15c262984dafaf9972fdc22d8a4ffc6433375b438adc2165d477a72322b47d97",
+                  "messages": [
+                    "a2e1b2370ab9694f2123578d17dadfc923b962ac71c8284e9578bbff849d2f30",
+                    "c2ca208b35360aece95b6e5e845e8e75c795810b7b89e382461a037b7a4528b4",
+                    "bce6748d3151b8690f137df9097e0bf9bcadc1f2c649d090b5fa65848e3a5fa6"
+                  ]
+                }
+              }
+            }
+          }
+        },
         "context": {
           "messageCount": 3,
           "summaryText": "Shared context engineering summary."
@@ -1484,6 +2498,42 @@
       ],
       "checkId": "runtime-api.recover-result.staged-result",
       "details": {
+        "adapterOutcome": {
+          "kind": "result",
+          "value": {
+            "evidence": {
+              "recovery": {
+                "firstObjectType": "message",
+                "firstTaskId": "tool-search",
+                "lastTurnNodeHash": "59968d93c8a85042e36db0214b7c0aa71d22e3d9453c9441e9c408bc799e89a3",
+                "uncommittedStagedResults": 1
+              }
+            },
+            "state": {
+              "recovery": {
+                "consumedStagedResults": [],
+                "lastCompletedStepId": null,
+                "lastTurnNodeHash": "59968d93c8a85042e36db0214b7c0aa71d22e3d9453c9441e9c408bc799e89a3",
+                "stepSequence": [
+                  {
+                    "deterministic": false,
+                    "id": "tool-search",
+                    "sideEffects": false
+                  }
+                ],
+                "uncommittedStagedResults": [
+                  {
+                    "objectHash": "94657fc60d114e7fd781129f0cf4f2288ea5f3dbaf55e4847efe16bc5045568b",
+                    "objectType": "message",
+                    "status": "completed",
+                    "taskId": "tool-search",
+                    "timestamp": 1
+                  }
+                ]
+              }
+            }
+          }
+        },
         "recovery": {
           "firstObjectType": "message",
           "firstTaskId": "tool-search",
@@ -1536,8 +2586,8 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 28,
-    "totalChecks": 28
+    "passedChecks": 25,
+    "totalChecks": 25
   },
   "suiteId": "tuvren.framework.promoted-authority",
   "suiteVersion": "0.1.0"

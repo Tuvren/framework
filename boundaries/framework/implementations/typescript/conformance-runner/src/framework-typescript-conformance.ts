@@ -14,15 +14,9 @@
  * limitations under the License.
  */
 
-import { readdir, readFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { EventSchemas } from "@ag-ui/core";
-import { toAgUiEvents } from "@tuvren/stream-agui";
-import { teeTuvrenStreamEvents } from "@tuvren/stream-core";
-import { toSseFrames } from "@tuvren/stream-sse";
-import type { AnySchema, ValidateFunction } from "ajv";
-import Ajv2020 from "ajv/dist/2020.js";
 import {
   type AssertionContext,
   type CompiledConformancePlan,
@@ -53,19 +47,10 @@ const FRAMEWORK_AUTHORITY_PACKET_PATHS: readonly string[] = [
   "boundaries/framework/contracts/runtime-api/spec/authority-packet.json",
   "boundaries/framework/contracts/driver-api/spec/authority-packet.json",
 ];
-const STREAM_EVENT_SCHEMA_DIRECTORY = resolve(
-  REPO_ROOT,
-  "boundaries/framework/contracts/event-stream/artifacts/json-schema"
-);
-const STREAM_EVENT_SCHEMA_PATH = resolve(
-  STREAM_EVENT_SCHEMA_DIRECTORY,
-  "TuvrenStreamEvent.json"
-);
 const IMPLEMENTATION_ID = "typescript-framework";
 const LANGUAGE = "typescript";
 const SUITE_ID = "tuvren.framework.promoted-authority";
 const SUITE_VERSION = "0.1.0";
-const streamEventValidator = await createStreamEventValidator();
 
 interface AuthorityPacketManifest {
   conformancePlans: readonly AuthorityPacketPlanReference[];
@@ -83,20 +68,10 @@ interface CheckRunContext {
   plan: CompiledConformancePlan;
 }
 
-type OperationHandler = (
-  context: CheckRunContext
-) => AssertionContext | Promise<AssertionContext>;
-type TuvrenStreamEvent =
-  Parameters<typeof toSseFrames>[0] extends AsyncIterable<infer Event>
-    ? Event
-    : never;
-
-const OPERATION_HANDLERS: Readonly<Record<string, OperationHandler>> = {
-  "event-stream.agui-projection": createAgUiProjectionContext,
-  "event-stream.fixture-events": createFixtureEventsContext,
-  "event-stream.sse-eager-subscription": createSseEagerSubscriptionContext,
-  "event-stream.sse-projection": createSseProjectionContext,
-};
+interface CheckRunResult {
+  assertionContext: AssertionContext;
+  details: Record<string, unknown>;
+}
 
 await main();
 
@@ -187,47 +162,6 @@ function readAuthorityPacketManifestValue(
   };
 }
 
-async function createStreamEventValidator(): Promise<
-  ValidateFunction<unknown>
-> {
-  const ajv = new Ajv2020({ allErrors: true, strict: false });
-  const schemaFileNames = await readdir(STREAM_EVENT_SCHEMA_DIRECTORY);
-
-  for (const schemaFileName of schemaFileNames.sort()) {
-    if (!schemaFileName.endsWith(".json")) {
-      continue;
-    }
-
-    const schemaPath = resolve(STREAM_EVENT_SCHEMA_DIRECTORY, schemaFileName);
-    const parsedSchema: unknown = JSON.parse(
-      await readFile(schemaPath, "utf8")
-    );
-    const schema = readJsonSchema(parsedSchema, schemaPath);
-
-    ajv.addSchema(schema);
-  }
-
-  const validate = ajv.getSchema(
-    "https://tuvren.dev/schemas/framework/event-stream/TuvrenStreamEvent.json"
-  );
-
-  if (validate === undefined) {
-    throw new Error(
-      `${STREAM_EVENT_SCHEMA_PATH} did not register the stream event schema`
-    );
-  }
-
-  return validate;
-}
-
-function readJsonSchema(value: unknown, label: string): AnySchema {
-  if (typeof value === "boolean" || isRecord(value)) {
-    return value;
-  }
-
-  throw new Error(`${label} must contain a JSON Schema object or boolean`);
-}
-
 function readPlanReferences(
   value: unknown,
   label: string
@@ -268,101 +202,20 @@ async function runPlanCheck(
   plan: CompiledConformancePlan,
   check: ConformancePlanCheck
 ): Promise<ConformanceCheckResult> {
-  const handler = OPERATION_HANDLERS[check.operation];
-  const context =
-    handler === undefined
-      ? await createAdapterOperationContext({ adapter, check, plan })
-      : await handler({ adapter, check, plan });
-  const details = createDetails(context);
+  const result = await createAdapterOperationContext({ adapter, check, plan });
 
   return createCheckResult(
     check.checkId,
-    evaluateAssertions(check, context),
-    details
+    evaluateAssertions(check, result.assertionContext),
+    result.details
   );
-}
-
-function createFixtureEventsContext({
-  check,
-  plan,
-}: CheckRunContext): AssertionContext {
-  return {
-    events: readFixtureEvents(plan, check),
-  };
-}
-
-async function createSseProjectionContext({
-  check,
-  plan,
-}: CheckRunContext): Promise<AssertionContext> {
-  const frames = await collectStreamValues(
-    toSseFrames(createFixtureEventStream(readFixtureEvents(plan, check)))
-  );
-
-  return {
-    evidence: {
-      frameEvents: frames.map((frame) => frame.event),
-      framePayloads: frames.map((frame) => parseJsonValue(frame.data)),
-    },
-  };
-}
-
-async function createSseEagerSubscriptionContext({
-  check,
-  plan,
-}: CheckRunContext): Promise<AssertionContext> {
-  const [sseBranch, directBranch] = teeTuvrenStreamEvents(
-    createFixtureEventStream(readFixtureEvents(plan, check)),
-    2
-  );
-  const sseFrames = toSseFrames(sseBranch);
-  const directIterator = directBranch[Symbol.asyncIterator]();
-  const firstDirectEvent = await directIterator.next();
-
-  await waitForAsyncTurn();
-  await directIterator.return?.();
-
-  const frames = await collectStreamValues(sseFrames);
-
-  return {
-    evidence: {
-      firstDirectEventType:
-        firstDirectEvent.done === false
-          ? readRecordString(firstDirectEvent.value, "type")
-          : undefined,
-      firstFrameEvent: frames[0]?.event,
-    },
-  };
-}
-
-async function createAgUiProjectionContext({
-  check,
-  plan,
-}: CheckRunContext): Promise<AssertionContext> {
-  const warningCodes: string[] = [];
-  const rawEvents = await collectStreamValues(
-    toAgUiEvents(createFixtureEventStream(readFixtureEvents(plan, check)), {
-      onWarning(warning) {
-        warningCodes.push(warning.code);
-      },
-    })
-  );
-  const events = rawEvents.map((event) => EventSchemas.parse(event));
-
-  return {
-    evidence: {
-      eventTypes: events.map((event) => event.type),
-      events,
-      warningCodes,
-    },
-  };
 }
 
 async function createAdapterOperationContext({
   adapter,
   check,
   plan,
-}: CheckRunContext): Promise<AssertionContext> {
+}: CheckRunContext): Promise<CheckRunResult> {
   const input = createAdapterInput(plan, check);
   const controls = createAdapterControls(check);
   const outcome = await adapter.dispatch(check.operation, input, controls);
@@ -381,7 +234,15 @@ async function createAdapterOperationContext({
     count: adapterEvents.length,
   });
 
-  return createAdapterAssertionContext(outcome, inspectedState);
+  const assertionContext = createAdapterAssertionContext(
+    outcome,
+    inspectedState
+  );
+
+  return {
+    assertionContext,
+    details: createDetails(assertionContext, outcome),
+  };
 }
 
 function createAdapterInput(
@@ -403,6 +264,15 @@ function createAdapterInput(
         : readPath(scenarioSource, scenarioPath);
   }
 
+  if (check.fixture !== undefined) {
+    const fixtureSource = plan.fixtures.get(check.fixture);
+    const fixturePath = readInputStringOptional(check.input, "fixturePath");
+    input.fixture =
+      fixturePath === undefined
+        ? fixtureSource
+        : readPath(fixtureSource, fixturePath);
+  }
+
   return input;
 }
 
@@ -422,10 +292,9 @@ function createAdapterAssertionContext(
   inspectedState: unknown
 ): AssertionContext {
   if (outcome.kind === "error") {
+    // Adapter protocol errors mean the implementation path did not produce an
+    // observation, so they must stay out of assertion fields such as result.
     return {
-      result: {
-        error: outcome.error,
-      },
       state: inspectedState ?? undefined,
     };
   }
@@ -439,6 +308,7 @@ function createAdapterAssertionContext(
 
   return {
     evidence: readOptionalRecord(outcome.value.evidence),
+    events: readOptionalArray(outcome.value.events),
     result: outcome.value.result,
     state: inspectedState ?? readOptionalRecord(outcome.value.state),
   };
@@ -458,31 +328,25 @@ function readOptionalRecord(
   return value;
 }
 
-function readFixtureEvents(
-  plan: CompiledConformancePlan,
-  check: ConformancePlanCheck
-): readonly TuvrenStreamEvent[] {
-  if (check.fixture === undefined) {
-    throw new Error(`${check.checkId} requires a fixture`);
+function readOptionalArray(value: unknown): readonly unknown[] | undefined {
+  if (value === undefined) {
+    return undefined;
   }
-
-  const fixture = plan.fixtures.get(check.fixture);
-  const fixturePath = readInputString(check.input, "fixturePath");
-  const value = readPath(fixture, fixturePath);
 
   if (!Array.isArray(value)) {
-    throw new Error(`${check.checkId} fixture path must resolve to an array`);
-  }
-
-  for (const [index, event] of value.entries()) {
-    assertStreamEventFromSchema(event, `${check.checkId}.events[${index}]`);
+    throw new Error("operation context events must be an array when present");
   }
 
   return value;
 }
 
-function createDetails(context: AssertionContext): Record<string, unknown> {
-  const details: Record<string, unknown> = {};
+function createDetails(
+  context: AssertionContext,
+  outcome: OperationOutcome
+): Record<string, unknown> {
+  const details: Record<string, unknown> = {
+    adapterOutcome: outcome,
+  };
 
   if (context.events !== undefined) {
     details.eventTypes = context.events.map((event) =>
@@ -515,57 +379,6 @@ async function collectStreamValues<T>(values: AsyncIterable<T>): Promise<T[]> {
   return collected;
 }
 
-function createFixtureEventStream(
-  events: readonly TuvrenStreamEvent[]
-): AsyncIterable<TuvrenStreamEvent> {
-  return {
-    async *[Symbol.asyncIterator](): AsyncIterator<TuvrenStreamEvent> {
-      await Promise.resolve();
-
-      for (const event of events) {
-        yield cloneTuvrenStreamEvent(event);
-      }
-    },
-  };
-}
-
-function cloneTuvrenStreamEvent(event: TuvrenStreamEvent): TuvrenStreamEvent {
-  const cloned = structuredClone(event);
-  assertStreamEventFromSchema(cloned, "cloned stream event");
-  return cloned;
-}
-
-function assertStreamEventFromSchema(
-  value: unknown,
-  label: string
-): asserts value is TuvrenStreamEvent {
-  if (streamEventValidator(value)) {
-    return;
-  }
-
-  throw new Error(
-    `${label} failed generated event-stream JSON Schema validation: ${streamEventValidator.errors
-      ?.map((error) => `${error.instancePath || "/"} ${error.message ?? ""}`)
-      .join("; ")}`
-  );
-}
-
-async function waitForAsyncTurn(): Promise<void> {
-  await Promise.resolve();
-}
-
-function parseJsonValue(value: string): unknown {
-  return JSON.parse(value);
-}
-
-function readInputString(input: unknown, key: string): string {
-  if (!isRecord(input) || typeof input[key] !== "string") {
-    throw new Error(`check input must contain ${key}`);
-  }
-
-  return input[key];
-}
-
 function readInputStringOptional(
   input: unknown,
   key: string
@@ -585,12 +398,6 @@ function readInputStringOptional(
   }
 
   return value;
-}
-
-function readRecordString(value: unknown, key: string): string | undefined {
-  return isRecord(value) && typeof value[key] === "string"
-    ? value[key]
-    : undefined;
 }
 
 function readPath(source: unknown, path: string): unknown {

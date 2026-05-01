@@ -326,16 +326,6 @@ fn create_check_run_context(
     loaded_plan: &LoadedPlan,
     check: &PlanCheck,
 ) -> Result<CheckRunContext, String> {
-    if uses_only_fixture_event_assertions(check) {
-        return Ok(CheckRunContext {
-            adapter_outcome: None,
-            assertion_context: AssertionContext {
-                events: Some(read_fixture_events(loaded_plan, check)?),
-                ..AssertionContext::default()
-            },
-        });
-    }
-
     let input = create_adapter_input(loaded_plan, check)?;
     let outcome = adapter.dispatch(&check.operation, &input, &check.controls);
     let assertion_context = create_adapter_assertion_context(&outcome);
@@ -344,16 +334,6 @@ fn create_check_run_context(
         adapter_outcome: Some(outcome),
         assertion_context,
     })
-}
-
-fn uses_only_fixture_event_assertions(check: &PlanCheck) -> bool {
-    check.fixture.is_some()
-        && check.assertions.iter().all(|assertion| {
-            matches!(
-                assertion.kind.as_str(),
-                "eventSequence" | "terminalEvent" | "ordering" | "noEvent"
-            )
-        })
 }
 
 fn create_adapter_input(loaded_plan: &LoadedPlan, check: &PlanCheck) -> Result<Value, String> {
@@ -396,19 +376,22 @@ fn create_adapter_input(loaded_plan: &LoadedPlan, check: &PlanCheck) -> Result<V
 fn create_adapter_assertion_context(outcome: &OperationOutcome) -> AssertionContext {
     match outcome {
         OperationOutcome::Error { error } => AssertionContext {
-            result: Some(json!({ "error": error })),
+            // Adapter protocol errors are runner/adapter failures, not
+            // implementation-produced results that can satisfy a plan assertion.
+            state: Some(json!({ "adapterError": error })),
             ..AssertionContext::default()
         },
         OperationOutcome::Result { value } => {
             let evidence = read_object_field(value, "evidence");
+            let events = read_array_field(value, "events");
             let result = read_value_field(value, "result");
             let state = read_object_field(value, "state");
 
             AssertionContext {
+                events,
                 evidence,
                 result,
                 state,
-                ..AssertionContext::default()
             }
         }
     }
@@ -421,27 +404,12 @@ fn read_object_field(value: &Value, field: &str) -> Option<Value> {
         .cloned()
 }
 
-fn read_value_field(value: &Value, field: &str) -> Option<Value> {
-    value.get(field).cloned()
+fn read_array_field(value: &Value, field: &str) -> Option<Vec<Value>> {
+    value.get(field).and_then(Value::as_array).cloned()
 }
 
-fn read_fixture_events(loaded_plan: &LoadedPlan, check: &PlanCheck) -> Result<Vec<Value>, String> {
-    let fixture_id = check
-        .fixture
-        .as_ref()
-        .ok_or_else(|| format!("{} requires a fixture", check.check_id))?;
-    let fixture = loaded_plan
-        .fixtures
-        .get(fixture_id)
-        .ok_or_else(|| format!("unknown fixture {fixture_id}"))?;
-    let fixture_path = read_input_string(&check.input, "fixturePath")?;
-    let value = read_path(fixture, &fixture_path)
-        .ok_or_else(|| format!("fixture path {fixture_path} did not resolve"))?;
-    let events = value
-        .as_array()
-        .ok_or_else(|| format!("{} fixture path must resolve to an array", check.check_id))?;
-
-    Ok(events.clone())
+fn read_value_field(value: &Value, field: &str) -> Option<Value> {
+    value.get(field).cloned()
 }
 
 fn evaluate_assertion(
@@ -686,15 +654,6 @@ fn read_path<'a>(source: &'a Value, path: &str) -> Option<&'a Value> {
     }
 
     Some(current)
-}
-
-fn read_input_string(input: &Value, key: &str) -> Result<String, String> {
-    input
-        .as_object()
-        .and_then(|object| object.get(key))
-        .and_then(Value::as_str)
-        .map(str::to_string)
-        .ok_or_else(|| format!("check input must contain {key}"))
 }
 
 fn read_input_string_optional(input: &Value, key: &str) -> Result<Option<String>, String> {

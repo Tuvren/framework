@@ -30,8 +30,8 @@
         },
         "controls": {},
         "operation": "driver.execute",
-        "result": {
-          "error": {
+        "state": {
+          "adapterError": {
             "code": "rust_framework_operation_not_implemented",
             "details": {
               "operation": "driver.execute",
@@ -73,8 +73,8 @@
         },
         "controls": {},
         "operation": "driver.execute",
-        "result": {
-          "error": {
+        "state": {
+          "adapterError": {
             "code": "rust_framework_operation_not_implemented",
             "details": {
               "operation": "driver.execute",
@@ -116,8 +116,8 @@
         },
         "controls": {},
         "operation": "driver.execute",
-        "result": {
-          "error": {
+        "state": {
+          "adapterError": {
             "code": "rust_framework_operation_not_implemented",
             "details": {
               "operation": "driver.execute",
@@ -159,8 +159,8 @@
         },
         "controls": {},
         "operation": "driver.execute",
-        "result": {
-          "error": {
+        "state": {
+          "adapterError": {
             "code": "rust_framework_operation_not_implemented",
             "details": {
               "operation": "driver.execute",
@@ -202,8 +202,8 @@
         },
         "controls": {},
         "operation": "driver.checkpoint",
-        "result": {
-          "error": {
+        "state": {
+          "adapterError": {
             "code": "rust_framework_operation_not_implemented",
             "details": {
               "operation": "driver.checkpoint",
@@ -245,8 +245,8 @@
         },
         "controls": {},
         "operation": "driver.execute",
-        "result": {
-          "error": {
+        "state": {
+          "adapterError": {
             "code": "rust_framework_operation_not_implemented",
             "details": {
               "operation": "driver.execute",
@@ -288,8 +288,8 @@
         },
         "controls": {},
         "operation": "driver.resume",
-        "result": {
-          "error": {
+        "state": {
+          "adapterError": {
             "code": "rust_framework_operation_not_implemented",
             "details": {
               "operation": "driver.resume",
@@ -306,7 +306,7 @@
       "assertionResults": [
         {
           "assertionId": "driver-api.error.envelope.1.errorEnvelope",
-          "status": "pass"
+          "status": "fail"
         }
       ],
       "checkId": "driver-api.error.envelope",
@@ -331,8 +331,8 @@
         },
         "controls": {},
         "operation": "driver.execute-error",
-        "result": {
-          "error": {
+        "state": {
+          "adapterError": {
             "code": "rust_framework_operation_not_implemented",
             "details": {
               "operation": "driver.execute-error",
@@ -343,102 +343,7 @@
           }
         }
       },
-      "status": "pass"
-    },
-    {
-      "assertionResults": [
-        {
-          "assertionId": "event-stream.completed-turn.sequence.1.eventSequence",
-          "status": "pass"
-        },
-        {
-          "assertionId": "event-stream.completed-turn.sequence.2.terminalEvent",
-          "status": "pass"
-        },
-        {
-          "assertionId": "event-stream.completed-turn.sequence.3.ordering",
-          "status": "pass"
-        }
-      ],
-      "checkId": "event-stream.completed-turn.sequence",
-      "details": {
-        "authority": {
-          "packetId": "tuvren.framework.event-stream",
-          "planId": "tuvren.framework.event-stream.core",
-          "planPath": "boundaries/framework/conformance/plans/event-stream-core.json",
-          "planVersion": "0.1.0"
-        },
-        "controls": {},
-        "eventTypes": [
-          "turn.start",
-          "iteration.start",
-          "message.start",
-          "text.delta",
-          "text.done",
-          "tool_call.start",
-          "tool_call.args_delta",
-          "tool_call.done",
-          "tool.start",
-          "tool.result",
-          "state.snapshot",
-          "custom",
-          "message.done",
-          "iteration.end",
-          "turn.end"
-        ],
-        "operation": "event-stream.fixture-events"
-      },
-      "status": "pass"
-    },
-    {
-      "assertionResults": [
-        {
-          "assertionId": "event-stream.failed-turn.terminal.1.eventSequence",
-          "status": "pass"
-        },
-        {
-          "assertionId": "event-stream.failed-turn.terminal.2.terminalEvent",
-          "status": "pass"
-        }
-      ],
-      "checkId": "event-stream.failed-turn.terminal",
-      "details": {
-        "authority": {
-          "packetId": "tuvren.framework.event-stream",
-          "planId": "tuvren.framework.event-stream.core",
-          "planPath": "boundaries/framework/conformance/plans/event-stream-core.json",
-          "planVersion": "0.1.0"
-        },
-        "controls": {},
-        "eventTypes": ["turn.start", "error", "turn.end"],
-        "operation": "event-stream.fixture-events"
-      },
-      "status": "pass"
-    },
-    {
-      "assertionResults": [
-        {
-          "assertionId": "event-stream.paused-turn.approval.1.eventSequence",
-          "status": "pass"
-        },
-        {
-          "assertionId": "event-stream.paused-turn.approval.2.terminalEvent",
-          "status": "pass"
-        }
-      ],
-      "checkId": "event-stream.paused-turn.approval",
-      "details": {
-        "authority": {
-          "packetId": "tuvren.framework.event-stream",
-          "planId": "tuvren.framework.event-stream.core",
-          "planPath": "boundaries/framework/conformance/plans/event-stream-core.json",
-          "planVersion": "0.1.0"
-        },
-        "controls": {},
-        "eventTypes": ["turn.start", "approval.requested", "turn.end"],
-        "operation": "event-stream.fixture-events"
-      },
-      "status": "pass"
+      "status": "fail"
     },
     {
       "assertionResults": [
@@ -477,8 +382,8 @@
         },
         "controls": {},
         "operation": "event-stream.sse-projection",
-        "result": {
-          "error": {
+        "state": {
+          "adapterError": {
             "code": "rust_framework_operation_not_implemented",
             "details": {
               "operation": "event-stream.sse-projection",
@@ -524,8 +429,8 @@
         },
         "controls": {},
         "operation": "event-stream.sse-eager-subscription",
-        "result": {
-          "error": {
+        "state": {
+          "adapterError": {
             "code": "rust_framework_operation_not_implemented",
             "details": {
               "operation": "event-stream.sse-eager-subscription",
@@ -575,8 +480,8 @@
         },
         "controls": {},
         "operation": "event-stream.agui-projection",
-        "result": {
-          "error": {
+        "state": {
+          "adapterError": {
             "code": "rust_framework_operation_not_implemented",
             "details": {
               "operation": "event-stream.agui-projection",
@@ -622,8 +527,8 @@
         },
         "controls": {},
         "operation": "event-stream.agui-projection",
-        "result": {
-          "error": {
+        "state": {
+          "adapterError": {
             "code": "rust_framework_operation_not_implemented",
             "details": {
               "operation": "event-stream.agui-projection",
@@ -677,8 +582,8 @@
         },
         "controls": {},
         "operation": "event-stream.agui-projection",
-        "result": {
-          "error": {
+        "state": {
+          "adapterError": {
             "code": "rust_framework_operation_not_implemented",
             "details": {
               "operation": "event-stream.agui-projection",
@@ -728,8 +633,8 @@
         },
         "controls": {},
         "operation": "runtime.provider-generate",
-        "result": {
-          "error": {
+        "state": {
+          "adapterError": {
             "code": "rust_framework_operation_not_implemented",
             "details": {
               "operation": "runtime.provider-generate",
@@ -783,8 +688,8 @@
         },
         "controls": {},
         "operation": "runtime.provider-stream",
-        "result": {
-          "error": {
+        "state": {
+          "adapterError": {
             "code": "rust_framework_operation_not_implemented",
             "details": {
               "operation": "runtime.provider-stream",
@@ -842,8 +747,8 @@
         },
         "controls": {},
         "operation": "runtime.tool-execute",
-        "result": {
-          "error": {
+        "state": {
+          "adapterError": {
             "code": "rust_framework_operation_not_implemented",
             "details": {
               "operation": "runtime.tool-execute",
@@ -897,8 +802,8 @@
         },
         "controls": {},
         "operation": "runtime.approval-resolve",
-        "result": {
-          "error": {
+        "state": {
+          "adapterError": {
             "code": "rust_framework_operation_not_implemented",
             "details": {
               "operation": "runtime.approval-resolve",
@@ -940,8 +845,8 @@
         },
         "controls": {},
         "operation": "runtime.validate-structured-output",
-        "result": {
-          "error": {
+        "state": {
+          "adapterError": {
             "code": "rust_framework_operation_not_implemented",
             "details": {
               "operation": "runtime.validate-structured-output",
@@ -990,8 +895,8 @@
           "deadlineMs": 1000
         },
         "operation": "runtime.cancel-execution",
-        "result": {
-          "error": {
+        "state": {
+          "adapterError": {
             "code": "rust_framework_operation_not_implemented",
             "details": {
               "operation": "runtime.cancel-execution",
@@ -1033,8 +938,8 @@
         },
         "controls": {},
         "operation": "runtime.execute-turn",
-        "result": {
-          "error": {
+        "state": {
+          "adapterError": {
             "code": "rust_framework_operation_not_implemented",
             "details": {
               "operation": "runtime.execute-turn",
@@ -1078,8 +983,8 @@
           "deadlineMs": 1000
         },
         "operation": "runtime.cancel-execution",
-        "result": {
-          "error": {
+        "state": {
+          "adapterError": {
             "code": "rust_framework_operation_not_implemented",
             "details": {
               "operation": "runtime.cancel-execution",
@@ -1125,8 +1030,8 @@
         },
         "controls": {},
         "operation": "runtime.approval-resolve",
-        "result": {
-          "error": {
+        "state": {
+          "adapterError": {
             "code": "rust_framework_operation_not_implemented",
             "details": {
               "operation": "runtime.approval-resolve",
@@ -1172,8 +1077,8 @@
         },
         "controls": {},
         "operation": "runtime.branch-create",
-        "result": {
-          "error": {
+        "state": {
+          "adapterError": {
             "code": "rust_framework_operation_not_implemented",
             "details": {
               "operation": "runtime.branch-create",
@@ -1223,8 +1128,8 @@
         },
         "controls": {},
         "operation": "runtime.context-transform",
-        "result": {
-          "error": {
+        "state": {
+          "adapterError": {
             "code": "rust_framework_operation_not_implemented",
             "details": {
               "operation": "runtime.context-transform",
@@ -1274,8 +1179,8 @@
         },
         "controls": {},
         "operation": "runtime.recover-result",
-        "result": {
-          "error": {
+        "state": {
+          "adapterError": {
             "code": "rust_framework_operation_not_implemented",
             "details": {
               "operation": "runtime.recover-result",
@@ -1295,9 +1200,9 @@
   "project": "framework-rust-conformance-runner",
   "status": "fail",
   "summary": {
-    "failedChecks": 24,
-    "passedChecks": 4,
-    "totalChecks": 28
+    "failedChecks": 25,
+    "passedChecks": 0,
+    "totalChecks": 25
   },
   "suiteId": "tuvren.framework.promoted-authority",
   "suiteVersion": "0.1.0"

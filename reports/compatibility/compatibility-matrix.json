@@ -15,9 +15,6 @@
             "driver-api.execute.resolution",
             "driver-api.resume.approval",
             "driver-api.error.envelope",
-            "event-stream.completed-turn.sequence",
-            "event-stream.failed-turn.terminal",
-            "event-stream.paused-turn.approval",
             "event-stream.sse.projection",
             "event-stream.sse.eager-subscription",
             "event-stream.agui.projection",
@@ -38,8 +35,8 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 28,
-            "totalChecks": 28
+            "passedChecks": 25,
+            "totalChecks": 25
           },
           "evidencePath": "reports/compatibility/evidence/framework-typescript-conformance-runner.typescript-framework.json",
           "status": "pass",
@@ -140,9 +137,6 @@
             "driver-api.execute.resolution",
             "driver-api.resume.approval",
             "driver-api.error.envelope",
-            "event-stream.completed-turn.sequence",
-            "event-stream.failed-turn.terminal",
-            "event-stream.paused-turn.approval",
             "event-stream.sse.projection",
             "event-stream.sse.eager-subscription",
             "event-stream.agui.projection",
@@ -162,9 +156,9 @@
             "runtime-api.recover-result.staged-result"
           ],
           "checkSummary": {
-            "failedChecks": 24,
-            "passedChecks": 4,
-            "totalChecks": 28
+            "failedChecks": 25,
+            "passedChecks": 0,
+            "totalChecks": 25
           },
           "evidencePath": "reports/compatibility/evidence/framework-rust-conformance-runner.rust-framework.json",
           "status": "fail",
