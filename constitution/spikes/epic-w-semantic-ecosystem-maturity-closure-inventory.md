@@ -26,10 +26,15 @@ success or TypeScript-local test lore.
 
 ## Mature Semantic Surfaces
 
-- Kernel deterministic hashing, schema/identity roundtrip, logical diff,
-  branch listing, recovery-state shape, cross-thread lineage rejection, and
-  lateral turn-head rejection are now named checks under
-  `tuvren.kernel.protocol-seed@0.2.0`.
+- Kernel deterministic hashing and schema/identity roundtrip are now named
+  checks under `tuvren.kernel.protocol-seed@0.2.0` with passing measured
+  evidence from both `typescript-kernel` and `rust-kernel`.
+- Kernel logical diff, branch listing, recovery-state shape, cross-thread
+  lineage rejection, and lateral turn-head rejection are now named checks
+  under `tuvren.kernel.protocol-seed@0.2.0` with passing measured evidence
+  from `rust-kernel`; `typescript-kernel` no longer claims those checks until
+  it can prove them through real implementation behavior rather than
+  fixture-only or backend-local evidence.
 - Framework canonical stream sequencing, paused/failed terminal semantics, SSE
   framing, and AG-UI projection/fallback/error mapping are now named checks
   under `tuvren.framework.stream-events@0.2.0`.
@@ -42,6 +47,9 @@ success or TypeScript-local test lore.
   `tuvren.framework.kernel-interop-smoke@0.2.0`.
 - Compatibility reporting now records `checkIds` and `checkSummary` for every
   implementation and interop result instead of only suite-level status.
+- Checked-in compatibility artifacts now use deterministic sentinel metadata
+  plus scrubbed interop telemetry attribute values so regenerated evidence is
+  reviewable without run-specific churn.
 
 ## Deferred or Local-Only Surfaces
 
