@@ -7,5 +7,9 @@
     "rootDir": "../../../../../",
     "types": ["bun"]
   },
-  "include": ["src/**/*.ts", "test/**/*.ts"]
+  "include": [
+    "src/**/*.ts",
+    "test/**/*.ts",
+    "../conformance-adapter/src/**/*.ts"
+  ]
 }

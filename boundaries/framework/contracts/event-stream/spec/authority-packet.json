@@ -43,7 +43,9 @@
   "forbiddenAuthoritySources": [
     "boundaries/framework/contracts/event-stream/implementations/typescript",
     "boundaries/framework/implementations/typescript/conformance-runner",
+    "boundaries/framework/implementations/typescript/conformance-adapter",
     "boundaries/framework/implementations/rust/conformance-runner",
+    "boundaries/framework/implementations/rust/conformance-adapter",
     "boundaries/framework/contracts/event-stream/README.md",
     "boundaries/framework/contracts/event-stream/spec/README.md",
     "docs",

@@ -1,0 +1,21 @@
+{
+  "adapterId": "typescript-kernel",
+  "implementationId": "typescript-kernel",
+  "language": "typescript",
+  "boundary": "kernel",
+  "protocol": {
+    "name": "tuvren.conformance-adapter",
+    "version": "0.1.0",
+    "transport": "json-rpc-2.0-stdio"
+  },
+  "command": [
+    "bun",
+    "boundaries/kernel/implementations/typescript/conformance-adapter/src/host.ts"
+  ],
+  "capabilities": ["kernel.protocol"],
+  "authorityPackets": [
+    "boundaries/kernel/contracts/protocol/spec/authority-packet.json"
+  ],
+  "suiteId": "tuvren.kernel.protocol",
+  "suiteVersion": "0.1.0"
+}

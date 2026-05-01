@@ -1,6 +1,8 @@
 [workspace]
 members = [
+  "boundaries/framework/implementations/rust/conformance-adapter",
   "boundaries/framework/implementations/rust/conformance-runner",
+  "boundaries/kernel/implementations/rust/conformance-adapter",
   "boundaries/kernel/implementations/rust/conformance-runner",
   "boundaries/kernel/implementations/rust/grpc-service",
   "boundaries/kernel/implementations/rust/kernel",

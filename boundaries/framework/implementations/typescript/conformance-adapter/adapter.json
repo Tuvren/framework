@@ -1,0 +1,30 @@
+{
+  "adapterId": "typescript-framework",
+  "implementationId": "typescript-framework",
+  "language": "typescript",
+  "boundary": "framework",
+  "protocol": {
+    "name": "tuvren.conformance-adapter",
+    "version": "0.1.0",
+    "transport": "json-rpc-2.0-stdio"
+  },
+  "command": [
+    "bun",
+    "boundaries/framework/implementations/typescript/conformance-adapter/src/host.ts"
+  ],
+  "capabilities": [
+    "framework.driver-api",
+    "framework.event-stream",
+    "framework.react-driver",
+    "framework.runtime-api",
+    "trace.lifecycle"
+  ],
+  "authorityPackets": [
+    "boundaries/framework/contracts/event-stream/spec/authority-packet.json",
+    "boundaries/framework/contracts/runtime-api/spec/authority-packet.json",
+    "boundaries/framework/contracts/driver-api/spec/authority-packet.json",
+    "boundaries/framework/contracts/react-driver/spec/authority-packet.json"
+  ],
+  "suiteId": "tuvren.framework.promoted-authority",
+  "suiteVersion": "0.1.0"
+}

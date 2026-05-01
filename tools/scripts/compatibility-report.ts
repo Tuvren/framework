@@ -67,9 +67,29 @@ interface CompatibilityInteropResult {
 }
 
 interface CompatibilityCheckSummary {
+  applicableChecks?: number;
   failedChecks: number;
+  nonApplicableChecks?: number;
   passedChecks: number;
   totalChecks: number;
+}
+
+interface CompatibilityConformanceEvidence {
+  adapterId?: string;
+  boundary: string;
+  capabilities?: readonly string[];
+  checkResults: readonly ConformanceCheckResult[];
+  command: string[];
+  exitCode: number;
+  implementationId: string;
+  nonApplicableCheckIds?: readonly string[];
+  project: string;
+  status: "fail" | "pass";
+  stderr?: string;
+  stdout?: string;
+  suiteId: string;
+  suiteVersion: string;
+  summary: CompatibilityCheckSummary;
 }
 
 interface InteropTelemetrySummary {
@@ -141,33 +161,58 @@ const ALLOW_FAILING_EVIDENCE_FLAG = "--allow-failing-evidence";
 
 const CONFORMANCE_RUNNERS: readonly ConformanceRunner[] = [
   {
+    command: [
+      "bun",
+      "tools/conformance/runner/run.ts",
+      "--adapter",
+      "boundaries/framework/implementations/typescript/conformance-adapter/adapter.json",
+    ],
     implementationId: "typescript-framework",
     language: "typescript",
     project: "framework-typescript-conformance-runner",
   },
   {
+    command: [
+      "bun",
+      "tools/conformance/runner/run.ts",
+      "--adapter",
+      "boundaries/kernel/implementations/typescript/conformance-adapter/adapter.json",
+    ],
     implementationId: "typescript-kernel",
     language: "typescript",
-    manifestPath: "boundaries/kernel/conformance/scenarios/suite-manifest.json",
     project: "kernel-typescript-conformance-runner",
   },
   {
+    command: [
+      "bun",
+      "tools/conformance/runner/run.ts",
+      "--adapter",
+      "boundaries/providers/implementations/typescript/conformance-adapter/adapter.json",
+    ],
     implementationId: "typescript-providers",
     language: "typescript",
-    manifestPath:
-      "boundaries/providers/conformance/scenarios/suite-manifest.json",
     project: "providers-typescript-conformance-runner",
   },
   {
+    command: [
+      "bun",
+      "tools/conformance/runner/run.ts",
+      "--adapter",
+      "boundaries/kernel/implementations/rust/conformance-adapter/adapter.json",
+    ],
     implementationId: "rust-kernel",
     language: "rust",
-    manifestPath: "boundaries/kernel/conformance/scenarios/suite-manifest.json",
     project: "kernel-rust-conformance-runner",
   },
   {
-    // This lane is expected to emit red evidence today; running Cargo directly
-    // keeps the structured JSON parseable after the process exits nonzero.
-    command: ["cargo", "run", "-p", "tuvren-framework-rust-conformance-runner"],
+    // This lane is expected to emit red evidence today; the shared runner keeps
+    // the structured JSON parseable after the process exits nonzero.
+    command: [
+      "bun",
+      "tools/conformance/runner/run.ts",
+      "--adapter",
+      "boundaries/framework/implementations/rust/conformance-adapter/adapter.json",
+    ],
     implementationId: "rust-framework",
     language: "rust",
     project: "framework-rust-conformance-runner",
@@ -314,7 +359,7 @@ async function runConformanceTarget(
   });
   const evidenceFilePath = resolve(
     EVIDENCE_DIRECTORY,
-    `${runner.project}.${runner.implementationId}.json`
+    `shared-conformance-runner.${runner.implementationId}.json`
   );
   const relativeEvidencePath = relative(REPO_ROOT, evidenceFilePath);
   const fallbackCheckResults =
@@ -345,25 +390,15 @@ async function runConformanceTarget(
     commandResult.code === 0 && evidencePayload.status === "pass"
       ? "pass"
       : "fail";
-  const evidence: {
-    boundary: string;
-    checkResults: ConformanceCheckResult[];
-    command: string[];
-    exitCode: number;
-    implementationId: string;
-    project: string;
-    status: "fail" | "pass";
-    summary: CompatibilityCheckSummary;
-    stderr?: string;
-    stdout?: string;
-    suiteId: string;
-    suiteVersion: string;
-  } = {
+  const evidence: CompatibilityConformanceEvidence = {
+    adapterId: evidencePayload.adapterId,
     boundary: evidencePayload.boundary,
+    capabilities: evidencePayload.capabilities,
     checkResults: evidencePayload.checkResults,
-    command,
+    command: sanitizeEvidenceCommand(command),
     exitCode: commandResult.code,
     implementationId: runner.implementationId,
+    nonApplicableCheckIds: evidencePayload.nonApplicableCheckIds,
     project: runner.project,
     status,
     summary: evidencePayload.summary,
@@ -393,6 +428,12 @@ async function runConformanceTarget(
       suiteVersion: evidencePayload.suiteVersion,
     },
   };
+}
+
+function sanitizeEvidenceCommand(command: readonly string[]): string[] {
+  return command.map((part) =>
+    part.includes("/conformance-adapter/") ? "[adapter-manifest]" : part
+  );
 }
 
 async function runInteropTarget(
@@ -952,7 +993,6 @@ function assertCompatibilityMatrix(
 
     for (const result of implementation.results) {
       if (
-        result.checkIds.length === 0 ||
         result.evidencePath.length === 0 ||
         result.suiteId.length === 0 ||
         result.suiteVersion.length === 0
@@ -963,12 +1003,16 @@ function assertCompatibilityMatrix(
       }
 
       assertCompatibilityCheckSummary(result.checkSummary);
+      assertCompatibilityResultCheckIds(
+        result.checkIds,
+        result.checkSummary,
+        "compatibility matrix implementation results"
+      );
     }
   }
 
   for (const interopResult of value.interop) {
     if (
-      interopResult.checkIds.length === 0 ||
       interopResult.evidencePath.length === 0 ||
       interopResult.pairId.length === 0 ||
       interopResult.suiteId.length === 0 ||
@@ -980,22 +1024,55 @@ function assertCompatibilityMatrix(
     }
 
     assertCompatibilityCheckSummary(interopResult.checkSummary);
+    assertCompatibilityResultCheckIds(
+      interopResult.checkIds,
+      interopResult.checkSummary,
+      "compatibility matrix interop results"
+    );
   }
+}
+
+function assertCompatibilityResultCheckIds(
+  checkIds: readonly string[],
+  summary: CompatibilityCheckSummary,
+  label: string
+): void {
+  if (checkIds.length > 0) {
+    return;
+  }
+
+  if (
+    summary.totalChecks === (summary.nonApplicableChecks ?? 0) &&
+    (summary.applicableChecks ?? 0) === 0
+  ) {
+    return;
+  }
+
+  throw new Error(`${label} must contain check ids for applicable checks`);
 }
 
 function assertCompatibilityCheckSummary(
   value: CompatibilityCheckSummary
 ): void {
+  const applicableChecks =
+    value.applicableChecks ?? value.failedChecks + value.passedChecks;
+  const nonApplicableChecks = value.nonApplicableChecks ?? 0;
+
   if (
     !(
+      Number.isSafeInteger(applicableChecks) &&
       Number.isSafeInteger(value.failedChecks) &&
       Number.isSafeInteger(value.passedChecks) &&
-      Number.isSafeInteger(value.totalChecks)
+      Number.isSafeInteger(value.totalChecks) &&
+      Number.isSafeInteger(nonApplicableChecks)
     ) ||
+    applicableChecks < 0 ||
     value.failedChecks < 0 ||
     value.passedChecks < 0 ||
+    nonApplicableChecks < 0 ||
     value.totalChecks <= 0 ||
-    value.failedChecks + value.passedChecks !== value.totalChecks
+    applicableChecks !== value.failedChecks + value.passedChecks ||
+    applicableChecks + nonApplicableChecks !== value.totalChecks
   ) {
     throw new Error(
       "compatibility matrix check summaries must be internally consistent"

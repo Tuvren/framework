@@ -62,14 +62,18 @@
                 "evidencePath": { "type": "string" },
                 "checkIds": {
                   "type": "array",
-                  "minItems": 1,
                   "items": { "type": "string" }
                 },
                 "checkSummary": {
                   "type": "object",
                   "required": ["failedChecks", "passedChecks", "totalChecks"],
                   "properties": {
+                    "applicableChecks": { "type": "integer", "minimum": 0 },
                     "failedChecks": { "type": "integer", "minimum": 0 },
+                    "nonApplicableChecks": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
                     "passedChecks": { "type": "integer", "minimum": 0 },
                     "totalChecks": { "type": "integer", "minimum": 1 }
                   },
@@ -107,14 +111,15 @@
           "evidencePath": { "type": "string" },
           "checkIds": {
             "type": "array",
-            "minItems": 1,
             "items": { "type": "string" }
           },
           "checkSummary": {
             "type": "object",
             "required": ["failedChecks", "passedChecks", "totalChecks"],
             "properties": {
+              "applicableChecks": { "type": "integer", "minimum": 0 },
               "failedChecks": { "type": "integer", "minimum": 0 },
+              "nonApplicableChecks": { "type": "integer", "minimum": 0 },
               "passedChecks": { "type": "integer", "minimum": 0 },
               "totalChecks": { "type": "integer", "minimum": 1 }
             },

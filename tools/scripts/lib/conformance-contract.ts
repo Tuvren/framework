@@ -61,16 +61,21 @@ export interface ConformanceCheckResult {
 }
 
 export interface ConformanceEvidenceSummary {
+  applicableChecks?: number;
   failedChecks: number;
+  nonApplicableChecks?: number;
   passedChecks: number;
   totalChecks: number;
 }
 
 export interface ConformanceEvidence {
+  adapterId?: string;
   boundary: string;
+  capabilities?: readonly string[];
   checkResults: readonly ConformanceCheckResult[];
   implementationId: string;
   language: string;
+  nonApplicableCheckIds?: readonly string[];
   status: ConformanceStatus;
   suiteId: string;
   suiteVersion: string;
@@ -144,6 +149,12 @@ export function assertConformanceEvidence(
     value.checkResults,
     `${label}.checkResults`
   );
+  const nonApplicableCheckIds =
+    readOptionalStringArray(
+      value.nonApplicableCheckIds,
+      `${label}.nonApplicableCheckIds`,
+      false
+    ) ?? [];
   const expectedSummary = createConformanceEvidenceSummary(checkResults);
 
   if (!isRecord(value.summary)) {
@@ -153,7 +164,7 @@ export function assertConformanceEvidence(
   assertSafeInteger(
     value.summary.totalChecks,
     `${label}.summary.totalChecks`,
-    expectedSummary.totalChecks
+    expectedSummary.totalChecks + nonApplicableCheckIds.length
   );
   assertSafeInteger(
     value.summary.passedChecks,
@@ -164,6 +175,16 @@ export function assertConformanceEvidence(
     value.summary.failedChecks,
     `${label}.summary.failedChecks`,
     expectedSummary.failedChecks
+  );
+  assertSafeInteger(
+    value.summary.applicableChecks,
+    `${label}.summary.applicableChecks`,
+    checkResults.length
+  );
+  assertSafeInteger(
+    value.summary.nonApplicableChecks,
+    `${label}.summary.nonApplicableChecks`,
+    nonApplicableCheckIds.length
   );
 
   const expectedStatus = expectedSummary.failedChecks === 0 ? "pass" : "fail";
@@ -384,8 +405,8 @@ function readCheckResults(
   value: unknown,
   label: string
 ): readonly ConformanceCheckResult[] {
-  if (!Array.isArray(value) || value.length === 0) {
-    throw new Error(`${label} must be a non-empty array`);
+  if (!Array.isArray(value)) {
+    throw new Error(`${label} must be an array`);
   }
 
   const checkResults = value.map((checkResult, index) =>
@@ -479,13 +500,14 @@ function readAssertionResult(
 
 function readOptionalStringArray(
   value: unknown,
-  label: string
+  label: string,
+  requireNonEmpty = true
 ): string[] | undefined {
   if (value === undefined) {
     return undefined;
   }
 
-  return readStringArray(value, label, true);
+  return readStringArray(value, label, requireNonEmpty);
 }
 
 function readStringArray(

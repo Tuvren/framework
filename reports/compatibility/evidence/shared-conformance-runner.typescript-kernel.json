@@ -1,0 +1,93 @@
+{
+  "adapterId": "typescript-kernel",
+  "boundary": "kernel",
+  "capabilities": ["kernel.protocol"],
+  "checkResults": [
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.2.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.3.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.requiredEvidence.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.requiredEvidence.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.requiredEvidence.hashes.turnTreeSchema",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.protocol.deterministic_hashing",
+      "details": {
+        "adapterId": "typescript-kernel",
+        "planId": "tuvren.kernel.protocol.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.2.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.requiredEvidence.roundtrip.turnNodeIdentityRecord.schemaId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.requiredEvidence.roundtrip.turnTreeSchemaRecord.schemaId",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.protocol.schema_roundtrip",
+      "details": {
+        "adapterId": "typescript-kernel",
+        "planId": "tuvren.kernel.protocol.core"
+      },
+      "status": "pass"
+    }
+  ],
+  "command": [
+    "bun",
+    "tools/conformance/runner/run.ts",
+    "--adapter",
+    "[adapter-manifest]"
+  ],
+  "exitCode": 0,
+  "implementationId": "typescript-kernel",
+  "nonApplicableCheckIds": [
+    "kernel.lineage.cross_thread_rejection",
+    "kernel.logical.branch_list",
+    "kernel.logical.diff_paths",
+    "kernel.logical.recovery_state",
+    "kernel.turn.lateral_head_guard"
+  ],
+  "project": "kernel-typescript-conformance-runner",
+  "status": "pass",
+  "summary": {
+    "failedChecks": 0,
+    "passedChecks": 2,
+    "totalChecks": 7,
+    "applicableChecks": 2,
+    "nonApplicableChecks": 5
+  },
+  "suiteId": "tuvren.kernel.protocol",
+  "suiteVersion": "0.1.0"
+}

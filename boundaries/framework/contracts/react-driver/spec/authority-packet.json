@@ -26,7 +26,9 @@
   "forbiddenAuthoritySources": [
     "boundaries/framework/implementations/typescript/drivers/react",
     "boundaries/framework/implementations/typescript/conformance-runner",
+    "boundaries/framework/implementations/typescript/conformance-adapter",
     "boundaries/framework/implementations/rust/conformance-runner",
+    "boundaries/framework/implementations/rust/conformance-adapter",
     "docs",
     "constitution"
   ],

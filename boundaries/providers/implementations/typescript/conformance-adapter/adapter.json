@@ -1,0 +1,21 @@
+{
+  "adapterId": "typescript-providers",
+  "implementationId": "typescript-providers",
+  "language": "typescript",
+  "boundary": "providers",
+  "protocol": {
+    "name": "tuvren.conformance-adapter",
+    "version": "0.1.0",
+    "transport": "json-rpc-2.0-stdio"
+  },
+  "command": [
+    "bun",
+    "boundaries/providers/implementations/typescript/conformance-adapter/src/host.ts"
+  ],
+  "capabilities": ["providers.provider-api", "providers.ai-sdk-bridge"],
+  "authorityPackets": [
+    "boundaries/providers/contracts/provider-api/spec/authority-packet.json"
+  ],
+  "suiteId": "tuvren.providers.provider-api",
+  "suiteVersion": "0.1.0"
+}

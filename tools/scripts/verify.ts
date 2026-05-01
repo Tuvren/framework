@@ -202,6 +202,10 @@ export const DEFAULT_VERIFICATION_STEPS: readonly VerificationStep[] = [
     id: "adapter protocol validation",
   },
   {
+    command: ["bun", "tools/conformance/meta-conformance/run.ts"],
+    id: "shared conformance runner meta-conformance",
+  },
+  {
     command: [
       "bun",
       "tools/scripts/authority-guardrails/authority-guardrails.ts",

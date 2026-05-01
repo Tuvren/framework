@@ -33,8 +33,17 @@ const OPERATION_SOURCE_BY_PACKET = new Map<string, readonly string[]>([
     "tuvren.framework.react-driver",
     ["boundaries/framework/contracts/driver-api/spec/typespec/main.tsp"],
   ],
+  [
+    "tuvren.kernel.protocol",
+    ["boundaries/kernel/conformance/plans/kernel-protocol-core.json"],
+  ],
+  [
+    "tuvren.providers.provider-api",
+    ["boundaries/providers/conformance/plans/provider-api-bridge.json"],
+  ],
 ]);
-const OPERATION_LITERAL_PATTERN = /"(?:runtime|driver)\.[a-z0-9-]+"/gu;
+const OPERATION_LITERAL_PATTERN =
+  /"(?:runtime|driver|kernel|providers)\.[a-z0-9_.-]+"/gu;
 
 const planPaths = await findConformancePlans();
 const operationCache = new Map<string, Promise<ReadonlySet<string>>>();
@@ -59,6 +68,14 @@ for (const planPath of planPaths) {
       throw new Error(
         `${planPath} check ${check.check.checkId} uses undeclared operation ${check.check.operation}`
       );
+    }
+
+    for (const step of check.check.steps ?? []) {
+      if (operations.size > 0 && !operations.has(step.operation)) {
+        throw new Error(
+          `${planPath} check ${check.check.checkId} step ${step.stepId} uses undeclared operation ${step.operation}`
+        );
+      }
     }
   }
 }
