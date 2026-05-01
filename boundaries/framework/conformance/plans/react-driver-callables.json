@@ -70,14 +70,21 @@
       "operation": "driver.checkpoint",
       "scenario": "driver-api-scenarios",
       "input": { "scenarioPath": "$.driver-checkpoint-turn" },
+      "steps": [
+        {
+          "stepId": "checkpoint",
+          "operation": "driver.checkpoint",
+          "input": { "scenarioPath": "$.driver-checkpoint-turn" }
+        }
+      ],
       "assertions": [
         {
-          "kind": "evidenceField",
-          "field": "$.checkpoint.manifestPathCount",
+          "kind": "stateField",
+          "field": "$.trace.checkpoint.evidence.checkpoint.manifestPathCount",
           "equals": 4
         }
       ],
-      "evidence": ["checkpoint.manifestPathCount"]
+      "evidence": ["trace.checkpoint.evidence.checkpoint.manifestPathCount"]
     }
   ]
 }

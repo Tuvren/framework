@@ -1,0 +1,145 @@
+{
+  "planId": "tuvren.kernel.protocol.core",
+  "planVersion": "0.1.0",
+  "packetId": "tuvren.kernel.protocol",
+  "applicability": {
+    "capabilities": ["kernel.protocol"]
+  },
+  "fixtures": {
+    "canonical-turn-tree-schema": "../fixtures/canonical-turn-tree-schema.json",
+    "kernel-protocol-deterministic": "../fixtures/kernel-protocol-deterministic.json",
+    "kernel-protocol-logical": "../fixtures/kernel-protocol-logical.json"
+  },
+  "checks": [
+    {
+      "checkId": "kernel.protocol.deterministic_hashing",
+      "operation": "kernel.protocol.deterministic-hashing",
+      "fixture": "kernel-protocol-deterministic",
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.hashes.rawOpaqueBytes",
+          "equalsPath": "$.fixture.rawOpaqueBytesSha256Hex"
+        },
+        {
+          "kind": "evidenceField",
+          "field": "$.hashes.turnTreeSchema",
+          "equalsPath": "$.fixture.turnTreeSchemaRecordSha256Hex"
+        },
+        {
+          "kind": "evidenceField",
+          "field": "$.hashes.turnNodeIdentity",
+          "equalsPath": "$.fixture.turnNodeIdentityRecordSha256Hex"
+        }
+      ],
+      "evidence": [
+        "hashes.rawOpaqueBytes",
+        "hashes.turnTreeSchema",
+        "hashes.turnNodeIdentity"
+      ]
+    },
+    {
+      "checkId": "kernel.protocol.schema_roundtrip",
+      "operation": "kernel.protocol.schema-roundtrip",
+      "fixture": "kernel-protocol-deterministic",
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.roundtrip.turnTreeSchemaRecord.schemaId",
+          "equalsPath": "$.fixture.turnTreeSchemaRecord.schemaId"
+        },
+        {
+          "kind": "evidenceField",
+          "field": "$.roundtrip.turnNodeIdentityRecord.schemaId",
+          "equalsPath": "$.fixture.turnNodeIdentityRecord.schemaId"
+        }
+      ],
+      "evidence": [
+        "roundtrip.turnTreeSchemaRecord.schemaId",
+        "roundtrip.turnNodeIdentityRecord.schemaId"
+      ]
+    },
+    {
+      "checkId": "kernel.logical.diff_paths",
+      "operation": "kernel.logical.diff-paths",
+      "capabilities": ["kernel.logical"],
+      "fixture": "kernel-protocol-logical",
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.diffPaths",
+          "equals": ["context.manifest", "messages"]
+        }
+      ],
+      "evidence": ["diffPaths"]
+    },
+    {
+      "checkId": "kernel.logical.branch_list",
+      "operation": "kernel.logical.branch-list",
+      "capabilities": ["kernel.logical"],
+      "fixture": "kernel-protocol-logical",
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.branchEntries.0",
+          "equalsPath": "$.fixture.branchHeadListEntry"
+        }
+      ],
+      "evidence": ["branchEntries"]
+    },
+    {
+      "checkId": "kernel.logical.recovery_state",
+      "operation": "kernel.logical.recovery-state",
+      "capabilities": ["kernel.logical"],
+      "fixture": "kernel-protocol-logical",
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.recovery.lastCompletedStepId",
+          "equals": "tool_execution"
+        },
+        {
+          "kind": "evidenceField",
+          "field": "$.recovery.consumedStagedResults",
+          "equals": 1
+        },
+        {
+          "kind": "evidenceField",
+          "field": "$.recovery.uncommittedStagedResults",
+          "equals": 1
+        }
+      ],
+      "evidence": [
+        "recovery.lastCompletedStepId",
+        "recovery.consumedStagedResults",
+        "recovery.uncommittedStagedResults"
+      ]
+    },
+    {
+      "checkId": "kernel.lineage.cross_thread_rejection",
+      "operation": "kernel.lineage.cross-thread-rejection",
+      "capabilities": ["kernel.logical"],
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.errorCode",
+          "equals": "turn_node_thread_mismatch"
+        }
+      ],
+      "evidence": ["errorCode"]
+    },
+    {
+      "checkId": "kernel.turn.lateral_head_guard",
+      "operation": "kernel.turn.lateral-head-guard",
+      "capabilities": ["kernel.logical"],
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.errorCode",
+          "equals": "turn_head_lateral_move"
+        }
+      ],
+      "evidence": ["errorCode"]
+    }
+  ]
+}

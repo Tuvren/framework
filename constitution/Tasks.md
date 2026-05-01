@@ -3,15 +3,16 @@
 ## 0. Version History & Changelog
 
 - v0.11.0 - Reopened Epic Y final conformance closure: KRT-Y013 records the posture correction, and KRT-Y014..KRT-Y023 form the active critical path to extract one shared semantic conformance engine, convert implementation language runners into adapter hosts, enforce executable capability selection, and add meta-conformance plus trace-plan support.
+- v0.11.1 - Closed Epic Y final conformance closure: KRT-Y014..KRT-Y023 now land one shared semantic conformance runner, JSON-RPC adapter manifests, TypeScript and Rust adapter hosts, executable capability selection, trace-plan lifecycle checks, guardrails, meta-conformance, and refreshed shared-runner compatibility evidence.
 - v0.10.1 - Closed Epic Y authority-packet closure in current repo reality with the authority leak inventory, promoted authority packets, conformance plans, adapter protocol scaffolding, generated artifacts, validator and guardrail wiring, and closure inventory.
 - v0.10.0 - Opened Epic Y Machine-Enforced Neutral Authority Closure as the active critical path (KRT-Y001..KRT-Y012) backed by the Epic Y planning spike, the new Authority Packet / Conformance Plan / Implementation Adapter contracts in TechSpec §4.11–§4.13, and ADR-023..028. Critical path totals 45 active story points.
 - ... [Older history truncated, refer to git logs]
 
 ## 1. Executive Summary & Active Critical Path
 
-- **Total Active Story Points:** 51
-- **Critical Path:** KRT-Y014 -> KRT-Y015 -> KRT-Y017 -> KRT-Y018 / KRT-Y019 -> KRT-Y020 -> KRT-Y021 -> KRT-Y022 -> KRT-Y023, with KRT-Y016 running after KRT-Y014 and before final guardrail closure. KRT-Y013 is the closed posture-correction spike that gates the remaining work.
-- **Planning Assumptions:** Epics A-X are closed in current repo reality. Epic Y KRT-Y001 through KRT-Y012 closed the authority-packet leak layer, but final language-agnostic conformance remains active until one shared semantic conformance engine drives language adapter hosts for the promoted framework surfaces and existing conformance lanes. Authority Packet manifests follow TechSpec §4.11; Conformance Plans follow §4.12; the revised Implementation Adapter Protocol follows §4.13. Epic Y artifacts are `constitution/spikes/epic-y-authority-leak-inventory.md`, `constitution/spikes/epic-y-machine-enforced-authority-closure-inventory.md`, and `constitution/spikes/epic-y-single-semantic-conformance-engine-spike.md`.
+- **Total Active Story Points:** 0
+- **Critical Path:** Epic Y KRT-Y013 through KRT-Y023 is closed in current repo reality. Future work starts from the shared runner, adapter manifests, trace plans, guardrails, and compatibility evidence rather than reopening implementation-owned semantic runners.
+- **Planning Assumptions:** Epics A-Y are closed in current repo reality. Authority Packet manifests follow TechSpec §4.11; Conformance Plans follow §4.12; the revised Implementation Adapter Protocol follows §4.13. Epic Y artifacts are `constitution/spikes/epic-y-authority-leak-inventory.md`, `constitution/spikes/epic-y-machine-enforced-authority-closure-inventory.md`, `constitution/spikes/epic-y-single-semantic-conformance-engine-spike.md`, `constitution/spikes/epic-y-trace-plan-extension-spike.md`, and `constitution/spikes/epic-y-shared-conformance-engine-closure-inventory.md`.
 
 ### Brownfield Continuity Note
 
@@ -32,7 +33,7 @@
 
 - Epic V is closed. Epic W starts from the measured compatibility evidence and the Epic V closure inventories, but it is not Rust framework work. Epic W must mature the semantic ecosystem itself: coverage matrix, assertion-bearing conformance suites, promoted TypeScript-local semantics, and compatibility evidence precise enough for future implementations to consume without treating TypeScript as the oracle.
 - Epic W and Epic X are closed. Epic X completed the structural normalization that relocated TS-only assets out of language-neutral boundary slots without changing semantics, conformance suites, fixtures, public package APIs, or generated artifacts.
-- Epic Y authority-packet closure is closed. The promoted neutral surfaces (`runtime-api`, `driver-api`, `event-stream`, `core-types`) plus the ReAct-driver plan family now resolve cross-implementation authority through packets, plans, generated artifacts, and guardrails. Epic Y final conformance closure is active because per-language semantic runners are still a possible authority split; the target is one shared semantic runner plus language adapter hosts.
+- Epic Y authority-packet closure and final conformance closure are closed. The promoted neutral surfaces (`runtime-api`, `driver-api`, `event-stream`, `core-types`) plus the ReAct-driver, kernel protocol, and provider bridge plan families now resolve cross-implementation authority through packets, plans, generated artifacts, guardrails, shared-runner evidence, and implementation adapter hosts.
 
 ### Planning Heuristic
 
@@ -48,7 +49,7 @@
 
 ### Current Active Scope
 
-- Epic Y final conformance closure is active. The current scope is the shared semantic conformance engine, adapter-host protocol hardening, TypeScript and Rust current-lane adapter conversion, assertion-engine meta-conformance, executable capability selection, trace-plan extension, guardrail hardening, and final evidence refresh.
+- No Epic Y tickets remain active. The current repo posture is closed through the shared semantic conformance engine, adapter-host protocol hardening, TypeScript and Rust current-lane adapter conversion, assertion-engine meta-conformance, executable capability selection, trace-plan extension, guardrail hardening, and final evidence refresh.
 - Epic W and Epic X are closed in current repo reality through their respective closure inventories under `constitution/spikes/`.
 - Future implementation-line work must start from the named semantic evidence in Epic W, the normalized Epic X topology, the Epic Y authority packets, and the shared semantic runner rather than reopening TypeScript-local semantic authority, filesystem drift, or implementation-language runner oracles by default.
 
@@ -993,7 +994,7 @@ And root `AGENTS.md` no longer describes per-language semantic runners as durabl
 
 - **Type:** Feature
 - **Effort:** 5
-- **Status:** Planned.
+- **Status:** Closed in current repo reality.
 - **Dependencies:** KRT-Y013
 - **Capability / Contract Mapping:** PRD `CAP-P0-037`, `CAP-P1-038`, `CAP-P1-036`; Architecture `2`, `4.5`, `4.6`; TechSpec `2 ADR-025`, `4.12`, `4.13`
 - **Description:** Extract the canonical conformance mechanics into `tools/conformance/runner/`. The shared runner must be boundary-agnostic across the current Kraken Engine conformance lanes (kernel, framework/runtime, ReAct driver, and providers): it loads authority packets, loads and validates conformance plans, resolves scenarios/fixtures, executes neutral operations through an adapter client, evaluates generic assertions once, enforces required evidence, isolates adapter errors, and emits compatibility evidence in the existing format.
@@ -1012,7 +1013,7 @@ And a missing required evidence path fails the check even when all assertion ope
 
 - **Type:** Feature
 - **Effort:** 5
-- **Status:** Planned.
+- **Status:** Closed in current repo reality.
 - **Dependencies:** KRT-Y014
 - **Capability / Contract Mapping:** PRD `CAP-P1-035`, `CAP-P1-036`, `CAP-P1-038`; Architecture `4.5`, `4.6`; TechSpec `4.13`
 - **Description:** Replace the prose-only adapter protocol with a machine-validated adapter manifest and JSON-RPC 2.0 stdio host protocol. Adapter hosts expose native invocation only: initialize, optional instance lifecycle, dispatch, events, inspectState, and shutdown. The protocol must remove check-scoped evidence emission and separate adapter failures from implementation result errors.
@@ -1032,7 +1033,7 @@ And adapter/protocol errors are reported as adapter errors and cannot satisfy as
 
 - **Type:** Feature
 - **Effort:** 5
-- **Status:** Planned.
+- **Status:** Closed in current repo reality.
 - **Dependencies:** KRT-Y014
 - **Capability / Contract Mapping:** PRD `CAP-P1-036`, `CAP-P1-038`; Architecture `4.5`, `4.6`; TechSpec `4.12`, `4.13`
 - **Description:** Add a conformance-engine meta-conformance corpus that validates the shared assertion engine and any transitional runner mechanics. The corpus must prove every generic operator, missing-path behavior, required-evidence failure, schema validation, ordering behavior, terminal/no-event behavior, exact error matching, and adapter-error isolation.
@@ -1051,7 +1052,7 @@ And no implementation adapter host is needed for the meta-conformance corpus
 
 - **Type:** Feature
 - **Effort:** 3
-- **Status:** Planned.
+- **Status:** Closed in current repo reality.
 - **Dependencies:** KRT-Y015
 - **Capability / Contract Mapping:** PRD `CAP-P0-037`, `CAP-P1-038`; Architecture `4.5`, `4.6`; TechSpec `4.11`, `4.12`, `4.13`
 - **Description:** Make plan applicability executable. The shared runner must select checks by capability requirements from conformance plans and adapter-declared capabilities, not by language lane, runner name, implementation ID, or bespoke skip matrix.
@@ -1070,7 +1071,7 @@ And compatibility evidence records the adapter capabilities used for selection
 
 - **Type:** Feature
 - **Effort:** 8
-- **Status:** Planned.
+- **Status:** Closed in current repo reality.
 - **Dependencies:** KRT-Y017
 - **Capability / Contract Mapping:** PRD `CAP-P0-037`, `CAP-P1-038`; Architecture `2.1`, `4.5`, `4.6`; TechSpec `4.12`, `4.13`, `5.1`
 - **Description:** Convert current TypeScript conformance entry points into adapter hosts driven by the shared runner, covering the framework/runtime surface, ReAct driver plan family, kernel lane, and provider lane where those lanes already exist. TypeScript adapter code may call native implementation packages and binding projections to execute behavior, but all assertion evaluation, pass/fail decisions, required-evidence checks, and compatibility evidence emission move to the shared runner.
@@ -1089,7 +1090,7 @@ And TypeScript conformance remains green only where native implementation logic 
 
 - **Type:** Feature
 - **Effort:** 8
-- **Status:** Planned.
+- **Status:** Closed in current repo reality.
 - **Dependencies:** KRT-Y017
 - **Capability / Contract Mapping:** PRD `CAP-P0-037`, `CAP-P1-038`; Architecture `2.1`, `4.5`, `4.6`; TechSpec `4.12`, `4.13`, `5.1`
 - **Description:** Convert current Rust conformance entry points into adapter hosts driven by the shared runner, covering the Rust kernel lane and the Rust framework red lane. Rust hosts should honestly return adapter observations or adapter-operation-not-implemented errors based on native Rust code availability; they must not implement assertion semantics or manufacture passing implementation evidence.
@@ -1108,7 +1109,7 @@ And unimplemented Rust adapter errors cannot satisfy implementation error-envelo
 
 - **Type:** Feature
 - **Effort:** 3
-- **Status:** Planned.
+- **Status:** Closed in current repo reality.
 - **Dependencies:** KRT-Y016, KRT-Y018, KRT-Y019
 - **Capability / Contract Mapping:** PRD `CAP-P0-037`, `CAP-P1-038`; Architecture `1.4`, `4.5`, `4.6`, `6`; TechSpec `2 ADR-023..028`, `4.12`, `4.13`
 - **Description:** Harden authority guardrails for the shared-runner architecture. Guardrails must scan every implementation conformance runner or adapter host root across TypeScript, Rust, and future languages for product-semantic assertion ownership, check IDs, plan literals, pass/fail grading, check-scoped evidence, fixture replay counted as implementation conformance, and adapter errors satisfying implementation assertions.
@@ -1127,7 +1128,7 @@ And normal `conformance`, `codegen`, and `verify` commands fail when structured 
 
 - **Type:** Spike
 - **Effort:** 3
-- **Status:** Planned.
+- **Status:** Closed in current repo reality.
 - **Dependencies:** KRT-Y014, KRT-Y015
 - **Capability / Contract Mapping:** PRD `CAP-P0-037`, `CAP-P1-036`, `CAP-P1-038`; Architecture `4.5`, `4.6`; TechSpec `4.12`, `4.13`
 - **Description:** Design the minimal `steps[]` extension for conformance plans so lifecycle-heavy behavior can be proven as a state machine. The spike must cover variable references to prior step outputs, fixture references, per-step controls, per-step assertions, instance lifecycle, and state inspection without giving adapters check IDs or assertion authority.
@@ -1146,7 +1147,7 @@ And TechSpec §4.12 has enough detail for implementation without inventing schem
 
 - **Type:** Feature
 - **Effort:** 8
-- **Status:** Planned.
+- **Status:** Closed in current repo reality.
 - **Dependencies:** KRT-Y016, KRT-Y017, KRT-Y021
 - **Capability / Contract Mapping:** PRD `CAP-P0-037`, `CAP-P1-036`, `CAP-P1-038`; Architecture `4.5`, `4.6`; TechSpec `4.12`, `4.13`
 - **Description:** Implement trace-plan support in the plan schema, compiler, shared runner, adapter client, and promoted framework plans where single-operation checks cannot honestly prove lifecycle semantics. Convert vulnerable cancellation, approval resume, recovery, branching, and checkpoint-like checks to trace plans that require implementation-produced state transitions.
@@ -1165,7 +1166,7 @@ And TypeScript evidence remains green only where native implementation logic sat
 
 - **Type:** Chore
 - **Effort:** 3
-- **Status:** Planned.
+- **Status:** Closed in current repo reality.
 - **Dependencies:** KRT-Y020, KRT-Y022
 - **Capability / Contract Mapping:** PRD `CAP-P0-037`, `CAP-P1-038`; Architecture `5`, `6`; TechSpec `5.3`, `5.4.1`
 - **Description:** Refresh compatibility evidence and record final Epic Y closure only after the shared runner, adapter hosts, guardrails, meta-conformance, capability selection, and trace-plan coverage are in place. The closure inventory must precisely list which TypeScript and Rust checks pass, fail, or are non-applicable based on native implementation behavior.

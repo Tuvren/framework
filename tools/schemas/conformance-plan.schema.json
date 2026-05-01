@@ -40,6 +40,11 @@
         "properties": {
           "checkId": { "type": "string", "minLength": 1 },
           "operation": { "type": "string", "minLength": 1 },
+          "capabilities": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 },
+            "default": []
+          },
           "fixture": { "type": "string", "minLength": 1 },
           "scenario": { "type": "string", "minLength": 1 },
           "input": {},
@@ -75,12 +80,70 @@
                 "path": { "type": "string", "minLength": 1 },
                 "schema": { "type": "string", "minLength": 1 },
                 "equals": {},
+                "equalsPath": { "type": "string", "minLength": 1 },
                 "matches": { "type": "string", "minLength": 1 },
                 "contains": {},
+                "containsPath": { "type": "string", "minLength": 1 },
                 "field": { "type": "string", "minLength": 1 },
                 "eventType": { "type": "string", "minLength": 1 }
               }
             }
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["stepId", "operation"],
+              "additionalProperties": false,
+              "properties": {
+                "stepId": { "type": "string", "minLength": 1 },
+                "operation": { "type": "string", "minLength": 1 },
+                "input": {},
+                "inspectState": {},
+                "controls": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "deadlineMs": { "type": "integer", "minimum": 1 },
+                    "cancelAfterEvent": { "type": "string", "minLength": 1 }
+                  }
+                },
+                "assertions": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": ["kind"],
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "eventSequence",
+                          "terminalEvent",
+                          "schemaValid",
+                          "errorEnvelope",
+                          "stateField",
+                          "evidenceField",
+                          "ordering",
+                          "noEvent"
+                        ]
+                      },
+                      "path": { "type": "string", "minLength": 1 },
+                      "schema": { "type": "string", "minLength": 1 },
+                      "equals": {},
+                      "equalsPath": { "type": "string", "minLength": 1 },
+                      "matches": { "type": "string", "minLength": 1 },
+                      "contains": {},
+                      "containsPath": { "type": "string", "minLength": 1 },
+                      "field": { "type": "string", "minLength": 1 },
+                      "eventType": { "type": "string", "minLength": 1 }
+                    }
+                  },
+                  "default": []
+                }
+              }
+            },
+            "default": []
           },
           "evidence": {
             "type": "array",

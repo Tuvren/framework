@@ -67,7 +67,9 @@ interface CompatibilityInteropResult {
 }
 
 interface CompatibilityCheckSummary {
+  applicableChecks?: number;
   failedChecks: number;
+  nonApplicableChecks?: number;
   passedChecks: number;
   totalChecks: number;
 }
@@ -141,33 +143,58 @@ const ALLOW_FAILING_EVIDENCE_FLAG = "--allow-failing-evidence";
 
 const CONFORMANCE_RUNNERS: readonly ConformanceRunner[] = [
   {
+    command: [
+      "bun",
+      "tools/conformance/runner/run.ts",
+      "--adapter",
+      "boundaries/framework/implementations/typescript/conformance-adapter/adapter.json",
+    ],
     implementationId: "typescript-framework",
     language: "typescript",
     project: "framework-typescript-conformance-runner",
   },
   {
+    command: [
+      "bun",
+      "tools/conformance/runner/run.ts",
+      "--adapter",
+      "boundaries/kernel/implementations/typescript/conformance-adapter/adapter.json",
+    ],
     implementationId: "typescript-kernel",
     language: "typescript",
-    manifestPath: "boundaries/kernel/conformance/scenarios/suite-manifest.json",
     project: "kernel-typescript-conformance-runner",
   },
   {
+    command: [
+      "bun",
+      "tools/conformance/runner/run.ts",
+      "--adapter",
+      "boundaries/providers/implementations/typescript/conformance-adapter/adapter.json",
+    ],
     implementationId: "typescript-providers",
     language: "typescript",
-    manifestPath:
-      "boundaries/providers/conformance/scenarios/suite-manifest.json",
     project: "providers-typescript-conformance-runner",
   },
   {
+    command: [
+      "bun",
+      "tools/conformance/runner/run.ts",
+      "--adapter",
+      "boundaries/kernel/implementations/rust/conformance-adapter/adapter.json",
+    ],
     implementationId: "rust-kernel",
     language: "rust",
-    manifestPath: "boundaries/kernel/conformance/scenarios/suite-manifest.json",
     project: "kernel-rust-conformance-runner",
   },
   {
     // This lane is expected to emit red evidence today; running Cargo directly
     // keeps the structured JSON parseable after the process exits nonzero.
-    command: ["cargo", "run", "-p", "tuvren-framework-rust-conformance-runner"],
+    command: [
+      "bun",
+      "tools/conformance/runner/run.ts",
+      "--adapter",
+      "boundaries/framework/implementations/rust/conformance-adapter/adapter.json",
+    ],
     implementationId: "rust-framework",
     language: "rust",
     project: "framework-rust-conformance-runner",
@@ -314,7 +341,7 @@ async function runConformanceTarget(
   });
   const evidenceFilePath = resolve(
     EVIDENCE_DIRECTORY,
-    `${runner.project}.${runner.implementationId}.json`
+    `shared-conformance-runner.${runner.implementationId}.json`
   );
   const relativeEvidencePath = relative(REPO_ROOT, evidenceFilePath);
   const fallbackCheckResults =
@@ -361,7 +388,7 @@ async function runConformanceTarget(
   } = {
     boundary: evidencePayload.boundary,
     checkResults: evidencePayload.checkResults,
-    command,
+    command: sanitizeEvidenceCommand(command),
     exitCode: commandResult.code,
     implementationId: runner.implementationId,
     project: runner.project,
@@ -393,6 +420,12 @@ async function runConformanceTarget(
       suiteVersion: evidencePayload.suiteVersion,
     },
   };
+}
+
+function sanitizeEvidenceCommand(command: readonly string[]): string[] {
+  return command.map((part) =>
+    part.includes("/conformance-adapter/") ? "[adapter-manifest]" : part
+  );
 }
 
 async function runInteropTarget(
@@ -986,16 +1019,21 @@ function assertCompatibilityMatrix(
 function assertCompatibilityCheckSummary(
   value: CompatibilityCheckSummary
 ): void {
+  const nonApplicableChecks = value.nonApplicableChecks ?? 0;
+
   if (
     !(
       Number.isSafeInteger(value.failedChecks) &&
       Number.isSafeInteger(value.passedChecks) &&
-      Number.isSafeInteger(value.totalChecks)
+      Number.isSafeInteger(value.totalChecks) &&
+      Number.isSafeInteger(nonApplicableChecks)
     ) ||
     value.failedChecks < 0 ||
     value.passedChecks < 0 ||
+    nonApplicableChecks < 0 ||
     value.totalChecks <= 0 ||
-    value.failedChecks + value.passedChecks !== value.totalChecks
+    value.failedChecks + value.passedChecks + nonApplicableChecks !==
+      value.totalChecks
   ) {
     throw new Error(
       "compatibility matrix check summaries must be internally consistent"

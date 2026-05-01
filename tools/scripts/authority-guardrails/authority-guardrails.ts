@@ -62,13 +62,6 @@ const FIXTURE_ROOT = resolve(
   "tools/scripts/authority-guardrails/__fixtures__"
 );
 const ROOT_TESTS_ROOT = resolve(REPO_ROOT, "tests");
-const RUNNER_SOURCE_ROOTS = [
-  // Epic Y only promotes framework surfaces to packet-driven conformance.
-  // Kernel/provider runners stay out of this guardrail until a later epic gives
-  // those surfaces authority packets instead of legacy suite manifests.
-  "boundaries/framework/implementations/typescript/conformance-runner/src",
-  "boundaries/framework/implementations/rust/conformance-runner/src",
-];
 const FRAMEWORK_TYPESCRIPT_ROOT =
   "boundaries/framework/implementations/typescript";
 const TYPESCRIPT_OWNED_CONFORMANCE_PATTERNS: readonly RegExp[] = [
@@ -84,6 +77,16 @@ const TYPESCRIPT_OWNED_FRAMEWORK_FIXTURE_PATTERNS: readonly RegExp[] = [
 const ROOT_TUVREN_IMPORT_PATTERN = /@tuvren\//u;
 const RUNNER_AGUI_EVENT_ENUM_PATTERN = /\bEventType\.[A-Z_]+\b/u;
 const CALLABLES_NAMESPACE_PATTERN = /\bcallables\b/u;
+const FORBIDDEN_RUNNER_OR_ADAPTER_TOKENS: readonly string[] = [
+  "assertionResults",
+  "checkId",
+  "createCheckResult",
+  "createConformanceEvidence",
+  "emitEvidence",
+  "failedChecks",
+  "passedChecks",
+  "requiredEvidence",
+];
 const FORBIDDEN_VOCABULARY_PATTERNS: readonly RegExp[] = [
   /\bPromise\b/u,
   /\bAsyncIterable\b/u,
@@ -271,8 +274,9 @@ async function checkRunnerOracleLiterals(
   const planCheckIds = await collectPlanCheckIds(manifests);
   const planOperationNames = await collectPlanOperationNames(manifests);
   const planAssertionLiterals = await collectPlanAssertionLiterals(manifests);
+  const conformanceSourceRoots = await findConformanceSourceRoots();
 
-  for (const runnerRoot of RUNNER_SOURCE_ROOTS) {
+  for (const runnerRoot of conformanceSourceRoots) {
     const sourcePaths = await findSourceFiles(resolve(REPO_ROOT, runnerRoot));
 
     for (const sourcePath of sourcePaths) {
@@ -332,8 +336,9 @@ async function checkTypescriptOwnedConformanceSources(): Promise<
   GuardrailFailure[]
 > {
   const failures: GuardrailFailure[] = [];
+  const conformanceSourceRoots = await findConformanceSourceRoots();
 
-  for (const runnerRoot of RUNNER_SOURCE_ROOTS) {
+  for (const runnerRoot of conformanceSourceRoots) {
     const sourcePaths = await findSourceFiles(resolve(REPO_ROOT, runnerRoot));
 
     for (const sourcePath of sourcePaths) {
@@ -711,12 +716,15 @@ function checkRunnerSourceText(
   planAssertionLiterals: ReadonlySet<string>
 ): GuardrailFailure[] {
   const failures: GuardrailFailure[] = [
+    ...collectForbiddenRunnerOrAdapterTokenFailures(source, sourceLabel),
     ...collectRunnerCheckIdFailures(source, sourceLabel, planCheckIds),
-    ...collectRunnerAssertionLiteralFailures(
-      source,
-      sourceLabel,
-      planAssertionLiterals
-    ),
+    ...(sourceLabel.includes("/conformance-runner/")
+      ? collectRunnerAssertionLiteralFailures(
+          source,
+          sourceLabel,
+          planAssertionLiterals
+        )
+      : []),
     ...collectRunnerOperationLiteralFailures(
       source,
       sourceLabel,
@@ -746,6 +754,18 @@ function checkRunnerSourceText(
   }
 
   return failures;
+}
+
+function collectForbiddenRunnerOrAdapterTokenFailures(
+  source: string,
+  sourceLabel: string
+): GuardrailFailure[] {
+  return FORBIDDEN_RUNNER_OR_ADAPTER_TOKENS.filter((token) =>
+    source.includes(token)
+  ).map((token) => ({
+    check: "runner-or-adapter-authority",
+    message: `${sourceLabel} embeds ${token}; runner and adapter roots must not own check-scoped grading, required-evidence, or compatibility evidence semantics`,
+  }));
 }
 
 function collectRunnerCheckIdFailures(
@@ -828,6 +848,7 @@ function isAllowedOperationRoutingLine(
 ): boolean {
   return (
     line.includes(`case ${quotedOperation}:`) ||
+    line.includes(`${quotedOperation} =>`) ||
     line.includes(`${quotedOperation}:`) ||
     line.includes(`readOperationScenario(input, ${quotedOperation})`) ||
     (line.includes(quotedOperation) &&
@@ -1096,8 +1117,51 @@ async function findSourceFiles(directory: string): Promise<string[]> {
     return [];
   }
 
-  const paths = await findFiles(directory, ".ts");
+  const paths = [
+    ...(await findFiles(directory, ".rs")),
+    ...(await findFiles(directory, ".ts")),
+    ...(await findFiles(directory, ".tsx")),
+  ];
   return paths.filter((path) => !path.endsWith(".d.ts"));
+}
+
+async function findConformanceSourceRoots(): Promise<string[]> {
+  const roots = await collectConformanceSourceRoots(BOUNDARIES_ROOT);
+  return roots
+    .map((root) => relative(REPO_ROOT, root))
+    .sort((left, right) => left.localeCompare(right));
+}
+
+async function collectConformanceSourceRoots(
+  directory: string
+): Promise<string[]> {
+  if (!existsSync(directory)) {
+    return [];
+  }
+
+  const entries = await readdir(directory, { withFileTypes: true });
+  const roots: string[] = [];
+
+  for (const entry of entries) {
+    const entryPath = resolve(directory, entry.name);
+
+    if (!entry.isDirectory()) {
+      continue;
+    }
+
+    if (
+      (entry.name === "conformance-runner" ||
+        entry.name === "conformance-adapter") &&
+      existsSync(resolve(entryPath, "src"))
+    ) {
+      roots.push(resolve(entryPath, "src"));
+      continue;
+    }
+
+    roots.push(...(await collectConformanceSourceRoots(entryPath)));
+  }
+
+  return roots;
 }
 
 async function snapshotPath(path: string): Promise<FileSnapshot[]> {

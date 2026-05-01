@@ -1570,6 +1570,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b"
 
 [[package]]
+name = "tuvren-framework-rust-conformance-adapter"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "tuvren-framework-rust-conformance-runner"
 version = "0.1.0"
 dependencies = [
@@ -1590,6 +1598,15 @@ dependencies = [
  "sha2",
  "thiserror",
  "tokio",
+]
+
+[[package]]
+name = "tuvren-kernel-rust-conformance-adapter"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "tuvren-kernel-rust",
 ]
 
 [[package]]

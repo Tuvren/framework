@@ -5,6 +5,8 @@
   "additionalProperties": false,
   "properties": {
     "AdapterCapabilities": { "$ref": "#/$defs/AdapterCapabilities" },
+    "JsonRpcRequest": { "$ref": "#/$defs/JsonRpcRequest" },
+    "JsonRpcResponse": { "$ref": "#/$defs/JsonRpcResponse" },
     "AdapterControls": { "$ref": "#/$defs/AdapterControls" },
     "AdapterErrorEnvelope": { "$ref": "#/$defs/AdapterErrorEnvelope" },
     "OperationOutcome": { "$ref": "#/$defs/OperationOutcome" }
@@ -13,7 +15,9 @@
     "AdapterCapabilities",
     "AdapterControls",
     "AdapterErrorEnvelope",
-    "OperationOutcome"
+    "OperationOutcome",
+    "JsonRpcRequest",
+    "JsonRpcResponse"
   ],
   "$defs": {
     "AdapterCapabilities": {
@@ -21,6 +25,10 @@
       "additionalProperties": false,
       "properties": {
         "adapterId": { "type": "string", "minLength": 1 },
+        "capabilities": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
         "packetId": { "type": "string", "minLength": 1 },
         "planVersion": {
           "type": "string",
@@ -79,6 +87,43 @@
       "oneOf": [
         { "$ref": "#/$defs/OperationResultOutcome" },
         { "$ref": "#/$defs/OperationErrorOutcome" }
+      ]
+    },
+    "JsonRpcRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "jsonrpc": { "const": "2.0" },
+        "id": { "type": ["integer", "string"] },
+        "method": {
+          "type": "string",
+          "enum": [
+            "initialize",
+            "createInstance",
+            "dispatch",
+            "events",
+            "inspectState",
+            "destroyInstance",
+            "shutdown"
+          ]
+        },
+        "params": {}
+      },
+      "required": ["jsonrpc", "id", "method"]
+    },
+    "JsonRpcResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "jsonrpc": { "const": "2.0" },
+        "id": { "type": ["integer", "string", "null"] },
+        "result": {},
+        "error": { "$ref": "#/$defs/AdapterErrorEnvelope" }
+      },
+      "required": ["jsonrpc", "id"],
+      "oneOf": [
+        { "required": ["result"], "not": { "required": ["error"] } },
+        { "required": ["error"], "not": { "required": ["result"] } }
       ]
     }
   }

@@ -1,0 +1,148 @@
+{
+  "boundary": "providers",
+  "checkResults": [
+    {
+      "assertionResults": [
+        {
+          "assertionId": "providers.bridge.generate_mapping.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.bridge.generate_mapping.2.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.bridge.generate_mapping.3.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.bridge.generate_mapping.4.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.bridge.generate_mapping.requiredEvidence.generate.providerMetadataKeys",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.bridge.generate_mapping.requiredEvidence.generate.responseFormatName",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.bridge.generate_mapping.requiredEvidence.generate.responseFormatType",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.bridge.generate_mapping.requiredEvidence.generate.responsePartTypes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "providers.bridge.generate_mapping",
+      "details": {
+        "adapterId": "typescript-providers",
+        "planId": "tuvren.providers.provider-api.bridge"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "providers.bridge.provider_failure_normalization.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.bridge.provider_failure_normalization.2.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.bridge.provider_failure_normalization.requiredEvidence.failure.errorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.bridge.provider_failure_normalization.requiredEvidence.failure.errorName",
+          "status": "pass"
+        }
+      ],
+      "checkId": "providers.bridge.provider_failure_normalization",
+      "details": {
+        "adapterId": "typescript-providers",
+        "planId": "tuvren.providers.provider-api.bridge"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "providers.bridge.stream_metadata_continuity.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.bridge.stream_metadata_continuity.2.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.bridge.stream_metadata_continuity.requiredEvidence.stream.chunkTypes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.bridge.stream_metadata_continuity.requiredEvidence.stream.finishMetadataKeys",
+          "status": "pass"
+        }
+      ],
+      "checkId": "providers.bridge.stream_metadata_continuity",
+      "details": {
+        "adapterId": "typescript-providers",
+        "planId": "tuvren.providers.provider-api.bridge"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "providers.bridge.structured_output_stream.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.bridge.structured_output_stream.2.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.bridge.structured_output_stream.3.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.bridge.structured_output_stream.requiredEvidence.structured.chunkTypes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.bridge.structured_output_stream.requiredEvidence.structured.doneName",
+          "status": "pass"
+        }
+      ],
+      "checkId": "providers.bridge.structured_output_stream",
+      "details": {
+        "adapterId": "typescript-providers",
+        "planId": "tuvren.providers.provider-api.bridge"
+      },
+      "status": "pass"
+    }
+  ],
+  "command": [
+    "bun",
+    "tools/conformance/runner/run.ts",
+    "--adapter",
+    "[adapter-manifest]"
+  ],
+  "exitCode": 0,
+  "implementationId": "typescript-providers",
+  "project": "providers-typescript-conformance-runner",
+  "status": "pass",
+  "summary": {
+    "failedChecks": 0,
+    "passedChecks": 4,
+    "totalChecks": 4,
+    "applicableChecks": 4,
+    "nonApplicableChecks": 0
+  },
+  "suiteId": "tuvren.providers.api-fixtures",
+  "suiteVersion": "0.2.0"
+}

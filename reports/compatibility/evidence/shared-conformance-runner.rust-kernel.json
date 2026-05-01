@@ -1,0 +1,194 @@
+{
+  "boundary": "kernel",
+  "checkResults": [
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.lineage.cross_thread_rejection.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.lineage.cross_thread_rejection.requiredEvidence.errorCode",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.lineage.cross_thread_rejection",
+      "details": {
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.logical.branch_list.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.branch_list.requiredEvidence.branchEntries",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.branch_list.requiredEvidence.branchEntries.0",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.logical.branch_list",
+      "details": {
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.logical.diff_paths.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.diff_paths.requiredEvidence.diffPaths",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.logical.diff_paths",
+      "details": {
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.logical.recovery_state.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.recovery_state.2.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.recovery_state.3.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.recovery_state.requiredEvidence.recovery.consumedStagedResults",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.recovery_state.requiredEvidence.recovery.lastCompletedStepId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.recovery_state.requiredEvidence.recovery.uncommittedStagedResults",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.logical.recovery_state",
+      "details": {
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.2.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.3.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.requiredEvidence.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.requiredEvidence.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.requiredEvidence.hashes.turnTreeSchema",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.protocol.deterministic_hashing",
+      "details": {
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.2.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.requiredEvidence.roundtrip.turnNodeIdentityRecord.schemaId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.requiredEvidence.roundtrip.turnTreeSchemaRecord.schemaId",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.protocol.schema_roundtrip",
+      "details": {
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.turn.lateral_head_guard.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.turn.lateral_head_guard.requiredEvidence.errorCode",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.turn.lateral_head_guard",
+      "details": {
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.core"
+      },
+      "status": "pass"
+    }
+  ],
+  "command": [
+    "bun",
+    "tools/conformance/runner/run.ts",
+    "--adapter",
+    "[adapter-manifest]"
+  ],
+  "exitCode": 0,
+  "implementationId": "rust-kernel",
+  "project": "kernel-rust-conformance-runner",
+  "status": "pass",
+  "summary": {
+    "failedChecks": 0,
+    "passedChecks": 7,
+    "totalChecks": 7,
+    "applicableChecks": 7,
+    "nonApplicableChecks": 0
+  },
+  "suiteId": "tuvren.kernel.protocol",
+  "suiteVersion": "0.1.0"
+}

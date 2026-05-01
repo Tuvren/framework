@@ -16,7 +16,7 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": ".",
-        "command": "cargo run -p tuvren-framework-rust-conformance-runner"
+        "command": "bun tools/conformance/runner/run.ts --adapter boundaries/framework/implementations/rust/conformance-adapter/adapter.json"
       }
     },
     "lint": {

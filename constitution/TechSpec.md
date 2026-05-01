@@ -3,6 +3,7 @@
 ## 0. Version History & Changelog
 
 - v0.8.2 - Reopened Epic Y final conformance closure around one shared semantic conformance engine, process-level language adapter hosts, executable capability selection, adapter-error isolation, assertion-engine meta-conformance, and future multi-step trace plans.
+- v0.8.3 - Closed Epic Y final conformance closure around `tools/conformance/runner/`, JSON-RPC adapter manifests, TypeScript and Rust current-lane adapter hosts, trace-plan lifecycle checks, meta-conformance, guardrails, and refreshed shared-runner compatibility evidence.
 - v0.8.1 - Closed Epic Y authority-packet closure in current repo reality with authority packet manifests, conformance plans, adapter protocol scaffolding, validator and guardrail wiring, generated JSON Schema artifacts, and the Epic Y closure inventory.
 - v0.8.0 - Opened Epic Y Machine-Enforced Neutral Authority Closure with ADR-023 (No Implementation Oracle), ADR-024 (No Prose Oracle), ADR-025 (No Runner Oracle), ADR-026 (Authority Packet Model), ADR-027 (Generated Artifact Freshness), and ADR-028 (Forbidden Implementation Vocabulary in Authority Sources). Added §4.11 Authority Packet Manifest contract, §4.12 Conformance Plan contract, and §4.13 Implementation Adapter Protocol. Extended §3.6 with packet membership rules and §5.4 with the Epic Y step. Stack section now records the layered authority stack vocabulary (TypeSpec, CDDL, Protobuf, JSON Schema, conformance-plan JSON, semconv/Weaver) without adding new pinned tooling.
 - ... [Older history truncated, refer to git logs]
@@ -33,8 +34,8 @@
 
 ### 1.2 Current-State vs Target-State
 
-- **Current repository reality:** The repository already contains the workspace scaffold, `@tuvren/core-types`, `@tuvren/kernel-protocol`, `@tuvren/backend-memory`, `@tuvren/backend-sqlite`, `@tuvren/kernel-testkit`, `@tuvren/runtime-api`, `@tuvren/driver-api`, `@tuvren/event-stream`, `@tuvren/tool-contracts`, `@tuvren/provider-api`, `@tuvren/runtime-core`, the ReAct Driver baseline with implementation-proven loop completion, streaming/provider semantics, shared runtime-core tool/approval integration, and the reusable `createGrpcRuntimeKernel()` helper for the governed Rust-kernel transport seam, `@tuvren/provider-bridge-ai-sdk` as the first concrete provider bridge, the host stream adapter line `@tuvren/stream-core`, `@tuvren/stream-sse`, and `@tuvren/stream-agui`, the private playground host harness `@tuvren/playground-host` with `kernelMode` runtime selection plus `kernelGrpcBaseUrl`, playground-owned aimock E2E validation lanes for the local OpenAI, Anthropic, and Gemini provider HTTP boundaries, an opt-in Gemini validation lane for real provider calls through `@ai-sdk/google`, the hardening testkits `@tuvren/provider-testkit` and `@tuvren/framework-testkit`, release and portability scripts under `tools/scripts`, the checked-in Epic Q portability matrix, the Epic Q release-hardening closure inventory, repo-global `telemetry/` and `reports/compatibility/` roots, boundary-owned `conformance/` roots for the framework, kernel, and providers, TypeSpec-authored tool/provider contract sources plus reviewed JSON Schema/OpenAPI artifacts, kernel CDDL grammar, implementation-scoped TypeScript conformance runners, kernel-only proto authority under `boundaries/kernel/interop/grpc/proto/`, root `buf.yaml` / `buf.gen.yaml`, the `kernel-interop-grpc` Nx target surface, Devenv-provisioned Buf/protoc generator tooling, generated TypeScript telemetry and kernel-interop helpers under the consuming framework implementation tree, root Cargo workspace files, the Rust kernel core, Rust conformance runner, Rust gRPC service, generated Rust telemetry helper under the Rust kernel tree, a real TS-framework-to-Rust-kernel interop suite manifest under `boundaries/framework/interop/rust-kernel/`, and a measured compatibility matrix whose checked-in payload uses deterministic sentinel `generatedAtMs` / `sourceRevision` values plus scrubbed interop telemetry attributes while still preserving the substantive `rust-kernel` and `typescript-framework__rust-kernel` evidence entries.
-- **Current semantic-evidence posture:** The boundary-owned semantic evidence posture from Epic W remains intact after Epic X. The TypeScript testkits still act as helper and facade packages for TypeScript-local testing, but they now live under implementation-owned paths. Existing TypeScript and Rust conformance entry points are transitional evidence producers; the final Epic Y target is one shared semantic conformance engine that drives language adapter hosts and emits the measured evidence.
+- **Current repository reality:** The repository already contains the workspace scaffold, `@tuvren/core-types`, `@tuvren/kernel-protocol`, `@tuvren/backend-memory`, `@tuvren/backend-sqlite`, `@tuvren/kernel-testkit`, `@tuvren/runtime-api`, `@tuvren/driver-api`, `@tuvren/event-stream`, `@tuvren/tool-contracts`, `@tuvren/provider-api`, `@tuvren/runtime-core`, the ReAct Driver baseline with implementation-proven loop completion, streaming/provider semantics, shared runtime-core tool/approval integration, and the reusable `createGrpcRuntimeKernel()` helper for the governed Rust-kernel transport seam, `@tuvren/provider-bridge-ai-sdk` as the first concrete provider bridge, the host stream adapter line `@tuvren/stream-core`, `@tuvren/stream-sse`, and `@tuvren/stream-agui`, the private playground host harness `@tuvren/playground-host` with `kernelMode` runtime selection plus `kernelGrpcBaseUrl`, playground-owned aimock E2E validation lanes for the local OpenAI, Anthropic, and Gemini provider HTTP boundaries, an opt-in Gemini validation lane for real provider calls through `@ai-sdk/google`, the hardening testkits `@tuvren/provider-testkit` and `@tuvren/framework-testkit`, release and portability scripts under `tools/scripts`, the checked-in Epic Q portability matrix, the Epic Q release-hardening closure inventory, repo-global `telemetry/` and `reports/compatibility/` roots, boundary-owned `conformance/` roots for the framework, kernel, and providers, TypeSpec-authored tool/provider contract sources plus reviewed JSON Schema/OpenAPI artifacts, kernel CDDL grammar, one shared semantic conformance runner under `tools/conformance/runner/`, JSON-RPC adapter protocol schemas under `tools/conformance/adapter-protocol/`, TypeScript and Rust implementation adapter hosts under `conformance-adapter/`, compatibility evidence emitted through shared-runner evidence files, kernel-only proto authority under `boundaries/kernel/interop/grpc/proto/`, root `buf.yaml` / `buf.gen.yaml`, the `kernel-interop-grpc` Nx target surface, Devenv-provisioned Buf/protoc generator tooling, generated TypeScript telemetry and kernel-interop helpers under the consuming framework implementation tree, root Cargo workspace files, the Rust kernel core, Rust gRPC service, generated Rust telemetry helper under the Rust kernel tree, a real TS-framework-to-Rust-kernel interop suite manifest under `boundaries/framework/interop/rust-kernel/`, and a measured compatibility matrix whose checked-in payload uses deterministic sentinel `generatedAtMs` / `sourceRevision` values plus scrubbed interop telemetry attributes while still preserving the substantive `rust-kernel`, `rust-framework`, TypeScript current-lane, and `typescript-framework__rust-kernel` evidence entries.
+- **Current semantic-evidence posture:** The boundary-owned semantic evidence posture from Epic W remains intact after Epic X and final Epic Y closure. The TypeScript testkits still act as helper and facade packages for TypeScript-local testing, but they now live under implementation-owned paths. TypeScript and Rust conformance entry points are wrappers or native adapter hosts; `tools/conformance/runner/` owns assertion evaluation, required evidence, capability selection, adapter-error isolation, trace execution, and compatibility evidence emission.
 - **Current topology posture:** Epic X is closed in current repo reality. Boundary-root testkits now live under `boundaries/<area>/implementations/typescript/testkit/`, contract roots now expose only language-neutral assets plus README placeholders, and the TypeScript package guts for moved contract packages live under sibling `implementations/typescript/` subtrees. Path topology now reveals language ownership without opening files.
 - **Target implementation state:** The package layout and interfaces defined below are the intended implementation target for the first authoritative TypeScript line plus the post-Epic-Q multi-language transition foundation.
 - **Drift rule:** The future codebase must conform to this TechSpec. The TechSpec must not be treated as a loose commentary on whatever structure happens to emerge.
@@ -1739,6 +1740,11 @@ A conformance plan is data-owned per ADR-025. Plans live alongside the surface t
         "properties": {
           "checkId": { "type": "string", "minLength": 1 },
           "operation": { "type": "string", "minLength": 1 },
+          "capabilities": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 },
+            "default": []
+          },
           "fixture": { "type": "string", "minLength": 1 },
           "scenario": { "type": "string", "minLength": 1 },
           "input": {},
@@ -1773,12 +1779,31 @@ A conformance plan is data-owned per ADR-025. Plans live alongside the surface t
                 "path": { "type": "string", "minLength": 1 },
                 "schema": { "type": "string", "minLength": 1 },
                 "equals": {},
+                "equalsPath": { "type": "string", "minLength": 1 },
                 "matches": { "type": "string", "minLength": 1 },
                 "contains": {},
+                "containsPath": { "type": "string", "minLength": 1 },
                 "field": { "type": "string", "minLength": 1 },
                 "eventType": { "type": "string", "minLength": 1 }
               }
             }
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["stepId", "operation"],
+              "additionalProperties": false,
+              "properties": {
+                "stepId": { "type": "string", "minLength": 1 },
+                "operation": { "type": "string", "minLength": 1 },
+                "input": {},
+                "controls": {},
+                "assertions": { "type": "array" },
+                "inspectState": {}
+              }
+            },
+            "default": []
           },
           "evidence": {
             "type": "array",
@@ -1793,11 +1818,12 @@ A conformance plan is data-owned per ADR-025. Plans live alongside the surface t
 ```
 
 - `operation` is a neutral operation name resolved by the Implementation Adapter Protocol (§4.13). The plan never names a TypeScript function or a Rust trait method directly; it names the neutral operation declared by the authority packet.
-- `applicability.capabilities` is executable. The shared runner selects checks by intersecting plan-required capabilities with capabilities declared by the adapter manifest or initialization response; promoted plans must not select by implementation ID, language, runner name, or adapter name.
+- `applicability.capabilities` and `checks[].capabilities` are executable. The shared runner selects checks by intersecting plan-required capabilities with capabilities declared by the adapter manifest or initialization response; promoted plans must not select by implementation ID, language, runner name, or adapter name.
 - `assertions[].kind` covers shape (`schemaValid`, `errorEnvelope`), behavior (`eventSequence`, `terminalEvent`, `ordering`, `noEvent`), durable state (`stateField`), and evidence (`evidenceField`). The shared semantic runner implements these kinds once; product-specific assertion logic must be expressed through these operators rather than added as runner-side or adapter-side bespoke code.
+- `equalsPath` and `containsPath` resolve against the runner-owned assertion context (`$.input`, `$.fixture`, `$.scenario`, `$.result`, `$.events`, `$.state`, and `$.evidence`) so plans can compare raw observations to fixture or prior-step values without moving comparison logic into adapters.
 - `controls` covers cancellation injection and deadlines; additional generic mechanics may be added through capability selectors and adapter-declared capabilities rather than by hard-coding new control semantics in runner or adapter source.
 - `evidence[]` lists the evidence artifact paths the runner must emit for the Compatibility Reporting Boundary; missing required evidence is a check failure.
-- Epic Y final closure will extend this contract with optional multi-step trace plans for lifecycle-heavy behavior. Trace plans must keep the same authority split: plans own expected behavior and step references, the shared runner owns trace execution and assertions, and adapters only execute neutral operations and return observations.
+- `steps[]` is the trace-plan extension for lifecycle-heavy behavior. Each step names a neutral operation, optional per-step input, optional controls, optional per-step assertions, and optional state inspection query. The shared runner executes steps against one adapter instance when the adapter supports lifecycle handles, stores each step's assertion context under `$.state.trace.<stepId>` and `$.evidence.trace.<stepId>`, resolves prior-step references before dispatch, and evaluates final check assertions over the assembled trace. Adapters still receive no `checkId` and own no assertion semantics.
 
 ### 4.13 Implementation Adapter Protocol
 
@@ -1820,12 +1846,13 @@ ConformanceAdapterHost (neutral protocol)
       | { kind: "result", value: Observation }
       | { kind: "error",  error: AdapterErrorEnvelope }
 
-  events(operation, input, controls) -> OrderedEventChannel
-    OrderedEventChannel yields neutral events with stable type names and JSON-encodable payloads
-    OrderedEventChannel terminates with one of: completed, paused, failed
-    OrderedEventChannel honors cancel(reason) and deadlineMs
+  events(operation, input, controls, instance?) -> JsonValue[]
+    Events returns any additional neutral events observed after dispatch.
+    Event-stream implementation checks should normally return implementation
+    events directly in Observation.events from dispatch so the runner can assert
+    the actual native stream.
 
-  inspectState(query) -> StateView | null
+  inspectState(query, instance?) -> StateView | null
     StateView is a JSON-encodable projection of durable state declared inspectable by the authority packet
 
   destroyInstance(instanceHandle) -> void
@@ -1843,7 +1870,7 @@ AdapterErrorEnvelope ::= { code: string, message: string, details?: JsonValue, c
 
 - Operations are named by the authority packet, not by a TypeScript or Rust signature. The same operation name resolves to the language-native call inside the adapter.
 - Adapter hosts do not receive `checkId`, do not emit check-scoped evidence, and do not decide pass/fail. The shared runner maps raw observations to required evidence paths and assertion results.
-- Event channels are ordered, single-consumer, and produce neutral events; per ADR-025 the runner asserts the event sequence rather than the adapter implementing the expected sequence.
+- Event observations are ordered neutral event arrays; per ADR-025 the runner asserts the event sequence rather than the adapter implementing the expected sequence.
 - Cancellation and deadlines are control inputs, not derived from `AbortSignal` or a Rust cancellation token at the protocol level. Adapters bridge to language-native cancellation internally.
 - Byte payloads cross the seam as base64-encoded JSON strings or as opaque JSON values; the adapter is responsible for converting to or from `Uint8Array`, `Buffer`, `Vec<u8>`, or any other language-native byte container.
 - `inspectState` and instance lifecycle methods are optional per packet. Packets that do not declare an inspectable or stateful surface omit them; packets that declare them list the queryable views and lifecycle requirements in the manifest or plan metadata.

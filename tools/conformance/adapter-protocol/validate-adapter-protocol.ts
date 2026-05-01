@@ -14,14 +14,19 @@
  * limitations under the License.
  */
 
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import Ajv2020 from "ajv/dist/2020.js";
 import { assertOperationOutcome } from "./index.js";
 
 const PROTOCOL_DIR = dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = resolve(PROTOCOL_DIR, "../../..");
 const SCHEMA_PATH = resolve(PROTOCOL_DIR, "protocol.schema.json");
+const MANIFEST_SCHEMA_PATH = resolve(
+  PROTOCOL_DIR,
+  "adapter-manifest.schema.json"
+);
 
 const protocolSchema: unknown = JSON.parse(await readFile(SCHEMA_PATH, "utf8"));
 const schema = readProtocolSchema(protocolSchema, SCHEMA_PATH);
@@ -73,6 +78,28 @@ assertOperationOutcome(
 );
 
 console.log("adapter protocol validation passed");
+
+const manifestSchema = readProtocolSchema(
+  JSON.parse(await readFile(MANIFEST_SCHEMA_PATH, "utf8")) as unknown,
+  MANIFEST_SCHEMA_PATH
+);
+const validateManifest = ajv.compile(manifestSchema);
+
+for (const manifestPath of await findAdapterManifests(
+  resolve(REPO_ROOT, "boundaries")
+)) {
+  const manifest = JSON.parse(await readFile(manifestPath, "utf8")) as unknown;
+
+  if (!validateManifest(manifest)) {
+    throw new Error(
+      `${manifestPath} failed adapter manifest validation: ${ajv.errorsText(
+        validateManifest.errors
+      )}`
+    );
+  }
+}
+
+console.log("adapter manifest validation passed");
 
 function createSample(definitionName: string): unknown {
   switch (definitionName) {
@@ -130,4 +157,24 @@ function readStringProperty(
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+async function findAdapterManifests(directory: string): Promise<string[]> {
+  const entries = await readdir(directory, { withFileTypes: true });
+  const manifests: string[] = [];
+
+  for (const entry of entries) {
+    const entryPath = resolve(directory, entry.name);
+
+    if (entry.isDirectory()) {
+      manifests.push(...(await findAdapterManifests(entryPath)));
+      continue;
+    }
+
+    if (entry.isFile() && entry.name === "adapter.json") {
+      manifests.push(entryPath);
+    }
+  }
+
+  return manifests.sort();
 }

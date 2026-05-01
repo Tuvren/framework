@@ -1,0 +1,114 @@
+{
+  "planId": "tuvren.providers.provider-api.bridge",
+  "planVersion": "0.1.0",
+  "packetId": "tuvren.providers.provider-api",
+  "applicability": {
+    "capabilities": ["providers.provider-api"]
+  },
+  "fixtures": {
+    "provider-fixtures": "../fixtures/provider-fixtures.json"
+  },
+  "checks": [
+    {
+      "checkId": "providers.bridge.generate_mapping",
+      "operation": "providers.bridge.generate-mapping",
+      "capabilities": ["providers.ai-sdk-bridge"],
+      "fixture": "provider-fixtures",
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.generate.responsePartTypes",
+          "contains": "structured"
+        },
+        {
+          "kind": "evidenceField",
+          "field": "$.generate.responseFormatType",
+          "equals": "json"
+        },
+        {
+          "kind": "evidenceField",
+          "field": "$.generate.responseFormatName",
+          "equals": "answer"
+        },
+        {
+          "kind": "evidenceField",
+          "field": "$.generate.providerMetadataKeys",
+          "contains": "openai"
+        }
+      ],
+      "evidence": [
+        "generate.responsePartTypes",
+        "generate.responseFormatType",
+        "generate.responseFormatName",
+        "generate.providerMetadataKeys"
+      ]
+    },
+    {
+      "checkId": "providers.bridge.stream_metadata_continuity",
+      "operation": "providers.bridge.stream-metadata-continuity",
+      "capabilities": ["providers.ai-sdk-bridge"],
+      "fixture": "provider-fixtures",
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.stream.chunkTypes",
+          "equals": [
+            "tool_call_start",
+            "tool_call_args_delta",
+            "tool_call_done",
+            "finish"
+          ]
+        },
+        {
+          "kind": "evidenceField",
+          "field": "$.stream.finishMetadataKeys",
+          "contains": "openai"
+        }
+      ],
+      "evidence": ["stream.chunkTypes", "stream.finishMetadataKeys"]
+    },
+    {
+      "checkId": "providers.bridge.structured_output_stream",
+      "operation": "providers.bridge.structured-output-stream",
+      "capabilities": ["providers.ai-sdk-bridge"],
+      "fixture": "provider-fixtures",
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.structured.chunkTypes",
+          "contains": "structured_delta"
+        },
+        {
+          "kind": "evidenceField",
+          "field": "$.structured.chunkTypes",
+          "contains": "structured_done"
+        },
+        {
+          "kind": "evidenceField",
+          "field": "$.structured.doneName",
+          "equals": "answer"
+        }
+      ],
+      "evidence": ["structured.chunkTypes", "structured.doneName"]
+    },
+    {
+      "checkId": "providers.bridge.provider_failure_normalization",
+      "operation": "providers.bridge.provider-failure-normalization",
+      "capabilities": ["providers.ai-sdk-bridge"],
+      "fixture": "provider-fixtures",
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.failure.errorName",
+          "equals": "TuvrenProviderError"
+        },
+        {
+          "kind": "evidenceField",
+          "field": "$.failure.errorCode",
+          "equals": "ai_sdk_generate_failed"
+        }
+      ],
+      "evidence": ["failure.errorName", "failure.errorCode"]
+    }
+  ]
+}

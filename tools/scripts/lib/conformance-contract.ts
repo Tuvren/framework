@@ -61,16 +61,21 @@ export interface ConformanceCheckResult {
 }
 
 export interface ConformanceEvidenceSummary {
+  applicableChecks?: number;
   failedChecks: number;
+  nonApplicableChecks?: number;
   passedChecks: number;
   totalChecks: number;
 }
 
 export interface ConformanceEvidence {
+  adapterId?: string;
   boundary: string;
+  capabilities?: readonly string[];
   checkResults: readonly ConformanceCheckResult[];
   implementationId: string;
   language: string;
+  nonApplicableCheckIds?: readonly string[];
   status: ConformanceStatus;
   suiteId: string;
   suiteVersion: string;
@@ -153,7 +158,10 @@ export function assertConformanceEvidence(
   assertSafeInteger(
     value.summary.totalChecks,
     `${label}.summary.totalChecks`,
-    expectedSummary.totalChecks
+    expectedSummary.totalChecks +
+      (typeof value.summary.nonApplicableChecks === "number"
+        ? value.summary.nonApplicableChecks
+        : 0)
   );
   assertSafeInteger(
     value.summary.passedChecks,
@@ -164,6 +172,14 @@ export function assertConformanceEvidence(
     value.summary.failedChecks,
     `${label}.summary.failedChecks`,
     expectedSummary.failedChecks
+  );
+  assertOptionalSafeInteger(
+    value.summary.applicableChecks,
+    `${label}.summary.applicableChecks`
+  );
+  assertOptionalSafeInteger(
+    value.summary.nonApplicableChecks,
+    `${label}.summary.nonApplicableChecks`
   );
 
   const expectedStatus = expectedSummary.failedChecks === 0 ? "pass" : "fail";
@@ -544,6 +560,16 @@ function assertSafeInteger(
 ): void {
   if (!Number.isSafeInteger(value) || value !== expectedValue) {
     throw new Error(`${label} must equal ${expectedValue}`);
+  }
+}
+
+function assertOptionalSafeInteger(value: unknown, label: string): void {
+  if (value === undefined) {
+    return;
+  }
+
+  if (!Number.isSafeInteger(value) || value < 0) {
+    throw new Error(`${label} must be a non-negative safe integer`);
   }
 }
 

@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import { EventSchemas } from "@ag-ui/core";
 import { assertHashString, type HashString } from "@tuvren/core-types";
 import type {
   DriverExecutionContext,
@@ -70,19 +69,12 @@ export type {
   OperationOutcome,
 } from "../../../../../../tools/conformance/adapter-protocol/index.js";
 
-export interface EvidenceRecord {
-  readonly checkId: string;
-  readonly key: string;
-  readonly payload: unknown;
-}
-
 export interface ImplementationAdapter {
   dispatch(
     operation: string,
     input: unknown,
     controls: AdapterControls
   ): Promise<OperationOutcome>;
-  emitEvidence(checkId: string, key: string, payload: unknown): Promise<void>;
   events(
     operation: string,
     input: unknown,
@@ -123,7 +115,6 @@ function createConformanceIdFactory(): () => string {
 }
 
 export class TypeScriptFrameworkAdapter implements ImplementationAdapter {
-  readonly evidence: EvidenceRecord[] = [];
   private capabilities?: AdapterCapabilities;
   private readonly observations = new Map<string, OperationObservation>();
   private latestState: Record<string, unknown> | null = null;
@@ -172,11 +163,6 @@ export class TypeScriptFrameworkAdapter implements ImplementationAdapter {
     }
   }
 
-  emitEvidence(checkId: string, key: string, payload: unknown): Promise<void> {
-    this.evidence.push({ checkId, key, payload });
-    return Promise.resolve();
-  }
-
   async *events(
     operation: string,
     _input: unknown,
@@ -209,6 +195,13 @@ export class TypeScriptFrameworkAdapter implements ImplementationAdapter {
   ): Promise<AdapterCapabilities> {
     this.capabilities = {
       adapterId: "typescript-framework",
+      capabilities: [
+        "framework.driver-api",
+        "framework.event-stream",
+        "framework.react-driver",
+        "framework.runtime-api",
+        "trace.lifecycle",
+      ],
       packetId,
       planVersion,
     };
@@ -230,7 +223,6 @@ export class TypeScriptFrameworkAdapter implements ImplementationAdapter {
 
   shutdown(): Promise<void> {
     this.capabilities = undefined;
-    this.evidence.length = 0;
     this.latestState = null;
     this.observations.clear();
     return Promise.resolve();
@@ -343,7 +335,7 @@ async function runAgUiProjection(input: unknown): Promise<AdapterProjection> {
       },
     })
   );
-  const events = rawEvents.map((event) => EventSchemas.parse(event));
+  const events = rawEvents;
 
   return {
     evidence: {

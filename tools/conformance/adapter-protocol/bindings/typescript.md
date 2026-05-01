@@ -8,18 +8,21 @@ without making TypeScript the semantic authority. Shared code in
 export interface ImplementationAdapter {
   initialize(packetId: string, planVersion: string): Promise<AdapterCapabilities>;
   shutdown(): Promise<void>;
+  createInstance?(input: unknown): Promise<unknown>;
+  destroyInstance?(instance: unknown): Promise<void>;
   dispatch(
     operation: string,
     input: unknown,
-    controls: AdapterControls
+    controls: AdapterControls,
+    instance?: unknown
   ): Promise<OperationOutcome>;
   events(
     operation: string,
     input: unknown,
-    controls: AdapterControls
+    controls: AdapterControls,
+    instance?: unknown
   ): AsyncIterable<unknown>;
-  inspectState?(query: unknown): Promise<unknown | null>;
-  emitEvidence(checkId: string, key: string, payload: unknown): Promise<void>;
+  inspectState?(query: unknown, instance?: unknown): Promise<unknown | null>;
 }
 ```
 
@@ -29,5 +32,5 @@ Neutral controls are still the schema-owned `cancel`, `cancelAfterEvent`, and
 internally. Conformance plans name neutral operations, scenario inputs, expected
 evidence fields, and assertion kinds.
 
-Reference scaffold:
-`boundaries/framework/implementations/typescript/conformance-runner/src/adapter-scaffold.ts`.
+Reference host helper:
+`tools/conformance/adapter-protocol/stdio-host.ts`.

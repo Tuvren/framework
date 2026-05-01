@@ -69,7 +69,12 @@
                   "type": "object",
                   "required": ["failedChecks", "passedChecks", "totalChecks"],
                   "properties": {
+                    "applicableChecks": { "type": "integer", "minimum": 0 },
                     "failedChecks": { "type": "integer", "minimum": 0 },
+                    "nonApplicableChecks": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
                     "passedChecks": { "type": "integer", "minimum": 0 },
                     "totalChecks": { "type": "integer", "minimum": 1 }
                   },
@@ -114,7 +119,9 @@
             "type": "object",
             "required": ["failedChecks", "passedChecks", "totalChecks"],
             "properties": {
+              "applicableChecks": { "type": "integer", "minimum": 0 },
               "failedChecks": { "type": "integer", "minimum": 0 },
+              "nonApplicableChecks": { "type": "integer", "minimum": 0 },
               "passedChecks": { "type": "integer", "minimum": 0 },
               "totalChecks": { "type": "integer", "minimum": 1 }
             },

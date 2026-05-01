@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/conformance/adapter-manifest.schema.json",
+  "type": "object",
+  "required": [
+    "adapterId",
+    "implementationId",
+    "language",
+    "boundary",
+    "protocol",
+    "command",
+    "capabilities",
+    "authorityPackets",
+    "suiteId",
+    "suiteVersion"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "adapterId": { "type": "string", "minLength": 1 },
+    "implementationId": { "type": "string", "minLength": 1 },
+    "language": { "type": "string", "minLength": 1 },
+    "boundary": {
+      "type": "string",
+      "enum": ["framework", "kernel", "providers", "shared", "hosts"]
+    },
+    "protocol": {
+      "type": "object",
+      "required": ["name", "version", "transport"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "const": "tuvren.conformance-adapter" },
+        "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+        "transport": { "const": "json-rpc-2.0-stdio" }
+      }
+    },
+    "command": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "capabilities": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "authorityPackets": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "suiteId": { "type": "string", "minLength": 1 },
+    "suiteVersion": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" }
+  }
+}

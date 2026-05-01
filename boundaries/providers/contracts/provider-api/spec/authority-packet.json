@@ -1,0 +1,45 @@
+{
+  "packetId": "tuvren.providers.provider-api",
+  "version": "0.1.0",
+  "boundary": "providers",
+  "surface": "provider-api",
+  "humanAuthorityRefs": [
+    "docs/KrakenFrameworkSpecification.md",
+    "constitution/spikes/epic-n-ai-sdk-bridge-inventory.md"
+  ],
+  "authoritativeSources": [
+    {
+      "path": "boundaries/providers/conformance/plans/provider-api-bridge.json",
+      "format": "conformance-plan"
+    },
+    {
+      "path": "boundaries/providers/conformance/fixtures/provider-fixtures.json",
+      "format": "fixture-set"
+    }
+  ],
+  "conformancePlans": [
+    {
+      "planId": "tuvren.providers.provider-api.bridge",
+      "planVersion": "0.1.0",
+      "path": "boundaries/providers/conformance/plans/provider-api-bridge.json"
+    }
+  ],
+  "bindingProjections": {
+    "typescript": "boundaries/providers/contracts/provider-api/implementations/typescript",
+    "typescript-ai-sdk-bridge": "boundaries/providers/implementations/typescript/bridge-ai-sdk"
+  },
+  "forbiddenAuthoritySources": [
+    "boundaries/providers/contracts/provider-api/implementations/typescript",
+    "boundaries/providers/implementations/typescript/bridge-ai-sdk",
+    "boundaries/providers/implementations/typescript/conformance-runner",
+    "boundaries/providers/implementations/typescript/conformance-adapter",
+    "docs",
+    "constitution"
+  ],
+  "verificationPaths": [
+    {
+      "kind": "conformance-plan",
+      "target": "boundaries/providers/conformance/plans/provider-api-bridge.json"
+    }
+  ]
+}
