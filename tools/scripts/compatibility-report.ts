@@ -103,6 +103,7 @@ interface CompatibilitySuite {
 }
 
 interface ConformanceRunner {
+  allowFailingEvidence?: boolean;
   implementationId: string;
   language: string;
   manifestPath?: string;
@@ -159,6 +160,15 @@ const CONFORMANCE_RUNNERS: readonly ConformanceRunner[] = [
     manifestPath: "boundaries/kernel/conformance/scenarios/suite-manifest.json",
     project: "kernel-rust-conformance-runner",
   },
+  {
+    // Rust framework conformance is an active TDD lane: the Rust runner must
+    // execute and publish failing evidence until that implementation exists,
+    // but compatibility codegen should still be able to refresh the matrix.
+    allowFailingEvidence: true,
+    implementationId: "rust-framework",
+    language: "rust",
+    project: "framework-rust-conformance-runner",
+  },
 ];
 
 const INTEROP_RUNNERS: readonly InteropRunner[] = [
@@ -214,7 +224,10 @@ async function main(): Promise<void> {
       version: TRANSITION_IMPLEMENTATION_VERSION,
     });
 
-    if (result.matrixResult.status === "fail") {
+    if (
+      result.matrixResult.status === "fail" &&
+      runner.allowFailingEvidence !== true
+    ) {
       hasFailure = true;
     }
   }

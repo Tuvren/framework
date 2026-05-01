@@ -108,6 +108,14 @@ const AGENT_NAME = "typescript-conformance-agent";
 
 type OperationStatus = "completed" | "failed" | "paused";
 
+function createConformanceIdFactory(): () => string {
+  let nextId = 1;
+
+  // Compatibility evidence is checked in, so conformance-only runtime IDs stay
+  // deterministic while the production runtime keeps its random default IDs.
+  return () => `conformance-id-${nextId++}`;
+}
+
 export class TypeScriptFrameworkAdapter implements ImplementationAdapter {
   readonly evidence: EvidenceRecord[] = [];
   private capabilities?: AdapterCapabilities;
@@ -277,6 +285,7 @@ export class TypeScriptFrameworkAdapter implements ImplementationAdapter {
 async function runCompletedRuntimeTurn(): Promise<AdapterProjection> {
   const harness = createFakeKernelHarness();
   const runtime = createTuvrenRuntimeCore({
+    createId: createConformanceIdFactory(),
     defaultDriverId: DRIVER_ID,
     driverRegistry: createDriverRegistry([
       createStaticDriver(() => ({
@@ -338,6 +347,7 @@ async function runCancelledRuntimeTurn(
     id: DRIVER_ID,
   } satisfies RuntimeDriver;
   const runtime = createTuvrenRuntimeCore({
+    createId: createConformanceIdFactory(),
     defaultDriverId: DRIVER_ID,
     driverRegistry: createDriverRegistry([driver]),
     kernel: harness.kernel,
@@ -429,6 +439,7 @@ async function runApprovalResume(input: unknown): Promise<AdapterProjection> {
     })
   );
   const runtime = createTuvrenRuntimeCore({
+    createId: createConformanceIdFactory(),
     defaultDriverId: DRIVER_ID,
     driverRegistry: createDriverRegistry([driver]),
     kernel: harness.kernel,
@@ -480,6 +491,7 @@ async function runApprovalResume(input: unknown): Promise<AdapterProjection> {
 async function runBranchCreate(): Promise<AdapterProjection> {
   const harness = createFakeKernelHarness();
   const runtime = createTuvrenRuntimeCore({
+    createId: createConformanceIdFactory(),
     defaultDriverId: DRIVER_ID,
     driverRegistry: createDriverRegistry([
       createStaticDriver(() => ({
@@ -655,6 +667,7 @@ async function runToolExecution(input: unknown): Promise<AdapterProjection> {
     id: DRIVER_ID,
   } satisfies RuntimeDriver;
   const runtime = createTuvrenRuntimeCore({
+    createId: createConformanceIdFactory(),
     defaultDriverId: DRIVER_ID,
     driverRegistry: createDriverRegistry([driver]),
     kernel: harness.kernel,
@@ -777,6 +790,7 @@ async function runContextTransform(input: unknown): Promise<AdapterProjection> {
   );
   const harness = createFakeKernelHarness();
   const runtime = createTuvrenRuntimeCore({
+    createId: createConformanceIdFactory(),
     defaultDriverId: DRIVER_ID,
     driverRegistry: createDriverRegistry([
       createStaticDriver(() => ({
@@ -862,6 +876,7 @@ async function runRecoverResult(input: unknown): Promise<AdapterProjection> {
   );
   const harness = createFakeKernelHarness();
   const runtime = createTuvrenRuntimeCore({
+    createId: createConformanceIdFactory(),
     defaultDriverId: DRIVER_ID,
     driverRegistry: createDriverRegistry([
       createStaticDriver(() => ({
@@ -949,6 +964,7 @@ async function runDriverExecute(input: unknown): Promise<AdapterProjection> {
     providerCallMode: "generate",
   }).create();
   const runtime = createTuvrenRuntimeCore({
+    createId: createConformanceIdFactory(),
     defaultDriverId: reactDriver.id,
     driverRegistry: createDriverRegistry([reactDriver]),
     kernel: harness.kernel,
@@ -1076,6 +1092,7 @@ async function runDriverCheckpoint(input: unknown): Promise<AdapterProjection> {
   );
   const harness = createFakeKernelHarness();
   const runtime = createTuvrenRuntimeCore({
+    createId: createConformanceIdFactory(),
     defaultDriverId: DRIVER_ID,
     driverRegistry: createDriverRegistry([
       createStaticDriver(() => ({

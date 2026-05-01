@@ -29,12 +29,14 @@ export interface VerificationResult {
 }
 
 export const RUST_NX_BUILD_PROJECTS: readonly string[] = [
+  "framework-rust-conformance-runner",
   "kernel-rust-kernel",
   "kernel-rust-grpc-service",
   "kernel-rust-conformance-runner",
 ];
 
 export const RUST_NX_TEST_PROJECTS: readonly string[] = [
+  "framework-rust-conformance-runner",
   "kernel-rust-kernel",
   "kernel-rust-grpc-service",
 ];

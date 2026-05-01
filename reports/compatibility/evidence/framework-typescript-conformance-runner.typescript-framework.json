@@ -1407,9 +1407,9 @@
       "details": {
         "state": {
           "branch": {
-            "createdBranchId": "0b1b62c6-f37b-446b-8bed-49bc880d7fb5",
+            "createdBranchId": "conformance-id-3",
             "createdHeadTurnNodeHash": "59968d93c8a85042e36db0214b7c0aa71d22e3d9453c9441e9c408bc799e89a3",
-            "sourceBranchId": "6fe1ca24-a29f-458d-8adb-5395efcea975",
+            "sourceBranchId": "conformance-id-2",
             "sourceHeadTurnNodeHash": "59968d93c8a85042e36db0214b7c0aa71d22e3d9453c9441e9c408bc799e89a3"
           },
           "adapter": {
@@ -1450,7 +1450,7 @@
             "manifest": {
               "context.manifest": "5cd1a1349eecc3c0153029d60a021af2fce3e2ca92dbad14b6cbd06a9712f959",
               "runtime.status": "954a679c205c84fccfac68cae2621adb2abecd1caf996c4e4d8238ae9d9682bd",
-              "turn.lineage": "848a9aa7d60584f1ba0db3b49488dbd468a5d032b7f00879f395764a6d33d71f",
+              "turn.lineage": "15c262984dafaf9972fdc22d8a4ffc6433375b438adc2165d477a72322b47d97",
               "messages": [
                 "a2e1b2370ab9694f2123578d17dadfc923b962ac71c8284e9578bbff849d2f30",
                 "c2ca208b35360aece95b6e5e845e8e75c795810b7b89e382461a037b7a4528b4",

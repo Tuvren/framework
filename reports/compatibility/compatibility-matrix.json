@@ -125,6 +125,54 @@
         }
       ],
       "version": "unreleased-workspace"
+    },
+    {
+      "implementationId": "rust-framework",
+      "language": "rust",
+      "results": [
+        {
+          "checkIds": [
+            "driver-callable.before-iteration",
+            "driver-callable.around-model",
+            "driver-callable.around-tool",
+            "driver-callable.after-iteration",
+            "driver-callable.checkpoint",
+            "driver-api.execute.resolution",
+            "driver-api.resume.approval",
+            "driver-api.error.envelope",
+            "event-stream.completed-turn.sequence",
+            "event-stream.failed-turn.terminal",
+            "event-stream.paused-turn.approval",
+            "event-stream.sse.projection",
+            "event-stream.sse.eager-subscription",
+            "event-stream.agui.projection",
+            "event-stream.agui.failed-turn-error-projection",
+            "event-stream.agui.paused-turn-fallback",
+            "runtime-callable.provider-generate",
+            "runtime-callable.provider-stream",
+            "runtime-callable.tool-execute",
+            "runtime-callable.approval-resolve",
+            "runtime-callable.validation-failure",
+            "runtime-callable.timeout-retry-cancellation-idempotency",
+            "runtime-api.execute-turn.lifecycle",
+            "runtime-api.cancel-execution.failure",
+            "runtime-api.approval-resolve.paused-resume",
+            "runtime-api.branch-create.recovery",
+            "runtime-api.context-transform.shared-summary",
+            "runtime-api.recover-result.staged-result"
+          ],
+          "checkSummary": {
+            "failedChecks": 28,
+            "passedChecks": 0,
+            "totalChecks": 28
+          },
+          "evidencePath": "reports/compatibility/evidence/framework-rust-conformance-runner.rust-framework.json",
+          "status": "fail",
+          "suiteId": "tuvren.framework.promoted-authority",
+          "suiteVersion": "0.1.0"
+        }
+      ],
+      "version": "unreleased-workspace"
     }
   ],
   "interop": [
