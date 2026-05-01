@@ -1,7 +1,8 @@
-# Event Stream Spec Placeholder
+# Event Stream Spec Authority
 
-No language-neutral source has been authored for `event-stream` yet.
+`event-stream` is promoted through Epic Y.
 
-The current authoritative implementation remains the TypeScript package under
-`../implementations/typescript/`. Promoting this surface to a neutral source is
-explicitly deferred beyond Epic X.
+- `authority-packet.json` declares `tuvren.framework.event-stream`.
+- `typespec/` carries neutral stream-event shape source.
+- `bindings/` records language-specific projection appendices.
+- TypeScript implementations are binding projections, not authority.

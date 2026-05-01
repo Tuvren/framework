@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/runtime-api/ContextManifest.json",
+  "type": "object",
+  "properties": {
+    "messageCount": {
+      "type": "integer",
+      "minimum": -2147483648,
+      "maximum": 2147483647
+    },
+    "tokenEstimate": {
+      "type": "integer",
+      "minimum": -2147483648,
+      "maximum": 2147483647
+    },
+    "byRole": {
+      "$ref": "https://tuvren.dev/schemas/framework/runtime-api/Metadata.json"
+    },
+    "toolCalls": {
+      "$ref": "https://tuvren.dev/schemas/framework/runtime-api/Metadata.json"
+    },
+    "toolResults": {
+      "$ref": "https://tuvren.dev/schemas/framework/runtime-api/Metadata.json"
+    },
+    "extensions": {
+      "$ref": "https://tuvren.dev/schemas/framework/runtime-api/Metadata.json"
+    },
+    "turnBoundaries": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "minimum": -2147483648,
+        "maximum": 2147483647
+      }
+    }
+  },
+  "required": ["messageCount"],
+  "unevaluatedProperties": {
+    "not": {}
+  }
+}

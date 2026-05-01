@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/runtime-api/ToolResultPart.json",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "const": "tool_result"
+    },
+    "callId": {
+      "$ref": "https://tuvren.dev/schemas/framework/runtime-api/NonEmptyString.json"
+    },
+    "name": {
+      "$ref": "https://tuvren.dev/schemas/framework/runtime-api/NonEmptyString.json"
+    },
+    "output": {},
+    "isError": {
+      "type": "boolean"
+    },
+    "providerMetadata": {
+      "$ref": "https://tuvren.dev/schemas/framework/runtime-api/Metadata.json"
+    }
+  },
+  "required": ["type", "callId", "name", "output"],
+  "unevaluatedProperties": {
+    "not": {}
+  }
+}

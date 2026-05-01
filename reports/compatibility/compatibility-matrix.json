@@ -7,24 +7,42 @@
       "results": [
         {
           "checkIds": [
-            "framework.stream.completed_turn_sequence",
-            "framework.stream.failed_turn_terminal_error",
-            "framework.stream.paused_turn_approval_shape",
-            "framework.stream.sse_projection",
-            "framework.stream.sse_eager_subscription",
-            "framework.stream.agui_projection",
-            "framework.stream.agui_failed_turn_error_projection",
-            "framework.stream.agui_paused_turn_fallback"
+            "driver-api.execute.resolution",
+            "driver-api.resume.approval",
+            "driver-api.resume.requires-pending-call",
+            "driver-api.error.envelope",
+            "event-stream.sse.projection",
+            "event-stream.sse.eager-subscription",
+            "event-stream.agui.projection",
+            "event-stream.agui.failed-turn-error-projection",
+            "event-stream.agui.paused-turn-fallback",
+            "react-driver-callable.before-iteration",
+            "react-driver-callable.around-model",
+            "react-driver-callable.around-tool",
+            "react-driver-callable.after-iteration",
+            "react-driver-callable.checkpoint",
+            "runtime-callable.provider-generate",
+            "runtime-callable.provider-stream",
+            "runtime-callable.tool-execute",
+            "runtime-callable.approval-resolve",
+            "runtime-callable.validation-failure",
+            "runtime-callable.timeout-retry-cancellation-idempotency",
+            "runtime-api.execute-turn.lifecycle",
+            "runtime-api.cancel-execution.failure",
+            "runtime-api.approval-resolve.paused-resume",
+            "runtime-api.branch-create.recovery",
+            "runtime-api.context-transform.shared-summary",
+            "runtime-api.recover-result.staged-result"
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 8,
-            "totalChecks": 8
+            "passedChecks": 26,
+            "totalChecks": 26
           },
-          "evidencePath": "reports/compatibility/evidence/tuvren.framework.stream-events.typescript-framework.json",
+          "evidencePath": "reports/compatibility/evidence/framework-typescript-conformance-runner.typescript-framework.json",
           "status": "pass",
-          "suiteId": "tuvren.framework.stream-events",
-          "suiteVersion": "0.2.0"
+          "suiteId": "tuvren.framework.promoted-authority",
+          "suiteVersion": "0.1.0"
         }
       ],
       "version": "unreleased-workspace"
@@ -43,7 +61,7 @@
             "passedChecks": 2,
             "totalChecks": 2
           },
-          "evidencePath": "reports/compatibility/evidence/tuvren.kernel.protocol-seed.typescript-kernel.json",
+          "evidencePath": "reports/compatibility/evidence/kernel-typescript-conformance-runner.typescript-kernel.json",
           "status": "pass",
           "suiteId": "tuvren.kernel.protocol-seed",
           "suiteVersion": "0.2.0"
@@ -71,7 +89,7 @@
             "passedChecks": 8,
             "totalChecks": 8
           },
-          "evidencePath": "reports/compatibility/evidence/tuvren.providers.api-fixtures.typescript-providers.json",
+          "evidencePath": "reports/compatibility/evidence/providers-typescript-conformance-runner.typescript-providers.json",
           "status": "pass",
           "suiteId": "tuvren.providers.api-fixtures",
           "suiteVersion": "0.2.0"
@@ -98,10 +116,56 @@
             "passedChecks": 7,
             "totalChecks": 7
           },
-          "evidencePath": "reports/compatibility/evidence/tuvren.kernel.protocol-seed.rust-kernel.json",
+          "evidencePath": "reports/compatibility/evidence/kernel-rust-conformance-runner.rust-kernel.json",
           "status": "pass",
           "suiteId": "tuvren.kernel.protocol-seed",
           "suiteVersion": "0.2.0"
+        }
+      ],
+      "version": "unreleased-workspace"
+    },
+    {
+      "implementationId": "rust-framework",
+      "language": "rust",
+      "results": [
+        {
+          "checkIds": [
+            "driver-api.execute.resolution",
+            "driver-api.resume.approval",
+            "driver-api.resume.requires-pending-call",
+            "driver-api.error.envelope",
+            "event-stream.sse.projection",
+            "event-stream.sse.eager-subscription",
+            "event-stream.agui.projection",
+            "event-stream.agui.failed-turn-error-projection",
+            "event-stream.agui.paused-turn-fallback",
+            "react-driver-callable.before-iteration",
+            "react-driver-callable.around-model",
+            "react-driver-callable.around-tool",
+            "react-driver-callable.after-iteration",
+            "react-driver-callable.checkpoint",
+            "runtime-callable.provider-generate",
+            "runtime-callable.provider-stream",
+            "runtime-callable.tool-execute",
+            "runtime-callable.approval-resolve",
+            "runtime-callable.validation-failure",
+            "runtime-callable.timeout-retry-cancellation-idempotency",
+            "runtime-api.execute-turn.lifecycle",
+            "runtime-api.cancel-execution.failure",
+            "runtime-api.approval-resolve.paused-resume",
+            "runtime-api.branch-create.recovery",
+            "runtime-api.context-transform.shared-summary",
+            "runtime-api.recover-result.staged-result"
+          ],
+          "checkSummary": {
+            "failedChecks": 26,
+            "passedChecks": 0,
+            "totalChecks": 26
+          },
+          "evidencePath": "reports/compatibility/evidence/framework-rust-conformance-runner.rust-framework.json",
+          "status": "fail",
+          "suiteId": "tuvren.framework.promoted-authority",
+          "suiteVersion": "0.1.0"
         }
       ],
       "version": "unreleased-workspace"
@@ -136,8 +200,8 @@
   "suites": [
     {
       "boundary": "framework",
-      "suiteId": "tuvren.framework.stream-events",
-      "suiteVersion": "0.2.0"
+      "suiteId": "tuvren.framework.promoted-authority",
+      "suiteVersion": "0.1.0"
     },
     {
       "boundary": "kernel",

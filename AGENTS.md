@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-This is an architecture-first, multi-language runtime monorepo. TypeScript is still the first authoritative framework implementation line, but the current repository also contains a Rust kernel implementation, gRPC kernel interop, boundary-owned conformance assets, telemetry generation, and compatibility reporting. Runtime code and semantic assets live under `boundaries/`:
+This is an architecture-first, multi-language runtime monorepo. TypeScript is one implementation lane, alongside Rust kernel implementation, gRPC kernel interop, boundary-owned conformance assets, telemetry generation, and compatibility reporting. Cross-language authority is owned by boundary packets, generated artifacts, conformance plans, fixtures, interop assets, and measured evidence rather than by any implementation language. Runtime code and semantic assets live under `boundaries/`:
 
 - `boundaries/framework/` for shared runtime contracts, TypeScript framework implementations, stream adapters, the ReAct driver, framework conformance assets, and Rust-kernel interop scenarios
 - `boundaries/kernel/` for kernel contracts, TypeScript kernel implementations, Rust kernel crates, gRPC interop definitions, and kernel conformance assets
@@ -22,7 +22,7 @@ Do not place `package.json`, `Cargo.toml`, `src/`, `dist/`, `test/`,
 `bench/`, `smoke/`, `tsconfig*.json`, generated bindings, or other
 language-tooling output at a boundary root or contract root.
 
-Working plans live in `constitution/`. Engine-level specs live in `docs/`. Shared legacy fixtures and scenario assets live in `tests/`; newer executable compatibility assets live under each boundary's `conformance/` or `interop/` roots. Tooling scripts live in `tools/`. Repo-level telemetry and compatibility evidence live in `telemetry/` and `reports/compatibility/`.
+Working plans live in `constitution/`. Engine-level specs live in `docs/`. The root `tests/` tree is not an authority home and must not own reusable TypeScript contract, conformance, or compatibility fixtures; keep shared executable behavioral assets under the relevant boundary-owned `conformance/` or `interop/` roots. Tooling scripts live in `tools/`. Repo-level telemetry and compatibility evidence live in `telemetry/` and `reports/compatibility/`.
 
 ## Source of Truth
 
@@ -45,6 +45,7 @@ Do not invent behavior, contracts, or scope that conflict with those sources.
 - `bun run format` applies Biome fixes
 - `bun run typecheck` runs Nx typechecks across the workspace
 - `bun run conformance` runs the active TypeScript and Rust conformance runners
+- `bun run compatibility:evidence` refreshes the checked-in compatibility matrix and evidence files, including known red TDD lanes, without treating red evidence as a passing verification gate
 - `bun run codegen` regenerates TypeSpec, telemetry, compatibility, and kernel interop artifacts
 - `bun run interop-smoke` runs the governed interop smoke lanes, including Rust-kernel paths
 - `bun run verify` runs the repo-global verification script across TypeScript, Rust, codegen, conformance, and interop lanes
@@ -80,7 +81,7 @@ Cross-language boundary discipline matters too:
 
 ## Testing Guidelines
 
-Tests use Bun (`bun test`) for TypeScript packages, Cargo for Rust crates, and Nx as the repo-facing wrapper where targets exist. Keep package-local tests near the package they verify under `test/`, and keep shared behavioral assets under boundary-owned `conformance/` or `interop/` roots.
+Tests use Bun (`bun test`) for TypeScript packages, Cargo for Rust crates, and Nx as the repo-facing wrapper where targets exist. Keep package-local tests near the package they verify under `test/`, and keep shared behavioral assets under boundary-owned `conformance/` or `interop/` roots. Root-level `tests/` files must not import `@tuvren/*` packages or become reusable semantic fixtures; move those assets into boundary-owned conformance/interop roots, or into package-local tests when they are binding-local probes.
 
 Run the narrowest relevant target first before broadening:
 
@@ -89,6 +90,28 @@ Run the narrowest relevant target first before broadening:
 - Contract/codegen changes: `bun run codegen` or the specific `:codegen` target
 - Cross-language changes: `bun run interop-smoke` or the specific `kernel-interop-grpc`, `kernel-rust-grpc-service`, or `host-playground` interop target
 - Release confidence: `bun run verify` before claiming broad workspace readiness
+
+Conformance status is part of the contract, not just command output. If a
+runner emits structured evidence with `status: "fail"`, the normal
+`conformance`, `codegen`, and `verify` gates must fail; use
+`bun run compatibility:evidence` only when intentionally refreshing checked-in
+evidence for an implementation lane that is expected to remain red.
+Authority fixture validation is not implementation conformance. A promoted
+implementation check may use a boundary fixture as input, but the passing
+evidence must come from implementation code run through the adapter protocol,
+not from replaying the fixture and asserting it against itself.
+Event-stream implementation conformance must consume events emitted by the
+runtime or driver implementation under test; projection-only checks over
+preauthored stream fixtures belong in binding-local adapter tests or fixture
+validation, not in compatibility evidence for an implementation lane.
+Promoted plans must not assert implementation-owned error-code literals such as
+driver- or runner-specific prefixes unless a neutral contract artifact owns that
+code first.
+Treat each conformance plan `evidence` entry as required evidence. A check that
+passes its assertions but omits required evidence is still failing conformance.
+Keep driver-neutral plans and concrete-driver plans separate: ReAct loop counts,
+hook sequencing, and other ReAct-specific behavior belong under the ReAct driver
+authority packet/plan family, not under the neutral `driver-api` packet.
 
 ## Pull Request Follow-Up
 
@@ -106,10 +129,12 @@ Before closing a PR that touches this file, remove or rephrase any guidance that
 
 ## Machine-Enforced Authority Guardrails (Epic Y)
 
-These three rules are enforceable on every PR. They derive from TechSpec ADR-023, ADR-024, ADR-025, ADR-026, ADR-027, and ADR-028 and from the new logical containers in Architecture §2.
+These rules are enforceable on every PR. They derive from TechSpec ADR-023, ADR-024, ADR-025, ADR-026, ADR-027, and ADR-028 and from the new logical containers in Architecture §2.
 
 - **No Implementation Oracle.** No cross-implementation semantic claim, conformance assertion, or compatibility claim may cite any file under `boundaries/<area>/contracts/<surface>/implementations/<lang>/`, `boundaries/<area>/implementations/<lang>/`, or any other implementation-language source tree as authority. Implementation-language files may host bindings, adapters, generated projections, local tests, and optimization logic; they may not define cross-language truth. Reject PRs that claim "TypeScript is the source of truth" or "see the runtime-core implementation" for a cross-implementation surface. The authoritative source is the surface's `spec/authority-packet.json` manifest.
 - **No Prose Oracle.** No acceptance criterion, conformance claim, compatibility claim, release gate, or interop check may depend solely on Markdown — including `docs/`, `constitution/`, `AGENTS.md`, or boundary `README.md` files. Every binding cross-language semantic claim must cite or derive from a machine authority packet, generated artifact, conformance plan, or measured evidence file. Markdown remains the home for rationale, workflow, ADRs, and decision records, paired with the executable artifacts that carry the actual contract.
-- **No Runner Oracle.** Conformance runner source code under `boundaries/<area>/implementations/<lang>/conformance-runner/` may implement only generic mechanics (adapter startup, dispatch, schema validation, generic assertion operators, ordered-channel consumption, cancellation injection, timeout control, evidence emission). Product semantics — expected event sequences, expected error codes, expected check IDs, expected lifecycle transitions, expected provider/tool behavior — must arrive only from a Conformance Plan (TechSpec §4.12) referenced by an Authority Packet manifest. Reject PRs that add product-semantic literals to runner source outside permitted plan-loading code paths.
+- **No Runner Oracle.** Final Epic Y posture is one shared semantic conformance engine under `tools/conformance/runner/` plus implementation-language adapter hosts under `boundaries/<area>/implementations/<lang>/conformance-adapter/`. Any remaining `conformance-runner/` path under an implementation tree is transitional and must not grow assertion, pass/fail, required-evidence, compatibility-evidence, or check-scoped semantics. Product semantics — expected event sequences, expected error codes, expected check IDs, expected lifecycle transitions, expected provider/tool behavior — must arrive only from a Conformance Plan (TechSpec §4.12) referenced by an Authority Packet manifest. Reject PRs that add product-semantic literals or assertion ownership to runner or adapter source outside native invocation mechanics.
+- **Adapter Hosts Are Not Evidence Authorities.** Adapter hosts start native implementations, translate neutral operations into native calls, and return neutral observations plus diagnostics. They must not receive `checkId`, call `emitEvidence(checkId, ...)`, decide pass/fail, replay fixtures as implementation proof, or map adapter/protocol failures into `$.result.error` where they can satisfy implementation assertions.
+- **No Language-Lane Plan Pinning.** Promoted conformance plans must select capability or surface requirements, not implementation adapter IDs such as `typescript-*`. Adding another language implementation must not require editing authority plans just to be included in already-promoted checks.
 
-When a surface lacks an Authority Packet manifest, it is in deferred scope per `constitution/Tasks.md` Epic Y; do not invent a cross-implementation claim for it inside an implementation language file, runner source, or Markdown. Open or extend an Authority Packet manifest in the same change instead.
+When a surface lacks an Authority Packet manifest, it is in deferred scope per `constitution/Tasks.md` Epic Y; do not invent a cross-implementation claim for it inside an implementation language file, runner source, adapter source, or Markdown. Open or extend an Authority Packet manifest in the same change instead.

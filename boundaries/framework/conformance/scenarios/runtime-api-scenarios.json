@@ -1,0 +1,112 @@
+{
+  "completed-turn": {
+    "operation": "runtime.execute-turn"
+  },
+  "provider-generate-text": {
+    "operation": "runtime.provider-generate",
+    "prompt": {
+      "messages": [
+        {
+          "role": "user",
+          "parts": [{ "type": "text", "text": "Generate the shared response." }]
+        }
+      ]
+    },
+    "providerResponse": {
+      "finishReason": "stop",
+      "parts": [{ "type": "text", "text": "generated from shared scenario" }]
+    }
+  },
+  "provider-stream-text": {
+    "operation": "runtime.provider-stream",
+    "prompt": {
+      "messages": [
+        {
+          "role": "user",
+          "parts": [{ "type": "text", "text": "Stream the shared response." }]
+        }
+      ]
+    },
+    "streamChunks": [
+      { "type": "text_delta", "text": "streamed from shared scenario" },
+      { "type": "finish", "finishReason": "stop" }
+    ]
+  },
+  "tool-execute-search": {
+    "operation": "runtime.tool-execute",
+    "prompt": "Run the shared tool.",
+    "toolCall": {
+      "callId": "call-tool",
+      "name": "search",
+      "input": { "query": "shared docs" }
+    },
+    "toolResult": { "ok": true, "source": "shared scenario" },
+    "finalText": "tool finished from shared scenario"
+  },
+  "paused-turn-resume": {
+    "operation": "runtime.approval-resolve",
+    "prompt": "Approve the shared action.",
+    "toolCalls": [
+      {
+        "callId": "call-search",
+        "name": "search",
+        "input": { "query": "latest shared status" },
+        "requiresApproval": false,
+        "output": { "ok": true }
+      },
+      {
+        "callId": "call-email",
+        "name": "email",
+        "input": { "subject": "Shared status update", "to": "ops@example.com" },
+        "requiresApproval": true,
+        "output": { "sent": true }
+      }
+    ],
+    "approvalDecisions": [{ "callId": "call-email", "type": "approve" }],
+    "finalText": "approved from shared scenario"
+  },
+  "structured-validation-failure": {
+    "operation": "runtime.validate-structured-output",
+    "providerResponse": {
+      "finishReason": "stop",
+      "parts": [
+        { "type": "structured", "name": "answer", "data": { "answer": 42 } }
+      ]
+    },
+    "responseFormat": {
+      "name": "answer",
+      "schema": {
+        "type": "object",
+        "properties": { "answer": { "type": "string" } },
+        "required": ["answer"]
+      }
+    }
+  },
+  "context-transform-append-summary": {
+    "operation": "runtime.context-transform",
+    "prompt": "Rewrite the shared context.",
+    "summaryText": "Shared context engineering summary.",
+    "finalText": "context transform completed"
+  },
+  "branch-from-completed-head": {
+    "operation": "runtime.branch-create"
+  },
+  "recover-staged-result": {
+    "operation": "runtime.recover-result",
+    "stagedObject": {
+      "taskId": "tool-search",
+      "objectType": "message",
+      "payload": {
+        "role": "tool",
+        "parts": [
+          {
+            "type": "tool_result",
+            "callId": "call-search",
+            "name": "search",
+            "output": { "ok": true }
+          }
+        ]
+      }
+    }
+  }
+}

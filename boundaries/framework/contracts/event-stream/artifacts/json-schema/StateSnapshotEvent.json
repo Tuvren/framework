@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/event-stream/StateSnapshotEvent.json",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "const": "state.snapshot"
+    },
+    "manifest": {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/ContextManifest.json"
+    }
+  },
+  "required": ["type", "manifest"],
+  "allOf": [
+    {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/BaseEvent.json"
+    }
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  }
+}

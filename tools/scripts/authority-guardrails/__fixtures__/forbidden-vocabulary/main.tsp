@@ -1,0 +1,3 @@
+model Fixture {
+  signal: AbortSignal;
+}

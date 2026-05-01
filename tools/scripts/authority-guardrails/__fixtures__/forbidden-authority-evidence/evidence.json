@@ -1,0 +1,10 @@
+{
+  "checkResults": [
+    {
+      "checkId": "fixture.check",
+      "details": {
+        "authority": "boundaries/framework/contracts/runtime-api/implementations/typescript"
+      }
+    }
+  ]
+}

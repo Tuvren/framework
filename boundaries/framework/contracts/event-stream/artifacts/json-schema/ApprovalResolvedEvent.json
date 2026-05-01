@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/event-stream/ApprovalResolvedEvent.json",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "const": "approval.resolved"
+    },
+    "response": {}
+  },
+  "required": ["type", "response"],
+  "allOf": [
+    {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/BaseEvent.json"
+    }
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  }
+}

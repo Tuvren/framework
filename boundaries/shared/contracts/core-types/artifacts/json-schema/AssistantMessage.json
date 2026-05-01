@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/shared/core-types/AssistantMessage.json",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "const": "assistant"
+    },
+    "parts": {
+      "type": "array",
+      "items": {
+        "$ref": "https://tuvren.dev/schemas/shared/core-types/ContentPart.json"
+      },
+      "minItems": 1
+    },
+    "providerMetadata": {
+      "$ref": "https://tuvren.dev/schemas/shared/core-types/Metadata.json"
+    }
+  },
+  "required": ["role", "parts"],
+  "unevaluatedProperties": {
+    "not": {}
+  }
+}

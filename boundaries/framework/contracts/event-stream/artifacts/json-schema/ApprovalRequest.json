@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/event-stream/ApprovalRequest.json",
+  "type": "object",
+  "properties": {
+    "completedResults": {
+      "type": "array",
+      "items": {}
+    },
+    "toolCalls": {
+      "type": "array",
+      "items": {},
+      "minItems": 1
+    }
+  },
+  "required": ["completedResults", "toolCalls"],
+  "unevaluatedProperties": {
+    "not": {}
+  }
+}

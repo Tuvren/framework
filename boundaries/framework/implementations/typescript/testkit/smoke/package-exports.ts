@@ -15,16 +15,49 @@
  */
 
 import { describe, expect, test } from "bun:test";
+import type { TuvrenStreamEvent } from "@tuvren/event-stream";
 import {
   collectTuvrenStreamEvents,
   createFixtureEventStream,
-  frameworkStreamTestFixtures,
 } from "@tuvren/framework-testkit";
+
+const pausedTurnFixture: readonly TuvrenStreamEvent[] = [
+  {
+    threadId: "thread-paused",
+    timestamp: 31,
+    turnId: "turn-paused",
+    type: "turn.start",
+  },
+  {
+    request: {
+      completedResults: [],
+      toolCalls: [
+        {
+          callId: "call-email",
+          decisions: ["approve", "reject"],
+          input: {
+            to: "team@example.com",
+          },
+          message: "Approve this email?",
+          name: "send_email",
+        },
+      ],
+    },
+    timestamp: 32,
+    type: "approval.requested",
+  },
+  {
+    status: "paused",
+    timestamp: 33,
+    turnId: "turn-paused",
+    type: "turn.end",
+  },
+];
 
 describe("@tuvren/framework-testkit package exports", () => {
   test("exposes framework stream test helpers", async () => {
     const events = await collectTuvrenStreamEvents(
-      createFixtureEventStream(frameworkStreamTestFixtures.pausedTurn)
+      createFixtureEventStream(pausedTurnFixture)
     );
 
     expect(events.map((event) => event.type)).toEqual([

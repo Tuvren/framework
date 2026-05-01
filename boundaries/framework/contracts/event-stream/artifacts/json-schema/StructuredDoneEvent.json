@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/event-stream/StructuredDoneEvent.json",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "const": "structured.done"
+    },
+    "messageId": {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/NonEmptyString.json"
+    },
+    "data": {},
+    "name": {
+      "type": "string"
+    }
+  },
+  "required": ["type", "messageId", "data"],
+  "allOf": [
+    {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/BaseEvent.json"
+    }
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  }
+}

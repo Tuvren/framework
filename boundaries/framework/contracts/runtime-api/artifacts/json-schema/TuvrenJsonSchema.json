@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/runtime-api/TuvrenJsonSchema.json",
+  "anyOf": [
+    {
+      "$ref": "https://tuvren.dev/schemas/framework/runtime-api/TuvrenJsonSchemaObject.json"
+    },
+    {
+      "type": "boolean"
+    }
+  ]
+}

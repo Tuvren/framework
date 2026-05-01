@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/runtime-api/StructuredPart.json",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "const": "structured"
+    },
+    "data": {},
+    "name": {
+      "type": "string"
+    },
+    "providerMetadata": {
+      "$ref": "https://tuvren.dev/schemas/framework/runtime-api/Metadata.json"
+    }
+  },
+  "required": ["type", "data"],
+  "unevaluatedProperties": {
+    "not": {}
+  }
+}

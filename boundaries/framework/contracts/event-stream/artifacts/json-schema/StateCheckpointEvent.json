@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/event-stream/StateCheckpointEvent.json",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "const": "state.checkpoint"
+    },
+    "checkpoint": {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/NonEmptyString.json"
+    }
+  },
+  "required": ["type", "checkpoint"],
+  "allOf": [
+    {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/BaseEvent.json"
+    }
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  }
+}

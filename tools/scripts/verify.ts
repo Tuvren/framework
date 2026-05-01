@@ -29,12 +29,14 @@ export interface VerificationResult {
 }
 
 export const RUST_NX_BUILD_PROJECTS: readonly string[] = [
+  "framework-rust-conformance-runner",
   "kernel-rust-kernel",
   "kernel-rust-grpc-service",
   "kernel-rust-conformance-runner",
 ];
 
 export const RUST_NX_TEST_PROJECTS: readonly string[] = [
+  "framework-rust-conformance-runner",
   "kernel-rust-kernel",
   "kernel-rust-grpc-service",
 ];
@@ -184,13 +186,38 @@ export const DEFAULT_VERIFICATION_STEPS: readonly VerificationStep[] = [
   {
     command: [
       "bun",
+      "tools/scripts/authority-packet/validate-authority-packets.ts",
+    ],
+    id: "authority packet validation",
+  },
+  {
+    command: ["bun", "tools/conformance/plan-compiler/validate-plans.ts"],
+    id: "conformance plan validation",
+  },
+  {
+    command: [
+      "bun",
+      "tools/conformance/adapter-protocol/validate-adapter-protocol.ts",
+    ],
+    id: "adapter protocol validation",
+  },
+  {
+    command: [
+      "bun",
+      "tools/scripts/authority-guardrails/authority-guardrails.ts",
+    ],
+    id: "machine authority guardrails",
+  },
+  {
+    command: [
+      "bun",
       "run",
       "nx",
       "run-many",
       "-t",
       "codegen",
       "-p",
-      "framework-tool-contracts,provider-api,telemetry-semconv,compatibility-reporting,kernel-interop-grpc",
+      "shared-core-types,framework-runtime-api,framework-event-stream,framework-driver-api,framework-tool-contracts,provider-api,telemetry-semconv,compatibility-reporting,kernel-interop-grpc",
       // Compatibility codegen shells out to the conformance runners to produce
       // measured evidence, so verify forces a fresh execution here instead of
       // accepting cached artifacts from another workspace state.

@@ -1,0 +1,12 @@
+[package]
+name = "tuvren-framework-rust-conformance-runner"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[dependencies]
+jsonschema = { version = "0.46.3", default-features = false }
+regex = "1.12.3"
+serde.workspace = true
+serde_json.workspace = true

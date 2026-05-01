@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/event-stream/IterationEndEvent.json",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "const": "iteration.end"
+    },
+    "iterationCount": {
+      "type": "integer",
+      "minimum": -2147483648,
+      "maximum": 2147483647
+    }
+  },
+  "required": ["type", "iterationCount"],
+  "allOf": [
+    {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/BaseEvent.json"
+    }
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  }
+}

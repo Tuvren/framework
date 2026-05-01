@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/conformance-plan.schema.json",
+  "type": "object",
+  "required": ["planId", "planVersion", "packetId", "applicability", "checks"],
+  "additionalProperties": false,
+  "properties": {
+    "planId": { "type": "string", "minLength": 1 },
+    "planVersion": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "packetId": { "type": "string", "minLength": 1 },
+    "applicability": {
+      "type": "object",
+      "required": ["capabilities"],
+      "additionalProperties": false,
+      "properties": {
+        "capabilities": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "fixtures": {
+      "type": "object",
+      "additionalProperties": { "type": "string", "minLength": 1 },
+      "default": {}
+    },
+    "scenarios": {
+      "type": "object",
+      "additionalProperties": { "type": "string", "minLength": 1 },
+      "default": {}
+    },
+    "checks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["checkId", "operation", "assertions"],
+        "additionalProperties": false,
+        "properties": {
+          "checkId": { "type": "string", "minLength": 1 },
+          "operation": { "type": "string", "minLength": 1 },
+          "fixture": { "type": "string", "minLength": 1 },
+          "scenario": { "type": "string", "minLength": 1 },
+          "input": {},
+          "controls": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "deadlineMs": { "type": "integer", "minimum": 1 },
+              "cancelAfterEvent": { "type": "string", "minLength": 1 }
+            }
+          },
+          "assertions": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["kind"],
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "eventSequence",
+                    "terminalEvent",
+                    "schemaValid",
+                    "errorEnvelope",
+                    "stateField",
+                    "evidenceField",
+                    "ordering",
+                    "noEvent"
+                  ]
+                },
+                "path": { "type": "string", "minLength": 1 },
+                "schema": { "type": "string", "minLength": 1 },
+                "equals": {},
+                "matches": { "type": "string", "minLength": 1 },
+                "contains": {},
+                "field": { "type": "string", "minLength": 1 },
+                "eventType": { "type": "string", "minLength": 1 }
+              }
+            }
+          },
+          "evidence": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 },
+            "default": []
+          }
+        }
+      }
+    }
+  }
+}

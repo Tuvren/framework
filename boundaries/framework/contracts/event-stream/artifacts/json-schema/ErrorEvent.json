@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/event-stream/ErrorEvent.json",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "const": "error"
+    },
+    "error": {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/ErrorEnvelope.json"
+    },
+    "fatal": {
+      "type": "boolean"
+    }
+  },
+  "required": ["type", "error", "fatal"],
+  "allOf": [
+    {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/BaseEvent.json"
+    }
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  }
+}

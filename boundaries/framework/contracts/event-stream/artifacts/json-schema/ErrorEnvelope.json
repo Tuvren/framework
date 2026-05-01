@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/event-stream/ErrorEnvelope.json",
+  "type": "object",
+  "properties": {
+    "code": {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/NonEmptyString.json"
+    },
+    "message": {
+      "type": "string"
+    },
+    "details": {}
+  },
+  "required": ["message"],
+  "unevaluatedProperties": {
+    "not": {}
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/event-stream/ContextManifestCounters.json",
+  "type": "object",
+  "properties": {
+    "total": {
+      "type": "integer",
+      "minimum": -2147483648,
+      "maximum": 2147483647
+    },
+    "byName": {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/Metadata.json"
+    }
+  },
+  "required": ["total"],
+  "unevaluatedProperties": {
+    "not": {}
+  }
+}

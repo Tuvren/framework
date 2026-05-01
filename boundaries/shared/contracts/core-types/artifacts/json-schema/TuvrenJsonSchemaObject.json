@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/shared/core-types/TuvrenJsonSchemaObject.json",
+  "type": "object",
+  "properties": {},
+  "unevaluatedProperties": {},
+  "description": "Opaque JSON Schema accepted by runtime and provider surfaces."
+}

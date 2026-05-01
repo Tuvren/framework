@@ -1,0 +1,37 @@
+{
+  "name": "framework-rust-conformance-runner",
+  "$schema": "../../../../../node_modules/nx/schemas/project-schema.json",
+  "root": "boundaries/framework/implementations/rust/conformance-runner",
+  "projectType": "library",
+  "tags": ["boundary:framework", "language:rust", "layer:conformance-runner"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "cargo build -p tuvren-framework-rust-conformance-runner"
+      }
+    },
+    "conformance": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "cargo run -p tuvren-framework-rust-conformance-runner"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "cargo fmt --package tuvren-framework-rust-conformance-runner -- --check && cargo clippy -p tuvren-framework-rust-conformance-runner --all-targets -- -D warnings"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "cargo test -p tuvren-framework-rust-conformance-runner"
+      }
+    }
+  }
+}

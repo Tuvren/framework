@@ -16,6 +16,17 @@
         "command": "bun tools/scripts/compatibility-report.ts"
       }
     },
+    "evidence-refresh": {
+      "executor": "nx:run-commands",
+      "outputs": [
+        "{workspaceRoot}/reports/compatibility/compatibility-matrix.json",
+        "{workspaceRoot}/reports/compatibility/evidence"
+      ],
+      "options": {
+        "cwd": ".",
+        "command": "bun tools/scripts/compatibility-report.ts --allow-failing-evidence"
+      }
+    },
     "lint": {
       "executor": "nx:run-commands",
       "options": {

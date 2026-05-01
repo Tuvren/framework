@@ -35,7 +35,7 @@ import {
   invalidKernelRecordFixtures,
   kernelRecordInsertionOrderVariants,
   sha256Hex,
-} from "../../../../../tests/fixtures/kernel-record-fixtures.js";
+} from "./kernel-record-fixtures.js";
 
 describe("HashString", () => {
   test("accepts lowercase 64-character hex digests", () => {

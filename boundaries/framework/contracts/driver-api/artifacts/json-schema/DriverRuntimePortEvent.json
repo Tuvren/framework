@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/driver-api/DriverRuntimePortEvent.json",
+  "type": "object",
+  "properties": {
+    "type": {
+      "$ref": "https://tuvren.dev/schemas/framework/driver-api/NonEmptyString.json"
+    },
+    "timestamp": {
+      "$ref": "https://tuvren.dev/schemas/framework/driver-api/EpochMs.json"
+    },
+    "payload": {}
+  },
+  "required": ["type", "timestamp"],
+  "unevaluatedProperties": {
+    "not": {}
+  }
+}

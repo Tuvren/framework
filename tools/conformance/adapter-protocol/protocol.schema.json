@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/conformance/adapter-protocol.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "AdapterCapabilities": { "$ref": "#/$defs/AdapterCapabilities" },
+    "AdapterControls": { "$ref": "#/$defs/AdapterControls" },
+    "AdapterErrorEnvelope": { "$ref": "#/$defs/AdapterErrorEnvelope" },
+    "OperationOutcome": { "$ref": "#/$defs/OperationOutcome" }
+  },
+  "required": [
+    "AdapterCapabilities",
+    "AdapterControls",
+    "AdapterErrorEnvelope",
+    "OperationOutcome"
+  ],
+  "$defs": {
+    "AdapterCapabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "adapterId": { "type": "string", "minLength": 1 },
+        "packetId": { "type": "string", "minLength": 1 },
+        "planVersion": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$"
+        }
+      },
+      "required": ["adapterId", "packetId", "planVersion"]
+    },
+    "AdapterCancelControl": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "reason": { "type": "string", "minLength": 1 }
+      },
+      "required": ["reason"]
+    },
+    "AdapterControls": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "cancel": { "$ref": "#/$defs/AdapterCancelControl" },
+        "cancelAfterEvent": { "type": "string", "minLength": 1 },
+        "deadlineMs": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "AdapterErrorEnvelope": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "cause": { "$ref": "#/$defs/AdapterErrorEnvelope" },
+        "code": { "type": "string", "minLength": 1 },
+        "details": {},
+        "message": { "type": "string" }
+      },
+      "required": ["code", "message"]
+    },
+    "OperationResultOutcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "result" },
+        "value": {}
+      },
+      "required": ["kind", "value"]
+    },
+    "OperationErrorOutcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "error": { "$ref": "#/$defs/AdapterErrorEnvelope" },
+        "kind": { "const": "error" }
+      },
+      "required": ["kind", "error"]
+    },
+    "OperationOutcome": {
+      "oneOf": [
+        { "$ref": "#/$defs/OperationResultOutcome" },
+        { "$ref": "#/$defs/OperationErrorOutcome" }
+      ]
+    }
+  }
+}

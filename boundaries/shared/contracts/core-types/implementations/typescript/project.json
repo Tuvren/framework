@@ -13,6 +13,22 @@
         "command": "bunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false"
       }
     },
+    "codegen": {
+      "executor": "nx:run-commands",
+      "outputs": [
+        "{workspaceRoot}/boundaries/shared/contracts/core-types/artifacts/json-schema"
+      ],
+      "options": {
+        "cwd": "boundaries/shared/contracts/core-types",
+        "command": "bunx --bun tsp compile ./spec/typespec --pretty false && bunx --bun @biomejs/biome check --write ./artifacts"
+      },
+      "inputs": [
+        "default",
+        "^production",
+        "{workspaceRoot}/boundaries/shared/contracts/core-types/spec/**/*",
+        "{workspaceRoot}/boundaries/shared/contracts/core-types/artifacts/**/*"
+      ]
+    },
     "lint": {
       "executor": "nx:run-commands",
       "options": {

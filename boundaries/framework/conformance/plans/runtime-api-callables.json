@@ -1,0 +1,202 @@
+{
+  "planId": "tuvren.framework.runtime-api.callables",
+  "planVersion": "0.1.0",
+  "packetId": "tuvren.framework.runtime-api",
+  "applicability": {
+    "capabilities": ["framework.runtime-api"]
+  },
+  "scenarios": {
+    "runtime-api-scenarios": "../scenarios/runtime-api-scenarios.json"
+  },
+  "checks": [
+    {
+      "checkId": "runtime-callable.provider-generate",
+      "operation": "runtime.provider-generate",
+      "scenario": "runtime-api-scenarios",
+      "input": { "scenarioPath": "$.provider-generate-text" },
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.provider.generate.callCount",
+          "equals": 1
+        },
+        {
+          "kind": "evidenceField",
+          "field": "$.provider.generate.response.parts.0.text",
+          "equals": "generated from shared scenario"
+        },
+        {
+          "kind": "evidenceField",
+          "field": "$.provider.generate.response.finishReason",
+          "equals": "stop"
+        }
+      ],
+      "evidence": [
+        "provider.generate.callCount",
+        "provider.generate.response.parts.0.text",
+        "provider.generate.response.finishReason"
+      ]
+    },
+    {
+      "checkId": "runtime-callable.provider-stream",
+      "operation": "runtime.provider-stream",
+      "scenario": "runtime-api-scenarios",
+      "input": { "scenarioPath": "$.provider-stream-text" },
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.provider.stream.callCount",
+          "equals": 1
+        },
+        {
+          "kind": "evidenceField",
+          "field": "$.provider.stream.emittedEventTypes",
+          "contains": "text.delta"
+        },
+        {
+          "kind": "evidenceField",
+          "field": "$.provider.stream.response.parts.0.text",
+          "equals": "streamed from shared scenario"
+        },
+        {
+          "kind": "evidenceField",
+          "field": "$.provider.stream.chunkTypes",
+          "equals": ["text_delta", "finish"]
+        }
+      ],
+      "evidence": [
+        "provider.stream.callCount",
+        "provider.stream.emittedEventTypes",
+        "provider.stream.response.parts.0.text",
+        "provider.stream.chunkTypes"
+      ]
+    },
+    {
+      "checkId": "runtime-callable.tool-execute",
+      "operation": "runtime.tool-execute",
+      "scenario": "runtime-api-scenarios",
+      "input": { "scenarioPath": "$.tool-execute-search" },
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.tool.execution.callCount",
+          "equals": 1
+        },
+        {
+          "kind": "evidenceField",
+          "field": "$.tool.execution.inputs.0.query",
+          "equals": "shared docs"
+        },
+        {
+          "kind": "evidenceField",
+          "field": "$.tool.execution.outputs.0.source",
+          "equals": "shared scenario"
+        },
+        {
+          "kind": "stateField",
+          "field": "$.toolExecution.status.phase",
+          "equals": "completed"
+        },
+        {
+          "kind": "stateField",
+          "field": "$.toolExecution.status.manifest.toolResults.total",
+          "equals": 1
+        }
+      ],
+      "evidence": [
+        "tool.execution.callCount",
+        "tool.execution.inputs.0.query",
+        "tool.execution.outputs.0.source",
+        "toolExecution.status.phase",
+        "toolExecution.status.manifest.toolResults.total"
+      ]
+    },
+    {
+      "checkId": "runtime-callable.approval-resolve",
+      "operation": "runtime.approval-resolve",
+      "scenario": "runtime-api-scenarios",
+      "input": { "scenarioPath": "$.paused-turn-resume" },
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.approval.pausedPhase",
+          "equals": "paused"
+        },
+        {
+          "kind": "evidenceField",
+          "field": "$.approval.resumedPhase",
+          "equals": "completed"
+        },
+        {
+          "kind": "evidenceField",
+          "field": "$.tool.execution.executedNames",
+          "equals": ["search", "email"]
+        },
+        {
+          "kind": "evidenceField",
+          "field": "$.approval.decisions.0.type",
+          "equals": "approve"
+        }
+      ],
+      "evidence": [
+        "approval.pausedPhase",
+        "approval.resumedPhase",
+        "tool.execution.executedNames",
+        "approval.decisions.0.type"
+      ]
+    },
+    {
+      "checkId": "runtime-callable.validation-failure",
+      "operation": "runtime.validate-structured-output",
+      "scenario": "runtime-api-scenarios",
+      "input": { "scenarioPath": "$.structured-validation-failure" },
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.validation.resolutionType",
+          "equals": "fail"
+        }
+      ],
+      "evidence": ["validation.resolutionType"]
+    },
+    {
+      "checkId": "runtime-callable.timeout-retry-cancellation-idempotency",
+      "operation": "runtime.cancel-execution",
+      "controls": { "deadlineMs": 1000, "cancelAfterEvent": "turn.start" },
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.cancellation.observedEventType",
+          "equals": "turn.start"
+        },
+        {
+          "kind": "evidenceField",
+          "field": "$.cancellation.observedEventIndex",
+          "equals": 0
+        },
+        {
+          "kind": "evidenceField",
+          "field": "$.cancellation.cancelInvocations",
+          "equals": 2
+        },
+        {
+          "kind": "evidenceField",
+          "field": "$.cancellation.errorEventCount",
+          "equals": 1
+        },
+        {
+          "kind": "evidenceField",
+          "field": "$.runtime.phase",
+          "equals": "failed"
+        }
+      ],
+      "evidence": [
+        "cancellation.observedEventType",
+        "cancellation.observedEventIndex",
+        "cancellation.cancelInvocations",
+        "cancellation.errorEventCount",
+        "runtime.phase"
+      ]
+    }
+  ]
+}

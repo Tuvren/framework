@@ -15,19 +15,62 @@
  */
 
 import { describe, expect, test } from "bun:test";
+import type { TuvrenStreamEvent } from "@tuvren/event-stream";
 import {
   assertStreamEventTypes,
   collectTuvrenStreamEvents,
   createFixtureEventStream,
-  frameworkStreamTestFixtures,
   startAsyncCapture,
   waitForAsyncTurn,
 } from "../src/index.ts";
 
+const completedTurnFixture: readonly TuvrenStreamEvent[] = [
+  {
+    threadId: "thread-main",
+    timestamp: 1,
+    turnId: "turn-main",
+    type: "turn.start",
+  },
+  {
+    iterationCount: 1,
+    timestamp: 2,
+    type: "iteration.start",
+  },
+  {
+    messageId: "message-main",
+    role: "assistant",
+    timestamp: 3,
+    type: "message.start",
+  },
+];
+const failedTurnFixture: readonly TuvrenStreamEvent[] = [
+  {
+    threadId: "thread-failed",
+    timestamp: 21,
+    turnId: "turn-failed",
+    type: "turn.start",
+  },
+  {
+    error: {
+      code: "runtime_execution_cancelled",
+      message: "execution cancelled",
+    },
+    fatal: true,
+    timestamp: 22,
+    type: "error",
+  },
+  {
+    status: "failed",
+    timestamp: 23,
+    turnId: "turn-failed",
+    type: "turn.end",
+  },
+];
+
 describe("@tuvren/framework-testkit", () => {
-  test("provides validated canonical stream fixtures and collectors", async () => {
+  test("provides validated stream collectors without owning fixtures", async () => {
     const events = await collectTuvrenStreamEvents(
-      createFixtureEventStream(frameworkStreamTestFixtures.completedTurn)
+      createFixtureEventStream(completedTurnFixture)
     );
 
     assertStreamEventTypes(events.slice(0, 3), [
@@ -35,12 +78,12 @@ describe("@tuvren/framework-testkit", () => {
       "iteration.start",
       "message.start",
     ]);
-    expect(events[0]).not.toBe(frameworkStreamTestFixtures.completedTurn[0]);
+    expect(events[0]).not.toBe(completedTurnFixture[0]);
   });
 
   test("captures asynchronous streams without consuming test assertions", async () => {
     const capture = startAsyncCapture(
-      createFixtureEventStream(frameworkStreamTestFixtures.failedTurn)
+      createFixtureEventStream(failedTurnFixture)
     );
 
     await waitForAsyncTurn();

@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/event-stream/TuvrenStreamEvent.json",
+  "anyOf": [
+    {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/TurnStartEvent.json"
+    },
+    {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/TurnEndEvent.json"
+    },
+    {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/IterationStartEvent.json"
+    },
+    {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/IterationEndEvent.json"
+    },
+    {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/MessageStartEvent.json"
+    },
+    {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/TextDeltaEvent.json"
+    },
+    {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/TextDoneEvent.json"
+    },
+    {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/ReasoningDeltaEvent.json"
+    },
+    {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/ReasoningDoneEvent.json"
+    },
+    {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/FileDoneEvent.json"
+    },
+    {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/StructuredDeltaEvent.json"
+    },
+    {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/StructuredDoneEvent.json"
+    },
+    {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/ToolCallStartEvent.json"
+    },
+    {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/ToolCallArgsDeltaEvent.json"
+    },
+    {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/ToolCallDoneEvent.json"
+    },
+    {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/MessageDoneEvent.json"
+    },
+    {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/ToolStartEvent.json"
+    },
+    {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/ToolResultEvent.json"
+    },
+    {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/ApprovalRequestedEvent.json"
+    },
+    {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/ApprovalResolvedEvent.json"
+    },
+    {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/SteeringIncorporatedEvent.json"
+    },
+    {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/StateSnapshotEvent.json"
+    },
+    {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/StateCheckpointEvent.json"
+    },
+    {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/ErrorEvent.json"
+    },
+    {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/CustomEvent.json"
+    }
+  ]
+}

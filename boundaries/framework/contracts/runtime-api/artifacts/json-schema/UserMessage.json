@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/runtime-api/UserMessage.json",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "const": "user"
+    },
+    "parts": {
+      "type": "array",
+      "items": {
+        "$ref": "https://tuvren.dev/schemas/framework/runtime-api/ContentPart.json"
+      },
+      "minItems": 1
+    }
+  },
+  "required": ["role", "parts"],
+  "unevaluatedProperties": {
+    "not": {}
+  }
+}

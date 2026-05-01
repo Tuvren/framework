@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/shared/core-types/EpochMs.json",
+  "type": "integer",
+  "description": "Milliseconds since Unix epoch."
+}

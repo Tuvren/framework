@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/driver-api/DriverExecutionContext.json",
+  "type": "object",
+  "properties": {
+    "threadId": {
+      "$ref": "https://tuvren.dev/schemas/framework/driver-api/NonEmptyString.json"
+    },
+    "branchId": {
+      "$ref": "https://tuvren.dev/schemas/framework/driver-api/NonEmptyString.json"
+    },
+    "turnId": {
+      "$ref": "https://tuvren.dev/schemas/framework/driver-api/NonEmptyString.json"
+    },
+    "schemaId": {
+      "$ref": "https://tuvren.dev/schemas/framework/driver-api/NonEmptyString.json"
+    },
+    "iterationCount": {
+      "type": "integer",
+      "minimum": -2147483648,
+      "maximum": 2147483647
+    },
+    "messages": {
+      "type": "array",
+      "items": {}
+    },
+    "manifest": {
+      "$ref": "https://tuvren.dev/schemas/framework/driver-api/Metadata.json"
+    },
+    "config": {
+      "$ref": "https://tuvren.dev/schemas/framework/driver-api/Metadata.json"
+    },
+    "controls": {
+      "$ref": "https://tuvren.dev/schemas/framework/driver-api/Metadata.json"
+    }
+  },
+  "required": [
+    "threadId",
+    "branchId",
+    "turnId",
+    "schemaId",
+    "iterationCount",
+    "messages",
+    "manifest",
+    "config"
+  ]
+}

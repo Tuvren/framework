@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/shared/core-types/TuvrenMessage.json",
+  "anyOf": [
+    {
+      "$ref": "https://tuvren.dev/schemas/shared/core-types/SystemMessage.json"
+    },
+    {
+      "$ref": "https://tuvren.dev/schemas/shared/core-types/UserMessage.json"
+    },
+    {
+      "$ref": "https://tuvren.dev/schemas/shared/core-types/AssistantMessage.json"
+    },
+    {
+      "$ref": "https://tuvren.dev/schemas/shared/core-types/ToolMessage.json"
+    }
+  ]
+}

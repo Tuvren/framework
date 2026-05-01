@@ -1,7 +1,8 @@
-# Runtime API Spec Placeholder
+# Runtime API Spec Authority
 
-No language-neutral source has been authored for `runtime-api` yet.
+`runtime-api` is promoted through Epic Y.
 
-The current authoritative implementation remains the TypeScript package under
-`../implementations/typescript/`. Promoting this surface to a neutral source is
-explicitly deferred beyond Epic X.
+- `authority-packet.json` declares `tuvren.framework.runtime-api`.
+- `typespec/` carries the neutral operation and payload source.
+- `bindings/` records language-specific projection appendices.
+- TypeScript implementations are binding projections, not authority.

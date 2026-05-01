@@ -1,0 +1,39 @@
+{
+  "packetId": "tuvren.framework.react-driver",
+  "version": "0.1.0",
+  "boundary": "framework",
+  "surface": "react-driver",
+  "humanAuthorityRefs": [
+    "docs/KrakenFrameworkSpecification.md#driver-contract",
+    "constitution/TechSpec.md#4.6-runtime-driver-contract"
+  ],
+  "authoritativeSources": [
+    {
+      "path": "boundaries/framework/conformance/plans/react-driver-callables.json",
+      "format": "conformance-plan"
+    }
+  ],
+  "conformancePlans": [
+    {
+      "planId": "tuvren.framework.react-driver.callables",
+      "planVersion": "0.1.0",
+      "path": "boundaries/framework/conformance/plans/react-driver-callables.json"
+    }
+  ],
+  "bindingProjections": {
+    "typescript-react-driver": "boundaries/framework/implementations/typescript/drivers/react"
+  },
+  "forbiddenAuthoritySources": [
+    "boundaries/framework/implementations/typescript/drivers/react",
+    "boundaries/framework/implementations/typescript/conformance-runner",
+    "boundaries/framework/implementations/rust/conformance-runner",
+    "docs",
+    "constitution"
+  ],
+  "verificationPaths": [
+    {
+      "kind": "conformance-plan",
+      "target": "boundaries/framework/conformance/plans/react-driver-callables.json"
+    }
+  ]
+}

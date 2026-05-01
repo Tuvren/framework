@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/runtime-api/RenderedToolDefinition.json",
+  "type": "object",
+  "properties": {
+    "name": {
+      "$ref": "https://tuvren.dev/schemas/framework/runtime-api/NonEmptyString.json"
+    },
+    "description": {
+      "type": "string"
+    },
+    "inputSchema": {
+      "$ref": "https://tuvren.dev/schemas/framework/runtime-api/TuvrenJsonSchema.json"
+    }
+  },
+  "required": ["name", "description", "inputSchema"],
+  "unevaluatedProperties": {
+    "not": {}
+  }
+}

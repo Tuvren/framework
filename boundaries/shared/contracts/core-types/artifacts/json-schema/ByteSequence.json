@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/shared/core-types/ByteSequence.json",
+  "type": "object",
+  "properties": {
+    "encoding": {
+      "type": "string",
+      "const": "base64"
+    },
+    "data": {
+      "type": "string"
+    }
+  },
+  "required": ["encoding", "data"],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "Opaque byte sequence represented portably as base64 text."
+}

@@ -15,22 +15,29 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import type { TuvrenStreamEvent } from "@tuvren/event-stream";
 import {
-  collectStreamValues,
-  createFixtureEventStream,
-  frameworkStreamTestFixtures,
-  waitForAsyncTurn,
-} from "@tuvren/framework-testkit";
-import { teeTuvrenStreamEvents } from "@tuvren/stream-core";
+  assertTuvrenStreamEvent,
+  type TuvrenStreamEvent,
+} from "@tuvren/event-stream";
+import {
+  createFixtureStream,
+  teeTuvrenStreamEvents,
+} from "@tuvren/stream-core";
+import { loadConformancePlan } from "../../../../../../tools/conformance/plan-compiler/index.js";
 import { toSseFrames, toSseResponse } from "../src/index.ts";
+
+const frameworkStreamFixtures = await readFrameworkStreamFixtures();
+
+interface FrameworkStreamFixtureSet {
+  completedTurn: readonly TuvrenStreamEvent[];
+  failedTurn: readonly TuvrenStreamEvent[];
+  pausedTurn: readonly TuvrenStreamEvent[];
+}
 
 describe("stream-sse", () => {
   test("projects canonical events into EventSource-compatible frames", async () => {
     const frames = await collectStreamValues(
-      toSseFrames(
-        createFixtureEventStream(frameworkStreamTestFixtures.completedTurn)
-      )
+      toSseFrames(createFixtureStream(frameworkStreamFixtures.completedTurn))
     );
 
     expect(frames[0]).toEqual({
@@ -48,7 +55,7 @@ describe("stream-sse", () => {
 
   test("creates streaming SSE responses with default headers and caller overrides", async () => {
     const response = toSseResponse(
-      createFixtureEventStream(frameworkStreamTestFixtures.completedTurn),
+      createFixtureStream(frameworkStreamFixtures.completedTurn),
       {
         headers: {
           "cache-control": "private, no-store",
@@ -82,7 +89,7 @@ describe("stream-sse", () => {
       },
     ];
     const frames = await collectStreamValues(
-      toSseFrames(createFixtureEventStream(binaryFileEvents), {
+      toSseFrames(createFixtureStream(binaryFileEvents), {
         onWarning(warning) {
           warnings.push(warning.code);
         },
@@ -104,7 +111,7 @@ describe("stream-sse", () => {
 
   test("subscribes eagerly so delayed SSE consumption still receives turn.start", async () => {
     const [sseBranch, directBranch] = teeTuvrenStreamEvents(
-      createFixtureEventStream(frameworkStreamTestFixtures.completedTurn),
+      createFixtureStream(frameworkStreamFixtures.completedTurn),
       2
     );
     const sseFrames = toSseFrames(sseBranch);
@@ -112,7 +119,7 @@ describe("stream-sse", () => {
 
     expect(await directIterator.next()).toMatchObject({
       done: false,
-      value: frameworkStreamTestFixtures.completedTurn[0],
+      value: frameworkStreamFixtures.completedTurn[0],
     });
     await waitForAsyncTurn();
     await directIterator.return?.();
@@ -124,3 +131,59 @@ describe("stream-sse", () => {
     });
   });
 });
+
+async function readFrameworkStreamFixtures(): Promise<FrameworkStreamFixtureSet> {
+  const plan = await loadConformancePlan(
+    "boundaries/framework/conformance/plans/event-stream-core.json"
+  );
+  const fixture = plan.fixtures.get("stream-events");
+
+  // The fixture bytes are plan-owned; this assertion only narrows the
+  // TypeScript binding projection used by these adapter mechanics tests.
+  assertFrameworkStreamFixtureSet(fixture, "stream-events fixture");
+  return fixture;
+}
+
+function assertFrameworkStreamFixtureSet(
+  value: unknown,
+  label: string
+): asserts value is FrameworkStreamFixtureSet {
+  if (!isRecord(value)) {
+    throw new Error(`${label} must be an object`);
+  }
+
+  assertTuvrenStreamEvents(value.completedTurn, `${label}.completedTurn`);
+  assertTuvrenStreamEvents(value.failedTurn, `${label}.failedTurn`);
+  assertTuvrenStreamEvents(value.pausedTurn, `${label}.pausedTurn`);
+}
+
+function assertTuvrenStreamEvents(
+  value: unknown,
+  label: string
+): asserts value is readonly TuvrenStreamEvent[] {
+  if (!Array.isArray(value)) {
+    throw new Error(`${label} must be an array`);
+  }
+
+  for (const [index, event] of value.entries()) {
+    assertTuvrenStreamEvent(event, `${label}[${index}]`);
+  }
+}
+
+async function collectStreamValues<T>(values: AsyncIterable<T>): Promise<T[]> {
+  const collected: T[] = [];
+
+  for await (const value of values) {
+    collected.push(value);
+  }
+
+  return collected;
+}
+
+async function waitForAsyncTurn(): Promise<void> {
+  await Promise.resolve();
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}

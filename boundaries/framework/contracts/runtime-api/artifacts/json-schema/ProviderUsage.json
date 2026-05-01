@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/runtime-api/ProviderUsage.json",
+  "type": "object",
+  "properties": {
+    "inputTokens": {
+      "type": "integer",
+      "minimum": -2147483648,
+      "maximum": 2147483647
+    },
+    "outputTokens": {
+      "type": "integer",
+      "minimum": -2147483648,
+      "maximum": 2147483647
+    }
+  },
+  "required": ["inputTokens", "outputTokens"],
+  "unevaluatedProperties": {
+    "not": {}
+  }
+}

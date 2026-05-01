@@ -14,6 +14,22 @@
         "command": "bunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false"
       }
     },
+    "codegen": {
+      "executor": "nx:run-commands",
+      "outputs": [
+        "{workspaceRoot}/boundaries/framework/contracts/event-stream/artifacts/json-schema"
+      ],
+      "options": {
+        "cwd": "boundaries/framework/contracts/event-stream",
+        "command": "bunx --bun tsp compile ./spec/typespec --pretty false && bunx --bun @biomejs/biome check --write ./artifacts"
+      },
+      "inputs": [
+        "default",
+        "^production",
+        "{workspaceRoot}/boundaries/framework/contracts/event-stream/spec/**/*",
+        "{workspaceRoot}/boundaries/framework/contracts/event-stream/artifacts/**/*"
+      ]
+    },
     "test": {
       "executor": "nx:run-commands",
       "options": {

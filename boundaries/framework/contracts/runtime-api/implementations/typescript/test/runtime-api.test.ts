@@ -16,10 +16,6 @@
 
 import { describe, expect, test } from "bun:test";
 import {
-  frameworkContractFixtures,
-  invalidFrameworkContractFixtures,
-} from "../../../../../../../tests/fixtures/framework-contract-fixtures.js";
-import {
   assertTuvrenStreamEvent as assertKrakenStreamEventFromSubpath,
   type TuvrenStreamEvent as KrakenStreamEventFromSubpath,
 } from "../src/events.ts";
@@ -57,6 +53,10 @@ import {
   type ApprovalRequest as ApprovalRequestFromSubpath,
   assertApprovalRequest as assertApprovalRequestFromSubpath,
 } from "../src/tools.ts";
+import {
+  frameworkContractFixtures,
+  invalidFrameworkContractFixtures,
+} from "./runtime-api-fixtures.js";
 
 describe("runtime-api contracts", () => {
   test("accepts the canonical framework fixtures", () => {

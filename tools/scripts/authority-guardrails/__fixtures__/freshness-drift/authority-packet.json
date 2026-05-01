@@ -1,0 +1,19 @@
+{
+  "packetId": "tuvren.fixture.freshness-drift",
+  "version": "0.1.0",
+  "boundary": "framework",
+  "surface": "fixture",
+  "authoritativeSources": [
+    { "path": "fixture/spec/main.tsp", "format": "typespec" }
+  ],
+  "generatedArtifacts": [
+    {
+      "path": "fixture/artifacts/json-schema",
+      "generatedFrom": "fixture/spec/typespec"
+    }
+  ],
+  "forbiddenAuthoritySources": ["fixture/implementation"],
+  "verificationPaths": [
+    { "kind": "schema-validation", "target": "fixture/artifacts/json-schema" }
+  ]
+}

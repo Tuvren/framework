@@ -15,12 +15,11 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import type { TuvrenStreamEvent } from "@tuvren/event-stream";
 import {
-  collectStreamValues,
-  frameworkStreamTestFixtures,
-  waitForAsyncTurn,
-} from "@tuvren/framework-testkit";
+  assertTuvrenStreamEvent,
+  type TuvrenStreamEvent,
+} from "@tuvren/event-stream";
+import { loadConformancePlan } from "../../../../../../tools/conformance/plan-compiler/index.js";
 import {
   cloneTuvrenStreamEvent,
   createFixtureStream,
@@ -33,6 +32,13 @@ const EVENT_STREAMS_CONSUMED_PATTERN =
   /event streams may only be consumed once/;
 const LATE_SUBSCRIPTION_PATTERN =
   /must subscribe before source consumption begins/;
+const frameworkStreamFixtures = await readFrameworkStreamFixtures();
+
+interface FrameworkStreamFixtureSet {
+  completedTurn: readonly TuvrenStreamEvent[];
+  failedTurn: readonly TuvrenStreamEvent[];
+  pausedTurn: readonly TuvrenStreamEvent[];
+}
 
 describe("stream-core", () => {
   test("tees one canonical stream into isolated single-consumer branches", async () => {
@@ -41,7 +47,7 @@ describe("stream-core", () => {
     const source = (async function* (): AsyncIterable<TuvrenStreamEvent> {
       started = true;
 
-      for (const event of frameworkStreamTestFixtures.completedTurn) {
+      for (const event of frameworkStreamFixtures.completedTurn) {
         yield cloneTuvrenStreamEvent(event);
       }
     })();
@@ -57,8 +63,8 @@ describe("stream-core", () => {
     ]);
 
     expect(started).toBe(true);
-    expect(leftEvents).toEqual([...frameworkStreamTestFixtures.completedTurn]);
-    expect(rightEvents).toEqual([...frameworkStreamTestFixtures.completedTurn]);
+    expect(leftEvents).toEqual([...frameworkStreamFixtures.completedTurn]);
+    expect(rightEvents).toEqual([...frameworkStreamFixtures.completedTurn]);
     expect(leftEvents[0]).not.toBe(rightEvents[0]);
 
     if (
@@ -137,14 +143,14 @@ describe("stream-core", () => {
 
   test("stops the source when the only active branch returns and siblings were never claimed", async () => {
     const source = createInstrumentedSource(
-      frameworkStreamTestFixtures.completedTurn
+      frameworkStreamFixtures.completedTurn
     );
     const [activeBranch] = teeTuvrenStreamEvents(source.events, 2);
     const iterator = activeBranch[Symbol.asyncIterator]();
 
     expect(await iterator.next()).toMatchObject({
       done: false,
-      value: frameworkStreamTestFixtures.completedTurn[0],
+      value: frameworkStreamFixtures.completedTurn[0],
     });
 
     await iterator.return?.();
@@ -156,7 +162,7 @@ describe("stream-core", () => {
 
   test("applies backpressure to claimed branches that have not started polling yet", async () => {
     const source = createInstrumentedSource(
-      frameworkStreamTestFixtures.completedTurn
+      frameworkStreamFixtures.completedTurn
     );
     const [leftBranch, rightBranch] = teeTuvrenStreamEvents(source.events, 2);
     const leftIterator = leftBranch[Symbol.asyncIterator]();
@@ -164,7 +170,7 @@ describe("stream-core", () => {
 
     expect(await leftIterator.next()).toMatchObject({
       done: false,
-      value: frameworkStreamTestFixtures.completedTurn[0],
+      value: frameworkStreamFixtures.completedTurn[0],
     });
     await waitForAsyncTurn();
 
@@ -174,7 +180,7 @@ describe("stream-core", () => {
 
     expect(await rightIterator.next()).toMatchObject({
       done: false,
-      value: frameworkStreamTestFixtures.completedTurn[0],
+      value: frameworkStreamFixtures.completedTurn[0],
     });
 
     await Promise.all([leftIterator.return?.(), rightIterator.return?.()]);
@@ -184,7 +190,7 @@ describe("stream-core", () => {
 
   test("replays the full prefix for branches that subscribe before source start and poll later", async () => {
     const source = createInstrumentedSource(
-      frameworkStreamTestFixtures.completedTurn
+      frameworkStreamFixtures.completedTurn
     );
     const [leftBranch, rightBranch] = teeTuvrenStreamEvents(source.events, 2);
     const leftIterator = leftBranch[Symbol.asyncIterator]();
@@ -193,7 +199,7 @@ describe("stream-core", () => {
 
     expect(leftFirst).toMatchObject({
       done: false,
-      value: frameworkStreamTestFixtures.completedTurn[0],
+      value: frameworkStreamFixtures.completedTurn[0],
     });
     await waitForAsyncTurn();
 
@@ -205,14 +211,14 @@ describe("stream-core", () => {
     ]);
 
     expect([leftFirst.value, ...leftRest]).toEqual([
-      ...frameworkStreamTestFixtures.completedTurn,
+      ...frameworkStreamFixtures.completedTurn,
     ]);
-    expect(rightEvents).toEqual([...frameworkStreamTestFixtures.completedTurn]);
+    expect(rightEvents).toEqual([...frameworkStreamFixtures.completedTurn]);
   });
 
   test("rejects branches that subscribe after source consumption has started", async () => {
     const source = createInstrumentedSource(
-      frameworkStreamTestFixtures.completedTurn
+      frameworkStreamFixtures.completedTurn
     );
     const [leftBranch, rightBranch] = teeTuvrenStreamEvents(source.events, 2);
     const leftIterator = leftBranch[Symbol.asyncIterator]();
@@ -310,4 +316,60 @@ function createInstrumentedSource(events: readonly TuvrenStreamEvent[]): {
       return returned;
     },
   };
+}
+
+async function readFrameworkStreamFixtures(): Promise<FrameworkStreamFixtureSet> {
+  const plan = await loadConformancePlan(
+    "boundaries/framework/conformance/plans/event-stream-core.json"
+  );
+  const fixture = plan.fixtures.get("stream-events");
+
+  // The fixture bytes are plan-owned; this assertion only narrows the
+  // TypeScript binding projection used by these adapter mechanics tests.
+  assertFrameworkStreamFixtureSet(fixture, "stream-events fixture");
+  return fixture;
+}
+
+function assertFrameworkStreamFixtureSet(
+  value: unknown,
+  label: string
+): asserts value is FrameworkStreamFixtureSet {
+  if (!isRecord(value)) {
+    throw new Error(`${label} must be an object`);
+  }
+
+  assertTuvrenStreamEvents(value.completedTurn, `${label}.completedTurn`);
+  assertTuvrenStreamEvents(value.failedTurn, `${label}.failedTurn`);
+  assertTuvrenStreamEvents(value.pausedTurn, `${label}.pausedTurn`);
+}
+
+function assertTuvrenStreamEvents(
+  value: unknown,
+  label: string
+): asserts value is readonly TuvrenStreamEvent[] {
+  if (!Array.isArray(value)) {
+    throw new Error(`${label} must be an array`);
+  }
+
+  for (const [index, event] of value.entries()) {
+    assertTuvrenStreamEvent(event, `${label}[${index}]`);
+  }
+}
+
+async function collectStreamValues<T>(values: AsyncIterable<T>): Promise<T[]> {
+  const collected: T[] = [];
+
+  for await (const value of values) {
+    collected.push(value);
+  }
+
+  return collected;
+}
+
+async function waitForAsyncTurn(): Promise<void> {
+  await Promise.resolve();
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
 }

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/runtime-api/RuntimeOperation.json",
+  "type": "object",
+  "properties": {
+    "operation": {
+      "$ref": "https://tuvren.dev/schemas/framework/runtime-api/RuntimeOperationName.json"
+    },
+    "input": {
+      "$ref": "https://tuvren.dev/schemas/framework/runtime-api/RuntimeOperationInput.json"
+    },
+    "outcome": {
+      "$ref": "https://tuvren.dev/schemas/framework/runtime-api/RuntimeOperationOutcome.json"
+    }
+  },
+  "required": ["operation", "input"],
+  "unevaluatedProperties": {
+    "not": {}
+  }
+}

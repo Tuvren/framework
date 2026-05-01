@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/shared/core-types/ToolCallPart.json",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "const": "tool_call"
+    },
+    "callId": {
+      "$ref": "https://tuvren.dev/schemas/shared/core-types/NonEmptyString.json"
+    },
+    "name": {
+      "$ref": "https://tuvren.dev/schemas/shared/core-types/NonEmptyString.json"
+    },
+    "input": {},
+    "providerMetadata": {
+      "$ref": "https://tuvren.dev/schemas/shared/core-types/Metadata.json"
+    }
+  },
+  "required": ["type", "callId", "name", "input"],
+  "unevaluatedProperties": {
+    "not": {}
+  }
+}

@@ -1,0 +1,87 @@
+{
+  "packetId": "tuvren.framework.runtime-api",
+  "version": "0.1.0",
+  "boundary": "framework",
+  "surface": "runtime-api",
+  "humanAuthorityRefs": [
+    "docs/KrakenFrameworkSpecification.md",
+    "constitution/TechSpec.md#4.1-framework-runtime-api"
+  ],
+  "authoritativeSources": [
+    {
+      "path": "boundaries/framework/contracts/runtime-api/spec/typespec/main.tsp",
+      "format": "typespec"
+    },
+    {
+      "path": "boundaries/framework/conformance/plans/runtime-api-lifecycle.json",
+      "format": "conformance-plan"
+    },
+    {
+      "path": "boundaries/framework/conformance/plans/runtime-api-callables.json",
+      "format": "conformance-plan"
+    }
+  ],
+  "generatedArtifacts": [
+    {
+      "path": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedFrom": "boundaries/framework/contracts/runtime-api/spec/typespec",
+      "generator": "@typespec/json-schema"
+    }
+  ],
+  "conformancePlans": [
+    {
+      "planId": "tuvren.framework.runtime-api.lifecycle",
+      "planVersion": "0.1.0",
+      "path": "boundaries/framework/conformance/plans/runtime-api-lifecycle.json"
+    },
+    {
+      "planId": "tuvren.framework.runtime-api.callables",
+      "planVersion": "0.1.0",
+      "path": "boundaries/framework/conformance/plans/runtime-api-callables.json"
+    }
+  ],
+  "bindingProjections": {
+    "typescript": "boundaries/framework/contracts/runtime-api/implementations/typescript",
+    "typescript-runtime-core": "boundaries/framework/implementations/typescript/runtime-core"
+  },
+  "bindingAppendices": [
+    {
+      "language": "typescript",
+      "path": "boundaries/framework/contracts/runtime-api/spec/bindings/typescript.md"
+    }
+  ],
+  "forbiddenAuthoritySources": [
+    "boundaries/framework/contracts/runtime-api/implementations/typescript",
+    "boundaries/framework/implementations/typescript/runtime-core",
+    "boundaries/framework/implementations/typescript/conformance-runner",
+    "boundaries/framework/implementations/rust/conformance-runner",
+    "boundaries/framework/contracts/runtime-api/README.md",
+    "boundaries/framework/contracts/runtime-api/spec/README.md",
+    "docs",
+    "constitution"
+  ],
+  "verificationPaths": [
+    {
+      "kind": "schema-validation",
+      "target": "boundaries/framework/contracts/runtime-api/artifacts/json-schema"
+    },
+    {
+      "kind": "conformance-plan",
+      "target": "boundaries/framework/conformance/plans/runtime-api-lifecycle.json"
+    },
+    {
+      "kind": "conformance-plan",
+      "target": "boundaries/framework/conformance/plans/runtime-api-callables.json"
+    },
+    {
+      "kind": "freshness-check",
+      "target": "boundaries/framework/contracts/runtime-api/artifacts/json-schema"
+    }
+  ],
+  "freshnessChecks": [
+    {
+      "artifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "regenerateCommand": "bun run nx run framework-runtime-api:codegen"
+    }
+  ]
+}

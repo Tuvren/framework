@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/runtime-api/ExecutionStatus.json",
+  "type": "object",
+  "properties": {
+    "phase": {
+      "anyOf": [
+        {
+          "type": "string",
+          "const": "running"
+        },
+        {
+          "type": "string",
+          "const": "paused"
+        },
+        {
+          "type": "string",
+          "const": "completed"
+        },
+        {
+          "type": "string",
+          "const": "failed"
+        }
+      ]
+    },
+    "iterationCount": {
+      "type": "integer",
+      "minimum": -2147483648,
+      "maximum": 2147483647
+    },
+    "activeAgent": {
+      "$ref": "https://tuvren.dev/schemas/framework/runtime-api/NonEmptyString.json"
+    },
+    "approval": {
+      "$ref": "https://tuvren.dev/schemas/framework/runtime-api/ApprovalRequest.json"
+    },
+    "manifest": {
+      "$ref": "https://tuvren.dev/schemas/framework/runtime-api/ContextManifest.json"
+    },
+    "pauseReason": {
+      "type": "string"
+    }
+  },
+  "required": ["phase", "iterationCount"],
+  "unevaluatedProperties": {
+    "not": {}
+  }
+}

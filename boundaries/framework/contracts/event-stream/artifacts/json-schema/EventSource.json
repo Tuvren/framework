@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/event-stream/EventSource.json",
+  "type": "object",
+  "properties": {
+    "agent": {
+      "type": "string"
+    },
+    "driver": {
+      "type": "string"
+    },
+    "provider": {
+      "type": "string"
+    }
+  },
+  "unevaluatedProperties": {
+    "not": {}
+  }
+}

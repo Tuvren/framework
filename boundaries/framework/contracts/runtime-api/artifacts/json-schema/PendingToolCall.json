@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/runtime-api/PendingToolCall.json",
+  "type": "object",
+  "properties": {
+    "callId": {
+      "$ref": "https://tuvren.dev/schemas/framework/runtime-api/NonEmptyString.json"
+    },
+    "name": {
+      "$ref": "https://tuvren.dev/schemas/framework/runtime-api/NonEmptyString.json"
+    },
+    "input": {},
+    "decisions": {
+      "type": "array",
+      "items": {
+        "$ref": "https://tuvren.dev/schemas/framework/runtime-api/NonEmptyString.json"
+      },
+      "minItems": 1
+    },
+    "message": {
+      "$ref": "https://tuvren.dev/schemas/framework/runtime-api/NonEmptyString.json"
+    }
+  },
+  "required": ["callId", "name", "input", "decisions", "message"],
+  "unevaluatedProperties": {
+    "not": {}
+  }
+}

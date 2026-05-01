@@ -1,0 +1,86 @@
+{
+  "planId": "tuvren.framework.driver-api.core",
+  "planVersion": "0.1.0",
+  "packetId": "tuvren.framework.driver-api",
+  "applicability": {
+    "capabilities": ["framework.driver-api"]
+  },
+  "scenarios": {
+    "driver-api-scenarios": "../scenarios/driver-api-scenarios.json"
+  },
+  "checks": [
+    {
+      "checkId": "driver-api.execute.resolution",
+      "operation": "driver.execute",
+      "scenario": "driver-api-scenarios",
+      "input": { "scenarioPath": "$.driver-hook-turn" },
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.driver.phase",
+          "equals": "completed"
+        }
+      ],
+      "evidence": ["driver.phase"]
+    },
+    {
+      "checkId": "driver-api.resume.approval",
+      "operation": "driver.resume",
+      "scenario": "driver-api-scenarios",
+      "input": { "scenarioPath": "$.driver-resume-approval" },
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.driver.resolutionType",
+          "equals": "end_turn"
+        },
+        {
+          "kind": "evidenceField",
+          "field": "$.driver.approvalDecisionCallIds",
+          "equals": ["call-search"]
+        },
+        {
+          "kind": "evidenceField",
+          "field": "$.driver.pendingToolCallIds",
+          "equals": ["call-search"]
+        }
+      ],
+      "evidence": [
+        "driver.resolutionType",
+        "driver.approvalDecisionCallIds",
+        "driver.pendingToolCallIds"
+      ]
+    },
+    {
+      "checkId": "driver-api.resume.requires-pending-call",
+      "operation": "driver.resume",
+      "scenario": "driver-api-scenarios",
+      "input": { "scenarioPath": "$.driver-resume-missing-pending-call" },
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.driver.resolutionType",
+          "equals": "fail"
+        },
+        {
+          "kind": "errorEnvelope",
+          "path": "$.result.error"
+        }
+      ],
+      "evidence": ["driver.resolutionType", "result.error.code"]
+    },
+    {
+      "checkId": "driver-api.error.envelope",
+      "operation": "driver.execute",
+      "scenario": "driver-api-scenarios",
+      "input": { "scenarioPath": "$.driver-provider-failure" },
+      "assertions": [
+        {
+          "kind": "errorEnvelope",
+          "path": "$.result.error"
+        }
+      ],
+      "evidence": ["result.error.code"]
+    }
+  ]
+}

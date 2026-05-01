@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/runtime-api/RuntimeOperationName.json",
+  "type": "string",
+  "enum": [
+    "runtime.execute-turn",
+    "runtime.provider-generate",
+    "runtime.provider-stream",
+    "runtime.tool-execute",
+    "runtime.approval-resolve",
+    "runtime.context-transform",
+    "runtime.branch-create",
+    "runtime.cancel-execution",
+    "runtime.recover-result",
+    "runtime.validate-structured-output"
+  ]
+}

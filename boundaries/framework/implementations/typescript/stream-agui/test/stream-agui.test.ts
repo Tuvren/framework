@@ -16,28 +16,34 @@
 
 import { describe, expect, test } from "bun:test";
 import { EventSchemas, EventType } from "@ag-ui/core";
-import type { TuvrenStreamEvent } from "@tuvren/event-stream";
 import {
-  collectStreamValues,
-  createFixtureEventStream,
-  frameworkStreamTestFixtures,
-  waitForAsyncTurn,
-} from "@tuvren/framework-testkit";
-import { teeTuvrenStreamEvents } from "@tuvren/stream-core";
+  assertTuvrenStreamEvent,
+  type TuvrenStreamEvent,
+} from "@tuvren/event-stream";
+import {
+  createFixtureStream,
+  teeTuvrenStreamEvents,
+} from "@tuvren/stream-core";
+import { loadConformancePlan } from "../../../../../../tools/conformance/plan-compiler/index.js";
 import { toAgUiEvents } from "../src/index.ts";
+
+const frameworkStreamFixtures = await readFrameworkStreamFixtures();
+
+interface FrameworkStreamFixtureSet {
+  completedTurn: readonly TuvrenStreamEvent[];
+  failedTurn: readonly TuvrenStreamEvent[];
+  pausedTurn: readonly TuvrenStreamEvent[];
+}
 
 describe("stream-agui", () => {
   test("maps canonical runtime events onto validated AG-UI events", async () => {
     const warnings: string[] = [];
     const events = await collectStreamValues(
-      toAgUiEvents(
-        createFixtureEventStream(frameworkStreamTestFixtures.completedTurn),
-        {
-          onWarning(warning) {
-            warnings.push(warning.code);
-          },
-        }
-      )
+      toAgUiEvents(createFixtureStream(frameworkStreamFixtures.completedTurn), {
+        onWarning(warning) {
+          warnings.push(warning.code);
+        },
+      })
     );
 
     expect(events.map((event) => EventSchemas.parse(event).type)).toEqual([
@@ -63,7 +69,7 @@ describe("stream-agui", () => {
       "agui_message_done_custom_fallback",
     ]);
     expect(events[0]?.rawEvent).toEqual(
-      frameworkStreamTestFixtures.completedTurn[0]
+      frameworkStreamFixtures.completedTurn[0]
     );
 
     const stateSnapshot = events.find(
@@ -72,8 +78,8 @@ describe("stream-agui", () => {
 
     expect(stateSnapshot?.snapshot).toEqual({
       contextManifest:
-        frameworkStreamTestFixtures.completedTurn[10]?.type === "state.snapshot"
-          ? frameworkStreamTestFixtures.completedTurn[10].manifest
+        frameworkStreamFixtures.completedTurn[10]?.type === "state.snapshot"
+          ? frameworkStreamFixtures.completedTurn[10].manifest
           : undefined,
     });
   });
@@ -81,14 +87,11 @@ describe("stream-agui", () => {
   test("coerces paused approval turns into CUSTOM plus RUN_FINISHED", async () => {
     const warnings: string[] = [];
     const events = await collectStreamValues(
-      toAgUiEvents(
-        createFixtureEventStream(frameworkStreamTestFixtures.pausedTurn),
-        {
-          onWarning(warning) {
-            warnings.push(warning.code);
-          },
-        }
-      )
+      toAgUiEvents(createFixtureStream(frameworkStreamFixtures.pausedTurn), {
+        onWarning(warning) {
+          warnings.push(warning.code);
+        },
+      })
     );
 
     expect(events.map((event) => event.type)).toEqual([
@@ -109,15 +112,15 @@ describe("stream-agui", () => {
     );
 
     expect(pausedTurnEvent?.value).toEqual(
-      frameworkStreamTestFixtures.pausedTurn[2]
+      frameworkStreamFixtures.pausedTurn[2]
     );
     expect(pausedTurnEvent?.rawEvent).toEqual(
-      frameworkStreamTestFixtures.pausedTurn[2]
+      frameworkStreamFixtures.pausedTurn[2]
     );
   });
 
   test("uses the last fatal canonical error to emit RUN_ERROR on failed turns", async () => {
-    const failureEvent = frameworkStreamTestFixtures.failedTurn.find(
+    const failureEvent = frameworkStreamFixtures.failedTurn.find(
       (event): event is Extract<TuvrenStreamEvent, { type: "error" }> =>
         event.type === "error"
     );
@@ -127,9 +130,7 @@ describe("stream-agui", () => {
     }
 
     const events = await collectStreamValues(
-      toAgUiEvents(
-        createFixtureEventStream(frameworkStreamTestFixtures.failedTurn)
-      )
+      toAgUiEvents(createFixtureStream(frameworkStreamFixtures.failedTurn))
     );
 
     expect(events.map((event) => event.type)).toEqual([
@@ -169,7 +170,7 @@ describe("stream-agui", () => {
       },
     ];
     const events = await collectStreamValues(
-      toAgUiEvents(createFixtureEventStream(toolCallEvents))
+      toAgUiEvents(createFixtureStream(toolCallEvents))
     );
 
     expect(events.map((event) => event.type)).toEqual([
@@ -207,7 +208,7 @@ describe("stream-agui", () => {
       },
     ];
     const events = await collectStreamValues(
-      toAgUiEvents(createFixtureEventStream(textDoneEvents))
+      toAgUiEvents(createFixtureStream(textDoneEvents))
     );
 
     expect(events.map((event) => event.type)).toEqual([
@@ -267,7 +268,7 @@ describe("stream-agui", () => {
       },
     ];
     const events = await collectStreamValues(
-      toAgUiEvents(createFixtureEventStream(failedOpenStreamEvents))
+      toAgUiEvents(createFixtureStream(failedOpenStreamEvents))
     );
 
     expect(events.map((event) => event.type)).toEqual([
@@ -312,7 +313,7 @@ describe("stream-agui", () => {
       },
     ];
     const events = await collectStreamValues(
-      toAgUiEvents(createFixtureEventStream(resumedEvents))
+      toAgUiEvents(createFixtureStream(resumedEvents))
     );
 
     expect(events[0]).toMatchObject({
@@ -334,7 +335,7 @@ describe("stream-agui", () => {
 
     try {
       await collectStreamValues(
-        toAgUiEvents(createFixtureEventStream(missingStartEvents))
+        toAgUiEvents(createFixtureStream(missingStartEvents))
       );
       throw new Error(
         "expected a failed turn without turn.start to be rejected"
@@ -347,7 +348,7 @@ describe("stream-agui", () => {
 
   test("subscribes eagerly so delayed AG-UI consumption still receives RUN_STARTED", async () => {
     const [aguiBranch, directBranch] = teeTuvrenStreamEvents(
-      createFixtureEventStream(frameworkStreamTestFixtures.completedTurn),
+      createFixtureStream(frameworkStreamFixtures.completedTurn),
       2
     );
     const aguiEvents = toAgUiEvents(aguiBranch);
@@ -355,7 +356,7 @@ describe("stream-agui", () => {
 
     expect(await directIterator.next()).toMatchObject({
       done: false,
-      value: frameworkStreamTestFixtures.completedTurn[0],
+      value: frameworkStreamFixtures.completedTurn[0],
     });
     await waitForAsyncTurn();
     await directIterator.return?.();
@@ -374,4 +375,60 @@ function readErrorCode(error: unknown): unknown {
   }
 
   return error.code;
+}
+
+async function readFrameworkStreamFixtures(): Promise<FrameworkStreamFixtureSet> {
+  const plan = await loadConformancePlan(
+    "boundaries/framework/conformance/plans/event-stream-core.json"
+  );
+  const fixture = plan.fixtures.get("stream-events");
+
+  // The fixture bytes are plan-owned; this assertion only narrows the
+  // TypeScript binding projection used by these adapter mechanics tests.
+  assertFrameworkStreamFixtureSet(fixture, "stream-events fixture");
+  return fixture;
+}
+
+function assertFrameworkStreamFixtureSet(
+  value: unknown,
+  label: string
+): asserts value is FrameworkStreamFixtureSet {
+  if (!isRecord(value)) {
+    throw new Error(`${label} must be an object`);
+  }
+
+  assertTuvrenStreamEvents(value.completedTurn, `${label}.completedTurn`);
+  assertTuvrenStreamEvents(value.failedTurn, `${label}.failedTurn`);
+  assertTuvrenStreamEvents(value.pausedTurn, `${label}.pausedTurn`);
+}
+
+function assertTuvrenStreamEvents(
+  value: unknown,
+  label: string
+): asserts value is readonly TuvrenStreamEvent[] {
+  if (!Array.isArray(value)) {
+    throw new Error(`${label} must be an array`);
+  }
+
+  for (const [index, event] of value.entries()) {
+    assertTuvrenStreamEvent(event, `${label}[${index}]`);
+  }
+}
+
+async function collectStreamValues<T>(values: AsyncIterable<T>): Promise<T[]> {
+  const collected: T[] = [];
+
+  for await (const value of values) {
+    collected.push(value);
+  }
+
+  return collected;
+}
+
+async function waitForAsyncTurn(): Promise<void> {
+  await Promise.resolve();
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
 }

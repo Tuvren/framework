@@ -26,7 +26,6 @@
     "test/**/*.ts",
     "../../../../../kernel/contracts/protocol/implementations/typescript/src/**/*.ts",
     "../../../../../framework/contracts/runtime-api/implementations/typescript/src/**/*.ts",
-    "../../../../../shared/contracts/core-types/implementations/typescript/src/**/*.ts",
-    "../../../../../../tests/fixtures/**/*.ts"
+    "../../../../../shared/contracts/core-types/implementations/typescript/src/**/*.ts"
   ]
 }

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/event-stream/BaseEvent.json",
+  "type": "object",
+  "properties": {
+    "timestamp": {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/EpochMs.json"
+    },
+    "source": {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/EventSource.json"
+    }
+  },
+  "required": ["timestamp"]
+}

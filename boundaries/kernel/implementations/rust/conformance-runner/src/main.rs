@@ -25,6 +25,8 @@ use tuvren_kernel_rust::{
     hash_kernel_record, hash_turn_node_identity, kernel_record_from_json, schema_to_record,
 };
 
+pub mod adapter_scaffold;
+
 const MANIFEST_PATH: &str = "boundaries/kernel/conformance/scenarios/suite-manifest.json";
 const RUST_IMPLEMENTATION_ID: &str = "rust-kernel";
 const EXPECTED_RUST_CHECK_IDS: &[&str] = &[

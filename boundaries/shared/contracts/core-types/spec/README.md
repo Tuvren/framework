@@ -1,8 +1,8 @@
 # Core Types Spec Authority
 
-Epic R activates this directory as the boundary-owned authored-source home for
-future machine-readable shared core-type sources when a real promotion is
-approved.
+`core-types` is promoted through Epic Y.
 
-- Current semantic authority remains `docs/` plus `constitution/`.
-- Shared contract growth here must remain minimal and cross-boundary.
+- `authority-packet.json` declares `tuvren.shared.core-types`.
+- `typespec/` carries the neutral shared payload and error-envelope source.
+- `bindings/` records language-specific projection appendices.
+- TypeScript implementations are binding projections, not authority.

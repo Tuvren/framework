@@ -215,7 +215,6 @@ must be updated during relocation:
 - `boundaries/kernel/implementations/typescript/conformance-runner/test/kernel-typescript-conformance.test.ts`
 - `boundaries/framework/implementations/typescript/conformance-runner/test/framework-typescript-conformance.test.ts`
 - `boundaries/providers/implementations/typescript/conformance-runner/test/providers-typescript-conformance.test.ts`
-- `tests/fixtures/kernel-protocol-fixtures.ts`
 
 ### Contract-root tests that intentionally read neutral assets
 

@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/shared/core-types/ContentPart.json",
+  "anyOf": [
+    {
+      "$ref": "https://tuvren.dev/schemas/shared/core-types/TextPart.json"
+    },
+    {
+      "$ref": "https://tuvren.dev/schemas/shared/core-types/ReasoningPart.json"
+    },
+    {
+      "$ref": "https://tuvren.dev/schemas/shared/core-types/ToolCallPart.json"
+    },
+    {
+      "$ref": "https://tuvren.dev/schemas/shared/core-types/ToolResultPart.json"
+    },
+    {
+      "$ref": "https://tuvren.dev/schemas/shared/core-types/FilePart.json"
+    },
+    {
+      "$ref": "https://tuvren.dev/schemas/shared/core-types/StructuredPart.json"
+    }
+  ]
+}

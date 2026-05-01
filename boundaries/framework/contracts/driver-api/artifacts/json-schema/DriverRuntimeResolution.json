@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/driver-api/DriverRuntimeResolution.json",
+  "type": "object",
+  "properties": {
+    "type": {
+      "anyOf": [
+        {
+          "type": "string",
+          "const": "continue_iteration"
+        },
+        {
+          "type": "string",
+          "const": "end_turn"
+        },
+        {
+          "type": "string",
+          "const": "pause"
+        },
+        {
+          "type": "string",
+          "const": "handoff"
+        },
+        {
+          "type": "string",
+          "const": "fail"
+        }
+      ]
+    },
+    "reason": {
+      "type": "string"
+    },
+    "targetAgent": {
+      "type": "string"
+    },
+    "approval": {},
+    "error": {
+      "$ref": "https://tuvren.dev/schemas/framework/driver-api/ErrorEnvelope.json"
+    },
+    "fatality": {
+      "anyOf": [
+        {
+          "type": "string",
+          "const": "hard"
+        },
+        {
+          "type": "string",
+          "const": "soft"
+        }
+      ]
+    },
+    "contextPlan": {
+      "$ref": "https://tuvren.dev/schemas/framework/driver-api/Metadata.json"
+    }
+  },
+  "required": ["type"],
+  "unevaluatedProperties": {
+    "not": {}
+  }
+}

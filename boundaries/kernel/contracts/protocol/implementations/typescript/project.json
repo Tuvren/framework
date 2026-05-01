@@ -38,7 +38,7 @@
         "default",
         "^production",
         "{workspaceRoot}/boundaries/kernel/contracts/protocol/spec/**/*",
-        "{workspaceRoot}/tests/fixtures/**/*"
+        "{workspaceRoot}/boundaries/kernel/conformance/fixtures/**/*"
       ]
     },
     "typecheck": {

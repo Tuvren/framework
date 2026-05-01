@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/event-stream/ContextManifest.json",
+  "type": "object",
+  "properties": {
+    "messageCount": {
+      "type": "integer",
+      "minimum": -2147483648,
+      "maximum": 2147483647
+    },
+    "tokenEstimate": {
+      "type": "integer",
+      "minimum": -2147483648,
+      "maximum": 2147483647
+    },
+    "toolCalls": {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/ContextManifestCounters.json"
+    },
+    "toolResults": {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/ContextManifestCounters.json"
+    },
+    "byRole": {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/Metadata.json"
+    },
+    "extensions": {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/Metadata.json"
+    },
+    "lastUserMessageIndex": {
+      "type": "integer",
+      "minimum": -2147483648,
+      "maximum": 2147483647
+    },
+    "lastAssistantMessageIndex": {
+      "type": "integer",
+      "minimum": -2147483648,
+      "maximum": 2147483647
+    },
+    "turnBoundaries": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "minimum": -2147483648,
+        "maximum": 2147483647
+      }
+    }
+  },
+  "required": ["messageCount"],
+  "unevaluatedProperties": {
+    "not": {}
+  }
+}

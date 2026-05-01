@@ -16,13 +16,7 @@
 
 import { describe, expect, test } from "bun:test";
 import { TuvrenValidationError } from "@tuvren/core-types";
-import {
-  kernelProtocolDeterministicFixtures,
-  kernelProtocolInvalidFixtures,
-  kernelProtocolLogicalFixtures,
-  kernelProtocolStoredFixtures,
-} from "../../../../../../../tests/fixtures/kernel-protocol-fixtures.js";
-import { deterministicKernelRecordFixture } from "../../../../../../../tests/fixtures/kernel-record-fixtures.js";
+import { deterministicKernelRecordFixture } from "../../../../../../shared/contracts/core-types/implementations/typescript/test/kernel-record-fixtures.js";
 import type { ComposedVerdict, KernelSignal, Verdict } from "../src/index.ts";
 import {
   assertBranchHeadListEntry,
@@ -77,6 +71,12 @@ import {
   isVerdict,
   isVerdictDisposition,
 } from "../src/index.ts";
+import {
+  kernelProtocolDeterministicFixtures,
+  kernelProtocolInvalidFixtures,
+  kernelProtocolLogicalFixtures,
+  kernelProtocolStoredFixtures,
+} from "./kernel-protocol-fixtures.js";
 
 function invokeHashTurnTreeIdentity(
   schemaId: string,

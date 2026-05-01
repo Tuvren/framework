@@ -7,5 +7,5 @@
     "rootDir": "../../../../../",
     "types": ["bun"]
   },
-  "include": ["src/**/*.ts", "test/**/*.ts", "../testkit/src/**/*.ts"]
+  "include": ["src/**/*.ts", "test/**/*.ts"]
 }

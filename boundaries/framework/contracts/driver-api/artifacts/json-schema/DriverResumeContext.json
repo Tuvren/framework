@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/driver-api/DriverResumeContext.json",
+  "type": "object",
+  "properties": {
+    "approval": {},
+    "resumedFrom": {
+      "type": "string"
+    }
+  },
+  "required": ["approval"],
+  "allOf": [
+    {
+      "$ref": "https://tuvren.dev/schemas/framework/driver-api/DriverExecutionContext.json"
+    }
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  }
+}

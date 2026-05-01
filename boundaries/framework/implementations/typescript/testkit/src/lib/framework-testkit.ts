@@ -16,7 +16,6 @@
 
 import type { TuvrenStreamEvent } from "@tuvren/event-stream";
 import { assertTuvrenStreamEvent } from "@tuvren/event-stream";
-import { frameworkStreamTestFixtures as loadedFrameworkStreamFixtures } from "./framework-conformance-fixtures.js";
 
 export interface EventLike {
   type: string;
@@ -31,15 +30,6 @@ export interface AsyncCapture<T> {
   readonly done: Promise<void>;
   readonly events: T[];
 }
-
-export interface FrameworkStreamTestFixtureSet {
-  completedTurn: readonly TuvrenStreamEvent[];
-  failedTurn: readonly TuvrenStreamEvent[];
-  pausedTurn: readonly TuvrenStreamEvent[];
-}
-
-export const frameworkStreamTestFixtures: FrameworkStreamTestFixtureSet =
-  loadedFrameworkStreamFixtures;
 
 export function createFixtureEventStream(
   events: readonly TuvrenStreamEvent[]

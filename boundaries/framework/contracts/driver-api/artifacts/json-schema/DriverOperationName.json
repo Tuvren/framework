@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/driver-api/DriverOperationName.json",
+  "type": "string",
+  "enum": [
+    "driver.initialize",
+    "driver.execute",
+    "driver.resume",
+    "driver.emit-event",
+    "driver.checkpoint",
+    "driver.cancel"
+  ]
+}

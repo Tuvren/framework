@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/runtime-api/ByteSequence.json",
+  "type": "object",
+  "properties": {
+    "encoding": {
+      "type": "string",
+      "const": "base64"
+    },
+    "data": {
+      "type": "string"
+    }
+  },
+  "required": ["encoding", "data"],
+  "unevaluatedProperties": {
+    "not": {}
+  }
+}

@@ -1,0 +1,151 @@
+{
+  "planId": "tuvren.framework.runtime-api.lifecycle",
+  "planVersion": "0.1.0",
+  "packetId": "tuvren.framework.runtime-api",
+  "applicability": {
+    "capabilities": ["framework.runtime-api"]
+  },
+  "scenarios": {
+    "runtime-api-scenarios": "../scenarios/runtime-api-scenarios.json"
+  },
+  "checks": [
+    {
+      "checkId": "runtime-api.execute-turn.lifecycle",
+      "operation": "runtime.execute-turn",
+      "scenario": "runtime-api-scenarios",
+      "input": { "scenarioPath": "$.completed-turn" },
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.runtime.phase",
+          "equals": "completed"
+        }
+      ],
+      "evidence": ["runtime.phase", "runtime.eventCount"]
+    },
+    {
+      "checkId": "runtime-api.cancel-execution.failure",
+      "operation": "runtime.cancel-execution",
+      "controls": { "deadlineMs": 1000, "cancelAfterEvent": "turn.start" },
+      "assertions": [
+        {
+          "kind": "errorEnvelope",
+          "path": "$.result.error"
+        }
+      ],
+      "evidence": ["result.error.code"]
+    },
+    {
+      "checkId": "runtime-api.approval-resolve.paused-resume",
+      "operation": "runtime.approval-resolve",
+      "scenario": "runtime-api-scenarios",
+      "input": { "scenarioPath": "$.paused-turn-resume" },
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.approval.pausedPhase",
+          "equals": "paused"
+        },
+        {
+          "kind": "evidenceField",
+          "field": "$.approval.resumedPhase",
+          "equals": "completed"
+        }
+      ],
+      "evidence": ["approval.pausedPhase", "approval.resumedPhase"]
+    },
+    {
+      "checkId": "runtime-api.branch-create.recovery",
+      "operation": "runtime.branch-create",
+      "scenario": "runtime-api-scenarios",
+      "input": { "scenarioPath": "$.branch-from-completed-head" },
+      "assertions": [
+        {
+          "kind": "stateField",
+          "field": "$.branch.completedTurnPhase",
+          "equals": "completed"
+        },
+        {
+          "kind": "stateField",
+          "field": "$.branch.sourceMessageCount",
+          "equals": 2
+        },
+        {
+          "kind": "stateField",
+          "field": "$.branch.sourceHeadTurnNodeHash",
+          "matches": "^[a-f0-9]{64}$"
+        },
+        {
+          "kind": "stateField",
+          "field": "$.branch.createdHeadTurnNodeHash",
+          "matches": "^[a-f0-9]{64}$"
+        }
+      ],
+      "evidence": [
+        "branch.createdBranchId",
+        "branch.sourceBranchId",
+        "branch.completedTurnPhase",
+        "branch.sourceMessageCount",
+        "branch.createdHeadTurnNodeHash",
+        "branch.sourceHeadTurnNodeHash"
+      ]
+    },
+    {
+      "checkId": "runtime-api.context-transform.shared-summary",
+      "operation": "runtime.context-transform",
+      "scenario": "runtime-api-scenarios",
+      "input": { "scenarioPath": "$.context-transform-append-summary" },
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.context.messageCount",
+          "equals": 3
+        },
+        {
+          "kind": "evidenceField",
+          "field": "$.context.summaryText",
+          "equals": "Shared context engineering summary."
+        },
+        {
+          "kind": "evidenceField",
+          "field": "$.runtime.phase",
+          "equals": "completed"
+        }
+      ],
+      "evidence": [
+        "context.messageCount",
+        "context.summaryText",
+        "runtime.phase"
+      ]
+    },
+    {
+      "checkId": "runtime-api.recover-result.staged-result",
+      "operation": "runtime.recover-result",
+      "scenario": "runtime-api-scenarios",
+      "input": { "scenarioPath": "$.recover-staged-result" },
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.recovery.uncommittedStagedResults",
+          "equals": 1
+        },
+        {
+          "kind": "evidenceField",
+          "field": "$.recovery.firstTaskId",
+          "equals": "tool-search"
+        },
+        {
+          "kind": "evidenceField",
+          "field": "$.recovery.firstObjectType",
+          "equals": "message"
+        }
+      ],
+      "evidence": [
+        "recovery.uncommittedStagedResults",
+        "recovery.firstTaskId",
+        "recovery.firstObjectType",
+        "recovery.lastTurnNodeHash"
+      ]
+    }
+  ]
+}

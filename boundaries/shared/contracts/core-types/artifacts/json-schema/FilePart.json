@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/shared/core-types/FilePart.json",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "const": "file"
+    },
+    "mediaType": {
+      "$ref": "https://tuvren.dev/schemas/shared/core-types/NonEmptyString.json"
+    },
+    "filename": {
+      "type": "string"
+    },
+    "data": {
+      "$ref": "https://tuvren.dev/schemas/shared/core-types/ByteSequence.json"
+    },
+    "providerMetadata": {
+      "$ref": "https://tuvren.dev/schemas/shared/core-types/Metadata.json"
+    }
+  },
+  "required": ["type", "mediaType", "data"],
+  "unevaluatedProperties": {
+    "not": {}
+  }
+}

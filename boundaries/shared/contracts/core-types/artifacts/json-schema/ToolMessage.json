@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/shared/core-types/ToolMessage.json",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "const": "tool"
+    },
+    "parts": {
+      "type": "array",
+      "items": {
+        "$ref": "https://tuvren.dev/schemas/shared/core-types/ToolResultPart.json"
+      },
+      "minItems": 1
+    }
+  },
+  "required": ["role", "parts"],
+  "unevaluatedProperties": {
+    "not": {}
+  }
+}

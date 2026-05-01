@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/runtime-api/ApprovalRequest.json",
+  "type": "object",
+  "properties": {
+    "completedResults": {
+      "type": "array",
+      "items": {
+        "$ref": "https://tuvren.dev/schemas/framework/runtime-api/ToolResultPart.json"
+      }
+    },
+    "toolCalls": {
+      "type": "array",
+      "items": {
+        "$ref": "https://tuvren.dev/schemas/framework/runtime-api/PendingToolCall.json"
+      },
+      "minItems": 1
+    }
+  },
+  "required": ["completedResults", "toolCalls"],
+  "unevaluatedProperties": {
+    "not": {}
+  }
+}

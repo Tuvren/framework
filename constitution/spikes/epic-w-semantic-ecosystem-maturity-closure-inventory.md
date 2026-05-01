@@ -10,7 +10,7 @@ success or TypeScript-local test lore.
 
 - `constitution/spikes/epic-w-semantic-coverage-matrix.md`
 - Assertion-bearing conformance manifests:
-  - `boundaries/framework/conformance/scenarios/suite-manifest.json`
+  - `boundaries/framework/conformance/plans/event-stream-core.json`
   - `boundaries/kernel/conformance/scenarios/suite-manifest.json`
   - `boundaries/providers/conformance/scenarios/suite-manifest.json`
   - `boundaries/framework/interop/rust-kernel/scenarios/suite-manifest.json`

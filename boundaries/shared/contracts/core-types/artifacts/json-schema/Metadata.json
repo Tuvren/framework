@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/shared/core-types/Metadata.json",
+  "type": "object",
+  "properties": {},
+  "unevaluatedProperties": {},
+  "description": "Opaque JSON object used for metadata maps."
+}

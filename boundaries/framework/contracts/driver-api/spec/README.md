@@ -1,7 +1,8 @@
-# Driver API Spec Placeholder
+# Driver API Spec Authority
 
-No language-neutral source has been authored for `driver-api` yet.
+`driver-api` is promoted through Epic Y.
 
-The current authoritative implementation remains the TypeScript package under
-`../implementations/typescript/`. Promoting this surface to a neutral source is
-explicitly deferred beyond Epic X.
+- `authority-packet.json` declares `tuvren.framework.driver-api`.
+- `typespec/` carries neutral driver operation and payload source.
+- `bindings/` records language-specific projection appendices.
+- TypeScript implementations are binding projections, not authority.

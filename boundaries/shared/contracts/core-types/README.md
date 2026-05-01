@@ -1,10 +1,11 @@
 # Core Types Contract Root
 
-This contract root is reserved for language-neutral `core-types` assets plus
+This contract root owns the boundary authority packet for `core-types` plus
 implementation subtrees.
 
-The current TypeScript package implementation for `@tuvren/core-types` lives
-under `implementations/typescript/`.
+The cross-implementation authority is `spec/authority-packet.json`, backed by
+neutral TypeSpec sources under `spec/typespec/` and generated JSON Schema
+artifacts under `artifacts/json-schema/`.
 
-Epic X intentionally does not author a language-neutral source for this
-surface. See `spec/README.md` for the deferred source-authority note.
+The TypeScript package implementation for `@tuvren/core-types` lives under
+`implementations/typescript/` and is a binding projection of the packet.

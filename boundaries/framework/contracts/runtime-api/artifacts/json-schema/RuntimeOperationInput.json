@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/runtime-api/RuntimeOperationInput.json",
+  "type": "object",
+  "properties": {
+    "threadId": {
+      "$ref": "https://tuvren.dev/schemas/framework/runtime-api/NonEmptyString.json"
+    },
+    "branchId": {
+      "$ref": "https://tuvren.dev/schemas/framework/runtime-api/NonEmptyString.json"
+    },
+    "turnId": {
+      "$ref": "https://tuvren.dev/schemas/framework/runtime-api/NonEmptyString.json"
+    },
+    "prompt": {
+      "$ref": "https://tuvren.dev/schemas/framework/runtime-api/TuvrenPrompt.json"
+    },
+    "messages": {
+      "type": "array",
+      "items": {
+        "$ref": "https://tuvren.dev/schemas/framework/runtime-api/TuvrenMessage.json"
+      }
+    },
+    "approval": {
+      "$ref": "https://tuvren.dev/schemas/framework/runtime-api/ApprovalResponse.json"
+    },
+    "toolName": {
+      "$ref": "https://tuvren.dev/schemas/framework/runtime-api/NonEmptyString.json"
+    },
+    "toolInput": {},
+    "controls": {
+      "$ref": "https://tuvren.dev/schemas/framework/runtime-api/Metadata.json"
+    }
+  },
+  "unevaluatedProperties": {
+    "not": {}
+  }
+}

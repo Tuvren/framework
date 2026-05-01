@@ -16,6 +16,7 @@
 
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, relative, resolve } from "node:path";
+import process from "node:process";
 import { fileURLToPath } from "node:url";
 import type { AnySchema } from "ajv";
 import Ajv2020 from "ajv/dist/2020.js";
@@ -103,9 +104,10 @@ interface CompatibilitySuite {
 }
 
 interface ConformanceRunner {
+  command?: string[];
   implementationId: string;
   language: string;
-  manifestPath: string;
+  manifestPath?: string;
   project: string;
 }
 
@@ -133,13 +135,14 @@ const COMPATIBILITY_METADATA = {
   generatedAtMs: 0,
   sourceRevision: "checked-in-workspace",
 } as const;
+// Evidence refresh can intentionally record known red lanes, but the default
+// compatibility codegen path remains a pass/fail gate for verification.
+const ALLOW_FAILING_EVIDENCE_FLAG = "--allow-failing-evidence";
 
 const CONFORMANCE_RUNNERS: readonly ConformanceRunner[] = [
   {
     implementationId: "typescript-framework",
     language: "typescript",
-    manifestPath:
-      "boundaries/framework/conformance/scenarios/suite-manifest.json",
     project: "framework-typescript-conformance-runner",
   },
   {
@@ -161,6 +164,14 @@ const CONFORMANCE_RUNNERS: readonly ConformanceRunner[] = [
     manifestPath: "boundaries/kernel/conformance/scenarios/suite-manifest.json",
     project: "kernel-rust-conformance-runner",
   },
+  {
+    // This lane is expected to emit red evidence today; running Cargo directly
+    // keeps the structured JSON parseable after the process exits nonzero.
+    command: ["cargo", "run", "-p", "tuvren-framework-rust-conformance-runner"],
+    implementationId: "rust-framework",
+    language: "rust",
+    project: "framework-rust-conformance-runner",
+  },
 ];
 
 const INTEROP_RUNNERS: readonly InteropRunner[] = [
@@ -176,6 +187,9 @@ const INTEROP_RUNNERS: readonly InteropRunner[] = [
 await main();
 
 async function main(): Promise<void> {
+  const allowFailingEvidence = process.argv.includes(
+    ALLOW_FAILING_EVIDENCE_FLAG
+  );
   // Checked-in evidence must describe only the currently measured suite set,
   // so codegen clears the directory before regenerating the authoritative
   // suite-specific artifacts.
@@ -189,16 +203,19 @@ async function main(): Promise<void> {
   let hasFailure = false;
 
   for (const runner of CONFORMANCE_RUNNERS) {
-    const suiteManifest = await readSuiteManifest(runner.manifestPath);
+    const suiteManifest =
+      runner.manifestPath === undefined
+        ? undefined
+        : await readSuiteManifest(runner.manifestPath);
     const result = await runConformanceTarget(runner, suiteManifest);
 
-    if (!seenSuiteIds.has(suiteManifest.suiteId)) {
+    if (!seenSuiteIds.has(result.suite.suiteId)) {
       suites.push({
-        boundary: suiteManifest.boundary,
-        suiteId: suiteManifest.suiteId,
-        suiteVersion: suiteManifest.suiteVersion,
+        boundary: result.suite.boundary,
+        suiteId: result.suite.suiteId,
+        suiteVersion: result.suite.suiteVersion,
       });
-      seenSuiteIds.add(suiteManifest.suiteId);
+      seenSuiteIds.add(result.suite.suiteId);
     }
     // Epic R establishes the first measured TypeScript baseline only. Later
     // language lines append peer implementation evidence here rather than
@@ -261,7 +278,7 @@ async function main(): Promise<void> {
   // regeneration.
   await formatGeneratedOutputs();
 
-  if (hasFailure) {
+  if (hasFailure && !allowFailingEvidence) {
     throw new Error("one or more conformance targets failed");
   }
 }
@@ -274,19 +291,22 @@ async function readSuiteManifest(
 
 async function runConformanceTarget(
   runner: ConformanceRunner,
-  suiteManifest: ConformanceSuiteManifest
+  suiteManifest: ConformanceSuiteManifest | undefined
 ): Promise<{
   matrixResult: CompatibilityImplementationResult;
+  suite: CompatibilitySuite;
 }> {
   // The compatibility matrix is meant to be measured evidence, not replayed
   // cached console output, so each conformance lane is forced to execute.
   const command = [
-    "bun",
-    "run",
-    "nx",
-    "run",
-    `${runner.project}:conformance`,
-    "--skipNxCache",
+    ...(runner.command ?? [
+      "bun",
+      "run",
+      "nx",
+      "run",
+      `${runner.project}:conformance`,
+      "--skipNxCache",
+    ]),
   ];
   const commandResult = await runCommand(command, {
     captureOutput: true,
@@ -294,20 +314,28 @@ async function runConformanceTarget(
   });
   const evidenceFilePath = resolve(
     EVIDENCE_DIRECTORY,
-    `${suiteManifest.suiteId}.${runner.implementationId}.json`
+    `${runner.project}.${runner.implementationId}.json`
   );
   const relativeEvidencePath = relative(REPO_ROOT, evidenceFilePath);
-  const fallbackCheckResults = createFallbackCheckResults(
-    suiteManifest,
-    "implementations",
-    runner.implementationId,
-    "runner exited without structured conformance evidence"
-  );
+  const fallbackCheckResults =
+    suiteManifest === undefined
+      ? []
+      : createFallbackCheckResults(
+          suiteManifest,
+          "implementations",
+          runner.implementationId,
+          "runner exited without structured conformance evidence"
+        );
   const parsedEvidence = readConformanceEvidence(commandResult.stdout);
   const evidencePayload =
     parsedEvidence === undefined
       ? createFallbackEvidence(
-          suiteManifest,
+          suiteManifest ?? {
+            boundary: "unknown",
+            checks: [],
+            suiteId: runner.project,
+            suiteVersion: "0.0.0",
+          },
           runner.implementationId,
           runner.language,
           fallbackCheckResults
@@ -356,6 +384,11 @@ async function runConformanceTarget(
       checkSummary: evidencePayload.summary,
       evidencePath: relativeEvidencePath,
       status,
+      suiteId: evidencePayload.suiteId,
+      suiteVersion: evidencePayload.suiteVersion,
+    },
+    suite: {
+      boundary: evidencePayload.boundary,
       suiteId: evidencePayload.suiteId,
       suiteVersion: evidencePayload.suiteVersion,
     },

@@ -1,0 +1,83 @@
+{
+  "planId": "tuvren.framework.react-driver.callables",
+  "planVersion": "0.1.0",
+  "packetId": "tuvren.framework.react-driver",
+  "applicability": {
+    "capabilities": ["framework.react-driver"]
+  },
+  "scenarios": {
+    "driver-api-scenarios": "../scenarios/driver-api-scenarios.json"
+  },
+  "checks": [
+    {
+      "checkId": "react-driver-callable.before-iteration",
+      "operation": "driver.execute",
+      "scenario": "driver-api-scenarios",
+      "input": { "scenarioPath": "$.driver-hook-turn" },
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.hooks.beforeIteration",
+          "equals": 2
+        }
+      ],
+      "evidence": ["hooks.beforeIteration"]
+    },
+    {
+      "checkId": "react-driver-callable.around-model",
+      "operation": "driver.execute",
+      "scenario": "driver-api-scenarios",
+      "input": { "scenarioPath": "$.driver-hook-turn" },
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.hooks.aroundModel",
+          "equals": 2
+        }
+      ],
+      "evidence": ["hooks.aroundModel"]
+    },
+    {
+      "checkId": "react-driver-callable.around-tool",
+      "operation": "driver.execute",
+      "scenario": "driver-api-scenarios",
+      "input": { "scenarioPath": "$.driver-hook-turn" },
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.hooks.aroundTool",
+          "equals": 1
+        }
+      ],
+      "evidence": ["hooks.aroundTool"]
+    },
+    {
+      "checkId": "react-driver-callable.after-iteration",
+      "operation": "driver.execute",
+      "scenario": "driver-api-scenarios",
+      "input": { "scenarioPath": "$.driver-hook-turn" },
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.hooks.afterIteration",
+          "equals": 2
+        }
+      ],
+      "evidence": ["hooks.afterIteration"]
+    },
+    {
+      "checkId": "react-driver-callable.checkpoint",
+      "operation": "driver.checkpoint",
+      "scenario": "driver-api-scenarios",
+      "input": { "scenarioPath": "$.driver-checkpoint-turn" },
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.checkpoint.manifestPathCount",
+          "equals": 4
+        }
+      ],
+      "evidence": ["checkpoint.manifestPathCount"]
+    }
+  ]
+}

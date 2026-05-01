@@ -1,0 +1,56 @@
+{
+  "packetId": "tuvren.shared.core-types",
+  "version": "0.1.0",
+  "boundary": "shared",
+  "surface": "core-types",
+  "humanAuthorityRefs": [
+    "docs/KrakenKernelSpecification.md",
+    "docs/KrakenFrameworkSpecification.md",
+    "constitution/TechSpec.md#4.11-authority-packet-manifest-contract"
+  ],
+  "authoritativeSources": [
+    {
+      "path": "boundaries/shared/contracts/core-types/spec/typespec/main.tsp",
+      "format": "typespec"
+    }
+  ],
+  "generatedArtifacts": [
+    {
+      "path": "boundaries/shared/contracts/core-types/artifacts/json-schema",
+      "generatedFrom": "boundaries/shared/contracts/core-types/spec/typespec",
+      "generator": "@typespec/json-schema"
+    }
+  ],
+  "bindingProjections": {
+    "typescript": "boundaries/shared/contracts/core-types/implementations/typescript"
+  },
+  "bindingAppendices": [
+    {
+      "language": "typescript",
+      "path": "boundaries/shared/contracts/core-types/spec/bindings/typescript.md"
+    }
+  ],
+  "forbiddenAuthoritySources": [
+    "boundaries/shared/contracts/core-types/implementations/typescript",
+    "boundaries/shared/contracts/core-types/README.md",
+    "boundaries/shared/contracts/core-types/spec/README.md",
+    "docs",
+    "constitution"
+  ],
+  "verificationPaths": [
+    {
+      "kind": "schema-validation",
+      "target": "boundaries/shared/contracts/core-types/artifacts/json-schema"
+    },
+    {
+      "kind": "freshness-check",
+      "target": "boundaries/shared/contracts/core-types/artifacts/json-schema"
+    }
+  ],
+  "freshnessChecks": [
+    {
+      "artifact": "boundaries/shared/contracts/core-types/artifacts/json-schema",
+      "regenerateCommand": "bun run nx run shared-core-types:codegen"
+    }
+  ]
+}

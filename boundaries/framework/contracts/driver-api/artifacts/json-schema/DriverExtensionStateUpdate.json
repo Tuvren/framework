@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/driver-api/DriverExtensionStateUpdate.json",
+  "type": "object",
+  "properties": {
+    "extensionName": {
+      "$ref": "https://tuvren.dev/schemas/framework/driver-api/NonEmptyString.json"
+    },
+    "state": {
+      "$ref": "https://tuvren.dev/schemas/framework/driver-api/Metadata.json"
+    }
+  },
+  "required": ["extensionName", "state"],
+  "unevaluatedProperties": {
+    "not": {}
+  }
+}

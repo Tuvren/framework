@@ -14,13 +14,6 @@
         "command": "bunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false"
       }
     },
-    "conformance": {
-      "executor": "nx:run-commands",
-      "options": {
-        "cwd": "boundaries/framework/implementations/typescript/testkit",
-        "command": "bun test ./test/framework-conformance.test.ts"
-      }
-    },
     "exports-smoke": {
       "executor": "nx:run-commands",
       "dependsOn": ["build"],

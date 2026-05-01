@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/driver-api/DriverManifest.json",
+  "type": "object",
+  "properties": {
+    "id": {
+      "$ref": "https://tuvren.dev/schemas/framework/driver-api/NonEmptyString.json"
+    },
+    "version": {
+      "type": "string"
+    },
+    "capabilities": {
+      "$ref": "https://tuvren.dev/schemas/framework/driver-api/Metadata.json"
+    }
+  },
+  "required": ["id"],
+  "unevaluatedProperties": {
+    "not": {}
+  }
+}

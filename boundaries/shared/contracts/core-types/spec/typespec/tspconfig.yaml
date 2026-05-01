@@ -1,0 +1,10 @@
+warn-as-error: true
+emit:
+  - "@typespec/json-schema"
+options:
+  "@typespec/json-schema":
+    emitter-output-dir: "{project-root}/../../artifacts/json-schema"
+    file-type: json
+    emitAllModels: true
+    emitAllRefs: true
+    seal-object-schemas: true

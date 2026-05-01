@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/shared/core-types/HashString.json",
+  "type": "string",
+  "pattern": "^[0-9a-f]{64}$",
+  "description": "Stable lowercase hash string projected across authority packets."
+}

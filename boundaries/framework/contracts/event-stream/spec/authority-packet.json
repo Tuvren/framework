@@ -1,0 +1,72 @@
+{
+  "packetId": "tuvren.framework.event-stream",
+  "version": "0.1.0",
+  "boundary": "framework",
+  "surface": "event-stream",
+  "humanAuthorityRefs": [
+    "docs/KrakenFrameworkSpecification.md#3-streaming-contract",
+    "constitution/TechSpec.md#4.12-conformance-plan-contract"
+  ],
+  "authoritativeSources": [
+    {
+      "path": "boundaries/framework/contracts/event-stream/spec/typespec/main.tsp",
+      "format": "typespec"
+    },
+    {
+      "path": "boundaries/framework/conformance/plans/event-stream-core.json",
+      "format": "conformance-plan"
+    }
+  ],
+  "generatedArtifacts": [
+    {
+      "path": "boundaries/framework/contracts/event-stream/artifacts/json-schema",
+      "generatedFrom": "boundaries/framework/contracts/event-stream/spec/typespec",
+      "generator": "@typespec/json-schema"
+    }
+  ],
+  "conformancePlans": [
+    {
+      "planId": "tuvren.framework.event-stream.core",
+      "planVersion": "0.1.0",
+      "path": "boundaries/framework/conformance/plans/event-stream-core.json"
+    }
+  ],
+  "bindingProjections": {
+    "typescript": "boundaries/framework/contracts/event-stream/implementations/typescript"
+  },
+  "bindingAppendices": [
+    {
+      "language": "typescript",
+      "path": "boundaries/framework/contracts/event-stream/spec/bindings/typescript.md"
+    }
+  ],
+  "forbiddenAuthoritySources": [
+    "boundaries/framework/contracts/event-stream/implementations/typescript",
+    "boundaries/framework/implementations/typescript/conformance-runner",
+    "boundaries/framework/implementations/rust/conformance-runner",
+    "boundaries/framework/contracts/event-stream/README.md",
+    "boundaries/framework/contracts/event-stream/spec/README.md",
+    "docs",
+    "constitution"
+  ],
+  "verificationPaths": [
+    {
+      "kind": "schema-validation",
+      "target": "boundaries/framework/contracts/event-stream/artifacts/json-schema"
+    },
+    {
+      "kind": "conformance-plan",
+      "target": "boundaries/framework/conformance/plans/event-stream-core.json"
+    },
+    {
+      "kind": "freshness-check",
+      "target": "boundaries/framework/contracts/event-stream/artifacts/json-schema"
+    }
+  ],
+  "freshnessChecks": [
+    {
+      "artifact": "boundaries/framework/contracts/event-stream/artifacts/json-schema",
+      "regenerateCommand": "bun run nx run framework-event-stream:codegen"
+    }
+  ]
+}

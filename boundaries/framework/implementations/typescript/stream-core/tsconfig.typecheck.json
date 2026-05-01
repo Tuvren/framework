@@ -8,7 +8,6 @@
       "@tuvren/core-types": [
         "../../../../shared/contracts/core-types/implementations/typescript/src/index.ts"
       ],
-      "@tuvren/framework-testkit": ["../testkit/src/index.ts"],
       "@tuvren/stream-core": ["./src/index.ts"],
       "@tuvren/event-stream": [
         "../../../contracts/event-stream/implementations/typescript/src/index.ts"
@@ -26,7 +25,6 @@
     "src/**/*.ts",
     "test/**/*.ts",
     "smoke/**/*.ts",
-    "../testkit/src/**/*.ts",
     "../../../contracts/event-stream/implementations/typescript/src/**/*.ts",
     "../../../contracts/runtime-api/implementations/typescript/src/**/*.ts",
     "../../../../shared/contracts/core-types/implementations/typescript/src/**/*.ts"
