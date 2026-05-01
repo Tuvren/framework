@@ -24,7 +24,23 @@
   "driver-resume-approval": {
     "operation": "driver.resume",
     "approvalDecisions": [{ "callId": "call-search", "type": "approve" }],
-    "finalText": "driver resume from shared scenario"
+    "providerResponses": [
+      {
+        "finishReason": "stop",
+        "parts": [
+          { "type": "text", "text": "driver resume from shared scenario" }
+        ]
+      }
+    ]
+  },
+  "driver-provider-failure": {
+    "operation": "driver.execute-error",
+    "providerResponses": [
+      {
+        "finishReason": "error",
+        "parts": [{ "type": "text", "text": "driver provider failure" }]
+      }
+    ]
   },
   "driver-checkpoint-turn": {
     "operation": "driver.checkpoint",

@@ -317,7 +317,7 @@
             "details": {
               "operation": "driver.execute-error",
               "receivedControlKeys": [],
-              "receivedInputKeys": ["checkInput"]
+              "receivedInputKeys": ["checkInput", "scenario"]
             },
             "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
           },
@@ -337,7 +337,7 @@
             "details": {
               "operation": "driver.execute-error",
               "receivedControlKeys": [],
-              "receivedInputKeys": ["checkInput"]
+              "receivedInputKeys": ["checkInput", "scenario"]
             },
             "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
           }
@@ -366,9 +366,9 @@
           "error": {
             "code": "rust_framework_operation_not_implemented",
             "details": {
-              "operation": "event-stream.sse-projection",
+              "operation": "event-stream.runtime-sse-projection",
               "receivedControlKeys": [],
-              "receivedInputKeys": ["checkInput", "fixture"]
+              "receivedInputKeys": ["checkInput", "scenario"]
             },
             "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
           },
@@ -381,14 +381,14 @@
           "planVersion": "0.1.0"
         },
         "controls": {},
-        "operation": "event-stream.sse-projection",
+        "operation": "event-stream.runtime-sse-projection",
         "state": {
           "adapterError": {
             "code": "rust_framework_operation_not_implemented",
             "details": {
-              "operation": "event-stream.sse-projection",
+              "operation": "event-stream.runtime-sse-projection",
               "receivedControlKeys": [],
-              "receivedInputKeys": ["checkInput", "fixture"]
+              "receivedInputKeys": ["checkInput", "scenario"]
             },
             "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
           }
@@ -413,9 +413,9 @@
           "error": {
             "code": "rust_framework_operation_not_implemented",
             "details": {
-              "operation": "event-stream.sse-eager-subscription",
+              "operation": "event-stream.runtime-sse-eager-subscription",
               "receivedControlKeys": [],
-              "receivedInputKeys": ["checkInput", "fixture"]
+              "receivedInputKeys": ["checkInput", "scenario"]
             },
             "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
           },
@@ -428,14 +428,14 @@
           "planVersion": "0.1.0"
         },
         "controls": {},
-        "operation": "event-stream.sse-eager-subscription",
+        "operation": "event-stream.runtime-sse-eager-subscription",
         "state": {
           "adapterError": {
             "code": "rust_framework_operation_not_implemented",
             "details": {
-              "operation": "event-stream.sse-eager-subscription",
+              "operation": "event-stream.runtime-sse-eager-subscription",
               "receivedControlKeys": [],
-              "receivedInputKeys": ["checkInput", "fixture"]
+              "receivedInputKeys": ["checkInput", "scenario"]
             },
             "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
           }
@@ -464,9 +464,9 @@
           "error": {
             "code": "rust_framework_operation_not_implemented",
             "details": {
-              "operation": "event-stream.agui-projection",
+              "operation": "event-stream.runtime-agui-projection",
               "receivedControlKeys": [],
-              "receivedInputKeys": ["checkInput", "fixture"]
+              "receivedInputKeys": ["checkInput", "scenario"]
             },
             "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
           },
@@ -479,14 +479,14 @@
           "planVersion": "0.1.0"
         },
         "controls": {},
-        "operation": "event-stream.agui-projection",
+        "operation": "event-stream.runtime-agui-projection",
         "state": {
           "adapterError": {
             "code": "rust_framework_operation_not_implemented",
             "details": {
-              "operation": "event-stream.agui-projection",
+              "operation": "event-stream.runtime-agui-projection",
               "receivedControlKeys": [],
-              "receivedInputKeys": ["checkInput", "fixture"]
+              "receivedInputKeys": ["checkInput", "scenario"]
             },
             "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
           }
@@ -511,9 +511,9 @@
           "error": {
             "code": "rust_framework_operation_not_implemented",
             "details": {
-              "operation": "event-stream.agui-projection",
+              "operation": "event-stream.runtime-agui-projection",
               "receivedControlKeys": [],
-              "receivedInputKeys": ["checkInput", "fixture"]
+              "receivedInputKeys": ["checkInput", "scenario"]
             },
             "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
           },
@@ -526,14 +526,14 @@
           "planVersion": "0.1.0"
         },
         "controls": {},
-        "operation": "event-stream.agui-projection",
+        "operation": "event-stream.runtime-agui-projection",
         "state": {
           "adapterError": {
             "code": "rust_framework_operation_not_implemented",
             "details": {
-              "operation": "event-stream.agui-projection",
+              "operation": "event-stream.runtime-agui-projection",
               "receivedControlKeys": [],
-              "receivedInputKeys": ["checkInput", "fixture"]
+              "receivedInputKeys": ["checkInput", "scenario"]
             },
             "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
           }
@@ -554,10 +554,6 @@
         {
           "assertionId": "event-stream.agui.paused-turn-fallback.3.evidenceField",
           "status": "fail"
-        },
-        {
-          "assertionId": "event-stream.agui.paused-turn-fallback.4.evidenceField",
-          "status": "fail"
         }
       ],
       "checkId": "event-stream.agui.paused-turn-fallback",
@@ -566,9 +562,9 @@
           "error": {
             "code": "rust_framework_operation_not_implemented",
             "details": {
-              "operation": "event-stream.agui-projection",
+              "operation": "event-stream.runtime-agui-projection",
               "receivedControlKeys": [],
-              "receivedInputKeys": ["checkInput", "fixture"]
+              "receivedInputKeys": ["checkInput", "scenario"]
             },
             "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
           },
@@ -581,14 +577,14 @@
           "planVersion": "0.1.0"
         },
         "controls": {},
-        "operation": "event-stream.agui-projection",
+        "operation": "event-stream.runtime-agui-projection",
         "state": {
           "adapterError": {
             "code": "rust_framework_operation_not_implemented",
             "details": {
-              "operation": "event-stream.agui-projection",
+              "operation": "event-stream.runtime-agui-projection",
               "receivedControlKeys": [],
-              "receivedInputKeys": ["checkInput", "fixture"]
+              "receivedInputKeys": ["checkInput", "scenario"]
             },
             "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
           }

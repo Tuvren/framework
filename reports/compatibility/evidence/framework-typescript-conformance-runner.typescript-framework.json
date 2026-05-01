@@ -473,18 +473,48 @@
         "adapterOutcome": {
           "kind": "result",
           "value": {
+            "evidence": {
+              "driver": {
+                "resolutionType": "fail"
+              }
+            },
             "result": {
               "error": {
-                "code": "driver_execute_error",
-                "message": "driver execution failed"
+                "code": "react_driver_provider_failure",
+                "message": "provider returned an error finish reason",
+                "details": {
+                  "response": {
+                    "finishReason": "error",
+                    "parts": [
+                      {
+                        "type": "text",
+                        "text": "driver provider failure"
+                      }
+                    ]
+                  }
+                }
               }
             }
           }
         },
+        "driver": {
+          "resolutionType": "fail"
+        },
         "result": {
           "error": {
-            "code": "driver_execute_error",
-            "message": "driver execution failed"
+            "code": "react_driver_provider_failure",
+            "message": "provider returned an error finish reason",
+            "details": {
+              "response": {
+                "finishReason": "error",
+                "parts": [
+                  {
+                    "type": "text",
+                    "text": "driver provider failure"
+                  }
+                ]
+              }
+            }
           }
         },
         "state": {
@@ -518,92 +548,220 @@
           "kind": "result",
           "value": {
             "evidence": {
-              "frameEvents": [
+              "sourceEventTypes": [
                 "turn.start",
+                "state.checkpoint",
+                "state.snapshot",
+                "iteration.start",
+                "message.start",
+                "tool_call.start",
+                "tool_call.args_delta",
+                "tool_call.done",
+                "message.done",
+                "tool.start",
+                "tool.result",
+                "state.checkpoint",
+                "state.snapshot",
+                "iteration.end",
                 "iteration.start",
                 "message.start",
                 "text.delta",
                 "text.done",
+                "message.done",
+                "state.checkpoint",
+                "state.snapshot",
+                "iteration.end",
+                "state.checkpoint",
+                "turn.end"
+              ],
+              "frameEvents": [
+                "turn.start",
+                "state.checkpoint",
+                "state.snapshot",
+                "iteration.start",
+                "message.start",
                 "tool_call.start",
                 "tool_call.args_delta",
                 "tool_call.done",
+                "message.done",
                 "tool.start",
                 "tool.result",
+                "state.checkpoint",
                 "state.snapshot",
-                "custom",
-                "message.done",
                 "iteration.end",
+                "iteration.start",
+                "message.start",
+                "text.delta",
+                "text.done",
+                "message.done",
+                "state.checkpoint",
+                "state.snapshot",
+                "iteration.end",
+                "state.checkpoint",
                 "turn.end"
               ],
               "framePayloads": [
                 {
-                  "threadId": "thread-main",
-                  "timestamp": 1,
-                  "turnId": "turn-main",
-                  "type": "turn.start"
+                  "threadId": "conformance-id-1",
+                  "timestamp": 1777639852611,
+                  "turnId": "conformance-id-3",
+                  "type": "turn.start",
+                  "source": {
+                    "agent": "typescript-conformance-agent",
+                    "driver": "react",
+                    "threadId": "conformance-id-1"
+                  }
+                },
+                {
+                  "iterationCount": 0,
+                  "timestamp": 1777639852612,
+                  "turnNodeHash": "140056641f536293271cb5e47ec17f1afbb333e40a3bb142821be4b5e7028a50",
+                  "type": "state.checkpoint",
+                  "source": {
+                    "agent": "typescript-conformance-agent",
+                    "driver": "react",
+                    "threadId": "conformance-id-1"
+                  }
+                },
+                {
+                  "manifest": {
+                    "byRole": {
+                      "assistant": 0,
+                      "system": 0,
+                      "tool": 0,
+                      "user": 1
+                    },
+                    "extensions": {},
+                    "lastAssistantMessageIndex": -1,
+                    "lastUserMessageIndex": 0,
+                    "messageCount": 1,
+                    "tokenEstimate": 16,
+                    "toolCalls": {
+                      "byName": {},
+                      "total": 0
+                    },
+                    "toolResults": {
+                      "byName": {},
+                      "total": 0
+                    },
+                    "turnBoundaries": [0]
+                  },
+                  "timestamp": 1777639852612,
+                  "type": "state.snapshot",
+                  "source": {
+                    "agent": "typescript-conformance-agent",
+                    "driver": "react",
+                    "threadId": "conformance-id-1"
+                  }
                 },
                 {
                   "iterationCount": 1,
-                  "timestamp": 2,
-                  "type": "iteration.start"
+                  "timestamp": 1777639852612,
+                  "type": "iteration.start",
+                  "source": {
+                    "agent": "typescript-conformance-agent",
+                    "driver": "react",
+                    "threadId": "conformance-id-1"
+                  }
                 },
                 {
-                  "messageId": "message-main",
+                  "messageId": "4fcf63be-0227-4a0c-96f0-73980ea55f2a",
                   "role": "assistant",
-                  "timestamp": 3,
-                  "type": "message.start"
-                },
-                {
-                  "delta": "Hello",
-                  "messageId": "message-main",
-                  "timestamp": 4,
-                  "type": "text.delta"
-                },
-                {
-                  "messageId": "message-main",
-                  "text": "Hello",
-                  "timestamp": 5,
-                  "type": "text.done"
+                  "timestamp": 1777639852613,
+                  "type": "message.start",
+                  "source": {
+                    "agent": "typescript-conformance-agent",
+                    "driver": "react",
+                    "threadId": "conformance-id-1"
+                  }
                 },
                 {
                   "callId": "call-search",
-                  "messageId": "message-main",
+                  "messageId": "4fcf63be-0227-4a0c-96f0-73980ea55f2a",
                   "name": "search",
-                  "timestamp": 6,
-                  "type": "tool_call.start"
+                  "timestamp": 1777639852613,
+                  "type": "tool_call.start",
+                  "source": {
+                    "agent": "typescript-conformance-agent",
+                    "driver": "react",
+                    "threadId": "conformance-id-1"
+                  }
                 },
                 {
                   "callId": "call-search",
-                  "delta": "{\"query\":\"docs\"}",
-                  "timestamp": 7,
-                  "type": "tool_call.args_delta"
+                  "delta": "{\"query\":\"event stream measurement\"}",
+                  "timestamp": 1777639852613,
+                  "type": "tool_call.args_delta",
+                  "source": {
+                    "agent": "typescript-conformance-agent",
+                    "driver": "react",
+                    "threadId": "conformance-id-1"
+                  }
                 },
                 {
                   "callId": "call-search",
                   "input": {
-                    "query": "docs"
+                    "query": "event stream measurement"
                   },
                   "name": "search",
-                  "timestamp": 8,
-                  "type": "tool_call.done"
+                  "timestamp": 1777639852613,
+                  "type": "tool_call.done",
+                  "source": {
+                    "agent": "typescript-conformance-agent",
+                    "driver": "react",
+                    "threadId": "conformance-id-1"
+                  }
+                },
+                {
+                  "finishReason": "tool_call",
+                  "messageId": "4fcf63be-0227-4a0c-96f0-73980ea55f2a",
+                  "timestamp": 1777639852613,
+                  "type": "message.done",
+                  "source": {
+                    "agent": "typescript-conformance-agent",
+                    "driver": "react",
+                    "threadId": "conformance-id-1"
+                  }
                 },
                 {
                   "callId": "call-search",
                   "input": {
-                    "query": "docs"
+                    "query": "event stream measurement"
                   },
                   "name": "search",
-                  "timestamp": 9,
-                  "type": "tool.start"
+                  "timestamp": 1777639852614,
+                  "type": "tool.start",
+                  "source": {
+                    "agent": "typescript-conformance-agent",
+                    "driver": "react",
+                    "threadId": "conformance-id-1"
+                  }
                 },
                 {
                   "callId": "call-search",
                   "name": "search",
                   "output": {
-                    "hits": 2
+                    "ok": true,
+                    "source": "shared event stream scenario"
                   },
-                  "timestamp": 10,
-                  "type": "tool.result"
+                  "timestamp": 1777639852614,
+                  "type": "tool.result",
+                  "source": {
+                    "agent": "typescript-conformance-agent",
+                    "driver": "react",
+                    "threadId": "conformance-id-1"
+                  }
+                },
+                {
+                  "iterationCount": 1,
+                  "timestamp": 1777639852620,
+                  "turnNodeHash": "fa67587e044e22b815f2c95919e8c4253157bd2d629a3f889e828932197026b1",
+                  "type": "state.checkpoint",
+                  "source": {
+                    "agent": "typescript-conformance-agent",
+                    "driver": "react",
+                    "threadId": "conformance-id-1"
+                  }
                 },
                 {
                   "manifest": {
@@ -617,7 +775,7 @@
                     "lastAssistantMessageIndex": 1,
                     "lastUserMessageIndex": 0,
                     "messageCount": 3,
-                    "tokenEstimate": 42,
+                    "tokenEstimate": 47,
                     "toolCalls": {
                       "byName": {
                         "search": 1
@@ -632,124 +790,374 @@
                     },
                     "turnBoundaries": [0]
                   },
-                  "timestamp": 11,
-                  "type": "state.snapshot"
-                },
-                {
-                  "data": {
-                    "ready": true
-                  },
-                  "name": "driver.executed",
-                  "timestamp": 12,
-                  "type": "custom"
-                },
-                {
-                  "finishReason": "stop",
-                  "messageId": "message-main",
-                  "timestamp": 13,
-                  "type": "message.done"
+                  "timestamp": 1777639852620,
+                  "type": "state.snapshot",
+                  "source": {
+                    "agent": "typescript-conformance-agent",
+                    "driver": "react",
+                    "threadId": "conformance-id-1"
+                  }
                 },
                 {
                   "iterationCount": 1,
-                  "timestamp": 14,
-                  "type": "iteration.end"
+                  "timestamp": 1777639852620,
+                  "type": "iteration.end",
+                  "source": {
+                    "agent": "typescript-conformance-agent",
+                    "driver": "react",
+                    "threadId": "conformance-id-1"
+                  }
+                },
+                {
+                  "iterationCount": 2,
+                  "timestamp": 1777639852620,
+                  "type": "iteration.start",
+                  "source": {
+                    "agent": "typescript-conformance-agent",
+                    "driver": "react",
+                    "threadId": "conformance-id-1"
+                  }
+                },
+                {
+                  "messageId": "786a56ea-98ee-46c2-82d1-0850d1464162",
+                  "role": "assistant",
+                  "timestamp": 1777639852621,
+                  "type": "message.start",
+                  "source": {
+                    "agent": "typescript-conformance-agent",
+                    "driver": "react",
+                    "threadId": "conformance-id-1"
+                  }
+                },
+                {
+                  "delta": "event stream turn completed",
+                  "messageId": "786a56ea-98ee-46c2-82d1-0850d1464162",
+                  "timestamp": 1777639852621,
+                  "type": "text.delta",
+                  "source": {
+                    "agent": "typescript-conformance-agent",
+                    "driver": "react",
+                    "threadId": "conformance-id-1"
+                  }
+                },
+                {
+                  "messageId": "786a56ea-98ee-46c2-82d1-0850d1464162",
+                  "text": "event stream turn completed",
+                  "timestamp": 1777639852621,
+                  "type": "text.done",
+                  "source": {
+                    "agent": "typescript-conformance-agent",
+                    "driver": "react",
+                    "threadId": "conformance-id-1"
+                  }
+                },
+                {
+                  "finishReason": "stop",
+                  "messageId": "786a56ea-98ee-46c2-82d1-0850d1464162",
+                  "timestamp": 1777639852621,
+                  "type": "message.done",
+                  "source": {
+                    "agent": "typescript-conformance-agent",
+                    "driver": "react",
+                    "threadId": "conformance-id-1"
+                  }
+                },
+                {
+                  "iterationCount": 2,
+                  "timestamp": 1777639852622,
+                  "turnNodeHash": "5ec2475ec7babf2660987caeebabb488eb99bc54f959e72cbf0e6d916dcdc88b",
+                  "type": "state.checkpoint",
+                  "source": {
+                    "agent": "typescript-conformance-agent",
+                    "driver": "react",
+                    "threadId": "conformance-id-1"
+                  }
+                },
+                {
+                  "manifest": {
+                    "byRole": {
+                      "assistant": 2,
+                      "system": 0,
+                      "tool": 1,
+                      "user": 1
+                    },
+                    "extensions": {},
+                    "lastAssistantMessageIndex": 3,
+                    "lastUserMessageIndex": 0,
+                    "messageCount": 4,
+                    "tokenEstimate": 54,
+                    "toolCalls": {
+                      "byName": {
+                        "search": 1
+                      },
+                      "total": 1
+                    },
+                    "toolResults": {
+                      "byName": {
+                        "search": 1
+                      },
+                      "total": 1
+                    },
+                    "turnBoundaries": [0]
+                  },
+                  "timestamp": 1777639852623,
+                  "type": "state.snapshot",
+                  "source": {
+                    "agent": "typescript-conformance-agent",
+                    "driver": "react",
+                    "threadId": "conformance-id-1"
+                  }
+                },
+                {
+                  "iterationCount": 2,
+                  "timestamp": 1777639852623,
+                  "type": "iteration.end",
+                  "source": {
+                    "agent": "typescript-conformance-agent",
+                    "driver": "react",
+                    "threadId": "conformance-id-1"
+                  }
+                },
+                {
+                  "iterationCount": 2,
+                  "timestamp": 1777639852624,
+                  "turnNodeHash": "c9b4ddfd122a60339c3afeb14208518273d8f1492e1b918789f57302e53f4bf4",
+                  "type": "state.checkpoint",
+                  "source": {
+                    "agent": "typescript-conformance-agent",
+                    "driver": "react",
+                    "threadId": "conformance-id-1"
+                  }
                 },
                 {
                   "status": "completed",
-                  "timestamp": 15,
-                  "turnId": "turn-main",
-                  "type": "turn.end"
+                  "timestamp": 1777639852624,
+                  "turnId": "conformance-id-3",
+                  "type": "turn.end",
+                  "source": {
+                    "agent": "typescript-conformance-agent",
+                    "driver": "react",
+                    "threadId": "conformance-id-1"
+                  }
                 }
               ]
             }
           }
         },
-        "frameEvents": [
+        "sourceEventTypes": [
           "turn.start",
+          "state.checkpoint",
+          "state.snapshot",
+          "iteration.start",
+          "message.start",
+          "tool_call.start",
+          "tool_call.args_delta",
+          "tool_call.done",
+          "message.done",
+          "tool.start",
+          "tool.result",
+          "state.checkpoint",
+          "state.snapshot",
+          "iteration.end",
           "iteration.start",
           "message.start",
           "text.delta",
           "text.done",
+          "message.done",
+          "state.checkpoint",
+          "state.snapshot",
+          "iteration.end",
+          "state.checkpoint",
+          "turn.end"
+        ],
+        "frameEvents": [
+          "turn.start",
+          "state.checkpoint",
+          "state.snapshot",
+          "iteration.start",
+          "message.start",
           "tool_call.start",
           "tool_call.args_delta",
           "tool_call.done",
+          "message.done",
           "tool.start",
           "tool.result",
+          "state.checkpoint",
           "state.snapshot",
-          "custom",
-          "message.done",
           "iteration.end",
+          "iteration.start",
+          "message.start",
+          "text.delta",
+          "text.done",
+          "message.done",
+          "state.checkpoint",
+          "state.snapshot",
+          "iteration.end",
+          "state.checkpoint",
           "turn.end"
         ],
         "framePayloads": [
           {
-            "threadId": "thread-main",
-            "timestamp": 1,
-            "turnId": "turn-main",
-            "type": "turn.start"
+            "threadId": "conformance-id-1",
+            "timestamp": 1777639852611,
+            "turnId": "conformance-id-3",
+            "type": "turn.start",
+            "source": {
+              "agent": "typescript-conformance-agent",
+              "driver": "react",
+              "threadId": "conformance-id-1"
+            }
+          },
+          {
+            "iterationCount": 0,
+            "timestamp": 1777639852612,
+            "turnNodeHash": "140056641f536293271cb5e47ec17f1afbb333e40a3bb142821be4b5e7028a50",
+            "type": "state.checkpoint",
+            "source": {
+              "agent": "typescript-conformance-agent",
+              "driver": "react",
+              "threadId": "conformance-id-1"
+            }
+          },
+          {
+            "manifest": {
+              "byRole": {
+                "assistant": 0,
+                "system": 0,
+                "tool": 0,
+                "user": 1
+              },
+              "extensions": {},
+              "lastAssistantMessageIndex": -1,
+              "lastUserMessageIndex": 0,
+              "messageCount": 1,
+              "tokenEstimate": 16,
+              "toolCalls": {
+                "byName": {},
+                "total": 0
+              },
+              "toolResults": {
+                "byName": {},
+                "total": 0
+              },
+              "turnBoundaries": [0]
+            },
+            "timestamp": 1777639852612,
+            "type": "state.snapshot",
+            "source": {
+              "agent": "typescript-conformance-agent",
+              "driver": "react",
+              "threadId": "conformance-id-1"
+            }
           },
           {
             "iterationCount": 1,
-            "timestamp": 2,
-            "type": "iteration.start"
+            "timestamp": 1777639852612,
+            "type": "iteration.start",
+            "source": {
+              "agent": "typescript-conformance-agent",
+              "driver": "react",
+              "threadId": "conformance-id-1"
+            }
           },
           {
-            "messageId": "message-main",
+            "messageId": "4fcf63be-0227-4a0c-96f0-73980ea55f2a",
             "role": "assistant",
-            "timestamp": 3,
-            "type": "message.start"
-          },
-          {
-            "delta": "Hello",
-            "messageId": "message-main",
-            "timestamp": 4,
-            "type": "text.delta"
-          },
-          {
-            "messageId": "message-main",
-            "text": "Hello",
-            "timestamp": 5,
-            "type": "text.done"
+            "timestamp": 1777639852613,
+            "type": "message.start",
+            "source": {
+              "agent": "typescript-conformance-agent",
+              "driver": "react",
+              "threadId": "conformance-id-1"
+            }
           },
           {
             "callId": "call-search",
-            "messageId": "message-main",
+            "messageId": "4fcf63be-0227-4a0c-96f0-73980ea55f2a",
             "name": "search",
-            "timestamp": 6,
-            "type": "tool_call.start"
+            "timestamp": 1777639852613,
+            "type": "tool_call.start",
+            "source": {
+              "agent": "typescript-conformance-agent",
+              "driver": "react",
+              "threadId": "conformance-id-1"
+            }
           },
           {
             "callId": "call-search",
-            "delta": "{\"query\":\"docs\"}",
-            "timestamp": 7,
-            "type": "tool_call.args_delta"
+            "delta": "{\"query\":\"event stream measurement\"}",
+            "timestamp": 1777639852613,
+            "type": "tool_call.args_delta",
+            "source": {
+              "agent": "typescript-conformance-agent",
+              "driver": "react",
+              "threadId": "conformance-id-1"
+            }
           },
           {
             "callId": "call-search",
             "input": {
-              "query": "docs"
+              "query": "event stream measurement"
             },
             "name": "search",
-            "timestamp": 8,
-            "type": "tool_call.done"
+            "timestamp": 1777639852613,
+            "type": "tool_call.done",
+            "source": {
+              "agent": "typescript-conformance-agent",
+              "driver": "react",
+              "threadId": "conformance-id-1"
+            }
+          },
+          {
+            "finishReason": "tool_call",
+            "messageId": "4fcf63be-0227-4a0c-96f0-73980ea55f2a",
+            "timestamp": 1777639852613,
+            "type": "message.done",
+            "source": {
+              "agent": "typescript-conformance-agent",
+              "driver": "react",
+              "threadId": "conformance-id-1"
+            }
           },
           {
             "callId": "call-search",
             "input": {
-              "query": "docs"
+              "query": "event stream measurement"
             },
             "name": "search",
-            "timestamp": 9,
-            "type": "tool.start"
+            "timestamp": 1777639852614,
+            "type": "tool.start",
+            "source": {
+              "agent": "typescript-conformance-agent",
+              "driver": "react",
+              "threadId": "conformance-id-1"
+            }
           },
           {
             "callId": "call-search",
             "name": "search",
             "output": {
-              "hits": 2
+              "ok": true,
+              "source": "shared event stream scenario"
             },
-            "timestamp": 10,
-            "type": "tool.result"
+            "timestamp": 1777639852614,
+            "type": "tool.result",
+            "source": {
+              "agent": "typescript-conformance-agent",
+              "driver": "react",
+              "threadId": "conformance-id-1"
+            }
+          },
+          {
+            "iterationCount": 1,
+            "timestamp": 1777639852620,
+            "turnNodeHash": "fa67587e044e22b815f2c95919e8c4253157bd2d629a3f889e828932197026b1",
+            "type": "state.checkpoint",
+            "source": {
+              "agent": "typescript-conformance-agent",
+              "driver": "react",
+              "threadId": "conformance-id-1"
+            }
           },
           {
             "manifest": {
@@ -763,7 +1171,7 @@
               "lastAssistantMessageIndex": 1,
               "lastUserMessageIndex": 0,
               "messageCount": 3,
-              "tokenEstimate": 42,
+              "tokenEstimate": 47,
               "toolCalls": {
                 "byName": {
                   "search": 1
@@ -778,33 +1186,155 @@
               },
               "turnBoundaries": [0]
             },
-            "timestamp": 11,
-            "type": "state.snapshot"
-          },
-          {
-            "data": {
-              "ready": true
-            },
-            "name": "driver.executed",
-            "timestamp": 12,
-            "type": "custom"
-          },
-          {
-            "finishReason": "stop",
-            "messageId": "message-main",
-            "timestamp": 13,
-            "type": "message.done"
+            "timestamp": 1777639852620,
+            "type": "state.snapshot",
+            "source": {
+              "agent": "typescript-conformance-agent",
+              "driver": "react",
+              "threadId": "conformance-id-1"
+            }
           },
           {
             "iterationCount": 1,
-            "timestamp": 14,
-            "type": "iteration.end"
+            "timestamp": 1777639852620,
+            "type": "iteration.end",
+            "source": {
+              "agent": "typescript-conformance-agent",
+              "driver": "react",
+              "threadId": "conformance-id-1"
+            }
+          },
+          {
+            "iterationCount": 2,
+            "timestamp": 1777639852620,
+            "type": "iteration.start",
+            "source": {
+              "agent": "typescript-conformance-agent",
+              "driver": "react",
+              "threadId": "conformance-id-1"
+            }
+          },
+          {
+            "messageId": "786a56ea-98ee-46c2-82d1-0850d1464162",
+            "role": "assistant",
+            "timestamp": 1777639852621,
+            "type": "message.start",
+            "source": {
+              "agent": "typescript-conformance-agent",
+              "driver": "react",
+              "threadId": "conformance-id-1"
+            }
+          },
+          {
+            "delta": "event stream turn completed",
+            "messageId": "786a56ea-98ee-46c2-82d1-0850d1464162",
+            "timestamp": 1777639852621,
+            "type": "text.delta",
+            "source": {
+              "agent": "typescript-conformance-agent",
+              "driver": "react",
+              "threadId": "conformance-id-1"
+            }
+          },
+          {
+            "messageId": "786a56ea-98ee-46c2-82d1-0850d1464162",
+            "text": "event stream turn completed",
+            "timestamp": 1777639852621,
+            "type": "text.done",
+            "source": {
+              "agent": "typescript-conformance-agent",
+              "driver": "react",
+              "threadId": "conformance-id-1"
+            }
+          },
+          {
+            "finishReason": "stop",
+            "messageId": "786a56ea-98ee-46c2-82d1-0850d1464162",
+            "timestamp": 1777639852621,
+            "type": "message.done",
+            "source": {
+              "agent": "typescript-conformance-agent",
+              "driver": "react",
+              "threadId": "conformance-id-1"
+            }
+          },
+          {
+            "iterationCount": 2,
+            "timestamp": 1777639852622,
+            "turnNodeHash": "5ec2475ec7babf2660987caeebabb488eb99bc54f959e72cbf0e6d916dcdc88b",
+            "type": "state.checkpoint",
+            "source": {
+              "agent": "typescript-conformance-agent",
+              "driver": "react",
+              "threadId": "conformance-id-1"
+            }
+          },
+          {
+            "manifest": {
+              "byRole": {
+                "assistant": 2,
+                "system": 0,
+                "tool": 1,
+                "user": 1
+              },
+              "extensions": {},
+              "lastAssistantMessageIndex": 3,
+              "lastUserMessageIndex": 0,
+              "messageCount": 4,
+              "tokenEstimate": 54,
+              "toolCalls": {
+                "byName": {
+                  "search": 1
+                },
+                "total": 1
+              },
+              "toolResults": {
+                "byName": {
+                  "search": 1
+                },
+                "total": 1
+              },
+              "turnBoundaries": [0]
+            },
+            "timestamp": 1777639852623,
+            "type": "state.snapshot",
+            "source": {
+              "agent": "typescript-conformance-agent",
+              "driver": "react",
+              "threadId": "conformance-id-1"
+            }
+          },
+          {
+            "iterationCount": 2,
+            "timestamp": 1777639852623,
+            "type": "iteration.end",
+            "source": {
+              "agent": "typescript-conformance-agent",
+              "driver": "react",
+              "threadId": "conformance-id-1"
+            }
+          },
+          {
+            "iterationCount": 2,
+            "timestamp": 1777639852624,
+            "turnNodeHash": "c9b4ddfd122a60339c3afeb14208518273d8f1492e1b918789f57302e53f4bf4",
+            "type": "state.checkpoint",
+            "source": {
+              "agent": "typescript-conformance-agent",
+              "driver": "react",
+              "threadId": "conformance-id-1"
+            }
           },
           {
             "status": "completed",
-            "timestamp": 15,
-            "turnId": "turn-main",
-            "type": "turn.end"
+            "timestamp": 1777639852624,
+            "turnId": "conformance-id-3",
+            "type": "turn.end",
+            "source": {
+              "agent": "typescript-conformance-agent",
+              "driver": "react",
+              "threadId": "conformance-id-1"
+            }
           }
         ],
         "state": {
@@ -872,164 +1402,344 @@
           "kind": "result",
           "value": {
             "evidence": {
+              "sourceEventTypes": [
+                "turn.start",
+                "state.checkpoint",
+                "state.snapshot",
+                "iteration.start",
+                "message.start",
+                "tool_call.start",
+                "tool_call.args_delta",
+                "tool_call.done",
+                "message.done",
+                "tool.start",
+                "tool.result",
+                "state.checkpoint",
+                "state.snapshot",
+                "iteration.end",
+                "iteration.start",
+                "message.start",
+                "text.delta",
+                "text.done",
+                "message.done",
+                "state.checkpoint",
+                "state.snapshot",
+                "iteration.end",
+                "state.checkpoint",
+                "turn.end"
+              ],
               "eventTypes": [
                 "RUN_STARTED",
+                "CUSTOM",
+                "STATE_SNAPSHOT",
                 "STEP_STARTED",
-                "TEXT_MESSAGE_START",
-                "TEXT_MESSAGE_CONTENT",
-                "TEXT_MESSAGE_END",
                 "TOOL_CALL_START",
                 "TOOL_CALL_ARGS",
                 "TOOL_CALL_END",
                 "CUSTOM",
+                "CUSTOM",
                 "TOOL_CALL_RESULT",
+                "CUSTOM",
                 "STATE_SNAPSHOT",
-                "CUSTOM",
-                "CUSTOM",
                 "STEP_FINISHED",
+                "STEP_STARTED",
+                "TEXT_MESSAGE_START",
+                "TEXT_MESSAGE_CONTENT",
+                "TEXT_MESSAGE_END",
+                "CUSTOM",
+                "CUSTOM",
+                "STATE_SNAPSHOT",
+                "STEP_FINISHED",
+                "CUSTOM",
                 "RUN_FINISHED"
               ],
               "events": [
                 {
                   "type": "RUN_STARTED",
-                  "timestamp": 1,
+                  "timestamp": 1777639852641,
                   "rawEvent": {
-                    "threadId": "thread-main",
-                    "timestamp": 1,
-                    "turnId": "turn-main",
-                    "type": "turn.start"
+                    "threadId": "conformance-id-1",
+                    "timestamp": 1777639852641,
+                    "turnId": "conformance-id-3",
+                    "type": "turn.start",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
                   },
-                  "threadId": "thread-main",
-                  "runId": "turn-main"
+                  "threadId": "conformance-id-1",
+                  "runId": "conformance-id-3"
+                },
+                {
+                  "type": "CUSTOM",
+                  "timestamp": 1777639852642,
+                  "rawEvent": {
+                    "iterationCount": 0,
+                    "timestamp": 1777639852642,
+                    "turnNodeHash": "140056641f536293271cb5e47ec17f1afbb333e40a3bb142821be4b5e7028a50",
+                    "type": "state.checkpoint",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
+                  },
+                  "name": "tuvren.runtime.state.checkpoint",
+                  "value": {
+                    "iterationCount": 0,
+                    "timestamp": 1777639852642,
+                    "turnNodeHash": "140056641f536293271cb5e47ec17f1afbb333e40a3bb142821be4b5e7028a50",
+                    "type": "state.checkpoint",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
+                  }
+                },
+                {
+                  "type": "STATE_SNAPSHOT",
+                  "timestamp": 1777639852642,
+                  "rawEvent": {
+                    "manifest": {
+                      "byRole": {
+                        "assistant": 0,
+                        "system": 0,
+                        "tool": 0,
+                        "user": 1
+                      },
+                      "extensions": {},
+                      "lastAssistantMessageIndex": -1,
+                      "lastUserMessageIndex": 0,
+                      "messageCount": 1,
+                      "tokenEstimate": 16,
+                      "toolCalls": {
+                        "byName": {},
+                        "total": 0
+                      },
+                      "toolResults": {
+                        "byName": {},
+                        "total": 0
+                      },
+                      "turnBoundaries": [0]
+                    },
+                    "timestamp": 1777639852642,
+                    "type": "state.snapshot",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
+                  },
+                  "snapshot": {
+                    "contextManifest": {
+                      "byRole": {
+                        "assistant": 0,
+                        "system": 0,
+                        "tool": 0,
+                        "user": 1
+                      },
+                      "extensions": {},
+                      "lastAssistantMessageIndex": -1,
+                      "lastUserMessageIndex": 0,
+                      "messageCount": 1,
+                      "tokenEstimate": 16,
+                      "toolCalls": {
+                        "byName": {},
+                        "total": 0
+                      },
+                      "toolResults": {
+                        "byName": {},
+                        "total": 0
+                      },
+                      "turnBoundaries": [0]
+                    }
+                  }
                 },
                 {
                   "type": "STEP_STARTED",
-                  "timestamp": 2,
+                  "timestamp": 1777639852642,
                   "rawEvent": {
                     "iterationCount": 1,
-                    "timestamp": 2,
-                    "type": "iteration.start"
+                    "timestamp": 1777639852642,
+                    "type": "iteration.start",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
                   },
                   "stepName": "iteration-1"
                 },
                 {
-                  "type": "TEXT_MESSAGE_START",
-                  "timestamp": 4,
-                  "rawEvent": {
-                    "delta": "Hello",
-                    "messageId": "message-main",
-                    "timestamp": 4,
-                    "type": "text.delta"
-                  },
-                  "messageId": "message-main",
-                  "role": "assistant"
-                },
-                {
-                  "type": "TEXT_MESSAGE_CONTENT",
-                  "timestamp": 4,
-                  "rawEvent": {
-                    "delta": "Hello",
-                    "messageId": "message-main",
-                    "timestamp": 4,
-                    "type": "text.delta"
-                  },
-                  "messageId": "message-main",
-                  "delta": "Hello"
-                },
-                {
-                  "type": "TEXT_MESSAGE_END",
-                  "timestamp": 5,
-                  "rawEvent": {
-                    "messageId": "message-main",
-                    "text": "Hello",
-                    "timestamp": 5,
-                    "type": "text.done"
-                  },
-                  "messageId": "message-main"
-                },
-                {
                   "type": "TOOL_CALL_START",
-                  "timestamp": 6,
+                  "timestamp": 1777639852643,
                   "rawEvent": {
                     "callId": "call-search",
-                    "messageId": "message-main",
+                    "messageId": "a095c779-8145-4e1d-83ad-fad4137b2c9c",
                     "name": "search",
-                    "timestamp": 6,
-                    "type": "tool_call.start"
+                    "timestamp": 1777639852643,
+                    "type": "tool_call.start",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
                   },
                   "toolCallId": "call-search",
                   "toolCallName": "search",
-                  "parentMessageId": "message-main"
+                  "parentMessageId": "a095c779-8145-4e1d-83ad-fad4137b2c9c"
                 },
                 {
                   "type": "TOOL_CALL_ARGS",
-                  "timestamp": 7,
+                  "timestamp": 1777639852643,
                   "rawEvent": {
                     "callId": "call-search",
-                    "delta": "{\"query\":\"docs\"}",
-                    "timestamp": 7,
-                    "type": "tool_call.args_delta"
+                    "delta": "{\"query\":\"event stream measurement\"}",
+                    "timestamp": 1777639852643,
+                    "type": "tool_call.args_delta",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
                   },
                   "toolCallId": "call-search",
-                  "delta": "{\"query\":\"docs\"}"
+                  "delta": "{\"query\":\"event stream measurement\"}"
                 },
                 {
                   "type": "TOOL_CALL_END",
-                  "timestamp": 8,
+                  "timestamp": 1777639852643,
                   "rawEvent": {
                     "callId": "call-search",
                     "input": {
-                      "query": "docs"
+                      "query": "event stream measurement"
                     },
                     "name": "search",
-                    "timestamp": 8,
-                    "type": "tool_call.done"
+                    "timestamp": 1777639852643,
+                    "type": "tool_call.done",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
                   },
                   "toolCallId": "call-search"
                 },
                 {
                   "type": "CUSTOM",
-                  "timestamp": 9,
+                  "timestamp": 1777639852643,
+                  "rawEvent": {
+                    "finishReason": "tool_call",
+                    "messageId": "a095c779-8145-4e1d-83ad-fad4137b2c9c",
+                    "timestamp": 1777639852643,
+                    "type": "message.done",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
+                  },
+                  "name": "tuvren.runtime.message.done",
+                  "value": {
+                    "finishReason": "tool_call",
+                    "messageId": "a095c779-8145-4e1d-83ad-fad4137b2c9c",
+                    "timestamp": 1777639852643,
+                    "type": "message.done",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
+                  }
+                },
+                {
+                  "type": "CUSTOM",
+                  "timestamp": 1777639852644,
                   "rawEvent": {
                     "callId": "call-search",
                     "input": {
-                      "query": "docs"
+                      "query": "event stream measurement"
                     },
                     "name": "search",
-                    "timestamp": 9,
-                    "type": "tool.start"
+                    "timestamp": 1777639852644,
+                    "type": "tool.start",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
                   },
                   "name": "tuvren.runtime.tool.start",
                   "value": {
                     "callId": "call-search",
                     "input": {
-                      "query": "docs"
+                      "query": "event stream measurement"
                     },
                     "name": "search",
-                    "timestamp": 9,
-                    "type": "tool.start"
+                    "timestamp": 1777639852644,
+                    "type": "tool.start",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
                   }
                 },
                 {
                   "type": "TOOL_CALL_RESULT",
-                  "timestamp": 10,
+                  "timestamp": 1777639852644,
                   "rawEvent": {
                     "callId": "call-search",
                     "name": "search",
                     "output": {
-                      "hits": 2
+                      "ok": true,
+                      "source": "shared event stream scenario"
                     },
-                    "timestamp": 10,
-                    "type": "tool.result"
+                    "timestamp": 1777639852644,
+                    "type": "tool.result",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
                   },
                   "messageId": "tool-result:call-search",
                   "toolCallId": "call-search",
-                  "content": "{\"hits\":2}",
+                  "content": "{\"ok\":true,\"source\":\"shared event stream scenario\"}",
                   "role": "tool"
                 },
                 {
+                  "type": "CUSTOM",
+                  "timestamp": 1777639852645,
+                  "rawEvent": {
+                    "iterationCount": 1,
+                    "timestamp": 1777639852645,
+                    "turnNodeHash": "fa67587e044e22b815f2c95919e8c4253157bd2d629a3f889e828932197026b1",
+                    "type": "state.checkpoint",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
+                  },
+                  "name": "tuvren.runtime.state.checkpoint",
+                  "value": {
+                    "iterationCount": 1,
+                    "timestamp": 1777639852645,
+                    "turnNodeHash": "fa67587e044e22b815f2c95919e8c4253157bd2d629a3f889e828932197026b1",
+                    "type": "state.checkpoint",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
+                  }
+                },
+                {
                   "type": "STATE_SNAPSHOT",
-                  "timestamp": 11,
+                  "timestamp": 1777639852645,
                   "rawEvent": {
                     "manifest": {
                       "byRole": {
@@ -1042,7 +1752,7 @@
                       "lastAssistantMessageIndex": 1,
                       "lastUserMessageIndex": 0,
                       "messageCount": 3,
-                      "tokenEstimate": 42,
+                      "tokenEstimate": 47,
                       "toolCalls": {
                         "byName": {
                           "search": 1
@@ -1057,8 +1767,13 @@
                       },
                       "turnBoundaries": [0]
                     },
-                    "timestamp": 11,
-                    "type": "state.snapshot"
+                    "timestamp": 1777639852645,
+                    "type": "state.snapshot",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
                   },
                   "snapshot": {
                     "contextManifest": {
@@ -1072,7 +1787,7 @@
                       "lastAssistantMessageIndex": 1,
                       "lastUserMessageIndex": 0,
                       "messageCount": 3,
-                      "tokenEstimate": 42,
+                      "tokenEstimate": 47,
                       "toolCalls": {
                         "byName": {
                           "search": 1
@@ -1090,229 +1805,615 @@
                   }
                 },
                 {
-                  "type": "CUSTOM",
-                  "timestamp": 12,
-                  "rawEvent": {
-                    "data": {
-                      "ready": true
-                    },
-                    "name": "driver.executed",
-                    "timestamp": 12,
-                    "type": "custom"
-                  },
-                  "name": "driver.executed",
-                  "value": {
-                    "ready": true
-                  }
-                },
-                {
-                  "type": "CUSTOM",
-                  "timestamp": 13,
-                  "rawEvent": {
-                    "finishReason": "stop",
-                    "messageId": "message-main",
-                    "timestamp": 13,
-                    "type": "message.done"
-                  },
-                  "name": "tuvren.runtime.message.done",
-                  "value": {
-                    "finishReason": "stop",
-                    "messageId": "message-main",
-                    "timestamp": 13,
-                    "type": "message.done"
-                  }
-                },
-                {
                   "type": "STEP_FINISHED",
-                  "timestamp": 14,
+                  "timestamp": 1777639852645,
                   "rawEvent": {
                     "iterationCount": 1,
-                    "timestamp": 14,
-                    "type": "iteration.end"
+                    "timestamp": 1777639852645,
+                    "type": "iteration.end",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
                   },
                   "stepName": "iteration-1"
                 },
                 {
+                  "type": "STEP_STARTED",
+                  "timestamp": 1777639852645,
+                  "rawEvent": {
+                    "iterationCount": 2,
+                    "timestamp": 1777639852645,
+                    "type": "iteration.start",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
+                  },
+                  "stepName": "iteration-2"
+                },
+                {
+                  "type": "TEXT_MESSAGE_START",
+                  "timestamp": 1777639852646,
+                  "rawEvent": {
+                    "delta": "event stream turn completed",
+                    "messageId": "fd2c61d0-61d3-43c5-8017-6369404ce5bd",
+                    "timestamp": 1777639852646,
+                    "type": "text.delta",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
+                  },
+                  "messageId": "fd2c61d0-61d3-43c5-8017-6369404ce5bd",
+                  "role": "assistant"
+                },
+                {
+                  "type": "TEXT_MESSAGE_CONTENT",
+                  "timestamp": 1777639852646,
+                  "rawEvent": {
+                    "delta": "event stream turn completed",
+                    "messageId": "fd2c61d0-61d3-43c5-8017-6369404ce5bd",
+                    "timestamp": 1777639852646,
+                    "type": "text.delta",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
+                  },
+                  "messageId": "fd2c61d0-61d3-43c5-8017-6369404ce5bd",
+                  "delta": "event stream turn completed"
+                },
+                {
+                  "type": "TEXT_MESSAGE_END",
+                  "timestamp": 1777639852646,
+                  "rawEvent": {
+                    "messageId": "fd2c61d0-61d3-43c5-8017-6369404ce5bd",
+                    "text": "event stream turn completed",
+                    "timestamp": 1777639852646,
+                    "type": "text.done",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
+                  },
+                  "messageId": "fd2c61d0-61d3-43c5-8017-6369404ce5bd"
+                },
+                {
+                  "type": "CUSTOM",
+                  "timestamp": 1777639852646,
+                  "rawEvent": {
+                    "finishReason": "stop",
+                    "messageId": "fd2c61d0-61d3-43c5-8017-6369404ce5bd",
+                    "timestamp": 1777639852646,
+                    "type": "message.done",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
+                  },
+                  "name": "tuvren.runtime.message.done",
+                  "value": {
+                    "finishReason": "stop",
+                    "messageId": "fd2c61d0-61d3-43c5-8017-6369404ce5bd",
+                    "timestamp": 1777639852646,
+                    "type": "message.done",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
+                  }
+                },
+                {
+                  "type": "CUSTOM",
+                  "timestamp": 1777639852648,
+                  "rawEvent": {
+                    "iterationCount": 2,
+                    "timestamp": 1777639852648,
+                    "turnNodeHash": "5ec2475ec7babf2660987caeebabb488eb99bc54f959e72cbf0e6d916dcdc88b",
+                    "type": "state.checkpoint",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
+                  },
+                  "name": "tuvren.runtime.state.checkpoint",
+                  "value": {
+                    "iterationCount": 2,
+                    "timestamp": 1777639852648,
+                    "turnNodeHash": "5ec2475ec7babf2660987caeebabb488eb99bc54f959e72cbf0e6d916dcdc88b",
+                    "type": "state.checkpoint",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
+                  }
+                },
+                {
+                  "type": "STATE_SNAPSHOT",
+                  "timestamp": 1777639852648,
+                  "rawEvent": {
+                    "manifest": {
+                      "byRole": {
+                        "assistant": 2,
+                        "system": 0,
+                        "tool": 1,
+                        "user": 1
+                      },
+                      "extensions": {},
+                      "lastAssistantMessageIndex": 3,
+                      "lastUserMessageIndex": 0,
+                      "messageCount": 4,
+                      "tokenEstimate": 54,
+                      "toolCalls": {
+                        "byName": {
+                          "search": 1
+                        },
+                        "total": 1
+                      },
+                      "toolResults": {
+                        "byName": {
+                          "search": 1
+                        },
+                        "total": 1
+                      },
+                      "turnBoundaries": [0]
+                    },
+                    "timestamp": 1777639852648,
+                    "type": "state.snapshot",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
+                  },
+                  "snapshot": {
+                    "contextManifest": {
+                      "byRole": {
+                        "assistant": 2,
+                        "system": 0,
+                        "tool": 1,
+                        "user": 1
+                      },
+                      "extensions": {},
+                      "lastAssistantMessageIndex": 3,
+                      "lastUserMessageIndex": 0,
+                      "messageCount": 4,
+                      "tokenEstimate": 54,
+                      "toolCalls": {
+                        "byName": {
+                          "search": 1
+                        },
+                        "total": 1
+                      },
+                      "toolResults": {
+                        "byName": {
+                          "search": 1
+                        },
+                        "total": 1
+                      },
+                      "turnBoundaries": [0]
+                    }
+                  }
+                },
+                {
+                  "type": "STEP_FINISHED",
+                  "timestamp": 1777639852652,
+                  "rawEvent": {
+                    "iterationCount": 2,
+                    "timestamp": 1777639852652,
+                    "type": "iteration.end",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
+                  },
+                  "stepName": "iteration-2"
+                },
+                {
+                  "type": "CUSTOM",
+                  "timestamp": 1777639852653,
+                  "rawEvent": {
+                    "iterationCount": 2,
+                    "timestamp": 1777639852653,
+                    "turnNodeHash": "c9b4ddfd122a60339c3afeb14208518273d8f1492e1b918789f57302e53f4bf4",
+                    "type": "state.checkpoint",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
+                  },
+                  "name": "tuvren.runtime.state.checkpoint",
+                  "value": {
+                    "iterationCount": 2,
+                    "timestamp": 1777639852653,
+                    "turnNodeHash": "c9b4ddfd122a60339c3afeb14208518273d8f1492e1b918789f57302e53f4bf4",
+                    "type": "state.checkpoint",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
+                  }
+                },
+                {
                   "type": "RUN_FINISHED",
-                  "timestamp": 15,
+                  "timestamp": 1777639852653,
                   "rawEvent": {
                     "status": "completed",
-                    "timestamp": 15,
-                    "turnId": "turn-main",
-                    "type": "turn.end"
+                    "timestamp": 1777639852653,
+                    "turnId": "conformance-id-3",
+                    "type": "turn.end",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
                   },
-                  "threadId": "thread-main",
-                  "runId": "turn-main",
+                  "threadId": "conformance-id-1",
+                  "runId": "conformance-id-3",
                   "result": {
                     "status": "completed"
                   }
                 }
               ],
               "warningCodes": [
-                "agui_tool_execution_custom_fallback",
-                "agui_message_done_custom_fallback"
+                "agui_state_checkpoint_custom_fallback",
+                "agui_message_done_custom_fallback",
+                "agui_tool_execution_custom_fallback"
               ]
             }
           }
         },
+        "sourceEventTypes": [
+          "turn.start",
+          "state.checkpoint",
+          "state.snapshot",
+          "iteration.start",
+          "message.start",
+          "tool_call.start",
+          "tool_call.args_delta",
+          "tool_call.done",
+          "message.done",
+          "tool.start",
+          "tool.result",
+          "state.checkpoint",
+          "state.snapshot",
+          "iteration.end",
+          "iteration.start",
+          "message.start",
+          "text.delta",
+          "text.done",
+          "message.done",
+          "state.checkpoint",
+          "state.snapshot",
+          "iteration.end",
+          "state.checkpoint",
+          "turn.end"
+        ],
         "eventTypes": [
           "RUN_STARTED",
+          "CUSTOM",
+          "STATE_SNAPSHOT",
           "STEP_STARTED",
-          "TEXT_MESSAGE_START",
-          "TEXT_MESSAGE_CONTENT",
-          "TEXT_MESSAGE_END",
           "TOOL_CALL_START",
           "TOOL_CALL_ARGS",
           "TOOL_CALL_END",
           "CUSTOM",
+          "CUSTOM",
           "TOOL_CALL_RESULT",
+          "CUSTOM",
           "STATE_SNAPSHOT",
-          "CUSTOM",
-          "CUSTOM",
           "STEP_FINISHED",
+          "STEP_STARTED",
+          "TEXT_MESSAGE_START",
+          "TEXT_MESSAGE_CONTENT",
+          "TEXT_MESSAGE_END",
+          "CUSTOM",
+          "CUSTOM",
+          "STATE_SNAPSHOT",
+          "STEP_FINISHED",
+          "CUSTOM",
           "RUN_FINISHED"
         ],
         "events": [
           {
             "type": "RUN_STARTED",
-            "timestamp": 1,
+            "timestamp": 1777639852641,
             "rawEvent": {
-              "threadId": "thread-main",
-              "timestamp": 1,
-              "turnId": "turn-main",
-              "type": "turn.start"
+              "threadId": "conformance-id-1",
+              "timestamp": 1777639852641,
+              "turnId": "conformance-id-3",
+              "type": "turn.start",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
             },
-            "threadId": "thread-main",
-            "runId": "turn-main"
+            "threadId": "conformance-id-1",
+            "runId": "conformance-id-3"
+          },
+          {
+            "type": "CUSTOM",
+            "timestamp": 1777639852642,
+            "rawEvent": {
+              "iterationCount": 0,
+              "timestamp": 1777639852642,
+              "turnNodeHash": "140056641f536293271cb5e47ec17f1afbb333e40a3bb142821be4b5e7028a50",
+              "type": "state.checkpoint",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
+            },
+            "name": "tuvren.runtime.state.checkpoint",
+            "value": {
+              "iterationCount": 0,
+              "timestamp": 1777639852642,
+              "turnNodeHash": "140056641f536293271cb5e47ec17f1afbb333e40a3bb142821be4b5e7028a50",
+              "type": "state.checkpoint",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
+            }
+          },
+          {
+            "type": "STATE_SNAPSHOT",
+            "timestamp": 1777639852642,
+            "rawEvent": {
+              "manifest": {
+                "byRole": {
+                  "assistant": 0,
+                  "system": 0,
+                  "tool": 0,
+                  "user": 1
+                },
+                "extensions": {},
+                "lastAssistantMessageIndex": -1,
+                "lastUserMessageIndex": 0,
+                "messageCount": 1,
+                "tokenEstimate": 16,
+                "toolCalls": {
+                  "byName": {},
+                  "total": 0
+                },
+                "toolResults": {
+                  "byName": {},
+                  "total": 0
+                },
+                "turnBoundaries": [0]
+              },
+              "timestamp": 1777639852642,
+              "type": "state.snapshot",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
+            },
+            "snapshot": {
+              "contextManifest": {
+                "byRole": {
+                  "assistant": 0,
+                  "system": 0,
+                  "tool": 0,
+                  "user": 1
+                },
+                "extensions": {},
+                "lastAssistantMessageIndex": -1,
+                "lastUserMessageIndex": 0,
+                "messageCount": 1,
+                "tokenEstimate": 16,
+                "toolCalls": {
+                  "byName": {},
+                  "total": 0
+                },
+                "toolResults": {
+                  "byName": {},
+                  "total": 0
+                },
+                "turnBoundaries": [0]
+              }
+            }
           },
           {
             "type": "STEP_STARTED",
-            "timestamp": 2,
+            "timestamp": 1777639852642,
             "rawEvent": {
               "iterationCount": 1,
-              "timestamp": 2,
-              "type": "iteration.start"
+              "timestamp": 1777639852642,
+              "type": "iteration.start",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
             },
             "stepName": "iteration-1"
           },
           {
-            "type": "TEXT_MESSAGE_START",
-            "timestamp": 4,
-            "rawEvent": {
-              "delta": "Hello",
-              "messageId": "message-main",
-              "timestamp": 4,
-              "type": "text.delta"
-            },
-            "messageId": "message-main",
-            "role": "assistant"
-          },
-          {
-            "type": "TEXT_MESSAGE_CONTENT",
-            "timestamp": 4,
-            "rawEvent": {
-              "delta": "Hello",
-              "messageId": "message-main",
-              "timestamp": 4,
-              "type": "text.delta"
-            },
-            "messageId": "message-main",
-            "delta": "Hello"
-          },
-          {
-            "type": "TEXT_MESSAGE_END",
-            "timestamp": 5,
-            "rawEvent": {
-              "messageId": "message-main",
-              "text": "Hello",
-              "timestamp": 5,
-              "type": "text.done"
-            },
-            "messageId": "message-main"
-          },
-          {
             "type": "TOOL_CALL_START",
-            "timestamp": 6,
+            "timestamp": 1777639852643,
             "rawEvent": {
               "callId": "call-search",
-              "messageId": "message-main",
+              "messageId": "a095c779-8145-4e1d-83ad-fad4137b2c9c",
               "name": "search",
-              "timestamp": 6,
-              "type": "tool_call.start"
+              "timestamp": 1777639852643,
+              "type": "tool_call.start",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
             },
             "toolCallId": "call-search",
             "toolCallName": "search",
-            "parentMessageId": "message-main"
+            "parentMessageId": "a095c779-8145-4e1d-83ad-fad4137b2c9c"
           },
           {
             "type": "TOOL_CALL_ARGS",
-            "timestamp": 7,
+            "timestamp": 1777639852643,
             "rawEvent": {
               "callId": "call-search",
-              "delta": "{\"query\":\"docs\"}",
-              "timestamp": 7,
-              "type": "tool_call.args_delta"
+              "delta": "{\"query\":\"event stream measurement\"}",
+              "timestamp": 1777639852643,
+              "type": "tool_call.args_delta",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
             },
             "toolCallId": "call-search",
-            "delta": "{\"query\":\"docs\"}"
+            "delta": "{\"query\":\"event stream measurement\"}"
           },
           {
             "type": "TOOL_CALL_END",
-            "timestamp": 8,
+            "timestamp": 1777639852643,
             "rawEvent": {
               "callId": "call-search",
               "input": {
-                "query": "docs"
+                "query": "event stream measurement"
               },
               "name": "search",
-              "timestamp": 8,
-              "type": "tool_call.done"
+              "timestamp": 1777639852643,
+              "type": "tool_call.done",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
             },
             "toolCallId": "call-search"
           },
           {
             "type": "CUSTOM",
-            "timestamp": 9,
+            "timestamp": 1777639852643,
+            "rawEvent": {
+              "finishReason": "tool_call",
+              "messageId": "a095c779-8145-4e1d-83ad-fad4137b2c9c",
+              "timestamp": 1777639852643,
+              "type": "message.done",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
+            },
+            "name": "tuvren.runtime.message.done",
+            "value": {
+              "finishReason": "tool_call",
+              "messageId": "a095c779-8145-4e1d-83ad-fad4137b2c9c",
+              "timestamp": 1777639852643,
+              "type": "message.done",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
+            }
+          },
+          {
+            "type": "CUSTOM",
+            "timestamp": 1777639852644,
             "rawEvent": {
               "callId": "call-search",
               "input": {
-                "query": "docs"
+                "query": "event stream measurement"
               },
               "name": "search",
-              "timestamp": 9,
-              "type": "tool.start"
+              "timestamp": 1777639852644,
+              "type": "tool.start",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
             },
             "name": "tuvren.runtime.tool.start",
             "value": {
               "callId": "call-search",
               "input": {
-                "query": "docs"
+                "query": "event stream measurement"
               },
               "name": "search",
-              "timestamp": 9,
-              "type": "tool.start"
+              "timestamp": 1777639852644,
+              "type": "tool.start",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
             }
           },
           {
             "type": "TOOL_CALL_RESULT",
-            "timestamp": 10,
+            "timestamp": 1777639852644,
             "rawEvent": {
               "callId": "call-search",
               "name": "search",
               "output": {
-                "hits": 2
+                "ok": true,
+                "source": "shared event stream scenario"
               },
-              "timestamp": 10,
-              "type": "tool.result"
+              "timestamp": 1777639852644,
+              "type": "tool.result",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
             },
             "messageId": "tool-result:call-search",
             "toolCallId": "call-search",
-            "content": "{\"hits\":2}",
+            "content": "{\"ok\":true,\"source\":\"shared event stream scenario\"}",
             "role": "tool"
           },
           {
+            "type": "CUSTOM",
+            "timestamp": 1777639852645,
+            "rawEvent": {
+              "iterationCount": 1,
+              "timestamp": 1777639852645,
+              "turnNodeHash": "fa67587e044e22b815f2c95919e8c4253157bd2d629a3f889e828932197026b1",
+              "type": "state.checkpoint",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
+            },
+            "name": "tuvren.runtime.state.checkpoint",
+            "value": {
+              "iterationCount": 1,
+              "timestamp": 1777639852645,
+              "turnNodeHash": "fa67587e044e22b815f2c95919e8c4253157bd2d629a3f889e828932197026b1",
+              "type": "state.checkpoint",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
+            }
+          },
+          {
             "type": "STATE_SNAPSHOT",
-            "timestamp": 11,
+            "timestamp": 1777639852645,
             "rawEvent": {
               "manifest": {
                 "byRole": {
@@ -1325,7 +2426,7 @@
                 "lastAssistantMessageIndex": 1,
                 "lastUserMessageIndex": 0,
                 "messageCount": 3,
-                "tokenEstimate": 42,
+                "tokenEstimate": 47,
                 "toolCalls": {
                   "byName": {
                     "search": 1
@@ -1340,8 +2441,13 @@
                 },
                 "turnBoundaries": [0]
               },
-              "timestamp": 11,
-              "type": "state.snapshot"
+              "timestamp": 1777639852645,
+              "type": "state.snapshot",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
             },
             "snapshot": {
               "contextManifest": {
@@ -1355,7 +2461,7 @@
                 "lastAssistantMessageIndex": 1,
                 "lastUserMessageIndex": 0,
                 "messageCount": 3,
-                "tokenEstimate": 42,
+                "tokenEstimate": 47,
                 "toolCalls": {
                   "byName": {
                     "search": 1
@@ -1373,67 +2479,273 @@
             }
           },
           {
-            "type": "CUSTOM",
-            "timestamp": 12,
-            "rawEvent": {
-              "data": {
-                "ready": true
-              },
-              "name": "driver.executed",
-              "timestamp": 12,
-              "type": "custom"
-            },
-            "name": "driver.executed",
-            "value": {
-              "ready": true
-            }
-          },
-          {
-            "type": "CUSTOM",
-            "timestamp": 13,
-            "rawEvent": {
-              "finishReason": "stop",
-              "messageId": "message-main",
-              "timestamp": 13,
-              "type": "message.done"
-            },
-            "name": "tuvren.runtime.message.done",
-            "value": {
-              "finishReason": "stop",
-              "messageId": "message-main",
-              "timestamp": 13,
-              "type": "message.done"
-            }
-          },
-          {
             "type": "STEP_FINISHED",
-            "timestamp": 14,
+            "timestamp": 1777639852645,
             "rawEvent": {
               "iterationCount": 1,
-              "timestamp": 14,
-              "type": "iteration.end"
+              "timestamp": 1777639852645,
+              "type": "iteration.end",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
             },
             "stepName": "iteration-1"
           },
           {
+            "type": "STEP_STARTED",
+            "timestamp": 1777639852645,
+            "rawEvent": {
+              "iterationCount": 2,
+              "timestamp": 1777639852645,
+              "type": "iteration.start",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
+            },
+            "stepName": "iteration-2"
+          },
+          {
+            "type": "TEXT_MESSAGE_START",
+            "timestamp": 1777639852646,
+            "rawEvent": {
+              "delta": "event stream turn completed",
+              "messageId": "fd2c61d0-61d3-43c5-8017-6369404ce5bd",
+              "timestamp": 1777639852646,
+              "type": "text.delta",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
+            },
+            "messageId": "fd2c61d0-61d3-43c5-8017-6369404ce5bd",
+            "role": "assistant"
+          },
+          {
+            "type": "TEXT_MESSAGE_CONTENT",
+            "timestamp": 1777639852646,
+            "rawEvent": {
+              "delta": "event stream turn completed",
+              "messageId": "fd2c61d0-61d3-43c5-8017-6369404ce5bd",
+              "timestamp": 1777639852646,
+              "type": "text.delta",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
+            },
+            "messageId": "fd2c61d0-61d3-43c5-8017-6369404ce5bd",
+            "delta": "event stream turn completed"
+          },
+          {
+            "type": "TEXT_MESSAGE_END",
+            "timestamp": 1777639852646,
+            "rawEvent": {
+              "messageId": "fd2c61d0-61d3-43c5-8017-6369404ce5bd",
+              "text": "event stream turn completed",
+              "timestamp": 1777639852646,
+              "type": "text.done",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
+            },
+            "messageId": "fd2c61d0-61d3-43c5-8017-6369404ce5bd"
+          },
+          {
+            "type": "CUSTOM",
+            "timestamp": 1777639852646,
+            "rawEvent": {
+              "finishReason": "stop",
+              "messageId": "fd2c61d0-61d3-43c5-8017-6369404ce5bd",
+              "timestamp": 1777639852646,
+              "type": "message.done",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
+            },
+            "name": "tuvren.runtime.message.done",
+            "value": {
+              "finishReason": "stop",
+              "messageId": "fd2c61d0-61d3-43c5-8017-6369404ce5bd",
+              "timestamp": 1777639852646,
+              "type": "message.done",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
+            }
+          },
+          {
+            "type": "CUSTOM",
+            "timestamp": 1777639852648,
+            "rawEvent": {
+              "iterationCount": 2,
+              "timestamp": 1777639852648,
+              "turnNodeHash": "5ec2475ec7babf2660987caeebabb488eb99bc54f959e72cbf0e6d916dcdc88b",
+              "type": "state.checkpoint",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
+            },
+            "name": "tuvren.runtime.state.checkpoint",
+            "value": {
+              "iterationCount": 2,
+              "timestamp": 1777639852648,
+              "turnNodeHash": "5ec2475ec7babf2660987caeebabb488eb99bc54f959e72cbf0e6d916dcdc88b",
+              "type": "state.checkpoint",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
+            }
+          },
+          {
+            "type": "STATE_SNAPSHOT",
+            "timestamp": 1777639852648,
+            "rawEvent": {
+              "manifest": {
+                "byRole": {
+                  "assistant": 2,
+                  "system": 0,
+                  "tool": 1,
+                  "user": 1
+                },
+                "extensions": {},
+                "lastAssistantMessageIndex": 3,
+                "lastUserMessageIndex": 0,
+                "messageCount": 4,
+                "tokenEstimate": 54,
+                "toolCalls": {
+                  "byName": {
+                    "search": 1
+                  },
+                  "total": 1
+                },
+                "toolResults": {
+                  "byName": {
+                    "search": 1
+                  },
+                  "total": 1
+                },
+                "turnBoundaries": [0]
+              },
+              "timestamp": 1777639852648,
+              "type": "state.snapshot",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
+            },
+            "snapshot": {
+              "contextManifest": {
+                "byRole": {
+                  "assistant": 2,
+                  "system": 0,
+                  "tool": 1,
+                  "user": 1
+                },
+                "extensions": {},
+                "lastAssistantMessageIndex": 3,
+                "lastUserMessageIndex": 0,
+                "messageCount": 4,
+                "tokenEstimate": 54,
+                "toolCalls": {
+                  "byName": {
+                    "search": 1
+                  },
+                  "total": 1
+                },
+                "toolResults": {
+                  "byName": {
+                    "search": 1
+                  },
+                  "total": 1
+                },
+                "turnBoundaries": [0]
+              }
+            }
+          },
+          {
+            "type": "STEP_FINISHED",
+            "timestamp": 1777639852652,
+            "rawEvent": {
+              "iterationCount": 2,
+              "timestamp": 1777639852652,
+              "type": "iteration.end",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
+            },
+            "stepName": "iteration-2"
+          },
+          {
+            "type": "CUSTOM",
+            "timestamp": 1777639852653,
+            "rawEvent": {
+              "iterationCount": 2,
+              "timestamp": 1777639852653,
+              "turnNodeHash": "c9b4ddfd122a60339c3afeb14208518273d8f1492e1b918789f57302e53f4bf4",
+              "type": "state.checkpoint",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
+            },
+            "name": "tuvren.runtime.state.checkpoint",
+            "value": {
+              "iterationCount": 2,
+              "timestamp": 1777639852653,
+              "turnNodeHash": "c9b4ddfd122a60339c3afeb14208518273d8f1492e1b918789f57302e53f4bf4",
+              "type": "state.checkpoint",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
+            }
+          },
+          {
             "type": "RUN_FINISHED",
-            "timestamp": 15,
+            "timestamp": 1777639852653,
             "rawEvent": {
               "status": "completed",
-              "timestamp": 15,
-              "turnId": "turn-main",
-              "type": "turn.end"
+              "timestamp": 1777639852653,
+              "turnId": "conformance-id-3",
+              "type": "turn.end",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
             },
-            "threadId": "thread-main",
-            "runId": "turn-main",
+            "threadId": "conformance-id-1",
+            "runId": "conformance-id-3",
             "result": {
               "status": "completed"
             }
           }
         ],
         "warningCodes": [
-          "agui_tool_execution_custom_fallback",
-          "agui_message_done_custom_fallback"
+          "agui_state_checkpoint_custom_fallback",
+          "agui_message_done_custom_fallback",
+          "agui_tool_execution_custom_fallback"
         ],
         "state": {
           "adapter": {
@@ -1462,71 +2774,615 @@
           "kind": "result",
           "value": {
             "evidence": {
-              "eventTypes": ["RUN_STARTED", "RUN_ERROR"],
+              "sourceEventTypes": [
+                "turn.start",
+                "state.checkpoint",
+                "state.snapshot",
+                "iteration.start",
+                "state.checkpoint",
+                "state.snapshot",
+                "iteration.end",
+                "state.checkpoint",
+                "error",
+                "turn.end"
+              ],
+              "eventTypes": [
+                "RUN_STARTED",
+                "CUSTOM",
+                "STATE_SNAPSHOT",
+                "STEP_STARTED",
+                "CUSTOM",
+                "STATE_SNAPSHOT",
+                "STEP_FINISHED",
+                "CUSTOM",
+                "RUN_ERROR"
+              ],
               "events": [
                 {
                   "type": "RUN_STARTED",
-                  "timestamp": 21,
+                  "timestamp": 1777639852660,
                   "rawEvent": {
-                    "threadId": "thread-failed",
-                    "timestamp": 21,
-                    "turnId": "turn-failed",
-                    "type": "turn.start"
+                    "threadId": "conformance-id-1",
+                    "timestamp": 1777639852660,
+                    "turnId": "conformance-id-3",
+                    "type": "turn.start",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
                   },
-                  "threadId": "thread-failed",
-                  "runId": "turn-failed"
+                  "threadId": "conformance-id-1",
+                  "runId": "conformance-id-3"
+                },
+                {
+                  "type": "CUSTOM",
+                  "timestamp": 1777639852661,
+                  "rawEvent": {
+                    "iterationCount": 0,
+                    "timestamp": 1777639852661,
+                    "turnNodeHash": "ef46945ffc1fb44ae7e7eb95a35034ae6379a773af7b4bc0ea0164c777171452",
+                    "type": "state.checkpoint",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
+                  },
+                  "name": "tuvren.runtime.state.checkpoint",
+                  "value": {
+                    "iterationCount": 0,
+                    "timestamp": 1777639852661,
+                    "turnNodeHash": "ef46945ffc1fb44ae7e7eb95a35034ae6379a773af7b4bc0ea0164c777171452",
+                    "type": "state.checkpoint",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
+                  }
+                },
+                {
+                  "type": "STATE_SNAPSHOT",
+                  "timestamp": 1777639852661,
+                  "rawEvent": {
+                    "manifest": {
+                      "byRole": {
+                        "assistant": 0,
+                        "system": 0,
+                        "tool": 0,
+                        "user": 1
+                      },
+                      "extensions": {},
+                      "lastAssistantMessageIndex": -1,
+                      "lastUserMessageIndex": 0,
+                      "messageCount": 1,
+                      "tokenEstimate": 15,
+                      "toolCalls": {
+                        "byName": {},
+                        "total": 0
+                      },
+                      "toolResults": {
+                        "byName": {},
+                        "total": 0
+                      },
+                      "turnBoundaries": [0]
+                    },
+                    "timestamp": 1777639852661,
+                    "type": "state.snapshot",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
+                  },
+                  "snapshot": {
+                    "contextManifest": {
+                      "byRole": {
+                        "assistant": 0,
+                        "system": 0,
+                        "tool": 0,
+                        "user": 1
+                      },
+                      "extensions": {},
+                      "lastAssistantMessageIndex": -1,
+                      "lastUserMessageIndex": 0,
+                      "messageCount": 1,
+                      "tokenEstimate": 15,
+                      "toolCalls": {
+                        "byName": {},
+                        "total": 0
+                      },
+                      "toolResults": {
+                        "byName": {},
+                        "total": 0
+                      },
+                      "turnBoundaries": [0]
+                    }
+                  }
+                },
+                {
+                  "type": "STEP_STARTED",
+                  "timestamp": 1777639852661,
+                  "rawEvent": {
+                    "iterationCount": 1,
+                    "timestamp": 1777639852661,
+                    "type": "iteration.start",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
+                  },
+                  "stepName": "iteration-1"
+                },
+                {
+                  "type": "CUSTOM",
+                  "timestamp": 1777639852663,
+                  "rawEvent": {
+                    "iterationCount": 1,
+                    "timestamp": 1777639852663,
+                    "turnNodeHash": "1bc4f8348423f7d25ba27b5eb8042efb4c3c5f67084eecad723eb1690da65386",
+                    "type": "state.checkpoint",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
+                  },
+                  "name": "tuvren.runtime.state.checkpoint",
+                  "value": {
+                    "iterationCount": 1,
+                    "timestamp": 1777639852663,
+                    "turnNodeHash": "1bc4f8348423f7d25ba27b5eb8042efb4c3c5f67084eecad723eb1690da65386",
+                    "type": "state.checkpoint",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
+                  }
+                },
+                {
+                  "type": "STATE_SNAPSHOT",
+                  "timestamp": 1777639852663,
+                  "rawEvent": {
+                    "manifest": {
+                      "byRole": {
+                        "assistant": 0,
+                        "system": 0,
+                        "tool": 0,
+                        "user": 1
+                      },
+                      "extensions": {},
+                      "lastAssistantMessageIndex": -1,
+                      "lastUserMessageIndex": 0,
+                      "messageCount": 1,
+                      "tokenEstimate": 15,
+                      "toolCalls": {
+                        "byName": {},
+                        "total": 0
+                      },
+                      "toolResults": {
+                        "byName": {},
+                        "total": 0
+                      },
+                      "turnBoundaries": [0]
+                    },
+                    "timestamp": 1777639852663,
+                    "type": "state.snapshot",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
+                  },
+                  "snapshot": {
+                    "contextManifest": {
+                      "byRole": {
+                        "assistant": 0,
+                        "system": 0,
+                        "tool": 0,
+                        "user": 1
+                      },
+                      "extensions": {},
+                      "lastAssistantMessageIndex": -1,
+                      "lastUserMessageIndex": 0,
+                      "messageCount": 1,
+                      "tokenEstimate": 15,
+                      "toolCalls": {
+                        "byName": {},
+                        "total": 0
+                      },
+                      "toolResults": {
+                        "byName": {},
+                        "total": 0
+                      },
+                      "turnBoundaries": [0]
+                    }
+                  }
+                },
+                {
+                  "type": "STEP_FINISHED",
+                  "timestamp": 1777639852663,
+                  "rawEvent": {
+                    "iterationCount": 1,
+                    "timestamp": 1777639852663,
+                    "type": "iteration.end",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
+                  },
+                  "stepName": "iteration-1"
+                },
+                {
+                  "type": "CUSTOM",
+                  "timestamp": 1777639852667,
+                  "rawEvent": {
+                    "iterationCount": 1,
+                    "timestamp": 1777639852667,
+                    "turnNodeHash": "bd8316546853aa3e3d3452785e7b87ab1519656b695d3c55353b19d2c1934418",
+                    "type": "state.checkpoint",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
+                  },
+                  "name": "tuvren.runtime.state.checkpoint",
+                  "value": {
+                    "iterationCount": 1,
+                    "timestamp": 1777639852667,
+                    "turnNodeHash": "bd8316546853aa3e3d3452785e7b87ab1519656b695d3c55353b19d2c1934418",
+                    "type": "state.checkpoint",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
+                  }
                 },
                 {
                   "type": "RUN_ERROR",
-                  "timestamp": 23,
+                  "timestamp": 1777639852667,
                   "rawEvent": {
                     "error": {
-                      "code": "runtime_execution_cancelled",
-                      "message": "execution cancelled"
+                      "code": "react_driver_provider_failure",
+                      "details": {
+                        "response": {
+                          "finishReason": "error",
+                          "parts": [
+                            {
+                              "type": "text",
+                              "text": "provider failure"
+                            }
+                          ]
+                        }
+                      },
+                      "message": "provider returned an error finish reason"
                     },
                     "fatal": true,
-                    "timestamp": 22,
-                    "type": "error"
+                    "timestamp": 1777639852667,
+                    "type": "error",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
                   },
-                  "message": "execution cancelled",
-                  "code": "runtime_execution_cancelled"
+                  "message": "provider returned an error finish reason",
+                  "code": "react_driver_provider_failure"
                 }
               ],
-              "warningCodes": []
+              "warningCodes": ["agui_state_checkpoint_custom_fallback"]
             }
           }
         },
-        "eventTypes": ["RUN_STARTED", "RUN_ERROR"],
+        "sourceEventTypes": [
+          "turn.start",
+          "state.checkpoint",
+          "state.snapshot",
+          "iteration.start",
+          "state.checkpoint",
+          "state.snapshot",
+          "iteration.end",
+          "state.checkpoint",
+          "error",
+          "turn.end"
+        ],
+        "eventTypes": [
+          "RUN_STARTED",
+          "CUSTOM",
+          "STATE_SNAPSHOT",
+          "STEP_STARTED",
+          "CUSTOM",
+          "STATE_SNAPSHOT",
+          "STEP_FINISHED",
+          "CUSTOM",
+          "RUN_ERROR"
+        ],
         "events": [
           {
             "type": "RUN_STARTED",
-            "timestamp": 21,
+            "timestamp": 1777639852660,
             "rawEvent": {
-              "threadId": "thread-failed",
-              "timestamp": 21,
-              "turnId": "turn-failed",
-              "type": "turn.start"
+              "threadId": "conformance-id-1",
+              "timestamp": 1777639852660,
+              "turnId": "conformance-id-3",
+              "type": "turn.start",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
             },
-            "threadId": "thread-failed",
-            "runId": "turn-failed"
+            "threadId": "conformance-id-1",
+            "runId": "conformance-id-3"
+          },
+          {
+            "type": "CUSTOM",
+            "timestamp": 1777639852661,
+            "rawEvent": {
+              "iterationCount": 0,
+              "timestamp": 1777639852661,
+              "turnNodeHash": "ef46945ffc1fb44ae7e7eb95a35034ae6379a773af7b4bc0ea0164c777171452",
+              "type": "state.checkpoint",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
+            },
+            "name": "tuvren.runtime.state.checkpoint",
+            "value": {
+              "iterationCount": 0,
+              "timestamp": 1777639852661,
+              "turnNodeHash": "ef46945ffc1fb44ae7e7eb95a35034ae6379a773af7b4bc0ea0164c777171452",
+              "type": "state.checkpoint",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
+            }
+          },
+          {
+            "type": "STATE_SNAPSHOT",
+            "timestamp": 1777639852661,
+            "rawEvent": {
+              "manifest": {
+                "byRole": {
+                  "assistant": 0,
+                  "system": 0,
+                  "tool": 0,
+                  "user": 1
+                },
+                "extensions": {},
+                "lastAssistantMessageIndex": -1,
+                "lastUserMessageIndex": 0,
+                "messageCount": 1,
+                "tokenEstimate": 15,
+                "toolCalls": {
+                  "byName": {},
+                  "total": 0
+                },
+                "toolResults": {
+                  "byName": {},
+                  "total": 0
+                },
+                "turnBoundaries": [0]
+              },
+              "timestamp": 1777639852661,
+              "type": "state.snapshot",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
+            },
+            "snapshot": {
+              "contextManifest": {
+                "byRole": {
+                  "assistant": 0,
+                  "system": 0,
+                  "tool": 0,
+                  "user": 1
+                },
+                "extensions": {},
+                "lastAssistantMessageIndex": -1,
+                "lastUserMessageIndex": 0,
+                "messageCount": 1,
+                "tokenEstimate": 15,
+                "toolCalls": {
+                  "byName": {},
+                  "total": 0
+                },
+                "toolResults": {
+                  "byName": {},
+                  "total": 0
+                },
+                "turnBoundaries": [0]
+              }
+            }
+          },
+          {
+            "type": "STEP_STARTED",
+            "timestamp": 1777639852661,
+            "rawEvent": {
+              "iterationCount": 1,
+              "timestamp": 1777639852661,
+              "type": "iteration.start",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
+            },
+            "stepName": "iteration-1"
+          },
+          {
+            "type": "CUSTOM",
+            "timestamp": 1777639852663,
+            "rawEvent": {
+              "iterationCount": 1,
+              "timestamp": 1777639852663,
+              "turnNodeHash": "1bc4f8348423f7d25ba27b5eb8042efb4c3c5f67084eecad723eb1690da65386",
+              "type": "state.checkpoint",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
+            },
+            "name": "tuvren.runtime.state.checkpoint",
+            "value": {
+              "iterationCount": 1,
+              "timestamp": 1777639852663,
+              "turnNodeHash": "1bc4f8348423f7d25ba27b5eb8042efb4c3c5f67084eecad723eb1690da65386",
+              "type": "state.checkpoint",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
+            }
+          },
+          {
+            "type": "STATE_SNAPSHOT",
+            "timestamp": 1777639852663,
+            "rawEvent": {
+              "manifest": {
+                "byRole": {
+                  "assistant": 0,
+                  "system": 0,
+                  "tool": 0,
+                  "user": 1
+                },
+                "extensions": {},
+                "lastAssistantMessageIndex": -1,
+                "lastUserMessageIndex": 0,
+                "messageCount": 1,
+                "tokenEstimate": 15,
+                "toolCalls": {
+                  "byName": {},
+                  "total": 0
+                },
+                "toolResults": {
+                  "byName": {},
+                  "total": 0
+                },
+                "turnBoundaries": [0]
+              },
+              "timestamp": 1777639852663,
+              "type": "state.snapshot",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
+            },
+            "snapshot": {
+              "contextManifest": {
+                "byRole": {
+                  "assistant": 0,
+                  "system": 0,
+                  "tool": 0,
+                  "user": 1
+                },
+                "extensions": {},
+                "lastAssistantMessageIndex": -1,
+                "lastUserMessageIndex": 0,
+                "messageCount": 1,
+                "tokenEstimate": 15,
+                "toolCalls": {
+                  "byName": {},
+                  "total": 0
+                },
+                "toolResults": {
+                  "byName": {},
+                  "total": 0
+                },
+                "turnBoundaries": [0]
+              }
+            }
+          },
+          {
+            "type": "STEP_FINISHED",
+            "timestamp": 1777639852663,
+            "rawEvent": {
+              "iterationCount": 1,
+              "timestamp": 1777639852663,
+              "type": "iteration.end",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
+            },
+            "stepName": "iteration-1"
+          },
+          {
+            "type": "CUSTOM",
+            "timestamp": 1777639852667,
+            "rawEvent": {
+              "iterationCount": 1,
+              "timestamp": 1777639852667,
+              "turnNodeHash": "bd8316546853aa3e3d3452785e7b87ab1519656b695d3c55353b19d2c1934418",
+              "type": "state.checkpoint",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
+            },
+            "name": "tuvren.runtime.state.checkpoint",
+            "value": {
+              "iterationCount": 1,
+              "timestamp": 1777639852667,
+              "turnNodeHash": "bd8316546853aa3e3d3452785e7b87ab1519656b695d3c55353b19d2c1934418",
+              "type": "state.checkpoint",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
+            }
           },
           {
             "type": "RUN_ERROR",
-            "timestamp": 23,
+            "timestamp": 1777639852667,
             "rawEvent": {
               "error": {
-                "code": "runtime_execution_cancelled",
-                "message": "execution cancelled"
+                "code": "react_driver_provider_failure",
+                "details": {
+                  "response": {
+                    "finishReason": "error",
+                    "parts": [
+                      {
+                        "type": "text",
+                        "text": "provider failure"
+                      }
+                    ]
+                  }
+                },
+                "message": "provider returned an error finish reason"
               },
               "fatal": true,
-              "timestamp": 22,
-              "type": "error"
+              "timestamp": 1777639852667,
+              "type": "error",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
             },
-            "message": "execution cancelled",
-            "code": "runtime_execution_cancelled"
+            "message": "provider returned an error finish reason",
+            "code": "react_driver_provider_failure"
           }
         ],
-        "warningCodes": [],
+        "warningCodes": ["agui_state_checkpoint_custom_fallback"],
         "state": {
           "adapter": {
             "adapterEvents": 1,
@@ -1550,10 +3406,6 @@
         {
           "assertionId": "event-stream.agui.paused-turn-fallback.3.evidenceField",
           "status": "pass"
-        },
-        {
-          "assertionId": "event-stream.agui.paused-turn-fallback.4.evidenceField",
-          "status": "pass"
         }
       ],
       "checkId": "event-stream.agui.paused-turn-fallback",
@@ -1562,40 +3414,369 @@
           "kind": "result",
           "value": {
             "evidence": {
-              "eventTypes": ["RUN_STARTED", "CUSTOM", "CUSTOM", "RUN_FINISHED"],
+              "sourceEventTypes": [
+                "turn.start",
+                "state.checkpoint",
+                "state.snapshot",
+                "iteration.start",
+                "message.start",
+                "tool_call.start",
+                "tool_call.args_delta",
+                "tool_call.done",
+                "message.done",
+                "state.checkpoint",
+                "state.snapshot",
+                "iteration.end",
+                "approval.requested",
+                "turn.end"
+              ],
+              "eventTypes": [
+                "RUN_STARTED",
+                "CUSTOM",
+                "STATE_SNAPSHOT",
+                "STEP_STARTED",
+                "TOOL_CALL_START",
+                "TOOL_CALL_ARGS",
+                "TOOL_CALL_END",
+                "CUSTOM",
+                "CUSTOM",
+                "STATE_SNAPSHOT",
+                "STEP_FINISHED",
+                "CUSTOM",
+                "CUSTOM",
+                "RUN_FINISHED"
+              ],
               "events": [
                 {
                   "type": "RUN_STARTED",
-                  "timestamp": 31,
+                  "timestamp": 1777639852669,
                   "rawEvent": {
-                    "threadId": "thread-paused",
-                    "timestamp": 31,
-                    "turnId": "turn-paused",
-                    "type": "turn.start"
+                    "threadId": "conformance-id-1",
+                    "timestamp": 1777639852669,
+                    "turnId": "conformance-id-3",
+                    "type": "turn.start",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
                   },
-                  "threadId": "thread-paused",
-                  "runId": "turn-paused"
+                  "threadId": "conformance-id-1",
+                  "runId": "conformance-id-3"
                 },
                 {
                   "type": "CUSTOM",
-                  "timestamp": 32,
+                  "timestamp": 1777639852670,
+                  "rawEvent": {
+                    "iterationCount": 0,
+                    "timestamp": 1777639852670,
+                    "turnNodeHash": "009a6a2047ae30a5fa283449aa503c137181867db21bacca7d44145a9e6db9d5",
+                    "type": "state.checkpoint",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
+                  },
+                  "name": "tuvren.runtime.state.checkpoint",
+                  "value": {
+                    "iterationCount": 0,
+                    "timestamp": 1777639852670,
+                    "turnNodeHash": "009a6a2047ae30a5fa283449aa503c137181867db21bacca7d44145a9e6db9d5",
+                    "type": "state.checkpoint",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
+                  }
+                },
+                {
+                  "type": "STATE_SNAPSHOT",
+                  "timestamp": 1777639852670,
+                  "rawEvent": {
+                    "manifest": {
+                      "byRole": {
+                        "assistant": 0,
+                        "system": 0,
+                        "tool": 0,
+                        "user": 1
+                      },
+                      "extensions": {},
+                      "lastAssistantMessageIndex": -1,
+                      "lastUserMessageIndex": 0,
+                      "messageCount": 1,
+                      "tokenEstimate": 16,
+                      "toolCalls": {
+                        "byName": {},
+                        "total": 0
+                      },
+                      "toolResults": {
+                        "byName": {},
+                        "total": 0
+                      },
+                      "turnBoundaries": [0]
+                    },
+                    "timestamp": 1777639852670,
+                    "type": "state.snapshot",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
+                  },
+                  "snapshot": {
+                    "contextManifest": {
+                      "byRole": {
+                        "assistant": 0,
+                        "system": 0,
+                        "tool": 0,
+                        "user": 1
+                      },
+                      "extensions": {},
+                      "lastAssistantMessageIndex": -1,
+                      "lastUserMessageIndex": 0,
+                      "messageCount": 1,
+                      "tokenEstimate": 16,
+                      "toolCalls": {
+                        "byName": {},
+                        "total": 0
+                      },
+                      "toolResults": {
+                        "byName": {},
+                        "total": 0
+                      },
+                      "turnBoundaries": [0]
+                    }
+                  }
+                },
+                {
+                  "type": "STEP_STARTED",
+                  "timestamp": 1777639852670,
+                  "rawEvent": {
+                    "iterationCount": 1,
+                    "timestamp": 1777639852670,
+                    "type": "iteration.start",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
+                  },
+                  "stepName": "iteration-1"
+                },
+                {
+                  "type": "TOOL_CALL_START",
+                  "timestamp": 1777639852671,
+                  "rawEvent": {
+                    "callId": "call-email",
+                    "messageId": "34f3ef4f-69d1-4f4b-9ce3-6a6fcdba21b5",
+                    "name": "email",
+                    "timestamp": 1777639852671,
+                    "type": "tool_call.start",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
+                  },
+                  "toolCallId": "call-email",
+                  "toolCallName": "email",
+                  "parentMessageId": "34f3ef4f-69d1-4f4b-9ce3-6a6fcdba21b5"
+                },
+                {
+                  "type": "TOOL_CALL_ARGS",
+                  "timestamp": 1777639852671,
+                  "rawEvent": {
+                    "callId": "call-email",
+                    "delta": "{\"to\":\"team@example.com\"}",
+                    "timestamp": 1777639852671,
+                    "type": "tool_call.args_delta",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
+                  },
+                  "toolCallId": "call-email",
+                  "delta": "{\"to\":\"team@example.com\"}"
+                },
+                {
+                  "type": "TOOL_CALL_END",
+                  "timestamp": 1777639852671,
+                  "rawEvent": {
+                    "callId": "call-email",
+                    "input": {
+                      "to": "team@example.com"
+                    },
+                    "name": "email",
+                    "timestamp": 1777639852671,
+                    "type": "tool_call.done",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
+                  },
+                  "toolCallId": "call-email"
+                },
+                {
+                  "type": "CUSTOM",
+                  "timestamp": 1777639852671,
+                  "rawEvent": {
+                    "finishReason": "tool_call",
+                    "messageId": "34f3ef4f-69d1-4f4b-9ce3-6a6fcdba21b5",
+                    "timestamp": 1777639852671,
+                    "type": "message.done",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
+                  },
+                  "name": "tuvren.runtime.message.done",
+                  "value": {
+                    "finishReason": "tool_call",
+                    "messageId": "34f3ef4f-69d1-4f4b-9ce3-6a6fcdba21b5",
+                    "timestamp": 1777639852671,
+                    "type": "message.done",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
+                  }
+                },
+                {
+                  "type": "CUSTOM",
+                  "timestamp": 1777639852673,
+                  "rawEvent": {
+                    "iterationCount": 1,
+                    "timestamp": 1777639852673,
+                    "turnNodeHash": "0cbed2b52eca17c061442595a467672828eff36f1426a3506edcc2c09d9bcac1",
+                    "type": "state.checkpoint",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
+                  },
+                  "name": "tuvren.runtime.state.checkpoint",
+                  "value": {
+                    "iterationCount": 1,
+                    "timestamp": 1777639852673,
+                    "turnNodeHash": "0cbed2b52eca17c061442595a467672828eff36f1426a3506edcc2c09d9bcac1",
+                    "type": "state.checkpoint",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
+                  }
+                },
+                {
+                  "type": "STATE_SNAPSHOT",
+                  "timestamp": 1777639852673,
+                  "rawEvent": {
+                    "manifest": {
+                      "byRole": {
+                        "assistant": 1,
+                        "system": 0,
+                        "tool": 0,
+                        "user": 1
+                      },
+                      "extensions": {},
+                      "lastAssistantMessageIndex": 1,
+                      "lastUserMessageIndex": 0,
+                      "messageCount": 2,
+                      "tokenEstimate": 26,
+                      "toolCalls": {
+                        "byName": {
+                          "email": 1
+                        },
+                        "total": 1
+                      },
+                      "toolResults": {
+                        "byName": {},
+                        "total": 0
+                      },
+                      "turnBoundaries": [0]
+                    },
+                    "timestamp": 1777639852673,
+                    "type": "state.snapshot",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
+                  },
+                  "snapshot": {
+                    "contextManifest": {
+                      "byRole": {
+                        "assistant": 1,
+                        "system": 0,
+                        "tool": 0,
+                        "user": 1
+                      },
+                      "extensions": {},
+                      "lastAssistantMessageIndex": 1,
+                      "lastUserMessageIndex": 0,
+                      "messageCount": 2,
+                      "tokenEstimate": 26,
+                      "toolCalls": {
+                        "byName": {
+                          "email": 1
+                        },
+                        "total": 1
+                      },
+                      "toolResults": {
+                        "byName": {},
+                        "total": 0
+                      },
+                      "turnBoundaries": [0]
+                    }
+                  }
+                },
+                {
+                  "type": "STEP_FINISHED",
+                  "timestamp": 1777639852673,
+                  "rawEvent": {
+                    "iterationCount": 1,
+                    "timestamp": 1777639852673,
+                    "type": "iteration.end",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
+                  },
+                  "stepName": "iteration-1"
+                },
+                {
+                  "type": "CUSTOM",
+                  "timestamp": 1777639852673,
                   "rawEvent": {
                     "request": {
                       "completedResults": [],
                       "toolCalls": [
                         {
                           "callId": "call-email",
-                          "decisions": ["approve", "reject"],
+                          "decisions": ["approve", "edit", "reject"],
                           "input": {
                             "to": "team@example.com"
                           },
-                          "message": "Approve this email?",
-                          "name": "send_email"
+                          "message": "Approve tool \"email\"?",
+                          "name": "email"
                         }
                       ]
                     },
-                    "timestamp": 32,
-                    "type": "approval.requested"
+                    "timestamp": 1777639852673,
+                    "type": "approval.requested",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
                   },
                   "name": "tuvren.runtime.approval.requested",
                   "value": {
@@ -1604,93 +3785,444 @@
                       "toolCalls": [
                         {
                           "callId": "call-email",
-                          "decisions": ["approve", "reject"],
+                          "decisions": ["approve", "edit", "reject"],
                           "input": {
                             "to": "team@example.com"
                           },
-                          "message": "Approve this email?",
-                          "name": "send_email"
+                          "message": "Approve tool \"email\"?",
+                          "name": "email"
                         }
                       ]
                     },
-                    "timestamp": 32,
-                    "type": "approval.requested"
+                    "timestamp": 1777639852673,
+                    "type": "approval.requested",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
                   }
                 },
                 {
                   "type": "CUSTOM",
-                  "timestamp": 33,
+                  "timestamp": 1777639852673,
                   "rawEvent": {
                     "status": "paused",
-                    "timestamp": 33,
-                    "turnId": "turn-paused",
-                    "type": "turn.end"
+                    "timestamp": 1777639852673,
+                    "turnId": "conformance-id-3",
+                    "type": "turn.end",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
                   },
                   "name": "tuvren.runtime.turn.paused",
                   "value": {
                     "status": "paused",
-                    "timestamp": 33,
-                    "turnId": "turn-paused",
-                    "type": "turn.end"
+                    "timestamp": 1777639852673,
+                    "turnId": "conformance-id-3",
+                    "type": "turn.end",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
                   }
                 },
                 {
                   "type": "RUN_FINISHED",
-                  "timestamp": 33,
+                  "timestamp": 1777639852673,
                   "rawEvent": {
                     "status": "paused",
-                    "timestamp": 33,
-                    "turnId": "turn-paused",
-                    "type": "turn.end"
+                    "timestamp": 1777639852673,
+                    "turnId": "conformance-id-3",
+                    "type": "turn.end",
+                    "source": {
+                      "agent": "typescript-conformance-agent",
+                      "driver": "react",
+                      "threadId": "conformance-id-1"
+                    }
                   },
-                  "threadId": "thread-paused",
-                  "runId": "turn-paused",
+                  "threadId": "conformance-id-1",
+                  "runId": "conformance-id-3",
                   "result": {
                     "status": "paused"
                   }
                 }
               ],
               "warningCodes": [
+                "agui_state_checkpoint_custom_fallback",
+                "agui_message_done_custom_fallback",
                 "agui_approval_custom_fallback",
                 "agui_paused_turn_coerced_to_run_finished"
               ]
             }
           }
         },
-        "eventTypes": ["RUN_STARTED", "CUSTOM", "CUSTOM", "RUN_FINISHED"],
+        "sourceEventTypes": [
+          "turn.start",
+          "state.checkpoint",
+          "state.snapshot",
+          "iteration.start",
+          "message.start",
+          "tool_call.start",
+          "tool_call.args_delta",
+          "tool_call.done",
+          "message.done",
+          "state.checkpoint",
+          "state.snapshot",
+          "iteration.end",
+          "approval.requested",
+          "turn.end"
+        ],
+        "eventTypes": [
+          "RUN_STARTED",
+          "CUSTOM",
+          "STATE_SNAPSHOT",
+          "STEP_STARTED",
+          "TOOL_CALL_START",
+          "TOOL_CALL_ARGS",
+          "TOOL_CALL_END",
+          "CUSTOM",
+          "CUSTOM",
+          "STATE_SNAPSHOT",
+          "STEP_FINISHED",
+          "CUSTOM",
+          "CUSTOM",
+          "RUN_FINISHED"
+        ],
         "events": [
           {
             "type": "RUN_STARTED",
-            "timestamp": 31,
+            "timestamp": 1777639852669,
             "rawEvent": {
-              "threadId": "thread-paused",
-              "timestamp": 31,
-              "turnId": "turn-paused",
-              "type": "turn.start"
+              "threadId": "conformance-id-1",
+              "timestamp": 1777639852669,
+              "turnId": "conformance-id-3",
+              "type": "turn.start",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
             },
-            "threadId": "thread-paused",
-            "runId": "turn-paused"
+            "threadId": "conformance-id-1",
+            "runId": "conformance-id-3"
           },
           {
             "type": "CUSTOM",
-            "timestamp": 32,
+            "timestamp": 1777639852670,
+            "rawEvent": {
+              "iterationCount": 0,
+              "timestamp": 1777639852670,
+              "turnNodeHash": "009a6a2047ae30a5fa283449aa503c137181867db21bacca7d44145a9e6db9d5",
+              "type": "state.checkpoint",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
+            },
+            "name": "tuvren.runtime.state.checkpoint",
+            "value": {
+              "iterationCount": 0,
+              "timestamp": 1777639852670,
+              "turnNodeHash": "009a6a2047ae30a5fa283449aa503c137181867db21bacca7d44145a9e6db9d5",
+              "type": "state.checkpoint",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
+            }
+          },
+          {
+            "type": "STATE_SNAPSHOT",
+            "timestamp": 1777639852670,
+            "rawEvent": {
+              "manifest": {
+                "byRole": {
+                  "assistant": 0,
+                  "system": 0,
+                  "tool": 0,
+                  "user": 1
+                },
+                "extensions": {},
+                "lastAssistantMessageIndex": -1,
+                "lastUserMessageIndex": 0,
+                "messageCount": 1,
+                "tokenEstimate": 16,
+                "toolCalls": {
+                  "byName": {},
+                  "total": 0
+                },
+                "toolResults": {
+                  "byName": {},
+                  "total": 0
+                },
+                "turnBoundaries": [0]
+              },
+              "timestamp": 1777639852670,
+              "type": "state.snapshot",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
+            },
+            "snapshot": {
+              "contextManifest": {
+                "byRole": {
+                  "assistant": 0,
+                  "system": 0,
+                  "tool": 0,
+                  "user": 1
+                },
+                "extensions": {},
+                "lastAssistantMessageIndex": -1,
+                "lastUserMessageIndex": 0,
+                "messageCount": 1,
+                "tokenEstimate": 16,
+                "toolCalls": {
+                  "byName": {},
+                  "total": 0
+                },
+                "toolResults": {
+                  "byName": {},
+                  "total": 0
+                },
+                "turnBoundaries": [0]
+              }
+            }
+          },
+          {
+            "type": "STEP_STARTED",
+            "timestamp": 1777639852670,
+            "rawEvent": {
+              "iterationCount": 1,
+              "timestamp": 1777639852670,
+              "type": "iteration.start",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
+            },
+            "stepName": "iteration-1"
+          },
+          {
+            "type": "TOOL_CALL_START",
+            "timestamp": 1777639852671,
+            "rawEvent": {
+              "callId": "call-email",
+              "messageId": "34f3ef4f-69d1-4f4b-9ce3-6a6fcdba21b5",
+              "name": "email",
+              "timestamp": 1777639852671,
+              "type": "tool_call.start",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
+            },
+            "toolCallId": "call-email",
+            "toolCallName": "email",
+            "parentMessageId": "34f3ef4f-69d1-4f4b-9ce3-6a6fcdba21b5"
+          },
+          {
+            "type": "TOOL_CALL_ARGS",
+            "timestamp": 1777639852671,
+            "rawEvent": {
+              "callId": "call-email",
+              "delta": "{\"to\":\"team@example.com\"}",
+              "timestamp": 1777639852671,
+              "type": "tool_call.args_delta",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
+            },
+            "toolCallId": "call-email",
+            "delta": "{\"to\":\"team@example.com\"}"
+          },
+          {
+            "type": "TOOL_CALL_END",
+            "timestamp": 1777639852671,
+            "rawEvent": {
+              "callId": "call-email",
+              "input": {
+                "to": "team@example.com"
+              },
+              "name": "email",
+              "timestamp": 1777639852671,
+              "type": "tool_call.done",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
+            },
+            "toolCallId": "call-email"
+          },
+          {
+            "type": "CUSTOM",
+            "timestamp": 1777639852671,
+            "rawEvent": {
+              "finishReason": "tool_call",
+              "messageId": "34f3ef4f-69d1-4f4b-9ce3-6a6fcdba21b5",
+              "timestamp": 1777639852671,
+              "type": "message.done",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
+            },
+            "name": "tuvren.runtime.message.done",
+            "value": {
+              "finishReason": "tool_call",
+              "messageId": "34f3ef4f-69d1-4f4b-9ce3-6a6fcdba21b5",
+              "timestamp": 1777639852671,
+              "type": "message.done",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
+            }
+          },
+          {
+            "type": "CUSTOM",
+            "timestamp": 1777639852673,
+            "rawEvent": {
+              "iterationCount": 1,
+              "timestamp": 1777639852673,
+              "turnNodeHash": "0cbed2b52eca17c061442595a467672828eff36f1426a3506edcc2c09d9bcac1",
+              "type": "state.checkpoint",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
+            },
+            "name": "tuvren.runtime.state.checkpoint",
+            "value": {
+              "iterationCount": 1,
+              "timestamp": 1777639852673,
+              "turnNodeHash": "0cbed2b52eca17c061442595a467672828eff36f1426a3506edcc2c09d9bcac1",
+              "type": "state.checkpoint",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
+            }
+          },
+          {
+            "type": "STATE_SNAPSHOT",
+            "timestamp": 1777639852673,
+            "rawEvent": {
+              "manifest": {
+                "byRole": {
+                  "assistant": 1,
+                  "system": 0,
+                  "tool": 0,
+                  "user": 1
+                },
+                "extensions": {},
+                "lastAssistantMessageIndex": 1,
+                "lastUserMessageIndex": 0,
+                "messageCount": 2,
+                "tokenEstimate": 26,
+                "toolCalls": {
+                  "byName": {
+                    "email": 1
+                  },
+                  "total": 1
+                },
+                "toolResults": {
+                  "byName": {},
+                  "total": 0
+                },
+                "turnBoundaries": [0]
+              },
+              "timestamp": 1777639852673,
+              "type": "state.snapshot",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
+            },
+            "snapshot": {
+              "contextManifest": {
+                "byRole": {
+                  "assistant": 1,
+                  "system": 0,
+                  "tool": 0,
+                  "user": 1
+                },
+                "extensions": {},
+                "lastAssistantMessageIndex": 1,
+                "lastUserMessageIndex": 0,
+                "messageCount": 2,
+                "tokenEstimate": 26,
+                "toolCalls": {
+                  "byName": {
+                    "email": 1
+                  },
+                  "total": 1
+                },
+                "toolResults": {
+                  "byName": {},
+                  "total": 0
+                },
+                "turnBoundaries": [0]
+              }
+            }
+          },
+          {
+            "type": "STEP_FINISHED",
+            "timestamp": 1777639852673,
+            "rawEvent": {
+              "iterationCount": 1,
+              "timestamp": 1777639852673,
+              "type": "iteration.end",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
+            },
+            "stepName": "iteration-1"
+          },
+          {
+            "type": "CUSTOM",
+            "timestamp": 1777639852673,
             "rawEvent": {
               "request": {
                 "completedResults": [],
                 "toolCalls": [
                   {
                     "callId": "call-email",
-                    "decisions": ["approve", "reject"],
+                    "decisions": ["approve", "edit", "reject"],
                     "input": {
                       "to": "team@example.com"
                     },
-                    "message": "Approve this email?",
-                    "name": "send_email"
+                    "message": "Approve tool \"email\"?",
+                    "name": "email"
                   }
                 ]
               },
-              "timestamp": 32,
-              "type": "approval.requested"
+              "timestamp": 1777639852673,
+              "type": "approval.requested",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
             },
             "name": "tuvren.runtime.approval.requested",
             "value": {
@@ -1699,53 +4231,75 @@
                 "toolCalls": [
                   {
                     "callId": "call-email",
-                    "decisions": ["approve", "reject"],
+                    "decisions": ["approve", "edit", "reject"],
                     "input": {
                       "to": "team@example.com"
                     },
-                    "message": "Approve this email?",
-                    "name": "send_email"
+                    "message": "Approve tool \"email\"?",
+                    "name": "email"
                   }
                 ]
               },
-              "timestamp": 32,
-              "type": "approval.requested"
+              "timestamp": 1777639852673,
+              "type": "approval.requested",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
             }
           },
           {
             "type": "CUSTOM",
-            "timestamp": 33,
+            "timestamp": 1777639852673,
             "rawEvent": {
               "status": "paused",
-              "timestamp": 33,
-              "turnId": "turn-paused",
-              "type": "turn.end"
+              "timestamp": 1777639852673,
+              "turnId": "conformance-id-3",
+              "type": "turn.end",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
             },
             "name": "tuvren.runtime.turn.paused",
             "value": {
               "status": "paused",
-              "timestamp": 33,
-              "turnId": "turn-paused",
-              "type": "turn.end"
+              "timestamp": 1777639852673,
+              "turnId": "conformance-id-3",
+              "type": "turn.end",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
             }
           },
           {
             "type": "RUN_FINISHED",
-            "timestamp": 33,
+            "timestamp": 1777639852673,
             "rawEvent": {
               "status": "paused",
-              "timestamp": 33,
-              "turnId": "turn-paused",
-              "type": "turn.end"
+              "timestamp": 1777639852673,
+              "turnId": "conformance-id-3",
+              "type": "turn.end",
+              "source": {
+                "agent": "typescript-conformance-agent",
+                "driver": "react",
+                "threadId": "conformance-id-1"
+              }
             },
-            "threadId": "thread-paused",
-            "runId": "turn-paused",
+            "threadId": "conformance-id-1",
+            "runId": "conformance-id-3",
             "result": {
               "status": "paused"
             }
           }
         ],
         "warningCodes": [
+          "agui_state_checkpoint_custom_fallback",
+          "agui_message_done_custom_fallback",
           "agui_approval_custom_fallback",
           "agui_paused_turn_coerced_to_run_finished"
         ],

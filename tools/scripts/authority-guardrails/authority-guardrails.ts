@@ -556,6 +556,18 @@ function collectFixtureSelfCertificationFailures(
 
   if (
     check.fixture !== undefined &&
+    operation?.startsWith("event-stream.") === true
+  ) {
+    return [
+      {
+        check: "plan-self-certification",
+        message: `${planLabel} check ${String(check.checkId)} uses fixture input for event-stream implementation conformance; event-stream checks must consume implementation-emitted events`,
+      },
+    ];
+  }
+
+  if (
+    check.fixture !== undefined &&
     Array.isArray(check.assertions) &&
     check.assertions.length > 0 &&
     check.assertions.every(isFixtureEventAssertion)
@@ -937,6 +949,18 @@ async function runFixtureSelfTests(): Promise<GuardrailFailure[]> {
           checkId: "fixture.self-certifying",
           fixture: "stream-events",
           operation: "event-stream.fixture-events",
+        },
+        {
+          assertions: [
+            {
+              equals: ["RUN_STARTED", "RUN_FINISHED"],
+              field: "$.eventTypes",
+              kind: "evidenceField",
+            },
+          ],
+          checkId: "fixture.projection-self-certifying",
+          fixture: "stream-events",
+          operation: "event-stream.agui-projection",
         },
       ],
     },

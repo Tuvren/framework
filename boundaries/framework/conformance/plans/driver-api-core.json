@@ -40,6 +40,8 @@
     {
       "checkId": "driver-api.error.envelope",
       "operation": "driver.execute-error",
+      "scenario": "driver-api-scenarios",
+      "input": { "scenarioPath": "$.driver-provider-failure" },
       "assertions": [
         {
           "kind": "errorEnvelope",

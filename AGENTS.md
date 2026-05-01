@@ -100,6 +100,10 @@ Authority fixture validation is not implementation conformance. A promoted
 implementation check may use a boundary fixture as input, but the passing
 evidence must come from implementation code run through the adapter protocol,
 not from replaying the fixture and asserting it against itself.
+Event-stream implementation conformance must consume events emitted by the
+runtime or driver implementation under test; projection-only checks over
+preauthored stream fixtures belong in binding-local adapter tests or fixture
+validation, not in compatibility evidence for an implementation lane.
 
 ## Pull Request Follow-Up
 

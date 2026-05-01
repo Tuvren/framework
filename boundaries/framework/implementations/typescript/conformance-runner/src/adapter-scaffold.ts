@@ -41,7 +41,6 @@ import {
   assertProviderStreamChunk,
   assertTuvrenMessage,
   assertTuvrenModelResponse,
-  assertTuvrenStreamEvent,
 } from "@tuvren/runtime-api";
 import { toAgUiEvents } from "@tuvren/stream-agui";
 import { teeTuvrenStreamEvents } from "@tuvren/stream-core";
@@ -275,16 +274,16 @@ export class TypeScriptFrameworkAdapter implements ImplementationAdapter {
       case "driver.execute":
         return runDriverExecute(input);
       case "driver.execute-error":
-        return runDriverExecuteError();
+        return runDriverExecuteError(input);
       case "driver.resume":
         return runDriverResume(input);
       case "driver.checkpoint":
         return runDriverCheckpoint(input);
-      case "event-stream.agui-projection":
+      case "event-stream.runtime-agui-projection":
         return runAgUiProjection(input);
-      case "event-stream.sse-eager-subscription":
+      case "event-stream.runtime-sse-eager-subscription":
         return runSseEagerSubscription(input);
-      case "event-stream.sse-projection":
+      case "event-stream.runtime-sse-projection":
         return runSseProjection(input);
       default:
         throw new Error(
@@ -295,12 +294,12 @@ export class TypeScriptFrameworkAdapter implements ImplementationAdapter {
 }
 
 async function runSseProjection(input: unknown): Promise<AdapterProjection> {
-  const frames = await collectValues(
-    toSseFrames(createFixtureEventStream(readFixtureEvents(input)))
-  );
+  const events = await runEventStreamScenario(input, "event-stream");
+  const frames = await collectValues(toSseFrames(createEventStream(events)));
 
   return {
     evidence: {
+      sourceEventTypes: events.map((event) => event.type),
       frameEvents: frames.map((frame) => frame.event),
       framePayloads: frames.map((frame) => parseJsonValue(frame.data)),
     },
@@ -310,8 +309,9 @@ async function runSseProjection(input: unknown): Promise<AdapterProjection> {
 async function runSseEagerSubscription(
   input: unknown
 ): Promise<AdapterProjection> {
+  const events = await runEventStreamScenario(input, "event-stream");
   const [sseBranch, directBranch] = teeTuvrenStreamEvents(
-    createFixtureEventStream(readFixtureEvents(input)),
+    createEventStream(events),
     2
   );
   const sseFrames = toSseFrames(sseBranch);
@@ -335,9 +335,10 @@ async function runSseEagerSubscription(
 }
 
 async function runAgUiProjection(input: unknown): Promise<AdapterProjection> {
+  const sourceEvents = await runEventStreamScenario(input, "event-stream");
   const warningCodes: string[] = [];
   const rawEvents = await collectValues(
-    toAgUiEvents(createFixtureEventStream(readFixtureEvents(input)), {
+    toAgUiEvents(createEventStream(sourceEvents), {
       onWarning(warning) {
         warningCodes.push(warning.code);
       },
@@ -347,11 +348,144 @@ async function runAgUiProjection(input: unknown): Promise<AdapterProjection> {
 
   return {
     evidence: {
+      sourceEventTypes: sourceEvents.map((event) => event.type),
       eventTypes: events.map((event) => event.type),
       events,
       warningCodes,
     },
   };
+}
+
+function runEventStreamScenario(
+  input: unknown,
+  label: string
+): Promise<readonly TuvrenStreamEvent[]> {
+  const scenario = readScenarioInput(input, label);
+  const operation = readStringProperty(
+    scenario,
+    "operation",
+    `${label}.scenario.operation`
+  );
+
+  switch (operation) {
+    case "event-stream.completed-tool-turn":
+      return runCompletedToolEventStreamTurn(scenario, label);
+    case "event-stream.failed-provider-turn":
+      return runFailedProviderEventStreamTurn(scenario, label);
+    case "event-stream.paused-approval-turn":
+      return runPausedApprovalEventStreamTurn(scenario, label);
+    default:
+      throw new Error(`${label} scenario declared unsupported ${operation}`);
+  }
+}
+
+async function runCompletedToolEventStreamTurn(
+  scenario: Record<string, unknown>,
+  label: string
+): Promise<readonly TuvrenStreamEvent[]> {
+  const prompt = readStringProperty(scenario, "prompt", `${label}.prompt`);
+  const providerResponses = readModelResponseArrayProperty(
+    scenario,
+    "providerResponses",
+    `${label}.providerResponses`
+  );
+  const toolName = readFirstToolCallName(
+    providerResponses,
+    `${label}.providerResponses`
+  );
+  const toolResult = readProperty(
+    scenario,
+    "toolResult",
+    `${label}.toolResult`
+  );
+  const runtime = createRuntimeWithReactDriver();
+  const thread = await runtime.createThread({});
+  const handle = runtime.executeTurn({
+    branchId: thread.branchId,
+    config: {
+      model: createScenarioProvider(providerResponses, () => undefined),
+      name: AGENT_NAME,
+      tools: [
+        {
+          description: "Shared event-stream conformance tool",
+          execute() {
+            return toolResult;
+          },
+          inputSchema: { type: "object" },
+          name: toolName,
+        },
+      ],
+    },
+    signal: textSignal(prompt),
+    threadId: thread.threadId,
+  });
+
+  return await collectValues(handle.events());
+}
+
+async function runFailedProviderEventStreamTurn(
+  scenario: Record<string, unknown>,
+  label: string
+): Promise<readonly TuvrenStreamEvent[]> {
+  const prompt = readStringProperty(scenario, "prompt", `${label}.prompt`);
+  const providerResponses = readModelResponseArrayProperty(
+    scenario,
+    "providerResponses",
+    `${label}.providerResponses`
+  );
+  const runtime = createRuntimeWithReactDriver();
+  const thread = await runtime.createThread({});
+  const handle = runtime.executeTurn({
+    branchId: thread.branchId,
+    config: {
+      model: createScenarioProvider(providerResponses, () => undefined),
+      name: AGENT_NAME,
+    },
+    signal: textSignal(prompt),
+    threadId: thread.threadId,
+  });
+
+  return await collectValues(handle.events());
+}
+
+async function runPausedApprovalEventStreamTurn(
+  scenario: Record<string, unknown>,
+  label: string
+): Promise<readonly TuvrenStreamEvent[]> {
+  const prompt = readStringProperty(scenario, "prompt", `${label}.prompt`);
+  const providerResponses = readModelResponseArrayProperty(
+    scenario,
+    "providerResponses",
+    `${label}.providerResponses`
+  );
+  const toolName = readFirstToolCallName(
+    providerResponses,
+    `${label}.providerResponses`
+  );
+  const runtime = createRuntimeWithReactDriver();
+  const thread = await runtime.createThread({});
+  const handle = runtime.executeTurn({
+    branchId: thread.branchId,
+    config: {
+      model: createScenarioProvider(providerResponses, () => undefined),
+      name: AGENT_NAME,
+      tools: [
+        {
+          approval: true,
+          description: "Shared event-stream approval tool",
+          execute() {
+            return readProperty(scenario, "toolResult", `${label}.toolResult`);
+          },
+          inputSchema: { type: "object" },
+          name: toolName,
+        },
+      ],
+    },
+    signal: textSignal(prompt),
+    threadId: thread.threadId,
+  });
+
+  return await collectValues(handle.events());
 }
 
 async function runCompletedRuntimeTurn(): Promise<AdapterProjection> {
@@ -1094,28 +1228,40 @@ async function runDriverExecute(input: unknown): Promise<AdapterProjection> {
   };
 }
 
-async function runDriverExecuteError(): Promise<AdapterProjection> {
-  await Promise.resolve();
-
-  const result = {
-    resolution: {
-      error: new Error("driver execution failed"),
-      fatality: "hard",
-      type: "fail",
-    },
-  } satisfies DriverExecutionResult;
+async function runDriverExecuteError(
+  input: unknown
+): Promise<AdapterProjection> {
+  const scenario = readOperationScenario(input, "driver.execute-error");
+  const providerResponses = readModelResponseArrayProperty(
+    scenario,
+    "providerResponses",
+    "driver.execute-error.providerResponses"
+  );
+  const driver = createReActDriver({
+    providerCallMode: "generate",
+  }).create();
+  const result = await driver.execute(
+    createDriverExecutionContext({
+      config: {
+        model: createScenarioProvider(providerResponses, () => undefined),
+        name: AGENT_NAME,
+      },
+    })
+  );
 
   assertDriverExecutionResult(result, "driver error result");
 
   return {
-    result: {
-      error: {
-        code: "driver_execute_error",
-        message:
-          result.resolution.type === "fail"
-            ? result.resolution.error.message
-            : "",
+    evidence: {
+      driver: {
+        resolutionType: result.resolution.type,
       },
+    },
+    result: {
+      error:
+        result.resolution.type === "fail"
+          ? errorToEnvelope(result.resolution.error)
+          : undefined,
     },
   };
 }
@@ -1126,19 +1272,25 @@ async function runDriverResume(input: unknown): Promise<AdapterProjection> {
     scenario,
     "driver.resume.approvalDecisions"
   );
-  const finalText = readStringProperty(
+  const providerResponses = readModelResponseArrayProperty(
     scenario,
-    "finalText",
-    "driver.resume.finalText"
+    "providerResponses",
+    "driver.resume.providerResponses"
   );
-  const driver = createMeasuredDriver(finalText);
+  const driver = createReActDriver({
+    providerCallMode: "generate",
+  }).create();
 
   if (driver.resume === undefined) {
-    throw new Error("measured driver must implement resume");
+    throw new Error("implementation driver does not expose resume");
   }
 
   const result = await driver.resume({
     ...createDriverExecutionContext(),
+    config: {
+      model: createScenarioProvider(providerResponses, () => undefined),
+      name: AGENT_NAME,
+    },
     approval: {
       decisions,
     },
@@ -1197,30 +1349,6 @@ async function runDriverCheckpoint(input: unknown): Promise<AdapterProjection> {
       runtime: {
         phase: handle.status().phase,
       },
-    },
-  };
-}
-
-function createMeasuredDriver(finalText = "driver resume"): RuntimeDriver {
-  return {
-    execute() {
-      return Promise.resolve({
-        messages: [assistantText("driver execute")],
-        resolution: {
-          reason: "done",
-          type: "end_turn",
-        },
-      });
-    },
-    id: DRIVER_ID,
-    resume() {
-      return Promise.resolve({
-        messages: [assistantText(finalText)],
-        resolution: {
-          reason: "done",
-          type: "end_turn",
-        },
-      });
     },
   };
 }
@@ -1288,6 +1416,21 @@ function createScenarioProvider(
       yield* [];
     },
   };
+}
+
+function createRuntimeWithReactDriver(): ReturnType<
+  typeof createTuvrenRuntimeCore
+> {
+  const reactDriver = createReActDriver({
+    providerCallMode: "generate",
+  }).create();
+
+  return createTuvrenRuntimeCore({
+    createId: createConformanceIdFactory(),
+    defaultDriverId: reactDriver.id,
+    driverRegistry: createDriverRegistry([reactDriver]),
+    kernel: createFakeKernelHarness().kernel,
+  });
 }
 
 function createStaticDriver(
@@ -1475,21 +1618,7 @@ function createClock(): () => number {
   return () => now++;
 }
 
-function readFixtureEvents(input: unknown): readonly TuvrenStreamEvent[] {
-  const envelope = readRecord(input, "event-stream.input");
-  const values = readArrayProperty(
-    envelope,
-    "fixture",
-    "event-stream.input.fixture"
-  );
-
-  return values.map((value, index) => {
-    assertTuvrenStreamEvent(value, `event-stream.input.fixture[${index}]`);
-    return structuredClone(value);
-  });
-}
-
-function createFixtureEventStream(
+function createEventStream(
   events: readonly TuvrenStreamEvent[]
 ): AsyncIterable<TuvrenStreamEvent> {
   return {
@@ -1566,6 +1695,22 @@ function readFirstErrorEnvelope(
   return undefined;
 }
 
+function errorToEnvelope(error: Error): Record<string, unknown> {
+  const errorRecord: Record<string, unknown> = isRecord(error) ? error : {};
+  const code =
+    typeof errorRecord.code === "string" ? errorRecord.code : "driver_error";
+  const envelope: Record<string, unknown> = {
+    code,
+    message: error.message,
+  };
+
+  if (errorRecord.details !== undefined) {
+    envelope.details = errorRecord.details;
+  }
+
+  return envelope;
+}
+
 function readRecordString(value: unknown, key: string): string | undefined {
   return isRecord(value) && typeof value[key] === "string"
     ? value[key]
@@ -1610,12 +1755,7 @@ function readOperationScenario(
   input: unknown,
   operation: string
 ): Record<string, unknown> {
-  const envelope = readRecord(input, `${operation}.input`);
-  const scenario = readRecordProperty(
-    envelope,
-    "scenario",
-    `${operation}.input.scenario`
-  );
+  const scenario = readScenarioInput(input, operation);
   const scenarioOperation = readStringProperty(
     scenario,
     "operation",
@@ -1627,6 +1767,20 @@ function readOperationScenario(
       `${operation} scenario declared operation ${scenarioOperation}`
     );
   }
+
+  return scenario;
+}
+
+function readScenarioInput(
+  input: unknown,
+  label: string
+): Record<string, unknown> {
+  const envelope = readRecord(input, `${label}.input`);
+  const scenario = readRecordProperty(
+    envelope,
+    "scenario",
+    `${label}.input.scenario`
+  );
 
   return scenario;
 }

@@ -25,6 +25,7 @@ import type {
   DriverExecutionContext,
   DriverExecutionResult,
   DriverExtensionStateUpdate,
+  DriverResumeContext,
   DriverToolExecutionMode,
   RuntimeDriver,
   RuntimeDriverFactory,
@@ -148,6 +149,12 @@ class ReActDriver implements RuntimeDriver {
         },
       };
     }
+  }
+
+  async resume(context: DriverResumeContext): Promise<DriverExecutionResult> {
+    // Resume uses the same ReAct iteration engine as execute; approval replay is
+    // prepared by the runtime before the driver is re-entered.
+    return await this.execute(context);
   }
 }
 
