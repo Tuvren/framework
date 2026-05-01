@@ -99,12 +99,19 @@ describe("@tuvren/kernel-testkit conformance assets", () => {
   });
 
   test("loads logical recovery and lineage change fixtures", () => {
+    // The boundary-owned kernel conformance fixture is the canonical source for
+    // lineage hashes here. Legacy shared test fixtures still carry older
+    // sentinel values, so keep this assertion pinned to the conformance asset
+    // that the testkit actually loads.
     expect(kernelProtocolLogicalFixtures.branchHeadListEntry).toEqual([
       "branch_main",
-      "9999999999999999999999999999999999999999999999999999999999999999",
+      "80003ce4d0adf81da829321c0381eab1aa7603fd21f2d311aa730caa2671d6aa",
     ]);
     expect(kernelProtocolLogicalFixtures.recoveryState).toMatchObject({
       lastCompletedStepId: "tool_execution",
+      // This recovery hash still looks sentinel-like, but it already matches
+      // the boundary-owned logical fixture and is therefore the canonical
+      // value until that fixture changes.
       lastTurnNodeHash:
         "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
       stepSequence: [

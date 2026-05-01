@@ -45,6 +45,9 @@ export const WORKSPACE_TEST_PROJECTS: readonly string[] = [
   "framework-runtime-api",
   "framework-driver-api",
   "framework-tool-contracts",
+  // Keep the kernel testkit in the repo-global test lane so boundary-owned
+  // fixture drift cannot hide behind the narrower conformance-runner coverage.
+  "kernel-testkit",
   "kernel-typescript-conformance-runner",
   "framework-typescript-conformance-runner",
   "providers-typescript-conformance-runner",
