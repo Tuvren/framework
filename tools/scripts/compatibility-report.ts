@@ -75,6 +75,7 @@ interface ConformanceRunner {
 }
 
 interface InteropRunner {
+  command?: string[];
   manifestPath: string;
   pairId: string;
   project: string;
@@ -130,6 +131,7 @@ const CONFORMANCE_RUNNERS: readonly ConformanceRunner[] = [
 
 const INTEROP_RUNNERS: readonly InteropRunner[] = [
   {
+    command: ["bun", "tools/scripts/playground-interop-smoke.ts"],
     manifestPath:
       "boundaries/framework/interop/rust-kernel/scenarios/suite-manifest.json",
     pairId: "typescript-framework__rust-kernel",
@@ -317,7 +319,17 @@ async function runInteropTarget(
 ): Promise<{
   matrixResult: CompatibilityInteropResult;
 }> {
-  const command = ["bun", "run", "nx", "run", runner.project, "--skipNxCache"];
+  // Interop evidence must measure the authoritative smoke implementation
+  // directly. Using a mutable Nx wrapper here would let unrelated task-graph
+  // fan-out change the compatibility result without any Rust-kernel regression.
+  const command = runner.command ?? [
+    "bun",
+    "run",
+    "nx",
+    "run",
+    runner.project,
+    "--skipNxCache",
+  ];
   const commandResult = await runCommand(command, {
     captureOutput: true,
     cwd: REPO_ROOT,

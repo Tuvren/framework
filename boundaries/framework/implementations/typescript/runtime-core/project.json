@@ -4,11 +4,19 @@
   "root": "boundaries/framework/implementations/typescript/runtime-core",
   "sourceRoot": "boundaries/framework/implementations/typescript/runtime-core/src",
   "projectType": "library",
+  "implicitDependencies": ["kernel-interop-grpc"],
   "tags": ["boundary:framework", "layer:implementation"],
   "targets": {
     "build": {
       "executor": "nx:run-commands",
-      "dependsOn": ["^build"],
+      "dependsOn": [
+        {
+          "projects": ["kernel-interop-grpc"],
+          "target": "codegen",
+          "params": "ignore"
+        },
+        "^build"
+      ],
       "options": {
         "cwd": "boundaries/framework/implementations/typescript/runtime-core",
         "command": "bunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false"
@@ -38,6 +46,13 @@
     },
     "test": {
       "executor": "nx:run-commands",
+      "dependsOn": [
+        {
+          "projects": ["kernel-interop-grpc"],
+          "target": "codegen",
+          "params": "ignore"
+        }
+      ],
       "options": {
         "cwd": "boundaries/framework/implementations/typescript/runtime-core",
         "command": "bun test"
@@ -45,7 +60,14 @@
     },
     "typecheck": {
       "executor": "nx:run-commands",
-      "dependsOn": ["^build"],
+      "dependsOn": [
+        {
+          "projects": ["kernel-interop-grpc"],
+          "target": "codegen",
+          "params": "ignore"
+        },
+        "^build"
+      ],
       "options": {
         "cwd": "boundaries/framework/implementations/typescript/runtime-core",
         "command": "bunx --bun tsc --project tsconfig.lib.json --noEmit --pretty false && bunx --bun tsc --project tsconfig.typecheck.json --noEmit --pretty false && bunx --bun tsc --project tsconfig.dts.json --noEmit --pretty false"

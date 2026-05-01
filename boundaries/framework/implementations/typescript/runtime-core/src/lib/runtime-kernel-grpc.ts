@@ -102,7 +102,7 @@ import {
   TurnCreateResponseSchema,
   TurnGetResponseSchema,
   VerdictsComposeResponseSchema,
-} from "./generated/kernel-interop/tuvren/kernel/interop/v1/kernel_services_pb.js";
+} from "./generated/kernel-interop/tuvren/kernel/interop/v1/kernel_services_pb";
 import {
   KernelErrorPayloadSchema,
   ObserveResultSchema,
@@ -132,7 +132,7 @@ import {
   StepDeclarationSchema,
   TurnTreeSchemaSchema,
   VerdictSchema,
-} from "./generated/kernel-interop/tuvren/kernel/interop/v1/kernel_types_pb.js";
+} from "./generated/kernel-interop/tuvren/kernel/interop/v1/kernel_types_pb";
 
 export interface GrpcRuntimeKernelOptions {
   baseUrl: string;

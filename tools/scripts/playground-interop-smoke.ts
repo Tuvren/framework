@@ -20,6 +20,7 @@ import net from "node:net";
 import { dirname, resolve } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { runCommand } from "./lib/command-runner.js";
 
 interface PlaygroundInteropModule {
   DEFAULT_PLAYGROUND_SCENARIOS: readonly string[];
@@ -46,6 +47,7 @@ const WAIT_TIMEOUT_MS = 30_000;
 await main();
 
 async function main(): Promise<void> {
+  await ensureInteropArtifacts();
   const port = await reservePort();
   const grpcAddress = `127.0.0.1:${port}`;
   const grpcBaseUrl = `http://${grpcAddress}`;
@@ -80,6 +82,29 @@ async function main(): Promise<void> {
   }
 }
 
+async function ensureInteropArtifacts(): Promise<void> {
+  // The authoritative interop smoke owns the exact prerequisites it executes:
+  // generate the governed bindings first, then build the playground bundle the
+  // script loads. Keeping that preparation here prevents the compatibility
+  // ledger from depending on whatever broader Nx fan-out happens to wrap it.
+  await runRequiredCommand([
+    "bun",
+    "run",
+    "nx",
+    "run",
+    "kernel-interop-grpc:codegen",
+    "--skipNxCache",
+  ]);
+  await runRequiredCommand([
+    "bun",
+    "run",
+    "nx",
+    "run",
+    "host-playground:build",
+    "--skipNxCache",
+  ]);
+}
+
 async function loadPlaygroundModule(): Promise<PlaygroundInteropModule> {
   const moduleUrl = pathToFileURL(PLAYGROUND_DIST_PATH).href;
   return (await import(moduleUrl)) as PlaygroundInteropModule;
@@ -102,6 +127,14 @@ function spawnRustKernelService(address: string): ChildProcess {
 
   child.unref();
   return child;
+}
+
+async function runRequiredCommand(command: readonly string[]): Promise<void> {
+  const result = await runCommand(command, { cwd: REPO_ROOT });
+
+  if (result.code !== 0) {
+    throw new Error(`command failed: ${command.join(" ")}`);
+  }
 }
 
 async function reservePort(): Promise<number> {

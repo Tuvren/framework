@@ -47,7 +47,6 @@
     },
     "interop-smoke": {
       "executor": "nx:run-commands",
-      "dependsOn": ["build", "^build"],
       "options": {
         "cwd": ".",
         "command": "bun tools/scripts/playground-interop-smoke.ts"
