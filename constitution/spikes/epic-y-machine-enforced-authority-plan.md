@@ -6,9 +6,16 @@ eliminating TypeScript, Rust, generic-runner-source, and Markdown as possible
 sources of cross-implementation semantic truth across the named contract
 surfaces.
 
+This file is now the historical plan for the authority-packet closure layer
+(`KRT-Y001` through `KRT-Y012`). The final conformance-engine posture is
+superseded by `constitution/spikes/epic-y-single-semantic-conformance-engine-spike.md`
+and active Tasks `KRT-Y013` through `KRT-Y023`, which collapse per-language
+semantic runners into one shared semantic runner plus language adapter hosts.
+
 ## Status
 
-- Epic Y is active in current repo reality.
+- Epic Y authority-packet closure is closed in current repo reality; final
+  conformance-engine closure is active.
 - Authority chain: PRD `CAP-P0-037` and `CAP-P1-038` (machine-enforced
   neutral authority); Architecture `1.2` (machine-enforced neutral authority
   principle), `1.4` (forbidden-authority-source and generated-artifact-
@@ -201,8 +208,9 @@ KRT-Y008 lands the §4.12 plan compiler with these assertion kinds:
 Plans are JSON; the compiler validates against
 `tools/schemas/conformance-plan.schema.json`, resolves fixtures from
 `boundaries/<area>/conformance/fixtures/`, and emits a runtime-loadable plan
-the existing TypeScript and Rust generic runners consume through the §4.13
-adapter protocol.
+the transitional TypeScript and Rust conformance entry points consume through
+the §4.13 adapter protocol. Final assertion ownership moves to the shared
+runner in `tools/conformance/runner/`.
 
 ## Implementation Adapter Direction
 
@@ -213,7 +221,8 @@ KRT-Y009 publishes the §4.13 adapter protocol with these operations:
 - `dispatch(operation, input, controls)` returning result or error envelope
 - `events(operation, input, controls)` returning an ordered event channel
 - `inspectState(query)` returning a JSON projection where applicable
-- `emitEvidence(checkId, key, payload)` for runner-side evidence collection
+- runner-side evidence collection, superseded by the final no-checkId adapter
+  rule in `epic-y-single-semantic-conformance-engine-spike.md`
 
 Adapters bridge to `Promise`, `AsyncIterable`, `AbortSignal`, `Uint8Array`,
 Tokio cancellation tokens, etc. internally. The protocol surface stays

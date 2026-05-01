@@ -1,6 +1,14 @@
 # Epic Y Machine-Enforced Authority Closure Inventory
 
-Epic Y is closed in current repo reality.
+Epic Y authority-packet closure is closed in current repo reality. Final
+language-agnostic conformance closure continues through
+`constitution/spikes/epic-y-single-semantic-conformance-engine-spike.md` and
+Tasks `KRT-Y013` through `KRT-Y023`.
+
+This inventory remains the durable record of the first closure layer: promoted
+authority packets, generated artifacts, conformance plans, binding projections,
+and guardrail wiring. It is not the final statement that per-language
+conformance runners are acceptable as independent semantic engines.
 
 ## Promoted Authority Packets
 
@@ -30,10 +38,13 @@ Epic Y is closed in current repo reality.
 - Conformance plan validation and generic assertion evaluation live under
   `tools/conformance/plan-compiler/`.
 - The adapter protocol lives under `tools/conformance/adapter-protocol/`.
-- Reference adapter scaffolds live at
+- Transitional reference adapter scaffolds for the authority-packet closure
+  layer live at
   `boundaries/framework/implementations/typescript/conformance-runner/src/adapter-scaffold.ts`
   and
   `boundaries/kernel/implementations/rust/conformance-runner/src/adapter_scaffold.rs`.
+  The final conformance-engine closure moves implementation-language adapter
+  hosts toward `conformance-adapter/` roots driven by `tools/conformance/runner/`.
 - Machine authority guardrails live at
   `tools/scripts/authority-guardrails/authority-guardrails.ts` with regression
   fixtures for freshness drift, forbidden evidence citations, runner oracle
@@ -56,7 +67,11 @@ Epic Y is closed in current repo reality.
 - Read the relevant `spec/authority-packet.json` before implementing a promoted
   surface.
 - Generate or inspect the packet's declared artifacts.
-- Implement a language adapter against the §4.13 adapter protocol.
-- Run the referenced conformance plans and emit measured evidence.
+- Implement a language adapter host against the §4.13 adapter protocol.
+- Run the referenced conformance plans through the shared semantic runner and
+  emit measured evidence from implementation-produced observations.
 - Do not cite implementation source, runner source, or Markdown as
   cross-implementation authority.
+- Do not treat a language runner or adapter host as a semantic engine; the
+  final Epic Y target is one shared assertion/evidence engine under
+  `tools/conformance/runner/`.

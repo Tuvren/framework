@@ -2,9 +2,9 @@
 
 ## 0. Version History & Changelog
 
-- v0.8.1 - Closed Epic Y in current repo reality with authority packet manifests, conformance plans, adapter protocol scaffolding, validator and guardrail wiring, generated JSON Schema artifacts, and the Epic Y closure inventory.
+- v0.8.2 - Reopened Epic Y final conformance closure around one shared semantic conformance engine, process-level language adapter hosts, executable capability selection, adapter-error isolation, assertion-engine meta-conformance, and future multi-step trace plans.
+- v0.8.1 - Closed Epic Y authority-packet closure in current repo reality with authority packet manifests, conformance plans, adapter protocol scaffolding, validator and guardrail wiring, generated JSON Schema artifacts, and the Epic Y closure inventory.
 - v0.8.0 - Opened Epic Y Machine-Enforced Neutral Authority Closure with ADR-023 (No Implementation Oracle), ADR-024 (No Prose Oracle), ADR-025 (No Runner Oracle), ADR-026 (Authority Packet Model), ADR-027 (Generated Artifact Freshness), and ADR-028 (Forbidden Implementation Vocabulary in Authority Sources). Added §4.11 Authority Packet Manifest contract, §4.12 Conformance Plan contract, and §4.13 Implementation Adapter Protocol. Extended §3.6 with packet membership rules and §5.4 with the Epic Y step. Stack section now records the layered authority stack vocabulary (TypeSpec, CDDL, Protobuf, JSON Schema, conformance-plan JSON, semconv/Weaver) without adding new pinned tooling.
-- v0.7.1 - Closed Epic X in current repo reality with the relocated TypeScript testkit and contract implementation roots, normalized Bun/Nx/tsconfig/tooling path rewires, explicit contract-root README placeholders for deferred neutral sources, and the Epic X closure inventory. ADR-022 is now enforced in repo reality, not just planned.
 - ... [Older history truncated, refer to git logs]
 
 ## 1. Stack Specification (Bill of Materials)
@@ -34,7 +34,7 @@
 ### 1.2 Current-State vs Target-State
 
 - **Current repository reality:** The repository already contains the workspace scaffold, `@tuvren/core-types`, `@tuvren/kernel-protocol`, `@tuvren/backend-memory`, `@tuvren/backend-sqlite`, `@tuvren/kernel-testkit`, `@tuvren/runtime-api`, `@tuvren/driver-api`, `@tuvren/event-stream`, `@tuvren/tool-contracts`, `@tuvren/provider-api`, `@tuvren/runtime-core`, the ReAct Driver baseline with implementation-proven loop completion, streaming/provider semantics, shared runtime-core tool/approval integration, and the reusable `createGrpcRuntimeKernel()` helper for the governed Rust-kernel transport seam, `@tuvren/provider-bridge-ai-sdk` as the first concrete provider bridge, the host stream adapter line `@tuvren/stream-core`, `@tuvren/stream-sse`, and `@tuvren/stream-agui`, the private playground host harness `@tuvren/playground-host` with `kernelMode` runtime selection plus `kernelGrpcBaseUrl`, playground-owned aimock E2E validation lanes for the local OpenAI, Anthropic, and Gemini provider HTTP boundaries, an opt-in Gemini validation lane for real provider calls through `@ai-sdk/google`, the hardening testkits `@tuvren/provider-testkit` and `@tuvren/framework-testkit`, release and portability scripts under `tools/scripts`, the checked-in Epic Q portability matrix, the Epic Q release-hardening closure inventory, repo-global `telemetry/` and `reports/compatibility/` roots, boundary-owned `conformance/` roots for the framework, kernel, and providers, TypeSpec-authored tool/provider contract sources plus reviewed JSON Schema/OpenAPI artifacts, kernel CDDL grammar, implementation-scoped TypeScript conformance runners, kernel-only proto authority under `boundaries/kernel/interop/grpc/proto/`, root `buf.yaml` / `buf.gen.yaml`, the `kernel-interop-grpc` Nx target surface, Devenv-provisioned Buf/protoc generator tooling, generated TypeScript telemetry and kernel-interop helpers under the consuming framework implementation tree, root Cargo workspace files, the Rust kernel core, Rust conformance runner, Rust gRPC service, generated Rust telemetry helper under the Rust kernel tree, a real TS-framework-to-Rust-kernel interop suite manifest under `boundaries/framework/interop/rust-kernel/`, and a measured compatibility matrix whose checked-in payload uses deterministic sentinel `generatedAtMs` / `sourceRevision` values plus scrubbed interop telemetry attributes while still preserving the substantive `rust-kernel` and `typescript-framework__rust-kernel` evidence entries.
-- **Current semantic-evidence posture:** The boundary-owned semantic evidence posture from Epic W remains intact after Epic X. The TypeScript testkits still act as helper and facade packages for TypeScript-local testing, but they now live under implementation-owned paths while assertion-bearing TypeScript and Rust conformance runners plus measured cross-language interop evidence remain the semantic evidence layers.
+- **Current semantic-evidence posture:** The boundary-owned semantic evidence posture from Epic W remains intact after Epic X. The TypeScript testkits still act as helper and facade packages for TypeScript-local testing, but they now live under implementation-owned paths. Existing TypeScript and Rust conformance entry points are transitional evidence producers; the final Epic Y target is one shared semantic conformance engine that drives language adapter hosts and emits the measured evidence.
 - **Current topology posture:** Epic X is closed in current repo reality. Boundary-root testkits now live under `boundaries/<area>/implementations/typescript/testkit/`, contract roots now expose only language-neutral assets plus README placeholders, and the TypeScript package guts for moved contract packages live under sibling `implementations/typescript/` subtrees. Path topology now reveals language ownership without opening files.
 - **Target implementation state:** The package layout and interfaces defined below are the intended implementation target for the first authoritative TypeScript line plus the post-Epic-Q multi-language transition foundation.
 - **Drift rule:** The future codebase must conform to this TechSpec. The TechSpec must not be treated as a loose commentary on whatever structure happens to emerge.
@@ -216,8 +216,8 @@
 
 - **Status:** accepted
 - **Context:** A generic conformance runner that hard-codes expected event sequences, expected error codes, expected check IDs, expected lifecycle transitions, or expected provider/tool behavior in its source code becomes a second oracle. Switching runner implementations or adding a new language line then depends on inheriting hidden runner assumptions rather than reading the conformance plan.
-- **Decision:** Conformance runner source code may implement only generic mechanics: adapter startup, operation dispatch, schema validation, generic assertion operators (equality, regex, set membership, ordering), ordered-channel consumption, cancellation injection, timeout control, and evidence emission. Product semantics — expected event sequences, expected durable state transitions, expected checkpoint behavior, expected provider/tool behavior, expected error codes, expected recovery behavior, and expected check IDs — must arrive only from a Conformance Plan (§4.12) referenced by an Authority Packet manifest (§4.11).
-- **Consequences:** Existing TypeScript and Rust conformance runners under `boundaries/<area>/implementations/<lang>/conformance-runner` must migrate toward consuming compiled conformance plans rather than encoding semantics in source. CI guardrails (KRT-Y011) reject product-semantic literals — known event-type strings, known error codes, known check IDs — appearing inside generic runner source outside permitted plan-loading code paths.
+- **Decision:** The final conformance architecture has one shared semantic conformance engine under `tools/conformance/runner/` and many implementation-language adapter hosts under `boundaries/<area>/implementations/<lang>/conformance-adapter/`. The shared runner is boundary-agnostic across current Kraken Engine conformance lanes: kernel, framework/runtime, ReAct driver, providers, and future promoted surfaces. It owns plan loading, scenario and fixture loading, schema validation, generic assertion operators, required-evidence enforcement, capability selection, adapter-error isolation, and compatibility evidence emission. Product semantics — expected event sequences, expected durable state transitions, expected checkpoint behavior, expected provider/tool behavior, expected error codes, expected recovery behavior, and expected check IDs — must arrive only from a Conformance Plan (§4.12) referenced by an Authority Packet manifest (§4.11).
+- **Consequences:** Existing TypeScript and Rust conformance runners under `boundaries/<area>/implementations/<lang>/conformance-runner` are transitional hosts and must collapse toward adapter-only code. They may start native implementations, translate neutral operations to native calls, and return neutral observations, but they must not evaluate assertions, decide pass/fail, know check IDs, or emit check-scoped evidence. CI guardrails (KRT-Y011 and the final Epic Y closure work) reject product-semantic literals and assertion/pass-fail semantics appearing inside implementation-language runner or adapter source outside permitted native invocation mechanics.
 
 ### ADR-026 Authority Packet Model
 
@@ -1793,29 +1793,32 @@ A conformance plan is data-owned per ADR-025. Plans live alongside the surface t
 ```
 
 - `operation` is a neutral operation name resolved by the Implementation Adapter Protocol (§4.13). The plan never names a TypeScript function or a Rust trait method directly; it names the neutral operation declared by the authority packet.
-- `assertions[].kind` covers shape (`schemaValid`, `errorEnvelope`), behavior (`eventSequence`, `terminalEvent`, `ordering`, `noEvent`), durable state (`stateField`), and evidence (`evidenceField`). Generic runners implement these kinds; product-specific assertion logic must be expressed through these operators rather than added as runner-side bespoke code.
-- `controls` covers cancellation injection and deadlines; additional generic mechanics may be added through capability selectors and adapter-declared capabilities rather than by hard-coding new control semantics in runner source.
+- `applicability.capabilities` is executable. The shared runner selects checks by intersecting plan-required capabilities with capabilities declared by the adapter manifest or initialization response; promoted plans must not select by implementation ID, language, runner name, or adapter name.
+- `assertions[].kind` covers shape (`schemaValid`, `errorEnvelope`), behavior (`eventSequence`, `terminalEvent`, `ordering`, `noEvent`), durable state (`stateField`), and evidence (`evidenceField`). The shared semantic runner implements these kinds once; product-specific assertion logic must be expressed through these operators rather than added as runner-side or adapter-side bespoke code.
+- `controls` covers cancellation injection and deadlines; additional generic mechanics may be added through capability selectors and adapter-declared capabilities rather than by hard-coding new control semantics in runner or adapter source.
 - `evidence[]` lists the evidence artifact paths the runner must emit for the Compatibility Reporting Boundary; missing required evidence is a check failure.
+- Epic Y final closure will extend this contract with optional multi-step trace plans for lifecycle-heavy behavior. Trace plans must keep the same authority split: plans own expected behavior and step references, the shared runner owns trace execution and assertions, and adapters only execute neutral operations and return observations.
 
 ### 4.13 Implementation Adapter Protocol
 
-- **Style:** library API consumed by language-specific implementation adapters
+- **Style:** process-level adapter host protocol, with JSON-RPC 2.0 over stdio as the normative transport target
 - **Authentication / Authorization:** Internal verification surface; adapters are not external entry points.
 - **Compatibility Strategy:** Protocol-shaped contract under `tools/conformance/adapter-protocol/`. Breaking changes to the operation, event, cancellation, error envelope, or state-inspection seam require a major-version bump and a coordinated update across every implementation adapter the surface declares in its authority packet.
-- **Error model:** Stable error envelope with `code`, `message`, optional `details`, and optional `cause`; carried as a neutral payload, not as a language-native exception.
+- **Error model:** Adapter/protocol failures are isolated from implementation result errors. A JSON-RPC transport or adapter failure returns an adapter error envelope and must not populate `$.result.error`; implementation-produced error behavior appears only inside a successful neutral observation returned by the native implementation path.
 
-The adapter protocol is the neutral seam between the Generic Conformance Runner and any one Implementation Adapter Boundary. It is intentionally minimal so that adding a new language line means writing a new adapter and binding projection, not a new conformance suite. The reference shape below is documented neutrally; concrete TypeScript and Rust adapter shapes live in their respective binding appendices declared by the relevant authority packet.
+The adapter protocol is the neutral seam between the shared Semantic Conformance Runner and any one Implementation Adapter Host. It is intentionally minimal so that adding a new language line means writing a new adapter host and binding projection, not a new assertion engine or conformance suite. JSON-RPC 2.0 requires request/response objects to carry `jsonrpc: "2.0"`, correlates responses by `id`, and keeps success `result` mutually exclusive with error `error`; the Tuvren protocol uses that envelope while defining its own neutral methods and observation payloads.
 
 ```text
-ImplementationAdapter (neutral protocol)
+ConformanceAdapterHost (neutral protocol)
 
   initialize(packetId, planVersion) -> AdapterCapabilities
+  createInstance(input?) -> InstanceHandle | null
   shutdown() -> void
 
   dispatch(operation, input, controls) -> OperationOutcome
     OperationOutcome ::=
-      | { kind: "result",  value }
-      | { kind: "error",   error: ErrorEnvelope }
+      | { kind: "result", value: Observation }
+      | { kind: "error",  error: AdapterErrorEnvelope }
 
   events(operation, input, controls) -> OrderedEventChannel
     OrderedEventChannel yields neutral events with stable type names and JSON-encodable payloads
@@ -1825,16 +1828,25 @@ ImplementationAdapter (neutral protocol)
   inspectState(query) -> StateView | null
     StateView is a JSON-encodable projection of durable state declared inspectable by the authority packet
 
-  emitEvidence(checkId, key, payload) -> void
+  destroyInstance(instanceHandle) -> void
 
-ErrorEnvelope ::= { code: string, message: string, details?: JsonValue, cause?: ErrorEnvelope }
+Observation ::= {
+  result?: JsonValue,
+  events?: JsonValue[],
+  state?: JsonValue,
+  evidence?: JsonValue,
+  diagnostics?: JsonValue
+}
+
+AdapterErrorEnvelope ::= { code: string, message: string, details?: JsonValue, cause?: AdapterErrorEnvelope }
 ```
 
 - Operations are named by the authority packet, not by a TypeScript or Rust signature. The same operation name resolves to the language-native call inside the adapter.
+- Adapter hosts do not receive `checkId`, do not emit check-scoped evidence, and do not decide pass/fail. The shared runner maps raw observations to required evidence paths and assertion results.
 - Event channels are ordered, single-consumer, and produce neutral events; per ADR-025 the runner asserts the event sequence rather than the adapter implementing the expected sequence.
 - Cancellation and deadlines are control inputs, not derived from `AbortSignal` or a Rust cancellation token at the protocol level. Adapters bridge to language-native cancellation internally.
 - Byte payloads cross the seam as base64-encoded JSON strings or as opaque JSON values; the adapter is responsible for converting to or from `Uint8Array`, `Buffer`, `Vec<u8>`, or any other language-native byte container.
-- `inspectState` is optional per packet. Packets that do not declare an inspectable state surface omit it; packets that declare it list the queryable views in the manifest.
+- `inspectState` and instance lifecycle methods are optional per packet. Packets that do not declare an inspectable or stateful surface omit them; packets that declare them list the queryable views and lifecycle requirements in the manifest or plan metadata.
 
 ## 5. Implementation Guidelines
 
@@ -1900,10 +1912,10 @@ the multi-language transition foundation:
 │   │   │   │   ├── stream-core/
 │   │   │   │   ├── stream-sse/
 │   │   │   │   ├── stream-agui/
-│   │   │   │   ├── conformance-runner/
+│   │   │   │   ├── conformance-adapter/      # final Epic Y target; current conformance-runner paths are transitional
 │   │   │   │   └── testkit/                  # framework testkit moved here from boundary root
 │   │   │   └── rust/
-│   │   │       └── conformance-runner/
+│   │   │       └── conformance-adapter/      # final Epic Y target; current conformance-runner paths are transitional
 │   │   ├── conformance/                      # neutral fixtures, schemas, scenarios
 │   │   │   ├── schemas/
 │   │   │   ├── fixtures/
@@ -1982,10 +1994,11 @@ carries one Authority Packet manifest at
 `boundaries/<area>/contracts/<surface>/spec/authority-packet.json` (or the
 equivalent path under `conformance/spec/` or `interop/<channel>/spec/` for
 behavior- or interop-rooted packets). Per Epic Y, conformance plans for a
-boundary live under `boundaries/<area>/conformance/plans/`; the implementation
-adapter protocol lives under `tools/conformance/adapter-protocol/`; and the
-authority-packet and conformance-plan JSON Schemas live under
-`tools/schemas/`.
+boundary live under `boundaries/<area>/conformance/plans/`; the shared
+semantic runner target lives under `tools/conformance/runner/`; the
+implementation adapter protocol lives under
+`tools/conformance/adapter-protocol/`; and the authority-packet and
+conformance-plan JSON Schemas live under `tools/schemas/`.
 
 ### 5.1.1 Structure Rules
 
@@ -2002,6 +2015,7 @@ authority-packet and conformance-plan JSON Schemas live under
 - `boundaries/framework/contracts/runtime-api/spec/authority-packet.json` is the machine authority entry for shared framework runtime contracts. Focused facade packages remain the preferred public home for event, tool, provider, and driver-specific imports, but compatibility re-exports from `@tuvren/runtime-api` are allowed while the partition settles as TypeScript binding projections.
 - Where a stable language-neutral structure exists, TypeScript adopts it first so later languages inherit a real system rather than a permanent TypeScript exception.
 - Per ADR-023, ADR-024, ADR-025, ADR-026, ADR-027, and ADR-028, every cross-implementation semantic surface must own one Authority Packet manifest declaring its authoritative sources, generated artifacts, conformance plans, binding projections, and forbidden authority sources. Implementation-language source trees, generic conformance runner source, and Markdown documents are forbidden authority sources for any cross-implementation semantic; they may project, validate, or describe authority but cannot become it. Generic runners must own only generic mechanics and consume product semantics from conformance plans referenced by an authority packet.
+- Per the final Epic Y conformance-engine adjustment, implementation language trees may host `conformance-adapter/` code that invokes native logic and returns neutral observations. Assertion evaluation, required-evidence enforcement, capability selection, adapter-error isolation, and compatibility evidence emission belong in the shared runner under `tools/conformance/runner/`, not in language adapter hosts.
 
 ### 5.2 Coding Standards
 
@@ -2033,7 +2047,7 @@ authority-packet and conformance-plan JSON Schemas live under
   - recovery and checkpoint scenario tests covering pause/resume, reactive checkpointing, and rollback archival
   - driver contract and framework-runtime integration tests that keep shared framework services distinct from ReAct-specific behavior
   - AI SDK bridge contract tests
-  - boundary-owned conformance runners that consume shared fixture suites without redefining semantics locally
+  - a shared semantic conformance runner that consumes boundary-owned plans and drives implementation-language adapter hosts without redefining semantics locally
   - compatibility-matrix generation from actual conformance and interop-smoke results
   - runtime portability tests for core packages on Bun and Node; Deno compatibility tests for core non-native packages as soon as package surfaces stabilize
 - **Observability Hooks:**
@@ -2071,15 +2085,16 @@ authority-packet and conformance-plan JSON Schemas live under
 1. The baseline TypeScript implementation line is already closed through Epic Q. Historical implementation detail lives in the closure artifacts cited in `5.4.1` rather than in a preserved closed backlog here.
 2. Formalize the multi-language transition foundation without weakening the TypeScript delivery path: add boundary-owned `spec/`, `artifacts/`, `conformance/`, and `interop/` homes, substantial early target-shape scaffolding, `telemetry/`, `reports/compatibility/`, and canonical Nx target names that delegate to native toolchains.
 3. Epic S is closed: selected framework and provider contract packages now have TypeSpec-authored sources and reviewed JSON Schema/OpenAPI artifacts.
-4. Epic S is closed: kernel protocol CDDL grammar exists, and TypeScript conformance evidence now flows through implementation-specific runners over boundary-owned conformance assets.
+4. Epic S is closed: kernel protocol CDDL grammar exists, and TypeScript conformance evidence now flows through the then-current implementation-specific runners over boundary-owned conformance assets; final Epic Y closure migrates that evidence path toward the shared semantic runner.
 5. Epic T is closed: the kernel interop transport surface now lives under `boundaries/kernel/interop/grpc/proto/`, root Buf configuration exists, and code-generation plus interop-smoke orchestration is wired through repo-global tooling.
 6. Epic R is closed: the telemetry semantic-convention source and generated helper contract were formalized before the Rust kernel implementation line began.
 7. Epic U is closed: root Cargo workspace files and the first Rust implementation now exist only under the kernel boundary: kernel core, gRPC service, and conformance runner.
 8. Epic V is closed: TypeScript framework to Rust kernel interop, cross-language telemetry attributes, generated telemetry helpers, and compatibility-ledger generation are stabilized as input evidence for semantic maturity work.
 9. Epic W matures the one-semantic-ecosystem layer before any additional implementation line: build the semantic coverage matrix, promote high-value TypeScript-local semantics into boundary-owned conformance suites, require assertion-bearing evidence, and update compatibility reporting so pass/fail claims name the semantic checks that ran.
 10. Epic X normalizes the boundary tree's path topology: relocate every TypeScript-only asset out of language-neutral slots into the appropriate `implementations/typescript/` subtree, codify the topology rule in `AGENTS.md` and TechSpec ADR-022, and record the closure inventory. Epic X performs no semantic, fixture, or public-API changes.
-11. Epic Y closed the machine-enforced neutral authority gap for the named surfaces: the repository now inventories TypeScript/Rust/Markdown oracle leaks; promotes `core-types`, `event-stream`, `runtime-api`, `driver-api`, and callable seams to boundary-owned Authority Packet manifests (§4.11) referencing conformance plans (§4.12); provides adapter protocol scaffolding (§4.13); treats TypeScript packages as binding projections; adds guardrails for generated artifact freshness, forbidden authority sources, runner-oracle checks, and forbidden implementation vocabulary; and records `constitution/spikes/epic-y-machine-enforced-authority-closure-inventory.md`.
-12. Add a Rust framework implementation, future concrete drivers, peer backends such as PostgreSQL and MySQL/MariaDB, provider expansions, or additional host protocols only after Epic W proves the artifact-backed semantic system is complete enough to absorb them without drift, Epic X has normalized the boundary tree to language-neutral roots, and Epic Y has eliminated implementation-, runner-, and prose-oracle paths from the named cross-implementation surfaces.
+11. Epic Y authority-packet closure is complete for the named surfaces: the repository now inventories TypeScript/Rust/Markdown oracle leaks; promotes `core-types`, `event-stream`, `runtime-api`, `driver-api`, and callable seams to boundary-owned Authority Packet manifests (§4.11) referencing conformance plans (§4.12); provides adapter protocol scaffolding (§4.13); treats TypeScript packages as binding projections; adds guardrails for generated artifact freshness, forbidden authority sources, runner-oracle checks, and forbidden implementation vocabulary; and records `constitution/spikes/epic-y-machine-enforced-authority-closure-inventory.md`.
+12. Epic Y final conformance closure is active: extract one shared semantic conformance engine under `tools/conformance/runner/`, convert language conformance entry points into adapter hosts, enforce executable capability selection, add assertion-engine meta-conformance, isolate adapter failures from implementation assertions, and add multi-step trace support where lifecycle semantics require it.
+13. Add a Rust framework implementation, future concrete drivers, peer backends such as PostgreSQL and MySQL/MariaDB, provider expansions, or additional host protocols only after Epic W proves the artifact-backed semantic system is complete enough to absorb them without drift, Epic X has normalized the boundary tree to language-neutral roots, and Epic Y has eliminated implementation-, runner-, and prose-oracle paths from the named cross-implementation surfaces through the shared-runner architecture.
 
 ### 5.4.1 ReAct and Multilanguage Epic Partition Status
 
@@ -2091,5 +2106,5 @@ authority-packet and conformance-plan JSON Schemas live under
 - **Epic V — TypeScript Framework and Rust Kernel Interop Stabilization:** Closed in current repo reality through `constitution/spikes/epic-v-transport-decision-inventory.md` and `constitution/spikes/epic-v-framework-rust-kernel-interop-closure-inventory.md`. The repo now has the TypeScript gRPC remote-kernel helper, the playground kernel switch, real interop-smoke evidence, compatibility-ledger interop entries, and separated cross-language verification lanes.
 - **Epic W — Semantic Ecosystem Maturity:** Closed in current repo reality through `constitution/spikes/epic-w-semantic-coverage-matrix.md` and `constitution/spikes/epic-w-semantic-ecosystem-maturity-closure-inventory.md`. Epic W was not a Rust framework, not a second framework implementation, and not a continuation of the Rust-kernel baseline; it closed the first semantic-authority gap by promoting normative semantics from TypeScript-local tests into boundary-owned conformance suites with named assertions and compatibility evidence.
 - **Epic X — TypeScript Topology Normalization:** Closed in current repo reality through `constitution/spikes/epic-x-typescript-topology-normalization-inventory.md` and `constitution/spikes/epic-x-typescript-topology-normalization-closure-inventory.md`. The repository now places boundary-level testkits and moved contract package guts only under `implementations/typescript/` subtrees and codifies the path-topology rule in `AGENTS.md`.
-- **Epic Y — Machine-Enforced Neutral Authority Closure:** Closed in current repo reality through `constitution/spikes/epic-y-authority-leak-inventory.md` and `constitution/spikes/epic-y-machine-enforced-authority-closure-inventory.md`. The named neutral surfaces and the separated ReAct-driver plan family now own Authority Packet manifests, conformance plans, generated JSON Schema artifacts where applicable, binding appendices, validator wiring, and machine guardrails. Existing TypeScript public package APIs remain binding projections of those packets.
+- **Epic Y — Machine-Enforced Neutral Authority Closure:** Authority-packet closure is closed in current repo reality through `constitution/spikes/epic-y-authority-leak-inventory.md` and `constitution/spikes/epic-y-machine-enforced-authority-closure-inventory.md`. Final language-agnostic conformance closure is active through `constitution/spikes/epic-y-single-semantic-conformance-engine-spike.md`: the target is one shared semantic runner over TypeScript, Rust, and future adapter hosts, not one independently meaningful runner per language. Existing TypeScript public package APIs remain binding projections of those packets.
 - **Later driver, backend, provider, language, and host protocol expansion:** Deferred beyond Epic W, Epic X, and Epic Y unless the TechSpec is revised. This includes Rust framework work, `LanguageModelV2` compatibility, provider-native tools, AI SDK agent loops/UI transports, LangChain bridge work, first-class Tuvren provider packages, ACP, future non-ReAct drivers, future official backends, and future language lines beyond Rust.
