@@ -64,6 +64,7 @@ const MANIFEST_PATH_SEGMENTS = [
   "scenarios",
   "suite-manifest.json",
 ];
+const MANIFEST_SCHEMA_RELATIVE_PATH = "../schemas/suite-manifest.schema.json";
 const LOWERCASE_HEX_PATTERN = /^[0-9a-f]+$/u;
 const ajv = new Ajv2020({ allErrors: true, strict: false });
 const kernelConformanceFixtureIndex = loadKernelConformanceFixtureIndex();
@@ -133,7 +134,19 @@ function loadKernelConformanceFixtureIndex(): KernelConformanceFixtureIndex {
     MANIFEST_PATH_SEGMENTS
   );
   const manifestText = readFileSync(manifestPath, "utf8");
+  const manifestSchemaText = readFileSync(
+    join(dirname(manifestPath), MANIFEST_SCHEMA_RELATIVE_PATH),
+    "utf8"
+  );
   const parsedManifest = JSON.parse(manifestText);
+  const parsedManifestSchema = readJsonSchema(JSON.parse(manifestSchemaText));
+  const validateManifest = ajv.compile(parsedManifestSchema);
+
+  if (!validateManifest(parsedManifest)) {
+    throw new Error(
+      `kernel conformance manifest failed JSON Schema validation: ${ajv.errorsText(validateManifest.errors)}`
+    );
+  }
 
   if (
     !isRecord(parsedManifest) ||

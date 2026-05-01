@@ -41,6 +41,10 @@ const KERNEL_SUITE_MANIFEST = new URL(
   "../../../../conformance/scenarios/suite-manifest.json",
   import.meta.url
 );
+const KERNEL_SUITE_MANIFEST_SCHEMA = new URL(
+  "../../../../conformance/schemas/suite-manifest.schema.json",
+  import.meta.url
+);
 
 describe("kernel TypeScript conformance runner", () => {
   test("executes the shared kernel protocol seed suite", async () => {
@@ -121,10 +125,20 @@ interface SuiteManifest {
 
 function readValidatedKernelFixtureSuite(manifestUrl: URL): KernelFixtureSuite {
   const manifest = readSuiteManifest(manifestUrl);
+  const manifestSchema = readJsonSchema(
+    fileURLToPath(KERNEL_SUITE_MANIFEST_SCHEMA)
+  );
+  const manifestAjv = new Ajv2020({ allErrors: true, strict: false });
+  const validateManifest = manifestAjv.compile(manifestSchema);
+
+  expect(
+    validateManifest(readJsonObject(fileURLToPath(manifestUrl))),
+    manifestAjv.errorsText(validateManifest.errors)
+  ).toBe(true);
   expect(manifest).toMatchObject({
     boundary: "kernel",
     suiteId: "tuvren.kernel.protocol-seed",
-    suiteVersion: "0.1.0",
+    suiteVersion: "0.2.0",
   });
   expect(manifest.fixtures.map((fixture) => fixture.id)).toEqual([
     "canonical-turn-tree-schema",

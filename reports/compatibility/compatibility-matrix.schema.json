@@ -44,7 +44,14 @@
             "type": "array",
             "items": {
               "type": "object",
-              "required": ["suiteId", "suiteVersion", "status", "evidencePath"],
+              "required": [
+                "suiteId",
+                "suiteVersion",
+                "status",
+                "evidencePath",
+                "checkIds",
+                "checkSummary"
+              ],
               "properties": {
                 "suiteId": { "type": "string" },
                 "suiteVersion": { "type": "string" },
@@ -52,7 +59,22 @@
                   "type": "string",
                   "enum": ["pass", "fail"]
                 },
-                "evidencePath": { "type": "string" }
+                "evidencePath": { "type": "string" },
+                "checkIds": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": { "type": "string" }
+                },
+                "checkSummary": {
+                  "type": "object",
+                  "required": ["failedChecks", "passedChecks", "totalChecks"],
+                  "properties": {
+                    "failedChecks": { "type": "integer", "minimum": 0 },
+                    "passedChecks": { "type": "integer", "minimum": 0 },
+                    "totalChecks": { "type": "integer", "minimum": 1 }
+                  },
+                  "additionalProperties": false
+                }
               },
               "additionalProperties": false
             }
@@ -70,7 +92,9 @@
           "suiteId",
           "suiteVersion",
           "status",
-          "evidencePath"
+          "evidencePath",
+          "checkIds",
+          "checkSummary"
         ],
         "properties": {
           "pairId": { "type": "string" },
@@ -80,7 +104,22 @@
             "type": "string",
             "enum": ["pass", "fail"]
           },
-          "evidencePath": { "type": "string" }
+          "evidencePath": { "type": "string" },
+          "checkIds": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string" }
+          },
+          "checkSummary": {
+            "type": "object",
+            "required": ["failedChecks", "passedChecks", "totalChecks"],
+            "properties": {
+              "failedChecks": { "type": "integer", "minimum": 0 },
+              "passedChecks": { "type": "integer", "minimum": 0 },
+              "totalChecks": { "type": "integer", "minimum": 1 }
+            },
+            "additionalProperties": false
+          }
         },
         "additionalProperties": false
       }

@@ -9,21 +9,21 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": ".",
-        "command": "devenv shell -- cargo build -p tuvren-kernel-rust"
+        "command": "cargo build -p tuvren-kernel-rust"
       }
     },
     "lint": {
       "executor": "nx:run-commands",
       "options": {
         "cwd": ".",
-        "command": "devenv shell -- cargo fmt --package tuvren-kernel-rust -- --check && devenv shell -- cargo clippy -p tuvren-kernel-rust --all-targets -- -D warnings"
+        "command": "cargo fmt --package tuvren-kernel-rust -- --check && cargo clippy -p tuvren-kernel-rust --all-targets -- -D warnings"
       }
     },
     "test": {
       "executor": "nx:run-commands",
       "options": {
         "cwd": ".",
-        "command": "devenv shell -- cargo test -p tuvren-kernel-rust"
+        "command": "cargo test -p tuvren-kernel-rust"
       }
     }
   }

@@ -1,6 +1,6 @@
 {
   "suiteId": "tuvren.kernel.protocol-seed",
-  "suiteVersion": "0.1.0",
+  "suiteVersion": "0.2.0",
   "boundary": "kernel",
   "fixtureSchemaPath": "../schemas/kernel-fixture-index.schema.json",
   "fixtures": [
@@ -15,6 +15,79 @@
     {
       "id": "kernel-protocol-logical",
       "path": "../fixtures/kernel-protocol-logical.json"
+    }
+  ],
+  "scenarios": [
+    { "id": "cross-thread-lineage-rejection" },
+    { "id": "turn-head-lateral-guard" }
+  ],
+  "checks": [
+    {
+      "checkId": "kernel.protocol.deterministic_hashing",
+      "description": "Shared kernel fixtures preserve stable hashing for opaque objects, schemas, and turn-node identity records.",
+      "fixtureIds": ["kernel-protocol-deterministic"],
+      "assertions": [
+        "raw_opaque_bytes_hash",
+        "turn_tree_schema_hash",
+        "turn_node_identity_hash"
+      ],
+      "implementations": ["typescript-kernel", "rust-kernel"],
+      "expectedEvidence": ["assertionResults", "details.hashKinds"]
+    },
+    {
+      "checkId": "kernel.protocol.schema_roundtrip",
+      "description": "Deterministic CBOR fixtures round-trip the canonical schema record.",
+      "fixtureIds": ["kernel-protocol-deterministic"],
+      "assertions": [
+        "turn_tree_schema_cbor_roundtrip",
+        "turn_node_identity_cbor_roundtrip"
+      ],
+      "implementations": ["typescript-kernel", "rust-kernel"],
+      "expectedEvidence": ["assertionResults"]
+    },
+    {
+      "checkId": "kernel.logical.diff_paths",
+      "description": "Logical fixtures preserve canonical diff paths for changed turn trees.",
+      "fixtureIds": ["canonical-turn-tree-schema", "kernel-protocol-logical"],
+      "assertions": ["logical_diff_matches_fixture_paths"],
+      "implementations": ["rust-kernel"],
+      "expectedEvidence": ["assertionResults", "details.diffPaths"]
+    },
+    {
+      "checkId": "kernel.logical.branch_list",
+      "description": "Logical fixtures preserve deterministic branch listing from the canonical thread root.",
+      "fixtureIds": ["kernel-protocol-logical"],
+      "assertions": ["branch_list_matches_fixture_entry"],
+      "implementations": ["rust-kernel"],
+      "expectedEvidence": ["assertionResults", "details.branchEntries"]
+    },
+    {
+      "checkId": "kernel.logical.recovery_state",
+      "description": "Logical fixtures preserve the recovery-state contract for last completed step and staged-result carryover.",
+      "fixtureIds": ["kernel-protocol-logical"],
+      "assertions": [
+        "recovery_state_last_completed_step",
+        "recovery_state_consumed_results",
+        "recovery_state_uncommitted_results"
+      ],
+      "implementations": ["rust-kernel"],
+      "expectedEvidence": ["assertionResults", "details.recoveryStepIds"]
+    },
+    {
+      "checkId": "kernel.lineage.cross_thread_rejection",
+      "description": "Kernel implementations reject branch creation across thread lineage roots.",
+      "scenarioIds": ["cross-thread-lineage-rejection"],
+      "assertions": ["cross_thread_branch_create_rejected"],
+      "implementations": ["rust-kernel"],
+      "expectedEvidence": ["assertionResults", "details.errorCode"]
+    },
+    {
+      "checkId": "kernel.turn.lateral_head_guard",
+      "description": "Kernel implementations reject turn-head rewrites that jump to a lateral descendant outside the turn lineage.",
+      "scenarioIds": ["turn-head-lateral-guard"],
+      "assertions": ["lateral_turn_head_move_rejected"],
+      "implementations": ["rust-kernel"],
+      "expectedEvidence": ["assertionResults", "details.errorCode"]
     }
   ]
 }

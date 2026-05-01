@@ -13,6 +13,7 @@
 // limitations under the License.
 
 use prost::Message;
+use prost_types::Any;
 use tokio_stream::StreamExt;
 use tokio_stream::wrappers::TcpListenerStream;
 use tonic::Request;
@@ -31,6 +32,19 @@ use tuvren_kernel_rust_grpc_service::proto::{
     self, IncorporationRule, PathCollectionKind, PathDefinition, RunCompletionStatus,
     SettledStagedResult, StagedResultStatus, StepDeclaration,
 };
+
+const KERNEL_ERROR_PAYLOAD_TYPE_URL: &str =
+    "type.googleapis.com/tuvren.kernel.interop.v1.KernelErrorPayload";
+
+#[derive(Clone, PartialEq, Message)]
+struct GoogleRpcStatus {
+    #[prost(int32, tag = "1")]
+    code: i32,
+    #[prost(string, tag = "2")]
+    message: String,
+    #[prost(message, repeated, tag = "3")]
+    details: Vec<Any>,
+}
 
 #[tokio::test]
 async fn interop_smoke_exercises_unary_and_node_walk_back_stream() {
@@ -193,8 +207,7 @@ async fn kernel_errors_include_stable_payload_details() {
         .expect_err("missing schema should map to a status");
 
     assert_eq!(error.code(), tonic::Code::NotFound);
-    let payload = proto::KernelErrorPayload::decode(error.details())
-        .expect("status details decode as KernelErrorPayload");
+    let payload = decode_kernel_error_payload(&error);
     assert_eq!(payload.code, "schema_not_found");
     assert!(payload.message.contains("schema"));
     assert!(payload.details_cbor.is_none());
@@ -245,8 +258,7 @@ async fn schema_shape_errors_map_to_invalid_argument() {
     .expect_err("duplicate schema paths are input shape errors");
 
     assert_eq!(error.code(), tonic::Code::InvalidArgument);
-    let payload = proto::KernelErrorPayload::decode(error.details())
-        .expect("status details decode as KernelErrorPayload");
+    let payload = decode_kernel_error_payload(&error);
     assert_eq!(payload.code, "duplicate_schema_path");
 }
 
@@ -387,9 +399,24 @@ async fn run_complete_step_rejects_non_object_annotations() {
     .expect_err("annotations must be object records");
 
     assert_eq!(error.code(), tonic::Code::InvalidArgument);
-    let payload = proto::KernelErrorPayload::decode(error.details())
-        .expect("status details decode as KernelErrorPayload");
+    let payload = decode_kernel_error_payload(&error);
     assert_eq!(payload.code, "invalid_annotation_record");
+}
+
+fn decode_kernel_error_payload(status: &tonic::Status) -> proto::KernelErrorPayload {
+    // tonic exposes the binary google.rpc.Status envelope via details(); the
+    // kernel payload sits inside that envelope as a typed Any detail rather
+    // than as raw KernelErrorPayload bytes.
+    let rich_status = GoogleRpcStatus::decode(status.details())
+        .expect("status details decode as google.rpc.Status");
+    let payload_detail = rich_status
+        .details
+        .into_iter()
+        .find(|detail| detail.type_url == KERNEL_ERROR_PAYLOAD_TYPE_URL)
+        .expect("status details include KernelErrorPayload");
+
+    proto::KernelErrorPayload::decode(payload_detail.value.as_slice())
+        .expect("KernelErrorPayload detail decodes")
 }
 
 async fn spawn_kernel_server() -> (String, tokio::task::JoinHandle<()>) {

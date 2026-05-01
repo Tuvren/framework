@@ -4,6 +4,10 @@
   "version": "0.0.0",
   "type": "module",
   "dependencies": {
-    "@tuvren/framework-testkit": "workspace:*"
+    "@ag-ui/core": "0.0.52",
+    "@tuvren/framework-testkit": "workspace:*",
+    "@tuvren/stream-agui": "workspace:*",
+    "@tuvren/stream-core": "workspace:*",
+    "@tuvren/stream-sse": "workspace:*"
   }
 }

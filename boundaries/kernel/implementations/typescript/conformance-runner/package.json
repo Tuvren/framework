@@ -4,6 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "dependencies": {
+    "@tuvren/backend-memory": "workspace:*",
+    "@tuvren/core-types": "workspace:*",
+    "@tuvren/kernel-protocol": "workspace:*",
     "@tuvren/kernel-testkit": "workspace:*"
   }
 }

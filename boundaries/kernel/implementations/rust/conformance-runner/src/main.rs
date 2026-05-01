@@ -16,95 +16,112 @@ use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use serde::Deserialize;
-use serde_json::Value;
+use serde::{Deserialize, Serialize};
+use serde_json::{Value, json};
 use tuvren_kernel_rust::{
     InMemoryKernel, KernelError, KernelRecord, PathCollectionKind, PathDefinition, PathValue,
-    RecoveryState, StagedResult, StagedResultStatus, StepDeclaration, TurnNode, TurnTreeSchema,
-    decode_deterministic_kernel_record, hash_bytes_to_hex, hash_kernel_record,
-    hash_turn_node_identity, kernel_record_from_json, schema_to_record,
+    RecoveryState, RunCompletionStatus, StagedResult, StagedResultStatus, StepDeclaration,
+    TurnNode, TurnTreeSchema, decode_deterministic_kernel_record, hash_bytes_to_hex,
+    hash_kernel_record, hash_turn_node_identity, kernel_record_from_json, schema_to_record,
 };
 
 const MANIFEST_PATH: &str = "boundaries/kernel/conformance/scenarios/suite-manifest.json";
+const RUST_IMPLEMENTATION_ID: &str = "rust-kernel";
+const EXPECTED_RUST_CHECK_IDS: &[&str] = &[
+    "kernel.protocol.deterministic_hashing",
+    "kernel.protocol.schema_roundtrip",
+    "kernel.logical.diff_paths",
+    "kernel.logical.branch_list",
+    "kernel.logical.recovery_state",
+    "kernel.lineage.cross_thread_rejection",
+    "kernel.turn.lateral_head_guard",
+];
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct AssertionResult {
+    assertion_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    message: Option<String>,
+    status: &'static str,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct CheckResult {
+    assertion_results: Vec<AssertionResult>,
+    check_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    details: Option<Value>,
+    status: &'static str,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct EvidenceSummary {
+    failed_checks: usize,
+    passed_checks: usize,
+    total_checks: usize,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct Evidence {
+    boundary: String,
+    check_results: Vec<CheckResult>,
+    implementation_id: &'static str,
+    language: &'static str,
+    status: &'static str,
+    suite_id: String,
+    suite_version: String,
+    summary: EvidenceSummary,
+}
 
 fn main() -> Result<(), KernelError> {
     let suite = read_suite()?;
     assert_eq!(suite.manifest.boundary, "kernel");
     assert_eq!(suite.manifest.suite_id, "tuvren.kernel.protocol-seed");
-    assert_eq!(suite.manifest.suite_version, "0.1.0");
+    assert_eq!(suite.manifest.suite_version, "0.2.0");
+    assert_expected_rust_checks(&suite.manifest)?;
 
-    let deterministic = suite.deterministic;
-    let raw_bytes = deterministic.raw_opaque_bytes;
-    assert_eq!(
-        hash_bytes_to_hex(&raw_bytes),
-        deterministic.raw_opaque_bytes_sha256_hex
-    );
+    // The Rust runner still dispatches checks explicitly so each scenario can
+    // stay idiomatic to the local kernel API, but the manifest assertion above
+    // prevents that hand-written list from drifting away from the
+    // boundary-owned suite contract.
+    let check_results = vec![
+        run_deterministic_hashing_check(&suite)?,
+        run_schema_roundtrip_check(&suite)?,
+        run_logical_diff_check(&suite)?,
+        run_branch_list_check(&suite)?,
+        run_recovery_state_check(&suite)?,
+        run_cross_thread_lineage_check(&suite)?,
+        run_lateral_turn_head_guard_check(&suite)?,
+    ];
 
-    let schema = parse_schema(&deterministic.turn_tree_schema_record)?;
-    assert_eq!(
-        hash_kernel_record(&schema_to_record(&schema))?,
-        deterministic.turn_tree_schema_record_sha256_hex
-    );
-    let decoded_schema = decode_deterministic_kernel_record(&hex_to_bytes(
-        &deterministic.turn_tree_schema_record_cbor_hex,
-    )?)?;
-    assert_eq!(decoded_schema, schema_to_record(&schema));
-
-    let node = parse_turn_node_identity(&deterministic.turn_node_identity_record)?;
-    assert_eq!(
-        hash_turn_node_identity(&node)?,
-        deterministic.turn_node_identity_record_sha256_hex
-    );
-    let decoded_node = decode_deterministic_kernel_record(&hex_to_bytes(
-        &deterministic.turn_node_identity_record_cbor_hex,
-    )?)?;
-    assert_eq!(
-        decoded_node,
-        kernel_record_from_json(&deterministic.turn_node_identity_record)?
-    );
-
-    let kernel = InMemoryKernel::new();
-    kernel.schema_register(parse_schema(&suite.canonical_schema)?)?;
-    let created = kernel.thread_create("thread_conformance", "schema_main", "branch_main")?;
-    let mut changes = BTreeMap::new();
-    let logical = suite.logical;
-    let branch_head = parse_branch_head_list_entry(&logical.branch_head_list_entry)?;
-    assert_eq!(branch_head.0, "branch_main");
-    assert_eq!(
-        branch_head.1,
-        "9999999999999999999999999999999999999999999999999999999999999999"
-    );
-    let recovery_state = parse_recovery_state(&logical.recovery_state)?;
-    assert_eq!(
-        recovery_state.last_completed_step_id.as_deref(),
-        Some("tool_execution")
-    );
-    assert_eq!(recovery_state.consumed_staged_results.len(), 1);
-    assert_eq!(recovery_state.step_sequence.len(), 2);
-    assert_eq!(recovery_state.uncommitted_staged_results.len(), 1);
-    run_recovery_fixture_scenario(&suite.canonical_schema, &recovery_state)?;
-
-    let logical_changes = logical
-        .turn_tree_change_set
-        .as_object()
-        .ok_or_else(|| error("invalid_fixture", "turnTreeChangeSet must be an object"))?;
-    for (path, value) in logical_changes {
-        changes.insert(path.clone(), parse_path_value(value)?);
-    }
-    let changed_tree =
-        kernel.tree_create("schema_main", changes, Some(&created.root_turn_tree_hash))?;
-    let diff = kernel.tree_diff(&created.root_turn_tree_hash, &changed_tree)?;
-    assert_eq!(
-        diff,
-        vec!["context.manifest".to_string(), "messages".to_string()]
-    );
-    let branch_entries = kernel.branch_list("thread_conformance")?;
-    assert_eq!(branch_entries.len(), 1);
-    assert_eq!(branch_entries[0].0, branch_head.0);
+    let failed_checks = check_results
+        .iter()
+        .filter(|check_result| check_result.status == "fail")
+        .count();
+    let summary = EvidenceSummary {
+        failed_checks,
+        passed_checks: check_results.len() - failed_checks,
+        total_checks: check_results.len(),
+    };
+    let evidence = Evidence {
+        boundary: suite.manifest.boundary.clone(),
+        check_results,
+        implementation_id: RUST_IMPLEMENTATION_ID,
+        language: "rust",
+        status: if failed_checks == 0 { "pass" } else { "fail" },
+        suite_id: suite.manifest.suite_id.clone(),
+        suite_version: suite.manifest.suite_version.clone(),
+        summary,
+    };
 
     println!(
-        "kernel Rust conformance passed: {}@{} checks=deterministic,logical-diff,branch-list,recovery",
-        suite.manifest.suite_id, suite.manifest.suite_version
+        "{}",
+        serde_json::to_string_pretty(&evidence)
+            .map_err(|_| error("invalid_evidence", "failed to serialize evidence"))?
     );
     Ok(())
 }
@@ -112,6 +129,7 @@ fn main() -> Result<(), KernelError> {
 #[derive(Deserialize)]
 struct SuiteManifest {
     boundary: String,
+    checks: Vec<SuiteCheck>,
     #[serde(rename = "fixtureSchemaPath")]
     fixture_schema_path: String,
     fixtures: Vec<SuiteFixture>,
@@ -125,6 +143,13 @@ struct SuiteManifest {
 struct SuiteFixture {
     id: String,
     path: String,
+}
+
+#[derive(Deserialize)]
+struct SuiteCheck {
+    #[serde(rename = "checkId")]
+    check_id: String,
+    implementations: Option<Vec<String>>,
 }
 
 #[derive(Deserialize)]
@@ -226,6 +251,327 @@ fn validate_fixture_schema_path(
         }
     }
     Ok(())
+}
+
+fn assert_expected_rust_checks(manifest: &SuiteManifest) -> Result<(), KernelError> {
+    let rust_check_ids: Vec<&str> = manifest
+        .checks
+        .iter()
+        .filter(|check| {
+            check
+                .implementations
+                .as_ref()
+                .is_some_and(|implementations| {
+                    implementations
+                        .iter()
+                        .any(|id| id == RUST_IMPLEMENTATION_ID)
+                })
+        })
+        .map(|check| check.check_id.as_str())
+        .collect();
+
+    if rust_check_ids == EXPECTED_RUST_CHECK_IDS {
+        return Ok(());
+    }
+
+    Err(error(
+        "manifest_check_drift",
+        "kernel conformance manifest check order drifted from the Rust runner dispatch list",
+    ))
+}
+
+fn run_deterministic_hashing_check(suite: &FixtureSuite) -> Result<CheckResult, KernelError> {
+    let deterministic = &suite.deterministic;
+    let raw_bytes = deterministic.raw_opaque_bytes.clone();
+    let schema = parse_schema(&deterministic.turn_tree_schema_record)?;
+    let node = parse_turn_node_identity(&deterministic.turn_node_identity_record)?;
+
+    Ok(create_check_result(
+        "kernel.protocol.deterministic_hashing",
+        vec![
+            create_assertion_result(
+                "raw_opaque_bytes_hash",
+                hash_bytes_to_hex(&raw_bytes) == deterministic.raw_opaque_bytes_sha256_hex,
+                None,
+            ),
+            create_assertion_result(
+                "turn_tree_schema_hash",
+                hash_kernel_record(&schema_to_record(&schema))?
+                    == deterministic.turn_tree_schema_record_sha256_hex,
+                None,
+            ),
+            create_assertion_result(
+                "turn_node_identity_hash",
+                hash_turn_node_identity(&node)?
+                    == deterministic.turn_node_identity_record_sha256_hex,
+                None,
+            ),
+        ],
+        Some(json!({
+            "hashKinds": ["rawOpaqueBytes", "turnTreeSchema", "turnNodeIdentity"]
+        })),
+    ))
+}
+
+fn run_schema_roundtrip_check(suite: &FixtureSuite) -> Result<CheckResult, KernelError> {
+    let deterministic = &suite.deterministic;
+    let schema = parse_schema(&deterministic.turn_tree_schema_record)?;
+    let decoded_schema = decode_deterministic_kernel_record(&hex_to_bytes(
+        &deterministic.turn_tree_schema_record_cbor_hex,
+    )?)?;
+    let decoded_node = decode_deterministic_kernel_record(&hex_to_bytes(
+        &deterministic.turn_node_identity_record_cbor_hex,
+    )?)?;
+
+    Ok(create_check_result(
+        "kernel.protocol.schema_roundtrip",
+        vec![
+            create_assertion_result(
+                "turn_tree_schema_cbor_roundtrip",
+                decoded_schema == schema_to_record(&schema),
+                None,
+            ),
+            create_assertion_result(
+                "turn_node_identity_cbor_roundtrip",
+                decoded_node == kernel_record_from_json(&deterministic.turn_node_identity_record)?,
+                None,
+            ),
+        ],
+        None,
+    ))
+}
+
+fn run_logical_diff_check(suite: &FixtureSuite) -> Result<CheckResult, KernelError> {
+    let kernel = InMemoryKernel::new();
+    kernel.schema_register(parse_schema(&suite.canonical_schema)?)?;
+    let created = kernel.thread_create("thread_conformance", "schema_main", "branch_main")?;
+    let mut changes = BTreeMap::new();
+    let logical_changes = suite
+        .logical
+        .turn_tree_change_set
+        .as_object()
+        .ok_or_else(|| error("invalid_fixture", "turnTreeChangeSet must be an object"))?;
+
+    for (path, value) in logical_changes {
+        changes.insert(path.clone(), parse_path_value(value)?);
+    }
+
+    let changed_tree =
+        kernel.tree_create("schema_main", changes, Some(&created.root_turn_tree_hash))?;
+    let diff = kernel.tree_diff(&created.root_turn_tree_hash, &changed_tree)?;
+
+    Ok(create_check_result(
+        "kernel.logical.diff_paths",
+        vec![create_assertion_result(
+            "logical_diff_matches_fixture_paths",
+            diff == vec!["context.manifest".to_string(), "messages".to_string()],
+            None,
+        )],
+        Some(json!({ "diffPaths": diff })),
+    ))
+}
+
+fn run_branch_list_check(suite: &FixtureSuite) -> Result<CheckResult, KernelError> {
+    let kernel = InMemoryKernel::new();
+    kernel.schema_register(parse_schema(&suite.canonical_schema)?)?;
+    kernel.thread_create("thread_conformance", "schema_main", "branch_main")?;
+    let branch_entries = kernel.branch_list("thread_conformance")?;
+    let branch_head = parse_branch_head_list_entry(&suite.logical.branch_head_list_entry)?;
+
+    Ok(create_check_result(
+        "kernel.logical.branch_list",
+        vec![create_assertion_result(
+            "branch_list_matches_fixture_entry",
+            branch_entries.len() == 1 && branch_entries[0] == branch_head,
+            None,
+        )],
+        Some(json!({ "branchEntries": branch_entries })),
+    ))
+}
+
+fn run_recovery_state_check(suite: &FixtureSuite) -> Result<CheckResult, KernelError> {
+    let recovery_state = parse_recovery_state(&suite.logical.recovery_state)?;
+    run_recovery_fixture_scenario(&suite.canonical_schema, &recovery_state)?;
+
+    Ok(create_check_result(
+        "kernel.logical.recovery_state",
+        vec![
+            create_assertion_result(
+                "recovery_state_last_completed_step",
+                recovery_state.last_completed_step_id.as_deref() == Some("tool_execution"),
+                None,
+            ),
+            create_assertion_result(
+                "recovery_state_consumed_results",
+                recovery_state.consumed_staged_results.len() == 1,
+                None,
+            ),
+            create_assertion_result(
+                "recovery_state_uncommitted_results",
+                recovery_state.uncommitted_staged_results.len() == 1,
+                None,
+            ),
+        ],
+        Some(json!({
+            "recoveryStepIds": recovery_state
+                .step_sequence
+                .iter()
+                .map(|step| step.id.clone())
+                .collect::<Vec<_>>()
+        })),
+    ))
+}
+
+fn run_cross_thread_lineage_check(suite: &FixtureSuite) -> Result<CheckResult, KernelError> {
+    let kernel = InMemoryKernel::new();
+    kernel.schema_register(parse_schema(&suite.canonical_schema)?)?;
+    let thread_a = kernel.thread_create("thread_a", "schema_main", "branch_a")?;
+    kernel.turn_create(
+        "turn_a",
+        "thread_a",
+        "branch_a",
+        None,
+        &thread_a.root_turn_node_hash,
+    )?;
+    kernel.run_create(
+        "run_a",
+        "turn_a",
+        "branch_a",
+        "schema_main",
+        &thread_a.root_turn_node_hash,
+        vec![StepDeclaration {
+            deterministic: false,
+            id: "step_a".to_string(),
+            metadata: None,
+            side_effects: false,
+        }],
+    )?;
+    let (_, node_a) = kernel.run_complete_step("run_a", "step_a", None, Vec::new(), None)?;
+    let node_a = node_a.ok_or_else(|| error("missing_checkpoint", "expected checkpoint hash"))?;
+    let _thread_b = kernel.thread_create("thread_b", "schema_main", "branch_b")?;
+    let error = kernel
+        .branch_create("branch_cross_thread", "thread_b", &node_a)
+        .expect_err("thread A node cannot seed thread B branch");
+
+    Ok(create_check_result(
+        "kernel.lineage.cross_thread_rejection",
+        vec![create_assertion_result(
+            "cross_thread_branch_create_rejected",
+            error.payload.code == "turn_node_thread_mismatch",
+            Some(error.payload.code.clone()),
+        )],
+        Some(json!({ "errorCode": error.payload.code })),
+    ))
+}
+
+fn run_lateral_turn_head_guard_check(suite: &FixtureSuite) -> Result<CheckResult, KernelError> {
+    let kernel = InMemoryKernel::new();
+    kernel.schema_register(parse_schema(&suite.canonical_schema)?)?;
+    let thread = kernel.thread_create("thread_main", "schema_main", "branch_main")?;
+    kernel.turn_create(
+        "turn_main",
+        "thread_main",
+        "branch_main",
+        None,
+        &thread.root_turn_node_hash,
+    )?;
+    kernel.run_create(
+        "run_main",
+        "turn_main",
+        "branch_main",
+        "schema_main",
+        &thread.root_turn_node_hash,
+        vec![StepDeclaration {
+            deterministic: false,
+            id: "main_step".to_string(),
+            metadata: None,
+            side_effects: false,
+        }],
+    )?;
+    let (_, main_node) =
+        kernel.run_complete_step("run_main", "main_step", None, Vec::new(), None)?;
+    let main_node =
+        main_node.ok_or_else(|| error("missing_checkpoint", "expected main checkpoint"))?;
+    kernel.run_complete("run_main", RunCompletionStatus::Completed, None)?;
+    kernel.branch_create("branch_alt", "thread_main", &thread.root_turn_node_hash)?;
+    kernel.turn_create(
+        "turn_alt",
+        "thread_main",
+        "branch_alt",
+        None,
+        &thread.root_turn_node_hash,
+    )?;
+    kernel.run_create(
+        "run_alt",
+        "turn_alt",
+        "branch_alt",
+        "schema_main",
+        &thread.root_turn_node_hash,
+        vec![StepDeclaration {
+            deterministic: false,
+            id: "alt_step".to_string(),
+            metadata: None,
+            side_effects: false,
+        }],
+    )?;
+    kernel.staging_stage(
+        "run_alt",
+        b"alt branch message".to_vec(),
+        "alt_message",
+        "message",
+        StagedResultStatus::Completed,
+        None,
+    )?;
+    let (_, alt_node) = kernel.run_complete_step("run_alt", "alt_step", None, Vec::new(), None)?;
+    let alt_node =
+        alt_node.ok_or_else(|| error("missing_checkpoint", "expected alt checkpoint"))?;
+    let error = kernel
+        .turn_update_head("turn_main", &alt_node)
+        .expect_err("turn head cannot jump to a lateral descendant");
+
+    Ok(create_check_result(
+        "kernel.turn.lateral_head_guard",
+        vec![create_assertion_result(
+            "lateral_turn_head_move_rejected",
+            main_node != alt_node && error.payload.code == "turn_head_lateral_move",
+            Some(error.payload.code.clone()),
+        )],
+        Some(json!({ "errorCode": error.payload.code })),
+    ))
+}
+
+fn create_check_result(
+    check_id: &str,
+    assertion_results: Vec<AssertionResult>,
+    details: Option<Value>,
+) -> CheckResult {
+    let status = if assertion_results
+        .iter()
+        .all(|assertion| assertion.status == "pass")
+    {
+        "pass"
+    } else {
+        "fail"
+    };
+
+    CheckResult {
+        assertion_results,
+        check_id: check_id.to_string(),
+        details,
+        status,
+    }
+}
+
+fn create_assertion_result(
+    assertion_id: &str,
+    passed: bool,
+    message: Option<String>,
+) -> AssertionResult {
+    AssertionResult {
+        assertion_id: assertion_id.to_string(),
+        message,
+        status: if passed { "pass" } else { "fail" },
+    }
 }
 
 fn fixture_path(

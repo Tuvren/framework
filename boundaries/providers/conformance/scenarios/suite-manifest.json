@@ -1,12 +1,113 @@
 {
   "suiteId": "tuvren.providers.api-fixtures",
-  "suiteVersion": "0.1.0",
+  "suiteVersion": "0.2.0",
   "boundary": "providers",
   "fixtureSchemaPath": "../schemas/provider-fixture-set.schema.json",
   "fixtures": [
     {
       "id": "provider-fixtures",
       "path": "../fixtures/provider-fixtures.json"
+    }
+  ],
+  "scenarios": [
+    { "id": "bridge-generate" },
+    { "id": "bridge-stream" },
+    { "id": "bridge-structured" },
+    { "id": "bridge-failure" }
+  ],
+  "checks": [
+    {
+      "checkId": "providers.fixture.prompt_shape",
+      "description": "Provider fixture prompts preserve the shared user/system/tool message contract.",
+      "fixtureIds": ["provider-fixtures"],
+      "assertions": ["prompt_has_messages", "prompt_has_single_user_message"],
+      "implementations": ["typescript-providers"],
+      "expectedEvidence": ["assertionResults", "details.messageRoles"]
+    },
+    {
+      "checkId": "providers.fixture.response_shape",
+      "description": "Provider response fixtures preserve finish reason, text output, and token usage shape.",
+      "fixtureIds": ["provider-fixtures"],
+      "assertions": [
+        "response_finish_reason_stop",
+        "response_contains_text_part",
+        "response_usage_shape"
+      ],
+      "implementations": ["typescript-providers"],
+      "expectedEvidence": ["assertionResults", "details.finishReason"]
+    },
+    {
+      "checkId": "providers.fixture.structured_output_shape",
+      "description": "Structured-output fixtures preserve the shared responseFormat contract.",
+      "fixtureIds": ["provider-fixtures"],
+      "assertions": [
+        "structured_prompt_has_response_format",
+        "structured_prompt_schema_requires_answer"
+      ],
+      "implementations": ["typescript-providers"],
+      "expectedEvidence": ["assertionResults", "details.schemaKeys"]
+    },
+    {
+      "checkId": "providers.fixture.tool_prompt_shape",
+      "description": "Tool prompt fixtures preserve shared tool definition shape.",
+      "fixtureIds": ["provider-fixtures"],
+      "assertions": [
+        "tool_prompt_has_search_tool",
+        "tool_prompt_tool_schema_requires_query"
+      ],
+      "implementations": ["typescript-providers"],
+      "expectedEvidence": ["assertionResults", "details.toolNames"]
+    },
+    {
+      "checkId": "providers.bridge.generate_mapping",
+      "description": "The AI SDK bridge maps provider-neutral generate prompts into LanguageModelV3 options and preserves response metadata.",
+      "fixtureIds": ["provider-fixtures"],
+      "scenarioIds": ["bridge-generate"],
+      "assertions": [
+        "bridge_generate_returns_text_response",
+        "bridge_generate_maps_structured_schema",
+        "bridge_generate_preserves_provider_metadata"
+      ],
+      "implementations": ["typescript-providers"],
+      "expectedEvidence": ["assertionResults", "details.providerMetadataKeys"]
+    },
+    {
+      "checkId": "providers.bridge.stream_metadata_continuity",
+      "description": "The AI SDK bridge preserves streamed text, tool, and finish metadata through ProviderStreamChunk output.",
+      "fixtureIds": ["provider-fixtures"],
+      "scenarioIds": ["bridge-stream"],
+      "assertions": [
+        "bridge_stream_emits_text_delta",
+        "bridge_stream_emits_tool_call_chunks",
+        "bridge_stream_preserves_finish_metadata"
+      ],
+      "implementations": ["typescript-providers"],
+      "expectedEvidence": ["assertionResults", "details.chunkTypes"]
+    },
+    {
+      "checkId": "providers.bridge.structured_output_stream",
+      "description": "The AI SDK bridge emits structured output completion with the declared response format name.",
+      "fixtureIds": ["provider-fixtures"],
+      "scenarioIds": ["bridge-structured"],
+      "assertions": [
+        "bridge_structured_stream_emits_delta",
+        "bridge_structured_stream_emits_done",
+        "bridge_structured_done_name_matches_request"
+      ],
+      "implementations": ["typescript-providers"],
+      "expectedEvidence": ["assertionResults", "details.chunkTypes"]
+    },
+    {
+      "checkId": "providers.bridge.provider_failure_normalization",
+      "description": "The AI SDK bridge normalizes provider failures into stable Tuvren provider errors.",
+      "fixtureIds": ["provider-fixtures"],
+      "scenarioIds": ["bridge-failure"],
+      "assertions": [
+        "bridge_failure_throws_tuvren_provider_error",
+        "bridge_failure_preserves_stable_error_code"
+      ],
+      "implementations": ["typescript-providers"],
+      "expectedEvidence": ["assertionResults", "details.errorCode"]
     }
   ]
 }

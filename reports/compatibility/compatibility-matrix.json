@@ -1,15 +1,30 @@
 {
-  "generatedAtMs": 1777595746044,
+  "generatedAtMs": 0,
   "implementations": [
     {
       "implementationId": "typescript-framework",
       "language": "typescript",
       "results": [
         {
+          "checkIds": [
+            "framework.stream.completed_turn_sequence",
+            "framework.stream.failed_turn_terminal_error",
+            "framework.stream.paused_turn_approval_shape",
+            "framework.stream.sse_projection",
+            "framework.stream.sse_eager_subscription",
+            "framework.stream.agui_projection",
+            "framework.stream.agui_failed_turn_error_projection",
+            "framework.stream.agui_paused_turn_fallback"
+          ],
+          "checkSummary": {
+            "failedChecks": 0,
+            "passedChecks": 8,
+            "totalChecks": 8
+          },
           "evidencePath": "reports/compatibility/evidence/tuvren.framework.stream-events.typescript-framework.json",
           "status": "pass",
           "suiteId": "tuvren.framework.stream-events",
-          "suiteVersion": "0.1.0"
+          "suiteVersion": "0.2.0"
         }
       ],
       "version": "unreleased-workspace"
@@ -19,10 +34,19 @@
       "language": "typescript",
       "results": [
         {
+          "checkIds": [
+            "kernel.protocol.deterministic_hashing",
+            "kernel.protocol.schema_roundtrip"
+          ],
+          "checkSummary": {
+            "failedChecks": 0,
+            "passedChecks": 2,
+            "totalChecks": 2
+          },
           "evidencePath": "reports/compatibility/evidence/tuvren.kernel.protocol-seed.typescript-kernel.json",
           "status": "pass",
           "suiteId": "tuvren.kernel.protocol-seed",
-          "suiteVersion": "0.1.0"
+          "suiteVersion": "0.2.0"
         }
       ],
       "version": "unreleased-workspace"
@@ -32,10 +56,25 @@
       "language": "typescript",
       "results": [
         {
+          "checkIds": [
+            "providers.fixture.prompt_shape",
+            "providers.fixture.response_shape",
+            "providers.fixture.structured_output_shape",
+            "providers.fixture.tool_prompt_shape",
+            "providers.bridge.generate_mapping",
+            "providers.bridge.stream_metadata_continuity",
+            "providers.bridge.structured_output_stream",
+            "providers.bridge.provider_failure_normalization"
+          ],
+          "checkSummary": {
+            "failedChecks": 0,
+            "passedChecks": 8,
+            "totalChecks": 8
+          },
           "evidencePath": "reports/compatibility/evidence/tuvren.providers.api-fixtures.typescript-providers.json",
           "status": "pass",
           "suiteId": "tuvren.providers.api-fixtures",
-          "suiteVersion": "0.1.0"
+          "suiteVersion": "0.2.0"
         }
       ],
       "version": "unreleased-workspace"
@@ -45,10 +84,24 @@
       "language": "rust",
       "results": [
         {
+          "checkIds": [
+            "kernel.protocol.deterministic_hashing",
+            "kernel.protocol.schema_roundtrip",
+            "kernel.logical.diff_paths",
+            "kernel.logical.branch_list",
+            "kernel.logical.recovery_state",
+            "kernel.lineage.cross_thread_rejection",
+            "kernel.turn.lateral_head_guard"
+          ],
+          "checkSummary": {
+            "failedChecks": 0,
+            "passedChecks": 7,
+            "totalChecks": 7
+          },
           "evidencePath": "reports/compatibility/evidence/tuvren.kernel.protocol-seed.rust-kernel.json",
           "status": "pass",
           "suiteId": "tuvren.kernel.protocol-seed",
-          "suiteVersion": "0.1.0"
+          "suiteVersion": "0.2.0"
         }
       ],
       "version": "unreleased-workspace"
@@ -56,34 +109,50 @@
   ],
   "interop": [
     {
+      "checkIds": [
+        "framework.interop.streaming_observability",
+        "framework.interop.structured_output",
+        "framework.interop.tool_history_and_trace",
+        "framework.interop.approval_resume",
+        "framework.interop.cancel_flow",
+        "framework.interop.metadata_surface",
+        "framework.interop.branching_state",
+        "framework.interop.steering_flow",
+        "framework.interop.reload_persistence"
+      ],
+      "checkSummary": {
+        "failedChecks": 0,
+        "passedChecks": 9,
+        "totalChecks": 9
+      },
       "evidencePath": "reports/compatibility/evidence/tuvren.framework.kernel-interop-smoke.typescript-framework__rust-kernel.json",
       "pairId": "typescript-framework__rust-kernel",
       "status": "pass",
       "suiteId": "tuvren.framework.kernel-interop-smoke",
-      "suiteVersion": "0.1.0"
+      "suiteVersion": "0.2.0"
     }
   ],
-  "sourceRevision": "2746edcff186d08d9355f7ad0ce35981a2c35bdc-dirty",
+  "sourceRevision": "checked-in-workspace",
   "suites": [
     {
       "boundary": "framework",
       "suiteId": "tuvren.framework.stream-events",
-      "suiteVersion": "0.1.0"
+      "suiteVersion": "0.2.0"
     },
     {
       "boundary": "kernel",
       "suiteId": "tuvren.kernel.protocol-seed",
-      "suiteVersion": "0.1.0"
+      "suiteVersion": "0.2.0"
     },
     {
       "boundary": "providers",
       "suiteId": "tuvren.providers.api-fixtures",
-      "suiteVersion": "0.1.0"
+      "suiteVersion": "0.2.0"
     },
     {
       "boundary": "framework",
       "suiteId": "tuvren.framework.kernel-interop-smoke",
-      "suiteVersion": "0.1.0"
+      "suiteVersion": "0.2.0"
     }
   ]
 }

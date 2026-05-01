@@ -20,6 +20,16 @@ import { fileURLToPath } from "node:url";
 import type { AnySchema } from "ajv";
 import Ajv2020 from "ajv/dist/2020.js";
 import { runCommand } from "./lib/command-runner.js";
+import {
+  assertConformanceEvidence,
+  type ConformanceCheckResult,
+  type ConformanceEvidence,
+  type ConformanceSuiteManifest,
+  createAssertionResult,
+  createCheckResult,
+  createConformanceEvidenceSummary,
+} from "./lib/conformance-contract.js";
+import { readConformanceSuiteManifest } from "./lib/conformance-runner.js";
 
 interface CompatibilityMatrix {
   generatedAtMs: number;
@@ -37,6 +47,8 @@ interface CompatibilityImplementation {
 }
 
 interface CompatibilityImplementationResult {
+  checkIds: string[];
+  checkSummary: CompatibilityCheckSummary;
   evidencePath: string;
   status: "fail" | "pass";
   suiteId: string;
@@ -44,6 +56,8 @@ interface CompatibilityImplementationResult {
 }
 
 interface CompatibilityInteropResult {
+  checkIds: string[];
+  checkSummary: CompatibilityCheckSummary;
   evidencePath: string;
   pairId: string;
   status: "fail" | "pass";
@@ -51,14 +65,35 @@ interface CompatibilityInteropResult {
   suiteVersion: string;
 }
 
+interface CompatibilityCheckSummary {
+  failedChecks: number;
+  passedChecks: number;
+  totalChecks: number;
+}
+
 interface InteropTelemetrySummary {
   observedKeys: string[];
   scenarios: Array<{
-    attributes: Record<string, string | string[] | null>;
     observedKeys: string[];
     scenario: string;
   }>;
   schemaUrl: string;
+}
+
+interface RawInteropTelemetry {
+  attributes: Record<string, string | string[] | null>;
+  observedKeys: string[];
+  scenario: string;
+  schemaUrl: string;
+}
+
+interface InteropScenarioReport {
+  reports: Array<{
+    checks: Record<string, boolean>;
+    scenario: string;
+    telemetry: RawInteropTelemetry;
+  }>;
+  scenarios: string[];
 }
 
 interface CompatibilitySuite {
@@ -81,12 +116,6 @@ interface InteropRunner {
   project: string;
 }
 
-interface SuiteManifest {
-  boundary: string;
-  suiteId: string;
-  suiteVersion: string;
-}
-
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const COMPATIBILITY_MATRIX_PATH = resolve(
   REPO_ROOT,
@@ -99,6 +128,11 @@ const COMPATIBILITY_SCHEMA_PATH = resolve(
 const EVIDENCE_DIRECTORY = resolve(REPO_ROOT, "reports/compatibility/evidence");
 const ajv = new Ajv2020({ allErrors: true, strict: false });
 const TRANSITION_IMPLEMENTATION_VERSION = "unreleased-workspace";
+const PREFIXED_OUTPUT_PATTERN = /^[A-Za-z0-9_.-]+: /u;
+const COMPATIBILITY_METADATA = {
+  generatedAtMs: 0,
+  sourceRevision: "checked-in-workspace",
+} as const;
 
 const CONFORMANCE_RUNNERS: readonly ConformanceRunner[] = [
   {
@@ -205,10 +239,14 @@ async function main(): Promise<void> {
   }
 
   const matrix: CompatibilityMatrix = {
-    generatedAtMs: Date.now(),
+    // The compatibility ledger is checked in as deterministic evidence. Git
+    // history already records when and from which revision that evidence was
+    // committed, so the JSON payload keeps stable sentinel metadata instead of
+    // embedding wall-clock or HEAD-derived values that would churn on reruns.
+    generatedAtMs: COMPATIBILITY_METADATA.generatedAtMs,
     implementations,
     interop,
-    sourceRevision: await readSourceRevision(),
+    sourceRevision: COMPATIBILITY_METADATA.sourceRevision,
     suites,
   };
 
@@ -228,29 +266,15 @@ async function main(): Promise<void> {
   }
 }
 
-async function readSuiteManifest(manifestPath: string): Promise<SuiteManifest> {
-  const manifestText = await readFile(resolve(REPO_ROOT, manifestPath), "utf8");
-  const manifest = JSON.parse(manifestText);
-
-  if (
-    !isRecord(manifest) ||
-    typeof manifest.boundary !== "string" ||
-    typeof manifest.suiteId !== "string" ||
-    typeof manifest.suiteVersion !== "string"
-  ) {
-    throw new Error(`invalid suite manifest at ${manifestPath}`);
-  }
-
-  return {
-    boundary: manifest.boundary,
-    suiteId: manifest.suiteId,
-    suiteVersion: manifest.suiteVersion,
-  };
+async function readSuiteManifest(
+  manifestPath: string
+): Promise<ConformanceSuiteManifest> {
+  return await readConformanceSuiteManifest(resolve(REPO_ROOT, manifestPath));
 }
 
 async function runConformanceTarget(
   runner: ConformanceRunner,
-  suiteManifest: SuiteManifest
+  suiteManifest: ConformanceSuiteManifest
 ): Promise<{
   matrixResult: CompatibilityImplementationResult;
 }> {
@@ -273,30 +297,53 @@ async function runConformanceTarget(
     `${suiteManifest.suiteId}.${runner.implementationId}.json`
   );
   const relativeEvidencePath = relative(REPO_ROOT, evidenceFilePath);
-  const status: "fail" | "pass" = commandResult.code === 0 ? "pass" : "fail";
+  const fallbackCheckResults = createFallbackCheckResults(
+    suiteManifest,
+    "implementations",
+    runner.implementationId,
+    "runner exited without structured conformance evidence"
+  );
+  const parsedEvidence = readConformanceEvidence(commandResult.stdout);
+  const evidencePayload =
+    parsedEvidence === undefined
+      ? createFallbackEvidence(
+          suiteManifest,
+          runner.implementationId,
+          runner.language,
+          fallbackCheckResults
+        )
+      : parsedEvidence;
+  const status: "fail" | "pass" =
+    commandResult.code === 0 && evidencePayload.status === "pass"
+      ? "pass"
+      : "fail";
   const evidence: {
     boundary: string;
+    checkResults: ConformanceCheckResult[];
     command: string[];
     exitCode: number;
     implementationId: string;
     project: string;
     status: "fail" | "pass";
+    summary: CompatibilityCheckSummary;
     stderr?: string;
     stdout?: string;
     suiteId: string;
     suiteVersion: string;
   } = {
-    boundary: suiteManifest.boundary,
+    boundary: evidencePayload.boundary,
+    checkResults: evidencePayload.checkResults,
     command,
     exitCode: commandResult.code,
     implementationId: runner.implementationId,
     project: runner.project,
     status,
-    suiteId: suiteManifest.suiteId,
-    suiteVersion: suiteManifest.suiteVersion,
+    summary: evidencePayload.summary,
+    suiteId: evidencePayload.suiteId,
+    suiteVersion: evidencePayload.suiteVersion,
   };
 
-  if (status === "fail") {
+  if (status === "fail" && parsedEvidence === undefined) {
     evidence.stderr = commandResult.stderr;
     evidence.stdout = commandResult.stdout;
   }
@@ -305,17 +352,19 @@ async function runConformanceTarget(
 
   return {
     matrixResult: {
+      checkIds: evidencePayload.checkResults.map((result) => result.checkId),
+      checkSummary: evidencePayload.summary,
       evidencePath: relativeEvidencePath,
       status,
-      suiteId: suiteManifest.suiteId,
-      suiteVersion: suiteManifest.suiteVersion,
+      suiteId: evidencePayload.suiteId,
+      suiteVersion: evidencePayload.suiteVersion,
     },
   };
 }
 
 async function runInteropTarget(
   runner: InteropRunner,
-  suiteManifest: SuiteManifest
+  suiteManifest: ConformanceSuiteManifest
 ): Promise<{
   matrixResult: CompatibilityInteropResult;
 }> {
@@ -339,14 +388,22 @@ async function runInteropTarget(
     `${suiteManifest.suiteId}.${runner.pairId}.json`
   );
   const relativeEvidencePath = relative(REPO_ROOT, evidenceFilePath);
+  const fallbackCheckResults = createFallbackCheckResults(
+    suiteManifest,
+    "interopPairs",
+    runner.pairId,
+    "interop runner exited without a parseable scenario report"
+  );
   let status: "fail" | "pass" = commandResult.code === 0 ? "pass" : "fail";
   const evidence: {
     boundary: string;
+    checkResults: ConformanceCheckResult[];
     command: string[];
     exitCode: number;
     pairId: string;
     project: string;
     status: "fail" | "pass";
+    summary: CompatibilityCheckSummary;
     stderr?: string;
     stdout?: string;
     telemetry?: InteropTelemetrySummary;
@@ -354,11 +411,13 @@ async function runInteropTarget(
     suiteVersion: string;
   } = {
     boundary: suiteManifest.boundary,
+    checkResults: fallbackCheckResults,
     command,
     exitCode: commandResult.code,
     pairId: runner.pairId,
     project: runner.project,
     status,
+    summary: createConformanceEvidenceSummary(fallbackCheckResults),
     suiteId: suiteManifest.suiteId,
     suiteVersion: suiteManifest.suiteVersion,
   };
@@ -368,18 +427,31 @@ async function runInteropTarget(
     evidence.stdout = commandResult.stdout;
   } else {
     const telemetry = readInteropTelemetrySummary(commandResult.stdout);
+    const report = readInteropScenarioReport(commandResult.stdout);
 
-    if (telemetry === undefined) {
+    if (telemetry === undefined || report === undefined) {
       // Epic V treats telemetry as part of the measured interop evidence, so a
       // smoke target that exits 0 but stops emitting the report payload must
       // fail here instead of silently downgrading the checked-in artifact.
       evidence.stderr =
-        "interop smoke completed without a parseable telemetry summary";
+        "interop smoke completed without a parseable scenario report";
       evidence.stdout = commandResult.stdout;
       status = "fail";
       evidence.status = status;
     } else {
+      evidence.checkResults = createInteropCheckResults(
+        suiteManifest,
+        runner.pairId,
+        report
+      );
+      evidence.summary = createConformanceEvidenceSummary(
+        evidence.checkResults
+      );
       evidence.telemetry = telemetry;
+      if (evidence.summary.failedChecks > 0) {
+        status = "fail";
+        evidence.status = status;
+      }
     }
   }
 
@@ -387,6 +459,8 @@ async function runInteropTarget(
 
   return {
     matrixResult: {
+      checkIds: evidence.checkResults.map((result) => result.checkId),
+      checkSummary: evidence.summary,
       evidencePath: relativeEvidencePath,
       pairId: runner.pairId,
       status,
@@ -402,15 +476,9 @@ function readInteropTelemetrySummary(
   // Nx target wrappers may prepend human-readable logs before the final JSON
   // matrix payload, so the evidence parser intentionally reads the trailing
   // object instead of assuming stdout is pure JSON from byte zero.
-  const parsed = JSON.parse(extractTrailingJsonObject(stdout));
+  const parsed = readInteropScenarioReport(stdout);
 
-  if (
-    !(
-      isRecord(parsed) &&
-      Array.isArray(parsed.reports) &&
-      Array.isArray(parsed.scenarios)
-    )
-  ) {
+  if (parsed === undefined) {
     return undefined;
   }
 
@@ -462,8 +530,90 @@ function readInteropTelemetrySummary(
   };
 }
 
+function readInteropScenarioReport(
+  stdout: string
+): InteropScenarioReport | undefined {
+  let parsed: unknown;
+
+  try {
+    parsed = JSON.parse(extractTrailingJsonObject(stdout));
+  } catch {
+    return undefined;
+  }
+
+  if (
+    !(
+      isRecord(parsed) &&
+      Array.isArray(parsed.reports) &&
+      Array.isArray(parsed.scenarios)
+    )
+  ) {
+    return undefined;
+  }
+
+  const scenarios = readExpectedInteropScenarios(parsed.scenarios);
+
+  if (scenarios.length === 0) {
+    return undefined;
+  }
+
+  const reports = parsed.reports
+    .map((report) => readInteropScenarioEntry(report))
+    .filter(
+      (report): report is InteropScenarioReport["reports"][number] =>
+        report !== undefined
+    );
+
+  if (reports.length !== scenarios.length) {
+    return undefined;
+  }
+
+  return {
+    reports,
+    scenarios,
+  };
+}
+
 function readExpectedInteropScenarios(value: unknown[]): string[] {
   return value.filter((entry): entry is string => typeof entry === "string");
+}
+
+function readInteropScenarioEntry(
+  value: unknown
+): InteropScenarioReport["reports"][number] | undefined {
+  if (
+    !isRecord(value) ||
+    typeof value.scenario !== "string" ||
+    !isRecord(value.checks) ||
+    !isRecord(value.telemetry) ||
+    !Array.isArray(value.telemetry.observedKeys) ||
+    !isRecord(value.telemetry.attributes) ||
+    typeof value.telemetry.schemaUrl !== "string"
+  ) {
+    return undefined;
+  }
+
+  const checks = Object.fromEntries(
+    Object.entries(value.checks).filter(
+      (entry): entry is [string, boolean] => typeof entry[1] === "boolean"
+    )
+  );
+
+  return {
+    checks,
+    scenario: value.scenario,
+    telemetry: {
+      attributes: value.telemetry.attributes as Record<
+        string,
+        string | string[] | null
+      >,
+      observedKeys: value.telemetry.observedKeys.filter(
+        (entry): entry is string => typeof entry === "string"
+      ),
+      scenario: value.scenario,
+      schemaUrl: value.telemetry.schemaUrl,
+    },
+  };
 }
 
 function readInteropTelemetryScenarioReport(
@@ -511,10 +661,11 @@ function readInteropTelemetryScenarioReport(
     (value): value is string => typeof value === "string"
   );
   const scenario = {
-    attributes: telemetry.attributes as Record<
-      string,
-      string | string[] | null
-    >,
+    // Interop telemetry values include run ids, branch ids, and checkpoint
+    // hashes that are intentionally different on every smoke execution. The
+    // checked-in compatibility evidence keeps only the stable key coverage and
+    // schema identity so reruns stay reviewable instead of churning on known
+    // per-run entropy.
     observedKeys,
     scenario: report.scenario,
   };
@@ -530,8 +681,8 @@ function readInteropTelemetryScenarioReport(
 function extractTrailingJsonObject(stdout: string): string {
   const prefixedJsonLines = stdout
     .split("\n")
-    .filter((line) => line.startsWith("host-playground: "))
-    .map((line) => line.slice("host-playground: ".length));
+    .filter((line) => PREFIXED_OUTPUT_PATTERN.test(line))
+    .map((line) => line.replace(PREFIXED_OUTPUT_PATTERN, ""));
 
   if (prefixedJsonLines.length > 0) {
     const jsonStart = prefixedJsonLines.findIndex((line) =>
@@ -551,6 +702,130 @@ function extractTrailingJsonObject(stdout: string): string {
   }
 
   return trimmed.slice(objectStart + 1);
+}
+
+function readConformanceEvidence(
+  stdout: string
+): ConformanceEvidence | undefined {
+  const trimmed = stdout.trim();
+
+  if (trimmed.length === 0) {
+    return undefined;
+  }
+
+  try {
+    const parsed = JSON.parse(extractTrailingJsonObject(stdout));
+    assertConformanceEvidence(parsed, "runner evidence");
+    return parsed;
+  } catch {
+    return undefined;
+  }
+}
+
+function createFallbackEvidence(
+  suiteManifest: ConformanceSuiteManifest,
+  implementationId: string,
+  language: string,
+  checkResults: readonly ConformanceCheckResult[]
+): ConformanceEvidence {
+  const summary = createConformanceEvidenceSummary(checkResults);
+
+  return {
+    boundary: suiteManifest.boundary,
+    checkResults: [...checkResults],
+    implementationId,
+    language,
+    status: summary.failedChecks === 0 ? "pass" : "fail",
+    suiteId: suiteManifest.suiteId,
+    suiteVersion: suiteManifest.suiteVersion,
+    summary,
+  };
+}
+
+function createFallbackCheckResults(
+  suiteManifest: ConformanceSuiteManifest,
+  applicabilityKey: "implementations" | "interopPairs",
+  applicabilityId: string,
+  message: string
+): ConformanceCheckResult[] {
+  return suiteManifest.checks
+    .filter((check) => check[applicabilityKey]?.includes(applicabilityId))
+    .map((check) =>
+      createCheckResult(
+        check.checkId,
+        check.assertions.map((assertionId) =>
+          createAssertionResult(assertionId, false, message)
+        ),
+        {
+          expectedEvidence: check.expectedEvidence,
+        }
+      )
+    );
+}
+
+function createInteropCheckResults(
+  suiteManifest: ConformanceSuiteManifest,
+  pairId: string,
+  report: InteropScenarioReport
+): ConformanceCheckResult[] {
+  const reportByScenario = new Map(
+    report.reports.map((entry) => [entry.scenario, entry] as const)
+  );
+
+  return suiteManifest.checks
+    .filter((check) => check.interopPairs?.includes(pairId))
+    .map((check) => {
+      // One named interop check may intentionally aggregate more than one
+      // scenario report. We keep that fan-in explicit here so the checked-in
+      // evidence matches the boundary-owned check catalog rather than the
+      // playground script's current scenario granularity.
+      const expectedScenarioIds = check.scenarioIds ?? [];
+      const scenarioReports = expectedScenarioIds
+        .map((scenarioId) => reportByScenario.get(scenarioId))
+        .filter(
+          (
+            scenarioReport
+          ): scenarioReport is InteropScenarioReport["reports"][number] =>
+            scenarioReport !== undefined
+        );
+      const missingScenarioIds = expectedScenarioIds.filter(
+        (scenarioId) => !reportByScenario.has(scenarioId)
+      );
+      const assertionResults = check.assertions.map((assertionId) => {
+        const passed =
+          missingScenarioIds.length === 0 &&
+          scenarioReports.every(
+            (scenarioReport) => scenarioReport.checks[assertionId] === true
+          );
+        let message: string | undefined;
+
+        if (missingScenarioIds.length > 0) {
+          message = `interop scenario report is missing required scenarios: ${missingScenarioIds.join(", ")}`;
+        } else if (
+          // Missing manifest-declared scenarios must fail the whole check.
+          // Otherwise `every()` on an empty subset would let a vanished
+          // smoke lane produce a false green compatibility artifact.
+          !scenarioReports.some(
+            (scenarioReport) => scenarioReport.checks[assertionId] === true
+          )
+        ) {
+          message =
+            "interop scenario report did not mark this assertion as passing";
+        }
+
+        return createAssertionResult(assertionId, passed, message);
+      });
+
+      return createCheckResult(check.checkId, assertionResults, {
+        missingScenarioIds,
+        scenario: check.scenarioIds ?? [],
+        telemetry: scenarioReports.map((scenarioReport) => ({
+          observedKeys: scenarioReport.telemetry.observedKeys,
+          scenario: scenarioReport.scenario,
+          schemaUrl: scenarioReport.telemetry.schemaUrl,
+        })),
+      });
+    });
 }
 
 async function formatGeneratedOutputs(): Promise<void> {
@@ -644,6 +919,7 @@ function assertCompatibilityMatrix(
 
     for (const result of implementation.results) {
       if (
+        result.checkIds.length === 0 ||
         result.evidencePath.length === 0 ||
         result.suiteId.length === 0 ||
         result.suiteVersion.length === 0
@@ -652,11 +928,14 @@ function assertCompatibilityMatrix(
           "compatibility matrix implementation results must contain non-empty fields"
         );
       }
+
+      assertCompatibilityCheckSummary(result.checkSummary);
     }
   }
 
   for (const interopResult of value.interop) {
     if (
+      interopResult.checkIds.length === 0 ||
       interopResult.evidencePath.length === 0 ||
       interopResult.pairId.length === 0 ||
       interopResult.suiteId.length === 0 ||
@@ -666,40 +945,29 @@ function assertCompatibilityMatrix(
         "compatibility matrix interop results must contain non-empty fields"
       );
     }
+
+    assertCompatibilityCheckSummary(interopResult.checkSummary);
   }
 }
 
-async function readSourceRevision(): Promise<string> {
-  const revisionResult = await runCommand(["git", "rev-parse", "HEAD"], {
-    captureOutput: true,
-    cwd: REPO_ROOT,
-  });
-
-  if (revisionResult.code !== 0) {
+function assertCompatibilityCheckSummary(
+  value: CompatibilityCheckSummary
+): void {
+  if (
+    !(
+      Number.isSafeInteger(value.failedChecks) &&
+      Number.isSafeInteger(value.passedChecks) &&
+      Number.isSafeInteger(value.totalChecks)
+    ) ||
+    value.failedChecks < 0 ||
+    value.passedChecks < 0 ||
+    value.totalChecks <= 0 ||
+    value.failedChecks + value.passedChecks !== value.totalChecks
+  ) {
     throw new Error(
-      revisionResult.stderr ||
-        revisionResult.stdout ||
-        "unable to read the current git revision"
+      "compatibility matrix check summaries must be internally consistent"
     );
   }
-
-  const statusResult = await runCommand(["git", "status", "--short"], {
-    captureOutput: true,
-    cwd: REPO_ROOT,
-  });
-
-  if (statusResult.code !== 0) {
-    throw new Error(
-      statusResult.stderr ||
-        statusResult.stdout ||
-        "unable to determine whether the working tree is dirty"
-    );
-  }
-
-  const revision = revisionResult.stdout.trim();
-  return statusResult.stdout.trim().length === 0
-    ? revision
-    : `${revision}-dirty`;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

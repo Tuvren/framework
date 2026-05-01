@@ -9,28 +9,28 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": ".",
-        "command": "devenv shell -- cargo build -p tuvren-kernel-rust-conformance-runner"
+        "command": "cargo build -p tuvren-kernel-rust-conformance-runner"
       }
     },
     "conformance": {
       "executor": "nx:run-commands",
       "options": {
         "cwd": ".",
-        "command": "devenv shell -- cargo run -p tuvren-kernel-rust-conformance-runner"
+        "command": "cargo run -p tuvren-kernel-rust-conformance-runner"
       }
     },
     "lint": {
       "executor": "nx:run-commands",
       "options": {
         "cwd": ".",
-        "command": "devenv shell -- cargo fmt --package tuvren-kernel-rust-conformance-runner -- --check && devenv shell -- cargo clippy -p tuvren-kernel-rust-conformance-runner --all-targets -- -D warnings"
+        "command": "cargo fmt --package tuvren-kernel-rust-conformance-runner -- --check && cargo clippy -p tuvren-kernel-rust-conformance-runner --all-targets -- -D warnings"
       }
     },
     "test": {
       "executor": "nx:run-commands",
       "options": {
         "cwd": ".",
-        "command": "devenv shell -- cargo test -p tuvren-kernel-rust-conformance-runner"
+        "command": "cargo test -p tuvren-kernel-rust-conformance-runner"
       }
     }
   }

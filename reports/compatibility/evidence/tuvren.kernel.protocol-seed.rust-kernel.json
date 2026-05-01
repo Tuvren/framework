@@ -1,5 +1,122 @@
 {
   "boundary": "kernel",
+  "checkResults": [
+    {
+      "assertionResults": [
+        {
+          "assertionId": "raw_opaque_bytes_hash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "turn_tree_schema_hash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "turn_node_identity_hash",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.protocol.deterministic_hashing",
+      "details": {
+        "hashKinds": ["rawOpaqueBytes", "turnTreeSchema", "turnNodeIdentity"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "turn_tree_schema_cbor_roundtrip",
+          "status": "pass"
+        },
+        {
+          "assertionId": "turn_node_identity_cbor_roundtrip",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.protocol.schema_roundtrip",
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "logical_diff_matches_fixture_paths",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.logical.diff_paths",
+      "details": {
+        "diffPaths": ["context.manifest", "messages"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "branch_list_matches_fixture_entry",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.logical.branch_list",
+      "details": {
+        "branchEntries": [
+          [
+            "branch_main",
+            "80003ce4d0adf81da829321c0381eab1aa7603fd21f2d311aa730caa2671d6aa"
+          ]
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "recovery_state_last_completed_step",
+          "status": "pass"
+        },
+        {
+          "assertionId": "recovery_state_consumed_results",
+          "status": "pass"
+        },
+        {
+          "assertionId": "recovery_state_uncommitted_results",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.logical.recovery_state",
+      "details": {
+        "recoveryStepIds": ["model_call", "tool_execution"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "cross_thread_branch_create_rejected",
+          "message": "turn_node_thread_mismatch",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.lineage.cross_thread_rejection",
+      "details": {
+        "errorCode": "turn_node_thread_mismatch"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "lateral_turn_head_move_rejected",
+          "message": "turn_head_lateral_move",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.turn.lateral_head_guard",
+      "details": {
+        "errorCode": "turn_head_lateral_move"
+      },
+      "status": "pass"
+    }
+  ],
   "command": [
     "bun",
     "run",
@@ -12,6 +129,11 @@
   "implementationId": "rust-kernel",
   "project": "kernel-rust-conformance-runner",
   "status": "pass",
+  "summary": {
+    "failedChecks": 0,
+    "passedChecks": 7,
+    "totalChecks": 7
+  },
   "suiteId": "tuvren.kernel.protocol-seed",
-  "suiteVersion": "0.1.0"
+  "suiteVersion": "0.2.0"
 }

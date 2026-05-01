@@ -1,5 +1,191 @@
 {
   "boundary": "framework",
+  "checkResults": [
+    {
+      "assertionResults": [
+        {
+          "assertionId": "completed_turn_event_order",
+          "status": "pass"
+        },
+        {
+          "assertionId": "completed_turn_tool_args_delta",
+          "status": "pass"
+        },
+        {
+          "assertionId": "completed_turn_manifest_snapshot",
+          "status": "pass"
+        }
+      ],
+      "checkId": "framework.stream.completed_turn_sequence",
+      "details": {
+        "eventTypes": [
+          "turn.start",
+          "iteration.start",
+          "message.start",
+          "text.delta",
+          "text.done",
+          "tool_call.start",
+          "tool_call.args_delta",
+          "tool_call.done",
+          "tool.start",
+          "tool.result",
+          "state.snapshot",
+          "custom",
+          "message.done",
+          "iteration.end",
+          "turn.end"
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "failed_turn_has_error_event",
+          "status": "pass"
+        },
+        {
+          "assertionId": "failed_turn_has_failed_status",
+          "status": "pass"
+        }
+      ],
+      "checkId": "framework.stream.failed_turn_terminal_error",
+      "details": {
+        "failedStatus": "failed"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "paused_turn_has_approval_request",
+          "status": "pass"
+        },
+        {
+          "assertionId": "paused_turn_has_paused_status",
+          "status": "pass"
+        }
+      ],
+      "checkId": "framework.stream.paused_turn_approval_shape",
+      "details": {
+        "approvalNames": ["send_email"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "sse_turn_start_event",
+          "status": "pass"
+        },
+        {
+          "assertionId": "sse_tool_result_payload",
+          "status": "pass"
+        }
+      ],
+      "checkId": "framework.stream.sse_projection",
+      "details": {
+        "frameEvents": [
+          "turn.start",
+          "iteration.start",
+          "message.start",
+          "text.delta",
+          "text.done",
+          "tool_call.start",
+          "tool_call.args_delta",
+          "tool_call.done",
+          "tool.start",
+          "tool.result",
+          "state.snapshot",
+          "custom",
+          "message.done",
+          "iteration.end",
+          "turn.end"
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "sse_preserves_turn_start_after_delayed_poll",
+          "status": "pass"
+        }
+      ],
+      "checkId": "framework.stream.sse_eager_subscription",
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "agui_completed_turn_event_types",
+          "status": "pass"
+        },
+        {
+          "assertionId": "agui_completed_turn_state_snapshot",
+          "status": "pass"
+        }
+      ],
+      "checkId": "framework.stream.agui_projection",
+      "details": {
+        "aguiTypes": [
+          "RUN_STARTED",
+          "STEP_STARTED",
+          "TEXT_MESSAGE_START",
+          "TEXT_MESSAGE_CONTENT",
+          "TEXT_MESSAGE_END",
+          "TOOL_CALL_START",
+          "TOOL_CALL_ARGS",
+          "TOOL_CALL_END",
+          "CUSTOM",
+          "TOOL_CALL_RESULT",
+          "STATE_SNAPSHOT",
+          "CUSTOM",
+          "CUSTOM",
+          "STEP_FINISHED",
+          "RUN_FINISHED"
+        ],
+        "warningCodes": [
+          "agui_tool_execution_custom_fallback",
+          "agui_message_done_custom_fallback"
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "agui_failed_turn_run_error",
+          "status": "pass"
+        }
+      ],
+      "checkId": "framework.stream.agui_failed_turn_error_projection",
+      "details": {
+        "errorCode": "runtime_execution_cancelled"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "agui_paused_turn_event_types",
+          "status": "pass"
+        },
+        {
+          "assertionId": "agui_paused_turn_custom_payload",
+          "status": "pass"
+        }
+      ],
+      "checkId": "framework.stream.agui_paused_turn_fallback",
+      "details": {
+        "warningCodes": [
+          "agui_approval_custom_fallback",
+          "agui_paused_turn_coerced_to_run_finished"
+        ]
+      },
+      "status": "pass"
+    }
+  ],
   "command": [
     "bun",
     "run",
@@ -12,6 +198,11 @@
   "implementationId": "typescript-framework",
   "project": "framework-typescript-conformance-runner",
   "status": "pass",
+  "summary": {
+    "failedChecks": 0,
+    "passedChecks": 8,
+    "totalChecks": 8
+  },
   "suiteId": "tuvren.framework.stream-events",
-  "suiteVersion": "0.1.0"
+  "suiteVersion": "0.2.0"
 }

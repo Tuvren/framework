@@ -62,7 +62,11 @@
       "name": "@tuvren/framework-typescript-conformance-runner",
       "version": "0.0.0",
       "dependencies": {
+        "@ag-ui/core": "0.0.52",
         "@tuvren/framework-testkit": "workspace:*",
+        "@tuvren/stream-agui": "workspace:*",
+        "@tuvren/stream-core": "workspace:*",
+        "@tuvren/stream-sse": "workspace:*",
       },
     },
     "boundaries/framework/implementations/typescript/drivers/react": {
@@ -209,6 +213,9 @@
       "name": "@tuvren/kernel-typescript-conformance-runner",
       "version": "0.0.0",
       "dependencies": {
+        "@tuvren/backend-memory": "workspace:*",
+        "@tuvren/core-types": "workspace:*",
+        "@tuvren/kernel-protocol": "workspace:*",
         "@tuvren/kernel-testkit": "workspace:*",
       },
     },
@@ -250,6 +257,9 @@
       "name": "@tuvren/providers-typescript-conformance-runner",
       "version": "0.0.0",
       "dependencies": {
+        "@ai-sdk/provider": "3.0.8",
+        "@tuvren/core-types": "workspace:*",
+        "@tuvren/provider-bridge-ai-sdk": "workspace:*",
         "@tuvren/provider-testkit": "workspace:*",
       },
     },

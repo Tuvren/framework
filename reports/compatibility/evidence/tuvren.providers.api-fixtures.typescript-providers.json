@@ -1,5 +1,164 @@
 {
   "boundary": "providers",
+  "checkResults": [
+    {
+      "assertionResults": [
+        {
+          "assertionId": "prompt_has_messages",
+          "status": "pass"
+        },
+        {
+          "assertionId": "prompt_has_single_user_message",
+          "status": "pass"
+        }
+      ],
+      "checkId": "providers.fixture.prompt_shape",
+      "details": {
+        "messageRoles": ["user"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "response_finish_reason_stop",
+          "status": "pass"
+        },
+        {
+          "assertionId": "response_contains_text_part",
+          "status": "pass"
+        },
+        {
+          "assertionId": "response_usage_shape",
+          "status": "pass"
+        }
+      ],
+      "checkId": "providers.fixture.response_shape",
+      "details": {
+        "finishReason": "stop"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "structured_prompt_has_response_format",
+          "status": "pass"
+        },
+        {
+          "assertionId": "structured_prompt_schema_requires_answer",
+          "status": "pass"
+        }
+      ],
+      "checkId": "providers.fixture.structured_output_shape",
+      "details": {
+        "schemaKeys": ["properties", "required", "type"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "tool_prompt_has_search_tool",
+          "status": "pass"
+        },
+        {
+          "assertionId": "tool_prompt_tool_schema_requires_query",
+          "status": "pass"
+        }
+      ],
+      "checkId": "providers.fixture.tool_prompt_shape",
+      "details": {
+        "toolNames": ["search"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "bridge_generate_returns_text_response",
+          "status": "pass"
+        },
+        {
+          "assertionId": "bridge_generate_maps_structured_schema",
+          "status": "pass"
+        },
+        {
+          "assertionId": "bridge_generate_preserves_provider_metadata",
+          "status": "pass"
+        }
+      ],
+      "checkId": "providers.bridge.generate_mapping",
+      "details": {
+        "providerMetadataKeys": ["openai", "aiSdkBridge"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "bridge_stream_emits_text_delta",
+          "status": "pass"
+        },
+        {
+          "assertionId": "bridge_stream_emits_tool_call_chunks",
+          "status": "pass"
+        },
+        {
+          "assertionId": "bridge_stream_preserves_finish_metadata",
+          "status": "pass"
+        }
+      ],
+      "checkId": "providers.bridge.stream_metadata_continuity",
+      "details": {
+        "chunkTypes": [
+          "tool_call_start",
+          "tool_call_args_delta",
+          "tool_call_done",
+          "finish"
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "bridge_structured_stream_emits_delta",
+          "status": "pass"
+        },
+        {
+          "assertionId": "bridge_structured_stream_emits_done",
+          "status": "pass"
+        },
+        {
+          "assertionId": "bridge_structured_done_name_matches_request",
+          "status": "pass"
+        }
+      ],
+      "checkId": "providers.bridge.structured_output_stream",
+      "details": {
+        "chunkTypes": ["structured_delta", "structured_done", "finish"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "bridge_failure_throws_tuvren_provider_error",
+          "status": "pass"
+        },
+        {
+          "assertionId": "bridge_failure_preserves_stable_error_code",
+          "status": "pass"
+        }
+      ],
+      "checkId": "providers.bridge.provider_failure_normalization",
+      "details": {
+        "errorCode": "ai_sdk_generate_failed"
+      },
+      "status": "pass"
+    }
+  ],
   "command": [
     "bun",
     "run",
@@ -12,6 +171,11 @@
   "implementationId": "typescript-providers",
   "project": "providers-typescript-conformance-runner",
   "status": "pass",
+  "summary": {
+    "failedChecks": 0,
+    "passedChecks": 8,
+    "totalChecks": 8
+  },
   "suiteId": "tuvren.providers.api-fixtures",
-  "suiteVersion": "0.1.0"
+  "suiteVersion": "0.2.0"
 }

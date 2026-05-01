@@ -4,6 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "dependencies": {
+    "@ai-sdk/provider": "3.0.8",
+    "@tuvren/core-types": "workspace:*",
+    "@tuvren/provider-bridge-ai-sdk": "workspace:*",
     "@tuvren/provider-testkit": "workspace:*"
   }
 }

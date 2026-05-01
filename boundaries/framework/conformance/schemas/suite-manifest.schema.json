@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/conformance/suite-manifest.schema.json",
+  "$defs": {
+    "check": {
+      "type": "object",
+      "required": [
+        "assertions",
+        "checkId",
+        "expectedEvidence",
+        "implementations"
+      ],
+      "properties": {
+        "assertions": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "checkId": { "type": "string", "minLength": 1 },
+        "description": { "type": "string", "minLength": 1 },
+        "expectedEvidence": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "fixtureIds": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "implementations": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "scenarioIds": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        }
+      },
+      "anyOf": [
+        { "required": ["fixtureIds"] },
+        { "required": ["scenarioIds"] }
+      ],
+      "additionalProperties": false
+    },
+    "fixture": {
+      "type": "object",
+      "required": ["id", "path"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "type": "object",
+  "required": [
+    "boundary",
+    "checks",
+    "fixtureSchemaPath",
+    "fixtures",
+    "suiteId",
+    "suiteVersion"
+  ],
+  "properties": {
+    "boundary": { "const": "framework" },
+    "checks": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/check" }
+    },
+    "fixtureSchemaPath": {
+      "const": "../schemas/fixture-set.schema.json"
+    },
+    "fixtures": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/fixture" }
+    },
+    "scenarios": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "path": { "type": "string", "minLength": 1 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "suiteId": { "const": "tuvren.framework.stream-events" },
+    "suiteVersion": { "type": "string", "minLength": 1 }
+  },
+  "additionalProperties": false
+}

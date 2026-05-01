@@ -2,6 +2,7 @@
 
 ## 0. Version History & Changelog
 
+- v0.9.0 - Closed Epic W in current repo reality with the semantic coverage matrix, assertion-bearing conformance suites, structured runner evidence, check-level compatibility reporting, and the Epic W closure inventory.
 - v0.8.9 - Activated Epic W as Semantic Ecosystem Maturity with a conformance coverage matrix, assertion-bearing suite contract, semantic conformance promotion, and compatibility-evidence hardening before any new implementation line.
 - v0.8.8 - Closed Epic V in current repo reality with the TypeScript gRPC remote-kernel helper, Rust-kernel playground interop matrix, compatibility-ledger interop evidence, and Epic V transport plus closure inventories.
 - v0.8.7 - Closed Epic U in current repo reality with the root Cargo workspace, Devenv Rust toolchain, Rust kernel core, Rust conformance runner, Rust gRPC service, and generated Rust telemetry helper.
@@ -9,9 +10,9 @@
 
 ## 1. Executive Summary & Active Critical Path
 
-- **Total Active Story Points:** 21
-- **Critical Path:** KRT-W001 -> KRT-W002 -> {KRT-W003, KRT-W004, KRT-W005} -> KRT-W006
-- **Planning Assumptions:** Epics A-V are closed in current repo reality. Epic U closure evidence lives in `constitution/spikes/epic-u-rust-kernel-baseline-inventory.md`, and Epic V closure evidence now lives in `constitution/spikes/epic-v-transport-decision-inventory.md` plus `constitution/spikes/epic-v-framework-rust-kernel-interop-closure-inventory.md`. TechSpec v0.6.8 keeps the baseline AI SDK bridge on `LanguageModelV3` / `ProviderV3` from `@ai-sdk/provider@3.0.8`, pins the AG-UI adapter to `@ag-ui/core@0.0.52`, preserves the existing `ProviderStreamChunk` seam while documenting the current tool-call metadata continuity requirements, treats tee-based fanout above `ExecutionHandle.events()` as the sanctioned multi-consumer host path when every required tee branch subscribes before the first pull, records SQLite playground validation as a Node-backed path because `@tuvren/backend-sqlite` uses `better-sqlite3`, keeps the playground-owned automated aimock provider lanes across OpenAI, Anthropic, and Gemini as local validation rather than a public provider contract, records the manual Gemini lane as an opt-in local proof rather than default automation, treats Buf `FILE` compatibility as the default interop gate from the first `.proto` merge, treats the compatibility matrix as a conservative near-public readiness signal rather than a private scratch report, and reframes Epic W as semantic ecosystem maturity rather than Rust framework implementation.
+- **Total Active Story Points:** 0
+- **Critical Path:** None. No implementation epic is currently active.
+- **Planning Assumptions:** Epics A-W are closed in current repo reality. Epic U closure evidence lives in `constitution/spikes/epic-u-rust-kernel-baseline-inventory.md`, Epic V closure evidence lives in `constitution/spikes/epic-v-transport-decision-inventory.md` plus `constitution/spikes/epic-v-framework-rust-kernel-interop-closure-inventory.md`, and Epic W closure evidence now lives in `constitution/spikes/epic-w-semantic-coverage-matrix.md` plus `constitution/spikes/epic-w-semantic-ecosystem-maturity-closure-inventory.md`. TechSpec v0.6.9 keeps the baseline AI SDK bridge on `LanguageModelV3` / `ProviderV3` from `@ai-sdk/provider@3.0.8`, pins the AG-UI adapter to `@ag-ui/core@0.0.52`, preserves the existing `ProviderStreamChunk` seam while documenting the current tool-call metadata continuity requirements, treats tee-based fanout above `ExecutionHandle.events()` as the sanctioned multi-consumer host path when every required tee branch subscribes before the first pull, records SQLite playground validation as a Node-backed path because `@tuvren/backend-sqlite` uses `better-sqlite3`, keeps the playground-owned automated aimock provider lanes across OpenAI, Anthropic, and Gemini as local validation rather than a public provider contract, records the manual Gemini lane as an opt-in local proof rather than default automation, treats Buf `FILE` compatibility as the default interop gate from the first `.proto` merge, and treats the compatibility matrix as a conservative near-public readiness signal with named check summaries rather than suite-only smoke claims.
 
 ### Brownfield Continuity Note
 
@@ -46,9 +47,9 @@
 
 ### Current Active Scope
 
-- Epic W is active and defines the semantic ecosystem maturity line before any new implementation line begins.
-- Epic W owns the semantic coverage matrix, assertion-bearing conformance-suite contract, promotion of high-value TypeScript-local semantics into boundary-owned suites, and compatibility evidence hardening.
-- Epic W explicitly does not implement a Rust framework, new driver, new backend, provider expansion, or host protocol.
+- No implementation epic is currently active.
+- Epic W is closed in current repo reality through `constitution/spikes/epic-w-semantic-coverage-matrix.md` and `constitution/spikes/epic-w-semantic-ecosystem-maturity-closure-inventory.md`.
+- Future implementation-line work must start from the named semantic evidence captured there instead of reopening TypeScript-local semantic authority by default.
 
 ### Future / Deferred Scope
 
@@ -477,14 +478,14 @@ Then the repository documents measured parity status, remaining gaps, semantic m
 
 ### Epic W - Semantic Ecosystem Maturity (SEM)
 
-- Active. Epic W makes the "one semantic ecosystem, then multiple implementations" paradigm real before any new implementation line begins.
+- Closed in current repo reality through `constitution/spikes/epic-w-semantic-coverage-matrix.md` and `constitution/spikes/epic-w-semantic-ecosystem-maturity-closure-inventory.md`.
 - Epic W is not Rust framework work. Rust framework start, future concrete drivers, new official backends, provider expansion, host protocol expansion, and future language lines remain deferred unless a later TechSpec revision activates them from Epic W evidence.
 
 **KRT-W001 Semantic Coverage Matrix and Gap Inventory**
 
 - **Type:** Spike
 - **Effort:** 3
-- **Status:** Pending.
+- **Status:** Closed in current repo reality.
 - **Dependencies:** KRT-V004
 - **Capability / Contract Mapping:** PRD `CAP-P1-035`, `CAP-P1-036`; Architecture `2`, `4.5`, `5`; TechSpec `2 ADR-021`, `3.6`, `4.8`, `5.4`
 - **Description:** Inventory the semantic coverage gap between `docs/`, TypeScript implementation tests, boundary-owned conformance suites, implementation runners, and compatibility evidence.
@@ -502,7 +503,7 @@ And no future implementation line is treated as authorized by object existence o
 
 - **Type:** Feature
 - **Effort:** 3
-- **Status:** Pending.
+- **Status:** Closed in current repo reality.
 - **Dependencies:** KRT-W001
 - **Capability / Contract Mapping:** PRD `CAP-P1-036`; Architecture `4.5`, `5`; TechSpec `3.6`, `4.8`, `4.10`
 - **Description:** Mature conformance suite manifests so they name semantic checks, required assertions, runner applicability, evidence fields, and suite-version policy instead of only listing fixture files.
@@ -520,7 +521,7 @@ And existing TypeScript and Rust conformance runners remain compatible or are mi
 
 - **Type:** Feature
 - **Effort:** 5
-- **Status:** Pending.
+- **Status:** Closed in current repo reality.
 - **Dependencies:** KRT-W002
 - **Capability / Contract Mapping:** PRD `CAP-P0-001`, `CAP-P0-004`, `CAP-P0-005`, `CAP-P1-036`; Architecture `2`, `4.5`; TechSpec `3.1`, `3.2`, `3.6`, `4.8`
 - **Description:** Promote kernel lifecycle, lineage, recovery, stable error, invalid transition, staged-result, and branch-head semantics from implementation-local tests into boundary-owned kernel conformance suites with TypeScript and Rust runner evidence where applicable.
@@ -538,7 +539,7 @@ And any kernel behavior not promoted is explicitly classified in the semantic co
 
 - **Type:** Feature
 - **Effort:** 5
-- **Status:** Pending.
+- **Status:** Closed in current repo reality.
 - **Dependencies:** KRT-W002
 - **Capability / Contract Mapping:** PRD `CAP-P0-019`, `CAP-P0-020`, `CAP-P1-036`; Architecture `2.1`, `4.5`; TechSpec `4.1`, `4.2`, `4.3`, `4.8`
 - **Description:** Promote framework and initial ReAct-driver semantics for turn lifecycle, stream reconciliation, approval pause/resume/reject/cancel, steering, branching, manifests, hook outcomes, tool execution ordering, and stable runtime errors into boundary-owned conformance suites.
@@ -556,7 +557,7 @@ And ReAct-specific checks are separated from driver-neutral framework checks
 
 - **Type:** Feature
 - **Effort:** 3
-- **Status:** Pending.
+- **Status:** Closed in current repo reality.
 - **Dependencies:** KRT-W002
 - **Capability / Contract Mapping:** PRD `CAP-P0-020`, `CAP-P1-036`; Architecture `2.1`, `4.5`, `5`; TechSpec `4.5`, `4.6`, `4.7`, `4.8`
 - **Description:** Promote provider bridge, provider contract, canonical stream, SSE, AG-UI, metadata continuity, structured output, tool continuation, and provider-failure semantics into boundary-owned provider/framework conformance where those semantics are not implementation-specific.
@@ -574,7 +575,7 @@ And compatibility evidence records the promoted provider and stream checks separ
 
 - **Type:** Chore
 - **Effort:** 2
-- **Status:** Pending.
+- **Status:** Closed in current repo reality.
 - **Dependencies:** KRT-W003, KRT-W004, KRT-W005
 - **Capability / Contract Mapping:** PRD `CAP-P1-035`, `CAP-P1-036`; Architecture `5`, `6`; TechSpec `4.10`, `5.3`, `5.4.1`
 - **Description:** Harden compatibility evidence so suite results cite named checks and record the remaining gates for future implementation-line activation.

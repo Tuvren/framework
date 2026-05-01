@@ -29,6 +29,10 @@ const PROVIDER_SUITE_MANIFEST = new URL(
   "../../../../conformance/scenarios/suite-manifest.json",
   import.meta.url
 );
+const PROVIDER_SUITE_MANIFEST_SCHEMA = new URL(
+  "../../../../conformance/schemas/suite-manifest.schema.json",
+  import.meta.url
+);
 
 describe("providers TypeScript conformance runner", () => {
   test("executes the shared provider fixture suite", () => {
@@ -82,10 +86,20 @@ function readValidatedSingleFixtureSuite(
   expectedFixtureId: string
 ): ProviderTestkitFixtureSet {
   const manifest = readSuiteManifest(manifestUrl);
+  const manifestSchema = readJsonSchema(
+    fileURLToPath(PROVIDER_SUITE_MANIFEST_SCHEMA)
+  );
+  const manifestAjv = new Ajv2020({ allErrors: true, strict: false });
+  const validateManifest = manifestAjv.compile(manifestSchema);
+
+  expect(
+    validateManifest(readJsonObject(fileURLToPath(manifestUrl))),
+    manifestAjv.errorsText(validateManifest.errors)
+  ).toBe(true);
   expect(manifest).toMatchObject({
     boundary: "providers",
     suiteId: "tuvren.providers.api-fixtures",
-    suiteVersion: "0.1.0",
+    suiteVersion: "0.2.0",
   });
   expect(manifest.fixtures).toEqual([
     {

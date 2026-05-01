@@ -2,6 +2,7 @@
 
 ## 0. Version History & Changelog
 
+- v0.6.9 - Closed Epic W in current repo reality with the semantic coverage matrix, assertion-bearing conformance suites, structured runner evidence, check-level compatibility reporting, and the Epic W closure inventory.
 - v0.6.8 - Reframed Epic W as Semantic Ecosystem Maturity: close the remaining TypeScript-local semantic authority gaps before authorizing any additional implementation line such as a Rust framework.
 - v0.6.7 - Closed Epic V in current repo reality with the TypeScript gRPC remote-kernel helper, Rust-kernel playground interop matrix, compatibility-ledger interop evidence, and Epic V transport plus closure inventories.
 - v0.6.6 - Closed Epic U in current repo reality with Rust `1.95.0`, Cargo workspace integration, Rust kernel core, Rust conformance runner, Rust gRPC service, and generated Rust telemetry helper output.
@@ -32,8 +33,8 @@
 
 ### 1.2 Current-State vs Target-State
 
-- **Current repository reality:** The repository already contains the workspace scaffold, `@tuvren/core-types`, `@tuvren/kernel-protocol`, `@tuvren/backend-memory`, `@tuvren/backend-sqlite`, `@tuvren/kernel-testkit`, `@tuvren/runtime-api`, `@tuvren/driver-api`, `@tuvren/event-stream`, `@tuvren/tool-contracts`, `@tuvren/provider-api`, `@tuvren/runtime-core`, the ReAct Driver baseline with implementation-proven loop completion, streaming/provider semantics, shared runtime-core tool/approval integration, and the reusable `createGrpcRuntimeKernel()` helper for the governed Rust-kernel transport seam, `@tuvren/provider-bridge-ai-sdk` as the first concrete provider bridge, the host stream adapter line `@tuvren/stream-core`, `@tuvren/stream-sse`, and `@tuvren/stream-agui`, the private playground host harness `@tuvren/playground-host` with `kernelMode` runtime selection plus `kernelGrpcBaseUrl`, playground-owned aimock E2E validation lanes for the local OpenAI, Anthropic, and Gemini provider HTTP boundaries, an opt-in Gemini validation lane for real provider calls through `@ai-sdk/google`, the hardening testkits `@tuvren/provider-testkit` and `@tuvren/framework-testkit`, release and portability scripts under `tools/scripts`, the checked-in Epic Q portability matrix, the Epic Q release-hardening closure inventory, repo-global `telemetry/` and `reports/compatibility/` roots, boundary-owned `conformance/` roots for the framework, kernel, and providers, TypeSpec-authored tool/provider contract sources plus reviewed JSON Schema/OpenAPI artifacts, kernel CDDL grammar, implementation-scoped TypeScript conformance runners, kernel-only proto authority under `boundaries/kernel/interop/grpc/proto/`, root `buf.yaml` / `buf.gen.yaml`, the `kernel-interop-grpc` Nx target surface, Devenv-provisioned Buf/protoc generator tooling, generated TypeScript telemetry and kernel-interop helpers under the consuming framework implementation tree, root Cargo workspace files, the Rust kernel core, Rust conformance runner, Rust gRPC service, generated Rust telemetry helper under the Rust kernel tree, a real TS-framework-to-Rust-kernel interop suite manifest under `boundaries/framework/interop/rust-kernel/`, and a measured compatibility matrix with `generatedAtMs`, `sourceRevision`, `rust-kernel`, and `typescript-framework__rust-kernel` evidence entries.
-- **Current gap posture:** The current `boundaries/*/testkit` packages remain helper/facade packages for TypeScript tests, while compatibility evidence now flows through implementation-scoped TypeScript and Rust conformance runners plus measured cross-language interop evidence. Epic V is closed; however, much of the rich framework, driver, provider, backend, and error semantic coverage still lives in TypeScript implementation tests rather than boundary-owned language-neutral conformance suites. Epic W is therefore the semantic-ecosystem maturity line, not a Rust-framework implementation line. Rust framework work and any other new implementation line remain deferred until the semantic coverage matrix, assertion-bearing conformance suites, and compatibility evidence prove that TypeScript is one peer implementation of the shared ecosystem rather than the de facto oracle.
+- **Current repository reality:** The repository already contains the workspace scaffold, `@tuvren/core-types`, `@tuvren/kernel-protocol`, `@tuvren/backend-memory`, `@tuvren/backend-sqlite`, `@tuvren/kernel-testkit`, `@tuvren/runtime-api`, `@tuvren/driver-api`, `@tuvren/event-stream`, `@tuvren/tool-contracts`, `@tuvren/provider-api`, `@tuvren/runtime-core`, the ReAct Driver baseline with implementation-proven loop completion, streaming/provider semantics, shared runtime-core tool/approval integration, and the reusable `createGrpcRuntimeKernel()` helper for the governed Rust-kernel transport seam, `@tuvren/provider-bridge-ai-sdk` as the first concrete provider bridge, the host stream adapter line `@tuvren/stream-core`, `@tuvren/stream-sse`, and `@tuvren/stream-agui`, the private playground host harness `@tuvren/playground-host` with `kernelMode` runtime selection plus `kernelGrpcBaseUrl`, playground-owned aimock E2E validation lanes for the local OpenAI, Anthropic, and Gemini provider HTTP boundaries, an opt-in Gemini validation lane for real provider calls through `@ai-sdk/google`, the hardening testkits `@tuvren/provider-testkit` and `@tuvren/framework-testkit`, release and portability scripts under `tools/scripts`, the checked-in Epic Q portability matrix, the Epic Q release-hardening closure inventory, repo-global `telemetry/` and `reports/compatibility/` roots, boundary-owned `conformance/` roots for the framework, kernel, and providers, TypeSpec-authored tool/provider contract sources plus reviewed JSON Schema/OpenAPI artifacts, kernel CDDL grammar, implementation-scoped TypeScript conformance runners, kernel-only proto authority under `boundaries/kernel/interop/grpc/proto/`, root `buf.yaml` / `buf.gen.yaml`, the `kernel-interop-grpc` Nx target surface, Devenv-provisioned Buf/protoc generator tooling, generated TypeScript telemetry and kernel-interop helpers under the consuming framework implementation tree, root Cargo workspace files, the Rust kernel core, Rust conformance runner, Rust gRPC service, generated Rust telemetry helper under the Rust kernel tree, a real TS-framework-to-Rust-kernel interop suite manifest under `boundaries/framework/interop/rust-kernel/`, and a measured compatibility matrix whose checked-in payload uses deterministic sentinel `generatedAtMs` / `sourceRevision` values plus scrubbed interop telemetry attributes while still preserving the substantive `rust-kernel` and `typescript-framework__rust-kernel` evidence entries.
+- **Current semantic-evidence posture:** The current `boundaries/*/testkit` packages remain helper/facade packages for TypeScript tests, but semantic evidence now flows through assertion-bearing TypeScript and Rust conformance runners plus measured cross-language interop evidence with named checks. Epic W closed the first semantic-authority gap by promoting kernel, framework, provider, stream, and framework-to-kernel interop semantics into boundary-owned suites and check-level compatibility reporting. Remaining deep TypeScript-local runtime-core, driver, backend, and provider-family specifics are now explicit deferred or implementation-specific entries in the Epic W coverage matrix instead of hidden semantic authority.
 - **Target implementation state:** The package layout and interfaces defined below are the intended implementation target for the first authoritative TypeScript line plus the post-Epic-Q multi-language transition foundation.
 - **Drift rule:** The future codebase must conform to this TechSpec. The TechSpec must not be treated as a loose commentary on whatever structure happens to emerge.
 
@@ -1412,12 +1413,13 @@ service KernelRunService {
 - **Style:** generated JSON report
 - **Authentication / Authorization:** None. This is a repo-generated report artifact.
 - **Compatibility Strategy:** The ledger records measured implementation parity by suite and version. It is designed as a conservative, reviewable near-public readiness signal, not merely a private maintainer scratchpad.
+- **Determinism note:** Because the ledger is checked in, `generatedAtMs` and `sourceRevision` use stable sentinel metadata inside the JSON payload; Git history remains the authoritative record for when and from which revision that evidence entered the repo.
 - **Error model:** Missing, stale, or contradictory suite results are report-generation failures, not silent compatibility claims.
 
 ```json
 {
   "generatedAtMs": 0,
-  "sourceRevision": "",
+  "sourceRevision": "checked-in-workspace",
   "suites": [
     {
       "suiteId": "",
@@ -1432,6 +1434,12 @@ service KernelRunService {
       "version": "",
       "results": [
         {
+          "checkIds": [""],
+          "checkSummary": {
+            "failedChecks": 0,
+            "passedChecks": 0,
+            "totalChecks": 1
+          },
           "suiteId": "",
           "suiteVersion": "",
           "status": "pass",
@@ -1443,6 +1451,12 @@ service KernelRunService {
   "interop": [
     {
       "pairId": "",
+      "checkIds": [""],
+      "checkSummary": {
+        "failedChecks": 0,
+        "passedChecks": 0,
+        "totalChecks": 1
+      },
       "suiteId": "",
       "suiteVersion": "",
       "status": "pass",
@@ -1454,6 +1468,7 @@ service KernelRunService {
 
 - `reports/compatibility/compatibility-matrix.json` is generated from actual conformance and interop-smoke runs.
 - The ledger must answer whether a named implementation passes a named suite version, whether a named cross-language pairing passes its interop-smoke suite, and which evidence artifact supports each claim.
+- Every implementation and interop result must name the executed `checkIds` and a `checkSummary` so reviewers can distinguish check-level semantic evidence from coarse suite success.
 - Ledger wording must stay conservative and measured enough that the file can move toward external readiness signaling without later semantic cleanup.
 
 ## 5. Implementation Guidelines
@@ -1672,5 +1687,5 @@ authored machine-readable source.
 - **Epic T — Kernel Interop Governance:** Closed in current repo reality through `constitution/spikes/epic-t-kernel-interop-surface-inventory.md` and `constitution/spikes/epic-t-kernel-interop-governance-inventory.md`. The repo now has the narrow kernel-only transport surface, strictly Buf-governed `.proto` ownership on the `FILE` compatibility setting, Devenv-provisioned Buf/protoc tooling invoked by Devenv-wrapped Nx targets, generated binding placement under the consuming framework implementation tree, and code-generation plus interop-smoke orchestration.
 - **Epic U — Rust Kernel Baseline:** Closed in current repo reality through `constitution/spikes/epic-u-rust-kernel-baseline-inventory.md`. The repo now has the root Cargo workspace, Rust kernel implementation, runnable Rust gRPC service, Rust conformance runner, and generated Rust telemetry helper while keeping framework ownership TypeScript-first.
 - **Epic V — TypeScript Framework and Rust Kernel Interop Stabilization:** Closed in current repo reality through `constitution/spikes/epic-v-transport-decision-inventory.md` and `constitution/spikes/epic-v-framework-rust-kernel-interop-closure-inventory.md`. The repo now has the TypeScript gRPC remote-kernel helper, the playground kernel switch, real interop-smoke evidence, compatibility-ledger interop entries, and separated cross-language verification lanes.
-- **Epic W — Semantic Ecosystem Maturity:** Active as the next implementation-planning focus. Epic W is not a Rust framework, not a second framework implementation, and not a continuation of the Rust-kernel baseline. Its job is to make the "one semantic ecosystem, then multiple implementations" promise real by promoting normative semantics from TypeScript-local tests into boundary-owned conformance suites with named assertions and compatibility evidence.
+- **Epic W — Semantic Ecosystem Maturity:** Closed in current repo reality through `constitution/spikes/epic-w-semantic-coverage-matrix.md` and `constitution/spikes/epic-w-semantic-ecosystem-maturity-closure-inventory.md`. Epic W was not a Rust framework, not a second framework implementation, and not a continuation of the Rust-kernel baseline; it closed the first semantic-authority gap by promoting normative semantics from TypeScript-local tests into boundary-owned conformance suites with named assertions and compatibility evidence.
 - **Later driver, backend, provider, language, and host protocol expansion:** Deferred beyond Epic W unless the TechSpec is revised. This includes Rust framework work, `LanguageModelV2` compatibility, provider-native tools, AI SDK agent loops/UI transports, LangChain bridge work, first-class Tuvren provider packages, ACP, future non-ReAct drivers, future official backends, and future language lines beyond Rust.

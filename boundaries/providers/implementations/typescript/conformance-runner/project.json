@@ -13,7 +13,7 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": "boundaries/providers/implementations/typescript/conformance-runner",
-        "command": "bun test ./test/providers-typescript-conformance.test.ts"
+        "command": "bun ./src/providers-typescript-conformance.ts"
       }
     },
     "lint": {

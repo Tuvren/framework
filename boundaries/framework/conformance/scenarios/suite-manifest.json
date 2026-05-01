@@ -1,12 +1,94 @@
 {
   "suiteId": "tuvren.framework.stream-events",
-  "suiteVersion": "0.1.0",
+  "suiteVersion": "0.2.0",
   "boundary": "framework",
   "fixtureSchemaPath": "../schemas/fixture-set.schema.json",
   "fixtures": [
     {
       "id": "stream-events",
       "path": "../fixtures/stream-events.json"
+    }
+  ],
+  "checks": [
+    {
+      "checkId": "framework.stream.completed_turn_sequence",
+      "description": "Canonical completed-turn fixtures preserve the shared runtime event order and manifest shape.",
+      "fixtureIds": ["stream-events"],
+      "assertions": [
+        "completed_turn_event_order",
+        "completed_turn_tool_args_delta",
+        "completed_turn_manifest_snapshot"
+      ],
+      "implementations": ["typescript-framework"],
+      "expectedEvidence": ["assertionResults", "details.eventTypes"]
+    },
+    {
+      "checkId": "framework.stream.failed_turn_terminal_error",
+      "description": "Failed-turn fixtures retain a fatal terminal error and failed turn.end status.",
+      "fixtureIds": ["stream-events"],
+      "assertions": [
+        "failed_turn_has_error_event",
+        "failed_turn_has_failed_status"
+      ],
+      "implementations": ["typescript-framework"],
+      "expectedEvidence": ["assertionResults", "details.failedStatus"]
+    },
+    {
+      "checkId": "framework.stream.paused_turn_approval_shape",
+      "description": "Paused-turn fixtures preserve approval-request structure and paused terminal status.",
+      "fixtureIds": ["stream-events"],
+      "assertions": [
+        "paused_turn_has_approval_request",
+        "paused_turn_has_paused_status"
+      ],
+      "implementations": ["typescript-framework"],
+      "expectedEvidence": ["assertionResults", "details.approvalNames"]
+    },
+    {
+      "checkId": "framework.stream.sse_projection",
+      "description": "SSE framing preserves canonical event names and serialized payloads.",
+      "fixtureIds": ["stream-events"],
+      "assertions": ["sse_turn_start_event", "sse_tool_result_payload"],
+      "implementations": ["typescript-framework"],
+      "expectedEvidence": ["assertionResults", "details.frameEvents"]
+    },
+    {
+      "checkId": "framework.stream.sse_eager_subscription",
+      "description": "SSE projection subscribes early enough to preserve turn.start before delayed consumption.",
+      "fixtureIds": ["stream-events"],
+      "assertions": ["sse_preserves_turn_start_after_delayed_poll"],
+      "implementations": ["typescript-framework"],
+      "expectedEvidence": ["assertionResults"]
+    },
+    {
+      "checkId": "framework.stream.agui_projection",
+      "description": "AG-UI projection maps canonical completed-turn fixtures into validated AG-UI events.",
+      "fixtureIds": ["stream-events"],
+      "assertions": [
+        "agui_completed_turn_event_types",
+        "agui_completed_turn_state_snapshot"
+      ],
+      "implementations": ["typescript-framework"],
+      "expectedEvidence": ["assertionResults", "details.aguiTypes"]
+    },
+    {
+      "checkId": "framework.stream.agui_failed_turn_error_projection",
+      "description": "AG-UI projection emits RUN_ERROR from the final fatal canonical error.",
+      "fixtureIds": ["stream-events"],
+      "assertions": ["agui_failed_turn_run_error"],
+      "implementations": ["typescript-framework"],
+      "expectedEvidence": ["assertionResults", "details.errorCode"]
+    },
+    {
+      "checkId": "framework.stream.agui_paused_turn_fallback",
+      "description": "AG-UI projection preserves paused approvals through CUSTOM events plus RUN_FINISHED fallback.",
+      "fixtureIds": ["stream-events"],
+      "assertions": [
+        "agui_paused_turn_event_types",
+        "agui_paused_turn_custom_payload"
+      ],
+      "implementations": ["typescript-framework"],
+      "expectedEvidence": ["assertionResults", "details.warningCodes"]
     }
   ]
 }

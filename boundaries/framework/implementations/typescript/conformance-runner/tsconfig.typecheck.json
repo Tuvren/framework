@@ -7,5 +7,9 @@
     "rootDir": "../../../../../",
     "types": ["bun"]
   },
-  "include": ["test/**/*.ts", "../../../../framework/testkit/src/**/*.ts"]
+  "include": [
+    "src/**/*.ts",
+    "test/**/*.ts",
+    "../../../../framework/testkit/src/**/*.ts"
+  ]
 }

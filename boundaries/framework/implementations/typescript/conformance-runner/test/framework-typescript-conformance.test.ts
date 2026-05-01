@@ -29,6 +29,10 @@ const FRAMEWORK_SUITE_MANIFEST = new URL(
   "../../../../conformance/scenarios/suite-manifest.json",
   import.meta.url
 );
+const FRAMEWORK_SUITE_MANIFEST_SCHEMA = new URL(
+  "../../../../conformance/schemas/suite-manifest.schema.json",
+  import.meta.url
+);
 
 describe("framework TypeScript conformance runner", () => {
   test("executes the shared framework stream-event suite", () => {
@@ -111,10 +115,20 @@ function readValidatedSingleFixtureSuite(
   expectedFixtureId: string
 ): FrameworkStreamTestFixtureSet {
   const manifest = readSuiteManifest(manifestUrl);
+  const manifestSchema = readJsonSchema(
+    fileURLToPath(FRAMEWORK_SUITE_MANIFEST_SCHEMA)
+  );
+  const manifestAjv = new Ajv2020({ allErrors: true, strict: false });
+  const validateManifest = manifestAjv.compile(manifestSchema);
+
+  expect(
+    validateManifest(readJsonObject(fileURLToPath(manifestUrl))),
+    manifestAjv.errorsText(validateManifest.errors)
+  ).toBe(true);
   expect(manifest).toMatchObject({
     boundary: "framework",
     suiteId: "tuvren.framework.stream-events",
-    suiteVersion: "0.1.0",
+    suiteVersion: "0.2.0",
   });
   expect(manifest.fixtures).toEqual([
     {

@@ -2013,7 +2013,14 @@ function resolveMigrationDirectory(): string {
   ];
 
   for (const candidate of candidates) {
-    if (existsSync(candidate)) {
+    if (!existsSync(candidate)) {
+      continue;
+    }
+
+    // Nx-cached builds can leave behind an empty dist/migrations directory
+    // before the authoritative SQL files are copied in. Treating "directory
+    // exists" as sufficient would silently skip every migration on a new DB.
+    if (listMigrationFiles(candidate).length > 0) {
       return candidate;
     }
   }

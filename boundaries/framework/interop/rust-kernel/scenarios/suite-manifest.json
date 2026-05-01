@@ -1,5 +1,146 @@
 {
   "boundary": "framework",
   "suiteId": "tuvren.framework.kernel-interop-smoke",
-  "suiteVersion": "0.1.0"
+  "suiteVersion": "0.2.0",
+  "scenarios": [
+    { "id": "streaming" },
+    { "id": "structured" },
+    { "id": "tools" },
+    { "id": "approval" },
+    { "id": "cancel" },
+    { "id": "metadata" },
+    { "id": "branching" },
+    { "id": "steering" },
+    { "id": "reload" }
+  ],
+  "checks": [
+    {
+      "checkId": "framework.interop.streaming_observability",
+      "description": "The TypeScript framework over the Rust kernel preserves canonical, SSE, AG-UI, and metadata visibility for a simple streaming turn.",
+      "scenarioIds": ["streaming"],
+      "assertions": [
+        "completed",
+        "canonicalObserved",
+        "sseObserved",
+        "aguiObserved",
+        "metadataObserved"
+      ],
+      "interopPairs": ["typescript-framework__rust-kernel"],
+      "expectedEvidence": [
+        "assertionResults",
+        "details.scenario",
+        "details.telemetry"
+      ]
+    },
+    {
+      "checkId": "framework.interop.structured_output",
+      "description": "Structured-output turns over the Rust kernel preserve canonical, SSE, AG-UI, and structured completion evidence.",
+      "scenarioIds": ["structured"],
+      "assertions": [
+        "completed",
+        "canonicalObserved",
+        "sseObserved",
+        "aguiObserved",
+        "structuredObserved"
+      ],
+      "interopPairs": ["typescript-framework__rust-kernel"],
+      "expectedEvidence": ["assertionResults", "details.scenario"]
+    },
+    {
+      "checkId": "framework.interop.tool_history_and_trace",
+      "description": "Tool turns preserve tool execution events plus durable provider metadata continuity across the Rust kernel seam.",
+      "scenarioIds": ["tools"],
+      "assertions": [
+        "completed",
+        "toolObserved",
+        "toolHistoryPreserved",
+        "toolTraceObserved",
+        "metadataObserved"
+      ],
+      "interopPairs": ["typescript-framework__rust-kernel"],
+      "expectedEvidence": ["assertionResults", "details.scenario"]
+    },
+    {
+      "checkId": "framework.interop.approval_resume",
+      "description": "Approval turns pause, resume, and preserve approval-driven tool metadata across the Rust kernel seam.",
+      "scenarioIds": ["approval"],
+      "assertions": [
+        "approvalRequested",
+        "approvalResolved",
+        "pausedFirst",
+        "resumedCompleted",
+        "toolResultAfterResume"
+      ],
+      "interopPairs": ["typescript-framework__rust-kernel"],
+      "expectedEvidence": ["assertionResults", "details.scenario"]
+    },
+    {
+      "checkId": "framework.interop.cancel_flow",
+      "description": "Cancellation surfaces canonical error and terminal failure semantics across the Rust kernel seam.",
+      "scenarioIds": ["cancel"],
+      "assertions": ["cancelled", "errorObserved", "terminalFailed"],
+      "interopPairs": ["typescript-framework__rust-kernel"],
+      "expectedEvidence": ["assertionResults", "details.scenario"]
+    },
+    {
+      "checkId": "framework.interop.metadata_surface",
+      "description": "Metadata scenarios preserve durable provider metadata over the Rust kernel seam.",
+      "scenarioIds": ["metadata"],
+      "assertions": ["completed", "metadataObserved"],
+      "interopPairs": ["typescript-framework__rust-kernel"],
+      "expectedEvidence": [
+        "assertionResults",
+        "details.scenario",
+        "details.telemetry"
+      ]
+    },
+    {
+      "checkId": "framework.interop.branching_state",
+      "description": "Branching scenarios create a new branch from the source head and advance branch-local durable messages.",
+      "scenarioIds": ["branching"],
+      "assertions": [
+        "sourceCompleted",
+        "branchCreated",
+        "branchedFromSourceHead",
+        "branchCompleted",
+        "branchMessagesVisible",
+        "branchMessagesAdvanced"
+      ],
+      "interopPairs": ["typescript-framework__rust-kernel"],
+      "expectedEvidence": ["assertionResults", "details.scenario"]
+    },
+    {
+      "checkId": "framework.interop.steering_flow",
+      "description": "Steering scenarios durably incorporate steering signals and surface the resulting response.",
+      "scenarioIds": ["steering"],
+      "assertions": [
+        "completed",
+        "steeringEventObserved",
+        "steeringMessageDurable",
+        "steeringResponseObserved"
+      ],
+      "interopPairs": ["typescript-framework__rust-kernel"],
+      "expectedEvidence": ["assertionResults", "details.scenario"]
+    },
+    {
+      "checkId": "framework.interop.reload_persistence",
+      "description": "Reload scenarios preserve durable thread visibility and continue from the advanced head after a fresh host instance.",
+      "scenarioIds": ["reload"],
+      "assertions": [
+        "completedBeforeReload",
+        "durableReloadAttempted",
+        "continuedAfterReload",
+        "durableMessagesVisibleAfterReload",
+        "headAdvancedAfterReload",
+        "rootPreservedAfterReload",
+        "threadVisibleAfterReload"
+      ],
+      "interopPairs": ["typescript-framework__rust-kernel"],
+      "expectedEvidence": [
+        "assertionResults",
+        "details.scenario",
+        "details.telemetry"
+      ]
+    }
+  ]
 }

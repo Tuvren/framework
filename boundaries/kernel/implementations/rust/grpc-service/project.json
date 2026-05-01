@@ -9,28 +9,28 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": ".",
-        "command": "devenv shell -- cargo build -p tuvren-kernel-rust-grpc-service"
+        "command": "cargo build -p tuvren-kernel-rust-grpc-service"
       }
     },
     "interop-smoke": {
       "executor": "nx:run-commands",
       "options": {
         "cwd": ".",
-        "command": "devenv shell -- cargo test -p tuvren-kernel-rust-grpc-service --test interop_smoke"
+        "command": "cargo test -p tuvren-kernel-rust-grpc-service --test interop_smoke"
       }
     },
     "lint": {
       "executor": "nx:run-commands",
       "options": {
         "cwd": ".",
-        "command": "devenv shell -- cargo fmt --package tuvren-kernel-rust-grpc-service -- --check && devenv shell -- cargo clippy -p tuvren-kernel-rust-grpc-service --all-targets -- -D warnings"
+        "command": "cargo fmt --package tuvren-kernel-rust-grpc-service -- --check && cargo clippy -p tuvren-kernel-rust-grpc-service --all-targets -- -D warnings"
       }
     },
     "test": {
       "executor": "nx:run-commands",
       "options": {
         "cwd": ".",
-        "command": "devenv shell -- cargo test -p tuvren-kernel-rust-grpc-service"
+        "command": "cargo test -p tuvren-kernel-rust-grpc-service"
       }
     }
   }

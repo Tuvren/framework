@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/interop/rust-kernel/suite-manifest.schema.json",
+  "$defs": {
+    "check": {
+      "type": "object",
+      "required": [
+        "assertions",
+        "checkId",
+        "expectedEvidence",
+        "interopPairs",
+        "scenarioIds"
+      ],
+      "properties": {
+        "assertions": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "checkId": { "type": "string", "minLength": 1 },
+        "description": { "type": "string", "minLength": 1 },
+        "expectedEvidence": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "interopPairs": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "scenarioIds": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "scenario": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "type": "object",
+  "required": ["boundary", "checks", "scenarios", "suiteId", "suiteVersion"],
+  "properties": {
+    "boundary": { "const": "framework" },
+    "checks": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/check" }
+    },
+    "scenarios": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/scenario" }
+    },
+    "suiteId": { "const": "tuvren.framework.kernel-interop-smoke" },
+    "suiteVersion": { "type": "string", "minLength": 1 }
+  },
+  "additionalProperties": false
+}

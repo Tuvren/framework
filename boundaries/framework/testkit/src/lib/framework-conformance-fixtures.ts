@@ -33,6 +33,7 @@ const MANIFEST_PATH_SEGMENTS = [
   "scenarios",
   "suite-manifest.json",
 ];
+const MANIFEST_SCHEMA_RELATIVE_PATH = "../schemas/suite-manifest.schema.json";
 const ajv = new Ajv2020({ allErrors: true, strict: false });
 
 export const frameworkStreamTestFixtures: FrameworkStreamTestFixtureSet =
@@ -84,7 +85,17 @@ function readConformanceManifest(manifestPath: string): {
   fixtureSchemaPath: string;
 } {
   const manifestText = readFileSync(manifestPath, "utf8");
+  const manifestSchemaText = readFileSync(
+    join(dirname(manifestPath), MANIFEST_SCHEMA_RELATIVE_PATH),
+    "utf8"
+  );
   const parsedManifest = JSON.parse(manifestText);
+  const parsedManifestSchema = readJsonSchema(JSON.parse(manifestSchemaText));
+  assertSchemaValid(
+    parsedManifestSchema,
+    parsedManifest,
+    "framework conformance manifest"
+  );
 
   if (
     !isRecord(parsedManifest) ||
