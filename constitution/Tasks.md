@@ -2,17 +2,16 @@
 
 ## 0. Version History & Changelog
 
-- v0.11.0 - Reopened Epic Y final conformance closure: KRT-Y013 records the posture correction, and KRT-Y014..KRT-Y023 form the active critical path to extract one shared semantic conformance engine, convert implementation language runners into adapter hosts, enforce executable capability selection, and add meta-conformance plus trace-plan support.
+- v0.12.0 - Opened TypeScript Kernel Gap Closure with Epic Z syscall implementation planning, Epic AA kernel conformance promotion, and Epic AB contract-first run-liveness recovery.
 - v0.11.1 - Closed Epic Y final conformance closure: KRT-Y014..KRT-Y023 now land one shared semantic conformance runner, JSON-RPC adapter manifests, TypeScript and Rust adapter hosts, executable capability selection, trace-plan lifecycle checks, guardrails, meta-conformance, and refreshed shared-runner compatibility evidence.
-- v0.10.1 - Closed Epic Y authority-packet closure in current repo reality with the authority leak inventory, promoted authority packets, conformance plans, adapter protocol scaffolding, generated artifacts, validator and guardrail wiring, and closure inventory.
-- v0.10.0 - Opened Epic Y Machine-Enforced Neutral Authority Closure as the active critical path (KRT-Y001..KRT-Y012) backed by the Epic Y planning spike, the new Authority Packet / Conformance Plan / Implementation Adapter contracts in TechSpec §4.11–§4.13, and ADR-023..028. Critical path totals 45 active story points.
+- v0.11.0 - Reopened Epic Y final conformance closure: KRT-Y013 records the posture correction, and KRT-Y014..KRT-Y023 form the active critical path to extract one shared semantic conformance engine, convert implementation language runners into adapter hosts, enforce executable capability selection, and add meta-conformance plus trace-plan support.
 - ... [Older history truncated, refer to git logs]
 
 ## 1. Executive Summary & Active Critical Path
 
-- **Total Active Story Points:** 0
-- **Critical Path:** Epic Y KRT-Y013 through KRT-Y023 is closed in current repo reality. Future work starts from the shared runner, adapter manifests, trace plans, guardrails, and compatibility evidence rather than reopening implementation-owned semantic runners.
-- **Planning Assumptions:** Epics A-Y are closed in current repo reality. Authority Packet manifests follow TechSpec §4.11; Conformance Plans follow §4.12; the revised Implementation Adapter Protocol follows §4.13. Epic Y artifacts are `constitution/spikes/epic-y-authority-leak-inventory.md`, `constitution/spikes/epic-y-machine-enforced-authority-closure-inventory.md`, `constitution/spikes/epic-y-single-semantic-conformance-engine-spike.md`, `constitution/spikes/epic-y-trace-plan-extension-spike.md`, and `constitution/spikes/epic-y-shared-conformance-engine-closure-inventory.md`.
+- **Total Active Story Points:** 59
+- **Critical Path:** KRT-Z001 -> KRT-Z002 -> KRT-Z003 -> KRT-Z004 -> KRT-Z005 -> KRT-AA001 -> KRT-AA002 -> KRT-AA003 -> KRT-AA004 -> KRT-AB001 -> KRT-AB002 -> KRT-AB003 -> KRT-AB004.
+- **Planning Assumptions:** Epics A-Y are closed in current repo reality. Authority Packet manifests follow TechSpec §4.11; Conformance Plans follow §4.12; the revised Implementation Adapter Protocol follows §4.13. The active TypeScript kernel line is documentation-backed by `docs/KrakenKernelSpecification.md` and TechSpec §3.2, §4.2, §4.3, §4.11-§4.13, and §5.4. Rust implementation work is out of scope unless explicitly named by capability evidence.
 
 ### Brownfield Continuity Note
 
@@ -49,17 +48,18 @@
 
 ### Current Active Scope
 
-- No Epic Y tickets remain active. The current repo posture is closed through the shared semantic conformance engine, adapter-host protocol hardening, TypeScript and Rust current-lane adapter conversion, assertion-engine meta-conformance, executable capability selection, trace-plan extension, guardrail hardening, and final evidence refresh.
-- Epic W and Epic X are closed in current repo reality through their respective closure inventories under `constitution/spikes/`.
-- Future implementation-line work must start from the named semantic evidence in Epic W, the normalized Epic X topology, the Epic Y authority packets, and the shared semantic runner rather than reopening TypeScript-local semantic authority, filesystem drift, or implementation-language runner oracles by default.
+- Epic Z is active to add the missing boundary-owned TypeScript `RuntimeKernel` implementation package over the existing backend contract and close the documented syscall semantics that currently live only in private playground logic or protocol types.
+- Epic AA is active after Epic Z to promote kernel syscall, logical, and observe behavior into authority-packet-backed conformance plans and shared-runner evidence.
+- Epic AB is active after Epic AA as a contract-first liveness extension for leased running ownership and stale-run preemption.
 
 ### Future / Deferred Scope
 
 - Rust framework product implementation work is deferred beyond Epic Y. Rust framework adapter-host work is active only to prove that the shared runner reports honest red/green evidence from native implementation behavior.
+- Rust kernel gap closure for the new TypeScript-first syscall/liveness epics is deferred unless a later Tasks revision explicitly adds Rust tickets. Rust lanes may report pass, fail, or non-applicable evidence based only on advertised capability.
 - `LanguageModelV2` / `ProviderV2` compatibility is deferred.
 - AI SDK agent loops, AI SDK UI message protocols, AI SDK transport helpers, LangChain bridges, provider-native tool support, and first-class Tuvren provider packages are deferred.
 - ACP or any additional host protocol beyond SSE and AG-UI is deferred until a future TechSpec revision names it.
-- Future concrete drivers beyond ReAct, official peer backends beyond memory/SQLite, and future product implementation lines beyond the current TypeScript and Rust lanes are deferred beyond Epic Y unless a later TechSpec revision activates them from the matured semantic evidence, authority packets, and shared runner evidence.
+- Future concrete drivers beyond ReAct, official peer backends beyond memory/SQLite, and future product implementation lines beyond the current TypeScript/Rust lanes and active TypeScript kernel closure line are deferred unless a later TechSpec revision activates them from the matured semantic evidence, authority packets, and shared runner evidence.
 - FFI-based Rust embedding is deferred until after the process-boundary kernel seam is proven boring and durable.
 - Deno portability checks are deferred until public package surfaces stabilize enough to avoid testing scaffolding churn.
 - Authoring authority packets for surfaces beyond the five named in Epic Y (kernel protocol packet hardening, host stream adapter packets, telemetry semconv packet, compatibility-ledger packet, AI SDK bridge packet) is deferred to a later epic that may build on Epic Y mechanics.
@@ -158,6 +158,19 @@ flowchart TD
   KRTY021 --> KRTY022
   KRTY020 --> KRTY023[KRT-Y023 Final Epic Y Conformance Closure]
   KRTY022 --> KRTY023
+  KRTY023 --> KRTZ001[KRT-Z001 RuntimeKernel Package Contract]
+  KRTZ001 --> KRTZ002[KRT-Z002 Schema and Tree Syscalls]
+  KRTZ002 --> KRTZ003[KRT-Z003 Lineage and Branch Syscalls]
+  KRTZ003 --> KRTZ004[KRT-Z004 Run Checkpoint Recovery Observe]
+  KRTZ004 --> KRTZ005[KRT-Z005 Framework and Playground Migration]
+  KRTZ005 --> KRTAA001[KRT-AA001 Kernel Conformance Authority Update]
+  KRTAA001 --> KRTAA002[KRT-AA002 TypeScript Adapter Operations]
+  KRTAA002 --> KRTAA003[KRT-AA003 Syscall Assertions and Evidence]
+  KRTAA003 --> KRTAA004[KRT-AA004 Compatibility Evidence Refresh]
+  KRTAA004 --> KRTAB001[KRT-AB001 Liveness Extension Contract]
+  KRTAB001 --> KRTAB002[KRT-AB002 Lease Storage and Validators]
+  KRTAB002 --> KRTAB003[KRT-AB003 Preemption Semantics]
+  KRTAB003 --> KRTAB004[KRT-AB004 Liveness Conformance Evidence]
 ```
 
 ## 4. Ticket List
@@ -1179,4 +1192,232 @@ Then `reports/compatibility/` evidence is refreshed through the shared runner an
 And `bun run conformance`, `bun run codegen`, and `bun run verify` fail on red structured evidence while `bun run compatibility:evidence` refreshes red TDD evidence intentionally
 And the final closure inventory names the shared runner, adapter hosts, promoted plans, trace plans, guardrails, and exact remaining deferred implementation gaps
 And `constitution/Tasks.md`, `constitution/TechSpec.md`, and root `AGENTS.md` mark Epic Y final conformance closure complete without claiming TypeScript, Rust, runner source, adapter source, or Markdown as cross-implementation authority
+```
+
+### Epic Z - TypeScript Kernel Syscall Closure (TKSC)
+
+**KRT-Z001 RuntimeKernel Package Contract**
+
+- **Type:** Feature
+- **Effort:** 5
+- **Dependencies:** KRT-Y023
+- **Capability / Contract Mapping:** `docs/KrakenKernelSpecification.md` §7; TechSpec §4.2, §4.3, §5.1
+- **Description:** Add the `@tuvren/kernel-runtime` package under `boundaries/kernel/implementations/typescript/runtime-kernel` and define it as the sole boundary-owned TypeScript adapter from `RuntimeBackend` to the frozen `RuntimeKernel` syscall surface. Host-owned playground kernel code becomes transitional until KRT-Z005.
+- **Acceptance Criteria (Gherkin):**
+
+```gherkin
+Given the TypeScript kernel boundary has protocol types and backend adapters but no boundary-owned RuntimeKernel implementation
+When KRT-Z001 is complete
+Then `@tuvren/kernel-runtime` exists under the kernel TypeScript implementation tree and exports `createRuntimeKernel`
+And the package depends on `@tuvren/kernel-protocol` and official backend contracts without moving runtime code into host or framework boundaries
+And the public package surface exposes only the kernel implementation entrypoints and test-visible types needed by later tickets
+```
+
+**KRT-Z002 Schema and Tree Syscalls**
+
+- **Type:** Feature
+- **Effort:** 5
+- **Dependencies:** KRT-Z001
+- **Capability / Contract Mapping:** Kernel spec §3.2, §7, Appendix B; TechSpec §3.3, §4.2
+- **Description:** Implement strict schema and TurnTree syscall semantics: duplicate schema registration rejection, required full manifests for base-less `tree.create`, schema-path validation, incorporation-rule rejection for unmatched staged object types, same-schema `tree.diff`, and unknown-path errors for `tree.resolve`.
+- **Acceptance Criteria (Gherkin):**
+
+```gherkin
+Given a registered TurnTreeSchema and stored objects
+When TypeScript callers invoke schema and tree operations through `@tuvren/kernel-runtime`
+Then every validation rule in the kernel spec Appendix B for schema and tree operations is enforced
+And invalid paths, wrong collection kinds, different-schema diffs, missing incorporation rules, and incomplete base-less manifests fail before persistence
+And valid tree operations produce deterministic hashes and manifests that remain backend-neutral across memory and SQLite
+```
+
+**KRT-Z003 Lineage and Branch Syscalls**
+
+- **Type:** Feature
+- **Effort:** 5
+- **Dependencies:** KRT-Z002
+- **Capability / Contract Mapping:** Kernel spec §4, §8.2; TechSpec §4.2
+- **Description:** Implement lineage-proven membership and branch-head semantics for thread, node, branch, and turn operations, including cross-thread rejection, invalid `node.walkBack` rejection, forward/backward/lateral head movement classification, archival rollback branch creation, and failed active runs on abandoned rollback segments.
+- **Acceptance Criteria (Gherkin):**
+
+```gherkin
+Given multiple Threads and Branches with divergent TurnNode histories
+When branch, node, thread, or turn syscalls reference TurnNodes across or outside their lineage
+Then cross-thread and lateral references are rejected with lineage-specific errors
+And backward `branch.setHead` atomically creates an archive Branch, preserves the abandoned head, fails affected running or paused Runs, and returns both Branch records
+And no TurnNode becomes orphaned after a successful rollback
+```
+
+**KRT-Z004 Run Checkpoint Recovery Observe**
+
+- **Type:** Feature
+- **Effort:** 5
+- **Dependencies:** KRT-Z003
+- **Capability / Contract Mapping:** Kernel spec §5, §6.4, §8.2; TechSpec §3.2, §4.2
+- **Description:** Complete run lifecycle semantics for planned checkpoints, reactive checkpoints, running-only `beginStep`/`completeStep`, event and tree validation, accurate `run.recover`, ObserveResult annotation persistence, signal handoff to the next step, and fixed verdict priority composition.
+- **Acceptance Criteria (Gherkin):**
+
+```gherkin
+Given a running Run with declared deterministic and side-effecting steps
+When steps complete, terminate, pause, fail, or recover through `@tuvren/kernel-runtime`
+Then checkpoint creation follows the documented planned and reactive rules atomically
+And `run.recover` returns consumed StagedResults from the last TurnNode plus durable uncommitted StagedResults
+And ObserveResult annotations are durably recorded outside TurnNode identity while signals appear on the next StepContext for the same Run
+And `verdicts.compose` applies Abort, Pause, Modify, Retry, Proceed priority with first-objection-wins inside each priority tier
+```
+
+**KRT-Z005 Framework and Playground Migration**
+
+- **Type:** Chore
+- **Effort:** 3
+- **Dependencies:** KRT-Z004
+- **Capability / Contract Mapping:** TechSpec §1.2, §4.1, §4.2, §5.1
+- **Description:** Replace the private playground-local TypeScript kernel implementation with `@tuvren/kernel-runtime` while preserving host helpers and runtime-core behavior. The playground may keep read inspectors, but syscall semantics must live in the kernel boundary package.
+- **Acceptance Criteria (Gherkin):**
+
+```gherkin
+Given the playground host currently owns a private local RuntimeKernel facade
+When the playground runs in local memory or SQLite kernel mode
+Then it obtains syscall behavior from `@tuvren/kernel-runtime`
+And host-specific inspector helpers remain host-owned without duplicating kernel semantics
+And existing runtime-core and playground tests continue to validate user-visible behavior through the new boundary-owned kernel implementation
+```
+
+### Epic AA - Kernel Conformance Promotion (KCP)
+
+**KRT-AA001 Kernel Conformance Authority Update**
+
+- **Type:** Chore
+- **Effort:** 5
+- **Dependencies:** KRT-Z005
+- **Capability / Contract Mapping:** TechSpec §4.11, §4.12, §4.13
+- **Description:** Extend the kernel protocol authority packet and conformance plans to cover `kernel.syscall`, `kernel.logical`, and `kernel.observe` capabilities without making implementation source, runner source, or Markdown the oracle.
+- **Acceptance Criteria (Gherkin):**
+
+```gherkin
+Given Epic Y established authority packets and shared-runner conformance plans
+When kernel syscall conformance is promoted
+Then the kernel protocol authority packet references the new or extended conformance plans and fixtures
+And every new check declares capability requirements, required evidence, assertions, and neutral operations
+And Markdown and TypeScript source remain explanatory or binding projections rather than cross-implementation authority
+```
+
+**KRT-AA002 TypeScript Adapter Operations**
+
+- **Type:** Feature
+- **Effort:** 3
+- **Dependencies:** KRT-AA001
+- **Capability / Contract Mapping:** TechSpec §4.13; Kernel conformance plans
+- **Description:** Extend the TypeScript kernel conformance adapter to invoke `@tuvren/kernel-runtime` against memory and SQLite-backed scenarios and return neutral observations for promoted syscall, logical, and observe operations.
+- **Acceptance Criteria (Gherkin):**
+
+```gherkin
+Given the shared runner dispatches neutral kernel conformance operations
+When the TypeScript kernel adapter advertises promoted kernel capabilities
+Then it executes native TypeScript kernel behavior through `@tuvren/kernel-runtime`
+And it returns observations only, without deciding pass/fail, receiving check IDs, or emitting check-scoped evidence
+And adapter errors remain isolated from implementation assertion failures
+```
+
+**KRT-AA003 Syscall Assertions and Evidence**
+
+- **Type:** Feature
+- **Effort:** 5
+- **Dependencies:** KRT-AA002
+- **Capability / Contract Mapping:** Kernel spec Appendix B; TechSpec §4.12
+- **Description:** Add assertion-bearing conformance coverage for schema/tree strictness, lineage rejection, branch rollback archival, recovery state, verdict composition, observe persistence, and logical kernel behaviors currently reported as non-applicable for TypeScript.
+- **Acceptance Criteria (Gherkin):**
+
+```gherkin
+Given the TypeScript adapter provides native observations for promoted kernel operations
+When shared-runner conformance executes the kernel plans
+Then validation, lineage, rollback, recovery, verdict, and observe checks pass or fail from implementation-produced evidence
+And TypeScript no longer reports `kernel.logical.diff_paths`, `kernel.logical.branch_list`, `kernel.logical.recovery_state`, `kernel.lineage.cross_thread_rejection`, or `kernel.turn.lateral_head_guard` as non-applicable once native support exists
+And every required evidence field is present or the shared runner fails the check
+```
+
+**KRT-AA004 Compatibility Evidence Refresh**
+
+- **Type:** Chore
+- **Effort:** 3
+- **Dependencies:** KRT-AA003
+- **Capability / Contract Mapping:** TechSpec §4.10, §4.12
+- **Description:** Refresh kernel compatibility evidence and compatibility matrix output after promoted TypeScript kernel conformance runs through the shared runner.
+- **Acceptance Criteria (Gherkin):**
+
+```gherkin
+Given kernel conformance plans and TypeScript adapter operations cover promoted syscall behavior
+When compatibility evidence is refreshed
+Then `reports/compatibility/` records TypeScript kernel pass, fail, and non-applicable status from shared-runner evidence
+And normal `conformance`, `codegen`, and `verify` gates fail on structured failed evidence
+And Rust kernel results remain capability-scoped rather than inferred from TypeScript behavior
+```
+
+### Epic AB - Run Liveness and Stale-Running Recovery (RLSR)
+
+**KRT-AB001 Liveness Extension Contract**
+
+- **Type:** Feature
+- **Effort:** 5
+- **Dependencies:** KRT-AA004
+- **Capability / Contract Mapping:** Kernel spec §5.2, §5.7, Appendix A; TechSpec §3.2, §4.2
+- **Description:** Formalize the `kernel.run-liveness` extension as a capability separate from the frozen 28-operation base, including TypeScript protocol helper types, storage fields, error semantics, and conformance plan membership.
+- **Acceptance Criteria (Gherkin):**
+
+```gherkin
+Given stale-running recovery requires leases but the frozen base syscall list has no lease operation
+When the liveness extension contract is added
+Then leased Run ownership is represented as an optional advertised capability
+And extension types define owner ID, lease expiry, fencing token, preemption reason, renewal, expired-run listing, and preemption result semantics
+And the base `RuntimeKernel` interface remains compatible for non-liveness implementations
+```
+
+**KRT-AB002 Lease Storage and Validators**
+
+- **Type:** Feature
+- **Effort:** 5
+- **Dependencies:** KRT-AB001
+- **Capability / Contract Mapping:** TechSpec §3.2, §3.4, §3.5
+- **Description:** Add memory and SQLite storage support for leased running ownership, including compare-and-swap renewal by owner and fencing token, expired-run lookup, and validators that keep paused Runs outside lease expiry semantics.
+- **Acceptance Criteria (Gherkin):**
+
+```gherkin
+Given a Run was created with leased running ownership
+When its owner renews, another owner attempts renewal, or the lease expires
+Then renewal succeeds only for the current owner and fencing token while the Run remains running
+And expired running Runs can be discovered through backend-neutral access paths
+And paused, completed, and failed Runs are not lease-expiry candidates
+```
+
+**KRT-AB003 Preemption Semantics**
+
+- **Type:** Feature
+- **Effort:** 5
+- **Dependencies:** KRT-AB002
+- **Capability / Contract Mapping:** Kernel spec §5.2, §5.7; TechSpec §4.2
+- **Description:** Implement stale-running preemption semantics: verify expiry atomically, fence the stale owner, preserve verifiable staged work through reactive checkpointing where required, mark the stale Run failed with preemption reason, and return recovery state for replacement execution.
+- **Acceptance Criteria (Gherkin):**
+
+```gherkin
+Given a leased running Run has expired while durable staged work may exist
+When a new owner preempts the stale Run
+Then the kernel atomically verifies expiry, records preemption, fails the stale Run, and returns RecoveryState for a new replacement Run
+And the stale Run is never reopened
+And a non-expired running Run or paused Run cannot be preempted through stale-running recovery
+```
+
+**KRT-AB004 Liveness Conformance Evidence**
+
+- **Type:** Chore
+- **Effort:** 5
+- **Dependencies:** KRT-AB003
+- **Capability / Contract Mapping:** TechSpec §4.10, §4.12, §4.13
+- **Description:** Promote `kernel.run-liveness` conformance plans and refresh compatibility evidence for TypeScript memory/SQLite behavior, leaving Rust non-applicable unless it advertises the extension capability.
+- **Acceptance Criteria (Gherkin):**
+
+```gherkin
+Given TypeScript implements the run-liveness extension
+When shared-runner liveness conformance executes
+Then lease renewal, expired-run discovery, stale preemption, paused exclusion, and replacement recovery state are verified from implementation-produced evidence
+And TypeScript memory and SQLite evidence report honest pass/fail status for the extension
+And Rust evidence is non-applicable unless a Rust adapter advertises `kernel.run-liveness`
 ```

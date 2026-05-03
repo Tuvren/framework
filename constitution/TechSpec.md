@@ -2,10 +2,9 @@
 
 ## 0. Version History & Changelog
 
-- v0.8.2 - Reopened Epic Y final conformance closure around one shared semantic conformance engine, process-level language adapter hosts, executable capability selection, adapter-error isolation, assertion-engine meta-conformance, and future multi-step trace plans.
+- v0.9.0 - Opened TypeScript Kernel Gap Closure around the documented 28-operation kernel surface, promoted syscall/logical conformance, ObserveResult persistence clarification, and contract-first stale-running liveness extension.
 - v0.8.3 - Closed Epic Y final conformance closure around `tools/conformance/runner/`, JSON-RPC adapter manifests, TypeScript and Rust current-lane adapter hosts, trace-plan lifecycle checks, meta-conformance, guardrails, and refreshed shared-runner compatibility evidence.
-- v0.8.1 - Closed Epic Y authority-packet closure in current repo reality with authority packet manifests, conformance plans, adapter protocol scaffolding, validator and guardrail wiring, generated JSON Schema artifacts, and the Epic Y closure inventory.
-- v0.8.0 - Opened Epic Y Machine-Enforced Neutral Authority Closure with ADR-023 (No Implementation Oracle), ADR-024 (No Prose Oracle), ADR-025 (No Runner Oracle), ADR-026 (Authority Packet Model), ADR-027 (Generated Artifact Freshness), and ADR-028 (Forbidden Implementation Vocabulary in Authority Sources). Added §4.11 Authority Packet Manifest contract, §4.12 Conformance Plan contract, and §4.13 Implementation Adapter Protocol. Extended §3.6 with packet membership rules and §5.4 with the Epic Y step. Stack section now records the layered authority stack vocabulary (TypeSpec, CDDL, Protobuf, JSON Schema, conformance-plan JSON, semconv/Weaver) without adding new pinned tooling.
+- v0.8.2 - Reopened Epic Y final conformance closure around one shared semantic conformance engine, process-level language adapter hosts, executable capability selection, adapter-error isolation, assertion-engine meta-conformance, and future multi-step trace plans.
 - ... [Older history truncated, refer to git logs]
 
 ## 1. Stack Specification (Bill of Materials)
@@ -35,6 +34,7 @@
 ### 1.2 Current-State vs Target-State
 
 - **Current repository reality:** The repository already contains the workspace scaffold, `@tuvren/core-types`, `@tuvren/kernel-protocol`, `@tuvren/backend-memory`, `@tuvren/backend-sqlite`, `@tuvren/kernel-testkit`, `@tuvren/runtime-api`, `@tuvren/driver-api`, `@tuvren/event-stream`, `@tuvren/tool-contracts`, `@tuvren/provider-api`, `@tuvren/runtime-core`, the ReAct Driver baseline with implementation-proven loop completion, streaming/provider semantics, shared runtime-core tool/approval integration, and the reusable `createGrpcRuntimeKernel()` helper for the governed Rust-kernel transport seam, `@tuvren/provider-bridge-ai-sdk` as the first concrete provider bridge, the host stream adapter line `@tuvren/stream-core`, `@tuvren/stream-sse`, and `@tuvren/stream-agui`, the private playground host harness `@tuvren/playground-host` with `kernelMode` runtime selection plus `kernelGrpcBaseUrl`, playground-owned aimock E2E validation lanes for the local OpenAI, Anthropic, and Gemini provider HTTP boundaries, an opt-in Gemini validation lane for real provider calls through `@ai-sdk/google`, the hardening testkits `@tuvren/provider-testkit` and `@tuvren/framework-testkit`, release and portability scripts under `tools/scripts`, the checked-in Epic Q portability matrix, the Epic Q release-hardening closure inventory, repo-global `telemetry/` and `reports/compatibility/` roots, boundary-owned `conformance/` roots for the framework, kernel, and providers, TypeSpec-authored tool/provider contract sources plus reviewed JSON Schema/OpenAPI artifacts, kernel CDDL grammar, one shared semantic conformance runner under `tools/conformance/runner/`, JSON-RPC adapter protocol schemas under `tools/conformance/adapter-protocol/`, TypeScript and Rust implementation adapter hosts under `conformance-adapter/`, compatibility evidence emitted through shared-runner evidence files, kernel-only proto authority under `boundaries/kernel/interop/grpc/proto/`, root `buf.yaml` / `buf.gen.yaml`, the `kernel-interop-grpc` Nx target surface, Devenv-provisioned Buf/protoc generator tooling, generated TypeScript telemetry and kernel-interop helpers under the consuming framework implementation tree, root Cargo workspace files, the Rust kernel core, Rust gRPC service, generated Rust telemetry helper under the Rust kernel tree, a real TS-framework-to-Rust-kernel interop suite manifest under `boundaries/framework/interop/rust-kernel/`, and a measured compatibility matrix whose checked-in payload uses deterministic sentinel `generatedAtMs` / `sourceRevision` values plus scrubbed interop telemetry attributes while still preserving the substantive `rust-kernel`, `rust-framework`, TypeScript current-lane, and `typescript-framework__rust-kernel` evidence entries.
+- **Current TypeScript kernel gap:** The TypeScript boundary currently has protocol types, memory/SQLite backend adapters, testkits, and conformance adapter hosts, but no boundary-owned `RuntimeKernel` implementation package. The only local TypeScript `RuntimeKernel` facade is private playground host code, while the TypeScript kernel conformance adapter advertises only `kernel.protocol` capability. The documented kernel gap is therefore a first-class implementation and conformance gap, not a Rust or transport gap.
 - **Current semantic-evidence posture:** The boundary-owned semantic evidence posture from Epic W remains intact after Epic X and final Epic Y closure. The TypeScript testkits still act as helper and facade packages for TypeScript-local testing, but they now live under implementation-owned paths. TypeScript and Rust conformance entry points are wrappers or native adapter hosts; `tools/conformance/runner/` owns assertion evaluation, required evidence, capability selection, adapter-error isolation, trace execution, and compatibility evidence emission.
 - **Current topology posture:** Epic X is closed in current repo reality. Boundary-root testkits now live under `boundaries/<area>/implementations/typescript/testkit/`, contract roots now expose only language-neutral assets plus README placeholders, and the TypeScript package guts for moved contract packages live under sibling `implementations/typescript/` subtrees. Path topology now reveals language ownership without opening files.
 - **Target implementation state:** The package layout and interfaces defined below are the intended implementation target for the first authoritative TypeScript line plus the post-Epic-Q multi-language transition foundation.
@@ -334,6 +334,13 @@
   - `eventHash: HashString | null`
   - `createdAtMs: EpochMs`
   - identity note: `hash` is derived from the logical TurnNode fields excluding `hash` itself; stored metadata such as `createdAtMs` is not part of the logical TurnNode identity
+- `StoredObserveAnnotation`
+  - `annotationHash: HashString`
+  - `runId: string`
+  - `turnNodeHash: HashString | null`
+  - `annotationCbor: Uint8Array`
+  - `createdAtMs: EpochMs`
+  - identity note: Observe annotations are persisted by the kernel at `run.completeStep` as durable annotation records, but they are not TurnNode identity inputs and do not change the frozen TurnNode hash contract.
 - `StoredThread`
   - `threadId: string`
   - `schemaId: string`
@@ -365,9 +372,10 @@
   - `currentStepIndex: number`
   - `stepSequenceCbor: Uint8Array`
   - `createdTurnNodesCbor: Uint8Array`
+  - `pendingSignalsCbor?: Uint8Array`
   - `createdAtMs: EpochMs`
   - `updatedAtMs: EpochMs`
-  - liveness note: the current implementation does not claim stale-`running` recovery from process death. Any implementation that makes that claim must extend `StoredRun` with execution-owner, lease-expiry, and fencing-token fields in the same change that adds kernel lease/preemption operations.
+  - liveness note: the base 28-operation surface does not by itself claim stale-`running` recovery from process death. Epic AB activates the extension below as contract-first work and must move storage fields, protocol helpers, framework recovery behavior, and conformance together.
 - `StoredStagedResult`
   - `runId: string`
   - `taskId: string`
@@ -380,7 +388,7 @@
 #### Run Liveness Extension Gate
 
 - **Purpose:** Define the required implementation delta before Tuvren Runtime can claim durable recovery of stale `running` Runs.
-- **Storage Shape:** Leased Run ownership extends `StoredRun` with backend-neutral fields equivalent to `executionOwnerId`, `leaseExpiresAtMs`, `fencingToken`, and `preemptionReason`.
+- **Storage Shape:** Leased Run ownership extends `StoredRun` with backend-neutral fields equivalent to `executionOwnerId`, `leaseExpiresAtMs`, `fencingToken`, and `preemptionReason`. These fields are nullable/absent for non-leased base Runs and mandatory for any implementation claiming `kernel.run-liveness` capability.
 - **Constraints / Invariants:**
   - Lease renewal is compare-and-swap by current owner and fencing token.
   - Lease renewal is valid only for `running` Runs.
@@ -388,12 +396,13 @@
   - Stale-running preemption atomically verifies expiry, preserves verifiable staged work through reactive checkpointing, marks the superseded Run `failed`, and returns recovery state for a replacement Run.
   - Replacement execution creates a new Run; stale Runs are never reopened.
 - **Indexes / Access Paths:** Backends implementing the extension must provide active stale-run discovery by status and lease expiry, plus owner/token lookup for renewal.
-- **Migration Notes:** This extension is not a SQLite-only change. Kernel protocol, framework recovery behavior, runtime configuration, backend repositories, validators, conformance tests, and physical schemas must move together.
+- **Migration Notes:** This extension is not a SQLite-only change and is not retroactively part of the frozen 28-operation base. Kernel protocol extension types, framework recovery behavior, runtime configuration, backend repositories, validators, conformance tests, and physical schemas must move together.
 
 ```mermaid
 erDiagram
   STORED_OBJECT ||--o{ STORED_STAGED_RESULT : referenced_by
   STORED_OBJECT ||--o{ STORED_TURN_NODE : event_hash
+  STORED_RUN ||--o{ STORED_OBSERVE_ANNOTATION : records
   STORED_SCHEMA ||--o{ STORED_TURN_TREE : constrains
   STORED_TURN_TREE ||--o{ STORED_TURN_TREE_PATH : contains
   STORED_ORDERED_PATH_CHUNK ||--o{ STORED_TURN_TREE_PATH : referenced_by
@@ -699,8 +708,9 @@ Runtime-core options include `defaultMaxParallelToolCalls?: number`, `manifestEx
 - **Compatibility Strategy:** Protocol-first contract. Breaking changes to record shapes, operation signatures, or validation semantics are semver-major.
 - **Error model:** `TuvrenError` with persistence, validation, lineage, and recovery codes
 - **Concrete payload rule:** The frozen kernel specification names `ObserveResult.annotations` as `Object[]` and `signals` as `Signal[]`, but does not define their first TypeScript wire shape. The authoritative TypeScript realization is:
-  - observe annotations are `KernelObject[]` carried into `run.completeStep`, where the kernel remains responsible for persisting them per the frozen kernel specification
-  - observe signals are `KernelRecord[]`, keeping them serializable and boundary-safe within the run lifecycle
+  - observe annotations are `KernelObject[]` carried into `run.completeStep`; the TypeScript kernel persists them as `StoredObserveAnnotation` records outside TurnNode identity and exposes their presence through conformance evidence rather than a new base syscall
+  - observe signals are `KernelRecord[]`; the TypeScript kernel stores them in `pendingSignalsCbor` for the same Run so the next `run.beginStep` returns them in `StepContext.signals`
+  - the base 28-operation surface remains frozen; stale-running leases use the optional `RuntimeKernelRunLiveness` extension below and must be advertised by capability
 
 ```ts
 export type KernelSignal = KernelRecord;
@@ -837,9 +847,41 @@ export interface RuntimeKernel {
     updateHead(turnId: string, headTurnNodeHash: HashString): Promise<void>;
   };
 }
+
+export interface RuntimeKernelRunLiveness {
+  runLiveness: {
+    createLeasedRun(
+      input: {
+        runId: string;
+        turnId: string;
+        branchId: string;
+        schemaId: string;
+        startTurnNodeHash: HashString;
+        steps: StepDeclaration[];
+        executionOwnerId: string;
+        leaseExpiresAtMs: EpochMs;
+      },
+    ): Promise<RunRecord>;
+    renewLease(
+      runId: string,
+      executionOwnerId: string,
+      fencingToken: string,
+      nextLeaseExpiresAtMs: EpochMs,
+    ): Promise<{ fencingToken: string; leaseExpiresAtMs: EpochMs }>;
+    listExpired(nowMs: EpochMs): Promise<RunRecord[]>;
+    preemptExpired(
+      runId: string,
+      preemptingOwnerId: string,
+      nowMs: EpochMs,
+      reason: string,
+    ): Promise<RecoveryState>;
+  };
+}
 ```
 
 Turn parent validation is branch-aware through the active head lineage rather than branch-id equality alone: the first Turn on a forked Branch may use the source Branch head Turn as `parentTurnId` when both Turns share a Thread and the parent head matches `startTurnNodeHash`; subsequent Turns on that fork use the immediately previous Turn on the fork.
+
+The target TypeScript implementation package for this surface is `@tuvren/kernel-runtime` under `boundaries/kernel/implementations/typescript/runtime-kernel`. It composes a `RuntimeBackend` into the documented `RuntimeKernel` surface; backend packages remain storage adapters and must not become alternate syscall implementations.
 
 ### 4.3 Backend Adapter Contract
 
@@ -1962,6 +2004,7 @@ the multi-language transition foundation:
 │   │   │       └── proto/                    # neutral .proto authority
 │   │   ├── implementations/
 │   │   │   ├── typescript/
+│   │   │   │   ├── runtime-kernel/
 │   │   │   │   ├── backend-memory/
 │   │   │   │   ├── backend-sqlite/
 │   │   │   │   ├── conformance-runner/
@@ -2121,7 +2164,10 @@ conformance-plan JSON Schemas live under `tools/schemas/`.
 10. Epic X normalizes the boundary tree's path topology: relocate every TypeScript-only asset out of language-neutral slots into the appropriate `implementations/typescript/` subtree, codify the topology rule in `AGENTS.md` and TechSpec ADR-022, and record the closure inventory. Epic X performs no semantic, fixture, or public-API changes.
 11. Epic Y authority-packet closure is complete for the named surfaces: the repository now inventories TypeScript/Rust/Markdown oracle leaks; promotes `core-types`, `event-stream`, `runtime-api`, `driver-api`, and callable seams to boundary-owned Authority Packet manifests (§4.11) referencing conformance plans (§4.12); provides adapter protocol scaffolding (§4.13); treats TypeScript packages as binding projections; adds guardrails for generated artifact freshness, forbidden authority sources, runner-oracle checks, and forbidden implementation vocabulary; and records `constitution/spikes/epic-y-machine-enforced-authority-closure-inventory.md`.
 12. Epic Y final conformance closure is closed: one shared semantic conformance engine now lives under `tools/conformance/runner/`, current language conformance entry points delegate to adapter hosts, executable capability selection and assertion-engine meta-conformance are enforced, adapter failures are isolated from implementation assertions, and multi-step trace support covers lifecycle semantics.
-13. Add a Rust framework implementation, future concrete drivers, peer backends such as PostgreSQL and MySQL/MariaDB, provider expansions, or additional host protocols only after Epic W proves the artifact-backed semantic system is complete enough to absorb them without drift, Epic X has normalized the boundary tree to language-neutral roots, and Epic Y has eliminated implementation-, runner-, and prose-oracle paths from the named cross-implementation surfaces through the shared-runner architecture.
+13. Epic Z closes the TypeScript kernel syscall gap by adding a boundary-owned `@tuvren/kernel-runtime` implementation over the existing `RuntimeBackend` contract, then migrating private playground usage away from host-owned syscall logic.
+14. Epic AA promotes the documented TypeScript kernel behavior into shared-runner conformance: the TypeScript adapter must advertise `kernel.logical`, `kernel.syscall`, and `kernel.observe` only after native implementation evidence satisfies the promoted checks.
+15. Epic AB adds stale-running recovery as a contract-first extension rather than silently widening the frozen 28-operation base. The extension must land storage, validators, protocol helpers, framework recovery use, conformance plans, and compatibility evidence together.
+16. Add a Rust framework implementation, future concrete drivers, peer backends such as PostgreSQL and MySQL/MariaDB, provider expansions, or additional host protocols only after the active TypeScript kernel closure line lands or is explicitly superseded by a later TechSpec revision.
 
 ### 5.4.1 ReAct and Multilanguage Epic Partition Status
 
@@ -2134,4 +2180,7 @@ conformance-plan JSON Schemas live under `tools/schemas/`.
 - **Epic W — Semantic Ecosystem Maturity:** Closed in current repo reality through `constitution/spikes/epic-w-semantic-coverage-matrix.md` and `constitution/spikes/epic-w-semantic-ecosystem-maturity-closure-inventory.md`. Epic W was not a Rust framework, not a second framework implementation, and not a continuation of the Rust-kernel baseline; it closed the first semantic-authority gap by promoting normative semantics from TypeScript-local tests into boundary-owned conformance suites with named assertions and compatibility evidence.
 - **Epic X — TypeScript Topology Normalization:** Closed in current repo reality through `constitution/spikes/epic-x-typescript-topology-normalization-inventory.md` and `constitution/spikes/epic-x-typescript-topology-normalization-closure-inventory.md`. The repository now places boundary-level testkits and moved contract package guts only under `implementations/typescript/` subtrees and codifies the path-topology rule in `AGENTS.md`.
 - **Epic Y — Machine-Enforced Neutral Authority Closure:** Authority-packet closure is closed in current repo reality through `constitution/spikes/epic-y-authority-leak-inventory.md` and `constitution/spikes/epic-y-machine-enforced-authority-closure-inventory.md`. Final language-agnostic conformance closure is closed through `constitution/spikes/epic-y-shared-conformance-engine-closure-inventory.md`: the repo now uses one shared semantic runner over TypeScript, Rust, and future adapter hosts rather than independently meaningful runners per language. Existing TypeScript public package APIs remain binding projections of those packets.
+- **Epic Z — TypeScript Kernel Syscall Closure:** Active. This epic adds the missing boundary-owned TypeScript `RuntimeKernel` implementation package and closes the documented syscall semantics currently represented only by protocol types, backend adapters, private playground logic, and partial protocol-only conformance.
+- **Epic AA — Kernel Conformance Promotion:** Active after Epic Z implementation exists. This epic promotes kernel syscall/logical/observe behavior into authority-packet-backed conformance plans and shared-runner evidence, with TypeScript as the first implementation surface and Rust treated only according to actual advertised capability.
+- **Epic AB — Run Liveness and Stale-Running Recovery:** Active contract-first after Epic AA establishes the base conformance footing. This epic implements leased running ownership and stale-run preemption as an optional extension capability rather than a hidden change to the frozen 28-operation surface.
 - **Later driver, backend, provider, language, and host protocol expansion:** Deferred beyond Epic W, Epic X, and Epic Y unless the TechSpec is revised. This includes Rust framework work, `LanguageModelV2` compatibility, provider-native tools, AI SDK agent loops/UI transports, LangChain bridge work, first-class Tuvren provider packages, ACP, future non-ReAct drivers, future official backends, and future language lines beyond Rust.
