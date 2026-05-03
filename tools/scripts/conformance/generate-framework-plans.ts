@@ -1215,8 +1215,7 @@ function buildEventStreamExtended(): Plan {
 }
 
 // Driver API extended — broader assertions on driver.execute and driver.resume
-// resolution shapes, including coverage probes for unimplemented driver
-// surfaces (lifecycle hooks, telemetry, and structured cancellation).
+// resolution shapes using operations declared by the driver authority packet.
 function buildDriverApiExtended(): Plan {
   const checks: PlanCheck[] = [];
 
