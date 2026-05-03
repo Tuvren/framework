@@ -215,6 +215,42 @@ describe("createRuntimeKernel", () => {
     expect(await fixture.kernel.turn.get(turn.turnId)).toEqual(turn);
   });
 
+  test("run.create rejects duplicate run ids before validation", async () => {
+    const fixture = await createThreadFixture({
+      branchId: "branch_run_uniqueness",
+      now: () => 1,
+      threadId: "thread_run_uniqueness",
+    });
+
+    const turn = await fixture.kernel.turn.create(
+      "turn_run_uniqueness",
+      fixture.threadId,
+      fixture.branchId,
+      null,
+      fixture.rootTurnNodeHash
+    );
+
+    await fixture.kernel.run.create(
+      "run_uniqueness",
+      turn.turnId,
+      fixture.branchId,
+      fixture.schemaId,
+      fixture.rootTurnNodeHash,
+      [{ deterministic: true, id: "start", sideEffects: false }]
+    );
+
+    await expect(
+      fixture.kernel.run.create(
+        "run_uniqueness",
+        turn.turnId,
+        fixture.branchId,
+        fixture.schemaId,
+        fixture.rootTurnNodeHash,
+        [{ deterministic: true, id: "start", sideEffects: false }]
+      )
+    ).rejects.toThrow('run "run_uniqueness" already exists');
+  });
+
   test("branch.setHead allocates an unused rollback archive branch id", async () => {
     const fixture = await createThreadFixture({
       branchId: "branch_archive_probe",
@@ -362,7 +398,10 @@ describe("createRuntimeKernel", () => {
     expect(first.signals).toEqual([{ kind: "signal", n: 1 }]);
     expect(second.signals).toEqual([{ kind: "signal", n: 1 }]);
 
-    await fixture.kernel.run.completeStep("run_pending_signal_durability", "second");
+    await fixture.kernel.run.completeStep(
+      "run_pending_signal_durability",
+      "second"
+    );
     const third = await fixture.kernel.run.beginStep(
       "run_pending_signal_durability",
       "third"

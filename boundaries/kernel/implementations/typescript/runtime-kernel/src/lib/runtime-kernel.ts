@@ -311,9 +311,8 @@ export function createRuntimeKernel(
           await assertTreeHashForRun(tx, treeHash, run.schemaId);
           validateObserveResults(observeResults);
 
-          const nextPendingSignalsCbor = encodeSignalsCborFromObserveResults(
-            observeResults
-          );
+          const nextPendingSignalsCbor =
+            encodeSignalsCborFromObserveResults(observeResults);
 
           const stagedResults = await listStagedResults(tx, runId);
           const shouldCheckpoint = stepRequiresCheckpoint(
@@ -329,15 +328,13 @@ export function createRuntimeKernel(
                 treeHash,
               })
             : undefined;
-          const nextAnnotationsCbor = await encodeStepAnnotationsCbor(
-            {
-              now,
-              observeResults,
-              runId,
-              stepId,
-              turnNodeHash: turnNodeHash ?? null,
-            }
-          );
+          const nextAnnotationsCbor = await encodeStepAnnotationsCbor({
+            now,
+            observeResults,
+            runId,
+            stepId,
+            turnNodeHash: turnNodeHash ?? null,
+          });
 
           const nextCreatedTurnNodes =
             turnNodeHash === undefined
@@ -383,6 +380,7 @@ export function createRuntimeKernel(
         steps
       ) {
         return await backend.transact(async (tx) => {
+          await assertRunIdAvailable(tx, runId);
           const turn = await requireTurn(tx, turnId);
           const branch = await requireBranch(tx, branchId);
 
@@ -1089,6 +1087,19 @@ async function assertBranchIdAvailable(
   }
 }
 
+async function assertRunIdAvailable(
+  tx: RuntimeBackendTx,
+  runId: string
+): Promise<void> {
+  const existingRun = await tx.runs.get(runId);
+
+  if (existingRun !== null) {
+    throw new TuvrenValidationError(`run "${runId}" already exists`, {
+      code: "kernel_runtime_duplicate_run",
+    });
+  }
+}
+
 async function assertTurnIdAvailable(
   tx: RuntimeBackendTx,
   turnId: string
@@ -1115,15 +1126,13 @@ function encodeSignalsCborFromObserveResults(
   return encodeRecord(newSignals);
 }
 
-async function encodeStepAnnotationsCbor(
-  input: {
-    now: () => EpochMs;
-    observeResults: { annotations: KernelObject[] }[] | undefined;
-    runId: string;
-    stepId: string;
-    turnNodeHash: HashString | null;
-  }
-): Promise<Uint8Array | undefined> {
+async function encodeStepAnnotationsCbor(input: {
+  now: () => EpochMs;
+  observeResults: { annotations: KernelObject[] }[] | undefined;
+  runId: string;
+  stepId: string;
+  turnNodeHash: HashString | null;
+}): Promise<Uint8Array | undefined> {
   const annotations: KernelObject[] =
     input.observeResults?.flatMap((result) => result.annotations) ?? [];
 
