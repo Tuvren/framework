@@ -30,6 +30,8 @@ Use native tools as ecosystem truth and Nx as a wrapper.
 - Use TypeSpec, Weaver, and other generator CLIs for their artifact families.
 - Use Nx for target routing and developer ergonomics, not as the canonical contract authority.
 - Prefer native commands behind Nx targets when adding cross-language build, test, codegen, or interop lanes.
+- Make generators leave checked-in artifacts formatter-clean; do not rely on a one-off manual format after regeneration.
+- Encode generated-artifact prerequisites in Nx targets when source imports gitignored or derived files.
 
 ## Commands
 - Run `bun run lint`, `format`, `typecheck`, `codegen`, `interop-smoke`, and `verify` for repo checks.
@@ -62,6 +64,7 @@ Keep semantic decisions in shared plans and shared runner code.
 - Keep ReAct-specific behavior in ReAct authority packets and plans, not neutral driver plans.
 - Keep authority fixture validation separate from implementation conformance.
 - Use implementation-emitted events for event-stream conformance.
+- Make assertion names match the data source the runner actually evaluates; do not claim evidence coverage from an assertion that reads events, state, result, or fixture data instead.
 - Fail normal `conformance`, `codegen`, and `verify` gates when structured evidence has `status: "fail"`.
 - Compute canonical encodings (CBOR bytes, hash digests, schema signatures) with the TypeScript reference implementation and commit the result under `boundaries/<area>/conformance/fixtures/`. The committed JSON is authority; the generator is tooling. Cross-validate against another language's reference encoder before promotion once a second implementation exists, and prefer agreement between implementations over single-language computation.
 
