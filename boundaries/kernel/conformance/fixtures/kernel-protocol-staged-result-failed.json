@@ -1,7 +1,5 @@
 {
-  "rawOpaqueBytes": [
-    9
-  ],
+  "rawOpaqueBytes": [9],
   "rawOpaqueBytesSha256Hex": "2b4c342f5433ebe591a1da77e013d1b72475562d48578dca8b84bac6651c3cb9",
   "turnNodeIdentityRecord": {
     "consumedStagedResults": [

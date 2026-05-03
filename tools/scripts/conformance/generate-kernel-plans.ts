@@ -17,6 +17,7 @@
 import { writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { formatGeneratedJson } from "./format-generated-json.ts";
 
 interface FixtureEntry {
   fixtureId: string;
@@ -24,7 +25,7 @@ interface FixtureEntry {
 }
 
 interface PlanCheck {
-  assertions: Array<Record<string, unknown>>;
+  assertions: Record<string, unknown>[];
   capabilities?: string[];
   checkId: string;
   evidence?: string[];
@@ -106,7 +107,8 @@ const fixtures: FixtureEntry[] = [
   },
   {
     fixtureId: "f-mixed-status-staged",
-    relativePath: "../fixtures/kernel-protocol-mixed-status-staged-results.json",
+    relativePath:
+      "../fixtures/kernel-protocol-mixed-status-staged-results.json",
   },
 ];
 
@@ -120,10 +122,9 @@ async function main(): Promise<void> {
   // authority is a separate spec amendment.
   const extendedPlan = buildExtendedProtocolPlan();
 
-  await writeFile(
-    resolve(PLANS_DIR, "kernel-protocol-extended.json"),
-    `${JSON.stringify(extendedPlan, null, 2)}\n`
-  );
+  const filePath = resolve(PLANS_DIR, "kernel-protocol-extended.json");
+  await writeFile(filePath, `${JSON.stringify(extendedPlan, null, 2)}\n`);
+  await formatGeneratedJson([filePath]);
 
   process.stdout.write(
     `wrote kernel-protocol-extended.json (${extendedPlan.checks.length} checks)\n`
@@ -218,4 +219,3 @@ function buildSchemaRoundtripCheck(fixture: FixtureEntry): PlanCheck {
     operation: "kernel.protocol.schema-roundtrip",
   };
 }
-

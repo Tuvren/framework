@@ -242,6 +242,16 @@ function assertNoEvent(
     throw new Error("noEvent assertion requires eventType");
   }
 
+  if (assertion.field !== undefined) {
+    const value = readPath(context.evidence, assertion.field);
+
+    if (!Array.isArray(value)) {
+      return value !== assertion.eventType;
+    }
+
+    return value.every((entry) => entry !== assertion.eventType);
+  }
+
   const events = readEvents(context);
   return events.every(
     (event) =>

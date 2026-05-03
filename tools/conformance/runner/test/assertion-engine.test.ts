@@ -47,9 +47,7 @@ describe("terminalEvent default path", () => {
 
   test("eventType match still works when path is explicitly $.type", () => {
     const [evaluation] = evaluateAssertions(
-      buildCheck([
-        { eventType: "end", kind: "terminalEvent", path: "$.type" },
-      ]),
+      buildCheck([{ eventType: "end", kind: "terminalEvent", path: "$.type" }]),
       { events: [{ type: "end" }] }
     );
     expect(evaluation?.status).toBe("pass");
@@ -71,6 +69,28 @@ describe("terminalEvent default path", () => {
     const [evaluation] = evaluateAssertions(
       buildCheck([{ eventType: "end", kind: "terminalEvent" }]),
       { events: [] }
+    );
+    expect(evaluation?.status).toBe("fail");
+  });
+});
+
+describe("noEvent evidence field", () => {
+  test("passes when the configured evidence array omits the event type", () => {
+    const [evaluation] = evaluateAssertions(
+      buildCheck([
+        { eventType: "error", field: "$.frameEvents", kind: "noEvent" },
+      ]),
+      { evidence: { frameEvents: ["turn.start", "turn.end"] } }
+    );
+    expect(evaluation?.status).toBe("pass");
+  });
+
+  test("fails when the configured evidence array contains the event type", () => {
+    const [evaluation] = evaluateAssertions(
+      buildCheck([
+        { eventType: "error", field: "$.frameEvents", kind: "noEvent" },
+      ]),
+      { evidence: { frameEvents: ["turn.start", "error", "turn.end"] } }
     );
     expect(evaluation?.status).toBe("fail");
   });

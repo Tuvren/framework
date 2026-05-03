@@ -1,8 +1,6 @@
 {
   "applicability": {
-    "capabilities": [
-      "framework.react-driver"
-    ]
+    "capabilities": ["framework.react-driver"]
   },
   "checks": [
     {
@@ -14,9 +12,7 @@
         }
       ],
       "checkId": "react-driver-ext.before-iteration-twice",
-      "evidence": [
-        "hooks.beforeIteration"
-      ],
+      "evidence": ["hooks.beforeIteration"],
       "input": {
         "scenarioPath": "$.driver-hook-turn"
       },
@@ -32,9 +28,7 @@
         }
       ],
       "checkId": "react-driver-ext.around-model-twice",
-      "evidence": [
-        "hooks.aroundModel"
-      ],
+      "evidence": ["hooks.aroundModel"],
       "input": {
         "scenarioPath": "$.driver-hook-turn"
       },
@@ -50,9 +44,7 @@
         }
       ],
       "checkId": "react-driver-ext.after-iteration-twice",
-      "evidence": [
-        "hooks.afterIteration"
-      ],
+      "evidence": ["hooks.afterIteration"],
       "input": {
         "scenarioPath": "$.driver-hook-turn"
       },
@@ -68,9 +60,7 @@
         }
       ],
       "checkId": "react-driver-ext.around-tool-once",
-      "evidence": [
-        "hooks.aroundTool"
-      ],
+      "evidence": ["hooks.aroundTool"],
       "input": {
         "scenarioPath": "$.driver-hook-turn"
       },
@@ -85,9 +75,7 @@
         }
       ],
       "checkId": "react-driver-ext.hook-field-present.before-iteration-present",
-      "evidence": [
-        "hooks.beforeIteration"
-      ],
+      "evidence": ["hooks.beforeIteration"],
       "input": {
         "scenarioPath": "$.driver-hook-turn"
       },
@@ -102,9 +90,7 @@
         }
       ],
       "checkId": "react-driver-ext.hook-field-present.after-iteration-present",
-      "evidence": [
-        "hooks.afterIteration"
-      ],
+      "evidence": ["hooks.afterIteration"],
       "input": {
         "scenarioPath": "$.driver-hook-turn"
       },
@@ -119,9 +105,7 @@
         }
       ],
       "checkId": "react-driver-ext.hook-field-present.around-model-present",
-      "evidence": [
-        "hooks.aroundModel"
-      ],
+      "evidence": ["hooks.aroundModel"],
       "input": {
         "scenarioPath": "$.driver-hook-turn"
       },
@@ -136,9 +120,7 @@
         }
       ],
       "checkId": "react-driver-ext.hook-field-present.around-tool-present",
-      "evidence": [
-        "hooks.aroundTool"
-      ],
+      "evidence": ["hooks.aroundTool"],
       "input": {
         "scenarioPath": "$.driver-hook-turn"
       },
@@ -154,9 +136,7 @@
         }
       ],
       "checkId": "react-driver-ext.checkpoint-manifest-path-count",
-      "evidence": [
-        "trace.checkpoint.evidence.checkpoint.manifestPathCount"
-      ],
+      "evidence": ["trace.checkpoint.evidence.checkpoint.manifestPathCount"],
       "input": {
         "scenarioPath": "$.driver-checkpoint-turn"
       },

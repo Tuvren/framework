@@ -1,8 +1,6 @@
 {
   "applicability": {
-    "capabilities": [
-      "framework.runtime-api"
-    ]
+    "capabilities": ["framework.runtime-api"]
   },
   "checks": [
     {
@@ -13,9 +11,7 @@
         }
       ],
       "checkId": "runtime-callable-ext.provider-generate.call-count-positive",
-      "evidence": [
-        "provider.generate.callCount"
-      ],
+      "evidence": ["provider.generate.callCount"],
       "input": {
         "scenarioPath": "$.provider-generate-text"
       },
@@ -30,9 +26,7 @@
         }
       ],
       "checkId": "runtime-callable-ext.provider-generate.response-parts-first-present",
-      "evidence": [
-        "provider.generate.response.parts.0"
-      ],
+      "evidence": ["provider.generate.response.parts.0"],
       "input": {
         "scenarioPath": "$.provider-generate-text"
       },
@@ -48,9 +42,7 @@
         }
       ],
       "checkId": "runtime-callable-ext.provider-generate.finish-reason-string",
-      "evidence": [
-        "provider.generate.response.finishReason"
-      ],
+      "evidence": ["provider.generate.response.finishReason"],
       "input": {
         "scenarioPath": "$.provider-generate-text"
       },
@@ -66,9 +58,7 @@
         }
       ],
       "checkId": "runtime-callable-ext.provider-generate.first-part-text-shape",
-      "evidence": [
-        "provider.generate.response.parts.0.type"
-      ],
+      "evidence": ["provider.generate.response.parts.0.type"],
       "input": {
         "scenarioPath": "$.provider-generate-text"
       },
@@ -84,9 +74,7 @@
         }
       ],
       "checkId": "runtime-callable-ext.provider-generate.response-finish-reason-equals-stop",
-      "evidence": [
-        "provider.generate.response.finishReason"
-      ],
+      "evidence": ["provider.generate.response.finishReason"],
       "input": {
         "scenarioPath": "$.provider-generate-text"
       },
@@ -102,9 +90,7 @@
         }
       ],
       "checkId": "runtime-callable-ext.provider-stream.chunk-types-include-finish",
-      "evidence": [
-        "provider.stream.chunkTypes"
-      ],
+      "evidence": ["provider.stream.chunkTypes"],
       "input": {
         "scenarioPath": "$.provider-stream-text"
       },
@@ -120,9 +106,7 @@
         }
       ],
       "checkId": "runtime-callable-ext.provider-stream.emitted-event-types-text-delta",
-      "evidence": [
-        "provider.stream.emittedEventTypes"
-      ],
+      "evidence": ["provider.stream.emittedEventTypes"],
       "input": {
         "scenarioPath": "$.provider-stream-text"
       },
@@ -138,9 +122,7 @@
         }
       ],
       "checkId": "runtime-callable-ext.provider-stream.emitted-event-types-include-message-start",
-      "evidence": [
-        "provider.stream.emittedEventTypes"
-      ],
+      "evidence": ["provider.stream.emittedEventTypes"],
       "input": {
         "scenarioPath": "$.provider-stream-text"
       },
@@ -156,9 +138,7 @@
         }
       ],
       "checkId": "runtime-callable-ext.provider-stream.emitted-event-types-include-message-done",
-      "evidence": [
-        "provider.stream.emittedEventTypes"
-      ],
+      "evidence": ["provider.stream.emittedEventTypes"],
       "input": {
         "scenarioPath": "$.provider-stream-text"
       },
@@ -174,9 +154,7 @@
         }
       ],
       "checkId": "runtime-callable-ext.provider-stream.chunk-types-text-delta-first",
-      "evidence": [
-        "provider.stream.chunkTypes.0"
-      ],
+      "evidence": ["provider.stream.chunkTypes.0"],
       "input": {
         "scenarioPath": "$.provider-stream-text"
       },
@@ -192,9 +170,7 @@
         }
       ],
       "checkId": "runtime-callable-ext.provider-stream.response-text-matches-scenario",
-      "evidence": [
-        "provider.stream.response.parts.0.text"
-      ],
+      "evidence": ["provider.stream.response.parts.0.text"],
       "input": {
         "scenarioPath": "$.provider-stream-text"
       },
@@ -210,9 +186,7 @@
         }
       ],
       "checkId": "runtime-callable-ext.tool-execute.call-count-equals-one",
-      "evidence": [
-        "tool.execution.callCount"
-      ],
+      "evidence": ["tool.execution.callCount"],
       "input": {
         "scenarioPath": "$.tool-execute-search"
       },
@@ -228,9 +202,7 @@
         }
       ],
       "checkId": "runtime-callable-ext.tool-execute.input-query-matches",
-      "evidence": [
-        "tool.execution.inputs.0.query"
-      ],
+      "evidence": ["tool.execution.inputs.0.query"],
       "input": {
         "scenarioPath": "$.tool-execute-search"
       },
@@ -246,9 +218,7 @@
         }
       ],
       "checkId": "runtime-callable-ext.tool-execute.output-source-matches",
-      "evidence": [
-        "tool.execution.outputs.0.source"
-      ],
+      "evidence": ["tool.execution.outputs.0.source"],
       "input": {
         "scenarioPath": "$.tool-execute-search"
       },
@@ -258,15 +228,13 @@
     {
       "assertions": [
         {
-          "equals": true,
-          "field": "$.tool.execution.outputs.0.ok",
-          "kind": "evidenceField"
+          "kind": "schemaValid",
+          "path": "$.evidence.tool.execution.outputs.0",
+          "schema": "$.scenario.toolResultSchema"
         }
       ],
-      "checkId": "runtime-callable-ext.tool-execute.output-ok-true",
-      "evidence": [
-        "tool.execution.outputs.0.ok"
-      ],
+      "checkId": "runtime-callable-ext.tool-execute.output-shape-matches-scenario",
+      "evidence": ["tool.execution.outputs.0"],
       "input": {
         "scenarioPath": "$.tool-execute-search"
       },
@@ -282,9 +250,7 @@
         }
       ],
       "checkId": "runtime-callable-ext.tool-execute.state-phase-completed",
-      "evidence": [
-        "toolExecution.status.phase"
-      ],
+      "evidence": ["toolExecution.status.phase"],
       "input": {
         "scenarioPath": "$.tool-execute-search"
       },
@@ -300,9 +266,7 @@
         }
       ],
       "checkId": "runtime-callable-ext.tool-execute.state-tool-results-total-one",
-      "evidence": [
-        "toolExecution.status.manifest.toolResults.total"
-      ],
+      "evidence": ["toolExecution.status.manifest.toolResults.total"],
       "input": {
         "scenarioPath": "$.tool-execute-search"
       },
@@ -318,9 +282,7 @@
         }
       ],
       "checkId": "runtime-callable-ext.approval-resolve.paused-phase-paused",
-      "evidence": [
-        "approval.pausedPhase"
-      ],
+      "evidence": ["approval.pausedPhase"],
       "input": {
         "scenarioPath": "$.paused-turn-resume"
       },
@@ -336,9 +298,7 @@
         }
       ],
       "checkId": "runtime-callable-ext.approval-resolve.resumed-phase-completed",
-      "evidence": [
-        "approval.resumedPhase"
-      ],
+      "evidence": ["approval.resumedPhase"],
       "input": {
         "scenarioPath": "$.paused-turn-resume"
       },
@@ -354,9 +314,7 @@
         }
       ],
       "checkId": "runtime-callable-ext.approval-resolve.executed-tools-include-search",
-      "evidence": [
-        "tool.execution.executedNames"
-      ],
+      "evidence": ["tool.execution.executedNames"],
       "input": {
         "scenarioPath": "$.paused-turn-resume"
       },
@@ -372,9 +330,7 @@
         }
       ],
       "checkId": "runtime-callable-ext.approval-resolve.executed-tools-include-email",
-      "evidence": [
-        "tool.execution.executedNames"
-      ],
+      "evidence": ["tool.execution.executedNames"],
       "input": {
         "scenarioPath": "$.paused-turn-resume"
       },
@@ -390,9 +346,7 @@
         }
       ],
       "checkId": "runtime-callable-ext.approval-resolve.decision-call-id-matches",
-      "evidence": [
-        "approval.decisions.0.callId"
-      ],
+      "evidence": ["approval.decisions.0.callId"],
       "input": {
         "scenarioPath": "$.paused-turn-resume"
       },
@@ -408,9 +362,7 @@
         }
       ],
       "checkId": "runtime-callable-ext.approval-resolve.decision-type-approve",
-      "evidence": [
-        "approval.decisions.0.type"
-      ],
+      "evidence": ["approval.decisions.0.type"],
       "input": {
         "scenarioPath": "$.paused-turn-resume"
       },
@@ -426,9 +378,7 @@
         }
       ],
       "checkId": "runtime-callable-ext.validate-structured-output.resolution-fail",
-      "evidence": [
-        "validation.resolutionType"
-      ],
+      "evidence": ["validation.resolutionType"],
       "input": {
         "scenarioPath": "$.structured-validation-failure"
       },
@@ -444,9 +394,7 @@
         }
       ],
       "checkId": "runtime-callable-ext.validate-structured-output.resolution-type-string",
-      "evidence": [
-        "validation.resolutionType"
-      ],
+      "evidence": ["validation.resolutionType"],
       "input": {
         "scenarioPath": "$.structured-validation-failure"
       },
@@ -466,9 +414,7 @@
         "cancelAfterEvent": "turn.start",
         "deadlineMs": 1000
       },
-      "evidence": [
-        "cancellation.observedEventType"
-      ],
+      "evidence": ["cancellation.observedEventType"],
       "operation": "runtime.cancel-execution"
     },
     {
@@ -484,9 +430,7 @@
         "cancelAfterEvent": "turn.start",
         "deadlineMs": 1000
       },
-      "evidence": [
-        "cancellation.observedEventIndex"
-      ],
+      "evidence": ["cancellation.observedEventIndex"],
       "operation": "runtime.cancel-execution"
     },
     {
@@ -502,9 +446,7 @@
         "cancelAfterEvent": "turn.start",
         "deadlineMs": 1000
       },
-      "evidence": [
-        "cancellation.cancelInvocations"
-      ],
+      "evidence": ["cancellation.cancelInvocations"],
       "operation": "runtime.cancel-execution"
     },
     {
@@ -520,9 +462,7 @@
         "cancelAfterEvent": "turn.start",
         "deadlineMs": 1000
       },
-      "evidence": [
-        "cancellation.errorEventCount"
-      ],
+      "evidence": ["cancellation.errorEventCount"],
       "operation": "runtime.cancel-execution"
     },
     {
@@ -538,9 +478,7 @@
         "cancelAfterEvent": "turn.start",
         "deadlineMs": 1000
       },
-      "evidence": [
-        "runtime.phase"
-      ],
+      "evidence": ["runtime.phase"],
       "operation": "runtime.cancel-execution"
     }
   ],

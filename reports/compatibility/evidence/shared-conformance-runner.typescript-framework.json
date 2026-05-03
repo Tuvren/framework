@@ -116,6 +116,158 @@
     {
       "assertionResults": [
         {
+          "assertionId": "driver-api-ext.execute.hook-turn-phase-completed.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "driver-api-ext.execute.hook-turn-phase-completed.requiredEvidence.driver.phase",
+          "status": "pass"
+        }
+      ],
+      "checkId": "driver-api-ext.execute.hook-turn-phase-completed",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.driver-api.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "driver-api-ext.execute.hook-turn-phase-string.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "driver-api-ext.execute.hook-turn-phase-string.requiredEvidence.driver.phase",
+          "status": "pass"
+        }
+      ],
+      "checkId": "driver-api-ext.execute.hook-turn-phase-string",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.driver-api.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "driver-api-ext.execute.provider-failure-error-envelope.1.errorEnvelope",
+          "status": "pass"
+        },
+        {
+          "assertionId": "driver-api-ext.execute.provider-failure-error-envelope.requiredEvidence.result.error",
+          "status": "pass"
+        },
+        {
+          "assertionId": "driver-api-ext.execute.provider-failure-error-envelope.requiredEvidence.result.error.code",
+          "status": "pass"
+        }
+      ],
+      "checkId": "driver-api-ext.execute.provider-failure-error-envelope",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.driver-api.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "driver-api-ext.resume.approval-decision-call-id-includes-call-search.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "driver-api-ext.resume.approval-decision-call-id-includes-call-search.requiredEvidence.driver.approvalDecisionCallIds",
+          "status": "pass"
+        }
+      ],
+      "checkId": "driver-api-ext.resume.approval-decision-call-id-includes-call-search",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.driver-api.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "driver-api-ext.resume.approval-pending-call-id-list-non-empty.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "driver-api-ext.resume.approval-pending-call-id-list-non-empty.requiredEvidence.driver.pendingToolCallIds",
+          "status": "pass"
+        }
+      ],
+      "checkId": "driver-api-ext.resume.approval-pending-call-id-list-non-empty",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.driver-api.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "driver-api-ext.resume.approval-resolution-end-turn.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "driver-api-ext.resume.approval-resolution-end-turn.requiredEvidence.driver.resolutionType",
+          "status": "pass"
+        }
+      ],
+      "checkId": "driver-api-ext.resume.approval-resolution-end-turn",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.driver-api.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "driver-api-ext.resume.missing-pending-call-error-envelope.1.errorEnvelope",
+          "status": "pass"
+        },
+        {
+          "assertionId": "driver-api-ext.resume.missing-pending-call-error-envelope.requiredEvidence.result.error",
+          "status": "pass"
+        },
+        {
+          "assertionId": "driver-api-ext.resume.missing-pending-call-error-envelope.requiredEvidence.result.error.code",
+          "status": "pass"
+        }
+      ],
+      "checkId": "driver-api-ext.resume.missing-pending-call-error-envelope",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.driver-api.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "driver-api-ext.resume.missing-pending-call-resolution-fail.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "driver-api-ext.resume.missing-pending-call-resolution-fail.requiredEvidence.driver.resolutionType",
+          "status": "pass"
+        }
+      ],
+      "checkId": "driver-api-ext.resume.missing-pending-call-resolution-fail",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.driver-api.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "event-stream.agui.failed-turn-error-projection.1.evidenceField",
           "status": "pass"
         },
@@ -310,6 +462,1774 @@
     {
       "assertionResults": [
         {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-00.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-00.requiredEvidence.eventTypes.0",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-00",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-01.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-01.requiredEvidence.eventTypes.1",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-01",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-02.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-02.requiredEvidence.eventTypes.2",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-02",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-03.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-03.requiredEvidence.eventTypes.3",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-03",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-04.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-04.requiredEvidence.eventTypes.4",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-04",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-05.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-05.requiredEvidence.eventTypes.5",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-05",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-06.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-06.requiredEvidence.eventTypes.6",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-06",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-07.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-07.requiredEvidence.eventTypes.7",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-07",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-08.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-08.requiredEvidence.eventTypes.8",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-08",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-09.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-09.requiredEvidence.eventTypes.9",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-09",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-10.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-10.requiredEvidence.eventTypes.10",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-10",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-11.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-11.requiredEvidence.eventTypes.11",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-11",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-12.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-12.requiredEvidence.eventTypes.12",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-12",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-13.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-13.requiredEvidence.eventTypes.13",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-13",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-14.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-14.requiredEvidence.eventTypes.14",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-14",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-15.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-15.requiredEvidence.eventTypes.15",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-15",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-16.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-16.requiredEvidence.eventTypes.16",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-16",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-17.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-17.requiredEvidence.eventTypes.17",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-17",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-18.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-18.requiredEvidence.eventTypes.18",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-18",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-19.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-19.requiredEvidence.eventTypes.19",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-19",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-20.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-20.requiredEvidence.eventTypes.20",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-20",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-21.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-21.requiredEvidence.eventTypes.21",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-21",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-22.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-22.requiredEvidence.eventTypes.22",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-22",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-run-finished.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-run-finished.requiredEvidence.eventTypes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-types-include-run-finished",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-run-started.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-run-started.requiredEvidence.eventTypes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-types-include-run-started",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-run-started-and-finished.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-run-started-and-finished.2.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-run-started-and-finished.requiredEvidence.eventTypes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-types-include-run-started-and-finished",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-state-snapshot.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-state-snapshot.requiredEvidence.eventTypes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-types-include-state-snapshot",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-text-message-start.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-text-message-start.requiredEvidence.eventTypes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-types-include-text-message-start",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-tool-call-result.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-tool-call-result.requiredEvidence.eventTypes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-types-include-tool-call-result",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-tool-call-start.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-tool-call-start.requiredEvidence.eventTypes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-types-include-tool-call-start",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-warnings-include-checkpoint-fallback.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-warnings-include-checkpoint-fallback.requiredEvidence.warningCodes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-warnings-include-checkpoint-fallback",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.failed-turn-error-code-snake-case.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.failed-turn-error-code-snake-case.requiredEvidence.events.8.rawEvent.error.code",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.failed-turn-error-code-snake-case",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.failed-turn-event-00.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.failed-turn-event-00.requiredEvidence.eventTypes.0",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.failed-turn-event-00",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.failed-turn-event-01.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.failed-turn-event-01.requiredEvidence.eventTypes.1",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.failed-turn-event-01",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.failed-turn-event-02.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.failed-turn-event-02.requiredEvidence.eventTypes.2",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.failed-turn-event-02",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.failed-turn-event-03.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.failed-turn-event-03.requiredEvidence.eventTypes.3",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.failed-turn-event-03",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.failed-turn-event-04.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.failed-turn-event-04.requiredEvidence.eventTypes.4",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.failed-turn-event-04",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.failed-turn-event-05.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.failed-turn-event-05.requiredEvidence.eventTypes.5",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.failed-turn-event-05",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.failed-turn-event-06.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.failed-turn-event-06.requiredEvidence.eventTypes.6",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.failed-turn-event-06",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.failed-turn-event-07.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.failed-turn-event-07.requiredEvidence.eventTypes.7",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.failed-turn-event-07",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.failed-turn-event-08.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.failed-turn-event-08.requiredEvidence.eventTypes.8",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.failed-turn-event-08",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.failed-turn-event-types-end-with-run-error.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.failed-turn-event-types-end-with-run-error.requiredEvidence.eventTypes.8",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.failed-turn-event-types-end-with-run-error",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-00.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-00.requiredEvidence.eventTypes.0",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.paused-turn-event-00",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-01.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-01.requiredEvidence.eventTypes.1",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.paused-turn-event-01",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-02.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-02.requiredEvidence.eventTypes.2",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.paused-turn-event-02",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-03.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-03.requiredEvidence.eventTypes.3",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.paused-turn-event-03",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-04.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-04.requiredEvidence.eventTypes.4",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.paused-turn-event-04",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-05.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-05.requiredEvidence.eventTypes.5",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.paused-turn-event-05",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-06.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-06.requiredEvidence.eventTypes.6",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.paused-turn-event-06",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-07.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-07.requiredEvidence.eventTypes.7",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.paused-turn-event-07",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-08.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-08.requiredEvidence.eventTypes.8",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.paused-turn-event-08",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-09.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-09.requiredEvidence.eventTypes.9",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.paused-turn-event-09",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-10.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-10.requiredEvidence.eventTypes.10",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.paused-turn-event-10",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-11.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-11.requiredEvidence.eventTypes.11",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.paused-turn-event-11",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-12.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-12.requiredEvidence.eventTypes.12",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.paused-turn-event-12",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-13.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-13.requiredEvidence.eventTypes.13",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.paused-turn-event-13",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-warnings-include-paused-coercion.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-warnings-include-paused-coercion.requiredEvidence.warningCodes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.paused-turn-warnings-include-paused-coercion",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse-eager.failed-turn-first-direct-event-turn-start.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.sse-eager.failed-turn-first-direct-event-turn-start.requiredEvidence.firstDirectEventType",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.sse-eager.failed-turn-first-direct-event-turn-start",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse-eager.first-direct-event-turn-start.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.sse-eager.first-direct-event-turn-start.requiredEvidence.firstDirectEventType",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.sse-eager.first-direct-event-turn-start",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse-eager.first-frame-event-turn-start.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.sse-eager.first-frame-event-turn-start.requiredEvidence.firstFrameEvent",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.sse-eager.first-frame-event-turn-start",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse-eager.paused-turn-first-frame-event-turn-start.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.sse-eager.paused-turn-first-frame-event-turn-start.requiredEvidence.firstFrameEvent",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.sse-eager.paused-turn-first-frame-event-turn-start",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-00.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-00.requiredEvidence.frameEvents.0",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-event-00",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-01.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-01.requiredEvidence.frameEvents.1",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-event-01",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-02.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-02.requiredEvidence.frameEvents.2",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-event-02",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-03.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-03.requiredEvidence.frameEvents.3",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-event-03",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-04.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-04.requiredEvidence.frameEvents.4",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-event-04",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-05.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-05.requiredEvidence.frameEvents.5",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-event-05",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-06.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-06.requiredEvidence.frameEvents.6",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-event-06",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-07.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-07.requiredEvidence.frameEvents.7",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-event-07",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-08.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-08.requiredEvidence.frameEvents.8",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-event-08",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-09.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-09.requiredEvidence.frameEvents.9",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-event-09",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-10.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-10.requiredEvidence.frameEvents.10",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-event-10",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-11.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-11.requiredEvidence.frameEvents.11",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-event-11",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-12.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-12.requiredEvidence.frameEvents.12",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-event-12",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-13.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-13.requiredEvidence.frameEvents.13",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-event-13",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-14.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-14.requiredEvidence.frameEvents.14",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-event-14",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-15.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-15.requiredEvidence.frameEvents.15",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-event-15",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-16.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-16.requiredEvidence.frameEvents.16",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-event-16",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-17.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-17.requiredEvidence.frameEvents.17",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-event-17",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-18.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-18.requiredEvidence.frameEvents.18",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-event-18",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-19.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-19.requiredEvidence.frameEvents.19",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-event-19",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-20.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-20.requiredEvidence.frameEvents.20",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-event-20",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-21.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-21.requiredEvidence.frameEvents.21",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-event-21",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-22.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-22.requiredEvidence.frameEvents.22",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-event-22",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-23.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-23.requiredEvidence.frameEvents.23",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-event-23",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-contain-iteration-end.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-contain-iteration-end.requiredEvidence.frameEvents",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-events-contain-iteration-end",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-contain-tool-call-start.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-contain-tool-call-start.requiredEvidence.frameEvents",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-events-contain-tool-call-start",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-contain-turn-end.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-contain-turn-end.requiredEvidence.frameEvents",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-events-contain-turn-end",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-contain-turn-start.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-contain-turn-start.requiredEvidence.frameEvents",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-events-contain-turn-start",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-end-with-turn-end.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-end-with-turn-end.requiredEvidence.frameEvents.23",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-events-end-with-turn-end",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-include-iteration-start.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-include-iteration-start.requiredEvidence.frameEvents",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-events-include-iteration-start",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-include-state-snapshot.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-include-state-snapshot.requiredEvidence.frameEvents",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-events-include-state-snapshot",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-include-text-delta.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-include-text-delta.requiredEvidence.frameEvents",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-events-include-text-delta",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-include-tool-result.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-include-tool-result.requiredEvidence.frameEvents",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-events-include-tool-result",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-no-error-event.1.noEvent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-no-error-event.requiredEvidence.frameEvents",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-no-error-event",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-source-event-types-start-with-turn-start.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-source-event-types-start-with-turn-start.requiredEvidence.sourceEventTypes.0",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-source-event-types-start-with-turn-start",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.failed-provider-turn-frame-events-include-error.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.failed-provider-turn-frame-events-include-error.requiredEvidence.frameEvents",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.failed-provider-turn-frame-events-include-error",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.paused-approval-turn-source-events-include-approval-requested.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.paused-approval-turn-source-events-include-approval-requested.requiredEvidence.sourceEventTypes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.paused-approval-turn-source-events-include-approval-requested",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "react-driver-callable.after-iteration.1.evidenceField",
           "status": "pass"
         },
@@ -395,6 +2315,169 @@
         "adapterId": "typescript-framework",
         "planId": "tuvren.framework.react-driver.callables",
         "traceStepIds": ["checkpoint"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "react-driver-ext.after-iteration-twice.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "react-driver-ext.after-iteration-twice.requiredEvidence.hooks.afterIteration",
+          "status": "pass"
+        }
+      ],
+      "checkId": "react-driver-ext.after-iteration-twice",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.react-driver.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "react-driver-ext.around-model-twice.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "react-driver-ext.around-model-twice.requiredEvidence.hooks.aroundModel",
+          "status": "pass"
+        }
+      ],
+      "checkId": "react-driver-ext.around-model-twice",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.react-driver.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "react-driver-ext.around-tool-once.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "react-driver-ext.around-tool-once.requiredEvidence.hooks.aroundTool",
+          "status": "pass"
+        }
+      ],
+      "checkId": "react-driver-ext.around-tool-once",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.react-driver.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "react-driver-ext.before-iteration-twice.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "react-driver-ext.before-iteration-twice.requiredEvidence.hooks.beforeIteration",
+          "status": "pass"
+        }
+      ],
+      "checkId": "react-driver-ext.before-iteration-twice",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.react-driver.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "react-driver-ext.checkpoint-manifest-path-count.1.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "react-driver-ext.checkpoint-manifest-path-count.requiredEvidence.trace.checkpoint.evidence.checkpoint.manifestPathCount",
+          "status": "pass"
+        }
+      ],
+      "checkId": "react-driver-ext.checkpoint-manifest-path-count",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.react-driver.extended",
+        "traceStepIds": ["checkpoint"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "react-driver-ext.hook-field-present.after-iteration-present.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "react-driver-ext.hook-field-present.after-iteration-present.requiredEvidence.hooks.afterIteration",
+          "status": "pass"
+        }
+      ],
+      "checkId": "react-driver-ext.hook-field-present.after-iteration-present",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.react-driver.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "react-driver-ext.hook-field-present.around-model-present.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "react-driver-ext.hook-field-present.around-model-present.requiredEvidence.hooks.aroundModel",
+          "status": "pass"
+        }
+      ],
+      "checkId": "react-driver-ext.hook-field-present.around-model-present",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.react-driver.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "react-driver-ext.hook-field-present.around-tool-present.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "react-driver-ext.hook-field-present.around-tool-present.requiredEvidence.hooks.aroundTool",
+          "status": "pass"
+        }
+      ],
+      "checkId": "react-driver-ext.hook-field-present.around-tool-present",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.react-driver.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "react-driver-ext.hook-field-present.before-iteration-present.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "react-driver-ext.hook-field-present.before-iteration-present.requiredEvidence.hooks.beforeIteration",
+          "status": "pass"
+        }
+      ],
+      "checkId": "react-driver-ext.hook-field-present.before-iteration-present",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.react-driver.extended"
       },
       "status": "pass"
     },
@@ -637,6 +2720,546 @@
     {
       "assertionResults": [
         {
+          "assertionId": "runtime-callable-ext.approval-resolve.decision-call-id-matches.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-ext.approval-resolve.decision-call-id-matches.requiredEvidence.approval.decisions.0.callId",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-callable-ext.approval-resolve.decision-call-id-matches",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.approval-resolve.decision-type-approve.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-ext.approval-resolve.decision-type-approve.requiredEvidence.approval.decisions.0.type",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-callable-ext.approval-resolve.decision-type-approve",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.approval-resolve.executed-tools-include-email.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-ext.approval-resolve.executed-tools-include-email.requiredEvidence.tool.execution.executedNames",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-callable-ext.approval-resolve.executed-tools-include-email",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.approval-resolve.executed-tools-include-search.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-ext.approval-resolve.executed-tools-include-search.requiredEvidence.tool.execution.executedNames",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-callable-ext.approval-resolve.executed-tools-include-search",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.approval-resolve.paused-phase-paused.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-ext.approval-resolve.paused-phase-paused.requiredEvidence.approval.pausedPhase",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-callable-ext.approval-resolve.paused-phase-paused",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.approval-resolve.resumed-phase-completed.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-ext.approval-resolve.resumed-phase-completed.requiredEvidence.approval.resumedPhase",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-callable-ext.approval-resolve.resumed-phase-completed",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.cancel-execution.cancel-invocation-count.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-ext.cancel-execution.cancel-invocation-count.requiredEvidence.cancellation.cancelInvocations",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-callable-ext.cancel-execution.cancel-invocation-count",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.cancel-execution.error-event-count-one.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-ext.cancel-execution.error-event-count-one.requiredEvidence.cancellation.errorEventCount",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-callable-ext.cancel-execution.error-event-count-one",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.cancel-execution.observed-event-index-zero.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-ext.cancel-execution.observed-event-index-zero.requiredEvidence.cancellation.observedEventIndex",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-callable-ext.cancel-execution.observed-event-index-zero",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.cancel-execution.observed-event-type.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-ext.cancel-execution.observed-event-type.requiredEvidence.cancellation.observedEventType",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-callable-ext.cancel-execution.observed-event-type",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.cancel-execution.runtime-phase-failed.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-ext.cancel-execution.runtime-phase-failed.requiredEvidence.runtime.phase",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-callable-ext.cancel-execution.runtime-phase-failed",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.provider-generate.call-count-positive.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-ext.provider-generate.call-count-positive.requiredEvidence.provider.generate.callCount",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-callable-ext.provider-generate.call-count-positive",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.provider-generate.finish-reason-string.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-ext.provider-generate.finish-reason-string.requiredEvidence.provider.generate.response.finishReason",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-callable-ext.provider-generate.finish-reason-string",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.provider-generate.first-part-text-shape.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-ext.provider-generate.first-part-text-shape.requiredEvidence.provider.generate.response.parts.0.type",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-callable-ext.provider-generate.first-part-text-shape",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.provider-generate.response-finish-reason-equals-stop.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-ext.provider-generate.response-finish-reason-equals-stop.requiredEvidence.provider.generate.response.finishReason",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-callable-ext.provider-generate.response-finish-reason-equals-stop",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.provider-generate.response-parts-first-present.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-ext.provider-generate.response-parts-first-present.requiredEvidence.provider.generate.response.parts.0",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-callable-ext.provider-generate.response-parts-first-present",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.provider-stream.chunk-types-include-finish.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-ext.provider-stream.chunk-types-include-finish.requiredEvidence.provider.stream.chunkTypes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-callable-ext.provider-stream.chunk-types-include-finish",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.provider-stream.chunk-types-text-delta-first.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-ext.provider-stream.chunk-types-text-delta-first.requiredEvidence.provider.stream.chunkTypes.0",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-callable-ext.provider-stream.chunk-types-text-delta-first",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.provider-stream.emitted-event-types-include-message-done.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-ext.provider-stream.emitted-event-types-include-message-done.requiredEvidence.provider.stream.emittedEventTypes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-callable-ext.provider-stream.emitted-event-types-include-message-done",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.provider-stream.emitted-event-types-include-message-start.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-ext.provider-stream.emitted-event-types-include-message-start.requiredEvidence.provider.stream.emittedEventTypes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-callable-ext.provider-stream.emitted-event-types-include-message-start",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.provider-stream.emitted-event-types-text-delta.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-ext.provider-stream.emitted-event-types-text-delta.requiredEvidence.provider.stream.emittedEventTypes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-callable-ext.provider-stream.emitted-event-types-text-delta",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.provider-stream.response-text-matches-scenario.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-ext.provider-stream.response-text-matches-scenario.requiredEvidence.provider.stream.response.parts.0.text",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-callable-ext.provider-stream.response-text-matches-scenario",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.tool-execute.call-count-equals-one.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-ext.tool-execute.call-count-equals-one.requiredEvidence.tool.execution.callCount",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-callable-ext.tool-execute.call-count-equals-one",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.tool-execute.input-query-matches.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-ext.tool-execute.input-query-matches.requiredEvidence.tool.execution.inputs.0.query",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-callable-ext.tool-execute.input-query-matches",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.tool-execute.output-shape-matches-scenario.1.schemaValid",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-ext.tool-execute.output-shape-matches-scenario.requiredEvidence.tool.execution.outputs.0",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-callable-ext.tool-execute.output-shape-matches-scenario",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.tool-execute.output-source-matches.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-ext.tool-execute.output-source-matches.requiredEvidence.tool.execution.outputs.0.source",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-callable-ext.tool-execute.output-source-matches",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.tool-execute.state-phase-completed.1.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-ext.tool-execute.state-phase-completed.requiredEvidence.toolExecution.status.phase",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-callable-ext.tool-execute.state-phase-completed",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.tool-execute.state-tool-results-total-one.1.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-ext.tool-execute.state-tool-results-total-one.requiredEvidence.toolExecution.status.manifest.toolResults.total",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-callable-ext.tool-execute.state-tool-results-total-one",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.validate-structured-output.resolution-fail.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-ext.validate-structured-output.resolution-fail.requiredEvidence.validation.resolutionType",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-callable-ext.validate-structured-output.resolution-fail",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.validate-structured-output.resolution-type-string.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-ext.validate-structured-output.resolution-type-string.requiredEvidence.validation.resolutionType",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-callable-ext.validate-structured-output.resolution-type-string",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "runtime-api.approval-resolve.paused-resume.1.stateField",
           "status": "pass"
         },
@@ -830,6 +3453,278 @@
         "traceStepIds": ["recovery"]
       },
       "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-lifecycle-ext.approval-resolve.paused-phase-trace.1.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.approval-resolve.paused-phase-trace.requiredEvidence.trace.approval.evidence.approval.pausedPhase",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.approval-resolve.paused-phase-trace",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.lifecycle-extended",
+        "traceStepIds": ["approval"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-lifecycle-ext.approval-resolve.resumed-phase-trace.1.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.approval-resolve.resumed-phase-trace.requiredEvidence.trace.approval.evidence.approval.resumedPhase",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.approval-resolve.resumed-phase-trace",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.lifecycle-extended",
+        "traceStepIds": ["approval"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-lifecycle-ext.branch-create.created-head-hash-format.1.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.branch-create.created-head-hash-format.requiredEvidence.branch.createdHeadTurnNodeHash",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.branch-create.created-head-hash-format",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.lifecycle-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-lifecycle-ext.branch-create.source-head-hash-format.1.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.branch-create.source-head-hash-format.requiredEvidence.branch.sourceHeadTurnNodeHash",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.branch-create.source-head-hash-format",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.lifecycle-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-lifecycle-ext.branch-create.source-message-count.1.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.branch-create.source-message-count.requiredEvidence.branch.sourceMessageCount",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.branch-create.source-message-count",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.lifecycle-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-lifecycle-ext.branch-create.source-phase-completed.1.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.branch-create.source-phase-completed.requiredEvidence.branch.completedTurnPhase",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.branch-create.source-phase-completed",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.lifecycle-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-lifecycle-ext.context-transform.message-count.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.context-transform.message-count.requiredEvidence.context.messageCount",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.context-transform.message-count",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.lifecycle-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-lifecycle-ext.context-transform.runtime-phase-completed.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.context-transform.runtime-phase-completed.requiredEvidence.runtime.phase",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.context-transform.runtime-phase-completed",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.lifecycle-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-lifecycle-ext.context-transform.summary-text.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.context-transform.summary-text.requiredEvidence.context.summaryText",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.context-transform.summary-text",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.lifecycle-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-lifecycle-ext.execute-turn.phase-completed.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.execute-turn.phase-completed.requiredEvidence.runtime.phase",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.execute-turn.phase-completed",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.lifecycle-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-lifecycle-ext.execute-turn.phase-enum.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.execute-turn.phase-enum.requiredEvidence.runtime.phase",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.execute-turn.phase-enum",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.lifecycle-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-lifecycle-ext.recover-result.first-object-type.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.recover-result.first-object-type.requiredEvidence.recovery.firstObjectType",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.recover-result.first-object-type",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.lifecycle-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-lifecycle-ext.recover-result.first-task-id.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.recover-result.first-task-id.requiredEvidence.recovery.firstTaskId",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.recover-result.first-task-id",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.lifecycle-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-lifecycle-ext.recover-result.last-turn-node-hash-format.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.recover-result.last-turn-node-hash-format.requiredEvidence.recovery.lastTurnNodeHash",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.recover-result.last-turn-node-hash-format",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.lifecycle-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-lifecycle-ext.recover-result.uncommitted-count.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.recover-result.uncommitted-count.requiredEvidence.recovery.uncommittedStagedResults",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.recover-result.uncommitted-count",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.lifecycle-extended"
+      },
+      "status": "pass"
     }
   ],
   "command": [
@@ -845,9 +3740,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 26,
-    "totalChecks": 26,
-    "applicableChecks": 26,
+    "passedChecks": 186,
+    "totalChecks": 186,
+    "applicableChecks": 186,
     "nonApplicableChecks": 0
   },
   "suiteId": "tuvren.framework.promoted-authority",

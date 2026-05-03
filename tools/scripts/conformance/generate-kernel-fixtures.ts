@@ -17,15 +17,16 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import type { KernelRecord } from "@tuvren/core-types";
 import {
   encodeDeterministicKernelRecord,
   hashKernelRecord,
   hashOpaqueObjectBytes,
   hashTurnNodeIdentity,
-  type KernelRecord,
   type StagedResult,
   type TurnTreeSchema,
 } from "@tuvren/kernel-protocol";
+import { formatGeneratedJson } from "./format-generated-json.ts";
 
 interface TurnNodeSpec {
   consumedStagedResults: StagedResult[];
@@ -310,7 +311,7 @@ const fixtures: FixtureSpec[] = [
     turnNode: {
       consumedStagedResults: [
         {
-          interruptPayload: { reason: "tool_paused", remainingMs: 5_000 },
+          interruptPayload: { reason: "tool_paused", remainingMs: 5000 },
           objectHash: HASH_THREE,
           objectType: "tool_result",
           status: "interrupted",
@@ -449,13 +450,17 @@ await main();
 
 async function main(): Promise<void> {
   await mkdir(FIXTURES_DIR, { recursive: true });
+  const filePaths: string[] = [];
 
   for (const fixture of fixtures) {
     const fixtureRecord = await buildFixtureRecord(fixture);
     const filePath = resolve(FIXTURES_DIR, fixture.fileName);
     await writeFile(filePath, `${JSON.stringify(fixtureRecord, null, 2)}\n`);
+    filePaths.push(filePath);
     process.stdout.write(`wrote ${fixture.fileName}\n`);
   }
+
+  await formatGeneratedJson(filePaths);
 }
 
 async function buildFixtureRecord(

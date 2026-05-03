@@ -1,8 +1,6 @@
 {
   "applicability": {
-    "capabilities": [
-      "kernel.protocol"
-    ]
+    "capabilities": ["kernel.protocol"]
   },
   "checks": [
     {

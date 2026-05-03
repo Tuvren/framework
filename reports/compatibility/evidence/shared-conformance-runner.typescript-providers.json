@@ -126,6 +126,114 @@
         "planId": "tuvren.providers.provider-api.bridge"
       },
       "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "providers-ext.failure.error-code-snake-case.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers-ext.failure.error-code-snake-case.requiredEvidence.failure.errorCode",
+          "status": "pass"
+        }
+      ],
+      "checkId": "providers-ext.failure.error-code-snake-case",
+      "details": {
+        "adapterId": "typescript-providers",
+        "planId": "tuvren.providers.provider-api.bridge-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "providers-ext.failure.error-name-pascal-case.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers-ext.failure.error-name-pascal-case.requiredEvidence.failure.errorName",
+          "status": "pass"
+        }
+      ],
+      "checkId": "providers-ext.failure.error-name-pascal-case",
+      "details": {
+        "adapterId": "typescript-providers",
+        "planId": "tuvren.providers.provider-api.bridge-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "providers-ext.generate.response-format-name-matches-pattern.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers-ext.generate.response-format-name-matches-pattern.requiredEvidence.generate.responseFormatName",
+          "status": "pass"
+        }
+      ],
+      "checkId": "providers-ext.generate.response-format-name-matches-pattern",
+      "details": {
+        "adapterId": "typescript-providers",
+        "planId": "tuvren.providers.provider-api.bridge-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "providers-ext.generate.response-part-types-shape-array.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers-ext.generate.response-part-types-shape-array.requiredEvidence.generate.responsePartTypes.0",
+          "status": "pass"
+        }
+      ],
+      "checkId": "providers-ext.generate.response-part-types-shape-array",
+      "details": {
+        "adapterId": "typescript-providers",
+        "planId": "tuvren.providers.provider-api.bridge-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "providers-ext.structured.done-name-matches-identifier.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers-ext.structured.done-name-matches-identifier.requiredEvidence.structured.doneName",
+          "status": "pass"
+        }
+      ],
+      "checkId": "providers-ext.structured.done-name-matches-identifier",
+      "details": {
+        "adapterId": "typescript-providers",
+        "planId": "tuvren.providers.provider-api.bridge-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "providers-ext.structured.first-chunk-is-structured-delta-or-text-delta.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers-ext.structured.first-chunk-is-structured-delta-or-text-delta.requiredEvidence.structured.chunkTypes.0",
+          "status": "pass"
+        }
+      ],
+      "checkId": "providers-ext.structured.first-chunk-is-structured-delta-or-text-delta",
+      "details": {
+        "adapterId": "typescript-providers",
+        "planId": "tuvren.providers.provider-api.bridge-extended"
+      },
+      "status": "pass"
     }
   ],
   "command": [
@@ -141,9 +249,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 4,
-    "totalChecks": 4,
-    "applicableChecks": 4,
+    "passedChecks": 10,
+    "totalChecks": 10,
+    "applicableChecks": 10,
     "nonApplicableChecks": 0
   },
   "suiteId": "tuvren.providers.provider-api",

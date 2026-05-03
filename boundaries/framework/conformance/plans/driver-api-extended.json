@@ -1,8 +1,6 @@
 {
   "applicability": {
-    "capabilities": [
-      "framework.driver-api"
-    ]
+    "capabilities": ["framework.driver-api"]
   },
   "checks": [
     {
@@ -14,9 +12,7 @@
         }
       ],
       "checkId": "driver-api-ext.execute.hook-turn-phase-completed",
-      "evidence": [
-        "driver.phase"
-      ],
+      "evidence": ["driver.phase"],
       "input": {
         "scenarioPath": "$.driver-hook-turn"
       },
@@ -32,9 +28,7 @@
         }
       ],
       "checkId": "driver-api-ext.execute.hook-turn-phase-string",
-      "evidence": [
-        "driver.phase"
-      ],
+      "evidence": ["driver.phase"],
       "input": {
         "scenarioPath": "$.driver-hook-turn"
       },
@@ -49,9 +43,7 @@
         }
       ],
       "checkId": "driver-api-ext.execute.provider-failure-error-envelope",
-      "evidence": [
-        "result.error.code"
-      ],
+      "evidence": ["result.error.code"],
       "input": {
         "scenarioPath": "$.driver-provider-failure"
       },
@@ -67,9 +59,7 @@
         }
       ],
       "checkId": "driver-api-ext.resume.approval-resolution-end-turn",
-      "evidence": [
-        "driver.resolutionType"
-      ],
+      "evidence": ["driver.resolutionType"],
       "input": {
         "scenarioPath": "$.driver-resume-approval"
       },
@@ -85,9 +75,7 @@
         }
       ],
       "checkId": "driver-api-ext.resume.approval-pending-call-id-list-non-empty",
-      "evidence": [
-        "driver.pendingToolCallIds"
-      ],
+      "evidence": ["driver.pendingToolCallIds"],
       "input": {
         "scenarioPath": "$.driver-resume-approval"
       },
@@ -103,9 +91,7 @@
         }
       ],
       "checkId": "driver-api-ext.resume.approval-decision-call-id-includes-call-search",
-      "evidence": [
-        "driver.approvalDecisionCallIds"
-      ],
+      "evidence": ["driver.approvalDecisionCallIds"],
       "input": {
         "scenarioPath": "$.driver-resume-approval"
       },
@@ -121,9 +107,7 @@
         }
       ],
       "checkId": "driver-api-ext.resume.missing-pending-call-resolution-fail",
-      "evidence": [
-        "driver.resolutionType"
-      ],
+      "evidence": ["driver.resolutionType"],
       "input": {
         "scenarioPath": "$.driver-resume-missing-pending-call"
       },
@@ -138,9 +122,7 @@
         }
       ],
       "checkId": "driver-api-ext.resume.missing-pending-call-error-envelope",
-      "evidence": [
-        "result.error.code"
-      ],
+      "evidence": ["result.error.code"],
       "input": {
         "scenarioPath": "$.driver-resume-missing-pending-call"
       },

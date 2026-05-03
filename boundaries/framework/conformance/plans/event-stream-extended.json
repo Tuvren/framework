@@ -1,8 +1,6 @@
 {
   "applicability": {
-    "capabilities": [
-      "framework.event-stream"
-    ]
+    "capabilities": ["framework.event-stream"]
   },
   "checks": [
     {
@@ -14,9 +12,7 @@
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-events-include-state-snapshot",
-      "evidence": [
-        "frameEvents"
-      ],
+      "evidence": ["frameEvents"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -32,9 +28,7 @@
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-events-include-iteration-start",
-      "evidence": [
-        "frameEvents"
-      ],
+      "evidence": ["frameEvents"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -50,9 +44,7 @@
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-events-include-tool-result",
-      "evidence": [
-        "frameEvents"
-      ],
+      "evidence": ["frameEvents"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -68,9 +60,7 @@
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-events-include-text-delta",
-      "evidence": [
-        "frameEvents"
-      ],
+      "evidence": ["frameEvents"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -86,9 +76,7 @@
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-source-event-types-start-with-turn-start",
-      "evidence": [
-        "sourceEventTypes.0"
-      ],
+      "evidence": ["sourceEventTypes.0"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -104,9 +92,7 @@
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-events-end-with-turn-end",
-      "evidence": [
-        "frameEvents.23"
-      ],
+      "evidence": ["frameEvents.23"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -122,9 +108,7 @@
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-events-contain-turn-start",
-      "evidence": [
-        "frameEvents"
-      ],
+      "evidence": ["frameEvents"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -140,9 +124,7 @@
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-events-contain-turn-end",
-      "evidence": [
-        "frameEvents"
-      ],
+      "evidence": ["frameEvents"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -158,9 +140,7 @@
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-events-contain-tool-call-start",
-      "evidence": [
-        "frameEvents"
-      ],
+      "evidence": ["frameEvents"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -176,9 +156,7 @@
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-events-contain-iteration-end",
-      "evidence": [
-        "frameEvents"
-      ],
+      "evidence": ["frameEvents"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -194,9 +172,7 @@
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-no-error-event",
-      "evidence": [
-        "frameEvents"
-      ],
+      "evidence": ["frameEvents"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -212,9 +188,7 @@
         }
       ],
       "checkId": "event-stream-ext.sse.failed-provider-turn-frame-events-include-error",
-      "evidence": [
-        "frameEvents"
-      ],
+      "evidence": ["frameEvents"],
       "input": {
         "scenarioPath": "$.failed-provider-turn"
       },
@@ -230,9 +204,7 @@
         }
       ],
       "checkId": "event-stream-ext.sse.paused-approval-turn-source-events-include-approval-requested",
-      "evidence": [
-        "sourceEventTypes"
-      ],
+      "evidence": ["sourceEventTypes"],
       "input": {
         "scenarioPath": "$.paused-approval-turn"
       },
@@ -248,9 +220,7 @@
         }
       ],
       "checkId": "event-stream-ext.sse-eager.first-direct-event-turn-start",
-      "evidence": [
-        "firstDirectEventType"
-      ],
+      "evidence": ["firstDirectEventType"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -266,9 +236,7 @@
         }
       ],
       "checkId": "event-stream-ext.sse-eager.first-frame-event-turn-start",
-      "evidence": [
-        "firstFrameEvent"
-      ],
+      "evidence": ["firstFrameEvent"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -284,9 +252,7 @@
         }
       ],
       "checkId": "event-stream-ext.sse-eager.failed-turn-first-direct-event-turn-start",
-      "evidence": [
-        "firstDirectEventType"
-      ],
+      "evidence": ["firstDirectEventType"],
       "input": {
         "scenarioPath": "$.failed-provider-turn"
       },
@@ -302,9 +268,7 @@
         }
       ],
       "checkId": "event-stream-ext.sse-eager.paused-turn-first-frame-event-turn-start",
-      "evidence": [
-        "firstFrameEvent"
-      ],
+      "evidence": ["firstFrameEvent"],
       "input": {
         "scenarioPath": "$.paused-approval-turn"
       },
@@ -320,9 +284,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-types-include-run-started",
-      "evidence": [
-        "eventTypes"
-      ],
+      "evidence": ["eventTypes"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -338,9 +300,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-types-include-run-finished",
-      "evidence": [
-        "eventTypes"
-      ],
+      "evidence": ["eventTypes"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -356,9 +316,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-types-include-state-snapshot",
-      "evidence": [
-        "eventTypes"
-      ],
+      "evidence": ["eventTypes"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -374,9 +332,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-types-include-tool-call-start",
-      "evidence": [
-        "eventTypes"
-      ],
+      "evidence": ["eventTypes"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -392,9 +348,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-types-include-tool-call-result",
-      "evidence": [
-        "eventTypes"
-      ],
+      "evidence": ["eventTypes"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -410,9 +364,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-types-include-text-message-start",
-      "evidence": [
-        "eventTypes"
-      ],
+      "evidence": ["eventTypes"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -422,15 +374,18 @@
     {
       "assertions": [
         {
+          "contains": "RUN_STARTED",
+          "field": "$.eventTypes",
+          "kind": "evidenceField"
+        },
+        {
           "contains": "RUN_FINISHED",
           "field": "$.eventTypes",
           "kind": "evidenceField"
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-types-include-run-started-and-finished",
-      "evidence": [
-        "eventTypes"
-      ],
+      "evidence": ["eventTypes"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -446,9 +401,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-warnings-include-checkpoint-fallback",
-      "evidence": [
-        "warningCodes"
-      ],
+      "evidence": ["warningCodes"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -464,9 +417,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.failed-turn-event-types-end-with-run-error",
-      "evidence": [
-        "eventTypes.8"
-      ],
+      "evidence": ["eventTypes.8"],
       "input": {
         "scenarioPath": "$.failed-provider-turn"
       },
@@ -482,9 +433,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.failed-turn-error-code-snake-case",
-      "evidence": [
-        "events.8.rawEvent.error.code"
-      ],
+      "evidence": ["events.8.rawEvent.error.code"],
       "input": {
         "scenarioPath": "$.failed-provider-turn"
       },
@@ -500,9 +449,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.paused-turn-warnings-include-paused-coercion",
-      "evidence": [
-        "warningCodes"
-      ],
+      "evidence": ["warningCodes"],
       "input": {
         "scenarioPath": "$.paused-approval-turn"
       },
@@ -518,9 +465,7 @@
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-event-00",
-      "evidence": [
-        "frameEvents.0"
-      ],
+      "evidence": ["frameEvents.0"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -536,9 +481,7 @@
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-event-01",
-      "evidence": [
-        "frameEvents.1"
-      ],
+      "evidence": ["frameEvents.1"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -554,9 +497,7 @@
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-event-02",
-      "evidence": [
-        "frameEvents.2"
-      ],
+      "evidence": ["frameEvents.2"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -572,9 +513,7 @@
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-event-03",
-      "evidence": [
-        "frameEvents.3"
-      ],
+      "evidence": ["frameEvents.3"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -590,9 +529,7 @@
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-event-04",
-      "evidence": [
-        "frameEvents.4"
-      ],
+      "evidence": ["frameEvents.4"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -608,9 +545,7 @@
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-event-05",
-      "evidence": [
-        "frameEvents.5"
-      ],
+      "evidence": ["frameEvents.5"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -626,9 +561,7 @@
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-event-06",
-      "evidence": [
-        "frameEvents.6"
-      ],
+      "evidence": ["frameEvents.6"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -644,9 +577,7 @@
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-event-07",
-      "evidence": [
-        "frameEvents.7"
-      ],
+      "evidence": ["frameEvents.7"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -662,9 +593,7 @@
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-event-08",
-      "evidence": [
-        "frameEvents.8"
-      ],
+      "evidence": ["frameEvents.8"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -680,9 +609,7 @@
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-event-09",
-      "evidence": [
-        "frameEvents.9"
-      ],
+      "evidence": ["frameEvents.9"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -698,9 +625,7 @@
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-event-10",
-      "evidence": [
-        "frameEvents.10"
-      ],
+      "evidence": ["frameEvents.10"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -716,9 +641,7 @@
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-event-11",
-      "evidence": [
-        "frameEvents.11"
-      ],
+      "evidence": ["frameEvents.11"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -734,9 +657,7 @@
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-event-12",
-      "evidence": [
-        "frameEvents.12"
-      ],
+      "evidence": ["frameEvents.12"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -752,9 +673,7 @@
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-event-13",
-      "evidence": [
-        "frameEvents.13"
-      ],
+      "evidence": ["frameEvents.13"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -770,9 +689,7 @@
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-event-14",
-      "evidence": [
-        "frameEvents.14"
-      ],
+      "evidence": ["frameEvents.14"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -788,9 +705,7 @@
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-event-15",
-      "evidence": [
-        "frameEvents.15"
-      ],
+      "evidence": ["frameEvents.15"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -806,9 +721,7 @@
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-event-16",
-      "evidence": [
-        "frameEvents.16"
-      ],
+      "evidence": ["frameEvents.16"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -824,9 +737,7 @@
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-event-17",
-      "evidence": [
-        "frameEvents.17"
-      ],
+      "evidence": ["frameEvents.17"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -842,9 +753,7 @@
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-event-18",
-      "evidence": [
-        "frameEvents.18"
-      ],
+      "evidence": ["frameEvents.18"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -860,9 +769,7 @@
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-event-19",
-      "evidence": [
-        "frameEvents.19"
-      ],
+      "evidence": ["frameEvents.19"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -878,9 +785,7 @@
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-event-20",
-      "evidence": [
-        "frameEvents.20"
-      ],
+      "evidence": ["frameEvents.20"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -896,9 +801,7 @@
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-event-21",
-      "evidence": [
-        "frameEvents.21"
-      ],
+      "evidence": ["frameEvents.21"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -914,9 +817,7 @@
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-event-22",
-      "evidence": [
-        "frameEvents.22"
-      ],
+      "evidence": ["frameEvents.22"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -932,9 +833,7 @@
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-event-23",
-      "evidence": [
-        "frameEvents.23"
-      ],
+      "evidence": ["frameEvents.23"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -950,9 +849,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-00",
-      "evidence": [
-        "eventTypes.0"
-      ],
+      "evidence": ["eventTypes.0"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -968,9 +865,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-01",
-      "evidence": [
-        "eventTypes.1"
-      ],
+      "evidence": ["eventTypes.1"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -986,9 +881,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-02",
-      "evidence": [
-        "eventTypes.2"
-      ],
+      "evidence": ["eventTypes.2"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -1004,9 +897,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-03",
-      "evidence": [
-        "eventTypes.3"
-      ],
+      "evidence": ["eventTypes.3"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -1022,9 +913,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-04",
-      "evidence": [
-        "eventTypes.4"
-      ],
+      "evidence": ["eventTypes.4"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -1040,9 +929,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-05",
-      "evidence": [
-        "eventTypes.5"
-      ],
+      "evidence": ["eventTypes.5"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -1058,9 +945,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-06",
-      "evidence": [
-        "eventTypes.6"
-      ],
+      "evidence": ["eventTypes.6"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -1076,9 +961,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-07",
-      "evidence": [
-        "eventTypes.7"
-      ],
+      "evidence": ["eventTypes.7"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -1094,9 +977,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-08",
-      "evidence": [
-        "eventTypes.8"
-      ],
+      "evidence": ["eventTypes.8"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -1112,9 +993,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-09",
-      "evidence": [
-        "eventTypes.9"
-      ],
+      "evidence": ["eventTypes.9"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -1130,9 +1009,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-10",
-      "evidence": [
-        "eventTypes.10"
-      ],
+      "evidence": ["eventTypes.10"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -1148,9 +1025,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-11",
-      "evidence": [
-        "eventTypes.11"
-      ],
+      "evidence": ["eventTypes.11"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -1166,9 +1041,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-12",
-      "evidence": [
-        "eventTypes.12"
-      ],
+      "evidence": ["eventTypes.12"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -1184,9 +1057,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-13",
-      "evidence": [
-        "eventTypes.13"
-      ],
+      "evidence": ["eventTypes.13"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -1202,9 +1073,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-14",
-      "evidence": [
-        "eventTypes.14"
-      ],
+      "evidence": ["eventTypes.14"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -1220,9 +1089,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-15",
-      "evidence": [
-        "eventTypes.15"
-      ],
+      "evidence": ["eventTypes.15"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -1238,9 +1105,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-16",
-      "evidence": [
-        "eventTypes.16"
-      ],
+      "evidence": ["eventTypes.16"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -1256,9 +1121,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-17",
-      "evidence": [
-        "eventTypes.17"
-      ],
+      "evidence": ["eventTypes.17"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -1274,9 +1137,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-18",
-      "evidence": [
-        "eventTypes.18"
-      ],
+      "evidence": ["eventTypes.18"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -1292,9 +1153,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-19",
-      "evidence": [
-        "eventTypes.19"
-      ],
+      "evidence": ["eventTypes.19"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -1310,9 +1169,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-20",
-      "evidence": [
-        "eventTypes.20"
-      ],
+      "evidence": ["eventTypes.20"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -1328,9 +1185,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-21",
-      "evidence": [
-        "eventTypes.21"
-      ],
+      "evidence": ["eventTypes.21"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -1346,9 +1201,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-22",
-      "evidence": [
-        "eventTypes.22"
-      ],
+      "evidence": ["eventTypes.22"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -1364,9 +1217,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.failed-turn-event-00",
-      "evidence": [
-        "eventTypes.0"
-      ],
+      "evidence": ["eventTypes.0"],
       "input": {
         "scenarioPath": "$.failed-provider-turn"
       },
@@ -1382,9 +1233,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.failed-turn-event-01",
-      "evidence": [
-        "eventTypes.1"
-      ],
+      "evidence": ["eventTypes.1"],
       "input": {
         "scenarioPath": "$.failed-provider-turn"
       },
@@ -1400,9 +1249,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.failed-turn-event-02",
-      "evidence": [
-        "eventTypes.2"
-      ],
+      "evidence": ["eventTypes.2"],
       "input": {
         "scenarioPath": "$.failed-provider-turn"
       },
@@ -1418,9 +1265,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.failed-turn-event-03",
-      "evidence": [
-        "eventTypes.3"
-      ],
+      "evidence": ["eventTypes.3"],
       "input": {
         "scenarioPath": "$.failed-provider-turn"
       },
@@ -1436,9 +1281,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.failed-turn-event-04",
-      "evidence": [
-        "eventTypes.4"
-      ],
+      "evidence": ["eventTypes.4"],
       "input": {
         "scenarioPath": "$.failed-provider-turn"
       },
@@ -1454,9 +1297,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.failed-turn-event-05",
-      "evidence": [
-        "eventTypes.5"
-      ],
+      "evidence": ["eventTypes.5"],
       "input": {
         "scenarioPath": "$.failed-provider-turn"
       },
@@ -1472,9 +1313,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.failed-turn-event-06",
-      "evidence": [
-        "eventTypes.6"
-      ],
+      "evidence": ["eventTypes.6"],
       "input": {
         "scenarioPath": "$.failed-provider-turn"
       },
@@ -1490,9 +1329,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.failed-turn-event-07",
-      "evidence": [
-        "eventTypes.7"
-      ],
+      "evidence": ["eventTypes.7"],
       "input": {
         "scenarioPath": "$.failed-provider-turn"
       },
@@ -1508,9 +1345,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.failed-turn-event-08",
-      "evidence": [
-        "eventTypes.8"
-      ],
+      "evidence": ["eventTypes.8"],
       "input": {
         "scenarioPath": "$.failed-provider-turn"
       },
@@ -1526,9 +1361,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.paused-turn-event-00",
-      "evidence": [
-        "eventTypes.0"
-      ],
+      "evidence": ["eventTypes.0"],
       "input": {
         "scenarioPath": "$.paused-approval-turn"
       },
@@ -1544,9 +1377,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.paused-turn-event-01",
-      "evidence": [
-        "eventTypes.1"
-      ],
+      "evidence": ["eventTypes.1"],
       "input": {
         "scenarioPath": "$.paused-approval-turn"
       },
@@ -1562,9 +1393,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.paused-turn-event-02",
-      "evidence": [
-        "eventTypes.2"
-      ],
+      "evidence": ["eventTypes.2"],
       "input": {
         "scenarioPath": "$.paused-approval-turn"
       },
@@ -1580,9 +1409,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.paused-turn-event-03",
-      "evidence": [
-        "eventTypes.3"
-      ],
+      "evidence": ["eventTypes.3"],
       "input": {
         "scenarioPath": "$.paused-approval-turn"
       },
@@ -1598,9 +1425,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.paused-turn-event-04",
-      "evidence": [
-        "eventTypes.4"
-      ],
+      "evidence": ["eventTypes.4"],
       "input": {
         "scenarioPath": "$.paused-approval-turn"
       },
@@ -1616,9 +1441,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.paused-turn-event-05",
-      "evidence": [
-        "eventTypes.5"
-      ],
+      "evidence": ["eventTypes.5"],
       "input": {
         "scenarioPath": "$.paused-approval-turn"
       },
@@ -1634,9 +1457,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.paused-turn-event-06",
-      "evidence": [
-        "eventTypes.6"
-      ],
+      "evidence": ["eventTypes.6"],
       "input": {
         "scenarioPath": "$.paused-approval-turn"
       },
@@ -1652,9 +1473,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.paused-turn-event-07",
-      "evidence": [
-        "eventTypes.7"
-      ],
+      "evidence": ["eventTypes.7"],
       "input": {
         "scenarioPath": "$.paused-approval-turn"
       },
@@ -1670,9 +1489,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.paused-turn-event-08",
-      "evidence": [
-        "eventTypes.8"
-      ],
+      "evidence": ["eventTypes.8"],
       "input": {
         "scenarioPath": "$.paused-approval-turn"
       },
@@ -1688,9 +1505,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.paused-turn-event-09",
-      "evidence": [
-        "eventTypes.9"
-      ],
+      "evidence": ["eventTypes.9"],
       "input": {
         "scenarioPath": "$.paused-approval-turn"
       },
@@ -1706,9 +1521,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.paused-turn-event-10",
-      "evidence": [
-        "eventTypes.10"
-      ],
+      "evidence": ["eventTypes.10"],
       "input": {
         "scenarioPath": "$.paused-approval-turn"
       },
@@ -1724,9 +1537,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.paused-turn-event-11",
-      "evidence": [
-        "eventTypes.11"
-      ],
+      "evidence": ["eventTypes.11"],
       "input": {
         "scenarioPath": "$.paused-approval-turn"
       },
@@ -1742,9 +1553,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.paused-turn-event-12",
-      "evidence": [
-        "eventTypes.12"
-      ],
+      "evidence": ["eventTypes.12"],
       "input": {
         "scenarioPath": "$.paused-approval-turn"
       },
@@ -1760,9 +1569,7 @@
         }
       ],
       "checkId": "event-stream-ext.agui.paused-turn-event-13",
-      "evidence": [
-        "eventTypes.13"
-      ],
+      "evidence": ["eventTypes.13"],
       "input": {
         "scenarioPath": "$.paused-approval-turn"
       },

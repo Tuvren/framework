@@ -17,9 +17,10 @@
 import { writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { formatGeneratedJson } from "./format-generated-json.ts";
 
 interface PlanCheck {
-  assertions: Array<Record<string, unknown>>;
+  assertions: Record<string, unknown>[];
   capabilities?: string[];
   checkId: string;
   controls?: Record<string, unknown>;
@@ -77,6 +78,10 @@ async function main(): Promise<void> {
     );
     process.stdout.write(`wrote ${fileName} (${plan.checks.length} checks)\n`);
   }
+
+  await formatGeneratedJson(
+    plans.map(({ fileName }) => resolve(PLANS_DIR, fileName))
+  );
 }
 
 // Runtime API callables — extends shape and value coverage of the six
@@ -85,7 +90,11 @@ function buildRuntimeApiCallablesExtended(): Plan {
   const checks: PlanCheck[] = [];
 
   // runtime.provider-generate
-  const providerGenerate = (id: string, assertion: Record<string, unknown>, evidence: string[]): PlanCheck => ({
+  const providerGenerate = (
+    id: string,
+    assertion: Record<string, unknown>,
+    evidence: string[]
+  ): PlanCheck => ({
     assertions: [assertion],
     checkId: `runtime-callable-ext.provider-generate.${id}`,
     evidence,
@@ -108,7 +117,11 @@ function buildRuntimeApiCallablesExtended(): Plan {
       "finish-reason-string",
       // Spec defines tool_call (singular) and includes error; reject the
       // common tool_calls typo and keep stop/length/content_filter accepted.
-      { field: "$.provider.generate.response.finishReason", kind: "evidenceField", matches: "^(stop|length|content_filter|tool_call|error)$" },
+      {
+        field: "$.provider.generate.response.finishReason",
+        kind: "evidenceField",
+        matches: "^(stop|length|content_filter|tool_call|error)$",
+      },
       ["provider.generate.response.finishReason"]
     ),
     providerGenerate(
@@ -128,11 +141,15 @@ function buildRuntimeApiCallablesExtended(): Plan {
         kind: "evidenceField",
       },
       ["provider.generate.response.finishReason"]
-    ),
+    )
   );
 
   // runtime.provider-stream
-  const providerStream = (id: string, assertion: Record<string, unknown>, evidence: string[]): PlanCheck => ({
+  const providerStream = (
+    id: string,
+    assertion: Record<string, unknown>,
+    evidence: string[]
+  ): PlanCheck => ({
     assertions: [assertion],
     checkId: `runtime-callable-ext.provider-stream.${id}`,
     evidence,
@@ -143,27 +160,47 @@ function buildRuntimeApiCallablesExtended(): Plan {
   checks.push(
     providerStream(
       "chunk-types-include-finish",
-      { contains: "finish", field: "$.provider.stream.chunkTypes", kind: "evidenceField" },
+      {
+        contains: "finish",
+        field: "$.provider.stream.chunkTypes",
+        kind: "evidenceField",
+      },
       ["provider.stream.chunkTypes"]
     ),
     providerStream(
       "emitted-event-types-text-delta",
-      { contains: "text.delta", field: "$.provider.stream.emittedEventTypes", kind: "evidenceField" },
+      {
+        contains: "text.delta",
+        field: "$.provider.stream.emittedEventTypes",
+        kind: "evidenceField",
+      },
       ["provider.stream.emittedEventTypes"]
     ),
     providerStream(
       "emitted-event-types-include-message-start",
-      { contains: "message.start", field: "$.provider.stream.emittedEventTypes", kind: "evidenceField" },
+      {
+        contains: "message.start",
+        field: "$.provider.stream.emittedEventTypes",
+        kind: "evidenceField",
+      },
       ["provider.stream.emittedEventTypes"]
     ),
     providerStream(
       "emitted-event-types-include-message-done",
-      { contains: "message.done", field: "$.provider.stream.emittedEventTypes", kind: "evidenceField" },
+      {
+        contains: "message.done",
+        field: "$.provider.stream.emittedEventTypes",
+        kind: "evidenceField",
+      },
       ["provider.stream.emittedEventTypes"]
     ),
     providerStream(
       "chunk-types-text-delta-first",
-      { equals: "text_delta", field: "$.provider.stream.chunkTypes.0", kind: "evidenceField" },
+      {
+        equals: "text_delta",
+        field: "$.provider.stream.chunkTypes.0",
+        kind: "evidenceField",
+      },
       ["provider.stream.chunkTypes.0"]
     ),
     providerStream(
@@ -174,11 +211,15 @@ function buildRuntimeApiCallablesExtended(): Plan {
         kind: "evidenceField",
       },
       ["provider.stream.response.parts.0.text"]
-    ),
+    )
   );
 
   // runtime.tool-execute
-  const toolExecute = (id: string, assertion: Record<string, unknown>, evidence: string[]): PlanCheck => ({
+  const toolExecute = (
+    id: string,
+    assertion: Record<string, unknown>,
+    evidence: string[]
+  ): PlanCheck => ({
     assertions: [assertion],
     checkId: `runtime-callable-ext.tool-execute.${id}`,
     evidence,
@@ -194,33 +235,57 @@ function buildRuntimeApiCallablesExtended(): Plan {
     ),
     toolExecute(
       "input-query-matches",
-      { equals: "shared docs", field: "$.tool.execution.inputs.0.query", kind: "evidenceField" },
+      {
+        equals: "shared docs",
+        field: "$.tool.execution.inputs.0.query",
+        kind: "evidenceField",
+      },
       ["tool.execution.inputs.0.query"]
     ),
     toolExecute(
       "output-source-matches",
-      { equals: "shared scenario", field: "$.tool.execution.outputs.0.source", kind: "evidenceField" },
+      {
+        equals: "shared scenario",
+        field: "$.tool.execution.outputs.0.source",
+        kind: "evidenceField",
+      },
       ["tool.execution.outputs.0.source"]
     ),
     toolExecute(
-      "output-ok-true",
-      { equals: true, field: "$.tool.execution.outputs.0.ok", kind: "evidenceField" },
-      ["tool.execution.outputs.0.ok"]
+      "output-shape-matches-scenario",
+      {
+        kind: "schemaValid",
+        path: "$.evidence.tool.execution.outputs.0",
+        schema: "$.scenario.toolResultSchema",
+      },
+      ["tool.execution.outputs.0"]
     ),
     toolExecute(
       "state-phase-completed",
-      { equals: "completed", field: "$.toolExecution.status.phase", kind: "stateField" },
+      {
+        equals: "completed",
+        field: "$.toolExecution.status.phase",
+        kind: "stateField",
+      },
       ["toolExecution.status.phase"]
     ),
     toolExecute(
       "state-tool-results-total-one",
-      { equals: 1, field: "$.toolExecution.status.manifest.toolResults.total", kind: "stateField" },
+      {
+        equals: 1,
+        field: "$.toolExecution.status.manifest.toolResults.total",
+        kind: "stateField",
+      },
       ["toolExecution.status.manifest.toolResults.total"]
-    ),
+    )
   );
 
   // runtime.approval-resolve
-  const approvalResolve = (id: string, assertion: Record<string, unknown>, evidence: string[]): PlanCheck => ({
+  const approvalResolve = (
+    id: string,
+    assertion: Record<string, unknown>,
+    evidence: string[]
+  ): PlanCheck => ({
     assertions: [assertion],
     checkId: `runtime-callable-ext.approval-resolve.${id}`,
     evidence,
@@ -231,38 +296,66 @@ function buildRuntimeApiCallablesExtended(): Plan {
   checks.push(
     approvalResolve(
       "paused-phase-paused",
-      { equals: "paused", field: "$.approval.pausedPhase", kind: "evidenceField" },
+      {
+        equals: "paused",
+        field: "$.approval.pausedPhase",
+        kind: "evidenceField",
+      },
       ["approval.pausedPhase"]
     ),
     approvalResolve(
       "resumed-phase-completed",
-      { equals: "completed", field: "$.approval.resumedPhase", kind: "evidenceField" },
+      {
+        equals: "completed",
+        field: "$.approval.resumedPhase",
+        kind: "evidenceField",
+      },
       ["approval.resumedPhase"]
     ),
     approvalResolve(
       "executed-tools-include-search",
-      { contains: "search", field: "$.tool.execution.executedNames", kind: "evidenceField" },
+      {
+        contains: "search",
+        field: "$.tool.execution.executedNames",
+        kind: "evidenceField",
+      },
       ["tool.execution.executedNames"]
     ),
     approvalResolve(
       "executed-tools-include-email",
-      { contains: "email", field: "$.tool.execution.executedNames", kind: "evidenceField" },
+      {
+        contains: "email",
+        field: "$.tool.execution.executedNames",
+        kind: "evidenceField",
+      },
       ["tool.execution.executedNames"]
     ),
     approvalResolve(
       "decision-call-id-matches",
-      { equals: "call-email", field: "$.approval.decisions.0.callId", kind: "evidenceField" },
+      {
+        equals: "call-email",
+        field: "$.approval.decisions.0.callId",
+        kind: "evidenceField",
+      },
       ["approval.decisions.0.callId"]
     ),
     approvalResolve(
       "decision-type-approve",
-      { equals: "approve", field: "$.approval.decisions.0.type", kind: "evidenceField" },
+      {
+        equals: "approve",
+        field: "$.approval.decisions.0.type",
+        kind: "evidenceField",
+      },
       ["approval.decisions.0.type"]
-    ),
+    )
   );
 
   // runtime.validate-structured-output
-  const validateStructured = (id: string, assertion: Record<string, unknown>, evidence: string[]): PlanCheck => ({
+  const validateStructured = (
+    id: string,
+    assertion: Record<string, unknown>,
+    evidence: string[]
+  ): PlanCheck => ({
     assertions: [assertion],
     checkId: `runtime-callable-ext.validate-structured-output.${id}`,
     evidence,
@@ -273,14 +366,22 @@ function buildRuntimeApiCallablesExtended(): Plan {
   checks.push(
     validateStructured(
       "resolution-fail",
-      { equals: "fail", field: "$.validation.resolutionType", kind: "evidenceField" },
+      {
+        equals: "fail",
+        field: "$.validation.resolutionType",
+        kind: "evidenceField",
+      },
       ["validation.resolutionType"]
     ),
     validateStructured(
       "resolution-type-string",
-      { field: "$.validation.resolutionType", kind: "evidenceField", matches: "^(fail|repair|warn|pass)$" },
+      {
+        field: "$.validation.resolutionType",
+        kind: "evidenceField",
+        matches: "^(fail|repair|warn|pass)$",
+      },
       ["validation.resolutionType"]
-    ),
+    )
   );
 
   // runtime.cancel-execution
@@ -306,7 +407,8 @@ function buildRuntimeApiCallablesExtended(): Plan {
           kind: "evidenceField",
         },
       ],
-      checkId: "runtime-callable-ext.cancel-execution.observed-event-index-zero",
+      checkId:
+        "runtime-callable-ext.cancel-execution.observed-event-index-zero",
       controls: { cancelAfterEvent: "turn.start", deadlineMs: 1000 },
       evidence: ["cancellation.observedEventIndex"],
       operation: "runtime.cancel-execution",
@@ -349,7 +451,7 @@ function buildRuntimeApiCallablesExtended(): Plan {
       controls: { cancelAfterEvent: "turn.start", deadlineMs: 1000 },
       evidence: ["runtime.phase"],
       operation: "runtime.cancel-execution",
-    },
+    }
   );
 
   return {
@@ -398,7 +500,7 @@ function buildRuntimeApiLifecycleExtended(): Plan {
       input: { scenarioPath: "$.completed-turn" },
       operation: "runtime.execute-turn",
       scenario: "runtime-api-scenarios",
-    },
+    }
   );
 
   // approval-resolve trace step — steps are required for $.trace.* paths to
@@ -446,7 +548,7 @@ function buildRuntimeApiLifecycleExtended(): Plan {
           stepId: "approval",
         },
       ],
-    } as PlanCheck,
+    } as PlanCheck
   );
 
   // branch-create assertions (single-shot via state)
@@ -506,7 +608,7 @@ function buildRuntimeApiLifecycleExtended(): Plan {
       input: { scenarioPath: "$.branch-from-completed-head" },
       operation: "runtime.branch-create",
       scenario: "runtime-api-scenarios",
-    },
+    }
   );
 
   // context-transform
@@ -547,12 +649,13 @@ function buildRuntimeApiLifecycleExtended(): Plan {
           kind: "evidenceField",
         },
       ],
-      checkId: "runtime-lifecycle-ext.context-transform.runtime-phase-completed",
+      checkId:
+        "runtime-lifecycle-ext.context-transform.runtime-phase-completed",
       evidence: ["runtime.phase"],
       input: { scenarioPath: "$.context-transform-append-summary" },
       operation: "runtime.context-transform",
       scenario: "runtime-api-scenarios",
-    },
+    }
   );
 
   // recover-result
@@ -607,12 +710,13 @@ function buildRuntimeApiLifecycleExtended(): Plan {
           matches: "^[a-f0-9]{64}$",
         },
       ],
-      checkId: "runtime-lifecycle-ext.recover-result.last-turn-node-hash-format",
+      checkId:
+        "runtime-lifecycle-ext.recover-result.last-turn-node-hash-format",
       evidence: ["recovery.lastTurnNodeHash"],
       input: { scenarioPath: "$.recover-staged-result" },
       operation: "runtime.recover-result",
       scenario: "runtime-api-scenarios",
-    },
+    }
   );
 
   return {
@@ -631,7 +735,12 @@ function buildRuntimeApiLifecycleExtended(): Plan {
 // each scenario, including event-by-event ordering and frame-payload checks.
 function buildEventStreamExtended(): Plan {
   const checks: PlanCheck[] = [];
-  const sseProjection = (id: string, assertion: Record<string, unknown>, evidence: string[], scenarioPath: string): PlanCheck => ({
+  const sseProjection = (
+    id: string,
+    assertion: Record<string, unknown>,
+    evidence: string[],
+    scenarioPath: string
+  ): PlanCheck => ({
     assertions: [assertion],
     checkId: `event-stream-ext.sse.${id}`,
     evidence,
@@ -642,19 +751,31 @@ function buildEventStreamExtended(): Plan {
   checks.push(
     sseProjection(
       "completed-turn-frame-events-include-state-snapshot",
-      { contains: "state.snapshot", field: "$.frameEvents", kind: "evidenceField" },
+      {
+        contains: "state.snapshot",
+        field: "$.frameEvents",
+        kind: "evidenceField",
+      },
       ["frameEvents"],
       "$.completed-tool-turn"
     ),
     sseProjection(
       "completed-turn-frame-events-include-iteration-start",
-      { contains: "iteration.start", field: "$.frameEvents", kind: "evidenceField" },
+      {
+        contains: "iteration.start",
+        field: "$.frameEvents",
+        kind: "evidenceField",
+      },
       ["frameEvents"],
       "$.completed-tool-turn"
     ),
     sseProjection(
       "completed-turn-frame-events-include-tool-result",
-      { contains: "tool.result", field: "$.frameEvents", kind: "evidenceField" },
+      {
+        contains: "tool.result",
+        field: "$.frameEvents",
+        kind: "evidenceField",
+      },
       ["frameEvents"],
       "$.completed-tool-turn"
     ),
@@ -666,7 +787,11 @@ function buildEventStreamExtended(): Plan {
     ),
     sseProjection(
       "completed-turn-source-event-types-start-with-turn-start",
-      { equals: "turn.start", field: "$.sourceEventTypes.0", kind: "evidenceField" },
+      {
+        equals: "turn.start",
+        field: "$.sourceEventTypes.0",
+        kind: "evidenceField",
+      },
       ["sourceEventTypes.0"],
       "$.completed-tool-turn"
     ),
@@ -697,13 +822,21 @@ function buildEventStreamExtended(): Plan {
     ),
     sseProjection(
       "completed-turn-frame-events-contain-tool-call-start",
-      { contains: "tool_call.start", field: "$.frameEvents", kind: "evidenceField" },
+      {
+        contains: "tool_call.start",
+        field: "$.frameEvents",
+        kind: "evidenceField",
+      },
       ["frameEvents"],
       "$.completed-tool-turn"
     ),
     sseProjection(
       "completed-turn-frame-events-contain-iteration-end",
-      { contains: "iteration.end", field: "$.frameEvents", kind: "evidenceField" },
+      {
+        contains: "iteration.end",
+        field: "$.frameEvents",
+        kind: "evidenceField",
+      },
       ["frameEvents"],
       "$.completed-tool-turn"
     ),
@@ -721,14 +854,23 @@ function buildEventStreamExtended(): Plan {
     ),
     sseProjection(
       "paused-approval-turn-source-events-include-approval-requested",
-      { contains: "approval.requested", field: "$.sourceEventTypes", kind: "evidenceField" },
+      {
+        contains: "approval.requested",
+        field: "$.sourceEventTypes",
+        kind: "evidenceField",
+      },
       ["sourceEventTypes"],
       "$.paused-approval-turn"
-    ),
+    )
   );
 
   // SSE eager subscription
-  const sseEager = (id: string, assertion: Record<string, unknown>, evidence: string[], scenarioPath: string): PlanCheck => ({
+  const sseEager = (
+    id: string,
+    assertion: Record<string, unknown>,
+    evidence: string[],
+    scenarioPath: string
+  ): PlanCheck => ({
     assertions: [assertion],
     checkId: `event-stream-ext.sse-eager.${id}`,
     evidence,
@@ -739,32 +881,53 @@ function buildEventStreamExtended(): Plan {
   checks.push(
     sseEager(
       "first-direct-event-turn-start",
-      { equals: "turn.start", field: "$.firstDirectEventType", kind: "evidenceField" },
+      {
+        equals: "turn.start",
+        field: "$.firstDirectEventType",
+        kind: "evidenceField",
+      },
       ["firstDirectEventType"],
       "$.completed-tool-turn"
     ),
     sseEager(
       "first-frame-event-turn-start",
-      { equals: "turn.start", field: "$.firstFrameEvent", kind: "evidenceField" },
+      {
+        equals: "turn.start",
+        field: "$.firstFrameEvent",
+        kind: "evidenceField",
+      },
       ["firstFrameEvent"],
       "$.completed-tool-turn"
     ),
     sseEager(
       "failed-turn-first-direct-event-turn-start",
-      { equals: "turn.start", field: "$.firstDirectEventType", kind: "evidenceField" },
+      {
+        equals: "turn.start",
+        field: "$.firstDirectEventType",
+        kind: "evidenceField",
+      },
       ["firstDirectEventType"],
       "$.failed-provider-turn"
     ),
     sseEager(
       "paused-turn-first-frame-event-turn-start",
-      { equals: "turn.start", field: "$.firstFrameEvent", kind: "evidenceField" },
+      {
+        equals: "turn.start",
+        field: "$.firstFrameEvent",
+        kind: "evidenceField",
+      },
       ["firstFrameEvent"],
       "$.paused-approval-turn"
-    ),
+    )
   );
 
   // AGUI projection
-  const agui = (id: string, assertion: Record<string, unknown>, evidence: string[], scenarioPath: string): PlanCheck => ({
+  const agui = (
+    id: string,
+    assertion: Record<string, unknown>,
+    evidence: string[],
+    scenarioPath: string
+  ): PlanCheck => ({
     assertions: [assertion],
     checkId: `event-stream-ext.agui.${id}`,
     evidence,
@@ -781,43 +944,81 @@ function buildEventStreamExtended(): Plan {
     ),
     agui(
       "completed-turn-event-types-include-run-finished",
-      { contains: "RUN_FINISHED", field: "$.eventTypes", kind: "evidenceField" },
+      {
+        contains: "RUN_FINISHED",
+        field: "$.eventTypes",
+        kind: "evidenceField",
+      },
       ["eventTypes"],
       "$.completed-tool-turn"
     ),
     agui(
       "completed-turn-event-types-include-state-snapshot",
-      { contains: "STATE_SNAPSHOT", field: "$.eventTypes", kind: "evidenceField" },
+      {
+        contains: "STATE_SNAPSHOT",
+        field: "$.eventTypes",
+        kind: "evidenceField",
+      },
       ["eventTypes"],
       "$.completed-tool-turn"
     ),
     agui(
       "completed-turn-event-types-include-tool-call-start",
-      { contains: "TOOL_CALL_START", field: "$.eventTypes", kind: "evidenceField" },
+      {
+        contains: "TOOL_CALL_START",
+        field: "$.eventTypes",
+        kind: "evidenceField",
+      },
       ["eventTypes"],
       "$.completed-tool-turn"
     ),
     agui(
       "completed-turn-event-types-include-tool-call-result",
-      { contains: "TOOL_CALL_RESULT", field: "$.eventTypes", kind: "evidenceField" },
+      {
+        contains: "TOOL_CALL_RESULT",
+        field: "$.eventTypes",
+        kind: "evidenceField",
+      },
       ["eventTypes"],
       "$.completed-tool-turn"
     ),
     agui(
       "completed-turn-event-types-include-text-message-start",
-      { contains: "TEXT_MESSAGE_START", field: "$.eventTypes", kind: "evidenceField" },
+      {
+        contains: "TEXT_MESSAGE_START",
+        field: "$.eventTypes",
+        kind: "evidenceField",
+      },
       ["eventTypes"],
       "$.completed-tool-turn"
     ),
-    agui(
-      "completed-turn-event-types-include-run-started-and-finished",
-      { contains: "RUN_FINISHED", field: "$.eventTypes", kind: "evidenceField" },
-      ["eventTypes"],
-      "$.completed-tool-turn"
-    ),
+    {
+      assertions: [
+        {
+          contains: "RUN_STARTED",
+          field: "$.eventTypes",
+          kind: "evidenceField",
+        },
+        {
+          contains: "RUN_FINISHED",
+          field: "$.eventTypes",
+          kind: "evidenceField",
+        },
+      ],
+      checkId:
+        "event-stream-ext.agui.completed-turn-event-types-include-run-started-and-finished",
+      evidence: ["eventTypes"],
+      input: { scenarioPath: "$.completed-tool-turn" },
+      operation: "event-stream.runtime-agui-projection",
+      scenario: "event-stream-scenarios",
+    },
     agui(
       "completed-turn-warnings-include-checkpoint-fallback",
-      { contains: "agui_state_checkpoint_custom_fallback", field: "$.warningCodes", kind: "evidenceField" },
+      {
+        contains: "agui_state_checkpoint_custom_fallback",
+        field: "$.warningCodes",
+        kind: "evidenceField",
+      },
       ["warningCodes"],
       "$.completed-tool-turn"
     ),
@@ -829,16 +1030,24 @@ function buildEventStreamExtended(): Plan {
     ),
     agui(
       "failed-turn-error-code-snake-case",
-      { field: "$.events.8.rawEvent.error.code", kind: "evidenceField", matches: "^[a-z0-9]+(?:_[a-z0-9]+)*$" },
+      {
+        field: "$.events.8.rawEvent.error.code",
+        kind: "evidenceField",
+        matches: "^[a-z0-9]+(?:_[a-z0-9]+)*$",
+      },
       ["events.8.rawEvent.error.code"],
       "$.failed-provider-turn"
     ),
     agui(
       "paused-turn-warnings-include-paused-coercion",
-      { contains: "agui_paused_turn_coerced_to_run_finished", field: "$.warningCodes", kind: "evidenceField" },
+      {
+        contains: "agui_paused_turn_coerced_to_run_finished",
+        field: "$.warningCodes",
+        kind: "evidenceField",
+      },
       ["warningCodes"],
       "$.paused-approval-turn"
-    ),
+    )
   );
 
   // Per-frame index assertions for the completed-tool-turn scenario. This
@@ -870,7 +1079,10 @@ function buildEventStreamExtended(): Plan {
     "state.checkpoint",
     "turn.end",
   ];
-  for (const [index, expectedType] of completedToolTurnFrameSequence.entries()) {
+  for (const [
+    index,
+    expectedType,
+  ] of completedToolTurnFrameSequence.entries()) {
     checks.push(
       sseProjection(
         `completed-turn-frame-event-${index.toString().padStart(2, "0")}`,
@@ -1008,7 +1220,12 @@ function buildEventStreamExtended(): Plan {
 function buildDriverApiExtended(): Plan {
   const checks: PlanCheck[] = [];
 
-  const driverExecute = (id: string, assertion: Record<string, unknown>, evidence: string[], scenarioPath: string): PlanCheck => ({
+  const driverExecute = (
+    id: string,
+    assertion: Record<string, unknown>,
+    evidence: string[],
+    scenarioPath: string
+  ): PlanCheck => ({
     assertions: [assertion],
     checkId: `driver-api-ext.execute.${id}`,
     evidence,
@@ -1025,7 +1242,11 @@ function buildDriverApiExtended(): Plan {
     ),
     driverExecute(
       "hook-turn-phase-string",
-      { field: "$.driver.phase", kind: "evidenceField", matches: "^(running|paused|completed|failed)$" },
+      {
+        field: "$.driver.phase",
+        kind: "evidenceField",
+        matches: "^(running|paused|completed|failed)$",
+      },
       ["driver.phase"],
       "$.driver-hook-turn"
     ),
@@ -1034,14 +1255,19 @@ function buildDriverApiExtended(): Plan {
       { kind: "errorEnvelope", path: "$.result.error" },
       ["result.error.code"],
       "$.driver-provider-failure"
-    ),
+    )
     // Snake-case-shape and non-empty-message probes were removed: evidenceField
     // reads context.evidence, but the error envelope lives at context.result —
     // those checks always failed regardless of adapter correctness. The
     // errorEnvelope assertion above already validates structural shape.
   );
 
-  const driverResume = (id: string, assertion: Record<string, unknown>, evidence: string[], scenarioPath: string): PlanCheck => ({
+  const driverResume = (
+    id: string,
+    assertion: Record<string, unknown>,
+    evidence: string[],
+    scenarioPath: string
+  ): PlanCheck => ({
     assertions: [assertion],
     checkId: `driver-api-ext.resume.${id}`,
     evidence,
@@ -1052,25 +1278,41 @@ function buildDriverApiExtended(): Plan {
   checks.push(
     driverResume(
       "approval-resolution-end-turn",
-      { equals: "end_turn", field: "$.driver.resolutionType", kind: "evidenceField" },
+      {
+        equals: "end_turn",
+        field: "$.driver.resolutionType",
+        kind: "evidenceField",
+      },
       ["driver.resolutionType"],
       "$.driver-resume-approval"
     ),
     driverResume(
       "approval-pending-call-id-list-non-empty",
-      { contains: "call-search", field: "$.driver.pendingToolCallIds", kind: "evidenceField" },
+      {
+        contains: "call-search",
+        field: "$.driver.pendingToolCallIds",
+        kind: "evidenceField",
+      },
       ["driver.pendingToolCallIds"],
       "$.driver-resume-approval"
     ),
     driverResume(
       "approval-decision-call-id-includes-call-search",
-      { contains: "call-search", field: "$.driver.approvalDecisionCallIds", kind: "evidenceField" },
+      {
+        contains: "call-search",
+        field: "$.driver.approvalDecisionCallIds",
+        kind: "evidenceField",
+      },
       ["driver.approvalDecisionCallIds"],
       "$.driver-resume-approval"
     ),
     driverResume(
       "missing-pending-call-resolution-fail",
-      { equals: "fail", field: "$.driver.resolutionType", kind: "evidenceField" },
+      {
+        equals: "fail",
+        field: "$.driver.resolutionType",
+        kind: "evidenceField",
+      },
       ["driver.resolutionType"],
       "$.driver-resume-missing-pending-call"
     ),
@@ -1079,7 +1321,7 @@ function buildDriverApiExtended(): Plan {
       { kind: "errorEnvelope", path: "$.result.error" },
       ["result.error.code"],
       "$.driver-resume-missing-pending-call"
-    ),
+    )
   );
 
   // Forward-looking probes against driver operations not declared by the
@@ -1103,7 +1345,11 @@ function buildDriverApiExtended(): Plan {
 function buildReactDriverExtended(): Plan {
   const checks: PlanCheck[] = [];
 
-  const hookCheck = (id: string, field: string, expected: number): PlanCheck => ({
+  const hookCheck = (
+    id: string,
+    field: string,
+    expected: number
+  ): PlanCheck => ({
     assertions: [
       { equals: expected, field: `$.${field}`, kind: "evidenceField" },
     ],
@@ -1117,7 +1363,7 @@ function buildReactDriverExtended(): Plan {
     hookCheck("before-iteration-twice", "hooks.beforeIteration", 2),
     hookCheck("around-model-twice", "hooks.aroundModel", 2),
     hookCheck("after-iteration-twice", "hooks.afterIteration", 2),
-    hookCheck("around-tool-once", "hooks.aroundTool", 1),
+    hookCheck("around-tool-once", "hooks.aroundTool", 1)
   );
 
   // Hook ordering: assert that beforeIteration hits at least 1 and afterIteration matches.
@@ -1133,33 +1379,31 @@ function buildReactDriverExtended(): Plan {
     hookFieldExists("before-iteration-present", "hooks.beforeIteration"),
     hookFieldExists("after-iteration-present", "hooks.afterIteration"),
     hookFieldExists("around-model-present", "hooks.aroundModel"),
-    hookFieldExists("around-tool-present", "hooks.aroundTool"),
+    hookFieldExists("around-tool-present", "hooks.aroundTool")
   );
 
   // Checkpoint trace
-  checks.push(
-    {
-      assertions: [
-        {
-          equals: 4,
-          field: "$.trace.checkpoint.evidence.checkpoint.manifestPathCount",
-          kind: "stateField",
-        },
-      ],
-      checkId: "react-driver-ext.checkpoint-manifest-path-count",
-      evidence: ["trace.checkpoint.evidence.checkpoint.manifestPathCount"],
-      input: { scenarioPath: "$.driver-checkpoint-turn" },
-      operation: "driver.checkpoint",
-      scenario: "driver-api-scenarios",
-      steps: [
-        {
-          input: { scenarioPath: "$.driver-checkpoint-turn" },
-          operation: "driver.checkpoint",
-          stepId: "checkpoint",
-        },
-      ],
-    } as PlanCheck,
-  );
+  checks.push({
+    assertions: [
+      {
+        equals: 4,
+        field: "$.trace.checkpoint.evidence.checkpoint.manifestPathCount",
+        kind: "stateField",
+      },
+    ],
+    checkId: "react-driver-ext.checkpoint-manifest-path-count",
+    evidence: ["trace.checkpoint.evidence.checkpoint.manifestPathCount"],
+    input: { scenarioPath: "$.driver-checkpoint-turn" },
+    operation: "driver.checkpoint",
+    scenario: "driver-api-scenarios",
+    steps: [
+      {
+        input: { scenarioPath: "$.driver-checkpoint-turn" },
+        operation: "driver.checkpoint",
+        stepId: "checkpoint",
+      },
+    ],
+  } as PlanCheck);
 
   // Forward-looking probes against react-driver concepts not declared by
   // driver-api TypeSpec were removed (validate-plans rejects them).

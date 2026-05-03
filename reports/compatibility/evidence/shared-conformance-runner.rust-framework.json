@@ -152,6 +152,224 @@
     {
       "assertionResults": [
         {
+          "assertionId": "driver-api-ext.execute.hook-turn-phase-completed.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "driver-api-ext.execute.hook-turn-phase-completed.requiredEvidence.driver.phase",
+          "message": "missing required evidence driver.phase",
+          "status": "fail"
+        }
+      ],
+      "checkId": "driver-api-ext.execute.hook-turn-phase-completed",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "driver.execute"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.driver-api.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "driver-api-ext.execute.hook-turn-phase-string.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "driver-api-ext.execute.hook-turn-phase-string.requiredEvidence.driver.phase",
+          "message": "missing required evidence driver.phase",
+          "status": "fail"
+        }
+      ],
+      "checkId": "driver-api-ext.execute.hook-turn-phase-string",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "driver.execute"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.driver-api.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "driver-api-ext.execute.provider-failure-error-envelope.1.errorEnvelope",
+          "status": "fail"
+        },
+        {
+          "assertionId": "driver-api-ext.execute.provider-failure-error-envelope.requiredEvidence.result.error",
+          "message": "missing required evidence result.error",
+          "status": "fail"
+        },
+        {
+          "assertionId": "driver-api-ext.execute.provider-failure-error-envelope.requiredEvidence.result.error.code",
+          "message": "missing required evidence result.error.code",
+          "status": "fail"
+        }
+      ],
+      "checkId": "driver-api-ext.execute.provider-failure-error-envelope",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "driver.execute"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.driver-api.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "driver-api-ext.resume.approval-decision-call-id-includes-call-search.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "driver-api-ext.resume.approval-decision-call-id-includes-call-search.requiredEvidence.driver.approvalDecisionCallIds",
+          "message": "missing required evidence driver.approvalDecisionCallIds",
+          "status": "fail"
+        }
+      ],
+      "checkId": "driver-api-ext.resume.approval-decision-call-id-includes-call-search",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "driver.resume"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.driver-api.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "driver-api-ext.resume.approval-pending-call-id-list-non-empty.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "driver-api-ext.resume.approval-pending-call-id-list-non-empty.requiredEvidence.driver.pendingToolCallIds",
+          "message": "missing required evidence driver.pendingToolCallIds",
+          "status": "fail"
+        }
+      ],
+      "checkId": "driver-api-ext.resume.approval-pending-call-id-list-non-empty",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "driver.resume"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.driver-api.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "driver-api-ext.resume.approval-resolution-end-turn.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "driver-api-ext.resume.approval-resolution-end-turn.requiredEvidence.driver.resolutionType",
+          "message": "missing required evidence driver.resolutionType",
+          "status": "fail"
+        }
+      ],
+      "checkId": "driver-api-ext.resume.approval-resolution-end-turn",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "driver.resume"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.driver-api.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "driver-api-ext.resume.missing-pending-call-error-envelope.1.errorEnvelope",
+          "status": "fail"
+        },
+        {
+          "assertionId": "driver-api-ext.resume.missing-pending-call-error-envelope.requiredEvidence.result.error",
+          "message": "missing required evidence result.error",
+          "status": "fail"
+        },
+        {
+          "assertionId": "driver-api-ext.resume.missing-pending-call-error-envelope.requiredEvidence.result.error.code",
+          "message": "missing required evidence result.error.code",
+          "status": "fail"
+        }
+      ],
+      "checkId": "driver-api-ext.resume.missing-pending-call-error-envelope",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "driver.resume"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.driver-api.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "driver-api-ext.resume.missing-pending-call-resolution-fail.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "driver-api-ext.resume.missing-pending-call-resolution-fail.requiredEvidence.driver.resolutionType",
+          "message": "missing required evidence driver.resolutionType",
+          "status": "fail"
+        }
+      ],
+      "checkId": "driver-api-ext.resume.missing-pending-call-resolution-fail",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "driver.resume"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.driver-api.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "event-stream.agui.failed-turn-error-projection.1.evidenceField",
           "status": "fail"
         },
@@ -403,6 +621,2558 @@
     {
       "assertionResults": [
         {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-00.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-00.requiredEvidence.eventTypes.0",
+          "message": "missing required evidence eventTypes.0",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-00",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-01.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-01.requiredEvidence.eventTypes.1",
+          "message": "missing required evidence eventTypes.1",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-01",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-02.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-02.requiredEvidence.eventTypes.2",
+          "message": "missing required evidence eventTypes.2",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-02",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-03.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-03.requiredEvidence.eventTypes.3",
+          "message": "missing required evidence eventTypes.3",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-03",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-04.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-04.requiredEvidence.eventTypes.4",
+          "message": "missing required evidence eventTypes.4",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-04",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-05.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-05.requiredEvidence.eventTypes.5",
+          "message": "missing required evidence eventTypes.5",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-05",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-06.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-06.requiredEvidence.eventTypes.6",
+          "message": "missing required evidence eventTypes.6",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-06",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-07.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-07.requiredEvidence.eventTypes.7",
+          "message": "missing required evidence eventTypes.7",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-07",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-08.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-08.requiredEvidence.eventTypes.8",
+          "message": "missing required evidence eventTypes.8",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-08",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-09.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-09.requiredEvidence.eventTypes.9",
+          "message": "missing required evidence eventTypes.9",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-09",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-10.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-10.requiredEvidence.eventTypes.10",
+          "message": "missing required evidence eventTypes.10",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-10",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-11.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-11.requiredEvidence.eventTypes.11",
+          "message": "missing required evidence eventTypes.11",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-11",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-12.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-12.requiredEvidence.eventTypes.12",
+          "message": "missing required evidence eventTypes.12",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-12",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-13.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-13.requiredEvidence.eventTypes.13",
+          "message": "missing required evidence eventTypes.13",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-13",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-14.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-14.requiredEvidence.eventTypes.14",
+          "message": "missing required evidence eventTypes.14",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-14",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-15.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-15.requiredEvidence.eventTypes.15",
+          "message": "missing required evidence eventTypes.15",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-15",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-16.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-16.requiredEvidence.eventTypes.16",
+          "message": "missing required evidence eventTypes.16",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-16",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-17.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-17.requiredEvidence.eventTypes.17",
+          "message": "missing required evidence eventTypes.17",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-17",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-18.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-18.requiredEvidence.eventTypes.18",
+          "message": "missing required evidence eventTypes.18",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-18",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-19.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-19.requiredEvidence.eventTypes.19",
+          "message": "missing required evidence eventTypes.19",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-19",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-20.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-20.requiredEvidence.eventTypes.20",
+          "message": "missing required evidence eventTypes.20",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-20",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-21.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-21.requiredEvidence.eventTypes.21",
+          "message": "missing required evidence eventTypes.21",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-21",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-22.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-22.requiredEvidence.eventTypes.22",
+          "message": "missing required evidence eventTypes.22",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-22",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-run-finished.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-run-finished.requiredEvidence.eventTypes",
+          "message": "missing required evidence eventTypes",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-types-include-run-finished",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-run-started.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-run-started.requiredEvidence.eventTypes",
+          "message": "missing required evidence eventTypes",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-types-include-run-started",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-run-started-and-finished.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-run-started-and-finished.2.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-run-started-and-finished.requiredEvidence.eventTypes",
+          "message": "missing required evidence eventTypes",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-types-include-run-started-and-finished",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-state-snapshot.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-state-snapshot.requiredEvidence.eventTypes",
+          "message": "missing required evidence eventTypes",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-types-include-state-snapshot",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-text-message-start.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-text-message-start.requiredEvidence.eventTypes",
+          "message": "missing required evidence eventTypes",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-types-include-text-message-start",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-tool-call-result.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-tool-call-result.requiredEvidence.eventTypes",
+          "message": "missing required evidence eventTypes",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-types-include-tool-call-result",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-tool-call-start.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-tool-call-start.requiredEvidence.eventTypes",
+          "message": "missing required evidence eventTypes",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-event-types-include-tool-call-start",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-warnings-include-checkpoint-fallback.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.completed-turn-warnings-include-checkpoint-fallback.requiredEvidence.warningCodes",
+          "message": "missing required evidence warningCodes",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.completed-turn-warnings-include-checkpoint-fallback",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.failed-turn-error-code-snake-case.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.failed-turn-error-code-snake-case.requiredEvidence.events.8.rawEvent.error.code",
+          "message": "missing required evidence events.8.rawEvent.error.code",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.failed-turn-error-code-snake-case",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.failed-turn-event-00.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.failed-turn-event-00.requiredEvidence.eventTypes.0",
+          "message": "missing required evidence eventTypes.0",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.failed-turn-event-00",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.failed-turn-event-01.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.failed-turn-event-01.requiredEvidence.eventTypes.1",
+          "message": "missing required evidence eventTypes.1",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.failed-turn-event-01",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.failed-turn-event-02.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.failed-turn-event-02.requiredEvidence.eventTypes.2",
+          "message": "missing required evidence eventTypes.2",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.failed-turn-event-02",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.failed-turn-event-03.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.failed-turn-event-03.requiredEvidence.eventTypes.3",
+          "message": "missing required evidence eventTypes.3",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.failed-turn-event-03",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.failed-turn-event-04.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.failed-turn-event-04.requiredEvidence.eventTypes.4",
+          "message": "missing required evidence eventTypes.4",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.failed-turn-event-04",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.failed-turn-event-05.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.failed-turn-event-05.requiredEvidence.eventTypes.5",
+          "message": "missing required evidence eventTypes.5",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.failed-turn-event-05",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.failed-turn-event-06.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.failed-turn-event-06.requiredEvidence.eventTypes.6",
+          "message": "missing required evidence eventTypes.6",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.failed-turn-event-06",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.failed-turn-event-07.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.failed-turn-event-07.requiredEvidence.eventTypes.7",
+          "message": "missing required evidence eventTypes.7",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.failed-turn-event-07",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.failed-turn-event-08.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.failed-turn-event-08.requiredEvidence.eventTypes.8",
+          "message": "missing required evidence eventTypes.8",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.failed-turn-event-08",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.failed-turn-event-types-end-with-run-error.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.failed-turn-event-types-end-with-run-error.requiredEvidence.eventTypes.8",
+          "message": "missing required evidence eventTypes.8",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.failed-turn-event-types-end-with-run-error",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-00.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-00.requiredEvidence.eventTypes.0",
+          "message": "missing required evidence eventTypes.0",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.paused-turn-event-00",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-01.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-01.requiredEvidence.eventTypes.1",
+          "message": "missing required evidence eventTypes.1",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.paused-turn-event-01",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-02.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-02.requiredEvidence.eventTypes.2",
+          "message": "missing required evidence eventTypes.2",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.paused-turn-event-02",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-03.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-03.requiredEvidence.eventTypes.3",
+          "message": "missing required evidence eventTypes.3",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.paused-turn-event-03",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-04.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-04.requiredEvidence.eventTypes.4",
+          "message": "missing required evidence eventTypes.4",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.paused-turn-event-04",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-05.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-05.requiredEvidence.eventTypes.5",
+          "message": "missing required evidence eventTypes.5",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.paused-turn-event-05",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-06.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-06.requiredEvidence.eventTypes.6",
+          "message": "missing required evidence eventTypes.6",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.paused-turn-event-06",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-07.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-07.requiredEvidence.eventTypes.7",
+          "message": "missing required evidence eventTypes.7",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.paused-turn-event-07",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-08.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-08.requiredEvidence.eventTypes.8",
+          "message": "missing required evidence eventTypes.8",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.paused-turn-event-08",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-09.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-09.requiredEvidence.eventTypes.9",
+          "message": "missing required evidence eventTypes.9",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.paused-turn-event-09",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-10.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-10.requiredEvidence.eventTypes.10",
+          "message": "missing required evidence eventTypes.10",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.paused-turn-event-10",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-11.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-11.requiredEvidence.eventTypes.11",
+          "message": "missing required evidence eventTypes.11",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.paused-turn-event-11",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-12.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-12.requiredEvidence.eventTypes.12",
+          "message": "missing required evidence eventTypes.12",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.paused-turn-event-12",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-13.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-event-13.requiredEvidence.eventTypes.13",
+          "message": "missing required evidence eventTypes.13",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.paused-turn-event-13",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-warnings-include-paused-coercion.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.agui.paused-turn-warnings-include-paused-coercion.requiredEvidence.warningCodes",
+          "message": "missing required evidence warningCodes",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.agui.paused-turn-warnings-include-paused-coercion",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-agui-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse-eager.failed-turn-first-direct-event-turn-start.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.sse-eager.failed-turn-first-direct-event-turn-start.requiredEvidence.firstDirectEventType",
+          "message": "missing required evidence firstDirectEventType",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.sse-eager.failed-turn-first-direct-event-turn-start",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-sse-eager-subscription"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse-eager.first-direct-event-turn-start.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.sse-eager.first-direct-event-turn-start.requiredEvidence.firstDirectEventType",
+          "message": "missing required evidence firstDirectEventType",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.sse-eager.first-direct-event-turn-start",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-sse-eager-subscription"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse-eager.first-frame-event-turn-start.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.sse-eager.first-frame-event-turn-start.requiredEvidence.firstFrameEvent",
+          "message": "missing required evidence firstFrameEvent",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.sse-eager.first-frame-event-turn-start",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-sse-eager-subscription"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse-eager.paused-turn-first-frame-event-turn-start.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.sse-eager.paused-turn-first-frame-event-turn-start.requiredEvidence.firstFrameEvent",
+          "message": "missing required evidence firstFrameEvent",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.sse-eager.paused-turn-first-frame-event-turn-start",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-sse-eager-subscription"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-00.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-00.requiredEvidence.frameEvents.0",
+          "message": "missing required evidence frameEvents.0",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-event-00",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-sse-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-01.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-01.requiredEvidence.frameEvents.1",
+          "message": "missing required evidence frameEvents.1",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-event-01",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-sse-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-02.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-02.requiredEvidence.frameEvents.2",
+          "message": "missing required evidence frameEvents.2",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-event-02",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-sse-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-03.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-03.requiredEvidence.frameEvents.3",
+          "message": "missing required evidence frameEvents.3",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-event-03",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-sse-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-04.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-04.requiredEvidence.frameEvents.4",
+          "message": "missing required evidence frameEvents.4",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-event-04",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-sse-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-05.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-05.requiredEvidence.frameEvents.5",
+          "message": "missing required evidence frameEvents.5",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-event-05",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-sse-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-06.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-06.requiredEvidence.frameEvents.6",
+          "message": "missing required evidence frameEvents.6",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-event-06",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-sse-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-07.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-07.requiredEvidence.frameEvents.7",
+          "message": "missing required evidence frameEvents.7",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-event-07",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-sse-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-08.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-08.requiredEvidence.frameEvents.8",
+          "message": "missing required evidence frameEvents.8",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-event-08",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-sse-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-09.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-09.requiredEvidence.frameEvents.9",
+          "message": "missing required evidence frameEvents.9",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-event-09",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-sse-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-10.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-10.requiredEvidence.frameEvents.10",
+          "message": "missing required evidence frameEvents.10",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-event-10",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-sse-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-11.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-11.requiredEvidence.frameEvents.11",
+          "message": "missing required evidence frameEvents.11",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-event-11",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-sse-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-12.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-12.requiredEvidence.frameEvents.12",
+          "message": "missing required evidence frameEvents.12",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-event-12",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-sse-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-13.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-13.requiredEvidence.frameEvents.13",
+          "message": "missing required evidence frameEvents.13",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-event-13",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-sse-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-14.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-14.requiredEvidence.frameEvents.14",
+          "message": "missing required evidence frameEvents.14",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-event-14",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-sse-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-15.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-15.requiredEvidence.frameEvents.15",
+          "message": "missing required evidence frameEvents.15",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-event-15",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-sse-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-16.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-16.requiredEvidence.frameEvents.16",
+          "message": "missing required evidence frameEvents.16",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-event-16",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-sse-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-17.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-17.requiredEvidence.frameEvents.17",
+          "message": "missing required evidence frameEvents.17",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-event-17",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-sse-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-18.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-18.requiredEvidence.frameEvents.18",
+          "message": "missing required evidence frameEvents.18",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-event-18",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-sse-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-19.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-19.requiredEvidence.frameEvents.19",
+          "message": "missing required evidence frameEvents.19",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-event-19",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-sse-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-20.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-20.requiredEvidence.frameEvents.20",
+          "message": "missing required evidence frameEvents.20",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-event-20",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-sse-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-21.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-21.requiredEvidence.frameEvents.21",
+          "message": "missing required evidence frameEvents.21",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-event-21",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-sse-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-22.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-22.requiredEvidence.frameEvents.22",
+          "message": "missing required evidence frameEvents.22",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-event-22",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-sse-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-23.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-23.requiredEvidence.frameEvents.23",
+          "message": "missing required evidence frameEvents.23",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-event-23",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-sse-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-contain-iteration-end.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-contain-iteration-end.requiredEvidence.frameEvents",
+          "message": "missing required evidence frameEvents",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-events-contain-iteration-end",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-sse-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-contain-tool-call-start.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-contain-tool-call-start.requiredEvidence.frameEvents",
+          "message": "missing required evidence frameEvents",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-events-contain-tool-call-start",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-sse-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-contain-turn-end.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-contain-turn-end.requiredEvidence.frameEvents",
+          "message": "missing required evidence frameEvents",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-events-contain-turn-end",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-sse-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-contain-turn-start.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-contain-turn-start.requiredEvidence.frameEvents",
+          "message": "missing required evidence frameEvents",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-events-contain-turn-start",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-sse-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-end-with-turn-end.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-end-with-turn-end.requiredEvidence.frameEvents.23",
+          "message": "missing required evidence frameEvents.23",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-events-end-with-turn-end",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-sse-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-include-iteration-start.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-include-iteration-start.requiredEvidence.frameEvents",
+          "message": "missing required evidence frameEvents",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-events-include-iteration-start",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-sse-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-include-state-snapshot.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-include-state-snapshot.requiredEvidence.frameEvents",
+          "message": "missing required evidence frameEvents",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-events-include-state-snapshot",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-sse-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-include-text-delta.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-include-text-delta.requiredEvidence.frameEvents",
+          "message": "missing required evidence frameEvents",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-events-include-text-delta",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-sse-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-include-tool-result.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-include-tool-result.requiredEvidence.frameEvents",
+          "message": "missing required evidence frameEvents",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-frame-events-include-tool-result",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-sse-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-no-error-event.1.noEvent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-no-error-event.requiredEvidence.frameEvents",
+          "message": "missing required evidence frameEvents",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-no-error-event",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-sse-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-source-event-types-start-with-turn-start.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.completed-turn-source-event-types-start-with-turn-start.requiredEvidence.sourceEventTypes.0",
+          "message": "missing required evidence sourceEventTypes.0",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.completed-turn-source-event-types-start-with-turn-start",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-sse-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.failed-provider-turn-frame-events-include-error.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.failed-provider-turn-frame-events-include-error.requiredEvidence.frameEvents",
+          "message": "missing required evidence frameEvents",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.failed-provider-turn-frame-events-include-error",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-sse-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ext.sse.paused-approval-turn-source-events-include-approval-requested.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "event-stream-ext.sse.paused-approval-turn-source-events-include-approval-requested.requiredEvidence.sourceEventTypes",
+          "message": "missing required evidence sourceEventTypes",
+          "status": "fail"
+        }
+      ],
+      "checkId": "event-stream-ext.sse.paused-approval-turn-source-events-include-approval-requested",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "event-stream.runtime-sse-projection"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.event-stream.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "react-driver-callable.after-iteration.1.evidenceField",
           "status": "fail"
         },
@@ -530,6 +3300,243 @@
           }
         },
         "traceStepIds": ["checkpoint"]
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "react-driver-ext.after-iteration-twice.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "react-driver-ext.after-iteration-twice.requiredEvidence.hooks.afterIteration",
+          "message": "missing required evidence hooks.afterIteration",
+          "status": "fail"
+        }
+      ],
+      "checkId": "react-driver-ext.after-iteration-twice",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "driver.execute"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.react-driver.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "react-driver-ext.around-model-twice.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "react-driver-ext.around-model-twice.requiredEvidence.hooks.aroundModel",
+          "message": "missing required evidence hooks.aroundModel",
+          "status": "fail"
+        }
+      ],
+      "checkId": "react-driver-ext.around-model-twice",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "driver.execute"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.react-driver.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "react-driver-ext.around-tool-once.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "react-driver-ext.around-tool-once.requiredEvidence.hooks.aroundTool",
+          "message": "missing required evidence hooks.aroundTool",
+          "status": "fail"
+        }
+      ],
+      "checkId": "react-driver-ext.around-tool-once",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "driver.execute"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.react-driver.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "react-driver-ext.before-iteration-twice.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "react-driver-ext.before-iteration-twice.requiredEvidence.hooks.beforeIteration",
+          "message": "missing required evidence hooks.beforeIteration",
+          "status": "fail"
+        }
+      ],
+      "checkId": "react-driver-ext.before-iteration-twice",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "driver.execute"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.react-driver.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "react-driver-ext.checkpoint-manifest-path-count.1.stateField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "react-driver-ext.checkpoint-manifest-path-count.requiredEvidence.trace.checkpoint.evidence.checkpoint.manifestPathCount",
+          "message": "missing required evidence trace.checkpoint.evidence.checkpoint.manifestPathCount",
+          "status": "fail"
+        }
+      ],
+      "checkId": "react-driver-ext.checkpoint-manifest-path-count",
+      "details": {
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.react-driver.extended",
+        "adapterErrors": {
+          "checkpoint": {
+            "code": "rust_framework_operation_not_implemented",
+            "details": {
+              "operation": "driver.checkpoint"
+            },
+            "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+          }
+        },
+        "traceStepIds": ["checkpoint"]
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "react-driver-ext.hook-field-present.after-iteration-present.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "react-driver-ext.hook-field-present.after-iteration-present.requiredEvidence.hooks.afterIteration",
+          "message": "missing required evidence hooks.afterIteration",
+          "status": "fail"
+        }
+      ],
+      "checkId": "react-driver-ext.hook-field-present.after-iteration-present",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "driver.execute"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.react-driver.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "react-driver-ext.hook-field-present.around-model-present.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "react-driver-ext.hook-field-present.around-model-present.requiredEvidence.hooks.aroundModel",
+          "message": "missing required evidence hooks.aroundModel",
+          "status": "fail"
+        }
+      ],
+      "checkId": "react-driver-ext.hook-field-present.around-model-present",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "driver.execute"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.react-driver.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "react-driver-ext.hook-field-present.around-tool-present.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "react-driver-ext.hook-field-present.around-tool-present.requiredEvidence.hooks.aroundTool",
+          "message": "missing required evidence hooks.aroundTool",
+          "status": "fail"
+        }
+      ],
+      "checkId": "react-driver-ext.hook-field-present.around-tool-present",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "driver.execute"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.react-driver.extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "react-driver-ext.hook-field-present.before-iteration-present.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "react-driver-ext.hook-field-present.before-iteration-present.requiredEvidence.hooks.beforeIteration",
+          "message": "missing required evidence hooks.beforeIteration",
+          "status": "fail"
+        }
+      ],
+      "checkId": "react-driver-ext.hook-field-present.before-iteration-present",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "driver.execute"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.react-driver.extended"
       },
       "status": "fail"
     },
@@ -836,6 +3843,786 @@
     {
       "assertionResults": [
         {
+          "assertionId": "runtime-callable-ext.approval-resolve.decision-call-id-matches.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "runtime-callable-ext.approval-resolve.decision-call-id-matches.requiredEvidence.approval.decisions.0.callId",
+          "message": "missing required evidence approval.decisions.0.callId",
+          "status": "fail"
+        }
+      ],
+      "checkId": "runtime-callable-ext.approval-resolve.decision-call-id-matches",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "runtime.approval-resolve"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.approval-resolve.decision-type-approve.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "runtime-callable-ext.approval-resolve.decision-type-approve.requiredEvidence.approval.decisions.0.type",
+          "message": "missing required evidence approval.decisions.0.type",
+          "status": "fail"
+        }
+      ],
+      "checkId": "runtime-callable-ext.approval-resolve.decision-type-approve",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "runtime.approval-resolve"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.approval-resolve.executed-tools-include-email.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "runtime-callable-ext.approval-resolve.executed-tools-include-email.requiredEvidence.tool.execution.executedNames",
+          "message": "missing required evidence tool.execution.executedNames",
+          "status": "fail"
+        }
+      ],
+      "checkId": "runtime-callable-ext.approval-resolve.executed-tools-include-email",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "runtime.approval-resolve"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.approval-resolve.executed-tools-include-search.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "runtime-callable-ext.approval-resolve.executed-tools-include-search.requiredEvidence.tool.execution.executedNames",
+          "message": "missing required evidence tool.execution.executedNames",
+          "status": "fail"
+        }
+      ],
+      "checkId": "runtime-callable-ext.approval-resolve.executed-tools-include-search",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "runtime.approval-resolve"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.approval-resolve.paused-phase-paused.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "runtime-callable-ext.approval-resolve.paused-phase-paused.requiredEvidence.approval.pausedPhase",
+          "message": "missing required evidence approval.pausedPhase",
+          "status": "fail"
+        }
+      ],
+      "checkId": "runtime-callable-ext.approval-resolve.paused-phase-paused",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "runtime.approval-resolve"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.approval-resolve.resumed-phase-completed.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "runtime-callable-ext.approval-resolve.resumed-phase-completed.requiredEvidence.approval.resumedPhase",
+          "message": "missing required evidence approval.resumedPhase",
+          "status": "fail"
+        }
+      ],
+      "checkId": "runtime-callable-ext.approval-resolve.resumed-phase-completed",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "runtime.approval-resolve"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.cancel-execution.cancel-invocation-count.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "runtime-callable-ext.cancel-execution.cancel-invocation-count.requiredEvidence.cancellation.cancelInvocations",
+          "message": "missing required evidence cancellation.cancelInvocations",
+          "status": "fail"
+        }
+      ],
+      "checkId": "runtime-callable-ext.cancel-execution.cancel-invocation-count",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "runtime.cancel-execution"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.cancel-execution.error-event-count-one.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "runtime-callable-ext.cancel-execution.error-event-count-one.requiredEvidence.cancellation.errorEventCount",
+          "message": "missing required evidence cancellation.errorEventCount",
+          "status": "fail"
+        }
+      ],
+      "checkId": "runtime-callable-ext.cancel-execution.error-event-count-one",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "runtime.cancel-execution"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.cancel-execution.observed-event-index-zero.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "runtime-callable-ext.cancel-execution.observed-event-index-zero.requiredEvidence.cancellation.observedEventIndex",
+          "message": "missing required evidence cancellation.observedEventIndex",
+          "status": "fail"
+        }
+      ],
+      "checkId": "runtime-callable-ext.cancel-execution.observed-event-index-zero",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "runtime.cancel-execution"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.cancel-execution.observed-event-type.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "runtime-callable-ext.cancel-execution.observed-event-type.requiredEvidence.cancellation.observedEventType",
+          "message": "missing required evidence cancellation.observedEventType",
+          "status": "fail"
+        }
+      ],
+      "checkId": "runtime-callable-ext.cancel-execution.observed-event-type",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "runtime.cancel-execution"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.cancel-execution.runtime-phase-failed.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "runtime-callable-ext.cancel-execution.runtime-phase-failed.requiredEvidence.runtime.phase",
+          "message": "missing required evidence runtime.phase",
+          "status": "fail"
+        }
+      ],
+      "checkId": "runtime-callable-ext.cancel-execution.runtime-phase-failed",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "runtime.cancel-execution"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.provider-generate.call-count-positive.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "runtime-callable-ext.provider-generate.call-count-positive.requiredEvidence.provider.generate.callCount",
+          "message": "missing required evidence provider.generate.callCount",
+          "status": "fail"
+        }
+      ],
+      "checkId": "runtime-callable-ext.provider-generate.call-count-positive",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "runtime.provider-generate"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.provider-generate.finish-reason-string.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "runtime-callable-ext.provider-generate.finish-reason-string.requiredEvidence.provider.generate.response.finishReason",
+          "message": "missing required evidence provider.generate.response.finishReason",
+          "status": "fail"
+        }
+      ],
+      "checkId": "runtime-callable-ext.provider-generate.finish-reason-string",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "runtime.provider-generate"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.provider-generate.first-part-text-shape.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "runtime-callable-ext.provider-generate.first-part-text-shape.requiredEvidence.provider.generate.response.parts.0.type",
+          "message": "missing required evidence provider.generate.response.parts.0.type",
+          "status": "fail"
+        }
+      ],
+      "checkId": "runtime-callable-ext.provider-generate.first-part-text-shape",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "runtime.provider-generate"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.provider-generate.response-finish-reason-equals-stop.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "runtime-callable-ext.provider-generate.response-finish-reason-equals-stop.requiredEvidence.provider.generate.response.finishReason",
+          "message": "missing required evidence provider.generate.response.finishReason",
+          "status": "fail"
+        }
+      ],
+      "checkId": "runtime-callable-ext.provider-generate.response-finish-reason-equals-stop",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "runtime.provider-generate"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.provider-generate.response-parts-first-present.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "runtime-callable-ext.provider-generate.response-parts-first-present.requiredEvidence.provider.generate.response.parts.0",
+          "message": "missing required evidence provider.generate.response.parts.0",
+          "status": "fail"
+        }
+      ],
+      "checkId": "runtime-callable-ext.provider-generate.response-parts-first-present",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "runtime.provider-generate"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.provider-stream.chunk-types-include-finish.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "runtime-callable-ext.provider-stream.chunk-types-include-finish.requiredEvidence.provider.stream.chunkTypes",
+          "message": "missing required evidence provider.stream.chunkTypes",
+          "status": "fail"
+        }
+      ],
+      "checkId": "runtime-callable-ext.provider-stream.chunk-types-include-finish",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "runtime.provider-stream"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.provider-stream.chunk-types-text-delta-first.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "runtime-callable-ext.provider-stream.chunk-types-text-delta-first.requiredEvidence.provider.stream.chunkTypes.0",
+          "message": "missing required evidence provider.stream.chunkTypes.0",
+          "status": "fail"
+        }
+      ],
+      "checkId": "runtime-callable-ext.provider-stream.chunk-types-text-delta-first",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "runtime.provider-stream"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.provider-stream.emitted-event-types-include-message-done.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "runtime-callable-ext.provider-stream.emitted-event-types-include-message-done.requiredEvidence.provider.stream.emittedEventTypes",
+          "message": "missing required evidence provider.stream.emittedEventTypes",
+          "status": "fail"
+        }
+      ],
+      "checkId": "runtime-callable-ext.provider-stream.emitted-event-types-include-message-done",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "runtime.provider-stream"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.provider-stream.emitted-event-types-include-message-start.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "runtime-callable-ext.provider-stream.emitted-event-types-include-message-start.requiredEvidence.provider.stream.emittedEventTypes",
+          "message": "missing required evidence provider.stream.emittedEventTypes",
+          "status": "fail"
+        }
+      ],
+      "checkId": "runtime-callable-ext.provider-stream.emitted-event-types-include-message-start",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "runtime.provider-stream"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.provider-stream.emitted-event-types-text-delta.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "runtime-callable-ext.provider-stream.emitted-event-types-text-delta.requiredEvidence.provider.stream.emittedEventTypes",
+          "message": "missing required evidence provider.stream.emittedEventTypes",
+          "status": "fail"
+        }
+      ],
+      "checkId": "runtime-callable-ext.provider-stream.emitted-event-types-text-delta",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "runtime.provider-stream"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.provider-stream.response-text-matches-scenario.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "runtime-callable-ext.provider-stream.response-text-matches-scenario.requiredEvidence.provider.stream.response.parts.0.text",
+          "message": "missing required evidence provider.stream.response.parts.0.text",
+          "status": "fail"
+        }
+      ],
+      "checkId": "runtime-callable-ext.provider-stream.response-text-matches-scenario",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "runtime.provider-stream"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.tool-execute.call-count-equals-one.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "runtime-callable-ext.tool-execute.call-count-equals-one.requiredEvidence.tool.execution.callCount",
+          "message": "missing required evidence tool.execution.callCount",
+          "status": "fail"
+        }
+      ],
+      "checkId": "runtime-callable-ext.tool-execute.call-count-equals-one",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "runtime.tool-execute"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.tool-execute.input-query-matches.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "runtime-callable-ext.tool-execute.input-query-matches.requiredEvidence.tool.execution.inputs.0.query",
+          "message": "missing required evidence tool.execution.inputs.0.query",
+          "status": "fail"
+        }
+      ],
+      "checkId": "runtime-callable-ext.tool-execute.input-query-matches",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "runtime.tool-execute"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.tool-execute.output-shape-matches-scenario.1.schemaValid",
+          "status": "fail"
+        },
+        {
+          "assertionId": "runtime-callable-ext.tool-execute.output-shape-matches-scenario.requiredEvidence.tool.execution.outputs.0",
+          "message": "missing required evidence tool.execution.outputs.0",
+          "status": "fail"
+        }
+      ],
+      "checkId": "runtime-callable-ext.tool-execute.output-shape-matches-scenario",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "runtime.tool-execute"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.tool-execute.output-source-matches.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "runtime-callable-ext.tool-execute.output-source-matches.requiredEvidence.tool.execution.outputs.0.source",
+          "message": "missing required evidence tool.execution.outputs.0.source",
+          "status": "fail"
+        }
+      ],
+      "checkId": "runtime-callable-ext.tool-execute.output-source-matches",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "runtime.tool-execute"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.tool-execute.state-phase-completed.1.stateField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "runtime-callable-ext.tool-execute.state-phase-completed.requiredEvidence.toolExecution.status.phase",
+          "message": "missing required evidence toolExecution.status.phase",
+          "status": "fail"
+        }
+      ],
+      "checkId": "runtime-callable-ext.tool-execute.state-phase-completed",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "runtime.tool-execute"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.tool-execute.state-tool-results-total-one.1.stateField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "runtime-callable-ext.tool-execute.state-tool-results-total-one.requiredEvidence.toolExecution.status.manifest.toolResults.total",
+          "message": "missing required evidence toolExecution.status.manifest.toolResults.total",
+          "status": "fail"
+        }
+      ],
+      "checkId": "runtime-callable-ext.tool-execute.state-tool-results-total-one",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "runtime.tool-execute"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.validate-structured-output.resolution-fail.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "runtime-callable-ext.validate-structured-output.resolution-fail.requiredEvidence.validation.resolutionType",
+          "message": "missing required evidence validation.resolutionType",
+          "status": "fail"
+        }
+      ],
+      "checkId": "runtime-callable-ext.validate-structured-output.resolution-fail",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "runtime.validate-structured-output"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-callable-ext.validate-structured-output.resolution-type-string.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "runtime-callable-ext.validate-structured-output.resolution-type-string.requiredEvidence.validation.resolutionType",
+          "message": "missing required evidence validation.resolutionType",
+          "status": "fail"
+        }
+      ],
+      "checkId": "runtime-callable-ext.validate-structured-output.resolution-type-string",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "runtime.validate-structured-output"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "runtime-api.approval-resolve.paused-resume.1.stateField",
           "status": "fail"
         },
@@ -1100,6 +4887,402 @@
         "traceStepIds": ["recovery"]
       },
       "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-lifecycle-ext.approval-resolve.paused-phase-trace.1.stateField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.approval-resolve.paused-phase-trace.requiredEvidence.trace.approval.evidence.approval.pausedPhase",
+          "message": "missing required evidence trace.approval.evidence.approval.pausedPhase",
+          "status": "fail"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.approval-resolve.paused-phase-trace",
+      "details": {
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.runtime-api.lifecycle-extended",
+        "adapterErrors": {
+          "approval": {
+            "code": "rust_framework_operation_not_implemented",
+            "details": {
+              "operation": "runtime.approval-resolve"
+            },
+            "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+          }
+        },
+        "traceStepIds": ["approval"]
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-lifecycle-ext.approval-resolve.resumed-phase-trace.1.stateField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.approval-resolve.resumed-phase-trace.requiredEvidence.trace.approval.evidence.approval.resumedPhase",
+          "message": "missing required evidence trace.approval.evidence.approval.resumedPhase",
+          "status": "fail"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.approval-resolve.resumed-phase-trace",
+      "details": {
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.runtime-api.lifecycle-extended",
+        "adapterErrors": {
+          "approval": {
+            "code": "rust_framework_operation_not_implemented",
+            "details": {
+              "operation": "runtime.approval-resolve"
+            },
+            "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+          }
+        },
+        "traceStepIds": ["approval"]
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-lifecycle-ext.branch-create.created-head-hash-format.1.stateField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.branch-create.created-head-hash-format.requiredEvidence.branch.createdHeadTurnNodeHash",
+          "message": "missing required evidence branch.createdHeadTurnNodeHash",
+          "status": "fail"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.branch-create.created-head-hash-format",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "runtime.branch-create"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.runtime-api.lifecycle-extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-lifecycle-ext.branch-create.source-head-hash-format.1.stateField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.branch-create.source-head-hash-format.requiredEvidence.branch.sourceHeadTurnNodeHash",
+          "message": "missing required evidence branch.sourceHeadTurnNodeHash",
+          "status": "fail"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.branch-create.source-head-hash-format",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "runtime.branch-create"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.runtime-api.lifecycle-extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-lifecycle-ext.branch-create.source-message-count.1.stateField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.branch-create.source-message-count.requiredEvidence.branch.sourceMessageCount",
+          "message": "missing required evidence branch.sourceMessageCount",
+          "status": "fail"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.branch-create.source-message-count",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "runtime.branch-create"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.runtime-api.lifecycle-extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-lifecycle-ext.branch-create.source-phase-completed.1.stateField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.branch-create.source-phase-completed.requiredEvidence.branch.completedTurnPhase",
+          "message": "missing required evidence branch.completedTurnPhase",
+          "status": "fail"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.branch-create.source-phase-completed",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "runtime.branch-create"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.runtime-api.lifecycle-extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-lifecycle-ext.context-transform.message-count.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.context-transform.message-count.requiredEvidence.context.messageCount",
+          "message": "missing required evidence context.messageCount",
+          "status": "fail"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.context-transform.message-count",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "runtime.context-transform"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.runtime-api.lifecycle-extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-lifecycle-ext.context-transform.runtime-phase-completed.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.context-transform.runtime-phase-completed.requiredEvidence.runtime.phase",
+          "message": "missing required evidence runtime.phase",
+          "status": "fail"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.context-transform.runtime-phase-completed",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "runtime.context-transform"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.runtime-api.lifecycle-extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-lifecycle-ext.context-transform.summary-text.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.context-transform.summary-text.requiredEvidence.context.summaryText",
+          "message": "missing required evidence context.summaryText",
+          "status": "fail"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.context-transform.summary-text",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "runtime.context-transform"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.runtime-api.lifecycle-extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-lifecycle-ext.execute-turn.phase-completed.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.execute-turn.phase-completed.requiredEvidence.runtime.phase",
+          "message": "missing required evidence runtime.phase",
+          "status": "fail"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.execute-turn.phase-completed",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "runtime.execute-turn"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.runtime-api.lifecycle-extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-lifecycle-ext.execute-turn.phase-enum.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.execute-turn.phase-enum.requiredEvidence.runtime.phase",
+          "message": "missing required evidence runtime.phase",
+          "status": "fail"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.execute-turn.phase-enum",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "runtime.execute-turn"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.runtime-api.lifecycle-extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-lifecycle-ext.recover-result.first-object-type.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.recover-result.first-object-type.requiredEvidence.recovery.firstObjectType",
+          "message": "missing required evidence recovery.firstObjectType",
+          "status": "fail"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.recover-result.first-object-type",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "runtime.recover-result"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.runtime-api.lifecycle-extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-lifecycle-ext.recover-result.first-task-id.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.recover-result.first-task-id.requiredEvidence.recovery.firstTaskId",
+          "message": "missing required evidence recovery.firstTaskId",
+          "status": "fail"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.recover-result.first-task-id",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "runtime.recover-result"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.runtime-api.lifecycle-extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-lifecycle-ext.recover-result.last-turn-node-hash-format.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.recover-result.last-turn-node-hash-format.requiredEvidence.recovery.lastTurnNodeHash",
+          "message": "missing required evidence recovery.lastTurnNodeHash",
+          "status": "fail"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.recover-result.last-turn-node-hash-format",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "runtime.recover-result"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.runtime-api.lifecycle-extended"
+      },
+      "status": "fail"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-lifecycle-ext.recover-result.uncommitted-count.1.evidenceField",
+          "status": "fail"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.recover-result.uncommitted-count.requiredEvidence.recovery.uncommittedStagedResults",
+          "message": "missing required evidence recovery.uncommittedStagedResults",
+          "status": "fail"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.recover-result.uncommitted-count",
+      "details": {
+        "adapterError": {
+          "code": "rust_framework_operation_not_implemented",
+          "details": {
+            "operation": "runtime.recover-result"
+          },
+          "message": "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet"
+        },
+        "adapterId": "rust-framework",
+        "planId": "tuvren.framework.runtime-api.lifecycle-extended"
+      },
+      "status": "fail"
     }
   ],
   "command": [
@@ -1114,10 +5297,10 @@
   "project": "framework-rust-conformance-runner",
   "status": "fail",
   "summary": {
-    "failedChecks": 26,
+    "failedChecks": 186,
     "passedChecks": 0,
-    "totalChecks": 26,
-    "applicableChecks": 26,
+    "totalChecks": 186,
+    "applicableChecks": 186,
     "nonApplicableChecks": 0
   },
   "suiteId": "tuvren.framework.promoted-authority",

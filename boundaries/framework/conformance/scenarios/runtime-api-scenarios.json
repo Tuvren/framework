@@ -40,6 +40,15 @@
       "name": "search",
       "input": { "query": "shared docs" }
     },
+    "toolResultSchema": {
+      "type": "object",
+      "required": ["ok", "source"],
+      "properties": {
+        "ok": { "const": true },
+        "source": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
     "toolResult": { "ok": true, "source": "shared scenario" },
     "finalText": "tool finished from shared scenario"
   },
