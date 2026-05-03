@@ -81,6 +81,7 @@ export function createRuntimeKernel(
     branch: {
       async create(branchId, threadId, fromTurnNodeHash) {
         return await backend.transact(async (tx) => {
+          await assertBranchIdAvailable(tx, branchId);
           const thread = await requireThread(tx, threadId);
           await requireThreadTurnNode(tx, fromTurnNodeHash, thread);
           const record: StoredBranch = {
@@ -160,7 +161,11 @@ export function createRuntimeKernel(
             (await tx.branches.listByThread(branch.threadId)).filter(
               (candidate) => candidate.archivedFromBranchId === branchId
             ).length + 1;
-          const archiveBranchId = `${branchId}-archive-${archiveOrdinal}-${currentHead.slice(0, 16)}`;
+          const archiveBranchId = await allocateArchiveBranchId(tx, {
+            branchId,
+            currentHead,
+            initialOrdinal: archiveOrdinal,
+          });
           const archiveBranch: StoredBranch = {
             archivedFromBranchId: branchId,
             branchId: archiveBranchId,
@@ -442,11 +447,8 @@ export function createRuntimeKernel(
       async recover(runId) {
         return await backend.transact(async (tx) => {
           const run = decodeStoredRun(await requireStoredRun(tx, runId));
-          const branch = await requireBranch(tx, run.branchId);
-          const lastTurnNode = await requireTurnNode(
-            tx,
-            branch.headTurnNodeHash
-          );
+          const lastTurnNodeHash = getLastRunTurnNodeHash(run);
+          const lastTurnNode = await requireTurnNode(tx, lastTurnNodeHash);
 
           const recoveryState: RecoveryState = {
             consumedStagedResults: lastTurnNode.consumedStagedResults,
@@ -454,7 +456,7 @@ export function createRuntimeKernel(
               run.currentStepIndex === 0
                 ? null
                 : (run.stepSequence[run.currentStepIndex - 1]?.id ?? null),
-            lastTurnNodeHash: branch.headTurnNodeHash,
+            lastTurnNodeHash,
             stepSequence: run.stepSequence,
             uncommittedStagedResults: await listStagedResults(tx, runId),
           };
@@ -720,6 +722,7 @@ export function createRuntimeKernel(
         startTurnNodeHash
       ) {
         return await backend.transact(async (tx) => {
+          await assertTurnIdAvailable(tx, turnId);
           const thread = await requireThread(tx, threadId);
           const branch = await requireBranch(tx, branchId);
 
@@ -895,6 +898,28 @@ async function collectAbandonedSegmentHashes(
   );
 }
 
+async function allocateArchiveBranchId(
+  tx: RuntimeBackendTx,
+  input: {
+    branchId: string;
+    currentHead: HashString;
+    initialOrdinal: number;
+  }
+): Promise<string> {
+  let ordinal = input.initialOrdinal;
+
+  while (true) {
+    const candidate = `${input.branchId}-archive-${ordinal}-${input.currentHead.slice(0, 16)}`;
+    const existing = await tx.branches.get(candidate);
+
+    if (existing === null) {
+      return candidate;
+    }
+
+    ordinal += 1;
+  }
+}
+
 function runTouchesSegment(
   run: StoredRun,
   segmentHashes: ReadonlySet<HashString>
@@ -910,6 +935,10 @@ function runTouchesSegment(
   }
 
   return false;
+}
+
+function getLastRunTurnNodeHash(run: RunRecord): HashString {
+  return run.createdTurnNodes.at(-1) ?? run.startTurnNodeHash;
 }
 
 async function turnNodeDescendsFrom(
@@ -1055,6 +1084,32 @@ async function assertThreadCreateIdsAvailable(
       `branch "${initialBranchId}" already exists`,
       { code: "kernel_runtime_duplicate_branch" }
     );
+  }
+}
+
+async function assertBranchIdAvailable(
+  tx: RuntimeBackendTx,
+  branchId: string
+): Promise<void> {
+  const existingBranch = await tx.branches.get(branchId);
+
+  if (existingBranch !== null) {
+    throw new TuvrenValidationError(`branch "${branchId}" already exists`, {
+      code: "kernel_runtime_duplicate_branch",
+    });
+  }
+}
+
+async function assertTurnIdAvailable(
+  tx: RuntimeBackendTx,
+  turnId: string
+): Promise<void> {
+  const existingTurn = await tx.turns.get(turnId);
+
+  if (existingTurn !== null) {
+    throw new TuvrenValidationError(`turn "${turnId}" already exists`, {
+      code: "kernel_runtime_duplicate_turn",
+    });
   }
 }
 

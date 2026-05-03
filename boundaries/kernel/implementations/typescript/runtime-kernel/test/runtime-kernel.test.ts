@@ -166,4 +166,155 @@ describe("createRuntimeKernel", () => {
       await fixture.kernel.thread.get("thread_branch_collision")
     ).toBeNull();
   });
+
+  test("branch.create rejects duplicate branch ids before writing", async () => {
+    const fixture = await createThreadFixture({
+      branchId: "branch_create_uniqueness",
+      now: () => 1,
+      threadId: "thread_branch_create_uniqueness",
+    });
+
+    await expect(
+      fixture.kernel.branch.create(
+        fixture.branchId,
+        fixture.threadId,
+        fixture.rootTurnNodeHash
+      )
+    ).rejects.toThrow('branch "branch_create_uniqueness" already exists');
+
+    expect(await fixture.kernel.branch.list(fixture.threadId)).toEqual([
+      [fixture.branchId, fixture.rootTurnNodeHash],
+    ]);
+  });
+
+  test("turn.create rejects duplicate turn ids before writing", async () => {
+    const fixture = await createThreadFixture({
+      branchId: "branch_turn_uniqueness",
+      now: () => 1,
+      threadId: "thread_turn_uniqueness",
+    });
+
+    const turn = await fixture.kernel.turn.create(
+      "turn_uniqueness",
+      fixture.threadId,
+      fixture.branchId,
+      null,
+      fixture.rootTurnNodeHash
+    );
+
+    await expect(
+      fixture.kernel.turn.create(
+        turn.turnId,
+        fixture.threadId,
+        fixture.branchId,
+        null,
+        fixture.rootTurnNodeHash
+      )
+    ).rejects.toThrow('turn "turn_uniqueness" already exists');
+
+    expect(await fixture.kernel.turn.get(turn.turnId)).toEqual(turn);
+  });
+
+  test("branch.setHead allocates an unused rollback archive branch id", async () => {
+    const fixture = await createThreadFixture({
+      branchId: "branch_archive_probe",
+      threadId: "thread_archive_probe",
+    });
+    const turn = await fixture.kernel.turn.create(
+      "turn_archive_probe",
+      fixture.threadId,
+      fixture.branchId,
+      null,
+      fixture.rootTurnNodeHash
+    );
+    await fixture.kernel.run.create(
+      "run_archive_probe",
+      turn.turnId,
+      fixture.branchId,
+      fixture.schemaId,
+      fixture.rootTurnNodeHash,
+      [{ deterministic: false, id: "checkpoint", sideEffects: false }]
+    );
+
+    const completedStep = await fixture.kernel.run.completeStep(
+      "run_archive_probe",
+      "checkpoint"
+    );
+
+    if (completedStep.turnNodeHash === undefined) {
+      throw new Error("expected checkpoint turn node");
+    }
+
+    const collidingArchiveBranchId = `${fixture.branchId}-archive-1-${completedStep.turnNodeHash.slice(0, 16)}`;
+    await fixture.kernel.branch.create(
+      collidingArchiveBranchId,
+      fixture.threadId,
+      completedStep.turnNodeHash
+    );
+
+    const result = await fixture.kernel.branch.setHead(
+      fixture.branchId,
+      fixture.rootTurnNodeHash
+    );
+
+    expect(result.branch.headTurnNodeHash).toBe(fixture.rootTurnNodeHash);
+    expect(result.archiveBranch?.branchId).toBe(
+      `${fixture.branchId}-archive-2-${completedStep.turnNodeHash.slice(0, 16)}`
+    );
+    expect(result.archiveBranch?.headTurnNodeHash).toBe(
+      completedStep.turnNodeHash
+    );
+  });
+
+  test("run.recover reads the run last node after rollback archival", async () => {
+    const fixture = await createThreadFixture({
+      branchId: "branch_recover_after_rollback",
+      threadId: "thread_recover_after_rollback",
+    });
+    const turn = await fixture.kernel.turn.create(
+      "turn_recover_after_rollback",
+      fixture.threadId,
+      fixture.branchId,
+      null,
+      fixture.rootTurnNodeHash
+    );
+    await fixture.kernel.run.create(
+      "run_recover_after_rollback",
+      turn.turnId,
+      fixture.branchId,
+      fixture.schemaId,
+      fixture.rootTurnNodeHash,
+      [{ deterministic: true, id: "work", sideEffects: false }]
+    );
+    const staged = await fixture.kernel.staging.stage(
+      "run_recover_after_rollback",
+      new Uint8Array([1, 2, 3]),
+      "task_recover_after_rollback",
+      "message",
+      "completed"
+    );
+    const completedStep = await fixture.kernel.run.completeStep(
+      "run_recover_after_rollback",
+      "work"
+    );
+
+    if (completedStep.turnNodeHash === undefined) {
+      throw new Error("expected staged result checkpoint turn node");
+    }
+
+    const rollback = await fixture.kernel.branch.setHead(
+      fixture.branchId,
+      fixture.rootTurnNodeHash
+    );
+    const recovery = await fixture.kernel.run.recover(
+      "run_recover_after_rollback"
+    );
+
+    expect(rollback.archiveBranch?.headTurnNodeHash).toBe(
+      completedStep.turnNodeHash
+    );
+    expect(recovery.lastTurnNodeHash).toBe(completedStep.turnNodeHash);
+    expect(recovery.consumedStagedResults).toEqual([staged.stagedResult]);
+    expect(recovery.uncommittedStagedResults).toEqual([]);
+  });
 });
