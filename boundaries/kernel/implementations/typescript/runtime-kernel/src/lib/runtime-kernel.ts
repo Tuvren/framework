@@ -360,7 +360,7 @@ export function createRuntimeKernel(
             createdTurnNodesCbor: encodeRecord(nextCreatedTurnNodes),
             currentStepIndex: Math.min(
               run.currentStepIndex + 1,
-              Math.max(run.stepSequence.length - 1, 0)
+              run.stepSequence.length
             ),
             updatedAtMs: now(),
             ...(nextPendingSignalsCbor === undefined
@@ -549,6 +549,7 @@ export function createRuntimeKernel(
     thread: {
       async create(threadId, schemaId, initialBranchId) {
         return await backend.transact(async (tx) => {
+          await assertThreadCreateIdsAvailable(tx, threadId, initialBranchId);
           const schema = await requireSchema(tx, schemaId);
           const rootTurnTreeHash = await createTurnTree(tx, {
             changes: createEmptyManifest(schema),
@@ -1030,6 +1031,29 @@ async function assertTreeHashForRun(
     throw new TuvrenValidationError(
       `tree hash "${treeHash}" uses schema "${tree.schemaId}" but run uses schema "${schemaId}"`,
       { code: "kernel_runtime_tree_schema_mismatch" }
+    );
+  }
+}
+
+async function assertThreadCreateIdsAvailable(
+  tx: RuntimeBackendTx,
+  threadId: string,
+  initialBranchId: string
+): Promise<void> {
+  const existingThread = await tx.threads.get(threadId);
+
+  if (existingThread !== null) {
+    throw new TuvrenValidationError(`thread "${threadId}" already exists`, {
+      code: "kernel_runtime_duplicate_thread",
+    });
+  }
+
+  const existingBranch = await tx.branches.get(initialBranchId);
+
+  if (existingBranch !== null) {
+    throw new TuvrenValidationError(
+      `branch "${initialBranchId}" already exists`,
+      { code: "kernel_runtime_duplicate_branch" }
     );
   }
 }

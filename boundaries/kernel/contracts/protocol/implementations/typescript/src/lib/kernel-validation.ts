@@ -2030,9 +2030,9 @@ function assertRunningRunHasNextStep(
     );
   }
 
-  if (currentStepIndex >= stepCount) {
+  if (currentStepIndex > stepCount) {
     throw validationError(
-      `${currentStepIndexLabel} must reference an available step when ${statusLabel} is "running"`,
+      `${currentStepIndexLabel} must not exceed the declared step count in ${stepSequenceLabel} when ${statusLabel} is "running"`,
       "invalid_run_step_index",
       { currentStepIndex, status, stepCount }
     );
