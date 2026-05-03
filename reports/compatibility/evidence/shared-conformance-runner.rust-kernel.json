@@ -762,19 +762,11 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-all-ones-bytes.3.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-ones-bytes.requiredEvidence.roundtrip.turnNodeIdentityRecord",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-all-ones-bytes.requiredEvidence.roundtrip.turnNodeIdentityRecord.schemaId",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-all-ones-bytes.requiredEvidence.roundtrip.turnNodeIdentityRecord.turnTreeHash",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-all-ones-bytes.requiredEvidence.roundtrip.turnTreeSchemaRecord.schemaId",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-ones-bytes.requiredEvidence.roundtrip.turnTreeSchemaRecord",
           "status": "pass"
         }
       ],
@@ -796,19 +788,11 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-all-ordered-paths.3.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-ordered-paths.requiredEvidence.roundtrip.turnNodeIdentityRecord",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-all-ordered-paths.requiredEvidence.roundtrip.turnNodeIdentityRecord.schemaId",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-all-ordered-paths.requiredEvidence.roundtrip.turnNodeIdentityRecord.turnTreeHash",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-all-ordered-paths.requiredEvidence.roundtrip.turnTreeSchemaRecord.schemaId",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-ordered-paths.requiredEvidence.roundtrip.turnTreeSchemaRecord",
           "status": "pass"
         }
       ],
@@ -830,19 +814,11 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-all-single-paths.3.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-single-paths.requiredEvidence.roundtrip.turnNodeIdentityRecord",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-all-single-paths.requiredEvidence.roundtrip.turnNodeIdentityRecord.schemaId",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-all-single-paths.requiredEvidence.roundtrip.turnNodeIdentityRecord.turnTreeHash",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-all-single-paths.requiredEvidence.roundtrip.turnTreeSchemaRecord.schemaId",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-single-paths.requiredEvidence.roundtrip.turnTreeSchemaRecord",
           "status": "pass"
         }
       ],
@@ -864,19 +840,11 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-all-zero-bytes.3.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-zero-bytes.requiredEvidence.roundtrip.turnNodeIdentityRecord",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-all-zero-bytes.requiredEvidence.roundtrip.turnNodeIdentityRecord.schemaId",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-all-zero-bytes.requiredEvidence.roundtrip.turnNodeIdentityRecord.turnTreeHash",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-all-zero-bytes.requiredEvidence.roundtrip.turnTreeSchemaRecord.schemaId",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-zero-bytes.requiredEvidence.roundtrip.turnTreeSchemaRecord",
           "status": "pass"
         }
       ],
@@ -898,19 +866,11 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-deep-path-schema.3.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-deep-path-schema.requiredEvidence.roundtrip.turnNodeIdentityRecord",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-deep-path-schema.requiredEvidence.roundtrip.turnNodeIdentityRecord.schemaId",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-deep-path-schema.requiredEvidence.roundtrip.turnNodeIdentityRecord.turnTreeHash",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-deep-path-schema.requiredEvidence.roundtrip.turnTreeSchemaRecord.schemaId",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-deep-path-schema.requiredEvidence.roundtrip.turnTreeSchemaRecord",
           "status": "pass"
         }
       ],
@@ -932,19 +892,11 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-empty-bytes.3.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-empty-bytes.requiredEvidence.roundtrip.turnNodeIdentityRecord",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-empty-bytes.requiredEvidence.roundtrip.turnNodeIdentityRecord.schemaId",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-empty-bytes.requiredEvidence.roundtrip.turnNodeIdentityRecord.turnTreeHash",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-empty-bytes.requiredEvidence.roundtrip.turnTreeSchemaRecord.schemaId",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-empty-bytes.requiredEvidence.roundtrip.turnTreeSchemaRecord",
           "status": "pass"
         }
       ],
@@ -966,19 +918,11 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-large-bytes.3.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-large-bytes.requiredEvidence.roundtrip.turnNodeIdentityRecord",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-large-bytes.requiredEvidence.roundtrip.turnNodeIdentityRecord.schemaId",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-large-bytes.requiredEvidence.roundtrip.turnNodeIdentityRecord.turnTreeHash",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-large-bytes.requiredEvidence.roundtrip.turnTreeSchemaRecord.schemaId",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-large-bytes.requiredEvidence.roundtrip.turnTreeSchemaRecord",
           "status": "pass"
         }
       ],
@@ -1000,19 +944,11 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-many-staged-results.3.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-many-staged-results.requiredEvidence.roundtrip.turnNodeIdentityRecord",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-many-staged-results.requiredEvidence.roundtrip.turnNodeIdentityRecord.schemaId",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-many-staged-results.requiredEvidence.roundtrip.turnNodeIdentityRecord.turnTreeHash",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-many-staged-results.requiredEvidence.roundtrip.turnTreeSchemaRecord.schemaId",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-many-staged-results.requiredEvidence.roundtrip.turnTreeSchemaRecord",
           "status": "pass"
         }
       ],
@@ -1034,19 +970,11 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-mixed-status-staged.3.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-mixed-status-staged.requiredEvidence.roundtrip.turnNodeIdentityRecord",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-mixed-status-staged.requiredEvidence.roundtrip.turnNodeIdentityRecord.schemaId",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-mixed-status-staged.requiredEvidence.roundtrip.turnNodeIdentityRecord.turnTreeHash",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-mixed-status-staged.requiredEvidence.roundtrip.turnTreeSchemaRecord.schemaId",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-mixed-status-staged.requiredEvidence.roundtrip.turnTreeSchemaRecord",
           "status": "pass"
         }
       ],
@@ -1068,19 +996,11 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-multi-path-schema.3.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-multi-path-schema.requiredEvidence.roundtrip.turnNodeIdentityRecord",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-multi-path-schema.requiredEvidence.roundtrip.turnNodeIdentityRecord.schemaId",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-multi-path-schema.requiredEvidence.roundtrip.turnNodeIdentityRecord.turnTreeHash",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-multi-path-schema.requiredEvidence.roundtrip.turnTreeSchemaRecord.schemaId",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-multi-path-schema.requiredEvidence.roundtrip.turnTreeSchemaRecord",
           "status": "pass"
         }
       ],
@@ -1102,19 +1022,11 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-non-utf8-bytes.3.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-non-utf8-bytes.requiredEvidence.roundtrip.turnNodeIdentityRecord",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-non-utf8-bytes.requiredEvidence.roundtrip.turnNodeIdentityRecord.schemaId",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-non-utf8-bytes.requiredEvidence.roundtrip.turnNodeIdentityRecord.turnTreeHash",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-non-utf8-bytes.requiredEvidence.roundtrip.turnTreeSchemaRecord.schemaId",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-non-utf8-bytes.requiredEvidence.roundtrip.turnTreeSchemaRecord",
           "status": "pass"
         }
       ],
@@ -1136,19 +1048,11 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-single-byte.3.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-single-byte.requiredEvidence.roundtrip.turnNodeIdentityRecord",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-single-byte.requiredEvidence.roundtrip.turnNodeIdentityRecord.schemaId",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-single-byte.requiredEvidence.roundtrip.turnNodeIdentityRecord.turnTreeHash",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-single-byte.requiredEvidence.roundtrip.turnTreeSchemaRecord.schemaId",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-single-byte.requiredEvidence.roundtrip.turnTreeSchemaRecord",
           "status": "pass"
         }
       ],
@@ -1170,19 +1074,11 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-staged-failed.3.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-staged-failed.requiredEvidence.roundtrip.turnNodeIdentityRecord",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-staged-failed.requiredEvidence.roundtrip.turnNodeIdentityRecord.schemaId",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-staged-failed.requiredEvidence.roundtrip.turnNodeIdentityRecord.turnTreeHash",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-staged-failed.requiredEvidence.roundtrip.turnTreeSchemaRecord.schemaId",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-staged-failed.requiredEvidence.roundtrip.turnTreeSchemaRecord",
           "status": "pass"
         }
       ],
@@ -1204,19 +1100,11 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-staged-interrupted.3.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-staged-interrupted.requiredEvidence.roundtrip.turnNodeIdentityRecord",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-staged-interrupted.requiredEvidence.roundtrip.turnNodeIdentityRecord.schemaId",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-staged-interrupted.requiredEvidence.roundtrip.turnNodeIdentityRecord.turnTreeHash",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-staged-interrupted.requiredEvidence.roundtrip.turnTreeSchemaRecord.schemaId",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-staged-interrupted.requiredEvidence.roundtrip.turnTreeSchemaRecord",
           "status": "pass"
         }
       ],
@@ -1238,19 +1126,11 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-with-event-hash.3.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-with-event-hash.requiredEvidence.roundtrip.turnNodeIdentityRecord",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-with-event-hash.requiredEvidence.roundtrip.turnNodeIdentityRecord.schemaId",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-with-event-hash.requiredEvidence.roundtrip.turnNodeIdentityRecord.turnTreeHash",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-with-event-hash.requiredEvidence.roundtrip.turnTreeSchemaRecord.schemaId",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-with-event-hash.requiredEvidence.roundtrip.turnTreeSchemaRecord",
           "status": "pass"
         }
       ],
@@ -1272,19 +1152,11 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-with-prev-turn.3.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-with-prev-turn.requiredEvidence.roundtrip.turnNodeIdentityRecord",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-with-prev-turn.requiredEvidence.roundtrip.turnNodeIdentityRecord.schemaId",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-with-prev-turn.requiredEvidence.roundtrip.turnNodeIdentityRecord.turnTreeHash",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-with-prev-turn.requiredEvidence.roundtrip.turnTreeSchemaRecord.schemaId",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-with-prev-turn.requiredEvidence.roundtrip.turnTreeSchemaRecord",
           "status": "pass"
         }
       ],
@@ -1306,19 +1178,11 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-zero-turn-tree-hash.3.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-zero-turn-tree-hash.requiredEvidence.roundtrip.turnNodeIdentityRecord",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-zero-turn-tree-hash.requiredEvidence.roundtrip.turnNodeIdentityRecord.schemaId",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-zero-turn-tree-hash.requiredEvidence.roundtrip.turnNodeIdentityRecord.turnTreeHash",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-zero-turn-tree-hash.requiredEvidence.roundtrip.turnTreeSchemaRecord.schemaId",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-zero-turn-tree-hash.requiredEvidence.roundtrip.turnTreeSchemaRecord",
           "status": "pass"
         }
       ],

@@ -194,26 +194,20 @@ function buildSchemaRoundtripCheck(fixture: FixtureEntry): PlanCheck {
   return {
     assertions: [
       {
-        equalsPath: "$.fixture.turnTreeSchemaRecord.schemaId",
-        field: "$.roundtrip.turnTreeSchemaRecord.schemaId",
+        equalsPath: "$.fixture.turnTreeSchemaRecord",
+        field: "$.roundtrip.turnTreeSchemaRecord",
         kind: "evidenceField",
       },
       {
-        equalsPath: "$.fixture.turnNodeIdentityRecord.schemaId",
-        field: "$.roundtrip.turnNodeIdentityRecord.schemaId",
-        kind: "evidenceField",
-      },
-      {
-        equalsPath: "$.fixture.turnNodeIdentityRecord.turnTreeHash",
-        field: "$.roundtrip.turnNodeIdentityRecord.turnTreeHash",
+        equalsPath: "$.fixture.turnNodeIdentityRecord",
+        field: "$.roundtrip.turnNodeIdentityRecord",
         kind: "evidenceField",
       },
     ],
     checkId: `kernel.protocol.schema_roundtrip.${fixture.fixtureId}`,
     evidence: [
-      "roundtrip.turnTreeSchemaRecord.schemaId",
-      "roundtrip.turnNodeIdentityRecord.schemaId",
-      "roundtrip.turnNodeIdentityRecord.turnTreeHash",
+      "roundtrip.turnTreeSchemaRecord",
+      "roundtrip.turnNodeIdentityRecord",
     ],
     fixture: fixture.fixtureId,
     operation: "kernel.protocol.schema-roundtrip",

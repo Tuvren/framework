@@ -11,6 +11,13 @@
   "targets": {
     "conformance": {
       "executor": "nx:run-commands",
+      "dependsOn": [
+        {
+          "projects": ["kernel-interop-grpc"],
+          "target": "codegen",
+          "params": "ignore"
+        }
+      ],
       "options": {
         "cwd": "boundaries/framework/implementations/typescript/conformance-runner",
         "command": "bun ./src/framework-typescript-conformance.ts"
@@ -32,6 +39,13 @@
     },
     "typecheck": {
       "executor": "nx:run-commands",
+      "dependsOn": [
+        {
+          "projects": ["kernel-interop-grpc"],
+          "target": "codegen",
+          "params": "ignore"
+        }
+      ],
       "options": {
         "cwd": "boundaries/framework/implementations/typescript/conformance-runner",
         "command": "bunx --bun tsc --project tsconfig.typecheck.json --noEmit --pretty false"

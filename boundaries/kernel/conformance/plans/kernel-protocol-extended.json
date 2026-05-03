@@ -33,26 +33,20 @@
     {
       "assertions": [
         {
-          "equalsPath": "$.fixture.turnTreeSchemaRecord.schemaId",
-          "field": "$.roundtrip.turnTreeSchemaRecord.schemaId",
+          "equalsPath": "$.fixture.turnTreeSchemaRecord",
+          "field": "$.roundtrip.turnTreeSchemaRecord",
           "kind": "evidenceField"
         },
         {
-          "equalsPath": "$.fixture.turnNodeIdentityRecord.schemaId",
-          "field": "$.roundtrip.turnNodeIdentityRecord.schemaId",
-          "kind": "evidenceField"
-        },
-        {
-          "equalsPath": "$.fixture.turnNodeIdentityRecord.turnTreeHash",
-          "field": "$.roundtrip.turnNodeIdentityRecord.turnTreeHash",
+          "equalsPath": "$.fixture.turnNodeIdentityRecord",
+          "field": "$.roundtrip.turnNodeIdentityRecord",
           "kind": "evidenceField"
         }
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-empty-bytes",
       "evidence": [
-        "roundtrip.turnTreeSchemaRecord.schemaId",
-        "roundtrip.turnNodeIdentityRecord.schemaId",
-        "roundtrip.turnNodeIdentityRecord.turnTreeHash"
+        "roundtrip.turnTreeSchemaRecord",
+        "roundtrip.turnNodeIdentityRecord"
       ],
       "fixture": "f-empty-bytes",
       "operation": "kernel.protocol.schema-roundtrip"
@@ -87,26 +81,20 @@
     {
       "assertions": [
         {
-          "equalsPath": "$.fixture.turnTreeSchemaRecord.schemaId",
-          "field": "$.roundtrip.turnTreeSchemaRecord.schemaId",
+          "equalsPath": "$.fixture.turnTreeSchemaRecord",
+          "field": "$.roundtrip.turnTreeSchemaRecord",
           "kind": "evidenceField"
         },
         {
-          "equalsPath": "$.fixture.turnNodeIdentityRecord.schemaId",
-          "field": "$.roundtrip.turnNodeIdentityRecord.schemaId",
-          "kind": "evidenceField"
-        },
-        {
-          "equalsPath": "$.fixture.turnNodeIdentityRecord.turnTreeHash",
-          "field": "$.roundtrip.turnNodeIdentityRecord.turnTreeHash",
+          "equalsPath": "$.fixture.turnNodeIdentityRecord",
+          "field": "$.roundtrip.turnNodeIdentityRecord",
           "kind": "evidenceField"
         }
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-single-byte",
       "evidence": [
-        "roundtrip.turnTreeSchemaRecord.schemaId",
-        "roundtrip.turnNodeIdentityRecord.schemaId",
-        "roundtrip.turnNodeIdentityRecord.turnTreeHash"
+        "roundtrip.turnTreeSchemaRecord",
+        "roundtrip.turnNodeIdentityRecord"
       ],
       "fixture": "f-single-byte",
       "operation": "kernel.protocol.schema-roundtrip"
@@ -141,26 +129,20 @@
     {
       "assertions": [
         {
-          "equalsPath": "$.fixture.turnTreeSchemaRecord.schemaId",
-          "field": "$.roundtrip.turnTreeSchemaRecord.schemaId",
+          "equalsPath": "$.fixture.turnTreeSchemaRecord",
+          "field": "$.roundtrip.turnTreeSchemaRecord",
           "kind": "evidenceField"
         },
         {
-          "equalsPath": "$.fixture.turnNodeIdentityRecord.schemaId",
-          "field": "$.roundtrip.turnNodeIdentityRecord.schemaId",
-          "kind": "evidenceField"
-        },
-        {
-          "equalsPath": "$.fixture.turnNodeIdentityRecord.turnTreeHash",
-          "field": "$.roundtrip.turnNodeIdentityRecord.turnTreeHash",
+          "equalsPath": "$.fixture.turnNodeIdentityRecord",
+          "field": "$.roundtrip.turnNodeIdentityRecord",
           "kind": "evidenceField"
         }
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-all-zero-bytes",
       "evidence": [
-        "roundtrip.turnTreeSchemaRecord.schemaId",
-        "roundtrip.turnNodeIdentityRecord.schemaId",
-        "roundtrip.turnNodeIdentityRecord.turnTreeHash"
+        "roundtrip.turnTreeSchemaRecord",
+        "roundtrip.turnNodeIdentityRecord"
       ],
       "fixture": "f-all-zero-bytes",
       "operation": "kernel.protocol.schema-roundtrip"
@@ -195,26 +177,20 @@
     {
       "assertions": [
         {
-          "equalsPath": "$.fixture.turnTreeSchemaRecord.schemaId",
-          "field": "$.roundtrip.turnTreeSchemaRecord.schemaId",
+          "equalsPath": "$.fixture.turnTreeSchemaRecord",
+          "field": "$.roundtrip.turnTreeSchemaRecord",
           "kind": "evidenceField"
         },
         {
-          "equalsPath": "$.fixture.turnNodeIdentityRecord.schemaId",
-          "field": "$.roundtrip.turnNodeIdentityRecord.schemaId",
-          "kind": "evidenceField"
-        },
-        {
-          "equalsPath": "$.fixture.turnNodeIdentityRecord.turnTreeHash",
-          "field": "$.roundtrip.turnNodeIdentityRecord.turnTreeHash",
+          "equalsPath": "$.fixture.turnNodeIdentityRecord",
+          "field": "$.roundtrip.turnNodeIdentityRecord",
           "kind": "evidenceField"
         }
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-all-ones-bytes",
       "evidence": [
-        "roundtrip.turnTreeSchemaRecord.schemaId",
-        "roundtrip.turnNodeIdentityRecord.schemaId",
-        "roundtrip.turnNodeIdentityRecord.turnTreeHash"
+        "roundtrip.turnTreeSchemaRecord",
+        "roundtrip.turnNodeIdentityRecord"
       ],
       "fixture": "f-all-ones-bytes",
       "operation": "kernel.protocol.schema-roundtrip"
@@ -249,26 +225,20 @@
     {
       "assertions": [
         {
-          "equalsPath": "$.fixture.turnTreeSchemaRecord.schemaId",
-          "field": "$.roundtrip.turnTreeSchemaRecord.schemaId",
+          "equalsPath": "$.fixture.turnTreeSchemaRecord",
+          "field": "$.roundtrip.turnTreeSchemaRecord",
           "kind": "evidenceField"
         },
         {
-          "equalsPath": "$.fixture.turnNodeIdentityRecord.schemaId",
-          "field": "$.roundtrip.turnNodeIdentityRecord.schemaId",
-          "kind": "evidenceField"
-        },
-        {
-          "equalsPath": "$.fixture.turnNodeIdentityRecord.turnTreeHash",
-          "field": "$.roundtrip.turnNodeIdentityRecord.turnTreeHash",
+          "equalsPath": "$.fixture.turnNodeIdentityRecord",
+          "field": "$.roundtrip.turnNodeIdentityRecord",
           "kind": "evidenceField"
         }
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-large-bytes",
       "evidence": [
-        "roundtrip.turnTreeSchemaRecord.schemaId",
-        "roundtrip.turnNodeIdentityRecord.schemaId",
-        "roundtrip.turnNodeIdentityRecord.turnTreeHash"
+        "roundtrip.turnTreeSchemaRecord",
+        "roundtrip.turnNodeIdentityRecord"
       ],
       "fixture": "f-large-bytes",
       "operation": "kernel.protocol.schema-roundtrip"
@@ -303,26 +273,20 @@
     {
       "assertions": [
         {
-          "equalsPath": "$.fixture.turnTreeSchemaRecord.schemaId",
-          "field": "$.roundtrip.turnTreeSchemaRecord.schemaId",
+          "equalsPath": "$.fixture.turnTreeSchemaRecord",
+          "field": "$.roundtrip.turnTreeSchemaRecord",
           "kind": "evidenceField"
         },
         {
-          "equalsPath": "$.fixture.turnNodeIdentityRecord.schemaId",
-          "field": "$.roundtrip.turnNodeIdentityRecord.schemaId",
-          "kind": "evidenceField"
-        },
-        {
-          "equalsPath": "$.fixture.turnNodeIdentityRecord.turnTreeHash",
-          "field": "$.roundtrip.turnNodeIdentityRecord.turnTreeHash",
+          "equalsPath": "$.fixture.turnNodeIdentityRecord",
+          "field": "$.roundtrip.turnNodeIdentityRecord",
           "kind": "evidenceField"
         }
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-multi-path-schema",
       "evidence": [
-        "roundtrip.turnTreeSchemaRecord.schemaId",
-        "roundtrip.turnNodeIdentityRecord.schemaId",
-        "roundtrip.turnNodeIdentityRecord.turnTreeHash"
+        "roundtrip.turnTreeSchemaRecord",
+        "roundtrip.turnNodeIdentityRecord"
       ],
       "fixture": "f-multi-path-schema",
       "operation": "kernel.protocol.schema-roundtrip"
@@ -357,26 +321,20 @@
     {
       "assertions": [
         {
-          "equalsPath": "$.fixture.turnTreeSchemaRecord.schemaId",
-          "field": "$.roundtrip.turnTreeSchemaRecord.schemaId",
+          "equalsPath": "$.fixture.turnTreeSchemaRecord",
+          "field": "$.roundtrip.turnTreeSchemaRecord",
           "kind": "evidenceField"
         },
         {
-          "equalsPath": "$.fixture.turnNodeIdentityRecord.schemaId",
-          "field": "$.roundtrip.turnNodeIdentityRecord.schemaId",
-          "kind": "evidenceField"
-        },
-        {
-          "equalsPath": "$.fixture.turnNodeIdentityRecord.turnTreeHash",
-          "field": "$.roundtrip.turnNodeIdentityRecord.turnTreeHash",
+          "equalsPath": "$.fixture.turnNodeIdentityRecord",
+          "field": "$.roundtrip.turnNodeIdentityRecord",
           "kind": "evidenceField"
         }
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-all-single-paths",
       "evidence": [
-        "roundtrip.turnTreeSchemaRecord.schemaId",
-        "roundtrip.turnNodeIdentityRecord.schemaId",
-        "roundtrip.turnNodeIdentityRecord.turnTreeHash"
+        "roundtrip.turnTreeSchemaRecord",
+        "roundtrip.turnNodeIdentityRecord"
       ],
       "fixture": "f-all-single-paths",
       "operation": "kernel.protocol.schema-roundtrip"
@@ -411,26 +369,20 @@
     {
       "assertions": [
         {
-          "equalsPath": "$.fixture.turnTreeSchemaRecord.schemaId",
-          "field": "$.roundtrip.turnTreeSchemaRecord.schemaId",
+          "equalsPath": "$.fixture.turnTreeSchemaRecord",
+          "field": "$.roundtrip.turnTreeSchemaRecord",
           "kind": "evidenceField"
         },
         {
-          "equalsPath": "$.fixture.turnNodeIdentityRecord.schemaId",
-          "field": "$.roundtrip.turnNodeIdentityRecord.schemaId",
-          "kind": "evidenceField"
-        },
-        {
-          "equalsPath": "$.fixture.turnNodeIdentityRecord.turnTreeHash",
-          "field": "$.roundtrip.turnNodeIdentityRecord.turnTreeHash",
+          "equalsPath": "$.fixture.turnNodeIdentityRecord",
+          "field": "$.roundtrip.turnNodeIdentityRecord",
           "kind": "evidenceField"
         }
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-all-ordered-paths",
       "evidence": [
-        "roundtrip.turnTreeSchemaRecord.schemaId",
-        "roundtrip.turnNodeIdentityRecord.schemaId",
-        "roundtrip.turnNodeIdentityRecord.turnTreeHash"
+        "roundtrip.turnTreeSchemaRecord",
+        "roundtrip.turnNodeIdentityRecord"
       ],
       "fixture": "f-all-ordered-paths",
       "operation": "kernel.protocol.schema-roundtrip"
@@ -465,26 +417,20 @@
     {
       "assertions": [
         {
-          "equalsPath": "$.fixture.turnTreeSchemaRecord.schemaId",
-          "field": "$.roundtrip.turnTreeSchemaRecord.schemaId",
+          "equalsPath": "$.fixture.turnTreeSchemaRecord",
+          "field": "$.roundtrip.turnTreeSchemaRecord",
           "kind": "evidenceField"
         },
         {
-          "equalsPath": "$.fixture.turnNodeIdentityRecord.schemaId",
-          "field": "$.roundtrip.turnNodeIdentityRecord.schemaId",
-          "kind": "evidenceField"
-        },
-        {
-          "equalsPath": "$.fixture.turnNodeIdentityRecord.turnTreeHash",
-          "field": "$.roundtrip.turnNodeIdentityRecord.turnTreeHash",
+          "equalsPath": "$.fixture.turnNodeIdentityRecord",
+          "field": "$.roundtrip.turnNodeIdentityRecord",
           "kind": "evidenceField"
         }
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-with-prev-turn",
       "evidence": [
-        "roundtrip.turnTreeSchemaRecord.schemaId",
-        "roundtrip.turnNodeIdentityRecord.schemaId",
-        "roundtrip.turnNodeIdentityRecord.turnTreeHash"
+        "roundtrip.turnTreeSchemaRecord",
+        "roundtrip.turnNodeIdentityRecord"
       ],
       "fixture": "f-with-prev-turn",
       "operation": "kernel.protocol.schema-roundtrip"
@@ -519,26 +465,20 @@
     {
       "assertions": [
         {
-          "equalsPath": "$.fixture.turnTreeSchemaRecord.schemaId",
-          "field": "$.roundtrip.turnTreeSchemaRecord.schemaId",
+          "equalsPath": "$.fixture.turnTreeSchemaRecord",
+          "field": "$.roundtrip.turnTreeSchemaRecord",
           "kind": "evidenceField"
         },
         {
-          "equalsPath": "$.fixture.turnNodeIdentityRecord.schemaId",
-          "field": "$.roundtrip.turnNodeIdentityRecord.schemaId",
-          "kind": "evidenceField"
-        },
-        {
-          "equalsPath": "$.fixture.turnNodeIdentityRecord.turnTreeHash",
-          "field": "$.roundtrip.turnNodeIdentityRecord.turnTreeHash",
+          "equalsPath": "$.fixture.turnNodeIdentityRecord",
+          "field": "$.roundtrip.turnNodeIdentityRecord",
           "kind": "evidenceField"
         }
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-with-event-hash",
       "evidence": [
-        "roundtrip.turnTreeSchemaRecord.schemaId",
-        "roundtrip.turnNodeIdentityRecord.schemaId",
-        "roundtrip.turnNodeIdentityRecord.turnTreeHash"
+        "roundtrip.turnTreeSchemaRecord",
+        "roundtrip.turnNodeIdentityRecord"
       ],
       "fixture": "f-with-event-hash",
       "operation": "kernel.protocol.schema-roundtrip"
@@ -573,26 +513,20 @@
     {
       "assertions": [
         {
-          "equalsPath": "$.fixture.turnTreeSchemaRecord.schemaId",
-          "field": "$.roundtrip.turnTreeSchemaRecord.schemaId",
+          "equalsPath": "$.fixture.turnTreeSchemaRecord",
+          "field": "$.roundtrip.turnTreeSchemaRecord",
           "kind": "evidenceField"
         },
         {
-          "equalsPath": "$.fixture.turnNodeIdentityRecord.schemaId",
-          "field": "$.roundtrip.turnNodeIdentityRecord.schemaId",
-          "kind": "evidenceField"
-        },
-        {
-          "equalsPath": "$.fixture.turnNodeIdentityRecord.turnTreeHash",
-          "field": "$.roundtrip.turnNodeIdentityRecord.turnTreeHash",
+          "equalsPath": "$.fixture.turnNodeIdentityRecord",
+          "field": "$.roundtrip.turnNodeIdentityRecord",
           "kind": "evidenceField"
         }
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-staged-failed",
       "evidence": [
-        "roundtrip.turnTreeSchemaRecord.schemaId",
-        "roundtrip.turnNodeIdentityRecord.schemaId",
-        "roundtrip.turnNodeIdentityRecord.turnTreeHash"
+        "roundtrip.turnTreeSchemaRecord",
+        "roundtrip.turnNodeIdentityRecord"
       ],
       "fixture": "f-staged-failed",
       "operation": "kernel.protocol.schema-roundtrip"
@@ -627,26 +561,20 @@
     {
       "assertions": [
         {
-          "equalsPath": "$.fixture.turnTreeSchemaRecord.schemaId",
-          "field": "$.roundtrip.turnTreeSchemaRecord.schemaId",
+          "equalsPath": "$.fixture.turnTreeSchemaRecord",
+          "field": "$.roundtrip.turnTreeSchemaRecord",
           "kind": "evidenceField"
         },
         {
-          "equalsPath": "$.fixture.turnNodeIdentityRecord.schemaId",
-          "field": "$.roundtrip.turnNodeIdentityRecord.schemaId",
-          "kind": "evidenceField"
-        },
-        {
-          "equalsPath": "$.fixture.turnNodeIdentityRecord.turnTreeHash",
-          "field": "$.roundtrip.turnNodeIdentityRecord.turnTreeHash",
+          "equalsPath": "$.fixture.turnNodeIdentityRecord",
+          "field": "$.roundtrip.turnNodeIdentityRecord",
           "kind": "evidenceField"
         }
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-staged-interrupted",
       "evidence": [
-        "roundtrip.turnTreeSchemaRecord.schemaId",
-        "roundtrip.turnNodeIdentityRecord.schemaId",
-        "roundtrip.turnNodeIdentityRecord.turnTreeHash"
+        "roundtrip.turnTreeSchemaRecord",
+        "roundtrip.turnNodeIdentityRecord"
       ],
       "fixture": "f-staged-interrupted",
       "operation": "kernel.protocol.schema-roundtrip"
@@ -681,26 +609,20 @@
     {
       "assertions": [
         {
-          "equalsPath": "$.fixture.turnTreeSchemaRecord.schemaId",
-          "field": "$.roundtrip.turnTreeSchemaRecord.schemaId",
+          "equalsPath": "$.fixture.turnTreeSchemaRecord",
+          "field": "$.roundtrip.turnTreeSchemaRecord",
           "kind": "evidenceField"
         },
         {
-          "equalsPath": "$.fixture.turnNodeIdentityRecord.schemaId",
-          "field": "$.roundtrip.turnNodeIdentityRecord.schemaId",
-          "kind": "evidenceField"
-        },
-        {
-          "equalsPath": "$.fixture.turnNodeIdentityRecord.turnTreeHash",
-          "field": "$.roundtrip.turnNodeIdentityRecord.turnTreeHash",
+          "equalsPath": "$.fixture.turnNodeIdentityRecord",
+          "field": "$.roundtrip.turnNodeIdentityRecord",
           "kind": "evidenceField"
         }
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-many-staged-results",
       "evidence": [
-        "roundtrip.turnTreeSchemaRecord.schemaId",
-        "roundtrip.turnNodeIdentityRecord.schemaId",
-        "roundtrip.turnNodeIdentityRecord.turnTreeHash"
+        "roundtrip.turnTreeSchemaRecord",
+        "roundtrip.turnNodeIdentityRecord"
       ],
       "fixture": "f-many-staged-results",
       "operation": "kernel.protocol.schema-roundtrip"
@@ -735,26 +657,20 @@
     {
       "assertions": [
         {
-          "equalsPath": "$.fixture.turnTreeSchemaRecord.schemaId",
-          "field": "$.roundtrip.turnTreeSchemaRecord.schemaId",
+          "equalsPath": "$.fixture.turnTreeSchemaRecord",
+          "field": "$.roundtrip.turnTreeSchemaRecord",
           "kind": "evidenceField"
         },
         {
-          "equalsPath": "$.fixture.turnNodeIdentityRecord.schemaId",
-          "field": "$.roundtrip.turnNodeIdentityRecord.schemaId",
-          "kind": "evidenceField"
-        },
-        {
-          "equalsPath": "$.fixture.turnNodeIdentityRecord.turnTreeHash",
-          "field": "$.roundtrip.turnNodeIdentityRecord.turnTreeHash",
+          "equalsPath": "$.fixture.turnNodeIdentityRecord",
+          "field": "$.roundtrip.turnNodeIdentityRecord",
           "kind": "evidenceField"
         }
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-deep-path-schema",
       "evidence": [
-        "roundtrip.turnTreeSchemaRecord.schemaId",
-        "roundtrip.turnNodeIdentityRecord.schemaId",
-        "roundtrip.turnNodeIdentityRecord.turnTreeHash"
+        "roundtrip.turnTreeSchemaRecord",
+        "roundtrip.turnNodeIdentityRecord"
       ],
       "fixture": "f-deep-path-schema",
       "operation": "kernel.protocol.schema-roundtrip"
@@ -789,26 +705,20 @@
     {
       "assertions": [
         {
-          "equalsPath": "$.fixture.turnTreeSchemaRecord.schemaId",
-          "field": "$.roundtrip.turnTreeSchemaRecord.schemaId",
+          "equalsPath": "$.fixture.turnTreeSchemaRecord",
+          "field": "$.roundtrip.turnTreeSchemaRecord",
           "kind": "evidenceField"
         },
         {
-          "equalsPath": "$.fixture.turnNodeIdentityRecord.schemaId",
-          "field": "$.roundtrip.turnNodeIdentityRecord.schemaId",
-          "kind": "evidenceField"
-        },
-        {
-          "equalsPath": "$.fixture.turnNodeIdentityRecord.turnTreeHash",
-          "field": "$.roundtrip.turnNodeIdentityRecord.turnTreeHash",
+          "equalsPath": "$.fixture.turnNodeIdentityRecord",
+          "field": "$.roundtrip.turnNodeIdentityRecord",
           "kind": "evidenceField"
         }
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-non-utf8-bytes",
       "evidence": [
-        "roundtrip.turnTreeSchemaRecord.schemaId",
-        "roundtrip.turnNodeIdentityRecord.schemaId",
-        "roundtrip.turnNodeIdentityRecord.turnTreeHash"
+        "roundtrip.turnTreeSchemaRecord",
+        "roundtrip.turnNodeIdentityRecord"
       ],
       "fixture": "f-non-utf8-bytes",
       "operation": "kernel.protocol.schema-roundtrip"
@@ -843,26 +753,20 @@
     {
       "assertions": [
         {
-          "equalsPath": "$.fixture.turnTreeSchemaRecord.schemaId",
-          "field": "$.roundtrip.turnTreeSchemaRecord.schemaId",
+          "equalsPath": "$.fixture.turnTreeSchemaRecord",
+          "field": "$.roundtrip.turnTreeSchemaRecord",
           "kind": "evidenceField"
         },
         {
-          "equalsPath": "$.fixture.turnNodeIdentityRecord.schemaId",
-          "field": "$.roundtrip.turnNodeIdentityRecord.schemaId",
-          "kind": "evidenceField"
-        },
-        {
-          "equalsPath": "$.fixture.turnNodeIdentityRecord.turnTreeHash",
-          "field": "$.roundtrip.turnNodeIdentityRecord.turnTreeHash",
+          "equalsPath": "$.fixture.turnNodeIdentityRecord",
+          "field": "$.roundtrip.turnNodeIdentityRecord",
           "kind": "evidenceField"
         }
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-zero-turn-tree-hash",
       "evidence": [
-        "roundtrip.turnTreeSchemaRecord.schemaId",
-        "roundtrip.turnNodeIdentityRecord.schemaId",
-        "roundtrip.turnNodeIdentityRecord.turnTreeHash"
+        "roundtrip.turnTreeSchemaRecord",
+        "roundtrip.turnNodeIdentityRecord"
       ],
       "fixture": "f-zero-turn-tree-hash",
       "operation": "kernel.protocol.schema-roundtrip"
@@ -897,26 +801,20 @@
     {
       "assertions": [
         {
-          "equalsPath": "$.fixture.turnTreeSchemaRecord.schemaId",
-          "field": "$.roundtrip.turnTreeSchemaRecord.schemaId",
+          "equalsPath": "$.fixture.turnTreeSchemaRecord",
+          "field": "$.roundtrip.turnTreeSchemaRecord",
           "kind": "evidenceField"
         },
         {
-          "equalsPath": "$.fixture.turnNodeIdentityRecord.schemaId",
-          "field": "$.roundtrip.turnNodeIdentityRecord.schemaId",
-          "kind": "evidenceField"
-        },
-        {
-          "equalsPath": "$.fixture.turnNodeIdentityRecord.turnTreeHash",
-          "field": "$.roundtrip.turnNodeIdentityRecord.turnTreeHash",
+          "equalsPath": "$.fixture.turnNodeIdentityRecord",
+          "field": "$.roundtrip.turnNodeIdentityRecord",
           "kind": "evidenceField"
         }
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-mixed-status-staged",
       "evidence": [
-        "roundtrip.turnTreeSchemaRecord.schemaId",
-        "roundtrip.turnNodeIdentityRecord.schemaId",
-        "roundtrip.turnNodeIdentityRecord.turnTreeHash"
+        "roundtrip.turnTreeSchemaRecord",
+        "roundtrip.turnNodeIdentityRecord"
       ],
       "fixture": "f-mixed-status-staged",
       "operation": "kernel.protocol.schema-roundtrip"
