@@ -232,22 +232,13 @@ export function createRuntimeKernel(
           const branch = await requireBranch(tx, run.branchId);
           const schema = await requireSchema(tx, run.schemaId);
 
-          // Return pending signals and clear them
+          // Return pending signals for the current step.
           const signals: KernelRecord[] = storedRun.pendingSignalsCbor
             ? decodeKernelRecordArray(
                 storedRun.pendingSignalsCbor,
                 "pending signals"
               )
             : [];
-
-          if (storedRun.pendingSignalsCbor !== undefined) {
-            const { pendingSignalsCbor: _s, ...runWithoutPendingSignals } =
-              storedRun;
-            await tx.runs.set({
-              ...runWithoutPendingSignals,
-              updatedAtMs: now(),
-            });
-          }
 
           return {
             currentTurnNodeHash: branch.headTurnNodeHash,
@@ -320,8 +311,7 @@ export function createRuntimeKernel(
           await assertTreeHashForRun(tx, treeHash, run.schemaId);
           validateObserveResults(observeResults);
 
-          const nextPendingSignalsCbor = accumulateSignalsCbor(
-            storedRun.pendingSignalsCbor,
+          const nextPendingSignalsCbor = encodeSignalsCborFromObserveResults(
             observeResults
           );
 
@@ -339,8 +329,7 @@ export function createRuntimeKernel(
                 treeHash,
               })
             : undefined;
-          const nextAnnotationsCbor = await accumulateAnnotationsCbor(
-            storedRun.lastStepAnnotationsCbor,
+          const nextAnnotationsCbor = await encodeStepAnnotationsCbor(
             {
               now,
               observeResults,
@@ -1113,26 +1102,20 @@ async function assertTurnIdAvailable(
   }
 }
 
-function accumulateSignalsCbor(
-  existing: Uint8Array | undefined,
+function encodeSignalsCborFromObserveResults(
   observeResults: { signals: KernelRecord[] }[] | undefined
 ): Uint8Array | undefined {
   const newSignals: KernelRecord[] =
     observeResults?.flatMap((r) => r.signals) ?? [];
 
   if (newSignals.length === 0) {
-    return existing;
+    return undefined;
   }
 
-  const existingSignals: KernelRecord[] = existing
-    ? decodeKernelRecordArray(existing, "pending signals")
-    : [];
-
-  return encodeRecord([...existingSignals, ...newSignals]);
+  return encodeRecord(newSignals);
 }
 
-async function accumulateAnnotationsCbor(
-  existing: Uint8Array | undefined,
+async function encodeStepAnnotationsCbor(
   input: {
     now: () => EpochMs;
     observeResults: { annotations: KernelObject[] }[] | undefined;
@@ -1145,13 +1128,10 @@ async function accumulateAnnotationsCbor(
     input.observeResults?.flatMap((result) => result.annotations) ?? [];
 
   if (annotations.length === 0) {
-    return existing;
+    return undefined;
   }
 
-  const records: KernelRecord[] =
-    existing === undefined
-      ? []
-      : decodeKernelRecordArray(existing, "observe annotations");
+  const records: KernelRecord[] = [];
   const createdAtMs = input.now();
 
   for (const annotation of annotations) {

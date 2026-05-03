@@ -317,4 +317,56 @@ describe("createRuntimeKernel", () => {
     expect(recovery.consumedStagedResults).toEqual([staged.stagedResult]);
     expect(recovery.uncommittedStagedResults).toEqual([]);
   });
+
+  test("run.beginStep keeps pending signals durable until completion", async () => {
+    const fixture = await createThreadFixture({
+      branchId: "branch_pending_signal_durability",
+      threadId: "thread_pending_signal_durability",
+    });
+    const turn = await fixture.kernel.turn.create(
+      "turn_pending_signal_durability",
+      fixture.threadId,
+      fixture.branchId,
+      null,
+      fixture.rootTurnNodeHash
+    );
+    await fixture.kernel.run.create(
+      "run_pending_signal_durability",
+      turn.turnId,
+      fixture.branchId,
+      fixture.schemaId,
+      fixture.rootTurnNodeHash,
+      [
+        { deterministic: true, id: "first", sideEffects: false },
+        { deterministic: true, id: "second", sideEffects: false },
+        { deterministic: true, id: "third", sideEffects: false },
+      ]
+    );
+
+    await fixture.kernel.run.completeStep(
+      "run_pending_signal_durability",
+      "first",
+      undefined,
+      [{ annotations: [], signals: [{ kind: "signal", n: 1 }] }]
+    );
+
+    const first = await fixture.kernel.run.beginStep(
+      "run_pending_signal_durability",
+      "second"
+    );
+    const second = await fixture.kernel.run.beginStep(
+      "run_pending_signal_durability",
+      "second"
+    );
+
+    expect(first.signals).toEqual([{ kind: "signal", n: 1 }]);
+    expect(second.signals).toEqual([{ kind: "signal", n: 1 }]);
+
+    await fixture.kernel.run.completeStep("run_pending_signal_durability", "second");
+    const third = await fixture.kernel.run.beginStep(
+      "run_pending_signal_durability",
+      "third"
+    );
+    expect(third.signals).toEqual([]);
+  });
 });
