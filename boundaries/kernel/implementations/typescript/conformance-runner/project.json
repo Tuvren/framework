@@ -11,6 +11,17 @@
   "targets": {
     "conformance": {
       "executor": "nx:run-commands",
+      "dependsOn": [
+        {
+          "projects": [
+            "backend-memory",
+            "kernel-runtime",
+            "kernel-typescript-conformance-adapter"
+          ],
+          "target": "build",
+          "params": "ignore"
+        }
+      ],
       "options": {
         "cwd": "boundaries/kernel/implementations/typescript/conformance-runner",
         "command": "bun ./src/kernel-typescript-conformance.ts"

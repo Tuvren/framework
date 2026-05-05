@@ -169,6 +169,7 @@ const COMPATIBILITY_SCHEMA_PATH = resolve(
 const EVIDENCE_DIRECTORY = resolve(REPO_ROOT, "reports/compatibility/evidence");
 const HERMETIC_BUILD_OUTPUT_DIRECTORIES = [
   "boundaries/kernel/implementations/typescript/conformance-adapter/dist",
+  "boundaries/kernel/implementations/typescript/backend-memory/dist",
   "boundaries/kernel/implementations/typescript/backend-sqlite/dist",
   "boundaries/kernel/implementations/typescript/runtime-kernel/dist",
 ] as const;
@@ -208,12 +209,6 @@ const CONFORMANCE_RUNNERS: readonly ConformanceRunner[] = [
     reportLabel: "TypeScript framework runtime baseline",
   },
   {
-    command: [
-      "bun",
-      "tools/conformance/runner/run.ts",
-      "--adapter",
-      "boundaries/kernel/implementations/typescript/conformance-adapter/adapter.json",
-    ],
     fullCapabilities: [
       "kernel.protocol",
       "kernel.logical",
