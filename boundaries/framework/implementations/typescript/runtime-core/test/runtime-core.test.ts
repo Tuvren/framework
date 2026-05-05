@@ -571,6 +571,103 @@ describe("framework-runtime-core", () => {
     ).toBe("failed");
   });
 
+  test("continues same-signal recovery from a recovered iterate branch head", async () => {
+    const harness = createFakeKernelHarness();
+    const livenessHarness = createFakeRunLivenessKernelHarness(harness);
+    const driver = {
+      async execute(context) {
+        expect(countUserTextMessages(context.messages, "Retry the same request")).toBe(
+          1
+        );
+        expect(
+          hasAssistantTextMessage(
+            context.messages,
+            "Recovered durable assistant output."
+          )
+        ).toBe(true);
+        return {
+          messages: [assistantText("Replacement iteration completed.")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createTuvrenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: livenessHarness.kernel,
+      runLiveness: {
+        executionOwnerId: "worker-1",
+        leaseDurationMs: 50,
+      },
+    });
+    const thread = await runtime.createThread({});
+    const staleTurn = await livenessHarness.kernel.turn.create(
+      "turn_stale_iterate_recovery",
+      thread.threadId,
+      thread.branchId,
+      null,
+      thread.rootTurnNodeHash
+    );
+    await livenessHarness.kernel.runLiveness.createLeasedRun({
+      branchId: thread.branchId,
+      executionOwnerId: "worker-stale",
+      leaseExpiresAtMs: 1,
+      runId: "run_stale_iterate_recovery",
+      schemaId: DEFAULT_AGENT_SCHEMA.schemaId,
+      startTurnNodeHash: thread.rootTurnNodeHash,
+      steps: [{ deterministic: false, id: "iterate", sideEffects: true }],
+      turnId: staleTurn.turnId,
+    });
+    await livenessHarness.kernel.staging.stage(
+      "run_stale_iterate_recovery",
+      encodeDeterministicKernelRecord({
+        parts: [
+          {
+            text: "Retry the same request",
+            type: "text",
+          },
+        ],
+        role: "user",
+      }),
+      "stale_iterate_user_message",
+      "message",
+      "completed"
+    );
+    await livenessHarness.kernel.staging.stage(
+      "run_stale_iterate_recovery",
+      encodeDeterministicKernelRecord({
+        parts: [
+          {
+            text: "Recovered durable assistant output.",
+            type: "text",
+          },
+        ],
+        role: "assistant",
+      }),
+      "stale_iterate_assistant_message",
+      "message",
+      "completed"
+    );
+
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: { name: "primary" },
+      signal: textSignal("Retry the same request"),
+      threadId: thread.threadId,
+    });
+    const events = await collectEvents(handle.events());
+
+    expect(handle.status().phase).toBe("completed");
+    expect(extractTurnId(events)).toBe(staleTurn.turnId);
+  });
+
   test("starts a fresh turn when the incoming signal does not match the recovered stale turn", async () => {
     const harness = createFakeKernelHarness();
     const livenessHarness = createFakeRunLivenessKernelHarness(harness);

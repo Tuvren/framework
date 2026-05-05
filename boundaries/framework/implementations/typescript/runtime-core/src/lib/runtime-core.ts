@@ -3820,9 +3820,9 @@ class RuntimeCore implements TuvrenRuntime {
 
     const recoveredHeadState = await this.loadHeadState(branchId);
 
-    // Only the original request may rebind onto the recovered turn. A different
-    // incoming signal still benefits from fencing the stale owner, but it must
-    // start a fresh turn on the recovered head instead of silently resuming.
+    // Without a durable request identity, the best available recovery signal is
+    // the last durable user message on the recovered head. A different signal
+    // always starts a fresh turn after fencing the stale owner.
     if (
       !doesSignalMatchRecoveredTurn(signal, recoveredHeadState.messages)
     ) {
@@ -5041,6 +5041,7 @@ function classifyRecoveredExecutionMode(
   switch (recoveredStepId) {
     case "incorporate_input":
       return "reuse_turn";
+    case "iterate":
     case "commit_extension_state":
     case "context_engineering":
     case "handoff_context":
