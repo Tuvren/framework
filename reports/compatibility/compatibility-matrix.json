@@ -205,13 +205,17 @@
             "runtime-lifecycle-ext.recover-result.first-object-type",
             "runtime-lifecycle-ext.recover-result.first-task-id",
             "runtime-lifecycle-ext.recover-result.last-turn-node-hash-format",
-            "runtime-lifecycle-ext.recover-result.uncommitted-count"
+            "runtime-lifecycle-ext.recover-result.uncommitted-count",
+            "runtime-lifecycle-ext.stale-recovery.finalize-terminal-status",
+            "runtime-lifecycle-ext.stale-recovery.handoff-context-active-agent",
+            "runtime-lifecycle-ext.stale-recovery.same-signal-iterate",
+            "runtime-lifecycle-ext.stale-recovery.signal-mismatch-fresh-turn"
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 199,
-            "totalChecks": 199,
-            "applicableChecks": 199,
+            "passedChecks": 203,
+            "totalChecks": 203,
+            "applicableChecks": 203,
             "nonApplicableChecks": 0
           },
           "declaredCapabilities": [
@@ -514,9 +518,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 0,
-            "totalChecks": 199,
+            "totalChecks": 203,
             "applicableChecks": 0,
-            "nonApplicableChecks": 199
+            "nonApplicableChecks": 203
           },
           "declaredCapabilities": [],
           "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.rust-framework.json",

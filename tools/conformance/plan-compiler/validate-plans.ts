@@ -42,7 +42,10 @@ const OPERATION_SOURCE_BY_PACKET = new Map<string, readonly string[]>([
   ],
   [
     "tuvren.providers.provider-api",
-    ["boundaries/providers/conformance/plans/provider-api-bridge.json"],
+    [
+      "boundaries/providers/conformance/plans/provider-api-bridge.json",
+      "boundaries/providers/conformance/plans/provider-api-bridge-extended.json",
+    ],
   ],
 ]);
 const OPERATION_LITERAL_PATTERN =

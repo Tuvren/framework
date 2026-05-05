@@ -3963,6 +3963,206 @@
         "planId": "tuvren.framework.runtime-api.lifecycle-extended"
       },
       "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.finalize-terminal-status.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.finalize-terminal-status.2.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.finalize-terminal-status.3.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.finalize-terminal-status.4.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.finalize-terminal-status.5.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.finalize-terminal-status.requiredEvidence.recovery.branchRuntimePhase",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.finalize-terminal-status.requiredEvidence.recovery.driverExecuteCalls",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.finalize-terminal-status.requiredEvidence.recovery.phase",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.finalize-terminal-status.requiredEvidence.recovery.sameTurn",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.finalize-terminal-status.requiredEvidence.recovery.staleRunStatus",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.stale-recovery.finalize-terminal-status",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.lifecycle-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.handoff-context-active-agent.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.handoff-context-active-agent.2.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.handoff-context-active-agent.3.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.handoff-context-active-agent.4.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.handoff-context-active-agent.5.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.handoff-context-active-agent.requiredEvidence.recovery.activeAgent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.handoff-context-active-agent.requiredEvidence.recovery.branchStatusActiveAgent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.handoff-context-active-agent.requiredEvidence.recovery.phase",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.handoff-context-active-agent.requiredEvidence.recovery.sameTurn",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.handoff-context-active-agent.requiredEvidence.recovery.staleRunStatus",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.stale-recovery.handoff-context-active-agent",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.lifecycle-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.same-signal-iterate.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.same-signal-iterate.2.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.same-signal-iterate.3.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.same-signal-iterate.4.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.same-signal-iterate.5.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.same-signal-iterate.requiredEvidence.recovery.originalUserMessageCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.same-signal-iterate.requiredEvidence.recovery.preemptCalls",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.same-signal-iterate.requiredEvidence.recovery.recoveredAssistantVisible",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.same-signal-iterate.requiredEvidence.recovery.sameTurn",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.same-signal-iterate.requiredEvidence.recovery.staleRunStatus",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.stale-recovery.same-signal-iterate",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.lifecycle-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.signal-mismatch-fresh-turn.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.signal-mismatch-fresh-turn.2.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.signal-mismatch-fresh-turn.3.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.signal-mismatch-fresh-turn.4.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.signal-mismatch-fresh-turn.5.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.signal-mismatch-fresh-turn.requiredEvidence.recovery.freshUserMessageCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.signal-mismatch-fresh-turn.requiredEvidence.recovery.originalUserMessageCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.signal-mismatch-fresh-turn.requiredEvidence.recovery.preemptCalls",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.signal-mismatch-fresh-turn.requiredEvidence.recovery.sameTurn",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.signal-mismatch-fresh-turn.requiredEvidence.recovery.staleRunStatus",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.stale-recovery.signal-mismatch-fresh-turn",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.lifecycle-extended"
+      },
+      "status": "pass"
     }
   ],
   "command": [
@@ -3980,9 +4180,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 199,
-    "totalChecks": 199,
-    "applicableChecks": 199,
+    "passedChecks": 203,
+    "totalChecks": 203,
+    "applicableChecks": 203,
     "nonApplicableChecks": 0
   },
   "suiteId": "tuvren.framework.promoted-authority",

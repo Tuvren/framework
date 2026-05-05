@@ -210,7 +210,11 @@
     "runtime-lifecycle-ext.recover-result.first-object-type",
     "runtime-lifecycle-ext.recover-result.first-task-id",
     "runtime-lifecycle-ext.recover-result.last-turn-node-hash-format",
-    "runtime-lifecycle-ext.recover-result.uncommitted-count"
+    "runtime-lifecycle-ext.recover-result.uncommitted-count",
+    "runtime-lifecycle-ext.stale-recovery.finalize-terminal-status",
+    "runtime-lifecycle-ext.stale-recovery.handoff-context-active-agent",
+    "runtime-lifecycle-ext.stale-recovery.same-signal-iterate",
+    "runtime-lifecycle-ext.stale-recovery.signal-mismatch-fresh-turn"
   ],
   "project": "framework-rust-conformance-runner",
   "reportLabel": "Rust framework unsupported stub",
@@ -219,9 +223,9 @@
   "summary": {
     "failedChecks": 0,
     "passedChecks": 0,
-    "totalChecks": 199,
+    "totalChecks": 203,
     "applicableChecks": 0,
-    "nonApplicableChecks": 199
+    "nonApplicableChecks": 203
   },
   "suiteId": "tuvren.framework.promoted-authority",
   "suiteVersion": "0.1.0"

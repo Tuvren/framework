@@ -260,6 +260,178 @@
       },
       "operation": "runtime.recover-result",
       "scenario": "runtime-api-scenarios"
+    },
+    {
+      "assertions": [
+        {
+          "equals": true,
+          "field": "$.recovery.sameTurn",
+          "kind": "evidenceField"
+        },
+        {
+          "equals": 1,
+          "field": "$.recovery.originalUserMessageCount",
+          "kind": "evidenceField"
+        },
+        {
+          "equals": true,
+          "field": "$.recovery.recoveredAssistantVisible",
+          "kind": "evidenceField"
+        },
+        {
+          "equals": "failed",
+          "field": "$.recovery.staleRunStatus",
+          "kind": "evidenceField"
+        },
+        {
+          "equals": 1,
+          "field": "$.recovery.preemptCalls",
+          "kind": "evidenceField"
+        }
+      ],
+      "capabilities": ["framework.run-liveness"],
+      "checkId": "runtime-lifecycle-ext.stale-recovery.same-signal-iterate",
+      "evidence": [
+        "recovery.sameTurn",
+        "recovery.originalUserMessageCount",
+        "recovery.recoveredAssistantVisible",
+        "recovery.staleRunStatus",
+        "recovery.preemptCalls"
+      ],
+      "input": {
+        "scenarioPath": "$.stale-recovery-same-signal-iterate"
+      },
+      "operation": "runtime.recover-stale-run",
+      "scenario": "runtime-api-scenarios"
+    },
+    {
+      "assertions": [
+        {
+          "equals": false,
+          "field": "$.recovery.sameTurn",
+          "kind": "evidenceField"
+        },
+        {
+          "equals": 1,
+          "field": "$.recovery.originalUserMessageCount",
+          "kind": "evidenceField"
+        },
+        {
+          "equals": 1,
+          "field": "$.recovery.freshUserMessageCount",
+          "kind": "evidenceField"
+        },
+        {
+          "equals": "failed",
+          "field": "$.recovery.staleRunStatus",
+          "kind": "evidenceField"
+        },
+        {
+          "equals": 1,
+          "field": "$.recovery.preemptCalls",
+          "kind": "evidenceField"
+        }
+      ],
+      "capabilities": ["framework.run-liveness"],
+      "checkId": "runtime-lifecycle-ext.stale-recovery.signal-mismatch-fresh-turn",
+      "evidence": [
+        "recovery.sameTurn",
+        "recovery.originalUserMessageCount",
+        "recovery.freshUserMessageCount",
+        "recovery.staleRunStatus",
+        "recovery.preemptCalls"
+      ],
+      "input": {
+        "scenarioPath": "$.stale-recovery-signal-mismatch"
+      },
+      "operation": "runtime.recover-stale-run",
+      "scenario": "runtime-api-scenarios"
+    },
+    {
+      "assertions": [
+        {
+          "equals": true,
+          "field": "$.recovery.sameTurn",
+          "kind": "evidenceField"
+        },
+        {
+          "equals": "completed",
+          "field": "$.recovery.phase",
+          "kind": "evidenceField"
+        },
+        {
+          "equals": "reviewer",
+          "field": "$.recovery.activeAgent",
+          "kind": "evidenceField"
+        },
+        {
+          "equals": "reviewer",
+          "field": "$.recovery.branchStatusActiveAgent",
+          "kind": "evidenceField"
+        },
+        {
+          "equals": "failed",
+          "field": "$.recovery.staleRunStatus",
+          "kind": "evidenceField"
+        }
+      ],
+      "capabilities": ["framework.run-liveness"],
+      "checkId": "runtime-lifecycle-ext.stale-recovery.handoff-context-active-agent",
+      "evidence": [
+        "recovery.sameTurn",
+        "recovery.phase",
+        "recovery.activeAgent",
+        "recovery.branchStatusActiveAgent",
+        "recovery.staleRunStatus"
+      ],
+      "input": {
+        "scenarioPath": "$.stale-recovery-handoff-context"
+      },
+      "operation": "runtime.recover-stale-run",
+      "scenario": "runtime-api-scenarios"
+    },
+    {
+      "assertions": [
+        {
+          "equals": true,
+          "field": "$.recovery.sameTurn",
+          "kind": "evidenceField"
+        },
+        {
+          "equals": "completed",
+          "field": "$.recovery.phase",
+          "kind": "evidenceField"
+        },
+        {
+          "equals": 0,
+          "field": "$.recovery.driverExecuteCalls",
+          "kind": "evidenceField"
+        },
+        {
+          "equals": "completed",
+          "field": "$.recovery.branchRuntimePhase",
+          "kind": "evidenceField"
+        },
+        {
+          "equals": "failed",
+          "field": "$.recovery.staleRunStatus",
+          "kind": "evidenceField"
+        }
+      ],
+      "capabilities": ["framework.run-liveness"],
+      "checkId": "runtime-lifecycle-ext.stale-recovery.finalize-terminal-status",
+      "evidence": [
+        "recovery.sameTurn",
+        "recovery.phase",
+        "recovery.driverExecuteCalls",
+        "recovery.branchRuntimePhase",
+        "recovery.staleRunStatus"
+      ],
+      "input": {
+        "scenarioPath": "$.stale-recovery-finalize-status"
+      },
+      "operation": "runtime.recover-stale-run",
+      "scenario": "runtime-api-scenarios"
     }
   ],
   "packetId": "tuvren.framework.runtime-api",
