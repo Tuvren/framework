@@ -634,6 +634,67 @@ describe("@tuvren/backend-sqlite", () => {
     );
   });
 
+  test("upgrades databases from 0003 to 0004 during startup", async () => {
+    const databasePath = createTempDatabasePath();
+    const seed = new Database(databasePath);
+    seed.exec(`
+      CREATE TABLE backend_sqlite_migrations (
+        name TEXT PRIMARY KEY,
+        applied_at_ms INTEGER NOT NULL
+      );
+    `);
+    seed.exec(getBaselineMigrationSql());
+    seed.exec(getTargetedValidationMigrationSql());
+    seed.exec(getPendingSignalsAndAnnotationsMigrationSql());
+    seed
+      .prepare(
+        `
+          INSERT INTO backend_sqlite_migrations (name, applied_at_ms)
+          VALUES (?, ?)
+        `
+      )
+      .run("0001_initial_schema.sql", 1);
+    seed
+      .prepare(
+        `
+          INSERT INTO backend_sqlite_migrations (name, applied_at_ms)
+          VALUES (?, ?)
+        `
+      )
+      .run("0002_targeted_validation_indexes.sql", 2);
+    seed
+      .prepare(
+        `
+          INSERT INTO backend_sqlite_migrations (name, applied_at_ms)
+          VALUES (?, ?)
+        `
+      )
+      .run("0003_pending_signals_and_annotations.sql", 3);
+    seed.close();
+
+    const backend = createSqliteBackend({ databasePath });
+    deepStrictEqual(await backend.health(), { ok: true });
+
+    const probe = new Database(databasePath, { readonly: true });
+    const migrationRows = probe
+      .prepare("SELECT name FROM backend_sqlite_migrations ORDER BY name")
+      .all() as Array<{ name: string }>;
+    const observeAnnotationsTable = probe
+      .prepare(
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'observe_annotations'"
+      )
+      .get() as { name: string } | undefined;
+    probe.close();
+
+    deepStrictEqual(migrationRows, [
+      { name: "0001_initial_schema.sql" },
+      { name: "0002_targeted_validation_indexes.sql" },
+      { name: "0003_pending_signals_and_annotations.sql" },
+      { name: "0004_observe_annotations.sql" },
+    ]);
+    deepStrictEqual(observeAnnotationsTable, { name: "observe_annotations" });
+  });
+
   test("loads migrations from dist-local paths in dist-style layouts", async () => {
     const tempDirectory = createWorkspaceTempDirectory(
       ".tmp-sqlite-dist-layout-"

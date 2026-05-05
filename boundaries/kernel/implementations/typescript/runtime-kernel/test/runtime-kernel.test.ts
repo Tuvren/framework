@@ -111,6 +111,18 @@ describe("createRuntimeKernel", () => {
     expect(result.kind).toBe("proceed");
   });
 
+  test("schema.register is idempotent for the same schema id and payload", async () => {
+    const kernel = createRuntimeKernel({ backend: createMemoryBackend() });
+
+    const [first, second] = await Promise.all([
+      kernel.schema.register(TEST_SCHEMA),
+      kernel.schema.register(TEST_SCHEMA),
+    ]);
+
+    expect(first).toBe(TEST_SCHEMA.schemaId);
+    expect(second).toBe(TEST_SCHEMA.schemaId);
+  });
+
   test("run.completeStep advances a final step past the sequence", async () => {
     const fixture = await createThreadFixture({
       branchId: "branch_final_step",

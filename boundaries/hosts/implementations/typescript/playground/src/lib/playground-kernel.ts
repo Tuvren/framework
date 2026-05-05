@@ -14,7 +14,11 @@
  * limitations under the License.
  */
 
-import { type HashString, TuvrenRuntimeError } from "@tuvren/core-types";
+import {
+  type HashString,
+  TuvrenRuntimeError,
+  TuvrenValidationError,
+} from "@tuvren/core-types";
 import {
   decodeDeterministicKernelRecord,
   type RuntimeKernel,
@@ -32,7 +36,7 @@ export function createPlaygroundKernelInspector(
   return {
     async readBranchMessages(branchId) {
       const turnTreeHash = await readBranchTurnTreeHash(kernel, branchId);
-      const messages = await kernel.tree.resolve(turnTreeHash, "messages");
+      const messages = await resolveOptionalPath(kernel, turnTreeHash, "messages");
 
       if (!Array.isArray(messages)) {
         return [];
@@ -52,7 +56,8 @@ export function createPlaygroundKernelInspector(
     },
     async readBranchStatus(branchId) {
       const turnTreeHash = await readBranchTurnTreeHash(kernel, branchId);
-      const statusHash = await kernel.tree.resolve(
+      const statusHash = await resolveOptionalPath(
+        kernel,
         turnTreeHash,
         "runtime.status"
       );
@@ -65,6 +70,25 @@ export function createPlaygroundKernelInspector(
       return bytes === null ? null : decodeDeterministicKernelRecord(bytes);
     },
   };
+}
+
+async function resolveOptionalPath(
+  kernel: RuntimeKernel,
+  turnTreeHash: HashString,
+  path: string
+): Promise<unknown | null> {
+  try {
+    return await kernel.tree.resolve(turnTreeHash, path);
+  } catch (error: unknown) {
+    if (
+      error instanceof TuvrenValidationError &&
+      error.code === "kernel_runtime_unknown_tree_path"
+    ) {
+      return null;
+    }
+
+    throw error;
+  }
 }
 
 async function readBranchTurnTreeHash(

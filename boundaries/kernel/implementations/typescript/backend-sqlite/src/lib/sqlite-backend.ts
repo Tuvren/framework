@@ -2255,7 +2255,7 @@ function validateMigrationState(db: Database.Database): void {
     latestAppliedMigrationName ===
     PENDING_SIGNALS_AND_ANNOTATIONS_MIGRATION_NAME
   ) {
-    validateCurrentPackageSchemaShape(db);
+    validatePendingSignalsAndAnnotationsSchemaShape(db);
     return;
   }
 
@@ -2396,14 +2396,20 @@ function validatePrePendingSignalsSchemaShape(db: Database.Database): void {
 }
 
 function validateCurrentPackageSchemaShape(db: Database.Database): void {
+  validatePendingSignalsAndAnnotationsSchemaShape(db);
+  validateObserveAnnotationsSchemaShape(db);
+}
+
+function validatePendingSignalsAndAnnotationsSchemaShape(
+  db: Database.Database
+): void {
   validateSqliteSchemaShape(
     db,
-    OBSERVE_ANNOTATIONS_MIGRATION_NAME,
+    PENDING_SIGNALS_AND_ANNOTATIONS_MIGRATION_NAME,
     INITIAL_SCHEMA_TABLE_DEFINITIONS,
     INITIAL_SCHEMA_INDEX_DEFINITIONS
   );
   validateTargetedValidationSchemaShape(db);
-  validateObserveAnnotationsSchemaShape(db);
 }
 
 function validateTargetedValidationSchemaShape(db: Database.Database): void {
