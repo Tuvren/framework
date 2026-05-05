@@ -109,6 +109,174 @@
         }
       ],
       "evidence": ["failure.errorName", "failure.errorCode"]
+    },
+    {
+      "checkId": "providers-ext.strict.error-code-stable",
+      "operation": "providers.bridge.strict-structured-output-rejection",
+      "capabilities": ["providers.rejects-native-strict-structured-output"],
+      "fixture": "provider-fixtures",
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.strictStructuredOutput.generateErrorCode",
+          "equals": "invalid_ai_sdk_bridge_config"
+        }
+      ],
+      "evidence": ["strictStructuredOutput.generateErrorCode"]
+    },
+    {
+      "checkId": "providers-ext.strict.error-reason-stable",
+      "operation": "providers.bridge.strict-structured-output-rejection",
+      "capabilities": ["providers.rejects-native-strict-structured-output"],
+      "fixture": "provider-fixtures",
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.strictStructuredOutput.generateErrorReason",
+          "equals": "native_strict_structured_output_unsupported"
+        }
+      ],
+      "evidence": ["strictStructuredOutput.generateErrorReason"]
+    },
+    {
+      "checkId": "providers-ext.strict.provider-call-count-zero",
+      "operation": "providers.bridge.strict-structured-output-rejection",
+      "capabilities": ["providers.rejects-native-strict-structured-output"],
+      "fixture": "provider-fixtures",
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.strictStructuredOutput.generateCalls",
+          "equals": 0
+        }
+      ],
+      "evidence": ["strictStructuredOutput.generateCalls"]
+    },
+    {
+      "checkId": "providers-ext.strict.stream-error-code-stable",
+      "operation": "providers.bridge.strict-structured-output-rejection",
+      "capabilities": ["providers.rejects-native-strict-structured-output"],
+      "fixture": "provider-fixtures",
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.strictStructuredOutput.streamErrorCode",
+          "equals": "invalid_ai_sdk_bridge_config"
+        }
+      ],
+      "evidence": ["strictStructuredOutput.streamErrorCode"]
+    },
+    {
+      "checkId": "providers-ext.strict.stream-error-reason-stable",
+      "operation": "providers.bridge.strict-structured-output-rejection",
+      "capabilities": ["providers.rejects-native-strict-structured-output"],
+      "fixture": "provider-fixtures",
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.strictStructuredOutput.streamErrorReason",
+          "equals": "native_strict_structured_output_unsupported"
+        }
+      ],
+      "evidence": ["strictStructuredOutput.streamErrorReason"]
+    },
+    {
+      "checkId": "providers-ext.strict.stream-call-count-zero",
+      "operation": "providers.bridge.strict-structured-output-rejection",
+      "capabilities": ["providers.rejects-native-strict-structured-output"],
+      "fixture": "provider-fixtures",
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.strictStructuredOutput.streamCalls",
+          "equals": 0
+        }
+      ],
+      "evidence": ["strictStructuredOutput.streamCalls"]
+    },
+    {
+      "checkId": "providers-ext.tool-execution.generate-error-code-stable",
+      "operation": "providers.bridge.provider-owned-tool-execution-rejection",
+      "capabilities": ["providers.framework-owned-tool-execution"],
+      "fixture": "provider-fixtures",
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.frameworkOwnedToolExecution.generateErrorCode",
+          "equals": "unsupported_ai_sdk_content"
+        }
+      ],
+      "evidence": ["frameworkOwnedToolExecution.generateErrorCode"]
+    },
+    {
+      "checkId": "providers-ext.tool-execution.generate-error-reason-stable",
+      "operation": "providers.bridge.provider-owned-tool-execution-rejection",
+      "capabilities": ["providers.framework-owned-tool-execution"],
+      "fixture": "provider-fixtures",
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.frameworkOwnedToolExecution.generateErrorReason",
+          "equals": "provider_owned_tool_execution_unsupported"
+        }
+      ],
+      "evidence": ["frameworkOwnedToolExecution.generateErrorReason"]
+    },
+    {
+      "checkId": "providers-ext.tool-execution.stream-error-code-stable",
+      "operation": "providers.bridge.provider-owned-tool-execution-rejection",
+      "capabilities": ["providers.framework-owned-tool-execution"],
+      "fixture": "provider-fixtures",
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.frameworkOwnedToolExecution.streamErrorCode",
+          "equals": "unsupported_ai_sdk_content"
+        }
+      ],
+      "evidence": ["frameworkOwnedToolExecution.streamErrorCode"]
+    },
+    {
+      "checkId": "providers-ext.tool-execution.stream-error-reason-stable",
+      "operation": "providers.bridge.provider-owned-tool-execution-rejection",
+      "capabilities": ["providers.framework-owned-tool-execution"],
+      "fixture": "provider-fixtures",
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.frameworkOwnedToolExecution.streamErrorReason",
+          "equals": "provider_owned_tool_execution_unsupported"
+        }
+      ],
+      "evidence": ["frameworkOwnedToolExecution.streamErrorReason"]
+    },
+    {
+      "checkId": "providers-ext.approval.error-code-stable",
+      "operation": "providers.bridge.provider-approval-request-rejection",
+      "capabilities": ["providers.framework-owned-approval-boundary"],
+      "fixture": "provider-fixtures",
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.frameworkOwnedApprovalBoundary.errorCode",
+          "equals": "unsupported_ai_sdk_stream_part"
+        }
+      ],
+      "evidence": ["frameworkOwnedApprovalBoundary.errorCode"]
+    },
+    {
+      "checkId": "providers-ext.approval.error-reason-stable",
+      "operation": "providers.bridge.provider-approval-request-rejection",
+      "capabilities": ["providers.framework-owned-approval-boundary"],
+      "fixture": "provider-fixtures",
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.frameworkOwnedApprovalBoundary.errorReason",
+          "equals": "provider_owned_tool_approval_unsupported"
+        }
+      ],
+      "evidence": ["frameworkOwnedApprovalBoundary.errorReason"]
     }
   ]
 }

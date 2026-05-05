@@ -395,31 +395,34 @@
       "results": [
         {
           "checkIds": [
+            "providers-ext.approval.error-code-stable",
+            "providers-ext.approval.error-reason-stable",
+            "providers-ext.strict.error-code-stable",
+            "providers-ext.strict.error-reason-stable",
+            "providers-ext.strict.provider-call-count-zero",
+            "providers-ext.strict.stream-call-count-zero",
+            "providers-ext.strict.stream-error-code-stable",
+            "providers-ext.strict.stream-error-reason-stable",
+            "providers-ext.tool-execution.generate-error-code-stable",
+            "providers-ext.tool-execution.generate-error-reason-stable",
+            "providers-ext.tool-execution.stream-error-code-stable",
+            "providers-ext.tool-execution.stream-error-reason-stable",
             "providers.bridge.generate_mapping",
             "providers.bridge.provider_failure_normalization",
             "providers.bridge.stream_metadata_continuity",
             "providers.bridge.structured_output_stream",
-            "providers-ext.approval.error-code-stable",
-            "providers-ext.approval.error-reason-stable",
             "providers-ext.failure.error-code-snake-case",
             "providers-ext.failure.error-name-pascal-case",
             "providers-ext.generate.response-format-name-matches-pattern",
             "providers-ext.generate.response-part-types-shape-array",
-            "providers-ext.strict.error-code-stable",
-            "providers-ext.strict.error-reason-stable",
-            "providers-ext.strict.provider-call-count-zero",
             "providers-ext.structured.done-name-matches-identifier",
-            "providers-ext.structured.first-chunk-is-structured-delta-or-text-delta",
-            "providers-ext.tool-execution.generate-error-code-stable",
-            "providers-ext.tool-execution.generate-error-reason-stable",
-            "providers-ext.tool-execution.stream-error-code-stable",
-            "providers-ext.tool-execution.stream-error-reason-stable"
+            "providers-ext.structured.first-chunk-is-structured-delta-or-text-delta"
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 19,
-            "totalChecks": 19,
-            "applicableChecks": 19,
+            "passedChecks": 22,
+            "totalChecks": 22,
+            "applicableChecks": 22,
             "nonApplicableChecks": 0
           },
           "declaredCapabilities": [

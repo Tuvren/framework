@@ -43,10 +43,9 @@ const PLANS_DIR = resolve(REPO_ROOT, "boundaries/providers/conformance/plans");
 await main();
 
 async function main(): Promise<void> {
-  // Coverage and negative-shape probes against undeclared providers.bridge.*
-  // operations were removed: the shared plan validator only accepts operations
-  // declared by the providers operation source. Bringing those operations
-  // under authority is a separate spec amendment.
+  // Extended provider coverage stays on the operations already declared by the
+  // core provider bridge plan, so validate-plans can still reject undeclared
+  // providers.bridge.* additions instead of learning them from this file.
   const extended = buildExtended();
 
   const filePath = resolve(PLANS_DIR, "provider-api-bridge-extended.json");
@@ -159,132 +158,6 @@ function buildExtended(): Plan {
         matches: "^[A-Z][A-Za-z0-9]+$",
       },
       ["failure.errorName"]
-    )
-  );
-
-  const strictStructured = (
-    id: string,
-    assertion: Record<string, unknown>,
-    evidence: string[]
-  ): PlanCheck => ({
-    assertions: [assertion],
-    capabilities: ["providers.rejects-native-strict-structured-output"],
-    checkId: `providers-ext.strict.${id}`,
-    evidence,
-    fixture: "provider-fixtures",
-    operation: "providers.bridge.strict-structured-output-rejection",
-  });
-  checks.push(
-    strictStructured(
-      "error-code-stable",
-      {
-        equals: "invalid_ai_sdk_bridge_config",
-        field: "$.strictStructuredOutput.errorCode",
-        kind: "evidenceField",
-      },
-      ["strictStructuredOutput.errorCode"]
-    ),
-    strictStructured(
-      "error-reason-stable",
-      {
-        equals: "native_strict_structured_output_unsupported",
-        field: "$.strictStructuredOutput.errorReason",
-        kind: "evidenceField",
-      },
-      ["strictStructuredOutput.errorReason"]
-    ),
-    strictStructured(
-      "provider-call-count-zero",
-      {
-        equals: 0,
-        field: "$.strictStructuredOutput.generateCalls",
-        kind: "evidenceField",
-      },
-      ["strictStructuredOutput.generateCalls"]
-    )
-  );
-
-  const frameworkOwnedToolExecution = (
-    id: string,
-    assertion: Record<string, unknown>,
-    evidence: string[]
-  ): PlanCheck => ({
-    assertions: [assertion],
-    capabilities: ["providers.framework-owned-tool-execution"],
-    checkId: `providers-ext.tool-execution.${id}`,
-    evidence,
-    fixture: "provider-fixtures",
-    operation: "providers.bridge.provider-owned-tool-execution-rejection",
-  });
-  checks.push(
-    frameworkOwnedToolExecution(
-      "generate-error-code-stable",
-      {
-        equals: "unsupported_ai_sdk_content",
-        field: "$.frameworkOwnedToolExecution.generateErrorCode",
-        kind: "evidenceField",
-      },
-      ["frameworkOwnedToolExecution.generateErrorCode"]
-    ),
-    frameworkOwnedToolExecution(
-      "generate-error-reason-stable",
-      {
-        equals: "provider_owned_tool_execution_unsupported",
-        field: "$.frameworkOwnedToolExecution.generateErrorReason",
-        kind: "evidenceField",
-      },
-      ["frameworkOwnedToolExecution.generateErrorReason"]
-    ),
-    frameworkOwnedToolExecution(
-      "stream-error-code-stable",
-      {
-        equals: "unsupported_ai_sdk_content",
-        field: "$.frameworkOwnedToolExecution.streamErrorCode",
-        kind: "evidenceField",
-      },
-      ["frameworkOwnedToolExecution.streamErrorCode"]
-    ),
-    frameworkOwnedToolExecution(
-      "stream-error-reason-stable",
-      {
-        equals: "provider_owned_tool_execution_unsupported",
-        field: "$.frameworkOwnedToolExecution.streamErrorReason",
-        kind: "evidenceField",
-      },
-      ["frameworkOwnedToolExecution.streamErrorReason"]
-    )
-  );
-
-  const frameworkOwnedApprovalBoundary = (
-    id: string,
-    assertion: Record<string, unknown>,
-    evidence: string[]
-  ): PlanCheck => ({
-    assertions: [assertion],
-    capabilities: ["providers.framework-owned-approval-boundary"],
-    checkId: `providers-ext.approval.${id}`,
-    evidence,
-    fixture: "provider-fixtures",
-    operation: "providers.bridge.provider-approval-request-rejection",
-  });
-  checks.push(
-    frameworkOwnedApprovalBoundary(
-      "error-code-stable",
-      {
-        equals: "unsupported_ai_sdk_stream_part",
-        field: "$.frameworkOwnedApprovalBoundary.errorCode",
-        kind: "evidenceField",
-      },
-      ["frameworkOwnedApprovalBoundary.errorCode"]
-    ),
-    frameworkOwnedApprovalBoundary(
-      "error-reason-stable",
-      {
-        equals: "provider_owned_tool_approval_unsupported",
-        field: "$.frameworkOwnedApprovalBoundary.errorReason",
-        kind: "evidenceField",
-      },
-      ["frameworkOwnedApprovalBoundary.errorReason"]
     )
   );
 

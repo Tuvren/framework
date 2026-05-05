@@ -1722,16 +1722,23 @@ describe("provider-bridge-ai-sdk", () => {
 
   test("rejects strict structured-output requests in the bridge baseline", async () => {
     let generateCalls = 0;
+    let streamCalls = 0;
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
         async doGenerate() {
           generateCalls += 1;
           return createGenerateResult();
         },
+        async doStream() {
+          streamCalls += 1;
+          return {
+            stream: streamFromParts([]),
+          };
+        },
       }),
     });
 
-    const error = await verifyProviderRejects({
+    const generateError = await verifyProviderRejects({
       expectedMessage: "StructuredOutputRequest.strict is not supported",
       run: async () => {
         await bridge.generate({
@@ -1758,13 +1765,49 @@ describe("provider-bridge-ai-sdk", () => {
       },
     });
 
-    expect(error).toMatchObject({
+    const streamError = await verifyProviderRejects({
+      expectedMessage: "StructuredOutputRequest.strict is not supported",
+      run: async () => {
+        for await (const _chunk of bridge.stream({
+          messages: [
+            {
+              parts: [{ text: "Hello", type: "text" }],
+              role: "user",
+            },
+          ],
+          responseFormat: {
+            name: "answer",
+            schema: {
+              properties: {
+                answer: {
+                  type: "string",
+                },
+              },
+              required: ["answer"],
+              type: "object",
+            },
+            strict: true,
+          },
+        })) {
+          void _chunk;
+        }
+      },
+    });
+
+    expect(generateError).toMatchObject({
+      code: "invalid_ai_sdk_bridge_config",
+      details: {
+        reason: "native_strict_structured_output_unsupported",
+      },
+    });
+    expect(streamError).toMatchObject({
       code: "invalid_ai_sdk_bridge_config",
       details: {
         reason: "native_strict_structured_output_unsupported",
       },
     });
     expect(generateCalls).toBe(0);
+    expect(streamCalls).toBe(0);
   });
 
   test("rejects unsupported provider-owned tool results in the baseline bridge", async () => {

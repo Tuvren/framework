@@ -270,7 +270,8 @@ async function providerFailureNormalization(): Promise<
 
 async function strictStructuredOutputRejection(): Promise<Record<string, unknown>> {
   let generateCalls = 0;
-  const bridge = createAiSdkProviderBridge({
+  let streamCalls = 0;
+  const generateBridge = createAiSdkProviderBridge({
     model: createMockModel({
       doGenerate() {
         generateCalls += 1;
@@ -278,9 +279,9 @@ async function strictStructuredOutputRejection(): Promise<Record<string, unknown
       },
     }),
   });
-  const error = await verifyProviderRejects({
+  const generateError = await verifyProviderRejects({
     run: async () => {
-      await bridge.generate({
+      await generateBridge.generate({
         ...providerTestkitFixtures.structuredPrompt,
         responseFormat: {
           ...providerTestkitFixtures.structuredPrompt.responseFormat!,
@@ -289,14 +290,45 @@ async function strictStructuredOutputRejection(): Promise<Record<string, unknown
       });
     },
   });
+  const streamBridge = createAiSdkProviderBridge({
+    model: createMockModel({
+      doStream() {
+        streamCalls += 1;
+        return Promise.resolve({
+          stream: streamFromParts([]),
+        });
+      },
+    }),
+  });
+  const streamError = await verifyProviderRejects({
+    run: async () => {
+      await collectProviderStreamChunks(
+        streamBridge.stream({
+          ...providerTestkitFixtures.structuredPrompt,
+          responseFormat: {
+            ...providerTestkitFixtures.structuredPrompt.responseFormat!,
+            strict: true,
+          },
+        })
+      );
+    },
+  });
 
   return {
     evidence: {
       strictStructuredOutput: {
-        errorCode:
-          error instanceof TuvrenProviderError ? error.code : "unknown",
-        errorReason: readProviderErrorReason(error),
         generateCalls,
+        generateErrorCode:
+          generateError instanceof TuvrenProviderError
+            ? generateError.code
+            : "unknown",
+        generateErrorReason: readProviderErrorReason(generateError),
+        streamCalls,
+        streamErrorCode:
+          streamError instanceof TuvrenProviderError
+            ? streamError.code
+            : "unknown",
+        streamErrorReason: readProviderErrorReason(streamError),
       },
     },
   };
