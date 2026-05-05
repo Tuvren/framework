@@ -10,16 +10,17 @@
       "$ref": "https://tuvren.dev/schemas/framework/event-stream/Metadata.json"
     },
     "lastAssistantMessageIndex": {
-      "type": "integer"
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/MessageIndex.json"
     },
     "lastUserMessageIndex": {
-      "type": "integer"
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/MessageIndex.json"
     },
     "messageCount": {
-      "type": "integer"
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/NonNegativeSafeInt.json"
     },
     "tokenEstimate": {
-      "type": "integer"
+      "type": "number",
+      "minimum": 0
     },
     "toolCalls": {
       "$ref": "https://tuvren.dev/schemas/framework/event-stream/ContextManifestNameCounters.json"
@@ -30,7 +31,7 @@
     "turnBoundaries": {
       "type": "array",
       "items": {
-        "type": "integer"
+        "$ref": "https://tuvren.dev/schemas/framework/event-stream/NonNegativeSafeInt.json"
       }
     }
   },

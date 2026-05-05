@@ -9,6 +9,14 @@ scalar NonEmptyString extends string;
 
 scalar EpochMs extends safeint;
 
+@minValue(0)
+@maxValue(9007199254740991)
+scalar NonNegativeSafeInt extends safeint;
+
+@minValue(-1)
+@maxValue(9007199254740991)
+scalar MessageIndex extends safeint;
+
 @pattern("^[0-9a-f]{64}$")
 scalar HashString extends string;
 
@@ -21,29 +29,38 @@ model ErrorEnvelope {
 }
 
 model ContextManifestCounters {
-  assistant: safeint;
-  system: safeint;
-  tool: safeint;
-  user: safeint;
+  assistant: NonNegativeSafeInt;
+  system: NonNegativeSafeInt;
+  tool: NonNegativeSafeInt;
+  user: NonNegativeSafeInt;
 }
 
-model ContextManifestNameCountMap is Record<safeint>;
+@TypeSpec.JsonSchema.extension(
+  "propertyNames",
+  #{
+    type: "string",
+    minLength: 1,
+    pattern: ".*\\S.*",
+  }
+)
+model ContextManifestNameCountMap is Record<NonNegativeSafeInt>;
 
 model ContextManifestNameCounters {
   byName: ContextManifestNameCountMap;
-  total: safeint;
+  total: NonNegativeSafeInt;
 }
 
 model ContextManifest {
   byRole: ContextManifestCounters;
   extensions: Metadata;
-  lastAssistantMessageIndex: safeint;
-  lastUserMessageIndex: safeint;
-  messageCount: safeint;
-  tokenEstimate: safeint;
+  lastAssistantMessageIndex: MessageIndex;
+  lastUserMessageIndex: MessageIndex;
+  messageCount: NonNegativeSafeInt;
+  @minValue(0)
+  tokenEstimate: float64;
   toolCalls: ContextManifestNameCounters;
   toolResults: ContextManifestNameCounters;
-  turnBoundaries: safeint[];
+  turnBoundaries: NonNegativeSafeInt[];
 }
 
 model EventSource {
@@ -73,12 +90,12 @@ model TurnEndEvent extends BaseEvent {
 
 model IterationStartEvent extends BaseEvent {
   type: "iteration.start";
-  iterationCount: int32;
+  iterationCount: NonNegativeSafeInt;
 }
 
 model IterationEndEvent extends BaseEvent {
   type: "iteration.end";
-  iterationCount: int32;
+  iterationCount: NonNegativeSafeInt;
 }
 
 model MessageStartEvent extends BaseEvent {
@@ -163,12 +180,8 @@ enum FinishReason {
 }
 
 model ProviderUsage {
-  @minValue(0)
-  @maxValue(9007199254740991)
-  inputTokens: safeint;
-  @minValue(0)
-  @maxValue(9007199254740991)
-  outputTokens: safeint;
+  inputTokens: NonNegativeSafeInt;
+  outputTokens: NonNegativeSafeInt;
 }
 
 model MessageDoneEvent extends BaseEvent {
@@ -251,7 +264,9 @@ model StateSnapshotEvent extends BaseEvent {
 
 model StateCheckpointEvent extends BaseEvent {
   type: "state.checkpoint";
-  iterationCount: safeint;
+  // Shared-core validation rejects negative checkpoint counts, so keep the
+  // non-negative invariant visible in the packet itself.
+  iterationCount: NonNegativeSafeInt;
   turnNodeHash: HashString;
 }
 

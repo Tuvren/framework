@@ -44,7 +44,9 @@ model TextPart {
   #[
     #{
       `if`: #{properties: #{redacted: #{`const`: false}}, required: #["redacted"]},
-      then: #{properties: #{text: #{type: "string", minLength: 1, pattern: ".*\\S.*"}}},
+      // Mirror the current binding validator exactly: unredacted reasoning
+      // must be non-empty, but whitespace-only payloads are still valid here.
+      then: #{properties: #{text: #{type: "string", minLength: 1}}},
     },
   ]
 )

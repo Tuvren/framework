@@ -61,7 +61,9 @@ model TextPart {
   #[
     #{
       `if`: #{properties: #{redacted: #{`const`: false}}, required: #["redacted"]},
-      then: #{properties: #{text: #{type: "string", minLength: 1, pattern: ".*\\S.*"}}},
+      // Mirror the focused provider binding exactly: unredacted reasoning
+      // must be non-empty, but whitespace-only payloads are still portable.
+      then: #{properties: #{text: #{type: "string", minLength: 1}}},
     },
   ]
 )
@@ -121,6 +123,9 @@ union ContentPart {
 
 model SystemMessage {
   role: "system";
+  // This packet follows the transport-oriented provider binding surface rather
+  // than the stricter durable-runtime message validator, so empty strings stay
+  // representable here.
   content: string;
 }
 
@@ -157,6 +162,8 @@ model RenderedToolDefinition {
 }
 
 model TuvrenModelConfig {
+  // The focused provider package re-exports the provider prompt types only; it
+  // does not add stricter runtime predicates for optional string fields here.
   `model`?: string;
   provider?: string;
   settings?: Metadata;
@@ -164,6 +171,8 @@ model TuvrenModelConfig {
 
 model StructuredOutputRequest {
   schema: TuvrenJsonSchema;
+  // Empty optional schema names remain valid on the provider-facing packet for
+  // parity with the binding surface and the broader runtime contract.
   name?: string;
   strict?: boolean;
 }

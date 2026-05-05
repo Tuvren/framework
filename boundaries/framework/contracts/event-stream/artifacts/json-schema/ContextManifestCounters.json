@@ -4,16 +4,16 @@
   "type": "object",
   "properties": {
     "assistant": {
-      "type": "integer"
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/NonNegativeSafeInt.json"
     },
     "system": {
-      "type": "integer"
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/NonNegativeSafeInt.json"
     },
     "tool": {
-      "type": "integer"
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/NonNegativeSafeInt.json"
     },
     "user": {
-      "type": "integer"
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/NonNegativeSafeInt.json"
     }
   },
   "required": ["assistant", "system", "tool", "user"],

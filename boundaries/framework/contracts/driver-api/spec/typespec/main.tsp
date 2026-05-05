@@ -9,6 +9,14 @@ scalar NonEmptyString extends string;
 
 scalar EpochMs extends safeint;
 
+@minValue(0)
+@maxValue(9007199254740991)
+scalar NonNegativeSafeInt extends safeint;
+
+@minValue(-1)
+@maxValue(9007199254740991)
+scalar MessageIndex extends safeint;
+
 @pattern("^[0-9a-f]{64}$")
 scalar HashString extends string;
 
@@ -44,7 +52,9 @@ model TextPart {
   #[
     #{
       `if`: #{properties: #{redacted: #{`const`: false}}, required: #["redacted"]},
-      then: #{properties: #{text: #{type: "string", minLength: 1, pattern: ".*\\S.*"}}},
+      // Mirror the current binding validator exactly: unredacted reasoning
+      // must be non-empty, but whitespace-only payloads are still valid here.
+      then: #{properties: #{text: #{type: "string", minLength: 1}}},
     },
   ]
 )
@@ -155,29 +165,38 @@ model ApprovalResponse {
 }
 
 model ContextManifestCounters {
-  assistant: safeint;
-  system: safeint;
-  tool: safeint;
-  user: safeint;
+  assistant: NonNegativeSafeInt;
+  system: NonNegativeSafeInt;
+  tool: NonNegativeSafeInt;
+  user: NonNegativeSafeInt;
 }
 
-model ContextManifestNameCountMap is Record<safeint>;
+@TypeSpec.JsonSchema.extension(
+  "propertyNames",
+  #{
+    type: "string",
+    minLength: 1,
+    pattern: ".*\\S.*",
+  }
+)
+model ContextManifestNameCountMap is Record<NonNegativeSafeInt>;
 
 model ContextManifestNameCounters {
   byName: ContextManifestNameCountMap;
-  total: safeint;
+  total: NonNegativeSafeInt;
 }
 
 model ContextManifest {
   byRole: ContextManifestCounters;
   extensions: Metadata;
-  lastAssistantMessageIndex: safeint;
-  lastUserMessageIndex: safeint;
-  messageCount: safeint;
-  tokenEstimate: safeint;
+  lastAssistantMessageIndex: MessageIndex;
+  lastUserMessageIndex: MessageIndex;
+  messageCount: NonNegativeSafeInt;
+  @minValue(0)
+  tokenEstimate: float64;
   toolCalls: ContextManifestNameCounters;
   toolResults: ContextManifestNameCounters;
-  turnBoundaries: safeint[];
+  turnBoundaries: NonNegativeSafeInt[];
 }
 
 model DriverExecutionContext {
@@ -185,7 +204,7 @@ model DriverExecutionContext {
   branchId: NonEmptyString;
   turnId: NonEmptyString;
   schemaId: NonEmptyString;
-  iterationCount: int32;
+  iterationCount: NonNegativeSafeInt;
   messages: TuvrenMessage[];
   manifest: ContextManifest;
   config: Metadata;

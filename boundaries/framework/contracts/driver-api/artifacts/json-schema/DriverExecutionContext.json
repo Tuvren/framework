@@ -16,9 +16,7 @@
       "$ref": "https://tuvren.dev/schemas/framework/driver-api/NonEmptyString.json"
     },
     "iterationCount": {
-      "type": "integer",
-      "minimum": -2147483648,
-      "maximum": 2147483647
+      "$ref": "https://tuvren.dev/schemas/framework/driver-api/NonNegativeSafeInt.json"
     },
     "messages": {
       "type": "array",

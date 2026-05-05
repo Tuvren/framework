@@ -4,6 +4,11 @@
   "type": "object",
   "properties": {},
   "unevaluatedProperties": {
-    "type": "integer"
+    "$ref": "https://tuvren.dev/schemas/framework/event-stream/NonNegativeSafeInt.json"
+  },
+  "propertyNames": {
+    "type": "string",
+    "minLength": 1,
+    "pattern": ".*\\S.*"
   }
 }

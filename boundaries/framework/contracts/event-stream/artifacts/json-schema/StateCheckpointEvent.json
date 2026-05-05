@@ -8,7 +8,7 @@
       "const": "state.checkpoint"
     },
     "iterationCount": {
-      "type": "integer"
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/NonNegativeSafeInt.json"
     },
     "turnNodeHash": {
       "$ref": "https://tuvren.dev/schemas/framework/event-stream/HashString.json"

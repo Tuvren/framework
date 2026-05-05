@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/runtime-api/MessageIndex.json",
+  "type": "integer",
+  "minimum": -1,
+  "maximum": 9007199254740991
+}

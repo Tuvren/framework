@@ -24,9 +24,7 @@
       ]
     },
     "iterationCount": {
-      "type": "integer",
-      "minimum": -2147483648,
-      "maximum": 2147483647
+      "$ref": "https://tuvren.dev/schemas/framework/runtime-api/NonNegativeSafeInt.json"
     },
     "activeAgent": {
       "$ref": "https://tuvren.dev/schemas/framework/runtime-api/NonEmptyString.json"

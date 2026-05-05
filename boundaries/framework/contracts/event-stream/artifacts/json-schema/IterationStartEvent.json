@@ -8,9 +8,7 @@
       "const": "iteration.start"
     },
     "iterationCount": {
-      "type": "integer",
-      "minimum": -2147483648,
-      "maximum": 2147483647
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/NonNegativeSafeInt.json"
     }
   },
   "required": ["type", "iterationCount"],

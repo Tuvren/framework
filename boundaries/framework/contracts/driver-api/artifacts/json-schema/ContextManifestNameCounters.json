@@ -7,7 +7,7 @@
       "$ref": "https://tuvren.dev/schemas/framework/driver-api/ContextManifestNameCountMap.json"
     },
     "total": {
-      "type": "integer"
+      "$ref": "https://tuvren.dev/schemas/framework/driver-api/NonNegativeSafeInt.json"
     }
   },
   "required": ["byName", "total"],
