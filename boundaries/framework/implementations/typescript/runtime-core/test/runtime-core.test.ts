@@ -404,6 +404,76 @@ describe("framework-runtime-core", () => {
     ).toBe("failed");
   });
 
+  test("re-incorporates the original signal on the same turn when incorporate_input crashed before a durable user message", async () => {
+    const harness = createFakeKernelHarness();
+    const livenessHarness = createFakeRunLivenessKernelHarness(harness);
+    const driver = {
+      async execute(context) {
+        expect(
+          countUserTextMessages(
+            context.messages,
+            "Re-incorporate the original signal"
+          )
+        ).toBe(1);
+        return {
+          messages: [assistantText("Recovered input was incorporated once.")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createTuvrenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: livenessHarness.kernel,
+      runLiveness: {
+        executionOwnerId: "worker-1",
+        leaseDurationMs: 50,
+      },
+    });
+    const thread = await runtime.createThread({});
+    const staleTurn = await livenessHarness.kernel.turn.create(
+      "turn_stale_reincorporate_input",
+      thread.threadId,
+      thread.branchId,
+      null,
+      thread.rootTurnNodeHash
+    );
+    await livenessHarness.kernel.runLiveness.createLeasedRun({
+      branchId: thread.branchId,
+      executionOwnerId: "worker-stale",
+      leaseExpiresAtMs: 1,
+      runId: "run_stale_reincorporate_input",
+      schemaId: DEFAULT_AGENT_SCHEMA.schemaId,
+      startTurnNodeHash: thread.rootTurnNodeHash,
+      steps: [
+        { deterministic: false, id: "incorporate_input", sideEffects: true },
+      ],
+      turnId: staleTurn.turnId,
+    });
+
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: { name: "primary" },
+      signal: textSignal("Re-incorporate the original signal"),
+      threadId: thread.threadId,
+    });
+    const events = await collectEvents(handle.events());
+    const branchMessages = await harness.readBranchMessages(thread.branchId);
+
+    expect(handle.status().phase).toBe("completed");
+    expect(extractTurnId(events)).toBe(staleTurn.turnId);
+    expect(
+      countUserTextMessages(branchMessages, "Re-incorporate the original signal")
+    ).toBe(1);
+  });
+
   test("continues same-signal recovery from a recovered iterate branch head", async () => {
     const harness = createFakeKernelHarness();
     const livenessHarness = createFakeRunLivenessKernelHarness(harness);
@@ -499,6 +569,101 @@ describe("framework-runtime-core", () => {
 
     expect(handle.status().phase).toBe("completed");
     expect(extractTurnId(events)).toBe(staleTurn.turnId);
+  });
+
+  test("stops before another driver pass when recovered iterations already reached maxIterations", async () => {
+    const harness = createFakeKernelHarness();
+    const livenessHarness = createFakeRunLivenessKernelHarness(harness);
+    let executeCalls = 0;
+    const driver = {
+      async execute() {
+        executeCalls += 1;
+        return {
+          messages: [
+            assistantText("This extra recovered iteration should not run."),
+          ],
+          resolution: {
+            type: "continue_iteration",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createTuvrenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: livenessHarness.kernel,
+      runLiveness: {
+        executionOwnerId: "worker-1",
+        leaseDurationMs: 50,
+      },
+    });
+    const thread = await runtime.createThread({});
+    const staleTurn = await livenessHarness.kernel.turn.create(
+      "turn_stale_iteration_limit_recovery",
+      thread.threadId,
+      thread.branchId,
+      null,
+      thread.rootTurnNodeHash
+    );
+    await livenessHarness.kernel.runLiveness.createLeasedRun({
+      branchId: thread.branchId,
+      executionOwnerId: "worker-stale",
+      leaseExpiresAtMs: 1,
+      runId: "run_stale_iteration_limit_recovery",
+      schemaId: DEFAULT_AGENT_SCHEMA.schemaId,
+      startTurnNodeHash: thread.rootTurnNodeHash,
+      steps: [{ deterministic: false, id: "iterate", sideEffects: true }],
+      turnId: staleTurn.turnId,
+    });
+    await livenessHarness.kernel.staging.stage(
+      "run_stale_iteration_limit_recovery",
+      encodeDeterministicKernelRecord({
+        parts: [
+          {
+            text: "Iteration-limited recovered request",
+            type: "text",
+          },
+        ],
+        role: "user",
+      }),
+      "stale_iteration_limit_user_message",
+      "message",
+      "completed"
+    );
+    await livenessHarness.kernel.staging.stage(
+      "run_stale_iteration_limit_recovery",
+      encodeDeterministicKernelRecord({
+        parts: [
+          {
+            text: "Recovered first iteration output.",
+            type: "text",
+          },
+        ],
+        role: "assistant",
+      }),
+      "stale_iteration_limit_assistant_message",
+      "message",
+      "completed"
+    );
+
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        maxIterations: 1,
+        name: "primary",
+      },
+      signal: textSignal("Iteration-limited recovered request"),
+      threadId: thread.threadId,
+    });
+
+    await collectEvents(handle.events());
+
+    expect(executeCalls).toBe(0);
+    expect(handle.status().phase).toBe("completed");
   });
 
   test("starts a fresh turn when the incoming signal does not match the recovered stale turn", async () => {
@@ -937,11 +1102,13 @@ describe("framework-runtime-core", () => {
     const capture = startEventCapture(handle.events());
     await waitForAsync(async () => {
       return (await harness.readBranchRuns(thread.branchId)).some(
-        (run) => run.status === "running"
+        (run) =>
+          run.status === "running" && run.stepSequence[0]?.id === "iterate"
       );
     });
     const activeRunId = (await harness.readBranchRuns(thread.branchId)).find(
-      (run) => run.status === "running"
+      (run) =>
+        run.status === "running" && run.stepSequence[0]?.id === "iterate"
     )?.runId;
 
     if (activeRunId === undefined) {

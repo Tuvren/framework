@@ -272,10 +272,12 @@ interface HelperBundle {
 
 interface ExpiredExecutionRecovery {
   activeAgentName?: string;
+  iterationCount?: number;
   mode?:
     | "reuse_turn"
     | "skip_fresh_prelude"
     | "complete_terminal_status";
+  needsInputReincorporation?: boolean;
   preempted: boolean;
   recoveryContended?: boolean;
   runtimeStatus?: DurableRuntimeStatus;
@@ -597,7 +599,9 @@ class RuntimeCore implements TuvrenRuntime {
           handle,
           schemaId,
           loopState,
-          recoveredExecution?.mode
+          recoveredExecution?.mode,
+          recoveredExecution?.iterationCount,
+          recoveredExecution?.needsInputReincorporation ?? false
         ))
       ) {
         return;
@@ -737,16 +741,21 @@ class RuntimeCore implements TuvrenRuntime {
     handle: RuntimeExecutionHandle,
     schemaId: string,
     loopState: LoopState,
-    recoveredExecutionMode: ExpiredExecutionRecovery["mode"]
+    recoveredExecutionMode: ExpiredExecutionRecovery["mode"],
+    recoveredIterationCount?: number,
+    needsInputReincorporation = false
   ): Promise<boolean> {
-    if (recoveredExecutionMode === undefined) {
+    if (recoveredExecutionMode === undefined || needsInputReincorporation) {
+      // `incorporate_input` recovery only re-stages the signal when the
+      // recovered branch head still lacks a durable matching user message.
       await this.incorporateInput(handle, schemaId, loopState);
     }
 
     const headState = await this.loadHeadState(handle.request.branchId);
+    const initialIterationCount = recoveredIterationCount ?? 0;
     handle.updateStatus({
       activeAgent: loopState.activeConfig.name,
-      iterationCount: 0,
+      iterationCount: initialIterationCount,
       manifest: headState.manifest,
       phase: "running",
     });
@@ -760,7 +769,7 @@ class RuntimeCore implements TuvrenRuntime {
         this.publishCustomEvent(handle, event, loopState);
       },
       extensions: loopState.activeConfig.extensions ?? [],
-      iterationCount: 0,
+      iterationCount: initialIterationCount,
       manifest: headState.manifest,
       messages: headState.messages,
       runId: this.createId(),
@@ -1166,6 +1175,18 @@ class RuntimeCore implements TuvrenRuntime {
     loopState: LoopState
   ): Promise<LoopOutcome> {
     while (true) {
+      if (
+        loopState.activeConfig.maxIterations !== undefined &&
+        handle.status().iterationCount >= loopState.activeConfig.maxIterations
+      ) {
+        return {
+          resolution: {
+            reason: "max_iterations",
+            type: "end_turn",
+          },
+        };
+      }
+
       const nextIteration = handle.status().iterationCount + 1;
       loopState.enteredIterationLoop = true;
 
@@ -3910,6 +3931,34 @@ class RuntimeCore implements TuvrenRuntime {
     }
 
     const recoveredHeadState = await this.loadHeadState(branchId);
+    const recoveredMode = classifyRecoveredExecutionMode(recoveryState);
+
+    if (recoveredMode === "reuse_turn") {
+      switch (
+        classifyRecoveredTurnSignalState(signal, recoveredHeadState.messages)
+      ) {
+        case "match":
+          return {
+            iterationCount: 0,
+            mode: recoveredMode,
+            needsInputReincorporation: false,
+            preempted: true,
+            turnId: expiredRun.turnId,
+          };
+        case "missing":
+          return {
+            iterationCount: 0,
+            mode: recoveredMode,
+            needsInputReincorporation: true,
+            preempted: true,
+            turnId: expiredRun.turnId,
+          };
+        case "mismatch":
+          return {
+            preempted: true,
+          };
+      }
+    }
 
     // Without a durable request identity, the best available recovery signal is
     // the last durable user message on the recovered head. A different signal
@@ -3926,13 +3975,61 @@ class RuntimeCore implements TuvrenRuntime {
       activeAgentName: await this.readRecoveredActiveAgentName(
         recoveredHeadState.turnNode.turnTreeHash
       ),
-      mode: classifyRecoveredExecutionMode(recoveryState),
+      iterationCount: await this.estimateRecoveredIterationCount(
+        expiredRun.turnId,
+        recoveredMode,
+        recoveredHeadState
+      ),
+      mode: recoveredMode,
       preempted: true,
       runtimeStatus: await this.readRecoveredRuntimeStatus(
         recoveredHeadState.turnNode.turnTreeHash
       ),
       turnId: expiredRun.turnId,
     };
+  }
+
+  private async estimateRecoveredIterationCount(
+    turnId: string,
+    _recoveredMode: Exclude<ExpiredExecutionRecovery["mode"], "reuse_turn">,
+    recoveredHeadState: HeadState
+  ): Promise<number> {
+    const turn = await this.options.kernel.turn.get(turnId);
+
+    if (turn === null) {
+      return 1;
+    }
+
+    const startTurnNode = await this.options.kernel.node.get(turn.startTurnNodeHash);
+
+    if (startTurnNode === null) {
+      return 1;
+    }
+
+    const startMessageHashes = toOrderedHashArray(
+      await this.options.kernel.tree.resolve(startTurnNode.turnTreeHash, "messages")
+    );
+
+    if (
+      recoveredHeadState.messageHashes.length >= startMessageHashes.length &&
+      startMessageHashes.every(
+        (hash, index) => recoveredHeadState.messageHashes[index] === hash
+      )
+    ) {
+      const assistantIterations = recoveredHeadState.messages
+        .slice(startMessageHashes.length)
+        .filter((message) => message.role === "assistant").length;
+
+      if (assistantIterations > 0) {
+        return assistantIterations;
+      }
+    }
+
+    // Context-engineering and other same-turn recovery steps may rewrite the
+    // message array, so the branch head is not guaranteed to retain the original
+    // prefix needed for exact counting. These modes still imply that at least
+    // one iteration already completed before the stale run was fenced.
+    return 1;
   }
 
   private async completeTrackedRun(
@@ -5157,15 +5254,24 @@ function doesSignalMatchRecoveredTurn(
   signal: InputSignal,
   messages: readonly TuvrenMessage[]
 ): boolean {
+  return classifyRecoveredTurnSignalState(signal, messages) === "match";
+}
+
+function classifyRecoveredTurnSignalState(
+  signal: InputSignal,
+  messages: readonly TuvrenMessage[]
+): "match" | "mismatch" | "missing" {
   const recoveredUserMessage = [...messages]
     .reverse()
     .find((message) => message.role === "user");
 
   if (recoveredUserMessage === undefined) {
-    return false;
+    return "missing";
   }
 
-  return isDeepStrictEqual(recoveredUserMessage.parts, signal.parts);
+  return isDeepStrictEqual(recoveredUserMessage.parts, signal.parts)
+    ? "match"
+    : "mismatch";
 }
 
 function classifyRecoveredExecutionMode(
