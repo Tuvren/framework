@@ -277,6 +277,7 @@ interface ExpiredExecutionRecovery {
     | "skip_fresh_prelude"
     | "complete_terminal_status";
   preempted: boolean;
+  recoveryContended?: boolean;
   runtimeStatus?: DurableRuntimeStatus;
   turnId?: string;
 }
@@ -515,6 +516,13 @@ class RuntimeCore implements TuvrenRuntime {
         handle.request.branchId,
         handle.request.signal
       );
+
+      if (recoveredExecution?.recoveryContended === true) {
+        // Losing the stale-recovery race means another owner still controls the
+        // branch or already fenced the stale run. We fail before `turn.create`
+        // so this handle cannot mutate lineage while recovery ownership is contested.
+        throw createStaleRecoveryContendedError();
+      }
 
       if (recoveredExecution?.turnId !== undefined) {
         handle.setTurnId(recoveredExecution.turnId);
@@ -5200,9 +5208,11 @@ function classifyStaleRecoveryRace(
 
   switch (error.code) {
     case "kernel_runtime_run_not_running":
-      return { preempted: true };
     case "kernel_runtime_run_lease_not_expired":
-      return { preempted: false };
+      return {
+        preempted: false,
+        recoveryContended: true,
+      };
     default:
       return undefined;
   }
@@ -6533,6 +6543,15 @@ function createRunLeaseLostError(error: unknown): Error {
       message: normalizedError.message,
     },
   });
+}
+
+function createStaleRecoveryContendedError(): Error {
+  return new TuvrenRuntimeError(
+    "stale run recovery was claimed by another owner",
+    {
+      code: "runtime_execution_recovery_contended",
+    }
+  );
 }
 
 function isRunLeaseFenceError(error: unknown): boolean {

@@ -655,6 +655,193 @@ describe("framework-runtime-core", () => {
     ).toBe(originalBranchHead);
   });
 
+  test("fails before creating a replacement turn when stale recovery loses a lease-renewal race", async () => {
+    const harness = createFakeKernelHarness();
+    const livenessHarness = createFakeRunLivenessKernelHarness(harness);
+    const originalTurnCreate = harness.kernel.turn.create;
+    let driverExecuteCalls = 0;
+    let turnCreateCalls = 0;
+
+    harness.kernel.turn.create = async (...args) => {
+      turnCreateCalls += 1;
+      return await originalTurnCreate(...args);
+    };
+    livenessHarness.kernel.runLiveness.preemptExpired = async () => {
+      throw new TuvrenRuntimeError("lease is no longer expired", {
+        code: "kernel_runtime_run_lease_not_expired",
+      });
+    };
+
+    const driver = {
+      async execute() {
+        driverExecuteCalls += 1;
+        return {
+          messages: [assistantText("This recovery should not execute.")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createTuvrenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: livenessHarness.kernel,
+      runLiveness: {
+        executionOwnerId: "worker-1",
+        leaseDurationMs: 50,
+      },
+    });
+    const thread = await runtime.createThread({});
+    const staleTurn = await livenessHarness.kernel.turn.create(
+      "turn_stale_recovery_lease_race",
+      thread.threadId,
+      thread.branchId,
+      null,
+      thread.rootTurnNodeHash
+    );
+    await livenessHarness.kernel.runLiveness.createLeasedRun({
+      branchId: thread.branchId,
+      executionOwnerId: "worker-stale",
+      leaseExpiresAtMs: 1,
+      runId: "run_stale_recovery_lease_race",
+      schemaId: DEFAULT_AGENT_SCHEMA.schemaId,
+      startTurnNodeHash: thread.rootTurnNodeHash,
+      steps: [{ deterministic: false, id: "iterate", sideEffects: true }],
+      turnId: staleTurn.turnId,
+    });
+    const originalBranchHead = (
+      await livenessHarness.kernel.branch.get(thread.branchId)
+    )?.headTurnNodeHash;
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: { name: "primary" },
+      signal: textSignal("Do not duplicate this request"),
+      threadId: thread.threadId,
+    });
+    const events = await collectEvents(handle.events());
+    const errorEvent = events.find(
+      (event): event is Extract<(typeof events)[number], { type: "error" }> =>
+        event.type === "error"
+    );
+
+    expect(handle.status().phase).toBe("failed");
+    expect(errorEvent?.error.code).toBe("runtime_execution_recovery_contended");
+    expect(turnCreateCalls).toBe(1);
+    expect(driverExecuteCalls).toBe(0);
+    expect(
+      (await livenessHarness.kernel.branch.get(thread.branchId))
+        ?.headTurnNodeHash
+    ).toBe(originalBranchHead);
+    expect(
+      (await harness.readBranchRuns(thread.branchId)).find(
+        (run) => run.runId === "run_stale_recovery_lease_race"
+      )?.status
+    ).toBe("running");
+  });
+
+  test("fails before replacement execution when another owner already won stale recovery", async () => {
+    const harness = createFakeKernelHarness();
+    const livenessHarness = createFakeRunLivenessKernelHarness(harness);
+    const originalTurnCreate = harness.kernel.turn.create;
+    let driverExecuteCalls = 0;
+    let turnCreateCalls = 0;
+
+    harness.kernel.turn.create = async (...args) => {
+      turnCreateCalls += 1;
+      return await originalTurnCreate(...args);
+    };
+    livenessHarness.kernel.runLiveness.preemptExpired = async (runId) => {
+      await harness.kernel.run.complete(runId, "failed");
+      throw new TuvrenRuntimeError("stale run already fenced elsewhere", {
+        code: "kernel_runtime_run_not_running",
+      });
+    };
+
+    const driver = {
+      async execute() {
+        driverExecuteCalls += 1;
+        return {
+          messages: [assistantText("Competing recovery should not execute.")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createTuvrenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: livenessHarness.kernel,
+      runLiveness: {
+        executionOwnerId: "worker-1",
+        leaseDurationMs: 50,
+      },
+    });
+    const thread = await runtime.createThread({});
+    const staleTurn = await livenessHarness.kernel.turn.create(
+      "turn_stale_recovery_preempted_elsewhere",
+      thread.threadId,
+      thread.branchId,
+      null,
+      thread.rootTurnNodeHash
+    );
+    await livenessHarness.kernel.runLiveness.createLeasedRun({
+      branchId: thread.branchId,
+      executionOwnerId: "worker-stale",
+      leaseExpiresAtMs: 1,
+      runId: "run_stale_recovery_preempted_elsewhere",
+      schemaId: DEFAULT_AGENT_SCHEMA.schemaId,
+      startTurnNodeHash: thread.rootTurnNodeHash,
+      steps: [{ deterministic: false, id: "iterate", sideEffects: true }],
+      turnId: staleTurn.turnId,
+    });
+    const originalBranchHead = (
+      await livenessHarness.kernel.branch.get(thread.branchId)
+    )?.headTurnNodeHash;
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: { name: "primary" },
+      signal: textSignal("Do not recover twice"),
+      threadId: thread.threadId,
+    });
+    const events = await collectEvents(handle.events());
+    const errorEvent = events.find(
+      (event): event is Extract<(typeof events)[number], { type: "error" }> =>
+        event.type === "error"
+    );
+
+    expect(handle.status().phase).toBe("failed");
+    expect(errorEvent?.error.code).toBe("runtime_execution_recovery_contended");
+    expect(turnCreateCalls).toBe(1);
+    expect(driverExecuteCalls).toBe(0);
+    expect(
+      (await livenessHarness.kernel.branch.get(thread.branchId))
+        ?.headTurnNodeHash
+    ).toBe(originalBranchHead);
+    expect(
+      (await harness.readBranchRuns(thread.branchId)).find(
+        (run) => run.runId === "run_stale_recovery_preempted_elsewhere"
+      )?.status
+    ).toBe("failed");
+    expect(
+      countUserTextMessages(
+        await harness.readBranchMessages(thread.branchId),
+        "Do not recover twice"
+      )
+    ).toBe(0);
+  });
+
   test("drops driver output that arrives after lease loss aborts the execution", async () => {
     const harness = createFakeKernelHarness();
     const livenessHarness = createFakeRunLivenessKernelHarness(harness, {
