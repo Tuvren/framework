@@ -4,28 +4,7 @@
   "type": "object",
   "properties": {
     "finishReason": {
-      "anyOf": [
-        {
-          "type": "string",
-          "const": "stop"
-        },
-        {
-          "type": "string",
-          "const": "tool_call"
-        },
-        {
-          "type": "string",
-          "const": "length"
-        },
-        {
-          "type": "string",
-          "const": "error"
-        },
-        {
-          "type": "string",
-          "const": "content_filter"
-        }
-      ]
+      "$ref": "https://tuvren.dev/schemas/framework/runtime-api/FinishReason.json"
     },
     "parts": {
       "type": "array",

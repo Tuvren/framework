@@ -117,6 +117,19 @@ describe("provider-api", () => {
       ...fixture.response,
       parts: [{ data: { status: "ok" }, name: "", type: "structured" }],
     };
+    const emptyStringPromptFields = {
+      ...fixture.prompt,
+      messages: [{ role: "system", content: "" }],
+      config: {
+        model: "",
+        provider: "",
+        settings: {},
+      },
+      responseFormat: {
+        name: "",
+        schema: { type: "object" },
+      },
+    };
     const whitespaceToolPrompt = {
       ...fixture.toolPrompt,
       tools: [{ ...fixture.toolPrompt.tools[0], name: "   " }],
@@ -148,6 +161,14 @@ describe("provider-api", () => {
       ajv,
       "https://tuvren.dev/schemas/providers/provider-api/TuvrenPrompt.json",
       fixture.toolPrompt
+    );
+    // The provider-facing packet mirrors the focused provider binding rather
+    // than durable-runtime message predicates, so empty optional strings remain
+    // valid on the transport contract here.
+    expectSchemaValidation(
+      ajv,
+      "https://tuvren.dev/schemas/providers/provider-api/TuvrenPrompt.json",
+      emptyStringPromptFields
     );
     // StructuredPart.name mirrors the framework durable contract where an
     // empty optional schema name is still a valid string, not NonEmptyString.

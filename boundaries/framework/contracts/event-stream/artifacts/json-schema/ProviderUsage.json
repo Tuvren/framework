@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/event-stream/ProviderUsage.json",
+  "type": "object",
+  "properties": {
+    "inputTokens": {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/NonNegativeSafeInt.json"
+    },
+    "outputTokens": {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/NonNegativeSafeInt.json"
+    }
+  },
+  "required": ["inputTokens", "outputTokens"],
+  "unevaluatedProperties": {
+    "not": {}
+  }
+}

@@ -4,14 +4,10 @@
   "type": "object",
   "properties": {
     "inputTokens": {
-      "type": "integer",
-      "minimum": -2147483648,
-      "maximum": 2147483647
+      "$ref": "https://tuvren.dev/schemas/framework/runtime-api/NonNegativeSafeInt.json"
     },
     "outputTokens": {
-      "type": "integer",
-      "minimum": -2147483648,
-      "maximum": 2147483647
+      "$ref": "https://tuvren.dev/schemas/framework/runtime-api/NonNegativeSafeInt.json"
     }
   },
   "required": ["inputTokens", "outputTokens"],

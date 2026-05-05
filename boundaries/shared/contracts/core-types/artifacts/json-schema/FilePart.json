@@ -7,20 +7,32 @@
       "type": "string",
       "const": "file"
     },
+    "data": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255
+          }
+        }
+      ]
+    },
     "mediaType": {
       "$ref": "https://tuvren.dev/schemas/shared/core-types/NonEmptyString.json"
     },
     "filename": {
       "type": "string"
     },
-    "data": {
-      "$ref": "https://tuvren.dev/schemas/shared/core-types/ByteSequence.json"
-    },
     "providerMetadata": {
       "$ref": "https://tuvren.dev/schemas/shared/core-types/Metadata.json"
     }
   },
-  "required": ["type", "mediaType", "data"],
+  "required": ["type", "data", "mediaType"],
   "unevaluatedProperties": {
     "not": {}
   }

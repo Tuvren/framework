@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/event-stream/FinishReason.json",
+  "type": "string",
+  "enum": ["stop", "tool_call", "length", "error", "content_filter"]
+}

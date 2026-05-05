@@ -7,7 +7,7 @@
       "$ref": "https://tuvren.dev/schemas/providers/provider-api/TuvrenJsonSchema.json"
     },
     "name": {
-      "$ref": "https://tuvren.dev/schemas/providers/provider-api/NonEmptyString.json"
+      "type": "string"
     },
     "strict": {
       "type": "boolean"

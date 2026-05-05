@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/driver-api/ContextManifest.json",
+  "type": "object",
+  "properties": {
+    "byRole": {
+      "$ref": "https://tuvren.dev/schemas/framework/driver-api/ContextManifestCounters.json"
+    },
+    "extensions": {
+      "$ref": "https://tuvren.dev/schemas/framework/driver-api/Metadata.json"
+    },
+    "lastAssistantMessageIndex": {
+      "$ref": "https://tuvren.dev/schemas/framework/driver-api/MessageIndex.json"
+    },
+    "lastUserMessageIndex": {
+      "$ref": "https://tuvren.dev/schemas/framework/driver-api/MessageIndex.json"
+    },
+    "messageCount": {
+      "$ref": "https://tuvren.dev/schemas/framework/driver-api/NonNegativeSafeInt.json"
+    },
+    "tokenEstimate": {
+      "type": "number",
+      "minimum": 0
+    },
+    "toolCalls": {
+      "$ref": "https://tuvren.dev/schemas/framework/driver-api/ContextManifestNameCounters.json"
+    },
+    "toolResults": {
+      "$ref": "https://tuvren.dev/schemas/framework/driver-api/ContextManifestNameCounters.json"
+    },
+    "turnBoundaries": {
+      "type": "array",
+      "items": {
+        "$ref": "https://tuvren.dev/schemas/framework/driver-api/NonNegativeSafeInt.json"
+      }
+    }
+  },
+  "required": [
+    "byRole",
+    "extensions",
+    "lastAssistantMessageIndex",
+    "lastUserMessageIndex",
+    "messageCount",
+    "tokenEstimate",
+    "toolCalls",
+    "toolResults",
+    "turnBoundaries"
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  }
+}

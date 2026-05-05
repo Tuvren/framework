@@ -9,6 +9,10 @@
   ],
   "authoritativeSources": [
     {
+      "path": "boundaries/providers/contracts/provider-api/spec/typespec/main.tsp",
+      "format": "typespec"
+    },
+    {
       "path": "boundaries/providers/conformance/plans/provider-api-bridge.json",
       "format": "conformance-plan"
     },
@@ -19,6 +23,18 @@
     {
       "path": "boundaries/providers/conformance/fixtures/provider-fixtures.json",
       "format": "fixture-set"
+    }
+  ],
+  "generatedArtifacts": [
+    {
+      "path": "boundaries/providers/contracts/provider-api/artifacts/json-schema",
+      "generatedFrom": "boundaries/providers/contracts/provider-api/spec/typespec",
+      "generator": "@typespec/json-schema"
+    },
+    {
+      "path": "boundaries/providers/contracts/provider-api/artifacts/openapi",
+      "generatedFrom": "boundaries/providers/contracts/provider-api/spec/typespec",
+      "generator": "@typespec/openapi3"
     }
   ],
   "conformancePlans": [
@@ -37,6 +53,12 @@
     "typescript": "boundaries/providers/contracts/provider-api/implementations/typescript",
     "typescript-ai-sdk-bridge": "boundaries/providers/implementations/typescript/bridge-ai-sdk"
   },
+  "bindingAppendices": [
+    {
+      "language": "typescript",
+      "path": "boundaries/providers/contracts/provider-api/spec/bindings/typescript.md"
+    }
+  ],
   "forbiddenAuthoritySources": [
     "boundaries/providers/contracts/provider-api/implementations/typescript",
     "boundaries/providers/implementations/typescript/bridge-ai-sdk",
@@ -47,12 +69,38 @@
   ],
   "verificationPaths": [
     {
+      "kind": "schema-validation",
+      "target": "boundaries/providers/contracts/provider-api/artifacts/json-schema"
+    },
+    {
+      "kind": "openapi-validation",
+      "target": "boundaries/providers/contracts/provider-api/artifacts/openapi"
+    },
+    {
       "kind": "conformance-plan",
       "target": "boundaries/providers/conformance/plans/provider-api-bridge.json"
     },
     {
       "kind": "conformance-plan",
       "target": "boundaries/providers/conformance/plans/provider-api-bridge-extended.json"
+    },
+    {
+      "kind": "freshness-check",
+      "target": "boundaries/providers/contracts/provider-api/artifacts/json-schema"
+    },
+    {
+      "kind": "freshness-check",
+      "target": "boundaries/providers/contracts/provider-api/artifacts/openapi"
+    }
+  ],
+  "freshnessChecks": [
+    {
+      "artifact": "boundaries/providers/contracts/provider-api/artifacts/json-schema",
+      "regenerateCommand": "bun run nx run provider-api:codegen"
+    },
+    {
+      "artifact": "boundaries/providers/contracts/provider-api/artifacts/openapi",
+      "regenerateCommand": "bun run nx run provider-api:codegen"
     }
   ]
 }

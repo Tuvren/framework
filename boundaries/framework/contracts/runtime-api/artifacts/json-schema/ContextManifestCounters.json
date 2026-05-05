@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/runtime-api/ContextManifestCounters.json",
+  "type": "object",
+  "properties": {
+    "assistant": {
+      "$ref": "https://tuvren.dev/schemas/framework/runtime-api/NonNegativeSafeInt.json"
+    },
+    "system": {
+      "$ref": "https://tuvren.dev/schemas/framework/runtime-api/NonNegativeSafeInt.json"
+    },
+    "tool": {
+      "$ref": "https://tuvren.dev/schemas/framework/runtime-api/NonNegativeSafeInt.json"
+    },
+    "user": {
+      "$ref": "https://tuvren.dev/schemas/framework/runtime-api/NonNegativeSafeInt.json"
+    }
+  },
+  "required": ["assistant", "system", "tool", "user"],
+  "unevaluatedProperties": {
+    "not": {}
+  }
+}

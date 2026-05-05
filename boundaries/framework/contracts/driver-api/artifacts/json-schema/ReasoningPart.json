@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/driver-api/ReasoningPart.json",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "const": "reasoning"
+    },
+    "text": {
+      "type": "string"
+    },
+    "redacted": {
+      "type": "boolean"
+    },
+    "providerMetadata": {
+      "$ref": "https://tuvren.dev/schemas/framework/driver-api/Metadata.json"
+    }
+  },
+  "required": ["type", "text", "redacted"],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "redacted": {
+            "const": false
+          }
+        },
+        "required": ["redacted"]
+      },
+      "then": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  ]
+}

@@ -3,9 +3,11 @@
   "$id": "https://tuvren.dev/schemas/framework/driver-api/DriverResumeContext.json",
   "type": "object",
   "properties": {
-    "approval": {},
+    "approval": {
+      "$ref": "https://tuvren.dev/schemas/framework/driver-api/ApprovalResponse.json"
+    },
     "resumedFrom": {
-      "type": "string"
+      "$ref": "https://tuvren.dev/schemas/framework/driver-api/HashString.json"
     }
   },
   "required": ["approval"],

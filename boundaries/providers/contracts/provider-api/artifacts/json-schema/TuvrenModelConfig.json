@@ -4,10 +4,10 @@
   "type": "object",
   "properties": {
     "model": {
-      "$ref": "https://tuvren.dev/schemas/providers/provider-api/NonEmptyString.json"
+      "type": "string"
     },
     "provider": {
-      "$ref": "https://tuvren.dev/schemas/providers/provider-api/NonEmptyString.json"
+      "type": "string"
     },
     "settings": {
       "$ref": "https://tuvren.dev/schemas/providers/provider-api/Metadata.json"

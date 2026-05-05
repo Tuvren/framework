@@ -1,17 +1,17 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://tuvren.dev/schemas/framework/runtime-api/ByteSequence.json",
+  "$id": "https://tuvren.dev/schemas/framework/driver-api/SystemMessage.json",
   "type": "object",
   "properties": {
-    "encoding": {
+    "role": {
       "type": "string",
-      "const": "base64"
+      "const": "system"
     },
-    "data": {
+    "content": {
       "type": "string"
     }
   },
-  "required": ["encoding", "data"],
+  "required": ["role", "content"],
   "unevaluatedProperties": {
     "not": {}
   }

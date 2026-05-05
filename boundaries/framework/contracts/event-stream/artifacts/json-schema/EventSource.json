@@ -4,15 +4,19 @@
   "type": "object",
   "properties": {
     "agent": {
-      "type": "string"
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/NonEmptyString.json"
     },
     "driver": {
-      "type": "string"
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/NonEmptyString.json"
     },
-    "provider": {
-      "type": "string"
+    "threadId": {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/NonEmptyString.json"
+    },
+    "workerId": {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/NonEmptyString.json"
     }
   },
+  "required": ["agent"],
   "unevaluatedProperties": {
     "not": {}
   }
