@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/runtime-api/ContextManifestNameCounters.json",
+  "type": "object",
+  "properties": {
+    "byName": {
+      "$ref": "https://tuvren.dev/schemas/framework/runtime-api/ContextManifestNameCountMap.json"
+    },
+    "total": {
+      "type": "integer"
+    }
+  },
+  "required": ["byName", "total"],
+  "unevaluatedProperties": {
+    "not": {}
+  }
+}

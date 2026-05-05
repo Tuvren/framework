@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/runtime-api/ContextManifestCounters.json",
+  "type": "object",
+  "properties": {
+    "assistant": {
+      "type": "integer"
+    },
+    "system": {
+      "type": "integer"
+    },
+    "tool": {
+      "type": "integer"
+    },
+    "user": {
+      "type": "integer"
+    }
+  },
+  "required": ["assistant", "system", "tool", "user"],
+  "unevaluatedProperties": {
+    "not": {}
+  }
+}

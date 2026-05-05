@@ -306,7 +306,7 @@
             "$ref": "#/components/schemas/TuvrenJsonSchema"
           },
           "name": {
-            "$ref": "#/components/schemas/NonEmptyString"
+            "type": "string"
           },
           "strict": {
             "type": "boolean"
@@ -345,7 +345,7 @@
             "enum": ["system"]
           },
           "content": {
-            "$ref": "#/components/schemas/NonEmptyString"
+            "type": "string"
           }
         },
         "unevaluatedProperties": {
@@ -551,10 +551,10 @@
         "type": "object",
         "properties": {
           "model": {
-            "$ref": "#/components/schemas/NonEmptyString"
+            "type": "string"
           },
           "provider": {
-            "$ref": "#/components/schemas/NonEmptyString"
+            "type": "string"
           },
           "settings": {
             "$ref": "#/components/schemas/Metadata"

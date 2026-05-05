@@ -11,7 +11,19 @@
       "$ref": "https://tuvren.dev/schemas/framework/event-stream/NonEmptyString.json"
     },
     "data": {
-      "type": "string"
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255
+          }
+        }
+      ]
     },
     "mediaType": {
       "$ref": "https://tuvren.dev/schemas/framework/event-stream/NonEmptyString.json"

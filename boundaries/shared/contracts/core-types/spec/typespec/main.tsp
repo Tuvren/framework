@@ -25,12 +25,6 @@ union TuvrenJsonSchema {
   boolean: boolean,
 }
 
-@doc("Opaque byte sequence represented portably as base64 text.")
-model ByteSequence {
-  encoding: "base64";
-  data: string;
-}
-
 @doc("Stable neutral error envelope shared by runtime, driver, provider, and adapter seams.")
 model ErrorEnvelope {
   code: NonEmptyString;
@@ -45,6 +39,15 @@ model TextPart {
   providerMetadata?: Metadata;
 }
 
+@TypeSpec.JsonSchema.extension(
+  "allOf",
+  #[
+    #{
+      `if`: #{properties: #{redacted: #{`const`: false}}, required: #["redacted"]},
+      then: #{properties: #{text: #{type: "string", minLength: 1, pattern: ".*\\S.*"}}},
+    },
+  ]
+)
 model ReasoningPart {
   type: "reasoning";
   text: string;
@@ -71,9 +74,9 @@ model ToolResultPart {
 
 model FilePart {
   type: "file";
+  data: string | uint8[];
   mediaType: NonEmptyString;
   filename?: string;
-  data: ByteSequence;
   providerMetadata?: Metadata;
 }
 
@@ -125,8 +128,12 @@ union TuvrenMessage {
 }
 
 model ProviderUsage {
-  inputTokens: int32;
-  outputTokens: int32;
+  @minValue(0)
+  @maxValue(9007199254740991)
+  inputTokens: safeint;
+  @minValue(0)
+  @maxValue(9007199254740991)
+  outputTokens: safeint;
 }
 
 model TuvrenModelResponse {

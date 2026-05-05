@@ -7,11 +7,14 @@
       "type": "string",
       "const": "state.checkpoint"
     },
-    "checkpoint": {
-      "$ref": "https://tuvren.dev/schemas/framework/event-stream/NonEmptyString.json"
+    "iterationCount": {
+      "type": "integer"
+    },
+    "turnNodeHash": {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/HashString.json"
     }
   },
-  "required": ["type", "checkpoint"],
+  "required": ["type", "iterationCount", "turnNodeHash"],
   "allOf": [
     {
       "$ref": "https://tuvren.dev/schemas/framework/event-stream/BaseEvent.json"

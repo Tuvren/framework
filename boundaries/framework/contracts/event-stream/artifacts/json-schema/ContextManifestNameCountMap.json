@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/event-stream/ContextManifestNameCountMap.json",
+  "type": "object",
+  "properties": {},
+  "unevaluatedProperties": {
+    "type": "integer"
+  }
+}

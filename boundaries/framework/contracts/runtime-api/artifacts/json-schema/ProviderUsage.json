@@ -5,13 +5,13 @@
   "properties": {
     "inputTokens": {
       "type": "integer",
-      "minimum": -2147483648,
-      "maximum": 2147483647
+      "minimum": 0,
+      "maximum": 9007199254740991
     },
     "outputTokens": {
       "type": "integer",
-      "minimum": -2147483648,
-      "maximum": 2147483647
+      "minimum": 0,
+      "maximum": 9007199254740991
     }
   },
   "required": ["inputTokens", "outputTokens"],

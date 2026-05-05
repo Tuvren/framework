@@ -5,11 +5,15 @@
   "properties": {
     "completedResults": {
       "type": "array",
-      "items": {}
+      "items": {
+        "$ref": "https://tuvren.dev/schemas/framework/event-stream/ToolResultPart.json"
+      }
     },
     "toolCalls": {
       "type": "array",
-      "items": {},
+      "items": {
+        "$ref": "https://tuvren.dev/schemas/framework/event-stream/PendingToolCall.json"
+      },
       "minItems": 1
     }
   },

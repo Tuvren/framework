@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/driver-api/HandoffResolution.json",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "const": "handoff"
+    },
+    "targetAgent": {
+      "$ref": "https://tuvren.dev/schemas/framework/driver-api/NonEmptyString.json"
+    },
+    "contextPlan": {
+      "$ref": "https://tuvren.dev/schemas/framework/driver-api/Metadata.json"
+    }
+  },
+  "required": ["type", "targetAgent", "contextPlan"],
+  "unevaluatedProperties": {
+    "not": {}
+  }
+}

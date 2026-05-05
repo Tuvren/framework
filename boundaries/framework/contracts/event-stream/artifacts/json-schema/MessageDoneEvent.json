@@ -11,10 +11,13 @@
       "$ref": "https://tuvren.dev/schemas/framework/event-stream/NonEmptyString.json"
     },
     "finishReason": {
-      "type": "string"
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/FinishReason.json"
+    },
+    "usage": {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream/ProviderUsage.json"
     }
   },
-  "required": ["type", "messageId"],
+  "required": ["type", "messageId", "finishReason"],
   "allOf": [
     {
       "$ref": "https://tuvren.dev/schemas/framework/event-stream/BaseEvent.json"

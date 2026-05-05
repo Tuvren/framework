@@ -19,7 +19,7 @@
       "$ref": "https://tuvren.dev/schemas/framework/runtime-api/StructuredOutputRequest.json"
     },
     "config": {
-      "$ref": "https://tuvren.dev/schemas/framework/runtime-api/Metadata.json"
+      "$ref": "https://tuvren.dev/schemas/framework/runtime-api/TuvrenModelConfig.json"
     }
   },
   "required": ["messages"],

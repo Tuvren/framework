@@ -11,16 +11,8 @@
       "$ref": "https://tuvren.dev/schemas/framework/event-stream/NonEmptyString.json"
     },
     "role": {
-      "anyOf": [
-        {
-          "type": "string",
-          "const": "assistant"
-        },
-        {
-          "type": "string",
-          "const": "tool"
-        }
-      ]
+      "type": "string",
+      "const": "assistant"
     }
   },
   "required": ["type", "messageId", "role"],

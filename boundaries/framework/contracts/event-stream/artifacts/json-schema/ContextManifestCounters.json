@@ -3,16 +3,20 @@
   "$id": "https://tuvren.dev/schemas/framework/event-stream/ContextManifestCounters.json",
   "type": "object",
   "properties": {
-    "total": {
-      "type": "integer",
-      "minimum": -2147483648,
-      "maximum": 2147483647
+    "assistant": {
+      "type": "integer"
     },
-    "byName": {
-      "$ref": "https://tuvren.dev/schemas/framework/event-stream/Metadata.json"
+    "system": {
+      "type": "integer"
+    },
+    "tool": {
+      "type": "integer"
+    },
+    "user": {
+      "type": "integer"
     }
   },
-  "required": ["total"],
+  "required": ["assistant", "system", "tool", "user"],
   "unevaluatedProperties": {
     "not": {}
   }

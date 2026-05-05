@@ -121,7 +121,7 @@ union ContentPart {
 
 model SystemMessage {
   role: "system";
-  content: NonEmptyString;
+  content: string;
 }
 
 model UserMessage {
@@ -157,14 +157,14 @@ model RenderedToolDefinition {
 }
 
 model TuvrenModelConfig {
-  `model`?: NonEmptyString;
-  provider?: NonEmptyString;
+  `model`?: string;
+  provider?: string;
   settings?: Metadata;
 }
 
 model StructuredOutputRequest {
   schema: TuvrenJsonSchema;
-  name?: NonEmptyString;
+  name?: string;
   strict?: boolean;
 }
 

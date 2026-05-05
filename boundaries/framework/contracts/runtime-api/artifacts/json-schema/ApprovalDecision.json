@@ -27,7 +27,7 @@
     },
     "editedInput": {},
     "message": {
-      "type": "string"
+      "$ref": "https://tuvren.dev/schemas/framework/runtime-api/NonEmptyString.json"
     }
   },
   "required": ["callId", "type"],

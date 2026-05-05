@@ -9,6 +9,9 @@ scalar NonEmptyString extends string;
 
 scalar EpochMs extends safeint;
 
+@pattern("^[0-9a-f]{64}$")
+scalar HashString extends string;
+
 model Metadata is Record<unknown>;
 
 model ErrorEnvelope {
@@ -18,26 +21,36 @@ model ErrorEnvelope {
 }
 
 model ContextManifestCounters {
-  total: int32;
-  byName?: Metadata;
+  assistant: safeint;
+  system: safeint;
+  tool: safeint;
+  user: safeint;
+}
+
+model ContextManifestNameCountMap is Record<safeint>;
+
+model ContextManifestNameCounters {
+  byName: ContextManifestNameCountMap;
+  total: safeint;
 }
 
 model ContextManifest {
-  messageCount: int32;
-  tokenEstimate?: int32;
-  toolCalls?: ContextManifestCounters;
-  toolResults?: ContextManifestCounters;
-  byRole?: Metadata;
-  extensions?: Metadata;
-  lastUserMessageIndex?: int32;
-  lastAssistantMessageIndex?: int32;
-  turnBoundaries?: int32[];
+  byRole: ContextManifestCounters;
+  extensions: Metadata;
+  lastAssistantMessageIndex: safeint;
+  lastUserMessageIndex: safeint;
+  messageCount: safeint;
+  tokenEstimate: safeint;
+  toolCalls: ContextManifestNameCounters;
+  toolResults: ContextManifestNameCounters;
+  turnBoundaries: safeint[];
 }
 
 model EventSource {
-  agent?: string;
-  driver?: string;
-  provider?: string;
+  agent: NonEmptyString;
+  driver?: NonEmptyString;
+  threadId?: NonEmptyString;
+  workerId?: NonEmptyString;
 }
 
 model BaseEvent {
@@ -49,6 +62,7 @@ model TurnStartEvent extends BaseEvent {
   type: "turn.start";
   threadId: NonEmptyString;
   turnId: NonEmptyString;
+  resumedFrom?: HashString;
 }
 
 model TurnEndEvent extends BaseEvent {
@@ -70,7 +84,7 @@ model IterationEndEvent extends BaseEvent {
 model MessageStartEvent extends BaseEvent {
   type: "message.start";
   messageId: NonEmptyString;
-  role: "assistant" | "tool";
+  role: "assistant";
 }
 
 model TextDeltaEvent extends BaseEvent {
@@ -100,7 +114,7 @@ model ReasoningDoneEvent extends BaseEvent {
 model FileDoneEvent extends BaseEvent {
   type: "file.done";
   messageId: NonEmptyString;
-  data: string;
+  data: string | uint8[];
   mediaType: NonEmptyString;
   filename?: string;
 }
@@ -140,10 +154,28 @@ model ToolCallDoneEvent extends BaseEvent {
   providerMetadata?: Metadata;
 }
 
+enum FinishReason {
+  stop: "stop",
+  toolCall: "tool_call",
+  length: "length",
+  error: "error",
+  contentFilter: "content_filter",
+}
+
+model ProviderUsage {
+  @minValue(0)
+  @maxValue(9007199254740991)
+  inputTokens: safeint;
+  @minValue(0)
+  @maxValue(9007199254740991)
+  outputTokens: safeint;
+}
+
 model MessageDoneEvent extends BaseEvent {
   type: "message.done";
   messageId: NonEmptyString;
-  finishReason?: string;
+  finishReason: FinishReason;
+  usage?: ProviderUsage;
 }
 
 model ToolStartEvent extends BaseEvent {
@@ -161,10 +193,40 @@ model ToolResultEvent extends BaseEvent {
   isError?: boolean;
 }
 
-model ApprovalRequest {
-  completedResults: unknown[];
+model ToolResultPart {
+  type: "tool_result";
+  callId: NonEmptyString;
+  name: NonEmptyString;
+  output: unknown;
+  isError?: boolean;
+  providerMetadata?: Metadata;
+}
+
+model PendingToolCall {
+  callId: NonEmptyString;
+  name: NonEmptyString;
+  input: unknown;
   @minItems(1)
-  toolCalls: unknown[];
+  decisions: NonEmptyString[];
+  message: NonEmptyString;
+}
+
+model ApprovalRequest {
+  completedResults: ToolResultPart[];
+  @minItems(1)
+  toolCalls: PendingToolCall[];
+}
+
+model ApprovalDecision {
+  callId: NonEmptyString;
+  type: "approve" | "edit" | "reject" | string;
+  editedInput?: unknown;
+  message?: NonEmptyString;
+}
+
+model ApprovalResponse {
+  @minItems(1)
+  decisions: ApprovalDecision[];
 }
 
 model ApprovalRequestedEvent extends BaseEvent {
@@ -174,7 +236,7 @@ model ApprovalRequestedEvent extends BaseEvent {
 
 model ApprovalResolvedEvent extends BaseEvent {
   type: "approval.resolved";
-  response: unknown;
+  response: ApprovalResponse;
 }
 
 model SteeringIncorporatedEvent extends BaseEvent {
@@ -189,7 +251,8 @@ model StateSnapshotEvent extends BaseEvent {
 
 model StateCheckpointEvent extends BaseEvent {
   type: "state.checkpoint";
-  checkpoint: NonEmptyString;
+  iterationCount: safeint;
+  turnNodeHash: HashString;
 }
 
 model ErrorEvent extends BaseEvent {

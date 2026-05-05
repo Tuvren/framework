@@ -3,38 +3,48 @@
   "$id": "https://tuvren.dev/schemas/framework/runtime-api/ContextManifest.json",
   "type": "object",
   "properties": {
-    "messageCount": {
-      "type": "integer",
-      "minimum": -2147483648,
-      "maximum": 2147483647
-    },
-    "tokenEstimate": {
-      "type": "integer",
-      "minimum": -2147483648,
-      "maximum": 2147483647
-    },
     "byRole": {
-      "$ref": "https://tuvren.dev/schemas/framework/runtime-api/Metadata.json"
-    },
-    "toolCalls": {
-      "$ref": "https://tuvren.dev/schemas/framework/runtime-api/Metadata.json"
-    },
-    "toolResults": {
-      "$ref": "https://tuvren.dev/schemas/framework/runtime-api/Metadata.json"
+      "$ref": "https://tuvren.dev/schemas/framework/runtime-api/ContextManifestCounters.json"
     },
     "extensions": {
       "$ref": "https://tuvren.dev/schemas/framework/runtime-api/Metadata.json"
     },
+    "lastAssistantMessageIndex": {
+      "type": "integer"
+    },
+    "lastUserMessageIndex": {
+      "type": "integer"
+    },
+    "messageCount": {
+      "type": "integer"
+    },
+    "tokenEstimate": {
+      "type": "integer"
+    },
+    "toolCalls": {
+      "$ref": "https://tuvren.dev/schemas/framework/runtime-api/ContextManifestNameCounters.json"
+    },
+    "toolResults": {
+      "$ref": "https://tuvren.dev/schemas/framework/runtime-api/ContextManifestNameCounters.json"
+    },
     "turnBoundaries": {
       "type": "array",
       "items": {
-        "type": "integer",
-        "minimum": -2147483648,
-        "maximum": 2147483647
+        "type": "integer"
       }
     }
   },
-  "required": ["messageCount"],
+  "required": [
+    "byRole",
+    "extensions",
+    "lastAssistantMessageIndex",
+    "lastUserMessageIndex",
+    "messageCount",
+    "tokenEstimate",
+    "toolCalls",
+    "toolResults",
+    "turnBoundaries"
+  ],
   "unevaluatedProperties": {
     "not": {}
   }

@@ -8,7 +8,7 @@
       "const": "system"
     },
     "content": {
-      "$ref": "https://tuvren.dev/schemas/providers/provider-api/NonEmptyString.json"
+      "type": "string"
     }
   },
   "required": ["role", "content"],

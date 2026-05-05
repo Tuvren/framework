@@ -30,6 +30,15 @@ model TextPart {
   providerMetadata?: Metadata;
 }
 
+@TypeSpec.JsonSchema.extension(
+  "allOf",
+  #[
+    #{
+      `if`: #{properties: #{redacted: #{`const`: false}}, required: #["redacted"]},
+      then: #{properties: #{text: #{type: "string", minLength: 1, pattern: ".*\\S.*"}}},
+    },
+  ]
+)
 model ReasoningPart {
   type: "reasoning";
   text: string;
@@ -54,16 +63,11 @@ model ToolResultPart {
   providerMetadata?: Metadata;
 }
 
-model ByteSequence {
-  encoding: "base64";
-  data: string;
-}
-
 model FilePart {
   type: "file";
+  data: string | uint8[];
   mediaType: NonEmptyString;
   filename?: string;
-  data: ByteSequence;
   providerMetadata?: Metadata;
 }
 
@@ -114,13 +118,36 @@ union TuvrenMessage {
   tool: ToolMessage,
 }
 
+model InputSignal {
+  @minItems(1)
+  parts: ContentPart[];
+}
+
+model TuvrenModelConfig {
+  `model`?: string;
+  provider?: string;
+  settings?: Metadata;
+}
+
+enum FinishReason {
+  stop: "stop",
+  toolCall: "tool_call",
+  length: "length",
+  error: "error",
+  contentFilter: "content_filter",
+}
+
 model ProviderUsage {
-  inputTokens: int32;
-  outputTokens: int32;
+  @minValue(0)
+  @maxValue(9007199254740991)
+  inputTokens: safeint;
+  @minValue(0)
+  @maxValue(9007199254740991)
+  outputTokens: safeint;
 }
 
 model TuvrenModelResponse {
-  finishReason: "stop" | "tool_call" | "length" | "error" | "content_filter";
+  finishReason: FinishReason;
   parts: ContentPart[];
   providerMetadata?: Metadata;
   usage?: ProviderUsage;
@@ -142,7 +169,7 @@ model TuvrenPrompt {
   messages: TuvrenMessage[];
   tools?: RenderedToolDefinition[];
   responseFormat?: StructuredOutputRequest;
-  config?: Metadata;
+  config?: TuvrenModelConfig;
 }
 
 model PendingToolCall {
@@ -164,7 +191,7 @@ model ApprovalDecision {
   callId: NonEmptyString;
   type: "approve" | "edit" | "reject" | string;
   editedInput?: unknown;
-  message?: string;
+  message?: NonEmptyString;
 }
 
 model ApprovalResponse {
@@ -172,14 +199,30 @@ model ApprovalResponse {
   decisions: ApprovalDecision[];
 }
 
+model ContextManifestCounters {
+  assistant: safeint;
+  system: safeint;
+  tool: safeint;
+  user: safeint;
+}
+
+model ContextManifestNameCountMap is Record<safeint>;
+
+model ContextManifestNameCounters {
+  byName: ContextManifestNameCountMap;
+  total: safeint;
+}
+
 model ContextManifest {
-  messageCount: int32;
-  tokenEstimate?: int32;
-  byRole?: Metadata;
-  toolCalls?: Metadata;
-  toolResults?: Metadata;
-  extensions?: Metadata;
-  turnBoundaries?: int32[];
+  byRole: ContextManifestCounters;
+  extensions: Metadata;
+  lastAssistantMessageIndex: safeint;
+  lastUserMessageIndex: safeint;
+  messageCount: safeint;
+  tokenEstimate: safeint;
+  toolCalls: ContextManifestNameCounters;
+  toolResults: ContextManifestNameCounters;
+  turnBoundaries: safeint[];
 }
 
 model ExecutionStatus {

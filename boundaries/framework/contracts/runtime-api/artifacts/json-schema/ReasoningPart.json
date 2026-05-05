@@ -20,5 +20,26 @@
   "required": ["type", "text", "redacted"],
   "unevaluatedProperties": {
     "not": {}
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "redacted": {
+            "const": false
+          }
+        },
+        "required": ["redacted"]
+      },
+      "then": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": ".*\\S.*"
+          }
+        }
+      }
+    }
+  ]
 }

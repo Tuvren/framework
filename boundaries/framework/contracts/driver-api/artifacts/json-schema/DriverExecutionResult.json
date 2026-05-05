@@ -8,7 +8,9 @@
     },
     "messages": {
       "type": "array",
-      "items": {}
+      "items": {
+        "$ref": "https://tuvren.dev/schemas/framework/driver-api/TuvrenMessage.json"
+      }
     },
     "partial": {
       "type": "boolean"
