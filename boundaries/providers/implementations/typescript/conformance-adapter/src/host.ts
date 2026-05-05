@@ -45,7 +45,12 @@ class TypeScriptProviderAdapter {
   ): Promise<AdapterCapabilities> {
     return Promise.resolve({
       adapterId: "typescript-providers",
-      capabilities: ["providers.provider-api", "providers.ai-sdk-bridge"],
+      capabilities: [
+        "providers.provider-api",
+        "providers.ai-sdk-bridge",
+        "providers.executed-tool-support",
+        "providers.structured-output-strictness",
+      ],
       packetId,
       planVersion,
     });

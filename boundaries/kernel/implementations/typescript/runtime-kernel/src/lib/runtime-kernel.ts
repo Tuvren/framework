@@ -39,6 +39,7 @@ import {
   hashOpaqueObjectBytes,
   hashTurnNodeIdentity,
   hashTurnTreeIdentity,
+  type ModifyVerdict,
   type PathValue,
   type RecoveryState,
   type RunRecord,
@@ -597,10 +598,9 @@ export function createRuntimeKernel(
           }
 
           if (isLeaseExpired(lease.leaseExpiresAtMs, now())) {
-            throw new TuvrenRuntimeError(
-              `run "${runId}" lease has expired`,
-              { code: "kernel_runtime_run_lease_expired" }
-            );
+            throw new TuvrenRuntimeError(`run "${runId}" lease has expired`, {
+              code: "kernel_runtime_run_lease_expired",
+            });
           }
 
           if (lease.executionOwnerId !== executionOwnerId) {
@@ -970,18 +970,55 @@ export function createRuntimeKernel(
 
     verdicts: {
       compose(verdicts) {
-        const priorityOrder = ["abort", "pause", "modify", "retry"] as const;
-
-        for (const kind of priorityOrder) {
-          const match = verdicts.find((v) => v.kind === kind);
-          if (match !== undefined) {
-            return Promise.resolve(match);
-          }
+        const abort = verdicts.find((verdict) => verdict.kind === "abort");
+        if (abort !== undefined) {
+          return Promise.resolve(abort);
         }
 
-        return Promise.resolve({ kind: "proceed" });
+        const pause = verdicts.find((verdict) => verdict.kind === "pause");
+        if (pause !== undefined) {
+          return Promise.resolve(pause);
+        }
+
+        const modify = composeModifyVerdict(verdicts);
+        if (modify !== undefined) {
+          return Promise.resolve(modify);
+        }
+
+        return Promise.resolve(
+          verdicts.find((verdict) => verdict.kind === "retry") ?? {
+            kind: "proceed",
+          }
+        );
       },
     },
+  };
+}
+
+function composeModifyVerdict(
+  verdicts: ReadonlyArray<{ kind: string; transform?: KernelRecord }>
+): ModifyVerdict | undefined {
+  const modifyTransforms = verdicts
+    .filter(
+      (verdict): verdict is { kind: "modify"; transform: KernelRecord } =>
+        verdict.kind === "modify"
+    )
+    .map((verdict) => verdict.transform);
+
+  if (modifyTransforms.length === 0) {
+    return undefined;
+  }
+
+  if (modifyTransforms.length === 1) {
+    return {
+      kind: "modify",
+      transform: modifyTransforms[0],
+    };
+  }
+
+  return {
+    kind: "modify",
+    transform: modifyTransforms,
   };
 }
 
@@ -1140,7 +1177,9 @@ function getLastRunTurnNodeHash(run: RunRecord): HashString {
 }
 
 function getLastRunTurnNodeHashFromStoredRun(run: StoredRun): HashString {
-  return decodeHashArray(run.createdTurnNodesCbor).at(-1) ?? run.startTurnNodeHash;
+  return (
+    decodeHashArray(run.createdTurnNodesCbor).at(-1) ?? run.startTurnNodeHash
+  );
 }
 
 function isLeaseExpired(leaseExpiresAtMs: EpochMs, nowMs: EpochMs): boolean {
@@ -2038,7 +2077,7 @@ function createRunningLeaseUpdate(
       fencingToken: string;
       leaseExpiresAtMs: EpochMs;
     }
-  | {} {
+  | Record<string, never> {
   if (
     run.executionOwnerId === undefined ||
     run.fencingToken === undefined ||
@@ -2063,7 +2102,7 @@ function isRunLeaseState(
         fencingToken: string;
         leaseExpiresAtMs: EpochMs;
       }
-    | {}
+    | Record<string, never>
 ): value is {
   executionOwnerId: string;
   fencingToken: string;

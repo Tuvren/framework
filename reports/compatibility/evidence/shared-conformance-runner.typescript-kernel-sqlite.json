@@ -1,10 +1,12 @@
 {
-  "adapterId": "rust-kernel",
+  "adapterId": "typescript-kernel-sqlite",
   "boundary": "kernel",
   "capabilities": [
     "kernel.logical",
-    "kernel.persistence.process-local",
-    "kernel.protocol"
+    "kernel.persistence.durable",
+    "kernel.protocol",
+    "kernel.restart-recovery",
+    "kernel.run-liveness"
   ],
   "checkResults": [
     {
@@ -20,7 +22,7 @@
       ],
       "checkId": "kernel.lineage.cross_thread_rejection",
       "details": {
-        "adapterId": "rust-kernel",
+        "adapterId": "typescript-kernel-sqlite",
         "planId": "tuvren.kernel.protocol.core"
       },
       "status": "pass"
@@ -42,7 +44,7 @@
       ],
       "checkId": "kernel.logical.branch_list",
       "details": {
-        "adapterId": "rust-kernel",
+        "adapterId": "typescript-kernel-sqlite",
         "planId": "tuvren.kernel.protocol.core"
       },
       "status": "pass"
@@ -60,7 +62,7 @@
       ],
       "checkId": "kernel.logical.diff_paths",
       "details": {
-        "adapterId": "rust-kernel",
+        "adapterId": "typescript-kernel-sqlite",
         "planId": "tuvren.kernel.protocol.core"
       },
       "status": "pass"
@@ -94,7 +96,7 @@
       ],
       "checkId": "kernel.logical.recovery_state",
       "details": {
-        "adapterId": "rust-kernel",
+        "adapterId": "typescript-kernel-sqlite",
         "planId": "tuvren.kernel.protocol.core"
       },
       "status": "pass"
@@ -128,7 +130,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing",
       "details": {
-        "adapterId": "rust-kernel",
+        "adapterId": "typescript-kernel-sqlite",
         "planId": "tuvren.kernel.protocol.core"
       },
       "status": "pass"
@@ -154,7 +156,7 @@
       ],
       "checkId": "kernel.protocol.modify_composition",
       "details": {
-        "adapterId": "rust-kernel",
+        "adapterId": "typescript-kernel-sqlite",
         "planId": "tuvren.kernel.protocol.core"
       },
       "status": "pass"
@@ -180,7 +182,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip",
       "details": {
-        "adapterId": "rust-kernel",
+        "adapterId": "typescript-kernel-sqlite",
         "planId": "tuvren.kernel.protocol.core"
       },
       "status": "pass"
@@ -214,7 +216,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-all-ones-bytes",
       "details": {
-        "adapterId": "rust-kernel",
+        "adapterId": "typescript-kernel-sqlite",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -248,7 +250,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-all-ordered-paths",
       "details": {
-        "adapterId": "rust-kernel",
+        "adapterId": "typescript-kernel-sqlite",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -282,7 +284,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-all-single-paths",
       "details": {
-        "adapterId": "rust-kernel",
+        "adapterId": "typescript-kernel-sqlite",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -316,7 +318,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-all-zero-bytes",
       "details": {
-        "adapterId": "rust-kernel",
+        "adapterId": "typescript-kernel-sqlite",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -350,7 +352,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-deep-path-schema",
       "details": {
-        "adapterId": "rust-kernel",
+        "adapterId": "typescript-kernel-sqlite",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -384,7 +386,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-empty-bytes",
       "details": {
-        "adapterId": "rust-kernel",
+        "adapterId": "typescript-kernel-sqlite",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -418,7 +420,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-large-bytes",
       "details": {
-        "adapterId": "rust-kernel",
+        "adapterId": "typescript-kernel-sqlite",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -452,7 +454,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-many-staged-results",
       "details": {
-        "adapterId": "rust-kernel",
+        "adapterId": "typescript-kernel-sqlite",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -486,7 +488,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-mixed-status-staged",
       "details": {
-        "adapterId": "rust-kernel",
+        "adapterId": "typescript-kernel-sqlite",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -520,7 +522,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-multi-path-schema",
       "details": {
-        "adapterId": "rust-kernel",
+        "adapterId": "typescript-kernel-sqlite",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -554,7 +556,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-non-utf8-bytes",
       "details": {
-        "adapterId": "rust-kernel",
+        "adapterId": "typescript-kernel-sqlite",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -588,7 +590,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-single-byte",
       "details": {
-        "adapterId": "rust-kernel",
+        "adapterId": "typescript-kernel-sqlite",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -622,7 +624,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-staged-failed",
       "details": {
-        "adapterId": "rust-kernel",
+        "adapterId": "typescript-kernel-sqlite",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -656,7 +658,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-staged-interrupted",
       "details": {
-        "adapterId": "rust-kernel",
+        "adapterId": "typescript-kernel-sqlite",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -690,7 +692,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-with-event-hash",
       "details": {
-        "adapterId": "rust-kernel",
+        "adapterId": "typescript-kernel-sqlite",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -724,7 +726,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-with-prev-turn",
       "details": {
-        "adapterId": "rust-kernel",
+        "adapterId": "typescript-kernel-sqlite",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -758,7 +760,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-zero-turn-tree-hash",
       "details": {
-        "adapterId": "rust-kernel",
+        "adapterId": "typescript-kernel-sqlite",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -784,7 +786,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-all-ones-bytes",
       "details": {
-        "adapterId": "rust-kernel",
+        "adapterId": "typescript-kernel-sqlite",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -810,7 +812,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-all-ordered-paths",
       "details": {
-        "adapterId": "rust-kernel",
+        "adapterId": "typescript-kernel-sqlite",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -836,7 +838,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-all-single-paths",
       "details": {
-        "adapterId": "rust-kernel",
+        "adapterId": "typescript-kernel-sqlite",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -862,7 +864,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-all-zero-bytes",
       "details": {
-        "adapterId": "rust-kernel",
+        "adapterId": "typescript-kernel-sqlite",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -888,7 +890,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-deep-path-schema",
       "details": {
-        "adapterId": "rust-kernel",
+        "adapterId": "typescript-kernel-sqlite",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -914,7 +916,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-empty-bytes",
       "details": {
-        "adapterId": "rust-kernel",
+        "adapterId": "typescript-kernel-sqlite",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -940,7 +942,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-large-bytes",
       "details": {
-        "adapterId": "rust-kernel",
+        "adapterId": "typescript-kernel-sqlite",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -966,7 +968,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-many-staged-results",
       "details": {
-        "adapterId": "rust-kernel",
+        "adapterId": "typescript-kernel-sqlite",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -992,7 +994,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-mixed-status-staged",
       "details": {
-        "adapterId": "rust-kernel",
+        "adapterId": "typescript-kernel-sqlite",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -1018,7 +1020,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-multi-path-schema",
       "details": {
-        "adapterId": "rust-kernel",
+        "adapterId": "typescript-kernel-sqlite",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -1044,7 +1046,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-non-utf8-bytes",
       "details": {
-        "adapterId": "rust-kernel",
+        "adapterId": "typescript-kernel-sqlite",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -1070,7 +1072,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-single-byte",
       "details": {
-        "adapterId": "rust-kernel",
+        "adapterId": "typescript-kernel-sqlite",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -1096,7 +1098,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-staged-failed",
       "details": {
-        "adapterId": "rust-kernel",
+        "adapterId": "typescript-kernel-sqlite",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -1122,7 +1124,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-staged-interrupted",
       "details": {
-        "adapterId": "rust-kernel",
+        "adapterId": "typescript-kernel-sqlite",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -1148,7 +1150,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-with-event-hash",
       "details": {
-        "adapterId": "rust-kernel",
+        "adapterId": "typescript-kernel-sqlite",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -1174,7 +1176,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-with-prev-turn",
       "details": {
-        "adapterId": "rust-kernel",
+        "adapterId": "typescript-kernel-sqlite",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -1200,8 +1202,196 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-zero-turn-tree-hash",
       "details": {
-        "adapterId": "rust-kernel",
+        "adapterId": "typescript-kernel-sqlite",
         "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.2.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.3.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.4.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.5.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.6.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.requiredEvidence.restartRecovery.checkpointLineageSurvivesRestart",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.requiredEvidence.restartRecovery.committedMessageCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.requiredEvidence.restartRecovery.committedStateVisible",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.requiredEvidence.restartRecovery.recoveredLastCompletedStepId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.requiredEvidence.restartRecovery.recoveredUncommittedCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.requiredEvidence.restartRecovery.recoveryHeadMatchesCommittedCheckpoint",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.requiredEvidence.restartRecovery.uncommittedNotPromoted",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.restart-recovery.close_reopen_checkpoint",
+      "details": {
+        "adapterId": "typescript-kernel-sqlite",
+        "planId": "tuvren.kernel.restart-recovery"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.run-liveness.expired_listing.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.expired_listing.2.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.expired_listing.3.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.expired_listing.requiredEvidence.listing.expiredRunIds",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.expired_listing.requiredEvidence.listing.pausedRunListed",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.expired_listing.requiredEvidence.listing.pausedRunStatus",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.run-liveness.expired_listing",
+      "details": {
+        "adapterId": "typescript-kernel-sqlite",
+        "planId": "tuvren.kernel.run-liveness"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.run-liveness.lease_renewal.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.lease_renewal.2.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.lease_renewal.3.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.lease_renewal.requiredEvidence.renewal.ownerMismatchCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.lease_renewal.requiredEvidence.renewal.renewedLeaseExpiresAtMs",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.lease_renewal.requiredEvidence.renewal.staleTokenCode",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.run-liveness.lease_renewal",
+      "details": {
+        "adapterId": "typescript-kernel-sqlite",
+        "planId": "tuvren.kernel.run-liveness"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.2.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.3.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.4.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.5.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.preemption.branchHeadTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.preemption.leaseCleared",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.preemption.preemptionReason",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.preemption.recoveryHeadMatchesBranchHead",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.preemption.recoveryLastTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.preemption.runStatus",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.preemption.uncommittedStagedResults",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.run-liveness.stale_preemption",
+      "details": {
+        "adapterId": "typescript-kernel-sqlite",
+        "planId": "tuvren.kernel.run-liveness"
       },
       "status": "pass"
     }
@@ -1213,23 +1403,18 @@
     "[adapter-manifest]"
   ],
   "exitCode": 0,
-  "implementationId": "rust-kernel",
-  "nonApplicableCheckIds": [
-    "kernel.restart-recovery.close_reopen_checkpoint",
-    "kernel.run-liveness.expired_listing",
-    "kernel.run-liveness.lease_renewal",
-    "kernel.run-liveness.stale_preemption"
-  ],
-  "project": "kernel-rust-conformance-runner",
-  "reportLabel": "Rust process-local kernel baseline",
-  "reportStatus": "capability_subset_pass",
+  "implementationId": "typescript-kernel-sqlite",
+  "nonApplicableCheckIds": [],
+  "project": "kernel-typescript-sqlite-conformance-runner",
+  "reportLabel": "TypeScript SQLite durable kernel",
+  "reportStatus": "full_pass",
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 41,
+    "passedChecks": 45,
     "totalChecks": 45,
-    "applicableChecks": 41,
-    "nonApplicableChecks": 4
+    "applicableChecks": 45,
+    "nonApplicableChecks": 0
   },
   "suiteId": "tuvren.kernel.protocol",
   "suiteVersion": "0.1.0"

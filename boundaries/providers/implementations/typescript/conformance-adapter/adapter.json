@@ -12,7 +12,12 @@
     "bun",
     "boundaries/providers/implementations/typescript/conformance-adapter/src/host.ts"
   ],
-  "capabilities": ["providers.provider-api", "providers.ai-sdk-bridge"],
+  "capabilities": [
+    "providers.provider-api",
+    "providers.ai-sdk-bridge",
+    "providers.executed-tool-support",
+    "providers.structured-output-strictness"
+  ],
   "authorityPackets": [
     "boundaries/providers/contracts/provider-api/spec/authority-packet.json"
   ],

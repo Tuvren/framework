@@ -113,6 +113,66 @@ describe("createRuntimeKernel", () => {
     expect(result.kind).toBe("proceed");
   });
 
+  test("verdicts.compose preserves a single modify verdict unchanged", async () => {
+    const kernel = createRuntimeKernel({ backend: createMemoryBackend() });
+    const result = await kernel.verdicts.compose([
+      {
+        kind: "modify",
+        transform: { phase: "single" },
+      },
+    ]);
+
+    expect(result).toEqual({
+      kind: "modify",
+      transform: { phase: "single" },
+    });
+  });
+
+  test("verdicts.compose preserves multiple modify verdicts in registration order", async () => {
+    const kernel = createRuntimeKernel({ backend: createMemoryBackend() });
+    const result = await kernel.verdicts.compose([
+      {
+        kind: "modify",
+        transform: { phase: "first" },
+      },
+      { kind: "proceed" },
+      {
+        kind: "modify",
+        transform: { phase: "second" },
+      },
+    ]);
+
+    expect(result).toEqual({
+      kind: "modify",
+      transform: [{ phase: "first" }, { phase: "second" }],
+    });
+  });
+
+  test("verdicts.compose keeps pause ahead of composed modify verdicts", async () => {
+    const kernel = createRuntimeKernel({ backend: createMemoryBackend() });
+    const result = await kernel.verdicts.compose([
+      {
+        kind: "modify",
+        transform: { phase: "first" },
+      },
+      {
+        kind: "pause",
+        reason: "awaiting_approval",
+        resumptionSchema: { type: "approval" },
+      },
+      {
+        kind: "modify",
+        transform: { phase: "second" },
+      },
+    ]);
+
+    expect(result).toEqual({
+      kind: "pause",
+      reason: "awaiting_approval",
+      resumptionSchema: { type: "approval" },
+    });
+  });
+
   test("schema.register rejects duplicate schema ids even for identical payloads", async () => {
     const kernel = createRuntimeKernel({ backend: createMemoryBackend() });
 
@@ -302,7 +362,7 @@ describe("createRuntimeKernel", () => {
   });
 
   test("runLiveness.renewLease rotates the fencing token for the same owner", async () => {
-    let currentNow = 10;
+    const currentNow = 10;
     const fixture = await createThreadFixture({
       branchId: "branch_lease_renew",
       now: () => currentNow,
@@ -475,7 +535,8 @@ describe("createRuntimeKernel", () => {
     expect(recovery.uncommittedStagedResults).toEqual([]);
     expect(recovery.consumedStagedResults).toHaveLength(1);
 
-    const expiredAfterPreemption = await fixture.kernel.runLiveness.listExpired(25);
+    const expiredAfterPreemption =
+      await fixture.kernel.runLiveness.listExpired(25);
     expect(expiredAfterPreemption).toEqual([]);
   });
 

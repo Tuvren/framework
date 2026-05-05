@@ -7,6 +7,8 @@
     "framework.react-driver",
     "framework.run-liveness",
     "framework.runtime-api",
+    "providers.executed-tool-support",
+    "providers.structured-output-strictness",
     "trace.lifecycle"
   ],
   "checkResults": [
@@ -3938,6 +3940,8 @@
   "implementationId": "typescript-framework",
   "nonApplicableCheckIds": [],
   "project": "framework-typescript-conformance-runner",
+  "reportLabel": "TypeScript framework runtime baseline",
+  "reportStatus": "full_pass",
   "status": "pass",
   "summary": {
     "failedChecks": 0,

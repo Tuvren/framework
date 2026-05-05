@@ -108,7 +108,11 @@ fn dispatch_request(request: JsonRpcRequest) -> Result<Value, AdapterErrorEnvelo
     match request.method.as_str() {
         "initialize" => Ok(json!(AdapterCapabilities {
             adapter_id: "rust-kernel",
-            capabilities: vec!["kernel.protocol", "kernel.logical"],
+            capabilities: vec![
+                "kernel.protocol",
+                "kernel.logical",
+                "kernel.persistence.process-local",
+            ],
             packet_id: read_param_string(&request.params, "packetId")?,
             plan_version: read_param_string(&request.params, "planVersion")?,
         })),
@@ -131,6 +135,7 @@ fn dispatch_operation(operation: &str, input: &Value) -> OperationOutcome {
     let result = match operation {
         "kernel.protocol.deterministic-hashing" => run_deterministic_hashing(input),
         "kernel.protocol.schema-roundtrip" => run_schema_roundtrip(input),
+        "kernel.protocol.modify-composition" => run_modify_composition(),
         "kernel.logical.diff-paths" => run_logical_diff(input),
         "kernel.logical.branch-list" => run_branch_list(input),
         "kernel.logical.recovery-state" => run_recovery_state(input),
@@ -193,6 +198,53 @@ fn run_schema_roundtrip(input: &Value) -> Result<Value, KernelError> {
             "roundtrip": {
                 "turnTreeSchemaRecord": kernel_record_to_json(&decoded_schema),
                 "turnNodeIdentityRecord": kernel_record_to_json(&decoded_node)
+            }
+        }
+    }))
+}
+
+fn run_modify_composition() -> Result<Value, KernelError> {
+    let kernel = InMemoryKernel::new();
+    let verdict = kernel.verdicts_compose(vec![
+        tuvren_kernel_rust::Verdict::Modify {
+            transform: KernelRecord::Map(BTreeMap::from([
+                (
+                    "extension".to_string(),
+                    KernelRecord::Text("first".to_string()),
+                ),
+                (
+                    "mutation".to_string(),
+                    KernelRecord::Text("append-prefix".to_string()),
+                ),
+            ])),
+        },
+        tuvren_kernel_rust::Verdict::Proceed,
+        tuvren_kernel_rust::Verdict::Modify {
+            transform: KernelRecord::Map(BTreeMap::from([
+                (
+                    "extension".to_string(),
+                    KernelRecord::Text("second".to_string()),
+                ),
+                (
+                    "mutation".to_string(),
+                    KernelRecord::Text("append-suffix".to_string()),
+                ),
+            ])),
+        },
+    ])?;
+
+    let tuvren_kernel_rust::Verdict::Modify { transform } = verdict else {
+        return Err(error(
+            "unexpected_verdict_kind",
+            "expected modify verdict after composing ordered modify transforms",
+        ));
+    };
+
+    Ok(json!({
+        "evidence": {
+            "verdict": {
+                "kind": "modify",
+                "transform": kernel_record_to_json(&transform),
             }
         }
     }))

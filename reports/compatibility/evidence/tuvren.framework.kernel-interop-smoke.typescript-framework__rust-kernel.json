@@ -411,6 +411,8 @@
   "exitCode": 0,
   "pairId": "typescript-framework__rust-kernel",
   "project": "host-playground:interop-smoke",
+  "reportLabel": "TypeScript framework to Rust kernel interop",
+  "reportStatus": "full_pass",
   "status": "pass",
   "summary": {
     "failedChecks": 0,

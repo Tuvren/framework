@@ -205,6 +205,8 @@ export class TypeScriptFrameworkAdapter implements ImplementationAdapter {
         "framework.run-liveness",
         "framework.react-driver",
         "framework.runtime-api",
+        "providers.executed-tool-support",
+        "providers.structured-output-strictness",
         "trace.lifecycle",
       ],
       packetId,

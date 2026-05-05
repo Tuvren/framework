@@ -95,12 +95,7 @@ fn dispatch_request(request: JsonRpcRequest) -> Result<Value, AdapterErrorEnvelo
     match request.method.as_str() {
         "initialize" => Ok(json!(AdapterCapabilities {
             adapter_id: "rust-framework",
-            capabilities: vec![
-                "framework.driver-api",
-                "framework.event-stream",
-                "framework.react-driver",
-                "framework.runtime-api",
-            ],
+            capabilities: Vec::<&'static str>::new(),
             packet_id: read_param_string(&request.params, "packetId")?,
             plan_version: read_param_string(&request.params, "planVersion")?,
         })),

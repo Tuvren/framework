@@ -465,12 +465,36 @@ export function createFakeKernelHarness(): FakeKernelHarness {
     },
     verdicts: {
       async compose(verdicts) {
-        return (verdicts.find((verdict) => verdict.kind === "abort") ??
-          verdicts.find((verdict) => verdict.kind === "pause") ??
-          verdicts.find((verdict) => verdict.kind === "modify") ??
-          verdicts.find((verdict) => verdict.kind === "retry") ?? {
-            kind: "proceed",
-          }) satisfies ComposedVerdict;
+        const abort = verdicts.find((verdict) => verdict.kind === "abort");
+        if (abort !== undefined) {
+          return abort;
+        }
+
+        const pause = verdicts.find((verdict) => verdict.kind === "pause");
+        if (pause !== undefined) {
+          return pause;
+        }
+
+        const modifyTransforms = verdicts
+          .filter((verdict) => verdict.kind === "modify")
+          .map((verdict) => verdict.transform);
+        if (modifyTransforms.length === 1) {
+          return {
+            kind: "modify",
+            transform: modifyTransforms[0],
+          } satisfies ComposedVerdict;
+        }
+
+        if (modifyTransforms.length > 1) {
+          return {
+            kind: "modify",
+            transform: modifyTransforms,
+          } satisfies ComposedVerdict;
+        }
+
+        return (verdicts.find((verdict) => verdict.kind === "retry") ?? {
+          kind: "proceed",
+        }) satisfies ComposedVerdict;
       },
     },
   };

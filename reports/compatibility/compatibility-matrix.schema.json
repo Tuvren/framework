@@ -48,6 +48,8 @@
                 "suiteId",
                 "suiteVersion",
                 "status",
+                "reportStatus",
+                "reportLabel",
                 "evidencePath",
                 "checkIds",
                 "checkSummary"
@@ -58,6 +60,22 @@
                 "status": {
                   "type": "string",
                   "enum": ["pass", "fail"]
+                },
+                "reportStatus": {
+                  "type": "string",
+                  "enum": [
+                    "full_pass",
+                    "capability_subset_pass",
+                    "unsupported",
+                    "not_applicable",
+                    "expected_fail",
+                    "unexpected_fail"
+                  ]
+                },
+                "reportLabel": { "type": "string" },
+                "declaredCapabilities": {
+                  "type": "array",
+                  "items": { "type": "string" }
                 },
                 "evidencePath": { "type": "string" },
                 "checkIds": {
@@ -96,6 +114,8 @@
           "suiteId",
           "suiteVersion",
           "status",
+          "reportStatus",
+          "reportLabel",
           "evidencePath",
           "checkIds",
           "checkSummary"
@@ -108,6 +128,18 @@
             "type": "string",
             "enum": ["pass", "fail"]
           },
+          "reportStatus": {
+            "type": "string",
+            "enum": [
+              "full_pass",
+              "capability_subset_pass",
+              "unsupported",
+              "not_applicable",
+              "expected_fail",
+              "unexpected_fail"
+            ]
+          },
+          "reportLabel": { "type": "string" },
           "evidencePath": { "type": "string" },
           "checkIds": {
             "type": "array",

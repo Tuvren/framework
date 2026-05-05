@@ -1,7 +1,12 @@
 {
   "adapterId": "typescript-providers",
   "boundary": "providers",
-  "capabilities": ["providers.ai-sdk-bridge", "providers.provider-api"],
+  "capabilities": [
+    "providers.ai-sdk-bridge",
+    "providers.executed-tool-support",
+    "providers.provider-api",
+    "providers.structured-output-strictness"
+  ],
   "checkResults": [
     {
       "assertionResults": [
@@ -246,6 +251,8 @@
   "implementationId": "typescript-providers",
   "nonApplicableCheckIds": [],
   "project": "providers-typescript-conformance-runner",
+  "reportLabel": "TypeScript AI SDK provider bridge",
+  "reportStatus": "full_pass",
   "status": "pass",
   "summary": {
     "failedChecks": 0,

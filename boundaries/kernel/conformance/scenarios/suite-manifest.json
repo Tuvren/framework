@@ -31,7 +31,11 @@
         "turn_tree_schema_hash",
         "turn_node_identity_hash"
       ],
-      "implementations": ["typescript-kernel", "rust-kernel"],
+      "implementations": [
+        "typescript-kernel-memory",
+        "typescript-kernel-sqlite",
+        "rust-kernel"
+      ],
       "expectedEvidence": ["assertionResults", "details.hashKinds"]
     },
     {
@@ -42,7 +46,11 @@
         "turn_tree_schema_cbor_roundtrip",
         "turn_node_identity_cbor_roundtrip"
       ],
-      "implementations": ["typescript-kernel", "rust-kernel"],
+      "implementations": [
+        "typescript-kernel-memory",
+        "typescript-kernel-sqlite",
+        "rust-kernel"
+      ],
       "expectedEvidence": ["assertionResults"]
     },
     {

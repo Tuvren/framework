@@ -47,10 +47,21 @@ interface CompatibilityImplementation {
   version: string;
 }
 
+type CompatibilityReportStatus =
+  | "capability_subset_pass"
+  | "expected_fail"
+  | "full_pass"
+  | "not_applicable"
+  | "unexpected_fail"
+  | "unsupported";
+
 interface CompatibilityImplementationResult {
   checkIds: string[];
   checkSummary: CompatibilityCheckSummary;
+  declaredCapabilities?: readonly string[];
   evidencePath: string;
+  reportLabel: string;
+  reportStatus: CompatibilityReportStatus;
   status: "fail" | "pass";
   suiteId: string;
   suiteVersion: string;
@@ -61,6 +72,8 @@ interface CompatibilityInteropResult {
   checkSummary: CompatibilityCheckSummary;
   evidencePath: string;
   pairId: string;
+  reportLabel: string;
+  reportStatus: CompatibilityReportStatus;
   status: "fail" | "pass";
   suiteId: string;
   suiteVersion: string;
@@ -84,6 +97,8 @@ interface CompatibilityConformanceEvidence {
   implementationId: string;
   nonApplicableCheckIds?: readonly string[];
   project: string;
+  reportLabel: string;
+  reportStatus: CompatibilityReportStatus;
   status: "fail" | "pass";
   stderr?: string;
   stdout?: string;
@@ -125,10 +140,13 @@ interface CompatibilitySuite {
 
 interface ConformanceRunner {
   command?: string[];
+  expectedFailure?: boolean;
+  fullCapabilities: readonly string[];
   implementationId: string;
   language: string;
   manifestPath?: string;
   project: string;
+  reportLabel: string;
 }
 
 interface InteropRunner {
@@ -136,6 +154,7 @@ interface InteropRunner {
   manifestPath: string;
   pairId: string;
   project: string;
+  reportLabel: string;
 }
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
@@ -167,9 +186,20 @@ const CONFORMANCE_RUNNERS: readonly ConformanceRunner[] = [
       "--adapter",
       "boundaries/framework/implementations/typescript/conformance-adapter/adapter.json",
     ],
+    fullCapabilities: [
+      "framework.driver-api",
+      "framework.event-stream",
+      "framework.run-liveness",
+      "framework.react-driver",
+      "framework.runtime-api",
+      "providers.executed-tool-support",
+      "providers.structured-output-strictness",
+      "trace.lifecycle",
+    ],
     implementationId: "typescript-framework",
     language: "typescript",
     project: "framework-typescript-conformance-runner",
+    reportLabel: "TypeScript framework runtime baseline",
   },
   {
     command: [
@@ -178,9 +208,36 @@ const CONFORMANCE_RUNNERS: readonly ConformanceRunner[] = [
       "--adapter",
       "boundaries/kernel/implementations/typescript/conformance-adapter/adapter.json",
     ],
-    implementationId: "typescript-kernel",
+    fullCapabilities: [
+      "kernel.protocol",
+      "kernel.logical",
+      "kernel.run-liveness",
+      "kernel.persistence.durable",
+      "kernel.restart-recovery",
+    ],
+    implementationId: "typescript-kernel-memory",
     language: "typescript",
     project: "kernel-typescript-conformance-runner",
+    reportLabel: "TypeScript process-local kernel baseline",
+  },
+  {
+    command: [
+      "bun",
+      "tools/conformance/runner/run.ts",
+      "--adapter",
+      "boundaries/kernel/implementations/typescript/conformance-adapter/adapter-sqlite.json",
+    ],
+    fullCapabilities: [
+      "kernel.protocol",
+      "kernel.logical",
+      "kernel.run-liveness",
+      "kernel.persistence.durable",
+      "kernel.restart-recovery",
+    ],
+    implementationId: "typescript-kernel-sqlite",
+    language: "typescript",
+    project: "kernel-typescript-sqlite-conformance-runner",
+    reportLabel: "TypeScript SQLite durable kernel",
   },
   {
     command: [
@@ -189,9 +246,16 @@ const CONFORMANCE_RUNNERS: readonly ConformanceRunner[] = [
       "--adapter",
       "boundaries/providers/implementations/typescript/conformance-adapter/adapter.json",
     ],
+    fullCapabilities: [
+      "providers.provider-api",
+      "providers.ai-sdk-bridge",
+      "providers.executed-tool-support",
+      "providers.structured-output-strictness",
+    ],
     implementationId: "typescript-providers",
     language: "typescript",
     project: "providers-typescript-conformance-runner",
+    reportLabel: "TypeScript AI SDK provider bridge",
   },
   {
     command: [
@@ -200,22 +264,39 @@ const CONFORMANCE_RUNNERS: readonly ConformanceRunner[] = [
       "--adapter",
       "boundaries/kernel/implementations/rust/conformance-adapter/adapter.json",
     ],
+    fullCapabilities: [
+      "kernel.protocol",
+      "kernel.logical",
+      "kernel.run-liveness",
+      "kernel.persistence.durable",
+      "kernel.restart-recovery",
+    ],
     implementationId: "rust-kernel",
     language: "rust",
     project: "kernel-rust-conformance-runner",
+    reportLabel: "Rust process-local kernel baseline",
   },
   {
-    // This lane is expected to emit red evidence today; the shared runner keeps
-    // the structured JSON parseable after the process exits nonzero.
     command: [
       "bun",
       "tools/conformance/runner/run.ts",
       "--adapter",
       "boundaries/framework/implementations/rust/conformance-adapter/adapter.json",
     ],
+    fullCapabilities: [
+      "framework.driver-api",
+      "framework.event-stream",
+      "framework.run-liveness",
+      "framework.react-driver",
+      "framework.runtime-api",
+      "providers.executed-tool-support",
+      "providers.structured-output-strictness",
+      "trace.lifecycle",
+    ],
     implementationId: "rust-framework",
     language: "rust",
     project: "framework-rust-conformance-runner",
+    reportLabel: "Rust framework unsupported stub",
   },
 ];
 
@@ -226,6 +307,7 @@ const INTEROP_RUNNERS: readonly InteropRunner[] = [
       "boundaries/framework/interop/rust-kernel/scenarios/suite-manifest.json",
     pairId: "typescript-framework__rust-kernel",
     project: "host-playground:interop-smoke",
+    reportLabel: "TypeScript framework to Rust kernel interop",
   },
 ] as const;
 
@@ -390,6 +472,11 @@ async function runConformanceTarget(
     commandResult.code === 0 && evidencePayload.status === "pass"
       ? "pass"
       : "fail";
+  const reportStatus = classifyConformanceReportStatus(
+    runner,
+    evidencePayload,
+    status
+  );
   const evidence: CompatibilityConformanceEvidence = {
     adapterId: evidencePayload.adapterId,
     boundary: evidencePayload.boundary,
@@ -400,6 +487,8 @@ async function runConformanceTarget(
     implementationId: runner.implementationId,
     nonApplicableCheckIds: evidencePayload.nonApplicableCheckIds,
     project: runner.project,
+    reportLabel: runner.reportLabel,
+    reportStatus,
     status,
     summary: evidencePayload.summary,
     suiteId: evidencePayload.suiteId,
@@ -417,7 +506,10 @@ async function runConformanceTarget(
     matrixResult: {
       checkIds: evidencePayload.checkResults.map((result) => result.checkId),
       checkSummary: evidencePayload.summary,
+      declaredCapabilities: evidencePayload.capabilities,
       evidencePath: relativeEvidencePath,
+      reportLabel: runner.reportLabel,
+      reportStatus,
       status,
       suiteId: evidencePayload.suiteId,
       suiteVersion: evidencePayload.suiteVersion,
@@ -434,6 +526,34 @@ function sanitizeEvidenceCommand(command: readonly string[]): string[] {
   return command.map((part) =>
     part.includes("/conformance-adapter/") ? "[adapter-manifest]" : part
   );
+}
+
+function classifyConformanceReportStatus(
+  runner: ConformanceRunner,
+  evidence: ConformanceEvidence,
+  rawStatus: "fail" | "pass"
+): CompatibilityReportStatus {
+  if (rawStatus === "fail") {
+    return runner.expectedFailure === true
+      ? "expected_fail"
+      : "unexpected_fail";
+  }
+
+  const applicableChecks =
+    evidence.summary.applicableChecks ??
+    evidence.summary.failedChecks + evidence.summary.passedChecks;
+  const nonApplicableChecks = evidence.summary.nonApplicableChecks ?? 0;
+
+  if (applicableChecks === 0) {
+    return nonApplicableChecks > 0 ? "unsupported" : "not_applicable";
+  }
+
+  const declaredCapabilities = new Set(evidence.capabilities ?? []);
+  const hasFullCapabilitySet = runner.fullCapabilities.every((capability) =>
+    declaredCapabilities.has(capability)
+  );
+
+  return hasFullCapabilitySet ? "full_pass" : "capability_subset_pass";
 }
 
 async function runInteropTarget(
@@ -469,6 +589,8 @@ async function runInteropTarget(
     "interop runner exited without a parseable scenario report"
   );
   let status: "fail" | "pass" = commandResult.code === 0 ? "pass" : "fail";
+  let reportStatus: CompatibilityReportStatus =
+    status === "pass" ? "full_pass" : "unexpected_fail";
   const evidence: {
     boundary: string;
     checkResults: ConformanceCheckResult[];
@@ -476,6 +598,8 @@ async function runInteropTarget(
     exitCode: number;
     pairId: string;
     project: string;
+    reportLabel: string;
+    reportStatus: CompatibilityReportStatus;
     status: "fail" | "pass";
     summary: CompatibilityCheckSummary;
     stderr?: string;
@@ -490,6 +614,8 @@ async function runInteropTarget(
     exitCode: commandResult.code,
     pairId: runner.pairId,
     project: runner.project,
+    reportLabel: runner.reportLabel,
+    reportStatus,
     status,
     summary: createConformanceEvidenceSummary(fallbackCheckResults),
     suiteId: suiteManifest.suiteId,
@@ -511,7 +637,9 @@ async function runInteropTarget(
         "interop smoke completed without a parseable scenario report";
       evidence.stdout = commandResult.stdout;
       status = "fail";
+      reportStatus = "unexpected_fail";
       evidence.status = status;
+      evidence.reportStatus = reportStatus;
     } else {
       evidence.checkResults = createInteropCheckResults(
         suiteManifest,
@@ -524,7 +652,12 @@ async function runInteropTarget(
       evidence.telemetry = telemetry;
       if (evidence.summary.failedChecks > 0) {
         status = "fail";
+        reportStatus = "unexpected_fail";
         evidence.status = status;
+        evidence.reportStatus = reportStatus;
+      } else {
+        reportStatus = "full_pass";
+        evidence.reportStatus = reportStatus;
       }
     }
   }
@@ -537,6 +670,8 @@ async function runInteropTarget(
       checkSummary: evidence.summary,
       evidencePath: relativeEvidencePath,
       pairId: runner.pairId,
+      reportLabel: runner.reportLabel,
+      reportStatus,
       status,
       suiteId: suiteManifest.suiteId,
       suiteVersion: suiteManifest.suiteVersion,
@@ -994,6 +1129,7 @@ function assertCompatibilityMatrix(
     for (const result of implementation.results) {
       if (
         result.evidencePath.length === 0 ||
+        result.reportLabel.length === 0 ||
         result.suiteId.length === 0 ||
         result.suiteVersion.length === 0
       ) {
@@ -1002,6 +1138,7 @@ function assertCompatibilityMatrix(
         );
       }
 
+      assertCompatibilityReportStatus(result.reportStatus);
       assertCompatibilityCheckSummary(result.checkSummary);
       assertCompatibilityResultCheckIds(
         result.checkIds,
@@ -1015,6 +1152,7 @@ function assertCompatibilityMatrix(
     if (
       interopResult.evidencePath.length === 0 ||
       interopResult.pairId.length === 0 ||
+      interopResult.reportLabel.length === 0 ||
       interopResult.suiteId.length === 0 ||
       interopResult.suiteVersion.length === 0
     ) {
@@ -1023,6 +1161,7 @@ function assertCompatibilityMatrix(
       );
     }
 
+    assertCompatibilityReportStatus(interopResult.reportStatus);
     assertCompatibilityCheckSummary(interopResult.checkSummary);
     assertCompatibilityResultCheckIds(
       interopResult.checkIds,
@@ -1077,6 +1216,21 @@ function assertCompatibilityCheckSummary(
     throw new Error(
       "compatibility matrix check summaries must be internally consistent"
     );
+  }
+}
+
+function assertCompatibilityReportStatus(
+  value: string
+): asserts value is CompatibilityReportStatus {
+  if (
+    value !== "full_pass" &&
+    value !== "capability_subset_pass" &&
+    value !== "unsupported" &&
+    value !== "not_applicable" &&
+    value !== "expected_fail" &&
+    value !== "unexpected_fail"
+  ) {
+    throw new Error(`unknown compatibility report status: ${value}`);
   }
 }
 

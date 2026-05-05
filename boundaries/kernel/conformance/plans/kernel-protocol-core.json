@@ -60,6 +60,26 @@
       ]
     },
     {
+      "checkId": "kernel.protocol.modify_composition",
+      "operation": "kernel.protocol.modify-composition",
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.verdict.kind",
+          "equals": "modify"
+        },
+        {
+          "kind": "evidenceField",
+          "field": "$.verdict.transform",
+          "equals": [
+            { "extension": "first", "mutation": "append-prefix" },
+            { "extension": "second", "mutation": "append-suffix" }
+          ]
+        }
+      ],
+      "evidence": ["verdict.kind", "verdict.transform"]
+    },
+    {
       "checkId": "kernel.logical.diff_paths",
       "operation": "kernel.logical.diff-paths",
       "capabilities": ["kernel.logical"],

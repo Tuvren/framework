@@ -9,7 +9,11 @@
     "transport": "json-rpc-2.0-stdio"
   },
   "command": ["cargo", "run", "-p", "tuvren-kernel-rust-conformance-adapter"],
-  "capabilities": ["kernel.protocol", "kernel.logical"],
+  "capabilities": [
+    "kernel.protocol",
+    "kernel.logical",
+    "kernel.persistence.process-local"
+  ],
   "authorityPackets": [
     "boundaries/kernel/contracts/protocol/spec/authority-packet.json"
   ],

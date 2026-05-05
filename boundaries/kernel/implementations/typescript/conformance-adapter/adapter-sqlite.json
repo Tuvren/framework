@@ -1,6 +1,6 @@
 {
-  "adapterId": "typescript-kernel-memory",
-  "implementationId": "typescript-kernel-memory",
+  "adapterId": "typescript-kernel-sqlite",
+  "implementationId": "typescript-kernel-sqlite",
   "language": "typescript",
   "boundary": "kernel",
   "protocol": {
@@ -12,9 +12,9 @@
     "bun",
     "boundaries/kernel/implementations/typescript/conformance-adapter/src/host.ts",
     "--adapter-id",
-    "typescript-kernel-memory",
+    "typescript-kernel-sqlite",
     "--backend",
-    "memory",
+    "sqlite",
     "--capability",
     "kernel.protocol",
     "--capability",
@@ -22,13 +22,16 @@
     "--capability",
     "kernel.run-liveness",
     "--capability",
-    "kernel.persistence.process-local"
+    "kernel.persistence.durable",
+    "--capability",
+    "kernel.restart-recovery"
   ],
   "capabilities": [
     "kernel.protocol",
     "kernel.logical",
     "kernel.run-liveness",
-    "kernel.persistence.process-local"
+    "kernel.persistence.durable",
+    "kernel.restart-recovery"
   ],
   "authorityPackets": [
     "boundaries/kernel/contracts/protocol/spec/authority-packet.json"

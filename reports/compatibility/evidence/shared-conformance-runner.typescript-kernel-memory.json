@@ -1,7 +1,12 @@
 {
-  "adapterId": "typescript-kernel",
+  "adapterId": "typescript-kernel-memory",
   "boundary": "kernel",
-  "capabilities": ["kernel.logical", "kernel.protocol", "kernel.run-liveness"],
+  "capabilities": [
+    "kernel.logical",
+    "kernel.persistence.process-local",
+    "kernel.protocol",
+    "kernel.run-liveness"
+  ],
   "checkResults": [
     {
       "assertionResults": [
@@ -16,7 +21,7 @@
       ],
       "checkId": "kernel.lineage.cross_thread_rejection",
       "details": {
-        "adapterId": "typescript-kernel",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.core"
       },
       "status": "pass"
@@ -38,7 +43,7 @@
       ],
       "checkId": "kernel.logical.branch_list",
       "details": {
-        "adapterId": "typescript-kernel",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.core"
       },
       "status": "pass"
@@ -56,7 +61,7 @@
       ],
       "checkId": "kernel.logical.diff_paths",
       "details": {
-        "adapterId": "typescript-kernel",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.core"
       },
       "status": "pass"
@@ -90,7 +95,7 @@
       ],
       "checkId": "kernel.logical.recovery_state",
       "details": {
-        "adapterId": "typescript-kernel",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.core"
       },
       "status": "pass"
@@ -124,7 +129,33 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing",
       "details": {
-        "adapterId": "typescript-kernel",
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.protocol.modify_composition.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.2.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.requiredEvidence.verdict.kind",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.requiredEvidence.verdict.transform",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.protocol.modify_composition",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.core"
       },
       "status": "pass"
@@ -150,7 +181,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip",
       "details": {
-        "adapterId": "typescript-kernel",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.core"
       },
       "status": "pass"
@@ -184,7 +215,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-all-ones-bytes",
       "details": {
-        "adapterId": "typescript-kernel",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -218,7 +249,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-all-ordered-paths",
       "details": {
-        "adapterId": "typescript-kernel",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -252,7 +283,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-all-single-paths",
       "details": {
-        "adapterId": "typescript-kernel",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -286,7 +317,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-all-zero-bytes",
       "details": {
-        "adapterId": "typescript-kernel",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -320,7 +351,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-deep-path-schema",
       "details": {
-        "adapterId": "typescript-kernel",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -354,7 +385,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-empty-bytes",
       "details": {
-        "adapterId": "typescript-kernel",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -388,7 +419,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-large-bytes",
       "details": {
-        "adapterId": "typescript-kernel",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -422,7 +453,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-many-staged-results",
       "details": {
-        "adapterId": "typescript-kernel",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -456,7 +487,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-mixed-status-staged",
       "details": {
-        "adapterId": "typescript-kernel",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -490,7 +521,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-multi-path-schema",
       "details": {
-        "adapterId": "typescript-kernel",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -524,7 +555,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-non-utf8-bytes",
       "details": {
-        "adapterId": "typescript-kernel",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -558,7 +589,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-single-byte",
       "details": {
-        "adapterId": "typescript-kernel",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -592,7 +623,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-staged-failed",
       "details": {
-        "adapterId": "typescript-kernel",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -626,7 +657,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-staged-interrupted",
       "details": {
-        "adapterId": "typescript-kernel",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -660,7 +691,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-with-event-hash",
       "details": {
-        "adapterId": "typescript-kernel",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -694,7 +725,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-with-prev-turn",
       "details": {
-        "adapterId": "typescript-kernel",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -728,7 +759,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-zero-turn-tree-hash",
       "details": {
-        "adapterId": "typescript-kernel",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -754,7 +785,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-all-ones-bytes",
       "details": {
-        "adapterId": "typescript-kernel",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -780,7 +811,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-all-ordered-paths",
       "details": {
-        "adapterId": "typescript-kernel",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -806,7 +837,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-all-single-paths",
       "details": {
-        "adapterId": "typescript-kernel",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -832,7 +863,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-all-zero-bytes",
       "details": {
-        "adapterId": "typescript-kernel",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -858,7 +889,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-deep-path-schema",
       "details": {
-        "adapterId": "typescript-kernel",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -884,7 +915,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-empty-bytes",
       "details": {
-        "adapterId": "typescript-kernel",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -910,7 +941,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-large-bytes",
       "details": {
-        "adapterId": "typescript-kernel",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -936,7 +967,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-many-staged-results",
       "details": {
-        "adapterId": "typescript-kernel",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -962,7 +993,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-mixed-status-staged",
       "details": {
-        "adapterId": "typescript-kernel",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -988,7 +1019,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-multi-path-schema",
       "details": {
-        "adapterId": "typescript-kernel",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -1014,7 +1045,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-non-utf8-bytes",
       "details": {
-        "adapterId": "typescript-kernel",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -1040,7 +1071,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-single-byte",
       "details": {
-        "adapterId": "typescript-kernel",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -1066,7 +1097,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-staged-failed",
       "details": {
-        "adapterId": "typescript-kernel",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -1092,7 +1123,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-staged-interrupted",
       "details": {
-        "adapterId": "typescript-kernel",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -1118,7 +1149,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-with-event-hash",
       "details": {
-        "adapterId": "typescript-kernel",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -1144,7 +1175,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-with-prev-turn",
       "details": {
-        "adapterId": "typescript-kernel",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -1170,7 +1201,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-zero-turn-tree-hash",
       "details": {
-        "adapterId": "typescript-kernel",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -1204,7 +1235,7 @@
       ],
       "checkId": "kernel.run-liveness.expired_listing",
       "details": {
-        "adapterId": "typescript-kernel",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.run-liveness"
       },
       "status": "pass"
@@ -1238,7 +1269,7 @@
       ],
       "checkId": "kernel.run-liveness.lease_renewal",
       "details": {
-        "adapterId": "typescript-kernel",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.run-liveness"
       },
       "status": "pass"
@@ -1296,7 +1327,7 @@
       ],
       "checkId": "kernel.run-liveness.stale_preemption",
       "details": {
-        "adapterId": "typescript-kernel",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.run-liveness"
       },
       "status": "pass"
@@ -1309,16 +1340,18 @@
     "[adapter-manifest]"
   ],
   "exitCode": 0,
-  "implementationId": "typescript-kernel",
-  "nonApplicableCheckIds": [],
+  "implementationId": "typescript-kernel-memory",
+  "nonApplicableCheckIds": ["kernel.restart-recovery.close_reopen_checkpoint"],
   "project": "kernel-typescript-conformance-runner",
+  "reportLabel": "TypeScript process-local kernel baseline",
+  "reportStatus": "capability_subset_pass",
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 43,
-    "totalChecks": 43,
-    "applicableChecks": 43,
-    "nonApplicableChecks": 0
+    "passedChecks": 44,
+    "totalChecks": 45,
+    "applicableChecks": 44,
+    "nonApplicableChecks": 1
   },
   "suiteId": "tuvren.kernel.protocol",
   "suiteVersion": "0.1.0"

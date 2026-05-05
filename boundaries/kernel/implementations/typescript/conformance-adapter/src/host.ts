@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 
+import { spawn } from "node:child_process";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { createMemoryBackend } from "@tuvren/backend-memory";
 import {
   assertRecoveryState,
@@ -48,9 +53,19 @@ const CANONICAL_SCHEMA_URL = new URL(
   "../../../../conformance/fixtures/canonical-turn-tree-schema.json",
   import.meta.url
 );
+const SQLITE_RESTART_SCENARIO_URL = new URL(
+  "./sqlite-restart-recovery-scenario.ts",
+  import.meta.url
+);
 
 interface AdapterInput {
   fixture?: unknown;
+}
+
+interface KernelAdapterConfig {
+  adapterId: string;
+  backend: "memory" | "sqlite";
+  capabilities: string[];
 }
 
 interface LogicalFixture {
@@ -59,7 +74,9 @@ interface LogicalFixture {
   turnTreeChangeSet: TurnTreeChangeSet;
 }
 
+const ADAPTER_CONFIG = readAdapterConfig(process.argv.slice(2));
 let canonicalSchemaPromise: Promise<TurnTreeSchema> | undefined;
+let sqliteRestartBuildPromise: Promise<void> | undefined;
 
 class TypeScriptKernelAdapter {
   initialize(
@@ -67,8 +84,8 @@ class TypeScriptKernelAdapter {
     planVersion: string
   ): Promise<AdapterCapabilities> {
     return Promise.resolve({
-      adapterId: "typescript-kernel",
-      capabilities: ["kernel.protocol", "kernel.logical", "kernel.run-liveness"],
+      adapterId: ADAPTER_CONFIG.adapterId,
+      capabilities: ADAPTER_CONFIG.capabilities,
       packetId,
       planVersion,
     });
@@ -85,6 +102,8 @@ class TypeScriptKernelAdapter {
           return result(await deterministicHashing(readFixture(input)));
         case "kernel.protocol.schema-roundtrip":
           return result(schemaRoundtrip(readFixture(input)));
+        case "kernel.protocol.modify-composition":
+          return result(await runModifyComposition());
         case "kernel.logical.diff-paths":
           return result(await runLogicalDiff(readFixture(input)));
         case "kernel.logical.branch-list":
@@ -99,11 +118,13 @@ class TypeScriptKernelAdapter {
           return result(await runExpiredListing());
         case "kernel.run-liveness.stale-preemption":
           return result(await runStalePreemption());
+        case "kernel.restart-recovery.close-reopen-checkpoint":
+          return result(await runRestartRecovery());
         default:
           return {
             error: {
               code: "adapter_operation_not_implemented",
-              message: `TypeScript kernel adapter does not implement ${operation}`,
+              message: `${ADAPTER_CONFIG.adapterId} does not implement ${operation}`,
             },
             kind: "error",
           };
@@ -118,6 +139,73 @@ class TypeScriptKernelAdapter {
 }
 
 await serveStdioAdapter(new TypeScriptKernelAdapter());
+
+function readAdapterConfig(args: readonly string[]): KernelAdapterConfig {
+  const capabilities: string[] = [];
+  let adapterId = "typescript-kernel-memory";
+  let backend: KernelAdapterConfig["backend"] = "memory";
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+
+    if (arg === "--adapter-id") {
+      const value = args[index + 1];
+      if (value === undefined) {
+        throw new Error("--adapter-id requires a value");
+      }
+      adapterId = value;
+      index += 1;
+      continue;
+    }
+
+    if (arg === "--backend") {
+      const value = args[index + 1];
+      if (value !== "memory" && value !== "sqlite") {
+        throw new Error("--backend must be memory or sqlite");
+      }
+      backend = value;
+      index += 1;
+      continue;
+    }
+
+    if (arg === "--capability") {
+      const value = args[index + 1];
+      if (value === undefined) {
+        throw new Error("--capability requires a value");
+      }
+      capabilities.push(value);
+      index += 1;
+    }
+  }
+
+  return {
+    adapterId,
+    backend,
+    capabilities:
+      capabilities.length > 0 ? capabilities : defaultCapabilities(backend),
+  };
+}
+
+function defaultCapabilities(
+  backend: KernelAdapterConfig["backend"]
+): string[] {
+  if (backend === "sqlite") {
+    return [
+      "kernel.protocol",
+      "kernel.logical",
+      "kernel.run-liveness",
+      "kernel.persistence.durable",
+      "kernel.restart-recovery",
+    ];
+  }
+
+  return [
+    "kernel.protocol",
+    "kernel.logical",
+    "kernel.run-liveness",
+    "kernel.persistence.process-local",
+  ];
+}
 
 async function deterministicHashing(
   fixture: Record<string, unknown>
@@ -188,6 +276,37 @@ function schemaRoundtrip(
             )
           )
         ),
+      },
+    },
+  };
+}
+
+async function runModifyComposition(): Promise<Record<string, unknown>> {
+  const schema = await loadCanonicalSchema();
+  const kernel = await createConformanceKernel(schema);
+  const verdict = await kernel.verdicts.compose([
+    {
+      kind: "modify",
+      transform: { extension: "first", mutation: "append-prefix" },
+    },
+    { kind: "proceed" },
+    {
+      kind: "modify",
+      transform: { extension: "second", mutation: "append-suffix" },
+    },
+  ]);
+
+  if (verdict.kind !== "modify") {
+    throw new Error(
+      `expected composed modify verdict, received ${verdict.kind}`
+    );
+  }
+
+  return {
+    evidence: {
+      verdict: {
+        kind: verdict.kind,
+        transform: verdict.transform,
       },
     },
   };
@@ -356,7 +475,7 @@ async function runCrossThreadLineage(): Promise<Record<string, unknown>> {
 async function runLeaseRenewal(): Promise<Record<string, unknown>> {
   const schema = await loadCanonicalSchema();
   const kernel = createRuntimeKernel({
-    backend: createMemoryBackend(),
+    backend: createConfiguredBackend(),
     now: () => 10,
   });
   await kernel.schema.register(schema);
@@ -427,7 +546,7 @@ async function runLeaseRenewal(): Promise<Record<string, unknown>> {
 
 async function runExpiredListing(): Promise<Record<string, unknown>> {
   const schema = await loadCanonicalSchema();
-  const backend = createMemoryBackend();
+  const backend = createConfiguredBackend();
   const kernel = createRuntimeKernel({ backend });
   await kernel.schema.register(schema);
   const expiredThread = await kernel.thread.create(
@@ -513,7 +632,9 @@ async function runExpiredListing(): Promise<Record<string, unknown>> {
     evidence: {
       listing: {
         expiredRunIds: expiredRuns.map((run) => run.runId),
-        pausedRunListed: expiredRuns.some((run) => run.runId === pausedRun.runId),
+        pausedRunListed: expiredRuns.some(
+          (run) => run.runId === pausedRun.runId
+        ),
         pausedRunStatus: pausedStoredRun.status,
       },
     },
@@ -522,8 +643,7 @@ async function runExpiredListing(): Promise<Record<string, unknown>> {
 
 async function runStalePreemption(): Promise<Record<string, unknown>> {
   const schema = await loadCanonicalSchema();
-  const kernel = await createConformanceKernel(schema);
-  const backend = createMemoryBackend();
+  const backend = createConfiguredBackend();
   const storageKernel = createRuntimeKernel({ backend });
   await storageKernel.schema.register(schema);
   const thread = await storageKernel.thread.create(
@@ -595,12 +715,128 @@ async function runStalePreemption(): Promise<Record<string, unknown>> {
   };
 }
 
+async function runRestartRecovery(): Promise<Record<string, unknown>> {
+  await ensureSqliteRestartRuntimeBuilt();
+  const tempDirectory = await mkdtemp(join(tmpdir(), "tuvren-kernel-restart-"));
+  const databasePath = join(tempDirectory, "kernel.sqlite");
+  const metadataPath = join(tempDirectory, "restart-metadata.json");
+
+  try {
+    await runRestartRecoveryPhase("write", databasePath, metadataPath);
+    const reopened = await runRestartRecoveryPhase(
+      "read",
+      databasePath,
+      metadataPath
+    );
+
+    return {
+      evidence: {
+        restartRecovery: reopened,
+      },
+    };
+  } finally {
+    await rm(tempDirectory, { force: true, recursive: true });
+  }
+}
+
 async function createConformanceKernel(schema: TurnTreeSchema) {
-  // The shared kernel adapter proves semantic behavior over a minimal backend;
-  // backend-specific storage and migration rules stay covered by backend suites.
-  const kernel = createRuntimeKernel({ backend: createMemoryBackend() });
+  // The Bun-hosted adapter keeps backend-agnostic semantics on the shared
+  // in-memory kernel path. Durable SQLite behavior is proven separately through
+  // the restart-recovery child process, because better-sqlite3 is not runnable
+  // inside Bun in this environment.
+  const kernel = createRuntimeKernel({
+    backend: createConfiguredBackend(),
+  });
   await kernel.schema.register(schema);
   return kernel;
+}
+
+function createConfiguredBackend() {
+  return createMemoryBackend();
+}
+
+async function runRestartRecoveryPhase(
+  phase: "read" | "write",
+  databasePath: string,
+  metadataPath: string
+): Promise<Record<string, unknown>> {
+  const result = await new Promise<{
+    code: number | null;
+    signal: NodeJS.Signals | null;
+    stderr: string;
+    stdout: string;
+  }>((resolve, reject) => {
+    const child = spawn(
+      "node",
+      [
+        fileURLToPath(SQLITE_RESTART_SCENARIO_URL),
+        phase,
+        databasePath,
+        metadataPath,
+      ],
+      {
+        stdio: ["ignore", "pipe", "pipe"],
+      }
+    );
+    let stdout = "";
+    let stderr = "";
+
+    child.stdout.on("data", (chunk: Buffer) => {
+      stdout += chunk.toString("utf8");
+    });
+    child.stderr.on("data", (chunk: Buffer) => {
+      stderr += chunk.toString("utf8");
+    });
+    child.on("error", reject);
+    child.on("close", (code, signal) => {
+      resolve({ code, signal, stderr, stdout });
+    });
+  });
+
+  if (result.code !== 0) {
+    throw new Error(
+      `restart recovery ${phase} phase failed: code=${String(result.code)} signal=${String(result.signal)} stderr=${result.stderr || "<empty>"}`
+    );
+  }
+
+  const value = JSON.parse(result.stdout) as unknown;
+  return readRecord(value, `restart recovery ${phase} output`);
+}
+
+async function ensureSqliteRestartRuntimeBuilt(): Promise<void> {
+  sqliteRestartBuildPromise ??= (async () => {
+    await runBuildTarget("backend-sqlite:build");
+    await runBuildTarget("kernel-runtime:build");
+  })();
+
+  return await sqliteRestartBuildPromise;
+}
+
+async function runBuildTarget(target: string): Promise<void> {
+  const result = await new Promise<{
+    code: number | null;
+    signal: NodeJS.Signals | null;
+    stderr: string;
+  }>((resolve, reject) => {
+    const child = spawn("bun", ["run", "nx", "run", target, "--skipNxCache"], {
+      stdio: ["ignore", "ignore", "pipe"],
+    });
+    let stderr = "";
+
+    child.stderr.on("data", (chunk: Buffer) => {
+      stderr += chunk.toString("utf8");
+    });
+    child.on("error", reject);
+    child.on("close", (code, signal) => {
+      resolve({ code, signal, stderr });
+    });
+  });
+
+  if (result.code !== 0) {
+    throw new Error(
+      `failed to build ${target} for sqlite restart recovery: code=${String(result.code)} signal=${String(result.signal)} stderr=${result.stderr || "<empty>"}`
+    );
+  }
 }
 
 async function loadCanonicalSchema(): Promise<TurnTreeSchema> {

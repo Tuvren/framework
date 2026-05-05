@@ -174,6 +174,8 @@ Where `PathValue` is `Hash[]` for `ordered` paths or `Hash | null` for `single` 
 
 **`manifest`** dumps all paths and their typed values. Used for serialization, debugging, and context assembly.
 
+**Conformance target for this surface:** Promoted cross-backend conformance evaluates observable TurnTree semantics: valid path inheritance from a base tree, deterministic `manifest` / `resolve` / `diff` results, and stable lineage-visible behavior across checkpointing, rollback, and branch head movement. Physical subtree layout, chunking strategy, or direct proof of hash-node reuse are implementation freedoms unless a future storage-level conformance packet promotes them explicitly.
+
 ### 3.3 TurnNode
 
 One durable point in the history DAG. Links a transition to the state it produced.

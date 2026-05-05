@@ -18,6 +18,10 @@
       "format": "conformance-plan"
     },
     {
+      "path": "boundaries/kernel/conformance/plans/kernel-restart-recovery.json",
+      "format": "conformance-plan"
+    },
+    {
       "path": "boundaries/kernel/conformance/fixtures/kernel-protocol-deterministic.json",
       "format": "fixture-set"
     },
@@ -41,6 +45,11 @@
       "planId": "tuvren.kernel.run-liveness",
       "planVersion": "0.1.0",
       "path": "boundaries/kernel/conformance/plans/kernel-run-liveness.json"
+    },
+    {
+      "planId": "tuvren.kernel.restart-recovery",
+      "planVersion": "0.1.0",
+      "path": "boundaries/kernel/conformance/plans/kernel-restart-recovery.json"
     }
   ],
   "bindingProjections": {
@@ -69,6 +78,10 @@
     {
       "kind": "conformance-plan",
       "target": "boundaries/kernel/conformance/plans/kernel-run-liveness.json"
+    },
+    {
+      "kind": "conformance-plan",
+      "target": "boundaries/kernel/conformance/plans/kernel-restart-recovery.json"
     }
   ]
 }

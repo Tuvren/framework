@@ -14,12 +14,7 @@
     "-p",
     "tuvren-framework-rust-conformance-adapter"
   ],
-  "capabilities": [
-    "framework.driver-api",
-    "framework.event-stream",
-    "framework.react-driver",
-    "framework.runtime-api"
-  ],
+  "capabilities": [],
   "authorityPackets": [
     "boundaries/framework/contracts/event-stream/spec/authority-packet.json",
     "boundaries/framework/contracts/runtime-api/spec/authority-packet.json",
