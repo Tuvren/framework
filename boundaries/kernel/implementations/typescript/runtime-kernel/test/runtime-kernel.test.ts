@@ -320,6 +320,94 @@ describe("createRuntimeKernel", () => {
     );
   });
 
+  test("branch.setHead rejects forward moves while the branch has an active run", async () => {
+    const fixture = await createThreadFixture({
+      branchId: "branch_forward_active_run",
+      threadId: "thread_forward_active_run",
+    });
+    const bootstrapTurn = await fixture.kernel.turn.create(
+      "turn_forward_active_run_bootstrap",
+      fixture.threadId,
+      fixture.branchId,
+      null,
+      fixture.rootTurnNodeHash
+    );
+    await fixture.kernel.run.create(
+      "run_forward_active_run_bootstrap",
+      bootstrapTurn.turnId,
+      fixture.branchId,
+      fixture.schemaId,
+      fixture.rootTurnNodeHash,
+      [{ deterministic: false, id: "bootstrap-step", sideEffects: false }]
+    );
+    const bootstrapCheckpoint = await fixture.kernel.run.completeStep(
+      "run_forward_active_run_bootstrap",
+      "bootstrap-step"
+    );
+
+    if (bootstrapCheckpoint.turnNodeHash === undefined) {
+      throw new Error("expected bootstrap checkpoint turn node");
+    }
+
+    await fixture.kernel.run.complete(
+      "run_forward_active_run_bootstrap",
+      "completed"
+    );
+    const mainTurn = await fixture.kernel.turn.create(
+      "turn_forward_active_run_main",
+      fixture.threadId,
+      fixture.branchId,
+      bootstrapTurn.turnId,
+      bootstrapCheckpoint.turnNodeHash
+    );
+    const forkBranch = await fixture.kernel.branch.create(
+      "branch_forward_active_run_fork",
+      fixture.threadId,
+      bootstrapCheckpoint.turnNodeHash
+    );
+    const forkTurn = await fixture.kernel.turn.create(
+      "turn_forward_active_run_fork",
+      fixture.threadId,
+      forkBranch.branchId,
+      mainTurn.turnId,
+      bootstrapCheckpoint.turnNodeHash
+    );
+    await fixture.kernel.run.create(
+      "run_forward_active_run_fork",
+      forkTurn.turnId,
+      forkBranch.branchId,
+      fixture.schemaId,
+      bootstrapCheckpoint.turnNodeHash,
+      [{ deterministic: false, id: "fork-step", sideEffects: false }]
+    );
+    const forkCheckpoint = await fixture.kernel.run.completeStep(
+      "run_forward_active_run_fork",
+      "fork-step"
+    );
+
+    if (forkCheckpoint.turnNodeHash === undefined) {
+      throw new Error("expected fork checkpoint turn node");
+    }
+
+    await fixture.kernel.run.create(
+      "run_forward_active_run",
+      mainTurn.turnId,
+      fixture.branchId,
+      fixture.schemaId,
+      bootstrapCheckpoint.turnNodeHash,
+      [{ deterministic: false, id: "step", sideEffects: false }]
+    );
+
+    await expect(
+      fixture.kernel.branch.setHead(
+        fixture.branchId,
+        forkCheckpoint.turnNodeHash
+      )
+    ).rejects.toThrow(
+      'branch "branch_forward_active_run" cannot move head while run "run_forward_active_run" is active'
+    );
+  });
+
   test("run.recover reads the run last node after rollback archival", async () => {
     const fixture = await createThreadFixture({
       branchId: "branch_recover_after_rollback",
@@ -649,5 +737,63 @@ describe("createRuntimeKernel", () => {
     );
 
     expect(secondForkTurn.parentTurnId).toBe(firstForkTurn.turnId);
+  });
+
+  test("turn.updateHead rejects rewrites that would invalidate dependent turns", async () => {
+    const fixture = await createThreadFixture({
+      branchId: "branch_turn_head_dependents",
+      threadId: "thread_turn_head_dependents",
+    });
+    const parentTurn = await fixture.kernel.turn.create(
+      "turn_head_parent",
+      fixture.threadId,
+      fixture.branchId,
+      null,
+      fixture.rootTurnNodeHash
+    );
+    await fixture.kernel.run.create(
+      "run_turn_head_parent",
+      parentTurn.turnId,
+      fixture.branchId,
+      fixture.schemaId,
+      fixture.rootTurnNodeHash,
+      [{ deterministic: false, id: "checkpoint", sideEffects: false }]
+    );
+    const checkpoint = await fixture.kernel.run.completeStep(
+      "run_turn_head_parent",
+      "checkpoint"
+    );
+
+    if (checkpoint.turnNodeHash === undefined) {
+      throw new Error("expected checkpoint turn node");
+    }
+
+    await fixture.kernel.run.complete("run_turn_head_parent", "completed");
+    await fixture.kernel.turn.updateHead(
+      parentTurn.turnId,
+      checkpoint.turnNodeHash
+    );
+
+    const forkBranch = await fixture.kernel.branch.create(
+      "branch_turn_head_dependents_fork",
+      fixture.threadId,
+      checkpoint.turnNodeHash
+    );
+    await fixture.kernel.turn.create(
+      "turn_head_child",
+      fixture.threadId,
+      forkBranch.branchId,
+      parentTurn.turnId,
+      checkpoint.turnNodeHash
+    );
+
+    await expect(
+      fixture.kernel.turn.updateHead(
+        parentTurn.turnId,
+        fixture.rootTurnNodeHash
+      )
+    ).rejects.toThrow(
+      'turn "turn_head_parent" cannot rewrite head past dependent turn "turn_head_child"'
+    );
   });
 });

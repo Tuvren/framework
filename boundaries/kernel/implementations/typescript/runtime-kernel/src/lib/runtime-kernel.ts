@@ -142,6 +142,7 @@ export function createRuntimeKernel(
           }
 
           if (direction === "forward") {
+            await assertNoActiveBranchRunForForwardHeadMove(tx, branch);
             const updated: StoredBranch = {
               ...branch,
               headTurnNodeHash: turnNodeHash,
@@ -772,6 +773,12 @@ export function createRuntimeKernel(
             );
           }
 
+          await assertTurnHeadRewritePreservesDependents(
+            tx,
+            toTurnRecord(turn),
+            headTurnNodeHash
+          );
+
           await tx.turns.set({
             ...turn,
             headTurnNodeHash,
@@ -864,6 +871,28 @@ async function classifyHeadMovement(
   }
 
   return "lateral";
+}
+
+async function assertNoActiveBranchRunForForwardHeadMove(
+  tx: RuntimeBackendTx,
+  branch: StoredBranch
+): Promise<void> {
+  const branchRuns = await tx.runs.listByBranch(branch.branchId);
+  const activeRun = branchRuns.find(
+    (storedRun) =>
+      storedRun.status === "running" || storedRun.status === "paused"
+  );
+
+  if (activeRun === undefined) {
+    return;
+  }
+
+  // An active run owns the branch head it is executing against, so forward
+  // rewrites must fail here instead of leaking a storage-adapter mismatch.
+  throw new TuvrenRuntimeError(
+    `branch "${branch.branchId}" cannot move head while run "${activeRun.runId}" is active`,
+    { code: "kernel_runtime_branch_has_active_run" }
+  );
 }
 
 async function collectAbandonedSegmentHashes(
@@ -1007,6 +1036,49 @@ async function validateTurnParent(
       `parent turn "${parentTurnId}" is not the immediately previous turn on branch "${branchId}"`,
       { code: "kernel_runtime_turn_parent_not_immediate_predecessor" }
     );
+  }
+}
+
+async function assertTurnHeadRewritePreservesDependents(
+  tx: RuntimeBackendTx,
+  turn: TurnRecord,
+  nextHeadTurnNodeHash: HashString
+): Promise<void> {
+  const branchRuns = await tx.runs.listByBranch(turn.branchId);
+
+  for (const storedRun of branchRuns) {
+    if (
+      storedRun.turnId === turn.turnId &&
+      (storedRun.status === "running" || storedRun.status === "paused")
+    ) {
+      const activeTurnNodeHash = getLastRunTurnNodeHash(
+        decodeStoredRun(storedRun)
+      );
+
+      if (activeTurnNodeHash !== nextHeadTurnNodeHash) {
+        throw new TuvrenRuntimeError(
+          `turn "${turn.turnId}" cannot rewrite head while run "${storedRun.runId}" is active`,
+          { code: "kernel_runtime_turn_has_active_run" }
+        );
+      }
+    }
+  }
+
+  const turnsInThread = await tx.turns.listByThread(turn.threadId);
+
+  for (const dependentTurn of turnsInThread) {
+    if (
+      dependentTurn.turnId !== turn.turnId &&
+      dependentTurn.parentTurnId === turn.turnId &&
+      dependentTurn.startTurnNodeHash !== nextHeadTurnNodeHash
+    ) {
+      // Child turns anchor their semantic parent at one exact head, so a
+      // parent rewrite must reject before it can invalidate that lineage.
+      throw new TuvrenLineageError(
+        `turn "${turn.turnId}" cannot rewrite head past dependent turn "${dependentTurn.turnId}"`,
+        { code: "kernel_runtime_turn_head_has_dependent_turns" }
+      );
+    }
   }
 }
 
