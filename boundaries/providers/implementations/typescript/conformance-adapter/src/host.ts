@@ -20,8 +20,8 @@ import type {
   LanguageModelV3GenerateResult,
   LanguageModelV3StreamPart,
 } from "@ai-sdk/provider";
-import type { ProviderStreamChunk } from "@tuvren/provider-api";
 import { TuvrenProviderError } from "@tuvren/core-types";
+import type { ProviderStreamChunk } from "@tuvren/provider-api";
 import {
   assertProviderFinishChunk,
   assertProviderStructuredDoneChunk,
@@ -75,6 +75,8 @@ class TypeScriptProviderAdapter {
           return result(await providerFailureNormalization());
         case "providers.bridge.strict-structured-output-rejection":
           return result(await strictStructuredOutputRejection());
+        case "providers.bridge.provider-owned-tool-result-rejection":
+          return result(await providerOwnedToolResultRejection());
         case "providers.bridge.provider-owned-tool-execution-rejection":
           return result(await providerOwnedToolExecutionRejection());
         case "providers.bridge.provider-approval-request-rejection":
@@ -268,9 +270,12 @@ async function providerFailureNormalization(): Promise<
   };
 }
 
-async function strictStructuredOutputRejection(): Promise<Record<string, unknown>> {
+async function strictStructuredOutputRejection(): Promise<
+  Record<string, unknown>
+> {
   let generateCalls = 0;
   let streamCalls = 0;
+  const responseFormat = readStructuredResponseFormat();
   const generateBridge = createAiSdkProviderBridge({
     model: createMockModel({
       doGenerate() {
@@ -284,7 +289,7 @@ async function strictStructuredOutputRejection(): Promise<Record<string, unknown
       await generateBridge.generate({
         ...providerTestkitFixtures.structuredPrompt,
         responseFormat: {
-          ...providerTestkitFixtures.structuredPrompt.responseFormat!,
+          ...responseFormat,
           strict: true,
         },
       });
@@ -306,7 +311,7 @@ async function strictStructuredOutputRejection(): Promise<Record<string, unknown
         streamBridge.stream({
           ...providerTestkitFixtures.structuredPrompt,
           responseFormat: {
-            ...providerTestkitFixtures.structuredPrompt.responseFormat!,
+            ...responseFormat,
             strict: true,
           },
         })
@@ -393,6 +398,85 @@ async function providerOwnedToolExecutionRejection(): Promise<
             ? generateError.code
             : "unknown",
         generateErrorReason: readProviderErrorReason(generateError),
+        streamErrorCode:
+          streamError instanceof TuvrenProviderError
+            ? streamError.code
+            : "unknown",
+        streamErrorReason: readProviderErrorReason(streamError),
+      },
+    },
+  };
+}
+
+async function providerOwnedToolResultRejection(): Promise<
+  Record<string, unknown>
+> {
+  let generateResolved = false;
+  let streamChunkCount = 0;
+  const generateBridge = createAiSdkProviderBridge({
+    model: createMockModel({
+      doGenerate() {
+        return Promise.resolve(
+          createGenerateResult({
+            content: [
+              {
+                result: {
+                  status: "done",
+                },
+                toolCallId: "provider-tool-call-1",
+                toolName: "search",
+                type: "tool-result",
+              },
+            ],
+          })
+        );
+      },
+    }),
+  });
+  const generateError = await verifyProviderRejects({
+    run: async () => {
+      await generateBridge.generate(providerTestkitFixtures.toolPrompt);
+      generateResolved = true;
+    },
+  });
+  const streamBridge = createAiSdkProviderBridge({
+    model: createMockModel({
+      doStream() {
+        return Promise.resolve({
+          stream: streamFromParts([
+            {
+              result: {
+                ok: true,
+              },
+              toolCallId: "provider-tool-call-1",
+              toolName: "search",
+              type: "tool-result",
+            },
+          ]),
+        });
+      },
+    }),
+  });
+  const streamError = await verifyProviderRejects({
+    run: async () => {
+      for await (const _chunk of streamBridge.stream(
+        providerTestkitFixtures.toolPrompt
+      )) {
+        streamChunkCount += 1;
+      }
+    },
+  });
+
+  return {
+    evidence: {
+      frameworkOwnedToolResultBoundary: {
+        generateErrorCode:
+          generateError instanceof TuvrenProviderError
+            ? generateError.code
+            : "unknown",
+        generateErrorReason: readProviderErrorReason(generateError),
+        generateResolved,
+        streamChunkCount,
         streamErrorCode:
           streamError instanceof TuvrenProviderError
             ? streamError.code
@@ -532,7 +616,7 @@ async function collectProviderStreamChunks(
 }
 
 function readProviderErrorReason(error: unknown): string | undefined {
-  if (!(error instanceof TuvrenProviderError) || !isRecord(error.details)) {
+  if (!(error instanceof TuvrenProviderError && isRecord(error.details))) {
     return undefined;
   }
 
@@ -543,4 +627,18 @@ function readProviderErrorReason(error: unknown): string | undefined {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function readStructuredResponseFormat(): NonNullable<
+  typeof providerTestkitFixtures.structuredPrompt.responseFormat
+> {
+  const { responseFormat } = providerTestkitFixtures.structuredPrompt;
+
+  if (responseFormat === undefined) {
+    throw new Error(
+      "provider structured prompt fixture must define responseFormat"
+    );
+  }
+
+  return responseFormat;
 }

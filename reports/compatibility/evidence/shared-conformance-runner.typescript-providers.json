@@ -228,6 +228,114 @@
     {
       "assertionResults": [
         {
+          "assertionId": "providers-ext.tool-result.generate-does-not-resolve.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers-ext.tool-result.generate-does-not-resolve.requiredEvidence.frameworkOwnedToolResultBoundary.generateResolved",
+          "status": "pass"
+        }
+      ],
+      "checkId": "providers-ext.tool-result.generate-does-not-resolve",
+      "details": {
+        "adapterId": "typescript-providers",
+        "planId": "tuvren.providers.provider-api.bridge"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "providers-ext.tool-result.generate-error-code-stable.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers-ext.tool-result.generate-error-code-stable.requiredEvidence.frameworkOwnedToolResultBoundary.generateErrorCode",
+          "status": "pass"
+        }
+      ],
+      "checkId": "providers-ext.tool-result.generate-error-code-stable",
+      "details": {
+        "adapterId": "typescript-providers",
+        "planId": "tuvren.providers.provider-api.bridge"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "providers-ext.tool-result.generate-error-reason-stable.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers-ext.tool-result.generate-error-reason-stable.requiredEvidence.frameworkOwnedToolResultBoundary.generateErrorReason",
+          "status": "pass"
+        }
+      ],
+      "checkId": "providers-ext.tool-result.generate-error-reason-stable",
+      "details": {
+        "adapterId": "typescript-providers",
+        "planId": "tuvren.providers.provider-api.bridge"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "providers-ext.tool-result.stream-emits-no-canonical-chunks.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers-ext.tool-result.stream-emits-no-canonical-chunks.requiredEvidence.frameworkOwnedToolResultBoundary.streamChunkCount",
+          "status": "pass"
+        }
+      ],
+      "checkId": "providers-ext.tool-result.stream-emits-no-canonical-chunks",
+      "details": {
+        "adapterId": "typescript-providers",
+        "planId": "tuvren.providers.provider-api.bridge"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "providers-ext.tool-result.stream-error-code-stable.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers-ext.tool-result.stream-error-code-stable.requiredEvidence.frameworkOwnedToolResultBoundary.streamErrorCode",
+          "status": "pass"
+        }
+      ],
+      "checkId": "providers-ext.tool-result.stream-error-code-stable",
+      "details": {
+        "adapterId": "typescript-providers",
+        "planId": "tuvren.providers.provider-api.bridge"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "providers-ext.tool-result.stream-error-reason-stable.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers-ext.tool-result.stream-error-reason-stable.requiredEvidence.frameworkOwnedToolResultBoundary.streamErrorReason",
+          "status": "pass"
+        }
+      ],
+      "checkId": "providers-ext.tool-result.stream-error-reason-stable",
+      "details": {
+        "adapterId": "typescript-providers",
+        "planId": "tuvren.providers.provider-api.bridge"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "providers.bridge.generate_mapping.1.evidenceField",
           "status": "pass"
         },
@@ -473,9 +581,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 22,
-    "totalChecks": 22,
-    "applicableChecks": 22,
+    "passedChecks": 28,
+    "totalChecks": 28,
+    "applicableChecks": 28,
     "nonApplicableChecks": 0
   },
   "suiteId": "tuvren.providers.provider-api",

@@ -251,6 +251,90 @@
       "evidence": ["frameworkOwnedToolExecution.streamErrorReason"]
     },
     {
+      "checkId": "providers-ext.tool-result.generate-error-code-stable",
+      "operation": "providers.bridge.provider-owned-tool-result-rejection",
+      "capabilities": ["providers.framework-owned-tool-execution"],
+      "fixture": "provider-fixtures",
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.frameworkOwnedToolResultBoundary.generateErrorCode",
+          "equals": "unsupported_ai_sdk_content"
+        }
+      ],
+      "evidence": ["frameworkOwnedToolResultBoundary.generateErrorCode"]
+    },
+    {
+      "checkId": "providers-ext.tool-result.generate-error-reason-stable",
+      "operation": "providers.bridge.provider-owned-tool-result-rejection",
+      "capabilities": ["providers.framework-owned-tool-execution"],
+      "fixture": "provider-fixtures",
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.frameworkOwnedToolResultBoundary.generateErrorReason",
+          "equals": "provider_owned_tool_result_unsupported"
+        }
+      ],
+      "evidence": ["frameworkOwnedToolResultBoundary.generateErrorReason"]
+    },
+    {
+      "checkId": "providers-ext.tool-result.generate-does-not-resolve",
+      "operation": "providers.bridge.provider-owned-tool-result-rejection",
+      "capabilities": ["providers.framework-owned-tool-execution"],
+      "fixture": "provider-fixtures",
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.frameworkOwnedToolResultBoundary.generateResolved",
+          "equals": false
+        }
+      ],
+      "evidence": ["frameworkOwnedToolResultBoundary.generateResolved"]
+    },
+    {
+      "checkId": "providers-ext.tool-result.stream-error-code-stable",
+      "operation": "providers.bridge.provider-owned-tool-result-rejection",
+      "capabilities": ["providers.framework-owned-tool-execution"],
+      "fixture": "provider-fixtures",
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.frameworkOwnedToolResultBoundary.streamErrorCode",
+          "equals": "unsupported_ai_sdk_stream_part"
+        }
+      ],
+      "evidence": ["frameworkOwnedToolResultBoundary.streamErrorCode"]
+    },
+    {
+      "checkId": "providers-ext.tool-result.stream-error-reason-stable",
+      "operation": "providers.bridge.provider-owned-tool-result-rejection",
+      "capabilities": ["providers.framework-owned-tool-execution"],
+      "fixture": "provider-fixtures",
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.frameworkOwnedToolResultBoundary.streamErrorReason",
+          "equals": "provider_owned_tool_result_unsupported"
+        }
+      ],
+      "evidence": ["frameworkOwnedToolResultBoundary.streamErrorReason"]
+    },
+    {
+      "checkId": "providers-ext.tool-result.stream-emits-no-canonical-chunks",
+      "operation": "providers.bridge.provider-owned-tool-result-rejection",
+      "capabilities": ["providers.framework-owned-tool-execution"],
+      "fixture": "provider-fixtures",
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.frameworkOwnedToolResultBoundary.streamChunkCount",
+          "equals": 0
+        }
+      ],
+      "evidence": ["frameworkOwnedToolResultBoundary.streamChunkCount"]
+    },
+    {
       "checkId": "providers-ext.approval.error-code-stable",
       "operation": "providers.bridge.provider-approval-request-rejection",
       "capabilities": ["providers.framework-owned-approval-boundary"],

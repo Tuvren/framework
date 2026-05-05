@@ -167,6 +167,11 @@ const COMPATIBILITY_SCHEMA_PATH = resolve(
   "reports/compatibility/compatibility-matrix.schema.json"
 );
 const EVIDENCE_DIRECTORY = resolve(REPO_ROOT, "reports/compatibility/evidence");
+const HERMETIC_BUILD_OUTPUT_DIRECTORIES = [
+  "boundaries/kernel/implementations/typescript/conformance-adapter/dist",
+  "boundaries/kernel/implementations/typescript/backend-sqlite/dist",
+  "boundaries/kernel/implementations/typescript/runtime-kernel/dist",
+] as const;
 const ajv = new Ajv2020({ allErrors: true, strict: false });
 const TRANSITION_IMPLEMENTATION_VERSION = "unreleased-workspace";
 const PREFIXED_OUTPUT_PATTERN = /^[A-Za-z0-9_.-]+: /u;
@@ -222,12 +227,6 @@ const CONFORMANCE_RUNNERS: readonly ConformanceRunner[] = [
     reportLabel: "TypeScript process-local kernel baseline",
   },
   {
-    command: [
-      "bun",
-      "tools/conformance/runner/run.ts",
-      "--adapter",
-      "boundaries/kernel/implementations/typescript/conformance-adapter/adapter-sqlite.json",
-    ],
     fullCapabilities: [
       "kernel.protocol",
       "kernel.logical",
@@ -320,6 +319,9 @@ async function main(): Promise<void> {
   const allowFailingEvidence = process.argv.includes(
     ALLOW_FAILING_EVIDENCE_FLAG
   );
+  // Compatibility evidence must prove the SQLite lane can rebuild from a clean
+  // checkout instead of inheriting prior local dist residue.
+  await resetHermeticBuildBoundary();
   // Checked-in evidence must describe only the currently measured suite set,
   // so codegen clears the directory before regenerating the authoritative
   // suite-specific artifacts.
@@ -411,6 +413,17 @@ async function main(): Promise<void> {
   if (hasFailure && !allowFailingEvidence) {
     throw new Error("one or more conformance targets failed");
   }
+}
+
+async function resetHermeticBuildBoundary(): Promise<void> {
+  await Promise.all(
+    HERMETIC_BUILD_OUTPUT_DIRECTORIES.map(async (directoryPath) =>
+      rm(resolve(REPO_ROOT, directoryPath), {
+        force: true,
+        recursive: true,
+      })
+    )
+  );
 }
 
 async function readSuiteManifest(

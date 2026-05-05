@@ -1398,9 +1398,11 @@
   ],
   "command": [
     "bun",
-    "tools/conformance/runner/run.ts",
-    "--adapter",
-    "[adapter-manifest]"
+    "run",
+    "nx",
+    "run",
+    "kernel-typescript-sqlite-conformance-runner:conformance",
+    "--skipNxCache"
   ],
   "exitCode": 0,
   "implementationId": "typescript-kernel-sqlite",

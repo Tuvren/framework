@@ -407,6 +407,12 @@
             "providers-ext.tool-execution.generate-error-reason-stable",
             "providers-ext.tool-execution.stream-error-code-stable",
             "providers-ext.tool-execution.stream-error-reason-stable",
+            "providers-ext.tool-result.generate-does-not-resolve",
+            "providers-ext.tool-result.generate-error-code-stable",
+            "providers-ext.tool-result.generate-error-reason-stable",
+            "providers-ext.tool-result.stream-emits-no-canonical-chunks",
+            "providers-ext.tool-result.stream-error-code-stable",
+            "providers-ext.tool-result.stream-error-reason-stable",
             "providers.bridge.generate_mapping",
             "providers.bridge.provider_failure_normalization",
             "providers.bridge.stream_metadata_continuity",
@@ -420,9 +426,9 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 22,
-            "totalChecks": 22,
-            "applicableChecks": 22,
+            "passedChecks": 28,
+            "totalChecks": 28,
+            "applicableChecks": 28,
             "nonApplicableChecks": 0
           },
           "declaredCapabilities": [
