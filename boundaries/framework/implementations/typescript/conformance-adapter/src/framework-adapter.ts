@@ -59,6 +59,7 @@ import {
 } from "../../drivers/react/src/lib/react-driver-stream.ts";
 import {
   createDriverRegistry,
+  createOrchestrationRuntime,
   createTuvrenRuntimeCore,
   DEFAULT_AGENT_SCHEMA,
 } from "../../runtime-core/src/index.ts";
@@ -202,6 +203,7 @@ export class TypeScriptFrameworkAdapter implements ImplementationAdapter {
       capabilities: [
         "framework.driver-api",
         "framework.event-stream",
+        "framework.orchestration",
         "framework.run-liveness",
         "framework.react-driver",
         "framework.runtime-api",
@@ -274,6 +276,16 @@ export class TypeScriptFrameworkAdapter implements ImplementationAdapter {
         return runRecoverResult(input);
       case "runtime.recover-stale-run":
         return runRecoverStaleRun(input);
+      case "runtime.orchestration.launch-preconditions":
+        return runOrchestrationLaunchPreconditions(input);
+      case "runtime.orchestration.lifecycle-locality":
+        return runOrchestrationLifecycleLocality(input);
+      case "runtime.orchestration.event-surfaces":
+        return runOrchestrationEventSurfaces(input);
+      case "runtime.orchestration.execution-inheritance":
+        return runOrchestrationExecutionInheritance(input);
+      case "runtime.orchestration.nested-attribution":
+        return runOrchestrationNestedAttribution(input);
       case "driver.execute":
         return runDriverExecute(input);
       case "driver.resume":
@@ -298,7 +310,9 @@ async function runSseProjection(input: unknown): Promise<AdapterProjection> {
   const events = await runEventStreamScenario(input, "event-stream");
   const frames = await collectValues(toSseFrames(createEventStream(events)));
   const threadIds = events.flatMap((event) =>
-    isRecord(event) && typeof event.threadId === "string" ? [event.threadId] : []
+    isRecord(event) && typeof event.threadId === "string"
+      ? [event.threadId]
+      : []
   );
   const sourceThreadIds = events.flatMap((event) =>
     isRecord(event.source) && typeof event.source.threadId === "string"
@@ -579,7 +593,11 @@ async function runResumedApprovalEventStreamTurn(
     throw new Error(`${label} did not emit a completed turn.end event`);
   }
 
-  if (!combinedEvents.some((event) => readRecordString(event, "type") === "approval.resolved")) {
+  if (
+    !combinedEvents.some(
+      (event) => readRecordString(event, "type") === "approval.resolved"
+    )
+  ) {
     throw new Error(`${label} did not emit approval.resolved after resume`);
   }
 
@@ -793,15 +811,18 @@ async function runApprovalResume(input: unknown): Promise<AdapterProjection> {
   const pausedPhase = pausedHandle.status().phase;
   const executedNamesBeforeResume = [...executedNames];
   const pausedApprovalCallIds =
-    pausedHandle.status().approval?.toolCalls.map((toolCall) => toolCall.callId) ??
-    [];
+    pausedHandle
+      .status()
+      .approval?.toolCalls.map((toolCall) => toolCall.callId) ?? [];
 
   if (pausedPhase !== "paused") {
     return {
       evidence: {
         approval: {
           pausedApprovalCallIds,
-          pausedEventTypes: pausedEvents.map((event) => readRecordString(event, "type")),
+          pausedEventTypes: pausedEvents.map((event) =>
+            readRecordString(event, "type")
+          ),
           pausedPhase,
         },
         tool: {
@@ -830,9 +851,13 @@ async function runApprovalResume(input: unknown): Promise<AdapterProjection> {
       approval: {
         decisions,
         pausedApprovalCallIds,
-        pausedEventTypes: pausedEvents.map((event) => readRecordString(event, "type")),
+        pausedEventTypes: pausedEvents.map((event) =>
+          readRecordString(event, "type")
+        ),
         pausedPhase,
-        resumedEventTypes: resumedEvents.map((event) => readRecordString(event, "type")),
+        resumedEventTypes: resumedEvents.map((event) =>
+          readRecordString(event, "type")
+        ),
         resumedPhase: resumedHandle.status().phase,
       },
       tool: {
@@ -1504,6 +1529,1300 @@ async function runRecoverStaleRun(input: unknown): Promise<AdapterProjection> {
   };
 }
 
+async function runOrchestrationLaunchPreconditions(
+  input: unknown
+): Promise<AdapterProjection> {
+  const scenario = readOperationScenario(
+    input,
+    "runtime.orchestration.launch-preconditions"
+  );
+  const parentText = readStringProperty(
+    scenario,
+    "parentText",
+    "runtime.orchestration.launch-preconditions.parentText"
+  );
+  const childText = readStringProperty(
+    scenario,
+    "childText",
+    "runtime.orchestration.launch-preconditions.childText"
+  );
+  const harness = createFakeKernelHarness();
+  const framework = createTuvrenRuntimeCore({
+    createId: createConformanceIdFactory(),
+    defaultDriverId: DRIVER_ID,
+    driverRegistry: createDriverRegistry([
+      createStaticDriver(async (context) => {
+        if (context.config.name === "worker") {
+          await sleep(5);
+          return {
+            messages: [assistantText(childText)],
+            resolution: {
+              reason: "done",
+              type: "end_turn",
+            },
+          };
+        }
+
+        await sleep(20);
+        return {
+          messages: [assistantText(parentText)],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      }),
+    ]),
+    kernel: harness.kernel,
+  });
+  const orchestration = createOrchestrationRuntime({
+    agents: {
+      primary: { name: "primary" },
+      worker: { name: "worker" },
+    },
+    framework,
+  });
+  const thread = await framework.createThread({});
+  const handle = orchestration.executeTurn({
+    agent: "primary",
+    branchId: thread.branchId,
+    signal: textSignal("launch"),
+    threadId: thread.threadId,
+  });
+  const preStartSpawnError = captureActionError(() =>
+    handle.spawn({
+      agent: "worker",
+      signal: textSignal("too-early"),
+    })
+  );
+  const preStartAwaitResultError = await captureAsyncActionError(async () => {
+    await handle.awaitResult();
+  });
+  const postAwaitSpawnError = captureActionError(() =>
+    handle.spawn({
+      agent: "worker",
+      signal: textSignal("still-too-early"),
+    })
+  );
+  const subtreeEventsPromise = collectValues(handle.allEvents());
+
+  await sleep(0);
+
+  const childHandle = handle.spawn({
+    agent: "worker",
+    signal: textSignal("child"),
+  });
+  const childEventsPromise = collectValues(childHandle.events());
+  const childResult = await childHandle.awaitResult();
+  const [subtreeEvents, childEvents] = await Promise.all([
+    subtreeEventsPromise,
+    childEventsPromise,
+  ]);
+  const childThreadId = findThreadId(childEvents);
+
+  return {
+    evidence: {
+      orchestration: {
+        launch: {
+          childResult,
+          childRunsOnOwnThread:
+            childThreadId !== undefined && childThreadId !== thread.threadId,
+          childThreadId,
+          descendantThreadId: findDescendantThreadId(subtreeEvents),
+          parentThreadId: thread.threadId,
+          postAwaitSpawnError,
+          preStartAwaitResultError,
+          preStartSpawnError,
+        },
+      },
+    },
+  };
+}
+
+async function runOrchestrationLifecycleLocality(
+  input: unknown
+): Promise<AdapterProjection> {
+  const scenario = readOperationScenario(
+    input,
+    "runtime.orchestration.lifecycle-locality"
+  );
+  const lifecycleCase = readStringProperty(
+    scenario,
+    "case",
+    "runtime.orchestration.lifecycle-locality.case"
+  );
+
+  switch (lifecycleCase) {
+    case "parent_pause_child_continues":
+      return await runOrchestrationParentPauseChildContinues(
+        readStringProperty(
+          scenario,
+          "childText",
+          "runtime.orchestration.lifecycle-locality.childText"
+        ),
+        readStringProperty(
+          scenario,
+          "parentText",
+          "runtime.orchestration.lifecycle-locality.parentText"
+        )
+      );
+    case "child_pause_parent_completes":
+      return await runOrchestrationChildPauseParentCompletes(
+        readStringProperty(
+          scenario,
+          "childText",
+          "runtime.orchestration.lifecycle-locality.childText"
+        ),
+        readStringProperty(
+          scenario,
+          "parentText",
+          "runtime.orchestration.lifecycle-locality.parentText"
+        )
+      );
+    case "child_cancel_parent_completes":
+      return await runOrchestrationChildCancelParentCompletes(
+        readStringProperty(
+          scenario,
+          "childText",
+          "runtime.orchestration.lifecycle-locality.childText"
+        ),
+        readStringProperty(
+          scenario,
+          "parentText",
+          "runtime.orchestration.lifecycle-locality.parentText"
+        )
+      );
+    case "parent_cancel_child_completes":
+      return await runOrchestrationParentCancelChildCompletes(
+        readStringProperty(
+          scenario,
+          "childText",
+          "runtime.orchestration.lifecycle-locality.childText"
+        ),
+        readStringProperty(
+          scenario,
+          "parentText",
+          "runtime.orchestration.lifecycle-locality.parentText"
+        )
+      );
+    case "spawn_requires_running_handle":
+      return await runOrchestrationSpawnRequiresRunningHandle();
+    default:
+      throw new Error(
+        `runtime.orchestration.lifecycle-locality declared unsupported case ${lifecycleCase}`
+      );
+  }
+}
+
+async function runOrchestrationEventSurfaces(
+  input: unknown
+): Promise<AdapterProjection> {
+  const scenario = readOperationScenario(
+    input,
+    "runtime.orchestration.event-surfaces"
+  );
+  const reviewerText =
+    typeof scenario.reviewerText === "string"
+      ? scenario.reviewerText
+      : undefined;
+
+  if (reviewerText !== undefined) {
+    return await runOrchestrationHandoffAttribution(
+      readStringProperty(
+        scenario,
+        "parentText",
+        "runtime.orchestration.event-surfaces.parentText"
+      ),
+      reviewerText
+    );
+  }
+
+  const parentText = readStringProperty(
+    scenario,
+    "parentText",
+    "runtime.orchestration.event-surfaces.parentText"
+  );
+  const childText = readStringProperty(
+    scenario,
+    "childText",
+    "runtime.orchestration.event-surfaces.childText"
+  );
+  const failureMessage = readStringProperty(
+    scenario,
+    "failureMessage",
+    "runtime.orchestration.event-surfaces.failureMessage"
+  );
+  const harness = createFakeKernelHarness();
+  const framework = createTuvrenRuntimeCore({
+    createId: createConformanceIdFactory(),
+    defaultDriverId: DRIVER_ID,
+    driverRegistry: createDriverRegistry([
+      createStaticDriver(async (context) => {
+        if (context.config.name === "worker") {
+          await sleep(5);
+          return {
+            messages: [assistantText(childText)],
+            resolution: {
+              reason: "done",
+              type: "end_turn",
+            },
+          };
+        }
+
+        await sleep(20);
+        return {
+          messages: [assistantText(parentText)],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      }),
+    ]),
+    kernel: harness.kernel,
+  });
+  const orchestration = createOrchestrationRuntime({
+    agents: {
+      primary: { name: "primary" },
+      worker: { name: "worker" },
+    },
+    framework,
+  });
+  const thread = await framework.createThread({});
+  const handle = orchestration.executeTurn({
+    agent: "primary",
+    branchId: thread.branchId,
+    signal: textSignal("root"),
+    threadId: thread.threadId,
+  });
+  const parentEventsPromise = collectValues(handle.events());
+  const subtreeEventsPromise = collectValues(handle.allEvents());
+
+  await sleep(0);
+
+  const childHandle = handle.spawn({
+    agent: "worker",
+    signal: textSignal("child"),
+  });
+  const childSubtreeEventsPromise = collectValues(childHandle.allEvents());
+  const childResult = await childHandle.awaitResult();
+  const [parentEvents, subtreeEvents, childSubtreeEvents, parentMessages] =
+    await Promise.all([
+      parentEventsPromise,
+      subtreeEventsPromise,
+      childSubtreeEventsPromise,
+      harness.readBranchMessages(thread.branchId),
+    ]);
+  const descendantEvent = findTextEventWithWorker(subtreeEvents, childText);
+  const failedAwaitResultError =
+    await runFailedOrchestrationAwaitResult(failureMessage);
+
+  return {
+    evidence: {
+      orchestration: {
+        surfaces: {
+          allEventsIncludeDescendants: descendantEvent !== undefined,
+          childAllEventsRemainAvailable:
+            findTextEvent(childSubtreeEvents, childText) !== undefined,
+          childResult,
+          descendantSourceAttributed:
+            descendantEvent?.source?.agent !== undefined &&
+            descendantEvent.source.threadId !== undefined &&
+            descendantEvent.source.workerId !== undefined,
+          descendantSource: descendantEvent?.source,
+          eventsSelfOnly: !parentEvents.some(
+            (event) =>
+              readRecordString(event, "type") === "text.done" &&
+              readRecordString(event, "text") === childText
+          ),
+          failedAwaitResultError,
+          failedAwaitResultRejected:
+            failedAwaitResultError?.message === failureMessage,
+          noCanonicalWorkerResultInjection:
+            !containsWorkerResult(parentMessages),
+        },
+      },
+    },
+  };
+}
+
+async function runOrchestrationExecutionInheritance(
+  input: unknown
+): Promise<AdapterProjection> {
+  const scenario = readOperationScenario(
+    input,
+    "runtime.orchestration.execution-inheritance"
+  );
+  const childToolStatus = readStringProperty(
+    scenario,
+    "childToolStatus",
+    "runtime.orchestration.execution-inheritance.childToolStatus"
+  );
+  const defaultDriver = {
+    async execute(context) {
+      if (context.config.name === "worker") {
+        return {
+          messages: [assistantText("Default worker driver.")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      }
+
+      await sleep(20);
+      return {
+        messages: [assistantText("Default parent driver.")],
+        resolution: {
+          reason: "done",
+          type: "end_turn",
+        },
+      };
+    },
+    id: "default",
+  } satisfies RuntimeDriver;
+  const specialDriver = {
+    async execute(context) {
+      if (context.config.name === "worker") {
+        const toolMessages = context.messages.filter(
+          (message) => message.role === "tool"
+        );
+
+        if (toolMessages.length === 0) {
+          return {
+            messages: [
+              assistantToolCalls([
+                {
+                  callId: "call-research",
+                  input: { query: "inherit" },
+                  name: "research",
+                },
+              ]),
+            ],
+            resolution: {
+              type: "continue_iteration",
+            },
+            toolExecutionMode: "parallel",
+          };
+        }
+
+        return {
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      }
+
+      await sleep(20);
+      return {
+        messages: [assistantText("Special parent driver.")],
+        resolution: {
+          reason: "done",
+          type: "end_turn",
+        },
+      };
+    },
+    id: "special",
+  } satisfies RuntimeDriver;
+  const harness = createFakeKernelHarness();
+  await harness.kernel.schema.register({
+    ...structuredClone(DEFAULT_AGENT_SCHEMA),
+    schemaId: "custom.agent.v1",
+  });
+  const framework = createTuvrenRuntimeCore({
+    createId: createConformanceIdFactory(),
+    defaultDriverId: "default",
+    driverRegistry: createDriverRegistry([defaultDriver, specialDriver]),
+    kernel: harness.kernel,
+  });
+  const orchestration = createOrchestrationRuntime({
+    agents: {
+      primary: { name: "primary" },
+      worker: { name: "worker" },
+    },
+    framework,
+  });
+  const thread = await framework.createThread({});
+  const handle = orchestration.executeTurn({
+    agent: "primary",
+    branchId: thread.branchId,
+    driverId: "special",
+    schemaId: "custom.agent.v1",
+    signal: textSignal("root"),
+    threadId: thread.threadId,
+    tools: [
+      {
+        description: "Inherited research tool",
+        execute() {
+          return { status: childToolStatus };
+        },
+        inputSchema: {
+          properties: {
+            query: { type: "string" },
+          },
+          required: ["query"],
+          type: "object",
+        },
+        name: "research",
+      },
+    ],
+  });
+
+  const parentEventsPromise = collectValues(handle.events());
+
+  await sleep(0);
+
+  const childHandle = handle.spawn({
+    agent: "worker",
+    signal: textSignal("child"),
+  });
+  const childEvents = await collectValues(childHandle.events());
+  const childResult = await childHandle.awaitResult();
+
+  await parentEventsPromise;
+
+  const childThreadId = findThreadId(childEvents);
+  const childThread =
+    childThreadId === undefined
+      ? null
+      : await framework.getThread(childThreadId);
+
+  return {
+    evidence: {
+      orchestration: {
+        inheritance: {
+          childResult,
+          childThreadId,
+          driverIdInherited: childEvents.some(
+            (event) =>
+              readRecordString(event, "type") === "tool.result" &&
+              isRecord(event.source) &&
+              event.source.driver === "special"
+          ),
+          schemaInherited: childThread?.schemaId === "custom.agent.v1",
+          toolsInherited: firstVisiblePartType(childResult) === "tool_result",
+        },
+      },
+    },
+  };
+}
+
+async function runOrchestrationNestedAttribution(
+  input: unknown
+): Promise<AdapterProjection> {
+  const scenario = readOperationScenario(
+    input,
+    "runtime.orchestration.nested-attribution"
+  );
+  const grandchildText = readStringProperty(
+    scenario,
+    "grandchildText",
+    "runtime.orchestration.nested-attribution.grandchildText"
+  );
+  const harness = createFakeKernelHarness();
+  const framework = createTuvrenRuntimeCore({
+    createId: createConformanceIdFactory(),
+    defaultDriverId: DRIVER_ID,
+    driverRegistry: createDriverRegistry([
+      createStaticDriver(async (context) => {
+        if (context.config.name === "worker") {
+          await sleep(20);
+          return {
+            messages: [assistantText("Child complete.")],
+            resolution: {
+              reason: "done",
+              type: "end_turn",
+            },
+          };
+        }
+
+        if (context.config.name === "worker-2") {
+          return {
+            messages: [assistantText(grandchildText)],
+            resolution: {
+              reason: "done",
+              type: "end_turn",
+            },
+          };
+        }
+
+        await sleep(20);
+        return {
+          messages: [assistantText("Root complete.")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      }),
+    ]),
+    kernel: harness.kernel,
+  });
+  const orchestration = createOrchestrationRuntime({
+    agents: {
+      primary: { name: "primary" },
+      worker: { name: "worker" },
+      "worker-2": { name: "worker-2" },
+    },
+    framework,
+  });
+  const thread = await framework.createThread({});
+  const handle = orchestration.executeTurn({
+    agent: "primary",
+    branchId: thread.branchId,
+    signal: textSignal("root"),
+    threadId: thread.threadId,
+  });
+  const rootEventsPromise = collectValues(handle.allEvents());
+
+  await Promise.resolve();
+
+  const childHandle = handle.spawn({
+    agent: "worker",
+    signal: textSignal("child"),
+  });
+  const childEventsPromise = collectValues(childHandle.allEvents());
+
+  await Promise.resolve();
+
+  const grandchildHandle = childHandle.spawn({
+    agent: "worker-2",
+    signal: textSignal("grandchild"),
+  });
+  const grandchildResult = await grandchildHandle.awaitResult();
+  const [rootEvents, childEvents] = await Promise.all([
+    rootEventsPromise,
+    childEventsPromise,
+  ]);
+  const rootGrandchildEvent = findTextEvent(rootEvents, grandchildText);
+  const childGrandchildEvent = findTextEvent(childEvents, grandchildText);
+
+  return {
+    evidence: {
+      orchestration: {
+        nested: {
+          childGrandchildSource: childGrandchildEvent?.source,
+          childReceivesGrandchild: childGrandchildEvent !== undefined,
+          grandchildResult,
+          rootGrandchildSource: rootGrandchildEvent?.source,
+          rootReceivesGrandchild: rootGrandchildEvent !== undefined,
+        },
+      },
+    },
+  };
+}
+
+async function runOrchestrationParentPauseChildContinues(
+  childText: string,
+  parentText: string
+): Promise<AdapterProjection> {
+  const harness = createFakeKernelHarness();
+  const framework = createTuvrenRuntimeCore({
+    createId: createConformanceIdFactory(),
+    defaultDriverId: DRIVER_ID,
+    driverRegistry: createDriverRegistry([
+      createStaticDriver(async (context) => {
+        if (context.config.name === "worker") {
+          await sleep(40);
+          return {
+            messages: [assistantText(childText)],
+            resolution: {
+              reason: "done",
+              type: "end_turn",
+            },
+          };
+        }
+
+        const toolMessages = context.messages.filter(
+          (message) => message.role === "tool"
+        );
+
+        if (toolMessages.length === 0) {
+          return {
+            messages: [
+              assistantToolCalls([
+                {
+                  callId: "call-hold",
+                  input: { hold: true },
+                  name: "hold",
+                },
+              ]),
+            ],
+            resolution: {
+              type: "continue_iteration",
+            },
+            toolExecutionMode: "parallel",
+          };
+        }
+
+        return {
+          messages: [assistantText(parentText)],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      }),
+    ]),
+    kernel: harness.kernel,
+  });
+  const orchestration = createOrchestrationRuntime({
+    agents: {
+      primary: {
+        name: "primary",
+        tools: [
+          {
+            approval: true,
+            description: "Pause the parent turn",
+            execute() {
+              return { approved: true };
+            },
+            inputSchema: {
+              properties: {
+                hold: { type: "boolean" },
+              },
+              required: ["hold"],
+              type: "object",
+            },
+            name: "hold",
+          },
+        ],
+      },
+      worker: { name: "worker" },
+    },
+    framework,
+  });
+  const thread = await framework.createThread({});
+  const handle = orchestration.executeTurn({
+    agent: "primary",
+    branchId: thread.branchId,
+    signal: textSignal("pause"),
+    threadId: thread.threadId,
+  });
+  const subtreeEventsPromise = collectValues(handle.allEvents());
+
+  await sleep(0);
+
+  const childHandle = handle.spawn({
+    agent: "worker",
+    signal: textSignal("background"),
+  });
+  await waitUntil(() => handle.status().phase === "paused");
+  const childResult = await childHandle.awaitResult();
+  const pausedPhase = handle.status().phase;
+  const resumedHandle = handle.resolveApproval({
+    decisions: [{ callId: "call-hold", type: "approve" }],
+  });
+  const resumedResult = await resumedHandle.awaitResult();
+  await subtreeEventsPromise;
+
+  return {
+    evidence: {
+      orchestration: {
+        lifecycle: {
+          childResult,
+          parentPausedWhileChildCompleted:
+            pausedPhase === "paused" &&
+            firstVisibleText(childResult) === childText,
+          resumedParentResult: resumedResult,
+          resumedParentPhase: resumedHandle.status().phase,
+        },
+      },
+    },
+  };
+}
+
+async function runOrchestrationChildPauseParentCompletes(
+  childText: string,
+  parentText: string
+): Promise<AdapterProjection> {
+  const harness = createFakeKernelHarness();
+  const framework = createTuvrenRuntimeCore({
+    createId: createConformanceIdFactory(),
+    defaultDriverId: DRIVER_ID,
+    driverRegistry: createDriverRegistry([
+      createStaticDriver(async (context) => {
+        const toolMessages = context.messages.filter(
+          (message) => message.role === "tool"
+        );
+
+        if (context.config.name === "worker") {
+          if (toolMessages.length === 0) {
+            return {
+              messages: [
+                assistantToolCalls([
+                  {
+                    callId: "call-approve-worker",
+                    input: { hold: true },
+                    name: "hold",
+                  },
+                ]),
+              ],
+              resolution: {
+                type: "continue_iteration",
+              },
+              toolExecutionMode: "parallel",
+            };
+          }
+
+          return {
+            messages: [assistantText(childText)],
+            resolution: {
+              reason: "done",
+              type: "end_turn",
+            },
+          };
+        }
+
+        await sleep(20);
+        return {
+          messages: [assistantText(parentText)],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      }),
+    ]),
+    kernel: harness.kernel,
+  });
+  const orchestration = createOrchestrationRuntime({
+    agents: {
+      primary: { name: "primary" },
+      worker: {
+        name: "worker",
+        tools: [
+          {
+            approval: true,
+            description: "Pause worker review",
+            execute() {
+              return { approved: true };
+            },
+            inputSchema: {
+              properties: {
+                hold: { type: "boolean" },
+              },
+              required: ["hold"],
+              type: "object",
+            },
+            name: "hold",
+          },
+        ],
+      },
+    },
+    framework,
+  });
+  const thread = await framework.createThread({});
+  const handle = orchestration.executeTurn({
+    agent: "primary",
+    branchId: thread.branchId,
+    signal: textSignal("root"),
+    threadId: thread.threadId,
+  });
+  const parentEventsPromise = collectValues(handle.allEvents());
+
+  await sleep(0);
+
+  const childHandle = handle.spawn({
+    agent: "worker",
+    signal: textSignal("approval"),
+  });
+  await collectValues(childHandle.events());
+  const parentResult = await handle.awaitResult();
+  const pausedPhase = childHandle.status().phase;
+  const resumedChildHandle = childHandle.resolveApproval({
+    decisions: [{ callId: "call-approve-worker", type: "approve" }],
+  });
+  const resumedChildResult = await resumedChildHandle.awaitResult();
+  await parentEventsPromise;
+
+  return {
+    evidence: {
+      orchestration: {
+        lifecycle: {
+          childPausedPhase: pausedPhase,
+          childResumedPhase: resumedChildHandle.status().phase,
+          parentCompletedWhileChildPaused:
+            pausedPhase === "paused" &&
+            handle.status().phase === "completed" &&
+            firstVisibleText(parentResult) === parentText,
+          resumedChildResult,
+        },
+      },
+    },
+  };
+}
+
+async function runOrchestrationChildCancelParentCompletes(
+  childText: string,
+  parentText: string
+): Promise<AdapterProjection> {
+  const harness = createFakeKernelHarness();
+  const framework = createTuvrenRuntimeCore({
+    createId: createConformanceIdFactory(),
+    defaultDriverId: DRIVER_ID,
+    driverRegistry: createDriverRegistry([
+      createStaticDriver(async (context) => {
+        if (context.config.name === "worker") {
+          await sleep(100);
+          return {
+            messages: [assistantText(childText)],
+            resolution: {
+              reason: "done",
+              type: "end_turn",
+            },
+          };
+        }
+
+        await sleep(30);
+        return {
+          messages: [assistantText(parentText)],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      }),
+    ]),
+    kernel: harness.kernel,
+  });
+  const orchestration = createOrchestrationRuntime({
+    agents: {
+      primary: { name: "primary" },
+      worker: { name: "worker" },
+    },
+    framework,
+  });
+  const thread = await framework.createThread({});
+  const handle = orchestration.executeTurn({
+    agent: "primary",
+    branchId: thread.branchId,
+    signal: textSignal("root"),
+    threadId: thread.threadId,
+  });
+  const parentEventsPromise = collectValues(handle.events());
+
+  await Promise.resolve();
+
+  const childHandle = handle.spawn({
+    agent: "worker",
+    signal: textSignal("child"),
+  });
+  await sleep(10);
+  childHandle.cancel();
+  const childError = await captureAsyncActionError(async () => {
+    await childHandle.awaitResult();
+  });
+  const parentResult = await handle.awaitResult();
+  await parentEventsPromise;
+
+  return {
+    evidence: {
+      orchestration: {
+        lifecycle: {
+          childCancelError: childError,
+          childCancelledWhileParentCompleted:
+            childHandle.status().phase === "failed" &&
+            handle.status().phase === "completed" &&
+            firstVisibleText(parentResult) === parentText,
+        },
+      },
+    },
+  };
+}
+
+async function runOrchestrationParentCancelChildCompletes(
+  childText: string,
+  _parentText: string
+): Promise<AdapterProjection> {
+  const harness = createFakeKernelHarness();
+  const framework = createTuvrenRuntimeCore({
+    createId: createConformanceIdFactory(),
+    defaultDriverId: DRIVER_ID,
+    driverRegistry: createDriverRegistry([
+      createStaticDriver(async (context) => {
+        if (context.config.name === "worker") {
+          await sleep(80);
+          return {
+            messages: [assistantText(childText)],
+            resolution: {
+              reason: "done",
+              type: "end_turn",
+            },
+          };
+        }
+
+        await sleep(200);
+        return {
+          messages: [assistantText("Parent done.")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      }),
+    ]),
+    kernel: harness.kernel,
+  });
+  const orchestration = createOrchestrationRuntime({
+    agents: {
+      primary: { name: "primary" },
+      worker: { name: "worker" },
+    },
+    framework,
+  });
+  const thread = await framework.createThread({});
+  const handle = orchestration.executeTurn({
+    agent: "primary",
+    branchId: thread.branchId,
+    signal: textSignal("root"),
+    threadId: thread.threadId,
+  });
+  const parentEventsPromise = collectValues(handle.events());
+
+  await Promise.resolve();
+
+  const childHandle = handle.spawn({
+    agent: "worker",
+    signal: textSignal("child"),
+  });
+  await sleep(10);
+  handle.cancel();
+  const parentCancelError = await captureAsyncActionError(async () => {
+    await handle.awaitResult();
+  });
+  const childResult = await childHandle.awaitResult();
+  await parentEventsPromise;
+
+  return {
+    evidence: {
+      orchestration: {
+        lifecycle: {
+          childResult,
+          parentCancelError,
+          parentCancelledWhileChildCompleted:
+            handle.status().phase === "failed" &&
+            childHandle.status().phase === "completed" &&
+            firstVisibleText(childResult) === childText,
+        },
+      },
+    },
+  };
+}
+
+async function runOrchestrationSpawnRequiresRunningHandle(): Promise<AdapterProjection> {
+  const pausedSpawnError = await runPausedParentSpawnRejection();
+  const completedSpawnError = await runCompletedParentSpawnRejection();
+
+  return {
+    evidence: {
+      orchestration: {
+        lifecycle: {
+          completedSpawnError,
+          pausedSpawnError,
+        },
+      },
+    },
+  };
+}
+
+async function runPausedParentSpawnRejection(): Promise<
+  Record<string, unknown> | undefined
+> {
+  const harness = createFakeKernelHarness();
+  const framework = createTuvrenRuntimeCore({
+    createId: createConformanceIdFactory(),
+    defaultDriverId: DRIVER_ID,
+    driverRegistry: createDriverRegistry([
+      createStaticDriver((context) => {
+        const toolMessages = context.messages.filter(
+          (message) => message.role === "tool"
+        );
+
+        if (toolMessages.length === 0) {
+          return {
+            messages: [
+              assistantToolCalls([
+                {
+                  callId: "call-hold",
+                  input: { hold: true },
+                  name: "hold",
+                },
+              ]),
+            ],
+            resolution: {
+              type: "continue_iteration",
+            },
+            toolExecutionMode: "parallel",
+          };
+        }
+
+        return {
+          messages: [assistantText("Parent resumed.")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      }),
+    ]),
+    kernel: harness.kernel,
+  });
+  const orchestration = createOrchestrationRuntime({
+    agents: {
+      primary: {
+        name: "primary",
+        tools: [
+          {
+            approval: true,
+            description: "Pause the parent turn",
+            execute() {
+              return { approved: true };
+            },
+            inputSchema: {
+              properties: {
+                hold: { type: "boolean" },
+              },
+              required: ["hold"],
+              type: "object",
+            },
+            name: "hold",
+          },
+        ],
+      },
+      worker: { name: "worker" },
+    },
+    framework,
+  });
+  const thread = await framework.createThread({});
+  const handle = orchestration.executeTurn({
+    agent: "primary",
+    branchId: thread.branchId,
+    signal: textSignal("pause"),
+    threadId: thread.threadId,
+  });
+
+  await collectValues(handle.events());
+
+  if (handle.status().phase !== "paused") {
+    throw new Error("paused spawn rejection scenario did not pause");
+  }
+
+  return captureActionError(() =>
+    handle.spawn({
+      agent: "worker",
+      signal: textSignal("background"),
+    })
+  );
+}
+
+async function runCompletedParentSpawnRejection(): Promise<
+  Record<string, unknown> | undefined
+> {
+  const harness = createFakeKernelHarness();
+  const framework = createTuvrenRuntimeCore({
+    createId: createConformanceIdFactory(),
+    defaultDriverId: DRIVER_ID,
+    driverRegistry: createDriverRegistry([
+      createStaticDriver(async () => ({
+        messages: [assistantText("Parent complete.")],
+        resolution: {
+          reason: "done",
+          type: "end_turn",
+        },
+      })),
+    ]),
+    kernel: harness.kernel,
+  });
+  const orchestration = createOrchestrationRuntime({
+    agents: {
+      primary: { name: "primary" },
+      worker: { name: "worker" },
+    },
+    framework,
+  });
+  const thread = await framework.createThread({});
+  const handle = orchestration.executeTurn({
+    agent: "primary",
+    branchId: thread.branchId,
+    signal: textSignal("complete"),
+    threadId: thread.threadId,
+  });
+
+  await collectValues(handle.events());
+
+  if (handle.status().phase !== "completed") {
+    throw new Error("completed spawn rejection scenario did not complete");
+  }
+
+  return captureActionError(() =>
+    handle.spawn({
+      agent: "worker",
+      signal: textSignal("too-late"),
+    })
+  );
+}
+
+async function runFailedOrchestrationAwaitResult(
+  failureMessage: string
+): Promise<Record<string, unknown> | undefined> {
+  const harness = createFakeKernelHarness();
+  const framework = createTuvrenRuntimeCore({
+    createId: createConformanceIdFactory(),
+    defaultDriverId: DRIVER_ID,
+    driverRegistry: createDriverRegistry([
+      createStaticDriver(async (context) => {
+        if (context.config.name === "worker") {
+          throw new Error(failureMessage);
+        }
+
+        await sleep(20);
+        return {
+          messages: [assistantText("Parent finished.")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      }),
+    ]),
+    kernel: harness.kernel,
+  });
+  const orchestration = createOrchestrationRuntime({
+    agents: {
+      primary: { name: "primary" },
+      worker: { name: "worker" },
+    },
+    framework,
+  });
+  const thread = await framework.createThread({});
+  const handle = orchestration.executeTurn({
+    agent: "primary",
+    branchId: thread.branchId,
+    signal: textSignal("root"),
+    threadId: thread.threadId,
+  });
+
+  const parentEventsPromise = collectValues(handle.allEvents());
+  await sleep(0);
+
+  const childHandle = handle.spawn({
+    agent: "worker",
+    signal: textSignal("failure"),
+  });
+
+  const childError = await captureAsyncActionError(async () => {
+    await childHandle.awaitResult();
+  });
+  await parentEventsPromise;
+  return childError;
+}
+
+async function runOrchestrationHandoffAttribution(
+  parentText: string,
+  reviewerText: string
+): Promise<AdapterProjection> {
+  const harness = createFakeKernelHarness();
+  const agents: Record<string, AgentConfig> = {
+    primary: { name: "primary" },
+    reviewer: { name: "reviewer" },
+    worker: { name: "worker" },
+  };
+  const framework = createTuvrenRuntimeCore({
+    createId: createConformanceIdFactory(),
+    defaultDriverId: DRIVER_ID,
+    driverRegistry: createDriverRegistry([
+      createStaticDriver(async (context) => {
+        if (context.config.name === "worker") {
+          return {
+            messages: [assistantText("Passing this to reviewer.")],
+            resolution: {
+              contextPlan: context.handoff.createContextPlan({
+                mode: "last_output_only",
+                reason: "review_handoff",
+                targetAgent: "reviewer",
+              }),
+              targetAgent: "reviewer",
+              type: "handoff",
+            },
+          };
+        }
+
+        if (context.config.name === "reviewer") {
+          return {
+            messages: [assistantText(reviewerText)],
+            resolution: {
+              reason: "done",
+              type: "end_turn",
+            },
+          };
+        }
+
+        await sleep(20);
+        return {
+          messages: [assistantText(parentText)],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      }),
+    ]),
+    kernel: harness.kernel,
+    resolveAgentConfig(agentName) {
+      return agents[agentName];
+    },
+  });
+  const orchestration = createOrchestrationRuntime({
+    agents,
+    framework,
+  });
+  const thread = await framework.createThread({});
+  const handle = orchestration.executeTurn({
+    agent: "primary",
+    branchId: thread.branchId,
+    signal: textSignal("Start root"),
+    threadId: thread.threadId,
+  });
+  const rootEventsPromise = collectValues(handle.allEvents());
+
+  await sleep(0);
+
+  const childHandle = handle.spawn({
+    agent: "worker",
+    signal: textSignal("handoff child"),
+  });
+  const childEvents = await collectValues(childHandle.events());
+  const childResult = await childHandle.awaitResult();
+  const rootEvents = await rootEventsPromise;
+  const childReviewerEvent = findTextEvent(childEvents, reviewerText);
+  const rootReviewerEvent = rootEvents.find(
+    (event) =>
+      isRecord(event) &&
+      event.type === "text.done" &&
+      event.text === reviewerText &&
+      isRecord(event.source) &&
+      typeof event.source.workerId === "string"
+  );
+
+  return {
+    evidence: {
+      orchestration: {
+        surfaces: {
+          childResult,
+          handoffDescendantAgentPreserved:
+            readSourceAgent(childReviewerEvent) === "reviewer" &&
+            readSourceAgent(rootReviewerEvent) === "reviewer",
+          handoffRootSource: isRecord(rootReviewerEvent)
+            ? rootReviewerEvent.source
+            : undefined,
+        },
+      },
+    },
+  };
+}
+
 async function runDriverExecute(input: unknown): Promise<AdapterProjection> {
   const scenario = readOperationScenario(input, "driver.execute");
   const providerResponses = readModelResponseArrayProperty(
@@ -2055,6 +3374,193 @@ function readTurnId(events: readonly unknown[]): string | undefined {
   }
 
   return undefined;
+}
+
+function findThreadId(events: readonly unknown[]): string | undefined {
+  for (const event of events) {
+    const threadId = readRecordString(event, "threadId");
+
+    if (threadId !== undefined) {
+      return threadId;
+    }
+  }
+
+  return undefined;
+}
+
+function findDescendantThreadId(
+  events: readonly unknown[]
+): string | undefined {
+  for (const event of events) {
+    if (!(isRecord(event) && isRecord(event.source))) {
+      continue;
+    }
+
+    const threadId =
+      typeof event.source.threadId === "string"
+        ? event.source.threadId
+        : undefined;
+
+    if (threadId !== undefined) {
+      return threadId;
+    }
+  }
+
+  return undefined;
+}
+
+function findTextEvent(
+  events: readonly unknown[],
+  text: string
+): Record<string, unknown> | undefined {
+  for (const event of events) {
+    if (
+      isRecord(event) &&
+      event.type === "text.done" &&
+      typeof event.text === "string" &&
+      event.text === text
+    ) {
+      return event;
+    }
+  }
+
+  return undefined;
+}
+
+function findTextEventWithWorker(
+  events: readonly unknown[],
+  text: string
+): Record<string, unknown> | undefined {
+  for (const event of events) {
+    if (!(isRecord(event) && isRecord(event.source))) {
+      continue;
+    }
+
+    if (
+      event.type === "text.done" &&
+      typeof event.text === "string" &&
+      event.text === text &&
+      typeof event.source.workerId === "string"
+    ) {
+      return event;
+    }
+  }
+
+  return undefined;
+}
+
+function readSourceAgent(event: unknown): string | undefined {
+  return isRecord(event) && isRecord(event.source)
+    ? readRecordString(event.source, "agent")
+    : undefined;
+}
+
+function containsWorkerResult(messages: readonly unknown[]): boolean {
+  for (const message of messages) {
+    if (
+      !isRecord(message) ||
+      message.role !== "user" ||
+      !Array.isArray(message.parts)
+    ) {
+      continue;
+    }
+
+    for (const part of message.parts) {
+      if (
+        isRecord(part) &&
+        part.type === "structured" &&
+        part.name === "worker_result"
+      ) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+function firstVisibleText(result: unknown): string | undefined {
+  if (!Array.isArray(result)) {
+    return undefined;
+  }
+
+  const [firstPart] = result;
+
+  return isRecord(firstPart) && firstPart.type === "text"
+    ? readRecordString(firstPart, "text")
+    : undefined;
+}
+
+function firstVisiblePartType(result: unknown): string | undefined {
+  if (!Array.isArray(result)) {
+    return undefined;
+  }
+
+  const [firstPart] = result;
+  return readRecordString(firstPart, "type");
+}
+
+function captureActionError(
+  action: () => unknown
+): Record<string, unknown> | undefined {
+  try {
+    action();
+    return undefined;
+  } catch (error: unknown) {
+    return toObservedErrorEnvelope(error);
+  }
+}
+
+async function captureAsyncActionError(
+  action: () => Promise<unknown>
+): Promise<Record<string, unknown> | undefined> {
+  try {
+    await action();
+    return undefined;
+  } catch (error: unknown) {
+    return toObservedErrorEnvelope(error);
+  }
+}
+
+async function waitUntil(
+  predicate: () => boolean,
+  timeoutMs = 1000
+): Promise<void> {
+  const start = Date.now();
+
+  while (!predicate()) {
+    if (Date.now() - start > timeoutMs) {
+      throw new Error(`timed out after ${timeoutMs}ms`);
+    }
+
+    await sleep(5);
+  }
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+function toObservedErrorEnvelope(error: unknown): Record<string, unknown> {
+  if (error instanceof Error) {
+    const envelope: Record<string, unknown> = {
+      code:
+        isRecord(error) && typeof error.code === "string"
+          ? error.code
+          : "adapter_operation_failed",
+      message: error.message,
+    };
+
+    if (isRecord(error) && error.details !== undefined) {
+      envelope.details = error.details;
+    }
+
+    return envelope;
+  }
+
+  return createAdapterErrorEnvelope(error);
 }
 
 async function stageRecoveredMessage(

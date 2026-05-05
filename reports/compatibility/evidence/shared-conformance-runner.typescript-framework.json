@@ -4,6 +4,7 @@
   "capabilities": [
     "framework.driver-api",
     "framework.event-stream",
+    "framework.orchestration",
     "framework.react-driver",
     "framework.run-liveness",
     "framework.runtime-api",
@@ -4163,6 +4164,546 @@
         "planId": "tuvren.framework.runtime-api.lifecycle-extended"
       },
       "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-orchestration.inheritance.driver-id.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-orchestration.inheritance.driver-id.requiredEvidence.orchestration.inheritance.driverIdInherited",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-orchestration.inheritance.driver-id",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.orchestration"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-orchestration.inheritance.schema-id.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-orchestration.inheritance.schema-id.requiredEvidence.orchestration.inheritance.schemaInherited",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-orchestration.inheritance.schema-id",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.orchestration"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-orchestration.inheritance.tools.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-orchestration.inheritance.tools.requiredEvidence.orchestration.inheritance.toolsInherited",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-orchestration.inheritance.tools",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.orchestration"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-orchestration.launch.await-result-does-not-start-parent.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-orchestration.launch.await-result-does-not-start-parent.requiredEvidence.orchestration.launch.postAwaitSpawnError.code",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-orchestration.launch.await-result-does-not-start-parent",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.orchestration"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-orchestration.launch.await-result-rejects-before-parent-start.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-orchestration.launch.await-result-rejects-before-parent-start.requiredEvidence.orchestration.launch.preStartAwaitResultError.code",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-orchestration.launch.await-result-rejects-before-parent-start",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.orchestration"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-orchestration.launch.child-runs-on-own-thread.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-orchestration.launch.child-runs-on-own-thread.requiredEvidence.orchestration.launch.childRunsOnOwnThread",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-orchestration.launch.child-runs-on-own-thread",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.orchestration"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-orchestration.launch.spawn-rejects-before-parent-start.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-orchestration.launch.spawn-rejects-before-parent-start.requiredEvidence.orchestration.launch.preStartSpawnError.code",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-orchestration.launch.spawn-rejects-before-parent-start",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.orchestration"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-orchestration.lifecycle.child-cancel-parent-completes.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-orchestration.lifecycle.child-cancel-parent-completes.requiredEvidence.orchestration.lifecycle.childCancelledWhileParentCompleted",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-orchestration.lifecycle.child-cancel-parent-completes",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.orchestration"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-orchestration.lifecycle.child-pause-parent-completes.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-orchestration.lifecycle.child-pause-parent-completes.requiredEvidence.orchestration.lifecycle.parentCompletedWhileChildPaused",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-orchestration.lifecycle.child-pause-parent-completes",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.orchestration"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-orchestration.lifecycle.child-resume-stays-local.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-orchestration.lifecycle.child-resume-stays-local.requiredEvidence.orchestration.lifecycle.childResumedPhase",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-orchestration.lifecycle.child-resume-stays-local",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.orchestration"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-orchestration.lifecycle.completed-parent-rejects-spawn.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-orchestration.lifecycle.completed-parent-rejects-spawn.requiredEvidence.orchestration.lifecycle.completedSpawnError.code",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-orchestration.lifecycle.completed-parent-rejects-spawn",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.orchestration"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-orchestration.lifecycle.parent-cancel-child-completes.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-orchestration.lifecycle.parent-cancel-child-completes.requiredEvidence.orchestration.lifecycle.parentCancelledWhileChildCompleted",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-orchestration.lifecycle.parent-cancel-child-completes",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.orchestration"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-orchestration.lifecycle.parent-pause-child-continues.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-orchestration.lifecycle.parent-pause-child-continues.requiredEvidence.orchestration.lifecycle.parentPausedWhileChildCompleted",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-orchestration.lifecycle.parent-pause-child-continues",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.orchestration"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-orchestration.lifecycle.paused-parent-rejects-spawn.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-orchestration.lifecycle.paused-parent-rejects-spawn.requiredEvidence.orchestration.lifecycle.pausedSpawnError.code",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-orchestration.lifecycle.paused-parent-rejects-spawn",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.orchestration"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-orchestration.nested.child-receives-grandchild.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-orchestration.nested.child-receives-grandchild.requiredEvidence.orchestration.nested.childReceivesGrandchild",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-orchestration.nested.child-receives-grandchild",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.orchestration"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-orchestration.nested.child-source-agent.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-orchestration.nested.child-source-agent.requiredEvidence.orchestration.nested.childGrandchildSource.agent",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-orchestration.nested.child-source-agent",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.orchestration"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-orchestration.nested.child-source-thread-id-present.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-orchestration.nested.child-source-thread-id-present.requiredEvidence.orchestration.nested.childGrandchildSource.threadId",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-orchestration.nested.child-source-thread-id-present",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.orchestration"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-orchestration.nested.child-source-worker-id-present.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-orchestration.nested.child-source-worker-id-present.requiredEvidence.orchestration.nested.childGrandchildSource.workerId",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-orchestration.nested.child-source-worker-id-present",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.orchestration"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-orchestration.nested.root-receives-grandchild.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-orchestration.nested.root-receives-grandchild.requiredEvidence.orchestration.nested.rootReceivesGrandchild",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-orchestration.nested.root-receives-grandchild",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.orchestration"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-orchestration.nested.root-source-agent.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-orchestration.nested.root-source-agent.requiredEvidence.orchestration.nested.rootGrandchildSource.agent",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-orchestration.nested.root-source-agent",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.orchestration"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-orchestration.nested.root-source-thread-id-present.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-orchestration.nested.root-source-thread-id-present.requiredEvidence.orchestration.nested.rootGrandchildSource.threadId",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-orchestration.nested.root-source-thread-id-present",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.orchestration"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-orchestration.nested.root-source-worker-id-present.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-orchestration.nested.root-source-worker-id-present.requiredEvidence.orchestration.nested.rootGrandchildSource.workerId",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-orchestration.nested.root-source-worker-id-present",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.orchestration"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-orchestration.surfaces.all-events-include-descendants.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-orchestration.surfaces.all-events-include-descendants.requiredEvidence.orchestration.surfaces.allEventsIncludeDescendants",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-orchestration.surfaces.all-events-include-descendants",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.orchestration"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-orchestration.surfaces.await-result-failure-rejects.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-orchestration.surfaces.await-result-failure-rejects.requiredEvidence.orchestration.surfaces.failedAwaitResultRejected",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-orchestration.surfaces.await-result-failure-rejects",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.orchestration"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-orchestration.surfaces.await-result-visible-result.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-orchestration.surfaces.await-result-visible-result.requiredEvidence.orchestration.surfaces.childResult.0.text",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-orchestration.surfaces.await-result-visible-result",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.orchestration"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-orchestration.surfaces.child-all-events-remains-available.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-orchestration.surfaces.child-all-events-remains-available.requiredEvidence.orchestration.surfaces.childAllEventsRemainAvailable",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-orchestration.surfaces.child-all-events-remains-available",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.orchestration"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-orchestration.surfaces.descendant-source-attributed.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-orchestration.surfaces.descendant-source-attributed.requiredEvidence.orchestration.surfaces.descendantSourceAttributed",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-orchestration.surfaces.descendant-source-attributed",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.orchestration"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-orchestration.surfaces.events-self-only.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-orchestration.surfaces.events-self-only.requiredEvidence.orchestration.surfaces.eventsSelfOnly",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-orchestration.surfaces.events-self-only",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.orchestration"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-orchestration.surfaces.handoff-descendant-agent-preserved.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-orchestration.surfaces.handoff-descendant-agent-preserved.requiredEvidence.orchestration.surfaces.handoffDescendantAgentPreserved",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-orchestration.surfaces.handoff-descendant-agent-preserved",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.orchestration"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-orchestration.surfaces.no-worker-result-injection.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-orchestration.surfaces.no-worker-result-injection.requiredEvidence.orchestration.surfaces.noCanonicalWorkerResultInjection",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-orchestration.surfaces.no-worker-result-injection",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.orchestration"
+      },
+      "status": "pass"
     }
   ],
   "command": [
@@ -4180,9 +4721,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 203,
-    "totalChecks": 203,
-    "applicableChecks": 203,
+    "passedChecks": 233,
+    "totalChecks": 233,
+    "applicableChecks": 233,
     "nonApplicableChecks": 0
   },
   "suiteId": "tuvren.framework.promoted-authority",

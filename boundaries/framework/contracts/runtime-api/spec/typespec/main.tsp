@@ -282,6 +282,14 @@ enum RuntimeOperationName {
   recoverResult: "runtime.recover-result",
   recoverStaleRun: "runtime.recover-stale-run",
   validateStructuredOutput: "runtime.validate-structured-output",
+  orchestrationLaunchPreconditions:
+    "runtime.orchestration.launch-preconditions",
+  orchestrationLifecycleLocality: "runtime.orchestration.lifecycle-locality",
+  orchestrationEventSurfaces: "runtime.orchestration.event-surfaces",
+  orchestrationExecutionInheritance:
+    "runtime.orchestration.execution-inheritance",
+  orchestrationNestedAttribution:
+    "runtime.orchestration.nested-attribution",
 }
 
 model RuntimeOperation {

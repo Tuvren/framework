@@ -147,5 +147,57 @@
     "staleStepId": "finalize_turn_status",
     "prompt": "Finalize this shared recovered turn",
     "finalText": "driver should not run"
+  },
+  "orchestration-launch-preconditions": {
+    "operation": "runtime.orchestration.launch-preconditions",
+    "childText": "Worker complete.",
+    "parentText": "Parent complete."
+  },
+  "orchestration-parent-pause-child-continues": {
+    "operation": "runtime.orchestration.lifecycle-locality",
+    "case": "parent_pause_child_continues",
+    "childText": "Background worker finished.",
+    "parentText": "Parent resumed."
+  },
+  "orchestration-child-pause-parent-completes": {
+    "operation": "runtime.orchestration.lifecycle-locality",
+    "case": "child_pause_parent_completes",
+    "childText": "Worker resumed with approval.",
+    "parentText": "Parent finished."
+  },
+  "orchestration-child-cancel-parent-completes": {
+    "operation": "runtime.orchestration.lifecycle-locality",
+    "case": "child_cancel_parent_completes",
+    "childText": "Worker done.",
+    "parentText": "Parent done."
+  },
+  "orchestration-parent-cancel-child-completes": {
+    "operation": "runtime.orchestration.lifecycle-locality",
+    "case": "parent_cancel_child_completes",
+    "childText": "Worker done.",
+    "parentText": "Parent done."
+  },
+  "orchestration-event-surfaces": {
+    "operation": "runtime.orchestration.event-surfaces",
+    "childText": "Worker complete.",
+    "failureMessage": "worker exploded",
+    "parentText": "Parent complete."
+  },
+  "orchestration-handoff-attribution": {
+    "operation": "runtime.orchestration.event-surfaces",
+    "parentText": "Parent complete.",
+    "reviewerText": "Reviewer done."
+  },
+  "orchestration-execution-inheritance": {
+    "operation": "runtime.orchestration.execution-inheritance",
+    "childToolStatus": "inherited"
+  },
+  "orchestration-spawn-running-window": {
+    "operation": "runtime.orchestration.lifecycle-locality",
+    "case": "spawn_requires_running_handle"
+  },
+  "orchestration-nested-attribution": {
+    "operation": "runtime.orchestration.nested-attribution",
+    "grandchildText": "Grandchild complete."
   }
 }

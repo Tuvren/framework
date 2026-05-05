@@ -2,6 +2,7 @@
 
 ## 0. Version History & Changelog
 
+- v0.14.0 - Closed Epic AC in current repo reality through the orchestration authority inventory and closure inventory, promoted framework orchestration into runtime-api authority plus shared-runner evidence, and left no implementation epic active in the current plan.
 - v0.13.0 - Closed Epics Z, AA, and AB in current repo reality, moved their detail out of the active plan and into archived summaries plus closure inventories, and opened Epic AC for framework orchestration authority promotion.
 - v0.12.1 - Hardened the TypeScript provider and framework compatibility boundary by promoting fail-closed provider bridge checks, renaming the advertised provider capabilities to the narrower framework-mediated labels, and refreshing compatibility evidence so green TypeScript reports no longer imply unsupported native provider behavior.
 - v0.12.0 - Opened TypeScript Kernel Gap Closure with Epic Z syscall implementation planning, Epic AA kernel conformance promotion, and Epic AB contract-first run-liveness recovery.
@@ -9,9 +10,9 @@
 
 ## 1. Executive Summary & Active Critical Path
 
-- **Total Active Story Points:** 20
-- **Critical Path:** KRT-AC001 -> KRT-AC002 -> KRT-AC003 -> KRT-AC004 -> KRT-AC005.
-- **Planning Assumptions:** Epics A-AB are closed in current repo reality. Authority Packet manifests follow TechSpec §4.11; Conformance Plans follow §4.12; the revised Implementation Adapter Protocol follows §4.13. Epic AC is documentation-backed by `docs/KrakenFrameworkSpecification.md` §10, the existing runtime-api binding appendix and `runtime-core` orchestration tests, and the current runtime-api authority gap described in TechSpec §1.2 and §5.4. Rust framework implementation work remains out of scope unless a later revision explicitly activates it by capability evidence.
+- **Total Active Story Points:** 0
+- **Critical Path:** No implementation epic is active in current repo reality.
+- **Planning Assumptions:** Epics A-AC are closed in current repo reality. Authority Packet manifests follow TechSpec §4.11; Conformance Plans follow §4.12; the revised Implementation Adapter Protocol follows §4.13. Framework orchestration promotion is documented by `constitution/spikes/epic-ac-framework-orchestration-authority-inventory.md`, `constitution/spikes/epic-ac-framework-orchestration-authority-closure-inventory.md`, the runtime-api packet, the shared orchestration plan, and refreshed compatibility evidence. Rust framework implementation work remains out of scope unless a later revision explicitly activates it by capability evidence.
 
 ### Brownfield Continuity Note
 
@@ -50,18 +51,18 @@
 
 ### Current Active Scope
 
-- Epic AC is active to promote framework orchestration from TypeScript-local behavior and binding-only documentation into boundary-owned runtime-api authority, shared conformance plans, TypeScript adapter capability evidence, and compatibility reporting.
-- Epic AC is a conformance and authority promotion line, not a broad implementation-expansion epic: the core orchestration semantics already exist in `docs/KrakenFrameworkSpecification.md` §10 and in TypeScript `runtime-core`, but they are not yet machine-owned cross-implementation authority.
-- Epic AC non-goals remain explicit: no Rust framework implementation, no A2A or ACP, no provider-native handoff or tool routing, no global worker scheduler, no ordered-pipeline standardization beyond handoff composition, and no new kernel concepts.
+- No implementation epic is active in current repo reality.
+- Framework orchestration promotion is closed: the runtime-api packet now references the shared orchestration plan family, the TypeScript framework adapter advertises `framework.orchestration`, and compatibility evidence reports the capability for TypeScript only.
+- The closed Epic AC non-goals remain stable current-reality boundaries: no Rust framework implementation, no A2A or ACP, no provider-native handoff or tool routing, no global worker scheduler, no ordered-pipeline standardization beyond handoff composition, and no new kernel concepts.
 
 ### Future / Deferred Scope
 
-- Rust framework product implementation work is deferred beyond Epic AC. Rust framework adapter-host work remains evidence-only until a later plan explicitly activates native framework behavior.
+- Rust framework product implementation work is deferred beyond closed Epic AC. Rust framework adapter-host work remains evidence-only until a later plan explicitly activates native framework behavior.
 - Rust framework orchestration support is deferred unless a later Tasks revision explicitly adds `framework.orchestration` implementation tickets. Rust lanes may report pass, fail, or non-applicable evidence only from advertised capability.
 - `LanguageModelV2` / `ProviderV2` compatibility is deferred.
 - AI SDK agent loops, AI SDK UI message protocols, AI SDK transport helpers, LangChain bridges, provider-native tool support, and first-class Tuvren provider packages are deferred.
 - ACP, A2A, or any additional host protocol beyond SSE and AG-UI is deferred until a future TechSpec revision names it.
-- Future concrete drivers beyond ReAct, official peer backends beyond memory/SQLite, and future product implementation lines beyond the current TypeScript/Rust lanes and active orchestration authority line are deferred unless a later TechSpec revision activates them from the matured semantic evidence, authority packets, and shared runner evidence.
+- Future concrete drivers beyond ReAct, official peer backends beyond memory/SQLite, and future product implementation lines beyond the current TypeScript/Rust lanes and promoted orchestration authority baseline are deferred unless a later TechSpec revision activates them from the matured semantic evidence, authority packets, and shared runner evidence.
 - FFI-based Rust embedding is deferred until after the process-boundary kernel seam is proven boring and durable.
 - Deno portability checks are deferred until public package surfaces stabilize enough to avoid testing scaffolding churn.
 - Authoring authority packets for surfaces beyond the five named in Epic Y (kernel protocol packet hardening, host stream adapter packets, telemetry semconv packet, compatibility-ledger packet, AI SDK bridge packet) is deferred to a later epic that may build on Epic Y mechanics.
@@ -79,7 +80,7 @@
 - Epic W closed the semantic ecosystem maturity line through `constitution/spikes/epic-w-semantic-coverage-matrix.md` and `constitution/spikes/epic-w-semantic-ecosystem-maturity-closure-inventory.md`.
 - Epic X closed the TypeScript topology normalization line through `constitution/spikes/epic-x-typescript-topology-normalization-inventory.md` and `constitution/spikes/epic-x-typescript-topology-normalization-closure-inventory.md`.
 - Epic Y closed machine-enforced neutral authority and final shared-runner conformance through `constitution/spikes/epic-y-authority-leak-inventory.md`, `constitution/spikes/epic-y-machine-enforced-authority-closure-inventory.md`, and `constitution/spikes/epic-y-shared-conformance-engine-closure-inventory.md`.
-- Epics Z, AA, and AB closed the TypeScript kernel implementation and promotion line through `constitution/spikes/epic-z-typescript-kernel-syscall-closure-inventory.md`, `constitution/spikes/epic-aa-kernel-conformance-promotion-closure-inventory.md`, and `constitution/spikes/epic-ab-run-liveness-recovery-closure-inventory.md`, leaving `@tuvren/kernel-runtime`, promoted kernel evidence, and `kernel.run-liveness` as current-reality baseline rather than active plan scope.
+- Epics Z, AA, AB, and AC closed the TypeScript kernel and framework promotion line through `constitution/spikes/epic-z-typescript-kernel-syscall-closure-inventory.md`, `constitution/spikes/epic-aa-kernel-conformance-promotion-closure-inventory.md`, `constitution/spikes/epic-ab-run-liveness-recovery-closure-inventory.md`, `constitution/spikes/epic-ac-framework-orchestration-authority-inventory.md`, and `constitution/spikes/epic-ac-framework-orchestration-authority-closure-inventory.md`, leaving `@tuvren/kernel-runtime`, promoted kernel evidence, `kernel.run-liveness`, and framework orchestration authority as current-reality baseline rather than active plan scope.
 - Rust framework start is no longer Epic W. It is deferred behind Epic W's semantic maturity evidence.
 
 ## 3. Build Order (Mermaid)
@@ -94,10 +95,10 @@ flowchart LR
 
 ## 4. Ticket List
 
-### Epic AC - Framework Orchestration Authority Promotion (FOAP)
+### Epic AC - Framework Orchestration Authority Promotion (FOAP) [Closed]
 
-- Epic AC is the next active implementation/evidence line after closing Z, AA, and AB.
-- Epic AC promotes orchestration into boundary-owned authority and shared-runner evidence; it does not authorize Rust framework implementation, A2A/ACP, provider-native routing, a global worker scheduler, ordered-pipeline standardization, or new kernel concepts.
+- Epic AC is closed in current repo reality through `constitution/spikes/epic-ac-framework-orchestration-authority-inventory.md` and `constitution/spikes/epic-ac-framework-orchestration-authority-closure-inventory.md`.
+- The archived ticket detail below remains for traceability only; it is not active scope.
 
 **KRT-AC001 Orchestration Authority Inventory**
 

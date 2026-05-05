@@ -13,6 +13,11 @@
     "runtime.cancel-execution",
     "runtime.recover-result",
     "runtime.recover-stale-run",
-    "runtime.validate-structured-output"
+    "runtime.validate-structured-output",
+    "runtime.orchestration.launch-preconditions",
+    "runtime.orchestration.lifecycle-locality",
+    "runtime.orchestration.event-surfaces",
+    "runtime.orchestration.execution-inheritance",
+    "runtime.orchestration.nested-attribution"
   ]
 }

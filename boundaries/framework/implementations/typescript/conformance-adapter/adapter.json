@@ -15,6 +15,7 @@
   "capabilities": [
     "framework.driver-api",
     "framework.event-stream",
+    "framework.orchestration",
     "framework.run-liveness",
     "framework.react-driver",
     "framework.runtime-api",

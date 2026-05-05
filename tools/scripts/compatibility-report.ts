@@ -195,6 +195,7 @@ const CONFORMANCE_RUNNERS: readonly ConformanceRunner[] = [
     fullCapabilities: [
       "framework.driver-api",
       "framework.event-stream",
+      "framework.orchestration",
       "framework.run-liveness",
       "framework.react-driver",
       "framework.runtime-api",

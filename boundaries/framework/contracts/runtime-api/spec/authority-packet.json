@@ -27,6 +27,10 @@
     {
       "path": "boundaries/framework/conformance/plans/runtime-api-lifecycle-extended.json",
       "format": "conformance-plan"
+    },
+    {
+      "path": "boundaries/framework/conformance/plans/runtime-api-orchestration.json",
+      "format": "conformance-plan"
     }
   ],
   "generatedArtifacts": [
@@ -56,6 +60,11 @@
       "planId": "tuvren.framework.runtime-api.lifecycle-extended",
       "planVersion": "0.1.0",
       "path": "boundaries/framework/conformance/plans/runtime-api-lifecycle-extended.json"
+    },
+    {
+      "planId": "tuvren.framework.runtime-api.orchestration",
+      "planVersion": "0.1.0",
+      "path": "boundaries/framework/conformance/plans/runtime-api-orchestration.json"
     }
   ],
   "bindingProjections": {
@@ -100,6 +109,10 @@
     {
       "kind": "conformance-plan",
       "target": "boundaries/framework/conformance/plans/runtime-api-lifecycle-extended.json"
+    },
+    {
+      "kind": "conformance-plan",
+      "target": "boundaries/framework/conformance/plans/runtime-api-orchestration.json"
     },
     {
       "kind": "freshness-check",
