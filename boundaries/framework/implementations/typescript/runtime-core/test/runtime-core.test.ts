@@ -23,6 +23,7 @@ import type {
 } from "@tuvren/driver-api";
 import type {
   RuntimeKernel as KrakenKernel,
+  RuntimeKernelRunLiveness,
   TurnTreeSchema,
 } from "@tuvren/kernel-protocol";
 import type {
@@ -173,6 +174,115 @@ describe("framework-runtime-core", () => {
         ]
       )
     ).toThrow('extension "shared" is already registered');
+  });
+
+  test("rejects run-liveness configuration when the kernel does not implement the extension", () => {
+    const harness = createFakeKernelHarness();
+
+    expect(() =>
+      createTuvrenRuntimeCore({
+        defaultDriverId: "fake",
+        driverRegistry: createDriverRegistry([]),
+        kernel: harness.kernel,
+        runLiveness: {
+          executionOwnerId: "worker-1",
+          leaseDurationMs: 50,
+        },
+      })
+    ).toThrow("kernel.run-liveness extension");
+  });
+
+  test("renews leased runs while a turn stays running", async () => {
+    const harness = createFakeKernelHarness();
+    const driver = {
+      async execute() {
+        await delay(120);
+        return {
+          messages: [assistantText("Lease remained active.")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    let createLeasedRunCalls = 0;
+    let renewLeaseCalls = 0;
+    const kernel: KrakenKernel & RuntimeKernelRunLiveness = {
+      ...harness.kernel,
+      runLiveness: {
+        async createLeasedRun(input) {
+          createLeasedRunCalls += 1;
+          const run = await harness.kernel.run.create(
+            input.runId,
+            input.turnId,
+            input.branchId,
+            input.schemaId,
+            input.startTurnNodeHash,
+            input.steps
+          );
+          return {
+            ...run,
+            executionOwnerId: input.executionOwnerId,
+            fencingToken: `token-${createLeasedRunCalls}`,
+            leaseExpiresAtMs: input.leaseExpiresAtMs,
+          };
+        },
+        async listExpired(nowMs) {
+          void nowMs;
+          return [];
+        },
+        async preemptExpired(runId, preemptingOwnerId, nowMs, reason) {
+          void runId;
+          void preemptingOwnerId;
+          void nowMs;
+          void reason;
+          throw new Error("preemptExpired was not expected");
+        },
+        async renewLease(
+          runId,
+          executionOwnerId,
+          fencingToken,
+          nextLeaseExpiresAtMs
+        ) {
+          void runId;
+          void executionOwnerId;
+          void fencingToken;
+          renewLeaseCalls += 1;
+          return {
+            fencingToken: `token-renewed-${renewLeaseCalls}`,
+            leaseExpiresAtMs: nextLeaseExpiresAtMs,
+          };
+        },
+      },
+    };
+    const runtime = createTuvrenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel,
+      runLiveness: {
+        executionOwnerId: "worker-1",
+        leaseDurationMs: 60,
+        renewBeforeMs: 20,
+      },
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: { name: "primary" },
+      signal: textSignal("Keep the lease alive"),
+      threadId: thread.threadId,
+    });
+
+    await collectEvents(handle.events());
+
+    expect(handle.status().phase).toBe("completed");
+    expect(createLeasedRunCalls).toBeGreaterThan(0);
+    expect(renewLeaseCalls).toBeGreaterThan(0);
   });
 
   test("tool registries snapshot tool definitions instead of exposing live references", () => {

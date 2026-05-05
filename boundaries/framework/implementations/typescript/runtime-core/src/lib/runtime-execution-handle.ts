@@ -184,6 +184,12 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
     this.eventsQueue.close();
   }
 
+  abortWithError(error: Error): void {
+    if (!this.abortController.signal.aborted) {
+      this.abortController.abort(error);
+    }
+  }
+
   get abortSignal(): AbortSignal {
     return this.abortController.signal;
   }

@@ -68,7 +68,7 @@ class TypeScriptKernelAdapter {
   ): Promise<AdapterCapabilities> {
     return Promise.resolve({
       adapterId: "typescript-kernel",
-      capabilities: ["kernel.protocol", "kernel.logical"],
+      capabilities: ["kernel.protocol", "kernel.logical", "kernel.run-liveness"],
       packetId,
       planVersion,
     });
@@ -93,6 +93,12 @@ class TypeScriptKernelAdapter {
           return result(await runRecoveryState(readFixture(input)));
         case "kernel.lineage.cross-thread-rejection":
           return result(await runCrossThreadLineage());
+        case "kernel.run-liveness.lease-renewal":
+          return result(await runLeaseRenewal());
+        case "kernel.run-liveness.expired-listing":
+          return result(await runExpiredListing());
+        case "kernel.run-liveness.stale-preemption":
+          return result(await runStalePreemption());
         default:
           return {
             error: {
@@ -347,6 +353,229 @@ async function runCrossThreadLineage(): Promise<Record<string, unknown>> {
   }
 }
 
+async function runLeaseRenewal(): Promise<Record<string, unknown>> {
+  const schema = await loadCanonicalSchema();
+  const kernel = createRuntimeKernel({
+    backend: createMemoryBackend(),
+    now: () => 10,
+  });
+  await kernel.schema.register(schema);
+  const thread = await kernel.thread.create(
+    "thread_liveness_renewal",
+    schema.schemaId,
+    "branch_liveness_renewal"
+  );
+  const turn = await kernel.turn.create(
+    "turn_liveness_renewal",
+    thread.threadId,
+    thread.branchId,
+    null,
+    thread.rootTurnNodeHash
+  );
+  const leasedRun = await kernel.runLiveness.createLeasedRun({
+    branchId: thread.branchId,
+    executionOwnerId: "owner-primary",
+    leaseExpiresAtMs: 20,
+    runId: "run_liveness_renewal",
+    schemaId: schema.schemaId,
+    startTurnNodeHash: thread.rootTurnNodeHash,
+    steps: [{ deterministic: false, id: "iterate", sideEffects: true }],
+    turnId: turn.turnId,
+  });
+  const staleToken = leasedRun.fencingToken ?? "";
+  const renewed = await kernel.runLiveness.renewLease(
+    leasedRun.runId,
+    "owner-primary",
+    staleToken,
+    40
+  );
+
+  let ownerMismatchCode = "unexpected_success";
+  try {
+    await kernel.runLiveness.renewLease(
+      leasedRun.runId,
+      "owner-secondary",
+      renewed.fencingToken,
+      50
+    );
+  } catch (error: unknown) {
+    ownerMismatchCode = normalizeLogicalErrorCode(readErrorCode(error));
+  }
+
+  let staleTokenCode = "unexpected_success";
+  try {
+    await kernel.runLiveness.renewLease(
+      leasedRun.runId,
+      "owner-primary",
+      staleToken,
+      50
+    );
+  } catch (error: unknown) {
+    staleTokenCode = normalizeLogicalErrorCode(readErrorCode(error));
+  }
+
+  return {
+    evidence: {
+      renewal: {
+        ownerMismatchCode,
+        renewedLeaseExpiresAtMs: renewed.leaseExpiresAtMs,
+        staleTokenCode,
+      },
+    },
+  };
+}
+
+async function runExpiredListing(): Promise<Record<string, unknown>> {
+  const schema = await loadCanonicalSchema();
+  const kernel = createRuntimeKernel({ backend: createMemoryBackend() });
+  await kernel.schema.register(schema);
+  const expiredThread = await kernel.thread.create(
+    "thread_liveness_listing_expired",
+    schema.schemaId,
+    "branch_liveness_listing_expired"
+  );
+  const freshThread = await kernel.thread.create(
+    "thread_liveness_listing_fresh",
+    schema.schemaId,
+    "branch_liveness_listing_fresh"
+  );
+  const pausedThread = await kernel.thread.create(
+    "thread_liveness_listing_paused",
+    schema.schemaId,
+    "branch_liveness_listing_paused"
+  );
+  const expiredTurn = await kernel.turn.create(
+    "turn_liveness_listing_expired",
+    expiredThread.threadId,
+    expiredThread.branchId,
+    null,
+    expiredThread.rootTurnNodeHash
+  );
+  const freshTurn = await kernel.turn.create(
+    "turn_liveness_listing_fresh",
+    freshThread.threadId,
+    freshThread.branchId,
+    null,
+    freshThread.rootTurnNodeHash
+  );
+  const pausedTurn = await kernel.turn.create(
+    "turn_liveness_listing_paused",
+    pausedThread.threadId,
+    pausedThread.branchId,
+    null,
+    pausedThread.rootTurnNodeHash
+  );
+  await kernel.runLiveness.createLeasedRun({
+    branchId: expiredThread.branchId,
+    executionOwnerId: "owner-primary",
+    leaseExpiresAtMs: 5,
+    runId: "run_expired",
+    schemaId: schema.schemaId,
+    startTurnNodeHash: expiredThread.rootTurnNodeHash,
+    steps: [{ deterministic: false, id: "iterate", sideEffects: true }],
+    turnId: expiredTurn.turnId,
+  });
+  const freshRun = await kernel.runLiveness.createLeasedRun({
+    branchId: freshThread.branchId,
+    executionOwnerId: "owner-primary",
+    leaseExpiresAtMs: 50,
+    runId: "run_fresh",
+    schemaId: schema.schemaId,
+    startTurnNodeHash: freshThread.rootTurnNodeHash,
+    steps: [{ deterministic: false, id: "iterate", sideEffects: true }],
+    turnId: freshTurn.turnId,
+  });
+  const pausedRun = await kernel.runLiveness.createLeasedRun({
+    branchId: pausedThread.branchId,
+    executionOwnerId: "owner-primary",
+    leaseExpiresAtMs: 50,
+    runId: "run_paused",
+    schemaId: schema.schemaId,
+    startTurnNodeHash: pausedThread.rootTurnNodeHash,
+    steps: [{ deterministic: false, id: "iterate", sideEffects: true }],
+    turnId: pausedTurn.turnId,
+  });
+  await kernel.run.complete(freshRun.runId, "failed");
+  await kernel.run.complete(pausedRun.runId, "paused");
+
+  return {
+    evidence: {
+      listing: {
+        expiredRunIds: (await kernel.runLiveness.listExpired(10)).map(
+          (run) => run.runId
+        ),
+        pausedRunStatus: "paused",
+      },
+    },
+  };
+}
+
+async function runStalePreemption(): Promise<Record<string, unknown>> {
+  const schema = await loadCanonicalSchema();
+  const kernel = await createConformanceKernel(schema);
+  const backend = createMemoryBackend();
+  const storageKernel = createRuntimeKernel({ backend });
+  await storageKernel.schema.register(schema);
+  const thread = await storageKernel.thread.create(
+    "thread_liveness_preemption",
+    schema.schemaId,
+    "branch_liveness_preemption"
+  );
+  const turn = await storageKernel.turn.create(
+    "turn_liveness_preemption",
+    thread.threadId,
+    thread.branchId,
+    null,
+    thread.rootTurnNodeHash
+  );
+  const leasedRun = await storageKernel.runLiveness.createLeasedRun({
+    branchId: thread.branchId,
+    executionOwnerId: "owner-primary",
+    leaseExpiresAtMs: 5,
+    runId: "run_liveness_preemption",
+    schemaId: schema.schemaId,
+    startTurnNodeHash: thread.rootTurnNodeHash,
+    steps: [{ deterministic: false, id: "iterate", sideEffects: true }],
+    turnId: turn.turnId,
+  });
+  await storageKernel.run.beginStep(leasedRun.runId, "iterate");
+  await storageKernel.staging.stage(
+    leasedRun.runId,
+    new TextEncoder().encode("assistant"),
+    "assistant_message",
+    "message",
+    "completed"
+  );
+  const recovery = await storageKernel.runLiveness.preemptExpired(
+    leasedRun.runId,
+    "owner-secondary",
+    10,
+    "stale_running_recovery"
+  );
+
+  const storedRun = await backend.transact(async (tx) => {
+    return await tx.runs.get(leasedRun.runId);
+  });
+
+  if (storedRun === null) {
+    throw new Error("expected preempted stored run");
+  }
+
+  return {
+    evidence: {
+      preemption: {
+        leaseCleared:
+          storedRun.executionOwnerId === undefined &&
+          storedRun.fencingToken === undefined &&
+          storedRun.leaseExpiresAtMs === undefined,
+        preemptionReason: storedRun.preemptionReason ?? null,
+        runStatus: storedRun.status,
+        uncommittedStagedResults: recovery.uncommittedStagedResults.length,
+      },
+    },
+  };
+}
+
 async function createConformanceKernel(schema: TurnTreeSchema) {
   const kernel = createRuntimeKernel({ backend: createMemoryBackend() });
   await kernel.schema.register(schema);
@@ -388,6 +617,10 @@ function normalizeLogicalErrorCode(code: string): string {
   switch (code) {
     case "kernel_runtime_lineage_mismatch":
       return "turn_node_thread_mismatch";
+    case "kernel_runtime_run_lease_owner_mismatch":
+      return "run_lease_owner_mismatch";
+    case "kernel_runtime_run_lease_token_mismatch":
+      return "run_lease_token_mismatch";
     case "kernel_runtime_turn_head_lineage_mismatch":
       return "turn_head_lateral_move";
     default:

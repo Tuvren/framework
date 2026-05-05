@@ -1,8 +1,100 @@
 {
   "adapterId": "typescript-kernel",
   "boundary": "kernel",
-  "capabilities": ["kernel.protocol"],
+  "capabilities": ["kernel.logical", "kernel.protocol", "kernel.run-liveness"],
   "checkResults": [
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.lineage.cross_thread_rejection.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.lineage.cross_thread_rejection.requiredEvidence.errorCode",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.lineage.cross_thread_rejection",
+      "details": {
+        "adapterId": "typescript-kernel",
+        "planId": "tuvren.kernel.protocol.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.logical.branch_list.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.branch_list.requiredEvidence.branchEntries",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.branch_list.requiredEvidence.branchEntries.0.0",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.logical.branch_list",
+      "details": {
+        "adapterId": "typescript-kernel",
+        "planId": "tuvren.kernel.protocol.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.logical.diff_paths.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.diff_paths.requiredEvidence.diffPaths",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.logical.diff_paths",
+      "details": {
+        "adapterId": "typescript-kernel",
+        "planId": "tuvren.kernel.protocol.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.logical.recovery_state.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.recovery_state.2.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.recovery_state.3.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.recovery_state.requiredEvidence.recovery.consumedStagedResults",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.recovery_state.requiredEvidence.recovery.lastCompletedStepId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.recovery_state.requiredEvidence.recovery.uncommittedStagedResults",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.logical.recovery_state",
+      "details": {
+        "adapterId": "typescript-kernel",
+        "planId": "tuvren.kernel.protocol.core"
+      },
+      "status": "pass"
+    },
     {
       "assertionResults": [
         {
@@ -1082,6 +1174,108 @@
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.run-liveness.expired_listing.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.expired_listing.2.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.expired_listing.requiredEvidence.listing.expiredRunIds",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.expired_listing.requiredEvidence.listing.pausedRunStatus",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.run-liveness.expired_listing",
+      "details": {
+        "adapterId": "typescript-kernel",
+        "planId": "tuvren.kernel.run-liveness"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.run-liveness.lease_renewal.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.lease_renewal.2.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.lease_renewal.3.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.lease_renewal.requiredEvidence.renewal.ownerMismatchCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.lease_renewal.requiredEvidence.renewal.renewedLeaseExpiresAtMs",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.lease_renewal.requiredEvidence.renewal.staleTokenCode",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.run-liveness.lease_renewal",
+      "details": {
+        "adapterId": "typescript-kernel",
+        "planId": "tuvren.kernel.run-liveness"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.2.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.3.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.4.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.preemption.leaseCleared",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.preemption.preemptionReason",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.preemption.runStatus",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.preemption.uncommittedStagedResults",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.run-liveness.stale_preemption",
+      "details": {
+        "adapterId": "typescript-kernel",
+        "planId": "tuvren.kernel.run-liveness"
+      },
+      "status": "pass"
     }
   ],
   "command": [
@@ -1092,21 +1286,15 @@
   ],
   "exitCode": 0,
   "implementationId": "typescript-kernel",
-  "nonApplicableCheckIds": [
-    "kernel.lineage.cross_thread_rejection",
-    "kernel.logical.branch_list",
-    "kernel.logical.diff_paths",
-    "kernel.logical.recovery_state",
-    "kernel.turn.lateral_head_guard"
-  ],
+  "nonApplicableCheckIds": [],
   "project": "kernel-typescript-conformance-runner",
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 36,
-    "totalChecks": 41,
-    "applicableChecks": 36,
-    "nonApplicableChecks": 5
+    "passedChecks": 43,
+    "totalChecks": 43,
+    "applicableChecks": 43,
+    "nonApplicableChecks": 0
   },
   "suiteId": "tuvren.kernel.protocol",
   "suiteVersion": "0.1.0"

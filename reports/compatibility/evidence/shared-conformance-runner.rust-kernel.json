@@ -32,7 +32,7 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.logical.branch_list.requiredEvidence.branchEntries.0",
+          "assertionId": "kernel.logical.branch_list.requiredEvidence.branchEntries.0.0",
           "status": "pass"
         }
       ],
@@ -149,24 +149,6 @@
         }
       ],
       "checkId": "kernel.protocol.schema_roundtrip",
-      "details": {
-        "adapterId": "rust-kernel",
-        "planId": "tuvren.kernel.protocol.core"
-      },
-      "status": "pass"
-    },
-    {
-      "assertionResults": [
-        {
-          "assertionId": "kernel.turn.lateral_head_guard.1.evidenceField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.turn.lateral_head_guard.requiredEvidence.errorCode",
-          "status": "pass"
-        }
-      ],
-      "checkId": "kernel.turn.lateral_head_guard",
       "details": {
         "adapterId": "rust-kernel",
         "planId": "tuvren.kernel.protocol.core"
@@ -1202,15 +1184,19 @@
   ],
   "exitCode": 0,
   "implementationId": "rust-kernel",
-  "nonApplicableCheckIds": [],
+  "nonApplicableCheckIds": [
+    "kernel.run-liveness.expired_listing",
+    "kernel.run-liveness.lease_renewal",
+    "kernel.run-liveness.stale_preemption"
+  ],
   "project": "kernel-rust-conformance-runner",
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 41,
-    "totalChecks": 41,
-    "applicableChecks": 41,
-    "nonApplicableChecks": 0
+    "passedChecks": 40,
+    "totalChecks": 43,
+    "applicableChecks": 40,
+    "nonApplicableChecks": 3
   },
   "suiteId": "tuvren.kernel.protocol",
   "suiteVersion": "0.1.0"

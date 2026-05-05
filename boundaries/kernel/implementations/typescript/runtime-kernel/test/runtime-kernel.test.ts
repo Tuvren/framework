@@ -19,6 +19,7 @@ import { createMemoryBackend } from "@tuvren/backend-memory";
 import type {
   RuntimeBackend,
   RuntimeKernel,
+  RuntimeKernelRunLiveness,
   TurnTreeSchema,
 } from "@tuvren/kernel-protocol";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
@@ -35,7 +36,7 @@ const TEST_SCHEMA = {
 interface RuntimeKernelFixture {
   backend: RuntimeBackend;
   branchId: string;
-  kernel: RuntimeKernel;
+  kernel: RuntimeKernel & RuntimeKernelRunLiveness;
   rootTurnNodeHash: string;
   schemaId: string;
   threadId: string;
@@ -75,6 +76,7 @@ describe("createRuntimeKernel", () => {
     expect(kernel.branch).toBeTruthy();
     expect(kernel.node).toBeTruthy();
     expect(kernel.run).toBeTruthy();
+    expect(kernel.runLiveness).toBeTruthy();
     expect(kernel.schema).toBeTruthy();
     expect(kernel.staging).toBeTruthy();
     expect(kernel.store).toBeTruthy();
@@ -267,6 +269,158 @@ describe("createRuntimeKernel", () => {
         [{ deterministic: true, id: "start", sideEffects: false }]
       )
     ).rejects.toThrow('run "run_uniqueness" already exists');
+  });
+
+  test("runLiveness.createLeasedRun returns a leased running record", async () => {
+    const fixture = await createThreadFixture({
+      branchId: "branch_leased_run",
+      threadId: "thread_leased_run",
+    });
+    const turn = await fixture.kernel.turn.create(
+      "turn_leased_run",
+      fixture.threadId,
+      fixture.branchId,
+      null,
+      fixture.rootTurnNodeHash
+    );
+
+    const run = await fixture.kernel.runLiveness.createLeasedRun({
+      branchId: fixture.branchId,
+      executionOwnerId: "owner-alpha",
+      leaseExpiresAtMs: 50,
+      runId: "run_leased",
+      schemaId: fixture.schemaId,
+      startTurnNodeHash: fixture.rootTurnNodeHash,
+      steps: [{ deterministic: true, id: "iterate", sideEffects: false }],
+      turnId: turn.turnId,
+    });
+
+    expect(run.status).toBe("running");
+    expect(run.executionOwnerId).toBe("owner-alpha");
+    expect(run.leaseExpiresAtMs).toBe(50);
+    expect(run.fencingToken).toBeTruthy();
+  });
+
+  test("runLiveness.renewLease rotates the fencing token for the same owner", async () => {
+    let currentNow = 10;
+    const fixture = await createThreadFixture({
+      branchId: "branch_lease_renew",
+      now: () => currentNow,
+      threadId: "thread_lease_renew",
+    });
+    const turn = await fixture.kernel.turn.create(
+      "turn_lease_renew",
+      fixture.threadId,
+      fixture.branchId,
+      null,
+      fixture.rootTurnNodeHash
+    );
+    const run = await fixture.kernel.runLiveness.createLeasedRun({
+      branchId: fixture.branchId,
+      executionOwnerId: "owner-alpha",
+      leaseExpiresAtMs: 50,
+      runId: "run_lease_renew",
+      schemaId: fixture.schemaId,
+      startTurnNodeHash: fixture.rootTurnNodeHash,
+      steps: [{ deterministic: true, id: "iterate", sideEffects: false }],
+      turnId: turn.turnId,
+    });
+
+    const renewed = await fixture.kernel.runLiveness.renewLease(
+      run.runId,
+      "owner-alpha",
+      run.fencingToken ?? "",
+      75
+    );
+
+    expect(renewed.leaseExpiresAtMs).toBe(75);
+    expect(renewed.fencingToken).not.toBe(run.fencingToken);
+  });
+
+  test("runLiveness.listExpired excludes paused and non-expired runs", async () => {
+    let currentNow = 10;
+    const fixture = await createThreadFixture({
+      branchId: "branch_list_expired",
+      now: () => currentNow,
+      threadId: "thread_list_expired",
+    });
+    const turn = await fixture.kernel.turn.create(
+      "turn_list_expired",
+      fixture.threadId,
+      fixture.branchId,
+      null,
+      fixture.rootTurnNodeHash
+    );
+    const leasedRun = await fixture.kernel.runLiveness.createLeasedRun({
+      branchId: fixture.branchId,
+      executionOwnerId: "owner-alpha",
+      leaseExpiresAtMs: 20,
+      runId: "run_list_expired",
+      schemaId: fixture.schemaId,
+      startTurnNodeHash: fixture.rootTurnNodeHash,
+      steps: [{ deterministic: true, id: "iterate", sideEffects: false }],
+      turnId: turn.turnId,
+    });
+
+    expect(await fixture.kernel.runLiveness.listExpired(19)).toEqual([]);
+
+    currentNow = 21;
+    expect(
+      (await fixture.kernel.runLiveness.listExpired(21)).map((run) => run.runId)
+    ).toEqual(["run_list_expired"]);
+
+    await fixture.kernel.run.complete(leasedRun.runId, "failed");
+    expect(await fixture.kernel.runLiveness.listExpired(21)).toEqual([]);
+  });
+
+  test("runLiveness.preemptExpired checkpoints staged work and returns recovery state", async () => {
+    let currentNow = 10;
+    const fixture = await createThreadFixture({
+      branchId: "branch_preempt_expired",
+      now: () => currentNow,
+      threadId: "thread_preempt_expired",
+    });
+    const turn = await fixture.kernel.turn.create(
+      "turn_preempt_expired",
+      fixture.threadId,
+      fixture.branchId,
+      null,
+      fixture.rootTurnNodeHash
+    );
+    const leasedRun = await fixture.kernel.runLiveness.createLeasedRun({
+      branchId: fixture.branchId,
+      executionOwnerId: "owner-alpha",
+      leaseExpiresAtMs: 20,
+      runId: "run_preempt_expired",
+      schemaId: fixture.schemaId,
+      startTurnNodeHash: fixture.rootTurnNodeHash,
+      steps: [{ deterministic: false, id: "iterate", sideEffects: true }],
+      turnId: turn.turnId,
+    });
+
+    await fixture.kernel.run.beginStep(leasedRun.runId, "iterate");
+    await fixture.kernel.staging.stage(
+      leasedRun.runId,
+      new TextEncoder().encode("hello"),
+      "assistant_message",
+      "message",
+      "completed"
+    );
+
+    currentNow = 25;
+    const recovery = await fixture.kernel.runLiveness.preemptExpired(
+      leasedRun.runId,
+      "owner-beta",
+      25,
+      "stale_running_recovery"
+    );
+
+    expect(recovery.lastTurnNodeHash).not.toBe(fixture.rootTurnNodeHash);
+    expect(recovery.uncommittedStagedResults).toEqual([]);
+    expect(recovery.consumedStagedResults).toHaveLength(1);
+
+    const expiredAfterPreemption = await fixture.kernel.runLiveness.listExpired(25);
+    expect(expiredAfterPreemption).toEqual([]);
   });
 
   test("branch.setHead allocates an unused rollback archive branch id", async () => {

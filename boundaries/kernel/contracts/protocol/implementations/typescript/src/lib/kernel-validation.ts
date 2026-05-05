@@ -545,6 +545,10 @@ export function assertRunRecord(
       "branchId",
       "createdTurnNodes",
       "currentStepIndex",
+      "executionOwnerId",
+      "fencingToken",
+      "leaseExpiresAtMs",
+      "preemptionReason",
       "runId",
       "schemaId",
       "startTurnNodeHash",
@@ -557,6 +561,22 @@ export function assertRunRecord(
   const currentStepIndex = objectValue.currentStepIndex;
   const stepSequence = objectValue.stepSequence;
 
+  assertOptionalFieldIsOmittedWhenUndefined(
+    objectValue,
+    "executionOwnerId",
+    label
+  );
+  assertOptionalFieldIsOmittedWhenUndefined(objectValue, "fencingToken", label);
+  assertOptionalFieldIsOmittedWhenUndefined(
+    objectValue,
+    "leaseExpiresAtMs",
+    label
+  );
+  assertOptionalFieldIsOmittedWhenUndefined(
+    objectValue,
+    "preemptionReason",
+    label
+  );
   assertNonEmptyString(objectValue.runId, `${label}.runId`);
   assertNonEmptyString(objectValue.turnId, `${label}.turnId`);
   assertNonEmptyString(objectValue.branchId, `${label}.branchId`);
@@ -568,6 +588,14 @@ export function assertRunRecord(
   assertHashStringArray(
     objectValue.createdTurnNodes,
     `${label}.createdTurnNodes`
+  );
+  assertOptionalRunLivenessFields(
+    objectValue.status,
+    objectValue.executionOwnerId,
+    objectValue.fencingToken,
+    objectValue.leaseExpiresAtMs,
+    objectValue.preemptionReason,
+    label
   );
 
   if (currentStepIndex > stepSequence.length) {
@@ -1526,7 +1554,11 @@ export function assertStoredRun(
       "createdAtMs",
       "createdTurnNodesCbor",
       "currentStepIndex",
+      "executionOwnerId",
+      "fencingToken",
+      "leaseExpiresAtMs",
       "pendingSignalsCbor",
+      "preemptionReason",
       "runId",
       "schemaId",
       "startTurnNodeHash",
@@ -1543,7 +1575,27 @@ export function assertStoredRun(
 
   assertOptionalFieldIsOmittedWhenUndefined(
     objectValue,
+    "executionOwnerId",
+    label
+  );
+  assertOptionalFieldIsOmittedWhenUndefined(
+    objectValue,
+    "fencingToken",
+    label
+  );
+  assertOptionalFieldIsOmittedWhenUndefined(
+    objectValue,
+    "leaseExpiresAtMs",
+    label
+  );
+  assertOptionalFieldIsOmittedWhenUndefined(
+    objectValue,
     "pendingSignalsCbor",
+    label
+  );
+  assertOptionalFieldIsOmittedWhenUndefined(
+    objectValue,
+    "preemptionReason",
     label
   );
   assertNonEmptyString(objectValue.runId, `${label}.runId`);
@@ -1562,6 +1614,14 @@ export function assertStoredRun(
       `${label}.pendingSignalsCbor`
     );
   }
+  assertOptionalRunLivenessFields(
+    objectValue.status,
+    objectValue.executionOwnerId,
+    objectValue.fencingToken,
+    objectValue.leaseExpiresAtMs,
+    objectValue.preemptionReason,
+    label
+  );
   const stepSequence = assertDecodedKernelRecord(
     stepSequenceCbor,
     assertStepDeclarationArray,
@@ -1608,6 +1668,63 @@ export function assertStoredRun(
     `${label}.currentStepIndex`,
     `${label}.stepSequenceCbor`
   );
+}
+
+function assertOptionalRunLivenessFields(
+  status: RunStatus,
+  executionOwnerId: unknown,
+  fencingToken: unknown,
+  leaseExpiresAtMs: unknown,
+  preemptionReason: unknown,
+  label: string
+): void {
+  const hasExecutionOwnerId = executionOwnerId !== undefined;
+  const hasFencingToken = fencingToken !== undefined;
+  const hasLeaseExpiresAtMs = leaseExpiresAtMs !== undefined;
+  const hasLeaseFields =
+    hasExecutionOwnerId || hasFencingToken || hasLeaseExpiresAtMs;
+
+  if (hasLeaseFields) {
+    if (!(hasExecutionOwnerId && hasFencingToken && hasLeaseExpiresAtMs)) {
+      throw validationError(
+        `${label} must provide executionOwnerId, fencingToken, and leaseExpiresAtMs together`,
+        "invalid_run_liveness_fields",
+        {
+          executionOwnerId,
+          fencingToken,
+          leaseExpiresAtMs,
+        }
+      );
+    }
+
+    if (status !== "running") {
+      throw validationError(
+        `${label} must not retain lease ownership fields once the run is not running`,
+        "invalid_run_liveness_status",
+        {
+          status,
+        }
+      );
+    }
+
+    assertNonEmptyString(executionOwnerId, `${label}.executionOwnerId`);
+    assertNonEmptyString(fencingToken, `${label}.fencingToken`);
+    assertEpochMs(leaseExpiresAtMs, `${label}.leaseExpiresAtMs`);
+  }
+
+  if (preemptionReason !== undefined) {
+    if (status !== "failed") {
+      throw validationError(
+        `${label}.preemptionReason is only valid for failed runs`,
+        "invalid_run_preemption_reason_status",
+        {
+          status,
+        }
+      );
+    }
+
+    assertNonEmptyString(preemptionReason, `${label}.preemptionReason`);
+  }
 }
 
 export function isStoredStagedResult(

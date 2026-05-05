@@ -215,6 +215,10 @@
       "results": [
         {
           "checkIds": [
+            "kernel.lineage.cross_thread_rejection",
+            "kernel.logical.branch_list",
+            "kernel.logical.diff_paths",
+            "kernel.logical.recovery_state",
             "kernel.protocol.deterministic_hashing",
             "kernel.protocol.schema_roundtrip",
             "kernel.protocol.deterministic_hashing.f-all-ones-bytes",
@@ -250,14 +254,17 @@
             "kernel.protocol.schema_roundtrip.f-staged-interrupted",
             "kernel.protocol.schema_roundtrip.f-with-event-hash",
             "kernel.protocol.schema_roundtrip.f-with-prev-turn",
-            "kernel.protocol.schema_roundtrip.f-zero-turn-tree-hash"
+            "kernel.protocol.schema_roundtrip.f-zero-turn-tree-hash",
+            "kernel.run-liveness.expired_listing",
+            "kernel.run-liveness.lease_renewal",
+            "kernel.run-liveness.stale_preemption"
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 36,
-            "totalChecks": 41,
-            "applicableChecks": 36,
-            "nonApplicableChecks": 5
+            "passedChecks": 43,
+            "totalChecks": 43,
+            "applicableChecks": 43,
+            "nonApplicableChecks": 0
           },
           "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.typescript-kernel.json",
           "status": "pass",
@@ -311,7 +318,6 @@
             "kernel.logical.recovery_state",
             "kernel.protocol.deterministic_hashing",
             "kernel.protocol.schema_roundtrip",
-            "kernel.turn.lateral_head_guard",
             "kernel.protocol.deterministic_hashing.f-all-ones-bytes",
             "kernel.protocol.deterministic_hashing.f-all-ordered-paths",
             "kernel.protocol.deterministic_hashing.f-all-single-paths",
@@ -349,10 +355,10 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 41,
-            "totalChecks": 41,
-            "applicableChecks": 41,
-            "nonApplicableChecks": 0
+            "passedChecks": 40,
+            "totalChecks": 43,
+            "applicableChecks": 40,
+            "nonApplicableChecks": 3
           },
           "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.rust-kernel.json",
           "status": "pass",

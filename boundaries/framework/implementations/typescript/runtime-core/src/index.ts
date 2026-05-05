@@ -45,7 +45,11 @@ export {
 } from "./lib/handoff-builders.js";
 export type { OrchestrationRuntimeOptions } from "./lib/orchestration-runtime.js";
 export { createOrchestrationRuntime } from "./lib/orchestration-runtime.js";
-export type { RuntimeCoreOptions, RuntimeWarning } from "./lib/runtime-core.js";
+export type {
+  RuntimeCoreOptions,
+  RuntimeRunLivenessOptions,
+  RuntimeWarning,
+} from "./lib/runtime-core.js";
 export {
   createTuvrenRuntimeCore,
   DEFAULT_AGENT_SCHEMA,

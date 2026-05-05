@@ -73,6 +73,7 @@ const PENDING_SIGNALS_AND_ANNOTATIONS_MIGRATION_NAME =
   "0003_pending_signals_and_annotations.sql";
 const OBSERVE_ANNOTATIONS_MIGRATION_NAME =
   "0004_observe_annotations.sql";
+const RUN_LIVENESS_MIGRATION_NAME = "0005_run_liveness.sql";
 const INITIAL_SCHEMA_REQUIRED_TABLES = [
   "objects",
   "schemas",
@@ -114,6 +115,9 @@ const TARGETED_VALIDATION_REQUIRED_INDEXES = [
 ] as const;
 const OBSERVE_ANNOTATIONS_REQUIRED_INDEXES = [
   "idx_observe_annotations_run_id_created_at_ms",
+] as const;
+const RUN_LIVENESS_REQUIRED_INDEXES = [
+  "idx_runs_status_lease_expires_at_ms",
 ] as const;
 const SQLITE_TRANSIENT_MEMORY_PATH = ":memory:";
 
@@ -292,6 +296,30 @@ const INITIAL_SCHEMA_TABLE_DEFINITIONS = {
         notNull: false,
         primaryKeyOrder: 0,
         type: "BLOB",
+      },
+      {
+        name: "execution_owner_id",
+        notNull: false,
+        primaryKeyOrder: 0,
+        type: "TEXT",
+      },
+      {
+        name: "lease_expires_at_ms",
+        notNull: false,
+        primaryKeyOrder: 0,
+        type: "INTEGER",
+      },
+      {
+        name: "fencing_token",
+        notNull: false,
+        primaryKeyOrder: 0,
+        type: "TEXT",
+      },
+      {
+        name: "preemption_reason",
+        notNull: false,
+        primaryKeyOrder: 0,
+        type: "TEXT",
       },
     ],
     foreignKeys: [
@@ -617,6 +645,12 @@ const PRE_PENDING_RUN_COLUMN_NAMES = new Set([
   "last_step_annotations_cbor",
   "pending_signals_cbor",
 ]);
+const RUN_LIVENESS_RUN_COLUMN_NAMES = new Set([
+  "execution_owner_id",
+  "lease_expires_at_ms",
+  "fencing_token",
+  "preemption_reason",
+]);
 const PRE_PENDING_SIGNALS_SCHEMA_TABLE_DEFINITIONS: Record<
   (typeof INITIAL_SCHEMA_REQUIRED_TABLES)[number],
   ExpectedSqliteTableSchema
@@ -625,7 +659,21 @@ const PRE_PENDING_SIGNALS_SCHEMA_TABLE_DEFINITIONS: Record<
   runs: {
     ...INITIAL_SCHEMA_TABLE_DEFINITIONS.runs,
     columns: INITIAL_SCHEMA_TABLE_DEFINITIONS.runs.columns.filter(
-      (column) => !PRE_PENDING_RUN_COLUMN_NAMES.has(column.name)
+      (column) =>
+        !PRE_PENDING_RUN_COLUMN_NAMES.has(column.name) &&
+        !RUN_LIVENESS_RUN_COLUMN_NAMES.has(column.name)
+    ),
+  },
+};
+const PRE_RUN_LIVENESS_SCHEMA_TABLE_DEFINITIONS: Record<
+  (typeof INITIAL_SCHEMA_REQUIRED_TABLES)[number],
+  ExpectedSqliteTableSchema
+> = {
+  ...INITIAL_SCHEMA_TABLE_DEFINITIONS,
+  runs: {
+    ...INITIAL_SCHEMA_TABLE_DEFINITIONS.runs,
+    columns: INITIAL_SCHEMA_TABLE_DEFINITIONS.runs.columns.filter(
+      (column) => !RUN_LIVENESS_RUN_COLUMN_NAMES.has(column.name)
     ),
   },
 };
@@ -835,6 +883,16 @@ const OBSERVE_ANNOTATIONS_INDEX_DEFINITIONS = {
   (typeof OBSERVE_ANNOTATIONS_REQUIRED_INDEXES)[number],
   ExpectedSqliteIndexSchema
 >;
+const RUN_LIVENESS_INDEX_DEFINITIONS = {
+  idx_runs_status_lease_expires_at_ms: {
+    columns: ["status", "lease_expires_at_ms"],
+    tableName: "runs",
+    unique: false,
+  },
+} as const satisfies Record<
+  (typeof RUN_LIVENESS_REQUIRED_INDEXES)[number],
+  ExpectedSqliteIndexSchema
+>;
 
 interface BackendState {
   branches: Map<string, StoredBranch>;
@@ -992,8 +1050,12 @@ interface SqliteRunRow {
   created_at_ms: number;
   created_turn_nodes_cbor: Uint8Array;
   current_step_index: number;
+  execution_owner_id: string | null;
+  fencing_token: string | null;
   last_step_annotations_cbor: Uint8Array | null;
+  lease_expires_at_ms: number | null;
   pending_signals_cbor: Uint8Array | null;
+  preemption_reason: string | null;
   run_id: string;
   schema_id: string;
   start_turn_node_hash: string;
@@ -1471,6 +1533,12 @@ function createRepositories(
         runs.sort(compareStoredRun);
         return Promise.resolve(runs.map(cloneStoredRun));
       },
+      listExpired(nowMs) {
+        assertTransactionActive();
+        const runs = selectExpiredRuns(db, nowMs);
+        runs.sort(compareStoredRun);
+        return Promise.resolve(runs.map(cloneStoredRun));
+      },
       set(record) {
         assertTransactionActive();
         assertStoredRun(record, "record");
@@ -1523,15 +1591,23 @@ function createRepositories(
               created_at_ms,
               updated_at_ms,
               pending_signals_cbor,
-              last_step_annotations_cbor
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
+              last_step_annotations_cbor,
+              execution_owner_id,
+              lease_expires_at_ms,
+              fencing_token,
+              preemption_reason
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?)
             ON CONFLICT(run_id) DO UPDATE SET
               status = excluded.status,
               current_step_index = excluded.current_step_index,
               created_turn_nodes_cbor = excluded.created_turn_nodes_cbor,
               updated_at_ms = excluded.updated_at_ms,
               pending_signals_cbor = excluded.pending_signals_cbor,
-              last_step_annotations_cbor = NULL
+              last_step_annotations_cbor = NULL,
+              execution_owner_id = excluded.execution_owner_id,
+              lease_expires_at_ms = excluded.lease_expires_at_ms,
+              fencing_token = excluded.fencing_token,
+              preemption_reason = excluded.preemption_reason
           `
         ).run(
           record.runId,
@@ -1547,7 +1623,11 @@ function createRepositories(
           record.updatedAtMs,
           record.pendingSignalsCbor === undefined
             ? null
-            : bufferFromBytes(record.pendingSignalsCbor)
+            : bufferFromBytes(record.pendingSignalsCbor),
+          record.executionOwnerId ?? null,
+          record.leaseExpiresAtMs ?? null,
+          record.fencingToken ?? null,
+          record.preemptionReason ?? null
         );
         writeTracker.recordRunSet(existingRun, record);
 
@@ -2239,6 +2319,10 @@ function validateMigrationState(db: Database.Database): void {
     validateObserveAnnotationsSchemaPresence(db);
   }
 
+  if (appliedMigrations.has(RUN_LIVENESS_MIGRATION_NAME)) {
+    validateRunLivenessSchemaPresence(db);
+  }
+
   const latestAppliedMigrationName = appliedMigrationNames.at(-1);
   if (latestAppliedMigrationName === INITIAL_SCHEMA_MIGRATION_NAME) {
     validatePrePendingSignalsSchemaShape(db);
@@ -2260,6 +2344,11 @@ function validateMigrationState(db: Database.Database): void {
   }
 
   if (latestAppliedMigrationName === OBSERVE_ANNOTATIONS_MIGRATION_NAME) {
+    validatePreRunLivenessSchemaShape(db);
+    return;
+  }
+
+  if (latestAppliedMigrationName === RUN_LIVENESS_MIGRATION_NAME) {
     validateCurrentPackageSchemaShape(db);
   }
 }
@@ -2396,8 +2485,7 @@ function validatePrePendingSignalsSchemaShape(db: Database.Database): void {
 }
 
 function validateCurrentPackageSchemaShape(db: Database.Database): void {
-  validatePendingSignalsAndAnnotationsSchemaShape(db);
-  validateObserveAnnotationsSchemaShape(db);
+  validateRunLivenessSchemaShape(db);
 }
 
 function validatePendingSignalsAndAnnotationsSchemaShape(
@@ -2406,7 +2494,7 @@ function validatePendingSignalsAndAnnotationsSchemaShape(
   validateSqliteSchemaShape(
     db,
     PENDING_SIGNALS_AND_ANNOTATIONS_MIGRATION_NAME,
-    INITIAL_SCHEMA_TABLE_DEFINITIONS,
+    PRE_RUN_LIVENESS_SCHEMA_TABLE_DEFINITIONS,
     INITIAL_SCHEMA_INDEX_DEFINITIONS
   );
   validateTargetedValidationSchemaShape(db);
@@ -2443,11 +2531,78 @@ function validateObserveAnnotationsSchemaPresence(
 }
 
 function validateObserveAnnotationsSchemaShape(db: Database.Database): void {
+  validatePreRunLivenessSchemaShape(db);
+}
+
+function validatePreRunLivenessSchemaShape(db: Database.Database): void {
   validateSqliteSchemaShape(
     db,
     OBSERVE_ANNOTATIONS_MIGRATION_NAME,
-    OBSERVE_ANNOTATIONS_TABLE_DEFINITIONS,
-    OBSERVE_ANNOTATIONS_INDEX_DEFINITIONS
+    {
+      ...PRE_RUN_LIVENESS_SCHEMA_TABLE_DEFINITIONS,
+      ...OBSERVE_ANNOTATIONS_TABLE_DEFINITIONS,
+    },
+    {
+      ...INITIAL_SCHEMA_INDEX_DEFINITIONS,
+      ...TARGETED_VALIDATION_INDEX_DEFINITIONS,
+      ...OBSERVE_ANNOTATIONS_INDEX_DEFINITIONS,
+    }
+  );
+}
+
+function validateRunLivenessSchemaPresence(db: Database.Database): void {
+  const tableInfo = db
+    .prepare("PRAGMA table_info(runs)")
+    .all() as SqliteTableInfoPragmaRow[];
+  const columns = new Map(tableInfo.map((column) => [column.name, column]));
+
+  for (const columnName of RUN_LIVENESS_RUN_COLUMN_NAMES) {
+    const column = columns.get(columnName);
+
+    if (column === undefined) {
+      throw persistenceError(
+        "sqlite backend found an applied migration without its run liveness schema columns",
+        "sqlite_backend_applied_migration_schema_missing",
+        {
+          columnName,
+          migrationName: RUN_LIVENESS_MIGRATION_NAME,
+          tableName: "runs",
+        }
+      );
+    }
+  }
+
+  for (const indexName of RUN_LIVENESS_REQUIRED_INDEXES) {
+    if (loadSqliteMasterNames(db, "index").has(indexName)) {
+      continue;
+    }
+
+    throw persistenceError(
+      "sqlite backend found an applied migration without its run liveness schema index",
+      "sqlite_backend_applied_migration_schema_missing",
+      {
+        indexName,
+        migrationName: RUN_LIVENESS_MIGRATION_NAME,
+      }
+    );
+  }
+}
+
+function validateRunLivenessSchemaShape(db: Database.Database): void {
+  validateSqliteSchemaShape(
+    db,
+    RUN_LIVENESS_MIGRATION_NAME,
+    {
+      ...INITIAL_SCHEMA_TABLE_DEFINITIONS,
+      ...TARGETED_VALIDATION_TABLE_DEFINITIONS,
+      ...OBSERVE_ANNOTATIONS_TABLE_DEFINITIONS,
+    },
+    {
+      ...INITIAL_SCHEMA_INDEX_DEFINITIONS,
+      ...TARGETED_VALIDATION_INDEX_DEFINITIONS,
+      ...OBSERVE_ANNOTATIONS_INDEX_DEFINITIONS,
+      ...RUN_LIVENESS_INDEX_DEFINITIONS,
+    }
   );
 }
 
@@ -3820,6 +3975,27 @@ function selectRunsByBranch(
   return rows.map(decodeRunRow);
 }
 
+function selectExpiredRuns(
+  db: Database.Database,
+  nowMs: EpochMs
+): StoredRun[] {
+  const rows = db
+    .prepare(
+      `
+        SELECT *
+        FROM runs
+        WHERE status = 'running'
+          AND execution_owner_id IS NOT NULL
+          AND fencing_token IS NOT NULL
+          AND lease_expires_at_ms IS NOT NULL
+          AND lease_expires_at_ms <= ?
+        ORDER BY created_at_ms, run_id
+      `
+    )
+    .all(nowMs) as SqliteRunRow[];
+  return rows.map(decodeRunRow);
+}
+
 function selectTurnsByParentTurnId(
   db: Database.Database,
   parentTurnId: string
@@ -4561,6 +4737,21 @@ function decodeRunRow(row: SqliteRunRow): StoredRun {
       toUint8Array(row.created_turn_nodes_cbor)
     ),
     currentStepIndex: row.current_step_index,
+    ...(row.execution_owner_id === null
+      ? {}
+      : {
+          executionOwnerId: row.execution_owner_id,
+        }),
+    ...(row.fencing_token === null
+      ? {}
+      : {
+          fencingToken: row.fencing_token,
+        }),
+    ...(row.lease_expires_at_ms === null
+      ? {}
+      : {
+          leaseExpiresAtMs: row.lease_expires_at_ms,
+        }),
     runId: row.run_id,
     schemaId: row.schema_id,
     startTurnNodeHash: row.start_turn_node_hash,
@@ -4574,6 +4765,11 @@ function decodeRunRow(row: SqliteRunRow): StoredRun {
           pendingSignalsCbor: cloneEncodedBytes(
             toUint8Array(row.pending_signals_cbor)
           ),
+        }),
+    ...(row.preemption_reason === null
+      ? {}
+      : {
+          preemptionReason: row.preemption_reason,
         }),
   };
   assertStoredRun(record, "stored run row");
@@ -5695,7 +5891,90 @@ function assertRunUpdateIsLegal(
     );
   }
 
+  assertRunLeaseUpdateIsLegal(existingRun, nextRun);
   assertRunStatusTransition(existingRun.status, nextRun.status);
+}
+
+function assertRunLeaseUpdateIsLegal(
+  existingRun: StoredRun,
+  nextRun: StoredRun
+): void {
+  if (
+    existingRun.executionOwnerId !== undefined &&
+    nextRun.status === "running"
+  ) {
+    assertImmutableField(
+      existingRun.executionOwnerId,
+      nextRun.executionOwnerId,
+      "record.executionOwnerId",
+      "sqlite_backend_run_execution_owner_immutable"
+    );
+  } else if (
+    existingRun.executionOwnerId === undefined &&
+    nextRun.executionOwnerId !== undefined
+  ) {
+    throw persistenceError(
+      "stored runs must not gain execution ownership after creation",
+      "sqlite_backend_run_execution_owner_late_set",
+      { runId: existingRun.runId }
+    );
+  }
+
+  if (existingRun.status === "running" && nextRun.status === "running") {
+    if (existingRun.fencingToken !== undefined) {
+      if (nextRun.fencingToken === undefined) {
+        throw persistenceError(
+          "stored running leased runs must retain a fencing token",
+          "sqlite_backend_run_fencing_token_missing",
+          { runId: existingRun.runId }
+        );
+      }
+
+      if (existingRun.fencingToken === nextRun.fencingToken) {
+        throw persistenceError(
+          "stored running leased runs must rotate fencing tokens on renewal",
+          "sqlite_backend_run_fencing_token_not_rotated",
+          { runId: existingRun.runId }
+        );
+      }
+    } else if (nextRun.fencingToken !== undefined) {
+      throw persistenceError(
+        "stored runs must not gain a fencing token after creation",
+        "sqlite_backend_run_fencing_token_late_set",
+        { runId: existingRun.runId }
+      );
+    }
+  }
+
+  if (
+    existingRun.leaseExpiresAtMs !== undefined &&
+    nextRun.leaseExpiresAtMs === undefined &&
+    nextRun.status === "running"
+  ) {
+    throw persistenceError(
+      "stored running leased runs must retain a lease expiry",
+      "sqlite_backend_run_lease_expiry_missing",
+      { runId: existingRun.runId }
+    );
+  }
+
+  if (existingRun.preemptionReason !== undefined) {
+    assertImmutableField(
+      existingRun.preemptionReason,
+      nextRun.preemptionReason,
+      "record.preemptionReason",
+      "sqlite_backend_run_preemption_reason_immutable"
+    );
+  } else if (
+    nextRun.preemptionReason !== undefined &&
+    nextRun.status !== "failed"
+  ) {
+    throw persistenceError(
+      "stored runs must only record preemptionReason on failed runs",
+      "sqlite_backend_run_preemption_reason_invalid_status",
+      { runId: existingRun.runId, status: nextRun.status }
+    );
+  }
 }
 
 function assertMonotonicRunStepIndex(

@@ -50,7 +50,7 @@
 
 - Epic Z is active to add the missing boundary-owned TypeScript `RuntimeKernel` implementation package over the existing backend contract and close the documented syscall semantics that currently live only in private playground logic or protocol types.
 - Epic AA is active after Epic Z to promote kernel syscall, logical, and observe behavior into authority-packet-backed conformance plans and shared-runner evidence.
-- Epic AB is active after Epic AA as a contract-first liveness extension for leased running ownership and stale-run preemption.
+- Epic AB has landed in current repo reality as a contract-first liveness extension for leased running ownership and stale-run preemption; Rust remains non-applicable unless it advertises `kernel.run-liveness`.
 
 ### Future / Deferred Scope
 
@@ -1354,8 +1354,11 @@ And Rust kernel results remain capability-scoped rather than inferred from TypeS
 
 ### Epic AB - Run Liveness and Stale-Running Recovery (RLSR)
 
+- Epic AB has landed in current repo reality through the advertised `kernel.run-liveness` extension, backend-neutral lease storage and validators, stale-run preemption semantics, shared-runner conformance coverage, and refreshed compatibility evidence.
+
 **KRT-AB001 Liveness Extension Contract**
 
+- **Status:** Closed in current repo reality.
 - **Type:** Feature
 - **Effort:** 5
 - **Dependencies:** KRT-AA004
@@ -1373,6 +1376,7 @@ And the base `RuntimeKernel` interface remains compatible for non-liveness imple
 
 **KRT-AB002 Lease Storage and Validators**
 
+- **Status:** Closed in current repo reality.
 - **Type:** Feature
 - **Effort:** 5
 - **Dependencies:** KRT-AB001
@@ -1390,6 +1394,7 @@ And paused, completed, and failed Runs are not lease-expiry candidates
 
 **KRT-AB003 Preemption Semantics**
 
+- **Status:** Closed in current repo reality.
 - **Type:** Feature
 - **Effort:** 5
 - **Dependencies:** KRT-AB002
@@ -1407,6 +1412,7 @@ And a non-expired running Run or paused Run cannot be preempted through stale-ru
 
 **KRT-AB004 Liveness Conformance Evidence**
 
+- **Status:** Closed in current repo reality.
 - **Type:** Chore
 - **Effort:** 5
 - **Dependencies:** KRT-AB003

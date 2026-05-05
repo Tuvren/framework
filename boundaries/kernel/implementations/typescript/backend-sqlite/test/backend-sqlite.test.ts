@@ -469,6 +469,7 @@ describe("@tuvren/backend-sqlite", () => {
       { name: "0002_targeted_validation_indexes.sql" },
       { name: "0003_pending_signals_and_annotations.sql" },
       { name: "0004_observe_annotations.sql" },
+      { name: "0005_run_liveness.sql" },
     ]);
     deepStrictEqual(objectsTable, { name: "objects" });
 
@@ -484,6 +485,7 @@ describe("@tuvren/backend-sqlite", () => {
       { name: "0002_targeted_validation_indexes.sql" },
       { name: "0003_pending_signals_and_annotations.sql" },
       { name: "0004_observe_annotations.sql" },
+      { name: "0005_run_liveness.sql" },
     ]);
   });
 
@@ -567,6 +569,7 @@ describe("@tuvren/backend-sqlite", () => {
       { name: "0002_targeted_validation_indexes.sql" },
       { name: "0003_pending_signals_and_annotations.sql" },
       { name: "0004_observe_annotations.sql" },
+      { name: "0005_run_liveness.sql" },
     ]);
     deepStrictEqual(objectsTable, { name: "objects" });
   });
@@ -634,7 +637,7 @@ describe("@tuvren/backend-sqlite", () => {
     );
   });
 
-  test("upgrades databases from 0003 to 0004 during startup", async () => {
+  test("upgrades databases from 0003 to 0005 during startup", async () => {
     const databasePath = createTempDatabasePath();
     const seed = new Database(databasePath);
     seed.exec(`
@@ -691,6 +694,7 @@ describe("@tuvren/backend-sqlite", () => {
       { name: "0002_targeted_validation_indexes.sql" },
       { name: "0003_pending_signals_and_annotations.sql" },
       { name: "0004_observe_annotations.sql" },
+      { name: "0005_run_liveness.sql" },
     ]);
     deepStrictEqual(observeAnnotationsTable, { name: "observe_annotations" });
   });
@@ -738,7 +742,7 @@ describe("@tuvren/backend-sqlite", () => {
     copyFileSync(getCompiledSqliteRuntimePath(), runtimePath);
     copyCurrentPackageMigrations(fakeMigrationsDirectory);
     writeFileSync(
-      join(fakeMigrationsDirectory, "0005_add_objects_extra.sql"),
+      join(fakeMigrationsDirectory, "0006_add_objects_extra.sql"),
       "ALTER TABLE objects ADD COLUMN extra TEXT;\n",
       "utf8"
     );
@@ -768,7 +772,8 @@ describe("@tuvren/backend-sqlite", () => {
       { name: "0002_targeted_validation_indexes.sql" },
       { name: "0003_pending_signals_and_annotations.sql" },
       { name: "0004_observe_annotations.sql" },
-      { name: "0005_add_objects_extra.sql" },
+      { name: "0005_run_liveness.sql" },
+      { name: "0006_add_objects_extra.sql" },
     ]);
   });
 
@@ -786,7 +791,7 @@ describe("@tuvren/backend-sqlite", () => {
     copyFileSync(getCompiledSqliteRuntimePath(), runtimePath);
     copyCurrentPackageMigrations(fakeMigrationsDirectory);
     writeFileSync(
-      join(fakeMigrationsDirectory, "0005_rebuild_runs_index.sql"),
+      join(fakeMigrationsDirectory, "0006_rebuild_runs_index.sql"),
       [
         "DROP INDEX idx_runs_branch_id_status;",
         "CREATE INDEX idx_runs_branch_id_status ON runs(branch_id, status, updated_at_ms);",

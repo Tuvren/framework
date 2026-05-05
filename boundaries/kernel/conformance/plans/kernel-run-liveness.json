@@ -1,0 +1,85 @@
+{
+  "planId": "tuvren.kernel.run-liveness",
+  "planVersion": "0.1.0",
+  "packetId": "tuvren.kernel.protocol",
+  "applicability": {
+    "capabilities": ["kernel.run-liveness"]
+  },
+  "checks": [
+    {
+      "checkId": "kernel.run-liveness.lease_renewal",
+      "operation": "kernel.run-liveness.lease-renewal",
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.renewal.renewedLeaseExpiresAtMs",
+          "equals": 40
+        },
+        {
+          "kind": "evidenceField",
+          "field": "$.renewal.ownerMismatchCode",
+          "equals": "run_lease_owner_mismatch"
+        },
+        {
+          "kind": "evidenceField",
+          "field": "$.renewal.staleTokenCode",
+          "equals": "run_lease_token_mismatch"
+        }
+      ],
+      "evidence": [
+        "renewal.renewedLeaseExpiresAtMs",
+        "renewal.ownerMismatchCode",
+        "renewal.staleTokenCode"
+      ]
+    },
+    {
+      "checkId": "kernel.run-liveness.expired_listing",
+      "operation": "kernel.run-liveness.expired-listing",
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.listing.expiredRunIds",
+          "equals": ["run_expired"]
+        },
+        {
+          "kind": "evidenceField",
+          "field": "$.listing.pausedRunStatus",
+          "equals": "paused"
+        }
+      ],
+      "evidence": ["listing.expiredRunIds", "listing.pausedRunStatus"]
+    },
+    {
+      "checkId": "kernel.run-liveness.stale_preemption",
+      "operation": "kernel.run-liveness.stale-preemption",
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.preemption.runStatus",
+          "equals": "failed"
+        },
+        {
+          "kind": "evidenceField",
+          "field": "$.preemption.preemptionReason",
+          "equals": "stale_running_recovery"
+        },
+        {
+          "kind": "evidenceField",
+          "field": "$.preemption.uncommittedStagedResults",
+          "equals": 0
+        },
+        {
+          "kind": "evidenceField",
+          "field": "$.preemption.leaseCleared",
+          "equals": true
+        }
+      ],
+      "evidence": [
+        "preemption.runStatus",
+        "preemption.preemptionReason",
+        "preemption.uncommittedStagedResults",
+        "preemption.leaseCleared"
+      ]
+    }
+  ]
+}

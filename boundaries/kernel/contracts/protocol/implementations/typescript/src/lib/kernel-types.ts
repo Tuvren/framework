@@ -151,6 +151,10 @@ export interface RunRecord {
   branchId: string;
   createdTurnNodes: HashString[];
   currentStepIndex: number;
+  executionOwnerId?: string;
+  fencingToken?: string;
+  leaseExpiresAtMs?: EpochMs;
+  preemptionReason?: string;
   runId: string;
   schemaId: string;
   startTurnNodeHash: HashString;
@@ -307,7 +311,11 @@ export interface StoredRun {
   createdAtMs: EpochMs;
   createdTurnNodesCbor: Uint8Array;
   currentStepIndex: number;
+  executionOwnerId?: string;
+  fencingToken?: string;
+  leaseExpiresAtMs?: EpochMs;
   pendingSignalsCbor?: Uint8Array;
+  preemptionReason?: string;
   runId: string;
   schemaId: string;
   startTurnNodeHash: HashString;
@@ -399,6 +407,7 @@ export interface TurnRepository {
 export interface RunRepository {
   get(runId: string): Promise<StoredRun | null>;
   listByBranch(branchId: string): Promise<StoredRun[]>;
+  listExpired(nowMs: EpochMs): Promise<StoredRun[]>;
   set(record: StoredRun): Promise<void>;
 }
 

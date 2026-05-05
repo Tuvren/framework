@@ -362,6 +362,19 @@ function createRepositories(
         runs.sort(compareStoredRun);
         return Promise.resolve(runs);
       },
+      listExpired(nowMs) {
+        assertTransactionActive();
+        const runs: StoredRun[] = [];
+
+        for (const run of state.runs.values()) {
+          if (isExpiredLeasedRunningRun(run, nowMs)) {
+            runs.push(cloneStoredRun(run));
+          }
+        }
+
+        runs.sort(compareStoredRun);
+        return Promise.resolve(runs);
+      },
       set(record) {
         assertTransactionActive();
         assertStoredRun(record, "record");
@@ -1775,7 +1788,90 @@ function assertRunUpdateIsLegal(
     );
   }
 
+  assertRunLeaseUpdateIsLegal(existingRun, nextRun);
   assertRunStatusTransition(existingRun.status, nextRun.status);
+}
+
+function assertRunLeaseUpdateIsLegal(
+  existingRun: StoredRun,
+  nextRun: StoredRun
+): void {
+  if (
+    existingRun.executionOwnerId !== undefined &&
+    nextRun.status === "running"
+  ) {
+    assertImmutableField(
+      existingRun.executionOwnerId,
+      nextRun.executionOwnerId,
+      "record.executionOwnerId",
+      "memory_backend_run_execution_owner_immutable"
+    );
+  } else if (
+    existingRun.executionOwnerId === undefined &&
+    nextRun.executionOwnerId !== undefined
+  ) {
+    throw persistenceError(
+      "stored runs must not gain execution ownership after creation",
+      "memory_backend_run_execution_owner_late_set",
+      { runId: existingRun.runId }
+    );
+  }
+
+  if (existingRun.status === "running" && nextRun.status === "running") {
+    if (existingRun.fencingToken !== undefined) {
+      if (nextRun.fencingToken === undefined) {
+        throw persistenceError(
+          "stored running leased runs must retain a fencing token",
+          "memory_backend_run_fencing_token_missing",
+          { runId: existingRun.runId }
+        );
+      }
+
+      if (existingRun.fencingToken === nextRun.fencingToken) {
+        throw persistenceError(
+          "stored running leased runs must rotate fencing tokens on renewal",
+          "memory_backend_run_fencing_token_not_rotated",
+          { runId: existingRun.runId }
+        );
+      }
+    } else if (nextRun.fencingToken !== undefined) {
+      throw persistenceError(
+        "stored runs must not gain a fencing token after creation",
+        "memory_backend_run_fencing_token_late_set",
+        { runId: existingRun.runId }
+      );
+    }
+  }
+
+  if (
+    existingRun.leaseExpiresAtMs !== undefined &&
+    nextRun.leaseExpiresAtMs === undefined &&
+    nextRun.status === "running"
+  ) {
+    throw persistenceError(
+      "stored running leased runs must retain a lease expiry",
+      "memory_backend_run_lease_expiry_missing",
+      { runId: existingRun.runId }
+    );
+  }
+
+  if (existingRun.preemptionReason !== undefined) {
+    assertImmutableField(
+      existingRun.preemptionReason,
+      nextRun.preemptionReason,
+      "record.preemptionReason",
+      "memory_backend_run_preemption_reason_immutable"
+    );
+  } else if (
+    nextRun.preemptionReason !== undefined &&
+    nextRun.status !== "failed"
+  ) {
+    throw persistenceError(
+      "stored runs must only record preemptionReason on failed runs",
+      "memory_backend_run_preemption_reason_invalid_status",
+      { runId: existingRun.runId, status: nextRun.status }
+    );
+  }
 }
 
 function assertMonotonicRunStepIndex(
@@ -2874,6 +2970,16 @@ function compareStoredRun(left: StoredRun, right: StoredRun): number {
     right.createdAtMs,
     left.runId,
     right.runId
+  );
+}
+
+function isExpiredLeasedRunningRun(run: StoredRun, nowMs: EpochMs): boolean {
+  return (
+    run.status === "running" &&
+    run.executionOwnerId !== undefined &&
+    run.fencingToken !== undefined &&
+    run.leaseExpiresAtMs !== undefined &&
+    run.leaseExpiresAtMs <= nowMs
   );
 }
 

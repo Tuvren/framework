@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import { randomUUID } from "node:crypto";
 import {
   assertHashString,
   type EpochMs,
@@ -44,6 +45,7 @@ import {
   type RuntimeBackend,
   type RuntimeBackendTx,
   type RuntimeKernel,
+  type RuntimeKernelRunLiveness,
   type SetHeadResult,
   type StagedResult,
   type StagedResultStatus,
@@ -68,14 +70,16 @@ const DEFAULT_MEDIA_TYPE = "application/octet-stream";
 
 export interface RuntimeKernelOptions {
   backend: RuntimeBackend;
+  createFencingToken?: () => string;
   now?: () => EpochMs;
 }
 
 export function createRuntimeKernel(
   options: RuntimeKernelOptions
-): RuntimeKernel {
+): RuntimeKernel & RuntimeKernelRunLiveness {
   const now = options.now ?? (() => Date.now() as EpochMs);
   const backend = options.backend;
+  const createFencingToken = options.createFencingToken ?? randomUUID;
 
   return {
     branch: {
@@ -289,7 +293,7 @@ export function createRuntimeKernel(
           const { pendingSignalsCbor: _s, ...runWithoutPendingSignals } =
             storedRun;
           await tx.runs.set({
-            ...runWithoutPendingSignals,
+            ...clearStoredRunLease(runWithoutPendingSignals),
             createdTurnNodesCbor: encodeRecord(nextCreatedTurnNodes),
             currentStepIndex:
               status === "completed"
@@ -400,18 +404,7 @@ export function createRuntimeKernel(
 
           await requireSchema(tx, schemaId);
           assertUniqueStepIds(steps);
-
-          // Reject if branch already has an active run
-          const existingRuns = await tx.runs.listByBranch(branchId);
-          const activeRun = existingRuns.find(
-            (r) => r.status === "running" || r.status === "paused"
-          );
-          if (activeRun !== undefined) {
-            throw new TuvrenRuntimeError(
-              `branch "${branchId}" already has an active run "${activeRun.runId}"`,
-              { code: "kernel_runtime_branch_already_active" }
-            );
-          }
+          await assertNoActiveRunOnBranch(tx, branchId);
 
           const record: StoredRun = {
             branchId,
@@ -448,6 +441,187 @@ export function createRuntimeKernel(
             uncommittedStagedResults: await listStagedResults(tx, runId),
           };
           return recoveryState;
+        });
+      },
+    },
+
+    runLiveness: {
+      async createLeasedRun(input) {
+        return await backend.transact(async (tx) => {
+          assertLeasedRunCreateInput(input);
+          await assertRunIdAvailable(tx, input.runId);
+          const turn = await requireTurn(tx, input.turnId);
+          const branch = await requireBranch(tx, input.branchId);
+
+          if (
+            turn.branchId !== input.branchId ||
+            turn.threadId !== branch.threadId
+          ) {
+            throw new TuvrenRuntimeError(
+              "run turn must belong to the requested branch and thread",
+              { code: "kernel_runtime_run_turn_mismatch" }
+            );
+          }
+
+          if (branch.headTurnNodeHash !== input.startTurnNodeHash) {
+            throw new TuvrenRuntimeError(
+              "run start turn node must match branch head",
+              { code: "kernel_runtime_run_branch_head_mismatch" }
+            );
+          }
+
+          await requireSchema(tx, input.schemaId);
+          assertUniqueStepIds(input.steps);
+          await assertNoActiveRunOnBranch(tx, input.branchId);
+
+          const record: StoredRun = {
+            branchId: input.branchId,
+            createdAtMs: now(),
+            createdTurnNodesCbor: encodeRecord([]),
+            currentStepIndex: 0,
+            executionOwnerId: input.executionOwnerId,
+            fencingToken: createFencingToken(),
+            leaseExpiresAtMs: input.leaseExpiresAtMs,
+            runId: input.runId,
+            schemaId: input.schemaId,
+            startTurnNodeHash: input.startTurnNodeHash,
+            status: "running",
+            stepSequenceCbor: encodeRecord(input.steps),
+            turnId: input.turnId,
+            updatedAtMs: now(),
+          };
+          await tx.runs.set(record);
+          return decodeStoredRun(record);
+        });
+      },
+
+      async listExpired(nowMs) {
+        return await backend.transact(async (tx) => {
+          return (await tx.runs.listExpired(nowMs)).map(decodeStoredRun);
+        });
+      },
+
+      async preemptExpired(runId, preemptingOwnerId, nowMs, reason) {
+        return await backend.transact(async (tx) => {
+          assertNonEmptyString(preemptingOwnerId, "preemptingOwnerId");
+          assertNonEmptyString(reason, "reason");
+          const storedRun = await requireStoredRun(tx, runId);
+          const run = decodeStoredRun(storedRun);
+          const lease = requireLeasedRun(storedRun, runId);
+
+          if (run.status !== "running") {
+            throw new TuvrenRuntimeError(
+              `run "${runId}" cannot be preempted (status: ${run.status})`,
+              { code: "kernel_runtime_run_not_running" }
+            );
+          }
+
+          if (!isLeaseExpired(lease.leaseExpiresAtMs, nowMs)) {
+            throw new TuvrenRuntimeError(
+              `run "${runId}" lease has not expired`,
+              { code: "kernel_runtime_run_lease_not_expired" }
+            );
+          }
+
+          const eventHash = await putObject(
+            tx,
+            encodeRecord({
+              preemptingOwnerId,
+              reason,
+              runId,
+              type: "stale_running_preempted",
+            }),
+            now
+          );
+          const stagedResults = await listStagedResults(tx, runId);
+          const turnNodeHash = await maybeCheckpoint(tx, run, stagedResults, {
+            eventHash,
+            now,
+            treeHash: undefined,
+          });
+          const nextCreatedTurnNodes =
+            turnNodeHash === undefined
+              ? run.createdTurnNodes
+              : [...run.createdTurnNodes, turnNodeHash];
+          const { pendingSignalsCbor: _signals, ...coreRun } = storedRun;
+          await tx.runs.set({
+            ...clearStoredRunLease(coreRun),
+            createdTurnNodesCbor: encodeRecord(nextCreatedTurnNodes),
+            preemptionReason: reason,
+            status: "failed",
+            updatedAtMs: now(),
+          });
+
+          const lastTurnNodeHash =
+            turnNodeHash ?? getLastRunTurnNodeHashFromStoredRun(storedRun);
+          const lastTurnNode = await requireTurnNode(tx, lastTurnNodeHash);
+
+          return {
+            consumedStagedResults: lastTurnNode.consumedStagedResults,
+            lastCompletedStepId:
+              run.currentStepIndex === 0
+                ? null
+                : (run.stepSequence[run.currentStepIndex - 1]?.id ?? null),
+            lastTurnNodeHash,
+            stepSequence: run.stepSequence,
+            uncommittedStagedResults:
+              turnNodeHash === undefined ? stagedResults : [],
+          } satisfies RecoveryState;
+        });
+      },
+
+      async renewLease(
+        runId,
+        executionOwnerId,
+        fencingToken,
+        nextLeaseExpiresAtMs
+      ) {
+        return await backend.transact(async (tx) => {
+          assertNonEmptyString(executionOwnerId, "executionOwnerId");
+          assertNonEmptyString(fencingToken, "fencingToken");
+          const storedRun = await requireStoredRun(tx, runId);
+          const run = decodeStoredRun(storedRun);
+          const lease = requireLeasedRun(storedRun, runId);
+
+          if (run.status !== "running") {
+            throw new TuvrenRuntimeError(
+              `run "${runId}" lease cannot be renewed (status: ${run.status})`,
+              { code: "kernel_runtime_run_not_running" }
+            );
+          }
+
+          if (isLeaseExpired(lease.leaseExpiresAtMs, now())) {
+            throw new TuvrenRuntimeError(
+              `run "${runId}" lease has expired`,
+              { code: "kernel_runtime_run_lease_expired" }
+            );
+          }
+
+          if (lease.executionOwnerId !== executionOwnerId) {
+            throw new TuvrenRuntimeError(
+              `run "${runId}" lease owner does not match`,
+              { code: "kernel_runtime_run_lease_owner_mismatch" }
+            );
+          }
+
+          if (lease.fencingToken !== fencingToken) {
+            throw new TuvrenRuntimeError(
+              `run "${runId}" lease fencing token is stale`,
+              { code: "kernel_runtime_run_lease_token_mismatch" }
+            );
+          }
+
+          const nextFencingToken = createFencingToken();
+          await tx.runs.set({
+            ...storedRun,
+            fencingToken: nextFencingToken,
+            leaseExpiresAtMs: nextLeaseExpiresAtMs,
+            updatedAtMs: now(),
+          });
+          return {
+            fencingToken: nextFencingToken,
+            leaseExpiresAtMs: nextLeaseExpiresAtMs,
+          };
         });
       },
     },
@@ -957,6 +1131,14 @@ function runTouchesSegment(
 
 function getLastRunTurnNodeHash(run: RunRecord): HashString {
   return run.createdTurnNodes.at(-1) ?? run.startTurnNodeHash;
+}
+
+function getLastRunTurnNodeHashFromStoredRun(run: StoredRun): HashString {
+  return decodeHashArray(run.createdTurnNodesCbor).at(-1) ?? run.startTurnNodeHash;
+}
+
+function isLeaseExpired(leaseExpiresAtMs: EpochMs, nowMs: EpochMs): boolean {
+  return leaseExpiresAtMs <= nowMs;
 }
 
 async function turnNodeDescendsFrom(
@@ -1763,6 +1945,26 @@ function decodeStoredRun(record: StoredRun): RunRecord {
     branchId: record.branchId,
     createdTurnNodes: decodeHashArray(record.createdTurnNodesCbor),
     currentStepIndex: record.currentStepIndex,
+    ...(record.executionOwnerId === undefined
+      ? {}
+      : {
+          executionOwnerId: record.executionOwnerId,
+        }),
+    ...(record.fencingToken === undefined
+      ? {}
+      : {
+          fencingToken: record.fencingToken,
+        }),
+    ...(record.leaseExpiresAtMs === undefined
+      ? {}
+      : {
+          leaseExpiresAtMs: record.leaseExpiresAtMs,
+        }),
+    ...(record.preemptionReason === undefined
+      ? {}
+      : {
+          preemptionReason: record.preemptionReason,
+        }),
     runId: record.runId,
     schemaId: record.schemaId,
     startTurnNodeHash: record.startTurnNodeHash,
@@ -1804,6 +2006,45 @@ function toTurnRecord(record: StoredTurn): TurnRecord {
   };
 }
 
+function clearStoredRunLease(
+  record: Omit<StoredRun, "pendingSignalsCbor">
+): Omit<
+  StoredRun,
+  "executionOwnerId" | "fencingToken" | "leaseExpiresAtMs" | "preemptionReason"
+> {
+  const {
+    executionOwnerId: _executionOwnerId,
+    fencingToken: _fencingToken,
+    leaseExpiresAtMs: _leaseExpiresAtMs,
+    preemptionReason: _preemptionReason,
+    ...coreRecord
+  } = record;
+
+  return coreRecord;
+}
+
+function assertLeasedRunCreateInput(input: {
+  executionOwnerId: string;
+  leaseExpiresAtMs: EpochMs;
+}): void {
+  assertNonEmptyString(input.executionOwnerId, "input.executionOwnerId");
+
+  if (!Number.isSafeInteger(input.leaseExpiresAtMs)) {
+    throw new TuvrenValidationError(
+      "input.leaseExpiresAtMs must be a safe integer epoch timestamp",
+      { code: "kernel_runtime_invalid_lease_expiry" }
+    );
+  }
+}
+
+function assertNonEmptyString(value: string, label: string): void {
+  if (value.length === 0) {
+    throw new TuvrenValidationError(`${label} must be a non-empty string`, {
+      code: "kernel_runtime_invalid_string",
+    });
+  }
+}
+
 async function requireBranch(
   tx: RuntimeBackendTx,
   branchId: string
@@ -1826,6 +2067,23 @@ async function requireRun(
   return decodeStoredRun(await requireStoredRun(tx, runId));
 }
 
+async function assertNoActiveRunOnBranch(
+  tx: RuntimeBackendTx,
+  branchId: string
+): Promise<void> {
+  const existingRuns = await tx.runs.listByBranch(branchId);
+  const activeRun = existingRuns.find(
+    (run) => run.status === "running" || run.status === "paused"
+  );
+
+  if (activeRun !== undefined) {
+    throw new TuvrenRuntimeError(
+      `branch "${branchId}" already has an active run "${activeRun.runId}"`,
+      { code: "kernel_runtime_branch_already_active" }
+    );
+  }
+}
+
 async function requireStoredRun(
   tx: RuntimeBackendTx,
   runId: string
@@ -1839,6 +2097,32 @@ async function requireStoredRun(
   }
 
   return run;
+}
+
+function requireLeasedRun(
+  run: StoredRun,
+  runId: string
+): {
+  executionOwnerId: string;
+  fencingToken: string;
+  leaseExpiresAtMs: EpochMs;
+} {
+  if (
+    run.executionOwnerId === undefined ||
+    run.fencingToken === undefined ||
+    run.leaseExpiresAtMs === undefined
+  ) {
+    throw new TuvrenRuntimeError(
+      `run "${runId}" does not hold leased execution ownership`,
+      { code: "kernel_runtime_run_not_leased" }
+    );
+  }
+
+  return {
+    executionOwnerId: run.executionOwnerId,
+    fencingToken: run.fencingToken,
+    leaseExpiresAtMs: run.leaseExpiresAtMs,
+  };
 }
 
 async function requireStoredTurn(

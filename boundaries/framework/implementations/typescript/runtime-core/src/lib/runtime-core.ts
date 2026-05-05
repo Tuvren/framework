@@ -36,6 +36,8 @@ import {
   decodeDeterministicKernelRecord,
   encodeDeterministicKernelRecord,
   type RuntimeKernel as KrakenKernel,
+  type RuntimeKernelRunLiveness,
+  type RunRecord,
   type PathValue,
   type RunCompletionStatus,
   type TurnNode,
@@ -118,6 +120,12 @@ import { createToolRegistry } from "./tool-registry.js";
 export const DEFAULT_AGENT_SCHEMA_ID = "tuvren.agent.v1";
 export const DEFAULT_MAX_PARALLEL_TOOL_CALLS = 10;
 export const DEFAULT_MANIFEST_EXTENSION_STATE_WARNING_BUDGET_BYTES = 256 * 1024;
+
+export interface RuntimeRunLivenessOptions {
+  executionOwnerId: string;
+  leaseDurationMs: number;
+  renewBeforeMs?: number;
+}
 export const DEFAULT_AGENT_SCHEMA: TurnTreeSchema = {
   incorporationRules: [
     { objectType: "message", targetPath: "messages" },
@@ -156,6 +164,7 @@ export interface RuntimeCoreOptions {
     threadId: string,
     branchId: string
   ) => Promise<string | null> | string | null;
+  runLiveness?: RuntimeRunLivenessOptions;
 }
 
 interface ResolvedRuntimeCoreOptions {
@@ -174,6 +183,13 @@ interface ResolvedRuntimeCoreOptions {
     threadId: string,
     branchId: string
   ) => Promise<string | null> | string | null;
+  runLiveness?: ResolvedRuntimeRunLivenessOptions;
+}
+
+interface ResolvedRuntimeRunLivenessOptions {
+  executionOwnerId: string;
+  leaseDurationMs: number;
+  renewBeforeMs: number;
 }
 
 export interface RuntimeWarning {
@@ -266,6 +282,13 @@ class FinalizationFailure extends Error {
 }
 
 class RuntimeCore implements TuvrenRuntime {
+  private readonly activeRunLeaseControllers = new WeakMap<
+    RuntimeExecutionHandle,
+    {
+      abortController: AbortController;
+      runId: string;
+    }
+  >();
   private readonly manifestExtensionStateWarningKeys = new WeakMap<
     RuntimeExecutionHandle,
     Set<string>
@@ -294,7 +317,23 @@ class RuntimeCore implements TuvrenRuntime {
       onWarning: options.onWarning,
       resolveAgentConfig: options.resolveAgentConfig,
       resolveParentTurnId: options.resolveParentTurnId,
+      runLiveness:
+        options.runLiveness === undefined
+          ? undefined
+          : normalizeRunLivenessOptions(options.runLiveness),
     };
+
+    if (
+      this.options.runLiveness !== undefined &&
+      !hasRunLivenessKernel(this.options.kernel)
+    ) {
+      throw new TuvrenRuntimeError(
+        "runLiveness requires a kernel that implements the kernel.run-liveness extension",
+        {
+          code: "missing_run_liveness_extension",
+        }
+      );
+    }
   }
 
   async createBranch(input: {
@@ -521,6 +560,7 @@ class RuntimeCore implements TuvrenRuntime {
     } catch (error: unknown) {
       await this.handleExecutionFailure(handle, error);
     } finally {
+      this.stopRunLeaseLoop(handle);
       handle.finish();
     }
   }
@@ -3605,15 +3645,38 @@ class RuntimeCore implements TuvrenRuntime {
       sideEffects: boolean;
     }>
   ): Promise<void> {
-    await this.options.kernel.run.create(
-      runId,
-      turnId,
-      branchId,
-      schemaId,
-      startTurnNodeHash,
-      steps
-    );
+    this.stopRunLeaseLoop(handle);
+    const livenessKernel = this.resolveRunLivenessKernel();
+    const leasedRun =
+      livenessKernel === undefined || this.options.runLiveness === undefined
+        ? undefined
+        : await livenessKernel.runLiveness.createLeasedRun({
+            branchId,
+            executionOwnerId: this.options.runLiveness.executionOwnerId,
+            leaseExpiresAtMs:
+              (this.now() + this.options.runLiveness.leaseDurationMs) as EpochMs,
+            runId,
+            schemaId,
+            startTurnNodeHash,
+            steps,
+            turnId,
+          });
+
+    if (leasedRun === undefined) {
+      await this.options.kernel.run.create(
+        runId,
+        turnId,
+        branchId,
+        schemaId,
+        startTurnNodeHash,
+        steps
+      );
+    }
+
     handle.setActiveRunId(runId);
+    if (leasedRun !== undefined) {
+      this.startRunLeaseLoop(handle, leasedRun);
+    }
   }
 
   private async completeTrackedRun(
@@ -3622,6 +3685,7 @@ class RuntimeCore implements TuvrenRuntime {
     status: RunCompletionStatus,
     event?: KernelRecord
   ): Promise<{ turnNodeHash?: HashString }> {
+    this.stopRunLeaseLoop(handle, runId);
     const eventHash =
       event === undefined ? undefined : await this.storeEventRecord(event);
     const completion = await this.options.kernel.run.complete(
@@ -3635,6 +3699,123 @@ class RuntimeCore implements TuvrenRuntime {
     }
 
     return completion;
+  }
+
+  private resolveRunLivenessKernel():
+    | (KrakenKernel & RuntimeKernelRunLiveness)
+    | undefined {
+    if (!hasRunLivenessKernel(this.options.kernel)) {
+      return undefined;
+    }
+
+    return this.options.kernel;
+  }
+
+  private startRunLeaseLoop(
+    handle: RuntimeExecutionHandle,
+    run: RunRecord
+  ): void {
+    const livenessOptions = this.options.runLiveness;
+    const livenessKernel = this.resolveRunLivenessKernel();
+
+    if (
+      livenessOptions === undefined ||
+      livenessKernel === undefined ||
+      run.executionOwnerId === undefined ||
+      run.fencingToken === undefined ||
+      run.leaseExpiresAtMs === undefined
+    ) {
+      return;
+    }
+
+    this.stopRunLeaseLoop(handle);
+    const abortController = new AbortController();
+    this.activeRunLeaseControllers.set(handle, {
+      abortController,
+      runId: run.runId,
+    });
+    detachPromise(
+      this.runLeaseLoop({
+        executionOwnerId: run.executionOwnerId,
+        fencingToken: run.fencingToken,
+        handle,
+        kernel: livenessKernel,
+        leaseExpiresAtMs: run.leaseExpiresAtMs,
+        runId: run.runId,
+        signal: abortController.signal,
+      })
+    );
+  }
+
+  private stopRunLeaseLoop(
+    handle: RuntimeExecutionHandle,
+    runId?: string
+  ): void {
+    const activeLease = this.activeRunLeaseControllers.get(handle);
+
+    if (activeLease === undefined) {
+      return;
+    }
+
+    if (runId !== undefined && activeLease.runId !== runId) {
+      return;
+    }
+
+    activeLease.abortController.abort();
+    this.activeRunLeaseControllers.delete(handle);
+  }
+
+  private async runLeaseLoop(input: {
+    executionOwnerId: string;
+    fencingToken: string;
+    handle: RuntimeExecutionHandle;
+    kernel: KrakenKernel & RuntimeKernelRunLiveness;
+    leaseExpiresAtMs: EpochMs;
+    runId: string;
+    signal: AbortSignal;
+  }): Promise<void> {
+    const livenessOptions = this.options.runLiveness;
+
+    if (livenessOptions === undefined) {
+      return;
+    }
+
+    let fencingToken = input.fencingToken;
+    let leaseExpiresAtMs = input.leaseExpiresAtMs;
+
+    while (!input.signal.aborted) {
+      const delayMs = Math.max(
+        0,
+        leaseExpiresAtMs - this.now() - livenessOptions.renewBeforeMs
+      );
+      await waitForDelay(delayMs, input.signal);
+
+      if (
+        input.signal.aborted ||
+        input.handle.getActiveRunId() !== input.runId ||
+        input.handle.status().phase !== "running"
+      ) {
+        return;
+      }
+
+      try {
+        const renewed = await input.kernel.runLiveness.renewLease(
+          input.runId,
+          input.executionOwnerId,
+          fencingToken,
+          (this.now() + livenessOptions.leaseDurationMs) as EpochMs
+        );
+        fencingToken = renewed.fencingToken;
+        leaseExpiresAtMs = renewed.leaseExpiresAtMs;
+      } catch (error: unknown) {
+        if (input.signal.aborted) {
+          return;
+        }
+
+        input.handle.abortWithError(createRunLeaseLostError(error));
+        return;
+      }
+    }
   }
 
   private async advanceTurnAndBranchHead(
@@ -4277,6 +4458,47 @@ function normalizeManifestExtensionStateWarningBudget(
   }
 
   return value;
+}
+
+function normalizeRunLivenessOptions(
+  value: RuntimeRunLivenessOptions
+): ResolvedRuntimeRunLivenessOptions {
+  if (value.executionOwnerId.length === 0) {
+    throw new TuvrenRuntimeError(
+      "runLiveness.executionOwnerId must be a non-empty string",
+      {
+        code: "invalid_runtime_options",
+      }
+    );
+  }
+
+  const leaseDurationMs = normalizeMaxParallelToolCalls(
+    value.leaseDurationMs,
+    "runLiveness.leaseDurationMs"
+  );
+  const renewBeforeMs = normalizeMaxParallelToolCalls(
+    value.renewBeforeMs ?? Math.max(1, Math.floor(leaseDurationMs / 2)),
+    "runLiveness.renewBeforeMs"
+  );
+
+  if (renewBeforeMs >= leaseDurationMs) {
+    throw new TuvrenRuntimeError(
+      "runLiveness.renewBeforeMs must be smaller than runLiveness.leaseDurationMs",
+      {
+        code: "invalid_runtime_options",
+        details: {
+          leaseDurationMs,
+          renewBeforeMs,
+        },
+      }
+    );
+  }
+
+  return {
+    executionOwnerId: value.executionOwnerId,
+    leaseDurationMs,
+    renewBeforeMs,
+  };
 }
 
 function approximateSerializedByteLength(value: unknown): number | undefined {
@@ -5880,6 +6102,61 @@ function isTurnLineageRecord(value: unknown): value is TurnLineageRecord {
 
 function hasAssistantOutputMessages(messages: TuvrenMessage[]): boolean {
   return messages.some((message) => message.role === "assistant");
+}
+
+function hasRunLivenessKernel(
+  kernel: KrakenKernel
+): kernel is KrakenKernel & RuntimeKernelRunLiveness {
+  return (
+    typeof kernel === "object" &&
+    kernel !== null &&
+    "runLiveness" in kernel &&
+    typeof kernel.runLiveness === "object" &&
+    kernel.runLiveness !== null
+  );
+}
+
+function createRunLeaseLostError(error: unknown): TuvrenRuntimeError {
+  const normalizedError = normalizeError(error);
+
+  return new TuvrenRuntimeError("execution lease lost", {
+    code: "runtime_execution_lease_lost",
+    details: {
+      cause:
+        isRecord(normalizedError) && typeof normalizedError.code === "string"
+          ? normalizedError.code
+          : undefined,
+      message: normalizedError.message,
+    },
+  });
+}
+
+function waitForDelay(durationMs: number, signal: AbortSignal): Promise<void> {
+  if (durationMs <= 0 || signal.aborted) {
+    return Promise.resolve();
+  }
+
+  return awaitableDelay(durationMs, signal);
+}
+
+function awaitableDelay(
+  durationMs: number,
+  signal: AbortSignal
+): Promise<void> {
+  return new Promise((resolve) => {
+    const timeoutId = setTimeout(() => {
+      signal.removeEventListener("abort", onAbort);
+      resolve();
+    }, durationMs);
+
+    const onAbort = () => {
+      clearTimeout(timeoutId);
+      signal.removeEventListener("abort", onAbort);
+      resolve();
+    };
+
+    signal.addEventListener("abort", onAbort, { once: true });
+  });
 }
 
 function assertFrameworkSchemaCompatibility(schema: TurnTreeSchema): void {
