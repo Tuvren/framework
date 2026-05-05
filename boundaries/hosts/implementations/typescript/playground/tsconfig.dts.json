@@ -10,6 +10,9 @@
       "@tuvren/backend-memory": [
         "../../../../kernel/implementations/typescript/backend-memory/dist/index.d.ts"
       ],
+      "@tuvren/kernel-runtime": [
+        "../../../../kernel/implementations/typescript/runtime-kernel/dist/index.d.ts"
+      ],
       "@tuvren/backend-sqlite": [
         "../../../../kernel/implementations/typescript/backend-sqlite/dist/index.d.ts"
       ],

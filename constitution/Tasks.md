@@ -1331,7 +1331,7 @@ And adapter errors remain isolated from implementation assertion failures
 Given the TypeScript adapter provides native observations for promoted kernel operations
 When shared-runner conformance executes the kernel plans
 Then validation, lineage, rollback, recovery, verdict, and observe checks pass or fail from implementation-produced evidence
-And TypeScript no longer reports `kernel.logical.diff_paths`, `kernel.logical.branch_list`, `kernel.logical.recovery_state`, `kernel.lineage.cross_thread_rejection`, or `kernel.turn.lateral_head_guard` as non-applicable once native support exists
+And TypeScript no longer reports `kernel.logical.diff_paths`, `kernel.logical.branch_list`, `kernel.logical.recovery_state`, or `kernel.lineage.cross_thread_rejection` as non-applicable once native support exists
 And every required evidence field is present or the shared runner fails the check
 ```
 

@@ -1,0 +1,26 @@
+{
+  "extends": "./tsconfig.lib.json",
+  "compilerOptions": {
+    "composite": false,
+    "rootDir": "../../../../../",
+    "allowImportingTsExtensions": true,
+    "paths": {
+      "@tuvren/core-types": [
+        "../../../../shared/contracts/core-types/implementations/typescript/src/index.ts"
+      ],
+      "@tuvren/kernel-protocol": [
+        "../../../contracts/protocol/implementations/typescript/src/index.ts"
+      ],
+      "@tuvren/backend-memory": ["../backend-memory/src/index.ts"],
+      "@tuvren/kernel-runtime": ["./src/index.ts"]
+    },
+    "types": ["bun", "node"]
+  },
+  "include": [
+    "src/**/*.ts",
+    "test/**/*.ts",
+    "../../../contracts/protocol/implementations/typescript/src/**/*.ts",
+    "../../../../shared/contracts/core-types/implementations/typescript/src/**/*.ts",
+    "../backend-memory/src/**/*.ts"
+  ]
+}

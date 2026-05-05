@@ -12,7 +12,7 @@
     "bun",
     "boundaries/kernel/implementations/typescript/conformance-adapter/src/host.ts"
   ],
-  "capabilities": ["kernel.protocol"],
+  "capabilities": ["kernel.protocol", "kernel.logical"],
   "authorityPackets": [
     "boundaries/kernel/contracts/protocol/spec/authority-packet.json"
   ],

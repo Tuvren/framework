@@ -267,6 +267,14 @@ export interface StoredTurnNode {
   turnTreeHash: HashString;
 }
 
+export interface StoredObserveAnnotation {
+  annotationCbor: Uint8Array;
+  annotationHash: HashString;
+  createdAtMs: EpochMs;
+  runId: string;
+  turnNodeHash: HashString | null;
+}
+
 export interface StoredThread {
   createdAtMs: EpochMs;
   rootTurnNodeHash: HashString;
@@ -299,6 +307,7 @@ export interface StoredRun {
   createdAtMs: EpochMs;
   createdTurnNodesCbor: Uint8Array;
   currentStepIndex: number;
+  pendingSignalsCbor?: Uint8Array;
   runId: string;
   schemaId: string;
   startTurnNodeHash: HashString;
@@ -365,6 +374,11 @@ export interface TurnNodeRepository {
   put(record: StoredTurnNode): Promise<void>;
 }
 
+export interface ObserveAnnotationRepository {
+  listByRun(runId: string): Promise<StoredObserveAnnotation[]>;
+  set(record: StoredObserveAnnotation): Promise<void>;
+}
+
 export interface ThreadRepository {
   get(threadId: string): Promise<StoredThread | null>;
   put(record: StoredThread): Promise<void>;
@@ -378,6 +392,7 @@ export interface BranchRepository {
 
 export interface TurnRepository {
   get(turnId: string): Promise<StoredTurn | null>;
+  listByThread(threadId: string): Promise<StoredTurn[]>;
   set(record: StoredTurn): Promise<void>;
 }
 
@@ -397,6 +412,7 @@ export interface StagedResultRepository {
 export interface RuntimeBackendTx {
   branches: BranchRepository;
   objects: ObjectRepository;
+  observeAnnotations: ObserveAnnotationRepository;
   orderedPathChunks: OrderedPathChunkRepository;
   runs: RunRepository;
   schemas: SchemaRepository;
@@ -507,5 +523,33 @@ export interface RuntimeKernel {
   };
   verdicts: {
     compose(verdicts: Verdict[]): Promise<ComposedVerdict>;
+  };
+}
+
+export interface RuntimeKernelRunLiveness {
+  runLiveness: {
+    createLeasedRun(input: {
+      branchId: string;
+      executionOwnerId: string;
+      leaseExpiresAtMs: EpochMs;
+      runId: string;
+      schemaId: string;
+      startTurnNodeHash: HashString;
+      steps: StepDeclaration[];
+      turnId: string;
+    }): Promise<RunRecord>;
+    listExpired(nowMs: EpochMs): Promise<RunRecord[]>;
+    preemptExpired(
+      runId: string,
+      preemptingOwnerId: string,
+      nowMs: EpochMs,
+      reason: string
+    ): Promise<RecoveryState>;
+    renewLease(
+      runId: string,
+      executionOwnerId: string,
+      fencingToken: string,
+      nextLeaseExpiresAtMs: EpochMs
+    ): Promise<{ fencingToken: string; leaseExpiresAtMs: EpochMs }>;
   };
 }

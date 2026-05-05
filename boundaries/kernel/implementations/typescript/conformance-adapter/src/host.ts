@@ -14,14 +14,22 @@
  * limitations under the License.
  */
 
+import { createMemoryBackend } from "@tuvren/backend-memory";
 import {
+  assertRecoveryState,
   assertStagedResult,
+  assertTurnTreeChangeSet,
+  assertTurnTreeSchema,
   decodeDeterministicKernelRecord,
   hashKernelRecord,
   hashOpaqueObjectBytes,
   hashTurnNodeIdentity,
+  type RecoveryState,
   type StagedResult,
+  type TurnTreeChangeSet,
+  type TurnTreeSchema,
 } from "@tuvren/kernel-protocol";
+import { createRuntimeKernel } from "@tuvren/kernel-runtime";
 import type {
   AdapterCapabilities,
   AdapterControls,
@@ -30,9 +38,28 @@ import type {
 import { createAdapterErrorEnvelope } from "../../../../../../tools/conformance/adapter-protocol/index.js";
 import { serveStdioAdapter } from "../../../../../../tools/conformance/adapter-protocol/stdio-host.js";
 
+declare const Bun: {
+  file(path: string | URL): {
+    json(): Promise<unknown>;
+  };
+};
+
+const CANONICAL_SCHEMA_URL = new URL(
+  "../../../../conformance/fixtures/canonical-turn-tree-schema.json",
+  import.meta.url
+);
+
 interface AdapterInput {
   fixture?: unknown;
 }
+
+interface LogicalFixture {
+  branchHeadListEntry: [string, string];
+  recoveryState: RecoveryState;
+  turnTreeChangeSet: TurnTreeChangeSet;
+}
+
+let canonicalSchemaPromise: Promise<TurnTreeSchema> | undefined;
 
 class TypeScriptKernelAdapter {
   initialize(
@@ -41,7 +68,7 @@ class TypeScriptKernelAdapter {
   ): Promise<AdapterCapabilities> {
     return Promise.resolve({
       adapterId: "typescript-kernel",
-      capabilities: ["kernel.protocol"],
+      capabilities: ["kernel.protocol", "kernel.logical"],
       packetId,
       planVersion,
     });
@@ -58,6 +85,14 @@ class TypeScriptKernelAdapter {
           return result(await deterministicHashing(readFixture(input)));
         case "kernel.protocol.schema-roundtrip":
           return result(schemaRoundtrip(readFixture(input)));
+        case "kernel.logical.diff-paths":
+          return result(await runLogicalDiff(readFixture(input)));
+        case "kernel.logical.branch-list":
+          return result(await runBranchList(readFixture(input)));
+        case "kernel.logical.recovery-state":
+          return result(await runRecoveryState(readFixture(input)));
+        case "kernel.lineage.cross-thread-rejection":
+          return result(await runCrossThreadLineage());
         default:
           return {
             error: {
@@ -152,6 +187,230 @@ function schemaRoundtrip(
   };
 }
 
+async function runLogicalDiff(
+  fixture: Record<string, unknown>
+): Promise<Record<string, unknown>> {
+  const schema = await loadCanonicalSchema();
+  const logical = readLogicalFixture(fixture, schema);
+  const kernel = await createConformanceKernel(schema);
+  const created = await kernel.thread.create(
+    "thread_conformance",
+    schema.schemaId,
+    logical.branchHeadListEntry[0]
+  );
+  const changedTree = await kernel.tree.create(
+    schema.schemaId,
+    logical.turnTreeChangeSet,
+    created.rootTurnTreeHash
+  );
+  const diffPaths = (
+    await kernel.tree.diff(created.rootTurnTreeHash, changedTree)
+  ).toSorted();
+
+  return { evidence: { diffPaths } };
+}
+
+async function runBranchList(
+  fixture: Record<string, unknown>
+): Promise<Record<string, unknown>> {
+  const schema = await loadCanonicalSchema();
+  const logical = readLogicalFixture(fixture, schema);
+  const kernel = await createConformanceKernel(schema);
+  await kernel.thread.create(
+    "thread_conformance",
+    schema.schemaId,
+    logical.branchHeadListEntry[0]
+  );
+  const branchEntries = await kernel.branch.list("thread_conformance");
+
+  return { evidence: { branchEntries } };
+}
+
+async function runRecoveryState(
+  fixture: Record<string, unknown>
+): Promise<Record<string, unknown>> {
+  const schema = await loadCanonicalSchema();
+  const logical = readLogicalFixture(fixture, schema);
+  const kernel = await createConformanceKernel(schema);
+  const thread = await kernel.thread.create(
+    "thread_conformance",
+    schema.schemaId,
+    logical.branchHeadListEntry[0]
+  );
+  const turn = await kernel.turn.create(
+    "turn_recovery",
+    thread.threadId,
+    thread.branchId,
+    null,
+    thread.rootTurnNodeHash
+  );
+  await kernel.run.create(
+    "run_recovery",
+    turn.turnId,
+    thread.branchId,
+    schema.schemaId,
+    thread.rootTurnNodeHash,
+    logical.recoveryState.stepSequence
+  );
+
+  const [firstStep, secondStep] = logical.recoveryState.stepSequence;
+
+  if (firstStep === undefined || secondStep === undefined) {
+    throw new Error("logical recovery fixture must declare at least two steps");
+  }
+
+  await kernel.run.beginStep("run_recovery", firstStep.id);
+  await kernel.run.completeStep("run_recovery", firstStep.id);
+  await kernel.run.beginStep("run_recovery", secondStep.id);
+
+  for (const [
+    index,
+    stagedResult,
+  ] of logical.recoveryState.consumedStagedResults.entries()) {
+    await stageFixtureResult(kernel, "run_recovery", stagedResult, index);
+  }
+
+  await kernel.run.completeStep("run_recovery", secondStep.id);
+
+  for (const [
+    index,
+    stagedResult,
+  ] of logical.recoveryState.uncommittedStagedResults.entries()) {
+    await stageFixtureResult(kernel, "run_recovery", stagedResult, index);
+  }
+
+  const recovery = await kernel.run.recover("run_recovery");
+
+  return {
+    evidence: {
+      recovery: {
+        consumedStagedResults: recovery.consumedStagedResults.length,
+        lastCompletedStepId: recovery.lastCompletedStepId,
+        uncommittedStagedResults: recovery.uncommittedStagedResults.length,
+      },
+    },
+  };
+}
+
+async function runCrossThreadLineage(): Promise<Record<string, unknown>> {
+  const schema = await loadCanonicalSchema();
+  const kernel = await createConformanceKernel(schema);
+  const threadA = await kernel.thread.create(
+    "thread_a",
+    schema.schemaId,
+    "branch_a"
+  );
+  const turnA = await kernel.turn.create(
+    "turn_a",
+    threadA.threadId,
+    threadA.branchId,
+    null,
+    threadA.rootTurnNodeHash
+  );
+  await kernel.run.create(
+    "run_a",
+    turnA.turnId,
+    threadA.branchId,
+    schema.schemaId,
+    threadA.rootTurnNodeHash,
+    [{ deterministic: false, id: "step_a", sideEffects: false }]
+  );
+  const completed = await kernel.run.completeStep("run_a", "step_a");
+
+  if (completed.turnNodeHash === undefined) {
+    throw new Error("expected checkpoint hash for cross-thread lineage check");
+  }
+
+  await kernel.thread.create("thread_b", schema.schemaId, "branch_b");
+
+  try {
+    await kernel.branch.create(
+      "branch_cross_thread",
+      "thread_b",
+      completed.turnNodeHash
+    );
+
+    // Unexpected acceptance is surfaced as evidence instead of crashing the
+    // adapter so the shared runner can report one semantic failure cleanly.
+    return {
+      evidence: {
+        diagnostics: ["thread A node unexpectedly seeded thread B branch"],
+        errorCode: "unexpected_success",
+      },
+    };
+  } catch (error: unknown) {
+    return {
+      evidence: {
+        errorCode: normalizeLogicalErrorCode(readErrorCode(error)),
+      },
+    };
+  }
+}
+
+async function createConformanceKernel(schema: TurnTreeSchema) {
+  const kernel = createRuntimeKernel({ backend: createMemoryBackend() });
+  await kernel.schema.register(schema);
+  return kernel;
+}
+
+async function loadCanonicalSchema(): Promise<TurnTreeSchema> {
+  canonicalSchemaPromise ??= Bun.file(CANONICAL_SCHEMA_URL)
+    .json()
+    .then((value: unknown) => {
+      assertTurnTreeSchema(value, "canonical kernel conformance schema");
+      return value;
+    });
+
+  return await canonicalSchemaPromise;
+}
+
+async function stageFixtureResult(
+  kernel: ReturnType<typeof createRuntimeKernel>,
+  runId: string,
+  stagedResult: StagedResult,
+  index: number
+): Promise<void> {
+  await kernel.staging.stage(
+    runId,
+    new TextEncoder().encode(`fixture staged result ${index}`),
+    stagedResult.taskId,
+    stagedResult.objectType,
+    stagedResult.status,
+    stagedResult.status === "interrupted"
+      ? stagedResult.interruptPayload
+      : undefined
+  );
+}
+
+function normalizeLogicalErrorCode(code: string): string {
+  // The conformance plan stays binding-neutral, so the adapter translates
+  // implementation-specific error codes into the stable shared evidence names.
+  switch (code) {
+    case "kernel_runtime_lineage_mismatch":
+      return "turn_node_thread_mismatch";
+    case "kernel_runtime_turn_head_lineage_mismatch":
+      return "turn_head_lateral_move";
+    default:
+      return code;
+  }
+}
+
+function readErrorCode(error: unknown): string {
+  if (typeof error === "object" && error !== null && "code" in error) {
+    const code = Reflect.get(error, "code");
+
+    if (typeof code === "string") {
+      return code;
+    }
+  }
+
+  if (error instanceof Error) {
+    return error.name;
+  }
+
+  return "unknown_error";
+}
+
 function result(value: Record<string, unknown>): OperationOutcome {
   return {
     kind: "result",
@@ -162,6 +421,36 @@ function result(value: Record<string, unknown>): OperationOutcome {
 function readFixture(input: unknown): Record<string, unknown> {
   const object = readRecord(input, "adapter input") as AdapterInput;
   return readRecord(object.fixture, "adapter input fixture");
+}
+
+function readLogicalFixture(
+  fixture: Record<string, unknown>,
+  schema: TurnTreeSchema
+): LogicalFixture {
+  const branchHeadListEntry = readArray(
+    fixture.branchHeadListEntry,
+    "branchHeadListEntry"
+  );
+
+  if (branchHeadListEntry.length !== 2) {
+    throw new Error("branchHeadListEntry must contain exactly two items");
+  }
+
+  const branchId = readString(branchHeadListEntry[0], "branchHeadListEntry[0]");
+  const branchHead = readString(
+    branchHeadListEntry[1],
+    "branchHeadListEntry[1]"
+  );
+  const recoveryState = fixture.recoveryState;
+  assertRecoveryState(recoveryState, "recoveryState");
+  const turnTreeChangeSet = fixture.turnTreeChangeSet;
+  assertTurnTreeChangeSet(turnTreeChangeSet, schema, "turnTreeChangeSet");
+
+  return {
+    branchHeadListEntry: [branchId, branchHead],
+    recoveryState,
+    turnTreeChangeSet,
+  };
 }
 
 function hexToBytes(value: string): Uint8Array {

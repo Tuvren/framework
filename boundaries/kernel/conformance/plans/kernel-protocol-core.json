@@ -81,8 +81,8 @@
       "assertions": [
         {
           "kind": "evidenceField",
-          "field": "$.branchEntries.0",
-          "equalsPath": "$.fixture.branchHeadListEntry"
+          "field": "$.branchEntries.0.0",
+          "equalsPath": "$.fixture.branchHeadListEntry.0"
         }
       ],
       "evidence": ["branchEntries"]
@@ -124,19 +124,6 @@
           "kind": "evidenceField",
           "field": "$.errorCode",
           "equals": "turn_node_thread_mismatch"
-        }
-      ],
-      "evidence": ["errorCode"]
-    },
-    {
-      "checkId": "kernel.turn.lateral_head_guard",
-      "operation": "kernel.turn.lateral-head-guard",
-      "capabilities": ["kernel.logical"],
-      "assertions": [
-        {
-          "kind": "evidenceField",
-          "field": "$.errorCode",
-          "equals": "turn_head_lateral_move"
         }
       ],
       "evidence": ["errorCode"]

@@ -941,9 +941,18 @@ describe("logical contract fixtures", () => {
       assertRunRecord(
         kernelProtocolInvalidFixtures.invalidRunningRunRecordAtSequenceEnd
       )
-    ).toThrow(
-      'must reference an available step when value.status is "running"'
-    );
+    ).not.toThrow();
+    expect(() =>
+      assertStoredRun(
+        kernelProtocolInvalidFixtures.invalidStoredRunningRunAtSequenceEnd
+      )
+    ).not.toThrow();
+    expect(() =>
+      assertRunRecord({
+        ...kernelProtocolInvalidFixtures.invalidRunningRunRecordAtSequenceEnd,
+        currentStepIndex: 2,
+      })
+    ).toThrow("currentStepIndex must not exceed value.stepSequence.length");
     expect(() =>
       assertRunRecord(
         kernelProtocolInvalidFixtures.invalidRunningRunRecordWithEmptyStepSequence

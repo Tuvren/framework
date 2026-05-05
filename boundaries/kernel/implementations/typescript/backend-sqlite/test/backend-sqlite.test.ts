@@ -168,6 +168,17 @@ function getTargetedValidationMigrationSql(): string {
   );
 }
 
+function getPendingSignalsAndAnnotationsMigrationSql(): string {
+  return readFileSync(
+    join(
+      process.cwd(),
+      "migrations",
+      "0003_pending_signals_and_annotations.sql"
+    ),
+    "utf8"
+  );
+}
+
 function copyCurrentPackageMigrations(targetDirectory: string): void {
   const migrationsDirectory = join(process.cwd(), "migrations");
   const migrationFiles = readdirSync(migrationsDirectory)
@@ -429,7 +440,7 @@ registerBackendRecoverySuite({
 });
 
 describe("@tuvren/backend-sqlite", () => {
-  test("enables WAL mode and applies the baseline migration once", async () => {
+  test("enables WAL mode and applies package migrations once", async () => {
     const databasePath = createTempDatabasePath();
     const backend = createSqliteBackend({
       databasePath,
@@ -456,6 +467,8 @@ describe("@tuvren/backend-sqlite", () => {
     deepStrictEqual(migrationRows, [
       { name: "0001_initial_schema.sql" },
       { name: "0002_targeted_validation_indexes.sql" },
+      { name: "0003_pending_signals_and_annotations.sql" },
+      { name: "0004_observe_annotations.sql" },
     ]);
     deepStrictEqual(objectsTable, { name: "objects" });
 
@@ -469,6 +482,8 @@ describe("@tuvren/backend-sqlite", () => {
     deepStrictEqual(reappliedRows, [
       { name: "0001_initial_schema.sql" },
       { name: "0002_targeted_validation_indexes.sql" },
+      { name: "0003_pending_signals_and_annotations.sql" },
+      { name: "0004_observe_annotations.sql" },
     ]);
   });
 
@@ -550,6 +565,8 @@ describe("@tuvren/backend-sqlite", () => {
     deepStrictEqual(migrationRows, [
       { name: "0001_initial_schema.sql" },
       { name: "0002_targeted_validation_indexes.sql" },
+      { name: "0003_pending_signals_and_annotations.sql" },
+      { name: "0004_observe_annotations.sql" },
     ]);
     deepStrictEqual(objectsTable, { name: "objects" });
   });
@@ -617,6 +634,67 @@ describe("@tuvren/backend-sqlite", () => {
     );
   });
 
+  test("upgrades databases from 0003 to 0004 during startup", async () => {
+    const databasePath = createTempDatabasePath();
+    const seed = new Database(databasePath);
+    seed.exec(`
+      CREATE TABLE backend_sqlite_migrations (
+        name TEXT PRIMARY KEY,
+        applied_at_ms INTEGER NOT NULL
+      );
+    `);
+    seed.exec(getBaselineMigrationSql());
+    seed.exec(getTargetedValidationMigrationSql());
+    seed.exec(getPendingSignalsAndAnnotationsMigrationSql());
+    seed
+      .prepare(
+        `
+          INSERT INTO backend_sqlite_migrations (name, applied_at_ms)
+          VALUES (?, ?)
+        `
+      )
+      .run("0001_initial_schema.sql", 1);
+    seed
+      .prepare(
+        `
+          INSERT INTO backend_sqlite_migrations (name, applied_at_ms)
+          VALUES (?, ?)
+        `
+      )
+      .run("0002_targeted_validation_indexes.sql", 2);
+    seed
+      .prepare(
+        `
+          INSERT INTO backend_sqlite_migrations (name, applied_at_ms)
+          VALUES (?, ?)
+        `
+      )
+      .run("0003_pending_signals_and_annotations.sql", 3);
+    seed.close();
+
+    const backend = createSqliteBackend({ databasePath });
+    deepStrictEqual(await backend.health(), { ok: true });
+
+    const probe = new Database(databasePath, { readonly: true });
+    const migrationRows = probe
+      .prepare("SELECT name FROM backend_sqlite_migrations ORDER BY name")
+      .all() as Array<{ name: string }>;
+    const observeAnnotationsTable = probe
+      .prepare(
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'observe_annotations'"
+      )
+      .get() as { name: string } | undefined;
+    probe.close();
+
+    deepStrictEqual(migrationRows, [
+      { name: "0001_initial_schema.sql" },
+      { name: "0002_targeted_validation_indexes.sql" },
+      { name: "0003_pending_signals_and_annotations.sql" },
+      { name: "0004_observe_annotations.sql" },
+    ]);
+    deepStrictEqual(observeAnnotationsTable, { name: "observe_annotations" });
+  });
+
   test("loads migrations from dist-local paths in dist-style layouts", async () => {
     const tempDirectory = createWorkspaceTempDirectory(
       ".tmp-sqlite-dist-layout-"
@@ -660,7 +738,7 @@ describe("@tuvren/backend-sqlite", () => {
     copyFileSync(getCompiledSqliteRuntimePath(), runtimePath);
     copyCurrentPackageMigrations(fakeMigrationsDirectory);
     writeFileSync(
-      join(fakeMigrationsDirectory, "0003_add_objects_extra.sql"),
+      join(fakeMigrationsDirectory, "0005_add_objects_extra.sql"),
       "ALTER TABLE objects ADD COLUMN extra TEXT;\n",
       "utf8"
     );
@@ -688,7 +766,9 @@ describe("@tuvren/backend-sqlite", () => {
     deepStrictEqual(migrationRows, [
       { name: "0001_initial_schema.sql" },
       { name: "0002_targeted_validation_indexes.sql" },
-      { name: "0003_add_objects_extra.sql" },
+      { name: "0003_pending_signals_and_annotations.sql" },
+      { name: "0004_observe_annotations.sql" },
+      { name: "0005_add_objects_extra.sql" },
     ]);
   });
 
@@ -706,7 +786,7 @@ describe("@tuvren/backend-sqlite", () => {
     copyFileSync(getCompiledSqliteRuntimePath(), runtimePath);
     copyCurrentPackageMigrations(fakeMigrationsDirectory);
     writeFileSync(
-      join(fakeMigrationsDirectory, "0003_rebuild_runs_index.sql"),
+      join(fakeMigrationsDirectory, "0005_rebuild_runs_index.sql"),
       [
         "DROP INDEX idx_runs_branch_id_status;",
         "CREATE INDEX idx_runs_branch_id_status ON runs(branch_id, status, updated_at_ms);",
@@ -1356,6 +1436,59 @@ describe("@tuvren/backend-sqlite", () => {
     throws(
       () => createSqliteBackend({ databasePath }),
       UNKNOWN_MIGRATION_ERROR_PATTERN
+    );
+  });
+
+  test("rejects latest package migration databases whose baseline table definitions drift", () => {
+    const databasePath = createTempDatabasePath();
+    const seed = new Database(databasePath);
+    const malformedSchemaSql = getBaselineMigrationSql().replace(
+      `CREATE TABLE objects (
+  hash TEXT PRIMARY KEY,
+  media_type TEXT NOT NULL,
+  bytes BLOB NOT NULL,
+  byte_length INTEGER NOT NULL,
+  created_at_ms INTEGER NOT NULL
+);`,
+      `CREATE TABLE objects (
+  hash TEXT NOT NULL,
+  media_type TEXT NOT NULL,
+  bytes BLOB NOT NULL,
+  byte_length INTEGER NOT NULL,
+  created_at_ms INTEGER NOT NULL
+);`
+    );
+
+    seed.exec(`
+      CREATE TABLE backend_sqlite_migrations (
+        name TEXT PRIMARY KEY,
+        applied_at_ms INTEGER NOT NULL
+      )
+    `);
+
+    for (const [migrationName, appliedAtMs] of [
+      ["0001_initial_schema.sql", 1],
+      ["0002_targeted_validation_indexes.sql", 2],
+      ["0003_pending_signals_and_annotations.sql", 3],
+    ] as const) {
+      seed
+        .prepare(
+          `
+            INSERT INTO backend_sqlite_migrations (name, applied_at_ms)
+            VALUES (?, ?)
+          `
+        )
+        .run(migrationName, appliedAtMs);
+    }
+
+    seed.exec(malformedSchemaSql);
+    seed.exec(getTargetedValidationMigrationSql());
+    seed.exec(getPendingSignalsAndAnnotationsMigrationSql());
+    seed.close();
+
+    throws(
+      () => createSqliteBackend({ databasePath }),
+      SCHEMA_MISMATCH_ERROR_PATTERN
     );
   });
 

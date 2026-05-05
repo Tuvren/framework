@@ -22,6 +22,7 @@ import {
 } from "@tuvren/core-types";
 import {
   assertStoredBranch,
+  assertStoredObserveAnnotation,
   assertStoredObject,
   assertStoredObjectIdentity,
   assertStoredOrderedPathChunk,
@@ -43,6 +44,7 @@ import {
   type RuntimeBackend as KrakenBackend,
   type RuntimeBackendTx as KrakenBackendTx,
   type StoredBranch,
+  type StoredObserveAnnotation,
   type StoredObject,
   type StoredOrderedPathChunk,
   type StoredRun,
@@ -61,6 +63,7 @@ const ORDERED_PATH_CHUNK_SIZE = 32;
 
 interface BackendState {
   branches: Map<string, StoredBranch>;
+  observeAnnotations: Map<string, StoredObserveAnnotation[]>;
   objects: Map<string, StoredObject>;
   orderedPathChunks: Map<string, StoredOrderedPathChunk>;
   runs: Map<string, StoredRun>;
@@ -263,6 +266,33 @@ function createRepositories(
       },
     },
     now,
+    observeAnnotations: {
+      listByRun(runId) {
+        assertTransactionActive();
+        const records = state.observeAnnotations.get(runId) ?? [];
+        return Promise.resolve(
+          records
+            .map(cloneStoredObserveAnnotation)
+            .sort(compareStoredObserveAnnotation)
+        );
+      },
+      set(record) {
+        assertTransactionActive();
+        assertStoredObserveAnnotation(record, "record");
+        ensureRunExists(state, record.runId, "record.runId");
+
+        if (record.turnNodeHash !== null) {
+          ensureTurnNodeExists(state, record.turnNodeHash, "record.turnNodeHash");
+        }
+
+        const records = state.observeAnnotations.get(record.runId) ?? [];
+        // Observe annotations are append-only evidence, so identical payloads
+        // must survive as distinct records instead of being deduplicated.
+        records.push(cloneStoredObserveAnnotation(record));
+        state.observeAnnotations.set(record.runId, records);
+        return Promise.resolve();
+      },
+    },
     objects: {
       get(hash) {
         assertTransactionActive();
@@ -702,6 +732,12 @@ function createRepositories(
           record === undefined ? null : cloneStoredTurn(record)
         );
       },
+      listByThread(threadId) {
+        assertTransactionActive();
+        return Promise.resolve(
+          listTurnsByThread(state, threadId).map(cloneStoredTurn)
+        );
+      },
       set(record) {
         assertTransactionActive();
         assertStoredTurn(record, "record");
@@ -790,6 +826,7 @@ function createRepositories(
 function createEmptyState(): BackendState {
   return {
     branches: new Map(),
+    observeAnnotations: new Map(),
     objects: new Map(),
     orderedPathChunks: new Map(),
     runs: new Map(),
@@ -1238,6 +1275,12 @@ function listTurnsByThread(
 function cloneState(state: BackendState): BackendState {
   return {
     branches: new Map(state.branches),
+    observeAnnotations: new Map(
+      Array.from(state.observeAnnotations, ([runId, records]) => [
+        runId,
+        records.map(cloneStoredObserveAnnotation),
+      ])
+    ),
     objects: new Map(state.objects),
     orderedPathChunks: new Map(state.orderedPathChunks),
     runs: new Map(state.runs),
@@ -2610,6 +2653,18 @@ function cloneStoredRun(record: StoredRun): StoredRun {
     ...record,
     createdTurnNodesCbor: cloneBytes(record.createdTurnNodesCbor),
     stepSequenceCbor: cloneBytes(record.stepSequenceCbor),
+    ...(record.pendingSignalsCbor === undefined
+      ? {}
+      : { pendingSignalsCbor: cloneBytes(record.pendingSignalsCbor) }),
+  };
+}
+
+function cloneStoredObserveAnnotation(
+  record: StoredObserveAnnotation
+): StoredObserveAnnotation {
+  return {
+    ...record,
+    annotationCbor: cloneBytes(record.annotationCbor),
   };
 }
 
@@ -2819,6 +2874,18 @@ function compareStoredRun(left: StoredRun, right: StoredRun): number {
     right.createdAtMs,
     left.runId,
     right.runId
+  );
+}
+
+function compareStoredObserveAnnotation(
+  left: StoredObserveAnnotation,
+  right: StoredObserveAnnotation
+): number {
+  return compareByTimestampAndKey(
+    left.createdAtMs,
+    right.createdAtMs,
+    left.annotationHash,
+    right.annotationHash
   );
 }
 

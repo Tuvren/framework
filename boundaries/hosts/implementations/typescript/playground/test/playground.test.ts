@@ -17,6 +17,8 @@
 import { describe, expect, test } from "bun:test";
 import { tmpdir } from "node:os";
 import { type ChatCompletionRequest, LLMock } from "@copilotkit/aimock";
+import { createMemoryBackend } from "@tuvren/backend-memory";
+import { createRuntimeKernel } from "@tuvren/kernel-runtime";
 import {
   AIMOCK_PLAYGROUND_PROVIDER_MODES,
   createPlaygroundHost,
@@ -33,6 +35,7 @@ import {
   TUVREN_RUNTIME_TELEMETRY_ATTRIBUTE_KEYS,
   TUVREN_RUNTIME_TELEMETRY_SCHEMA_URL,
 } from "@tuvren/runtime-core";
+import { createPlaygroundKernelInspector } from "../src/lib/playground-kernel.js";
 
 const AIMOCK_PROVIDER_CASES: readonly AimockProviderCase[] = [
   {
@@ -1389,6 +1392,26 @@ describe("playground host scenarios", () => {
     expect(report.summary.allChecksPassed).toBe(false);
     expect(report.summary.failedScenarioCount).toBe(1);
     expect(report.summary.failedScenarios).toEqual(["reload"]);
+  });
+
+  test("playground inspector tolerates schemas without messages or runtime.status paths", async () => {
+    const kernel = createRuntimeKernel({ backend: createMemoryBackend() });
+    const schemaId = await kernel.schema.register({
+      incorporationRules: [],
+      paths: [{ collection: "single", path: "context.manifest" }],
+      schemaId: "schema_playground_custom",
+    });
+    const thread = await kernel.thread.create(
+      "thread_playground_custom",
+      schemaId,
+      "branch_playground_custom"
+    );
+    const inspector = createPlaygroundKernelInspector(kernel);
+
+    await expect(inspector.readBranchMessages(thread.branchId)).resolves.toEqual(
+      []
+    );
+    await expect(inspector.readBranchStatus(thread.branchId)).resolves.toBeNull();
   });
 });
 

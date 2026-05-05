@@ -48,6 +48,7 @@ import type {
   StepContext,
   StepDeclaration,
   StoredBranch,
+  StoredObserveAnnotation,
   StoredObject,
   StoredOrderedPathChunk,
   StoredRun,
@@ -1354,6 +1355,41 @@ export async function assertStoredTurnNodeIdentity(
   }
 }
 
+export function isStoredObserveAnnotation(
+  value: unknown
+): value is StoredObserveAnnotation {
+  return tryAssert(value, assertStoredObserveAnnotation);
+}
+
+export function assertStoredObserveAnnotation(
+  value: unknown,
+  label = "value"
+): asserts value is StoredObserveAnnotation {
+  const objectValue = assertPlainObject(value, label);
+  assertAllowedObjectKeys(
+    objectValue,
+    [
+      "annotationCbor",
+      "annotationHash",
+      "createdAtMs",
+      "runId",
+      "turnNodeHash",
+    ],
+    label
+  );
+
+  assertUint8Array(objectValue.annotationCbor, `${label}.annotationCbor`);
+  assertHashString(objectValue.annotationHash, `${label}.annotationHash`);
+  assertEpochMs(objectValue.createdAtMs, `${label}.createdAtMs`);
+  assertNonEmptyString(objectValue.runId, `${label}.runId`);
+  assertNullableHashString(objectValue.turnNodeHash, `${label}.turnNodeHash`);
+  assertDecodedKernelRecord(
+    objectValue.annotationCbor,
+    assertKernelObject,
+    `${label}.annotationCbor`
+  );
+}
+
 export function isStoredThread(value: unknown): value is StoredThread {
   return tryAssert(value, assertStoredThread);
 }
@@ -1490,6 +1526,7 @@ export function assertStoredRun(
       "createdAtMs",
       "createdTurnNodesCbor",
       "currentStepIndex",
+      "pendingSignalsCbor",
       "runId",
       "schemaId",
       "startTurnNodeHash",
@@ -1504,6 +1541,11 @@ export function assertStoredRun(
   const stepSequenceCbor = objectValue.stepSequenceCbor;
   const createdTurnNodesCbor = objectValue.createdTurnNodesCbor;
 
+  assertOptionalFieldIsOmittedWhenUndefined(
+    objectValue,
+    "pendingSignalsCbor",
+    label
+  );
   assertNonEmptyString(objectValue.runId, `${label}.runId`);
   assertNonEmptyString(objectValue.turnId, `${label}.turnId`);
   assertNonEmptyString(objectValue.branchId, `${label}.branchId`);
@@ -1513,6 +1555,13 @@ export function assertStoredRun(
   assertNonNegativeInteger(currentStepIndex, `${label}.currentStepIndex`);
   assertUint8Array(stepSequenceCbor, `${label}.stepSequenceCbor`);
   assertUint8Array(createdTurnNodesCbor, `${label}.createdTurnNodesCbor`);
+
+  if (objectValue.pendingSignalsCbor !== undefined) {
+    assertUint8Array(
+      objectValue.pendingSignalsCbor,
+      `${label}.pendingSignalsCbor`
+    );
+  }
   const stepSequence = assertDecodedKernelRecord(
     stepSequenceCbor,
     assertStepDeclarationArray,
@@ -2004,9 +2053,9 @@ function assertRunningRunHasNextStep(
     );
   }
 
-  if (currentStepIndex >= stepCount) {
+  if (currentStepIndex > stepCount) {
     throw validationError(
-      `${currentStepIndexLabel} must reference an available step when ${statusLabel} is "running"`,
+      `${currentStepIndexLabel} must not exceed the declared step count in ${stepSequenceLabel} when ${statusLabel} is "running"`,
       "invalid_run_step_index",
       { currentStepIndex, status, stepCount }
     );

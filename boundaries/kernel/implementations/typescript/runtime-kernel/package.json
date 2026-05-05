@@ -1,0 +1,22 @@
+{
+  "name": "@tuvren/kernel-runtime",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "dependencies": {
+    "@tuvren/core-types": "workspace:*",
+    "@tuvren/kernel-protocol": "workspace:*"
+  },
+  "devDependencies": {
+    "@tuvren/backend-memory": "workspace:*"
+  }
+}

@@ -31,7 +31,7 @@ Remaining `conformance-runner/` projects are native or Nx wrappers only. They do
 ## Current Evidence Posture
 
 - TypeScript framework: green through native observations and trace plans.
-- TypeScript kernel: green for `kernel.protocol`; `kernel.logical` is non-applicable by capability.
+- TypeScript kernel: green for `kernel.protocol` and the current promoted `kernel.logical` checks through native `@tuvren/kernel-runtime` observations.
 - TypeScript providers: green for provider bridge observations.
 - Rust kernel: green through the native Rust adapter and shared runner.
 - Rust framework: red because native Rust framework/runtime/ReAct behavior is not implemented.

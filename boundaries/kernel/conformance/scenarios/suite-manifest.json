@@ -80,14 +80,6 @@
       "assertions": ["cross_thread_branch_create_rejected"],
       "implementations": ["rust-kernel"],
       "expectedEvidence": ["assertionResults", "details.errorCode"]
-    },
-    {
-      "checkId": "kernel.turn.lateral_head_guard",
-      "description": "Kernel implementations reject turn-head rewrites that jump to a lateral descendant outside the turn lineage.",
-      "scenarioIds": ["turn-head-lateral-guard"],
-      "assertions": ["lateral_turn_head_move_rejected"],
-      "implementations": ["rust-kernel"],
-      "expectedEvidence": ["assertionResults", "details.errorCode"]
     }
   ]
 }

@@ -157,6 +157,7 @@
         "@tuvren/event-stream": "workspace:*",
         "@tuvren/framework-testkit": "workspace:*",
         "@tuvren/kernel-protocol": "workspace:*",
+        "@tuvren/kernel-runtime": "workspace:*",
         "@tuvren/provider-bridge-ai-sdk": "workspace:*",
         "@tuvren/runtime-api": "workspace:*",
         "@tuvren/runtime-core": "workspace:*",
@@ -208,6 +209,17 @@
         "@tuvren/core-types": "workspace:*",
         "@tuvren/kernel-protocol": "workspace:*",
         "@tuvren/kernel-testkit": "workspace:*",
+      },
+    },
+    "boundaries/kernel/implementations/typescript/runtime-kernel": {
+      "name": "@tuvren/kernel-runtime",
+      "version": "0.0.0",
+      "dependencies": {
+        "@tuvren/core-types": "workspace:*",
+        "@tuvren/kernel-protocol": "workspace:*",
+      },
+      "devDependencies": {
+        "@tuvren/backend-memory": "workspace:*",
       },
     },
     "boundaries/kernel/implementations/typescript/testkit": {
@@ -828,6 +840,8 @@
     "@tuvren/framework-typescript-conformance-runner": ["@tuvren/framework-typescript-conformance-runner@workspace:boundaries/framework/implementations/typescript/conformance-runner"],
 
     "@tuvren/kernel-protocol": ["@tuvren/kernel-protocol@workspace:boundaries/kernel/contracts/protocol/implementations/typescript"],
+
+    "@tuvren/kernel-runtime": ["@tuvren/kernel-runtime@workspace:boundaries/kernel/implementations/typescript/runtime-kernel"],
 
     "@tuvren/kernel-testkit": ["@tuvren/kernel-testkit@workspace:boundaries/kernel/implementations/typescript/testkit"],
 

@@ -58,6 +58,9 @@
       "@tuvren/backend-memory": [
         "./boundaries/kernel/implementations/typescript/backend-memory/src/index.ts"
       ],
+      "@tuvren/kernel-runtime": [
+        "./boundaries/kernel/implementations/typescript/runtime-kernel/src/index.ts"
+      ],
       "@tuvren/backend-sqlite": [
         "./boundaries/kernel/implementations/typescript/backend-sqlite/src/index.ts"
       ],

@@ -8,6 +8,9 @@
       "@tuvren/backend-memory": [
         "../../../../kernel/implementations/typescript/backend-memory/src/index.ts"
       ],
+      "@tuvren/kernel-runtime": [
+        "../../../../kernel/implementations/typescript/runtime-kernel/src/index.ts"
+      ],
       "@tuvren/backend-sqlite": [
         "../../../../kernel/implementations/typescript/backend-sqlite/src/index.ts"
       ],
@@ -56,6 +59,7 @@
     "../../../../kernel/contracts/protocol/implementations/typescript/src/**/*.ts",
     "../../../../kernel/implementations/typescript/backend-memory/src/**/*.ts",
     "../../../../kernel/implementations/typescript/backend-sqlite/src/**/*.ts",
+    "../../../../kernel/implementations/typescript/runtime-kernel/src/**/*.ts",
     "../../../../framework/contracts/runtime-api/implementations/typescript/src/**/*.ts",
     "../../../../framework/contracts/event-stream/implementations/typescript/src/**/*.ts",
     "../../../../framework/contracts/driver-api/implementations/typescript/src/**/*.ts",
