@@ -496,12 +496,6 @@ describe("framework-runtime-core", () => {
         expect(countUserTextMessages(context.messages, "Replace the stale run")).toBe(
           1
         );
-        expect(
-          hasAssistantTextMessage(
-            context.messages,
-            "Recovered durable assistant output."
-          )
-        ).toBe(true);
         return {
           messages: [assistantText("Replacement execution succeeded.")],
           resolution: {
@@ -539,7 +533,7 @@ describe("framework-runtime-core", () => {
       runId: "run_stale_leased_execution",
       schemaId: DEFAULT_AGENT_SCHEMA.schemaId,
       startTurnNodeHash: thread.rootTurnNodeHash,
-      steps: [{ deterministic: false, id: "iterate", sideEffects: true }],
+      steps: [{ deterministic: false, id: "incorporate_input", sideEffects: true }],
       turnId: staleTurn.turnId,
     });
     await livenessHarness.kernel.staging.stage(
@@ -554,21 +548,6 @@ describe("framework-runtime-core", () => {
         role: "user",
       }),
       "stale_user_message",
-      "message",
-      "completed"
-    );
-    await livenessHarness.kernel.staging.stage(
-      "run_stale_leased_execution",
-      encodeDeterministicKernelRecord({
-        parts: [
-          {
-            text: "Recovered durable assistant output.",
-            type: "text",
-          },
-        ],
-        role: "assistant",
-      }),
-      "stale_assistant_message",
       "message",
       "completed"
     );
@@ -590,12 +569,6 @@ describe("framework-runtime-core", () => {
         (run) => run.runId === "run_stale_leased_execution"
       )?.status
     ).toBe("failed");
-    expect(
-      hasAssistantTextMessage(
-        await harness.readBranchMessages(thread.branchId),
-        "Recovered durable assistant output."
-      )
-    ).toBe(true);
   });
 
   test("starts a fresh turn when the incoming signal does not match the recovered stale turn", async () => {
@@ -756,7 +729,9 @@ describe("framework-runtime-core", () => {
     const harness = createFakeKernelHarness();
     const livenessHarness = createFakeRunLivenessKernelHarness(harness, {
       async onRenewLease() {
-        throw new Error("lease renewal lost");
+        throw new TuvrenRuntimeError("lease fencing token is stale", {
+          code: "kernel_runtime_run_lease_token_mismatch",
+        });
       },
     });
     const driver = {

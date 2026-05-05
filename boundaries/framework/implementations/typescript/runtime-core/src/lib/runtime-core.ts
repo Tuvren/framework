@@ -37,6 +37,7 @@ import {
   encodeDeterministicKernelRecord,
   type RuntimeKernel as KrakenKernel,
   type RuntimeKernelRunLiveness,
+  type RecoveryState,
   type RunRecord,
   type PathValue,
   type RunCompletionStatus,
@@ -270,6 +271,7 @@ interface HelperBundle {
 }
 
 interface ExpiredExecutionRecovery {
+  mode?: "reuse_turn" | "skip_fresh_prelude";
   preempted: boolean;
   turnId?: string;
 }
@@ -570,7 +572,7 @@ class RuntimeCore implements TuvrenRuntime {
           handle,
           schemaId,
           loopState,
-          recoveredExecution?.turnId !== undefined
+          recoveredExecution?.mode
         ))
       ) {
         return;
@@ -694,9 +696,9 @@ class RuntimeCore implements TuvrenRuntime {
     handle: RuntimeExecutionHandle,
     schemaId: string,
     loopState: LoopState,
-    reuseRecoveredTurn: boolean
+    recoveredExecutionMode: ExpiredExecutionRecovery["mode"]
   ): Promise<boolean> {
-    if (!reuseRecoveredTurn) {
+    if (recoveredExecutionMode === undefined) {
       await this.incorporateInput(handle, schemaId, loopState);
     }
 
@@ -707,6 +709,10 @@ class RuntimeCore implements TuvrenRuntime {
       manifest: headState.manifest,
       phase: "running",
     });
+
+    if (recoveredExecutionMode === "skip_fresh_prelude") {
+      return false;
+    }
 
     const beforeTurn = await runBeforeTurnHooks({
       emit: (event) => {
@@ -3793,12 +3799,25 @@ class RuntimeCore implements TuvrenRuntime {
       return undefined;
     }
 
-    await livenessKernel.runLiveness.preemptExpired(
-      expiredRun.runId,
-      livenessOptions.executionOwnerId,
-      this.now(),
-      "stale_running_recovery"
-    );
+    let recoveryState: RecoveryState;
+
+    try {
+      recoveryState = await livenessKernel.runLiveness.preemptExpired(
+        expiredRun.runId,
+        livenessOptions.executionOwnerId,
+        this.now(),
+        "stale_running_recovery"
+      );
+    } catch (error: unknown) {
+      const raceResolution = classifyStaleRecoveryRace(error);
+
+      if (raceResolution === undefined) {
+        throw error;
+      }
+
+      return raceResolution;
+    }
+
     const recoveredHeadState = await this.loadHeadState(branchId);
 
     // Only the original request may rebind onto the recovered turn. A different
@@ -3813,6 +3832,7 @@ class RuntimeCore implements TuvrenRuntime {
     }
 
     return {
+      mode: classifyRecoveredExecutionMode(recoveryState),
       preempted: true,
       turnId: expiredRun.turnId,
     };
@@ -5011,6 +5031,50 @@ function doesSignalMatchRecoveredTurn(
   }
 
   return isDeepStrictEqual(recoveredUserMessage.parts, signal.parts);
+}
+
+function classifyRecoveredExecutionMode(
+  recoveryState: RecoveryState
+): ExpiredExecutionRecovery["mode"] {
+  const recoveredStepId = recoveryState.stepSequence[0]?.id;
+
+  switch (recoveredStepId) {
+    case "incorporate_input":
+      return "reuse_turn";
+    case "commit_extension_state":
+    case "context_engineering":
+    case "handoff_context":
+    case "resume_running_status":
+      return "skip_fresh_prelude";
+    default:
+      throw new TuvrenRuntimeError(
+        "stale run recovery cannot safely resume the recovered phase",
+        {
+          code: "unsupported_stale_run_recovery_phase",
+          details: {
+            lastCompletedStepId: recoveryState.lastCompletedStepId,
+            recoveredStepId: recoveredStepId ?? null,
+          },
+        }
+      );
+  }
+}
+
+function classifyStaleRecoveryRace(
+  error: unknown
+): ExpiredExecutionRecovery | undefined {
+  if (!isRecord(error) || typeof error.code !== "string") {
+    return undefined;
+  }
+
+  switch (error.code) {
+    case "kernel_runtime_run_not_running":
+      return { preempted: true };
+    case "kernel_runtime_run_lease_not_expired":
+      return { preempted: false };
+    default:
+      return undefined;
+  }
 }
 
 function shouldSuppressBufferedDriverEvents(
@@ -6321,8 +6385,12 @@ function hasRunLivenessKernel(
   );
 }
 
-function createRunLeaseLostError(error: unknown): TuvrenRuntimeError {
+function createRunLeaseLostError(error: unknown): Error {
   const normalizedError = normalizeError(error);
+
+  if (!isRunLeaseFenceError(normalizedError)) {
+    return normalizedError;
+  }
 
   return new TuvrenRuntimeError("execution lease lost", {
     code: "runtime_execution_lease_lost",
@@ -6334,6 +6402,18 @@ function createRunLeaseLostError(error: unknown): TuvrenRuntimeError {
       message: normalizedError.message,
     },
   });
+}
+
+function isRunLeaseFenceError(error: unknown): boolean {
+  if (!isRecord(error) || typeof error.code !== "string") {
+    return false;
+  }
+
+  return (
+    error.code === "kernel_runtime_run_lease_expired" ||
+    error.code === "kernel_runtime_run_lease_owner_mismatch" ||
+    error.code === "kernel_runtime_run_lease_token_mismatch"
+  );
 }
 
 function waitForDelay(durationMs: number, signal: AbortSignal): Promise<void> {
