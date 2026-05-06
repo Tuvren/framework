@@ -95,7 +95,7 @@ model ToolResultPart {
 
 model FilePart {
   type: "file";
-  // Uint8Array is represented as uint8[] in JSON artifacts so the emitted
+  // Binary byte arrays are represented as uint8[] in JSON artifacts so the emitted
   // schema remains JSON-native; binary transport encoding is outside Epic S.
   data: string | uint8[];
   mediaType: NonEmptyString;

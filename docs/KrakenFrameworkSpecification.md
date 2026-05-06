@@ -1,14 +1,16 @@
 # Kraken Framework Specification
 
 **Version**: v0.17
-**Status**: Authoritative
+**Status**: Human semantic authority; machine portability classified by Epic AD
 **Basis**: Kernel Specification v0.9 (frozen)
 
-Read this after the kernel specification. This document is authoritative for the initial Kraken framework driver behavior built on the frozen kernel.
+Read this after the kernel specification. This document defines the human semantic model for the initial Kraken framework driver behavior built on the frozen kernel.
 
 Kraken is the execution engine inside Tuvren Runtime. This specification defines the engine-layer framework and driver semantics, not the public product namespace.
 
-This is the single authoritative specification for the shared framework semantic model plus the initial ReAct Driver execution semantics. It does not claim that ReAct is the only possible Kraken driver. Future drivers may reuse the shared framework types and kernel primitives defined here while specifying different control-flow behavior. The companion rationale document is explanatory only.
+Epic AD freezes the portability reading of this Markdown. Portable cross-implementation meaning is freeze-covered when the docs-to-authority matrix maps the claim to boundary-owned authority packets, generated artifacts where applicable, conformance plans, fixtures, adapter capabilities, and compatibility evidence. Claims classified as implementation-local, implementation-defined, explicitly deferred, or stale-corrected in `constitution/spikes/epic-ad-docs-to-authority-coverage-matrix.json` are not portable machine authority until a later packet and conformance change promotes them.
+
+This document describes the shared framework semantic model plus the initial ReAct Driver execution semantics. It does not claim that ReAct is the only possible Kraken driver. Future drivers may reuse the shared framework types and kernel primitives defined here while specifying different control-flow behavior after a later plan activates them. The companion rationale document is explanatory only.
 
 ---
 
@@ -2214,4 +2216,4 @@ This specification does not define:
 
 ---
 
-_v0.17. This is the single authoritative framework specification. All framework behavior — execution model, extension system, multi-agent orchestration, streaming, host contract, and tool dispatch — is defined here. Companion rationale is explanatory only and non-contract._
+_v0.17. This is the human semantic framework specification. Epic AD classifies portability and freeze coverage through `constitution/spikes/epic-ad-docs-to-authority-coverage-matrix.json`. Companion rationale is explanatory and non-contract._

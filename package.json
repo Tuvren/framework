@@ -20,6 +20,7 @@
     "compatibility:evidence": "bun run nx run compatibility-reporting:evidence-refresh --skipNxCache",
     "codegen": "bun tools/scripts/authority-packet/validate-authority-packets.ts && bun tools/conformance/plan-compiler/validate-plans.ts && bun tools/conformance/adapter-protocol/validate-adapter-protocol.ts && bun tools/conformance/meta-conformance/run.ts && bun tools/scripts/authority-guardrails/authority-guardrails.ts && bun run nx run-many -t codegen -p shared-core-types,framework-runtime-api,framework-event-stream,framework-driver-api,framework-tool-contracts,provider-api,telemetry-semconv,compatibility-reporting,kernel-interop-grpc",
     "interop-smoke": "bun run nx run-many -t interop-smoke -p kernel-interop-grpc,kernel-rust-grpc-service,host-playground --parallel=1",
+    "docs:authority-freeze": "bun tools/scripts/docs-authority-freeze-gate.ts",
     "verify": "bun tools/scripts/verify.ts",
     "release-check": "bun tools/scripts/release-check.ts",
     "graph": "bun run nx graph"
