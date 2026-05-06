@@ -118,6 +118,7 @@
             "type": "string",
             "enum": [
               "schema-validation",
+              "openapi-validation",
               "conformance-plan",
               "interop-smoke",
               "freshness-check",

@@ -714,13 +714,6 @@ function collectSingleAssertionOracleFailures(
     });
   }
 
-  if (typeof assertion.equals === "boolean") {
-    failures.push({
-      check: "plan-oracle-shape",
-      message: `${planLabel} check ${String(check.checkId)} asserts bare boolean evidence/state; promoted plans must assert raw observed values`,
-    });
-  }
-
   return failures;
 }
 

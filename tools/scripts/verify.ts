@@ -184,6 +184,10 @@ export const DEFAULT_VERIFICATION_STEPS: readonly VerificationStep[] = [
     id: "Rust Nx target tests",
   },
   {
+    command: ["bun", "run", "docs:authority-freeze:check"],
+    id: "docs-to-authority freeze gate",
+  },
+  {
     command: [
       "bun",
       "tools/scripts/authority-packet/validate-authority-packets.ts",
