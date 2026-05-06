@@ -39,10 +39,12 @@ const REPORT_PATH = `${OUTPUT_DIR}/epic-ad-typescript-freeze-gate-report.md`;
 const CLOSURE_PATH = `${OUTPUT_DIR}/epic-ad-docs-to-authority-freeze-gate-closure-inventory.md`;
 
 const NORMATIVE_PATTERN =
-  /\b(must|must not|should|cannot|can not|never|always|required|requires|required|guarantee|guarantees|only|canonical|authoritative|valid|invalid|MUST|SHOULD|MAY)\b/i;
+  /\b(must|must not|should|cannot|can not|never|always|required|requires|required|guarantee|guarantees|only|canonical|authoritative|valid|invalid|deferred|MUST|SHOULD|MAY)\b|\bdoes not define\b/i;
 const ANCHOR_BACKTICK_PATTERN = /`/g;
 const ANCHOR_UNSAFE_CHAR_PATTERN = /[^a-z0-9\s-]/g;
 const CODE_FENCE_COMMENT_PATTERN = /^\s*\/\//;
+const CODE_FENCE_INLINE_COMMENT_PATTERN = /\/\/(.+)$/;
+const CODE_FENCE_STRONG_NORMATIVE_PATTERN = /\b(MUST|SHOULD|MAY)\b/;
 const HEADING_PATTERN = /^(#{1,6})\s+(.+)$/;
 const LEADING_LIST_MARKER_PATTERN = /^\s*[-*]\s+/;
 const LINE_SPLIT_PATTERN = /\r?\n/;
@@ -453,6 +455,14 @@ function extractEvidencePaths(value: string): string[] {
   );
 }
 
+function isSection(section: string, expected: string): boolean {
+  return section === expected || section.startsWith(`${expected}.`);
+}
+
+function isSectionMajor(section: string, major: string): boolean {
+  return section === major || section.startsWith(`${major}.`);
+}
+
 async function pathExists(path: string): Promise<boolean> {
   try {
     await access(path);
@@ -558,7 +568,21 @@ async function parseCodeFenceLine(
     return;
   }
 
-  await parseStandaloneClaimLine(state, heading, trimmed, line);
+  if (isNormativeCodeFenceLine(trimmed)) {
+    await parseStandaloneClaimLine(state, heading, trimmed, line);
+    return;
+  }
+
+  addRationaleLines(state, heading, 1);
+}
+
+function isNormativeCodeFenceLine(trimmed: string): boolean {
+  const commentMatch = CODE_FENCE_INLINE_COMMENT_PATTERN.exec(trimmed);
+  if (commentMatch?.[1] != null) {
+    return NORMATIVE_PATTERN.test(commentMatch[1]);
+  }
+
+  return CODE_FENCE_STRONG_NORMATIVE_PATTERN.test(trimmed);
 }
 
 async function parseHeadingLine(
@@ -676,12 +700,27 @@ async function flushProseBlock(state: DocParseState): Promise<void> {
   state.proseBlock = null;
   const claimText = block.lines.join(" ");
 
-  if (NORMATIVE_PATTERN.test(claimText)) {
+  if (
+    NORMATIVE_PATTERN.test(claimText) ||
+    isImplicitScopeBoundaryBlock(block)
+  ) {
     await pushClaim(state, block.heading, claimText, block.line);
     return;
   }
 
   addRationaleLines(state, block.heading, block.lines.length);
+}
+
+function isImplicitScopeBoundaryBlock(block: PendingProseBlock): boolean {
+  if (block.heading.sectionKey !== "10.9" || block.lines.length !== 1) {
+    return false;
+  }
+
+  const [line] = block.lines;
+  return (
+    line === "This specification does not define:" ||
+    LIST_ITEM_PATTERN.test(line ?? "")
+  );
 }
 
 async function toStableClaimId(
@@ -814,7 +853,11 @@ function classifyFrameworkClaim(claim: NormativeClaim): ClassificationDecision {
     );
   }
 
-  if (section === "preamble" || section === "0") {
+  if (
+    section === "preamble" ||
+    section === "0" ||
+    section === "kraken-framework-specification"
+  ) {
     return implementationDefinedDecision(
       "framework driver framing",
       "Driver framing explains the current semantic layering; portable claim status is determined by the matrix rows for the referenced concrete surfaces."
@@ -849,18 +892,18 @@ function classifyFrameworkCoreSection(
     );
   }
 
-  if (section.startsWith("1.8") || section.startsWith("6")) {
+  if (isSection(section, "1.8") || isSectionMajor(section, "6")) {
     return authorityDecision("framework event stream", EVIDENCE.eventStream);
   }
 
-  if (section.startsWith("1.5") || section.startsWith("4.10")) {
+  if (isSection(section, "1.5") || isSection(section, "4.10")) {
     return authorityDecision(
       "runtime resolution and errors",
       EVIDENCE.runtimeApi
     );
   }
 
-  if (section.startsWith("1.7") || section.startsWith("8")) {
+  if (isSection(section, "1.7") || isSectionMajor(section, "8")) {
     return missingConformanceDecision(
       "tool and approval contracts",
       EVIDENCE.runtimeApi,
@@ -869,7 +912,7 @@ function classifyFrameworkCoreSection(
     );
   }
 
-  if (section.startsWith("1")) {
+  if (isSectionMajor(section, "1")) {
     return missingConformanceDecision(
       "shared framework type shapes",
       EVIDENCE.runtimeApi,
@@ -878,7 +921,7 @@ function classifyFrameworkCoreSection(
     );
   }
 
-  if (section.startsWith("2")) {
+  if (isSectionMajor(section, "2")) {
     return implementationLocalDecision(
       "framework state schema",
       "boundaries/framework/implementations/typescript/runtime-core/test/runtime-core.test.ts",
@@ -893,7 +936,10 @@ function classifyFrameworkIntegrationSection(
   section: string,
   text: string
 ): ClassificationDecision | null {
-  if (section.startsWith("3.4") || text.includes("provider-anthropic")) {
+  if (
+    (isSection(section, "3.4") && text.includes("provider-")) ||
+    text.includes("provider-anthropic")
+  ) {
     return deferredDecision(
       "future provider adapter packages",
       "Future direct provider packages remain deferred until a later TechSpec activates concrete provider package work."
@@ -916,7 +962,7 @@ function classifyFrameworkIntegrationSection(
     );
   }
 
-  if (section.startsWith("3")) {
+  if (isSectionMajor(section, "3")) {
     return authorityDecision("provider API bridge", EVIDENCE.providerApi);
   }
 
@@ -939,25 +985,34 @@ function classifyFrameworkIntegrationSection(
     );
   }
 
-  if (section.startsWith("4.8") || section.startsWith("4.9")) {
+  if (isSection(section, "4.8") || isSection(section, "4.9")) {
     return authorityDecision(
       "runtime lifecycle recovery",
       EVIDENCE.runLiveness
     );
   }
 
-  if (section.startsWith("4")) {
+  if (isSectionMajor(section, "4")) {
     return authorityDecision(
       "runtime and ReAct execution",
       EVIDENCE.runtimeApi
     );
   }
 
-  if (section.startsWith("5.6")) {
+  if (isSection(section, "5.6")) {
     return authorityDecision("driver contract", EVIDENCE.driverApi);
   }
 
-  if (section.startsWith("5.3") || section.startsWith("9")) {
+  if (isSection(section, "5.3")) {
+    return missingConformanceDecision(
+      "runtime loop policy",
+      EVIDENCE.driverApi,
+      "KRT-AF003",
+      "Loop-policy continuation and invalid-combination semantics are shared driver behavior that AF must promote before freeze closure."
+    );
+  }
+
+  if (isSectionMajor(section, "9")) {
     if (
       text.includes("ordering") ||
       text.includes("around") ||
@@ -978,7 +1033,7 @@ function classifyFrameworkIntegrationSection(
     );
   }
 
-  if (section.startsWith("5")) {
+  if (isSectionMajor(section, "5")) {
     return implementationLocalDecision(
       "framework integration contracts",
       "boundaries/framework/implementations/typescript/runtime-core/test/runtime-core.test.ts; boundaries/framework/implementations/typescript/drivers/react/test/react-driver.test.ts",
@@ -1021,7 +1076,7 @@ function classifyFrameworkRuntimeSection(
     );
   }
 
-  if (section.startsWith("7")) {
+  if (isSectionMajor(section, "7")) {
     return authorityDecision("host execution handle", EVIDENCE.runtimeApi);
   }
 
@@ -1040,28 +1095,28 @@ function classifyFrameworkRuntimeSection(
     );
   }
 
-  if (section.startsWith("10.1") || section.startsWith("10.7")) {
+  if (isSection(section, "10.1") || isSection(section, "10.7")) {
     return implementationDefinedDecision(
       "orchestration static config and extension scoping",
       "Epic AC left static config snapshotting and extension scoping as local evidence; KRT-AF005 decides whether to promote or keep them local."
     );
   }
 
-  if (section.startsWith("10.2") || section.startsWith("10.5")) {
+  if (isSection(section, "10.2") || isSection(section, "10.5")) {
     return implementationDefinedDecision(
       "orchestration optional worker modes",
       "Synchronous workers and ordered pipelines are explicitly above the shared-core freeze surface."
     );
   }
 
-  if (section.startsWith("10.9")) {
+  if (isSection(section, "10.9")) {
     return deferredDecision(
       "orchestration out-of-core boundaries",
       "Worker process management, agent discovery, delegated construction modes, and related higher-layer concerns require a later product plan."
     );
   }
 
-  if (section.startsWith("10")) {
+  if (isSectionMajor(section, "10")) {
     return authorityDecision(
       "runtime orchestration",
       EVIDENCE.runtimeOrchestration
@@ -1077,6 +1132,10 @@ function classifyKernelClaim(claim: NormativeClaim): ClassificationDecision {
   const postureDecision = classifyKernelPostureText(text);
   if (postureDecision != null) {
     return postureDecision;
+  }
+  const deferredDecisionResult = classifyKernelDeferredText(text);
+  if (deferredDecisionResult != null) {
+    return deferredDecisionResult;
   }
 
   for (const classifier of [
@@ -1095,6 +1154,19 @@ function classifyKernelClaim(claim: NormativeClaim): ClassificationDecision {
   return unclassifiedDecision(
     "kernel unclassified surface",
     "Kernel prose landed outside the Epic AD section classifier and must be explicitly routed before the freeze gate can pass."
+  );
+}
+
+function classifyKernelDeferredText(
+  text: string
+): ClassificationDecision | null {
+  if (!text.includes("deferred")) {
+    return null;
+  }
+
+  return deferredDecision(
+    "kernel deferred maintenance surfaces",
+    "Merge rules, garbage collection, and related maintenance policies remain deferred until a later kernel storage or lifecycle plan activates them."
   );
 }
 
@@ -1140,9 +1212,10 @@ function classifyKernelBackendSection(
   text: string
 ): ClassificationDecision | null {
   if (
-    text.includes("structural sharing") ||
-    text.includes("subtree hashes") ||
-    text.includes("reused by reference")
+    (text.includes("structural sharing") ||
+      text.includes("subtree hashes") ||
+      text.includes("reused by reference")) &&
+    !text.includes("cannot be diffed")
   ) {
     return implementationDefinedDecision(
       "kernel storage structural sharing",
