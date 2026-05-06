@@ -8,13 +8,13 @@ Rust framework product work remains blocked until Epic AF closes and a later Tec
 
 ## Authority-Backed and Conformance-Covered Claims
 
-- Claims currently classified as authority-backed and conformance-covered: 115
+- Claims currently classified as authority-backed and conformance-covered: 110
 - Evidence anchors: framework, provider, and kernel authority packets; shared conformance plans; boundary fixtures/scenarios; adapter capabilities; and compatibility evidence under `reports/compatibility/evidence/`.
 
 ## Remaining Surfaces
 
 - Potentially blocking until AE/AF or docs correction evidence closes: 95
-- Non-blocking because they are explicitly implementation-defined or deferred: 17
+- Non-blocking because they are explicitly implementation-defined or deferred: 19
 
 ## Remaining Surface Detail
 
@@ -34,8 +34,10 @@ Every remaining non-authority surface is listed below with its current blocker p
 | kernel backend acceleration indexes | 2 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
 | kernel backend physical storage | 1 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
 | kernel recovery edge states | 3 | missing-conformance-follow-up | KRT-AF006 | Yes, until AF/docs evidence resolves it |
+| kernel storage structural sharing | 2 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
 | ReAct and extension hooks | 13 | missing-conformance-follow-up | KRT-AF003 | Yes, until AF/docs evidence resolves it |
-| shared framework type shapes | 24 | missing-conformance-follow-up | KRT-AF001 | Yes, until AF/docs evidence resolves it |
+| shared framework type shapes | 23 | missing-conformance-follow-up | KRT-AF001 | Yes, until AF/docs evidence resolves it |
+| stream adapter package topology | 1 | implementation-local-evidence | KRT-AF001 if portability is selected | Yes, until AF/docs evidence resolves it |
 | structured output contract | 7 | missing-conformance-follow-up | KRT-AF004 | Yes, until AF/docs evidence resolves it |
 | tool and approval contracts | 12 | missing-conformance-follow-up | KRT-AF004 | Yes, until AF/docs evidence resolves it |
 

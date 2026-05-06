@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { access, mkdir, readFile, writeFile } from "node:fs/promises";
 
 const DOC_SOURCES = [
   {
@@ -42,6 +42,7 @@ const NORMATIVE_PATTERN =
   /\b(must|must not|should|cannot|can not|never|always|required|requires|required|guarantee|guarantees|only|canonical|authoritative|valid|invalid|MUST|SHOULD|MAY)\b/i;
 const ANCHOR_BACKTICK_PATTERN = /`/g;
 const ANCHOR_UNSAFE_CHAR_PATTERN = /[^a-z0-9\s-]/g;
+const CODE_FENCE_COMMENT_PATTERN = /^\s*\/\//;
 const HEADING_PATTERN = /^(#{1,6})\s+(.+)$/;
 const LEADING_LIST_MARKER_PATTERN = /^\s*[-*]\s+/;
 const LINE_SPLIT_PATTERN = /\r?\n/;
@@ -51,7 +52,15 @@ const SECTION_TRAILING_DASH_PATTERN = /-+$/g;
 const SECTION_UNSAFE_CHAR_PATTERN = /[^a-z0-9]+/g;
 const TABLE_ROW_PATTERN = /^\s*\|/;
 const WHITESPACE_PATTERN = /\s+/g;
+const EVIDENCE_PATH_PATTERN =
+  /\b(?:boundaries|reports|tools|constitution)\/[^\s;,)`]+/g;
 const CLAIM_ID_HASH_LENGTH = 12;
+const REQUIRED_AUTHORITY_ANCHOR_FIELDS = [
+  "authorityPacket",
+  "conformancePlan",
+  "fixture",
+  "compatibilityEvidence",
+] as const;
 
 type SourceBoundary = (typeof DOC_SOURCES)[number]["boundary"];
 
@@ -322,6 +331,7 @@ async function main(): Promise<void> {
       `docs authority freeze gate found ${unclassifiedEntries.length} unclassified claims: ${examples}`
     );
   }
+  await validateCoverageMatrixEvidence(matrixEntries);
 
   await mkdir(OUTPUT_DIR, { recursive: true });
   await writeJson(INVENTORY_PATH, {
@@ -358,6 +368,98 @@ async function main(): Promise<void> {
   console.log(
     `docs authority freeze gate generated ${matrixEntries.length} classified claims`
   );
+}
+
+async function validateCoverageMatrixEvidence(
+  entries: readonly CoverageEntry[]
+): Promise<void> {
+  const failures: string[] = [];
+
+  for (const entry of entries) {
+    if (entry.classification !== "authority-backed-conformance-covered") {
+      continue;
+    }
+
+    failures.push(...authorityAnchorPresenceFailures(entry));
+
+    for (const reference of authorityEvidenceReferences(entry)) {
+      if (!(await pathExists(reference.path))) {
+        failures.push(
+          `${entry.claimId} ${reference.field} path does not exist: ${reference.path}`
+        );
+      }
+    }
+  }
+
+  if (failures.length > 0) {
+    throw new Error(
+      `docs authority freeze gate evidence validation failed:\n${failures.join("\n")}`
+    );
+  }
+}
+
+function authorityAnchorPresenceFailures(entry: CoverageEntry): string[] {
+  const failures: string[] = [];
+
+  if (
+    entry.adapterCapability === "N/A" ||
+    entry.adapterCapability.length === 0
+  ) {
+    failures.push(`${entry.claimId} adapterCapability is missing`);
+  }
+
+  for (const field of REQUIRED_AUTHORITY_ANCHOR_FIELDS) {
+    if (entry[field] === "N/A" || entry[field].length === 0) {
+      failures.push(`${entry.claimId} ${field} is missing`);
+    }
+  }
+
+  return failures;
+}
+
+function authorityEvidenceReferences(entry: CoverageEntry): Array<{
+  field: string;
+  path: string;
+}> {
+  const references: Array<{ field: string; path: string }> = [];
+
+  for (const field of REQUIRED_AUTHORITY_ANCHOR_FIELDS) {
+    references.push(
+      ...extractEvidencePaths(entry[field]).map((path) => ({ field, path }))
+    );
+  }
+
+  references.push(
+    ...extractEvidencePaths(entry.generatedArtifact).map((path) => ({
+      field: "generatedArtifact",
+      path,
+    }))
+  );
+
+  return references;
+}
+
+function extractEvidencePaths(value: string): string[] {
+  if (value === "N/A") {
+    return [];
+  }
+
+  if (!value.startsWith("N/A -")) {
+    return value.split(";").map((part) => part.trim());
+  }
+
+  return [...value.matchAll(EVIDENCE_PATH_PATTERN)].map((match) =>
+    (match[0] ?? "").replace(/[.,]+$/g, "")
+  );
+}
+
+async function pathExists(path: string): Promise<boolean> {
+  try {
+    await access(path);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 async function parseDocSource(source: DocSource): Promise<{
@@ -448,6 +550,11 @@ async function parseCodeFenceLine(
   line: number
 ): Promise<void> {
   if (trimmed.length === 0) {
+    return;
+  }
+
+  if (CODE_FENCE_COMMENT_PATTERN.test(trimmed)) {
+    addRationaleLines(state, heading, 1);
     return;
   }
 
@@ -734,6 +841,14 @@ function classifyFrameworkCoreSection(
   section: string,
   text: string
 ): ClassificationDecision | null {
+  if (section === "6.9" && text.includes("package topology")) {
+    return implementationLocalDecision(
+      "stream adapter package topology",
+      "boundaries/framework/implementations/typescript/stream-core; boundaries/framework/implementations/typescript/stream-sse; boundaries/framework/implementations/typescript/stream-agui",
+      "TypeScript stream adapter package topology and AG-UI version pinning are implementation-line evidence, not portable event-stream authority."
+    );
+  }
+
   if (section.startsWith("1.8") || section.startsWith("6")) {
     return authorityDecision("framework event stream", EVIDENCE.eventStream);
   }
@@ -1024,6 +1139,17 @@ function classifyKernelBackendSection(
   _section: string,
   text: string
 ): ClassificationDecision | null {
+  if (
+    text.includes("structural sharing") ||
+    text.includes("subtree hashes") ||
+    text.includes("reused by reference")
+  ) {
+    return implementationDefinedDecision(
+      "kernel storage structural sharing",
+      "Structural sharing and direct hash-node reuse are implementation freedoms unless a future storage-level packet promotes them."
+    );
+  }
+
   if (text.includes("implementation") && text.includes("may maintain")) {
     return implementationDefinedDecision(
       "kernel backend acceleration indexes",
