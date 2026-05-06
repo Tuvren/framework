@@ -31,6 +31,13 @@
     },
     "test": {
       "executor": "nx:run-commands",
+      "dependsOn": [
+        {
+          "projects": ["kernel-interop-grpc"],
+          "target": "codegen",
+          "params": "ignore"
+        }
+      ],
       "options": {
         "cwd": "boundaries/providers/implementations/typescript/bridge-ai-sdk",
         "command": "bun test"

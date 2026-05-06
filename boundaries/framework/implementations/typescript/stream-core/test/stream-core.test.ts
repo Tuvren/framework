@@ -16,7 +16,7 @@
 
 import { describe, expect, test } from "bun:test";
 import type { TuvrenStreamEvent } from "@tuvren/event-stream";
-import { readFrameworkStreamFixtures } from "../../testkit/src/index.ts";
+import { readFrameworkStreamFixtures } from "@tuvren/framework-testkit";
 import {
   cloneTuvrenStreamEvent,
   createFixtureStream,

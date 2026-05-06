@@ -11,6 +11,7 @@
       "@tuvren/event-stream": [
         "../../../contracts/event-stream/implementations/typescript/src/index.ts"
       ],
+      "@tuvren/framework-testkit": ["../testkit/src/index.ts"],
       "@tuvren/stream-core": ["../stream-core/src/index.ts"],
       "@tuvren/stream-agui": ["./src/index.ts"]
     },
@@ -20,6 +21,7 @@
     "src/**/*.ts",
     "test/**/*.ts",
     "smoke/**/*.ts",
+    "../testkit/src/**/*.ts",
     "../../../contracts/event-stream/implementations/typescript/src/**/*.ts",
     "../stream-core/src/**/*.ts",
     "../../../../shared/contracts/core-types/implementations/typescript/src/**/*.ts"

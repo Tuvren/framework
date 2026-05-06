@@ -15,5 +15,8 @@
   "dependencies": {
     "@tuvren/event-stream": "workspace:*",
     "@tuvren/stream-core": "workspace:*"
+  },
+  "devDependencies": {
+    "@tuvren/framework-testkit": "workspace:*"
   }
 }

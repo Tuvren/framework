@@ -16,11 +16,11 @@
 
 import { describe, expect, test } from "bun:test";
 import type { TuvrenStreamEvent } from "@tuvren/event-stream";
+import { readFrameworkStreamFixtures } from "@tuvren/framework-testkit";
 import {
   createFixtureStream,
   teeTuvrenStreamEvents,
 } from "@tuvren/stream-core";
-import { readFrameworkStreamFixtures } from "../../testkit/src/index.ts";
 import { toSseFrames, toSseResponse } from "../src/index.ts";
 
 const frameworkStreamFixtures = await readFrameworkStreamFixtures();

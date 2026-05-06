@@ -41,10 +41,16 @@ export interface FrameworkStreamFixtureSet {
 }
 
 const FRAMEWORK_TESTKIT_ROOT = dirname(fileURLToPath(import.meta.url));
-const STREAM_FIXTURES_PATH = resolve(
-  FRAMEWORK_TESTKIT_ROOT,
-  "../../../../../conformance/fixtures/stream-events.json"
-);
+const STREAM_FIXTURE_PATHS = [
+  resolve(
+    FRAMEWORK_TESTKIT_ROOT,
+    "../../../../../conformance/fixtures/stream-events.json"
+  ),
+  resolve(
+    FRAMEWORK_TESTKIT_ROOT,
+    "../../../../conformance/fixtures/stream-events.json"
+  ),
+];
 
 export function createFixtureEventStream(
   events: readonly TuvrenStreamEvent[]
@@ -86,9 +92,10 @@ export async function collectTuvrenStreamEvents(
 }
 
 export async function readFrameworkStreamFixtures(): Promise<FrameworkStreamFixtureSet> {
-  const fixture = JSON.parse(
-    await readFile(STREAM_FIXTURES_PATH, "utf8")
-  ) as unknown;
+  const fixture = (await readFirstJsonFile(
+    STREAM_FIXTURE_PATHS,
+    "stream-events fixture"
+  )) as unknown;
 
   assertFrameworkStreamFixtureSet(fixture, "stream-events fixture");
   return fixture;
@@ -199,6 +206,28 @@ function cloneTuvrenStreamEvent(event: TuvrenStreamEvent): TuvrenStreamEvent {
   return cloned;
 }
 
+async function readFirstJsonFile(
+  paths: readonly string[],
+  label: string
+): Promise<unknown> {
+  const errors: string[] = [];
+
+  for (const path of paths) {
+    try {
+      return JSON.parse(await readFile(path, "utf8")) as unknown;
+    } catch (error) {
+      if (isNotFoundError(error)) {
+        errors.push(path);
+        continue;
+      }
+
+      throw error;
+    }
+  }
+
+  throw new Error(`${label} was not found at ${errors.join(", ")}`);
+}
+
 function assertFrameworkStreamFixtureSet(
   value: unknown,
   label: string
@@ -227,4 +256,13 @@ function assertTuvrenStreamEvents(
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+function isNotFoundError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    error.code === "ENOENT"
+  );
 }

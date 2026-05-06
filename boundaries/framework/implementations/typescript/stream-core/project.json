@@ -31,6 +31,7 @@
     },
     "test": {
       "executor": "nx:run-commands",
+      "dependsOn": ["^build"],
       "options": {
         "cwd": "boundaries/framework/implementations/typescript/stream-core",
         "command": "bun test"

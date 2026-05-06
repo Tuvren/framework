@@ -1,16 +1,15 @@
 # Epic AE Modular Boundary Hardening Inventory
 
-This file closes `KRT-AE001` against current repo reality and records the
-largest TypeScript semantic gravity wells, the initial extraction map, and the
-temporary line-count posture that AE uses while the split lands. It is a
-planning and implementation handoff, not a semantic authority packet.
+This file closes Epic AE against current repo reality and records the largest
+TypeScript semantic gravity wells, the extraction map, and the final
+line-count posture after the split. It is a planning and implementation
+handoff, not a semantic authority packet.
 
 ## Status
 
-- `KRT-AE001` is complete in current repo reality.
-- `KRT-AE002`, `KRT-AE003`, `KRT-AE004`, and `KRT-AE007` are in progress.
-- Epic AE remains active through the remaining implementation tickets.
-- This inventory is the seam map and running closure log for the first
+- `KRT-AE001` through `KRT-AE009` are complete in current repo reality.
+- Epic AE is closed by the repo-wide size audit and `bun run verify` pass.
+- This inventory is the seam map and closure log for the landed
   implementation slices.
 
 ## Current Repo Reality
@@ -1324,6 +1323,6 @@ but a long sequence of active slices has landed since the initial map:
   test lane is green.
 - The runtime-core package still warrants more production seams, but it is now
   one hotspot among several, and the orchestration-runtime public facade is no
-  longer one of the over-ceiling files, so the next Epic AE move should pick
-  whichever remaining oversized production or support file offers the
-  strongest verification lane.
+  longer one of the over-ceiling files. Any future hardening follow-up should
+  pick whichever remaining production or support hotspot offers the strongest
+  verification lane rather than reopening Epic AE.

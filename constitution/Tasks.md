@@ -2,7 +2,8 @@
 
 ## 0. Version History & Changelog
 
-- v0.16.0 - Closed Epic AD in current repo reality through the docs-to-authority claim inventory, coverage matrix, deferred/local surface decisions, docs cleanup, freeze gate report, and closure inventory; remaining active scope is Epic AE plus Epic AF.
+- v0.17.0 - Closed Epic AE in current repo reality through the modular boundary hardening inventory, repo-wide `boundaries/**/*.ts` size audit, and a clean `bun run verify`; remaining active implementation scope is Epic AF.
+- v0.16.0 - Closed Epic AD in current repo reality through the docs-to-authority claim inventory, coverage matrix, deferred/local surface decisions, docs cleanup, freeze gate report, and closure inventory; at that time, remaining active scope was Epic AE plus Epic AF.
 - v0.15.0 - Activated TypeScript freeze-readiness closure after Epic AC, reopened active scope around Epics AD, AE, and AF, and replaced the zero-active-scope posture with a docs/authority, modular-hardening, and freeze-evidence critical path.
 - v0.14.0 - Closed Epic AC in current repo reality through the orchestration authority inventory and closure inventory, promoted framework orchestration into runtime-api authority plus shared-runner evidence, and left no implementation epic active in the current plan.
 - v0.13.0 - Closed Epics Z, AA, and AB in current repo reality, moved their detail out of the active plan and into archived summaries plus closure inventories, and opened Epic AC for framework orchestration authority promotion.
@@ -10,20 +11,20 @@
 
 ## 1. Executive Summary & Active Critical Path
 
-- **Total Active Story Points:** 87
-- **Critical Path:** `KRT-AF001 -> KRT-AF002/KRT-AF003/KRT-AF004/KRT-AF005/KRT-AF006 -> KRT-AF007 -> KRT-AF008`, with Epic AE running as the parallel modular-hardening lane required by `KRT-AF008`.
+- **Total Active Story Points:** 37
+- **Critical Path:** `KRT-AF001 -> KRT-AF002/KRT-AF003/KRT-AF004/KRT-AF005/KRT-AF006 -> KRT-AF007 -> KRT-AF008`; Epic AE is now a completed prerequisite for the final freeze-evidence gate.
 - **Planning Assumptions:** The checked-in compatibility matrix currently records `typescript-framework` as `full_pass` for `233/233` checks, `typescript-kernel-sqlite` as `full_pass` for `45/45` checks, `typescript-providers` as `full_pass` for `28/28` checks, and `rust-framework` as `unsupported` with `233` non-applicable checks. Epic AD now classifies the docs-to-authority surface; that proves the gate can identify authority-backed, local, implementation-defined, deferred, stale-corrected, and missing-conformance claims, not that TypeScript is freeze-ready. TechSpec ADR-021 through ADR-029 remain binding, and Rust framework product work stays out of scope until the active freeze-readiness epics close.
 
 ### Brownfield Continuity Note
 
-- Epics A-AD are closed in current repo reality through the closure inventories already cited in `constitution/spikes/`.
+- Epics A-AE are closed in current repo reality through the closure inventories already cited in `constitution/spikes/`.
 - Epic W explicitly left some framework, ReAct, provider-family, and backend-local surfaces outside shared semantic authority; Epic AC explicitly left orchestration static config snapshotting and extension scoping as local implementation evidence.
 - The active scope is therefore the remaining hardening and evidence closure over implementation-local, structurally risky, or insufficiently conformance-backed surfaces before any later framework implementation line is authorized.
 
 ### Sequential Scope Rule
 
 - Epics W, X, Y, Z, AA, AB, AC, and AD remain closed and must not be quietly reopened through implementation drift.
-- Epics AE and AF are the only active implementation epics in current repo reality. Epic AD is closed and serves as input evidence for AF.
+- Epic AF is the only active implementation epic in current repo reality. Epics AD and AE are closed and serve as input evidence for AF.
 - Rust framework adapter-host work may continue to exist as evidence plumbing only; no Rust framework product implementation ticket is authorized in this plan.
 
 ### Planning Heuristic
@@ -40,7 +41,6 @@
 
 ### Current Active Scope
 
-- **Epic AE — TypeScript Modular Boundary Hardening:** split the identified large TypeScript semantic gravity wells behind stable internal seams without changing public package APIs or reintroducing hidden structural or semantic oracles.
 - **Epic AF — Conformance Depth and Freeze Evidence:** promote only the intended portable negative/interleaving behavior into shared conformance, add freeze guardrails, and certify whether TypeScript is freeze-ready from a clean environment.
 
 ### Future / Deferred Scope
@@ -59,10 +59,10 @@
 
 - Epics A-Q established the architecture-first TypeScript baseline, shared contracts, ReAct/runtime execution path, provider bridge, host stream adapters, playground host, and release/portability hardening.
 - Epics R-V established the multi-language transition foundation, contract/conformance artifactization, kernel interop governance, Rust kernel baseline, and TypeScript-framework-to-Rust-kernel interop evidence.
-- Epics W-AD promoted the first shared semantic authority surfaces, normalized topology, enforced neutral machine authority, closed the TypeScript kernel gap, promoted run-liveness, promoted framework orchestration, and closed the docs-to-authority freeze gate.
+- Epics W-AE promoted the first shared semantic authority surfaces, normalized topology, enforced neutral machine authority, closed the TypeScript kernel gap, promoted run-liveness, promoted framework orchestration, closed the docs-to-authority freeze gate, and completed TypeScript modular boundary hardening.
 - Epics K-Q closure evidence remains anchored in `constitution/spikes/epic-k-react-loop-cancellation-inventory.md`, `constitution/spikes/epic-l-parity-inventory.md`, `constitution/spikes/epic-m-tool-approval-gap-inventory.md`, `constitution/spikes/epic-n-ai-sdk-bridge-inventory.md`, `constitution/spikes/epic-o-stream-adapter-inventory.md`, `constitution/spikes/epic-p-playground-host-inventory.md`, and `constitution/spikes/epic-q-release-hardening-inventory.md`.
 - Epics R-V closure evidence remains anchored in `constitution/spikes/epic-r-multilanguage-transition-guide.md`, `constitution/spikes/epic-r-multilanguage-transition-foundation-inventory.md`, `constitution/spikes/epic-s-boundary-contract-conformance-artifactization-inventory.md`, `constitution/spikes/epic-t-kernel-interop-surface-inventory.md`, `constitution/spikes/epic-t-kernel-interop-governance-inventory.md`, `constitution/spikes/epic-u-rust-kernel-baseline-inventory.md`, `constitution/spikes/epic-v-transport-decision-inventory.md`, and `constitution/spikes/epic-v-framework-rust-kernel-interop-closure-inventory.md`.
-- Epics W-AD closure evidence remains anchored in `constitution/spikes/epic-w-semantic-coverage-matrix.md`, `constitution/spikes/epic-w-semantic-ecosystem-maturity-closure-inventory.md`, `constitution/spikes/epic-x-typescript-topology-normalization-inventory.md`, `constitution/spikes/epic-x-typescript-topology-normalization-closure-inventory.md`, `constitution/spikes/epic-y-authority-leak-inventory.md`, `constitution/spikes/epic-y-machine-enforced-authority-closure-inventory.md`, `constitution/spikes/epic-y-shared-conformance-engine-closure-inventory.md`, `constitution/spikes/epic-z-typescript-kernel-syscall-closure-inventory.md`, `constitution/spikes/epic-aa-kernel-conformance-promotion-closure-inventory.md`, `constitution/spikes/epic-ab-run-liveness-recovery-closure-inventory.md`, `constitution/spikes/epic-ac-framework-orchestration-authority-inventory.md`, `constitution/spikes/epic-ac-framework-orchestration-authority-closure-inventory.md`, and `constitution/spikes/epic-ad-docs-to-authority-freeze-gate-closure-inventory.md`.
+- Epics W-AE closure evidence remains anchored in `constitution/spikes/epic-w-semantic-coverage-matrix.md`, `constitution/spikes/epic-w-semantic-ecosystem-maturity-closure-inventory.md`, `constitution/spikes/epic-x-typescript-topology-normalization-inventory.md`, `constitution/spikes/epic-x-typescript-topology-normalization-closure-inventory.md`, `constitution/spikes/epic-y-authority-leak-inventory.md`, `constitution/spikes/epic-y-machine-enforced-authority-closure-inventory.md`, `constitution/spikes/epic-y-shared-conformance-engine-closure-inventory.md`, `constitution/spikes/epic-z-typescript-kernel-syscall-closure-inventory.md`, `constitution/spikes/epic-aa-kernel-conformance-promotion-closure-inventory.md`, `constitution/spikes/epic-ab-run-liveness-recovery-closure-inventory.md`, `constitution/spikes/epic-ac-framework-orchestration-authority-inventory.md`, `constitution/spikes/epic-ac-framework-orchestration-authority-closure-inventory.md`, `constitution/spikes/epic-ad-docs-to-authority-freeze-gate-closure-inventory.md`, and `constitution/spikes/epic-ae-modular-boundary-hardening-inventory.md`.
 
 ## 3. Build Order (Mermaid)
 
@@ -244,6 +244,9 @@ And it states that Rust framework remains blocked until Epic AF closes
 ```
 
 ### Epic AE — TypeScript Modular Boundary Hardening
+
+Epic AE is closed in current repo reality; the tickets below are retained as
+historical execution detail and as input evidence for Epic AF.
 
 **KRT-AE001 TypeScript Seam Inventory and Extraction Map**
 

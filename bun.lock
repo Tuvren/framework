@@ -117,6 +117,9 @@
         "@tuvren/event-stream": "workspace:*",
         "@tuvren/stream-core": "workspace:*",
       },
+      "devDependencies": {
+        "@tuvren/framework-testkit": "workspace:*",
+      },
     },
     "boundaries/framework/implementations/typescript/stream-core": {
       "name": "@tuvren/stream-core",
@@ -125,6 +128,9 @@
         "@tuvren/core-types": "workspace:*",
         "@tuvren/event-stream": "workspace:*",
       },
+      "devDependencies": {
+        "@tuvren/framework-testkit": "workspace:*",
+      },
     },
     "boundaries/framework/implementations/typescript/stream-sse": {
       "name": "@tuvren/stream-sse",
@@ -132,6 +138,9 @@
       "dependencies": {
         "@tuvren/event-stream": "workspace:*",
         "@tuvren/stream-core": "workspace:*",
+      },
+      "devDependencies": {
+        "@tuvren/framework-testkit": "workspace:*",
       },
     },
     "boundaries/framework/implementations/typescript/testkit": {
