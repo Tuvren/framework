@@ -6,21 +6,25 @@ Framework deferred-surface decisions are recorded from the docs-to-authority mat
 
 | Surface | Claims | Classifications | Follow-up | Blocks future implementation line? |
 | --- | ---: | --- | --- | --- |
-| driver contract | 11 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
-| extension contracts | 8 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
+| approval resume semantics | 5 | missing-conformance-follow-up | KRT-AF004 | Yes, until AF/docs evidence resolves it |
+| driver contract | 15 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
+| extension contracts | 6 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
+| extension state and prompt contracts | 4 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
 | framework driver framing | 2 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
 | framework event stream | 18 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
 | framework state schema | 4 | implementation-local-evidence | KRT-AF001 if portability is selected | Yes, until AF/docs evidence resolves it |
-| framework uncategorized local surface | 33 | implementation-local-evidence | KRT-AF001 if portability is selected | Yes, until AF/docs evidence resolves it |
 | future framework drivers | 1 | explicitly-deferred | Future TechSpec/Tasks revision after TypeScript freeze closure | No, if kept local/deferred |
-| host execution handle | 4 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
+| future provider adapter packages | 1 | explicitly-deferred | Future TechSpec/Tasks revision after TypeScript freeze closure | No, if kept local/deferred |
+| handoff and context engineering | 6 | missing-conformance-follow-up | KRT-AF005 | Yes, until AF/docs evidence resolves it |
+| host execution handle | 5 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
 | provider API bridge | 2 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
-| ReAct and extension hooks | 1 | missing-conformance-follow-up | KRT-AF003 | Yes, until AF/docs evidence resolves it |
-| runtime and ReAct execution | 11 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
-| runtime lifecycle recovery | 5 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
+| ReAct and extension hooks | 13 | missing-conformance-follow-up | KRT-AF003 | Yes, until AF/docs evidence resolves it |
+| runtime and ReAct execution | 14 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
+| runtime lifecycle recovery | 10 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
 | runtime resolution and errors | 3 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
-| shared framework type shapes | 20 | missing-conformance-follow-up | KRT-AF001 | Yes, until AF/docs evidence resolves it |
-| tool and approval contracts | 6 | missing-conformance-follow-up | KRT-AF004 | Yes, until AF/docs evidence resolves it |
+| shared framework type shapes | 24 | missing-conformance-follow-up | KRT-AF001 | Yes, until AF/docs evidence resolves it |
+| structured output contract | 7 | missing-conformance-follow-up | KRT-AF004 | Yes, until AF/docs evidence resolves it |
+| tool and approval contracts | 12 | missing-conformance-follow-up | KRT-AF004 | Yes, until AF/docs evidence resolves it |
 
 ## Freeze Decisions
 

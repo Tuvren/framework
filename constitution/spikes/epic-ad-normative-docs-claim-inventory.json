@@ -28,7 +28,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "nonNormativeLineCount": 2,
+      "nonNormativeLineCount": 34,
       "sectionAnchor": "#11-content-parts",
       "sectionHeading": "1.1 Content Parts",
       "sectionKey": "1.1",
@@ -36,7 +36,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "nonNormativeLineCount": 1,
+      "nonNormativeLineCount": 7,
       "sectionAnchor": "#12-messages",
       "sectionHeading": "1.2 Messages",
       "sectionKey": "1.2",
@@ -45,6 +45,14 @@
     {
       "affectedBoundary": "framework",
       "nonNormativeLineCount": 1,
+      "sectionAnchor": "#13-inputsignal",
+      "sectionHeading": "1.3 InputSignal",
+      "sectionKey": "1.3",
+      "sourceFile": "docs/KrakenFrameworkSpecification.md"
+    },
+    {
+      "affectedBoundary": "framework",
+      "nonNormativeLineCount": 23,
       "sectionAnchor": "#14-prompt-and-response",
       "sectionHeading": "1.4 Prompt and Response",
       "sectionKey": "1.4",
@@ -52,7 +60,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "nonNormativeLineCount": 15,
+      "nonNormativeLineCount": 47,
       "sectionAnchor": "#15-runtimeresolution",
       "sectionHeading": "1.5 RuntimeResolution",
       "sectionKey": "1.5",
@@ -60,7 +68,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "nonNormativeLineCount": 1,
+      "nonNormativeLineCount": 21,
       "sectionAnchor": "#16-contextmanifest",
       "sectionHeading": "1.6 ContextManifest",
       "sectionKey": "1.6",
@@ -68,7 +76,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "nonNormativeLineCount": 7,
+      "nonNormativeLineCount": 22,
       "sectionAnchor": "#17-approvalrequest-and-approvalresponse",
       "sectionHeading": "1.7 ApprovalRequest and ApprovalResponse",
       "sectionKey": "1.7",
@@ -76,7 +84,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "nonNormativeLineCount": 9,
+      "nonNormativeLineCount": 41,
       "sectionAnchor": "#18-tuvrenstreamevent",
       "sectionHeading": "1.8 TuvrenStreamEvent",
       "sectionKey": "1.8",
@@ -84,7 +92,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "nonNormativeLineCount": 1,
+      "nonNormativeLineCount": 14,
       "sectionAnchor": "#21-default-schema",
       "sectionHeading": "2.1 Default Schema",
       "sectionKey": "2.1",
@@ -108,7 +116,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "nonNormativeLineCount": 1,
+      "nonNormativeLineCount": 3,
       "sectionAnchor": "#24-turn-lineage-path-single",
       "sectionHeading": "2.4 Turn Lineage Path (single)",
       "sectionKey": "2.4",
@@ -116,7 +124,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "nonNormativeLineCount": 1,
+      "nonNormativeLineCount": 6,
       "sectionAnchor": "#25-runtime-status-path-single",
       "sectionHeading": "2.5 Runtime Status Path (single)",
       "sectionKey": "2.5",
@@ -132,7 +140,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "nonNormativeLineCount": 1,
+      "nonNormativeLineCount": 5,
       "sectionAnchor": "#31-interface",
       "sectionHeading": "3.1 Interface",
       "sectionKey": "3.1",
@@ -140,7 +148,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "nonNormativeLineCount": 7,
+      "nonNormativeLineCount": 20,
       "sectionAnchor": "#32-providerstreamchunk",
       "sectionHeading": "3.2 ProviderStreamChunk",
       "sectionKey": "3.2",
@@ -148,7 +156,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "nonNormativeLineCount": 1,
+      "nonNormativeLineCount": 5,
       "sectionAnchor": "#33-streamaccumulator",
       "sectionHeading": "3.3 StreamAccumulator",
       "sectionKey": "3.3",
@@ -156,7 +164,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "nonNormativeLineCount": 4,
+      "nonNormativeLineCount": 9,
       "sectionAnchor": "#34-adapter-strategy",
       "sectionHeading": "3.4 Adapter Strategy",
       "sectionKey": "3.4",
@@ -204,7 +212,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "nonNormativeLineCount": 5,
+      "nonNormativeLineCount": 31,
       "sectionAnchor": "#41-turn-lifecycle",
       "sectionHeading": "4.1 Turn Lifecycle",
       "sectionKey": "4.1",
@@ -212,7 +220,23 @@
     },
     {
       "affectedBoundary": "framework",
-      "nonNormativeLineCount": 2,
+      "nonNormativeLineCount": 19,
+      "sectionAnchor": "#42-phase-1-incorporate-input",
+      "sectionHeading": "4.2 Phase 1: Incorporate Input",
+      "sectionKey": "4.2",
+      "sourceFile": "docs/KrakenFrameworkSpecification.md"
+    },
+    {
+      "affectedBoundary": "framework",
+      "nonNormativeLineCount": 61,
+      "sectionAnchor": "#43-phase-2-iteration-loop",
+      "sectionHeading": "4.3 Phase 2: Iteration Loop",
+      "sectionKey": "4.3",
+      "sourceFile": "docs/KrakenFrameworkSpecification.md"
+    },
+    {
+      "affectedBoundary": "framework",
+      "nonNormativeLineCount": 4,
       "sectionAnchor": "#44-steering-injection",
       "sectionHeading": "4.4 Steering Injection",
       "sectionKey": "4.4",
@@ -220,7 +244,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "nonNormativeLineCount": 1,
+      "nonNormativeLineCount": 32,
       "sectionAnchor": "#45-context-engineering-action",
       "sectionHeading": "4.5 Context Engineering Action",
       "sectionKey": "4.5",
@@ -228,7 +252,15 @@
     },
     {
       "affectedBoundary": "framework",
-      "nonNormativeLineCount": 1,
+      "nonNormativeLineCount": 90,
+      "sectionAnchor": "#46-agent-iteration",
+      "sectionHeading": "4.6 Agent Iteration",
+      "sectionKey": "4.6",
+      "sourceFile": "docs/KrakenFrameworkSpecification.md"
+    },
+    {
+      "affectedBoundary": "framework",
+      "nonNormativeLineCount": 43,
       "sectionAnchor": "#47-complete-turn-protocol",
       "sectionHeading": "4.7 Complete Turn Protocol",
       "sectionKey": "4.7",
@@ -244,7 +276,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "nonNormativeLineCount": 2,
+      "nonNormativeLineCount": 14,
       "sectionAnchor": "#approval-resume",
       "sectionHeading": "Approval Resume",
       "sectionKey": "approval-resume",
@@ -276,7 +308,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "nonNormativeLineCount": 1,
+      "nonNormativeLineCount": 19,
       "sectionAnchor": "#411-final-turn-status-checkpoint",
       "sectionHeading": "4.11 Final Turn Status Checkpoint",
       "sectionKey": "4.11",
@@ -292,7 +324,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "nonNormativeLineCount": 2,
+      "nonNormativeLineCount": 4,
       "sectionAnchor": "#51-context-policy",
       "sectionHeading": "5.1 Context Policy",
       "sectionKey": "5.1",
@@ -300,7 +332,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "nonNormativeLineCount": 1,
+      "nonNormativeLineCount": 5,
       "sectionAnchor": "#52-renderer",
       "sectionHeading": "5.2 Renderer",
       "sectionKey": "5.2",
@@ -308,7 +340,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "nonNormativeLineCount": 5,
+      "nonNormativeLineCount": 8,
       "sectionAnchor": "#53-loop-policy",
       "sectionHeading": "5.3 Loop Policy",
       "sectionKey": "5.3",
@@ -316,7 +348,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "nonNormativeLineCount": 1,
+      "nonNormativeLineCount": 6,
       "sectionAnchor": "#54-tool-executor",
       "sectionHeading": "5.4 Tool Executor",
       "sectionKey": "5.4",
@@ -324,7 +356,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "nonNormativeLineCount": 1,
+      "nonNormativeLineCount": 3,
       "sectionAnchor": "#55-context-engineering-executor",
       "sectionHeading": "5.5 Context Engineering Executor",
       "sectionKey": "5.5",
@@ -332,7 +364,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "nonNormativeLineCount": 8,
+      "nonNormativeLineCount": 38,
       "sectionAnchor": "#56-driver-contract",
       "sectionHeading": "5.6 Driver Contract",
       "sectionKey": "5.6",
@@ -340,7 +372,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "nonNormativeLineCount": 2,
+      "nonNormativeLineCount": 5,
       "sectionAnchor": "#61-layered-surfaces",
       "sectionHeading": "6.1 Layered Surfaces",
       "sectionKey": "6.1",
@@ -348,7 +380,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "nonNormativeLineCount": 4,
+      "nonNormativeLineCount": 25,
       "sectionAnchor": "#62-two-parallel-outputs",
       "sectionHeading": "6.2 Two Parallel Outputs",
       "sectionKey": "6.2",
@@ -364,7 +396,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "nonNormativeLineCount": 4,
+      "nonNormativeLineCount": 16,
       "sectionAnchor": "#64-tool-execution-events",
       "sectionHeading": "6.4 Tool Execution Events",
       "sectionKey": "6.4",
@@ -388,7 +420,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "nonNormativeLineCount": 2,
+      "nonNormativeLineCount": 6,
       "sectionAnchor": "#67-custom-event-emission",
       "sectionHeading": "6.7 Custom Event Emission",
       "sectionKey": "6.7",
@@ -405,6 +437,14 @@
     {
       "affectedBoundary": "framework",
       "nonNormativeLineCount": 2,
+      "sectionAnchor": "#69-protocol-adapter-boundary",
+      "sectionHeading": "6.9 Protocol Adapter Boundary",
+      "sectionKey": "6.9",
+      "sourceFile": "docs/KrakenFrameworkSpecification.md"
+    },
+    {
+      "affectedBoundary": "framework",
+      "nonNormativeLineCount": 2,
       "sectionAnchor": "#610-cancellation",
       "sectionHeading": "6.10 Cancellation",
       "sectionKey": "6.10",
@@ -412,7 +452,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "nonNormativeLineCount": 4,
+      "nonNormativeLineCount": 9,
       "sectionAnchor": "#611-durability-boundary",
       "sectionHeading": "6.11 Durability Boundary",
       "sectionKey": "6.11",
@@ -428,7 +468,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "nonNormativeLineCount": 4,
+      "nonNormativeLineCount": 17,
       "sectionAnchor": "#71-executionhandle",
       "sectionHeading": "7.1 ExecutionHandle",
       "sectionKey": "7.1",
@@ -444,7 +484,31 @@
     },
     {
       "affectedBoundary": "framework",
-      "nonNormativeLineCount": 1,
+      "nonNormativeLineCount": 28,
+      "sectionAnchor": "#73-lifecycle",
+      "sectionHeading": "7.3 Lifecycle",
+      "sectionKey": "7.3",
+      "sourceFile": "docs/KrakenFrameworkSpecification.md"
+    },
+    {
+      "affectedBoundary": "framework",
+      "nonNormativeLineCount": 8,
+      "sectionAnchor": "#81-tuvrentooldefinition",
+      "sectionHeading": "8.1 TuvrenToolDefinition",
+      "sectionKey": "8.1",
+      "sourceFile": "docs/KrakenFrameworkSpecification.md"
+    },
+    {
+      "affectedBoundary": "framework",
+      "nonNormativeLineCount": 5,
+      "sectionAnchor": "#82-schema-flexibility",
+      "sectionHeading": "8.2 Schema Flexibility",
+      "sectionKey": "8.2",
+      "sourceFile": "docs/KrakenFrameworkSpecification.md"
+    },
+    {
+      "affectedBoundary": "framework",
+      "nonNormativeLineCount": 15,
       "sectionAnchor": "#83-execute-function",
       "sectionHeading": "8.3 Execute Function",
       "sectionKey": "8.3",
@@ -452,7 +516,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "nonNormativeLineCount": 1,
+      "nonNormativeLineCount": 4,
       "sectionAnchor": "#84-approval-policy",
       "sectionHeading": "8.4 Approval Policy",
       "sectionKey": "8.4",
@@ -460,7 +524,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "nonNormativeLineCount": 1,
+      "nonNormativeLineCount": 7,
       "sectionAnchor": "#85-tool-registry",
       "sectionHeading": "8.5 Tool Registry",
       "sectionKey": "8.5",
@@ -468,7 +532,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "nonNormativeLineCount": 3,
+      "nonNormativeLineCount": 11,
       "sectionAnchor": "#86-executor-flow",
       "sectionHeading": "8.6 Executor Flow",
       "sectionKey": "8.6",
@@ -476,7 +540,15 @@
     },
     {
       "affectedBoundary": "framework",
-      "nonNormativeLineCount": 2,
+      "nonNormativeLineCount": 5,
+      "sectionAnchor": "#87-approval-precedence",
+      "sectionHeading": "8.7 Approval Precedence",
+      "sectionKey": "8.7",
+      "sourceFile": "docs/KrakenFrameworkSpecification.md"
+    },
+    {
+      "affectedBoundary": "framework",
+      "nonNormativeLineCount": 21,
       "sectionAnchor": "#91-extension-unit",
       "sectionHeading": "9.1 Extension Unit",
       "sectionKey": "9.1",
@@ -492,7 +564,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "nonNormativeLineCount": 1,
+      "nonNormativeLineCount": 7,
       "sectionAnchor": "#system-prompt",
       "sectionHeading": "System Prompt",
       "sectionKey": "system-prompt",
@@ -532,7 +604,15 @@
     },
     {
       "affectedBoundary": "framework",
-      "nonNormativeLineCount": 8,
+      "nonNormativeLineCount": 9,
+      "sectionAnchor": "#handler-signature",
+      "sectionHeading": "Handler Signature",
+      "sectionKey": "handler-signature",
+      "sourceFile": "docs/KrakenFrameworkSpecification.md"
+    },
+    {
+      "affectedBoundary": "framework",
+      "nonNormativeLineCount": 11,
       "sectionAnchor": "#interceptresult",
       "sectionHeading": "InterceptResult",
       "sectionKey": "interceptresult",
@@ -548,6 +628,22 @@
     },
     {
       "affectedBoundary": "framework",
+      "nonNormativeLineCount": 5,
+      "sectionAnchor": "#beforeiteration",
+      "sectionHeading": "beforeIteration",
+      "sectionKey": "beforeiteration",
+      "sourceFile": "docs/KrakenFrameworkSpecification.md"
+    },
+    {
+      "affectedBoundary": "framework",
+      "nonNormativeLineCount": 5,
+      "sectionAnchor": "#afteriteration",
+      "sectionHeading": "afterIteration",
+      "sectionKey": "afteriteration",
+      "sourceFile": "docs/KrakenFrameworkSpecification.md"
+    },
+    {
+      "affectedBoundary": "framework",
       "nonNormativeLineCount": 1,
       "sectionAnchor": "#95-around-hooks",
       "sectionHeading": "9.5 Around Hooks",
@@ -556,7 +652,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "nonNormativeLineCount": 2,
+      "nonNormativeLineCount": 15,
       "sectionAnchor": "#aroundmodel",
       "sectionHeading": "aroundModel",
       "sectionKey": "aroundmodel",
@@ -564,7 +660,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "nonNormativeLineCount": 1,
+      "nonNormativeLineCount": 20,
       "sectionAnchor": "#aroundtool",
       "sectionHeading": "aroundTool",
       "sectionKey": "aroundtool",
@@ -580,7 +676,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "nonNormativeLineCount": 1,
+      "nonNormativeLineCount": 5,
       "sectionAnchor": "#around-nesting",
       "sectionHeading": "Around Nesting",
       "sectionKey": "around-nesting",
@@ -628,7 +724,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "nonNormativeLineCount": 1,
+      "nonNormativeLineCount": 12,
       "sectionAnchor": "#101-agent-configuration",
       "sectionHeading": "10.1 Agent Configuration",
       "sectionKey": "10.1",
@@ -636,7 +732,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "nonNormativeLineCount": 2,
+      "nonNormativeLineCount": 25,
       "sectionAnchor": "#102-synchronous-workers",
       "sectionHeading": "10.2 Synchronous Workers",
       "sectionKey": "10.2",
@@ -652,7 +748,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "nonNormativeLineCount": 16,
+      "nonNormativeLineCount": 9,
       "sectionAnchor": "#agent-signaled-handoff",
       "sectionHeading": "Agent-Signaled Handoff",
       "sectionKey": "agent-signaled-handoff",
@@ -660,7 +756,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "nonNormativeLineCount": 4,
+      "nonNormativeLineCount": 35,
       "sectionAnchor": "#handoff-context-engineering",
       "sectionHeading": "Handoff Context Engineering",
       "sectionKey": "handoff-context-engineering",
@@ -668,7 +764,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "nonNormativeLineCount": 1,
+      "nonNormativeLineCount": 28,
       "sectionAnchor": "#default-handoff-context-builder-preservetrace",
       "sectionHeading": "Default Handoff Context Builder (`preserve_trace`)",
       "sectionKey": "default-handoff-context-builder-preserve-trace",
@@ -676,7 +772,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "nonNormativeLineCount": 1,
+      "nonNormativeLineCount": 10,
       "sectionAnchor": "#last-output-only-builder-lastoutputonly",
       "sectionHeading": "Last Output Only Builder (`last_output_only`)",
       "sectionKey": "last-output-only-builder-last-output-only",
@@ -700,7 +796,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "nonNormativeLineCount": 14,
+      "nonNormativeLineCount": 25,
       "sectionAnchor": "#106-orchestrationruntime",
       "sectionHeading": "10.6 OrchestrationRuntime",
       "sectionKey": "10.6",
@@ -756,7 +852,7 @@
     },
     {
       "affectedBoundary": "kernel",
-      "nonNormativeLineCount": 1,
+      "nonNormativeLineCount": 17,
       "sectionAnchor": "#12-layers",
       "sectionHeading": "1.2 Layers",
       "sectionKey": "1.2",
@@ -780,7 +876,7 @@
     },
     {
       "affectedBoundary": "kernel",
-      "nonNormativeLineCount": 1,
+      "nonNormativeLineCount": 4,
       "sectionAnchor": "#24-object-store-operations",
       "sectionHeading": "2.4 Object Store Operations",
       "sectionKey": "2.4",
@@ -788,7 +884,7 @@
     },
     {
       "affectedBoundary": "kernel",
-      "nonNormativeLineCount": 8,
+      "nonNormativeLineCount": 19,
       "sectionAnchor": "#31-turntreeschema",
       "sectionHeading": "3.1 TurnTreeSchema",
       "sectionKey": "3.1",
@@ -796,7 +892,15 @@
     },
     {
       "affectedBoundary": "kernel",
-      "nonNormativeLineCount": 3,
+      "nonNormativeLineCount": 2,
+      "sectionAnchor": "#schema-operations",
+      "sectionHeading": "Schema Operations",
+      "sectionKey": "schema-operations",
+      "sourceFile": "docs/KrakenKernelSpecification.md"
+    },
+    {
+      "affectedBoundary": "kernel",
+      "nonNormativeLineCount": 9,
       "sectionAnchor": "#32-turntree",
       "sectionHeading": "3.2 TurnTree",
       "sectionKey": "3.2",
@@ -804,7 +908,7 @@
     },
     {
       "affectedBoundary": "kernel",
-      "nonNormativeLineCount": 2,
+      "nonNormativeLineCount": 9,
       "sectionAnchor": "#tree-operations",
       "sectionHeading": "Tree Operations",
       "sectionKey": "tree-operations",
@@ -812,7 +916,7 @@
     },
     {
       "affectedBoundary": "kernel",
-      "nonNormativeLineCount": 3,
+      "nonNormativeLineCount": 11,
       "sectionAnchor": "#33-turnnode",
       "sectionHeading": "3.3 TurnNode",
       "sectionKey": "3.3",
@@ -820,7 +924,15 @@
     },
     {
       "affectedBoundary": "kernel",
-      "nonNormativeLineCount": 5,
+      "nonNormativeLineCount": 2,
+      "sectionAnchor": "#turnnode-operations",
+      "sectionHeading": "TurnNode Operations",
+      "sectionKey": "turnnode-operations",
+      "sourceFile": "docs/KrakenKernelSpecification.md"
+    },
+    {
+      "affectedBoundary": "kernel",
+      "nonNormativeLineCount": 12,
       "sectionAnchor": "#34-stagedresult",
       "sectionHeading": "3.4 StagedResult",
       "sectionKey": "3.4",
@@ -828,7 +940,7 @@
     },
     {
       "affectedBoundary": "kernel",
-      "nonNormativeLineCount": 2,
+      "nonNormativeLineCount": 5,
       "sectionAnchor": "#staging-operations",
       "sectionHeading": "Staging Operations",
       "sectionKey": "staging-operations",
@@ -836,7 +948,7 @@
     },
     {
       "affectedBoundary": "kernel",
-      "nonNormativeLineCount": 3,
+      "nonNormativeLineCount": 10,
       "sectionAnchor": "#41-thread",
       "sectionHeading": "4.1 Thread",
       "sectionKey": "4.1",
@@ -844,7 +956,15 @@
     },
     {
       "affectedBoundary": "kernel",
-      "nonNormativeLineCount": 5,
+      "nonNormativeLineCount": 2,
+      "sectionAnchor": "#thread-operations",
+      "sectionHeading": "Thread Operations",
+      "sectionKey": "thread-operations",
+      "sourceFile": "docs/KrakenKernelSpecification.md"
+    },
+    {
+      "affectedBoundary": "kernel",
+      "nonNormativeLineCount": 9,
       "sectionAnchor": "#42-branch",
       "sectionHeading": "4.2 Branch",
       "sectionKey": "4.2",
@@ -852,7 +972,7 @@
     },
     {
       "affectedBoundary": "kernel",
-      "nonNormativeLineCount": 10,
+      "nonNormativeLineCount": 14,
       "sectionAnchor": "#branch-operations",
       "sectionHeading": "Branch Operations",
       "sectionKey": "branch-operations",
@@ -876,7 +996,7 @@
     },
     {
       "affectedBoundary": "kernel",
-      "nonNormativeLineCount": 2,
+      "nonNormativeLineCount": 7,
       "sectionAnchor": "#51-stepdeclaration",
       "sectionHeading": "5.1 StepDeclaration",
       "sectionKey": "5.1",
@@ -884,7 +1004,7 @@
     },
     {
       "affectedBoundary": "kernel",
-      "nonNormativeLineCount": 8,
+      "nonNormativeLineCount": 18,
       "sectionAnchor": "#52-run",
       "sectionHeading": "5.2 Run",
       "sectionKey": "5.2",
@@ -908,7 +1028,7 @@
     },
     {
       "affectedBoundary": "kernel",
-      "nonNormativeLineCount": 3,
+      "nonNormativeLineCount": 10,
       "sectionAnchor": "#53-turn",
       "sectionHeading": "5.3 Turn",
       "sectionKey": "5.3",
@@ -916,7 +1036,7 @@
     },
     {
       "affectedBoundary": "kernel",
-      "nonNormativeLineCount": 1,
+      "nonNormativeLineCount": 4,
       "sectionAnchor": "#turn-operations",
       "sectionHeading": "Turn Operations",
       "sectionKey": "turn-operations",
@@ -932,7 +1052,7 @@
     },
     {
       "affectedBoundary": "kernel",
-      "nonNormativeLineCount": 1,
+      "nonNormativeLineCount": 25,
       "sectionAnchor": "#55-checkpoint-transaction",
       "sectionHeading": "5.5 Checkpoint Transaction",
       "sectionKey": "5.5",
@@ -940,7 +1060,7 @@
     },
     {
       "affectedBoundary": "kernel",
-      "nonNormativeLineCount": 2,
+      "nonNormativeLineCount": 5,
       "sectionAnchor": "#56-checkpoint-obligations",
       "sectionHeading": "5.6 Checkpoint Obligations",
       "sectionKey": "5.6",
@@ -948,7 +1068,7 @@
     },
     {
       "affectedBoundary": "kernel",
-      "nonNormativeLineCount": 15,
+      "nonNormativeLineCount": 13,
       "sectionAnchor": "#57-recovery-protocol",
       "sectionHeading": "5.7 Recovery Protocol",
       "sectionKey": "5.7",
@@ -956,7 +1076,7 @@
     },
     {
       "affectedBoundary": "kernel",
-      "nonNormativeLineCount": 1,
+      "nonNormativeLineCount": 16,
       "sectionAnchor": "#58-execution-model",
       "sectionHeading": "5.8 Execution Model",
       "sectionKey": "5.8",
@@ -964,7 +1084,7 @@
     },
     {
       "affectedBoundary": "kernel",
-      "nonNormativeLineCount": 4,
+      "nonNormativeLineCount": 20,
       "sectionAnchor": "#run-lifecycle-operations",
       "sectionHeading": "Run Lifecycle Operations",
       "sectionKey": "run-lifecycle-operations",
@@ -972,7 +1092,7 @@
     },
     {
       "affectedBoundary": "kernel",
-      "nonNormativeLineCount": 2,
+      "nonNormativeLineCount": 17,
       "sectionAnchor": "#61-verdicts",
       "sectionHeading": "6.1 Verdicts",
       "sectionKey": "6.1",
@@ -980,7 +1100,7 @@
     },
     {
       "affectedBoundary": "kernel",
-      "nonNormativeLineCount": 1,
+      "nonNormativeLineCount": 2,
       "sectionAnchor": "#62-composition-rule",
       "sectionHeading": "6.2 Composition Rule",
       "sectionKey": "6.2",
@@ -996,7 +1116,15 @@
     },
     {
       "affectedBoundary": "kernel",
-      "nonNormativeLineCount": 1,
+      "nonNormativeLineCount": 3,
+      "sectionAnchor": "#64-observeresult",
+      "sectionHeading": "6.4 ObserveResult",
+      "sectionKey": "6.4",
+      "sourceFile": "docs/KrakenKernelSpecification.md"
+    },
+    {
+      "affectedBoundary": "kernel",
+      "nonNormativeLineCount": 2,
       "sectionAnchor": "#65-verdict-composition-operation",
       "sectionHeading": "6.5 Verdict Composition Operation",
       "sectionKey": "6.5",
@@ -1004,7 +1132,7 @@
     },
     {
       "affectedBoundary": "kernel",
-      "nonNormativeLineCount": 1,
+      "nonNormativeLineCount": 44,
       "sectionAnchor": "#7-syscall-surface",
       "sectionHeading": "7. Syscall Surface",
       "sectionKey": "7",
@@ -1028,7 +1156,7 @@
     },
     {
       "affectedBoundary": "kernel",
-      "nonNormativeLineCount": 9,
+      "nonNormativeLineCount": 20,
       "sectionAnchor": "#run-status-transitions",
       "sectionHeading": "Run Status Transitions",
       "sectionKey": "run-status-transitions",
@@ -1111,7 +1239,7 @@
     "docs/KrakenFrameworkSpecification.md",
     "docs/KrakenKernelSpecification.md"
   ],
-  "totalNormativeClaims": 202,
+  "totalNormativeClaims": 227,
   "claims": [
     {
       "affectedBoundary": "framework",
@@ -1161,6 +1289,36 @@
     {
       "affectedBoundary": "framework",
       "adapterCapability": "framework.runtime-api",
+      "claimFingerprint": "8e41ad74d58f9c827f12e1151e7fe7f7cef09f9671c7d5d74c500e72dc2c872f",
+      "claimId": "FWK-8E41AD74D58F",
+      "duplicateOf": null,
+      "line": 58,
+      "rationaleContext": "normative",
+      "sectionAnchor": "#11-content-parts",
+      "sectionHeading": "1.1 Content Parts",
+      "sectionKey": "1.1",
+      "sourceFile": "docs/KrakenFrameworkSpecification.md",
+      "surface": "shared framework type shapes",
+      "text": "├─ input: unknown // always parsed, never JSON string"
+    },
+    {
+      "affectedBoundary": "framework",
+      "adapterCapability": "framework.runtime-api",
+      "claimFingerprint": "4b0a4d61ddbf9ba123b8d49eb14ecc9d0f4ae40308b869ff804cd91b107cad3b",
+      "claimId": "FWK-4B0A4D61DDBF",
+      "duplicateOf": null,
+      "line": 78,
+      "rationaleContext": "normative",
+      "sectionAnchor": "#11-content-parts",
+      "sectionHeading": "1.1 Content Parts",
+      "sectionKey": "1.1",
+      "sourceFile": "docs/KrakenFrameworkSpecification.md",
+      "surface": "shared framework type shapes",
+      "text": "├─ data: unknown // parsed structured data, never a raw string"
+    },
+    {
+      "affectedBoundary": "framework",
+      "adapterCapability": "framework.runtime-api",
       "claimFingerprint": "550e41a79a797cbf7821dbd3a01d0a173ee84ea7f426d97cec5d377fd5fbc175",
       "claimId": "FWK-550E41A79A79",
       "duplicateOf": null,
@@ -1187,6 +1345,36 @@
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
       "surface": "shared framework type shapes",
       "text": "Canonical inbound signal accepted by the framework and its drivers."
+    },
+    {
+      "affectedBoundary": "framework",
+      "adapterCapability": "framework.runtime-api",
+      "claimFingerprint": "a694947f2be62b3e4639cec8cb8c17c6fe6c026363d96596b7d20820449b6b7d",
+      "claimId": "FWK-A694947F2BE6",
+      "duplicateOf": null,
+      "line": 109,
+      "rationaleContext": "normative",
+      "sectionAnchor": "#13-inputsignal",
+      "sectionHeading": "1.3 InputSignal",
+      "sectionKey": "1.3",
+      "sourceFile": "docs/KrakenFrameworkSpecification.md",
+      "surface": "shared framework type shapes",
+      "text": "└─ parts: NonEmptyArray<ContentPart> // Canonical inbound user content."
+    },
+    {
+      "affectedBoundary": "framework",
+      "adapterCapability": "framework.runtime-api",
+      "claimFingerprint": "a49e993c46f5901cf55218b08c6e3115a0a4bcade8fef266b688c7fac279350d",
+      "claimId": "FWK-A49E993C46F5",
+      "duplicateOf": null,
+      "line": 110,
+      "rationaleContext": "normative",
+      "sectionAnchor": "#13-inputsignal",
+      "sectionHeading": "1.3 InputSignal",
+      "sectionKey": "1.3",
+      "sourceFile": "docs/KrakenFrameworkSpecification.md",
+      "surface": "shared framework type shapes",
+      "text": "// Extend only if a future extra is irreducible."
     },
     {
       "affectedBoundary": "framework",
@@ -1262,6 +1450,21 @@
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
       "surface": "shared framework type shapes",
       "text": "Extensions own their namespace within `extensions`. The core manifest never reads extension data. The manifest is updated by the framework as a side effect of staging messages — computing deltas is arithmetic from data the framework already holds. Context engineering and handoff rebuild the manifest's core message-derived indexes, but preserve `extensions` unchanged unless an explicit context engineering action says otherwise."
+    },
+    {
+      "affectedBoundary": "framework",
+      "adapterCapability": "framework.runtime-api",
+      "claimFingerprint": "9f20f73a974543bc118206c8524b121cd17ba85006f95d4eec283fdc6bb621f8",
+      "claimId": "FWK-9F20F73A9745",
+      "duplicateOf": null,
+      "line": 270,
+      "rationaleContext": "normative",
+      "sectionAnchor": "#17-approvalrequest-and-approvalresponse",
+      "sectionHeading": "1.7 ApprovalRequest and ApprovalResponse",
+      "sectionKey": "1.7",
+      "sourceFile": "docs/KrakenFrameworkSpecification.md",
+      "surface": "tool and approval contracts",
+      "text": "├─ callId: string // must match a PendingToolCall.callId"
     },
     {
       "affectedBoundary": "framework",
@@ -1431,6 +1634,21 @@
     {
       "affectedBoundary": "framework",
       "adapterCapability": "N/A",
+      "claimFingerprint": "5177f92372a7bee25079210984e8e21f43d1919945622a060bf2b77e2301f1fc",
+      "claimId": "FWK-5177F92372A7",
+      "duplicateOf": null,
+      "line": 499,
+      "rationaleContext": "normative",
+      "sectionAnchor": "#34-adapter-strategy",
+      "sectionHeading": "3.4 Adapter Strategy",
+      "sectionKey": "3.4",
+      "sourceFile": "docs/KrakenFrameworkSpecification.md",
+      "surface": "future provider adapter packages",
+      "text": "@tuvren/core-types zero dependencies, types only"
+    },
+    {
+      "affectedBoundary": "framework",
+      "adapterCapability": "framework.runtime-api",
       "claimFingerprint": "78a3d571633b8e88ea69308dac8ba070fd9d677bbab49ed5cf592cf50fd9aaaf",
       "claimId": "FWK-78A3D571633B",
       "duplicateOf": null,
@@ -1440,12 +1658,12 @@
       "sectionHeading": "Adapter Normalization",
       "sectionKey": "adapter-normalization",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "framework uncategorized local surface",
+      "surface": "structured output contract",
       "text": "Provider adapters normalize provider-native structured responses into `StructuredPart` before durable staging. The canonical model never exposes provider-specific structured output types."
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "N/A",
+      "adapterCapability": "framework.runtime-api",
       "claimFingerprint": "2855d4d9a4b55259a890b4e81999448228ef1439891775424ab80c205a29c298",
       "claimId": "FWK-2855D4D9A4B5",
       "duplicateOf": null,
@@ -1455,12 +1673,12 @@
       "sectionHeading": "Adapter Normalization",
       "sectionKey": "adapter-normalization",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "framework uncategorized local surface",
+      "surface": "structured output contract",
       "text": "Outbound: when `TuvrenPrompt.responseFormat` is set, the adapter maps `StructuredOutputRequest` to the provider's native structured output mechanism (OpenAI's `response_format`, Google's `generationConfig.responseSchema`, or equivalent). When the provider does not support native structured output, the adapter must either reject with a clear error identifying the unsupported capability, or fall back through a documented compatibility path (e.g., injecting the schema into the system prompt as an instruction). The choice between rejection and fallback is adapter-specific and must be documented per adapter."
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "N/A",
+      "adapterCapability": "framework.runtime-api",
       "claimFingerprint": "176c448dd30e842f60c7717b08b5e5c77fbbb678022839ee8a0e40cdfcc22676",
       "claimId": "FWK-176C448DD30E",
       "duplicateOf": null,
@@ -1470,12 +1688,12 @@
       "sectionHeading": "Streaming Behavior",
       "sectionKey": "streaming-behavior",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "framework uncategorized local surface",
+      "surface": "structured output contract",
       "text": "**Live path**: Provider stream chunks of type `structured_delta` are translated into `structured.delta` framework events and yielded to the output iterable immediately. The consumer sees the raw structured content building incrementally. When the provider emits `structured_done`, the driver yields `structured.done` with the final parsed data. If a provider emits `structured_done` without any prior `structured_delta`, the driver first synthesizes a `structured.delta` from the serialized final data so the live stream still satisfies the canonical delta/done contract."
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "N/A",
+      "adapterCapability": "framework.runtime-api",
       "claimFingerprint": "cfbf4a38f861526b9e2ba962ab60a73f39c786065e4fc6322eb1158d3262a518",
       "claimId": "FWK-CFBF4A38F861",
       "duplicateOf": null,
@@ -1485,12 +1703,12 @@
       "sectionHeading": "Validation",
       "sectionKey": "validation",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "framework uncategorized local surface",
+      "surface": "structured output contract",
       "text": "**Schema validation**: After the `aroundModel` chain returns (whether it called `next` or not), the driver validates the `StructuredPart.data` against the `schema` from the prompt's `StructuredOutputRequest`. The validator uses draft-07 when `$schema` is absent or declares draft-07, draft-2019-09 when `$schema` declares that dialect, and draft-2020-12 when `$schema` declares that dialect. Dynamic request schemas are compiled in an isolated validator context so repeated `$id` values from different host requests do not collide across turns. Unsupported `$schema` dialects and schema compilation failures produce `structured_output_validation`. Provider-side enforcement via the `strict` flag is the first line of defense — providers that support native schema enforcement apply it at generation time. The framework validates after receipt regardless. This is consistent with the \"framework always normalizes, never trusts the wire\" principle applied to tool call argument parsing."
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "N/A",
+      "adapterCapability": "framework.runtime-api",
       "claimFingerprint": "7ac0f63c88bd9d52827e35957be1ae255d68eed3498c03bd9d8e2b7022c9679d",
       "claimId": "FWK-7AC0F63C88BD",
       "duplicateOf": null,
@@ -1500,12 +1718,12 @@
       "sectionHeading": "Validation",
       "sectionKey": "validation",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "framework uncategorized local surface",
+      "surface": "structured output contract",
       "text": "**Failure behavior**: Schema mismatch produces `fail(hard)` with error code `structured_output_validation`. This is a defined runtime outcome, not a silent acceptance or best-effort parse. The error is staged and the Run fails through the standard `failIteration` path. The model does not see the invalid output on the next iteration — the Turn terminates."
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "N/A",
+      "adapterCapability": "framework.runtime-api",
       "claimFingerprint": "24bad806542f1dbccba4084852c39d6af2a3555110ff667b2d9b4ff14657afc2",
       "claimId": "FWK-24BAD806542F",
       "duplicateOf": null,
@@ -1515,12 +1733,12 @@
       "sectionHeading": "Lifecycle",
       "sectionKey": "lifecycle",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "framework uncategorized local surface",
+      "surface": "structured output contract",
       "text": "Structured output survives checkpointing, recovery, rollback, handoff, and context engineering through the same mechanisms as any other content part. No special handling is required. Context assembly includes structured outputs in history unless explicitly removed by context engineering policy. Handoff context builders can read structured outputs from message history through the standard `ContextEngineeringHelpers`."
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "N/A",
+      "adapterCapability": "framework.runtime-api",
       "claimFingerprint": "87974e517d0c7af2fd44187d2b1bbd59f14f0603927cf9d07f0cd35f21a73d91",
       "claimId": "FWK-87974E517D0C",
       "duplicateOf": null,
@@ -1530,8 +1748,38 @@
       "sectionHeading": "Lifecycle",
       "sectionKey": "lifecycle",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "framework uncategorized local surface",
+      "surface": "structured output contract",
       "text": "No kernel primitive or syscall changes are required. Structured output is stored as part of serialized `TuvrenMessage` Objects in the content-addressed store."
+    },
+    {
+      "affectedBoundary": "framework",
+      "adapterCapability": "framework.runtime-api",
+      "claimFingerprint": "58a0bf3eb3abaf1590d2fd770f5049764ff4e92b1d7aa886a25f6b61f0cd8dee",
+      "claimId": "FWK-58A0BF3EB3AB",
+      "duplicateOf": null,
+      "line": 558,
+      "rationaleContext": "normative",
+      "sectionAnchor": "#41-turn-lifecycle",
+      "sectionHeading": "4.1 Turn Lifecycle",
+      "sectionKey": "4.1",
+      "sourceFile": "docs/KrakenFrameworkSpecification.md",
+      "surface": "runtime and ReAct execution",
+      "text": "├─ Phase 1: Incorporate Input (always)"
+    },
+    {
+      "affectedBoundary": "framework",
+      "adapterCapability": "framework.runtime-api",
+      "claimFingerprint": "fb410a958442f5f77dcfa024ab1f911f8040a0803d5298b7df17722207ed6558",
+      "claimId": "FWK-FB410A958442",
+      "duplicateOf": null,
+      "line": 569,
+      "rationaleContext": "normative",
+      "sectionAnchor": "#41-turn-lifecycle",
+      "sectionHeading": "4.1 Turn Lifecycle",
+      "sectionKey": "4.1",
+      "sourceFile": "docs/KrakenFrameworkSpecification.md",
+      "surface": "runtime and ReAct execution",
+      "text": "├─ b. beforeIteration hooks (may trigger context engineering)"
     },
     {
       "affectedBoundary": "framework",
@@ -1656,6 +1904,21 @@
     {
       "affectedBoundary": "framework",
       "adapterCapability": "framework.runtime-api",
+      "claimFingerprint": "167f6b47df4cf4ae0e1db12538f62e86fcd0a0550f6755bf9561e43ee7effa7a",
+      "claimId": "FWK-167F6B47DF4C",
+      "duplicateOf": null,
+      "line": 805,
+      "rationaleContext": "normative",
+      "sectionAnchor": "#46-agent-iteration",
+      "sectionHeading": "4.6 Agent Iteration",
+      "sectionKey": "4.6",
+      "sourceFile": "docs/KrakenFrameworkSpecification.md",
+      "surface": "runtime and ReAct execution",
+      "text": "// RuntimeResolution.handoff and returns only conversational assistant parts"
+    },
+    {
+      "affectedBoundary": "framework",
+      "adapterCapability": "framework.runtime-api",
       "claimFingerprint": "cb1a6a36e3d56ef02de5f346f79412962090e467d23c1135f92bf51ea272c377",
       "claimId": "FWK-CB1A6A36E3D5",
       "duplicateOf": null,
@@ -1715,7 +1978,22 @@
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "N/A",
+      "adapterCapability": "framework.runtime-api",
+      "claimFingerprint": "4b61bcffe8baf48d1dd6e157ff3938cb4b0fb1d33af5cbb58867d4747973940b",
+      "claimId": "FWK-4B61BCFFE8BA",
+      "duplicateOf": null,
+      "line": 972,
+      "rationaleContext": "normative",
+      "sectionAnchor": "#approval-resume",
+      "sectionHeading": "Approval Resume",
+      "sectionKey": "approval-resume",
+      "sourceFile": "docs/KrakenFrameworkSpecification.md",
+      "surface": "approval resume semantics",
+      "text": "6. Apply approval decisions → resume only unfinished tool calls through the full aroundTool chain;"
+    },
+    {
+      "affectedBoundary": "framework",
+      "adapterCapability": "framework.runtime-api",
       "claimFingerprint": "3eb6bd2e44c647b98345d017ffea2f3ef2e7cf43ae1df5732b930cdf901b3a7b",
       "claimId": "FWK-3EB6BD2E44C6",
       "duplicateOf": null,
@@ -1725,12 +2003,12 @@
       "sectionHeading": "Approval Resume",
       "sectionKey": "approval-resume",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "framework uncategorized local surface",
+      "surface": "approval resume semantics",
       "text": "Before resumed tool execution begins, the framework MUST durably restage `runtime.status` to `running` for the active Turn. This ensures the durable state surface reflects actual execution state throughout the decision path."
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "N/A",
+      "adapterCapability": "framework.runtime-api",
       "claimFingerprint": "aea220d0da5209b499ae0afce2cc35ec2f732ab2c5a8e4187527b2546d29ca5c",
       "claimId": "FWK-AEA220D0DA52",
       "duplicateOf": null,
@@ -1740,12 +2018,12 @@
       "sectionHeading": "Approval Resume",
       "sectionKey": "approval-resume",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "framework uncategorized local surface",
+      "surface": "approval resume semantics",
       "text": "`resolveApproval(...)` returns a **new** handle. The old paused handle remains exhausted/inert as the completed paused execution token and must not remain a second active owner of further control flow. Once approval has been resolved, subsequent control calls on the old handle are invalid."
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "N/A",
+      "adapterCapability": "framework.runtime-api",
       "claimFingerprint": "0a405f74632b1efcb3424ebd2b5cd860ac1db87ca066cb607a4e077ce03ef05b",
       "claimId": "FWK-0A405F74632B",
       "duplicateOf": null,
@@ -1755,12 +2033,12 @@
       "sectionHeading": "Approval Resume",
       "sectionKey": "approval-resume",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "framework uncategorized local surface",
+      "surface": "approval resume semantics",
       "text": "For `approve` and `edit` decisions, unfinished tool calls resume through the normal tool execution path. For `reject`, shared-core semantics require the canonical rejection `ToolResultPart` outcomes for the pending calls and then continue the same Turn through the normal iteration loop. The host chooses that explicit same-Turn rejection path by calling `resolveApproval(...)` with `reject` decisions; the paused-handle `cancel()` path remains the separate rejection-and-stop control surface described in §6.10."
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "N/A",
+      "adapterCapability": "framework.runtime-api",
       "claimFingerprint": "51b9484b4acd24c8c7ec96dd0f089054e295502e0d563bc103a916a625bb39f4",
       "claimId": "FWK-51B9484B4ACD",
       "duplicateOf": null,
@@ -1770,12 +2048,12 @@
       "sectionHeading": "Approval Resume",
       "sectionKey": "approval-resume",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "framework uncategorized local surface",
+      "surface": "approval resume semantics",
       "text": "At the kernel layer, closing a paused Run still uses the kernel's `paused -> failed` transition before the continuation Run begins. That is a Run-lifecycle bookkeeping step required by the kernel contract; it MUST NOT be interpreted as a Turn-level approval failure or as a contradiction of the framework's approval semantics."
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "N/A",
+      "adapterCapability": "kernel.run-liveness; framework.run-liveness",
       "claimFingerprint": "421dcb7431f672aba7664ae2ef5cf159c0ccd34987e2843c34b5605eebc0f7d5",
       "claimId": "FWK-421DCB7431F6",
       "duplicateOf": null,
@@ -1785,12 +2063,12 @@
       "sectionHeading": "Running Lease Ownership",
       "sectionKey": "running-lease-ownership",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "framework uncategorized local surface",
+      "surface": "runtime lifecycle recovery",
       "text": "Framework implementations that claim durable recovery of `running` Runs MUST configure an execution owner identity and lease policy before creating leased Runs. The owner identity is a host/framework runtime identity, not a model/provider identity."
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "N/A",
+      "adapterCapability": "kernel.run-liveness; framework.run-liveness",
       "claimFingerprint": "6d6d07de0a90389b66142992c4825b5820d87defc5aaa2e764aab0a0bb536d31",
       "claimId": "FWK-6D6D07DE0A90",
       "duplicateOf": null,
@@ -1800,12 +2078,12 @@
       "sectionHeading": "Running Lease Ownership",
       "sectionKey": "running-lease-ownership",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "framework uncategorized local surface",
+      "surface": "runtime lifecycle recovery",
       "text": "While a Turn is running, shared core is responsible for renewing the active Run lease before expiry. If renewal fails because the fencing token is stale, the active `ExecutionHandle` is invalidated: it MUST stop producing ordinary progress, surface a fatal runtime error, and must not attempt to persist further work under the stale owner token."
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "N/A",
+      "adapterCapability": "kernel.run-liveness; framework.run-liveness",
       "claimFingerprint": "722e8933104ead10bebaba73f773617c4d5a66689474c1a4756f6450af7c7475",
       "claimId": "FWK-722E8933104E",
       "duplicateOf": null,
@@ -1815,12 +2093,12 @@
       "sectionHeading": "Running Lease Ownership",
       "sectionKey": "running-lease-ownership",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "framework uncategorized local surface",
+      "surface": "runtime lifecycle recovery",
       "text": "Lease ownership applies only to `running` Runs. Approval pause/resume uses the approval control surface below and MUST NOT be represented as execution-heartbeat renewal."
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "N/A",
+      "adapterCapability": "kernel.run-liveness; framework.run-liveness",
       "claimFingerprint": "bfd4076fd38f6ea5be91d589f810ce73225f88c5a0babfe102a3e397f721bcbd",
       "claimId": "FWK-BFD4076FD38F",
       "duplicateOf": null,
@@ -1830,12 +2108,12 @@
       "sectionHeading": "Stale Running Recovery",
       "sectionKey": "stale-running-recovery",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "framework uncategorized local surface",
+      "surface": "runtime lifecycle recovery",
       "text": "The framework MUST treat preemption as a recovery event, not as user cancellation. Durable staged work from the stale Run is recovered through the kernel recovery state; unverified in-memory provider stream state is not assumed to exist. A replacement Run re-enters the appropriate framework phase from durable state only."
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "N/A",
+      "adapterCapability": "kernel.run-liveness; framework.run-liveness",
       "claimFingerprint": "57aee9ece71805eafb804da4fad9c972ba43ecfe6cc439905e5ba63e13ac94f4",
       "claimId": "FWK-57AEE9ECE718",
       "duplicateOf": null,
@@ -1845,7 +2123,7 @@
       "sectionHeading": "Stale Running Recovery",
       "sectionKey": "stale-running-recovery",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "framework uncategorized local surface",
+      "surface": "runtime lifecycle recovery",
       "text": "Paused approval Runs are not stale-running candidates. Host-configured approval timeouts, if any, must be modeled as explicit approval rejection, abandonment, or a future approval-expiry outcome; they are not execution lease expiry."
     },
     {
@@ -1926,8 +2204,8 @@
     {
       "affectedBoundary": "framework",
       "adapterCapability": "N/A",
-      "claimFingerprint": "ef6d65d2130c42378a9ee4cf96139df2088121452ad16b5104f8b998a743c1ea",
-      "claimId": "FWK-EF6D65D2130C",
+      "claimFingerprint": "7321fba0bdb57563d641452a6a146cee625e2e9d545ea972e33babdb8b1b954f",
+      "claimId": "FWK-7321FBA0BDB5",
       "duplicateOf": null,
       "line": 1109,
       "rationaleContext": "normative",
@@ -1936,37 +2214,67 @@
       "sectionKey": "5.3",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
       "surface": "extension contracts",
-      "text": "Invalid combinations are rejected. Under the current shared driver seam,"
+      "text": "Invalid combinations are rejected. Under the current shared driver seam, assistant responses that contain executable tool calls may only proceed when the loop policy returns `continue: true` and `executeTools: true`. A tool-call response paired with `continue: true, executeTools: false` or with `continue: false` MUST convert to `fail(hard)` with error code `invalid_loop_policy`."
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "N/A",
-      "claimFingerprint": "f22cf62889fd10fcc74e1ab1a56f39b39289cd1d217a1a8325d51e2db94034f7",
-      "claimId": "FWK-F22CF62889FD",
+      "adapterCapability": "framework.driver-api",
+      "claimFingerprint": "fb5fbb7512738abbcc6bbaa6a7a4472629f4fed918d2037e4977e321de314043",
+      "claimId": "FWK-FB5FBB751273",
       "duplicateOf": null,
-      "line": 1110,
+      "line": 1166,
       "rationaleContext": "normative",
-      "sectionAnchor": "#53-loop-policy",
-      "sectionHeading": "5.3 Loop Policy",
-      "sectionKey": "5.3",
+      "sectionAnchor": "#56-driver-contract",
+      "sectionHeading": "5.6 Driver Contract",
+      "sectionKey": "5.6",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "extension contracts",
-      "text": "assistant responses that contain executable tool calls may only proceed when the"
+      "surface": "driver contract",
+      "text": "├─ config: AgentConfig // read-only snapshot"
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "N/A",
-      "claimFingerprint": "2bb956b583dbf26c81a1aab30f7a8458d309a6a5f03b224b37315383b1ffb3d0",
-      "claimId": "FWK-2BB956B583DB",
+      "adapterCapability": "framework.driver-api",
+      "claimFingerprint": "9b95db8e525087928c083d67806b89ca4d320156cfb7e4f5aa07a7d19a48cf1a",
+      "claimId": "FWK-9B95DB8E5250",
       "duplicateOf": null,
-      "line": 1113,
+      "line": 1167,
       "rationaleContext": "normative",
-      "sectionAnchor": "#53-loop-policy",
-      "sectionHeading": "5.3 Loop Policy",
-      "sectionKey": "5.3",
+      "sectionAnchor": "#56-driver-contract",
+      "sectionHeading": "5.6 Driver Contract",
+      "sectionKey": "5.6",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "extension contracts",
-      "text": "`continue: false` MUST convert to `fail(hard)` with error code"
+      "surface": "driver contract",
+      "text": "├─ messages: TuvrenMessage[] // read-only snapshot"
+    },
+    {
+      "affectedBoundary": "framework",
+      "adapterCapability": "framework.driver-api",
+      "claimFingerprint": "b0d69e0f958bdbe954bfce494bf3a50820c7d3d5841ab62dd1d8adb79dcb3613",
+      "claimId": "FWK-B0D69E0F958B",
+      "duplicateOf": null,
+      "line": 1168,
+      "rationaleContext": "normative",
+      "sectionAnchor": "#56-driver-contract",
+      "sectionHeading": "5.6 Driver Contract",
+      "sectionKey": "5.6",
+      "sourceFile": "docs/KrakenFrameworkSpecification.md",
+      "surface": "driver contract",
+      "text": "├─ manifest: ContextManifest // read-only snapshot"
+    },
+    {
+      "affectedBoundary": "framework",
+      "adapterCapability": "framework.driver-api",
+      "claimFingerprint": "9f2d5a3ec3c9a429a25a3664c2648a5421c9a304dbfcb38ac7418511f6f86cab",
+      "claimId": "FWK-9F2D5A3EC3C9",
+      "duplicateOf": null,
+      "line": 1169,
+      "rationaleContext": "normative",
+      "sectionAnchor": "#56-driver-contract",
+      "sectionHeading": "5.6 Driver Contract",
+      "sectionKey": "5.6",
+      "sourceFile": "docs/KrakenFrameworkSpecification.md",
+      "surface": "driver contract",
+      "text": "├─ toolRegistry: ToolRegistry // read-only driver-facing view"
     },
     {
       "affectedBoundary": "framework",
@@ -2406,6 +2714,51 @@
     {
       "affectedBoundary": "framework",
       "adapterCapability": "framework.runtime-api",
+      "claimFingerprint": "2eef73fef9917c9985c6feed5e6fbccb749a900c667ee76f5a9af0d83b5a70a0",
+      "claimId": "FWK-2EEF73FEF991",
+      "duplicateOf": null,
+      "line": 1486,
+      "rationaleContext": "normative",
+      "sectionAnchor": "#73-lifecycle",
+      "sectionHeading": "7.3 Lifecycle",
+      "sectionKey": "7.3",
+      "sourceFile": "docs/KrakenFrameworkSpecification.md",
+      "surface": "host execution handle",
+      "text": "// Or inject steering (only while running)"
+    },
+    {
+      "affectedBoundary": "framework",
+      "adapterCapability": "framework.runtime-api",
+      "claimFingerprint": "7c2ae541c58f10f7e9ce2dc027fb96eb6b839bb8a165c3389773ae275d4d2c25",
+      "claimId": "FWK-7C2AE541C58F",
+      "duplicateOf": null,
+      "line": 1513,
+      "rationaleContext": "normative",
+      "sectionAnchor": "#82-schema-flexibility",
+      "sectionHeading": "8.2 Schema Flexibility",
+      "sectionKey": "8.2",
+      "sourceFile": "docs/KrakenFrameworkSpecification.md",
+      "surface": "tool and approval contracts",
+      "text": "| { valid: true, value: unknown }"
+    },
+    {
+      "affectedBoundary": "framework",
+      "adapterCapability": "framework.runtime-api",
+      "claimFingerprint": "cd70c451abe892d1c40acb0cccd66efd828a31a25d7e8f115f3e7813d020d9eb",
+      "claimId": "FWK-CD70C451ABE8",
+      "duplicateOf": null,
+      "line": 1514,
+      "rationaleContext": "normative",
+      "sectionAnchor": "#82-schema-flexibility",
+      "sectionHeading": "8.2 Schema Flexibility",
+      "sectionKey": "8.2",
+      "sourceFile": "docs/KrakenFrameworkSpecification.md",
+      "surface": "tool and approval contracts",
+      "text": "| { valid: false, error: { message: string, details?: unknown } }"
+    },
+    {
+      "affectedBoundary": "framework",
+      "adapterCapability": "framework.runtime-api",
       "claimFingerprint": "8eb24eefc45c3f3ea899563108fc3a08b46c60a2361daf7d72f6d7f606c275e3",
       "claimId": "FWK-8EB24EEFC45C",
       "duplicateOf": null,
@@ -2417,6 +2770,51 @@
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
       "surface": "tool and approval contracts",
       "text": "JSON Schema is the interchange format at the shared framework contract boundary. Zod and TypeBox remain acceptable implementation conveniences upstream, but they must be converted into JSON Schema or wrapped behind `CustomSchema` before they cross this shared contract seam."
+    },
+    {
+      "affectedBoundary": "framework",
+      "adapterCapability": "framework.runtime-api",
+      "claimFingerprint": "b3be8fdc226cc50dc5c5b2dd97ba6c9f7f10e28aaa322100e4c3f6b5f7f18bbd",
+      "claimId": "FWK-B3BE8FDC226C",
+      "duplicateOf": null,
+      "line": 1575,
+      "rationaleContext": "normative",
+      "sectionAnchor": "#86-executor-flow",
+      "sectionHeading": "8.6 Executor Flow",
+      "sectionKey": "8.6",
+      "sourceFile": "docs/KrakenFrameworkSpecification.md",
+      "surface": "tool and approval contracts",
+      "text": "2. VALIDATE tool.inputSchema.validate(input). Invalid → error ToolResultPart."
+    },
+    {
+      "affectedBoundary": "framework",
+      "adapterCapability": "framework.runtime-api",
+      "claimFingerprint": "dc7d35f6c2cd7fd2f8adba81d43da667954faa52287f56938eeda5240a35e1d8",
+      "claimId": "FWK-DC7D35F6C2CD",
+      "duplicateOf": null,
+      "line": 1578,
+      "rationaleContext": "normative",
+      "sectionAnchor": "#86-executor-flow",
+      "sectionHeading": "8.6 Executor Flow",
+      "sectionKey": "8.6",
+      "sourceFile": "docs/KrakenFrameworkSpecification.md",
+      "surface": "tool and approval contracts",
+      "text": "aroundTool may also trigger approval (pause verdict)."
+    },
+    {
+      "affectedBoundary": "framework",
+      "adapterCapability": "framework.runtime-api",
+      "claimFingerprint": "86dbc9e570c823a558af6cb231d0022f5d2a1d0c9136b6aafaa20343ddf073b0",
+      "claimId": "FWK-86DBC9E570C8",
+      "duplicateOf": null,
+      "line": 1582,
+      "rationaleContext": "normative",
+      "sectionAnchor": "#86-executor-flow",
+      "sectionHeading": "8.6 Executor Flow",
+      "sectionKey": "8.6",
+      "sourceFile": "docs/KrakenFrameworkSpecification.md",
+      "surface": "tool and approval contracts",
+      "text": "the executor MUST invoke `context.stageResult(result)`."
     },
     {
       "affectedBoundary": "framework",
@@ -2505,7 +2903,7 @@
       "sectionHeading": "System Prompt",
       "sectionKey": "system-prompt",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "framework uncategorized local surface",
+      "surface": "extension state and prompt contracts",
       "text": "Dynamic system prompts may invalidate provider KV cache. The framework documents this tradeoff but does not prevent it."
     },
     {
@@ -2520,7 +2918,7 @@
       "sectionHeading": "Reading and Updating",
       "sectionKey": "reading-and-updating",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "framework uncategorized local surface",
+      "surface": "extension state and prompt contracts",
       "text": "All handlers receive `ctx.extensionState` (their own persisted extension namespace, deserialized from the manifest). Handler contexts also expose `sharedExports`, a read-only projection of other extensions' declared export keys over the latest persisted extension state. Intercepts and arounds return state updates via the generic `state` field in their return value. Updates are collected per phase and applied at the next checkpoint."
     },
     {
@@ -2535,7 +2933,7 @@
       "sectionHeading": "Reading and Updating",
       "sectionKey": "reading-and-updating",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "framework uncategorized local surface",
+      "surface": "extension state and prompt contracts",
       "text": "The framework may warn hosts when an extension namespace grows past an implementation-defined manifest budget, but this is advisory only. There is no hard manifest-state cap in the core contract; hosts keep agency over their persistence and performance tradeoffs."
     },
     {
@@ -2550,7 +2948,7 @@
       "sectionHeading": "Namespace Isolation",
       "sectionKey": "namespace-isolation",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "framework uncategorized local surface",
+      "surface": "extension state and prompt contracts",
       "text": "Each extension owns `manifest.extensions[name]`. The framework rejects duplicate names. Other extensions may read only the keys explicitly listed in that extension's `exports` declaration; they may not mutate another extension’s namespace. Core manifest fields are never affected by extension state updates."
     },
     {
@@ -2570,7 +2968,52 @@
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "N/A",
+      "adapterCapability": "framework.react-driver",
+      "claimFingerprint": "b48e88c029d46b4ab70647b980a27cd65ac92fbde4b9d978c5670946a1730545",
+      "claimId": "FWK-B48E88C029D4",
+      "duplicateOf": "FWK-9B95DB8E5250",
+      "line": 1716,
+      "rationaleContext": "normative",
+      "sectionAnchor": "#handler-signature",
+      "sectionHeading": "Handler Signature",
+      "sectionKey": "handler-signature",
+      "sourceFile": "docs/KrakenFrameworkSpecification.md",
+      "surface": "ReAct and extension hooks",
+      "text": "├─ messages: TuvrenMessage[] // read-only snapshot"
+    },
+    {
+      "affectedBoundary": "framework",
+      "adapterCapability": "framework.react-driver",
+      "claimFingerprint": "ebcc7f6d9ec15480982c74d1daf6e0695596c6646a0e381519db9258bd1a952f",
+      "claimId": "FWK-EBCC7F6D9EC1",
+      "duplicateOf": null,
+      "line": 1728,
+      "rationaleContext": "normative",
+      "sectionAnchor": "#interceptresult",
+      "sectionHeading": "InterceptResult",
+      "sectionKey": "interceptresult",
+      "sourceFile": "docs/KrakenFrameworkSpecification.md",
+      "surface": "ReAct and extension hooks",
+      "text": "├─ reason?: string // required for endTurn"
+    },
+    {
+      "affectedBoundary": "framework",
+      "adapterCapability": "framework.react-driver",
+      "claimFingerprint": "fae5a77068e714333ed789c8d095b99b3c8edc91b1a69908668751b6ef645011",
+      "claimId": "FWK-FAE5A77068E7",
+      "duplicateOf": null,
+      "line": 1729,
+      "rationaleContext": "normative",
+      "sectionAnchor": "#interceptresult",
+      "sectionHeading": "InterceptResult",
+      "sectionKey": "interceptresult",
+      "sourceFile": "docs/KrakenFrameworkSpecification.md",
+      "surface": "ReAct and extension hooks",
+      "text": "└─ error?: Error // required for softFail and hardFail"
+    },
+    {
+      "affectedBoundary": "framework",
+      "adapterCapability": "framework.react-driver",
       "claimFingerprint": "08deaa2a61a3b2e78ca98e26dfe452cd6e72f2097ad5a19d607cd81bc4930fae",
       "claimId": "FWK-08DEAA2A61A3",
       "duplicateOf": null,
@@ -2580,12 +3023,12 @@
       "sectionHeading": "InterceptResult",
       "sectionKey": "interceptresult",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "framework uncategorized local surface",
+      "surface": "ReAct and extension hooks",
       "text": "`InterceptResult` stays small and local. It is not a miniature `RuntimeResolution` object. The only extra payload carried is the irreducible payload required for clean lifting into runtime control."
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "N/A",
+      "adapterCapability": "framework.react-driver",
       "claimFingerprint": "413c5b22b8ea39daea5aa0cf2fb7985a1bb3b316ec51bfe79b7b08c6827fd667",
       "claimId": "FWK-413C5B22B8EA",
       "duplicateOf": null,
@@ -2595,12 +3038,12 @@
       "sectionHeading": "InterceptResult",
       "sectionKey": "interceptresult",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "framework uncategorized local surface",
+      "surface": "ReAct and extension hooks",
       "text": "Validation rules: `reason` is required when `verdict` is `\"endTurn\"`. `error` is required when `verdict` is `\"softFail\"` or `\"hardFail\"`."
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "N/A",
+      "adapterCapability": "framework.react-driver",
       "claimFingerprint": "de249477068f55ba2645acd4c9815698cc13555bd37e138c1e1b1779b134643d",
       "claimId": "FWK-DE249477068F",
       "duplicateOf": null,
@@ -2610,12 +3053,42 @@
       "sectionHeading": "afterTurn",
       "sectionKey": "afterturn",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "framework uncategorized local surface",
+      "surface": "ReAct and extension hooks",
       "text": "Fires once after the iteration loop reaches a terminal non-paused stop. It is not fired for `beforeTurn` short-circuits because no iteration ran, and it is not fired for approval pauses because the Turn may resume. Used for cleanup, turn-level accounting, final metrics emission. Uses `InterceptHandler` / `InterceptResult`. Verdicts from afterTurn do not affect the completed Turn — the Turn has already resolved. State updates from afterTurn are non-durable on terminal paths. Implementations MUST NOT assume a later persistence opportunity for those updates within the same Turn."
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "N/A",
+      "adapterCapability": "framework.react-driver",
+      "claimFingerprint": "41d622194b15e765287b1442289e1d5764249ab5525c76046bcc9e305d6a2fda",
+      "claimId": "FWK-41D622194B15",
+      "duplicateOf": "FWK-EBCC7F6D9EC1",
+      "line": 1764,
+      "rationaleContext": "normative",
+      "sectionAnchor": "#beforeiteration",
+      "sectionHeading": "beforeIteration",
+      "sectionKey": "beforeiteration",
+      "sourceFile": "docs/KrakenFrameworkSpecification.md",
+      "surface": "ReAct and extension hooks",
+      "text": "├─ reason?: string // required for endTurn"
+    },
+    {
+      "affectedBoundary": "framework",
+      "adapterCapability": "framework.react-driver",
+      "claimFingerprint": "1a08ffe9629ba0bf5f91ba0fec936b591a9bf9934afb4b1e5a97f245cf9b4768",
+      "claimId": "FWK-1A08FFE9629B",
+      "duplicateOf": "FWK-FAE5A77068E7",
+      "line": 1765,
+      "rationaleContext": "normative",
+      "sectionAnchor": "#beforeiteration",
+      "sectionHeading": "beforeIteration",
+      "sectionKey": "beforeiteration",
+      "sourceFile": "docs/KrakenFrameworkSpecification.md",
+      "surface": "ReAct and extension hooks",
+      "text": "└─ error?: Error // required for softFail and hardFail"
+    },
+    {
+      "affectedBoundary": "framework",
+      "adapterCapability": "framework.react-driver",
       "claimFingerprint": "2417799566df6eef74d37e7b15acbbe37d7e005edaa3654ecda743a3e6809b67",
       "claimId": "FWK-2417799566DF",
       "duplicateOf": null,
@@ -2625,12 +3098,12 @@
       "sectionHeading": "beforeIteration",
       "sectionKey": "beforeiteration",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "framework uncategorized local surface",
+      "surface": "ReAct and extension hooks",
       "text": "When `cePlan` is returned, the framework executes the context engineering action as a separate Run before the iteration proceeds (§4.5). This is the only hook that can trigger context engineering."
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "N/A",
+      "adapterCapability": "framework.react-driver",
       "claimFingerprint": "f16baf069f4584167c9b5181eba5ea1dbffd72675d2ec8e3d732c28fbc9f7c9f",
       "claimId": "FWK-F16BAF069F45",
       "duplicateOf": null,
@@ -2640,12 +3113,12 @@
       "sectionHeading": "afterIteration",
       "sectionKey": "afteriteration",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "framework uncategorized local surface",
+      "surface": "ReAct and extension hooks",
       "text": "Fires after checkpoint. Sees the complete iteration: model response, tool results, and committed state. Used for budget tracking (token counting after seeing usage), metrics, and verdicts that should consider the full iteration outcome. `softFail` remains non-terminal here; `endTurn` and `hardFail` may still override continuation through RuntimeResolution precedence."
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "N/A",
+      "adapterCapability": "framework.react-driver",
       "claimFingerprint": "3c496f9731cb760ed4478918fde0834971a8016a3e15f8a9bb7e634a53896b7b",
       "claimId": "FWK-3C496F9731CB",
       "duplicateOf": null,
@@ -2655,12 +3128,12 @@
       "sectionHeading": "afterIteration",
       "sectionKey": "afteriteration",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "framework uncategorized local surface",
+      "surface": "ReAct and extension hooks",
       "text": "State updates returned from afterIteration are durable only if a later checkpoint occurs. On terminal paths they are non-durable."
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "N/A",
+      "adapterCapability": "framework.react-driver",
       "claimFingerprint": "eb75f78718da5639235476708fd0e5ca7b828a727f0dc5df766679fae6f9c054",
       "claimId": "FWK-EB75F78718DA",
       "duplicateOf": null,
@@ -2670,7 +3143,7 @@
       "sectionHeading": "aroundTool",
       "sectionKey": "aroundtool",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "framework uncategorized local surface",
+      "surface": "ReAct and extension hooks",
       "text": "When filtered by tool name, the handler only runs for matching tools. When the handler returns `{ verdict: \"pause\", approval }`, it uses the same approval machinery as tool-level `approval` fields (§8.7). State updates returned with `{ result, state }` or with a pause verdict are collected by the executor and applied at the next iteration checkpoint, including the pause checkpoint when approval interrupts the batch. On approval resume, only unfinished tool calls are resumed, and each resumed call re-enters the full aroundTool chain. Approval-aware wrappers use the prior decision for the exact call and pass through without re-requesting approval."
     },
     {
@@ -2840,22 +3313,22 @@
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "N/A",
-      "claimFingerprint": "6ae1c0c2a601cee3eeb4e898ed9ea04bdf7cc586f7d9a4d34ff774435de9d5d0",
-      "claimId": "FWK-6AE1C0C2A601",
+      "adapterCapability": "framework.orchestration",
+      "claimFingerprint": "d7f58dbe7f22936f7295b6ad84808a72b21ae7b4db862d8affe0303168015ec2",
+      "claimId": "FWK-D7F58DBE7F22",
       "duplicateOf": null,
-      "line": 1994,
+      "line": 1991,
       "rationaleContext": "normative",
       "sectionAnchor": "#agent-signaled-handoff",
       "sectionHeading": "Agent-Signaled Handoff",
       "sectionKey": "agent-signaled-handoff",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "framework uncategorized local surface",
-      "text": "content part, so baseline drivers must not invent one inside"
+      "surface": "handoff and context engineering",
+      "text": "Agent-signaled handoff is preserved through the shared driver seam as `RuntimeResolution.handoff`, not as an ordinary conversational history entry. The current provider-neutral content model does not define a dedicated handoff content part, so baseline drivers must not invent one inside `TuvrenModelResponse.parts` in v0.1. If a provider bridge or higher layer can recognize a provider-native tool-like handoff signal, it maps that signal into the existing handoff resolution contract instead of persisting a literal handoff tool call as ordinary conversation history."
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "N/A",
+      "adapterCapability": "framework.orchestration",
       "claimFingerprint": "e64892fc65da489cc93f05adb0fa419e7f4fd98c77ec9966f54a945a643884ed",
       "claimId": "FWK-E64892FC65DA",
       "duplicateOf": null,
@@ -2865,12 +3338,12 @@
       "sectionHeading": "Agent-Signaled Handoff",
       "sectionKey": "agent-signaled-handoff",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "framework uncategorized local surface",
+      "surface": "handoff and context engineering",
       "text": "Before the next iteration begins, the framework MUST rebuild the active execution scope from the new `AgentConfig`: tool registry, extension composition, system prompt contributions, renderer inputs, loop policy, context policy, and any other per-agent framework contracts. The receiving agent MUST NOT continue with the previous agent’s tool or extension surface."
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "N/A",
+      "adapterCapability": "framework.orchestration",
       "claimFingerprint": "676a729ce7f4c1a70b73b6473184ce8bc1a1305ee054f1261fbe9450a3b116f3",
       "claimId": "FWK-676A729CE7F4",
       "duplicateOf": null,
@@ -2880,12 +3353,12 @@
       "sectionHeading": "Agent-Signaled Handoff",
       "sectionKey": "agent-signaled-handoff",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "framework uncategorized local surface",
+      "surface": "handoff and context engineering",
       "text": "The framework rejects multiple handoff intents in one iteration. A detected handoff intent that is combined with ordinary executable tool calls is rejected as invalid handoff composition."
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "N/A",
+      "adapterCapability": "framework.orchestration",
       "claimFingerprint": "b354fa47ebe1ab5c049cae0ac1fec076e7c3f09db9dbe78bece4d6c15ef484f4",
       "claimId": "FWK-B354FA47EBE1",
       "duplicateOf": null,
@@ -2895,12 +3368,12 @@
       "sectionHeading": "Handoff Context Engineering",
       "sectionKey": "handoff-context-engineering",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "framework uncategorized local surface",
+      "surface": "handoff and context engineering",
       "text": "**`last_output_only`** — expected for thin higher-layer pipeline patterns built on handoff. The receiving agent gets a clean-slate request containing only the previous agent’s final visible output parts (text / structured / file) plus any developer-configured scaffolding. Provider continuity metadata is not carried across the role transition into the new user-authored handoff message."
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "N/A",
+      "adapterCapability": "framework.orchestration",
       "claimFingerprint": "a94f389d6aca02f65976224d3b7aabb015beee6e0d40db35510a9010054914bb",
       "claimId": "FWK-A94F389D6ACA",
       "duplicateOf": null,
@@ -2910,12 +3383,12 @@
       "sectionHeading": "Default Handoff Context Builder (`preserve_trace`)",
       "sectionKey": "default-handoff-context-builder-preserve-trace",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "framework uncategorized local surface",
+      "surface": "handoff and context engineering",
       "text": "System instructions are never persisted by handoff context builders. The receiving agent’s base system prompt remains transient renderer input from the active `AgentConfig`."
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "N/A",
+      "adapterCapability": "framework.orchestration",
       "claimFingerprint": "26f5b55d9b57fce80c54978035bac4cb46c0eb3aa6a52175df391b50afd4d910",
       "claimId": "FWK-26F5B55D9B57",
       "duplicateOf": null,
@@ -2925,7 +3398,7 @@
       "sectionHeading": "Default Handoff Context Builder (`preserve_trace`)",
       "sectionKey": "default-handoff-context-builder-preserve-trace",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "framework uncategorized local surface",
+      "surface": "handoff and context engineering",
       "text": "Developers may replace this builder with custom builders for domain-specific handoff formats. The default remains available."
     },
     {
@@ -3060,7 +3533,7 @@
       "sectionHeading": "Kraken Kernel Specification",
       "sectionKey": "kraken-kernel-specification",
       "sourceFile": "docs/KrakenKernelSpecification.md",
-      "surface": "kernel protocol",
+      "surface": "kernel boundary framing",
       "text": "Read this before the framework specification. This document freezes the human semantic model for the kernel primitives only."
     },
     {
@@ -3075,7 +3548,7 @@
       "sectionHeading": "1.1 Boundary Contract",
       "sectionKey": "1.1",
       "sourceFile": "docs/KrakenKernelSpecification.md",
-      "surface": "kernel protocol",
+      "surface": "kernel boundary framing",
       "text": "The kernel never calls up to the framework for any of its obligations (including reactive checkpointing during crashes)."
     },
     {
@@ -3210,7 +3683,7 @@
       "sectionHeading": "Tree Operations",
       "sectionKey": "tree-operations",
       "sourceFile": "docs/KrakenKernelSpecification.md",
-      "surface": "kernel protocol",
+      "surface": "kernel logical operations",
       "text": "**`create`** builds a TurnTree. Without `baseTurnTreeHash`, all schema paths must be provided. With `baseTurnTreeHash`, only changed paths are provided — unchanged paths inherit from the base. The kernel compares each path's refs against the base and only rehashes changed paths. This is the mechanism for framework-initiated state transformations: substitution, projection, reordering, or any structural change."
     },
     {
@@ -3225,7 +3698,7 @@
       "sectionHeading": "Tree Operations",
       "sectionKey": "tree-operations",
       "sourceFile": "docs/KrakenKernelSpecification.md",
-      "surface": "kernel protocol",
+      "surface": "kernel logical operations",
       "text": "**`incorporate`** applies StagedResults to a base tree using the schema's incorporation rules. Each StagedResult's `objectType` maps to a `targetPath`. For `ordered` paths, the Object hash is appended. For `single` paths, the Object hash replaces. Deterministic given the same inputs in the same order. A StagedResult with no matching rule is an error. The kernel uses `incorporate` autonomously during checkpointing and reactive checkpointing — no framework involvement required."
     },
     {
@@ -3240,7 +3713,7 @@
       "sectionHeading": "Tree Operations",
       "sectionKey": "tree-operations",
       "sourceFile": "docs/KrakenKernelSpecification.md",
-      "surface": "kernel protocol",
+      "surface": "kernel logical operations",
       "text": "**`diff`** compares two TurnTrees. Efficient due to structural sharing — compare subtree hashes, recurse only into changed branches. Trees with different `schemaId` values cannot be diffed."
     },
     {
@@ -3255,7 +3728,7 @@
       "sectionHeading": "Tree Operations",
       "sectionKey": "tree-operations",
       "sourceFile": "docs/KrakenKernelSpecification.md",
-      "surface": "kernel protocol",
+      "surface": "kernel logical operations",
       "text": "**`resolve`** returns the value at a given path. Empty list (`ordered`) or null (`single`) for valid paths with no refs. Unknown path is an error."
     },
     {
@@ -3330,7 +3803,7 @@
       "sectionHeading": "TurnNode Operations",
       "sectionKey": "turnnode-operations",
       "sourceFile": "docs/KrakenKernelSpecification.md",
-      "surface": "kernel protocol",
+      "surface": "kernel logical operations",
       "text": "Read operations only. `walkBack` follows the `previousTurnNodeHash` chain linearly. TurnNode creation is kernel-internal, triggered through `run.completeStep` and `run.complete`."
     },
     {
@@ -3635,18 +4108,33 @@
     },
     {
       "affectedBoundary": "kernel",
-      "adapterCapability": "kernel.restart-recovery",
-      "claimFingerprint": "e4f142be9b08b42c3f688b2a62a44bee40354039d3a4ada82adf6b249d32925d",
-      "claimId": "KER-E4F142BE9B08",
+      "adapterCapability": "kernel.protocol; kernel.logical",
+      "claimFingerprint": "fd2aa96b795a11400a69dad62b1ed977b046294093271fafabf0845039b8ddca",
+      "claimId": "KER-FD2AA96B795A",
       "duplicateOf": null,
-      "line": 526,
+      "line": 463,
+      "rationaleContext": "normative",
+      "sectionAnchor": "#55-checkpoint-transaction",
+      "sectionHeading": "5.5 Checkpoint Transaction",
+      "sectionKey": "5.5",
+      "sourceFile": "docs/KrakenKernelSpecification.md",
+      "surface": "kernel logical operations",
+      "text": "If treeHash provided: TurnTree must exist and use the Run's schemaId"
+    },
+    {
+      "affectedBoundary": "kernel",
+      "adapterCapability": "kernel.restart-recovery",
+      "claimFingerprint": "22511c79a15ed84b8799974d3f041258442949c760285eabe5a32a8e4bffd404",
+      "claimId": "KER-22511C79A15E",
+      "duplicateOf": null,
+      "line": 525,
       "rationaleContext": "normative",
       "sectionAnchor": "#57-recovery-protocol",
       "sectionHeading": "5.7 Recovery Protocol",
       "sectionKey": "5.7",
       "sourceFile": "docs/KrakenKernelSpecification.md",
       "surface": "kernel recovery edge states",
-      "text": "Detectable via `store.has(objectHash)`. Invalid StagedResults treated as incomplete. Task re-executes."
+      "text": "**Class 7: StagedResult appended, referenced Object not yet written.** Detectable via `store.has(objectHash)`. Invalid StagedResults treated as incomplete. Task re-executes."
     },
     {
       "affectedBoundary": "kernel",
@@ -3666,17 +4154,17 @@
     {
       "affectedBoundary": "kernel",
       "adapterCapability": "kernel.restart-recovery",
-      "claimFingerprint": "7a34d493aa29cf46ee31554d8d62422280369ce84906cb90c07a800239efb6bc",
-      "claimId": "KER-7A34D493AA29",
+      "claimFingerprint": "f8785e02207ad52bae1f307da5807042141598831e15df7316c69f686e29747e",
+      "claimId": "KER-F8785E02207A",
       "duplicateOf": null,
-      "line": 531,
+      "line": 530,
       "rationaleContext": "normative",
       "sectionAnchor": "#57-recovery-protocol",
       "sectionHeading": "5.7 Recovery Protocol",
       "sectionKey": "5.7",
       "sourceFile": "docs/KrakenKernelSpecification.md",
       "surface": "kernel recovery edge states",
-      "text": "If the execution lease is still valid, another owner must not take over. If the lease is expired, stale-running preemption (§5.2) is the only valid takeover path. `paused` Runs are excluded from this crash class because they represent approval ownership, not execution ownership."
+      "text": "**Class 8: Process death leaves a leased `running` Run.** If the execution lease is still valid, another owner must not take over. If the lease is expired, stale-running preemption (§5.2) is the only valid takeover path. `paused` Runs are excluded from this crash class because they represent approval ownership, not execution ownership."
     },
     {
       "affectedBoundary": "kernel",
@@ -3690,7 +4178,7 @@
       "sectionHeading": "Run Lifecycle Operations",
       "sectionKey": "run-lifecycle-operations",
       "sourceFile": "docs/KrakenKernelSpecification.md",
-      "surface": "kernel protocol",
+      "surface": "kernel logical operations",
       "text": "**`completeStep`** checks step declaration flags and executes checkpoint transaction if required. If `treeHash` provided, uses it instead of constructing via `tree.incorporate`. Returns whether checkpoint was created."
     },
     {
@@ -3846,6 +4334,21 @@
     {
       "affectedBoundary": "kernel",
       "adapterCapability": "kernel.protocol; kernel.logical",
+      "claimFingerprint": "3813bbb13ec65b8251b212887fe3f79a0f0abe736891e30ed2d303832609c0f6",
+      "claimId": "KER-3813BBB13EC6",
+      "duplicateOf": null,
+      "line": 780,
+      "rationaleContext": "normative",
+      "sectionAnchor": "#run-status-transitions",
+      "sectionHeading": "Run Status Transitions",
+      "sectionKey": "run-status-transitions",
+      "sourceFile": "docs/KrakenKernelSpecification.md",
+      "surface": "kernel appendix validation matrix",
+      "text": "old Run must be failed first)"
+    },
+    {
+      "affectedBoundary": "kernel",
+      "adapterCapability": "kernel.protocol; kernel.logical",
       "claimFingerprint": "f3bf91436e2058a47c260a1add1955dfa7531838930d87e6028ffe079b939f90",
       "claimId": "KER-F3BF91436E20",
       "duplicateOf": null,
@@ -3855,7 +4358,7 @@
       "sectionHeading": "Run Creation Legality",
       "sectionKey": "run-creation-legality",
       "sourceFile": "docs/KrakenKernelSpecification.md",
-      "surface": "kernel protocol",
+      "surface": "kernel appendix validation matrix",
       "text": "`run.create` succeeds only if: `runId` unique, `turnId` exists, `branchId` exists and belongs to correct Thread, `schemaId` registered, Branch Head matches `startTurnNodeHash`, no `running` or `paused` Run on Branch."
     },
     {
@@ -3870,7 +4373,7 @@
       "sectionHeading": "Turn Update Legality",
       "sectionKey": "turn-update-legality",
       "sourceFile": "docs/KrakenKernelSpecification.md",
-      "surface": "kernel protocol",
+      "surface": "kernel appendix validation matrix",
       "text": "`turn.updateHead` succeeds only if `headTurnNodeHash` is a descendant of `startTurnNodeHash` by lineage walk."
     },
     {
@@ -3885,7 +4388,7 @@
       "sectionHeading": "Schema",
       "sectionKey": "schema",
       "sourceFile": "docs/KrakenKernelSpecification.md",
-      "surface": "kernel protocol",
+      "surface": "kernel appendix validation matrix",
       "text": "**`schema.register(schema)`** — `schemaId` must be unique. No duplicate paths. Collection types must be `ordered` or `single`. All incorporation rule `targetPath` values must exist in `paths`. No duplicate `objectType` values."
     },
     {
@@ -3900,7 +4403,7 @@
       "sectionHeading": "TurnTree",
       "sectionKey": "turntree",
       "sourceFile": "docs/KrakenKernelSpecification.md",
-      "surface": "kernel protocol",
+      "surface": "kernel appendix validation matrix",
       "text": "**`tree.create(schemaId, changes, baseTurnTreeHash?)`** — `schemaId` must be registered. If `baseTurnTreeHash`: must exist. If no base: all schema paths must be in `changes`. Each path must exist in schema. Each value must match collection kind."
     },
     {
@@ -3915,7 +4418,7 @@
       "sectionHeading": "TurnTree",
       "sectionKey": "turntree",
       "sourceFile": "docs/KrakenKernelSpecification.md",
-      "surface": "kernel protocol",
+      "surface": "kernel appendix validation matrix",
       "text": "**`tree.incorporate(baseTurnTreeHash, stagedResults)`** — Base must exist. Each StagedResult's `objectType` must have a matching incorporation rule."
     },
     {
@@ -3930,7 +4433,7 @@
       "sectionHeading": "TurnTree",
       "sectionKey": "turntree",
       "sourceFile": "docs/KrakenKernelSpecification.md",
-      "surface": "kernel protocol",
+      "surface": "kernel appendix validation matrix",
       "text": "**`tree.diff(treeHashA, treeHashB)`** — Both must exist. Both must share the same `schemaId`."
     },
     {
@@ -3945,7 +4448,7 @@
       "sectionHeading": "TurnTree",
       "sectionKey": "turntree",
       "sourceFile": "docs/KrakenKernelSpecification.md",
-      "surface": "kernel protocol",
+      "surface": "kernel appendix validation matrix",
       "text": "**`tree.resolve(treeHash, path)`** — Tree must exist. Path must exist in schema."
     },
     {
@@ -3960,7 +4463,7 @@
       "sectionHeading": "TurnTree",
       "sectionKey": "turntree",
       "sourceFile": "docs/KrakenKernelSpecification.md",
-      "surface": "kernel protocol",
+      "surface": "kernel appendix validation matrix",
       "text": "**`tree.manifest(treeHash)`** — Tree must exist."
     },
     {
@@ -3975,7 +4478,7 @@
       "sectionHeading": "TurnNode",
       "sectionKey": "turnnode",
       "sourceFile": "docs/KrakenKernelSpecification.md",
-      "surface": "kernel protocol",
+      "surface": "kernel appendix validation matrix",
       "text": "**`node.walkBack(fromHash)`** — `fromHash` must be a valid TurnNode."
     },
     {
@@ -3990,7 +4493,7 @@
       "sectionHeading": "Branch",
       "sectionKey": "branch",
       "sourceFile": "docs/KrakenKernelSpecification.md",
-      "surface": "kernel protocol",
+      "surface": "kernel appendix validation matrix",
       "text": "**`branch.setHead(branchId, turnNodeHash)`** — `branchId` exists. `turnNodeHash` exists and belongs to Thread by lineage walk. Directional relationship must be forward or backward (lateral rejected). If backward: atomic archival."
     },
     {
@@ -4005,7 +4508,7 @@
       "sectionHeading": "Staging",
       "sectionKey": "staging",
       "sourceFile": "docs/KrakenKernelSpecification.md",
-      "surface": "kernel protocol",
+      "surface": "kernel appendix validation matrix",
       "text": "**`staging.stage(runId, blob, taskId, objectType, status, interruptPayload?)`** — `runId` must exist and be `running`."
     },
     {
@@ -4020,7 +4523,7 @@
       "sectionHeading": "Staging",
       "sectionKey": "staging",
       "sourceFile": "docs/KrakenKernelSpecification.md",
-      "surface": "kernel protocol",
+      "surface": "kernel appendix validation matrix",
       "text": "**`staging.current(runId)`** — `runId` must exist."
     },
     {
@@ -4035,7 +4538,7 @@
       "sectionHeading": "Run Lifecycle",
       "sectionKey": "run-lifecycle",
       "sourceFile": "docs/KrakenKernelSpecification.md",
-      "surface": "kernel protocol",
+      "surface": "kernel appendix validation matrix",
       "text": "**`run.create(runId, turnId, branchId, schemaId, startTurnNodeHash, steps)`** — See Run Creation Legality (Appendix A). Step IDs must be unique within the sequence."
     },
     {
@@ -4050,7 +4553,7 @@
       "sectionHeading": "Run Lifecycle",
       "sectionKey": "run-lifecycle",
       "sourceFile": "docs/KrakenKernelSpecification.md",
-      "surface": "kernel protocol",
+      "surface": "kernel appendix validation matrix",
       "text": "**`run.beginStep(runId, stepId)`** — `runId` must be `running`. `stepId` must match next expected step."
     },
     {
@@ -4065,7 +4568,7 @@
       "sectionHeading": "Run Lifecycle",
       "sectionKey": "run-lifecycle",
       "sourceFile": "docs/KrakenKernelSpecification.md",
-      "surface": "kernel protocol",
+      "surface": "kernel appendix validation matrix",
       "text": "**`run.completeStep(runId, stepId, eventHash?, observeResults?, treeHash?)`** — `runId` must be `running`. `stepId` must match current step. If `eventHash`: Object must exist. If `treeHash`: TurnTree must exist with matching `schemaId`."
     },
     {
@@ -4080,7 +4583,7 @@
       "sectionHeading": "Run Lifecycle",
       "sectionKey": "run-lifecycle",
       "sourceFile": "docs/KrakenKernelSpecification.md",
-      "surface": "kernel protocol",
+      "surface": "kernel appendix validation matrix",
       "text": "**`run.complete(runId, status, eventHash?)`** — If `runId` is `running`, `status` must be `completed`, `failed`, or `paused`. If `runId` is `paused`, `status` must be `failed`. If `eventHash`: Object must exist."
     },
     {
@@ -4095,7 +4598,7 @@
       "sectionHeading": "Run Lifecycle",
       "sectionKey": "run-lifecycle",
       "sourceFile": "docs/KrakenKernelSpecification.md",
-      "surface": "kernel protocol",
+      "surface": "kernel appendix validation matrix",
       "text": "**`run.recover(runId)`** — `runId` must exist."
     },
     {
@@ -4110,7 +4613,7 @@
       "sectionHeading": "Turn Lifecycle",
       "sectionKey": "turn-lifecycle",
       "sourceFile": "docs/KrakenKernelSpecification.md",
-      "surface": "kernel protocol",
+      "surface": "kernel appendix validation matrix",
       "text": "**`turn.create(id, threadId, branchId, parentTurnId?, startTurnNodeHash)`** — `id` unique. `threadId` exists. `branchId` exists and belongs to the same Thread. If `parentTurnId`: must exist, belong to the same Thread, and chain contiguously into `startTurnNodeHash`; forked Branches may reference the source Branch head Turn as their first semantic parent. `startTurnNodeHash` must exist and belong to Thread by lineage walk."
     },
     {
@@ -4125,7 +4628,7 @@
       "sectionHeading": "Turn Lifecycle",
       "sectionKey": "turn-lifecycle",
       "sourceFile": "docs/KrakenKernelSpecification.md",
-      "surface": "kernel protocol",
+      "surface": "kernel appendix validation matrix",
       "text": "**`turn.updateHead(id, headTurnNodeHash)`** — Turn must exist. `headTurnNodeHash` must exist and be a descendant of `startTurnNodeHash`."
     },
     {

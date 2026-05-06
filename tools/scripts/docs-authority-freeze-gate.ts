@@ -45,9 +45,11 @@ const ANCHOR_UNSAFE_CHAR_PATTERN = /[^a-z0-9\s-]/g;
 const HEADING_PATTERN = /^(#{1,6})\s+(.+)$/;
 const LEADING_LIST_MARKER_PATTERN = /^\s*[-*]\s+/;
 const LINE_SPLIT_PATTERN = /\r?\n/;
+const LIST_ITEM_PATTERN = /^\s*(?:[-*]|\d+[.)])\s+/;
 const SECTION_NUMBER_PATTERN = /^(\d+(?:\.\d+)*)\b/;
 const SECTION_TRAILING_DASH_PATTERN = /-+$/g;
 const SECTION_UNSAFE_CHAR_PATTERN = /[^a-z0-9]+/g;
+const TABLE_ROW_PATTERN = /^\s*\|/;
 const WHITESPACE_PATTERN = /\s+/g;
 const CLAIM_ID_HASH_LENGTH = 12;
 
@@ -59,7 +61,8 @@ type Classification =
   | "implementation-defined"
   | "explicitly-deferred"
   | "missing-conformance-follow-up"
-  | "stale-docs-corrected";
+  | "stale-docs-corrected"
+  | "unclassified";
 
 interface DocSource {
   boundary: SourceBoundary;
@@ -72,6 +75,22 @@ interface HeadingState {
   heading: string;
   level: number;
   sectionKey: string;
+}
+
+interface PendingProseBlock {
+  heading: HeadingState;
+  line: number;
+  lines: string[];
+}
+
+interface DocParseState {
+  claimedIds: Map<string, string>;
+  claims: NormativeClaim[];
+  headingStack: HeadingState[];
+  inCodeFence: boolean;
+  proseBlock: PendingProseBlock | null;
+  rationaleLineCounts: Map<string, RationaleSection>;
+  source: DocSource;
 }
 
 interface NormativeClaim {
@@ -287,6 +306,22 @@ async function main(): Promise<void> {
   const claimsWithDuplicates = addDuplicateLinks(claims);
   const matrixEntries = claimsWithDuplicates.map(toCoverageEntry);
   const inventoryClaims = matrixEntries.map(toInventoryEntry);
+  const unclassifiedEntries = matrixEntries.filter(
+    (entry) => entry.classification === "unclassified"
+  );
+
+  if (unclassifiedEntries.length > 0) {
+    const examples = unclassifiedEntries
+      .slice(0, 5)
+      .map(
+        (entry) =>
+          `${entry.claimId} ${entry.sourceFile}:${entry.line} ${entry.sectionKey}`
+      )
+      .join("; ");
+    throw new Error(
+      `docs authority freeze gate found ${unclassifiedEntries.length} unclassified claims: ${examples}`
+    );
+  }
 
   await mkdir(OUTPUT_DIR, { recursive: true });
   await writeJson(INVENTORY_PATH, {
@@ -302,9 +337,7 @@ async function main(): Promise<void> {
     primaryClassificationRule:
       "Each normative claim receives exactly one primary classification derived from its source section and explicit text markers.",
     totalClaims: matrixEntries.length,
-    unclassifiedClaims: matrixEntries.filter(
-      (entry) => entry.classification.length === 0
-    ).length,
+    unclassifiedClaims: unclassifiedEntries.length,
     entries: matrixEntries,
   } satisfies CoverageMatrix);
 
@@ -332,99 +365,216 @@ async function parseDocSource(source: DocSource): Promise<{
   rationaleSections: RationaleSection[];
 }> {
   const text = await readFile(source.path, "utf8");
-  const lines = text.split(LINE_SPLIT_PATTERN);
-  const headingStack: HeadingState[] = [
-    {
-      anchor: "#top",
-      heading: "Document Preamble",
-      level: 1,
-      sectionKey: "preamble",
-    },
-  ];
-  const rationaleLineCounts = new Map<string, RationaleSection>();
-  const claimedIds = new Map<string, string>();
-  const claims: NormativeClaim[] = [];
-  let inCodeFence = false;
+  const state: DocParseState = {
+    claimedIds: new Map<string, string>(),
+    claims: [],
+    headingStack: [
+      {
+        anchor: "#top",
+        heading: "Document Preamble",
+        level: 1,
+        sectionKey: "preamble",
+      },
+    ],
+    inCodeFence: false,
+    proseBlock: null,
+    rationaleLineCounts: new Map<string, RationaleSection>(),
+    source,
+  };
 
-  for (let index = 0; index < lines.length; index += 1) {
-    const rawLine = lines[index] ?? "";
-    const trimmed = rawLine.trim();
-
-    if (trimmed.startsWith("```")) {
-      inCodeFence = !inCodeFence;
-      continue;
-    }
-
-    if (inCodeFence || trimmed.length === 0 || trimmed === "---") {
-      continue;
-    }
-
-    const headingMatch = HEADING_PATTERN.exec(trimmed);
-    if (headingMatch != null) {
-      const [, marker, headingText] = headingMatch;
-      if (marker === undefined || headingText === undefined) {
-        throw new Error(`invalid heading at ${source.path}:${index + 1}`);
-      }
-      const level = marker.length;
-      headingStack.splice(level - 1);
-      headingStack.push({
-        anchor: toAnchor(headingText),
-        heading: headingText,
-        level,
-        sectionKey: toSectionKey(headingText),
-      });
-      continue;
-    }
-
-    const currentHeading = headingStack.at(-1);
-    if (currentHeading === undefined) {
-      throw new Error(`missing heading state at ${source.path}:${index + 1}`);
-    }
-
-    if (NORMATIVE_PATTERN.test(trimmed)) {
-      const text = normalizeClaimText(trimmed);
-      const { claimFingerprint, claimId } = await toStableClaimId(
-        source,
-        currentHeading,
-        text,
-        claimedIds
-      );
-      claims.push({
-        affectedBoundary: source.boundary,
-        claimFingerprint,
-        claimId,
-        duplicateOf: null,
-        line: index + 1,
-        rationaleContext: "normative",
-        sectionAnchor: currentHeading.anchor,
-        sectionHeading: currentHeading.heading,
-        sectionKey: currentHeading.sectionKey,
-        sourceFile: source.path,
-        text,
-      });
-      continue;
-    }
-
-    const rationaleKey = `${source.path}:${currentHeading.anchor}`;
-    const existing = rationaleLineCounts.get(rationaleKey);
-    if (existing == null) {
-      rationaleLineCounts.set(rationaleKey, {
-        affectedBoundary: source.boundary,
-        nonNormativeLineCount: 1,
-        sectionAnchor: currentHeading.anchor,
-        sectionHeading: currentHeading.heading,
-        sectionKey: currentHeading.sectionKey,
-        sourceFile: source.path,
-      });
-    } else {
-      existing.nonNormativeLineCount += 1;
-    }
+  for (const [index, rawLine] of text.split(LINE_SPLIT_PATTERN).entries()) {
+    await parseDocLine(state, rawLine, index + 1);
   }
 
+  await flushProseBlock(state);
+
   return {
-    claims,
-    rationaleSections: [...rationaleLineCounts.values()],
+    claims: state.claims,
+    rationaleSections: [...state.rationaleLineCounts.values()],
   };
+}
+
+async function parseDocLine(
+  state: DocParseState,
+  rawLine: string,
+  line: number
+): Promise<void> {
+  const trimmed = rawLine.trim();
+
+  if (trimmed.startsWith("```")) {
+    await flushProseBlock(state);
+    state.inCodeFence = !state.inCodeFence;
+    return;
+  }
+
+  const currentHeading = currentHeadingFor(state, line);
+
+  if (state.inCodeFence) {
+    await parseCodeFenceLine(state, currentHeading, trimmed, line);
+    return;
+  }
+
+  if (trimmed.length === 0 || trimmed === "---") {
+    await flushProseBlock(state);
+    return;
+  }
+
+  const headingMatch = HEADING_PATTERN.exec(trimmed);
+  if (headingMatch != null) {
+    await parseHeadingLine(state, headingMatch, line);
+    return;
+  }
+
+  if (TABLE_ROW_PATTERN.test(trimmed)) {
+    await parseStandaloneClaimLine(state, currentHeading, trimmed, line);
+    return;
+  }
+
+  await appendProseLine(state, currentHeading, trimmed, line);
+}
+
+function currentHeadingFor(state: DocParseState, line: number): HeadingState {
+  const currentHeading = state.headingStack.at(-1);
+  if (currentHeading === undefined) {
+    throw new Error(`missing heading state at ${state.source.path}:${line}`);
+  }
+  return currentHeading;
+}
+
+async function parseCodeFenceLine(
+  state: DocParseState,
+  heading: HeadingState,
+  trimmed: string,
+  line: number
+): Promise<void> {
+  if (trimmed.length === 0) {
+    return;
+  }
+
+  await parseStandaloneClaimLine(state, heading, trimmed, line);
+}
+
+async function parseHeadingLine(
+  state: DocParseState,
+  headingMatch: RegExpExecArray,
+  line: number
+): Promise<void> {
+  await flushProseBlock(state);
+  const [, marker, headingText] = headingMatch;
+  if (marker === undefined || headingText === undefined) {
+    throw new Error(`invalid heading at ${state.source.path}:${line}`);
+  }
+  const level = marker.length;
+  state.headingStack.splice(level - 1);
+  state.headingStack.push({
+    anchor: toAnchor(headingText),
+    heading: headingText,
+    level,
+    sectionKey: toSectionKey(headingText),
+  });
+}
+
+async function parseStandaloneClaimLine(
+  state: DocParseState,
+  heading: HeadingState,
+  trimmed: string,
+  line: number
+): Promise<void> {
+  await flushProseBlock(state);
+  if (NORMATIVE_PATTERN.test(trimmed)) {
+    await pushClaim(state, heading, trimmed, line);
+  } else {
+    addRationaleLines(state, heading, 1);
+  }
+}
+
+async function appendProseLine(
+  state: DocParseState,
+  heading: HeadingState,
+  trimmed: string,
+  line: number
+): Promise<void> {
+  if (LIST_ITEM_PATTERN.test(trimmed)) {
+    await flushProseBlock(state);
+  }
+
+  if (state.proseBlock == null) {
+    state.proseBlock = {
+      heading,
+      line,
+      lines: [trimmed],
+    };
+    return;
+  }
+
+  state.proseBlock.lines.push(trimmed);
+}
+
+function addRationaleLines(
+  state: DocParseState,
+  heading: HeadingState,
+  lineCount: number
+): void {
+  const rationaleKey = `${state.source.path}:${heading.anchor}`;
+  const existing = state.rationaleLineCounts.get(rationaleKey);
+  if (existing == null) {
+    state.rationaleLineCounts.set(rationaleKey, {
+      affectedBoundary: state.source.boundary,
+      nonNormativeLineCount: lineCount,
+      sectionAnchor: heading.anchor,
+      sectionHeading: heading.heading,
+      sectionKey: heading.sectionKey,
+      sourceFile: state.source.path,
+    });
+    return;
+  }
+
+  existing.nonNormativeLineCount += lineCount;
+}
+
+async function pushClaim(
+  state: DocParseState,
+  heading: HeadingState,
+  claimText: string,
+  line: number
+): Promise<void> {
+  const normalizedText = normalizeClaimText(claimText);
+  const { claimFingerprint, claimId } = await toStableClaimId(
+    state.source,
+    heading,
+    normalizedText,
+    state.claimedIds
+  );
+  state.claims.push({
+    affectedBoundary: state.source.boundary,
+    claimFingerprint,
+    claimId,
+    duplicateOf: null,
+    line,
+    rationaleContext: "normative",
+    sectionAnchor: heading.anchor,
+    sectionHeading: heading.heading,
+    sectionKey: heading.sectionKey,
+    sourceFile: state.source.path,
+    text: normalizedText,
+  });
+}
+
+async function flushProseBlock(state: DocParseState): Promise<void> {
+  if (state.proseBlock == null) {
+    return;
+  }
+
+  const block = state.proseBlock;
+  state.proseBlock = null;
+  const claimText = block.lines.join(" ");
+
+  if (NORMATIVE_PATTERN.test(claimText)) {
+    await pushClaim(state, block.heading, claimText, block.line);
+    return;
+  }
+
+  addRationaleLines(state, block.heading, block.lines.length);
 }
 
 async function toStableClaimId(
@@ -574,10 +724,9 @@ function classifyFrameworkClaim(claim: NormativeClaim): ClassificationDecision {
     return runtimeSectionDecision;
   }
 
-  return implementationLocalDecision(
-    "framework uncategorized local surface",
-    "boundaries/framework/implementations/typescript/runtime-core/test/runtime-core.test.ts",
-    "No promoted packet mapping exists for this exact framework prose claim."
+  return unclassifiedDecision(
+    "framework unclassified surface",
+    "Framework prose landed outside the Epic AD section classifier and must be explicitly routed before the freeze gate can pass."
   );
 }
 
@@ -636,8 +785,43 @@ function classifyFrameworkIntegrationSection(
     );
   }
 
+  if (
+    [
+      "adapter-normalization",
+      "streaming-behavior",
+      "validation",
+      "lifecycle",
+    ].includes(section)
+  ) {
+    return missingConformanceDecision(
+      "structured output contract",
+      EVIDENCE.runtimeApi,
+      "KRT-AF004",
+      "Structured-output adapter, streaming, validation, and lifecycle semantics need AF tool/provider/error-boundary checks before freeze closure."
+    );
+  }
+
   if (section.startsWith("3")) {
     return authorityDecision("provider API bridge", EVIDENCE.providerApi);
+  }
+
+  if (section === "approval-resume") {
+    return missingConformanceDecision(
+      "approval resume semantics",
+      EVIDENCE.runtimeApi,
+      "KRT-AF004",
+      "Approval resume has TypeScript runtime evidence, but AF must promote the selected approval continuity checks into shared conformance."
+    );
+  }
+
+  if (
+    section === "running-lease-ownership" ||
+    section === "stale-running-recovery"
+  ) {
+    return authorityDecision(
+      "runtime lifecycle recovery",
+      EVIDENCE.runLiveness
+    );
   }
 
   if (section.startsWith("4.8") || section.startsWith("4.9")) {
@@ -693,8 +877,52 @@ function classifyFrameworkIntegrationSection(
 function classifyFrameworkRuntimeSection(
   section: string
 ): ClassificationDecision | null {
+  if (
+    ["system-prompt", "reading-and-updating", "namespace-isolation"].includes(
+      section
+    )
+  ) {
+    return implementationDefinedDecision(
+      "extension state and prompt contracts",
+      "Extension prompt and state policy is explicitly framework-local unless AF promotes selected hook behavior."
+    );
+  }
+
+  if (
+    [
+      "interceptresult",
+      "handler-signature",
+      "afterturn",
+      "beforeiteration",
+      "afteriteration",
+      "aroundtool",
+    ].includes(section)
+  ) {
+    return missingConformanceDecision(
+      "ReAct and extension hooks",
+      EVIDENCE.reactDriver,
+      "KRT-AF003",
+      "Extension hook result, ordering, and persistence semantics need AF promotion before they become portable cross-language authority."
+    );
+  }
+
   if (section.startsWith("7")) {
     return authorityDecision("host execution handle", EVIDENCE.runtimeApi);
+  }
+
+  if (
+    [
+      "agent-signaled-handoff",
+      "handoff-context-engineering",
+      "default-handoff-context-builder-preserve-trace",
+    ].includes(section)
+  ) {
+    return missingConformanceDecision(
+      "handoff and context engineering",
+      EVIDENCE.runtimeOrchestration,
+      "KRT-AF005",
+      "Handoff and context-engineering behavior remains blocked on AF orchestration leftover closure."
+    );
   }
 
   if (section.startsWith("10.1") || section.startsWith("10.7")) {
@@ -731,24 +959,71 @@ function classifyFrameworkRuntimeSection(
 function classifyKernelClaim(claim: NormativeClaim): ClassificationDecision {
   const section = claim.sectionKey;
   const text = claim.text.toLowerCase();
-
-  if (
-    text.includes("single authoritative") ||
-    text.includes("authoritative for")
-  ) {
-    return staleDocsDecision(
-      "kernel authority posture",
-      "Docs preamble now distinguishes frozen human kernel semantics from promoted machine authority."
-    );
+  const postureDecision = classifyKernelPostureText(text);
+  if (postureDecision != null) {
+    return postureDecision;
   }
 
-  if (section === "preamble" || section === "purpose" || section === "1") {
+  for (const classifier of [
+    classifyKernelFramingSection,
+    classifyKernelBackendSection,
+    classifyKernelRunLivenessSection,
+    classifyKernelAppendixSection,
+    classifyKernelCoreSection,
+  ]) {
+    const decision = classifier(section, text);
+    if (decision != null) {
+      return decision;
+    }
+  }
+
+  return unclassifiedDecision(
+    "kernel unclassified surface",
+    "Kernel prose landed outside the Epic AD section classifier and must be explicitly routed before the freeze gate can pass."
+  );
+}
+
+function classifyKernelPostureText(
+  text: string
+): ClassificationDecision | null {
+  if (
+    !(
+      text.includes("single authoritative") ||
+      text.includes("authoritative for")
+    )
+  ) {
+    return null;
+  }
+
+  return staleDocsDecision(
+    "kernel authority posture",
+    "Docs preamble now distinguishes frozen human kernel semantics from promoted machine authority."
+  );
+}
+
+function classifyKernelFramingSection(
+  section: string
+): ClassificationDecision | null {
+  if (
+    section === "preamble" ||
+    section === "purpose" ||
+    section === "1" ||
+    section === "kraken-kernel-specification" ||
+    section.startsWith("1.")
+  ) {
     return authorityDecision(
       "kernel boundary framing",
       EVIDENCE.kernelProtocol
     );
   }
 
+  return null;
+}
+
+function classifyKernelBackendSection(
+  _section: string,
+  text: string
+): ClassificationDecision | null {
   if (text.includes("implementation") && text.includes("may maintain")) {
     return implementationDefinedDecision(
       "kernel backend acceleration indexes",
@@ -756,6 +1031,19 @@ function classifyKernelClaim(claim: NormativeClaim): ClassificationDecision {
     );
   }
 
+  if (text.includes("sqlite") || text.includes("physical")) {
+    return implementationDefinedDecision(
+      "kernel backend physical storage",
+      "Physical storage strategy and backend internals remain implementation-defined unless a future storage packet promotes them."
+    );
+  }
+
+  return null;
+}
+
+function classifyKernelRunLivenessSection(
+  section: string
+): ClassificationDecision | null {
   if (
     section.startsWith("5.2") ||
     section.includes("run-execution-leases") ||
@@ -773,19 +1061,53 @@ function classifyKernelClaim(claim: NormativeClaim): ClassificationDecision {
     );
   }
 
-  if (section.startsWith("appendix")) {
-    return missingConformanceDecision(
-      "kernel appendix validation matrix",
-      EVIDENCE.kernelProtocol,
-      "KRT-AF006",
-      "Appendix legality and validation prose is portable intent, but AF must select edge-state checks before treating every row as freeze-covered."
-    );
+  return null;
+}
+
+function classifyKernelAppendixSection(
+  section: string
+): ClassificationDecision | null {
+  if (
+    !(
+      section.startsWith("appendix") ||
+      [
+        "run-status-transitions",
+        "run-creation-legality",
+        "turn-update-legality",
+        "schema",
+        "turntree",
+        "turnnode",
+        "branch",
+        "staging",
+        "run-lifecycle",
+        "turn-lifecycle",
+      ].includes(section)
+    )
+  ) {
+    return null;
   }
 
-  if (text.includes("sqlite") || text.includes("physical")) {
-    return implementationDefinedDecision(
-      "kernel backend physical storage",
-      "Physical storage strategy and backend internals remain implementation-defined unless a future storage packet promotes them."
+  return missingConformanceDecision(
+    "kernel appendix validation matrix",
+    EVIDENCE.kernelProtocol,
+    "KRT-AF006",
+    "Appendix legality and validation prose is portable intent, but AF must select edge-state checks before treating every row as freeze-covered."
+  );
+}
+
+function classifyKernelCoreSection(
+  section: string
+): ClassificationDecision | null {
+  if (
+    [
+      "tree-operations",
+      "turnnode-operations",
+      "run-lifecycle-operations",
+    ].includes(section)
+  ) {
+    return authorityDecision(
+      "kernel logical operations",
+      EVIDENCE.kernelProtocol
     );
   }
 
@@ -816,7 +1138,7 @@ function classifyKernelClaim(claim: NormativeClaim): ClassificationDecision {
     return authorityDecision("kernel invariants", EVIDENCE.kernelProtocol);
   }
 
-  return authorityDecision("kernel protocol", EVIDENCE.kernelProtocol);
+  return null;
 }
 
 function authorityDecision(
@@ -916,6 +1238,22 @@ function staleDocsDecision(
     docsCorrection,
     evidence: EMPTY_EVIDENCE,
     followUpTicket: "N/A",
+    implementationEvidence: "N/A",
+    surface,
+  };
+}
+
+function unclassifiedDecision(
+  surface: string,
+  rationale: string
+): ClassificationDecision {
+  return {
+    classification: "unclassified",
+    deferralRationale: rationale,
+    docsCorrection:
+      "N/A - the docs authority freeze gate must classify this claim before closure.",
+    evidence: EMPTY_EVIDENCE,
+    followUpTicket: "Epic AD classifier update required",
     implementationEvidence: "N/A",
     surface,
   };

@@ -6,17 +6,18 @@ Kernel, backend, provider, and tool surfaces are separated from cross-language a
 
 | Surface | Claims | Classifications | Follow-up | Blocks future implementation line? |
 | --- | ---: | --- | --- | --- |
-| kernel appendix validation matrix | 1 | missing-conformance-follow-up | KRT-AF006 | Yes, until AF/docs evidence resolves it |
+| future provider adapter packages | 1 | explicitly-deferred | Future TechSpec/Tasks revision after TypeScript freeze closure | No, if kept local/deferred |
+| kernel appendix validation matrix | 21 | missing-conformance-follow-up | KRT-AF006 | Yes, until AF/docs evidence resolves it |
 | kernel backend acceleration indexes | 2 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
 | kernel backend physical storage | 1 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
+| kernel boundary framing | 2 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
 | kernel invariants | 9 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
-| kernel logical operations | 8 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
-| kernel protocol | 27 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
+| kernel logical operations | 15 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
 | kernel protocol records | 12 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
 | kernel recovery edge states | 3 | missing-conformance-follow-up | KRT-AF006 | Yes, until AF/docs evidence resolves it |
 | kernel run liveness | 10 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
 | provider API bridge | 2 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
-| tool and approval contracts | 6 | missing-conformance-follow-up | KRT-AF004 | Yes, until AF/docs evidence resolves it |
+| tool and approval contracts | 12 | missing-conformance-follow-up | KRT-AF004 | Yes, until AF/docs evidence resolves it |
 
 ## Decisions
 
