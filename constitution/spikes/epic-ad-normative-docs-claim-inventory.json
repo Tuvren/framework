@@ -1288,7 +1288,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "N/A",
+      "adapterCapability": "framework.runtime-api",
       "claimFingerprint": "f1df0f90609a547d959eeacb41fe1ab2ec9bf883c24ed05e67c84d7db113d802",
       "claimId": "FWK-F1DF0F90609A",
       "duplicateOf": null,
@@ -1298,7 +1298,7 @@
       "sectionHeading": "0. Driver Framing",
       "sectionKey": "0",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "framework driver framing",
+      "surface": "approval and cancellation control",
       "text": "Unless a section says otherwise, terms such as messages, tool calls, structured output, approvals, event shapes, and context manifests are framework-level semantics. Iterative loop behavior, runtime resolution precedence in the active agent loop, and model-tool-feedback execution are specified here as the ReAct Driver baseline rather than as the only possible Kraken execution model."
     },
     {
@@ -1418,7 +1418,7 @@
       "sectionHeading": "1.5 RuntimeResolution",
       "sectionKey": "1.5",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "runtime resolution and errors",
+      "surface": "approval and cancellation control",
       "text": "| Tool approval required (via tool policy or aroundTool) | `pause(approval: ApprovalRequest)` |"
     },
     {
@@ -1478,7 +1478,7 @@
       "sectionHeading": "1.7 ApprovalRequest and ApprovalResponse",
       "sectionKey": "1.7",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "tool and approval contracts",
+      "surface": "approval and cancellation control",
       "text": "`ApprovalDecision.message` remains optional for every decision type. When present, it is incorporated into the resulting `ToolResultPart` produced by the approval outcome; it does not create a separate `user` message and is not treated as steering. For `approve` and `edit`, the message is attached to the executed tool result. For `reject` and custom decisions, the message is attached to the synthesized error `ToolResultPart`. When `reject` or a custom decision omits `message`, the framework MUST still synthesize a coherent error `ToolResultPart` using a framework-defined default explanation."
     },
     {
@@ -1513,7 +1513,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "framework.event-stream",
+      "adapterCapability": "framework.runtime-api",
       "claimFingerprint": "b18ecc3ddcf3a674143d61fab5e4f690136e3dba6c02ab9fe38cfb2becf0d100",
       "claimId": "FWK-B18ECC3DDCF3",
       "duplicateOf": null,
@@ -1523,7 +1523,7 @@
       "sectionHeading": "1.8 TuvrenStreamEvent",
       "sectionKey": "1.8",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "framework event stream",
+      "surface": "approval and cancellation control",
       "text": "**Required core events**: `turn.start`, `turn.end`, `iteration.start`, `iteration.end`, `message.start`, `text.delta`, `text.done`, `reasoning.delta`, `reasoning.done`, `file.done`, `structured.delta`, `structured.done`, `tool_call.start`, `tool_call.args_delta`, `tool_call.done`, `message.done`, `tool.start`, `tool.result`, `approval.requested`, `approval.resolved`, `steering.incorporated`, and `error`. When their corresponding runtime moments occur, the framework MUST emit them."
     },
     {
@@ -1543,7 +1543,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "N/A",
+      "adapterCapability": "framework.runtime-api",
       "claimFingerprint": "28aafc4f1dc8983f9e98c3d219ed9fe0142af814065020dbf00303e6527f8adb",
       "claimId": "FWK-28AAFC4F1DC8",
       "duplicateOf": null,
@@ -1553,7 +1553,7 @@
       "sectionHeading": "2.5 Runtime Status Path (single)",
       "sectionKey": "2.5",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "framework state schema",
+      "surface": "approval and cancellation control",
       "text": "**Lifecycle**: The framework stages an updated RuntimeStatus at Turn start (`running`, `activeAgent` set from the active `AgentConfig`), on approval decision execution (`running` restaged before any resumed work proceeds), on pause (`paused`, `pauseReason` set), on handoff (`running`, `activeAgent` updated), and at Turn end (`completed` or `failed`). It is not staged on every iteration — only on state transitions. Used by the framework for execution decisions, by hosts for status display, and by orchestration for current execution ownership. Not consumed by context assembly for prompt construction."
     },
     {
@@ -1793,7 +1793,7 @@
       "sectionHeading": "4.1 Turn Lifecycle",
       "sectionKey": "4.1",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "runtime and ReAct execution",
+      "surface": "approval and cancellation control",
       "text": "Approval resume continues the same Turn and MUST NOT re-run Turn-level hooks."
     },
     {
@@ -1808,7 +1808,7 @@
       "sectionHeading": "4.1 Turn Lifecycle",
       "sectionKey": "4.1",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "runtime and ReAct execution",
+      "surface": "approval and cancellation control",
       "text": "`pause` is approval-only. A paused Turn represents approval-gated continuation of already-requested tool work."
     },
     {
@@ -1883,12 +1883,12 @@
       "sectionHeading": "4.7 Complete Turn Protocol",
       "sectionKey": "4.7",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "runtime and ReAct execution",
+      "surface": "approval and cancellation control",
       "text": "For a Thread's first semantic Turn, `parentTurnId` is `null`. For every subsequent semantic Turn, `parentTurnId` MUST identify the active semantic parent recorded at the Branch Head and still belong to the same Thread. On a newly forked Branch, that active parent can be the source Branch's head Turn; later Turns on the fork use the immediately previous Turn on the fork itself. When the framework resolves this parent implicitly, the resolver must be branch-aware (`resolveParentTurnId(threadId, branchId)`), so branching and rollback do not make semantic lineage ambiguous. Approval resumes stay within the existing Turn and do not create a new Turn."
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "kernel.run-liveness; framework.run-liveness",
+      "adapterCapability": "framework.runtime-api",
       "claimFingerprint": "738e2e1eec12efd83b3cb0af24079b3738fba26382965e57f009ba787698c785",
       "claimId": "FWK-738E2E1EEC12",
       "duplicateOf": null,
@@ -1898,12 +1898,12 @@
       "sectionHeading": "4.8 Pause and Resume",
       "sectionKey": "4.8",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "runtime lifecycle recovery",
+      "surface": "approval and cancellation control",
       "text": "**Pause trigger**: Tool approval. A Turn pauses only when one or more requested tool calls are pending approval, whether that approval requirement came from the tool definition’s `approval` policy or from `aroundTool`."
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "kernel.run-liveness; framework.run-liveness",
+      "adapterCapability": "framework.runtime-api",
       "claimFingerprint": "c3619f4e0dd7ab194904737b9a7ab40a75c2c75b13351a5780f9e4ff814c3ff4",
       "claimId": "FWK-C3619F4E0DD7",
       "duplicateOf": null,
@@ -1913,7 +1913,7 @@
       "sectionHeading": "4.8 Pause and Resume",
       "sectionKey": "4.8",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "runtime lifecycle recovery",
+      "surface": "approval and cancellation control",
       "text": "When a pause is triggered by tool approval, the framework MUST emit `approval.requested` before yielding `turn.end` with paused status."
     },
     {
@@ -1943,7 +1943,7 @@
       "sectionHeading": "Approval Resume",
       "sectionKey": "approval-resume",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "approval resume semantics",
+      "surface": "approval and cancellation control",
       "text": "`resolveApproval(...)` returns a **new** handle. The old paused handle remains exhausted/inert as the completed paused execution token and must not remain a second active owner of further control flow. Once approval has been resolved, subsequent control calls on the old handle are invalid."
     },
     {
@@ -1958,7 +1958,7 @@
       "sectionHeading": "Approval Resume",
       "sectionKey": "approval-resume",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "approval resume semantics",
+      "surface": "approval and cancellation control",
       "text": "For `approve` and `edit` decisions, unfinished tool calls resume through the normal tool execution path. For `reject`, shared-core semantics require the canonical rejection `ToolResultPart` outcomes for the pending calls and then continue the same Turn through the normal iteration loop. The host chooses that explicit same-Turn rejection path by calling `resolveApproval(...)` with `reject` decisions; the paused-handle `cancel()` path remains the separate rejection-and-stop control surface described in §6.10."
     },
     {
@@ -1973,7 +1973,7 @@
       "sectionHeading": "Approval Resume",
       "sectionKey": "approval-resume",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "approval resume semantics",
+      "surface": "approval and cancellation control",
       "text": "At the kernel layer, closing a paused Run still uses the kernel's `paused -> failed` transition before the continuation Run begins. That is a Run-lifecycle bookkeeping step required by the kernel contract; it MUST NOT be interpreted as a Turn-level approval failure or as a contradiction of the framework's approval semantics."
     },
     {
@@ -2008,7 +2008,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "kernel.run-liveness; framework.run-liveness",
+      "adapterCapability": "framework.runtime-api",
       "claimFingerprint": "722e8933104ead10bebaba73f773617c4d5a66689474c1a4756f6450af7c7475",
       "claimId": "FWK-722E8933104E",
       "duplicateOf": null,
@@ -2018,7 +2018,7 @@
       "sectionHeading": "Running Lease Ownership",
       "sectionKey": "running-lease-ownership",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "runtime lifecycle recovery",
+      "surface": "approval and cancellation control",
       "text": "Lease ownership applies only to `running` Runs. Approval pause/resume uses the approval control surface below and MUST NOT be represented as execution-heartbeat renewal."
     },
     {
@@ -2038,7 +2038,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "kernel.run-liveness; framework.run-liveness",
+      "adapterCapability": "framework.runtime-api",
       "claimFingerprint": "57aee9ece71805eafb804da4fad9c972ba43ecfe6cc439905e5ba63e13ac94f4",
       "claimId": "FWK-57AEE9ECE718",
       "duplicateOf": null,
@@ -2048,7 +2048,7 @@
       "sectionHeading": "Stale Running Recovery",
       "sectionKey": "stale-running-recovery",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "runtime lifecycle recovery",
+      "surface": "approval and cancellation control",
       "text": "Paused approval Runs are not stale-running candidates. Host-configured approval timeouts, if any, must be modeled as explicit approval rejection, abandonment, or a future approval-expiry outcome; they are not execution lease expiry."
     },
     {
@@ -2083,7 +2083,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "kernel.run-liveness; framework.run-liveness",
+      "adapterCapability": "framework.runtime-api",
       "claimFingerprint": "476f0ca23f557266fc6fcdfae145f83db02157e4bb9e790c411dc071a011959c",
       "claimId": "FWK-476F0CA23F55",
       "duplicateOf": null,
@@ -2093,7 +2093,7 @@
       "sectionHeading": "4.9 Recovery Protocol",
       "sectionKey": "4.9",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "runtime lifecycle recovery",
+      "surface": "approval and cancellation control",
       "text": "**Crash leaving a leased `running` Run**: If the lease remains valid, another owner must not resume the Run. If the lease is expired, shared core may recover only through kernel stale-running preemption, then creates a replacement Run from returned recovery state. Paused approval Runs are excluded from this path."
     },
     {
@@ -2218,7 +2218,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "framework.driver-api",
+      "adapterCapability": "framework.runtime-api",
       "claimFingerprint": "9436bd7532834cebb9e8cca34f492df935e35dd241cfd4c90ba067da7aa247fe",
       "claimId": "FWK-9436BD753283",
       "duplicateOf": null,
@@ -2228,7 +2228,7 @@
       "sectionHeading": "5.6 Driver Contract",
       "sectionKey": "5.6",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "driver contract",
+      "surface": "approval and cancellation control",
       "text": "`runtime.emit(...)` is a driver-owned streaming surface, not a framework-lifecycle backdoor. Drivers may use it for custom events and assistant/provider stream-content events only. Shared-core lifecycle events such as `turn.*`, `iteration.*`, `tool.*`, `approval.*`, `state.*`, `error`, and similar framework-owned control events are emitted only by shared core itself. If a driver emits assistant content events, that emitted assistant sequence must normally reconcile to the same durable assistant message returned in `DriverExecutionResult.messages`, including incremental delta payloads such as `text.delta`, `reasoning.delta`, `structured.delta`, and `tool_call.args_delta`, stable event identity (`messageId`, `callId`), canonical message-start/message-done ordering, and the final `finishReason`; otherwise shared core rejects the result as an invalid stream event. The one intentional exception is `aroundModel` post-stream replacement after `next()`: once a live assistant sequence has already been emitted, the wrapper may still replace the durable assistant checkpoint, and the driver must opt into that narrower validation path by returning `assistantEventReconciliation: \"allow_final_sequence_divergence\"`. Shared core honors that exception only when the active agent config includes at least one `aroundModel` handler, assistant content events were actually emitted, the final emitted assistant sequence actually diverges from the durable assistant message, and neither the final live sequence nor the durable assistant message requests tools; in that case it validates the emitted assistant sequence as a standalone assistant message rather than requiring equality with the final durable assistant message. AfterIteration hooks still receive a coherent `TuvrenModelResponse` synthesized from the durable assistant checkpoint, with provider usage preserved when available. Because publication is live, later contract failures such as streamed structured-output validation errors do not retract already-forwarded assistant events; the Turn fails with the corresponding validation error instead. If a driver returns a durable assistant message without emitting matching assistant content events, shared core synthesizes the missing assistant stream events from that durable message so the public event stream still reflects the committed assistant output."
     },
     {
@@ -2428,7 +2428,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "framework.event-stream",
+      "adapterCapability": "framework.runtime-api",
       "claimFingerprint": "8e25784cc248c155e366a6e18de512cff1ac99cf8958b1854b8a3e13bf9c681f",
       "claimId": "FWK-8E25784CC248",
       "duplicateOf": null,
@@ -2438,7 +2438,7 @@
       "sectionHeading": "6.4 Tool Execution Events",
       "sectionKey": "6.4",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "framework event stream",
+      "surface": "approval and cancellation control",
       "text": "`tool.start` and `tool.result` events describe framework-side execution. A `tool.start` event is emitted only after approval has resolved and immediately before the framework enters the first executable aroundTool/execute step for that call. It is never emitted merely because the model requested the tool (that’s `tool_call.done`)."
     },
     {
@@ -2473,7 +2473,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "framework.event-stream",
+      "adapterCapability": "framework.runtime-api",
       "claimFingerprint": "33f5deafc66a5909747caf313cd8848e96b761a0f1779702d5825d80a21953f6",
       "claimId": "FWK-33F5DEAFC66A",
       "duplicateOf": null,
@@ -2483,7 +2483,7 @@
       "sectionHeading": "6.4 Tool Execution Events",
       "sectionKey": "6.4",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "framework event stream",
+      "surface": "approval and cancellation control",
       "text": "**Mixed-approval batch ordering**: When a parallel batch contains both auto-approved and approval-gated tools, only auto-approved tools emit `tool.start`/`tool.result` events before the pause. Approval-gated tools do not emit `tool.start` until after approval, during the resume. The model’s request for the tool is already visible in `tool_call.done` events from the streaming phase."
     },
     {
@@ -2548,7 +2548,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "framework.event-stream",
+      "adapterCapability": "framework.runtime-api",
       "claimFingerprint": "57513b429b0f5b26ee70ba78728e68f52dfa3d3aeb26bb0a45211e6073ad9b86",
       "claimId": "FWK-57513B429B0F",
       "duplicateOf": null,
@@ -2558,12 +2558,12 @@
       "sectionHeading": "6.10 Cancellation",
       "sectionKey": "6.10",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "framework event stream",
+      "surface": "approval and cancellation control",
       "text": "**User-initiated cancellation while paused for approval**: The shared-core semantic is equivalent to rejecting the pending tool calls and durably staging those rejection outcomes without re-entering the model on the same Turn. The framework MUST NOT reinterpret the paused Turn as failed solely because approval was declined. This is the host-facing rejection-and-stop path; higher layers remain responsible for any later host-initiated continuation after that staged rejection state."
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "framework.event-stream",
+      "adapterCapability": "framework.runtime-api",
       "claimFingerprint": "d32084f687aeeb591270cd497c9d7b0387ce0958508cae2adca5743b241d38fa",
       "claimId": "FWK-D32084F687AE",
       "duplicateOf": null,
@@ -2573,7 +2573,7 @@
       "sectionHeading": "6.10 Cancellation",
       "sectionKey": "6.10",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "framework event stream",
+      "surface": "approval and cancellation control",
       "text": "As with approval resolution, the kernel may still record the superseded paused Run through its `paused -> failed` transition because that is how paused Runs are closed at the kernel boundary. That Run-level status change does not alter the framework-level meaning of paused cancellation, which remains rejection-and-stop rather than Turn failure."
     },
     {
@@ -2588,7 +2588,7 @@
       "sectionHeading": "7.1 ExecutionHandle",
       "sectionKey": "7.1",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "host execution handle",
+      "surface": "approval and cancellation control",
       "text": "**`events()`** — the primary output. The host iterates this to receive all execution events. Iteration drives execution — the driver advances as the consumer pulls events. The stream is single-consumer per handle; calling `events()` again after consumption starts is invalid. If the only consumer abandons a still-running `events()` stream without calling `cancel()` separately, shared core treats that stream abandonment as cancellation of the running execution. Paused Handles remain explicit control surfaces: abandoning an already-paused stream does not synthesize rejection."
     },
     {
@@ -2633,7 +2633,7 @@
       "sectionHeading": "7.1 ExecutionHandle",
       "sectionKey": "7.1",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "host execution handle",
+      "surface": "approval and cancellation control",
       "text": "**`resolveApproval(response)`** — provides the human’s decision for a paused approval. Triggers the approval decision path (§4.8): closes the paused Run, applies decisions, resumes only unfinished approved or edited tool calls through the normal execution path, and returns a **new** `ExecutionHandle` for the continued Turn. Reject decisions produce canonical rejection `ToolResultPart` outcomes for the pending calls and then continue the same Turn through the normal iteration loop. Only valid when `status().phase === \"paused\"` and `status().approval` is present."
     },
     {
@@ -2893,7 +2893,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "framework.react-driver",
+      "adapterCapability": "framework.runtime-api",
       "claimFingerprint": "de249477068f55ba2645acd4c9815698cc13555bd37e138c1e1b1779b134643d",
       "claimId": "FWK-DE249477068F",
       "duplicateOf": null,
@@ -2903,7 +2903,7 @@
       "sectionHeading": "afterTurn",
       "sectionKey": "afterturn",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "ReAct and extension hooks",
+      "surface": "approval and cancellation control",
       "text": "Fires once after the iteration loop reaches a terminal non-paused stop. It is not fired for `beforeTurn` short-circuits because no iteration ran, and it is not fired for approval pauses because the Turn may resume. Used for cleanup, turn-level accounting, final metrics emission. Uses `InterceptHandler` / `InterceptResult`. Verdicts from afterTurn do not affect the completed Turn — the Turn has already resolved. State updates from afterTurn are non-durable on terminal paths. Implementations MUST NOT assume a later persistence opportunity for those updates within the same Turn."
     },
     {
@@ -2983,7 +2983,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "framework.react-driver",
+      "adapterCapability": "framework.runtime-api",
       "claimFingerprint": "eb75f78718da5639235476708fd0e5ca7b828a727f0dc5df766679fae6f9c054",
       "claimId": "FWK-EB75F78718DA",
       "duplicateOf": null,
@@ -2993,7 +2993,7 @@
       "sectionHeading": "aroundTool",
       "sectionKey": "aroundtool",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "ReAct and extension hooks",
+      "surface": "approval and cancellation control",
       "text": "When filtered by tool name, the handler only runs for matching tools. When the handler returns `{ verdict: \"pause\", approval }`, it uses the same approval machinery as tool-level `approval` fields (§8.7). State updates returned with `{ result, state }` or with a pause verdict are collected by the executor and applied at the next iteration checkpoint, including the pause checkpoint when approval interrupts the batch. On approval resume, only unfinished tool calls are resumed, and each resumed call re-enters the full aroundTool chain. Approval-aware wrappers use the prior decision for the exact call and pass through without re-requesting approval."
     },
     {
@@ -3118,7 +3118,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "framework.orchestration",
+      "adapterCapability": "framework.runtime-api",
       "claimFingerprint": "d0c7dffdb7a65f6aec1936cb7d04663e122c0e281d9194d9d221153f53465770",
       "claimId": "FWK-D0C7DFFDB7A6",
       "duplicateOf": null,
@@ -3128,7 +3128,7 @@
       "sectionHeading": "10.3 Asynchronous Workers",
       "sectionKey": "10.3",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "runtime orchestration",
+      "surface": "approval and cancellation control",
       "text": "**Run locality**: Worker execution is local to the specific execution handle that spawned it. If the parent pauses for approval, workers may continue. If a worker pauses for approval, the parent and sibling workers may continue. Pause semantics are always run-local."
     },
     {
@@ -3523,7 +3523,7 @@
     },
     {
       "affectedBoundary": "kernel",
-      "adapterCapability": "N/A",
+      "adapterCapability": "kernel.protocol; kernel.logical",
       "claimFingerprint": "f5823fef4b2a9e3f7540558125ae2bf9296f81c59a4645960d951ea422440c0c",
       "claimId": "KER-F5823FEF4B2A",
       "duplicateOf": null,
@@ -3533,7 +3533,7 @@
       "sectionHeading": "Kraken Kernel Specification",
       "sectionKey": "kraken-kernel-specification",
       "sourceFile": "docs/KrakenKernelSpecification.md",
-      "surface": "kernel deferred maintenance surfaces",
+      "surface": "kernel boundary framing",
       "text": "Epic AD freezes the portability reading of this Markdown. Portable cross-implementation meaning is freeze-covered when the docs-to-authority matrix maps the claim to the kernel protocol authority packet, CDDL or fixture assets where applicable, conformance plans, advertised adapter capabilities, and compatibility evidence. Claims classified as implementation-local-evidence, implementation-defined, missing-conformance-follow-up, explicitly deferred, or stale-corrected in `constitution/spikes/epic-ad-docs-to-authority-coverage-matrix.json` are not portable machine authority until a later packet and conformance change promotes them."
     },
     {

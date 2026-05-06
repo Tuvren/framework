@@ -853,6 +853,14 @@ function classifyFrameworkClaim(claim: NormativeClaim): ClassificationDecision {
     );
   }
 
+  const controlSurfaceDecision = classifyFrameworkControlSurfaceClaim(
+    section,
+    text
+  );
+  if (controlSurfaceDecision != null) {
+    return controlSurfaceDecision;
+  }
+
   if (
     section === "preamble" ||
     section === "0" ||
@@ -877,6 +885,41 @@ function classifyFrameworkClaim(claim: NormativeClaim): ClassificationDecision {
   return unclassifiedDecision(
     "framework unclassified surface",
     "Framework prose landed outside the Epic AD section classifier and must be explicitly routed before the freeze gate can pass."
+  );
+}
+
+function classifyFrameworkControlSurfaceClaim(
+  section: string,
+  text: string
+): ClassificationDecision | null {
+  if (isApprovalControlClaim(text)) {
+    return missingConformanceDecision(
+      "approval and cancellation control",
+      EVIDENCE.runtimeApi,
+      "KRT-AF004",
+      "Approval resume, paused cancellation, rejection, and resolveApproval control semantics require AF tool/approval checks before freeze closure."
+    );
+  }
+
+  if (isSection(section, "6.10") && text.includes("cancellation")) {
+    return missingConformanceDecision(
+      "runtime cancellation control",
+      EVIDENCE.runtimeApi,
+      "KRT-AF002",
+      "Running cancellation and partial-staging behavior needs AF lifecycle negative/interleaving checks before freeze closure."
+    );
+  }
+
+  return null;
+}
+
+function isApprovalControlClaim(text: string): boolean {
+  return (
+    text.includes("approval") ||
+    text.includes("resolveapproval") ||
+    text.includes("paused run") ||
+    text.includes("paused handle") ||
+    text.includes("paused turn")
   );
 }
 
@@ -1133,7 +1176,7 @@ function classifyKernelClaim(claim: NormativeClaim): ClassificationDecision {
   if (postureDecision != null) {
     return postureDecision;
   }
-  const deferredDecisionResult = classifyKernelDeferredText(text);
+  const deferredDecisionResult = classifyKernelDeferredText(section, text);
   if (deferredDecisionResult != null) {
     return deferredDecisionResult;
   }
@@ -1158,9 +1201,10 @@ function classifyKernelClaim(claim: NormativeClaim): ClassificationDecision {
 }
 
 function classifyKernelDeferredText(
+  section: string,
   text: string
 ): ClassificationDecision | null {
-  if (!text.includes("deferred")) {
+  if (section !== "appendix" || !text.includes("deferred")) {
     return null;
   }
 
