@@ -55,6 +55,7 @@
       "name": "@tuvren/tool-contracts",
       "version": "0.0.0",
       "dependencies": {
+        "@tuvren/core-types": "workspace:*",
         "@tuvren/runtime-api": "workspace:*",
       },
     },
@@ -206,8 +207,10 @@
       "version": "0.0.0",
       "dependencies": {
         "@tuvren/backend-memory": "workspace:*",
+        "@tuvren/backend-sqlite": "workspace:*",
         "@tuvren/core-types": "workspace:*",
         "@tuvren/kernel-protocol": "workspace:*",
+        "@tuvren/kernel-runtime": "workspace:*",
         "@tuvren/kernel-testkit": "workspace:*",
       },
     },

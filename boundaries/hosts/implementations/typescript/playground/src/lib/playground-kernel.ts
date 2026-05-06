@@ -36,7 +36,11 @@ export function createPlaygroundKernelInspector(
   return {
     async readBranchMessages(branchId) {
       const turnTreeHash = await readBranchTurnTreeHash(kernel, branchId);
-      const messages = await resolveOptionalPath(kernel, turnTreeHash, "messages");
+      const messages = await resolveOptionalPath(
+        kernel,
+        turnTreeHash,
+        "messages"
+      );
 
       if (!Array.isArray(messages)) {
         return [];

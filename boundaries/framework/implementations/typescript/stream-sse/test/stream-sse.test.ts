@@ -15,24 +15,15 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import {
-  assertTuvrenStreamEvent,
-  type TuvrenStreamEvent,
-} from "@tuvren/event-stream";
+import type { TuvrenStreamEvent } from "@tuvren/event-stream";
 import {
   createFixtureStream,
   teeTuvrenStreamEvents,
 } from "@tuvren/stream-core";
-import { loadConformancePlan } from "../../../../../../tools/conformance/plan-compiler/index.js";
+import { readFrameworkStreamFixtures } from "../../testkit/src/index.ts";
 import { toSseFrames, toSseResponse } from "../src/index.ts";
 
 const frameworkStreamFixtures = await readFrameworkStreamFixtures();
-
-interface FrameworkStreamFixtureSet {
-  completedTurn: readonly TuvrenStreamEvent[];
-  failedTurn: readonly TuvrenStreamEvent[];
-  pausedTurn: readonly TuvrenStreamEvent[];
-}
 
 describe("stream-sse", () => {
   test("projects canonical events into EventSource-compatible frames", async () => {
@@ -132,44 +123,6 @@ describe("stream-sse", () => {
   });
 });
 
-async function readFrameworkStreamFixtures(): Promise<FrameworkStreamFixtureSet> {
-  const plan = await loadConformancePlan(
-    "boundaries/framework/conformance/plans/event-stream-core.json"
-  );
-  const fixture = plan.fixtures.get("stream-events");
-
-  // The fixture bytes are plan-owned; this assertion only narrows the
-  // TypeScript binding projection used by these adapter mechanics tests.
-  assertFrameworkStreamFixtureSet(fixture, "stream-events fixture");
-  return fixture;
-}
-
-function assertFrameworkStreamFixtureSet(
-  value: unknown,
-  label: string
-): asserts value is FrameworkStreamFixtureSet {
-  if (!isRecord(value)) {
-    throw new Error(`${label} must be an object`);
-  }
-
-  assertTuvrenStreamEvents(value.completedTurn, `${label}.completedTurn`);
-  assertTuvrenStreamEvents(value.failedTurn, `${label}.failedTurn`);
-  assertTuvrenStreamEvents(value.pausedTurn, `${label}.pausedTurn`);
-}
-
-function assertTuvrenStreamEvents(
-  value: unknown,
-  label: string
-): asserts value is readonly TuvrenStreamEvent[] {
-  if (!Array.isArray(value)) {
-    throw new Error(`${label} must be an array`);
-  }
-
-  for (const [index, event] of value.entries()) {
-    assertTuvrenStreamEvent(event, `${label}[${index}]`);
-  }
-}
-
 async function collectStreamValues<T>(values: AsyncIterable<T>): Promise<T[]> {
   const collected: T[] = [];
 
@@ -182,8 +135,4 @@ async function collectStreamValues<T>(values: AsyncIterable<T>): Promise<T[]> {
 
 async function waitForAsyncTurn(): Promise<void> {
   await Promise.resolve();
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
 }

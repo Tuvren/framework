@@ -18,6 +18,7 @@
 export type {
   AsyncCapture,
   EventLike,
+  FrameworkStreamFixtureSet,
   SseFrameLike,
 } from "./lib/framework-testkit.js";
 export {
@@ -27,6 +28,7 @@ export {
   collectStreamValues,
   collectTuvrenStreamEvents,
   createFixtureEventStream,
+  readFrameworkStreamFixtures,
   startAsyncCapture,
   waitForAsyncTurn,
   waitForCondition,

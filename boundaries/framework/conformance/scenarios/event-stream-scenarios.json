@@ -66,7 +66,9 @@
       },
       {
         "finishReason": "stop",
-        "parts": [{ "type": "text", "text": "approval resumed from shared scenario" }]
+        "parts": [
+          { "type": "text", "text": "approval resumed from shared scenario" }
+        ]
       }
     ],
     "approvalDecisions": [{ "callId": "call-email", "type": "approve" }],

@@ -14,26 +14,16 @@
  * limitations under the License.
  */
 
-import { spawn } from "node:child_process";
-import { randomUUID } from "node:crypto";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { fileURLToPath } from "node:url";
 import {
-  assertRecoveryState,
   assertStagedResult,
-  assertTurnTreeChangeSet,
-  assertTurnTreeSchema,
   decodeDeterministicKernelRecord,
   hashKernelRecord,
   hashOpaqueObjectBytes,
   hashTurnNodeIdentity,
-  type RecoveryState,
-  type RuntimeBackend,
   type StagedResult,
-  type TurnTreeChangeSet,
-  type TurnTreeSchema,
 } from "@tuvren/kernel-protocol";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
 import type {
@@ -43,19 +33,21 @@ import type {
 } from "../../../../../../tools/conformance/adapter-protocol/index.js";
 import { createAdapterErrorEnvelope } from "../../../../../../tools/conformance/adapter-protocol/index.js";
 import { serveStdioAdapter } from "../../../../../../tools/conformance/adapter-protocol/stdio-host.js";
-
-const CANONICAL_SCHEMA_URL = new URL(
-  "../../../../conformance/fixtures/canonical-turn-tree-schema.json",
-  import.meta.url
-);
-const SQLITE_RESTART_SCENARIO_URL = new URL(
-  "./sqlite-restart-recovery-scenario.mjs",
-  import.meta.url
-);
-
-interface AdapterInput {
-  fixture?: unknown;
-}
+import {
+  hexToBytes,
+  loadCanonicalSchema,
+  normalizeLogicalErrorCode,
+  readErrorCode,
+  readFixture,
+  readLogicalFixture,
+  readRecord,
+  readString,
+  result,
+  runRestartRecoveryPhase,
+  stageFixtureResult,
+  withConfiguredBackend,
+  withConformanceKernel,
+} from "./host-support.js";
 
 interface KernelAdapterConfig {
   adapterId: string;
@@ -63,19 +55,7 @@ interface KernelAdapterConfig {
   capabilities: string[];
 }
 
-interface LogicalFixture {
-  branchHeadListEntry: [string, string];
-  recoveryState: RecoveryState;
-  turnTreeChangeSet: TurnTreeChangeSet;
-}
-
-interface ConfiguredBackendHandle {
-  backend: RuntimeBackend;
-  cleanup(): Promise<void>;
-}
-
 const ADAPTER_CONFIG = readAdapterConfig(process.argv.slice(2));
-let canonicalSchemaPromise: Promise<TurnTreeSchema> | undefined;
 
 class TypeScriptKernelAdapter {
   initialize(
@@ -282,7 +262,7 @@ function schemaRoundtrip(
 
 async function runModifyComposition(): Promise<Record<string, unknown>> {
   const schema = await loadCanonicalSchema();
-  return await withConformanceKernel(schema, async (kernel) => {
+  return await withConformanceKernel(schema, ADAPTER_CONFIG, async (kernel) => {
     const verdict = await kernel.verdicts.compose([
       {
         kind: "modify",
@@ -317,7 +297,7 @@ async function runLogicalDiff(
 ): Promise<Record<string, unknown>> {
   const schema = await loadCanonicalSchema();
   const logical = readLogicalFixture(fixture, schema);
-  return await withConformanceKernel(schema, async (kernel) => {
+  return await withConformanceKernel(schema, ADAPTER_CONFIG, async (kernel) => {
     const created = await kernel.thread.create(
       "thread_conformance",
       schema.schemaId,
@@ -341,7 +321,7 @@ async function runBranchList(
 ): Promise<Record<string, unknown>> {
   const schema = await loadCanonicalSchema();
   const logical = readLogicalFixture(fixture, schema);
-  return await withConformanceKernel(schema, async (kernel) => {
+  return await withConformanceKernel(schema, ADAPTER_CONFIG, async (kernel) => {
     await kernel.thread.create(
       "thread_conformance",
       schema.schemaId,
@@ -358,7 +338,7 @@ async function runRecoveryState(
 ): Promise<Record<string, unknown>> {
   const schema = await loadCanonicalSchema();
   const logical = readLogicalFixture(fixture, schema);
-  return await withConformanceKernel(schema, async (kernel) => {
+  return await withConformanceKernel(schema, ADAPTER_CONFIG, async (kernel) => {
     const thread = await kernel.thread.create(
       "thread_conformance",
       schema.schemaId,
@@ -424,7 +404,7 @@ async function runRecoveryState(
 
 async function runCrossThreadLineage(): Promise<Record<string, unknown>> {
   const schema = await loadCanonicalSchema();
-  return await withConformanceKernel(schema, async (kernel) => {
+  return await withConformanceKernel(schema, ADAPTER_CONFIG, async (kernel) => {
     const threadA = await kernel.thread.create(
       "thread_a",
       schema.schemaId,
@@ -482,7 +462,7 @@ async function runCrossThreadLineage(): Promise<Record<string, unknown>> {
 
 async function runLeaseRenewal(): Promise<Record<string, unknown>> {
   const schema = await loadCanonicalSchema();
-  return await withConfiguredBackend(async (backend) => {
+  return await withConfiguredBackend(ADAPTER_CONFIG, async (backend) => {
     const kernel = createRuntimeKernel({
       backend,
       now: () => 10,
@@ -556,7 +536,7 @@ async function runLeaseRenewal(): Promise<Record<string, unknown>> {
 
 async function runExpiredListing(): Promise<Record<string, unknown>> {
   const schema = await loadCanonicalSchema();
-  return await withConfiguredBackend(async (backend) => {
+  return await withConfiguredBackend(ADAPTER_CONFIG, async (backend) => {
     const kernel = createRuntimeKernel({ backend });
     await kernel.schema.register(schema);
     const expiredThread = await kernel.thread.create(
@@ -654,7 +634,7 @@ async function runExpiredListing(): Promise<Record<string, unknown>> {
 
 async function runStalePreemption(): Promise<Record<string, unknown>> {
   const schema = await loadCanonicalSchema();
-  return await withConfiguredBackend(async (backend) => {
+  return await withConfiguredBackend(ADAPTER_CONFIG, async (backend) => {
     const storageKernel = createRuntimeKernel({ backend });
     await storageKernel.schema.register(schema);
     const thread = await storageKernel.thread.create(
@@ -750,262 +730,12 @@ async function runRestartRecovery(): Promise<Record<string, unknown>> {
   }
 }
 
-async function createConformanceKernel(schema: TurnTreeSchema): Promise<{
-  cleanup(): Promise<void>;
-  kernel: ReturnType<typeof createRuntimeKernel>;
-}> {
-  const configuredBackend = await createConfiguredBackend();
-  const kernel = createRuntimeKernel({
-    backend: configuredBackend.backend,
-  });
-  await kernel.schema.register(schema);
-  return {
-    cleanup: configuredBackend.cleanup,
-    kernel,
-  };
-}
-
-async function createConfiguredBackend(): Promise<ConfiguredBackendHandle> {
-  if (ADAPTER_CONFIG.backend === "sqlite") {
-    const sqliteBackendModuleUrl = new URL(
-      "../../backend-sqlite/dist/index.js",
-      import.meta.url
-    );
-    const { createSqliteBackend } = await import(sqliteBackendModuleUrl.href);
-    const tempDirectory = await mkdtemp(
-      join(tmpdir(), `${ADAPTER_CONFIG.adapterId}-${process.pid}-`)
-    );
-    const databasePath = join(tempDirectory, `${randomUUID()}.sqlite`);
-    return {
-      backend: createSqliteBackend({ databasePath }),
-      cleanup: async () => {
-        await rm(tempDirectory, { force: true, recursive: true });
-      },
-    };
-  }
-
-  const memoryBackendModuleUrl = new URL(
-    "../../backend-memory/dist/index.js",
-    import.meta.url
-  );
-  const { createMemoryBackend } = await import(memoryBackendModuleUrl.href);
-  return {
-    backend: createMemoryBackend(),
-    cleanup: async () => {
-      // Memory backends have no external resources to release.
-    },
-  };
-}
-
-async function withConformanceKernel<T>(
-  schema: TurnTreeSchema,
-  execute: (kernel: ReturnType<typeof createRuntimeKernel>) => Promise<T>
-): Promise<T> {
-  const configuredKernel = await createConformanceKernel(schema);
-
-  try {
-    return await execute(configuredKernel.kernel);
-  } finally {
-    await configuredKernel.cleanup();
-  }
-}
-
-async function withConfiguredBackend<T>(
-  execute: (backend: RuntimeBackend) => Promise<T>
-): Promise<T> {
-  const configuredBackend = await createConfiguredBackend();
-
-  try {
-    return await execute(configuredBackend.backend);
-  } finally {
-    await configuredBackend.cleanup();
-  }
-}
-
-async function runRestartRecoveryPhase(
-  phase: "read" | "write",
-  databasePath: string,
-  metadataPath: string
-): Promise<Record<string, unknown>> {
-  const result = await new Promise<{
-    code: number | null;
-    signal: NodeJS.Signals | null;
-    stderr: string;
-    stdout: string;
-  }>((resolve, reject) => {
-    const child = spawn(
-      "node",
-      [
-        fileURLToPath(SQLITE_RESTART_SCENARIO_URL),
-        phase,
-        databasePath,
-        metadataPath,
-      ],
-      {
-        stdio: ["ignore", "pipe", "pipe"],
-      }
-    );
-    let stdout = "";
-    let stderr = "";
-
-    child.stdout.on("data", (chunk: Buffer) => {
-      stdout += chunk.toString("utf8");
-    });
-    child.stderr.on("data", (chunk: Buffer) => {
-      stderr += chunk.toString("utf8");
-    });
-    child.on("error", reject);
-    child.on("close", (code, signal) => {
-      resolve({ code, signal, stderr, stdout });
-    });
-  });
-
-  if (result.code !== 0) {
-    throw new Error(
-      `restart recovery ${phase} phase failed: code=${String(result.code)} signal=${String(result.signal)} stderr=${result.stderr || "<empty>"}`
-    );
-  }
-
-  const value = JSON.parse(result.stdout) as unknown;
-  return readRecord(value, `restart recovery ${phase} output`);
-}
-
-async function loadCanonicalSchema(): Promise<TurnTreeSchema> {
-  canonicalSchemaPromise ??= readFile(CANONICAL_SCHEMA_URL, "utf8")
-    .then((contents) => JSON.parse(contents) as unknown)
-    .then((value) => {
-      assertTurnTreeSchema(value, "canonical kernel conformance schema");
-      return value;
-    });
-
-  return await canonicalSchemaPromise;
-}
-
-async function stageFixtureResult(
-  kernel: ReturnType<typeof createRuntimeKernel>,
-  runId: string,
-  stagedResult: StagedResult,
-  index: number
-): Promise<void> {
-  await kernel.staging.stage(
-    runId,
-    new TextEncoder().encode(`fixture staged result ${index}`),
-    stagedResult.taskId,
-    stagedResult.objectType,
-    stagedResult.status,
-    stagedResult.status === "interrupted"
-      ? stagedResult.interruptPayload
-      : undefined
-  );
-}
-
-function normalizeLogicalErrorCode(code: string): string {
-  // The conformance plan stays binding-neutral, so the adapter translates
-  // implementation-specific error codes into the stable shared evidence names.
-  switch (code) {
-    case "kernel_runtime_lineage_mismatch":
-      return "turn_node_thread_mismatch";
-    case "kernel_runtime_run_lease_owner_mismatch":
-      return "run_lease_owner_mismatch";
-    case "kernel_runtime_run_lease_token_mismatch":
-      return "run_lease_token_mismatch";
-    case "kernel_runtime_turn_head_lineage_mismatch":
-      return "turn_head_lateral_move";
-    default:
-      return code;
-  }
-}
-
-function readErrorCode(error: unknown): string {
-  if (typeof error === "object" && error !== null && "code" in error) {
-    const code = Reflect.get(error, "code");
-
-    if (typeof code === "string") {
-      return code;
-    }
-  }
-
-  if (error instanceof Error) {
-    return error.name;
-  }
-
-  return "unknown_error";
-}
-
-function result(value: Record<string, unknown>): OperationOutcome {
-  return {
-    kind: "result",
-    value,
-  };
-}
-
-function readFixture(input: unknown): Record<string, unknown> {
-  const object = readRecord(input, "adapter input") as AdapterInput;
-  return readRecord(object.fixture, "adapter input fixture");
-}
-
-function readLogicalFixture(
-  fixture: Record<string, unknown>,
-  schema: TurnTreeSchema
-): LogicalFixture {
-  const branchHeadListEntry = readArray(
-    fixture.branchHeadListEntry,
-    "branchHeadListEntry"
-  );
-
-  if (branchHeadListEntry.length !== 2) {
-    throw new Error("branchHeadListEntry must contain exactly two items");
-  }
-
-  const branchId = readString(branchHeadListEntry[0], "branchHeadListEntry[0]");
-  const branchHead = readString(
-    branchHeadListEntry[1],
-    "branchHeadListEntry[1]"
-  );
-  const recoveryState = fixture.recoveryState;
-  assertRecoveryState(recoveryState, "recoveryState");
-  const turnTreeChangeSet = fixture.turnTreeChangeSet;
-  assertTurnTreeChangeSet(turnTreeChangeSet, schema, "turnTreeChangeSet");
-
-  return {
-    branchHeadListEntry: [branchId, branchHead],
-    recoveryState,
-    turnTreeChangeSet,
-  };
-}
-
-function hexToBytes(value: string): Uint8Array {
-  if (value.length % 2 !== 0) {
-    throw new Error("fixture hex must have even length");
-  }
-
-  const bytes = new Uint8Array(value.length / 2);
-
-  for (let index = 0; index < value.length; index += 2) {
-    bytes[index / 2] = Number.parseInt(value.slice(index, index + 2), 16);
-  }
-
-  return bytes;
-}
-
-function readRecord(value: unknown, label: string): Record<string, unknown> {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    throw new Error(`${label} must be an object`);
-  }
-
-  return value as Record<string, unknown>;
-}
-
-function readArray(value: unknown, label: string): unknown[] {
-  if (!Array.isArray(value)) {
-    throw new Error(`${label} must be an array`);
-  }
-
-  return value;
-}
-
 function readStagedResults(value: unknown, label: string): StagedResult[] {
-  const results = readArray(value, label);
+  const results = Array.isArray(value)
+    ? value
+    : (() => {
+        throw new Error(`${label} must be an array`);
+      })();
   const stagedResults: StagedResult[] = [];
 
   for (const [index, result] of results.entries()) {
@@ -1017,7 +747,11 @@ function readStagedResults(value: unknown, label: string): StagedResult[] {
 }
 
 function readNumberArray(value: unknown, label: string): number[] {
-  const values = readArray(value, label);
+  if (!Array.isArray(value)) {
+    throw new Error(`${label} must be an array`);
+  }
+
+  const values = value;
 
   if (!values.every((entry) => typeof entry === "number")) {
     throw new Error(`${label} must contain numbers`);
@@ -1026,18 +760,14 @@ function readNumberArray(value: unknown, label: string): number[] {
   return values;
 }
 
-function readString(value: unknown, label: string): string {
-  if (typeof value !== "string") {
-    throw new Error(`${label} must be a string`);
-  }
-
-  return value;
-}
-
 function readNullableString(value: unknown, label: string): string | null {
   if (value === null) {
     return null;
   }
 
-  return readString(value, label);
+  if (typeof value !== "string") {
+    throw new Error(`${label} must be a string`);
+  }
+
+  return value;
 }

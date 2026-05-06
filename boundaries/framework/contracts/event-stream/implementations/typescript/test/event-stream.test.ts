@@ -20,9 +20,9 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import Ajv2020 from "ajv/dist/2020.js";
 import {
+  type ApprovalResolvedEvent,
   assertTuvrenStreamEvent,
   isTuvrenStreamEvent,
-  type ApprovalResolvedEvent,
   type StateCheckpointEvent,
   type TextDoneEvent,
 } from "../src/index.ts";

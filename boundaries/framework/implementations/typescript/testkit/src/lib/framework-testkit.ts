@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+import { readFile } from "node:fs/promises";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import type { TuvrenStreamEvent } from "@tuvren/event-stream";
 import { assertTuvrenStreamEvent } from "@tuvren/event-stream";
 
@@ -30,6 +33,18 @@ export interface AsyncCapture<T> {
   readonly done: Promise<void>;
   readonly events: T[];
 }
+
+export interface FrameworkStreamFixtureSet {
+  completedTurn: readonly TuvrenStreamEvent[];
+  failedTurn: readonly TuvrenStreamEvent[];
+  pausedTurn: readonly TuvrenStreamEvent[];
+}
+
+const FRAMEWORK_TESTKIT_ROOT = dirname(fileURLToPath(import.meta.url));
+const STREAM_FIXTURES_PATH = resolve(
+  FRAMEWORK_TESTKIT_ROOT,
+  "../../../../../conformance/fixtures/stream-events.json"
+);
 
 export function createFixtureEventStream(
   events: readonly TuvrenStreamEvent[]
@@ -68,6 +83,15 @@ export async function collectTuvrenStreamEvents(
   }
 
   return events;
+}
+
+export async function readFrameworkStreamFixtures(): Promise<FrameworkStreamFixtureSet> {
+  const fixture = JSON.parse(
+    await readFile(STREAM_FIXTURES_PATH, "utf8")
+  ) as unknown;
+
+  assertFrameworkStreamFixtureSet(fixture, "stream-events fixture");
+  return fixture;
 }
 
 export function assertStreamEventTypes(
@@ -173,4 +197,34 @@ function cloneTuvrenStreamEvent(event: TuvrenStreamEvent): TuvrenStreamEvent {
   const cloned = structuredClone(event);
   assertTuvrenStreamEvent(cloned, "cloned stream event");
   return cloned;
+}
+
+function assertFrameworkStreamFixtureSet(
+  value: unknown,
+  label: string
+): asserts value is FrameworkStreamFixtureSet {
+  if (!isRecord(value)) {
+    throw new Error(`${label} must be an object`);
+  }
+
+  assertTuvrenStreamEvents(value.completedTurn, `${label}.completedTurn`);
+  assertTuvrenStreamEvents(value.failedTurn, `${label}.failedTurn`);
+  assertTuvrenStreamEvents(value.pausedTurn, `${label}.pausedTurn`);
+}
+
+function assertTuvrenStreamEvents(
+  value: unknown,
+  label: string
+): asserts value is readonly TuvrenStreamEvent[] {
+  if (!Array.isArray(value)) {
+    throw new Error(`${label} must be an array`);
+  }
+
+  for (const [index, event] of value.entries()) {
+    assertTuvrenStreamEvent(event, `${label}[${index}]`);
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
 }
