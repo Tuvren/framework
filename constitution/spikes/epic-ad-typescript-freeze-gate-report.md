@@ -8,14 +8,14 @@ Rust framework product work remains blocked until Epic AF closes and a later Tec
 
 ## Authority-Backed and Conformance-Covered Claims
 
-- Independent claims currently classified as authority-backed and conformance-covered: 100
+- Independent claims currently classified as authority-backed and conformance-covered: 99
 - Duplicate matrix rows linked by `duplicateOf`: 3
 - Evidence anchors: framework, provider, and kernel authority packets; shared conformance plans; boundary fixtures/scenarios; adapter capabilities; and compatibility evidence under `reports/compatibility/evidence/`.
 
 ## Remaining Surfaces
 
 - Potentially blocking until AE/AF or docs correction evidence closes: 96
-- Non-blocking because they are explicitly implementation-defined or deferred: 27
+- Non-blocking because they are explicitly implementation-defined or deferred: 28
 
 ## Remaining Surface Detail
 
@@ -36,6 +36,7 @@ Every remaining non-authority surface is listed below with its current blocker p
 | kernel backend acceleration indexes | 2 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
 | kernel backend physical storage | 1 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
 | kernel deferred maintenance surfaces | 1 | explicitly-deferred | Future TechSpec/Tasks revision after TypeScript freeze closure | No, if kept local/deferred |
+| kernel docs-to-authority framing | 1 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
 | kernel recovery edge states | 3 | missing-conformance-follow-up | KRT-AF006 | Yes, until AF/docs evidence resolves it |
 | kernel storage structural sharing | 1 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
 | orchestration optional worker modes | 1 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |

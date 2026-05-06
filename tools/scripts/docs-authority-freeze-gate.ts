@@ -15,6 +15,7 @@
  */
 
 import { access, mkdir, readFile, writeFile } from "node:fs/promises";
+import process from "node:process";
 
 const DOC_SOURCES = [
   {
@@ -166,6 +167,11 @@ interface CoverageMatrix {
   unclassifiedClaims: number;
 }
 
+interface OutputArtifact {
+  content: string;
+  path: string;
+}
+
 interface EvidenceTemplate {
   adapterCapability: string;
   authorityPacket: string;
@@ -313,6 +319,7 @@ interface ClassificationDecision {
 }
 
 async function main(): Promise<void> {
+  const mode = resolveCliMode();
   const parsed = await Promise.all(DOC_SOURCES.map(parseDocSource));
   const claims = parsed.flatMap((result) => result.claims);
   const rationaleSections = parsed.flatMap(
@@ -339,8 +346,7 @@ async function main(): Promise<void> {
   }
   await validateCoverageMatrixEvidence(matrixEntries);
 
-  await mkdir(OUTPUT_DIR, { recursive: true });
-  await writeJson(INVENTORY_PATH, {
+  const inventory = {
     duplicateNormativeClaims: duplicateClaimCount(claimsWithDuplicates),
     generatedBy: "bun tools/scripts/docs-authority-freeze-gate.ts",
     normativePattern: NORMATIVE_PATTERN.source,
@@ -349,8 +355,8 @@ async function main(): Promise<void> {
     totalIndependentClaims: independentClaimCount(claimsWithDuplicates),
     totalNormativeClaims: claimsWithDuplicates.length,
     claims: inventoryClaims,
-  } satisfies ClaimInventory);
-  await writeJson(MATRIX_PATH, {
+  } satisfies ClaimInventory;
+  const matrix = {
     duplicateClaims: duplicateClaimCount(matrixEntries),
     generatedBy: "bun tools/scripts/docs-authority-freeze-gate.ts",
     primaryClassificationRule:
@@ -359,25 +365,50 @@ async function main(): Promise<void> {
     totalIndependentClaims: independentClaimCount(matrixEntries),
     unclassifiedClaims: unclassifiedEntries.length,
     entries: matrixEntries,
-  } satisfies CoverageMatrix);
+  } satisfies CoverageMatrix;
+  const artifacts: readonly OutputArtifact[] = [
+    { path: INVENTORY_PATH, content: formatJson(inventory) },
+    { path: MATRIX_PATH, content: formatJson(matrix) },
+    { path: SUMMARY_PATH, content: renderSummary(matrixEntries) },
+    {
+      path: FRAMEWORK_DECISIONS_PATH,
+      content: renderFrameworkDecisions(matrixEntries),
+    },
+    {
+      path: LOCAL_DECISIONS_PATH,
+      content: renderLocalSurfaceDecisions(matrixEntries),
+    },
+    { path: REPORT_PATH, content: renderFreezeGateReport(matrixEntries) },
+    { path: CLOSURE_PATH, content: renderClosureInventory(matrixEntries) },
+  ];
 
-  await writeFile(SUMMARY_PATH, renderSummary(matrixEntries), "utf8");
-  await writeFile(
-    FRAMEWORK_DECISIONS_PATH,
-    renderFrameworkDecisions(matrixEntries),
-    "utf8"
-  );
-  await writeFile(
-    LOCAL_DECISIONS_PATH,
-    renderLocalSurfaceDecisions(matrixEntries),
-    "utf8"
-  );
-  await writeFile(REPORT_PATH, renderFreezeGateReport(matrixEntries), "utf8");
-  await writeFile(CLOSURE_PATH, renderClosureInventory(matrixEntries), "utf8");
+  if (mode === "check") {
+    await checkArtifacts(artifacts);
+    console.log(
+      `docs authority freeze gate verified ${matrixEntries.length} classified claims`
+    );
+    return;
+  }
+
+  await writeArtifacts(artifacts);
 
   console.log(
     `docs authority freeze gate generated ${matrixEntries.length} classified claims`
   );
+}
+
+function resolveCliMode(): "check" | "write" {
+  const args = process.argv.slice(2);
+  const unexpectedArgs = args.filter((arg) => arg !== "--check");
+  if (unexpectedArgs.length > 0) {
+    throw new Error(
+      `unsupported docs authority freeze gate arguments: ${unexpectedArgs.join(
+        ", "
+      )}`
+    );
+  }
+
+  return args.includes("--check") ? "check" : "write";
 }
 
 async function validateCoverageMatrixEvidence(
@@ -1218,6 +1249,10 @@ function classifyFrameworkRuntimeSection(
 function classifyKernelClaim(claim: NormativeClaim): ClassificationDecision {
   const section = claim.sectionKey;
   const text = claim.text.toLowerCase();
+  const portabilityNoteDecision = classifyKernelPortabilityNoteText(text);
+  if (portabilityNoteDecision != null) {
+    return portabilityNoteDecision;
+  }
   const postureDecision = classifyKernelPostureText(text);
   if (postureDecision != null) {
     return postureDecision;
@@ -1243,6 +1278,24 @@ function classifyKernelClaim(claim: NormativeClaim): ClassificationDecision {
   return unclassifiedDecision(
     "kernel unclassified surface",
     "Kernel prose landed outside the Epic AD section classifier and must be explicitly routed before the freeze gate can pass."
+  );
+}
+
+function classifyKernelPortabilityNoteText(
+  text: string
+): ClassificationDecision | null {
+  if (
+    !(
+      text.includes("epic ad freezes the portability reading") &&
+      text.includes("docs-to-authority matrix")
+    )
+  ) {
+    return null;
+  }
+
+  return implementationDefinedDecision(
+    "kernel docs-to-authority framing",
+    "The Epic AD portability note describes the freeze gate classification model rather than portable kernel protocol behavior."
   );
 }
 
@@ -1896,8 +1949,53 @@ function escapeTableCell(value: string): string {
   return value.replace(/\|/g, "\\|").replace(/\n/g, " ");
 }
 
-async function writeJson(path: string, value: unknown): Promise<void> {
-  await writeFile(path, `${JSON.stringify(value, null, 2)}\n`, "utf8");
+function formatJson(value: unknown): string {
+  return `${JSON.stringify(value, null, 2)}\n`;
+}
+
+async function writeArtifacts(
+  artifacts: readonly OutputArtifact[]
+): Promise<void> {
+  await mkdir(OUTPUT_DIR, { recursive: true });
+
+  for (const artifact of artifacts) {
+    await writeFile(artifact.path, artifact.content, "utf8");
+  }
+}
+
+async function checkArtifacts(
+  artifacts: readonly OutputArtifact[]
+): Promise<void> {
+  const stalePaths: string[] = [];
+
+  for (const artifact of artifacts) {
+    let currentContent: string;
+    try {
+      currentContent = await readFile(artifact.path, "utf8");
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        "code" in error &&
+        error.code === "ENOENT"
+      ) {
+        stalePaths.push(artifact.path);
+        continue;
+      }
+      throw error;
+    }
+
+    if (currentContent !== artifact.content) {
+      stalePaths.push(artifact.path);
+    }
+  }
+
+  if (stalePaths.length > 0) {
+    throw new Error(
+      "docs authority freeze gate artifacts are stale. " +
+        "Run `bun run docs:authority-freeze` and commit the updated files: " +
+        stalePaths.join(", ")
+    );
+  }
 }
 
 if (import.meta.main) {

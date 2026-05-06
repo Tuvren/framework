@@ -3525,7 +3525,7 @@
     },
     {
       "affectedBoundary": "kernel",
-      "adapterCapability": "kernel.protocol; kernel.logical",
+      "adapterCapability": "N/A",
       "claimFingerprint": "f5823fef4b2a9e3f7540558125ae2bf9296f81c59a4645960d951ea422440c0c",
       "claimId": "KER-F5823FEF4B2A",
       "duplicateOf": null,
@@ -3535,7 +3535,7 @@
       "sectionHeading": "Kraken Kernel Specification",
       "sectionKey": "kraken-kernel-specification",
       "sourceFile": "docs/KrakenKernelSpecification.md",
-      "surface": "kernel boundary framing",
+      "surface": "kernel docs-to-authority framing",
       "text": "Epic AD freezes the portability reading of this Markdown. Portable cross-implementation meaning is freeze-covered when the docs-to-authority matrix maps the claim to the kernel protocol authority packet, CDDL or fixture assets where applicable, conformance plans, advertised adapter capabilities, and compatibility evidence. Claims classified as implementation-local-evidence, implementation-defined, missing-conformance-follow-up, explicitly deferred, or stale-corrected in `constitution/spikes/epic-ad-docs-to-authority-coverage-matrix.json` are not portable machine authority until a later packet and conformance change promotes them."
     },
     {
