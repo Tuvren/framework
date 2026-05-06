@@ -6,7 +6,8 @@
   "entries": [
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0001",
+      "claimFingerprint": "4e514c457b96987fbeae49302f1471db8bf7e6a1ba8671e087a92ed9ad0ce587",
+      "claimId": "FWK-4E514C457B96",
       "duplicateOf": null,
       "line": 13,
       "rationaleContext": "normative",
@@ -30,7 +31,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0002",
+      "claimFingerprint": "c9900ff32feae5314a68dc82a0c881b630f9187e8f6556acaf7a793e5d210aaf",
+      "claimId": "FWK-C9900FF32FEA",
       "duplicateOf": null,
       "line": 21,
       "rationaleContext": "normative",
@@ -54,7 +56,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0003",
+      "claimFingerprint": "f1df0f90609a547d959eeacb41fe1ab2ec9bf883c24ed05e67c84d7db113d802",
+      "claimId": "FWK-F1DF0F90609A",
       "duplicateOf": null,
       "line": 30,
       "rationaleContext": "normative",
@@ -78,7 +81,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0004",
+      "claimFingerprint": "550e41a79a797cbf7821dbd3a01d0a173ee84ea7f426d97cec5d377fd5fbc175",
+      "claimId": "FWK-550E41A79A79",
       "duplicateOf": null,
       "line": 85,
       "rationaleContext": "normative",
@@ -102,7 +106,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0005",
+      "claimFingerprint": "f840209551a0817d692cf5404b205ed43dd3f7b5989c59a3db09935f8be2114e",
+      "claimId": "FWK-F840209551A0",
       "duplicateOf": null,
       "line": 105,
       "rationaleContext": "normative",
@@ -126,7 +131,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0006",
+      "claimFingerprint": "5ed37780c4ca70b6b8dbcdfc183d8c2c99d6b63eca8c325dfbd44db0bcaec5ba",
+      "claimId": "FWK-5ED37780C4CA",
       "duplicateOf": null,
       "line": 113,
       "rationaleContext": "normative",
@@ -150,7 +156,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0007",
+      "claimFingerprint": "ab9be971f3f8903c5911f11746f5e819ef0e871139550537ba439a2b684f3468",
+      "claimId": "FWK-AB9BE971F3F8",
       "duplicateOf": null,
       "line": 138,
       "rationaleContext": "normative",
@@ -174,7 +181,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0008",
+      "claimFingerprint": "077da00dee7c7bd9857f95fe72a193d88c4ae5e168ac390eeda4be9db4cedb48",
+      "claimId": "FWK-077DA00DEE7C",
       "duplicateOf": null,
       "line": 214,
       "rationaleContext": "normative",
@@ -198,7 +206,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0009",
+      "claimFingerprint": "45927473f7fededbc0a3b1cbec52f0d92c2023050d76c9b2f1315e4406038f87",
+      "claimId": "FWK-45927473F7FE",
       "duplicateOf": null,
       "line": 219,
       "rationaleContext": "normative",
@@ -222,7 +231,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0010",
+      "claimFingerprint": "d1c028c77a543b1f04182463b1ab251030afd10579f0d3f73d1abb01c1766bfb",
+      "claimId": "FWK-D1C028C77A54",
       "duplicateOf": null,
       "line": 250,
       "rationaleContext": "normative",
@@ -246,7 +256,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0011",
+      "claimFingerprint": "31ee39cb3972d41e2448ab92d4cb7abfb4a37dd1d4a150484891cc98afa5a407",
+      "claimId": "FWK-31EE39CB3972",
       "duplicateOf": null,
       "line": 285,
       "rationaleContext": "normative",
@@ -270,7 +281,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0012",
+      "claimFingerprint": "7c78f12313251489a46820307cc7686f7b600bf0d1a7b6c6b776d24850a81553",
+      "claimId": "FWK-7C78F1231325",
       "duplicateOf": null,
       "line": 350,
       "rationaleContext": "normative",
@@ -294,7 +306,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0013",
+      "claimFingerprint": "0747403b725c60b6e50f96e76112dcf7628ddbb53d41ecb5059157800f2fddcf",
+      "claimId": "FWK-0747403B725C",
       "duplicateOf": null,
       "line": 352,
       "rationaleContext": "normative",
@@ -318,7 +331,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0014",
+      "claimFingerprint": "b18ecc3ddcf3a674143d61fab5e4f690136e3dba6c02ab9fe38cfb2becf0d100",
+      "claimId": "FWK-B18ECC3DDCF3",
       "duplicateOf": null,
       "line": 354,
       "rationaleContext": "normative",
@@ -342,7 +356,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0015",
+      "claimFingerprint": "8161bc69f786fd18a23b6509ff57c9e46709c2d55766557d4ab4bd6ed1e0c695",
+      "claimId": "FWK-8161BC69F786",
       "duplicateOf": null,
       "line": 356,
       "rationaleContext": "normative",
@@ -366,7 +381,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0016",
+      "claimFingerprint": "28aafc4f1dc8983f9e98c3d219ed9fe0142af814065020dbf00303e6527f8adb",
+      "claimId": "FWK-28AAFC4F1DC8",
       "duplicateOf": null,
       "line": 413,
       "rationaleContext": "normative",
@@ -390,7 +406,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0017",
+      "claimFingerprint": "a346b29d81955ac34eb7c3cffdb590619347af5606946d46a3cfb5f785e2a573",
+      "claimId": "FWK-A346B29D8195",
       "duplicateOf": null,
       "line": 417,
       "rationaleContext": "normative",
@@ -414,7 +431,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0018",
+      "claimFingerprint": "a9611c7d2c6fc54a980386989107f27e0cee1310cda87a6baebf712930f1caf3",
+      "claimId": "FWK-A9611C7D2C6F",
       "duplicateOf": null,
       "line": 421,
       "rationaleContext": "normative",
@@ -438,7 +456,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0019",
+      "claimFingerprint": "0a368d92cb9dad35b646870f5330bf1ca5c2be63b87ddf5f40ee7ff792b0e992",
+      "claimId": "FWK-0A368D92CB9D",
       "duplicateOf": null,
       "line": 429,
       "rationaleContext": "normative",
@@ -462,7 +481,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0020",
+      "claimFingerprint": "a6d3beb95d9e99f0f875a0cc47f7492fa313af34d1ccf22e4c70a954b2023d72",
+      "claimId": "FWK-A6D3BEB95D9E",
       "duplicateOf": null,
       "line": 446,
       "rationaleContext": "normative",
@@ -486,7 +506,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0021",
+      "claimFingerprint": "f75ec27cfe7037f546c5478eae7cab094b8c94c10180c3932668e1c83f965a56",
+      "claimId": "FWK-F75EC27CFE70",
       "duplicateOf": null,
       "line": 488,
       "rationaleContext": "normative",
@@ -510,7 +531,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0022",
+      "claimFingerprint": "78a3d571633b8e88ea69308dac8ba070fd9d677bbab49ed5cf592cf50fd9aaaf",
+      "claimId": "FWK-78A3D571633B",
       "duplicateOf": null,
       "line": 515,
       "rationaleContext": "normative",
@@ -534,7 +556,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0023",
+      "claimFingerprint": "2855d4d9a4b55259a890b4e81999448228ef1439891775424ab80c205a29c298",
+      "claimId": "FWK-2855D4D9A4B5",
       "duplicateOf": null,
       "line": 517,
       "rationaleContext": "normative",
@@ -558,7 +581,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0024",
+      "claimFingerprint": "176c448dd30e842f60c7717b08b5e5c77fbbb678022839ee8a0e40cdfcc22676",
+      "claimId": "FWK-176C448DD30E",
       "duplicateOf": null,
       "line": 525,
       "rationaleContext": "normative",
@@ -582,7 +606,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0025",
+      "claimFingerprint": "cfbf4a38f861526b9e2ba962ab60a73f39c786065e4fc6322eb1158d3262a518",
+      "claimId": "FWK-CFBF4A38F861",
       "duplicateOf": null,
       "line": 537,
       "rationaleContext": "normative",
@@ -606,7 +631,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0026",
+      "claimFingerprint": "7ac0f63c88bd9d52827e35957be1ae255d68eed3498c03bd9d8e2b7022c9679d",
+      "claimId": "FWK-7AC0F63C88BD",
       "duplicateOf": null,
       "line": 539,
       "rationaleContext": "normative",
@@ -630,7 +656,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0027",
+      "claimFingerprint": "24bad806542f1dbccba4084852c39d6af2a3555110ff667b2d9b4ff14657afc2",
+      "claimId": "FWK-24BAD806542F",
       "duplicateOf": null,
       "line": 545,
       "rationaleContext": "normative",
@@ -654,7 +681,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0028",
+      "claimFingerprint": "87974e517d0c7af2fd44187d2b1bbd59f14f0603927cf9d07f0cd35f21a73d91",
+      "claimId": "FWK-87974E517D0C",
       "duplicateOf": null,
       "line": 547,
       "rationaleContext": "normative",
@@ -678,7 +706,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0029",
+      "claimFingerprint": "a4d2da24b366bb1a6b2d9f0c0ac8f2e530fc0a23d620fa19cd81038d62d7d3e1",
+      "claimId": "FWK-A4D2DA24B366",
       "duplicateOf": null,
       "line": 589,
       "rationaleContext": "normative",
@@ -702,7 +731,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0030",
+      "claimFingerprint": "eef9fb3c40e6ba69549ee2aca2f14a83fa5074d9aa9c85c12a74d258590dd54d",
+      "claimId": "FWK-EEF9FB3C40E6",
       "duplicateOf": null,
       "line": 590,
       "rationaleContext": "normative",
@@ -726,7 +756,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0031",
+      "claimFingerprint": "5c26dabaa592825875206a294dcc1e40a11e8b2f7e9a3bb2a41e76904e60d31f",
+      "claimId": "FWK-5C26DABAA592",
       "duplicateOf": null,
       "line": 594,
       "rationaleContext": "normative",
@@ -750,7 +781,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0032",
+      "claimFingerprint": "4c1b5c7c29ab0f7a17df355624adaccf321aae8c93a59cb5a360cbee3bf5def2",
+      "claimId": "FWK-4C1B5C7C29AB",
       "duplicateOf": null,
       "line": 595,
       "rationaleContext": "normative",
@@ -774,7 +806,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0033",
+      "claimFingerprint": "5e22b4d78c820d5e7113e4cf63b603f697bb873d838bd98a5acf0cfad0bc8824",
+      "claimId": "FWK-5E22B4D78C82",
       "duplicateOf": null,
       "line": 596,
       "rationaleContext": "normative",
@@ -798,7 +831,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0034",
+      "claimFingerprint": "b637838f1417c6369d87699801cd9b7f6757225086377f44ee54995497bf6f79",
+      "claimId": "FWK-B637838F1417",
       "duplicateOf": null,
       "line": 597,
       "rationaleContext": "normative",
@@ -822,7 +856,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0035",
+      "claimFingerprint": "cfabf438f4b88950d87b2d4a1936c6de74edd6391784b341376c28c2aa57fd15",
+      "claimId": "FWK-CFABF438F4B8",
       "duplicateOf": null,
       "line": 721,
       "rationaleContext": "normative",
@@ -846,7 +881,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0036",
+      "claimFingerprint": "cd5e40b9345dc23bd08f4d63aafd509f49d4d321aaadca1b779a684aae95a77d",
+      "claimId": "FWK-CD5E40B9345D",
       "duplicateOf": null,
       "line": 723,
       "rationaleContext": "normative",
@@ -870,7 +906,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0037",
+      "claimFingerprint": "cb1a6a36e3d56ef02de5f346f79412962090e467d23c1135f92bf51ea272c377",
+      "claimId": "FWK-CB1A6A36E3D5",
       "duplicateOf": null,
       "line": 943,
       "rationaleContext": "normative",
@@ -894,7 +931,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0038",
+      "claimFingerprint": "7d9b813a79cd9f8094e996dffcbeb8da84bfd8e57f9c8c811f367d95cfef7608",
+      "claimId": "FWK-7D9B813A79CD",
       "duplicateOf": null,
       "line": 945,
       "rationaleContext": "normative",
@@ -918,7 +956,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0039",
+      "claimFingerprint": "738e2e1eec12efd83b3cb0af24079b3738fba26382965e57f009ba787698c785",
+      "claimId": "FWK-738E2E1EEC12",
       "duplicateOf": null,
       "line": 949,
       "rationaleContext": "normative",
@@ -942,7 +981,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0040",
+      "claimFingerprint": "c3619f4e0dd7ab194904737b9a7ab40a75c2c75b13351a5780f9e4ff814c3ff4",
+      "claimId": "FWK-C3619F4E0DD7",
       "duplicateOf": null,
       "line": 955,
       "rationaleContext": "normative",
@@ -966,7 +1006,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0041",
+      "claimFingerprint": "3eb6bd2e44c647b98345d017ffea2f3ef2e7cf43ae1df5732b930cdf901b3a7b",
+      "claimId": "FWK-3EB6BD2E44C6",
       "duplicateOf": null,
       "line": 981,
       "rationaleContext": "normative",
@@ -990,7 +1031,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0042",
+      "claimFingerprint": "aea220d0da5209b499ae0afce2cc35ec2f732ab2c5a8e4187527b2546d29ca5c",
+      "claimId": "FWK-AEA220D0DA52",
       "duplicateOf": null,
       "line": 983,
       "rationaleContext": "normative",
@@ -1014,7 +1056,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0043",
+      "claimFingerprint": "0a405f74632b1efcb3424ebd2b5cd860ac1db87ca066cb607a4e077ce03ef05b",
+      "claimId": "FWK-0A405F74632B",
       "duplicateOf": null,
       "line": 985,
       "rationaleContext": "normative",
@@ -1038,7 +1081,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0044",
+      "claimFingerprint": "51b9484b4acd24c8c7ec96dd0f089054e295502e0d563bc103a916a625bb39f4",
+      "claimId": "FWK-51B9484B4ACD",
       "duplicateOf": null,
       "line": 987,
       "rationaleContext": "normative",
@@ -1062,7 +1106,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0045",
+      "claimFingerprint": "421dcb7431f672aba7664ae2ef5cf159c0ccd34987e2843c34b5605eebc0f7d5",
+      "claimId": "FWK-421DCB7431F6",
       "duplicateOf": null,
       "line": 991,
       "rationaleContext": "normative",
@@ -1086,7 +1131,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0046",
+      "claimFingerprint": "6d6d07de0a90389b66142992c4825b5820d87defc5aaa2e764aab0a0bb536d31",
+      "claimId": "FWK-6D6D07DE0A90",
       "duplicateOf": null,
       "line": 993,
       "rationaleContext": "normative",
@@ -1110,7 +1156,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0047",
+      "claimFingerprint": "722e8933104ead10bebaba73f773617c4d5a66689474c1a4756f6450af7c7475",
+      "claimId": "FWK-722E8933104E",
       "duplicateOf": null,
       "line": 995,
       "rationaleContext": "normative",
@@ -1134,7 +1181,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0048",
+      "claimFingerprint": "bfd4076fd38f6ea5be91d589f810ce73225f88c5a0babfe102a3e397f721bcbd",
+      "claimId": "FWK-BFD4076FD38F",
       "duplicateOf": null,
       "line": 1001,
       "rationaleContext": "normative",
@@ -1158,7 +1206,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0049",
+      "claimFingerprint": "57aee9ece71805eafb804da4fad9c972ba43ecfe6cc439905e5ba63e13ac94f4",
+      "claimId": "FWK-57AEE9ECE718",
       "duplicateOf": null,
       "line": 1003,
       "rationaleContext": "normative",
@@ -1182,7 +1231,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0050",
+      "claimFingerprint": "ba30a46fda59e8ad8550ef0d0777a5007b13a882a891aa4e56c66bc0e95d7138",
+      "claimId": "FWK-BA30A46FDA59",
       "duplicateOf": null,
       "line": 1015,
       "rationaleContext": "normative",
@@ -1206,7 +1256,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0051",
+      "claimFingerprint": "9243d948835dd893daa8c431a98332d0a14b4a02bddfc8597230952229b38ac1",
+      "claimId": "FWK-9243D948835D",
       "duplicateOf": null,
       "line": 1017,
       "rationaleContext": "normative",
@@ -1230,7 +1281,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0052",
+      "claimFingerprint": "476f0ca23f557266fc6fcdfae145f83db02157e4bb9e790c411dc071a011959c",
+      "claimId": "FWK-476F0CA23F55",
       "duplicateOf": null,
       "line": 1021,
       "rationaleContext": "normative",
@@ -1254,7 +1306,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0053",
+      "claimFingerprint": "16e6a4d5e03d2d7f9d1007b7f3ea15937985fb8b00ad502b8b7c14ad50a3008a",
+      "claimId": "FWK-16E6A4D5E03D",
       "duplicateOf": null,
       "line": 1027,
       "rationaleContext": "normative",
@@ -1278,7 +1331,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0054",
+      "claimFingerprint": "a237e99bd783b5bb90e3e5b99e842250d6df3b59200cba0a243928b6db2f6afd",
+      "claimId": "FWK-A237E99BD783",
       "duplicateOf": null,
       "line": 1063,
       "rationaleContext": "normative",
@@ -1302,7 +1356,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0055",
+      "claimFingerprint": "ef6d65d2130c42378a9ee4cf96139df2088121452ad16b5104f8b998a743c1ea",
+      "claimId": "FWK-EF6D65D2130C",
       "duplicateOf": null,
       "line": 1109,
       "rationaleContext": "normative",
@@ -1326,7 +1381,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0056",
+      "claimFingerprint": "f22cf62889fd10fcc74e1ab1a56f39b39289cd1d217a1a8325d51e2db94034f7",
+      "claimId": "FWK-F22CF62889FD",
       "duplicateOf": null,
       "line": 1110,
       "rationaleContext": "normative",
@@ -1350,7 +1406,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0057",
+      "claimFingerprint": "2bb956b583dbf26c81a1aab30f7a8458d309a6a5f03b224b37315383b1ffb3d0",
+      "claimId": "FWK-2BB956B583DB",
       "duplicateOf": null,
       "line": 1113,
       "rationaleContext": "normative",
@@ -1374,7 +1431,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0058",
+      "claimFingerprint": "7b2522fcdcd293902cf64516b378e44327d81a1f5147784050206a3769b68072",
+      "claimId": "FWK-7B2522FCDCD2",
       "duplicateOf": null,
       "line": 1191,
       "rationaleContext": "normative",
@@ -1398,7 +1456,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0059",
+      "claimFingerprint": "9436bd7532834cebb9e8cca34f492df935e35dd241cfd4c90ba067da7aa247fe",
+      "claimId": "FWK-9436BD753283",
       "duplicateOf": null,
       "line": 1193,
       "rationaleContext": "normative",
@@ -1422,7 +1481,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0060",
+      "claimFingerprint": "0c65be060497a3ffb64bc016750cf974817b58d381f703be7e2cd05508e582a5",
+      "claimId": "FWK-0C65BE060497",
       "duplicateOf": null,
       "line": 1197,
       "rationaleContext": "normative",
@@ -1446,7 +1506,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0061",
+      "claimFingerprint": "b664f883ceb1ce3b9c766801eb8c136a74d17c9d73e93d7086a6e38cef0a5477",
+      "claimId": "FWK-B664F883CEB1",
       "duplicateOf": null,
       "line": 1198,
       "rationaleContext": "normative",
@@ -1470,7 +1531,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0062",
+      "claimFingerprint": "bfa2cd0475d08ec24c8e79a5508b59544059db0ebe27abec61f1bc78a98850c3",
+      "claimId": "FWK-BFA2CD0475D0",
       "duplicateOf": null,
       "line": 1199,
       "rationaleContext": "normative",
@@ -1494,7 +1556,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0063",
+      "claimFingerprint": "ffc7905314fd46e1acf9f88e31077e80fa5415af16f6ebf768e4f6723a771bce",
+      "claimId": "FWK-FFC7905314FD",
       "duplicateOf": null,
       "line": 1200,
       "rationaleContext": "normative",
@@ -1518,7 +1581,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0064",
+      "claimFingerprint": "439134e746d22fdcc8429d12e843a04dacebeb3431c2d4348f0ea4088c3b2935",
+      "claimId": "FWK-439134E746D2",
       "duplicateOf": null,
       "line": 1201,
       "rationaleContext": "normative",
@@ -1542,7 +1606,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0065",
+      "claimFingerprint": "74731be03a3d7799827881928da6b5523d144a5f36c1f1c490a95a0a8e478e7c",
+      "claimId": "FWK-74731BE03A3D",
       "duplicateOf": null,
       "line": 1202,
       "rationaleContext": "normative",
@@ -1566,7 +1631,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0066",
+      "claimFingerprint": "98b798bd35c240a7578a2eb11577e2d25eb0da65f4bf3f4a36c6ba22d29f75c0",
+      "claimId": "FWK-98B798BD35C2",
       "duplicateOf": null,
       "line": 1203,
       "rationaleContext": "normative",
@@ -1590,7 +1656,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0067",
+      "claimFingerprint": "c8ae1fe5d5b6cd12ac0c1267e1a548c553eda9f69b0ac6965d11f9814891c11d",
+      "claimId": "FWK-C8AE1FE5D5B6",
       "duplicateOf": null,
       "line": 1204,
       "rationaleContext": "normative",
@@ -1614,7 +1681,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0068",
+      "claimFingerprint": "a7792be183d15e0c5bc25968c32f4660d52994c29ef612f31ff2c5dd3bd498a3",
+      "claimId": "FWK-A7792BE183D1",
       "duplicateOf": null,
       "line": 1205,
       "rationaleContext": "normative",
@@ -1638,7 +1706,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0069",
+      "claimFingerprint": "503cc279abb7bf5f3513600825e07a2f75128c8de857b5a747b93eeb8c6252ca",
+      "claimId": "FWK-503CC279ABB7",
       "duplicateOf": null,
       "line": 1217,
       "rationaleContext": "normative",
@@ -1662,7 +1731,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0070",
+      "claimFingerprint": "2ad7efd1e6d057eb120b68a57f16b053ad38f84603b18eaa2105bcc1683493af",
+      "claimId": "FWK-2AD7EFD1E6D0",
       "duplicateOf": null,
       "line": 1221,
       "rationaleContext": "normative",
@@ -1686,7 +1756,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0071",
+      "claimFingerprint": "a7079bbf73404a7d516016d04b3bd4876d71e849a259963cda9177929bba0b65",
+      "claimId": "FWK-A7079BBF7340",
       "duplicateOf": null,
       "line": 1223,
       "rationaleContext": "normative",
@@ -1710,7 +1781,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0072",
+      "claimFingerprint": "a7370e21c1837751b926d34e429a7a081d013116778883923623218c2171ab4b",
+      "claimId": "FWK-A7370E21C183",
       "duplicateOf": null,
       "line": 1231,
       "rationaleContext": "normative",
@@ -1734,7 +1806,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0073",
+      "claimFingerprint": "8e25784cc248c155e366a6e18de512cff1ac99cf8958b1854b8a3e13bf9c681f",
+      "claimId": "FWK-8E25784CC248",
       "duplicateOf": null,
       "line": 1281,
       "rationaleContext": "normative",
@@ -1758,7 +1831,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0074",
+      "claimFingerprint": "bc7142393baa1f9b46a63a3f30deb16f1f87971d56d158b1252d0bebed16a236",
+      "claimId": "FWK-BC7142393BAA",
       "duplicateOf": null,
       "line": 1311,
       "rationaleContext": "normative",
@@ -1782,7 +1856,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0075",
+      "claimFingerprint": "4193d2a613e04f24519c7222334df417b3968327ef3e5d654a26326fd6f81a8b",
+      "claimId": "FWK-4193D2A613E0",
       "duplicateOf": null,
       "line": 1313,
       "rationaleContext": "normative",
@@ -1806,7 +1881,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0076",
+      "claimFingerprint": "33f5deafc66a5909747caf313cd8848e96b761a0f1779702d5825d80a21953f6",
+      "claimId": "FWK-33F5DEAFC66A",
       "duplicateOf": null,
       "line": 1315,
       "rationaleContext": "normative",
@@ -1830,7 +1906,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0077",
+      "claimFingerprint": "607fbc20fd59aae06d573b065e3467a17bceea4df612fbea5c0f462d5f700b35",
+      "claimId": "FWK-607FBC20FD59",
       "duplicateOf": null,
       "line": 1323,
       "rationaleContext": "normative",
@@ -1854,7 +1931,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0078",
+      "claimFingerprint": "af60c9581babea8a88b3abc4464d5a8062e7213d5d85373ce97b77cc52c27fe1",
+      "claimId": "FWK-AF60C9581BAB",
       "duplicateOf": null,
       "line": 1325,
       "rationaleContext": "normative",
@@ -1878,7 +1956,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0079",
+      "claimFingerprint": "c6917e7e9d81a3d37316bd12dcce649a7eb72f5bf494b7189e3fbdd6a3e3eb01",
+      "claimId": "FWK-C6917E7E9D81",
       "duplicateOf": null,
       "line": 1345,
       "rationaleContext": "normative",
@@ -1902,7 +1981,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0080",
+      "claimFingerprint": "d021530b1987254656a6af02e5e90dc43e2dea1d9846b820c03e6586e179a5ab",
+      "claimId": "FWK-D021530B1987",
       "duplicateOf": null,
       "line": 1365,
       "rationaleContext": "normative",
@@ -1926,7 +2006,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0081",
+      "claimFingerprint": "57513b429b0f5b26ee70ba78728e68f52dfa3d3aeb26bb0a45211e6073ad9b86",
+      "claimId": "FWK-57513B429B0F",
       "duplicateOf": null,
       "line": 1371,
       "rationaleContext": "normative",
@@ -1950,7 +2031,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0082",
+      "claimFingerprint": "d32084f687aeeb591270cd497c9d7b0387ce0958508cae2adca5743b241d38fa",
+      "claimId": "FWK-D32084F687AE",
       "duplicateOf": null,
       "line": 1373,
       "rationaleContext": "normative",
@@ -1974,7 +2056,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0083",
+      "claimFingerprint": "10f71f510bdbb0a9219f712ed248fdec0ffb1749a1511bf0f2c98510e92a79f0",
+      "claimId": "FWK-10F71F510BDB",
       "duplicateOf": null,
       "line": 1414,
       "rationaleContext": "normative",
@@ -1998,7 +2081,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0084",
+      "claimFingerprint": "7b83bf4f3d5c80b0ed1831770bc7e813292e00b293a585d481a72ee36b7827a1",
+      "claimId": "FWK-7B83BF4F3D5C",
       "duplicateOf": null,
       "line": 1416,
       "rationaleContext": "normative",
@@ -2022,7 +2106,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0085",
+      "claimFingerprint": "99b2316192563848861560b720ff017a2f9898767317cd42d340edab56328832",
+      "claimId": "FWK-99B231619256",
       "duplicateOf": null,
       "line": 1420,
       "rationaleContext": "normative",
@@ -2046,7 +2131,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0086",
+      "claimFingerprint": "7aac5e04465d0259d474cc793a032d6b9db7f84aafd51c5e9245b3cc7e19b01e",
+      "claimId": "FWK-7AAC5E04465D",
       "duplicateOf": null,
       "line": 1422,
       "rationaleContext": "normative",
@@ -2070,7 +2156,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0087",
+      "claimFingerprint": "8eb24eefc45c3f3ea899563108fc3a08b46c60a2361daf7d72f6d7f606c275e3",
+      "claimId": "FWK-8EB24EEFC45C",
       "duplicateOf": null,
       "line": 1521,
       "rationaleContext": "normative",
@@ -2094,7 +2181,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0088",
+      "claimFingerprint": "b9434e23ab690c5d7948e2034eb97277f16aae3b3188f9756e472fdbfb7daee3",
+      "claimId": "FWK-B9434E23AB69",
       "duplicateOf": null,
       "line": 1587,
       "rationaleContext": "normative",
@@ -2118,7 +2206,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0089",
+      "claimFingerprint": "c9356ee090179e66fcd1587db9b1137a93716004e08ff237d877cc2066a30dfa",
+      "claimId": "FWK-C9356EE09017",
       "duplicateOf": null,
       "line": 1593,
       "rationaleContext": "normative",
@@ -2142,7 +2231,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0090",
+      "claimFingerprint": "aefdb52bdbf929d60ae09500ab0ee035bd5cab556e0edf887288b55221dc01d4",
+      "claimId": "FWK-AEFDB52BDBF9",
       "duplicateOf": null,
       "line": 1595,
       "rationaleContext": "normative",
@@ -2166,7 +2256,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0091",
+      "claimFingerprint": "097d5a1c6aa2dd0195bf36b5ca2217e34262264c1bbef3b6c1dd145da4788874",
+      "claimId": "FWK-097D5A1C6AA2",
       "duplicateOf": null,
       "line": 1597,
       "rationaleContext": "normative",
@@ -2190,7 +2281,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0092",
+      "claimFingerprint": "7c58e817a350ded57646b0ee4d183b9ba7c5eb20a8f8b82db1c2152f7e4b6e77",
+      "claimId": "FWK-7C58E817A350",
       "duplicateOf": null,
       "line": 1644,
       "rationaleContext": "normative",
@@ -2214,7 +2306,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0093",
+      "claimFingerprint": "d8d93a60350efcaf15bc0734331a9b118ebddd9f13608755b30dda9ba298fa13",
+      "claimId": "FWK-D8D93A60350E",
       "duplicateOf": null,
       "line": 1668,
       "rationaleContext": "normative",
@@ -2238,7 +2331,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0094",
+      "claimFingerprint": "44336420cb815b2c7cf91c9788a97d7816e8609ce6794d11e1711504d568275e",
+      "claimId": "FWK-44336420CB81",
       "duplicateOf": null,
       "line": 1680,
       "rationaleContext": "normative",
@@ -2262,7 +2356,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0095",
+      "claimFingerprint": "8480d0a08e53d5325a17f91c2138bc191496dacb61f596723e264ef75f85b6c5",
+      "claimId": "FWK-8480D0A08E53",
       "duplicateOf": null,
       "line": 1682,
       "rationaleContext": "normative",
@@ -2286,7 +2381,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0096",
+      "claimFingerprint": "e3feb2d7d1bf276d068d3ac507e3b212260dba9aae0e052fe8087942b5e26a35",
+      "claimId": "FWK-E3FEB2D7D1BF",
       "duplicateOf": null,
       "line": 1692,
       "rationaleContext": "normative",
@@ -2310,7 +2406,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0097",
+      "claimFingerprint": "56abe07a73be619f1d55c1dc14b54db1b8549fa1145bd1d52b7832849c05c442",
+      "claimId": "FWK-56ABE07A73BE",
       "duplicateOf": null,
       "line": 1704,
       "rationaleContext": "normative",
@@ -2334,7 +2431,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0098",
+      "claimFingerprint": "08deaa2a61a3b2e78ca98e26dfe452cd6e72f2097ad5a19d607cd81bc4930fae",
+      "claimId": "FWK-08DEAA2A61A3",
       "duplicateOf": null,
       "line": 1741,
       "rationaleContext": "normative",
@@ -2358,7 +2456,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0099",
+      "claimFingerprint": "413c5b22b8ea39daea5aa0cf2fb7985a1bb3b316ec51bfe79b7b08c6827fd667",
+      "claimId": "FWK-413C5B22B8EA",
       "duplicateOf": null,
       "line": 1743,
       "rationaleContext": "normative",
@@ -2382,7 +2481,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0100",
+      "claimFingerprint": "de249477068f55ba2645acd4c9815698cc13555bd37e138c1e1b1779b134643d",
+      "claimId": "FWK-DE249477068F",
       "duplicateOf": null,
       "line": 1753,
       "rationaleContext": "normative",
@@ -2406,7 +2506,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0101",
+      "claimFingerprint": "2417799566df6eef74d37e7b15acbbe37d7e005edaa3654ecda743a3e6809b67",
+      "claimId": "FWK-2417799566DF",
       "duplicateOf": null,
       "line": 1768,
       "rationaleContext": "normative",
@@ -2430,7 +2531,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0102",
+      "claimFingerprint": "f16baf069f4584167c9b5181eba5ea1dbffd72675d2ec8e3d732c28fbc9f7c9f",
+      "claimId": "FWK-F16BAF069F45",
       "duplicateOf": null,
       "line": 1781,
       "rationaleContext": "normative",
@@ -2454,7 +2556,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0103",
+      "claimFingerprint": "3c496f9731cb760ed4478918fde0834971a8016a3e15f8a9bb7e634a53896b7b",
+      "claimId": "FWK-3C496F9731CB",
       "duplicateOf": null,
       "line": 1783,
       "rationaleContext": "normative",
@@ -2478,7 +2581,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0104",
+      "claimFingerprint": "eb75f78718da5639235476708fd0e5ca7b828a727f0dc5df766679fae6f9c054",
+      "claimId": "FWK-EB75F78718DA",
       "duplicateOf": null,
       "line": 1840,
       "rationaleContext": "normative",
@@ -2502,7 +2606,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0105",
+      "claimFingerprint": "265b4580533799ac11941cc1fd423447969caeec85e0a7d8efbf99ec7a2810ad",
+      "claimId": "FWK-265B45805337",
       "duplicateOf": null,
       "line": 1873,
       "rationaleContext": "normative",
@@ -2526,7 +2631,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0106",
+      "claimFingerprint": "148107aea4b545e4d60c921d1d8de68b4344a67e843cfc4fbbe38f64aa593712",
+      "claimId": "FWK-148107AEA4B5",
       "duplicateOf": null,
       "line": 1874,
       "rationaleContext": "normative",
@@ -2550,7 +2656,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0107",
+      "claimFingerprint": "4fa079668ffc1f818b0432d35e1e2969c70e2df09e8e79114cc9c58de0328c2d",
+      "claimId": "FWK-4FA079668FFC",
       "duplicateOf": null,
       "line": 1879,
       "rationaleContext": "normative",
@@ -2574,7 +2681,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0108",
+      "claimFingerprint": "1e18e9de5e545cb432f6ad375e8070932d4b0335110bbd52fdaa9d41e82c402d",
+      "claimId": "FWK-1E18E9DE5E54",
       "duplicateOf": null,
       "line": 1903,
       "rationaleContext": "normative",
@@ -2598,7 +2706,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0109",
+      "claimFingerprint": "567db78fa36a098ef0cf0808d9fbf04083de16351542018730d05d8fb71756f8",
+      "claimId": "FWK-567DB78FA36A",
       "duplicateOf": null,
       "line": 1964,
       "rationaleContext": "normative",
@@ -2622,7 +2731,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0110",
+      "claimFingerprint": "1943b7aa343aeadd75c6a1419b25504da552a4027e32a84e3adb2e6ed2b2e922",
+      "claimId": "FWK-1943B7AA343A",
       "duplicateOf": null,
       "line": 1966,
       "rationaleContext": "normative",
@@ -2646,7 +2756,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0111",
+      "claimFingerprint": "da3fc5ca2efbc614bbc087b014000e8ccb2855d1f42a1e4cea27f76cffebf11b",
+      "claimId": "FWK-DA3FC5CA2EFB",
       "duplicateOf": null,
       "line": 1973,
       "rationaleContext": "normative",
@@ -2670,7 +2781,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0112",
+      "claimFingerprint": "4875b891999bfae22efcdf89215dc7f599c6035944941dac8f2f3ce94ad4369f",
+      "claimId": "FWK-4875B891999B",
       "duplicateOf": null,
       "line": 1979,
       "rationaleContext": "normative",
@@ -2694,7 +2806,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0113",
+      "claimFingerprint": "d0c7dffdb7a65f6aec1936cb7d04663e122c0e281d9194d9d221153f53465770",
+      "claimId": "FWK-D0C7DFFDB7A6",
       "duplicateOf": null,
       "line": 1981,
       "rationaleContext": "normative",
@@ -2718,7 +2831,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0114",
+      "claimFingerprint": "a7528740f1ee674293b48afde70e8fc8bfd5912c5b717b6a51fea9aff6dabfa9",
+      "claimId": "FWK-A7528740F1EE",
       "duplicateOf": null,
       "line": 1983,
       "rationaleContext": "normative",
@@ -2742,7 +2856,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0115",
+      "claimFingerprint": "1ff1e01ed555e7c4b52a3f7930cf9d096e5445a3bf357c4a1406473a06a519af",
+      "claimId": "FWK-1FF1E01ED555",
       "duplicateOf": null,
       "line": 1985,
       "rationaleContext": "normative",
@@ -2766,7 +2881,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0116",
+      "claimFingerprint": "6ae1c0c2a601cee3eeb4e898ed9ea04bdf7cc586f7d9a4d34ff774435de9d5d0",
+      "claimId": "FWK-6AE1C0C2A601",
       "duplicateOf": null,
       "line": 1994,
       "rationaleContext": "normative",
@@ -2790,7 +2906,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0117",
+      "claimFingerprint": "e64892fc65da489cc93f05adb0fa419e7f4fd98c77ec9966f54a945a643884ed",
+      "claimId": "FWK-E64892FC65DA",
       "duplicateOf": null,
       "line": 2011,
       "rationaleContext": "normative",
@@ -2814,7 +2931,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0118",
+      "claimFingerprint": "676a729ce7f4c1a70b73b6473184ce8bc1a1305ee054f1261fbe9450a3b116f3",
+      "claimId": "FWK-676A729CE7F4",
       "duplicateOf": null,
       "line": 2013,
       "rationaleContext": "normative",
@@ -2838,7 +2956,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0119",
+      "claimFingerprint": "b354fa47ebe1ab5c049cae0ac1fec076e7c3f09db9dbe78bece4d6c15ef484f4",
+      "claimId": "FWK-B354FA47EBE1",
       "duplicateOf": null,
       "line": 2022,
       "rationaleContext": "normative",
@@ -2862,7 +2981,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0120",
+      "claimFingerprint": "a94f389d6aca02f65976224d3b7aabb015beee6e0d40db35510a9010054914bb",
+      "claimId": "FWK-A94F389D6ACA",
       "duplicateOf": null,
       "line": 2102,
       "rationaleContext": "normative",
@@ -2886,7 +3006,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0121",
+      "claimFingerprint": "26f5b55d9b57fce80c54978035bac4cb46c0eb3aa6a52175df391b50afd4d910",
+      "claimId": "FWK-26F5B55D9B57",
       "duplicateOf": null,
       "line": 2104,
       "rationaleContext": "normative",
@@ -2910,7 +3031,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0122",
+      "claimFingerprint": "c6758f45d54bb67e12322151d5365ee1e7fe1c606feac3d897d14f463f7acf9d",
+      "claimId": "FWK-C6758F45D54B",
       "duplicateOf": null,
       "line": 2132,
       "rationaleContext": "normative",
@@ -2934,7 +3056,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0123",
+      "claimFingerprint": "90947413826eadde1873a0a07cb12e0c532b96cc5d88acf1b3cb294f48f95ff0",
+      "claimId": "FWK-90947413826E",
       "duplicateOf": null,
       "line": 2162,
       "rationaleContext": "normative",
@@ -2958,7 +3081,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0124",
+      "claimFingerprint": "3478730f6141ca5f4a7f9b191c40df8d16f91dc984d3fee148c6c3b47cc1b55b",
+      "claimId": "FWK-3478730F6141",
       "duplicateOf": null,
       "line": 2176,
       "rationaleContext": "normative",
@@ -2982,7 +3106,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0125",
+      "claimFingerprint": "1c0f62871a50d03bdfc882f36651b751e9908d3b09d8d617adc5df56995b42fd",
+      "claimId": "FWK-1C0F62871A50",
       "duplicateOf": null,
       "line": 2177,
       "rationaleContext": "normative",
@@ -3006,7 +3131,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0126",
+      "claimFingerprint": "411a01042ed22d20ae5e3c7c0f07a451423245d63fcb5db5fd482b5609a00ed2",
+      "claimId": "FWK-411A01042ED2",
       "duplicateOf": null,
       "line": 2180,
       "rationaleContext": "normative",
@@ -3030,7 +3156,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0127",
+      "claimFingerprint": "c7822b6c6db543e77f7b764b1d504cc303f30e72623b36738838aff0f87e4219",
+      "claimId": "FWK-C7822B6C6DB5",
       "duplicateOf": null,
       "line": 2189,
       "rationaleContext": "normative",
@@ -3054,7 +3181,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0128",
+      "claimFingerprint": "e5ff9f294ab3f1a5b5e66ca6c8ef69d0ee24a6b9dc9c424e679c3d1bf74177f4",
+      "claimId": "FWK-E5FF9F294AB3",
       "duplicateOf": null,
       "line": 2199,
       "rationaleContext": "normative",
@@ -3078,7 +3206,8 @@
     },
     {
       "affectedBoundary": "framework",
-      "claimId": "FWK-0129",
+      "claimFingerprint": "c03d8a5f6ce847dc9c8cf858ad215228b948f4f7fd181bc5c484e19c79f3bcc9",
+      "claimId": "FWK-C03D8A5F6CE8",
       "duplicateOf": null,
       "line": 2201,
       "rationaleContext": "normative",
@@ -3102,7 +3231,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0001",
+      "claimFingerprint": "09802bc9b7af2989ac40de734f1a103ec5637ff03b5f2349146d78603c295c2e",
+      "claimId": "KER-09802BC9B7AF",
       "duplicateOf": null,
       "line": 6,
       "rationaleContext": "normative",
@@ -3126,7 +3256,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0002",
+      "claimFingerprint": "7b18a5c48da790a00e63a64cd48e7bbbecd25c0198e2b0523a197a0348a4b1a5",
+      "claimId": "KER-7B18A5C48DA7",
       "duplicateOf": null,
       "line": 32,
       "rationaleContext": "normative",
@@ -3150,7 +3281,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0003",
+      "claimFingerprint": "e2894df56f0a80df85b68486c530bbae49fae7133af5ca403eb29c28635386a7",
+      "claimId": "KER-E2894DF56F0A",
       "duplicateOf": null,
       "line": 69,
       "rationaleContext": "normative",
@@ -3174,7 +3306,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0004",
+      "claimFingerprint": "402d500066f33259e6c84d66645340c20b1862daf1d1d9dabe3ffc44b701068a",
+      "claimId": "KER-402D500066F3",
       "duplicateOf": null,
       "line": 70,
       "rationaleContext": "normative",
@@ -3198,7 +3331,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0005",
+      "claimFingerprint": "a09a78374381915808a7e2c4d499cafb29cf74fa61c0c1cd669c8ad6cffbbe47",
+      "claimId": "KER-A09A78374381",
       "duplicateOf": null,
       "line": 79,
       "rationaleContext": "normative",
@@ -3222,7 +3356,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0006",
+      "claimFingerprint": "27516f22be262ebc8196f426b91a7a9c341ca5c48bbb1593e8cc9a0687f40615",
+      "claimId": "KER-27516F22BE26",
       "duplicateOf": null,
       "line": 114,
       "rationaleContext": "normative",
@@ -3246,7 +3381,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0007",
+      "claimFingerprint": "9eb231ef4e08d17a422b441320bc41c1cd35d082cf978be841411ab35d459fbc",
+      "claimId": "KER-9EB231EF4E08",
       "duplicateOf": null,
       "line": 124,
       "rationaleContext": "normative",
@@ -3270,7 +3406,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0008",
+      "claimFingerprint": "f133ab83f22c5159535e7354713053ac8439ef48372e20dfe3b59297d911189b",
+      "claimId": "KER-F133AB83F22C",
       "duplicateOf": null,
       "line": 137,
       "rationaleContext": "normative",
@@ -3294,7 +3431,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0009",
+      "claimFingerprint": "06bcee705de40af8e4d52d871637373f0db2461de81f162d3cdd8bb8dc96e568",
+      "claimId": "KER-06BCEE705DE4",
       "duplicateOf": null,
       "line": 138,
       "rationaleContext": "normative",
@@ -3318,7 +3456,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0010",
+      "claimFingerprint": "9a982dd74ae222ca212ae89b0b0597a134f2e1158b7cdfa6f682dbb16d5591f7",
+      "claimId": "KER-9A982DD74AE2",
       "duplicateOf": null,
       "line": 143,
       "rationaleContext": "normative",
@@ -3342,7 +3481,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0011",
+      "claimFingerprint": "abf3dd73d3a25b4090440aa6881ecf28cc11abfc83086081be485a52a2aaa562",
+      "claimId": "KER-ABF3DD73D3A2",
       "duplicateOf": null,
       "line": 169,
       "rationaleContext": "normative",
@@ -3366,7 +3506,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0012",
+      "claimFingerprint": "154d215ec603addb6fb1e12a1eec0a16e11de8cff02ed493dfba8eba864e71e2",
+      "claimId": "KER-154D215EC603",
       "duplicateOf": null,
       "line": 171,
       "rationaleContext": "normative",
@@ -3390,7 +3531,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0013",
+      "claimFingerprint": "ed7a8556e4f39381acc1ba8545ff36f837ff86fab8cc8b25dd81225b8405e132",
+      "claimId": "KER-ED7A8556E4F3",
       "duplicateOf": null,
       "line": 173,
       "rationaleContext": "normative",
@@ -3414,7 +3556,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0014",
+      "claimFingerprint": "4ee4f7a180ebc00de61a8aac9e765b4f358d771570de6914877012c350aecf78",
+      "claimId": "KER-4EE4F7A180EB",
       "duplicateOf": null,
       "line": 175,
       "rationaleContext": "normative",
@@ -3438,7 +3581,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0015",
+      "claimFingerprint": "d8dc4c673d97095d4c7f6d0931c26db34de69d87cb6c831af3dad514c7c64849",
+      "claimId": "KER-D8DC4C673D97",
       "duplicateOf": null,
       "line": 179,
       "rationaleContext": "normative",
@@ -3462,7 +3606,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0016",
+      "claimFingerprint": "8120fc62f0864faf51f614b63c6b398baff06cd5990ec2e2b31adb28e06e4de9",
+      "claimId": "KER-8120FC62F086",
       "duplicateOf": null,
       "line": 196,
       "rationaleContext": "normative",
@@ -3486,7 +3631,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0017",
+      "claimFingerprint": "815ac237fa58843ef1e61feb34e6d541285f1c6a3cbfcc3c4b6c457078583e86",
+      "claimId": "KER-815AC237FA58",
       "duplicateOf": null,
       "line": 197,
       "rationaleContext": "normative",
@@ -3510,7 +3656,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0018",
+      "claimFingerprint": "f5cf0ca0386159a1119a0bf5ba7adfbde57cb88c253c1eef144074313c2e8c33",
+      "claimId": "KER-F5CF0CA03861",
       "duplicateOf": null,
       "line": 202,
       "rationaleContext": "normative",
@@ -3534,7 +3681,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0019",
+      "claimFingerprint": "edb2502978271184a0fc18fa5ef7c1346695bf350e9c3db5e5ceaceb896ca994",
+      "claimId": "KER-EDB250297827",
       "duplicateOf": null,
       "line": 211,
       "rationaleContext": "normative",
@@ -3558,7 +3706,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0020",
+      "claimFingerprint": "cf53c90748796f613765636f46b96d0152247fc6e3f30b7c8ef5b5d9d17f61ef",
+      "claimId": "KER-CF53C9074879",
       "duplicateOf": null,
       "line": 228,
       "rationaleContext": "normative",
@@ -3582,7 +3731,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0021",
+      "claimFingerprint": "841826b2936c528c30a7bca490cdfb8fb551fed7e830cca38dc79a8e14a1d9dc",
+      "claimId": "KER-841826B2936C",
       "duplicateOf": null,
       "line": 263,
       "rationaleContext": "normative",
@@ -3606,7 +3756,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0022",
+      "claimFingerprint": "7a5d842efe29d56822e849c9b0eb88f35d4b44b8429e35210cfee6fbed566a91",
+      "claimId": "KER-7A5D842EFE29",
       "duplicateOf": null,
       "line": 266,
       "rationaleContext": "normative",
@@ -3630,7 +3781,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0023",
+      "claimFingerprint": "831022812b0194d67ef8bb9e5169989f2d57876c6ea2bbe9416db97e8da12dac",
+      "claimId": "KER-831022812B01",
       "duplicateOf": null,
       "line": 274,
       "rationaleContext": "normative",
@@ -3654,7 +3806,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0024",
+      "claimFingerprint": "75aa729c2780cfee91de65df1e2eb159b9dc99de71a6e1a1201477472913d2dd",
+      "claimId": "KER-75AA729C2780",
       "duplicateOf": null,
       "line": 327,
       "rationaleContext": "normative",
@@ -3678,7 +3831,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0025",
+      "claimFingerprint": "0c14161d2b8b64ee36d7b56f80310703861a288a713d3ccb8b1e62f87a9b7357",
+      "claimId": "KER-0C14161D2B8B",
       "duplicateOf": null,
       "line": 333,
       "rationaleContext": "normative",
@@ -3702,7 +3856,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0026",
+      "claimFingerprint": "6663970338fb668109dabbafb146abbcf96c0b15dc642f53b694c2caa43c95d3",
+      "claimId": "KER-6663970338FB",
       "duplicateOf": null,
       "line": 356,
       "rationaleContext": "normative",
@@ -3726,7 +3881,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0027",
+      "claimFingerprint": "4e6b1978e5618d265517995033a180b415dc47620655166d672a6c905feb9faf",
+      "claimId": "KER-4E6B1978E561",
       "duplicateOf": null,
       "line": 382,
       "rationaleContext": "normative",
@@ -3750,7 +3906,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0028",
+      "claimFingerprint": "b85dbe97689fa3eae506788062f16b7433514b80e626fa57d155edeee68ec24a",
+      "claimId": "KER-B85DBE97689F",
       "duplicateOf": null,
       "line": 383,
       "rationaleContext": "normative",
@@ -3774,7 +3931,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0029",
+      "claimFingerprint": "2da96db2a61a2c2dc1e512793e99751f1956239016600dd0b8d8758be487d3ec",
+      "claimId": "KER-2DA96DB2A61A",
       "duplicateOf": null,
       "line": 384,
       "rationaleContext": "normative",
@@ -3798,7 +3956,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0030",
+      "claimFingerprint": "4dd317f1a5c4ac09707777502fa4ef291b15fa50a969f998b2f2444ce0871fc7",
+      "claimId": "KER-4DD317F1A5C4",
       "duplicateOf": null,
       "line": 386,
       "rationaleContext": "normative",
@@ -3822,7 +3981,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0031",
+      "claimFingerprint": "166ea9c00a687b6a5b041ee97b1cbd4af6a722eab66e6603588d3bfa8612eb47",
+      "claimId": "KER-166EA9C00A68",
       "duplicateOf": null,
       "line": 392,
       "rationaleContext": "normative",
@@ -3846,7 +4006,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0032",
+      "claimFingerprint": "f5e605a3b6ccdabbd8f90f3712bd0ce030416d78dbf6d162dd526a748a911ccd",
+      "claimId": "KER-F5E605A3B6CC",
       "duplicateOf": null,
       "line": 399,
       "rationaleContext": "normative",
@@ -3870,7 +4031,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0033",
+      "claimFingerprint": "2c01dfd64f5e5b9d714d3413f1dcd14915b444a0bf7ef4d4a92db04165176894",
+      "claimId": "KER-2C01DFD64F5E",
       "duplicateOf": null,
       "line": 401,
       "rationaleContext": "normative",
@@ -3894,7 +4056,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0034",
+      "claimFingerprint": "eb7621f2ffa4e745f4643c3a232f69720dc9528d02d8e87c40ffe5259cca1b23",
+      "claimId": "KER-EB7621F2FFA4",
       "duplicateOf": null,
       "line": 405,
       "rationaleContext": "normative",
@@ -3918,7 +4081,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0035",
+      "claimFingerprint": "b2f6a715d3c3a4514cc191fa202dbd0feb78b4a3c37541339cbc18fc8499afe9",
+      "claimId": "KER-B2F6A715D3C3",
       "duplicateOf": null,
       "line": 407,
       "rationaleContext": "normative",
@@ -3942,7 +4106,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0036",
+      "claimFingerprint": "c66eb63ef84d0d7f40a53521b604f12dc123fd7cd1c4f0cbf1992424d1241ad5",
+      "claimId": "KER-C66EB63EF84D",
       "duplicateOf": null,
       "line": 416,
       "rationaleContext": "normative",
@@ -3966,7 +4131,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0037",
+      "claimFingerprint": "dc76b7969ec82b9b4cb6966eb6cd57e759be5e990b90248c2dd730005cef6e71",
+      "claimId": "KER-DC76B7969EC8",
       "duplicateOf": null,
       "line": 435,
       "rationaleContext": "normative",
@@ -3990,7 +4156,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0038",
+      "claimFingerprint": "34ba61ce3020574bb37d03017200b8cc1738399e1217536758218739ad007e10",
+      "claimId": "KER-34BA61CE3020",
       "duplicateOf": null,
       "line": 451,
       "rationaleContext": "normative",
@@ -4014,7 +4181,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0039",
+      "claimFingerprint": "884728c8173f2a1df0498c650f45ab8fde20b9b9d36015b3f2f5f8091432312d",
+      "claimId": "KER-884728C8173F",
       "duplicateOf": null,
       "line": 455,
       "rationaleContext": "normative",
@@ -4038,7 +4206,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0040",
+      "claimFingerprint": "e4f142be9b08b42c3f688b2a62a44bee40354039d3a4ada82adf6b249d32925d",
+      "claimId": "KER-E4F142BE9B08",
       "duplicateOf": null,
       "line": 526,
       "rationaleContext": "normative",
@@ -4062,7 +4231,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0041",
+      "claimFingerprint": "007a3ecfb49f1680704b8db03a819949660eac155dc0938b8e84060ee9c93765",
+      "claimId": "KER-007A3ECFB49F",
       "duplicateOf": null,
       "line": 528,
       "rationaleContext": "normative",
@@ -4086,7 +4256,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0042",
+      "claimFingerprint": "7a34d493aa29cf46ee31554d8d62422280369ce84906cb90c07a800239efb6bc",
+      "claimId": "KER-7A34D493AA29",
       "duplicateOf": null,
       "line": 531,
       "rationaleContext": "normative",
@@ -4110,7 +4281,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0043",
+      "claimFingerprint": "29aad1b2e9f3d224f39599176056e26e3491a73eba8817f279f1f3641b51ca90",
+      "claimId": "KER-29AAD1B2E9F3",
       "duplicateOf": null,
       "line": 581,
       "rationaleContext": "normative",
@@ -4134,7 +4306,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0044",
+      "claimFingerprint": "10c1e931d2650c5d25c7aed176c178051ead1133dbd515eaa8c40bc246e62e89",
+      "claimId": "KER-10C1E931D265",
       "duplicateOf": null,
       "line": 726,
       "rationaleContext": "normative",
@@ -4158,7 +4331,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0045",
+      "claimFingerprint": "ab5966195fd46e1c87896a4346f867084b27d64d4df371b0453648ce1e78ec99",
+      "claimId": "KER-AB5966195FD4",
       "duplicateOf": null,
       "line": 728,
       "rationaleContext": "normative",
@@ -4182,7 +4356,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0046",
+      "claimFingerprint": "b549645db4b3be5d5959142a1e29d96b6ae9f30303e6487f81a609f0374c68ae",
+      "claimId": "KER-B549645DB4B3",
       "duplicateOf": null,
       "line": 733,
       "rationaleContext": "normative",
@@ -4206,7 +4381,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0047",
+      "claimFingerprint": "a81a3f8d4bc21e1cf1a9d975f7d0db8ad510c4e72179b0f2b1170d6074a2697f",
+      "claimId": "KER-A81A3F8D4BC2",
       "duplicateOf": null,
       "line": 735,
       "rationaleContext": "normative",
@@ -4230,7 +4406,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0048",
+      "claimFingerprint": "5d1a66ecef066d83fde4febbb656ae2ea08483931d384177141d2bef7a555784",
+      "claimId": "KER-5D1A66ECEF06",
       "duplicateOf": null,
       "line": 737,
       "rationaleContext": "normative",
@@ -4254,7 +4431,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0049",
+      "claimFingerprint": "8c30434db0c068f0ed14e8f3fbec1a582ab9f3ea9a6b30133878298390095e77",
+      "claimId": "KER-8C30434DB0C0",
       "duplicateOf": null,
       "line": 743,
       "rationaleContext": "normative",
@@ -4278,7 +4456,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0050",
+      "claimFingerprint": "fbf232cd70ea91f35ca9cb69bde444d42caf637b4beb531fcff4d42a07e093b3",
+      "claimId": "KER-FBF232CD70EA",
       "duplicateOf": null,
       "line": 749,
       "rationaleContext": "normative",
@@ -4302,7 +4481,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0051",
+      "claimFingerprint": "c433c066f31c3b5036b52f75f07c9dfea6977755e1497cef047d76e15a746669",
+      "claimId": "KER-C433C066F31C",
       "duplicateOf": null,
       "line": 751,
       "rationaleContext": "normative",
@@ -4326,7 +4506,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0052",
+      "claimFingerprint": "d2a13b6ce783947e5b60afd406a5257e82f4aaf443d3e60b7ec7c17efc994669",
+      "claimId": "KER-D2A13B6CE783",
       "duplicateOf": null,
       "line": 752,
       "rationaleContext": "normative",
@@ -4350,7 +4531,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0053",
+      "claimFingerprint": "f57779a22e4bad7ab1b9446fdc3ddc268a3f55634a1b0a2cccb7cb0e46858ed8",
+      "claimId": "KER-F57779A22E4B",
       "duplicateOf": null,
       "line": 754,
       "rationaleContext": "normative",
@@ -4374,7 +4556,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0054",
+      "claimFingerprint": "f3bf91436e2058a47c260a1add1955dfa7531838930d87e6028ffe079b939f90",
+      "claimId": "KER-F3BF91436E20",
       "duplicateOf": null,
       "line": 804,
       "rationaleContext": "normative",
@@ -4398,7 +4581,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0055",
+      "claimFingerprint": "3b60173b39838f3bfa039a80c6431a8021730def9346fe02d436ebdea6e414c1",
+      "claimId": "KER-3B60173B3983",
       "duplicateOf": null,
       "line": 808,
       "rationaleContext": "normative",
@@ -4422,7 +4606,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0056",
+      "claimFingerprint": "4254857154896d92e85fed67074c49d891fcc45070eb7544c4da0fd66115eb09",
+      "claimId": "KER-425485715489",
       "duplicateOf": null,
       "line": 824,
       "rationaleContext": "normative",
@@ -4446,7 +4631,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0057",
+      "claimFingerprint": "bfddf853237e4dd5af7ab15a4aa5704aa5cf424129526f4c93468e4cf226c2cb",
+      "claimId": "KER-BFDDF853237E",
       "duplicateOf": null,
       "line": 830,
       "rationaleContext": "normative",
@@ -4470,7 +4656,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0058",
+      "claimFingerprint": "36bda9c8ead87c08311b4f41fb46c50fd260fc250dc0677dcc7a2975dc81229a",
+      "claimId": "KER-36BDA9C8EAD8",
       "duplicateOf": null,
       "line": 832,
       "rationaleContext": "normative",
@@ -4494,7 +4681,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0059",
+      "claimFingerprint": "bbf71e1726ad00fa2b4f2ebb84619fd41f9f02611ab99ad347afeebfdb2d4b49",
+      "claimId": "KER-BBF71E1726AD",
       "duplicateOf": null,
       "line": 834,
       "rationaleContext": "normative",
@@ -4518,7 +4706,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0060",
+      "claimFingerprint": "a8645fb7b39125860c37d8128855d87deedf21b79a95df6568e3403c116f9f96",
+      "claimId": "KER-A8645FB7B391",
       "duplicateOf": null,
       "line": 836,
       "rationaleContext": "normative",
@@ -4542,7 +4731,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0061",
+      "claimFingerprint": "75ca970d8fac1068a4602b2f979930d186b7c083c2e43e7c5780325ffc3d7408",
+      "claimId": "KER-75CA970D8FAC",
       "duplicateOf": null,
       "line": 838,
       "rationaleContext": "normative",
@@ -4566,7 +4756,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0062",
+      "claimFingerprint": "acca4d458ded6451698d01b9e3d0d84f3d9e957f051466e67b1e2ed2ab850f1f",
+      "claimId": "KER-ACCA4D458DED",
       "duplicateOf": null,
       "line": 844,
       "rationaleContext": "normative",
@@ -4590,7 +4781,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0063",
+      "claimFingerprint": "91443f7814d57417968cb6538b9747d766baf961dc606eea01de453e1d3ddd34",
+      "claimId": "KER-91443F7814D5",
       "duplicateOf": null,
       "line": 858,
       "rationaleContext": "normative",
@@ -4614,7 +4806,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0064",
+      "claimFingerprint": "9d4754767e9fe838af4af6091423cefd9605ac618a8a1f47f3043b30537d1fbc",
+      "claimId": "KER-9D4754767E9F",
       "duplicateOf": null,
       "line": 864,
       "rationaleContext": "normative",
@@ -4638,7 +4831,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0065",
+      "claimFingerprint": "6cf7b14b0e8d3676174dacec2c19d1d0659f70f773f9535d95ce0407feacfd63",
+      "claimId": "KER-6CF7B14B0E8D",
       "duplicateOf": null,
       "line": 866,
       "rationaleContext": "normative",
@@ -4662,7 +4856,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0066",
+      "claimFingerprint": "41407cffa30b6c94f5a1cb7cc328fbb9b14da1d3cf688651931d4ea3024cf902",
+      "claimId": "KER-41407CFFA30B",
       "duplicateOf": null,
       "line": 870,
       "rationaleContext": "normative",
@@ -4686,7 +4881,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0067",
+      "claimFingerprint": "67b9d6f6be09fc481aa4ac2c27187c0edff7d1ad6c6419a91e271f1aeac9091c",
+      "claimId": "KER-67B9D6F6BE09",
       "duplicateOf": null,
       "line": 872,
       "rationaleContext": "normative",
@@ -4710,7 +4906,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0068",
+      "claimFingerprint": "5e3ca5c766d45faf04b04a120e034ede109575c5b0fb21e2f087c716188ce191",
+      "claimId": "KER-5E3CA5C766D4",
       "duplicateOf": null,
       "line": 874,
       "rationaleContext": "normative",
@@ -4734,7 +4931,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0069",
+      "claimFingerprint": "c6d3e87f842e188127ec9d78550afe8a30cc81f2b42905e2d1eb451c3f26340f",
+      "claimId": "KER-C6D3E87F842E",
       "duplicateOf": null,
       "line": 876,
       "rationaleContext": "normative",
@@ -4758,7 +4956,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0070",
+      "claimFingerprint": "1c9229916315bc03017087a763fc7abd0ea420741d1aaeedac9ce1f14360c4a4",
+      "claimId": "KER-1C9229916315",
       "duplicateOf": null,
       "line": 878,
       "rationaleContext": "normative",
@@ -4782,7 +4981,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0071",
+      "claimFingerprint": "d955f623f729f462ed44cc543413f7856821016f6c3325ae5f29cba95c008e20",
+      "claimId": "KER-D955F623F729",
       "duplicateOf": null,
       "line": 886,
       "rationaleContext": "normative",
@@ -4806,7 +5006,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0072",
+      "claimFingerprint": "c79a21671f767ab2a58812a1181bc0fed5ba8c22768b97f124f05aecf67e5916",
+      "claimId": "KER-C79A21671F76",
       "duplicateOf": null,
       "line": 890,
       "rationaleContext": "normative",
@@ -4830,7 +5031,8 @@
     },
     {
       "affectedBoundary": "kernel",
-      "claimId": "KER-0073",
+      "claimFingerprint": "96bce696e092b5207078650c112bfc3d27269aa5b54414491ac90dbb853f93fe",
+      "claimId": "KER-96BCE696E092",
       "duplicateOf": null,
       "line": 914,
       "rationaleContext": "normative",

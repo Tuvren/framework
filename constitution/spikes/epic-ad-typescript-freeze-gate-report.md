@@ -16,6 +16,25 @@ Rust framework product work remains blocked until Epic AF closes and a later Tec
 - Potentially blocking until AE/AF or docs correction evidence closes: 68
 - Non-blocking because they are explicitly implementation-defined or deferred: 14
 
+## Remaining Surface Detail
+
+Every remaining non-authority surface is listed below with its current blocker posture. `missing-conformance-follow-up` rows are blocking until AF either promotes checks or explicitly leaves the behavior local/deferred.
+
+| Surface | Claims | Classifications | Follow-up | Blocks future implementation line? |
+| --- | ---: | --- | --- | --- |
+| extension contracts | 8 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
+| framework driver framing | 2 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
+| framework state schema | 4 | implementation-local-evidence | KRT-AF001 if portability is selected | Yes, until AF/docs evidence resolves it |
+| framework uncategorized local surface | 33 | implementation-local-evidence | KRT-AF001 if portability is selected | Yes, until AF/docs evidence resolves it |
+| future framework drivers | 1 | explicitly-deferred | Future TechSpec/Tasks revision after TypeScript freeze closure | No, if kept local/deferred |
+| kernel appendix validation matrix | 1 | missing-conformance-follow-up | KRT-AF006 | Yes, until AF/docs evidence resolves it |
+| kernel backend acceleration indexes | 2 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
+| kernel backend physical storage | 1 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
+| kernel recovery edge states | 3 | missing-conformance-follow-up | KRT-AF006 | Yes, until AF/docs evidence resolves it |
+| ReAct and extension hooks | 1 | missing-conformance-follow-up | KRT-AF003 | Yes, until AF/docs evidence resolves it |
+| shared framework type shapes | 20 | missing-conformance-follow-up | KRT-AF001 | Yes, until AF/docs evidence resolves it |
+| tool and approval contracts | 6 | missing-conformance-follow-up | KRT-AF004 | Yes, until AF/docs evidence resolves it |
+
 ## Exact Evidence Required for Freeze Closure
 
 - `KRT-AE009` must show the TypeScript semantic gravity wells have been decomposed without public API churn.

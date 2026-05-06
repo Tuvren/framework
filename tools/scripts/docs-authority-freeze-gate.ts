@@ -49,6 +49,7 @@ const SECTION_NUMBER_PATTERN = /^(\d+(?:\.\d+)*)\b/;
 const SECTION_TRAILING_DASH_PATTERN = /-+$/g;
 const SECTION_UNSAFE_CHAR_PATTERN = /[^a-z0-9]+/g;
 const WHITESPACE_PATTERN = /\s+/g;
+const CLAIM_ID_HASH_LENGTH = 12;
 
 type SourceBoundary = (typeof DOC_SOURCES)[number]["boundary"];
 
@@ -75,6 +76,7 @@ interface HeadingState {
 
 interface NormativeClaim {
   affectedBoundary: string;
+  claimFingerprint: string;
   claimId: string;
   duplicateOf: string | null;
   line: number;
@@ -86,8 +88,12 @@ interface NormativeClaim {
   text: string;
 }
 
-interface CoverageEntry extends NormativeClaim {
+interface ClaimInventoryEntry extends NormativeClaim {
   adapterCapability: string;
+  surface: string;
+}
+
+interface CoverageEntry extends ClaimInventoryEntry {
   authorityPacket: string;
   classification: Classification;
   compatibilityEvidence: string;
@@ -98,7 +104,6 @@ interface CoverageEntry extends NormativeClaim {
   followUpTicket: string;
   generatedArtifact: string;
   implementationEvidence: string;
-  surface: string;
 }
 
 interface RationaleSection {
@@ -111,7 +116,7 @@ interface RationaleSection {
 }
 
 interface ClaimInventory {
-  claims: NormativeClaim[];
+  claims: ClaimInventoryEntry[];
   generatedBy: string;
   normativePattern: string;
   rationaleSections: RationaleSection[];
@@ -281,6 +286,7 @@ async function main(): Promise<void> {
   );
   const claimsWithDuplicates = addDuplicateLinks(claims);
   const matrixEntries = claimsWithDuplicates.map(toCoverageEntry);
+  const inventoryClaims = matrixEntries.map(toInventoryEntry);
 
   await mkdir(OUTPUT_DIR, { recursive: true });
   await writeJson(INVENTORY_PATH, {
@@ -289,7 +295,7 @@ async function main(): Promise<void> {
     rationaleSections,
     sources: DOC_SOURCES.map((source) => source.path),
     totalNormativeClaims: claimsWithDuplicates.length,
-    claims: claimsWithDuplicates,
+    claims: inventoryClaims,
   } satisfies ClaimInventory);
   await writeJson(MATRIX_PATH, {
     generatedBy: "bun tools/scripts/docs-authority-freeze-gate.ts",
@@ -336,9 +342,9 @@ async function parseDocSource(source: DocSource): Promise<{
     },
   ];
   const rationaleLineCounts = new Map<string, RationaleSection>();
+  const claimedIds = new Map<string, string>();
   const claims: NormativeClaim[] = [];
   let inCodeFence = false;
-  let claimNumber = 0;
 
   for (let index = 0; index < lines.length; index += 1) {
     const rawLine = lines[index] ?? "";
@@ -376,10 +382,17 @@ async function parseDocSource(source: DocSource): Promise<{
     }
 
     if (NORMATIVE_PATTERN.test(trimmed)) {
-      claimNumber += 1;
+      const text = normalizeClaimText(trimmed);
+      const { claimFingerprint, claimId } = await toStableClaimId(
+        source,
+        currentHeading,
+        text,
+        claimedIds
+      );
       claims.push({
         affectedBoundary: source.boundary,
-        claimId: `${source.claimPrefix}-${String(claimNumber).padStart(4, "0")}`,
+        claimFingerprint,
+        claimId,
         duplicateOf: null,
         line: index + 1,
         rationaleContext: "normative",
@@ -387,7 +400,7 @@ async function parseDocSource(source: DocSource): Promise<{
         sectionHeading: currentHeading.heading,
         sectionKey: currentHeading.sectionKey,
         sourceFile: source.path,
-        text: normalizeClaimText(trimmed),
+        text,
       });
       continue;
     }
@@ -412,6 +425,53 @@ async function parseDocSource(source: DocSource): Promise<{
     claims,
     rationaleSections: [...rationaleLineCounts.values()],
   };
+}
+
+async function toStableClaimId(
+  source: DocSource,
+  heading: HeadingState,
+  text: string,
+  claimedIds: Map<string, string>
+): Promise<{
+  claimFingerprint: string;
+  claimId: string;
+}> {
+  const fingerprintInput = [
+    source.path,
+    source.boundary,
+    heading.sectionKey,
+    heading.anchor,
+    text.toLowerCase(),
+  ].join("\n");
+  const claimFingerprint = await sha256Hex(fingerprintInput);
+  const baseClaimId = `${source.claimPrefix}-${claimFingerprint
+    .slice(0, CLAIM_ID_HASH_LENGTH)
+    .toUpperCase()}`;
+  let claimId = baseClaimId;
+  let suffix = 2;
+
+  while (claimedIds.has(claimId)) {
+    claimId = `${baseClaimId}-${suffix}`;
+    suffix += 1;
+  }
+
+  claimedIds.set(claimId, claimFingerprint);
+
+  return {
+    claimFingerprint,
+    claimId,
+  };
+}
+
+async function sha256Hex(value: string): Promise<string> {
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(value)
+  );
+  const bytes = new Uint8Array(digest);
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join(
+    ""
+  );
 }
 
 function addDuplicateLinks(
@@ -455,6 +515,24 @@ function toCoverageEntry(claim: NormativeClaim): CoverageEntry {
     generatedArtifact: decision.evidence.generatedArtifact,
     implementationEvidence: decision.implementationEvidence,
     surface: decision.surface,
+  };
+}
+
+function toInventoryEntry(entry: CoverageEntry): ClaimInventoryEntry {
+  return {
+    affectedBoundary: entry.affectedBoundary,
+    adapterCapability: entry.adapterCapability,
+    claimFingerprint: entry.claimFingerprint,
+    claimId: entry.claimId,
+    duplicateOf: entry.duplicateOf,
+    line: entry.line,
+    rationaleContext: entry.rationaleContext,
+    sectionAnchor: entry.sectionAnchor,
+    sectionHeading: entry.sectionHeading,
+    sectionKey: entry.sectionKey,
+    sourceFile: entry.sourceFile,
+    surface: entry.surface,
+    text: entry.text,
   };
 }
 
@@ -953,6 +1031,10 @@ function renderFreezeGateReport(entries: readonly CoverageEntry[]): string {
       entry.classification
     )
   );
+  const remaining = entries.filter(
+    (entry) => entry.classification !== "authority-backed-conformance-covered"
+  );
+  const remainingSurfaces = groupBy(remaining, (entry) => entry.surface);
 
   return [
     "# Epic AD TypeScript Freeze Gate Report",
@@ -972,6 +1054,12 @@ function renderFreezeGateReport(entries: readonly CoverageEntry[]): string {
     "",
     `- Potentially blocking until AE/AF or docs correction evidence closes: ${blocking.length}`,
     `- Non-blocking because they are explicitly implementation-defined or deferred: ${nonBlocking.length}`,
+    "",
+    "## Remaining Surface Detail",
+    "",
+    "Every remaining non-authority surface is listed below with its current blocker posture. `missing-conformance-follow-up` rows are blocking until AF either promotes checks or explicitly leaves the behavior local/deferred.",
+    "",
+    renderSurfaceTable(remainingSurfaces),
     "",
     "## Exact Evidence Required for Freeze Closure",
     "",
