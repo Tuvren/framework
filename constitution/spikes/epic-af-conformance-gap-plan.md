@@ -19,7 +19,7 @@ This plan is generated from the Epic AD docs-to-authority coverage matrix. It is
 - Fixture or scenario: `boundaries/framework/conformance/scenarios/runtime-api-scenarios.json`
 - Adapter operation: `runtime.approval-resolve; runtime.cancel-execution`
 - Capability requirement: `framework.runtime-api; providers.framework-owned-approval-boundary`
-- Required evidence: `cancellation.cancelInvocations`, `approval.handleOwnership`, `approval.rejectionToolResults`, `approval.pausedCancelPhase`
+- Required evidence: `cancellation.cancelInvocations`, `approval.cancelledPhase`, `approval.cancelledToolResults.1.isError`, `approval.handleOwnership.cancelErrorCode`, `approval.handleOwnership.resolveApprovalErrorCode`, `approval.resumedPhase`, `approval.resumedTextAbsent`, `approval.toolResults.1.isError`, `approval.toolResults.1.output.decisionType`, `cancellation.errorEventCount`, `runtime.phase`, `tool.execution.executedNamesAfterCancel`
 - Planned check IDs: `runtime-lifecycle-af.cancel-running-idempotent-fails-once`, `runtime-callable-af.approval-resume-new-handle-only`, `runtime-callable-af.approval-reject-stages-tool-result`, `runtime-callable-af.paused-cancel-rejection-and-stop`
 - Evidence update: Refresh framework compatibility evidence with lifecycle negative and approval boundary outcomes; Rust framework remains non-applicable.
 - Rationale: Running cancellation, approval resume, rejection, and paused cancellation are high-risk lifecycle/tool interleavings selected for portability.
@@ -51,7 +51,7 @@ This plan is generated from the Epic AD docs-to-authority coverage matrix. It is
 - Fixture or scenario: `boundaries/framework/conformance/scenarios/driver-api-scenarios.json`
 - Adapter operation: `driver.execute`
 - Capability requirement: `framework.react-driver`
-- Required evidence: `aroundModel.liveSequenceTexts`, `aroundModel.durableText`, `aroundModel.reconciliationMode`
+- Required evidence: `aroundModel.finalAssistantText`, `aroundModel.messageStartCount`, `aroundModel.streamedTextDone`, `provider.generate.callCount`
 - Planned check IDs: `react-driver-af.around-model-post-stream-replacement`, `react-driver-af.around-model-retry-final-response-durable`
 - Evidence update: Refresh framework compatibility evidence with live-event and durable-message reconciliation traces.
 - Rationale: The live-versus-durable aroundModel exception is portable only through explicit reconciliation evidence.
@@ -83,7 +83,7 @@ This plan is generated from the Epic AD docs-to-authority coverage matrix. It is
 - Fixture or scenario: `boundaries/framework/conformance/scenarios/runtime-api-scenarios.json`
 - Adapter operation: `runtime.orchestration.execution-inheritance`
 - Capability requirement: `framework.orchestration`
-- Required evidence: `handoff.resolutionType`, `handoff.historyEntryCount`, `handoff.lastOutputOnly`, `handoff.multipleIntentError`
+- Required evidence: `orchestration.surfaces.handoffHistoryControlEntryAbsent`, `orchestration.surfaces.handoffInvalidCompositionError.code`, `orchestration.surfaces.handoffLastOutputOnlyNoSourceSignal`, `orchestration.surfaces.handoffLastOutputOnlyText`
 - Planned check IDs: `runtime-orchestration-af.handoff-resolution-not-history-entry`, `runtime-orchestration-af.handoff-last-output-only-builder`, `runtime-orchestration-af.handoff-rejects-multiple-intents`
 - Evidence update: Refresh framework compatibility evidence for promoted orchestration handoff observations; Rust framework remains non-applicable.
 - Rationale: Handoff behavior is selected for runtime-api orchestration promotion; static config snapshotting and extension scoping stay implementation-defined.
@@ -111,11 +111,11 @@ This plan is generated from the Epic AD docs-to-authority coverage matrix. It is
 - Matrix follow-up tickets: `KRT-AF006`
 - Claim IDs: `KER-007A3ECFB49F`, `KER-22511C79A15E`, `KER-F8785E02207A`
 - Authority packet: `boundaries/kernel/contracts/protocol/spec/authority-packet.json`
-- Conformance plan: `boundaries/kernel/conformance/plans/kernel-restart-recovery.json`
+- Conformance plan: `boundaries/kernel/conformance/plans/kernel-restart-recovery.json; boundaries/kernel/conformance/plans/kernel-run-liveness.json`
 - Fixture or scenario: `boundaries/kernel/conformance/fixtures/kernel-protocol-logical.json`
-- Adapter operation: `kernel.restart-recovery`
-- Capability requirement: `kernel.restart-recovery`
-- Required evidence: `recovery.edgeClass`, `recovery.action`, `recovery.preemptionAllowed`
+- Adapter operation: `kernel.restart-recovery.close-reopen-checkpoint; kernel.run-liveness.stale-preemption; kernel.run-liveness.expired-listing`
+- Capability requirement: `kernel.restart-recovery; kernel.run-liveness`
+- Required evidence: `listing.pausedRunListed`, `listing.pausedRunStatus`, `preemption.leaseCleared`, `preemption.preemptionReason`, `preemption.runStatus`, `restartRecovery.recoveredLastCompletedStepId`, `restartRecovery.recoveredUncommittedCount`, `restartRecovery.uncommittedNotPromoted`
 - Planned check IDs: `kernel-restart-af.invalid-staged-result-reexecutes`, `kernel-restart-af.expired-running-requires-preemption`, `kernel-restart-af.paused-run-excluded-from-stale-preemption`
 - Evidence update: Refresh SQLite restart-recovery evidence and report memory/Rust support according to advertised capabilities.
 - Rationale: Only portable restart/recovery edge states are promoted; backend crash-injection mechanics remain adapter-local observations.
@@ -131,7 +131,7 @@ This plan is generated from the Epic AD docs-to-authority coverage matrix. It is
 - Fixture or scenario: `boundaries/framework/conformance/scenarios/driver-api-scenarios.json`
 - Adapter operation: `driver.execute`
 - Capability requirement: `framework.react-driver`
-- Required evidence: `hooks.phaseTrace`, `hooks.aroundToolTrace`, `hooks.terminalDurability`
+- Required evidence: `hooks.phaseTrace`, `hooks.aroundToolTrace`, `hooks.terminalMutationAttempted`, `hooks.terminalMutationDurableText`
 - Planned check IDs: `react-driver-af.extension.phase-order-before-around-after`, `react-driver-af.extension.around-tool-nesting`, `react-driver-af.extension.after-iteration-terminal-state-nondurable`
 - Evidence update: Refresh TypeScript and Rust-framework non-applicable compatibility evidence after react-driver-extended gains AF checks.
 - Rationale: Hook ordering and around-hook nesting are portable ReAct behavior; adapter observations must expose traces, not expected sequences.
@@ -163,7 +163,7 @@ This plan is generated from the Epic AD docs-to-authority coverage matrix. It is
 - Fixture or scenario: `boundaries/framework/conformance/scenarios/runtime-api-scenarios.json`
 - Adapter operation: `runtime.provider-generate; runtime.validate-structured-output`
 - Capability requirement: `framework.runtime-api`
-- Required evidence: `content.toolCallInputType`, `content.structuredDataType`, `inputSignal.error.code`, `validation.dialect`
+- Required evidence: `provider.generate.response.parts.0.input.query`, `provider.generate.response.parts.0.data.answer`, `inputSignal.error.code`, `inputSignal.accepted`, `validation.dialect`
 - Planned check IDs: `runtime-callable-af.content-tool-call-input-parsed`, `runtime-callable-af.content-structured-data-parsed`, `runtime-callable-af.input-signal-empty-parts-rejected`, `runtime-callable-af.structured-output-default-draft07`
 - Evidence update: Refresh framework compatibility evidence for runtime-api type-shape checks; generated runtime-api artifacts remain the type projection anchor.
 - Rationale: Only boundary-visible runtime type-shape claims are promoted; TypeScript package layout and state internals stay local.
@@ -195,7 +195,7 @@ This plan is generated from the Epic AD docs-to-authority coverage matrix. It is
 - Fixture or scenario: `boundaries/framework/conformance/scenarios/runtime-api-scenarios.json`
 - Adapter operation: `runtime.provider-stream; runtime.validate-structured-output`
 - Capability requirement: `framework.runtime-api; providers.rejects-native-strict-structured-output`
-- Required evidence: `provider.stream.emittedEventTypes`, `validation.error.code`, `provider.generate.response.parts`
+- Required evidence: `provider.generate.partKeys.0`, `provider.stream.structuredDeltaIndex`, `provider.stream.structuredDoneIndex`, `validation.error.code`, `validation.resolutionType`
 - Planned check IDs: `runtime-callable-af.structured-stream-synthesizes-delta-before-done`, `runtime-callable-af.structured-validation-hard-fail-code`, `runtime-callable-af.structured-provider-native-type-hidden`
 - Evidence update: Refresh framework and provider compatibility evidence for neutral structured-output failure and streaming behavior.
 - Rationale: Shared checks assert provider-neutral structured-output semantics without standardizing provider-native mechanics.
@@ -211,7 +211,7 @@ This plan is generated from the Epic AD docs-to-authority coverage matrix. It is
 - Fixture or scenario: `boundaries/framework/conformance/scenarios/runtime-api-scenarios.json`
 - Adapter operation: `runtime.tool-execute; runtime.approval-resolve`
 - Capability requirement: `framework.runtime-api; providers.framework-owned-tool-execution`
-- Required evidence: `tool.execution.callIds`, `tool.execution.errorResult`, `approval.messageAttachment`
+- Required evidence: `provider.stream.response.parts.0.providerMetadata.providerCallId`, `provider.stream.toolCallIdOwnedByFramework`, `tool.execution.toolResults.0.isError`, `tool.execution.toolResults.0.output.error`, `toolExecution.status.phase`, `approval.messageAttachment`
 - Planned check IDs: `runtime-callable-af.tool-call-id-owned-by-framework`, `runtime-callable-af.tool-failure-produces-error-result-not-run-fail`, `runtime-callable-af.approval-message-attaches-to-tool-result`
 - Evidence update: Refresh framework and provider compatibility evidence for tool execution and approval-boundary traces.
 - Rationale: The portable surface is framework-owned call/result/error shape, not provider-family-specific metadata.
@@ -227,7 +227,7 @@ This plan is generated from the Epic AD docs-to-authority coverage matrix. It is
 - Fixture or scenario: `boundaries/framework/conformance/scenarios/runtime-api-scenarios.json`
 - Adapter operation: `runtime.tool-execute`
 - Capability requirement: `framework.runtime-api`
-- Required evidence: `tool.execution.eventTypes`, `tool.execution.resultOrder`, `approval.resumedEventTypes`
+- Required evidence: `tool.execution.eventTypes`, `tool.execution.parallelWaveStartedBeforeResults`, `approval.resumedEventTypes`, `approval.gatedToolStartAfterResume`
 - Planned check IDs: `runtime-callable-af.tool-parallel-wave-starts-before-results`, `runtime-callable-af.mixed-approval-gated-tool-start-after-resume`
 - Evidence update: Refresh framework compatibility evidence with event-order traces and durable result ordering.
 - Rationale: Parallel wave and mixed approval ordering are high-risk interleavings selected for portable conformance.
@@ -243,7 +243,7 @@ This plan is generated from the Epic AD docs-to-authority coverage matrix. It is
 - Fixture or scenario: `boundaries/framework/conformance/scenarios/runtime-api-scenarios.json`
 - Adapter operation: `runtime.orchestration.nested-attribution`
 - Capability requirement: `framework.orchestration`
-- Required evidence: `worker.forwardedEventSource`
+- Required evidence: `orchestration.nested.rootGrandchildSource.agent`, `orchestration.nested.rootGrandchildSource.threadId`, `orchestration.nested.rootGrandchildSource.workerId`
 - Planned check IDs: `runtime-orchestration-af.worker-forwarded-event-source`
 - Evidence update: Refresh framework compatibility evidence with forwarded worker source attribution.
 - Rationale: Forwarded worker events are promoted only as attributed event observations, not as a worker scheduler contract.
@@ -254,4 +254,3 @@ This plan is generated from the Epic AD docs-to-authority coverage matrix. It is
 - Every promoted check must declare required evidence in its conformance plan and must be backed by adapter observations only.
 - Unsupported implementations remain non-applicable through capability selection; no AF check may target an implementation ID or language directly.
 - Excluded implementation-local surfaces stay out of shared conformance until a later TechSpec/Tasks revision promotes them explicitly.
-

@@ -107,7 +107,8 @@ const SURFACE_PLANS: Readonly<Record<string, SurfacePlan>> = {
     requiredEvidence: [
       "hooks.phaseTrace",
       "hooks.aroundToolTrace",
-      "hooks.terminalDurability",
+      "hooks.terminalMutationAttempted",
+      "hooks.terminalMutationDurableText",
     ],
   },
   "approval and cancellation control": {
@@ -128,9 +129,17 @@ const SURFACE_PLANS: Readonly<Record<string, SurfacePlan>> = {
       "Running cancellation, approval resume, rejection, and paused cancellation are high-risk lifecycle/tool interleavings selected for portability.",
     requiredEvidence: [
       "cancellation.cancelInvocations",
-      "approval.handleOwnership",
-      "approval.rejectionToolResults",
-      "approval.pausedCancelPhase",
+      "approval.cancelledPhase",
+      "approval.cancelledToolResults.1.isError",
+      "approval.handleOwnership.cancelErrorCode",
+      "approval.handleOwnership.resolveApprovalErrorCode",
+      "approval.resumedPhase",
+      "approval.resumedTextAbsent",
+      "approval.toolResults.1.isError",
+      "approval.toolResults.1.output.decisionType",
+      "cancellation.errorEventCount",
+      "runtime.phase",
+      "tool.execution.executedNamesAfterCancel",
     ],
   },
   "approval resume semantics": {
@@ -166,9 +175,10 @@ const SURFACE_PLANS: Readonly<Record<string, SurfacePlan>> = {
     rationale:
       "The live-versus-durable aroundModel exception is portable only through explicit reconciliation evidence.",
     requiredEvidence: [
-      "aroundModel.liveSequenceTexts",
-      "aroundModel.durableText",
-      "aroundModel.reconciliationMode",
+      "aroundModel.finalAssistantText",
+      "aroundModel.messageStartCount",
+      "aroundModel.streamedTextDone",
+      "provider.generate.callCount",
     ],
   },
   "framework state schema": {
@@ -218,10 +228,10 @@ const SURFACE_PLANS: Readonly<Record<string, SurfacePlan>> = {
     rationale:
       "Handoff behavior is selected for runtime-api orchestration promotion; static config snapshotting and extension scoping stay implementation-defined.",
     requiredEvidence: [
-      "handoff.resolutionType",
-      "handoff.historyEntryCount",
-      "handoff.lastOutputOnly",
-      "handoff.multipleIntentError",
+      "orchestration.surfaces.handoffHistoryControlEntryAbsent",
+      "orchestration.surfaces.handoffInvalidCompositionError.code",
+      "orchestration.surfaces.handoffLastOutputOnlyNoSourceSignal",
+      "orchestration.surfaces.handoffLastOutputOnlyText",
     ],
   },
   "kernel appendix validation matrix": {
@@ -253,13 +263,16 @@ const SURFACE_PLANS: Readonly<Record<string, SurfacePlan>> = {
     ],
   },
   "kernel recovery edge states": {
-    adapterOperation: "kernel.restart-recovery",
-    capabilityRequirement: "kernel.restart-recovery",
+    adapterOperation:
+      "kernel.restart-recovery.close-reopen-checkpoint; kernel.run-liveness.stale-preemption; kernel.run-liveness.expired-listing",
+    capabilityRequirement: "kernel.restart-recovery; kernel.run-liveness",
     checkIds: [
       "kernel-restart-af.invalid-staged-result-reexecutes",
       "kernel-restart-af.expired-running-requires-preemption",
       "kernel-restart-af.paused-run-excluded-from-stale-preemption",
     ],
+    conformancePlan:
+      "boundaries/kernel/conformance/plans/kernel-restart-recovery.json; boundaries/kernel/conformance/plans/kernel-run-liveness.json",
     deliveryTicket: "KRT-AF006",
     disposition: "promote",
     evidenceUpdate:
@@ -267,9 +280,14 @@ const SURFACE_PLANS: Readonly<Record<string, SurfacePlan>> = {
     rationale:
       "Only portable restart/recovery edge states are promoted; backend crash-injection mechanics remain adapter-local observations.",
     requiredEvidence: [
-      "recovery.edgeClass",
-      "recovery.action",
-      "recovery.preemptionAllowed",
+      "listing.pausedRunListed",
+      "listing.pausedRunStatus",
+      "preemption.leaseCleared",
+      "preemption.preemptionReason",
+      "preemption.runStatus",
+      "restartRecovery.recoveredLastCompletedStepId",
+      "restartRecovery.recoveredUncommittedCount",
+      "restartRecovery.uncommittedNotPromoted",
     ],
   },
   "runtime loop policy": {
@@ -301,9 +319,10 @@ const SURFACE_PLANS: Readonly<Record<string, SurfacePlan>> = {
     rationale:
       "Only boundary-visible runtime type-shape claims are promoted; TypeScript package layout and state internals stay local.",
     requiredEvidence: [
-      "content.toolCallInputType",
-      "content.structuredDataType",
+      "provider.generate.response.parts.0.input.query",
+      "provider.generate.response.parts.0.data.answer",
       "inputSignal.error.code",
+      "inputSignal.accepted",
       "validation.dialect",
     ],
   },
@@ -336,9 +355,11 @@ const SURFACE_PLANS: Readonly<Record<string, SurfacePlan>> = {
     rationale:
       "Shared checks assert provider-neutral structured-output semantics without standardizing provider-native mechanics.",
     requiredEvidence: [
-      "provider.stream.emittedEventTypes",
+      "provider.generate.partKeys.0",
+      "provider.stream.structuredDeltaIndex",
+      "provider.stream.structuredDoneIndex",
       "validation.error.code",
-      "provider.generate.response.parts",
+      "validation.resolutionType",
     ],
   },
   "tool and approval contracts": {
@@ -357,8 +378,11 @@ const SURFACE_PLANS: Readonly<Record<string, SurfacePlan>> = {
     rationale:
       "The portable surface is framework-owned call/result/error shape, not provider-family-specific metadata.",
     requiredEvidence: [
-      "tool.execution.callIds",
-      "tool.execution.errorResult",
+      "provider.stream.response.parts.0.providerMetadata.providerCallId",
+      "provider.stream.toolCallIdOwnedByFramework",
+      "tool.execution.toolResults.0.isError",
+      "tool.execution.toolResults.0.output.error",
+      "toolExecution.status.phase",
       "approval.messageAttachment",
     ],
   },
@@ -377,8 +401,9 @@ const SURFACE_PLANS: Readonly<Record<string, SurfacePlan>> = {
       "Parallel wave and mixed approval ordering are high-risk interleavings selected for portable conformance.",
     requiredEvidence: [
       "tool.execution.eventTypes",
-      "tool.execution.resultOrder",
+      "tool.execution.parallelWaveStartedBeforeResults",
       "approval.resumedEventTypes",
+      "approval.gatedToolStartAfterResume",
     ],
   },
   "worker subtree event forwarding": {
@@ -391,7 +416,11 @@ const SURFACE_PLANS: Readonly<Record<string, SurfacePlan>> = {
       "Refresh framework compatibility evidence with forwarded worker source attribution.",
     rationale:
       "Forwarded worker events are promoted only as attributed event observations, not as a worker scheduler contract.",
-    requiredEvidence: ["worker.forwardedEventSource"],
+    requiredEvidence: [
+      "orchestration.nested.rootGrandchildSource.agent",
+      "orchestration.nested.rootGrandchildSource.threadId",
+      "orchestration.nested.rootGrandchildSource.workerId",
+    ],
   },
 };
 
@@ -399,6 +428,8 @@ const PROMOTED_CLASSIFICATIONS = new Set<MatrixClassification>([
   "implementation-local-evidence",
   "missing-conformance-follow-up",
 ]);
+
+const EPIC_AF_FOLLOW_UP_PREFIX = "KRT-AF";
 
 async function main(): Promise<void> {
   const options = readCliOptions(process.argv.slice(2));
@@ -428,7 +459,9 @@ async function main(): Promise<void> {
 
   if (options.check) {
     await checkGeneratedArtifacts(artifacts);
-    await checkPromotedCheckIdsAreImplemented(plan);
+    const implementedChecks = await readImplementedCheckEvidence();
+    checkPromotedCheckIdsAreImplemented(plan, implementedChecks);
+    checkPromotedEvidenceIsDeclared(plan, implementedChecks);
     checkPromotedSurfacesAreConcrete(plan);
     return;
   }
@@ -475,18 +508,51 @@ async function checkGeneratedArtifacts(
   }
 }
 
-async function checkPromotedCheckIdsAreImplemented(
-  plan: GapPlan
-): Promise<void> {
-  const implementedCheckIds = await readImplementedCheckIds();
+function checkPromotedCheckIdsAreImplemented(
+  plan: GapPlan,
+  implementedChecks: ReadonlyMap<string, ReadonlySet<string>>
+): void {
   const missingCheckIds = plan.surfaces
     .filter((surface) => surface.disposition === "promote")
     .flatMap((surface) => surface.checkIds)
-    .filter((checkId) => !implementedCheckIds.has(checkId));
+    .filter((checkId) => !implementedChecks.has(checkId));
 
   if (missingCheckIds.length > 0) {
     throw new Error(
       `Epic AF gap plan references promoted checks that are missing from boundary conformance plans: ${uniqueSorted(missingCheckIds).join(", ")}`
+    );
+  }
+}
+
+function checkPromotedEvidenceIsDeclared(
+  plan: GapPlan,
+  implementedChecks: ReadonlyMap<string, ReadonlySet<string>>
+): void {
+  const missingEvidence: string[] = [];
+
+  for (const surface of plan.surfaces) {
+    if (surface.disposition !== "promote") {
+      continue;
+    }
+
+    const declaredEvidence = new Set<string>();
+
+    for (const checkId of surface.checkIds) {
+      for (const path of implementedChecks.get(checkId) ?? []) {
+        declaredEvidence.add(path);
+      }
+    }
+
+    for (const path of surface.requiredEvidence) {
+      if (!declaredEvidence.has(path)) {
+        missingEvidence.push(`${surface.surface}: ${path}`);
+      }
+    }
+  }
+
+  if (missingEvidence.length > 0) {
+    throw new Error(
+      `Epic AF promoted surfaces reference evidence not declared by their planned checks: ${missingEvidence.join(", ")}`
     );
   }
 }
@@ -513,8 +579,10 @@ function checkPromotedSurfacesAreConcrete(plan: GapPlan): void {
   }
 }
 
-async function readImplementedCheckIds(): Promise<Set<string>> {
-  const checkIds = new Set<string>();
+async function readImplementedCheckEvidence(): Promise<
+  Map<string, Set<string>>
+> {
+  const checks = new Map<string, Set<string>>();
 
   for (const planPath of await findConformancePlanPaths(BOUNDARIES_ROOT)) {
     const plan = JSON.parse(await readFile(planPath, "utf8")) as unknown;
@@ -525,12 +593,24 @@ async function readImplementedCheckIds(): Promise<Set<string>> {
 
     for (const check of plan.checks) {
       if (isRecord(check) && typeof check.checkId === "string") {
-        checkIds.add(check.checkId);
+        checks.set(check.checkId, readEvidencePaths(check));
       }
     }
   }
 
-  return checkIds;
+  return checks;
+}
+
+function readEvidencePaths(check: Record<string, unknown>): Set<string> {
+  const evidence = check.evidence;
+
+  if (!Array.isArray(evidence)) {
+    return new Set();
+  }
+
+  return new Set(
+    evidence.filter((entry): entry is string => typeof entry === "string")
+  );
 }
 
 async function findConformancePlanPaths(directory: string): Promise<string[]> {
@@ -560,8 +640,11 @@ async function findConformancePlanPaths(directory: string): Promise<string[]> {
 function createPlannedSurfaces(
   entries: readonly CoverageEntry[]
 ): PlannedSurface[] {
-  const selected = entries.filter((entry) =>
-    PROMOTED_CLASSIFICATIONS.has(entry.classification)
+  const selected = entries.filter(
+    (entry) =>
+      SURFACE_PLANS[entry.surface] !== undefined &&
+      (PROMOTED_CLASSIFICATIONS.has(entry.classification) ||
+        entry.followUpTicket.startsWith(EPIC_AF_FOLLOW_UP_PREFIX))
   );
   const grouped = new Map<string, CoverageEntry[]>();
 
@@ -659,7 +742,10 @@ function renderMarkdown(plan: GapPlan): string {
   lines.push(
     "- Excluded implementation-local surfaces stay out of shared conformance until a later TechSpec/Tasks revision promotes them explicitly."
   );
-  lines.push("");
+
+  while (lines.at(-1) === "") {
+    lines.pop();
+  }
 
   return `${lines.join("\n")}\n`;
 }

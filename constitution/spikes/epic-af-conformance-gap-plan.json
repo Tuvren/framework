@@ -18,9 +18,17 @@
       "rationale": "Running cancellation, approval resume, rejection, and paused cancellation are high-risk lifecycle/tool interleavings selected for portability.",
       "requiredEvidence": [
         "cancellation.cancelInvocations",
-        "approval.handleOwnership",
-        "approval.rejectionToolResults",
-        "approval.pausedCancelPhase"
+        "approval.cancelledPhase",
+        "approval.cancelledToolResults.1.isError",
+        "approval.handleOwnership.cancelErrorCode",
+        "approval.handleOwnership.resolveApprovalErrorCode",
+        "approval.resumedPhase",
+        "approval.resumedTextAbsent",
+        "approval.toolResults.1.isError",
+        "approval.toolResults.1.output.decisionType",
+        "cancellation.errorEventCount",
+        "runtime.phase",
+        "tool.execution.executedNamesAfterCancel"
       ],
       "adapterCapability": "framework.runtime-api",
       "authorityPacket": "boundaries/framework/contracts/runtime-api/spec/authority-packet.json",
@@ -52,7 +60,7 @@
         "FWK-EB75F78718DA",
         "FWK-F1DF0F90609A"
       ],
-      "classifications": ["missing-conformance-follow-up"],
+      "classifications": ["authority-backed-conformance-covered"],
       "compatibilityEvidence": "reports/compatibility/evidence/shared-conformance-runner.typescript-framework.json",
       "conformancePlan": "boundaries/framework/conformance/plans/runtime-api-lifecycle.json; boundaries/framework/conformance/plans/runtime-api-lifecycle-extended.json; boundaries/framework/conformance/plans/runtime-api-callables.json; boundaries/framework/conformance/plans/runtime-api-callables-extended.json",
       "fixture": "boundaries/framework/conformance/scenarios/runtime-api-scenarios.json",
@@ -79,7 +87,7 @@
       "adapterCapability": "framework.runtime-api",
       "authorityPacket": "boundaries/framework/contracts/runtime-api/spec/authority-packet.json",
       "claimIds": ["FWK-3EB6BD2E44C6"],
-      "classifications": ["missing-conformance-follow-up"],
+      "classifications": ["authority-backed-conformance-covered"],
       "compatibilityEvidence": "reports/compatibility/evidence/shared-conformance-runner.typescript-framework.json",
       "conformancePlan": "boundaries/framework/conformance/plans/runtime-api-lifecycle.json; boundaries/framework/conformance/plans/runtime-api-lifecycle-extended.json; boundaries/framework/conformance/plans/runtime-api-callables.json; boundaries/framework/conformance/plans/runtime-api-callables-extended.json",
       "fixture": "boundaries/framework/conformance/scenarios/runtime-api-scenarios.json",
@@ -99,14 +107,15 @@
       "evidenceUpdate": "Refresh framework compatibility evidence with live-event and durable-message reconciliation traces.",
       "rationale": "The live-versus-durable aroundModel exception is portable only through explicit reconciliation evidence.",
       "requiredEvidence": [
-        "aroundModel.liveSequenceTexts",
-        "aroundModel.durableText",
-        "aroundModel.reconciliationMode"
+        "aroundModel.finalAssistantText",
+        "aroundModel.messageStartCount",
+        "aroundModel.streamedTextDone",
+        "provider.generate.callCount"
       ],
       "adapterCapability": "framework.react-driver",
       "authorityPacket": "boundaries/framework/contracts/react-driver/spec/authority-packet.json",
       "claimIds": ["FWK-607FBC20FD59", "FWK-AF60C9581BAB"],
-      "classifications": ["missing-conformance-follow-up"],
+      "classifications": ["authority-backed-conformance-covered"],
       "compatibilityEvidence": "reports/compatibility/evidence/shared-conformance-runner.typescript-framework.json",
       "conformancePlan": "boundaries/framework/conformance/plans/react-driver-callables.json; boundaries/framework/conformance/plans/react-driver-extended.json",
       "fixture": "boundaries/framework/conformance/scenarios/driver-api-scenarios.json",
@@ -142,7 +151,7 @@
       ],
       "adapterCapability": "N/A",
       "claimIds": ["FWK-0A368D92CB9D", "FWK-A346B29D8195", "FWK-A9611C7D2C6F"],
-      "classifications": ["implementation-local-evidence"],
+      "classifications": ["authority-backed-conformance-covered"],
       "compatibilityEvidence": "N/A",
       "generatedArtifact": "N/A",
       "matrixFollowUpTickets": ["KRT-AF001 if portability is selected"],
@@ -161,10 +170,10 @@
       "evidenceUpdate": "Refresh framework compatibility evidence for promoted orchestration handoff observations; Rust framework remains non-applicable.",
       "rationale": "Handoff behavior is selected for runtime-api orchestration promotion; static config snapshotting and extension scoping stay implementation-defined.",
       "requiredEvidence": [
-        "handoff.resolutionType",
-        "handoff.historyEntryCount",
-        "handoff.lastOutputOnly",
-        "handoff.multipleIntentError"
+        "orchestration.surfaces.handoffHistoryControlEntryAbsent",
+        "orchestration.surfaces.handoffInvalidCompositionError.code",
+        "orchestration.surfaces.handoffLastOutputOnlyNoSourceSignal",
+        "orchestration.surfaces.handoffLastOutputOnlyText"
       ],
       "adapterCapability": "framework.orchestration",
       "authorityPacket": "boundaries/framework/contracts/runtime-api/spec/authority-packet.json",
@@ -176,7 +185,7 @@
         "FWK-D7F58DBE7F22",
         "FWK-E64892FC65DA"
       ],
-      "classifications": ["missing-conformance-follow-up"],
+      "classifications": ["authority-backed-conformance-covered"],
       "compatibilityEvidence": "reports/compatibility/evidence/shared-conformance-runner.typescript-framework.json",
       "conformancePlan": "boundaries/framework/conformance/plans/runtime-api-orchestration.json",
       "fixture": "boundaries/framework/conformance/scenarios/runtime-api-scenarios.json",
@@ -233,7 +242,7 @@
         "KER-D955F623F729",
         "KER-F3BF91436E20"
       ],
-      "classifications": ["missing-conformance-follow-up"],
+      "classifications": ["authority-backed-conformance-covered"],
       "compatibilityEvidence": "reports/compatibility/evidence/shared-conformance-runner.typescript-kernel-sqlite.json; reports/compatibility/evidence/shared-conformance-runner.rust-kernel.json",
       "conformancePlan": "boundaries/kernel/conformance/plans/kernel-protocol-core.json; boundaries/kernel/conformance/plans/kernel-protocol-extended.json",
       "fixture": "boundaries/kernel/conformance/fixtures/kernel-protocol-logical.json; boundaries/kernel/conformance/fixtures/kernel-protocol-deterministic.json",
@@ -242,28 +251,33 @@
       "surface": "kernel appendix validation matrix"
     },
     {
-      "adapterOperation": "kernel.restart-recovery",
-      "capabilityRequirement": "kernel.restart-recovery",
+      "adapterOperation": "kernel.restart-recovery.close-reopen-checkpoint; kernel.run-liveness.stale-preemption; kernel.run-liveness.expired-listing",
+      "capabilityRequirement": "kernel.restart-recovery; kernel.run-liveness",
       "checkIds": [
         "kernel-restart-af.invalid-staged-result-reexecutes",
         "kernel-restart-af.expired-running-requires-preemption",
         "kernel-restart-af.paused-run-excluded-from-stale-preemption"
       ],
+      "conformancePlan": "boundaries/kernel/conformance/plans/kernel-restart-recovery.json; boundaries/kernel/conformance/plans/kernel-run-liveness.json",
       "deliveryTicket": "KRT-AF006",
       "disposition": "promote",
       "evidenceUpdate": "Refresh SQLite restart-recovery evidence and report memory/Rust support according to advertised capabilities.",
       "rationale": "Only portable restart/recovery edge states are promoted; backend crash-injection mechanics remain adapter-local observations.",
       "requiredEvidence": [
-        "recovery.edgeClass",
-        "recovery.action",
-        "recovery.preemptionAllowed"
+        "listing.pausedRunListed",
+        "listing.pausedRunStatus",
+        "preemption.leaseCleared",
+        "preemption.preemptionReason",
+        "preemption.runStatus",
+        "restartRecovery.recoveredLastCompletedStepId",
+        "restartRecovery.recoveredUncommittedCount",
+        "restartRecovery.uncommittedNotPromoted"
       ],
       "adapterCapability": "kernel.restart-recovery",
       "authorityPacket": "boundaries/kernel/contracts/protocol/spec/authority-packet.json",
       "claimIds": ["KER-007A3ECFB49F", "KER-22511C79A15E", "KER-F8785E02207A"],
-      "classifications": ["missing-conformance-follow-up"],
+      "classifications": ["authority-backed-conformance-covered"],
       "compatibilityEvidence": "reports/compatibility/evidence/shared-conformance-runner.typescript-kernel-sqlite.json",
-      "conformancePlan": "boundaries/kernel/conformance/plans/kernel-restart-recovery.json",
       "fixture": "boundaries/kernel/conformance/fixtures/kernel-protocol-logical.json",
       "generatedArtifact": "N/A - restart recovery is conformance-plan authority without generated schema artifacts",
       "matrixFollowUpTickets": ["KRT-AF006"],
@@ -284,7 +298,8 @@
       "requiredEvidence": [
         "hooks.phaseTrace",
         "hooks.aroundToolTrace",
-        "hooks.terminalDurability"
+        "hooks.terminalMutationAttempted",
+        "hooks.terminalMutationDurableText"
       ],
       "adapterCapability": "framework.react-driver",
       "authorityPacket": "boundaries/framework/contracts/react-driver/spec/authority-packet.json",
@@ -301,7 +316,7 @@
         "FWK-F16BAF069F45",
         "FWK-FAE5A77068E7"
       ],
-      "classifications": ["missing-conformance-follow-up"],
+      "classifications": ["authority-backed-conformance-covered"],
       "compatibilityEvidence": "reports/compatibility/evidence/shared-conformance-runner.typescript-framework.json",
       "conformancePlan": "boundaries/framework/conformance/plans/react-driver-callables.json; boundaries/framework/conformance/plans/react-driver-extended.json",
       "fixture": "boundaries/framework/conformance/scenarios/driver-api-scenarios.json",
@@ -321,7 +336,7 @@
       "adapterCapability": "framework.driver-api",
       "authorityPacket": "boundaries/framework/contracts/driver-api/spec/authority-packet.json",
       "claimIds": ["FWK-7321FBA0BDB5"],
-      "classifications": ["missing-conformance-follow-up"],
+      "classifications": ["authority-backed-conformance-covered"],
       "compatibilityEvidence": "reports/compatibility/evidence/shared-conformance-runner.typescript-framework.json",
       "conformancePlan": "boundaries/framework/conformance/plans/driver-api-core.json; boundaries/framework/conformance/plans/driver-api-extended.json",
       "fixture": "boundaries/framework/conformance/scenarios/driver-api-scenarios.json",
@@ -343,9 +358,10 @@
       "evidenceUpdate": "Refresh framework compatibility evidence for runtime-api type-shape checks; generated runtime-api artifacts remain the type projection anchor.",
       "rationale": "Only boundary-visible runtime type-shape claims are promoted; TypeScript package layout and state internals stay local.",
       "requiredEvidence": [
-        "content.toolCallInputType",
-        "content.structuredDataType",
+        "provider.generate.response.parts.0.input.query",
+        "provider.generate.response.parts.0.data.answer",
         "inputSignal.error.code",
+        "inputSignal.accepted",
         "validation.dialect"
       ],
       "adapterCapability": "framework.runtime-api",
@@ -360,7 +376,7 @@
         "FWK-D1C028C77A54",
         "FWK-F840209551A0"
       ],
-      "classifications": ["missing-conformance-follow-up"],
+      "classifications": ["authority-backed-conformance-covered"],
       "compatibilityEvidence": "reports/compatibility/evidence/shared-conformance-runner.typescript-framework.json",
       "conformancePlan": "boundaries/framework/conformance/plans/runtime-api-lifecycle.json; boundaries/framework/conformance/plans/runtime-api-lifecycle-extended.json; boundaries/framework/conformance/plans/runtime-api-callables.json; boundaries/framework/conformance/plans/runtime-api-callables-extended.json",
       "fixture": "boundaries/framework/conformance/scenarios/runtime-api-scenarios.json",
@@ -401,9 +417,11 @@
       "evidenceUpdate": "Refresh framework and provider compatibility evidence for neutral structured-output failure and streaming behavior.",
       "rationale": "Shared checks assert provider-neutral structured-output semantics without standardizing provider-native mechanics.",
       "requiredEvidence": [
-        "provider.stream.emittedEventTypes",
+        "provider.generate.partKeys.0",
+        "provider.stream.structuredDeltaIndex",
+        "provider.stream.structuredDoneIndex",
         "validation.error.code",
-        "provider.generate.response.parts"
+        "validation.resolutionType"
       ],
       "adapterCapability": "framework.runtime-api",
       "authorityPacket": "boundaries/framework/contracts/runtime-api/spec/authority-packet.json",
@@ -416,7 +434,7 @@
         "FWK-87974E517D0C",
         "FWK-CFBF4A38F861"
       ],
-      "classifications": ["missing-conformance-follow-up"],
+      "classifications": ["authority-backed-conformance-covered"],
       "compatibilityEvidence": "reports/compatibility/evidence/shared-conformance-runner.typescript-framework.json",
       "conformancePlan": "boundaries/framework/conformance/plans/runtime-api-lifecycle.json; boundaries/framework/conformance/plans/runtime-api-lifecycle-extended.json; boundaries/framework/conformance/plans/runtime-api-callables.json; boundaries/framework/conformance/plans/runtime-api-callables-extended.json",
       "fixture": "boundaries/framework/conformance/scenarios/runtime-api-scenarios.json",
@@ -437,8 +455,11 @@
       "evidenceUpdate": "Refresh framework and provider compatibility evidence for tool execution and approval-boundary traces.",
       "rationale": "The portable surface is framework-owned call/result/error shape, not provider-family-specific metadata.",
       "requiredEvidence": [
-        "tool.execution.callIds",
-        "tool.execution.errorResult",
+        "provider.stream.response.parts.0.providerMetadata.providerCallId",
+        "provider.stream.toolCallIdOwnedByFramework",
+        "tool.execution.toolResults.0.isError",
+        "tool.execution.toolResults.0.output.error",
+        "toolExecution.status.phase",
         "approval.messageAttachment"
       ],
       "adapterCapability": "framework.runtime-api",
@@ -452,7 +473,7 @@
         "FWK-B9434E23AB69",
         "FWK-C9356EE09017"
       ],
-      "classifications": ["missing-conformance-follow-up"],
+      "classifications": ["authority-backed-conformance-covered"],
       "compatibilityEvidence": "reports/compatibility/evidence/shared-conformance-runner.typescript-framework.json",
       "conformancePlan": "boundaries/framework/conformance/plans/runtime-api-lifecycle.json; boundaries/framework/conformance/plans/runtime-api-lifecycle-extended.json; boundaries/framework/conformance/plans/runtime-api-callables.json; boundaries/framework/conformance/plans/runtime-api-callables-extended.json",
       "fixture": "boundaries/framework/conformance/scenarios/runtime-api-scenarios.json",
@@ -473,13 +494,14 @@
       "rationale": "Parallel wave and mixed approval ordering are high-risk interleavings selected for portable conformance.",
       "requiredEvidence": [
         "tool.execution.eventTypes",
-        "tool.execution.resultOrder",
-        "approval.resumedEventTypes"
+        "tool.execution.parallelWaveStartedBeforeResults",
+        "approval.resumedEventTypes",
+        "approval.gatedToolStartAfterResume"
       ],
       "adapterCapability": "framework.runtime-api",
       "authorityPacket": "boundaries/framework/contracts/runtime-api/spec/authority-packet.json",
       "claimIds": ["FWK-4193D2A613E0", "FWK-BC7142393BAA"],
-      "classifications": ["missing-conformance-follow-up"],
+      "classifications": ["authority-backed-conformance-covered"],
       "compatibilityEvidence": "reports/compatibility/evidence/shared-conformance-runner.typescript-framework.json",
       "conformancePlan": "boundaries/framework/conformance/plans/runtime-api-lifecycle.json; boundaries/framework/conformance/plans/runtime-api-lifecycle-extended.json; boundaries/framework/conformance/plans/runtime-api-callables.json; boundaries/framework/conformance/plans/runtime-api-callables-extended.json",
       "fixture": "boundaries/framework/conformance/scenarios/runtime-api-scenarios.json",
@@ -495,11 +517,15 @@
       "disposition": "promote",
       "evidenceUpdate": "Refresh framework compatibility evidence with forwarded worker source attribution.",
       "rationale": "Forwarded worker events are promoted only as attributed event observations, not as a worker scheduler contract.",
-      "requiredEvidence": ["worker.forwardedEventSource"],
+      "requiredEvidence": [
+        "orchestration.nested.rootGrandchildSource.agent",
+        "orchestration.nested.rootGrandchildSource.threadId",
+        "orchestration.nested.rootGrandchildSource.workerId"
+      ],
       "adapterCapability": "framework.orchestration",
       "authorityPacket": "boundaries/framework/contracts/runtime-api/spec/authority-packet.json",
       "claimIds": ["FWK-C6917E7E9D81"],
-      "classifications": ["missing-conformance-follow-up"],
+      "classifications": ["authority-backed-conformance-covered"],
       "compatibilityEvidence": "reports/compatibility/evidence/shared-conformance-runner.typescript-framework.json",
       "conformancePlan": "boundaries/framework/conformance/plans/runtime-api-orchestration.json",
       "fixture": "boundaries/framework/conformance/scenarios/runtime-api-scenarios.json",

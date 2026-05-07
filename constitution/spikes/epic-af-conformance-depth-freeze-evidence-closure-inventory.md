@@ -17,8 +17,10 @@ capabilities, and produces its own shared-runner evidence.
 ## Delivered Scope
 
 - `KRT-AF001` produced the generated conformance gap plan from the Epic AD
-  docs-to-authority matrix, covering 15 promote-now surfaces and 38 planned
-  check IDs while excluding implementation-local and deferred surfaces.
+  docs-to-authority matrix, covering 14 promoted surfaces, one explicitly
+  excluded package-topology surface, and 38 planned check IDs. The promoted set
+  includes the selected portable subset of the former framework state-schema
+  implementation-local surface.
 - `KRT-AF002` promoted runtime lifecycle negative and interleaving behavior into
   boundary-owned framework conformance plans with required evidence.
 - `KRT-AF003` promoted selected ReAct driver, extension hook, loop-policy, and
