@@ -83,6 +83,8 @@ class TypeScriptKernelAdapter {
           return result(schemaRoundtrip(readFixture(input)));
         case "kernel.protocol.modify-composition":
           return result(await runModifyComposition());
+        case "kernel.protocol.edge-validation":
+          return result(await runProtocolEdgeValidation());
         case "kernel.logical.diff-paths":
           return result(await runLogicalDiff(readFixture(input)));
         case "kernel.logical.branch-list":
@@ -171,6 +173,7 @@ function defaultCapabilities(
   if (backend === "sqlite") {
     return [
       "kernel.protocol",
+      "kernel.edge-validation",
       "kernel.logical",
       "kernel.run-liveness",
       "kernel.persistence.durable",
@@ -180,6 +183,7 @@ function defaultCapabilities(
 
   return [
     "kernel.protocol",
+    "kernel.edge-validation",
     "kernel.logical",
     "kernel.run-liveness",
     "kernel.persistence.process-local",
@@ -458,6 +462,260 @@ async function runCrossThreadLineage(): Promise<Record<string, unknown>> {
       };
     }
   });
+}
+
+async function runProtocolEdgeValidation(): Promise<Record<string, unknown>> {
+  const schema = await loadCanonicalSchema();
+  return await withConformanceKernel(schema, ADAPTER_CONFIG, async (kernel) => {
+    const firstPath = schema.paths[0];
+
+    if (firstPath === undefined) {
+      throw new Error("canonical schema must define at least one path");
+    }
+
+    const duplicatePathCode = await captureSemanticErrorCode(async () => {
+      await kernel.schema.register({
+        ...schema,
+        paths: [...schema.paths, { ...firstPath }],
+        schemaId: "schema_edge_duplicate_path",
+      });
+    });
+
+    const missingRequiredPathCode = await captureSemanticErrorCode(async () => {
+      await kernel.tree.create(schema.schemaId, { messages: [] });
+    });
+
+    const alternateSchema = {
+      ...schema,
+      schemaId: "schema_edge_alternate",
+    };
+    await kernel.schema.register(alternateSchema);
+    const canonicalTree = await kernel.tree.create(schema.schemaId, {
+      "context.manifest": null,
+      messages: [],
+    });
+    const alternateTree = await kernel.tree.create(alternateSchema.schemaId, {
+      "context.manifest": null,
+      messages: [],
+    });
+    const schemaMismatchCode = await captureSemanticErrorCode(async () => {
+      await kernel.tree.diff(canonicalTree, alternateTree);
+    });
+
+    const busyThread = await kernel.thread.create(
+      "thread_edge_busy_branch",
+      schema.schemaId,
+      "branch_edge_busy_branch"
+    );
+    const busyTurn = await kernel.turn.create(
+      "turn_edge_busy_branch",
+      busyThread.threadId,
+      busyThread.branchId,
+      null,
+      busyThread.rootTurnNodeHash
+    );
+    await kernel.run.create(
+      "run_edge_busy_branch_active",
+      busyTurn.turnId,
+      busyThread.branchId,
+      schema.schemaId,
+      busyThread.rootTurnNodeHash,
+      [{ deterministic: false, id: "first", sideEffects: false }]
+    );
+    const busyBranchCode = await captureSemanticErrorCode(async () => {
+      await kernel.run.create(
+        "run_edge_busy_branch_rejected",
+        busyTurn.turnId,
+        busyThread.branchId,
+        schema.schemaId,
+        busyThread.rootTurnNodeHash,
+        [{ deterministic: false, id: "next", sideEffects: false }]
+      );
+    });
+
+    const orderedThread = await kernel.thread.create(
+      "thread_edge_step_order",
+      schema.schemaId,
+      "branch_edge_step_order"
+    );
+    const orderedTurn = await kernel.turn.create(
+      "turn_edge_step_order",
+      orderedThread.threadId,
+      orderedThread.branchId,
+      null,
+      orderedThread.rootTurnNodeHash
+    );
+    await kernel.run.create(
+      "run_edge_step_order",
+      orderedTurn.turnId,
+      orderedThread.branchId,
+      schema.schemaId,
+      orderedThread.rootTurnNodeHash,
+      [
+        { deterministic: false, id: "first", sideEffects: false },
+        { deterministic: false, id: "second", sideEffects: false },
+      ]
+    );
+    const outOfOrderStepCode = await captureSemanticErrorCode(async () => {
+      await kernel.run.beginStep("run_edge_step_order", "second");
+    });
+
+    const missingEventThread = await kernel.thread.create(
+      "thread_edge_missing_event",
+      schema.schemaId,
+      "branch_edge_missing_event"
+    );
+    const missingEventTurn = await kernel.turn.create(
+      "turn_edge_missing_event",
+      missingEventThread.threadId,
+      missingEventThread.branchId,
+      null,
+      missingEventThread.rootTurnNodeHash
+    );
+    await kernel.run.create(
+      "run_edge_missing_event",
+      missingEventTurn.turnId,
+      missingEventThread.branchId,
+      schema.schemaId,
+      missingEventThread.rootTurnNodeHash,
+      [{ deterministic: false, id: "event_step", sideEffects: false }]
+    );
+    const missingEventObjectCode = await captureSemanticErrorCode(async () => {
+      await kernel.run.completeStep(
+        "run_edge_missing_event",
+        "event_step",
+        "a".repeat(64)
+      );
+    });
+
+    const lateralThread = await kernel.thread.create(
+      "thread_edge_lateral",
+      schema.schemaId,
+      "branch_edge_lateral_main"
+    );
+    const bootstrapTurn = await kernel.turn.create(
+      "turn_edge_lateral_bootstrap",
+      lateralThread.threadId,
+      lateralThread.branchId,
+      null,
+      lateralThread.rootTurnNodeHash
+    );
+    await kernel.run.create(
+      "run_edge_lateral_bootstrap",
+      bootstrapTurn.turnId,
+      lateralThread.branchId,
+      schema.schemaId,
+      lateralThread.rootTurnNodeHash,
+      [{ deterministic: false, id: "bootstrap", sideEffects: false }]
+    );
+    const bootstrapCheckpoint = await kernel.run.completeStep(
+      "run_edge_lateral_bootstrap",
+      "bootstrap"
+    );
+
+    if (bootstrapCheckpoint.turnNodeHash === undefined) {
+      throw new Error("expected bootstrap lateral checkpoint");
+    }
+
+    await kernel.run.complete("run_edge_lateral_bootstrap", "completed");
+    const mainTurn = await kernel.turn.create(
+      "turn_edge_lateral_main",
+      lateralThread.threadId,
+      lateralThread.branchId,
+      bootstrapTurn.turnId,
+      bootstrapCheckpoint.turnNodeHash
+    );
+    await kernel.run.create(
+      "run_edge_lateral_main",
+      mainTurn.turnId,
+      lateralThread.branchId,
+      schema.schemaId,
+      bootstrapCheckpoint.turnNodeHash,
+      [{ deterministic: false, id: "main", sideEffects: false }]
+    );
+    const mainEventHash = await kernel.store.put(
+      new TextEncoder().encode("lateral-main")
+    );
+    const mainCheckpoint = await kernel.run.completeStep(
+      "run_edge_lateral_main",
+      "main",
+      mainEventHash
+    );
+
+    if (mainCheckpoint.turnNodeHash === undefined) {
+      throw new Error("expected main lateral checkpoint");
+    }
+
+    await kernel.run.complete("run_edge_lateral_main", "completed");
+    const forkBranch = await kernel.branch.create(
+      "branch_edge_lateral_fork",
+      lateralThread.threadId,
+      bootstrapCheckpoint.turnNodeHash
+    );
+    const forkTurn = await kernel.turn.create(
+      "turn_edge_lateral_fork",
+      lateralThread.threadId,
+      forkBranch.branchId,
+      bootstrapTurn.turnId,
+      bootstrapCheckpoint.turnNodeHash
+    );
+    await kernel.run.create(
+      "run_edge_lateral_fork",
+      forkTurn.turnId,
+      forkBranch.branchId,
+      schema.schemaId,
+      bootstrapCheckpoint.turnNodeHash,
+      [{ deterministic: false, id: "fork", sideEffects: false }]
+    );
+    const forkEventHash = await kernel.store.put(
+      new TextEncoder().encode("lateral-fork")
+    );
+    const forkCheckpoint = await kernel.run.completeStep(
+      "run_edge_lateral_fork",
+      "fork",
+      forkEventHash
+    );
+
+    const forkTurnNodeHash = forkCheckpoint.turnNodeHash;
+
+    if (forkTurnNodeHash === undefined) {
+      throw new Error("expected fork lateral checkpoint");
+    }
+
+    await kernel.run.complete("run_edge_lateral_fork", "completed");
+    const lateralHeadCode = await captureSemanticErrorCode(async () => {
+      await kernel.branch.setHead(lateralThread.branchId, forkTurnNodeHash);
+    });
+
+    return {
+      evidence: {
+        protocolEdgeValidation: {
+          branch: { lateralHeadCode },
+          run: {
+            busyBranchCode,
+            missingEventObjectCode,
+            outOfOrderStepCode,
+          },
+          schema: { duplicatePathCode },
+          tree: {
+            missingRequiredPathCode,
+            schemaMismatchCode,
+          },
+        },
+      },
+    };
+  });
+}
+
+async function captureSemanticErrorCode(
+  execute: () => Promise<unknown>
+): Promise<string> {
+  try {
+    await execute();
+    return "unexpected_success";
+  } catch (error: unknown) {
+    return normalizeLogicalErrorCode(readErrorCode(error));
+  }
 }
 
 async function runLeaseRenewal(): Promise<Record<string, unknown>> {

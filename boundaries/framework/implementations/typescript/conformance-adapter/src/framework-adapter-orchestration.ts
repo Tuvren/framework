@@ -734,6 +734,7 @@ export function createFrameworkAdapterOrchestration(
     const childEvents = await collectValues(childHandle.events());
     const childResult = await childHandle.awaitResult();
     const rootEvents = await rootEventsPromise;
+    const lastOutputOnlyEvidence = await runLastOutputOnlyDirectEvidence();
     const childReviewerEvent = findTextEvent(childEvents, reviewerText);
     const rootReviewerEvent = rootEvents.find(
       (event) =>
@@ -752,12 +753,136 @@ export function createFrameworkAdapterOrchestration(
             handoffDescendantAgentPreserved:
               readSourceAgent(childReviewerEvent) === "reviewer" &&
               readSourceAgent(rootReviewerEvent) === "reviewer",
+            handoffHistoryControlEntryAbsent:
+              lastOutputOnlyEvidence.historyControlEntryAbsent,
+            handoffInvalidCompositionError:
+              await runInvalidHandoffCompositionError(),
+            handoffLastOutputOnlyNoSourceSignal:
+              lastOutputOnlyEvidence.noSourceSignal,
+            handoffLastOutputOnlyText: lastOutputOnlyEvidence.firstUserText,
             handoffRootSource: dependencies.isRecord(rootReviewerEvent)
               ? rootReviewerEvent.source
               : undefined,
           },
         },
       },
+    };
+  }
+
+  async function runInvalidHandoffCompositionError(): Promise<
+    Record<string, unknown> | undefined
+  > {
+    const harness = createFakeKernelHarness();
+    const framework = createTuvrenRuntimeCore({
+      createId: createConformanceIdFactory(),
+      defaultDriverId: DRIVER_ID,
+      driverRegistry: createDriverRegistry([
+        createStaticDriver((context) => ({
+          messages: [
+            assistantToolCalls([
+              {
+                callId: "call-search",
+                input: { query: "invalid handoff composition" },
+                name: "search",
+              },
+            ]),
+          ],
+          resolution: {
+            contextPlan: context.handoff.createContextPlan({
+              mode: "last_output_only",
+              reason: "invalid_composition",
+              targetAgent: "reviewer",
+            }),
+            targetAgent: "reviewer",
+            type: "handoff",
+          },
+          toolExecutionMode: "parallel",
+        })),
+      ]),
+      kernel: harness.kernel,
+      resolveAgentConfig(agentName) {
+        return agentName === "reviewer" ? { name: "reviewer" } : undefined;
+      },
+    });
+    const thread = await framework.createThread({});
+    const handle = framework.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        name: "primary",
+        tools: [
+          {
+            description: "Search docs",
+            execute() {
+              return { ok: true };
+            },
+            inputSchema: { type: "object" },
+            name: "search",
+          },
+        ],
+      },
+      signal: textSignal("invalid handoff composition"),
+      threadId: thread.threadId,
+    });
+
+    const events = await collectValues(handle.events());
+    return readFirstErrorEnvelope(events);
+  }
+
+  async function runLastOutputOnlyDirectEvidence(): Promise<{
+    firstUserText?: string;
+    historyControlEntryAbsent: boolean;
+    noSourceSignal: boolean;
+  }> {
+    const harness = createFakeKernelHarness();
+    const framework = createTuvrenRuntimeCore({
+      createId: createConformanceIdFactory(),
+      defaultDriverId: DRIVER_ID,
+      driverRegistry: createDriverRegistry([
+        createStaticDriver((context) => {
+          if (context.config.name === "primary") {
+            return {
+              messages: [assistantText("Passing this to reviewer.")],
+              resolution: {
+                contextPlan: context.handoff.createContextPlan({
+                  mode: "last_output_only",
+                  reason: "review_handoff",
+                  targetAgent: "reviewer",
+                }),
+                targetAgent: "reviewer",
+                type: "handoff",
+              },
+            };
+          }
+
+          return {
+            messages: [assistantText("Reviewer done.")],
+            resolution: {
+              reason: "done",
+              type: "end_turn",
+            },
+          };
+        }),
+      ]),
+      kernel: harness.kernel,
+      resolveAgentConfig(agentName) {
+        return agentName === "reviewer" ? { name: "reviewer" } : undefined;
+      },
+    });
+    const thread = await framework.createThread({});
+    const handle = framework.executeTurn({
+      branchId: thread.branchId,
+      config: { name: "primary" },
+      signal: textSignal("handoff child"),
+      threadId: thread.threadId,
+    });
+
+    await collectValues(handle.events());
+
+    const messages = await harness.readBranchMessages(thread.branchId);
+    return {
+      firstUserText: readFirstUserText(messages),
+      historyControlEntryAbsent: !containsHandoffControlEntry(messages),
+      noSourceSignal: !messageTextIncludes(messages, "handoff child"),
     };
   }
 
@@ -844,6 +969,18 @@ export function createFrameworkAdapterOrchestration(
       : undefined;
   }
 
+  function readFirstErrorEnvelope(
+    events: readonly unknown[]
+  ): Record<string, unknown> | undefined {
+    for (const event of events) {
+      if (dependencies.isRecord(event) && dependencies.isRecord(event.error)) {
+        return event.error;
+      }
+    }
+
+    return undefined;
+  }
+
   function containsWorkerResult(messages: readonly unknown[]): boolean {
     for (const message of messages) {
       if (
@@ -866,6 +1003,77 @@ export function createFrameworkAdapterOrchestration(
     }
 
     return false;
+  }
+
+  function containsHandoffControlEntry(messages: readonly unknown[]): boolean {
+    for (const message of messages) {
+      if (!(dependencies.isRecord(message) && Array.isArray(message.parts))) {
+        continue;
+      }
+
+      for (const part of message.parts) {
+        if (isHandoffControlPart(part)) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  function isHandoffControlPart(part: unknown): boolean {
+    return (
+      dependencies.isRecord(part) &&
+      part.name === "handoff" &&
+      (part.type === "tool_call" || part.type === "structured")
+    );
+  }
+
+  function messageTextIncludes(
+    messages: readonly unknown[],
+    expectedText: string
+  ): boolean {
+    for (const message of messages) {
+      if (!(dependencies.isRecord(message) && Array.isArray(message.parts))) {
+        continue;
+      }
+
+      for (const part of message.parts) {
+        if (
+          dependencies.isRecord(part) &&
+          part.type === "text" &&
+          part.text === expectedText
+        ) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  function readFirstUserText(messages: readonly unknown[]): string | undefined {
+    for (const message of messages) {
+      if (
+        !dependencies.isRecord(message) ||
+        message.role !== "user" ||
+        !Array.isArray(message.parts)
+      ) {
+        continue;
+      }
+
+      for (const part of message.parts) {
+        if (
+          dependencies.isRecord(part) &&
+          part.type === "text" &&
+          typeof part.text === "string"
+        ) {
+          return part.text;
+        }
+      }
+    }
+
+    return undefined;
   }
 
   function firstVisiblePartType(result: unknown): string | undefined {

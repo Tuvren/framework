@@ -201,6 +201,83 @@
       "assertions": [
         {
           "equals": 1,
+          "field": "$.context.sourceMessageCount",
+          "kind": "evidenceField"
+        },
+        {
+          "equals": 2,
+          "field": "$.context.rewrittenMessageCount",
+          "kind": "evidenceField"
+        },
+        {
+          "equals": 3,
+          "field": "$.context.messageCount",
+          "kind": "evidenceField"
+        }
+      ],
+      "checkId": "runtime-lifecycle-af.context-transform-preserves-source-checkpoint",
+      "evidence": [
+        "context.sourceMessageCount",
+        "context.rewrittenMessageCount",
+        "context.messageCount"
+      ],
+      "input": {
+        "scenarioPath": "$.context-transform-append-summary"
+      },
+      "operation": "runtime.context-transform",
+      "scenario": "runtime-api-scenarios"
+    },
+    {
+      "assertions": [
+        {
+          "equals": true,
+          "field": "$.context.createdNewHead",
+          "kind": "evidenceField"
+        },
+        {
+          "equals": true,
+          "field": "$.context.finalHeadChanged",
+          "kind": "evidenceField"
+        },
+        {
+          "equals": [1, 2, 3],
+          "field": "$.context.snapshotMessageCounts",
+          "kind": "evidenceField"
+        }
+      ],
+      "checkId": "runtime-lifecycle-af.context-transform-creates-new-tree-heads",
+      "evidence": [
+        "context.checkpointHashes",
+        "context.createdNewHead",
+        "context.finalHeadChanged",
+        "context.snapshotMessageCounts"
+      ],
+      "input": {
+        "scenarioPath": "$.context-transform-append-summary"
+      },
+      "operation": "runtime.context-transform",
+      "scenario": "runtime-api-scenarios"
+    },
+    {
+      "assertions": [
+        {
+          "equals": 2,
+          "field": "$.context.driverObservedMessageCount",
+          "kind": "evidenceField"
+        }
+      ],
+      "checkId": "runtime-lifecycle-af.context-transform-driver-sees-rewritten-context",
+      "evidence": ["context.driverObservedMessageCount"],
+      "input": {
+        "scenarioPath": "$.context-transform-append-summary"
+      },
+      "operation": "runtime.context-transform",
+      "scenario": "runtime-api-scenarios"
+    },
+    {
+      "assertions": [
+        {
+          "equals": 1,
           "field": "$.recovery.uncommittedStagedResults",
           "kind": "evidenceField"
         }
@@ -432,6 +509,66 @@
       },
       "operation": "runtime.recover-stale-run",
       "scenario": "runtime-api-scenarios"
+    },
+    {
+      "assertions": [
+        {
+          "equals": 2,
+          "field": "$.cancellation.cancelInvocations",
+          "kind": "evidenceField"
+        },
+        {
+          "equals": 1,
+          "field": "$.cancellation.errorEventCount",
+          "kind": "evidenceField"
+        },
+        {
+          "equals": "failed",
+          "field": "$.runtime.phase",
+          "kind": "evidenceField"
+        }
+      ],
+      "checkId": "runtime-lifecycle-af.cancel-running-idempotent-fails-once",
+      "controls": {
+        "cancelAfterEvent": "turn.start",
+        "deadlineMs": 1000
+      },
+      "evidence": [
+        "cancellation.cancelInvocations",
+        "cancellation.errorEventCount",
+        "runtime.phase"
+      ],
+      "operation": "runtime.cancel-execution"
+    },
+    {
+      "assertions": [
+        {
+          "equals": "failed",
+          "field": "$.runtime.phase",
+          "kind": "evidenceField"
+        },
+        {
+          "equals": true,
+          "field": "$.cancellation.runtimeStatusPartial",
+          "kind": "evidenceField"
+        },
+        {
+          "equals": "interrupted",
+          "field": "$.cancellation.partialAssistantText",
+          "kind": "evidenceField"
+        }
+      ],
+      "checkId": "runtime-lifecycle-af.cancel-running-stages-partial-status",
+      "controls": {
+        "cancelAfterEvent": "iteration.end",
+        "deadlineMs": 1000
+      },
+      "evidence": [
+        "cancellation.partialAssistantText",
+        "cancellation.runtimeStatusPartial",
+        "runtime.phase"
+      ],
+      "operation": "runtime.cancel-execution"
     }
   ],
   "packetId": "tuvren.framework.runtime-api",

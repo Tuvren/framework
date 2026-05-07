@@ -87,6 +87,8 @@ export interface FakeKernelHarness {
   readBranchRuns(branchId: string): Promise<RunRecord[]>;
   readBranchRuntimeStatus(branchId: string): Promise<unknown | null>;
   readRunningStagedMessages(branchId: string): Promise<unknown[]>;
+  readTurnNodeManifest(turnNodeHash: HashString): Promise<TurnTreeManifest>;
+  readTurnNodeMessages(turnNodeHash: HashString): Promise<unknown[]>;
 }
 
 export interface FakeRunLivenessKernelHarness {
@@ -499,6 +501,30 @@ export function createFakeKernelHarness(): FakeKernelHarness {
     },
   };
 
+  const readMessagesFromManifest = (manifest: TurnTreeManifest): unknown[] => {
+    const hashes = manifest.messages;
+
+    if (!Array.isArray(hashes)) {
+      return [];
+    }
+
+    const messages: unknown[] = [];
+
+    for (const hash of hashes) {
+      if (!isHashString(hash)) {
+        continue;
+      }
+
+      const payload = state.objects.get(hash);
+
+      if (payload !== undefined) {
+        messages.push(decodeDeterministicKernelRecord(payload));
+      }
+    }
+
+    return messages;
+  };
+
   return {
     kernel,
     async readBranchManifest(branchId) {
@@ -508,27 +534,7 @@ export function createFakeKernelHarness(): FakeKernelHarness {
     },
     async readBranchMessages(branchId) {
       const manifest = await this.readBranchManifest(branchId);
-      const hashes = manifest.messages;
-
-      if (!Array.isArray(hashes)) {
-        return [];
-      }
-
-      const messages: unknown[] = [];
-
-      for (const hash of hashes) {
-        if (!isHashString(hash)) {
-          continue;
-        }
-
-        const payload = state.objects.get(hash);
-
-        if (payload !== undefined) {
-          messages.push(decodeDeterministicKernelRecord(payload));
-        }
-      }
-
-      return messages;
+      return readMessagesFromManifest(manifest);
     },
     async readBranchRuntimeStatus(branchId) {
       const manifest = await this.readBranchManifest(branchId);
@@ -574,6 +580,14 @@ export function createFakeKernelHarness(): FakeKernelHarness {
       }
 
       return messages;
+    },
+    async readTurnNodeManifest(turnNodeHash) {
+      const turnNode = requireTurnNode(state, turnNodeHash);
+      return cloneManifest(requireTree(state, turnNode.turnTreeHash).manifest);
+    },
+    async readTurnNodeMessages(turnNodeHash) {
+      const manifest = await this.readTurnNodeManifest(turnNodeHash);
+      return readMessagesFromManifest(manifest);
     },
   };
 }

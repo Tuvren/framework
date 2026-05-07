@@ -2,6 +2,7 @@
   "adapterId": "typescript-kernel-sqlite",
   "boundary": "kernel",
   "capabilities": [
+    "kernel.edge-validation",
     "kernel.logical",
     "kernel.persistence.durable",
     "kernel.protocol",
@@ -184,6 +185,132 @@
       "details": {
         "adapterId": "typescript-kernel-sqlite",
         "planId": "tuvren.kernel.protocol.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel-protocol-af.branch-set-head-rejects-lateral-lineage.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-protocol-af.branch-set-head-rejects-lateral-lineage.requiredEvidence.protocolEdgeValidation.branch.lateralHeadCode",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel-protocol-af.branch-set-head-rejects-lateral-lineage",
+      "details": {
+        "adapterId": "typescript-kernel-sqlite",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel-protocol-af.run-begin-step-rejects-out-of-order-step.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-protocol-af.run-begin-step-rejects-out-of-order-step.requiredEvidence.protocolEdgeValidation.run.outOfOrderStepCode",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel-protocol-af.run-begin-step-rejects-out-of-order-step",
+      "details": {
+        "adapterId": "typescript-kernel-sqlite",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel-protocol-af.run-complete-rejects-missing-event-object.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-protocol-af.run-complete-rejects-missing-event-object.requiredEvidence.protocolEdgeValidation.run.missingEventObjectCode",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel-protocol-af.run-complete-rejects-missing-event-object",
+      "details": {
+        "adapterId": "typescript-kernel-sqlite",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel-protocol-af.run-create-rejects-busy-branch.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-protocol-af.run-create-rejects-busy-branch.requiredEvidence.protocolEdgeValidation.run.busyBranchCode",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel-protocol-af.run-create-rejects-busy-branch",
+      "details": {
+        "adapterId": "typescript-kernel-sqlite",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel-protocol-af.schema-register-rejects-duplicate-path.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-protocol-af.schema-register-rejects-duplicate-path.requiredEvidence.protocolEdgeValidation.schema.duplicatePathCode",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel-protocol-af.schema-register-rejects-duplicate-path",
+      "details": {
+        "adapterId": "typescript-kernel-sqlite",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel-protocol-af.tree-create-rejects-missing-required-path.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-protocol-af.tree-create-rejects-missing-required-path.requiredEvidence.protocolEdgeValidation.tree.missingRequiredPathCode",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel-protocol-af.tree-create-rejects-missing-required-path",
+      "details": {
+        "adapterId": "typescript-kernel-sqlite",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel-protocol-af.tree-diff-rejects-schema-mismatch.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-protocol-af.tree-diff-rejects-schema-mismatch.requiredEvidence.protocolEdgeValidation.tree.schemaMismatchCode",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel-protocol-af.tree-diff-rejects-schema-mismatch",
+      "details": {
+        "adapterId": "typescript-kernel-sqlite",
+        "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
     },
@@ -1210,6 +1337,40 @@
     {
       "assertionResults": [
         {
+          "assertionId": "kernel-restart-af.invalid-staged-result-reexecutes.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-restart-af.invalid-staged-result-reexecutes.2.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-restart-af.invalid-staged-result-reexecutes.3.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-restart-af.invalid-staged-result-reexecutes.requiredEvidence.restartRecovery.recoveredLastCompletedStepId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-restart-af.invalid-staged-result-reexecutes.requiredEvidence.restartRecovery.recoveredUncommittedCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-restart-af.invalid-staged-result-reexecutes.requiredEvidence.restartRecovery.uncommittedNotPromoted",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel-restart-af.invalid-staged-result-reexecutes",
+      "details": {
+        "adapterId": "typescript-kernel-sqlite",
+        "planId": "tuvren.kernel.restart-recovery"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.1.evidenceField",
           "status": "pass"
         },
@@ -1266,6 +1427,66 @@
       "details": {
         "adapterId": "typescript-kernel-sqlite",
         "planId": "tuvren.kernel.restart-recovery"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel-restart-af.expired-running-requires-preemption.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-restart-af.expired-running-requires-preemption.2.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-restart-af.expired-running-requires-preemption.3.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-restart-af.expired-running-requires-preemption.requiredEvidence.preemption.leaseCleared",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-restart-af.expired-running-requires-preemption.requiredEvidence.preemption.preemptionReason",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-restart-af.expired-running-requires-preemption.requiredEvidence.preemption.runStatus",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel-restart-af.expired-running-requires-preemption",
+      "details": {
+        "adapterId": "typescript-kernel-sqlite",
+        "planId": "tuvren.kernel.run-liveness"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel-restart-af.paused-run-excluded-from-stale-preemption.1.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-restart-af.paused-run-excluded-from-stale-preemption.2.evidenceField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-restart-af.paused-run-excluded-from-stale-preemption.requiredEvidence.listing.pausedRunListed",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-restart-af.paused-run-excluded-from-stale-preemption.requiredEvidence.listing.pausedRunStatus",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+      "details": {
+        "adapterId": "typescript-kernel-sqlite",
+        "planId": "tuvren.kernel.run-liveness"
       },
       "status": "pass"
     },
@@ -1413,9 +1634,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 45,
-    "totalChecks": 45,
-    "applicableChecks": 45,
+    "passedChecks": 55,
+    "totalChecks": 55,
+    "applicableChecks": 55,
     "nonApplicableChecks": 0
   },
   "suiteId": "tuvren.kernel.protocol",

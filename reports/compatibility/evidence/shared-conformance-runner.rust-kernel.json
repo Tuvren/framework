@@ -1215,7 +1215,17 @@
   "exitCode": 0,
   "implementationId": "rust-kernel",
   "nonApplicableCheckIds": [
+    "kernel-protocol-af.branch-set-head-rejects-lateral-lineage",
+    "kernel-protocol-af.run-begin-step-rejects-out-of-order-step",
+    "kernel-protocol-af.run-complete-rejects-missing-event-object",
+    "kernel-protocol-af.run-create-rejects-busy-branch",
+    "kernel-protocol-af.schema-register-rejects-duplicate-path",
+    "kernel-protocol-af.tree-create-rejects-missing-required-path",
+    "kernel-protocol-af.tree-diff-rejects-schema-mismatch",
+    "kernel-restart-af.invalid-staged-result-reexecutes",
     "kernel.restart-recovery.close_reopen_checkpoint",
+    "kernel-restart-af.expired-running-requires-preemption",
+    "kernel-restart-af.paused-run-excluded-from-stale-preemption",
     "kernel.run-liveness.expired_listing",
     "kernel.run-liveness.lease_renewal",
     "kernel.run-liveness.stale_preemption"
@@ -1227,9 +1237,9 @@
   "summary": {
     "failedChecks": 0,
     "passedChecks": 41,
-    "totalChecks": 45,
+    "totalChecks": 55,
     "applicableChecks": 41,
-    "nonApplicableChecks": 4
+    "nonApplicableChecks": 14
   },
   "suiteId": "tuvren.kernel.protocol",
   "suiteVersion": "0.1.0"

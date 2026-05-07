@@ -18,6 +18,8 @@ import { assertHashString, type HashString } from "@tuvren/core-types";
 import type { RuntimeDriver } from "@tuvren/driver-api";
 import type {
   ApprovalDecision,
+  ExecutionHandle,
+  InputSignal,
   TuvrenMessage,
   TuvrenToolDefinition,
 } from "@tuvren/runtime-api";
@@ -91,7 +93,7 @@ export interface FrameworkAdapterRuntimeScenarioDependencies {
     record: Record<string, unknown>,
     property: string,
     path: string
-  ): import("@tuvren/runtime-api").StructuredOutputRequest | undefined;
+  ): import("@tuvren/runtime-api").StructuredOutputRequest;
   readScenarioToolCall(
     record: Record<string, unknown>,
     path: string
@@ -101,6 +103,7 @@ export interface FrameworkAdapterRuntimeScenarioDependencies {
     readonly name: string;
     readonly output?: unknown;
     readonly requiresApproval?: boolean;
+    readonly throwMessage?: string;
   };
   readScenarioToolCalls(
     record: Record<string, unknown>,
@@ -111,6 +114,7 @@ export interface FrameworkAdapterRuntimeScenarioDependencies {
     readonly name: string;
     readonly output?: unknown;
     readonly requiresApproval?: boolean;
+    readonly throwMessage?: string;
   }>;
   readStringProperty(
     record: Record<string, unknown>,
@@ -128,7 +132,7 @@ export function createFrameworkAdapterRuntimeScenarios(
     cancelAfterEvent?: string;
     deadlineMs?: number;
   }): Promise<AdapterProjection>;
-  runCompletedRuntimeTurn(): Promise<AdapterProjection>;
+  runCompletedRuntimeTurn(input: unknown): Promise<AdapterProjection>;
   runContextTransform(input: unknown): Promise<AdapterProjection>;
   runProviderGenerate(input: unknown): Promise<AdapterProjection>;
   runProviderStream(input: unknown): Promise<AdapterProjection>;
@@ -147,6 +151,7 @@ export function createFrameworkAdapterRuntimeScenarios(
     readProviderStreamChunks: dependencies.readProviderStreamChunks,
     readResponseFormatProperty: dependencies.readResponseFormatProperty,
     readScenarioToolCall: dependencies.readScenarioToolCall,
+    readScenarioToolCalls: dependencies.readScenarioToolCalls,
     readStringProperty: dependencies.readStringProperty,
   });
   const recoveryScenarios = createFrameworkAdapterRecoveryScenarios({
@@ -158,7 +163,18 @@ export function createFrameworkAdapterRuntimeScenarios(
     readStringProperty: dependencies.readStringProperty,
   });
 
-  async function runCompletedRuntimeTurn(): Promise<AdapterProjection> {
+  async function runCompletedRuntimeTurn(
+    input: unknown
+  ): Promise<AdapterProjection> {
+    const scenario = dependencies.readOperationScenario(
+      input,
+      "runtime.execute-turn"
+    );
+
+    if (scenario.case === "empty_parts") {
+      return await runInputSignalEmptyParts();
+    }
+
     const harness = createFakeKernelHarness();
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
@@ -267,6 +283,11 @@ export function createFrameworkAdapterRuntimeScenarios(
       }
     }
 
+    const messages = await harness.readBranchMessages(thread.branchId);
+    const runtimeStatus = await harness.readBranchRuntimeStatus(
+      thread.branchId
+    );
+
     return {
       evidence: {
         cancellation: {
@@ -274,6 +295,13 @@ export function createFrameworkAdapterRuntimeScenarios(
           errorEventCount: countEventsByType(events, "error"),
           observedEventIndex,
           observedEventType,
+          partialAssistantText: dependencies.readAssistantText(
+            messages,
+            "interrupted"
+          ),
+          runtimeStatusPartial:
+            dependencies.isRecord(runtimeStatus) &&
+            runtimeStatus.partial === true,
         },
         controls: {
           cancelAfterEvent: controls.cancelAfterEvent,
@@ -396,25 +424,68 @@ export function createFrameworkAdapterRuntimeScenarios(
       };
     }
 
+    if (dependencies.readRecordString(scenario, "case") === "cancel_paused") {
+      pausedHandle.cancel();
+      await waitForHandlePhase(pausedHandle, "completed");
+      const messages = await harness.readBranchMessages(thread.branchId);
+      const toolResults = readToolResultParts(messages);
+
+      return {
+        evidence: {
+          approval: {
+            cancelledPhase: pausedHandle.status().phase,
+            cancelledToolResults: toolResults,
+            pausedApprovalCallIds,
+            pausedEventTypes: pausedEvents.map((event) =>
+              dependencies.readRecordString(event, "type")
+            ),
+            pausedPhase,
+            resumedTextAbsent: !hasAssistantText(messages, finalText),
+          },
+          tool: {
+            execution: {
+              executedNamesAfterCancel: [...executedNames],
+              executedNamesBeforeResume,
+            },
+          },
+        },
+      };
+    }
+
     const resumedHandle = pausedHandle.resolveApproval({
       decisions,
     });
 
     const resumedEvents = await collectValues(resumedHandle.events());
+    const handleOwnership = observeSupersededPausedHandle(pausedHandle);
+    const messages = await harness.readBranchMessages(thread.branchId);
+    const toolResults = readToolResultParts(messages);
 
     return {
       evidence: {
         approval: {
           decisions,
+          gatedToolStartAfterResume: didEventOccurAfter(
+            resumedEvents,
+            "approval.resolved",
+            "tool.start",
+            "call-email"
+          ),
+          handleOwnership,
+          messageAttachment: readFirstApprovalMessage(toolResults),
           pausedApprovalCallIds,
           pausedEventTypes: pausedEvents.map((event) =>
             dependencies.readRecordString(event, "type")
           ),
           pausedPhase,
+          pausedTurnIds: readEventStringValues(pausedEvents, "turnId"),
           resumedEventTypes: resumedEvents.map((event) =>
             dependencies.readRecordString(event, "type")
           ),
           resumedPhase: resumedHandle.status().phase,
+          resumedTurnIds: readEventStringValues(resumedEvents, "turnId"),
+          sameTurn: eventStreamsShareTurn(pausedEvents, resumedEvents),
+          toolResults,
         },
         tool: {
           execution: {
@@ -472,6 +543,54 @@ export function createFrameworkAdapterRuntimeScenarios(
     };
   }
 
+  async function runInputSignalEmptyParts(): Promise<AdapterProjection> {
+    const harness = createFakeKernelHarness();
+    const runtime = createTuvrenRuntimeCore({
+      createId: createConformanceIdFactory(),
+      defaultDriverId: DRIVER_ID,
+      driverRegistry: createDriverRegistry([
+        createStaticDriver(() => ({
+          messages: [assistantText("should not execute")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        })),
+      ]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    // This scenario intentionally crosses the typed boundary with malformed
+    // input so the shared runner can observe runtime validation behavior.
+    const emptySignal = { parts: [] } as unknown as InputSignal;
+
+    try {
+      runtime.executeTurn({
+        branchId: thread.branchId,
+        config: { name: AGENT_NAME },
+        signal: emptySignal,
+        threadId: thread.threadId,
+      });
+
+      return {
+        evidence: {
+          inputSignal: {
+            accepted: true,
+          },
+        },
+      };
+    } catch (error: unknown) {
+      return {
+        evidence: {
+          inputSignal: {
+            accepted: false,
+            error: readErrorEnvelope(error),
+          },
+        },
+      };
+    }
+  }
+
   return {
     runApprovalResume,
     runBranchCreate,
@@ -499,6 +618,52 @@ export function createFrameworkAdapterRuntimeScenarios(
     return new Promise((resolve) => {
       signal.addEventListener("abort", () => resolve(), { once: true });
     });
+  }
+
+  async function waitForHandlePhase(
+    handle: ExecutionHandle,
+    phase: "completed" | "failed" | "paused" | "running"
+  ): Promise<void> {
+    for (let attempt = 0; attempt < 50; attempt += 1) {
+      if (handle.status().phase === phase) {
+        return;
+      }
+
+      await new Promise((resolve) => {
+        setTimeout(resolve, 1);
+      });
+    }
+
+    throw new Error(`handle did not reach ${phase} phase`);
+  }
+
+  function hasAssistantText(
+    messages: readonly unknown[],
+    expectedText: string
+  ): boolean {
+    for (const message of messages) {
+      if (!dependencies.isRecord(message) || message.role !== "assistant") {
+        continue;
+      }
+
+      const parts = message.parts;
+
+      if (!Array.isArray(parts)) {
+        continue;
+      }
+
+      for (const part of parts) {
+        if (
+          dependencies.isRecord(part) &&
+          part.type === "text" &&
+          part.text === expectedText
+        ) {
+          return true;
+        }
+      }
+    }
+
+    return false;
   }
 
   function readFirstErrorEnvelope(
@@ -544,5 +709,166 @@ export function createFrameworkAdapterRuntimeScenarios(
     }
 
     return checkpointHash;
+  }
+
+  function observeSupersededPausedHandle(
+    handle: ExecutionHandle
+  ): Record<string, unknown> {
+    return {
+      cancelErrorCode: readThrownErrorCode(() => handle.cancel()),
+      resolveApprovalErrorCode: readThrownErrorCode(() =>
+        handle.resolveApproval({ decisions: [] })
+      ),
+      statusPhaseAfterResolution: handle.status().phase,
+    };
+  }
+
+  function readThrownErrorCode(action: () => void): string | undefined {
+    try {
+      action();
+      return undefined;
+    } catch (error: unknown) {
+      if (dependencies.isRecord(error) && typeof error.code === "string") {
+        return error.code;
+      }
+
+      return undefined;
+    }
+  }
+
+  function readErrorEnvelope(error: unknown): Record<string, unknown> {
+    if (error instanceof Error) {
+      return {
+        code:
+          dependencies.isRecord(error) && typeof error.code === "string"
+            ? error.code
+            : "runtime_error",
+        message: error.message,
+      };
+    }
+
+    return {
+      code: "runtime_error",
+      message: String(error),
+    };
+  }
+
+  function readToolResultParts(
+    messages: readonly unknown[]
+  ): Record<string, unknown>[] {
+    const results: Record<string, unknown>[] = [];
+
+    for (const message of messages) {
+      if (!dependencies.isRecord(message) || message.role !== "tool") {
+        continue;
+      }
+
+      const parts = message.parts;
+
+      if (!Array.isArray(parts)) {
+        continue;
+      }
+
+      for (const part of parts) {
+        if (!dependencies.isRecord(part)) {
+          continue;
+        }
+
+        results.push({
+          callId: part.callId,
+          isError: part.isError === true,
+          name: part.name,
+          output: part.output,
+        });
+      }
+    }
+
+    return results;
+  }
+
+  function readFirstApprovalMessage(
+    toolResults: readonly Record<string, unknown>[]
+  ): string | undefined {
+    for (const result of toolResults) {
+      const output = result.output;
+
+      if (!dependencies.isRecord(output)) {
+        continue;
+      }
+
+      const message = dependencies.readRecordString(output, "message");
+
+      if (message !== undefined) {
+        return message;
+      }
+
+      const error = dependencies.readRecordString(output, "error");
+
+      if (error !== undefined) {
+        return error;
+      }
+    }
+
+    return undefined;
+  }
+
+  function readEventStringValues(
+    events: readonly unknown[],
+    key: string
+  ): string[] {
+    const values = new Set<string>();
+
+    for (const event of events) {
+      const value = dependencies.readRecordString(event, key);
+
+      if (value !== undefined) {
+        values.add(value);
+      }
+    }
+
+    return [...values].sort();
+  }
+
+  function didEventOccurAfter(
+    events: readonly unknown[],
+    earlierType: string,
+    laterType: string,
+    laterCallId?: string
+  ): boolean {
+    const earlierIndex = findEventIndex(events, earlierType);
+    const laterIndex = findEventIndex(events, laterType, laterCallId);
+
+    return earlierIndex >= 0 && laterIndex > earlierIndex;
+  }
+
+  function findEventIndex(
+    events: readonly unknown[],
+    type: string,
+    callId?: string
+  ): number {
+    return events.findIndex((event) => {
+      if (dependencies.readRecordString(event, "type") !== type) {
+        return false;
+      }
+
+      return (
+        callId === undefined ||
+        dependencies.readRecordString(event, "callId") === callId
+      );
+    });
+  }
+
+  function eventStreamsShareTurn(
+    firstEvents: readonly unknown[],
+    secondEvents: readonly unknown[]
+  ): boolean {
+    const firstTurnIds = readEventStringValues(firstEvents, "turnId");
+    const secondTurnIds = readEventStringValues(secondEvents, "turnId");
+
+    return (
+      firstTurnIds.length === 1 &&
+      secondTurnIds.length === 1 &&
+      firstTurnIds[0] === secondTurnIds[0]
+    );
   }
 }

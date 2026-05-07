@@ -41,6 +41,7 @@ const OPERATION_SOURCE_BY_PACKET = new Map<string, readonly string[]>([
     "tuvren.kernel.protocol",
     [
       "boundaries/kernel/conformance/plans/kernel-protocol-core.json",
+      "boundaries/kernel/conformance/plans/kernel-protocol-extended.json",
       "boundaries/kernel/conformance/plans/kernel-run-liveness.json",
       "boundaries/kernel/conformance/plans/kernel-restart-recovery.json",
     ],

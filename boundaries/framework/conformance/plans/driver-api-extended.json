@@ -128,6 +128,31 @@
       },
       "operation": "driver.resume",
       "scenario": "driver-api-scenarios"
+    },
+    {
+      "assertions": [
+        {
+          "equals": "fail",
+          "field": "$.driver.resolutionType",
+          "kind": "evidenceField"
+        },
+        {
+          "equals": "invalid_loop_policy",
+          "field": "$.driver.errorCode",
+          "kind": "evidenceField"
+        }
+      ],
+      "checkId": "driver-api-af.invalid-loop-policy-tool-call-hard-fail",
+      "evidence": [
+        "driver.resolutionType",
+        "driver.errorCode",
+        "result.error.code"
+      ],
+      "input": {
+        "scenarioPath": "$.driver-invalid-loop-policy-tool-call"
+      },
+      "operation": "driver.execute",
+      "scenario": "driver-api-scenarios"
     }
   ],
   "packetId": "tuvren.framework.driver-api",

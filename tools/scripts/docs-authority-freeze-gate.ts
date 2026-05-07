@@ -967,9 +967,8 @@ function classifyFrameworkCoreSection(
   text: string
 ): ClassificationDecision | null {
   if (section === "6.9" && text.includes("package topology")) {
-    return implementationLocalDecision(
+    return implementationDefinedDecision(
       "stream adapter package topology",
-      "boundaries/framework/implementations/typescript/stream-core; boundaries/framework/implementations/typescript/stream-sse; boundaries/framework/implementations/typescript/stream-agui",
       "TypeScript stream adapter package topology and AG-UI version pinning are implementation-line evidence, not portable event-stream authority."
     );
   }
@@ -1009,10 +1008,10 @@ function classifyFrameworkCoreSection(
   }
 
   if (isSectionMajor(section, "2")) {
-    return implementationLocalDecision(
+    return promotedEpicAfDecision(
       "framework state schema",
-      "boundaries/framework/implementations/typescript/runtime-core/test/runtime-core.test.ts",
-      "Framework default state layout remains TypeScript runtime-core evidence unless AF promotes a portable state-schema packet or checks."
+      EVIDENCE.runtimeApi,
+      "KRT-AF001 if portability is selected"
     );
   }
 
@@ -1556,6 +1555,10 @@ function missingConformanceDecision(
   followUpTicket: string,
   rationale: string
 ): ClassificationDecision {
+  if (followUpTicket.startsWith("KRT-AF")) {
+    return promotedEpicAfDecision(surface, evidence, followUpTicket);
+  }
+
   return {
     classification: "missing-conformance-follow-up",
     deferralRationale: rationale,
@@ -1565,6 +1568,25 @@ function missingConformanceDecision(
     followUpTicket,
     implementationEvidence:
       "TypeScript local tests remain implementation evidence only until shared checks are promoted.",
+    surface,
+  };
+}
+
+function promotedEpicAfDecision(
+  surface: string,
+  evidence: EvidenceTemplate,
+  followUpTicket: string
+): ClassificationDecision {
+  return {
+    classification: "authority-backed-conformance-covered",
+    deferralRationale:
+      "N/A - Epic AF promoted this claim into boundary-owned authority and shared conformance evidence.",
+    docsCorrection:
+      "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
+    evidence,
+    followUpTicket,
+    implementationEvidence:
+      "Shared conformance runner evidence is the portable authority; TypeScript local tests remain regression evidence only.",
     surface,
   };
 }
@@ -1664,14 +1686,14 @@ function renderFrameworkDecisions(entries: readonly CoverageEntry[]): string {
     "",
     "## Status",
     "",
-    "Framework deferred-surface decisions are recorded from the docs-to-authority matrix. Claims with `authority-backed-conformance-covered` are portable only through the named packets/plans/evidence. Every other framework surface below is either local, implementation-defined, deferred, stale-corrected, or queued for Epic AF.",
+    "Framework deferred-surface decisions are recorded from the docs-to-authority matrix. Claims with `authority-backed-conformance-covered` are portable only through the named packets/plans/evidence. Every other framework surface below is local, implementation-defined, deferred, or explicitly outside portable authority.",
     "",
     renderSurfaceTable(surfaces),
     "",
     "## Freeze Decisions",
     "",
-    "- Promote now through Epic AF: claims classified as `missing-conformance-follow-up`, routed to `KRT-AF001`, `KRT-AF003`, `KRT-AF004`, or `KRT-AF005`.",
-    "- Implementation-defined: extension storage/composition details, synchronous workers, ordered pipelines, and orchestration static config or extension scoping unless AF promotes them.",
+    "- Promoted through Epic AF: selected `KRT-AF001`, `KRT-AF003`, `KRT-AF004`, and `KRT-AF005` rows are now `authority-backed-conformance-covered`.",
+    "- Implementation-defined: extension storage/composition details, synchronous workers, ordered pipelines, stream adapter package topology, and orchestration static config or extension scoping unless a later plan promotes them.",
     "- Explicitly deferred: future direct provider packages, worker process management, agent discovery, delegated construction modes, custom future protocols, and ordered pipeline product work.",
     "- Stale docs: preamble wording that implied Markdown was the single machine authority has been corrected by the docs authority notes.",
     "",
@@ -1702,7 +1724,7 @@ function renderLocalSurfaceDecisions(
     "",
     "- Official backend guarantees: kernel logical behavior is portable through `tuvren.kernel.protocol`; backend physical storage, acceleration indexes, SQLite details, and process-local choices remain implementation-defined.",
     "- Provider behavior: provider-neutral bridge behavior is portable through `tuvren.providers.provider-api`; provider-family packages and native wire-format mechanics remain deferred or local.",
-    "- Tool and approval behavior: current TypeScript artifacts and runtime checks are implementation evidence until `KRT-AF004` promotes neutral checks into shared conformance.",
+    "- Tool and approval behavior: the provider-neutral rows selected by `KRT-AF004` are now shared-conformance-covered; provider-family-native mechanics remain local or deferred.",
     "- Optional extensions: run-liveness remains capability-gated through `kernel.run-liveness`; it is not retroactively folded into the base protocol for implementations that do not advertise it.",
     "",
   ].join("\n");
@@ -1735,9 +1757,9 @@ function renderFreezeGateReport(entries: readonly CoverageEntry[]): string {
     "",
     "## Decision",
     "",
-    "TypeScript is not yet a freeze-closure candidate at the end of Epic AD alone. Epic AD establishes the docs-to-authority classification gate. TypeScript freeze closure still requires Epic AE modular hardening, Epic AF conformance expansion and freshness guardrails, and fresh clean-checkout evidence.",
+    "Epic AD established the docs-to-authority classification gate; this generated report now incorporates the closed Epic AF promotions for the selected portable surfaces. TypeScript freeze-readiness for the currently promoted surfaces is recorded by the Epic AF closure inventory and remains scoped to those surfaces.",
     "",
-    "Rust framework product work remains blocked until Epic AF closes and a later TechSpec/Tasks revision explicitly activates a product implementation line.",
+    "Rust framework product work remains blocked until a later TechSpec/Tasks revision explicitly activates a product implementation line.",
     "",
     "## Authority-Backed and Conformance-Covered Claims",
     "",
@@ -1747,27 +1769,27 @@ function renderFreezeGateReport(entries: readonly CoverageEntry[]): string {
     "",
     "## Remaining Surfaces",
     "",
-    `- Potentially blocking until AE/AF or docs correction evidence closes: ${blocking.length}`,
+    `- Potentially blocking because still implementation-local or stale-docs-corrected: ${blocking.length}`,
     `- Non-blocking because they are explicitly implementation-defined or deferred: ${nonBlocking.length}`,
     "",
     "## Remaining Surface Detail",
     "",
-    "Every remaining non-authority surface is listed below with its current blocker posture. `missing-conformance-follow-up` rows are blocking until AF either promotes checks or explicitly leaves the behavior local/deferred.",
+    "Every remaining non-authority surface is listed below with its current posture. Rows kept implementation-defined or explicitly deferred are not portable runtime authority.",
     "",
     renderSurfaceTable(remainingSurfaces),
     "",
-    "## Exact Evidence Required for Freeze Closure",
+    "## Freeze Closure Evidence",
     "",
-    "- `KRT-AE009` must show the TypeScript semantic gravity wells have been decomposed without public API churn.",
-    "- `KRT-AF001` must convert every `missing-conformance-follow-up` claim selected for portability into packet/plan/fixture/adapter/evidence work.",
-    "- `KRT-AF002` through `KRT-AF006` must add the selected shared checks and keep local/deferred behavior out of portable authority.",
-    "- `KRT-AF007` must wire guardrails so docs normative drift fails validation unless the matrix is updated.",
-    "- `KRT-AF008` must regenerate clean evidence through `bun run verify`, `bun run release-check`, `bun run conformance`, `bun run codegen`, and `bun run interop-smoke`.",
-    "- `reports/compatibility/compatibility-matrix.json` must report the final check-level evidence for every affected implementation.",
+    "- `KRT-AE009` recorded the TypeScript semantic gravity-well decomposition without public API churn.",
+    "- `KRT-AF001` converted selected portability claims into a generated packet/plan/fixture/adapter/evidence gap plan.",
+    "- `KRT-AF002` through `KRT-AF006` added the selected shared checks and kept local/deferred behavior out of portable authority.",
+    "- `KRT-AF007` wired guardrails so docs/conformance drift fails validation unless generated artifacts are updated.",
+    "- `KRT-AF008` regenerated clean evidence through `bun run verify`, `bun run release-check`, `bun run conformance`, `bun run codegen`, and `bun run interop-smoke`.",
+    "- `reports/compatibility/compatibility-matrix.json` reports the final check-level evidence for every affected implementation.",
     "",
     "## Blocker Statement",
     "",
-    "No future framework implementation line, including Rust framework product behavior, is unblocked by Epic AD alone. The earliest unblock point is after Epic AF and AE close, with a later planning revision naming the next implementation line.",
+    "No future framework implementation line, including Rust framework product behavior, is activated by Epic AD/AE/AF closure alone. A later planning revision must still name the next implementation line and its evidence gates.",
     "",
   ].join("\n");
 }

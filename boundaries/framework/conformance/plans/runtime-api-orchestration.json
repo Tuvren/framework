@@ -315,6 +315,64 @@
       "assertions": [
         {
           "equals": true,
+          "field": "$.orchestration.surfaces.handoffHistoryControlEntryAbsent",
+          "kind": "evidenceField"
+        }
+      ],
+      "checkId": "runtime-orchestration-af.handoff-resolution-not-history-entry",
+      "evidence": ["orchestration.surfaces.handoffHistoryControlEntryAbsent"],
+      "input": {
+        "scenarioPath": "$.orchestration-handoff-attribution"
+      },
+      "operation": "runtime.orchestration.event-surfaces",
+      "scenario": "runtime-api-scenarios"
+    },
+    {
+      "assertions": [
+        {
+          "equals": "Passing this to reviewer.",
+          "field": "$.orchestration.surfaces.handoffLastOutputOnlyText",
+          "kind": "evidenceField"
+        },
+        {
+          "equals": true,
+          "field": "$.orchestration.surfaces.handoffLastOutputOnlyNoSourceSignal",
+          "kind": "evidenceField"
+        }
+      ],
+      "checkId": "runtime-orchestration-af.handoff-last-output-only-builder",
+      "evidence": [
+        "orchestration.surfaces.handoffLastOutputOnlyText",
+        "orchestration.surfaces.handoffLastOutputOnlyNoSourceSignal"
+      ],
+      "input": {
+        "scenarioPath": "$.orchestration-handoff-attribution"
+      },
+      "operation": "runtime.orchestration.event-surfaces",
+      "scenario": "runtime-api-scenarios"
+    },
+    {
+      "assertions": [
+        {
+          "equals": "invalid_driver_result",
+          "field": "$.orchestration.surfaces.handoffInvalidCompositionError.code",
+          "kind": "evidenceField"
+        }
+      ],
+      "checkId": "runtime-orchestration-af.handoff-rejects-multiple-intents",
+      "evidence": [
+        "orchestration.surfaces.handoffInvalidCompositionError.code"
+      ],
+      "input": {
+        "scenarioPath": "$.orchestration-handoff-attribution"
+      },
+      "operation": "runtime.orchestration.event-surfaces",
+      "scenario": "runtime-api-scenarios"
+    },
+    {
+      "assertions": [
+        {
+          "equals": true,
           "field": "$.orchestration.inheritance.driverIdInherited",
           "kind": "evidenceField"
         }
@@ -481,6 +539,36 @@
       ],
       "checkId": "runtime-orchestration.nested.child-source-worker-id-present",
       "evidence": ["orchestration.nested.childGrandchildSource.workerId"],
+      "input": {
+        "scenarioPath": "$.orchestration-nested-attribution"
+      },
+      "operation": "runtime.orchestration.nested-attribution",
+      "scenario": "runtime-api-scenarios"
+    },
+    {
+      "assertions": [
+        {
+          "equals": "worker-2",
+          "field": "$.orchestration.nested.rootGrandchildSource.agent",
+          "kind": "evidenceField"
+        },
+        {
+          "field": "$.orchestration.nested.rootGrandchildSource.threadId",
+          "kind": "evidenceField",
+          "matches": "^.+$"
+        },
+        {
+          "field": "$.orchestration.nested.rootGrandchildSource.workerId",
+          "kind": "evidenceField",
+          "matches": "^.+$"
+        }
+      ],
+      "checkId": "runtime-orchestration-af.worker-forwarded-event-source",
+      "evidence": [
+        "orchestration.nested.rootGrandchildSource.agent",
+        "orchestration.nested.rootGrandchildSource.threadId",
+        "orchestration.nested.rootGrandchildSource.workerId"
+      ],
       "input": {
         "scenarioPath": "$.orchestration-nested-attribution"
       },

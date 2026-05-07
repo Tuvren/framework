@@ -2,64 +2,50 @@
 
 ## Decision
 
-TypeScript is not yet a freeze-closure candidate at the end of Epic AD alone. Epic AD establishes the docs-to-authority classification gate. TypeScript freeze closure still requires Epic AE modular hardening, Epic AF conformance expansion and freshness guardrails, and fresh clean-checkout evidence.
+Epic AD established the docs-to-authority classification gate; this generated report now incorporates the closed Epic AF promotions for the selected portable surfaces. TypeScript freeze-readiness for the currently promoted surfaces is recorded by the Epic AF closure inventory and remains scoped to those surfaces.
 
-Rust framework product work remains blocked until Epic AF closes and a later TechSpec/Tasks revision explicitly activates a product implementation line.
+Rust framework product work remains blocked until a later TechSpec/Tasks revision explicitly activates a product implementation line.
 
 ## Authority-Backed and Conformance-Covered Claims
 
-- Independent claims currently classified as authority-backed and conformance-covered: 99
+- Independent claims currently classified as authority-backed and conformance-covered: 194
 - Duplicate matrix rows linked by `duplicateOf`: 3
 - Evidence anchors: framework, provider, and kernel authority packets; shared conformance plans; boundary fixtures/scenarios; adapter capabilities; and compatibility evidence under `reports/compatibility/evidence/`.
 
 ## Remaining Surfaces
 
-- Potentially blocking until AE/AF or docs correction evidence closes: 96
-- Non-blocking because they are explicitly implementation-defined or deferred: 28
+- Potentially blocking because still implementation-local or stale-docs-corrected: 0
+- Non-blocking because they are explicitly implementation-defined or deferred: 29
 
 ## Remaining Surface Detail
 
-Every remaining non-authority surface is listed below with its current blocker posture. `missing-conformance-follow-up` rows are blocking until AF either promotes checks or explicitly leaves the behavior local/deferred.
+Every remaining non-authority surface is listed below with its current posture. Rows kept implementation-defined or explicitly deferred are not portable runtime authority.
 
 | Surface | Independent Claims | Classifications | Follow-up | Blocks future implementation line? |
 | --- | ---: | --- | --- | --- |
-| approval and cancellation control | 26 | missing-conformance-follow-up | KRT-AF004 | Yes, until AF/docs evidence resolves it |
-| approval resume semantics | 1 | missing-conformance-follow-up | KRT-AF004 | Yes, until AF/docs evidence resolves it |
-| aroundModel live/durable reconciliation | 2 | missing-conformance-follow-up | KRT-AF003 | Yes, until AF/docs evidence resolves it |
 | extension contracts | 5 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
 | extension state and prompt contracts | 4 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
 | framework driver framing | 2 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
-| framework state schema | 3 | implementation-local-evidence | KRT-AF001 if portability is selected | Yes, until AF/docs evidence resolves it |
 | future framework drivers | 1 | explicitly-deferred | Future TechSpec/Tasks revision after TypeScript freeze closure | No, if kept local/deferred |
-| handoff and context engineering | 6 | missing-conformance-follow-up | KRT-AF005 | Yes, until AF/docs evidence resolves it |
-| kernel appendix validation matrix | 20 | missing-conformance-follow-up | KRT-AF006 | Yes, until AF/docs evidence resolves it |
 | kernel backend acceleration indexes | 2 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
 | kernel backend physical storage | 1 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
 | kernel deferred maintenance surfaces | 1 | explicitly-deferred | Future TechSpec/Tasks revision after TypeScript freeze closure | No, if kept local/deferred |
 | kernel docs-to-authority framing | 1 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
-| kernel recovery edge states | 3 | missing-conformance-follow-up | KRT-AF006 | Yes, until AF/docs evidence resolves it |
 | kernel storage structural sharing | 1 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
 | orchestration optional worker modes | 1 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
 | orchestration out-of-core boundaries | 8 | explicitly-deferred | Future TechSpec/Tasks revision after TypeScript freeze closure | No, if kept local/deferred |
 | orchestration static config and extension scoping | 1 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
-| ReAct and extension hooks | 8 | missing-conformance-follow-up | KRT-AF003 | Yes, until AF/docs evidence resolves it |
-| runtime loop policy | 1 | missing-conformance-follow-up | KRT-AF003 | Yes, until AF/docs evidence resolves it |
-| shared framework type shapes | 8 | missing-conformance-follow-up | KRT-AF001 | Yes, until AF/docs evidence resolves it |
-| stream adapter package topology | 1 | implementation-local-evidence | KRT-AF001 if portability is selected | Yes, until AF/docs evidence resolves it |
-| structured output contract | 7 | missing-conformance-follow-up | KRT-AF004 | Yes, until AF/docs evidence resolves it |
-| tool and approval contracts | 7 | missing-conformance-follow-up | KRT-AF004 | Yes, until AF/docs evidence resolves it |
-| tool parallelism and event ordering | 2 | missing-conformance-follow-up | KRT-AF004 | Yes, until AF/docs evidence resolves it |
-| worker subtree event forwarding | 1 | missing-conformance-follow-up | KRT-AF005 | Yes, until AF/docs evidence resolves it |
+| stream adapter package topology | 1 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
 
-## Exact Evidence Required for Freeze Closure
+## Freeze Closure Evidence
 
-- `KRT-AE009` must show the TypeScript semantic gravity wells have been decomposed without public API churn.
-- `KRT-AF001` must convert every `missing-conformance-follow-up` claim selected for portability into packet/plan/fixture/adapter/evidence work.
-- `KRT-AF002` through `KRT-AF006` must add the selected shared checks and keep local/deferred behavior out of portable authority.
-- `KRT-AF007` must wire guardrails so docs normative drift fails validation unless the matrix is updated.
-- `KRT-AF008` must regenerate clean evidence through `bun run verify`, `bun run release-check`, `bun run conformance`, `bun run codegen`, and `bun run interop-smoke`.
-- `reports/compatibility/compatibility-matrix.json` must report the final check-level evidence for every affected implementation.
+- `KRT-AE009` recorded the TypeScript semantic gravity-well decomposition without public API churn.
+- `KRT-AF001` converted selected portability claims into a generated packet/plan/fixture/adapter/evidence gap plan.
+- `KRT-AF002` through `KRT-AF006` added the selected shared checks and kept local/deferred behavior out of portable authority.
+- `KRT-AF007` wired guardrails so docs/conformance drift fails validation unless generated artifacts are updated.
+- `KRT-AF008` regenerated clean evidence through `bun run verify`, `bun run release-check`, `bun run conformance`, `bun run codegen`, and `bun run interop-smoke`.
+- `reports/compatibility/compatibility-matrix.json` reports the final check-level evidence for every affected implementation.
 
 ## Blocker Statement
 
-No future framework implementation line, including Rust framework product behavior, is unblocked by Epic AD alone. The earliest unblock point is after Epic AF and AE close, with a later planning revision naming the next implementation line.
+No future framework implementation line, including Rust framework product behavior, is activated by Epic AD/AE/AF closure alone. A later planning revision must still name the next implementation line and its evidence gates.

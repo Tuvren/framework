@@ -53,6 +53,35 @@
         "restartRecovery.recoveredUncommittedCount",
         "restartRecovery.committedMessageCount"
       ]
+    },
+    {
+      "checkId": "kernel-restart-af.invalid-staged-result-reexecutes",
+      "operation": "kernel.restart-recovery.close-reopen-checkpoint",
+      "controls": {
+        "deadlineMs": 180000
+      },
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.restartRecovery.uncommittedNotPromoted",
+          "equals": true
+        },
+        {
+          "kind": "evidenceField",
+          "field": "$.restartRecovery.recoveredUncommittedCount",
+          "equals": 1
+        },
+        {
+          "kind": "evidenceField",
+          "field": "$.restartRecovery.recoveredLastCompletedStepId",
+          "equals": "model_call"
+        }
+      ],
+      "evidence": [
+        "restartRecovery.uncommittedNotPromoted",
+        "restartRecovery.recoveredUncommittedCount",
+        "restartRecovery.recoveredLastCompletedStepId"
+      ]
     }
   ]
 }

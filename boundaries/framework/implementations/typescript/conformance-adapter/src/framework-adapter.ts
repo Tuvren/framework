@@ -83,6 +83,7 @@ const driverScenarios = createFrameworkAdapterDriver({
   readOperationScenario,
   readPendingToolCalls,
   readProperty,
+  readProviderStreamChunks,
   readStringProperty,
 });
 
@@ -261,7 +262,7 @@ export class TypeScriptFrameworkAdapter implements ImplementationAdapter {
     // assertions and expected semantics, and this file must only measure TS behavior.
     switch (operation) {
       case "runtime.execute-turn":
-        return runtimeScenarios.runCompletedRuntimeTurn();
+        return runtimeScenarios.runCompletedRuntimeTurn(input);
       case "runtime.cancel-execution":
         return runtimeScenarios.runCancelledRuntimeTurn(controls);
       case "runtime.approval-resolve":
@@ -570,6 +571,10 @@ function readScenarioToolCall(
             "requiresApproval",
             `${label}.requiresApproval`
           ),
+    throwMessage:
+      record.throwMessage === undefined
+        ? undefined
+        : readStringProperty(record, "throwMessage", `${label}.throwMessage`),
   };
 }
 
@@ -599,6 +604,15 @@ function readApprovalDecisions(
           "callId",
           `${label}[${index}].callId`
         ),
+        ...(record.message === undefined
+          ? {}
+          : {
+              message: readStringProperty(
+                record,
+                "message",
+                `${label}[${index}].message`
+              ),
+            }),
         type: readStringProperty(record, "type", `${label}[${index}].type`),
       };
     }

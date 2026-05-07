@@ -16,10 +16,14 @@
 
 import { assertHashString } from "@tuvren/core-types";
 import { assertDriverExecutionResult } from "@tuvren/driver-api";
+import type { ProviderStreamChunk, TuvrenProvider } from "@tuvren/provider-api";
 import type {
   ApprovalDecision,
+  IterationDecision,
+  LoopPolicy,
   TuvrenExtension,
   TuvrenModelResponse,
+  TuvrenStreamEvent,
 } from "@tuvren/runtime-api";
 import { createReActDriver } from "../../drivers/react/src/index.ts";
 import {
@@ -70,6 +74,10 @@ export interface FrameworkAdapterDriverDependencies {
     property: string,
     path: string
   ): unknown;
+  readProviderStreamChunks(
+    record: Record<string, unknown>,
+    path: string
+  ): ProviderStreamChunk[];
   readStringProperty(
     record: Record<string, unknown>,
     property: string,
@@ -98,9 +106,19 @@ export function createFrameworkAdapterDriver(
       providerResponses,
       "driver.execute.providerResponses"
     );
+    const loopPolicy = readLoopPolicyOptional(scenario);
+    const caseName = readOptionalString(scenario, "case");
 
-    if (toolName === undefined) {
-      return runDirectDriverExecute(providerResponses);
+    if (caseName === "around_model_post_stream_replacement") {
+      return await runAroundModelPostStreamReplacement(scenario);
+    }
+
+    if (caseName === "around_model_retry_final_response") {
+      return await runAroundModelRetryFinalResponse(providerResponses);
+    }
+
+    if (toolName === undefined || loopPolicy !== undefined) {
+      return runDirectDriverExecute(providerResponses, loopPolicy);
     }
 
     const prompt = dependencies.readStringProperty(
@@ -140,6 +158,7 @@ export function createFrameworkAdapterDriver(
           {
             description: "Search docs",
             execute() {
+              hooks.aroundToolTrace.push("tool.execute");
               toolCalls += 1;
               return toolResult;
             },
@@ -153,6 +172,7 @@ export function createFrameworkAdapterDriver(
     });
 
     await collectValues(handle.events());
+    const messages = await harness.readBranchMessages(thread.branchId);
 
     return {
       evidence: {
@@ -162,8 +182,13 @@ export function createFrameworkAdapterDriver(
         hooks: {
           afterIteration: hooks.afterIteration,
           aroundModel: hooks.aroundModel,
+          aroundModelTrace: hooks.aroundModelTrace,
           aroundTool: hooks.aroundTool,
+          aroundToolTrace: hooks.aroundToolTrace,
+          terminalMutationAttempted: hooks.terminalMutationAttempted,
+          terminalMutationDurableText: readAssistantText(messages),
           beforeIteration: hooks.beforeIteration,
+          phaseTrace: hooks.phaseTrace,
         },
         provider: {
           generate: {
@@ -182,8 +207,130 @@ export function createFrameworkAdapterDriver(
     };
   }
 
-  async function runDirectDriverExecute(
+  async function runAroundModelPostStreamReplacement(
+    scenario: Record<string, unknown>
+  ): Promise<AdapterProjection> {
+    const chunks = dependencies.readProviderStreamChunks(
+      scenario,
+      "driver.execute.streamChunks"
+    );
+    const emittedEvents: TuvrenStreamEvent[] = [];
+    const provider: TuvrenProvider = {
+      generate() {
+        return Promise.reject(
+          new Error("generate must not run during stream replacement")
+        );
+      },
+      id: "provider",
+      async *stream() {
+        await Promise.resolve();
+        for (const chunk of chunks) {
+          yield structuredClone(chunk);
+        }
+      },
+    };
+    const driver = createReActDriver({
+      providerCallMode: "stream",
+    }).create();
+    const result = await driver.execute(
+      createDriverExecutionContext({
+        config: {
+          extensions: [
+            {
+              async aroundModel(_context, next) {
+                const response = await next();
+                return {
+                  ...response,
+                  parts: [{ text: "modified", type: "text" }],
+                };
+              },
+              name: "rewriter",
+            },
+          ],
+          model: provider,
+          name: AGENT_NAME,
+        },
+        emittedEvents,
+      })
+    );
+
+    assertDriverExecutionResult(result, "driver aroundModel replacement");
+
+    return {
+      evidence: {
+        aroundModel: {
+          finalAssistantText: readResultAssistantText(result),
+          messageStartCount: countEventsByType(emittedEvents, "message.start"),
+          streamedTextDone: readTextDoneValues(emittedEvents),
+        },
+        driver: {
+          resolutionType: result.resolution.type,
+        },
+      },
+    };
+  }
+
+  async function runAroundModelRetryFinalResponse(
     providerResponses: readonly TuvrenModelResponse[]
+  ): Promise<AdapterProjection> {
+    let generateCalls = 0;
+    const driver = createReActDriver({
+      providerCallMode: "generate",
+    }).create();
+    const result = await driver.execute(
+      createDriverExecutionContext({
+        config: {
+          extensions: [
+            {
+              async aroundModel(context, next) {
+                await next(context);
+                return await next({
+                  ...context,
+                  prompt: {
+                    ...context.prompt,
+                    messages: [
+                      ...context.prompt.messages,
+                      {
+                        content: "Retry with shared fallback behavior",
+                        role: "system" as const,
+                      },
+                    ],
+                  },
+                });
+              },
+              name: "retry",
+            },
+          ],
+          model: createScenarioProvider(providerResponses, () => {
+            generateCalls += 1;
+          }),
+          name: AGENT_NAME,
+        },
+      })
+    );
+
+    assertDriverExecutionResult(result, "driver aroundModel retry");
+
+    return {
+      evidence: {
+        aroundModel: {
+          finalAssistantText: readResultAssistantText(result),
+        },
+        driver: {
+          resolutionType: result.resolution.type,
+        },
+        provider: {
+          generate: {
+            callCount: generateCalls,
+          },
+        },
+      },
+    };
+  }
+
+  async function runDirectDriverExecute(
+    providerResponses: readonly TuvrenModelResponse[],
+    loopPolicy?: LoopPolicy
   ): Promise<AdapterProjection> {
     const driver = createReActDriver({
       providerCallMode: "generate",
@@ -191,6 +338,7 @@ export function createFrameworkAdapterDriver(
     const result = await driver.execute(
       createDriverExecutionContext({
         config: {
+          ...(loopPolicy === undefined ? {} : { loopPolicy }),
           model: createScenarioProvider(providerResponses, () => undefined),
           name: AGENT_NAME,
         },
@@ -202,6 +350,10 @@ export function createFrameworkAdapterDriver(
     return {
       evidence: {
         driver: {
+          errorCode:
+            result.resolution.type === "fail"
+              ? dependencies.errorToEnvelope(result.resolution.error).code
+              : undefined,
           resolutionType: result.resolution.type,
         },
       },
@@ -339,33 +491,177 @@ export function createFrameworkAdapterDriver(
 interface HookCounters {
   afterIteration: number;
   aroundModel: number;
+  aroundModelTrace: string[];
   aroundTool: number;
+  aroundToolTrace: string[];
   beforeIteration: number;
+  phaseTrace: string[];
+  terminalMutationAttempted: boolean;
 }
 
 function createHookCounters(): HookCounters {
   return {
     afterIteration: 0,
     aroundModel: 0,
+    aroundModelTrace: [],
     aroundTool: 0,
+    aroundToolTrace: [],
     beforeIteration: 0,
+    phaseTrace: [],
+    terminalMutationAttempted: false,
   };
+}
+
+function readOptionalString(
+  record: Record<string, unknown>,
+  key: string
+): string | undefined {
+  return typeof record[key] === "string" ? record[key] : undefined;
+}
+
+function readLoopPolicyOptional(
+  scenario: Record<string, unknown>
+): LoopPolicy | undefined {
+  const loopPolicy = scenario.loopPolicy;
+
+  if (loopPolicy === undefined) {
+    return undefined;
+  }
+
+  if (!isRecord(loopPolicy)) {
+    throw new Error("driver.execute.loopPolicy must be an object");
+  }
+
+  const decision = readIterationDecision(loopPolicy);
+
+  return {
+    evaluate() {
+      return decision;
+    },
+  };
+}
+
+function readIterationDecision(
+  record: Record<string, unknown>
+): IterationDecision {
+  const continueDecision = record.continue;
+  const executeTools = record.executeTools;
+  const reason = record.reason;
+
+  if (typeof continueDecision !== "boolean") {
+    throw new Error("driver.execute.loopPolicy.continue must be a boolean");
+  }
+
+  if (typeof executeTools !== "boolean") {
+    throw new Error("driver.execute.loopPolicy.executeTools must be a boolean");
+  }
+
+  return {
+    continue: continueDecision,
+    executeTools,
+    ...(typeof reason === "string" ? { reason } : {}),
+  };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function countEventsByType(
+  events: readonly TuvrenStreamEvent[],
+  type: string
+): number {
+  let count = 0;
+
+  for (const event of events) {
+    if (event.type === type) {
+      count += 1;
+    }
+  }
+
+  return count;
+}
+
+function readTextDoneValues(events: readonly TuvrenStreamEvent[]): string[] {
+  const values: string[] = [];
+
+  for (const event of events) {
+    if (event.type === "text.done") {
+      values.push(event.text);
+    }
+  }
+
+  return values;
+}
+
+function readResultAssistantText(result: {
+  messages?: readonly unknown[];
+}): string | undefined {
+  return readAssistantText(result.messages ?? []);
+}
+
+function readAssistantText(messages: readonly unknown[]): string | undefined {
+  for (const message of messages) {
+    if (!isRecord(message) || message.role !== "assistant") {
+      continue;
+    }
+
+    const parts = message.parts;
+
+    if (!Array.isArray(parts)) {
+      continue;
+    }
+
+    for (const part of parts) {
+      if (
+        isRecord(part) &&
+        part.type === "text" &&
+        typeof part.text === "string"
+      ) {
+        return part.text;
+      }
+    }
+  }
+
+  return undefined;
 }
 
 function createMeasuredExtension(hooks: HookCounters): TuvrenExtension {
   return {
-    afterIteration() {
+    afterIteration(context) {
+      const firstPart = context.response.parts[0];
+
+      if (
+        firstPart?.type === "text" &&
+        firstPart.text === "driver hook turn completed"
+      ) {
+        firstPart.text = "mutated by afterIteration";
+        hooks.terminalMutationAttempted = true;
+      }
+
+      hooks.phaseTrace.push("afterIteration");
       hooks.afterIteration += 1;
     },
     async aroundModel(_context, next) {
+      hooks.phaseTrace.push("aroundModel.before");
+      hooks.aroundModelTrace.push("before");
       hooks.aroundModel += 1;
-      return await next();
+      const result = await next();
+      hooks.aroundModelTrace.push("after");
+      hooks.phaseTrace.push("aroundModel.after");
+      return result;
     },
     async aroundTool(_context, next) {
+      hooks.phaseTrace.push("aroundTool.before");
+      hooks.aroundToolTrace.push("aroundTool.before");
       hooks.aroundTool += 1;
-      return await next();
+      const result = await next();
+      hooks.aroundToolTrace.push("aroundTool.after");
+      hooks.phaseTrace.push("aroundTool.after");
+      return result;
     },
     beforeIteration() {
+      hooks.phaseTrace.push("beforeIteration");
       hooks.beforeIteration += 1;
     },
     name: "measured-driver-hooks",

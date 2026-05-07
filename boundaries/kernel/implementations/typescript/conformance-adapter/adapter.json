@@ -18,6 +18,8 @@
     "--capability",
     "kernel.protocol",
     "--capability",
+    "kernel.edge-validation",
+    "--capability",
     "kernel.logical",
     "--capability",
     "kernel.run-liveness",
@@ -26,6 +28,7 @@
   ],
   "capabilities": [
     "kernel.protocol",
+    "kernel.edge-validation",
     "kernel.logical",
     "kernel.run-liveness",
     "kernel.persistence.process-local"

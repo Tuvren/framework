@@ -1560,7 +1560,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "N/A",
+      "adapterCapability": "framework.runtime-api",
       "claimFingerprint": "a346b29d81955ac34eb7c3cffdb590619347af5606946d46a3cfb5f785e2a573",
       "claimId": "FWK-A346B29D8195",
       "duplicateOf": null,
@@ -1575,7 +1575,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "N/A",
+      "adapterCapability": "framework.runtime-api",
       "claimFingerprint": "a9611c7d2c6fc54a980386989107f27e0cee1310cda87a6baebf712930f1caf3",
       "claimId": "FWK-A9611C7D2C6F",
       "duplicateOf": null,
@@ -1590,7 +1590,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "N/A",
+      "adapterCapability": "framework.runtime-api",
       "claimFingerprint": "0a368d92cb9dad35b646870f5330bf1ca5c2be63b87ddf5f40ee7ff792b0e992",
       "claimId": "FWK-0A368D92CB9D",
       "duplicateOf": null,

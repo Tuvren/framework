@@ -97,6 +97,49 @@
         "preemption.uncommittedStagedResults",
         "preemption.leaseCleared"
       ]
+    },
+    {
+      "checkId": "kernel-restart-af.expired-running-requires-preemption",
+      "operation": "kernel.run-liveness.stale-preemption",
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.preemption.runStatus",
+          "equals": "failed"
+        },
+        {
+          "kind": "evidenceField",
+          "field": "$.preemption.preemptionReason",
+          "equals": "stale_running_recovery"
+        },
+        {
+          "kind": "evidenceField",
+          "field": "$.preemption.leaseCleared",
+          "equals": true
+        }
+      ],
+      "evidence": [
+        "preemption.runStatus",
+        "preemption.preemptionReason",
+        "preemption.leaseCleared"
+      ]
+    },
+    {
+      "checkId": "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+      "operation": "kernel.run-liveness.expired-listing",
+      "assertions": [
+        {
+          "kind": "evidenceField",
+          "field": "$.listing.pausedRunStatus",
+          "equals": "paused"
+        },
+        {
+          "kind": "evidenceField",
+          "field": "$.listing.pausedRunListed",
+          "equals": false
+        }
+      ],
+      "evidence": ["listing.pausedRunStatus", "listing.pausedRunListed"]
     }
   ]
 }

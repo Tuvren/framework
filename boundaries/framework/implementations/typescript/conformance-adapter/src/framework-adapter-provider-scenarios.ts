@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import { assertHashString, type HashString } from "@tuvren/core-types";
 import type { DriverExecutionContext } from "@tuvren/driver-api";
 import { assertDriverExecutionResult } from "@tuvren/driver-api";
 import type { ProviderStreamChunk, TuvrenProvider } from "@tuvren/provider-api";
@@ -82,7 +83,7 @@ export interface FrameworkAdapterProviderScenarioDependencies {
     record: Record<string, unknown>,
     property: string,
     path: string
-  ): StructuredOutputRequest | undefined;
+  ): StructuredOutputRequest;
   readScenarioToolCall(
     record: Record<string, unknown>,
     path: string
@@ -92,7 +93,19 @@ export interface FrameworkAdapterProviderScenarioDependencies {
     readonly name: string;
     readonly output?: unknown;
     readonly requiresApproval?: boolean;
+    readonly throwMessage?: string;
   };
+  readScenarioToolCalls(
+    record: Record<string, unknown>,
+    path: string
+  ): Array<{
+    readonly callId: string;
+    readonly input: unknown;
+    readonly name: string;
+    readonly output?: unknown;
+    readonly requiresApproval?: boolean;
+    readonly throwMessage?: string;
+  }>;
   readStringProperty(
     record: Record<string, unknown>,
     property: string,
@@ -150,6 +163,7 @@ export function createFrameworkAdapterProviderScenarios(
           generate: {
             callCount: generateCalls,
             eventTypes: sequence.events.map((event) => event.type),
+            partKeys: sequence.response.parts.map((part) => Object.keys(part)),
             response: sequence.response,
           },
         },
@@ -207,6 +221,17 @@ export function createFrameworkAdapterProviderScenarios(
             callCount: streamCalls,
             chunkTypes: chunks.map((chunk) => chunk.type),
             emittedEventTypes: emittedEvents.map((event) => event.type),
+            structuredDeltaIndex: findEventIndex(
+              emittedEvents,
+              "structured.delta"
+            ),
+            structuredDoneIndex: findEventIndex(
+              emittedEvents,
+              "structured.done"
+            ),
+            toolCallIdOwnedByFramework: isFirstToolCallIdOwnedByFramework(
+              sequence.response
+            ),
             response: sequence.response,
           },
         },
@@ -224,10 +249,7 @@ export function createFrameworkAdapterProviderScenarios(
       "prompt",
       "runtime.tool-execute.prompt"
     );
-    const call = dependencies.readScenarioToolCall(
-      scenario.toolCall as Record<string, unknown>,
-      "runtime.tool-execute.toolCall"
-    );
+    const calls = readScenarioToolCallList(scenario);
     const toolResult = dependencies.readProperty(
       scenario,
       "toolResult",
@@ -242,13 +264,14 @@ export function createFrameworkAdapterProviderScenarios(
     let toolCalls = 0;
     const toolInputs: unknown[] = [];
     const toolOutputs: unknown[] = [];
+    const toolFailures: string[] = [];
     const driver = createStaticDriver(
       async (context: DriverExecutionContext) => {
         await Promise.resolve();
 
         if (!context.messages.some((message) => message.role === "tool")) {
           return {
-            messages: [assistantToolCalls([call])],
+            messages: [assistantToolCalls(calls)],
             resolution: { type: "continue_iteration" as const },
             toolExecutionMode: "parallel",
           };
@@ -274,33 +297,50 @@ export function createFrameworkAdapterProviderScenarios(
       branchId: thread.branchId,
       config: {
         name: AGENT_NAME,
-        tools: [
-          {
-            description: "Search docs",
-            execute() {
-              toolCalls += 1;
-              toolInputs.push(call.input);
-              toolOutputs.push(toolResult);
-              return toolResult;
-            },
-            inputSchema: { type: "object" },
-            name: call.name,
+        tools: calls.map((call) => ({
+          description: `Shared conformance tool ${call.name}`,
+          execute() {
+            toolCalls += 1;
+            toolInputs.push(call.input);
+
+            if (call.throwMessage !== undefined) {
+              toolFailures.push(call.name);
+              throw new Error(call.throwMessage);
+            }
+
+            const output = call.output ?? toolResult;
+            toolOutputs.push(output);
+            return output;
           },
-        ],
+          inputSchema: { type: "object" },
+          name: call.name,
+        })),
       },
       signal: textSignal(prompt),
       threadId: thread.threadId,
     });
 
     const events = await collectValues(handle.events());
+    const messages = await harness.readBranchMessages(thread.branchId);
 
     return {
       evidence: {
         tool: {
           execution: {
             callCount: toolCalls,
+            eventTypes: events.map((event) => readEventType(event)),
+            firstToolResultIndex: findEventIndex(events, "tool.result"),
+            parallelWaveStartedBeforeResults:
+              didParallelWaveStartBeforeResults(events),
+            secondToolStartIndex: findEventIndex(
+              events,
+              "tool.start",
+              "call-email"
+            ),
+            failureNames: toolFailures,
             inputs: toolInputs,
             outputs: toolOutputs,
+            toolResults: readToolResultParts(messages),
           },
         },
       },
@@ -359,9 +399,11 @@ export function createFrameworkAdapterProviderScenarios(
           error:
             result.resolution.type === "fail"
               ? {
+                  code: readErrorCode(result.resolution.error),
                   message: result.resolution.error.message,
                 }
               : undefined,
+          dialect: resolveSchemaDialect(responseFormat.schema),
           resolutionType: result.resolution.type,
         },
       },
@@ -395,13 +437,24 @@ export function createFrameworkAdapterProviderScenarios(
       createId: createConformanceIdFactory(),
       defaultDriverId: DRIVER_ID,
       driverRegistry: createDriverRegistry([
-        createStaticDriver(() => ({
-          messages: [assistantText(finalText)],
-          resolution: {
-            reason: "done",
-            type: "end_turn",
-          },
-        })),
+        createStaticDriver((context) => {
+          context.runtime.emit({
+            data: {
+              messageCount: context.messages.length,
+            },
+            name: "driver.executed",
+            timestamp: context.runtime.now(),
+            type: "custom",
+          });
+
+          return {
+            messages: [assistantText(finalText)],
+            resolution: {
+              reason: "done",
+              type: "end_turn",
+            },
+          };
+        }),
       ]),
       kernel: harness.kernel,
     });
@@ -432,14 +485,40 @@ export function createFrameworkAdapterProviderScenarios(
       threadId: thread.threadId,
     });
 
-    await collectValues(handle.events());
+    const events = await collectValues(handle.events());
     const manifest = await harness.readBranchManifest(thread.branchId);
     const messages = await harness.readBranchMessages(thread.branchId);
+    const checkpointHashes = readCheckpointHashes(events);
+    const sourceTurnNodeHash = checkpointHashes[0];
+    const rewrittenTurnNodeHash = checkpointHashes[1];
+    const finalTurnNodeHash = checkpointHashes.at(-1);
+    const sourceMessages =
+      sourceTurnNodeHash === undefined
+        ? []
+        : await harness.readTurnNodeMessages(sourceTurnNodeHash);
+    const rewrittenMessages =
+      rewrittenTurnNodeHash === undefined
+        ? []
+        : await harness.readTurnNodeMessages(rewrittenTurnNodeHash);
 
     return {
+      events,
       evidence: {
         context: {
+          checkpointHashes,
+          createdNewHead:
+            sourceTurnNodeHash !== undefined &&
+            rewrittenTurnNodeHash !== undefined &&
+            sourceTurnNodeHash !== rewrittenTurnNodeHash,
+          driverObservedMessageCount: readDriverObservedMessageCount(events),
+          finalHeadChanged:
+            rewrittenTurnNodeHash !== undefined &&
+            finalTurnNodeHash !== undefined &&
+            rewrittenTurnNodeHash !== finalTurnNodeHash,
           messageCount: messages.length,
+          rewrittenMessageCount: rewrittenMessages.length,
+          snapshotMessageCounts: readSnapshotMessageCounts(events),
+          sourceMessageCount: sourceMessages.length,
           summaryText: dependencies.readAssistantText(messages, summaryText),
         },
         runtime: {
@@ -461,4 +540,219 @@ export function createFrameworkAdapterProviderScenarios(
     runStructuredValidationFailure,
     runToolExecution,
   };
+
+  function readCheckpointHashes(events: readonly unknown[]): HashString[] {
+    const hashes: HashString[] = [];
+
+    for (const event of events) {
+      if (!isRecord(event) || event.type !== "state.checkpoint") {
+        continue;
+      }
+
+      const turnNodeHash = event.turnNodeHash;
+
+      if (typeof turnNodeHash !== "string") {
+        continue;
+      }
+
+      assertHashString(turnNodeHash, "state.checkpoint.turnNodeHash");
+      hashes.push(turnNodeHash);
+    }
+
+    return hashes;
+  }
+
+  function readDriverObservedMessageCount(
+    events: readonly unknown[]
+  ): number | undefined {
+    for (const event of events) {
+      if (!isRecord(event) || event.type !== "custom") {
+        continue;
+      }
+
+      if (event.name !== "driver.executed" || !isRecord(event.data)) {
+        continue;
+      }
+
+      const messageCount = event.data.messageCount;
+
+      if (typeof messageCount === "number") {
+        return messageCount;
+      }
+    }
+
+    return undefined;
+  }
+
+  function readSnapshotMessageCounts(events: readonly unknown[]): number[] {
+    const counts: number[] = [];
+
+    for (const event of events) {
+      if (
+        isRecord(event) &&
+        event.type === "state.snapshot" &&
+        isRecord(event.manifest) &&
+        typeof event.manifest.messageCount === "number"
+      ) {
+        counts.push(event.manifest.messageCount);
+      }
+    }
+
+    return counts;
+  }
+
+  function readScenarioToolCallList(
+    scenario: Record<string, unknown>
+  ): ReturnType<
+    FrameworkAdapterProviderScenarioDependencies["readScenarioToolCalls"]
+  > {
+    if (Array.isArray(scenario.toolCalls)) {
+      return dependencies.readScenarioToolCalls(
+        scenario,
+        "runtime.tool-execute.toolCalls"
+      );
+    }
+
+    if (!isRecord(scenario.toolCall)) {
+      throw new Error("runtime.tool-execute.toolCall must be an object");
+    }
+
+    return [
+      dependencies.readScenarioToolCall(
+        scenario.toolCall,
+        "runtime.tool-execute.toolCall"
+      ),
+    ];
+  }
+}
+
+function readErrorCode(error: Error): string | undefined {
+  return isRecord(error) && typeof error.code === "string"
+    ? error.code
+    : undefined;
+}
+
+function resolveSchemaDialect(schema: unknown): string {
+  if (!isRecord(schema) || schema.$schema === undefined) {
+    return "draft-07";
+  }
+
+  if (typeof schema.$schema !== "string") {
+    return "unsupported";
+  }
+
+  if (schema.$schema.includes("2020-12")) {
+    return "draft-2020-12";
+  }
+
+  if (schema.$schema.includes("2019-09")) {
+    return "draft-2019-09";
+  }
+
+  if (schema.$schema.includes("draft-07")) {
+    return "draft-07";
+  }
+
+  return "unsupported";
+}
+
+function findEventIndex(
+  events: readonly unknown[],
+  type: string,
+  callId?: string
+): number {
+  return events.findIndex((event) => {
+    if (readEventType(event) !== type) {
+      return false;
+    }
+
+    return callId === undefined || (isRecord(event) && event.callId === callId);
+  });
+}
+
+function didParallelWaveStartBeforeResults(
+  events: readonly unknown[]
+): boolean {
+  const resultIndex = findEventIndex(events, "tool.result");
+
+  if (resultIndex < 0) {
+    return false;
+  }
+
+  const startedCallIds = new Set<string>();
+
+  for (let index = 0; index < resultIndex; index += 1) {
+    const event = events[index];
+
+    if (
+      isRecord(event) &&
+      event.type === "tool.start" &&
+      typeof event.callId === "string"
+    ) {
+      startedCallIds.add(event.callId);
+    }
+  }
+
+  return startedCallIds.size >= 2;
+}
+
+function isFirstToolCallIdOwnedByFramework(
+  response: TuvrenModelResponse
+): boolean {
+  for (const part of response.parts) {
+    if (part.type !== "tool_call") {
+      continue;
+    }
+
+    const providerCallId = isRecord(part.providerMetadata)
+      ? part.providerMetadata.providerCallId
+      : undefined;
+
+    return typeof providerCallId === "string" && part.callId !== providerCallId;
+  }
+
+  return false;
+}
+
+function readEventType(event: unknown): string | undefined {
+  return isRecord(event) && typeof event.type === "string"
+    ? event.type
+    : undefined;
+}
+
+function readToolResultParts(
+  messages: readonly unknown[]
+): Record<string, unknown>[] {
+  const results: Record<string, unknown>[] = [];
+
+  for (const message of messages) {
+    if (!isRecord(message) || message.role !== "tool") {
+      continue;
+    }
+
+    const parts = message.parts;
+
+    if (!Array.isArray(parts)) {
+      continue;
+    }
+
+    for (const part of parts) {
+      if (!isRecord(part)) {
+        continue;
+      }
+
+      results.push({
+        callId: part.callId,
+        isError: part.isError === true,
+        name: part.name,
+        output: part.output,
+      });
+    }
+  }
+
+  return results;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }

@@ -50,6 +50,7 @@ export interface ScenarioToolCall {
   readonly name: string;
   readonly output?: unknown;
   readonly requiresApproval?: boolean;
+  readonly throwMessage?: string;
 }
 
 export const DRIVER_ID = "typescript-conformance-driver";

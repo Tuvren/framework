@@ -818,6 +818,97 @@
       ],
       "fixture": "f-mixed-status-staged",
       "operation": "kernel.protocol.schema-roundtrip"
+    },
+    {
+      "assertions": [
+        {
+          "equals": "duplicate_schema_path",
+          "field": "$.protocolEdgeValidation.schema.duplicatePathCode",
+          "kind": "evidenceField"
+        }
+      ],
+      "capabilities": ["kernel.edge-validation"],
+      "checkId": "kernel-protocol-af.schema-register-rejects-duplicate-path",
+      "evidence": ["protocolEdgeValidation.schema.duplicatePathCode"],
+      "operation": "kernel.protocol.edge-validation"
+    },
+    {
+      "assertions": [
+        {
+          "equals": "kernel_runtime_missing_required_tree_path",
+          "field": "$.protocolEdgeValidation.tree.missingRequiredPathCode",
+          "kind": "evidenceField"
+        }
+      ],
+      "capabilities": ["kernel.edge-validation"],
+      "checkId": "kernel-protocol-af.tree-create-rejects-missing-required-path",
+      "evidence": ["protocolEdgeValidation.tree.missingRequiredPathCode"],
+      "operation": "kernel.protocol.edge-validation"
+    },
+    {
+      "assertions": [
+        {
+          "equals": "kernel_runtime_tree_schema_mismatch_diff",
+          "field": "$.protocolEdgeValidation.tree.schemaMismatchCode",
+          "kind": "evidenceField"
+        }
+      ],
+      "capabilities": ["kernel.edge-validation"],
+      "checkId": "kernel-protocol-af.tree-diff-rejects-schema-mismatch",
+      "evidence": ["protocolEdgeValidation.tree.schemaMismatchCode"],
+      "operation": "kernel.protocol.edge-validation"
+    },
+    {
+      "assertions": [
+        {
+          "equals": "kernel_runtime_branch_already_active",
+          "field": "$.protocolEdgeValidation.run.busyBranchCode",
+          "kind": "evidenceField"
+        }
+      ],
+      "capabilities": ["kernel.edge-validation"],
+      "checkId": "kernel-protocol-af.run-create-rejects-busy-branch",
+      "evidence": ["protocolEdgeValidation.run.busyBranchCode"],
+      "operation": "kernel.protocol.edge-validation"
+    },
+    {
+      "assertions": [
+        {
+          "equals": "kernel_runtime_unexpected_step",
+          "field": "$.protocolEdgeValidation.run.outOfOrderStepCode",
+          "kind": "evidenceField"
+        }
+      ],
+      "capabilities": ["kernel.edge-validation"],
+      "checkId": "kernel-protocol-af.run-begin-step-rejects-out-of-order-step",
+      "evidence": ["protocolEdgeValidation.run.outOfOrderStepCode"],
+      "operation": "kernel.protocol.edge-validation"
+    },
+    {
+      "assertions": [
+        {
+          "equals": "kernel_runtime_missing_event_object",
+          "field": "$.protocolEdgeValidation.run.missingEventObjectCode",
+          "kind": "evidenceField"
+        }
+      ],
+      "capabilities": ["kernel.edge-validation"],
+      "checkId": "kernel-protocol-af.run-complete-rejects-missing-event-object",
+      "evidence": ["protocolEdgeValidation.run.missingEventObjectCode"],
+      "operation": "kernel.protocol.edge-validation"
+    },
+    {
+      "assertions": [
+        {
+          "equals": "kernel_runtime_lateral_head_movement",
+          "field": "$.protocolEdgeValidation.branch.lateralHeadCode",
+          "kind": "evidenceField"
+        }
+      ],
+      "capabilities": ["kernel.edge-validation"],
+      "checkId": "kernel-protocol-af.branch-set-head-rejects-lateral-lineage",
+      "evidence": ["protocolEdgeValidation.branch.lateralHeadCode"],
+      "operation": "kernel.protocol.edge-validation"
     }
   ],
   "fixtures": {

@@ -188,6 +188,10 @@ export const DEFAULT_VERIFICATION_STEPS: readonly VerificationStep[] = [
     id: "docs-to-authority freeze gate",
   },
   {
+    command: ["bun", "run", "docs:af-gap-plan:check"],
+    id: "Epic AF conformance gap plan freshness",
+  },
+  {
     command: [
       "bun",
       "tools/scripts/authority-packet/validate-authority-packets.ts",

@@ -2,6 +2,10 @@
   "completed-turn": {
     "operation": "runtime.execute-turn"
   },
+  "input-signal-empty-parts": {
+    "operation": "runtime.execute-turn",
+    "case": "empty_parts"
+  },
   "provider-generate-text": {
     "operation": "runtime.provider-generate",
     "prompt": {
@@ -17,6 +21,64 @@
       "parts": [{ "type": "text", "text": "generated from shared scenario" }]
     }
   },
+  "provider-generate-tool-call": {
+    "operation": "runtime.provider-generate",
+    "prompt": {
+      "messages": [
+        {
+          "role": "user",
+          "parts": [{ "type": "text", "text": "Call the shared tool." }]
+        }
+      ],
+      "tools": [
+        {
+          "name": "search",
+          "description": "Search docs",
+          "inputSchema": {
+            "type": "object",
+            "properties": { "query": { "type": "string" } },
+            "required": ["query"]
+          }
+        }
+      ]
+    },
+    "providerResponse": {
+      "finishReason": "tool_call",
+      "parts": [
+        {
+          "type": "tool_call",
+          "callId": "call-search",
+          "name": "search",
+          "input": { "query": "shared docs" }
+        }
+      ]
+    }
+  },
+  "provider-generate-structured": {
+    "operation": "runtime.provider-generate",
+    "prompt": {
+      "messages": [
+        {
+          "role": "user",
+          "parts": [{ "type": "text", "text": "Return structured data." }]
+        }
+      ],
+      "responseFormat": {
+        "name": "answer",
+        "schema": {
+          "type": "object",
+          "properties": { "answer": { "type": "number" } },
+          "required": ["answer"]
+        }
+      }
+    },
+    "providerResponse": {
+      "finishReason": "stop",
+      "parts": [
+        { "type": "structured", "name": "answer", "data": { "answer": 42 } }
+      ]
+    }
+  },
   "provider-stream-text": {
     "operation": "runtime.provider-stream",
     "prompt": {
@@ -30,6 +92,71 @@
     "streamChunks": [
       { "type": "text_delta", "text": "streamed from shared scenario" },
       { "type": "finish", "finishReason": "stop" }
+    ]
+  },
+  "provider-stream-structured-final": {
+    "operation": "runtime.provider-stream",
+    "prompt": {
+      "messages": [
+        {
+          "role": "user",
+          "parts": [
+            { "type": "text", "text": "Stream the shared structured answer." }
+          ]
+        }
+      ],
+      "responseFormat": {
+        "name": "answer",
+        "schema": {
+          "type": "object",
+          "properties": { "answer": { "type": "string" } },
+          "required": ["answer"]
+        }
+      }
+    },
+    "streamChunks": [
+      {
+        "type": "structured_done",
+        "name": "answer",
+        "data": { "answer": "ok" }
+      },
+      { "type": "finish", "finishReason": "stop" }
+    ]
+  },
+  "provider-stream-tool-call-native": {
+    "operation": "runtime.provider-stream",
+    "prompt": {
+      "messages": [
+        {
+          "role": "user",
+          "parts": [{ "type": "text", "text": "Stream the shared tool call." }]
+        }
+      ],
+      "tools": [
+        {
+          "name": "search",
+          "description": "Search docs",
+          "inputSchema": {
+            "type": "object",
+            "properties": { "query": { "type": "string" } },
+            "required": ["query"]
+          }
+        }
+      ]
+    },
+    "streamChunks": [
+      {
+        "type": "tool_call_start",
+        "providerCallId": "native-call-1",
+        "name": "search"
+      },
+      {
+        "type": "tool_call_done",
+        "providerCallId": "native-call-1",
+        "name": "search",
+        "input": { "query": "runtime" }
+      },
+      { "type": "finish", "finishReason": "tool_call" }
     ]
   },
   "tool-execute-search": {
@@ -52,6 +179,38 @@
     "toolResult": { "ok": true, "source": "shared scenario" },
     "finalText": "tool finished from shared scenario"
   },
+  "tool-execute-failure": {
+    "operation": "runtime.tool-execute",
+    "prompt": "Run the failing shared tool.",
+    "toolCall": {
+      "callId": "call-tool-fail",
+      "name": "search",
+      "input": { "query": "shared failure" },
+      "throwMessage": "shared tool failed"
+    },
+    "toolResult": { "ok": false },
+    "finalText": "tool failure staged from shared scenario"
+  },
+  "tool-execute-parallel-wave": {
+    "operation": "runtime.tool-execute",
+    "prompt": "Run shared parallel tools.",
+    "toolCalls": [
+      {
+        "callId": "call-search",
+        "name": "search",
+        "input": { "query": "parallel shared docs" },
+        "output": { "ok": true, "source": "search" }
+      },
+      {
+        "callId": "call-email",
+        "name": "email",
+        "input": { "subject": "Parallel shared update" },
+        "output": { "sent": true }
+      }
+    ],
+    "toolResult": { "ok": true },
+    "finalText": "parallel tools finished from shared scenario"
+  },
   "paused-turn-resume": {
     "operation": "runtime.approval-resolve",
     "prompt": "Approve the shared action.",
@@ -73,6 +232,57 @@
     ],
     "approvalDecisions": [{ "callId": "call-email", "type": "approve" }],
     "finalText": "approved from shared scenario"
+  },
+  "paused-turn-reject": {
+    "operation": "runtime.approval-resolve",
+    "prompt": "Reject the shared action.",
+    "toolCalls": [
+      {
+        "callId": "call-search",
+        "name": "search",
+        "input": { "query": "latest shared status" },
+        "requiresApproval": false,
+        "output": { "ok": true }
+      },
+      {
+        "callId": "call-email",
+        "name": "email",
+        "input": { "subject": "Shared status update", "to": "ops@example.com" },
+        "requiresApproval": true,
+        "output": { "sent": true }
+      }
+    ],
+    "approvalDecisions": [
+      {
+        "callId": "call-email",
+        "type": "reject",
+        "message": "Rejected by shared conformance."
+      }
+    ],
+    "finalText": "rejected from shared scenario"
+  },
+  "paused-turn-cancel": {
+    "operation": "runtime.approval-resolve",
+    "case": "cancel_paused",
+    "prompt": "Cancel the paused shared action.",
+    "toolCalls": [
+      {
+        "callId": "call-search",
+        "name": "search",
+        "input": { "query": "latest shared status" },
+        "requiresApproval": false,
+        "output": { "ok": true }
+      },
+      {
+        "callId": "call-email",
+        "name": "email",
+        "input": { "subject": "Shared status update", "to": "ops@example.com" },
+        "requiresApproval": true,
+        "output": { "sent": true }
+      }
+    ],
+    "approvalDecisions": [],
+    "finalText": "cancel should not resume"
   },
   "structured-validation-failure": {
     "operation": "runtime.validate-structured-output",

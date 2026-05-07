@@ -68,6 +68,50 @@
       }
     ]
   },
+  "driver-invalid-loop-policy-tool-call": {
+    "operation": "driver.execute",
+    "providerResponses": [
+      {
+        "finishReason": "tool_call",
+        "parts": [
+          {
+            "type": "tool_call",
+            "callId": "call-search",
+            "name": "search",
+            "input": { "query": "driver loop-policy validation" }
+          }
+        ]
+      }
+    ],
+    "loopPolicy": {
+      "continue": true,
+      "executeTools": false,
+      "reason": "shared_conformance_blocks_tool_execution"
+    }
+  },
+  "driver-around-model-post-stream-replacement": {
+    "operation": "driver.execute",
+    "case": "around_model_post_stream_replacement",
+    "providerResponses": [],
+    "streamChunks": [
+      { "type": "text_delta", "text": "provider" },
+      { "type": "finish", "finishReason": "stop" }
+    ]
+  },
+  "driver-around-model-retry-final-response": {
+    "operation": "driver.execute",
+    "case": "around_model_retry_final_response",
+    "providerResponses": [
+      {
+        "finishReason": "stop",
+        "parts": [{ "type": "text", "text": "first attempt" }]
+      },
+      {
+        "finishReason": "stop",
+        "parts": [{ "type": "text", "text": "second attempt" }]
+      }
+    ]
+  },
   "driver-checkpoint-turn": {
     "operation": "driver.checkpoint",
     "finalText": "checkpoint from shared scenario"
