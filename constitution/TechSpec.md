@@ -553,6 +553,8 @@ erDiagram
   - Boundary-owned conformance suites contain language-neutral schemas, fixtures, and scenarios with stable identity and explicit versioning.
   - Boundary-owned conformance assets are the behavioral source of truth for implementation parity. TypeScript runners consume them as one peer implementation path and do not retain special semantic authority after the split.
   - Mature conformance suites must identify named semantic checks, not only fixture files or smoke commands. A compatibility `pass` must be traceable to the exact check set that ran.
+  - Promoted conformance checks are decided only by runner-observed domains (`result`, `events`, `state`) and decisive assertions over those domains, schema validity, error-envelope shape, event ordering, terminality, or explicit absence of events. Adapter `evidence` is diagnostic/provenance only and cannot be the sole proof of promoted check success.
+  - Compatibility status is authoritative only as `pass`, `fail`, `unsupported`, or `not_applicable`; `pass` requires `applicableChecks > 0`, `failedChecks === 0`, and `passedChecks === applicableChecks`. `status: "pass"` with `applicableChecks === 0` is invalid.
   - Implementation-local tests may continue to exist for package internals, regressions, and convenience harnessing, but normative semantics that future implementations must share must be promoted into boundary-owned suites or explicitly marked implementation-specific.
   - A semantic coverage matrix must map the human specifications and high-value TypeScript implementation tests to boundary-owned suites, implementation runners, compatibility evidence, and documented gaps before any new implementation line is activated.
   - A docs-to-authority coverage matrix must classify every normative claim in `docs/KrakenFrameworkSpecification.md` and `docs/KrakenKernelSpecification.md` before any new framework implementation line is activated.
@@ -564,7 +566,7 @@ erDiagram
   - by boundary ownership: `boundaries/<area>/contracts/...`, `boundaries/<area>/conformance/...`, `boundaries/<area>/interop/...`
   - by repo-global generated outputs: `reports/compatibility/...`
   - by repo-global observability conventions: `telemetry/...`
-- **Migration Notes:** Existing TypeScript testkit packages now live under `boundaries/<area>/implementations/typescript/testkit/` and remain helper/facade packages. Compatibility evidence now flows through implementation-specific TypeScript conformance runners over shared conformance assets before Rust or other non-TypeScript implementations become authoritative. Epic W closed the first semantic-authority gap; the active freeze-readiness closure must now classify the remaining docs claims, TypeScript-local semantics, and structural hotspots before any future framework, driver, backend, provider, or host implementation line is authorized.
+- **Migration Notes:** Existing TypeScript testkit packages remain implementation-local helper/facade packages under `boundaries/<area>/implementations/typescript/testkit/`. Promoted compatibility evidence now flows through the shared semantic runner and implementation adapter hosts, not implementation-specific semantic runners. Epic AD, AE, and AF are archived historical context; AG is the active readiness gate. Historical closure inventories may inform AG001, but current readiness claims must be generated from live checks or removed.
 - **Authority packet membership (Epic Y):** Per ADR-026, every cross-implementation semantic surface owns exactly one Authority Packet manifest at the surface's `spec/authority-packet.json`. The manifest names which boundary-owned contract sources, conformance plans, transport projections, and binding projections together carry that surface and which sources are forbidden authority for it. A cross-implementation semantic claim that is not declared in such a manifest is not authoritative. Existing surfaces without a manifest (`runtime-api`, `driver-api`, `event-stream`, `core-types`, callable seams) are promoted through Epic Y; until promoted, their TypeScript implementations remain valid binding projections but cannot be cited as cross-language authority.
 
 ## 4. Interface Contract
@@ -1792,6 +1794,38 @@ A conformance plan is data-owned per ADR-025. Plans live alongside the surface t
     "checks"
   ],
   "additionalProperties": false,
+  "$defs": {
+    "assertion": {
+      "type": "object",
+      "required": ["kind"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "resultField",
+            "eventSequence",
+            "terminalEvent",
+            "schemaValid",
+            "errorEnvelope",
+            "stateField",
+            "evidenceField",
+            "ordering",
+            "noEvent"
+          ]
+        },
+        "path": { "type": "string", "minLength": 1 },
+        "schema": { "type": "string", "minLength": 1 },
+        "equals": {},
+        "equalsPath": { "type": "string", "minLength": 1 },
+        "matches": { "type": "string", "minLength": 1 },
+        "contains": {},
+        "containsPath": { "type": "string", "minLength": 1 },
+        "field": { "type": "string", "minLength": 1 },
+        "eventType": { "type": "string", "minLength": 1 }
+      }
+    }
+  },
   "properties": {
     "planId": { "type": "string", "minLength": 1 },
     "planVersion": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
@@ -1842,35 +1876,7 @@ A conformance plan is data-owned per ADR-025. Plans live alongside the surface t
           "assertions": {
             "type": "array",
             "minItems": 1,
-            "items": {
-              "type": "object",
-              "required": ["kind"],
-              "properties": {
-                "kind": {
-                  "type": "string",
-                  "enum": [
-                    "resultField",
-                    "eventSequence",
-                    "terminalEvent",
-                    "schemaValid",
-                    "errorEnvelope",
-                    "stateField",
-                    "evidenceField",
-                    "ordering",
-                    "noEvent"
-                  ]
-                },
-                "path": { "type": "string", "minLength": 1 },
-                "schema": { "type": "string", "minLength": 1 },
-                "equals": {},
-                "equalsPath": { "type": "string", "minLength": 1 },
-                "matches": { "type": "string", "minLength": 1 },
-                "contains": {},
-                "containsPath": { "type": "string", "minLength": 1 },
-                "field": { "type": "string", "minLength": 1 },
-                "eventType": { "type": "string", "minLength": 1 }
-              }
-            }
+            "items": { "$ref": "#/$defs/assertion" }
           },
           "steps": {
             "type": "array",
@@ -1883,7 +1889,11 @@ A conformance plan is data-owned per ADR-025. Plans live alongside the surface t
                 "operation": { "type": "string", "minLength": 1 },
                 "input": {},
                 "controls": {},
-                "assertions": { "type": "array" },
+                "assertions": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": { "$ref": "#/$defs/assertion" }
+                },
                 "inspectState": {}
               }
             },
@@ -1905,6 +1915,7 @@ A conformance plan is data-owned per ADR-025. Plans live alongside the surface t
 - `applicability.capabilities` and `checks[].capabilities` are executable. The shared runner selects checks by intersecting plan-required capabilities with capabilities declared by the adapter manifest or initialization response; promoted plans must not select by implementation ID, language, runner name, or adapter name.
 - `assertions[].kind` covers decisive result observations (`resultField` over `$.result`), durable state (`stateField` over `$.state`), event-stream behavior (`eventSequence`, `terminalEvent`, `ordering`, and `noEvent` over `$.events`), shape (`schemaValid` over `$.result`, `$.events`, or `$.state`, plus `errorEnvelope`), and diagnostics (`evidenceField` over `$.evidence`).
 - Decisive assertion kinds are `resultField`, `stateField`, `eventSequence`, `terminalEvent`, `schemaValid` over `$.result` / `$.events` / `$.state`, `errorEnvelope`, `ordering`, and `noEvent`. A conformance plan referenced by an Authority Packet must reject any promoted check that lacks at least one decisive non-evidence assertion.
+The decisive-assertion requirement applies across both `checks[].assertions` and `checks[].steps[].assertions`. A lifecycle check may satisfy the requirement through step assertions, final trace assertions, or both, but no promoted check or promoted trace step may rely only on evidence assertions.
 - `evidenceField` is never decisive. `schemaValid` over `$.evidence` is diagnostic and cannot satisfy the decisive-assertion requirement.
 - `noEvent` must inspect the runner-owned event observation stream, not adapter evidence arrays or adapter-reported event-type summaries.
 - The shared semantic runner implements assertion kinds once; product-specific assertion logic must be expressed through these operators rather than added as runner-side or adapter-side bespoke code.
@@ -2244,6 +2255,6 @@ conformance-plan JSON Schemas live under `tools/schemas/`.
 - **Epic AB — Run Liveness and Stale-Running Recovery:** Closed in current repo reality through `constitution/spikes/epic-ab-run-liveness-recovery-closure-inventory.md`. `kernel.run-liveness` is now an optional advertised extension, TypeScript memory and SQLite backends support it, shared framework stale-recovery conformance is promoted, and Rust remains non-applicable unless it advertises the same capability.
 - **Epic AC — Framework Orchestration Authority Promotion:** Closed in current repo reality through `constitution/spikes/epic-ac-framework-orchestration-authority-inventory.md` and `constitution/spikes/epic-ac-framework-orchestration-authority-closure-inventory.md`. The runtime-api packet now owns the orchestration plan family, the TypeScript framework adapter advertises and exercises `framework.orchestration`, and compatibility reporting records the promoted capability without introducing new kernel concepts, a global worker scheduler, A2A/ACP, provider-native handoff/tool routing, or Rust framework implementation work.
 - **Epic AD — Docs-to-Authority Freeze Gate:** Closed in current repo reality through `constitution/spikes/epic-ad-docs-to-authority-freeze-gate-closure-inventory.md`. The docs-to-authority matrix now classifies every normative framework and kernel docs claim against authority packets, conformance plans, fixtures, compatibility evidence, implementation-local evidence, deferral, missing conformance, or staleness before any new framework implementation line is activated.
-- **Epic AE — TypeScript Modular Boundary Hardening:** Closed in current repo reality through `constitution/spikes/epic-ae-modular-boundary-hardening-inventory.md`. The TypeScript semantic gravity wells are split behind stable seams, no `boundaries/**/*.ts` file remains over the `1000` hard ceiling, and the closure was verified with `bun run verify`.
+- **Epic AE — TypeScript Modular Boundary Hardening:** Closed as historical work through `constitution/spikes/epic-ae-modular-boundary-hardening-inventory.md`. Its measurable file-size claims are archived context and must not certify current readiness unless regenerated by AG008 live closure checks.
 - **Epic AF — Conformance Depth and Freeze Evidence:** Closed in current repo reality through `constitution/spikes/epic-af-conformance-gap-plan.md` and `constitution/spikes/epic-af-conformance-depth-freeze-evidence-closure-inventory.md`. The selected portable negative/interleaving behaviors were promoted into shared conformance, authority/freshness guardrails were wired into validation, compatibility evidence was refreshed, and TypeScript was considered freeze-ready for the then-promoted surfaces until Epic AG suspended that conclusion pending regenerated evidence.
 - **Later driver, backend, provider, language, and host protocol expansion:** Deferred unless the TechSpec is revised again. This includes Rust framework work, `LanguageModelV2` compatibility, provider-native tools, AI SDK agent loops/UI transports, LangChain bridge work, first-class Tuvren provider packages, ACP, future non-ReAct drivers, future official backends, and future language lines beyond Rust.

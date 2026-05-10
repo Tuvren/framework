@@ -251,7 +251,7 @@ When fresh evidence and freeze reassessment are performed
 Then conformance evidence is regenerated under AG gates
 And the compatibility matrix reports truthful `pass`, `fail`, `unsupported`, or `not_applicable`
 And `bun run codegen` has no drift
-And `bun run conformance`, `bun run compatibility:evidence`, `bun run release-check`, and `bun run verify` pass for supported applicable surfaces
+And `bun run conformance`, `bun run compatibility:evidence`, `bun run interop-smoke`, `bun run release-check`, and `bun run verify` pass for supported applicable surfaces
 And Tasks and TechSpec state whether TypeScript freeze-readiness is reaffirmed under AG rules
 ```
 
