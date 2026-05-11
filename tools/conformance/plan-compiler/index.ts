@@ -263,6 +263,10 @@ function assertValidAssertion(
   if (assertion.kind === "noEvent" && assertion.field !== undefined) {
     throw new Error(`${context} has field configured on noEvent assertion`);
   }
+
+  if (assertion.kind === "resultField" && assertion.field === undefined) {
+    throw new Error(`${context} has no field configured on resultField assertion`);
+  }
 }
 
 function expandRequiredEvidence(

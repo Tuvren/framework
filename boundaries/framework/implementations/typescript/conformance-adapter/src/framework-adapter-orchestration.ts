@@ -451,9 +451,7 @@ export function createFrameworkAdapterOrchestration(
 
     const parentEventsPromise = collectValues(handle.events());
 
-    await waitForHandlePhase(handle, "running");
-
-    const childHandle = handle.spawn({
+    const childHandle = await spawnWhenRunning(handle, {
       agent: "worker",
       signal: textSignal("child"),
     });
@@ -1113,29 +1111,51 @@ export function createFrameworkAdapterOrchestration(
     });
   }
 
-  async function waitForHandlePhase(
-    handle: {
-      status(): { phase: "completed" | "failed" | "paused" | "running" };
-    },
-    phase: "completed" | "failed" | "paused" | "running",
-    timeoutMs = 1000
-  ): Promise<void> {
-    const start = Date.now();
-
-    while (handle.status().phase !== phase) {
-      if (Date.now() - start > timeoutMs) {
-        throw new Error(`orchestration handle did not reach ${phase} phase`);
-      }
-
-      await sleep(5);
-    }
-  }
-
   function withResult(
     projection: AdapterProjection & { evidence: Record<string, unknown> }
   ): AdapterProjection {
     return projection.result === undefined
       ? { ...projection, result: projection.evidence }
       : projection;
+  }
+
+  async function spawnWhenRunning(
+    handle: {
+      spawn(input: {
+        agent: string;
+        signal: ReturnType<typeof textSignal>;
+      }): {
+        awaitResult(): Promise<unknown>;
+        events(): AsyncIterable<unknown>;
+      };
+    },
+    input: {
+      agent: string;
+      signal: ReturnType<typeof textSignal>;
+    },
+    timeoutMs = 1000
+  ): Promise<{
+    awaitResult(): Promise<unknown>;
+    events(): AsyncIterable<unknown>;
+  }> {
+    const start = Date.now();
+
+    while (true) {
+      try {
+        return handle.spawn(input);
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+
+        if (!message.includes("requires a running orchestration handle")) {
+          throw error;
+        }
+
+        if (Date.now() - start > timeoutMs) {
+          throw error;
+        }
+
+        await sleep(5);
+      }
+    }
   }
 }

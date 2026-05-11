@@ -112,4 +112,12 @@ describe("resultField assertions", () => {
     );
     expect(evaluation?.status).toBe("fail");
   });
+
+  test("fails when the configured result field is missing from the result", () => {
+    const [evaluation] = evaluateAssertions(
+      buildCheck([{ equals: "ready", field: "$.answer", kind: "resultField" }]),
+      { evidence: { answer: "ready" } }
+    );
+    expect(evaluation?.status).toBe("fail");
+  });
 });

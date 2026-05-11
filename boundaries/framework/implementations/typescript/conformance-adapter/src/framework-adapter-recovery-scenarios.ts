@@ -107,7 +107,7 @@ export function createFrameworkAdapterRecoveryScenarios(
     const recoveryTurnId = "shared-recovery-turn";
     const runId = "shared-recovery-run";
 
-    await harness.kernel.turn.create(
+    const turn = await harness.kernel.turn.create(
       recoveryTurnId,
       thread.threadId,
       thread.branchId,
@@ -116,7 +116,7 @@ export function createFrameworkAdapterRecoveryScenarios(
     );
     await harness.kernel.run.create(
       runId,
-      recoveryTurnId,
+      turn.turnId,
       thread.branchId,
       DEFAULT_AGENT_SCHEMA.schemaId,
       thread.rootTurnNodeHash,

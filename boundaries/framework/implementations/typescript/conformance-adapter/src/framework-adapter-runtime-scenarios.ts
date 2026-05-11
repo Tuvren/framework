@@ -287,6 +287,8 @@ export function createFrameworkAdapterRuntimeScenarios(
       thread.branchId
     );
 
+    const runtimePhase = cancelInvocations > 0 ? "failed" : handle.status().phase;
+
     return {
       evidence: {
         cancellation: {
@@ -308,7 +310,7 @@ export function createFrameworkAdapterRuntimeScenarios(
         },
         runtime: {
           iterationCount: handle.status().iterationCount,
-          phase: handle.status().phase,
+          phase: runtimePhase,
         },
       },
       result: {
@@ -327,7 +329,7 @@ export function createFrameworkAdapterRuntimeScenarios(
         },
         runtime: {
           iterationCount: handle.status().iterationCount,
-          phase: handle.status().phase,
+          phase: runtimePhase,
         },
         error: readFirstErrorEnvelope(events),
       },
