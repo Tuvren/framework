@@ -300,10 +300,17 @@ function assertionRequiredEvidencePath(
 ): string | undefined {
   switch (assertion.kind) {
     case "evidenceField":
-    case "resultField":
     case "stateField":
       return assertion.field === undefined
         ? undefined
+        : normalizeEvidencePath(assertion.field);
+    case "resultField":
+      if (assertion.field === undefined) {
+        return undefined;
+      }
+
+      return assertion.field === "$"
+        ? "result"
         : normalizeEvidencePath(assertion.field);
     case "errorEnvelope":
       return normalizeEvidencePath(assertion.path ?? "$.result.error");
@@ -328,7 +335,9 @@ function stepAssertionRequiredEvidencePath(
       // is checked against the final trace context after the lifecycle finishes.
       return `trace.${stepId}.evidence.${path}`;
     case "resultField":
-      return `trace.${stepId}.result.${path}`;
+      return assertion.field === "$"
+        ? `trace.${stepId}.result`
+        : `trace.${stepId}.result.${path}`;
     case "stateField":
       return `trace.${stepId}.state.${path}`;
     case "errorEnvelope":

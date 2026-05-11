@@ -199,6 +199,32 @@ export function createFrameworkAdapterDriver(
           },
         },
       },
+      result: {
+        driver: {
+          phase: handle.status().phase,
+        },
+        hooks: {
+          afterIteration: hooks.afterIteration,
+          aroundModel: hooks.aroundModel,
+          aroundModelTrace: hooks.aroundModelTrace,
+          aroundTool: hooks.aroundTool,
+          aroundToolTrace: hooks.aroundToolTrace,
+          terminalMutationAttempted: hooks.terminalMutationAttempted,
+          terminalMutationDurableText: readAssistantText(messages),
+          beforeIteration: hooks.beforeIteration,
+          phaseTrace: hooks.phaseTrace,
+        },
+        provider: {
+          generate: {
+            callCount: generateCalls,
+          },
+        },
+        tool: {
+          execution: {
+            callCount: toolCalls,
+          },
+        },
+      },
       state: {
         hookCounts: hooks,
       },
