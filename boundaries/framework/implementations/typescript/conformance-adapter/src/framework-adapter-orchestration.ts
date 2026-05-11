@@ -451,7 +451,7 @@ export function createFrameworkAdapterOrchestration(
 
     const parentEventsPromise = collectValues(handle.events());
 
-    await sleep(0);
+    await waitForHandlePhase(handle, "running");
 
     const childHandle = handle.spawn({
       agent: "worker",
@@ -1111,5 +1111,22 @@ export function createFrameworkAdapterOrchestration(
     return new Promise((resolve) => {
       setTimeout(resolve, ms);
     });
+  }
+
+  async function waitForHandlePhase(
+    handle: {
+      status(): { phase: "completed" | "failed" | "paused" | "running" };
+    },
+    phase: "completed" | "failed" | "paused" | "running"
+  ): Promise<void> {
+    for (let attempt = 0; attempt < 50; attempt += 1) {
+      if (handle.status().phase === phase) {
+        return;
+      }
+
+      await sleep(1);
+    }
+
+    throw new Error(`orchestration handle did not reach ${phase} phase`);
   }
 }

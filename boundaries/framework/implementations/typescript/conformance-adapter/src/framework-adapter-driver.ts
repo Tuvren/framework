@@ -345,21 +345,24 @@ export function createFrameworkAdapterDriver(
 
     assertDriverExecutionResultShape(result, "driver execute result");
 
+    const error =
+      result.resolution.type === "fail"
+        ? dependencies.errorToEnvelope(result.resolution.error)
+        : undefined;
+
     return {
       evidence: {
         driver: {
-          errorCode:
-            result.resolution.type === "fail"
-              ? dependencies.errorToEnvelope(result.resolution.error).code
-              : undefined,
+          errorCode: error?.code,
           resolutionType: result.resolution.type,
         },
       },
       result: {
-        error:
-          result.resolution.type === "fail"
-            ? dependencies.errorToEnvelope(result.resolution.error)
-            : undefined,
+        driver: {
+          errorCode: error?.code,
+          resolutionType: result.resolution.type,
+        },
+        error,
       },
     };
   }
@@ -420,6 +423,11 @@ export function createFrameworkAdapterDriver(
         },
       },
       result: {
+        driver: {
+          approvalDecisionCallIds: decisions.map((decision) => decision.callId),
+          pendingToolCallIds: pendingToolCalls.map((call) => call.callId),
+          resolutionType: result.resolution.type,
+        },
         error:
           result.resolution.type === "fail"
             ? dependencies.errorToEnvelope(result.resolution.error)

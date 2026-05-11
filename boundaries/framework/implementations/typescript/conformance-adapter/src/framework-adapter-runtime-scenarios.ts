@@ -312,6 +312,23 @@ export function createFrameworkAdapterRuntimeScenarios(
         },
       },
       result: {
+        cancellation: {
+          cancelInvocations,
+          errorEventCount: countEventsByType(events, "error"),
+          observedEventIndex,
+          observedEventType,
+          partialAssistantText: dependencies.readAssistantText(
+            messages,
+            "interrupted"
+          ),
+          runtimeStatusPartial:
+            dependencies.isRecord(runtimeStatus) &&
+            runtimeStatus.partial === true,
+        },
+        runtime: {
+          iterationCount: handle.status().iterationCount,
+          phase: handle.status().phase,
+        },
         error: readFirstErrorEnvelope(events),
       },
     };

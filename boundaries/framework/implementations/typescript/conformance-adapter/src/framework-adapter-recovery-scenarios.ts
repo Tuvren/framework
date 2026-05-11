@@ -104,11 +104,19 @@ export function createFrameworkAdapterRecoveryScenarios(
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
+    const recoveryTurnId = "shared-recovery-turn";
     const runId = "shared-recovery-run";
 
+    await harness.kernel.turn.create(
+      recoveryTurnId,
+      thread.threadId,
+      thread.branchId,
+      null,
+      thread.rootTurnNodeHash
+    );
     await harness.kernel.run.create(
       runId,
-      "shared-recovery-turn",
+      recoveryTurnId,
       thread.branchId,
       DEFAULT_AGENT_SCHEMA.schemaId,
       thread.rootTurnNodeHash,
@@ -124,17 +132,30 @@ export function createFrameworkAdapterRecoveryScenarios(
 
     const recovery = await harness.kernel.run.recover(runId);
     const [firstStagedResult] = recovery.uncommittedStagedResults;
+    const recoveryProjection = {
+      firstObjectType: firstStagedResult?.objectType,
+      firstTaskId: firstStagedResult?.taskId,
+      lastTurnNodeHash: recovery.lastTurnNodeHash,
+      uncommittedStagedResults: recovery.uncommittedStagedResults.length,
+    };
 
     return {
       evidence: {
-        recovery: {
-          firstObjectType: firstStagedResult?.objectType,
-          firstTaskId: firstStagedResult?.taskId,
-          lastTurnNodeHash: recovery.lastTurnNodeHash,
-          uncommittedStagedResults: recovery.uncommittedStagedResults.length,
+        recovery: recoveryProjection,
+      },
+      result: {
+        recovery: recoveryProjection,
+      },
+      state: {
+        recovery,
+        trace: {
+          recovery: {
+            evidence: {
+              recovery: recoveryProjection,
+            },
+          },
         },
       },
-      state: { recovery },
     };
   }
 
@@ -303,38 +324,39 @@ export function createFrameworkAdapterRecoveryScenarios(
     );
     const observedTurnId = readTurnId(events);
 
+    const recoveryProjection = {
+      activeAgent: handle.status().activeAgent,
+      branchRuntimePhase: dependencies.readRecordString(
+        branchRuntimeStatus,
+        "state"
+      ),
+      branchStatusActiveAgent: dependencies.readRecordString(
+        branchRuntimeStatus,
+        "activeAgent"
+      ),
+      driverExecuteCalls: executeCalls,
+      freshUserMessageCount:
+        recoveryCase === "signal_mismatch"
+          ? 1
+          : countUserTextMessages(branchMessages, signalText),
+      originalUserMessageCount: countUserTextMessages(branchMessages, prompt),
+      phase: handle.status().phase,
+      preemptCalls: livenessHarness.getPreemptCalls(),
+      recoveredAssistantVisible: hasTextMessage(
+        branchMessages,
+        "assistant",
+        recoveredAssistantText ?? ""
+      ),
+      sameTurn: observedTurnId === staleTurn.turnId,
+      staleRunStatus: branchRuns.find((run) => run.runId === staleRunId)?.status ?? null,
+    };
+
     return {
       evidence: {
-        recovery: {
-          activeAgent: handle.status().activeAgent,
-          branchRuntimePhase: dependencies.readRecordString(
-            branchRuntimeStatus,
-            "state"
-          ),
-          branchStatusActiveAgent: dependencies.readRecordString(
-            branchRuntimeStatus,
-            "activeAgent"
-          ),
-          driverExecuteCalls: executeCalls,
-          freshUserMessageCount: countUserTextMessages(
-            branchMessages,
-            signalText
-          ),
-          originalUserMessageCount: countUserTextMessages(
-            branchMessages,
-            prompt
-          ),
-          phase: handle.status().phase,
-          preemptCalls: livenessHarness.getPreemptCalls(),
-          recoveredAssistantVisible: hasTextMessage(
-            branchMessages,
-            "assistant",
-            recoveredAssistantText ?? ""
-          ),
-          sameTurn: observedTurnId === staleTurn.turnId,
-          staleRunStatus:
-            branchRuns.find((run) => run.runId === staleRunId)?.status ?? null,
-        },
+        recovery: recoveryProjection,
+      },
+      result: {
+        recovery: recoveryProjection,
       },
     };
   }
