@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type { InputSignal, TuvrenToolDefinition } from "@tuvren/runtime-api";
+import type { InputSignal, TuvrenToolDefinition } from "@tuvren/runtime";
 
 export function createPlaygroundTools(): TuvrenToolDefinition[] {
   return [

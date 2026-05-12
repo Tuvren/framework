@@ -1,0 +1,29 @@
+{
+  "extends": "../../../../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "rootDir": "./src",
+    "outDir": "./dist"
+  },
+  "include": ["src/**/*.ts"],
+  "references": [
+    {
+      "path": "../../../contracts/runtime-api/implementations/typescript/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../../shared/contracts/core-types/implementations/typescript/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../../kernel/contracts/protocol/implementations/typescript/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../../kernel/implementations/typescript/runtime-kernel/tsconfig.lib.json"
+    },
+    {
+      "path": "../drivers/react/tsconfig.lib.json"
+    },
+    {
+      "path": "../runtime-core/tsconfig.lib.json"
+    }
+  ]
+}

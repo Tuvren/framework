@@ -60,6 +60,7 @@ export const WORKSPACE_TEST_PROJECTS: readonly string[] = [
   "framework-stream-sse",
   "framework-stream-agui",
   "framework-runtime-core",
+  "framework-runtime",
   "framework-driver-react",
   "host-playground",
 ];
@@ -79,6 +80,7 @@ export const WORKSPACE_BUILD_PROJECTS: readonly string[] = [
   "framework-tool-contracts",
   "framework-testkit",
   "framework-runtime-core",
+  "framework-runtime",
   "framework-driver-react",
   "framework-stream-core",
   "framework-stream-sse",
@@ -92,6 +94,7 @@ export const WORKSPACE_EXPORT_SMOKE_PROJECTS: readonly string[] = [
   "framework-event-stream",
   "framework-runtime-api",
   "framework-runtime-core",
+  "framework-runtime",
   "framework-tool-contracts",
   "provider-api",
   "providers-testkit",

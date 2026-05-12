@@ -2,6 +2,7 @@
 
 ## 0. Version History & Changelog
 
+- v0.24.0 - Closed Epic AI in current repo reality through a checked-in SDK-surface audit, a curated `@tuvren/runtime` host-facing facade, playground rewiring away from lower-level runtime packages, and fresh host/runtime validation evidence.
 - v0.23.0 - Closed Epic AH by archiving historical constitutional support material under `constitution/archived/`, moving active generated support artifacts to `constitution/support/live/`, and advancing the active critical path to the SDK audit and proving-host work.
 - v0.22.0 - Clarified that the proving-host and portability-gate evidence must become part of the repo's canonical verification path, and kept the portability scope focused on in-scope runtime semantics rather than explanatory or ecosystem-only material.
 - v0.21.0 - Replaced the AG-closed maintenance posture with an active TypeScript productization plan centered on constitutional archive cleanup, host-facing package normalization, a serious REPL proving host, PostgreSQL, and portability-gate conformance closure before Rust resumes.
@@ -10,8 +11,8 @@
 
 ## 1. Executive Summary & Active Critical Path
 
-- **Total Active Story Points:** 53
-- **Critical Path:** `KRT-AI001 -> KRT-AJ001 -> KRT-AI002 -> KRT-AJ002 -> KRT-AJ003 -> KRT-AK001 -> KRT-AK002 -> KRT-AK003 -> KRT-AL001 -> KRT-AL002 -> KRT-AL003`
+- **Total Active Story Points:** 46
+- **Critical Path:** `KRT-AJ001 -> KRT-AJ002 -> KRT-AJ003 -> KRT-AK001 -> KRT-AK002 -> KRT-AK003 -> KRT-AL001 -> KRT-AL002 -> KRT-AL003`
 - **Planning Assumptions:** `docs/` remains the timeless semantic authority; the live constitutional authority chain is `constitution/PRD.md`, `constitution/Architecture.md`, `constitution/TechSpec.md`, and `constitution/Tasks.md`; `constitution/support/live/` holds generated support artifacts consumed by docs portability classification or canonical verification without extending that authority chain; historical constitutional support material lives under `constitution/archived/`; the SDK is the main product; the serious REPL CLI is the proving host; canonical stream plus SSE are portable surfaces; AG-UI and the TypeScript AI SDK bridge implementation are the standing implementation-specific exceptions; PostgreSQL lands before Rust; and Rust remains blocked until `product proof gate`, `platform gate`, and `portability gate` all pass.
 
 ### Brownfield Continuity Note
@@ -36,8 +37,7 @@
 
 ### Current Active Scope
 
-- Normalize host-facing TypeScript package naming and topology immediately before the proving-host build.
-- Build a serious REPL host entirely on the intended high-level SDK surface.
+- Build a serious REPL host entirely on the curated `@tuvren/runtime` high-level SDK surface.
 - Add PostgreSQL as the next official backend and prove it under strict backend semantics.
 - Close the portability gate across the intended portable runtime surface before Rust resumes.
 
@@ -53,6 +53,7 @@
 
 - Epic AH completed the constitutional authority reset: historical support material moved under `constitution/archived/`, active generated support artifacts now live under `constitution/support/live/`, and the live authority chain is narrowed to the four constitutional documents plus explicit support inputs.
 - Epics A-Q established the baseline TypeScript runtime, ReAct path, provider bridge, stream adapters, playground host, and release-hardening work.
+- Epic AI completed the current host-facing TypeScript package audit/normalization path through [epic-ai-high-level-sdk-surface-audit.md](./archived/spikes/epic-ai-high-level-sdk-surface-audit.md).
 - Epics R-AG established the multi-language transition foundation, shared conformance architecture, kernel interop, and the AG hardening subset that remains historical evidence for promoted surfaces.
 - That work remains valuable audit context, but the active path is now TypeScript product proof, TypeScript platform completion, and then portability-gate closure.
 
@@ -60,9 +61,7 @@
 
 ```mermaid
 flowchart LR
-  KRTAI001[KRT-AI001 SDK Naming Audit] --> KRTAJ001[KRT-AJ001 REPL Host Contract]
-  KRTAJ001 --> KRTAI002[KRT-AI002 Package Normalization]
-  KRTAI002 --> KRTAJ002[KRT-AJ002 REPL Host Implementation]
+  KRTAJ001[KRT-AJ001 REPL Host Contract] --> KRTAJ002[KRT-AJ002 REPL Host Implementation]
   KRTAJ002 --> KRTAJ003[KRT-AJ003 Proving-Host Validation]
   KRTAJ003 --> KRTAK001[KRT-AK001 PostgreSQL Design Spike]
   KRTAK001 --> KRTAK002[KRT-AK002 PostgreSQL Implementation]
@@ -115,7 +114,10 @@ And stale closure or freeze language no longer implies current product readiness
 
 ### Epic AI — TypeScript SDK Surface Normalization (KRT)
 
+**Status:** Completed in v0.24.0 through [epic-ai-high-level-sdk-surface-audit.md](./archived/spikes/epic-ai-high-level-sdk-surface-audit.md)
+
 **KRT-AI001 High-Level SDK Naming and Surface Audit**
+- **Status:** Completed in v0.24.0
 - **Type:** Spike
 - **Effort:** 2
 - **Dependencies:** `KRT-AH002`
@@ -131,6 +133,7 @@ And the audit does not prematurely freeze public package publication beyond the 
 ```
 
 **KRT-AI002 Host-Facing Package Normalization**
+- **Status:** Completed in v0.24.0
 - **Type:** Feature
 - **Effort:** 5
 - **Dependencies:** `KRT-AJ001`

@@ -17,7 +17,7 @@
 import { randomUUID } from "node:crypto";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { TuvrenRuntimeError } from "@tuvren/core-types";
+import { TuvrenRuntimeError } from "@tuvren/runtime";
 import type {
   PlaygroundBackendMode,
   PlaygroundConfig,

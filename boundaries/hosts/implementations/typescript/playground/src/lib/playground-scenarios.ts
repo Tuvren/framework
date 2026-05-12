@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type { LoopPolicy } from "@tuvren/runtime-api";
+import type { LoopPolicy } from "@tuvren/runtime";
 import { createPlaygroundHost } from "./playground-host.js";
 import {
   countDurableToolCallProviderCallIds,
