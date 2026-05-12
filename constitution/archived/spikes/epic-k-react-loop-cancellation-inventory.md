@@ -6,9 +6,9 @@ This note records the current brownfield state of Epic K after the loop-closure
 pass. It is an implementation inventory, not a replacement for the normative
 behavior in:
 
-- [docs/KrakenFrameworkSpecification.md](../../docs/KrakenFrameworkSpecification.md)
-- [constitution/TechSpec.md](../TechSpec.md)
-- [constitution/Tasks.md](../Tasks.md)
+- [docs/KrakenFrameworkSpecification.md](../../../docs/KrakenFrameworkSpecification.md)
+- [constitution/TechSpec.md](../../TechSpec.md)
+- [constitution/Tasks.md](../../Tasks.md)
 
 Epic K remains scoped to the existing ReAct driver, shared runtime-core loop,
 and current handoff contract. It does not widen provider bridges, host stream
@@ -19,9 +19,9 @@ adapters, or handoff policy.
 ### 1. Resolution and loop ownership
 
 - ReAct driver iteration mapping lives in
-  [react-driver.ts](../../boundaries/framework/implementations/typescript/drivers/react/src/lib/react-driver.ts).
+  [react-driver.ts](../../../boundaries/framework/implementations/typescript/drivers/react/src/lib/react-driver.ts).
 - Shared loop orchestration, checkpointing, and lifecycle publication live in
-  [runtime-core.ts](../../boundaries/framework/implementations/typescript/runtime-core/src/lib/runtime-core.ts).
+  [runtime-core.ts](../../../boundaries/framework/implementations/typescript/runtime-core/src/lib/runtime-core.ts).
 - Current deterministic mapping:
   - assistant tool calls -> `continue_iteration` plus `toolExecutionMode`
   - terminal assistant content -> `end_turn`
@@ -86,7 +86,7 @@ adapters, or handoff policy.
 ### 3. Assistant stream publication and validation seam
 
 - Stream assembly and partial finalization live in
-  [react-driver-stream.ts](../../boundaries/framework/implementations/typescript/drivers/react/src/lib/react-driver-stream.ts).
+  [react-driver-stream.ts](../../../boundaries/framework/implementations/typescript/drivers/react/src/lib/react-driver-stream.ts).
 - Generated responses stay buffered until validation succeeds.
 - Streamed responses may publish assistant events before final validation; later
   invalid-stream failures do not retract already-forwarded live events.

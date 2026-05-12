@@ -6,8 +6,8 @@ This is a non-authoritative research note that records the current docs-first de
 
 Authoritative behavioral meaning belongs in:
 
-- [docs/KrakenKernelSpecification.md](../../docs/KrakenKernelSpecification.md)
-- [docs/KrakenFrameworkSpecification.md](../../docs/KrakenFrameworkSpecification.md)
+- [docs/KrakenKernelSpecification.md](../../../docs/KrakenKernelSpecification.md)
+- [docs/KrakenFrameworkSpecification.md](../../../docs/KrakenFrameworkSpecification.md)
 
 This note exists to preserve the conclusions reached while unwinding the long-running `epic/h-shared-framework-foundations` branch. It is intentionally self-contained so it can serve as a staging artifact while the authoritative framework spec is being rewritten.
 
