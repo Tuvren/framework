@@ -15,7 +15,9 @@
  */
 
 import { describe, expect, test } from "bun:test";
+import { spawn } from "node:child_process";
 import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { createMemoryBackend } from "@tuvren/backend-memory";
 import {
   AIMOCK_REPL_PROVIDER_MODES as AIMOCK_PLAYGROUND_PROVIDER_MODES,
@@ -587,7 +589,7 @@ describe("repl host scenarios", () => {
     }
 
     expect((await runReplCommand(shell, ".turn start approval")).output).toBe(
-      "An active turn already exists. Await, approve, steer, or cancel it before starting another turn."
+      "Active work already exists on the current branch. Await, approve, steer, or cancel it before starting another turn."
     );
     expect(shell.activeTurn?.handle).toBe(activeHandle);
 
@@ -613,7 +615,7 @@ describe("repl host scenarios", () => {
     }
 
     expect((await runReplCommand(shell, ".orch start")).output).toBe(
-      "An orchestration already exists. Await or cancel it before starting another root orchestration."
+      "Active work already exists on the current branch. Await or cancel it before starting another root orchestration."
     );
 
     await runReplCommand(shell, ".orch spawn worker first");
@@ -627,6 +629,79 @@ describe("repl host scenarios", () => {
     await runReplCommand(shell, ".thread new");
 
     expect(shell.activeOrchestration).toBe(undefined);
+    await waitForCondition(() => activeHandle.status().phase !== "running");
+  });
+
+  test("rejects cross-kind work on the same branch", async () => {
+    const turnShell = createReplShell({
+      backend: "memory",
+      providerMode: "fixture",
+      scenario: "streaming",
+    });
+
+    await runReplCommand(turnShell, ".thread new");
+    await runReplCommand(turnShell, ".turn start steering");
+    const turnHandle = turnShell.activeTurn?.handle;
+
+    if (turnHandle === undefined) {
+      throw new Error("expected active turn handle after .turn start");
+    }
+
+    expect((await runReplCommand(turnShell, ".orch start")).output).toBe(
+      "Active work already exists on the current branch. Await or cancel it before starting another root orchestration."
+    );
+
+    await runReplCommand(turnShell, ".backend memory");
+    await waitForCondition(() => turnHandle.status().phase !== "running");
+
+    const orchestrationShell = createReplShell({
+      backend: "memory",
+      providerMode: "fixture",
+      scenario: "streaming",
+    });
+
+    await runReplCommand(orchestrationShell, ".thread new");
+    await runReplCommand(orchestrationShell, ".orch start");
+    const orchestrationHandle = orchestrationShell.activeOrchestration?.handle;
+
+    if (orchestrationHandle === undefined) {
+      throw new Error("expected active orchestration handle after .orch start");
+    }
+
+    expect(
+      (await runReplCommand(orchestrationShell, ".turn start steering")).output
+    ).toBe(
+      "Active work already exists on the current branch. Await, approve, steer, or cancel it before starting another turn."
+    );
+
+    await runReplCommand(orchestrationShell, ".thread new");
+    await waitForCondition(
+      () => orchestrationHandle.status().phase !== "running"
+    );
+  });
+
+  test("rejects branching while work is active", async () => {
+    const shell = createReplShell({
+      backend: "memory",
+      providerMode: "fixture",
+      scenario: "streaming",
+    });
+
+    await runReplCommand(shell, ".thread new");
+    await runReplCommand(shell, ".turn start steering");
+    const activeHandle = shell.activeTurn?.handle;
+    const activeBranchId = shell.thread?.branchId;
+
+    if (activeHandle === undefined) {
+      throw new Error("expected active turn handle after .turn start");
+    }
+
+    expect((await runReplCommand(shell, ".branch fork")).output).toBe(
+      "Active work already exists on the current branch. Await or cancel it before forking a branch."
+    );
+    expect(shell.thread?.branchId).toBe(activeBranchId);
+
+    await runReplCommand(shell, ".backend memory");
     await waitForCondition(() => activeHandle.status().phase !== "running");
   });
 
@@ -646,6 +721,19 @@ describe("repl host scenarios", () => {
     expect(shell.thread).toBe(undefined);
     expect(shell.activeTurn).toBe(undefined);
     expect(shell.lastProjection).toBe(undefined);
+  });
+
+  test("does not create a thread when showing messages without an active thread", async () => {
+    const shell = createReplShell({
+      backend: "memory",
+      providerMode: "fixture",
+      scenario: "streaming",
+    });
+
+    expect((await runReplCommand(shell, ".messages show")).output).toBe(
+      "No active thread exists."
+    );
+    expect(shell.thread).toBe(undefined);
   });
 
   test("aggregates matrix success for deterministic scenarios", async () => {
@@ -734,6 +822,13 @@ describe("repl host scenarios", () => {
 
     expect(withHead(thread, projection).headTurnNodeHash).toBe("head-1");
   });
+
+  test("interactive CLI exits cleanly for piped sessions", async () => {
+    const result = await runCliSession(".thread new\n.exit\n");
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr.includes("ERR_USE_AFTER_CLOSE")).toBe(false);
+  });
 });
 
 function readCommandArray(
@@ -767,4 +862,44 @@ async function waitForCondition(
       setTimeout(resolve, 20);
     });
   }
+}
+
+async function runCliSession(
+  stdin: string
+): Promise<{ exitCode: number | null; stderr: string; stdout: string }> {
+  const cli = spawn(
+    "node",
+    [
+      join(process.cwd(), "dist/cli.js"),
+      "--backend",
+      "memory",
+      "--provider",
+      "fixture",
+    ],
+    {
+      cwd: process.cwd(),
+      stdio: "pipe",
+    }
+  );
+  let stdout = "";
+  let stderr = "";
+
+  cli.stdout.on("data", (chunk: Buffer | string) => {
+    stdout += String(chunk);
+  });
+  cli.stderr.on("data", (chunk: Buffer | string) => {
+    stderr += String(chunk);
+  });
+  cli.stdin.end(stdin);
+
+  return await new Promise<{
+    exitCode: number | null;
+    stderr: string;
+    stdout: string;
+  }>((resolve, reject) => {
+    cli.once("error", reject);
+    cli.once("close", (exitCode) => {
+      resolve({ exitCode, stderr, stdout });
+    });
+  });
 }

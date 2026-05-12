@@ -260,6 +260,13 @@ async function handleBranchCommand(
     return { output: 'Expected ".branch fork".' };
   }
 
+  if (hasActiveShellWork(shell)) {
+    return {
+      output:
+        "Active work already exists on the current branch. Await or cancel it before forking a branch.",
+    };
+  }
+
   const thread = await ensureThread(shell);
   const turnNodeHash = thread.headTurnNodeHash ?? thread.rootTurnNodeHash;
   const branch = await shell.host.branchFromHead({
@@ -284,7 +291,12 @@ async function showMessages(
     return { output: 'Expected ".messages show".' };
   }
 
-  const thread = await ensureThread(shell);
+  const thread = shell.thread;
+
+  if (thread === undefined) {
+    return { output: "No active thread exists." };
+  }
+
   const messages = await shell.host.readBranchMessages(thread.branchId);
   return { output: formatJson(messages) };
 }
@@ -363,10 +375,10 @@ async function startTurn(
     };
   }
 
-  if (shell.activeTurn !== undefined) {
+  if (hasActiveShellWork(shell)) {
     return {
       output:
-        "An active turn already exists. Await, approve, steer, or cancel it before starting another turn.",
+        "Active work already exists on the current branch. Await, approve, steer, or cancel it before starting another turn.",
     };
   }
 
@@ -487,10 +499,10 @@ function cancelTurn(shell: ReplShell): ReplCommandResult {
 async function startOrchestration(
   shell: ReplShell
 ): Promise<ReplCommandResult> {
-  if (shell.activeOrchestration !== undefined) {
+  if (hasActiveShellWork(shell)) {
     return {
       output:
-        "An orchestration already exists. Await or cancel it before starting another root orchestration.",
+        "Active work already exists on the current branch. Await or cancel it before starting another root orchestration.",
     };
   }
 
@@ -753,6 +765,12 @@ function cancelActiveShellWork(shell: ReplShell): void {
     observeCancellation(shell.activeOrchestration.handle.awaitResult());
     observeCancellation(shell.activeOrchestration.eventsPromise);
   }
+}
+
+function hasActiveShellWork(shell: ReplShell): boolean {
+  return (
+    shell.activeTurn !== undefined || shell.activeOrchestration !== undefined
+  );
 }
 
 function isTerminalPhase(

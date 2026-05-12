@@ -62,6 +62,8 @@ async function runInteractiveShell(
 
   try {
     for await (const line of rl) {
+      let shouldPrompt = !process.stdin.readableEnded;
+
       try {
         const result = await runReplCommand(shell, line);
 
@@ -70,13 +72,16 @@ async function runInteractiveShell(
         }
 
         if (result.exit === true) {
+          shouldPrompt = false;
           break;
         }
       } catch (error: unknown) {
         process.stderr.write(`${renderError(error)}\n`);
       }
 
-      rl.prompt();
+      if (shouldPrompt) {
+        rl.prompt();
+      }
     }
   } finally {
     rl.close();
