@@ -256,7 +256,7 @@ System_Boundary(tuvren_runtime, "Tuvren Runtime") {
   Container(extensionRuntime, "Extension Runtime", "Policy Runtime", "Hooks, wrappers, prompt contributions, extension state")
   Container(providerGateway, "Provider Gateway", "Integration Boundary", "Canonical <-> provider translation")
   Container(toolGateway, "Tool Execution Gateway", "Integration Boundary", "Validation, approval gating, tool execution, incremental result staging")
-  Container(orchestrationRuntime, "Orchestration Runtime", "Coordination Service", "Minimal child-handle orchestration and descendant event aggregation")
+  Container(orchestrationRuntime, "Orchestration Runtime", "Coordination Service", "Workers, handoffs, execution inheritance, descendant attribution, and pipeline-level orchestration policy")
   Container(eventAdapter, "Event Stream Adapter Layer", "Outbound Adapter", "Canonical event translation for hosts")
   Container(kernelBoundary, "Kernel Boundary", "Mechanism Core", "Durable objects, staging, trees, lineage, runs, branches")
   ContainerDb(stateBoundary, "Durable State Boundary", "Persistence Boundary", "Atomic durable storage substrate")

@@ -191,6 +191,7 @@ And TypeScript AI SDK bridge-backed provider scenarios remain covered as a first
 And interactive REPL flows and scripted scenario mode share the same host-facing implementation path
 And product-proof claims cite proving-host evidence rather than private playground-only evidence
 And named proving-host validation targets are introduced for the serious REPL host rather than reusing playground-only target names as the lasting gate
+And that wiring replaces the current `host-playground:interop-smoke` and `host-playground:scenario-sqlite` product-proof path in `tools/scripts/verify.ts`
 And the repo's canonical verification path consumes those proving-host validation targets through `package.json` entry points and `tools/scripts/verify.ts` as the decisive `product proof gate` so stale or failing host-proof evidence breaks readiness claims
 ```
 
