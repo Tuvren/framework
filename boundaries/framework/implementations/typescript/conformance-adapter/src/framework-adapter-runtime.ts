@@ -14,11 +14,24 @@
  * limitations under the License.
  */
 
+import { createMemoryBackend } from "@tuvren/backend-memory";
+import {
+  type HashString as CoreHashString,
+  isHashString,
+} from "@tuvren/core-types";
 import type {
   DriverExecutionContext,
   DriverExecutionResult,
   RuntimeDriver,
 } from "@tuvren/driver-api";
+import {
+  decodeDeterministicKernelRecord,
+  type RunRecord,
+  type RuntimeKernel,
+  type RuntimeKernelRunLiveness,
+  type TurnTreeManifest,
+} from "@tuvren/kernel-protocol";
+import { createRuntimeKernel } from "@tuvren/kernel-runtime";
 import type { TuvrenProvider } from "@tuvren/provider-api";
 import type {
   ContextManifest,
@@ -30,18 +43,36 @@ import type {
   TuvrenStreamEvent,
   TuvrenToolDefinition,
 } from "@tuvren/runtime-api";
+import { decodeStoredRun } from "../../../../../kernel/implementations/typescript/runtime-kernel/src/lib/runtime-kernel-storage.ts";
 import { createReActDriver } from "../../drivers/react/src/index.ts";
 import {
   createDriverRegistry,
   createTuvrenRuntimeCore,
 } from "../../runtime-core/src/index.ts";
-import { createFakeKernelHarness } from "../../runtime-core/test/fake-kernel.ts";
 
 export interface AdapterProjection {
   events?: readonly unknown[];
   evidence?: Record<string, unknown>;
   result?: unknown;
   state?: Record<string, unknown>;
+}
+
+export interface ConformanceKernelHarness {
+  kernel: RuntimeKernel & RuntimeKernelRunLiveness;
+  readBranchManifest(branchId: string): Promise<TurnTreeManifest>;
+  readBranchMessages(branchId: string): Promise<unknown[]>;
+  readBranchRuns(branchId: string): Promise<RunRecord[]>;
+  readBranchRuntimeStatus(branchId: string): Promise<unknown | null>;
+  readRunningStagedMessages(branchId: string): Promise<unknown[]>;
+  readTurnNodeManifest(turnNodeHash: CoreHashString): Promise<TurnTreeManifest>;
+  readTurnNodeMessages(turnNodeHash: CoreHashString): Promise<unknown[]>;
+}
+
+export interface ConformanceRunLivenessKernelHarness {
+  getPreemptCalls(): number;
+  getRenewLeaseCalls(): number;
+  kernel: RuntimeKernel & RuntimeKernelRunLiveness;
+  leasedRuns: Map<string, RunRecord>;
 }
 
 export interface ScenarioToolCall {
@@ -55,6 +86,178 @@ export interface ScenarioToolCall {
 
 export const DRIVER_ID = "typescript-conformance-driver";
 export const AGENT_NAME = "typescript-conformance-agent";
+
+export function createConformanceKernelHarness(options?: {
+  now?: () => number;
+}): ConformanceKernelHarness {
+  const backend = createMemoryBackend({ now: options?.now });
+  const kernel = createRuntimeKernel({
+    backend,
+    now: options?.now,
+  });
+
+  return {
+    kernel,
+    async readBranchManifest(branchId) {
+      const branch = await kernel.branch.get(branchId);
+
+      if (branch === null) {
+        throw new Error(`branch "${branchId}" not found`);
+      }
+
+      const turnNode = await kernel.node.get(branch.headTurnNodeHash);
+
+      if (turnNode === null) {
+        throw new Error(
+          `branch "${branchId}" head turn node ${branch.headTurnNodeHash} not found`
+        );
+      }
+
+      return await kernel.tree.manifest(turnNode.turnTreeHash);
+    },
+    async readBranchMessages(branchId) {
+      const manifest = await this.readBranchManifest(branchId);
+      return readMessagesFromManifest(kernel, manifest);
+    },
+    async readBranchRuntimeStatus(branchId) {
+      const manifest = await this.readBranchManifest(branchId);
+      const runtimeStatusHash = manifest["runtime.status"];
+
+      if (!isHashString(runtimeStatusHash)) {
+        return null;
+      }
+
+      const payload = await kernel.store.get(runtimeStatusHash);
+      return payload === null ? null : decodeDeterministicKernelRecord(payload);
+    },
+    async readBranchRuns(branchId) {
+      return await backend.transact((tx) =>
+        tx.runs
+          .listByBranch(branchId)
+          .then((storedRuns) =>
+            storedRuns.map((storedRun) => decodeStoredRun(storedRun))
+          )
+      );
+    },
+    async readRunningStagedMessages(branchId) {
+      const runs = await this.readBranchRuns(branchId);
+      const runningRun = runs.find((run) => run.status === "running");
+
+      if (runningRun === undefined) {
+        return [];
+      }
+
+      const stagedResults = await kernel.staging.current(runningRun.runId);
+      const stagedMessages: unknown[] = [];
+
+      for (const stagedResult of stagedResults) {
+        if (stagedResult.objectType !== "message") {
+          continue;
+        }
+
+        const payload = await kernel.store.get(stagedResult.objectHash);
+
+        if (payload !== null) {
+          stagedMessages.push(decodeDeterministicKernelRecord(payload));
+        }
+      }
+
+      return stagedMessages;
+    },
+    async readTurnNodeManifest(turnNodeHash) {
+      const turnNode = await kernel.node.get(turnNodeHash);
+
+      if (turnNode === null) {
+        throw new Error(`turn node ${turnNodeHash} not found`);
+      }
+
+      return await kernel.tree.manifest(turnNode.turnTreeHash);
+    },
+    async readTurnNodeMessages(turnNodeHash) {
+      const manifest = await this.readTurnNodeManifest(turnNodeHash);
+      return readMessagesFromManifest(kernel, manifest);
+    },
+  };
+}
+
+export function createConformanceRunLivenessKernelHarness(
+  harness: ConformanceKernelHarness
+): ConformanceRunLivenessKernelHarness {
+  const leasedRuns = new Map<string, RunRecord>();
+  let preemptCalls = 0;
+  let renewLeaseCalls = 0;
+  const baseKernel = harness.kernel;
+
+  return {
+    getPreemptCalls() {
+      return preemptCalls;
+    },
+    getRenewLeaseCalls() {
+      return renewLeaseCalls;
+    },
+    kernel: {
+      ...baseKernel,
+      run: {
+        ...baseKernel.run,
+        async complete(runId, status, eventHash) {
+          const completion = await baseKernel.run.complete(
+            runId,
+            status,
+            eventHash
+          );
+          leasedRuns.delete(runId);
+          return completion;
+        },
+      },
+      runLiveness: {
+        ...baseKernel.runLiveness,
+        async createLeasedRun(input) {
+          const run = await baseKernel.runLiveness.createLeasedRun(input);
+          leasedRuns.set(run.runId, run);
+          return run;
+        },
+        async preemptExpired(runId, preemptingOwnerId, nowMs, reason) {
+          preemptCalls += 1;
+          const recovery = await baseKernel.runLiveness.preemptExpired(
+            runId,
+            preemptingOwnerId,
+            nowMs,
+            reason
+          );
+          leasedRuns.delete(runId);
+          return recovery;
+        },
+        async renewLease(
+          runId,
+          executionOwnerId,
+          fencingToken,
+          nextLeaseExpiresAtMs
+        ) {
+          renewLeaseCalls += 1;
+          const renewal = await baseKernel.runLiveness.renewLease(
+            runId,
+            executionOwnerId,
+            fencingToken,
+            nextLeaseExpiresAtMs
+          );
+          const leasedRun = leasedRuns.get(runId);
+
+          if (leasedRun !== undefined) {
+            leasedRuns.set(runId, {
+              ...leasedRun,
+              executionOwnerId,
+              fencingToken: renewal.fencingToken,
+              leaseExpiresAtMs: renewal.leaseExpiresAtMs,
+            });
+          }
+
+          return renewal;
+        },
+      },
+    },
+    leasedRuns,
+  };
+}
 
 export function createConformanceIdFactory(): () => string {
   let nextId = 1;
@@ -104,7 +307,7 @@ export function createRuntimeWithReactDriver(): ReturnType<
     createId: createConformanceIdFactory(),
     defaultDriverId: reactDriver.id,
     driverRegistry: createDriverRegistry([reactDriver]),
-    kernel: createFakeKernelHarness().kernel,
+    kernel: createConformanceKernelHarness().kernel,
   });
 }
 
@@ -300,4 +503,31 @@ export async function collectValues<T>(values: AsyncIterable<T>): Promise<T[]> {
   }
 
   return collected;
+}
+
+async function readMessagesFromManifest(
+  kernel: RuntimeKernel,
+  manifest: TurnTreeManifest
+): Promise<unknown[]> {
+  const hashes = manifest.messages;
+
+  if (!Array.isArray(hashes)) {
+    return [];
+  }
+
+  const messages: unknown[] = [];
+
+  for (const hash of hashes) {
+    if (!isHashString(hash)) {
+      continue;
+    }
+
+    const payload = await kernel.store.get(hash);
+
+    if (payload !== null) {
+      messages.push(decodeDeterministicKernelRecord(payload));
+    }
+  }
+
+  return messages;
 }

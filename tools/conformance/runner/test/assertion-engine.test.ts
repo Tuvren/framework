@@ -15,8 +15,14 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import type { ConformancePlanCheck } from "../../plan-compiler/index.ts";
-import { evaluateAssertions } from "../assertion-engine/index.ts";
+import type {
+  CompiledConformancePlanCheck,
+  ConformancePlanCheck,
+} from "../../plan-compiler/index.ts";
+import {
+  evaluateAssertions,
+  evaluateRequiredEvidence,
+} from "../assertion-engine/index.ts";
 
 function buildCheck(
   assertions: ConformancePlanCheck["assertions"]
@@ -74,24 +80,76 @@ describe("terminalEvent default path", () => {
   });
 });
 
-describe("noEvent evidence field", () => {
-  test("passes when the configured evidence array omits the event type", () => {
+describe("noEvent event assertions", () => {
+  test("passes when the observed event sequence omits the event type", () => {
     const [evaluation] = evaluateAssertions(
-      buildCheck([
-        { eventType: "error", field: "$.frameEvents", kind: "noEvent" },
-      ]),
-      { evidence: { frameEvents: ["turn.start", "turn.end"] } }
+      buildCheck([{ eventType: "error", kind: "noEvent" }]),
+      { events: [{ type: "turn.start" }, { type: "turn.end" }] }
     );
     expect(evaluation?.status).toBe("pass");
   });
 
-  test("fails when the configured evidence array contains the event type", () => {
+  test("fails when the observed event sequence contains the event type", () => {
     const [evaluation] = evaluateAssertions(
-      buildCheck([
-        { eventType: "error", field: "$.frameEvents", kind: "noEvent" },
-      ]),
-      { evidence: { frameEvents: ["turn.start", "error", "turn.end"] } }
+      buildCheck([{ eventType: "error", kind: "noEvent" }]),
+      {
+        events: [
+          { type: "turn.start" },
+          { type: "error" },
+          { type: "turn.end" },
+        ],
+      }
     );
     expect(evaluation?.status).toBe("fail");
+  });
+});
+
+describe("resultField assertions", () => {
+  test("passes when the configured result field matches the expected value", () => {
+    const [evaluation] = evaluateAssertions(
+      buildCheck([{ equals: "ready", field: "$.answer", kind: "resultField" }]),
+      { result: { answer: "ready" } }
+    );
+    expect(evaluation?.status).toBe("pass");
+  });
+
+  test("fails when the configured result field does not match the expected value", () => {
+    const [evaluation] = evaluateAssertions(
+      buildCheck([{ equals: "ready", field: "$.answer", kind: "resultField" }]),
+      { result: { answer: "wait" } }
+    );
+    expect(evaluation?.status).toBe("fail");
+  });
+
+  test("fails when the configured result field is missing from the result", () => {
+    const [evaluation] = evaluateAssertions(
+      buildCheck([{ equals: "ready", field: "$.answer", kind: "resultField" }]),
+      { evidence: { answer: "ready" } }
+    );
+    expect(evaluation?.status).toBe("fail");
+  });
+
+  test("required evidence only passes from the result surface", () => {
+    const compiledCheck: CompiledConformancePlanCheck = {
+      check: buildCheck([
+        { equals: "ready", field: "$.answer", kind: "resultField" },
+      ]),
+      requiredEvidence: ["result.answer"],
+    };
+
+    const mirroredSurfaces = {
+      evidence: { answer: "ready" },
+      state: { answer: "ready" },
+    };
+
+    expect(
+      evaluateRequiredEvidence(compiledCheck, mirroredSurfaces)[0]?.status
+    ).toBe("fail");
+    expect(
+      evaluateRequiredEvidence(compiledCheck, {
+        ...mirroredSurfaces,
+        result: { answer: "ready" },
+      })[0]?.status
+    ).toBe("pass");
   });
 });

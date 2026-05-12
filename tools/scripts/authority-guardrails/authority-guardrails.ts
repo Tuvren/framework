@@ -41,7 +41,7 @@ interface AuthorityPacketManifest {
   packetId: string;
 }
 
-interface GuardrailFailure {
+export interface GuardrailFailure {
   check: string;
   message: string;
 }
@@ -107,7 +107,9 @@ const GENERIC_RUNNER_LITERAL_ALLOWLIST = new Set([
   "paused",
 ]);
 
-await main();
+if (import.meta.main) {
+  await main();
+}
 
 async function main(): Promise<void> {
   const manifests = await loadAuthorityPackets();
@@ -546,7 +548,7 @@ function collectOperationNamesFromPlanValue(
   }
 }
 
-function collectPlanEvidenceOracleShapeFailures(
+export function collectPlanEvidenceOracleShapeFailures(
   planValue: unknown,
   planLabel: string
 ): GuardrailFailure[] {
@@ -564,6 +566,7 @@ function collectPlanEvidenceOracleShapeFailures(
     failures.push(
       ...collectEvidencePathOracleFailures(check, planLabel),
       ...collectAssertionOracleFailures(check, planLabel),
+      ...collectDecisiveAssertionFailures(check, planLabel),
       ...collectFixtureSelfCertificationFailures(check, planLabel),
       ...readPlanSteps(check).flatMap((step) =>
         collectAssertionOracleFailures(
@@ -572,6 +575,13 @@ function collectPlanEvidenceOracleShapeFailures(
             checkId: `${String(check.checkId)}.${String(step.stepId)}`,
           },
           planLabel
+        )
+      ),
+      ...readPlanSteps(check).flatMap((step) =>
+        collectStepDecisiveAssertionFailures(
+          step,
+          planLabel,
+          String(check.checkId)
         )
       ),
       ...readPlanSteps(check).flatMap((step) =>
@@ -588,6 +598,96 @@ function collectPlanEvidenceOracleShapeFailures(
   }
 
   return failures;
+}
+
+function collectDecisiveAssertionFailures(
+  check: Record<string, unknown>,
+  planLabel: string
+): GuardrailFailure[] {
+  const assertions = readAssertions(check.assertions);
+
+  if (assertions.length === 0) {
+    return [];
+  }
+
+  if (hasDecisiveAssertion(assertions)) {
+    return [];
+  }
+
+  return [
+    {
+      check: "plan-decisive-assertion",
+      message: `${planLabel} promoted check ${String(check.checkId)} has no decisive assertion`,
+    },
+  ];
+}
+
+function collectStepDecisiveAssertionFailures(
+  step: Record<string, unknown>,
+  planLabel: string,
+  checkId: string
+): GuardrailFailure[] {
+  const assertions = readAssertions(step.assertions);
+
+  if (assertions.length === 0) {
+    return [];
+  }
+
+  if (hasDecisiveAssertion(assertions)) {
+    return [];
+  }
+
+  return [
+    {
+      check: "step-decisive-assertion",
+      message: `${planLabel} promoted check ${checkId} step ${String(step.stepId)} has no decisive assertion`,
+    },
+  ];
+}
+
+function readAssertions(assertions: unknown): Record<string, unknown>[] {
+  if (!Array.isArray(assertions)) {
+    return [];
+  }
+
+  return assertions.filter(isRecord);
+}
+
+function hasDecisiveAssertion(assertions: Record<string, unknown>[]): boolean {
+  return assertions.some(isDecisiveAssertion);
+}
+
+function isDecisiveAssertion(assertion: Record<string, unknown>): boolean {
+  const kind = assertion.kind;
+
+  if (kind === "resultField") {
+    return true;
+  }
+
+  if (
+    kind === "stateField" ||
+    kind === "eventSequence" ||
+    kind === "terminalEvent" ||
+    kind === "ordering" ||
+    kind === "noEvent" ||
+    kind === "errorEnvelope"
+  ) {
+    return true;
+  }
+
+  if (kind !== "schemaValid") {
+    return false;
+  }
+
+  const path = typeof assertion.path === "string" ? assertion.path : "$.result";
+  return (
+    path === "$.result" ||
+    path.startsWith("$.result.") ||
+    path === "$.events" ||
+    path.startsWith("$.events.") ||
+    path === "$.state" ||
+    path.startsWith("$.state.")
+  );
 }
 
 function readPlanSteps(
@@ -1003,6 +1103,120 @@ async function runFixtureSelfTests(): Promise<GuardrailFailure[]> {
       check: "guardrail-fixture",
       message:
         "boolean-oracle fixture did not trigger the plan-shape guardrail",
+    });
+  }
+
+  const evidenceOnlyPlanFailures = collectPlanEvidenceOracleShapeFailures(
+    {
+      checks: [
+        {
+          assertions: [
+            {
+              field: "$.answer",
+              kind: "evidenceField",
+              equals: "ready",
+            },
+          ],
+          checkId: "fixture.evidence-only",
+          operation: "runtime.assertion",
+          evidence: ["answer"],
+        },
+      ],
+    },
+    "fixture evidence-only plan"
+  );
+
+  if (evidenceOnlyPlanFailures.length === 0) {
+    failures.push({
+      check: "guardrail-fixture",
+      message:
+        "evidence-only fixture did not trigger the decisive-assertion guardrail",
+    });
+  }
+
+  const schemaOverEvidencePlanFailures = collectPlanEvidenceOracleShapeFailures(
+    {
+      checks: [
+        {
+          assertions: [
+            {
+              kind: "schemaValid",
+              path: "$.evidence",
+              schema: "$.evidence.schema",
+            },
+          ],
+          checkId: "fixture.schema-valid-evidence",
+          operation: "runtime.assertion",
+          evidence: ["schema"],
+        },
+        {
+          assertions: [
+            {
+              kind: "schemaValid",
+              path: "$.state",
+              schema: "$.evidence.schema",
+            },
+          ],
+          checkId: "fixture.schema-valid-state",
+          operation: "runtime.assertion",
+        },
+      ],
+    },
+    "fixture schemaValid classification plan"
+  );
+
+  if (
+    !schemaOverEvidencePlanFailures.some((failure) =>
+      failure.message.includes("fixture.schema-valid-evidence")
+    )
+  ) {
+    failures.push({
+      check: "guardrail-fixture",
+      message:
+        "schema-valid over evidence fixture did not trigger the decisive-assertion guardrail",
+    });
+  }
+
+  const stepEvidenceOnlyPlanFailures = collectPlanEvidenceOracleShapeFailures(
+    {
+      checks: [
+        {
+          assertions: [
+            {
+              eventType: "turn.end",
+              kind: "terminalEvent",
+            },
+          ],
+          checkId: "fixture.step-evidence-only",
+          operation: "runtime.assertion",
+          steps: [
+            {
+              stepId: "trace",
+              operation: "runtime.assertion",
+              assertions: [
+                {
+                  field: "$.answer",
+                  kind: "evidenceField",
+                  equals: "ready",
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+    "fixture step-evidence-only plan"
+  );
+
+  if (
+    !stepEvidenceOnlyPlanFailures.some((failure) =>
+      failure.message.includes("fixture.step-evidence-only step trace")
+    )
+  ) {
+    failures.push({
+      check: "guardrail-fixture",
+      message:
+        "step evidence-only fixture did not trigger the step decisive-assertion guardrail",
     });
   }
 

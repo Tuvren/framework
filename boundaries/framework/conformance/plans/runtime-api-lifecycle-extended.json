@@ -8,32 +8,53 @@
         {
           "equals": "completed",
           "field": "$.runtime.phase",
-          "kind": "evidenceField"
+          "kind": "resultField"
         }
       ],
       "checkId": "runtime-lifecycle-ext.execute-turn.phase-completed",
-      "evidence": ["runtime.phase"],
       "input": {
         "scenarioPath": "$.completed-turn"
       },
       "operation": "runtime.execute-turn",
-      "scenario": "runtime-api-scenarios"
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["result.runtime.phase"]
     },
     {
       "assertions": [
         {
           "field": "$.runtime.phase",
-          "kind": "evidenceField",
+          "kind": "resultField",
           "matches": "^(running|paused|completed|failed)$"
         }
       ],
       "checkId": "runtime-lifecycle-ext.execute-turn.phase-enum",
-      "evidence": ["runtime.phase"],
       "input": {
         "scenarioPath": "$.completed-turn"
       },
       "operation": "runtime.execute-turn",
-      "scenario": "runtime-api-scenarios"
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["result.runtime.phase"]
+    },
+    {
+      "assertions": [
+        {
+          "equals": false,
+          "field": "$.inputSignal.accepted",
+          "kind": "resultField"
+        },
+        {
+          "equals": "invalid_tuvren_message",
+          "field": "$.inputSignal.error.code",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "runtime-callable-af.input-signal-empty-parts-rejected",
+      "input": {
+        "scenarioPath": "$.input-signal-empty-parts"
+      },
+      "operation": "runtime.execute-turn",
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["inputSignal.error.code", "inputSignal.accepted"]
     },
     {
       "assertions": [
@@ -154,378 +175,129 @@
         {
           "equals": 3,
           "field": "$.context.messageCount",
-          "kind": "evidenceField"
+          "kind": "resultField"
         }
       ],
       "checkId": "runtime-lifecycle-ext.context-transform.message-count",
-      "evidence": ["context.messageCount"],
       "input": {
         "scenarioPath": "$.context-transform-append-summary"
       },
       "operation": "runtime.context-transform",
-      "scenario": "runtime-api-scenarios"
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["result.context.messageCount"]
     },
     {
       "assertions": [
         {
           "equals": "Shared context engineering summary.",
           "field": "$.context.summaryText",
-          "kind": "evidenceField"
+          "kind": "resultField"
         }
       ],
       "checkId": "runtime-lifecycle-ext.context-transform.summary-text",
-      "evidence": ["context.summaryText"],
       "input": {
         "scenarioPath": "$.context-transform-append-summary"
       },
       "operation": "runtime.context-transform",
-      "scenario": "runtime-api-scenarios"
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["result.context.summaryText"]
     },
     {
       "assertions": [
         {
           "equals": "completed",
           "field": "$.runtime.phase",
-          "kind": "evidenceField"
+          "kind": "resultField"
         }
       ],
       "checkId": "runtime-lifecycle-ext.context-transform.runtime-phase-completed",
-      "evidence": ["runtime.phase"],
       "input": {
         "scenarioPath": "$.context-transform-append-summary"
       },
       "operation": "runtime.context-transform",
-      "scenario": "runtime-api-scenarios"
-    },
-    {
-      "assertions": [
-        {
-          "equals": 1,
-          "field": "$.context.sourceMessageCount",
-          "kind": "evidenceField"
-        },
-        {
-          "equals": 2,
-          "field": "$.context.rewrittenMessageCount",
-          "kind": "evidenceField"
-        },
-        {
-          "equals": 3,
-          "field": "$.context.messageCount",
-          "kind": "evidenceField"
-        }
-      ],
-      "checkId": "runtime-lifecycle-af.context-transform-preserves-source-checkpoint",
-      "evidence": [
-        "context.sourceMessageCount",
-        "context.rewrittenMessageCount",
-        "context.messageCount"
-      ],
-      "input": {
-        "scenarioPath": "$.context-transform-append-summary"
-      },
-      "operation": "runtime.context-transform",
-      "scenario": "runtime-api-scenarios"
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["result.runtime.phase"]
     },
     {
       "assertions": [
         {
           "equals": true,
           "field": "$.context.createdNewHead",
-          "kind": "evidenceField"
-        },
-        {
-          "equals": true,
-          "field": "$.context.finalHeadChanged",
-          "kind": "evidenceField"
-        },
-        {
-          "equals": [1, 2, 3],
-          "field": "$.context.snapshotMessageCounts",
-          "kind": "evidenceField"
+          "kind": "resultField"
         }
       ],
       "checkId": "runtime-lifecycle-af.context-transform-creates-new-tree-heads",
-      "evidence": [
-        "context.checkpointHashes",
-        "context.createdNewHead",
-        "context.finalHeadChanged",
-        "context.snapshotMessageCounts"
-      ],
       "input": {
         "scenarioPath": "$.context-transform-append-summary"
       },
       "operation": "runtime.context-transform",
-      "scenario": "runtime-api-scenarios"
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["context.createdNewHead"]
+    },
+    {
+      "assertions": [
+        {
+          "equals": 1,
+          "field": "$.context.sourceMessageCount",
+          "kind": "resultField"
+        },
+        {
+          "equals": [1, 2, 3],
+          "field": "$.context.snapshotMessageCounts",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "runtime-lifecycle-af.context-transform-preserves-source-checkpoint",
+      "input": {
+        "scenarioPath": "$.context-transform-append-summary"
+      },
+      "operation": "runtime.context-transform",
+      "scenario": "runtime-api-scenarios",
+      "evidence": [
+        "context.sourceMessageCount",
+        "context.snapshotMessageCounts"
+      ]
     },
     {
       "assertions": [
         {
           "equals": 2,
+          "field": "$.context.rewrittenMessageCount",
+          "kind": "resultField"
+        },
+        {
+          "equals": 2,
           "field": "$.context.driverObservedMessageCount",
-          "kind": "evidenceField"
+          "kind": "resultField"
         }
       ],
       "checkId": "runtime-lifecycle-af.context-transform-driver-sees-rewritten-context",
-      "evidence": ["context.driverObservedMessageCount"],
       "input": {
         "scenarioPath": "$.context-transform-append-summary"
       },
       "operation": "runtime.context-transform",
-      "scenario": "runtime-api-scenarios"
-    },
-    {
-      "assertions": [
-        {
-          "equals": 1,
-          "field": "$.recovery.uncommittedStagedResults",
-          "kind": "evidenceField"
-        }
-      ],
-      "checkId": "runtime-lifecycle-ext.recover-result.uncommitted-count",
-      "evidence": ["recovery.uncommittedStagedResults"],
-      "input": {
-        "scenarioPath": "$.recover-staged-result"
-      },
-      "operation": "runtime.recover-result",
-      "scenario": "runtime-api-scenarios"
-    },
-    {
-      "assertions": [
-        {
-          "equals": "tool-search",
-          "field": "$.recovery.firstTaskId",
-          "kind": "evidenceField"
-        }
-      ],
-      "checkId": "runtime-lifecycle-ext.recover-result.first-task-id",
-      "evidence": ["recovery.firstTaskId"],
-      "input": {
-        "scenarioPath": "$.recover-staged-result"
-      },
-      "operation": "runtime.recover-result",
-      "scenario": "runtime-api-scenarios"
-    },
-    {
-      "assertions": [
-        {
-          "equals": "message",
-          "field": "$.recovery.firstObjectType",
-          "kind": "evidenceField"
-        }
-      ],
-      "checkId": "runtime-lifecycle-ext.recover-result.first-object-type",
-      "evidence": ["recovery.firstObjectType"],
-      "input": {
-        "scenarioPath": "$.recover-staged-result"
-      },
-      "operation": "runtime.recover-result",
-      "scenario": "runtime-api-scenarios"
-    },
-    {
-      "assertions": [
-        {
-          "field": "$.recovery.lastTurnNodeHash",
-          "kind": "evidenceField",
-          "matches": "^[a-f0-9]{64}$"
-        }
-      ],
-      "checkId": "runtime-lifecycle-ext.recover-result.last-turn-node-hash-format",
-      "evidence": ["recovery.lastTurnNodeHash"],
-      "input": {
-        "scenarioPath": "$.recover-staged-result"
-      },
-      "operation": "runtime.recover-result",
-      "scenario": "runtime-api-scenarios"
-    },
-    {
-      "assertions": [
-        {
-          "equals": true,
-          "field": "$.recovery.sameTurn",
-          "kind": "evidenceField"
-        },
-        {
-          "equals": 1,
-          "field": "$.recovery.originalUserMessageCount",
-          "kind": "evidenceField"
-        },
-        {
-          "equals": true,
-          "field": "$.recovery.recoveredAssistantVisible",
-          "kind": "evidenceField"
-        },
-        {
-          "equals": "failed",
-          "field": "$.recovery.staleRunStatus",
-          "kind": "evidenceField"
-        },
-        {
-          "equals": 1,
-          "field": "$.recovery.preemptCalls",
-          "kind": "evidenceField"
-        }
-      ],
-      "capabilities": ["framework.run-liveness"],
-      "checkId": "runtime-lifecycle-ext.stale-recovery.same-signal-iterate",
+      "scenario": "runtime-api-scenarios",
       "evidence": [
-        "recovery.sameTurn",
-        "recovery.originalUserMessageCount",
-        "recovery.recoveredAssistantVisible",
-        "recovery.staleRunStatus",
-        "recovery.preemptCalls"
-      ],
-      "input": {
-        "scenarioPath": "$.stale-recovery-same-signal-iterate"
-      },
-      "operation": "runtime.recover-stale-run",
-      "scenario": "runtime-api-scenarios"
-    },
-    {
-      "assertions": [
-        {
-          "equals": false,
-          "field": "$.recovery.sameTurn",
-          "kind": "evidenceField"
-        },
-        {
-          "equals": 1,
-          "field": "$.recovery.originalUserMessageCount",
-          "kind": "evidenceField"
-        },
-        {
-          "equals": 1,
-          "field": "$.recovery.freshUserMessageCount",
-          "kind": "evidenceField"
-        },
-        {
-          "equals": "failed",
-          "field": "$.recovery.staleRunStatus",
-          "kind": "evidenceField"
-        },
-        {
-          "equals": 1,
-          "field": "$.recovery.preemptCalls",
-          "kind": "evidenceField"
-        }
-      ],
-      "capabilities": ["framework.run-liveness"],
-      "checkId": "runtime-lifecycle-ext.stale-recovery.signal-mismatch-fresh-turn",
-      "evidence": [
-        "recovery.sameTurn",
-        "recovery.originalUserMessageCount",
-        "recovery.freshUserMessageCount",
-        "recovery.staleRunStatus",
-        "recovery.preemptCalls"
-      ],
-      "input": {
-        "scenarioPath": "$.stale-recovery-signal-mismatch"
-      },
-      "operation": "runtime.recover-stale-run",
-      "scenario": "runtime-api-scenarios"
-    },
-    {
-      "assertions": [
-        {
-          "equals": true,
-          "field": "$.recovery.sameTurn",
-          "kind": "evidenceField"
-        },
-        {
-          "equals": "completed",
-          "field": "$.recovery.phase",
-          "kind": "evidenceField"
-        },
-        {
-          "equals": "reviewer",
-          "field": "$.recovery.activeAgent",
-          "kind": "evidenceField"
-        },
-        {
-          "equals": "reviewer",
-          "field": "$.recovery.branchStatusActiveAgent",
-          "kind": "evidenceField"
-        },
-        {
-          "equals": "failed",
-          "field": "$.recovery.staleRunStatus",
-          "kind": "evidenceField"
-        }
-      ],
-      "capabilities": ["framework.run-liveness"],
-      "checkId": "runtime-lifecycle-ext.stale-recovery.handoff-context-active-agent",
-      "evidence": [
-        "recovery.sameTurn",
-        "recovery.phase",
-        "recovery.activeAgent",
-        "recovery.branchStatusActiveAgent",
-        "recovery.staleRunStatus"
-      ],
-      "input": {
-        "scenarioPath": "$.stale-recovery-handoff-context"
-      },
-      "operation": "runtime.recover-stale-run",
-      "scenario": "runtime-api-scenarios"
-    },
-    {
-      "assertions": [
-        {
-          "equals": true,
-          "field": "$.recovery.sameTurn",
-          "kind": "evidenceField"
-        },
-        {
-          "equals": "completed",
-          "field": "$.recovery.phase",
-          "kind": "evidenceField"
-        },
-        {
-          "equals": 0,
-          "field": "$.recovery.driverExecuteCalls",
-          "kind": "evidenceField"
-        },
-        {
-          "equals": "completed",
-          "field": "$.recovery.branchRuntimePhase",
-          "kind": "evidenceField"
-        },
-        {
-          "equals": "failed",
-          "field": "$.recovery.staleRunStatus",
-          "kind": "evidenceField"
-        }
-      ],
-      "capabilities": ["framework.run-liveness"],
-      "checkId": "runtime-lifecycle-ext.stale-recovery.finalize-terminal-status",
-      "evidence": [
-        "recovery.sameTurn",
-        "recovery.phase",
-        "recovery.driverExecuteCalls",
-        "recovery.branchRuntimePhase",
-        "recovery.staleRunStatus"
-      ],
-      "input": {
-        "scenarioPath": "$.stale-recovery-finalize-status"
-      },
-      "operation": "runtime.recover-stale-run",
-      "scenario": "runtime-api-scenarios"
+        "context.rewrittenMessageCount",
+        "context.driverObservedMessageCount"
+      ]
     },
     {
       "assertions": [
         {
           "equals": 2,
           "field": "$.cancellation.cancelInvocations",
-          "kind": "evidenceField"
+          "kind": "resultField"
         },
         {
           "equals": 1,
           "field": "$.cancellation.errorEventCount",
-          "kind": "evidenceField"
+          "kind": "resultField"
         },
         {
           "equals": "failed",
           "field": "$.runtime.phase",
-          "kind": "evidenceField"
+          "kind": "resultField"
         }
       ],
       "checkId": "runtime-lifecycle-af.cancel-running-idempotent-fails-once",
@@ -533,29 +305,24 @@
         "cancelAfterEvent": "turn.start",
         "deadlineMs": 1000
       },
+      "operation": "runtime.cancel-execution",
       "evidence": [
         "cancellation.cancelInvocations",
         "cancellation.errorEventCount",
         "runtime.phase"
-      ],
-      "operation": "runtime.cancel-execution"
+      ]
     },
     {
       "assertions": [
         {
-          "equals": "failed",
-          "field": "$.runtime.phase",
-          "kind": "evidenceField"
-        },
-        {
           "equals": true,
           "field": "$.cancellation.runtimeStatusPartial",
-          "kind": "evidenceField"
+          "kind": "resultField"
         },
         {
           "equals": "interrupted",
           "field": "$.cancellation.partialAssistantText",
-          "kind": "evidenceField"
+          "kind": "resultField"
         }
       ],
       "checkId": "runtime-lifecycle-af.cancel-running-stages-partial-status",
@@ -563,12 +330,247 @@
         "cancelAfterEvent": "iteration.end",
         "deadlineMs": 1000
       },
+      "operation": "runtime.cancel-execution",
       "evidence": [
-        "cancellation.partialAssistantText",
         "cancellation.runtimeStatusPartial",
-        "runtime.phase"
+        "cancellation.partialAssistantText"
+      ]
+    },
+    {
+      "assertions": [
+        {
+          "equals": 1,
+          "field": "$.recovery.uncommittedStagedResults",
+          "kind": "resultField"
+        }
       ],
-      "operation": "runtime.cancel-execution"
+      "checkId": "runtime-lifecycle-ext.recover-result.uncommitted-count",
+      "input": {
+        "scenarioPath": "$.recover-staged-result"
+      },
+      "operation": "runtime.recover-result",
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["result.recovery.uncommittedStagedResults"]
+    },
+    {
+      "assertions": [
+        {
+          "equals": "tool-search",
+          "field": "$.recovery.firstTaskId",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.recover-result.first-task-id",
+      "input": {
+        "scenarioPath": "$.recover-staged-result"
+      },
+      "operation": "runtime.recover-result",
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["result.recovery.firstTaskId"]
+    },
+    {
+      "assertions": [
+        {
+          "equals": "message",
+          "field": "$.recovery.firstObjectType",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.recover-result.first-object-type",
+      "input": {
+        "scenarioPath": "$.recover-staged-result"
+      },
+      "operation": "runtime.recover-result",
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["result.recovery.firstObjectType"]
+    },
+    {
+      "assertions": [
+        {
+          "field": "$.recovery.lastTurnNodeHash",
+          "kind": "resultField",
+          "matches": "^[a-f0-9]{64}$"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.recover-result.last-turn-node-hash-format",
+      "input": {
+        "scenarioPath": "$.recover-staged-result"
+      },
+      "operation": "runtime.recover-result",
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["result.recovery.lastTurnNodeHash"]
+    },
+    {
+      "assertions": [
+        {
+          "equals": true,
+          "field": "$.recovery.sameTurn",
+          "kind": "resultField"
+        },
+        {
+          "equals": 1,
+          "field": "$.recovery.originalUserMessageCount",
+          "kind": "resultField"
+        },
+        {
+          "equals": true,
+          "field": "$.recovery.recoveredAssistantVisible",
+          "kind": "resultField"
+        },
+        {
+          "equals": "failed",
+          "field": "$.recovery.staleRunStatus",
+          "kind": "resultField"
+        },
+        {
+          "equals": 1,
+          "field": "$.recovery.preemptCalls",
+          "kind": "resultField"
+        }
+      ],
+      "capabilities": ["framework.run-liveness"],
+      "checkId": "runtime-lifecycle-ext.stale-recovery.same-signal-iterate",
+      "input": {
+        "scenarioPath": "$.stale-recovery-same-signal-iterate"
+      },
+      "operation": "runtime.recover-stale-run",
+      "scenario": "runtime-api-scenarios",
+      "evidence": [
+        "result.recovery.sameTurn",
+        "result.recovery.originalUserMessageCount",
+        "result.recovery.recoveredAssistantVisible",
+        "result.recovery.staleRunStatus",
+        "result.recovery.preemptCalls"
+      ]
+    },
+    {
+      "assertions": [
+        {
+          "equals": false,
+          "field": "$.recovery.sameTurn",
+          "kind": "resultField"
+        },
+        {
+          "equals": 1,
+          "field": "$.recovery.originalUserMessageCount",
+          "kind": "resultField"
+        },
+        {
+          "equals": 1,
+          "field": "$.recovery.freshUserMessageCount",
+          "kind": "resultField"
+        },
+        {
+          "equals": "failed",
+          "field": "$.recovery.staleRunStatus",
+          "kind": "resultField"
+        },
+        {
+          "equals": 1,
+          "field": "$.recovery.preemptCalls",
+          "kind": "resultField"
+        }
+      ],
+      "capabilities": ["framework.run-liveness"],
+      "checkId": "runtime-lifecycle-ext.stale-recovery.signal-mismatch-fresh-turn",
+      "input": {
+        "scenarioPath": "$.stale-recovery-signal-mismatch"
+      },
+      "operation": "runtime.recover-stale-run",
+      "scenario": "runtime-api-scenarios",
+      "evidence": [
+        "result.recovery.sameTurn",
+        "result.recovery.originalUserMessageCount",
+        "result.recovery.freshUserMessageCount",
+        "result.recovery.staleRunStatus",
+        "result.recovery.preemptCalls"
+      ]
+    },
+    {
+      "assertions": [
+        {
+          "equals": true,
+          "field": "$.recovery.sameTurn",
+          "kind": "resultField"
+        },
+        {
+          "equals": "completed",
+          "field": "$.recovery.phase",
+          "kind": "resultField"
+        },
+        {
+          "equals": "reviewer",
+          "field": "$.recovery.activeAgent",
+          "kind": "resultField"
+        },
+        {
+          "equals": "reviewer",
+          "field": "$.recovery.branchStatusActiveAgent",
+          "kind": "resultField"
+        },
+        {
+          "equals": "failed",
+          "field": "$.recovery.staleRunStatus",
+          "kind": "resultField"
+        }
+      ],
+      "capabilities": ["framework.run-liveness"],
+      "checkId": "runtime-lifecycle-ext.stale-recovery.handoff-context-active-agent",
+      "input": {
+        "scenarioPath": "$.stale-recovery-handoff-context"
+      },
+      "operation": "runtime.recover-stale-run",
+      "scenario": "runtime-api-scenarios",
+      "evidence": [
+        "result.recovery.sameTurn",
+        "result.recovery.phase",
+        "result.recovery.activeAgent",
+        "result.recovery.branchStatusActiveAgent",
+        "result.recovery.staleRunStatus"
+      ]
+    },
+    {
+      "assertions": [
+        {
+          "equals": true,
+          "field": "$.recovery.sameTurn",
+          "kind": "resultField"
+        },
+        {
+          "equals": "completed",
+          "field": "$.recovery.phase",
+          "kind": "resultField"
+        },
+        {
+          "equals": 0,
+          "field": "$.recovery.driverExecuteCalls",
+          "kind": "resultField"
+        },
+        {
+          "equals": "completed",
+          "field": "$.recovery.branchRuntimePhase",
+          "kind": "resultField"
+        },
+        {
+          "equals": "failed",
+          "field": "$.recovery.staleRunStatus",
+          "kind": "resultField"
+        }
+      ],
+      "capabilities": ["framework.run-liveness"],
+      "checkId": "runtime-lifecycle-ext.stale-recovery.finalize-terminal-status",
+      "input": {
+        "scenarioPath": "$.stale-recovery-finalize-status"
+      },
+      "operation": "runtime.recover-stale-run",
+      "scenario": "runtime-api-scenarios",
+      "evidence": [
+        "result.recovery.sameTurn",
+        "result.recovery.phase",
+        "result.recovery.driverExecuteCalls",
+        "result.recovery.branchRuntimePhase",
+        "result.recovery.staleRunStatus"
+      ]
     }
   ],
   "packetId": "tuvren.framework.runtime-api",

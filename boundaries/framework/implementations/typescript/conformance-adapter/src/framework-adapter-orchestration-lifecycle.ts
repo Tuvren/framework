@@ -19,13 +19,13 @@ import {
   createOrchestrationRuntime,
   createTuvrenRuntimeCore,
 } from "../../runtime-core/src/index.ts";
-import { createFakeKernelHarness } from "../../runtime-core/test/fake-kernel.ts";
 import {
   type AdapterProjection,
   assistantText,
   assistantToolCalls,
   collectValues,
   createConformanceIdFactory,
+  createConformanceKernelHarness,
   createStaticDriver,
   DRIVER_ID,
   textSignal,
@@ -132,7 +132,7 @@ export function createFrameworkAdapterOrchestrationLifecycle(
     childText: string,
     parentText: string
   ): Promise<AdapterProjection> {
-    const harness = createFakeKernelHarness();
+    const harness = createConformanceKernelHarness();
     const framework = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultDriverId: DRIVER_ID,
@@ -232,19 +232,17 @@ export function createFrameworkAdapterOrchestrationLifecycle(
     const resumedResult = await resumedHandle.awaitResult();
     await subtreeEventsPromise;
 
+    const lifecycle = {
+      childResult,
+      parentPausedWhileChildCompleted:
+        pausedPhase === "paused" && firstVisibleText(childResult) === childText,
+      resumedParentPhase: resumedHandle.status().phase,
+      resumedParentResult: resumedResult,
+    };
+
     return {
-      evidence: {
-        orchestration: {
-          lifecycle: {
-            childResult,
-            parentPausedWhileChildCompleted:
-              pausedPhase === "paused" &&
-              firstVisibleText(childResult) === childText,
-            resumedParentPhase: resumedHandle.status().phase,
-            resumedParentResult: resumedResult,
-          },
-        },
-      },
+      evidence: { orchestration: { lifecycle } },
+      result: { orchestration: { lifecycle } },
     };
   }
 
@@ -252,7 +250,7 @@ export function createFrameworkAdapterOrchestrationLifecycle(
     childText: string,
     parentText: string
   ): Promise<AdapterProjection> {
-    const harness = createFakeKernelHarness();
+    const harness = createConformanceKernelHarness();
     const framework = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultDriverId: DRIVER_ID,
@@ -352,20 +350,19 @@ export function createFrameworkAdapterOrchestrationLifecycle(
     const resumedChildResult = await resumedChildHandle.awaitResult();
     await parentEventsPromise;
 
+    const lifecycle = {
+      childPausedPhase: pausedPhase,
+      childResumedPhase: resumedChildHandle.status().phase,
+      parentCompletedWhileChildPaused:
+        pausedPhase === "paused" &&
+        handle.status().phase === "completed" &&
+        firstVisibleText(parentResult) === parentText,
+      resumedChildResult,
+    };
+
     return {
-      evidence: {
-        orchestration: {
-          lifecycle: {
-            childPausedPhase: pausedPhase,
-            childResumedPhase: resumedChildHandle.status().phase,
-            parentCompletedWhileChildPaused:
-              pausedPhase === "paused" &&
-              handle.status().phase === "completed" &&
-              firstVisibleText(parentResult) === parentText,
-            resumedChildResult,
-          },
-        },
-      },
+      evidence: { orchestration: { lifecycle } },
+      result: { orchestration: { lifecycle } },
     };
   }
 
@@ -373,7 +370,7 @@ export function createFrameworkAdapterOrchestrationLifecycle(
     childText: string,
     parentText: string
   ): Promise<AdapterProjection> {
-    const harness = createFakeKernelHarness();
+    const harness = createConformanceKernelHarness();
     const framework = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultDriverId: DRIVER_ID,
@@ -432,18 +429,17 @@ export function createFrameworkAdapterOrchestrationLifecycle(
     const parentResult = await handle.awaitResult();
     await parentEventsPromise;
 
+    const lifecycle = {
+      childCancelError: childError,
+      childCancelledWhileParentCompleted:
+        childHandle.status().phase === "failed" &&
+        handle.status().phase === "completed" &&
+        firstVisibleText(parentResult) === parentText,
+    };
+
     return {
-      evidence: {
-        orchestration: {
-          lifecycle: {
-            childCancelError: childError,
-            childCancelledWhileParentCompleted:
-              childHandle.status().phase === "failed" &&
-              handle.status().phase === "completed" &&
-              firstVisibleText(parentResult) === parentText,
-          },
-        },
-      },
+      evidence: { orchestration: { lifecycle } },
+      result: { orchestration: { lifecycle } },
     };
   }
 
@@ -451,7 +447,7 @@ export function createFrameworkAdapterOrchestrationLifecycle(
     childText: string,
     _parentText: string
   ): Promise<AdapterProjection> {
-    const harness = createFakeKernelHarness();
+    const harness = createConformanceKernelHarness();
     const framework = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultDriverId: DRIVER_ID,
@@ -510,19 +506,18 @@ export function createFrameworkAdapterOrchestrationLifecycle(
     const childResult = await childHandle.awaitResult();
     await parentEventsPromise;
 
+    const lifecycle = {
+      childResult,
+      parentCancelError,
+      parentCancelledWhileChildCompleted:
+        handle.status().phase === "failed" &&
+        childHandle.status().phase === "completed" &&
+        firstVisibleText(childResult) === childText,
+    };
+
     return {
-      evidence: {
-        orchestration: {
-          lifecycle: {
-            childResult,
-            parentCancelError,
-            parentCancelledWhileChildCompleted:
-              handle.status().phase === "failed" &&
-              childHandle.status().phase === "completed" &&
-              firstVisibleText(childResult) === childText,
-          },
-        },
-      },
+      evidence: { orchestration: { lifecycle } },
+      result: { orchestration: { lifecycle } },
     };
   }
 
@@ -530,22 +525,21 @@ export function createFrameworkAdapterOrchestrationLifecycle(
     const pausedSpawnError = await runPausedParentSpawnRejection();
     const completedSpawnError = await runCompletedParentSpawnRejection();
 
+    const lifecycle = {
+      completedSpawnError,
+      pausedSpawnError,
+    };
+
     return {
-      evidence: {
-        orchestration: {
-          lifecycle: {
-            completedSpawnError,
-            pausedSpawnError,
-          },
-        },
-      },
+      evidence: { orchestration: { lifecycle } },
+      result: { orchestration: { lifecycle } },
     };
   }
 
   async function runPausedParentSpawnRejection(): Promise<
     Record<string, unknown> | undefined
   > {
-    const harness = createFakeKernelHarness();
+    const harness = createConformanceKernelHarness();
     const framework = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultDriverId: DRIVER_ID,
@@ -635,7 +629,7 @@ export function createFrameworkAdapterOrchestrationLifecycle(
   async function runCompletedParentSpawnRejection(): Promise<
     Record<string, unknown> | undefined
   > {
-    const harness = createFakeKernelHarness();
+    const harness = createConformanceKernelHarness();
     const framework = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultDriverId: DRIVER_ID,

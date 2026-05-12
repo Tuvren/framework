@@ -11,17 +11,17 @@
       "operation": "kernel.run-liveness.lease-renewal",
       "assertions": [
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.renewal.renewedLeaseExpiresAtMs",
           "equals": 40
         },
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.renewal.ownerMismatchCode",
           "equals": "run_lease_owner_mismatch"
         },
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.renewal.staleTokenCode",
           "equals": "run_lease_token_mismatch"
         }
@@ -37,17 +37,17 @@
       "operation": "kernel.run-liveness.expired-listing",
       "assertions": [
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.listing.expiredRunIds",
           "equals": ["run_expired"]
         },
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.listing.pausedRunStatus",
           "equals": "paused"
         },
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.listing.pausedRunListed",
           "equals": false
         }
@@ -63,27 +63,27 @@
       "operation": "kernel.run-liveness.stale-preemption",
       "assertions": [
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.preemption.runStatus",
           "equals": "failed"
         },
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.preemption.preemptionReason",
           "equals": "stale_running_recovery"
         },
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.preemption.uncommittedStagedResults",
           "equals": 0
         },
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.preemption.leaseCleared",
           "equals": true
         },
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.preemption.recoveryHeadMatchesBranchHead",
           "equals": true
         }
@@ -103,17 +103,17 @@
       "operation": "kernel.run-liveness.stale-preemption",
       "assertions": [
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.preemption.runStatus",
           "equals": "failed"
         },
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.preemption.preemptionReason",
           "equals": "stale_running_recovery"
         },
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.preemption.leaseCleared",
           "equals": true
         }
@@ -129,12 +129,12 @@
       "operation": "kernel.run-liveness.expired-listing",
       "assertions": [
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.listing.pausedRunStatus",
           "equals": "paused"
         },
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.listing.pausedRunListed",
           "equals": false
         }

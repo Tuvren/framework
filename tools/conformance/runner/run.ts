@@ -428,6 +428,7 @@ async function runTraceCheck(
     evidence: { trace },
     fixture: baseInput.fixture,
     input: baseInput.checkInput,
+    result: { trace },
     scenario: baseInput.scenario,
     state: { trace },
   };

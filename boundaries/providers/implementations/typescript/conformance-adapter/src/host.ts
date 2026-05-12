@@ -21,15 +21,12 @@ import type {
   LanguageModelV3StreamPart,
 } from "@ai-sdk/provider";
 import { TuvrenProviderError } from "@tuvren/core-types";
-import type { ProviderStreamChunk } from "@tuvren/provider-api";
 import {
-  assertProviderFinishChunk,
-  assertProviderStructuredDoneChunk,
-  providerTestkitFixtures,
-  verifyProviderGenerate,
-  verifyProviderRejects,
-  verifyProviderStream,
-} from "@tuvren/provider-testkit";
+  assertProviderStreamChunk,
+  assertTuvrenModelResponse,
+  type ProviderStreamChunk,
+  type StructuredOutputRequest,
+} from "@tuvren/provider-api";
 import type {
   AdapterCapabilities,
   AdapterControls,
@@ -38,6 +35,7 @@ import type {
 import { createAdapterErrorEnvelope } from "../../../../../../tools/conformance/adapter-protocol/index.js";
 import { serveStdioAdapter } from "../../../../../../tools/conformance/adapter-protocol/stdio-host.js";
 import { createAiSdkProviderBridge } from "../../bridge-ai-sdk/src/index.ts";
+import { providerConformanceFixtures } from "./provider-conformance-fixtures.ts";
 
 class TypeScriptProviderAdapter {
   initialize(
@@ -125,27 +123,28 @@ async function generateMapping(): Promise<Record<string, unknown>> {
       },
     }),
   });
-  const response = await verifyProviderGenerate({
-    prompt: providerTestkitFixtures.structuredPrompt,
-    provider: bridge,
-  });
+  const response = await bridge.generate(
+    providerConformanceFixtures.structuredPrompt
+  );
+  assertTuvrenModelResponse(
+    response,
+    "providers.bridge.generate-mapping generate response"
+  );
   const providerMetadata = isRecord(response.providerMetadata)
     ? response.providerMetadata
     : {};
 
-  return {
-    evidence: {
-      generate: {
-        providerMetadataKeys: Object.keys(providerMetadata),
-        responseFormatName:
-          capturedOptions?.responseFormat?.type === "json"
-            ? capturedOptions.responseFormat.name
-            : undefined,
-        responseFormatType: capturedOptions?.responseFormat?.type,
-        responsePartTypes: response.parts.map((part) => part.type),
-      },
+  return createProjection({
+    generate: {
+      providerMetadataKeys: Object.keys(providerMetadata),
+      responseFormatName:
+        capturedOptions?.responseFormat?.type === "json"
+          ? capturedOptions.responseFormat.name
+          : undefined,
+      responseFormatType: capturedOptions?.responseFormat?.type,
+      responsePartTypes: response.parts.map((part) => part.type),
     },
-  };
+  });
 }
 
 async function streamMetadataContinuity(): Promise<Record<string, unknown>> {
@@ -182,22 +181,19 @@ async function streamMetadataContinuity(): Promise<Record<string, unknown>> {
       },
     }),
   });
-  const chunks = await verifyProviderStream({
-    prompt: providerTestkitFixtures.toolPrompt,
-    provider: bridge,
-  });
-  const finishChunk = assertProviderFinishChunk(chunks, "tool_call");
+  const chunks = await collectProviderStreamChunks(
+    bridge.stream(providerConformanceFixtures.toolPrompt)
+  );
+  const finishChunk = findFinishChunk(chunks, "tool_call");
 
-  return {
-    evidence: {
-      stream: {
-        chunkTypes: chunks.map((chunk) => chunk.type),
-        finishMetadataKeys: isRecord(finishChunk.providerMetadata)
-          ? Object.keys(finishChunk.providerMetadata)
-          : [],
-      },
+  return createProjection({
+    stream: {
+      chunkTypes: chunks.map((chunk) => chunk.type),
+      finishMetadataKeys: isRecord(finishChunk.providerMetadata)
+        ? Object.keys(finishChunk.providerMetadata)
+        : [],
     },
-  };
+  });
 }
 
 async function structuredOutputStream(): Promise<Record<string, unknown>> {
@@ -223,23 +219,17 @@ async function structuredOutputStream(): Promise<Record<string, unknown>> {
       },
     }),
   });
-  const chunks = await verifyProviderStream({
-    prompt: providerTestkitFixtures.structuredPrompt,
-    provider: bridge,
-  });
-  const structuredDoneChunk = assertProviderStructuredDoneChunk(
-    chunks,
-    "answer"
+  const chunks = await collectProviderStreamChunks(
+    bridge.stream(providerConformanceFixtures.structuredPrompt)
   );
+  const structuredDoneChunk = findStructuredDoneChunk(chunks, "answer");
 
-  return {
-    evidence: {
-      structured: {
-        chunkTypes: chunks.map((chunk) => chunk.type),
-        doneName: structuredDoneChunk.name,
-      },
+  return createProjection({
+    structured: {
+      chunkTypes: chunks.map((chunk) => chunk.type),
+      doneName: structuredDoneChunk.name,
     },
-  };
+  });
 }
 
 async function providerFailureNormalization(): Promise<
@@ -252,22 +242,19 @@ async function providerFailureNormalization(): Promise<
       },
     }),
   });
-  const error = await verifyProviderRejects({
-    run: () => bridge.generate(providerTestkitFixtures.prompt),
-  });
+  const error = await collectProviderOperationError(() =>
+    bridge.generate(providerConformanceFixtures.prompt)
+  );
 
-  return {
-    evidence: {
-      failure: {
-        errorCode:
-          error instanceof TuvrenProviderError ? error.code : "unknown",
-        errorName:
-          error instanceof TuvrenProviderError
-            ? "TuvrenProviderError"
-            : error.constructor.name,
-      },
+  return createProjection({
+    failure: {
+      errorCode: error instanceof TuvrenProviderError ? error.code : "unknown",
+      errorName:
+        error instanceof TuvrenProviderError
+          ? "TuvrenProviderError"
+          : error.constructor.name,
     },
-  };
+  });
 }
 
 async function strictStructuredOutputRejection(): Promise<
@@ -284,16 +271,14 @@ async function strictStructuredOutputRejection(): Promise<
       },
     }),
   });
-  const generateError = await verifyProviderRejects({
-    run: async () => {
-      await generateBridge.generate({
-        ...providerTestkitFixtures.structuredPrompt,
-        responseFormat: {
-          ...responseFormat,
-          strict: true,
-        },
-      });
-    },
+  const generateError = await collectProviderOperationError(async () => {
+    await generateBridge.generate({
+      ...providerConformanceFixtures.structuredPrompt,
+      responseFormat: {
+        ...responseFormat,
+        strict: true,
+      },
+    });
   });
   const streamBridge = createAiSdkProviderBridge({
     model: createMockModel({
@@ -305,38 +290,34 @@ async function strictStructuredOutputRejection(): Promise<
       },
     }),
   });
-  const streamError = await verifyProviderRejects({
-    run: async () => {
-      await collectProviderStreamChunks(
-        streamBridge.stream({
-          ...providerTestkitFixtures.structuredPrompt,
-          responseFormat: {
-            ...responseFormat,
-            strict: true,
-          },
-        })
-      );
-    },
+  const streamError = await collectProviderOperationError(async () => {
+    await collectProviderStreamChunks(
+      streamBridge.stream({
+        ...providerConformanceFixtures.structuredPrompt,
+        responseFormat: {
+          ...responseFormat,
+          strict: true,
+        },
+      })
+    );
   });
 
-  return {
-    evidence: {
-      strictStructuredOutput: {
-        generateCalls,
-        generateErrorCode:
-          generateError instanceof TuvrenProviderError
-            ? generateError.code
-            : "unknown",
-        generateErrorReason: readProviderErrorReason(generateError),
-        streamCalls,
-        streamErrorCode:
-          streamError instanceof TuvrenProviderError
-            ? streamError.code
-            : "unknown",
-        streamErrorReason: readProviderErrorReason(streamError),
-      },
+  return createProjection({
+    strictStructuredOutput: {
+      generateCalls,
+      generateErrorCode:
+        generateError instanceof TuvrenProviderError
+          ? generateError.code
+          : "unknown",
+      generateErrorReason: readProviderErrorReason(generateError),
+      streamCalls,
+      streamErrorCode:
+        streamError instanceof TuvrenProviderError
+          ? streamError.code
+          : "unknown",
+      streamErrorReason: readProviderErrorReason(streamError),
     },
-  };
+  });
 }
 
 async function providerOwnedToolExecutionRejection(): Promise<
@@ -361,10 +342,8 @@ async function providerOwnedToolExecutionRejection(): Promise<
       },
     }),
   });
-  const generateError = await verifyProviderRejects({
-    run: async () => {
-      await generateBridge.generate(providerTestkitFixtures.toolPrompt);
-    },
+  const generateError = await collectProviderOperationError(async () => {
+    await generateBridge.generate(providerConformanceFixtures.toolPrompt);
   });
   const streamBridge = createAiSdkProviderBridge({
     model: createMockModel({
@@ -382,30 +361,26 @@ async function providerOwnedToolExecutionRejection(): Promise<
       },
     }),
   });
-  const streamError = await verifyProviderRejects({
-    run: async () => {
-      await collectProviderStreamChunks(
-        streamBridge.stream(providerTestkitFixtures.toolPrompt)
-      );
-    },
+  const streamError = await collectProviderOperationError(async () => {
+    await collectProviderStreamChunks(
+      streamBridge.stream(providerConformanceFixtures.toolPrompt)
+    );
   });
 
-  return {
-    evidence: {
-      frameworkOwnedToolExecution: {
-        generateErrorCode:
-          generateError instanceof TuvrenProviderError
-            ? generateError.code
-            : "unknown",
-        generateErrorReason: readProviderErrorReason(generateError),
-        streamErrorCode:
-          streamError instanceof TuvrenProviderError
-            ? streamError.code
-            : "unknown",
-        streamErrorReason: readProviderErrorReason(streamError),
-      },
+  return createProjection({
+    frameworkOwnedToolExecution: {
+      generateErrorCode:
+        generateError instanceof TuvrenProviderError
+          ? generateError.code
+          : "unknown",
+      generateErrorReason: readProviderErrorReason(generateError),
+      streamErrorCode:
+        streamError instanceof TuvrenProviderError
+          ? streamError.code
+          : "unknown",
+      streamErrorReason: readProviderErrorReason(streamError),
     },
-  };
+  });
 }
 
 async function providerOwnedToolResultRejection(): Promise<
@@ -433,11 +408,9 @@ async function providerOwnedToolResultRejection(): Promise<
       },
     }),
   });
-  const generateError = await verifyProviderRejects({
-    run: async () => {
-      await generateBridge.generate(providerTestkitFixtures.toolPrompt);
-      generateResolved = true;
-    },
+  const generateError = await collectProviderOperationError(async () => {
+    await generateBridge.generate(providerConformanceFixtures.toolPrompt);
+    generateResolved = true;
   });
   const streamBridge = createAiSdkProviderBridge({
     model: createMockModel({
@@ -457,34 +430,30 @@ async function providerOwnedToolResultRejection(): Promise<
       },
     }),
   });
-  const streamError = await verifyProviderRejects({
-    run: async () => {
-      for await (const _chunk of streamBridge.stream(
-        providerTestkitFixtures.toolPrompt
-      )) {
-        streamChunkCount += 1;
-      }
-    },
+  const streamError = await collectProviderOperationError(async () => {
+    for await (const _chunk of streamBridge.stream(
+      providerConformanceFixtures.toolPrompt
+    )) {
+      streamChunkCount += 1;
+    }
   });
 
-  return {
-    evidence: {
-      frameworkOwnedToolResultBoundary: {
-        generateErrorCode:
-          generateError instanceof TuvrenProviderError
-            ? generateError.code
-            : "unknown",
-        generateErrorReason: readProviderErrorReason(generateError),
-        generateResolved,
-        streamChunkCount,
-        streamErrorCode:
-          streamError instanceof TuvrenProviderError
-            ? streamError.code
-            : "unknown",
-        streamErrorReason: readProviderErrorReason(streamError),
-      },
+  return createProjection({
+    frameworkOwnedToolResultBoundary: {
+      generateErrorCode:
+        generateError instanceof TuvrenProviderError
+          ? generateError.code
+          : "unknown",
+      generateErrorReason: readProviderErrorReason(generateError),
+      generateResolved,
+      streamChunkCount,
+      streamErrorCode:
+        streamError instanceof TuvrenProviderError
+          ? streamError.code
+          : "unknown",
+      streamErrorReason: readProviderErrorReason(streamError),
     },
-  };
+  });
 }
 
 async function providerApprovalRequestRejection(): Promise<
@@ -505,29 +474,33 @@ async function providerApprovalRequestRejection(): Promise<
       },
     }),
   });
-  const error = await verifyProviderRejects({
-    run: async () => {
-      await collectProviderStreamChunks(
-        bridge.stream(providerTestkitFixtures.toolPrompt)
-      );
-    },
+  const error = await collectProviderOperationError(async () => {
+    await collectProviderStreamChunks(
+      bridge.stream(providerConformanceFixtures.toolPrompt)
+    );
   });
 
-  return {
-    evidence: {
-      frameworkOwnedApprovalBoundary: {
-        errorCode:
-          error instanceof TuvrenProviderError ? error.code : "unknown",
-        errorReason: readProviderErrorReason(error),
-      },
+  return createProjection({
+    frameworkOwnedApprovalBoundary: {
+      errorCode: error instanceof TuvrenProviderError ? error.code : "unknown",
+      errorReason: readProviderErrorReason(error),
     },
-  };
+  });
 }
 
 function result(value: Record<string, unknown>): OperationOutcome {
   return {
     kind: "result",
     value,
+  };
+}
+
+function createProjection<T extends Record<string, unknown>>(
+  evidence: T
+): Record<string, unknown> {
+  return {
+    evidence,
+    result: evidence,
   };
 }
 
@@ -607,12 +580,77 @@ async function collectProviderStreamChunks(
   stream: AsyncIterable<ProviderStreamChunk>
 ): Promise<ProviderStreamChunk[]> {
   const chunks: ProviderStreamChunk[] = [];
+  let index = 0;
 
   for await (const chunk of stream) {
-    chunks.push(chunk);
+    assertProviderStreamChunk(chunk, `provider stream chunk ${index}`);
+    chunks.push(structuredClone(chunk));
+    index += 1;
   }
 
   return chunks;
+}
+
+async function collectProviderOperationError(
+  run: () => Promise<unknown> | unknown
+): Promise<Error> {
+  try {
+    await run();
+  } catch (error: unknown) {
+    return error instanceof Error ? error : new Error(String(error));
+  }
+
+  throw new Error("provider operation did not fail");
+}
+
+function findFinishChunk(
+  chunks: readonly ProviderStreamChunk[],
+  expected: "tool_call" | "stop"
+): Extract<ProviderStreamChunk, { type: "finish" }> {
+  const finishChunk = chunks.find(
+    (chunk): chunk is Extract<ProviderStreamChunk, { type: "finish" }> =>
+      chunk.type === "finish"
+  );
+
+  if (finishChunk === undefined) {
+    throw new Error("provider stream did not emit a finish chunk");
+  }
+
+  if (finishChunk.finishReason !== expected) {
+    throw new Error(
+      `provider stream finished with ${String(
+        finishChunk.finishReason
+      )}; expected ${expected}`
+    );
+  }
+
+  return finishChunk;
+}
+
+function findStructuredDoneChunk(
+  chunks: readonly ProviderStreamChunk[],
+  expectedName: string
+): Extract<ProviderStreamChunk, { type: "structured_done" }> {
+  const structuredDoneChunk = chunks.find(
+    (
+      chunk
+    ): chunk is Extract<ProviderStreamChunk, { type: "structured_done" }> =>
+      chunk.type === "structured_done"
+  );
+
+  if (structuredDoneChunk === undefined) {
+    throw new Error("provider stream did not emit a structured_done chunk");
+  }
+
+  if (structuredDoneChunk.name !== expectedName) {
+    throw new Error(
+      `provider stream structured_done name was ${String(
+        structuredDoneChunk.name
+      )}; expected ${expectedName}`
+    );
+  }
+
+  return structuredDoneChunk;
 }
 
 function readProviderErrorReason(error: unknown): string | undefined {
@@ -629,10 +667,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function readStructuredResponseFormat(): NonNullable<
-  typeof providerTestkitFixtures.structuredPrompt.responseFormat
-> {
-  const { responseFormat } = providerTestkitFixtures.structuredPrompt;
+function readStructuredResponseFormat(): StructuredOutputRequest {
+  const { responseFormat } = providerConformanceFixtures.structuredPrompt;
 
   if (responseFormat === undefined) {
     throw new Error(

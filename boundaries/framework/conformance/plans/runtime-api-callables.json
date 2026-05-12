@@ -16,17 +16,17 @@
       "input": { "scenarioPath": "$.provider-generate-text" },
       "assertions": [
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.provider.generate.callCount",
           "equals": 1
         },
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.provider.generate.response.parts.0.text",
           "equals": "generated from shared scenario"
         },
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.provider.generate.response.finishReason",
           "equals": "stop"
         }
@@ -44,22 +44,22 @@
       "input": { "scenarioPath": "$.provider-stream-text" },
       "assertions": [
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.provider.stream.callCount",
           "equals": 1
         },
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.provider.stream.emittedEventTypes",
           "contains": "text.delta"
         },
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.provider.stream.response.parts.0.text",
           "equals": "streamed from shared scenario"
         },
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.provider.stream.chunkTypes",
           "equals": ["text_delta", "finish"]
         }
@@ -78,17 +78,17 @@
       "input": { "scenarioPath": "$.tool-execute-search" },
       "assertions": [
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.tool.execution.callCount",
           "equals": 1
         },
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.tool.execution.inputs.0.query",
           "equals": "shared docs"
         },
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.tool.execution.outputs.0.source",
           "equals": "shared scenario"
         },
@@ -118,22 +118,22 @@
       "input": { "scenarioPath": "$.paused-turn-resume" },
       "assertions": [
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.approval.pausedPhase",
           "equals": "paused"
         },
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.approval.resumedPhase",
           "equals": "completed"
         },
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.tool.execution.executedNames",
           "equals": ["search", "email"]
         },
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.approval.decisions.0.type",
           "equals": "approve"
         }
@@ -152,7 +152,7 @@
       "input": { "scenarioPath": "$.structured-validation-failure" },
       "assertions": [
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.validation.resolutionType",
           "equals": "fail"
         }
@@ -165,27 +165,27 @@
       "controls": { "deadlineMs": 1000, "cancelAfterEvent": "turn.start" },
       "assertions": [
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.cancellation.observedEventType",
           "equals": "turn.start"
         },
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.cancellation.observedEventIndex",
           "equals": 0
         },
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.cancellation.cancelInvocations",
           "equals": 2
         },
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.cancellation.errorEventCount",
           "equals": 1
         },
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.runtime.phase",
           "equals": "failed"
         }

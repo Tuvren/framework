@@ -17,17 +17,17 @@
       "fixture": "kernel-protocol-deterministic",
       "assertions": [
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.hashes.rawOpaqueBytes",
           "equalsPath": "$.fixture.rawOpaqueBytesSha256Hex"
         },
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.hashes.turnTreeSchema",
           "equalsPath": "$.fixture.turnTreeSchemaRecordSha256Hex"
         },
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.hashes.turnNodeIdentity",
           "equalsPath": "$.fixture.turnNodeIdentityRecordSha256Hex"
         }
@@ -44,12 +44,12 @@
       "fixture": "kernel-protocol-deterministic",
       "assertions": [
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.roundtrip.turnTreeSchemaRecord.schemaId",
           "equalsPath": "$.fixture.turnTreeSchemaRecord.schemaId"
         },
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.roundtrip.turnNodeIdentityRecord.schemaId",
           "equalsPath": "$.fixture.turnNodeIdentityRecord.schemaId"
         }
@@ -64,12 +64,12 @@
       "operation": "kernel.protocol.modify-composition",
       "assertions": [
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.verdict.kind",
           "equals": "modify"
         },
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.verdict.transform",
           "equals": [
             { "extension": "first", "mutation": "append-prefix" },
@@ -86,7 +86,7 @@
       "fixture": "kernel-protocol-logical",
       "assertions": [
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.diffPaths",
           "equals": ["context.manifest", "messages"]
         }
@@ -100,7 +100,7 @@
       "fixture": "kernel-protocol-logical",
       "assertions": [
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.branchEntries.0.0",
           "equalsPath": "$.fixture.branchHeadListEntry.0"
         }
@@ -114,17 +114,17 @@
       "fixture": "kernel-protocol-logical",
       "assertions": [
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.recovery.lastCompletedStepId",
           "equals": "tool_execution"
         },
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.recovery.consumedStagedResults",
           "equals": 1
         },
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.recovery.uncommittedStagedResults",
           "equals": 1
         }
@@ -141,7 +141,7 @@
       "capabilities": ["kernel.logical"],
       "assertions": [
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.errorCode",
           "equals": "turn_node_thread_mismatch"
         }

@@ -8,32 +8,32 @@
         {
           "equals": "completed",
           "field": "$.driver.phase",
-          "kind": "evidenceField"
+          "kind": "resultField"
         }
       ],
       "checkId": "driver-api-ext.execute.hook-turn-phase-completed",
-      "evidence": ["driver.phase"],
       "input": {
         "scenarioPath": "$.driver-hook-turn"
       },
       "operation": "driver.execute",
-      "scenario": "driver-api-scenarios"
+      "scenario": "driver-api-scenarios",
+      "evidence": ["result.driver.phase"]
     },
     {
       "assertions": [
         {
           "field": "$.driver.phase",
-          "kind": "evidenceField",
+          "kind": "resultField",
           "matches": "^(running|paused|completed|failed)$"
         }
       ],
       "checkId": "driver-api-ext.execute.hook-turn-phase-string",
-      "evidence": ["driver.phase"],
       "input": {
         "scenarioPath": "$.driver-hook-turn"
       },
       "operation": "driver.execute",
-      "scenario": "driver-api-scenarios"
+      "scenario": "driver-api-scenarios",
+      "evidence": ["result.driver.phase"]
     },
     {
       "assertions": [
@@ -53,66 +53,91 @@
     {
       "assertions": [
         {
+          "equals": "fail",
+          "field": "$.driver.resolutionType",
+          "kind": "resultField"
+        },
+        {
+          "equals": "invalid_loop_policy",
+          "field": "$.driver.errorCode",
+          "kind": "resultField"
+        },
+        {
+          "kind": "errorEnvelope",
+          "path": "$.result.error"
+        }
+      ],
+      "checkId": "driver-api-af.invalid-loop-policy-tool-call-hard-fail",
+      "input": {
+        "scenarioPath": "$.driver-invalid-loop-policy-tool-call"
+      },
+      "operation": "driver.execute",
+      "scenario": "driver-api-scenarios",
+      "evidence": ["driver.resolutionType", "result.error.code"]
+    },
+    {
+      "assertions": [
+        {
           "equals": "end_turn",
           "field": "$.driver.resolutionType",
-          "kind": "evidenceField"
+          "kind": "resultField"
         }
       ],
       "checkId": "driver-api-ext.resume.approval-resolution-end-turn",
-      "evidence": ["driver.resolutionType"],
       "input": {
         "scenarioPath": "$.driver-resume-approval"
       },
       "operation": "driver.resume",
-      "scenario": "driver-api-scenarios"
+      "scenario": "driver-api-scenarios",
+      "evidence": ["result.driver.resolutionType"]
     },
     {
       "assertions": [
         {
           "contains": "call-search",
           "field": "$.driver.pendingToolCallIds",
-          "kind": "evidenceField"
+          "kind": "resultField"
         }
       ],
       "checkId": "driver-api-ext.resume.approval-pending-call-id-list-non-empty",
-      "evidence": ["driver.pendingToolCallIds"],
       "input": {
         "scenarioPath": "$.driver-resume-approval"
       },
       "operation": "driver.resume",
-      "scenario": "driver-api-scenarios"
+      "scenario": "driver-api-scenarios",
+      "evidence": ["result.driver.pendingToolCallIds"]
     },
     {
       "assertions": [
         {
           "contains": "call-search",
           "field": "$.driver.approvalDecisionCallIds",
-          "kind": "evidenceField"
+          "kind": "resultField"
         }
       ],
       "checkId": "driver-api-ext.resume.approval-decision-call-id-includes-call-search",
-      "evidence": ["driver.approvalDecisionCallIds"],
       "input": {
         "scenarioPath": "$.driver-resume-approval"
       },
       "operation": "driver.resume",
-      "scenario": "driver-api-scenarios"
+      "scenario": "driver-api-scenarios",
+      "evidence": ["result.driver.approvalDecisionCallIds"]
     },
     {
       "assertions": [
         {
           "equals": "fail",
           "field": "$.driver.resolutionType",
-          "kind": "evidenceField"
+          "kind": "resultField"
         }
       ],
       "checkId": "driver-api-ext.resume.missing-pending-call-resolution-fail",
-      "evidence": ["driver.resolutionType"],
       "input": {
         "scenarioPath": "$.driver-resume-missing-pending-call"
       },
       "operation": "driver.resume",
-      "scenario": "driver-api-scenarios"
+      "scenario": "driver-api-scenarios",
+      "evidence": ["result.driver.resolutionType"]
     },
     {
       "assertions": [
@@ -127,31 +152,6 @@
         "scenarioPath": "$.driver-resume-missing-pending-call"
       },
       "operation": "driver.resume",
-      "scenario": "driver-api-scenarios"
-    },
-    {
-      "assertions": [
-        {
-          "equals": "fail",
-          "field": "$.driver.resolutionType",
-          "kind": "evidenceField"
-        },
-        {
-          "equals": "invalid_loop_policy",
-          "field": "$.driver.errorCode",
-          "kind": "evidenceField"
-        }
-      ],
-      "checkId": "driver-api-af.invalid-loop-policy-tool-call-hard-fail",
-      "evidence": [
-        "driver.resolutionType",
-        "driver.errorCode",
-        "result.error.code"
-      ],
-      "input": {
-        "scenarioPath": "$.driver-invalid-loop-policy-tool-call"
-      },
-      "operation": "driver.execute",
       "scenario": "driver-api-scenarios"
     }
   ],

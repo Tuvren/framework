@@ -14,32 +14,32 @@
       },
       "assertions": [
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.restartRecovery.committedStateVisible",
           "equals": true
         },
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.restartRecovery.uncommittedNotPromoted",
           "equals": true
         },
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.restartRecovery.checkpointLineageSurvivesRestart",
           "equals": true
         },
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.restartRecovery.recoveryHeadMatchesCommittedCheckpoint",
           "equals": true
         },
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.restartRecovery.recoveredLastCompletedStepId",
           "equals": "model_call"
         },
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.restartRecovery.recoveredUncommittedCount",
           "equals": 1
         }
@@ -62,17 +62,17 @@
       },
       "assertions": [
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.restartRecovery.uncommittedNotPromoted",
           "equals": true
         },
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.restartRecovery.recoveredUncommittedCount",
           "equals": 1
         },
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.restartRecovery.recoveredLastCompletedStepId",
           "equals": "model_call"
         }

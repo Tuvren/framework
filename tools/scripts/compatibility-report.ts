@@ -55,6 +55,12 @@ type CompatibilityReportStatus =
   | "unexpected_fail"
   | "unsupported";
 
+type CompatibilityResultStatus =
+  | "fail"
+  | "not_applicable"
+  | "pass"
+  | "unsupported";
+
 interface CompatibilityImplementationResult {
   checkIds: string[];
   checkSummary: CompatibilityCheckSummary;
@@ -62,7 +68,7 @@ interface CompatibilityImplementationResult {
   evidencePath: string;
   reportLabel: string;
   reportStatus: CompatibilityReportStatus;
-  status: "fail" | "pass";
+  status: CompatibilityResultStatus;
   suiteId: string;
   suiteVersion: string;
 }
@@ -74,7 +80,7 @@ interface CompatibilityInteropResult {
   pairId: string;
   reportLabel: string;
   reportStatus: CompatibilityReportStatus;
-  status: "fail" | "pass";
+  status: CompatibilityResultStatus;
   suiteId: string;
   suiteVersion: string;
 }
@@ -99,7 +105,7 @@ interface CompatibilityConformanceEvidence {
   project: string;
   reportLabel: string;
   reportStatus: CompatibilityReportStatus;
-  status: "fail" | "pass";
+  status: CompatibilityResultStatus;
   stderr?: string;
   stdout?: string;
   suiteId: string;
@@ -480,10 +486,10 @@ async function runConformanceTarget(
           fallbackCheckResults
         )
       : parsedEvidence;
-  const status: "fail" | "pass" =
-    commandResult.code === 0 && evidencePayload.status === "pass"
-      ? "pass"
-      : "fail";
+  const status: CompatibilityResultStatus = computeCompatibilityResultStatus(
+    commandResult.code,
+    evidencePayload
+  );
   const reportStatus = classifyConformanceReportStatus(
     runner,
     evidencePayload,
@@ -543,12 +549,16 @@ function sanitizeEvidenceCommand(command: readonly string[]): string[] {
 function classifyConformanceReportStatus(
   runner: ConformanceRunner,
   evidence: ConformanceEvidence,
-  rawStatus: "fail" | "pass"
+  rawStatus: CompatibilityResultStatus
 ): CompatibilityReportStatus {
   if (rawStatus === "fail") {
     return runner.expectedFailure === true
       ? "expected_fail"
       : "unexpected_fail";
+  }
+
+  if (rawStatus === "unsupported" || rawStatus === "not_applicable") {
+    return rawStatus;
   }
 
   const applicableChecks =
@@ -566,6 +576,26 @@ function classifyConformanceReportStatus(
   );
 
   return hasFullCapabilitySet ? "full_pass" : "capability_subset_pass";
+}
+
+function computeCompatibilityResultStatus(
+  commandExitCode: number,
+  evidence: ConformanceEvidence
+): CompatibilityResultStatus {
+  if (commandExitCode !== 0 || evidence.status !== "pass") {
+    return "fail";
+  }
+
+  const applicableChecks =
+    evidence.summary.applicableChecks ??
+    evidence.summary.failedChecks + evidence.summary.passedChecks;
+  const nonApplicableChecks = evidence.summary.nonApplicableChecks ?? 0;
+
+  if (applicableChecks === 0) {
+    return nonApplicableChecks > 0 ? "unsupported" : "not_applicable";
+  }
+
+  return "pass";
 }
 
 async function runInteropTarget(

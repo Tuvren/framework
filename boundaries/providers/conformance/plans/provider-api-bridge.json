@@ -16,22 +16,22 @@
       "fixture": "provider-fixtures",
       "assertions": [
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.generate.responsePartTypes",
           "contains": "structured"
         },
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.generate.responseFormatType",
           "equals": "json"
         },
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.generate.responseFormatName",
           "equals": "answer"
         },
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.generate.providerMetadataKeys",
           "contains": "openai"
         }
@@ -50,7 +50,7 @@
       "fixture": "provider-fixtures",
       "assertions": [
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.stream.chunkTypes",
           "equals": [
             "tool_call_start",
@@ -60,7 +60,7 @@
           ]
         },
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.stream.finishMetadataKeys",
           "contains": "openai"
         }
@@ -74,17 +74,17 @@
       "fixture": "provider-fixtures",
       "assertions": [
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.structured.chunkTypes",
           "contains": "structured_delta"
         },
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.structured.chunkTypes",
           "contains": "structured_done"
         },
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.structured.doneName",
           "equals": "answer"
         }
@@ -98,12 +98,12 @@
       "fixture": "provider-fixtures",
       "assertions": [
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.failure.errorName",
           "equals": "TuvrenProviderError"
         },
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.failure.errorCode",
           "equals": "ai_sdk_generate_failed"
         }
@@ -117,7 +117,7 @@
       "fixture": "provider-fixtures",
       "assertions": [
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.strictStructuredOutput.generateErrorCode",
           "equals": "invalid_ai_sdk_bridge_config"
         }
@@ -131,7 +131,7 @@
       "fixture": "provider-fixtures",
       "assertions": [
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.strictStructuredOutput.generateErrorReason",
           "equals": "native_strict_structured_output_unsupported"
         }
@@ -145,7 +145,7 @@
       "fixture": "provider-fixtures",
       "assertions": [
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.strictStructuredOutput.generateCalls",
           "equals": 0
         }
@@ -159,7 +159,7 @@
       "fixture": "provider-fixtures",
       "assertions": [
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.strictStructuredOutput.streamErrorCode",
           "equals": "invalid_ai_sdk_bridge_config"
         }
@@ -173,7 +173,7 @@
       "fixture": "provider-fixtures",
       "assertions": [
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.strictStructuredOutput.streamErrorReason",
           "equals": "native_strict_structured_output_unsupported"
         }
@@ -187,7 +187,7 @@
       "fixture": "provider-fixtures",
       "assertions": [
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.strictStructuredOutput.streamCalls",
           "equals": 0
         }
@@ -201,7 +201,7 @@
       "fixture": "provider-fixtures",
       "assertions": [
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.frameworkOwnedToolExecution.generateErrorCode",
           "equals": "unsupported_ai_sdk_content"
         }
@@ -215,7 +215,7 @@
       "fixture": "provider-fixtures",
       "assertions": [
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.frameworkOwnedToolExecution.generateErrorReason",
           "equals": "provider_owned_tool_execution_unsupported"
         }
@@ -229,7 +229,7 @@
       "fixture": "provider-fixtures",
       "assertions": [
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.frameworkOwnedToolExecution.streamErrorCode",
           "equals": "unsupported_ai_sdk_content"
         }
@@ -243,7 +243,7 @@
       "fixture": "provider-fixtures",
       "assertions": [
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.frameworkOwnedToolExecution.streamErrorReason",
           "equals": "provider_owned_tool_execution_unsupported"
         }
@@ -257,7 +257,7 @@
       "fixture": "provider-fixtures",
       "assertions": [
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.frameworkOwnedToolResultBoundary.generateErrorCode",
           "equals": "unsupported_ai_sdk_content"
         }
@@ -271,7 +271,7 @@
       "fixture": "provider-fixtures",
       "assertions": [
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.frameworkOwnedToolResultBoundary.generateErrorReason",
           "equals": "provider_owned_tool_result_unsupported"
         }
@@ -285,7 +285,7 @@
       "fixture": "provider-fixtures",
       "assertions": [
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.frameworkOwnedToolResultBoundary.generateResolved",
           "equals": false
         }
@@ -299,7 +299,7 @@
       "fixture": "provider-fixtures",
       "assertions": [
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.frameworkOwnedToolResultBoundary.streamErrorCode",
           "equals": "unsupported_ai_sdk_stream_part"
         }
@@ -313,7 +313,7 @@
       "fixture": "provider-fixtures",
       "assertions": [
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.frameworkOwnedToolResultBoundary.streamErrorReason",
           "equals": "provider_owned_tool_result_unsupported"
         }
@@ -327,7 +327,7 @@
       "fixture": "provider-fixtures",
       "assertions": [
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.frameworkOwnedToolResultBoundary.streamChunkCount",
           "equals": 0
         }
@@ -341,7 +341,7 @@
       "fixture": "provider-fixtures",
       "assertions": [
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.frameworkOwnedApprovalBoundary.errorCode",
           "equals": "unsupported_ai_sdk_stream_part"
         }
@@ -355,7 +355,7 @@
       "fixture": "provider-fixtures",
       "assertions": [
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.frameworkOwnedApprovalBoundary.errorReason",
           "equals": "provider_owned_tool_approval_unsupported"
         }

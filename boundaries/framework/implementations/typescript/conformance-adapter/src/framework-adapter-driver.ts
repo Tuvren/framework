@@ -30,7 +30,6 @@ import {
   createDriverRegistry,
   createTuvrenRuntimeCore,
 } from "../../runtime-core/src/index.ts";
-import { createFakeKernelHarness } from "../../runtime-core/test/fake-kernel.ts";
 import {
   type AdapterProjection,
   AGENT_NAME,
@@ -38,6 +37,7 @@ import {
   assistantToolCalls,
   collectValues,
   createConformanceIdFactory,
+  createConformanceKernelHarness,
   createDriverExecutionContext,
   createScenarioProvider,
   createStaticDriver,
@@ -131,7 +131,7 @@ export function createFrameworkAdapterDriver(
       "toolResult",
       "driver.execute.toolResult"
     );
-    const harness = createFakeKernelHarness();
+    const harness = createConformanceKernelHarness();
     const hooks = createHookCounters();
     let generateCalls = 0;
     let toolCalls = 0;
@@ -176,6 +176,32 @@ export function createFrameworkAdapterDriver(
 
     return {
       evidence: {
+        driver: {
+          phase: handle.status().phase,
+        },
+        hooks: {
+          afterIteration: hooks.afterIteration,
+          aroundModel: hooks.aroundModel,
+          aroundModelTrace: hooks.aroundModelTrace,
+          aroundTool: hooks.aroundTool,
+          aroundToolTrace: hooks.aroundToolTrace,
+          terminalMutationAttempted: hooks.terminalMutationAttempted,
+          terminalMutationDurableText: readAssistantText(messages),
+          beforeIteration: hooks.beforeIteration,
+          phaseTrace: hooks.phaseTrace,
+        },
+        provider: {
+          generate: {
+            callCount: generateCalls,
+          },
+        },
+        tool: {
+          execution: {
+            callCount: toolCalls,
+          },
+        },
+      },
+      result: {
         driver: {
           phase: handle.status().phase,
         },
@@ -256,17 +282,20 @@ export function createFrameworkAdapterDriver(
 
     assertDriverExecutionResult(result, "driver aroundModel replacement");
 
-    return {
-      evidence: {
-        aroundModel: {
-          finalAssistantText: readResultAssistantText(result),
-          messageStartCount: countEventsByType(emittedEvents, "message.start"),
-          streamedTextDone: readTextDoneValues(emittedEvents),
-        },
-        driver: {
-          resolutionType: result.resolution.type,
-        },
+    const projection = {
+      aroundModel: {
+        finalAssistantText: readResultAssistantText(result),
+        messageStartCount: countEventsByType(emittedEvents, "message.start"),
+        streamedTextDone: readTextDoneValues(emittedEvents),
       },
+      driver: {
+        resolutionType: result.resolution.type,
+      },
+    };
+
+    return {
+      evidence: projection,
+      result: projection,
     };
   }
 
@@ -311,20 +340,23 @@ export function createFrameworkAdapterDriver(
 
     assertDriverExecutionResult(result, "driver aroundModel retry");
 
-    return {
-      evidence: {
-        aroundModel: {
-          finalAssistantText: readResultAssistantText(result),
-        },
-        driver: {
-          resolutionType: result.resolution.type,
-        },
-        provider: {
-          generate: {
-            callCount: generateCalls,
-          },
+    const projection = {
+      aroundModel: {
+        finalAssistantText: readResultAssistantText(result),
+      },
+      driver: {
+        resolutionType: result.resolution.type,
+      },
+      provider: {
+        generate: {
+          callCount: generateCalls,
         },
       },
+    };
+
+    return {
+      evidence: projection,
+      result: projection,
     };
   }
 
@@ -347,21 +379,24 @@ export function createFrameworkAdapterDriver(
 
     assertDriverExecutionResult(result, "driver execute result");
 
+    const error =
+      result.resolution.type === "fail"
+        ? dependencies.errorToEnvelope(result.resolution.error)
+        : undefined;
+
     return {
       evidence: {
         driver: {
-          errorCode:
-            result.resolution.type === "fail"
-              ? dependencies.errorToEnvelope(result.resolution.error).code
-              : undefined,
+          errorCode: error?.code,
           resolutionType: result.resolution.type,
         },
       },
       result: {
-        error:
-          result.resolution.type === "fail"
-            ? dependencies.errorToEnvelope(result.resolution.error)
-            : undefined,
+        driver: {
+          errorCode: error?.code,
+          resolutionType: result.resolution.type,
+        },
+        error,
       },
     };
   }
@@ -422,6 +457,11 @@ export function createFrameworkAdapterDriver(
         },
       },
       result: {
+        driver: {
+          approvalDecisionCallIds: decisions.map((decision) => decision.callId),
+          pendingToolCallIds: pendingToolCalls.map((call) => call.callId),
+          resolutionType: result.resolution.type,
+        },
         error:
           result.resolution.type === "fail"
             ? dependencies.errorToEnvelope(result.resolution.error)
@@ -442,7 +482,7 @@ export function createFrameworkAdapterDriver(
       "finalText",
       "driver.checkpoint.finalText"
     );
-    const harness = createFakeKernelHarness();
+    const harness = createConformanceKernelHarness();
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultDriverId: DRIVER_ID,

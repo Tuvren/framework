@@ -16,7 +16,7 @@
       "input": { "scenarioPath": "$.completed-turn" },
       "assertions": [
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.runtime.phase",
           "equals": "completed"
         }

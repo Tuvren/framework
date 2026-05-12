@@ -16,7 +16,7 @@
       "input": { "scenarioPath": "$.driver-hook-turn" },
       "assertions": [
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.hooks.beforeIteration",
           "equals": 2
         }
@@ -30,7 +30,7 @@
       "input": { "scenarioPath": "$.driver-hook-turn" },
       "assertions": [
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.hooks.aroundModel",
           "equals": 2
         }
@@ -44,7 +44,7 @@
       "input": { "scenarioPath": "$.driver-hook-turn" },
       "assertions": [
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.hooks.aroundTool",
           "equals": 1
         }
@@ -58,7 +58,7 @@
       "input": { "scenarioPath": "$.driver-hook-turn" },
       "assertions": [
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.hooks.afterIteration",
           "equals": 2
         }

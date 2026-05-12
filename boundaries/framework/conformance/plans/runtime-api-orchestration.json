@@ -8,572 +8,580 @@
         {
           "equals": "orchestration_parent_not_started",
           "field": "$.orchestration.launch.preStartSpawnError.code",
-          "kind": "evidenceField"
+          "kind": "resultField"
         }
       ],
       "checkId": "runtime-orchestration.launch.spawn-rejects-before-parent-start",
-      "evidence": ["orchestration.launch.preStartSpawnError.code"],
       "input": {
         "scenarioPath": "$.orchestration-launch-preconditions"
       },
       "operation": "runtime.orchestration.launch-preconditions",
-      "scenario": "runtime-api-scenarios"
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["result.orchestration.launch.preStartSpawnError.code"]
     },
     {
       "assertions": [
         {
           "equals": "orchestration_parent_not_started",
           "field": "$.orchestration.launch.preStartAwaitResultError.code",
-          "kind": "evidenceField"
+          "kind": "resultField"
         }
       ],
       "checkId": "runtime-orchestration.launch.await-result-rejects-before-parent-start",
-      "evidence": ["orchestration.launch.preStartAwaitResultError.code"],
       "input": {
         "scenarioPath": "$.orchestration-launch-preconditions"
       },
       "operation": "runtime.orchestration.launch-preconditions",
-      "scenario": "runtime-api-scenarios"
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["result.orchestration.launch.preStartAwaitResultError.code"]
     },
     {
       "assertions": [
         {
           "equals": "orchestration_parent_not_started",
           "field": "$.orchestration.launch.postAwaitSpawnError.code",
-          "kind": "evidenceField"
+          "kind": "resultField"
         }
       ],
       "checkId": "runtime-orchestration.launch.await-result-does-not-start-parent",
-      "evidence": ["orchestration.launch.postAwaitSpawnError.code"],
       "input": {
         "scenarioPath": "$.orchestration-launch-preconditions"
       },
       "operation": "runtime.orchestration.launch-preconditions",
-      "scenario": "runtime-api-scenarios"
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["result.orchestration.launch.postAwaitSpawnError.code"]
     },
     {
       "assertions": [
         {
           "equals": true,
           "field": "$.orchestration.launch.childRunsOnOwnThread",
-          "kind": "evidenceField"
+          "kind": "resultField"
         }
       ],
       "checkId": "runtime-orchestration.launch.child-runs-on-own-thread",
-      "evidence": ["orchestration.launch.childRunsOnOwnThread"],
       "input": {
         "scenarioPath": "$.orchestration-launch-preconditions"
       },
       "operation": "runtime.orchestration.launch-preconditions",
-      "scenario": "runtime-api-scenarios"
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["result.orchestration.launch.childRunsOnOwnThread"]
     },
     {
       "assertions": [
         {
           "equals": true,
           "field": "$.orchestration.lifecycle.parentPausedWhileChildCompleted",
-          "kind": "evidenceField"
+          "kind": "resultField"
         }
       ],
       "checkId": "runtime-orchestration.lifecycle.parent-pause-child-continues",
-      "evidence": ["orchestration.lifecycle.parentPausedWhileChildCompleted"],
       "input": {
         "scenarioPath": "$.orchestration-parent-pause-child-continues"
       },
       "operation": "runtime.orchestration.lifecycle-locality",
-      "scenario": "runtime-api-scenarios"
+      "scenario": "runtime-api-scenarios",
+      "evidence": [
+        "result.orchestration.lifecycle.parentPausedWhileChildCompleted"
+      ]
     },
     {
       "assertions": [
         {
           "equals": true,
           "field": "$.orchestration.lifecycle.parentCompletedWhileChildPaused",
-          "kind": "evidenceField"
+          "kind": "resultField"
         }
       ],
       "checkId": "runtime-orchestration.lifecycle.child-pause-parent-completes",
-      "evidence": ["orchestration.lifecycle.parentCompletedWhileChildPaused"],
       "input": {
         "scenarioPath": "$.orchestration-child-pause-parent-completes"
       },
       "operation": "runtime.orchestration.lifecycle-locality",
-      "scenario": "runtime-api-scenarios"
+      "scenario": "runtime-api-scenarios",
+      "evidence": [
+        "result.orchestration.lifecycle.parentCompletedWhileChildPaused"
+      ]
     },
     {
       "assertions": [
         {
           "equals": "completed",
           "field": "$.orchestration.lifecycle.childResumedPhase",
-          "kind": "evidenceField"
+          "kind": "resultField"
         }
       ],
       "checkId": "runtime-orchestration.lifecycle.child-resume-stays-local",
-      "evidence": ["orchestration.lifecycle.childResumedPhase"],
       "input": {
         "scenarioPath": "$.orchestration-child-pause-parent-completes"
       },
       "operation": "runtime.orchestration.lifecycle-locality",
-      "scenario": "runtime-api-scenarios"
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["result.orchestration.lifecycle.childResumedPhase"]
     },
     {
       "assertions": [
         {
           "equals": true,
           "field": "$.orchestration.lifecycle.childCancelledWhileParentCompleted",
-          "kind": "evidenceField"
+          "kind": "resultField"
         }
       ],
       "checkId": "runtime-orchestration.lifecycle.child-cancel-parent-completes",
-      "evidence": [
-        "orchestration.lifecycle.childCancelledWhileParentCompleted"
-      ],
       "input": {
         "scenarioPath": "$.orchestration-child-cancel-parent-completes"
       },
       "operation": "runtime.orchestration.lifecycle-locality",
-      "scenario": "runtime-api-scenarios"
+      "scenario": "runtime-api-scenarios",
+      "evidence": [
+        "result.orchestration.lifecycle.childCancelledWhileParentCompleted"
+      ]
     },
     {
       "assertions": [
         {
           "equals": true,
           "field": "$.orchestration.lifecycle.parentCancelledWhileChildCompleted",
-          "kind": "evidenceField"
+          "kind": "resultField"
         }
       ],
       "checkId": "runtime-orchestration.lifecycle.parent-cancel-child-completes",
-      "evidence": [
-        "orchestration.lifecycle.parentCancelledWhileChildCompleted"
-      ],
       "input": {
         "scenarioPath": "$.orchestration-parent-cancel-child-completes"
       },
       "operation": "runtime.orchestration.lifecycle-locality",
-      "scenario": "runtime-api-scenarios"
+      "scenario": "runtime-api-scenarios",
+      "evidence": [
+        "result.orchestration.lifecycle.parentCancelledWhileChildCompleted"
+      ]
     },
     {
       "assertions": [
         {
           "equals": "orchestration_parent_inactive",
           "field": "$.orchestration.lifecycle.pausedSpawnError.code",
-          "kind": "evidenceField"
+          "kind": "resultField"
         }
       ],
       "checkId": "runtime-orchestration.lifecycle.paused-parent-rejects-spawn",
-      "evidence": ["orchestration.lifecycle.pausedSpawnError.code"],
       "input": {
         "scenarioPath": "$.orchestration-spawn-running-window"
       },
       "operation": "runtime.orchestration.lifecycle-locality",
-      "scenario": "runtime-api-scenarios"
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["result.orchestration.lifecycle.pausedSpawnError.code"]
     },
     {
       "assertions": [
         {
           "equals": "orchestration_parent_inactive",
           "field": "$.orchestration.lifecycle.completedSpawnError.code",
-          "kind": "evidenceField"
+          "kind": "resultField"
         }
       ],
       "checkId": "runtime-orchestration.lifecycle.completed-parent-rejects-spawn",
-      "evidence": ["orchestration.lifecycle.completedSpawnError.code"],
       "input": {
         "scenarioPath": "$.orchestration-spawn-running-window"
       },
       "operation": "runtime.orchestration.lifecycle-locality",
-      "scenario": "runtime-api-scenarios"
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["result.orchestration.lifecycle.completedSpawnError.code"]
     },
     {
       "assertions": [
         {
           "equals": true,
           "field": "$.orchestration.surfaces.eventsSelfOnly",
-          "kind": "evidenceField"
+          "kind": "resultField"
         }
       ],
       "checkId": "runtime-orchestration.surfaces.events-self-only",
-      "evidence": ["orchestration.surfaces.eventsSelfOnly"],
       "input": {
         "scenarioPath": "$.orchestration-event-surfaces"
       },
       "operation": "runtime.orchestration.event-surfaces",
-      "scenario": "runtime-api-scenarios"
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["result.orchestration.surfaces.eventsSelfOnly"]
     },
     {
       "assertions": [
         {
           "equals": true,
           "field": "$.orchestration.surfaces.allEventsIncludeDescendants",
-          "kind": "evidenceField"
+          "kind": "resultField"
         }
       ],
       "checkId": "runtime-orchestration.surfaces.all-events-include-descendants",
-      "evidence": ["orchestration.surfaces.allEventsIncludeDescendants"],
       "input": {
         "scenarioPath": "$.orchestration-event-surfaces"
       },
       "operation": "runtime.orchestration.event-surfaces",
-      "scenario": "runtime-api-scenarios"
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["result.orchestration.surfaces.allEventsIncludeDescendants"]
     },
     {
       "assertions": [
         {
           "equals": true,
           "field": "$.orchestration.surfaces.descendantSourceAttributed",
-          "kind": "evidenceField"
+          "kind": "resultField"
         }
       ],
       "checkId": "runtime-orchestration.surfaces.descendant-source-attributed",
-      "evidence": ["orchestration.surfaces.descendantSourceAttributed"],
       "input": {
         "scenarioPath": "$.orchestration-event-surfaces"
       },
       "operation": "runtime.orchestration.event-surfaces",
-      "scenario": "runtime-api-scenarios"
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["result.orchestration.surfaces.descendantSourceAttributed"]
     },
     {
       "assertions": [
         {
           "equals": "Worker complete.",
           "field": "$.orchestration.surfaces.childResult.0.text",
-          "kind": "evidenceField"
+          "kind": "resultField"
         }
       ],
       "checkId": "runtime-orchestration.surfaces.await-result-visible-result",
-      "evidence": ["orchestration.surfaces.childResult.0.text"],
       "input": {
         "scenarioPath": "$.orchestration-event-surfaces"
       },
       "operation": "runtime.orchestration.event-surfaces",
-      "scenario": "runtime-api-scenarios"
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["result.orchestration.surfaces.childResult.0.text"]
     },
     {
       "assertions": [
         {
           "equals": true,
           "field": "$.orchestration.surfaces.noCanonicalWorkerResultInjection",
-          "kind": "evidenceField"
+          "kind": "resultField"
         }
       ],
       "checkId": "runtime-orchestration.surfaces.no-worker-result-injection",
-      "evidence": ["orchestration.surfaces.noCanonicalWorkerResultInjection"],
       "input": {
         "scenarioPath": "$.orchestration-event-surfaces"
       },
       "operation": "runtime.orchestration.event-surfaces",
-      "scenario": "runtime-api-scenarios"
+      "scenario": "runtime-api-scenarios",
+      "evidence": [
+        "result.orchestration.surfaces.noCanonicalWorkerResultInjection"
+      ]
     },
     {
       "assertions": [
         {
           "equals": true,
           "field": "$.orchestration.surfaces.childAllEventsRemainAvailable",
-          "kind": "evidenceField"
+          "kind": "resultField"
         }
       ],
       "checkId": "runtime-orchestration.surfaces.child-all-events-remains-available",
-      "evidence": ["orchestration.surfaces.childAllEventsRemainAvailable"],
       "input": {
         "scenarioPath": "$.orchestration-event-surfaces"
       },
       "operation": "runtime.orchestration.event-surfaces",
-      "scenario": "runtime-api-scenarios"
+      "scenario": "runtime-api-scenarios",
+      "evidence": [
+        "result.orchestration.surfaces.childAllEventsRemainAvailable"
+      ]
     },
     {
       "assertions": [
         {
           "equals": true,
           "field": "$.orchestration.surfaces.failedAwaitResultRejected",
-          "kind": "evidenceField"
+          "kind": "resultField"
         }
       ],
       "checkId": "runtime-orchestration.surfaces.await-result-failure-rejects",
-      "evidence": ["orchestration.surfaces.failedAwaitResultRejected"],
       "input": {
         "scenarioPath": "$.orchestration-event-surfaces"
       },
       "operation": "runtime.orchestration.event-surfaces",
-      "scenario": "runtime-api-scenarios"
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["result.orchestration.surfaces.failedAwaitResultRejected"]
     },
     {
       "assertions": [
         {
           "equals": true,
           "field": "$.orchestration.surfaces.handoffDescendantAgentPreserved",
-          "kind": "evidenceField"
+          "kind": "resultField"
         }
       ],
       "checkId": "runtime-orchestration.surfaces.handoff-descendant-agent-preserved",
-      "evidence": ["orchestration.surfaces.handoffDescendantAgentPreserved"],
       "input": {
         "scenarioPath": "$.orchestration-handoff-attribution"
       },
       "operation": "runtime.orchestration.event-surfaces",
-      "scenario": "runtime-api-scenarios"
+      "scenario": "runtime-api-scenarios",
+      "evidence": [
+        "result.orchestration.surfaces.handoffDescendantAgentPreserved"
+      ]
     },
     {
       "assertions": [
         {
           "equals": true,
           "field": "$.orchestration.surfaces.handoffHistoryControlEntryAbsent",
-          "kind": "evidenceField"
+          "kind": "resultField"
         }
       ],
       "checkId": "runtime-orchestration-af.handoff-resolution-not-history-entry",
-      "evidence": ["orchestration.surfaces.handoffHistoryControlEntryAbsent"],
       "input": {
         "scenarioPath": "$.orchestration-handoff-attribution"
       },
       "operation": "runtime.orchestration.event-surfaces",
-      "scenario": "runtime-api-scenarios"
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["orchestration.surfaces.handoffHistoryControlEntryAbsent"]
     },
     {
       "assertions": [
         {
-          "equals": "Passing this to reviewer.",
-          "field": "$.orchestration.surfaces.handoffLastOutputOnlyText",
-          "kind": "evidenceField"
-        },
-        {
           "equals": true,
           "field": "$.orchestration.surfaces.handoffLastOutputOnlyNoSourceSignal",
-          "kind": "evidenceField"
+          "kind": "resultField"
+        },
+        {
+          "equals": "Passing this to reviewer.",
+          "field": "$.orchestration.surfaces.handoffLastOutputOnlyText",
+          "kind": "resultField"
         }
       ],
       "checkId": "runtime-orchestration-af.handoff-last-output-only-builder",
-      "evidence": [
-        "orchestration.surfaces.handoffLastOutputOnlyText",
-        "orchestration.surfaces.handoffLastOutputOnlyNoSourceSignal"
-      ],
       "input": {
         "scenarioPath": "$.orchestration-handoff-attribution"
       },
       "operation": "runtime.orchestration.event-surfaces",
-      "scenario": "runtime-api-scenarios"
+      "scenario": "runtime-api-scenarios",
+      "evidence": [
+        "orchestration.surfaces.handoffLastOutputOnlyNoSourceSignal",
+        "orchestration.surfaces.handoffLastOutputOnlyText"
+      ]
     },
     {
       "assertions": [
         {
           "equals": "invalid_driver_result",
           "field": "$.orchestration.surfaces.handoffInvalidCompositionError.code",
-          "kind": "evidenceField"
+          "kind": "resultField"
         }
       ],
       "checkId": "runtime-orchestration-af.handoff-rejects-multiple-intents",
-      "evidence": [
-        "orchestration.surfaces.handoffInvalidCompositionError.code"
-      ],
       "input": {
         "scenarioPath": "$.orchestration-handoff-attribution"
       },
       "operation": "runtime.orchestration.event-surfaces",
-      "scenario": "runtime-api-scenarios"
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["orchestration.surfaces.handoffInvalidCompositionError.code"]
     },
     {
       "assertions": [
         {
           "equals": true,
           "field": "$.orchestration.inheritance.driverIdInherited",
-          "kind": "evidenceField"
+          "kind": "resultField"
         }
       ],
       "checkId": "runtime-orchestration.inheritance.driver-id",
-      "evidence": ["orchestration.inheritance.driverIdInherited"],
       "input": {
         "scenarioPath": "$.orchestration-execution-inheritance"
       },
       "operation": "runtime.orchestration.execution-inheritance",
-      "scenario": "runtime-api-scenarios"
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["result.orchestration.inheritance.driverIdInherited"]
     },
     {
       "assertions": [
         {
           "equals": true,
           "field": "$.orchestration.inheritance.toolsInherited",
-          "kind": "evidenceField"
+          "kind": "resultField"
         }
       ],
       "checkId": "runtime-orchestration.inheritance.tools",
-      "evidence": ["orchestration.inheritance.toolsInherited"],
       "input": {
         "scenarioPath": "$.orchestration-execution-inheritance"
       },
       "operation": "runtime.orchestration.execution-inheritance",
-      "scenario": "runtime-api-scenarios"
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["result.orchestration.inheritance.toolsInherited"]
     },
     {
       "assertions": [
         {
           "equals": true,
           "field": "$.orchestration.inheritance.schemaInherited",
-          "kind": "evidenceField"
+          "kind": "resultField"
         }
       ],
       "checkId": "runtime-orchestration.inheritance.schema-id",
-      "evidence": ["orchestration.inheritance.schemaInherited"],
       "input": {
         "scenarioPath": "$.orchestration-execution-inheritance"
       },
       "operation": "runtime.orchestration.execution-inheritance",
-      "scenario": "runtime-api-scenarios"
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["result.orchestration.inheritance.schemaInherited"]
     },
     {
       "assertions": [
         {
           "equals": true,
           "field": "$.orchestration.nested.rootReceivesGrandchild",
-          "kind": "evidenceField"
+          "kind": "resultField"
         }
       ],
       "checkId": "runtime-orchestration.nested.root-receives-grandchild",
-      "evidence": ["orchestration.nested.rootReceivesGrandchild"],
       "input": {
         "scenarioPath": "$.orchestration-nested-attribution"
       },
       "operation": "runtime.orchestration.nested-attribution",
-      "scenario": "runtime-api-scenarios"
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["result.orchestration.nested.rootReceivesGrandchild"]
     },
     {
       "assertions": [
         {
           "equals": true,
           "field": "$.orchestration.nested.childReceivesGrandchild",
-          "kind": "evidenceField"
+          "kind": "resultField"
         }
       ],
       "checkId": "runtime-orchestration.nested.child-receives-grandchild",
-      "evidence": ["orchestration.nested.childReceivesGrandchild"],
       "input": {
         "scenarioPath": "$.orchestration-nested-attribution"
       },
       "operation": "runtime.orchestration.nested-attribution",
-      "scenario": "runtime-api-scenarios"
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["result.orchestration.nested.childReceivesGrandchild"]
     },
     {
       "assertions": [
         {
           "equals": "worker-2",
           "field": "$.orchestration.nested.rootGrandchildSource.agent",
-          "kind": "evidenceField"
+          "kind": "resultField"
         }
       ],
       "checkId": "runtime-orchestration.nested.root-source-agent",
-      "evidence": ["orchestration.nested.rootGrandchildSource.agent"],
       "input": {
         "scenarioPath": "$.orchestration-nested-attribution"
       },
       "operation": "runtime.orchestration.nested-attribution",
-      "scenario": "runtime-api-scenarios"
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["result.orchestration.nested.rootGrandchildSource.agent"]
     },
     {
       "assertions": [
         {
           "field": "$.orchestration.nested.rootGrandchildSource.threadId",
-          "kind": "evidenceField",
+          "kind": "resultField",
           "matches": "^.+$"
         }
       ],
       "checkId": "runtime-orchestration.nested.root-source-thread-id-present",
-      "evidence": ["orchestration.nested.rootGrandchildSource.threadId"],
       "input": {
         "scenarioPath": "$.orchestration-nested-attribution"
       },
       "operation": "runtime.orchestration.nested-attribution",
-      "scenario": "runtime-api-scenarios"
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["result.orchestration.nested.rootGrandchildSource.threadId"]
     },
     {
       "assertions": [
         {
           "field": "$.orchestration.nested.rootGrandchildSource.workerId",
-          "kind": "evidenceField",
+          "kind": "resultField",
           "matches": "^.+$"
         }
       ],
       "checkId": "runtime-orchestration.nested.root-source-worker-id-present",
-      "evidence": ["orchestration.nested.rootGrandchildSource.workerId"],
       "input": {
         "scenarioPath": "$.orchestration-nested-attribution"
       },
       "operation": "runtime.orchestration.nested-attribution",
-      "scenario": "runtime-api-scenarios"
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["result.orchestration.nested.rootGrandchildSource.workerId"]
+    },
+    {
+      "assertions": [
+        {
+          "equals": "worker-2",
+          "field": "$.orchestration.nested.rootGrandchildSource.agent",
+          "kind": "resultField"
+        },
+        {
+          "field": "$.orchestration.nested.rootGrandchildSource.threadId",
+          "kind": "resultField",
+          "matches": "^.+$"
+        },
+        {
+          "field": "$.orchestration.nested.rootGrandchildSource.workerId",
+          "kind": "resultField",
+          "matches": "^.+$"
+        }
+      ],
+      "checkId": "runtime-orchestration-af.worker-forwarded-event-source",
+      "input": {
+        "scenarioPath": "$.orchestration-nested-attribution"
+      },
+      "operation": "runtime.orchestration.nested-attribution",
+      "scenario": "runtime-api-scenarios",
+      "evidence": [
+        "orchestration.nested.rootGrandchildSource.agent",
+        "orchestration.nested.rootGrandchildSource.threadId",
+        "orchestration.nested.rootGrandchildSource.workerId"
+      ]
     },
     {
       "assertions": [
         {
           "equals": "worker-2",
           "field": "$.orchestration.nested.childGrandchildSource.agent",
-          "kind": "evidenceField"
+          "kind": "resultField"
         }
       ],
       "checkId": "runtime-orchestration.nested.child-source-agent",
-      "evidence": ["orchestration.nested.childGrandchildSource.agent"],
       "input": {
         "scenarioPath": "$.orchestration-nested-attribution"
       },
       "operation": "runtime.orchestration.nested-attribution",
-      "scenario": "runtime-api-scenarios"
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["result.orchestration.nested.childGrandchildSource.agent"]
     },
     {
       "assertions": [
         {
           "field": "$.orchestration.nested.childGrandchildSource.threadId",
-          "kind": "evidenceField",
+          "kind": "resultField",
           "matches": "^.+$"
         }
       ],
       "checkId": "runtime-orchestration.nested.child-source-thread-id-present",
-      "evidence": ["orchestration.nested.childGrandchildSource.threadId"],
       "input": {
         "scenarioPath": "$.orchestration-nested-attribution"
       },
       "operation": "runtime.orchestration.nested-attribution",
-      "scenario": "runtime-api-scenarios"
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["result.orchestration.nested.childGrandchildSource.threadId"]
     },
     {
       "assertions": [
         {
           "field": "$.orchestration.nested.childGrandchildSource.workerId",
-          "kind": "evidenceField",
+          "kind": "resultField",
           "matches": "^.+$"
         }
       ],
       "checkId": "runtime-orchestration.nested.child-source-worker-id-present",
-      "evidence": ["orchestration.nested.childGrandchildSource.workerId"],
       "input": {
         "scenarioPath": "$.orchestration-nested-attribution"
       },
       "operation": "runtime.orchestration.nested-attribution",
-      "scenario": "runtime-api-scenarios"
-    },
-    {
-      "assertions": [
-        {
-          "equals": "worker-2",
-          "field": "$.orchestration.nested.rootGrandchildSource.agent",
-          "kind": "evidenceField"
-        },
-        {
-          "field": "$.orchestration.nested.rootGrandchildSource.threadId",
-          "kind": "evidenceField",
-          "matches": "^.+$"
-        },
-        {
-          "field": "$.orchestration.nested.rootGrandchildSource.workerId",
-          "kind": "evidenceField",
-          "matches": "^.+$"
-        }
-      ],
-      "checkId": "runtime-orchestration-af.worker-forwarded-event-source",
-      "evidence": [
-        "orchestration.nested.rootGrandchildSource.agent",
-        "orchestration.nested.rootGrandchildSource.threadId",
-        "orchestration.nested.rootGrandchildSource.workerId"
-      ],
-      "input": {
-        "scenarioPath": "$.orchestration-nested-attribution"
-      },
-      "operation": "runtime.orchestration.nested-attribution",
-      "scenario": "runtime-api-scenarios"
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["result.orchestration.nested.childGrandchildSource.workerId"]
     }
   ],
   "packetId": "tuvren.framework.runtime-api",

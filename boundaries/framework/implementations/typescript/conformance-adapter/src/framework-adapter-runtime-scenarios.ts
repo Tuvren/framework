@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { assertHashString, type HashString } from "@tuvren/core-types";
+import { assertHashString } from "@tuvren/core-types";
 import type { RuntimeDriver } from "@tuvren/driver-api";
 import type {
   ApprovalDecision,
@@ -27,7 +27,6 @@ import {
   createDriverRegistry,
   createTuvrenRuntimeCore,
 } from "../../runtime-core/src/index.ts";
-import { createFakeKernelHarness } from "../../runtime-core/test/fake-kernel.ts";
 import { createFrameworkAdapterProviderScenarios } from "./framework-adapter-provider-scenarios.ts";
 import { createFrameworkAdapterRecoveryScenarios } from "./framework-adapter-recovery-scenarios.ts";
 import {
@@ -37,6 +36,7 @@ import {
   assistantToolCalls,
   collectValues,
   createConformanceIdFactory,
+  createConformanceKernelHarness,
   createStaticDriver,
   DRIVER_ID,
   textSignal,
@@ -175,7 +175,7 @@ export function createFrameworkAdapterRuntimeScenarios(
       return await runInputSignalEmptyParts();
     }
 
-    const harness = createFakeKernelHarness();
+    const harness = createConformanceKernelHarness();
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultDriverId: DRIVER_ID,
@@ -206,6 +206,12 @@ export function createFrameworkAdapterRuntimeScenarios(
           phase: handle.status().phase,
         },
       },
+      result: {
+        runtime: {
+          eventCount: events.length,
+          phase: handle.status().phase,
+        },
+      },
     };
   }
 
@@ -213,7 +219,7 @@ export function createFrameworkAdapterRuntimeScenarios(
     cancelAfterEvent?: string;
     deadlineMs?: number;
   }): Promise<AdapterProjection> {
-    const harness = createFakeKernelHarness();
+    const harness = createConformanceKernelHarness();
     let executeCount = 0;
     const driver = {
       async execute(context) {
@@ -288,6 +294,8 @@ export function createFrameworkAdapterRuntimeScenarios(
       thread.branchId
     );
 
+    const finalStatus = handle.status();
+
     return {
       evidence: {
         cancellation: {
@@ -308,11 +316,28 @@ export function createFrameworkAdapterRuntimeScenarios(
           deadlineMs: controls.deadlineMs,
         },
         runtime: {
-          iterationCount: handle.status().iterationCount,
-          phase: handle.status().phase,
+          iterationCount: finalStatus.iterationCount,
+          phase: finalStatus.phase,
         },
       },
       result: {
+        cancellation: {
+          cancelInvocations,
+          errorEventCount: countEventsByType(events, "error"),
+          observedEventIndex,
+          observedEventType,
+          partialAssistantText: dependencies.readAssistantText(
+            messages,
+            "interrupted"
+          ),
+          runtimeStatusPartial:
+            dependencies.isRecord(runtimeStatus) &&
+            runtimeStatus.partial === true,
+        },
+        runtime: {
+          iterationCount: finalStatus.iterationCount,
+          phase: finalStatus.phase,
+        },
         error: readFirstErrorEnvelope(events),
       },
     };
@@ -341,7 +366,7 @@ export function createFrameworkAdapterRuntimeScenarios(
       "finalText",
       "runtime.approval-resolve.finalText"
     );
-    const harness = createFakeKernelHarness();
+    const harness = createConformanceKernelHarness();
     const executedNames: string[] = [];
     const driver = {
       async execute(context) {
@@ -417,6 +442,22 @@ export function createFrameworkAdapterRuntimeScenarios(
             },
           },
         },
+        result: {
+          approval: {
+            pausedApprovalCallIds,
+            pausedEventTypes: pausedEvents.map((event) =>
+              dependencies.readRecordString(event, "type")
+            ),
+            pausedPhase,
+          },
+          tool: {
+            execution: {
+              executedNames,
+              executedNamesAfterResume: [...executedNames],
+              executedNamesBeforeResume,
+            },
+          },
+        },
         state: {
           approval: pausedHandle.status(),
           approvalError: readFirstErrorEnvelope(pausedEvents),
@@ -432,6 +473,24 @@ export function createFrameworkAdapterRuntimeScenarios(
 
       return {
         evidence: {
+          approval: {
+            cancelledPhase: pausedHandle.status().phase,
+            cancelledToolResults: toolResults,
+            pausedApprovalCallIds,
+            pausedEventTypes: pausedEvents.map((event) =>
+              dependencies.readRecordString(event, "type")
+            ),
+            pausedPhase,
+            resumedTextAbsent: !hasAssistantText(messages, finalText),
+          },
+          tool: {
+            execution: {
+              executedNamesAfterCancel: [...executedNames],
+              executedNamesBeforeResume,
+            },
+          },
+        },
+        result: {
           approval: {
             cancelledPhase: pausedHandle.status().phase,
             cancelledToolResults: toolResults,
@@ -495,11 +554,44 @@ export function createFrameworkAdapterRuntimeScenarios(
           },
         },
       },
+      result: {
+        approval: {
+          decisions,
+          gatedToolStartAfterResume: didEventOccurAfter(
+            resumedEvents,
+            "approval.resolved",
+            "tool.start",
+            "call-email"
+          ),
+          handleOwnership,
+          messageAttachment: readFirstApprovalMessage(toolResults),
+          pausedApprovalCallIds,
+          pausedEventTypes: pausedEvents.map((event) =>
+            dependencies.readRecordString(event, "type")
+          ),
+          pausedPhase,
+          pausedTurnIds: readEventStringValues(pausedEvents, "turnId"),
+          resumedEventTypes: resumedEvents.map((event) =>
+            dependencies.readRecordString(event, "type")
+          ),
+          resumedPhase: resumedHandle.status().phase,
+          resumedTurnIds: readEventStringValues(resumedEvents, "turnId"),
+          sameTurn: eventStreamsShareTurn(pausedEvents, resumedEvents),
+          toolResults,
+        },
+        tool: {
+          execution: {
+            executedNames,
+            executedNamesAfterResume: [...executedNames],
+            executedNamesBeforeResume,
+          },
+        },
+      },
     };
   }
 
   async function runBranchCreate(): Promise<AdapterProjection> {
-    const harness = createFakeKernelHarness();
+    const harness = createConformanceKernelHarness();
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultDriverId: DRIVER_ID,
@@ -540,11 +632,21 @@ export function createFrameworkAdapterRuntimeScenarios(
           sourceMessageCount: sourceMessages.length,
         },
       },
+      result: {
+        branch: {
+          completedTurnPhase: handle.status().phase,
+          createdBranchId: branch.branchId,
+          createdHeadTurnNodeHash: branch.headTurnNodeHash,
+          sourceBranchId: thread.branchId,
+          sourceHeadTurnNodeHash: completedHeadTurnNodeHash,
+          sourceMessageCount: sourceMessages.length,
+        },
+      },
     };
   }
 
   async function runInputSignalEmptyParts(): Promise<AdapterProjection> {
-    const harness = createFakeKernelHarness();
+    const harness = createConformanceKernelHarness();
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultDriverId: DRIVER_ID,
@@ -578,10 +680,21 @@ export function createFrameworkAdapterRuntimeScenarios(
             accepted: true,
           },
         },
+        result: {
+          inputSignal: {
+            accepted: true,
+          },
+        },
       };
     } catch (error: unknown) {
       return {
         evidence: {
+          inputSignal: {
+            accepted: false,
+            error: readErrorEnvelope(error),
+          },
+        },
+        result: {
           inputSignal: {
             accepted: false,
             error: readErrorEnvelope(error),
@@ -690,8 +803,8 @@ export function createFrameworkAdapterRuntimeScenarios(
     return count;
   }
 
-  function readLastCheckpointHash(events: readonly unknown[]): HashString {
-    let checkpointHash: HashString | undefined;
+  function readLastCheckpointHash(events: readonly unknown[]): string {
+    let checkpointHash: string | undefined;
 
     for (const event of events) {
       const turnNodeHash = dependencies.readRecordString(event, "turnNodeHash");

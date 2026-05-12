@@ -59,7 +59,7 @@
                 "suiteVersion": { "type": "string" },
                 "status": {
                   "type": "string",
-                  "enum": ["pass", "fail"]
+                  "enum": ["fail", "not_applicable", "pass", "unsupported"]
                 },
                 "reportStatus": {
                   "type": "string",
@@ -126,7 +126,7 @@
           "suiteVersion": { "type": "string" },
           "status": {
             "type": "string",
-            "enum": ["pass", "fail"]
+            "enum": ["fail", "not_applicable", "pass", "unsupported"]
           },
           "reportStatus": {
             "type": "string",

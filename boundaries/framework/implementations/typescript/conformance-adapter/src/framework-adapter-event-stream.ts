@@ -69,41 +69,20 @@ export function createFrameworkAdapterEventStream(
   runSseProjection(input: unknown): Promise<AdapterProjection>;
 } {
   async function runSseProjection(input: unknown): Promise<AdapterProjection> {
-    const events = await runEventStreamScenario(input, "event-stream");
-    const frames = await collectValues(toSseFrames(createEventStream(events)));
-    const threadIds = events.flatMap((event) =>
-      dependencies.isRecord(event) && typeof event.threadId === "string"
-        ? [event.threadId]
-        : []
+    const sourceEvents = await runEventStreamScenario(input, "event-stream");
+    const frames = await collectValues(
+      toSseFrames(createEventStream(sourceEvents))
     );
-    const sourceThreadIds = events.flatMap((event) =>
-      dependencies.isRecord(event.source) &&
-      typeof event.source.threadId === "string"
-        ? [event.source.threadId]
-        : []
-    );
-    const checkpointHashes = events.flatMap((event) =>
-      dependencies.isRecord(event) && typeof event.turnNodeHash === "string"
-        ? [event.turnNodeHash]
-        : []
-    );
-    const resumedFromHashes = events.flatMap((event) =>
-      dependencies.isRecord(event) && typeof event.resumedFrom === "string"
-        ? [event.resumedFrom]
-        : []
-    );
+    const projectedEvents = frames.map((frame) => ({
+      event: frame.event,
+      payload: dependencies.parseJsonValue(frame.data),
+    }));
 
     return {
-      evidence: {
-        checkpointHashes,
-        frameEvents: frames.map((frame) => frame.event),
-        framePayloads: frames.map((frame) =>
-          dependencies.parseJsonValue(frame.data)
-        ),
-        resumedFromHashes,
-        sourceEventTypes: events.map((event) => event.type),
-        sourceThreadIds,
-        threadIds,
+      events: projectedEvents,
+      result: {
+        events: projectedEvents,
+        sourceEvents,
       },
     };
   }
@@ -124,35 +103,39 @@ export function createFrameworkAdapterEventStream(
     await directIterator.return?.();
 
     const frames = await collectValues(sseFrames);
+    const projectedEvents = frames.map((frame) => ({
+      event: frame.event,
+      payload: dependencies.parseJsonValue(frame.data),
+    }));
 
     return {
-      evidence: {
-        firstDirectEventType:
-          firstDirectEvent.done === false
-            ? dependencies.readRecordString(firstDirectEvent.value, "type")
-            : undefined,
-        firstFrameEvent: frames[0]?.event,
+      events: projectedEvents,
+      result: {
+        events: projectedEvents,
+        ...(firstDirectEvent.done === false
+          ? { firstDirectEvent: firstDirectEvent.value }
+          : {}),
       },
     };
   }
 
   async function runAgUiProjection(input: unknown): Promise<AdapterProjection> {
     const sourceEvents = await runEventStreamScenario(input, "event-stream");
-    const warningCodes: string[] = [];
+    const warnings: Array<{ code: string }> = [];
     const events = await collectValues(
       toAgUiEvents(createEventStream(sourceEvents), {
         onWarning(warning) {
-          warningCodes.push(warning.code);
+          warnings.push({ code: warning.code });
         },
       })
     );
 
     return {
-      evidence: {
-        eventTypes: events.map((event) => event.type),
+      events,
+      result: {
         events,
-        sourceEventTypes: sourceEvents.map((event) => event.type),
-        warningCodes,
+        sourceEvents,
+        warnings,
       },
     };
   }

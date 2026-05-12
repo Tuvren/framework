@@ -127,6 +127,8 @@ function evaluateAssertion(
       return assertField(assertion, context.state, context);
     case "evidenceField":
       return assertField(assertion, context.evidence, context);
+    case "resultField":
+      return assertField(assertion, context.result, context);
     case "ordering":
       return assertOrdering(assertion, context);
     case "noEvent":
@@ -242,16 +244,6 @@ function assertNoEvent(
     throw new Error("noEvent assertion requires eventType");
   }
 
-  if (assertion.field !== undefined) {
-    const value = readPath(context.evidence, assertion.field);
-
-    if (!Array.isArray(value)) {
-      return value !== assertion.eventType;
-    }
-
-    return value.every((entry) => entry !== assertion.eventType);
-  }
-
   const events = readEvents(context);
   return events.every(
     (event) =>
@@ -309,6 +301,21 @@ function resolveExpectedPair(
 }
 
 function hasRequiredEvidence(context: AssertionContext, path: string): boolean {
+  if (path === "result") {
+    return context.result !== undefined;
+  }
+
+  if (path.startsWith("result.")) {
+    // resultField evidence is intentionally result-only; do not satisfy it
+    // from mirrored evidence/state surfaces or the contract becomes fuzzy
+    // again.
+    return (
+      context.result !== undefined &&
+      readPath(context.result, `$.${path.slice("result.".length)}`) !==
+        undefined
+    );
+  }
+
   const jsonPath = `$.${path}`;
 
   if (readPath(context, jsonPath) !== undefined) {

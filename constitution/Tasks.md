@@ -2,6 +2,7 @@
 
 ## 0. Version History & Changelog
 
+- v0.20.0 - Closed Epic AG in current repo reality through non-self-attesting promoted-plan hardening, real-kernel framework proof, refreshed compatibility evidence, and passing AG-gated `bun run codegen`, `bun run conformance`, `bun run compatibility:evidence`, `bun run interop-smoke`, `bun run release-check`, and `bun run verify`; TypeScript freeze-readiness is reaffirmed for the currently promoted supported applicable surfaces.
 - v0.19.0 - Activated Epic AG for non-self-attesting conformance hardening, superseding the Epic AF freeze-readiness conclusion without reopening AD, AE, or AF.
 - v0.18.0 - Closed Epic AF in current repo reality through the generated conformance gap plan, promoted AF shared-runner checks, freshness and authority guardrails, refreshed compatibility evidence, and clean freeze validation; TypeScript was considered freeze-ready for the then-promoted surfaces.
 - v0.17.0 - Closed Epic AE in current repo reality through the modular boundary hardening inventory, repo-wide `boundaries/**/*.ts` size audit, and a clean `bun run verify`; remaining active implementation scope was Epic AF.
@@ -9,15 +10,15 @@
 
 ## 1. Executive Summary & Active Critical Path
 
-- **Total Active Story Points:** 46
-- **Critical Path:** KRT-AG001 -> KRT-AG002 + KRT-AG003 -> KRT-AG004 + KRT-AG005 -> KRT-AG006 -> KRT-AG007 -> KRT-AG008 -> KRT-AG009
-- **Planning Assumptions:** TechSpec v0.16.0 governs the non-self-attesting conformance contract. Epics A-AF remain archived. Epic AF evidence is historical and must be regenerated under AG gates before freeze-readiness is reaffirmed. Rust framework product behavior remains unsupported and out of active scope.
+- **Total Active Story Points:** 0
+- **Critical Path:** None. Epic AG is closed in current repo reality.
+- **Planning Assumptions:** TechSpec v0.17.0 records the AG-hardened conformance contract and the post-AG freeze-readiness posture. Epics A-AG remain archived context. Fresh AG-gated `bun run codegen`, `bun run conformance`, `bun run compatibility:evidence`, `bun run interop-smoke`, `bun run release-check`, and `bun run verify` evidence reaffirms TypeScript freeze-readiness for the currently promoted supported applicable surfaces. Rust framework product behavior remains unsupported and out of product scope.
 
 ### Brownfield Continuity Note
 
 - Epic AG supersedes the freeze-readiness conclusion from Epic AF, not the work history.
 - Epics AD, AE, and AF remain closed archived context and must not be reopened through AG ticket execution.
-- AG treats the existing Authority Packets, Conformance Plans, Implementation Adapters, Generic Runner, and Compatibility Reporting surfaces as the architecture-approved physical contract to harden.
+- Epic AG is now closed in current repo reality; the ticket list below remains as the closure record for the hardening work that produced the live readiness claim.
 
 ### Sequential Scope Rule
 
@@ -39,10 +40,10 @@
 
 ### Current Active Scope
 
-- Epic AG hardens the conformance authority layer so promoted checks cannot pass through adapter evidence alone.
-- AG updates conformance schemas, runner assertion domains, compatibility status algebra, adapter restrictions, promoted plans, guardrails, and regenerated evidence.
-- AG ensures promoted conformance pass/fail decisions are grounded in runner-observed `result`, `events`, `state`, schema validity, error-envelope shape, event ordering, terminality, or explicit absence of observed events.
-- AG does not activate Rust framework product implementation, new drivers, new providers, new host protocols, or new backend families.
+- No implementation epic is currently active.
+- Current maintenance scope is to keep docs, contracts, conformance plans, generated artifacts, and evidence aligned with the AG-closed baseline.
+- TypeScript freeze-readiness is reaffirmed only for the currently promoted supported applicable surfaces proven by the AG-gated evidence stack.
+- This closure does not activate Rust framework product behavior, new drivers, new providers, new host protocols, or new backend families.
 
 ### Future / Deferred Scope
 
@@ -62,7 +63,8 @@
 - Epics A-Q established the architecture-first TypeScript baseline, shared contracts, ReAct/runtime execution path, provider bridge, host stream adapters, playground host, and release/portability hardening.
 - Epics R-V established the multi-language transition foundation, contract/conformance artifactization, kernel interop governance, Rust kernel baseline, and TypeScript-framework-to-Rust-kernel interop evidence.
 - Epics W-AF promoted the first shared semantic authority surfaces, normalized topology, enforced neutral machine authority, closed the TypeScript kernel gap, promoted run-liveness, promoted framework orchestration, closed the docs-to-authority freeze gate, completed TypeScript modular boundary hardening, and produced historical TypeScript freeze evidence.
-- Epic AF evidence remains archived historical context and must be regenerated under AG gates before freeze-readiness is reaffirmed.
+- Epic AG closed in current repo reality through non-self-attesting promoted-plan hardening, real-kernel framework proof, raw compatibility status enforcement, live guardrails, refreshed compatibility evidence, and clean AG-gated repo validation. TypeScript freeze-readiness is reaffirmed for the currently promoted supported applicable surfaces, while Rust framework remains unsupported.
+- Epic AF evidence remains archived historical context; AG regenerated the live evidence used by the current readiness claim.
 
 ## 3. Build Order (Mermaid)
 
@@ -82,7 +84,7 @@ flowchart LR
 
 ## 4. Ticket List
 
-### Epic AG - Non-Self-Attesting Conformance Hardening
+### Epic AG - Non-Self-Attesting Conformance Hardening (Closed In Current Repo Reality)
 
 **KRT-AG001 Conformance Oracle Inventory**
 

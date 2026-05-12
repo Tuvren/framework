@@ -22,14 +22,12 @@ import {
   DEFAULT_AGENT_SCHEMA,
 } from "../../runtime-core/src/index.ts";
 import {
-  createFakeKernelHarness,
-  createFakeRunLivenessKernelHarness,
-} from "../../runtime-core/test/fake-kernel.ts";
-import {
   type AdapterProjection,
   assistantText,
   collectValues,
   createConformanceIdFactory,
+  createConformanceKernelHarness,
+  createConformanceRunLivenessKernelHarness,
   createStaticDriver,
   DRIVER_ID,
   textSignal,
@@ -90,7 +88,7 @@ export function createFrameworkAdapterRecoveryScenarios(
       "payload",
       "runtime.recover-result.stagedObject.payload"
     );
-    const harness = createFakeKernelHarness();
+    const harness = createConformanceKernelHarness();
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultDriverId: DRIVER_ID,
@@ -106,11 +104,19 @@ export function createFrameworkAdapterRecoveryScenarios(
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
+    const recoveryTurnId = "shared-recovery-turn";
     const runId = "shared-recovery-run";
 
+    const turn = await harness.kernel.turn.create(
+      recoveryTurnId,
+      thread.threadId,
+      thread.branchId,
+      null,
+      thread.rootTurnNodeHash
+    );
     await harness.kernel.run.create(
       runId,
-      "shared-recovery-turn",
+      turn.turnId,
       thread.branchId,
       DEFAULT_AGENT_SCHEMA.schemaId,
       thread.rootTurnNodeHash,
@@ -126,17 +132,30 @@ export function createFrameworkAdapterRecoveryScenarios(
 
     const recovery = await harness.kernel.run.recover(runId);
     const [firstStagedResult] = recovery.uncommittedStagedResults;
+    const recoveryProjection = {
+      firstObjectType: firstStagedResult?.objectType,
+      firstTaskId: firstStagedResult?.taskId,
+      lastTurnNodeHash: recovery.lastTurnNodeHash,
+      uncommittedStagedResults: recovery.uncommittedStagedResults.length,
+    };
 
     return {
       evidence: {
-        recovery: {
-          firstObjectType: firstStagedResult?.objectType,
-          firstTaskId: firstStagedResult?.taskId,
-          lastTurnNodeHash: recovery.lastTurnNodeHash,
-          uncommittedStagedResults: recovery.uncommittedStagedResults.length,
+        recovery: recoveryProjection,
+      },
+      result: {
+        recovery: recoveryProjection,
+      },
+      state: {
+        recovery,
+        trace: {
+          recovery: {
+            evidence: {
+              recovery: recoveryProjection,
+            },
+          },
         },
       },
-      state: { recovery },
     };
   }
 
@@ -161,8 +180,8 @@ export function createFrameworkAdapterRecoveryScenarios(
       typeof scenario.recoveredAssistantText === "string"
         ? scenario.recoveredAssistantText
         : undefined;
-    const harness = createFakeKernelHarness();
-    const livenessHarness = createFakeRunLivenessKernelHarness(harness);
+    const harness = createConformanceKernelHarness();
+    const livenessHarness = createConformanceRunLivenessKernelHarness(harness);
     let executeCalls = 0;
 
     const driver = {
@@ -243,6 +262,12 @@ export function createFrameworkAdapterRecoveryScenarios(
       `${recoveryCase}_user_message`,
       prompt
     );
+    await stageRecoveredTurnLineage(
+      livenessHarness,
+      staleRunId,
+      `${recoveryCase}_turn_lineage`,
+      staleTurn.turnId
+    );
 
     switch (recoveryCase) {
       case "same_signal_iterate":
@@ -305,38 +330,37 @@ export function createFrameworkAdapterRecoveryScenarios(
     );
     const observedTurnId = readTurnId(events);
 
+    const recoveryProjection = {
+      activeAgent: handle.status().activeAgent,
+      branchRuntimePhase: dependencies.readRecordString(
+        branchRuntimeStatus,
+        "state"
+      ),
+      branchStatusActiveAgent: dependencies.readRecordString(
+        branchRuntimeStatus,
+        "activeAgent"
+      ),
+      driverExecuteCalls: executeCalls,
+      freshUserMessageCount: countUserTextMessages(branchMessages, signalText),
+      originalUserMessageCount: countUserTextMessages(branchMessages, prompt),
+      phase: handle.status().phase,
+      preemptCalls: livenessHarness.getPreemptCalls(),
+      recoveredAssistantVisible: hasTextMessage(
+        branchMessages,
+        "assistant",
+        recoveredAssistantText ?? ""
+      ),
+      sameTurn: observedTurnId === staleTurn.turnId,
+      staleRunStatus:
+        branchRuns.find((run) => run.runId === staleRunId)?.status ?? null,
+    };
+
     return {
       evidence: {
-        recovery: {
-          activeAgent: handle.status().activeAgent,
-          branchRuntimePhase: dependencies.readRecordString(
-            branchRuntimeStatus,
-            "state"
-          ),
-          branchStatusActiveAgent: dependencies.readRecordString(
-            branchRuntimeStatus,
-            "activeAgent"
-          ),
-          driverExecuteCalls: executeCalls,
-          freshUserMessageCount: countUserTextMessages(
-            branchMessages,
-            signalText
-          ),
-          originalUserMessageCount: countUserTextMessages(
-            branchMessages,
-            prompt
-          ),
-          phase: handle.status().phase,
-          preemptCalls: livenessHarness.getPreemptCalls(),
-          recoveredAssistantVisible: hasTextMessage(
-            branchMessages,
-            "assistant",
-            recoveredAssistantText ?? ""
-          ),
-          sameTurn: observedTurnId === staleTurn.turnId,
-          staleRunStatus:
-            branchRuns.find((run) => run.runId === staleRunId)?.status ?? null,
-        },
+        recovery: recoveryProjection,
+      },
+      result: {
+        recovery: recoveryProjection,
       },
     };
   }
@@ -397,7 +421,9 @@ export function createFrameworkAdapterRecoveryScenarios(
   }
 
   async function stageRecoveredMessage(
-    livenessHarness: ReturnType<typeof createFakeRunLivenessKernelHarness>,
+    livenessHarness: ReturnType<
+      typeof createConformanceRunLivenessKernelHarness
+    >,
     runId: string,
     taskId: string,
     text: string,
@@ -416,7 +442,9 @@ export function createFrameworkAdapterRecoveryScenarios(
   }
 
   async function stageRecoveredRuntimeStatus(
-    livenessHarness: ReturnType<typeof createFakeRunLivenessKernelHarness>,
+    livenessHarness: ReturnType<
+      typeof createConformanceRunLivenessKernelHarness
+    >,
     runId: string,
     taskId: string,
     status: { activeAgent: string; state: "completed" | "running" }
@@ -426,6 +454,23 @@ export function createFrameworkAdapterRecoveryScenarios(
       encodeDeterministicKernelRecord(status),
       taskId,
       "runtime_status",
+      "completed"
+    );
+  }
+
+  async function stageRecoveredTurnLineage(
+    livenessHarness: ReturnType<
+      typeof createConformanceRunLivenessKernelHarness
+    >,
+    runId: string,
+    taskId: string,
+    turnId: string
+  ): Promise<void> {
+    await livenessHarness.kernel.staging.stage(
+      runId,
+      encodeDeterministicKernelRecord({ activeTurnId: turnId }),
+      taskId,
+      "turn_lineage",
       "completed"
     );
   }

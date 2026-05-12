@@ -12,11 +12,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel.lineage.cross_thread_rejection.1.evidenceField",
+          "assertionId": "kernel.lineage.cross_thread_rejection.1.resultField",
           "status": "pass"
         },
         {
           "assertionId": "kernel.lineage.cross_thread_rejection.requiredEvidence.errorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.lineage.cross_thread_rejection.requiredEvidence.result.errorCode",
           "status": "pass"
         }
       ],
@@ -30,7 +34,7 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel.logical.branch_list.1.evidenceField",
+          "assertionId": "kernel.logical.branch_list.1.resultField",
           "status": "pass"
         },
         {
@@ -38,7 +42,7 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.logical.branch_list.requiredEvidence.branchEntries.0.0",
+          "assertionId": "kernel.logical.branch_list.requiredEvidence.result.branchEntries.0.0",
           "status": "pass"
         }
       ],
@@ -52,11 +56,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel.logical.diff_paths.1.evidenceField",
+          "assertionId": "kernel.logical.diff_paths.1.resultField",
           "status": "pass"
         },
         {
           "assertionId": "kernel.logical.diff_paths.requiredEvidence.diffPaths",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.diff_paths.requiredEvidence.result.diffPaths",
           "status": "pass"
         }
       ],
@@ -70,15 +78,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel.logical.recovery_state.1.evidenceField",
+          "assertionId": "kernel.logical.recovery_state.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.logical.recovery_state.2.evidenceField",
+          "assertionId": "kernel.logical.recovery_state.2.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.logical.recovery_state.3.evidenceField",
+          "assertionId": "kernel.logical.recovery_state.3.resultField",
           "status": "pass"
         },
         {
@@ -92,6 +100,18 @@
         {
           "assertionId": "kernel.logical.recovery_state.requiredEvidence.recovery.uncommittedStagedResults",
           "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.recovery_state.requiredEvidence.result.recovery.consumedStagedResults",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.recovery_state.requiredEvidence.result.recovery.lastCompletedStepId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.recovery_state.requiredEvidence.result.recovery.uncommittedStagedResults",
+          "status": "pass"
         }
       ],
       "checkId": "kernel.logical.recovery_state",
@@ -104,15 +124,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.1.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.2.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.2.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.3.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.3.resultField",
           "status": "pass"
         },
         {
@@ -126,6 +146,18 @@
         {
           "assertionId": "kernel.protocol.deterministic_hashing.requiredEvidence.hashes.turnTreeSchema",
           "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.requiredEvidence.result.hashes.turnTreeSchema",
+          "status": "pass"
         }
       ],
       "checkId": "kernel.protocol.deterministic_hashing",
@@ -138,11 +170,19 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel.protocol.modify_composition.1.evidenceField",
+          "assertionId": "kernel.protocol.modify_composition.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.modify_composition.2.evidenceField",
+          "assertionId": "kernel.protocol.modify_composition.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.requiredEvidence.result.verdict.kind",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.requiredEvidence.result.verdict.transform",
           "status": "pass"
         },
         {
@@ -164,11 +204,19 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.1.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.2.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.requiredEvidence.result.roundtrip.turnNodeIdentityRecord.schemaId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.requiredEvidence.result.roundtrip.turnTreeSchemaRecord.schemaId",
           "status": "pass"
         },
         {
@@ -190,11 +238,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel-protocol-af.branch-set-head-rejects-lateral-lineage.1.evidenceField",
+          "assertionId": "kernel-protocol-af.branch-set-head-rejects-lateral-lineage.1.resultField",
           "status": "pass"
         },
         {
           "assertionId": "kernel-protocol-af.branch-set-head-rejects-lateral-lineage.requiredEvidence.protocolEdgeValidation.branch.lateralHeadCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-protocol-af.branch-set-head-rejects-lateral-lineage.requiredEvidence.result.protocolEdgeValidation.branch.lateralHeadCode",
           "status": "pass"
         }
       ],
@@ -208,11 +260,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel-protocol-af.run-begin-step-rejects-out-of-order-step.1.evidenceField",
+          "assertionId": "kernel-protocol-af.run-begin-step-rejects-out-of-order-step.1.resultField",
           "status": "pass"
         },
         {
           "assertionId": "kernel-protocol-af.run-begin-step-rejects-out-of-order-step.requiredEvidence.protocolEdgeValidation.run.outOfOrderStepCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-protocol-af.run-begin-step-rejects-out-of-order-step.requiredEvidence.result.protocolEdgeValidation.run.outOfOrderStepCode",
           "status": "pass"
         }
       ],
@@ -226,11 +282,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel-protocol-af.run-complete-rejects-missing-event-object.1.evidenceField",
+          "assertionId": "kernel-protocol-af.run-complete-rejects-missing-event-object.1.resultField",
           "status": "pass"
         },
         {
           "assertionId": "kernel-protocol-af.run-complete-rejects-missing-event-object.requiredEvidence.protocolEdgeValidation.run.missingEventObjectCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-protocol-af.run-complete-rejects-missing-event-object.requiredEvidence.result.protocolEdgeValidation.run.missingEventObjectCode",
           "status": "pass"
         }
       ],
@@ -244,11 +304,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel-protocol-af.run-create-rejects-busy-branch.1.evidenceField",
+          "assertionId": "kernel-protocol-af.run-create-rejects-busy-branch.1.resultField",
           "status": "pass"
         },
         {
           "assertionId": "kernel-protocol-af.run-create-rejects-busy-branch.requiredEvidence.protocolEdgeValidation.run.busyBranchCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-protocol-af.run-create-rejects-busy-branch.requiredEvidence.result.protocolEdgeValidation.run.busyBranchCode",
           "status": "pass"
         }
       ],
@@ -262,11 +326,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel-protocol-af.schema-register-rejects-duplicate-path.1.evidenceField",
+          "assertionId": "kernel-protocol-af.schema-register-rejects-duplicate-path.1.resultField",
           "status": "pass"
         },
         {
           "assertionId": "kernel-protocol-af.schema-register-rejects-duplicate-path.requiredEvidence.protocolEdgeValidation.schema.duplicatePathCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-protocol-af.schema-register-rejects-duplicate-path.requiredEvidence.result.protocolEdgeValidation.schema.duplicatePathCode",
           "status": "pass"
         }
       ],
@@ -280,11 +348,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel-protocol-af.tree-create-rejects-missing-required-path.1.evidenceField",
+          "assertionId": "kernel-protocol-af.tree-create-rejects-missing-required-path.1.resultField",
           "status": "pass"
         },
         {
           "assertionId": "kernel-protocol-af.tree-create-rejects-missing-required-path.requiredEvidence.protocolEdgeValidation.tree.missingRequiredPathCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-protocol-af.tree-create-rejects-missing-required-path.requiredEvidence.result.protocolEdgeValidation.tree.missingRequiredPathCode",
           "status": "pass"
         }
       ],
@@ -298,11 +370,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel-protocol-af.tree-diff-rejects-schema-mismatch.1.evidenceField",
+          "assertionId": "kernel-protocol-af.tree-diff-rejects-schema-mismatch.1.resultField",
           "status": "pass"
         },
         {
           "assertionId": "kernel-protocol-af.tree-diff-rejects-schema-mismatch.requiredEvidence.protocolEdgeValidation.tree.schemaMismatchCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-protocol-af.tree-diff-rejects-schema-mismatch.requiredEvidence.result.protocolEdgeValidation.tree.schemaMismatchCode",
           "status": "pass"
         }
       ],
@@ -316,15 +392,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-all-ones-bytes.1.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-ones-bytes.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-all-ones-bytes.2.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-ones-bytes.2.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-all-ones-bytes.3.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-ones-bytes.3.resultField",
           "status": "pass"
         },
         {
@@ -338,6 +414,18 @@
         {
           "assertionId": "kernel.protocol.deterministic_hashing.f-all-ones-bytes.requiredEvidence.hashes.turnTreeSchema",
           "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-ones-bytes.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-ones-bytes.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-ones-bytes.requiredEvidence.result.hashes.turnTreeSchema",
+          "status": "pass"
         }
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-all-ones-bytes",
@@ -350,15 +438,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-all-ordered-paths.1.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-ordered-paths.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-all-ordered-paths.2.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-ordered-paths.2.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-all-ordered-paths.3.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-ordered-paths.3.resultField",
           "status": "pass"
         },
         {
@@ -372,6 +460,18 @@
         {
           "assertionId": "kernel.protocol.deterministic_hashing.f-all-ordered-paths.requiredEvidence.hashes.turnTreeSchema",
           "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-ordered-paths.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-ordered-paths.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-ordered-paths.requiredEvidence.result.hashes.turnTreeSchema",
+          "status": "pass"
         }
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-all-ordered-paths",
@@ -384,15 +484,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-all-single-paths.1.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-single-paths.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-all-single-paths.2.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-single-paths.2.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-all-single-paths.3.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-single-paths.3.resultField",
           "status": "pass"
         },
         {
@@ -406,6 +506,18 @@
         {
           "assertionId": "kernel.protocol.deterministic_hashing.f-all-single-paths.requiredEvidence.hashes.turnTreeSchema",
           "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-single-paths.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-single-paths.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-single-paths.requiredEvidence.result.hashes.turnTreeSchema",
+          "status": "pass"
         }
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-all-single-paths",
@@ -418,15 +530,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-all-zero-bytes.1.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-zero-bytes.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-all-zero-bytes.2.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-zero-bytes.2.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-all-zero-bytes.3.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-zero-bytes.3.resultField",
           "status": "pass"
         },
         {
@@ -440,6 +552,18 @@
         {
           "assertionId": "kernel.protocol.deterministic_hashing.f-all-zero-bytes.requiredEvidence.hashes.turnTreeSchema",
           "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-zero-bytes.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-zero-bytes.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-zero-bytes.requiredEvidence.result.hashes.turnTreeSchema",
+          "status": "pass"
         }
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-all-zero-bytes",
@@ -452,15 +576,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-deep-path-schema.1.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-deep-path-schema.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-deep-path-schema.2.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-deep-path-schema.2.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-deep-path-schema.3.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-deep-path-schema.3.resultField",
           "status": "pass"
         },
         {
@@ -474,6 +598,18 @@
         {
           "assertionId": "kernel.protocol.deterministic_hashing.f-deep-path-schema.requiredEvidence.hashes.turnTreeSchema",
           "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-deep-path-schema.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-deep-path-schema.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-deep-path-schema.requiredEvidence.result.hashes.turnTreeSchema",
+          "status": "pass"
         }
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-deep-path-schema",
@@ -486,15 +622,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-empty-bytes.1.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-empty-bytes.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-empty-bytes.2.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-empty-bytes.2.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-empty-bytes.3.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-empty-bytes.3.resultField",
           "status": "pass"
         },
         {
@@ -508,6 +644,18 @@
         {
           "assertionId": "kernel.protocol.deterministic_hashing.f-empty-bytes.requiredEvidence.hashes.turnTreeSchema",
           "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-empty-bytes.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-empty-bytes.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-empty-bytes.requiredEvidence.result.hashes.turnTreeSchema",
+          "status": "pass"
         }
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-empty-bytes",
@@ -520,15 +668,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-large-bytes.1.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-large-bytes.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-large-bytes.2.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-large-bytes.2.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-large-bytes.3.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-large-bytes.3.resultField",
           "status": "pass"
         },
         {
@@ -542,6 +690,18 @@
         {
           "assertionId": "kernel.protocol.deterministic_hashing.f-large-bytes.requiredEvidence.hashes.turnTreeSchema",
           "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-large-bytes.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-large-bytes.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-large-bytes.requiredEvidence.result.hashes.turnTreeSchema",
+          "status": "pass"
         }
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-large-bytes",
@@ -554,15 +714,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-many-staged-results.1.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-many-staged-results.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-many-staged-results.2.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-many-staged-results.2.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-many-staged-results.3.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-many-staged-results.3.resultField",
           "status": "pass"
         },
         {
@@ -576,6 +736,18 @@
         {
           "assertionId": "kernel.protocol.deterministic_hashing.f-many-staged-results.requiredEvidence.hashes.turnTreeSchema",
           "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-many-staged-results.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-many-staged-results.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-many-staged-results.requiredEvidence.result.hashes.turnTreeSchema",
+          "status": "pass"
         }
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-many-staged-results",
@@ -588,15 +760,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-mixed-status-staged.1.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-mixed-status-staged.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-mixed-status-staged.2.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-mixed-status-staged.2.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-mixed-status-staged.3.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-mixed-status-staged.3.resultField",
           "status": "pass"
         },
         {
@@ -610,6 +782,18 @@
         {
           "assertionId": "kernel.protocol.deterministic_hashing.f-mixed-status-staged.requiredEvidence.hashes.turnTreeSchema",
           "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-mixed-status-staged.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-mixed-status-staged.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-mixed-status-staged.requiredEvidence.result.hashes.turnTreeSchema",
+          "status": "pass"
         }
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-mixed-status-staged",
@@ -622,15 +806,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-multi-path-schema.1.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-multi-path-schema.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-multi-path-schema.2.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-multi-path-schema.2.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-multi-path-schema.3.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-multi-path-schema.3.resultField",
           "status": "pass"
         },
         {
@@ -644,6 +828,18 @@
         {
           "assertionId": "kernel.protocol.deterministic_hashing.f-multi-path-schema.requiredEvidence.hashes.turnTreeSchema",
           "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-multi-path-schema.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-multi-path-schema.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-multi-path-schema.requiredEvidence.result.hashes.turnTreeSchema",
+          "status": "pass"
         }
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-multi-path-schema",
@@ -656,15 +852,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-non-utf8-bytes.1.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-non-utf8-bytes.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-non-utf8-bytes.2.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-non-utf8-bytes.2.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-non-utf8-bytes.3.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-non-utf8-bytes.3.resultField",
           "status": "pass"
         },
         {
@@ -678,6 +874,18 @@
         {
           "assertionId": "kernel.protocol.deterministic_hashing.f-non-utf8-bytes.requiredEvidence.hashes.turnTreeSchema",
           "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-non-utf8-bytes.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-non-utf8-bytes.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-non-utf8-bytes.requiredEvidence.result.hashes.turnTreeSchema",
+          "status": "pass"
         }
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-non-utf8-bytes",
@@ -690,15 +898,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-single-byte.1.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-single-byte.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-single-byte.2.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-single-byte.2.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-single-byte.3.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-single-byte.3.resultField",
           "status": "pass"
         },
         {
@@ -712,6 +920,18 @@
         {
           "assertionId": "kernel.protocol.deterministic_hashing.f-single-byte.requiredEvidence.hashes.turnTreeSchema",
           "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-single-byte.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-single-byte.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-single-byte.requiredEvidence.result.hashes.turnTreeSchema",
+          "status": "pass"
         }
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-single-byte",
@@ -724,15 +944,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-staged-failed.1.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-staged-failed.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-staged-failed.2.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-staged-failed.2.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-staged-failed.3.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-staged-failed.3.resultField",
           "status": "pass"
         },
         {
@@ -746,6 +966,18 @@
         {
           "assertionId": "kernel.protocol.deterministic_hashing.f-staged-failed.requiredEvidence.hashes.turnTreeSchema",
           "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-staged-failed.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-staged-failed.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-staged-failed.requiredEvidence.result.hashes.turnTreeSchema",
+          "status": "pass"
         }
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-staged-failed",
@@ -758,15 +990,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-staged-interrupted.1.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-staged-interrupted.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-staged-interrupted.2.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-staged-interrupted.2.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-staged-interrupted.3.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-staged-interrupted.3.resultField",
           "status": "pass"
         },
         {
@@ -780,6 +1012,18 @@
         {
           "assertionId": "kernel.protocol.deterministic_hashing.f-staged-interrupted.requiredEvidence.hashes.turnTreeSchema",
           "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-staged-interrupted.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-staged-interrupted.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-staged-interrupted.requiredEvidence.result.hashes.turnTreeSchema",
+          "status": "pass"
         }
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-staged-interrupted",
@@ -792,15 +1036,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-with-event-hash.1.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-with-event-hash.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-with-event-hash.2.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-with-event-hash.2.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-with-event-hash.3.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-with-event-hash.3.resultField",
           "status": "pass"
         },
         {
@@ -814,6 +1058,18 @@
         {
           "assertionId": "kernel.protocol.deterministic_hashing.f-with-event-hash.requiredEvidence.hashes.turnTreeSchema",
           "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-with-event-hash.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-with-event-hash.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-with-event-hash.requiredEvidence.result.hashes.turnTreeSchema",
+          "status": "pass"
         }
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-with-event-hash",
@@ -826,15 +1082,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-with-prev-turn.1.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-with-prev-turn.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-with-prev-turn.2.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-with-prev-turn.2.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-with-prev-turn.3.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-with-prev-turn.3.resultField",
           "status": "pass"
         },
         {
@@ -848,6 +1104,18 @@
         {
           "assertionId": "kernel.protocol.deterministic_hashing.f-with-prev-turn.requiredEvidence.hashes.turnTreeSchema",
           "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-with-prev-turn.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-with-prev-turn.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-with-prev-turn.requiredEvidence.result.hashes.turnTreeSchema",
+          "status": "pass"
         }
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-with-prev-turn",
@@ -860,15 +1128,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-zero-turn-tree-hash.1.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-zero-turn-tree-hash.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-zero-turn-tree-hash.2.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-zero-turn-tree-hash.2.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.deterministic_hashing.f-zero-turn-tree-hash.3.evidenceField",
+          "assertionId": "kernel.protocol.deterministic_hashing.f-zero-turn-tree-hash.3.resultField",
           "status": "pass"
         },
         {
@@ -882,6 +1150,18 @@
         {
           "assertionId": "kernel.protocol.deterministic_hashing.f-zero-turn-tree-hash.requiredEvidence.hashes.turnTreeSchema",
           "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-zero-turn-tree-hash.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-zero-turn-tree-hash.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-zero-turn-tree-hash.requiredEvidence.result.hashes.turnTreeSchema",
+          "status": "pass"
         }
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-zero-turn-tree-hash",
@@ -894,11 +1174,19 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-all-ones-bytes.1.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-ones-bytes.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-all-ones-bytes.2.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-ones-bytes.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-ones-bytes.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-ones-bytes.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
           "status": "pass"
         },
         {
@@ -920,11 +1208,19 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-all-ordered-paths.1.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-ordered-paths.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-all-ordered-paths.2.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-ordered-paths.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-ordered-paths.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-ordered-paths.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
           "status": "pass"
         },
         {
@@ -946,11 +1242,19 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-all-single-paths.1.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-single-paths.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-all-single-paths.2.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-single-paths.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-single-paths.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-single-paths.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
           "status": "pass"
         },
         {
@@ -972,11 +1276,19 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-all-zero-bytes.1.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-zero-bytes.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-all-zero-bytes.2.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-zero-bytes.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-zero-bytes.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-zero-bytes.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
           "status": "pass"
         },
         {
@@ -998,11 +1310,19 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-deep-path-schema.1.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-deep-path-schema.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-deep-path-schema.2.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-deep-path-schema.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-deep-path-schema.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-deep-path-schema.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
           "status": "pass"
         },
         {
@@ -1024,11 +1344,19 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-empty-bytes.1.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-empty-bytes.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-empty-bytes.2.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-empty-bytes.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-empty-bytes.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-empty-bytes.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
           "status": "pass"
         },
         {
@@ -1050,11 +1378,19 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-large-bytes.1.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-large-bytes.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-large-bytes.2.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-large-bytes.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-large-bytes.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-large-bytes.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
           "status": "pass"
         },
         {
@@ -1076,11 +1412,19 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-many-staged-results.1.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-many-staged-results.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-many-staged-results.2.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-many-staged-results.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-many-staged-results.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-many-staged-results.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
           "status": "pass"
         },
         {
@@ -1102,11 +1446,19 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-mixed-status-staged.1.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-mixed-status-staged.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-mixed-status-staged.2.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-mixed-status-staged.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-mixed-status-staged.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-mixed-status-staged.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
           "status": "pass"
         },
         {
@@ -1128,11 +1480,19 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-multi-path-schema.1.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-multi-path-schema.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-multi-path-schema.2.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-multi-path-schema.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-multi-path-schema.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-multi-path-schema.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
           "status": "pass"
         },
         {
@@ -1154,11 +1514,19 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-non-utf8-bytes.1.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-non-utf8-bytes.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-non-utf8-bytes.2.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-non-utf8-bytes.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-non-utf8-bytes.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-non-utf8-bytes.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
           "status": "pass"
         },
         {
@@ -1180,11 +1548,19 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-single-byte.1.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-single-byte.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-single-byte.2.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-single-byte.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-single-byte.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-single-byte.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
           "status": "pass"
         },
         {
@@ -1206,11 +1582,19 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-staged-failed.1.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-staged-failed.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-staged-failed.2.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-staged-failed.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-staged-failed.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-staged-failed.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
           "status": "pass"
         },
         {
@@ -1232,11 +1616,19 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-staged-interrupted.1.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-staged-interrupted.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-staged-interrupted.2.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-staged-interrupted.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-staged-interrupted.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-staged-interrupted.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
           "status": "pass"
         },
         {
@@ -1258,11 +1650,19 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-with-event-hash.1.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-with-event-hash.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-with-event-hash.2.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-with-event-hash.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-with-event-hash.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-with-event-hash.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
           "status": "pass"
         },
         {
@@ -1284,11 +1684,19 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-with-prev-turn.1.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-with-prev-turn.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-with-prev-turn.2.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-with-prev-turn.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-with-prev-turn.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-with-prev-turn.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
           "status": "pass"
         },
         {
@@ -1310,11 +1718,19 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-zero-turn-tree-hash.1.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-zero-turn-tree-hash.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.protocol.schema_roundtrip.f-zero-turn-tree-hash.2.evidenceField",
+          "assertionId": "kernel.protocol.schema_roundtrip.f-zero-turn-tree-hash.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-zero-turn-tree-hash.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-zero-turn-tree-hash.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
           "status": "pass"
         },
         {
@@ -1336,15 +1752,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel-restart-af.expired-running-requires-preemption.1.evidenceField",
+          "assertionId": "kernel-restart-af.expired-running-requires-preemption.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel-restart-af.expired-running-requires-preemption.2.evidenceField",
+          "assertionId": "kernel-restart-af.expired-running-requires-preemption.2.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel-restart-af.expired-running-requires-preemption.3.evidenceField",
+          "assertionId": "kernel-restart-af.expired-running-requires-preemption.3.resultField",
           "status": "pass"
         },
         {
@@ -1358,6 +1774,18 @@
         {
           "assertionId": "kernel-restart-af.expired-running-requires-preemption.requiredEvidence.preemption.runStatus",
           "status": "pass"
+        },
+        {
+          "assertionId": "kernel-restart-af.expired-running-requires-preemption.requiredEvidence.result.preemption.leaseCleared",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-restart-af.expired-running-requires-preemption.requiredEvidence.result.preemption.preemptionReason",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-restart-af.expired-running-requires-preemption.requiredEvidence.result.preemption.runStatus",
+          "status": "pass"
         }
       ],
       "checkId": "kernel-restart-af.expired-running-requires-preemption",
@@ -1370,11 +1798,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel-restart-af.paused-run-excluded-from-stale-preemption.1.evidenceField",
+          "assertionId": "kernel-restart-af.paused-run-excluded-from-stale-preemption.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel-restart-af.paused-run-excluded-from-stale-preemption.2.evidenceField",
+          "assertionId": "kernel-restart-af.paused-run-excluded-from-stale-preemption.2.resultField",
           "status": "pass"
         },
         {
@@ -1383,6 +1811,14 @@
         },
         {
           "assertionId": "kernel-restart-af.paused-run-excluded-from-stale-preemption.requiredEvidence.listing.pausedRunStatus",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-restart-af.paused-run-excluded-from-stale-preemption.requiredEvidence.result.listing.pausedRunListed",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-restart-af.paused-run-excluded-from-stale-preemption.requiredEvidence.result.listing.pausedRunStatus",
           "status": "pass"
         }
       ],
@@ -1396,15 +1832,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel.run-liveness.expired_listing.1.evidenceField",
+          "assertionId": "kernel.run-liveness.expired_listing.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.run-liveness.expired_listing.2.evidenceField",
+          "assertionId": "kernel.run-liveness.expired_listing.2.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.run-liveness.expired_listing.3.evidenceField",
+          "assertionId": "kernel.run-liveness.expired_listing.3.resultField",
           "status": "pass"
         },
         {
@@ -1418,6 +1854,18 @@
         {
           "assertionId": "kernel.run-liveness.expired_listing.requiredEvidence.listing.pausedRunStatus",
           "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.expired_listing.requiredEvidence.result.listing.expiredRunIds",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.expired_listing.requiredEvidence.result.listing.pausedRunListed",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.expired_listing.requiredEvidence.result.listing.pausedRunStatus",
+          "status": "pass"
         }
       ],
       "checkId": "kernel.run-liveness.expired_listing",
@@ -1430,15 +1878,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel.run-liveness.lease_renewal.1.evidenceField",
+          "assertionId": "kernel.run-liveness.lease_renewal.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.run-liveness.lease_renewal.2.evidenceField",
+          "assertionId": "kernel.run-liveness.lease_renewal.2.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.run-liveness.lease_renewal.3.evidenceField",
+          "assertionId": "kernel.run-liveness.lease_renewal.3.resultField",
           "status": "pass"
         },
         {
@@ -1452,6 +1900,18 @@
         {
           "assertionId": "kernel.run-liveness.lease_renewal.requiredEvidence.renewal.staleTokenCode",
           "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.lease_renewal.requiredEvidence.result.renewal.ownerMismatchCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.lease_renewal.requiredEvidence.result.renewal.renewedLeaseExpiresAtMs",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.lease_renewal.requiredEvidence.result.renewal.staleTokenCode",
+          "status": "pass"
         }
       ],
       "checkId": "kernel.run-liveness.lease_renewal",
@@ -1464,23 +1924,23 @@
     {
       "assertionResults": [
         {
-          "assertionId": "kernel.run-liveness.stale_preemption.1.evidenceField",
+          "assertionId": "kernel.run-liveness.stale_preemption.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.run-liveness.stale_preemption.2.evidenceField",
+          "assertionId": "kernel.run-liveness.stale_preemption.2.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.run-liveness.stale_preemption.3.evidenceField",
+          "assertionId": "kernel.run-liveness.stale_preemption.3.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.run-liveness.stale_preemption.4.evidenceField",
+          "assertionId": "kernel.run-liveness.stale_preemption.4.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.run-liveness.stale_preemption.5.evidenceField",
+          "assertionId": "kernel.run-liveness.stale_preemption.5.resultField",
           "status": "pass"
         },
         {
@@ -1509,6 +1969,26 @@
         },
         {
           "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.preemption.uncommittedStagedResults",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.result.preemption.leaseCleared",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.result.preemption.preemptionReason",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.result.preemption.recoveryHeadMatchesBranchHead",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.result.preemption.runStatus",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.result.preemption.uncommittedStagedResults",
           "status": "pass"
         }
       ],

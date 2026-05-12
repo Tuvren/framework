@@ -7,7 +7,7 @@
       "assertions": [
         {
           "field": "$.generate.responsePartTypes.0",
-          "kind": "evidenceField"
+          "kind": "resultField"
         }
       ],
       "capabilities": ["providers.ai-sdk-bridge"],
@@ -20,7 +20,7 @@
       "assertions": [
         {
           "field": "$.generate.responseFormatName",
-          "kind": "evidenceField",
+          "kind": "resultField",
           "matches": "^[a-z][a-zA-Z0-9_]*$"
         }
       ],
@@ -34,7 +34,7 @@
       "assertions": [
         {
           "field": "$.structured.doneName",
-          "kind": "evidenceField",
+          "kind": "resultField",
           "matches": "^[a-z][a-zA-Z0-9_]*$"
         }
       ],
@@ -48,7 +48,7 @@
       "assertions": [
         {
           "field": "$.structured.chunkTypes.0",
-          "kind": "evidenceField",
+          "kind": "resultField",
           "matches": "^(structured_delta|text_delta)$"
         }
       ],
@@ -62,7 +62,7 @@
       "assertions": [
         {
           "field": "$.failure.errorCode",
-          "kind": "evidenceField",
+          "kind": "resultField",
           "matches": "^[a-z0-9]+(?:_[a-z0-9]+)*$"
         }
       ],
@@ -76,7 +76,7 @@
       "assertions": [
         {
           "field": "$.failure.errorName",
-          "kind": "evidenceField",
+          "kind": "resultField",
           "matches": "^[A-Z][A-Za-z0-9]+$"
         }
       ],

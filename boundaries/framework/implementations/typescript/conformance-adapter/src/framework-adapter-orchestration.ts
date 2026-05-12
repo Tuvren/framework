@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
+import { TuvrenRuntimeError } from "@tuvren/core-types";
 import type { RuntimeDriver } from "@tuvren/driver-api";
-import type { AgentConfig } from "@tuvren/runtime-api";
+import type { AgentConfig, OrchestrationHandle } from "@tuvren/runtime-api";
 import {
   createDriverRegistry,
   createOrchestrationRuntime,
   createTuvrenRuntimeCore,
   DEFAULT_AGENT_SCHEMA,
 } from "../../runtime-core/src/index.ts";
-import { createFakeKernelHarness } from "../../runtime-core/test/fake-kernel.ts";
 import { createFrameworkAdapterOrchestrationLifecycle } from "./framework-adapter-orchestration-lifecycle.ts";
 import {
   type AdapterProjection,
@@ -30,6 +30,7 @@ import {
   assistantToolCalls,
   collectValues,
   createConformanceIdFactory,
+  createConformanceKernelHarness,
   createStaticDriver,
   DRIVER_ID,
   textSignal,
@@ -86,7 +87,7 @@ export function createFrameworkAdapterOrchestration(
       "childText",
       "runtime.orchestration.launch-preconditions.childText"
     );
-    const harness = createFakeKernelHarness();
+    const harness = createConformanceKernelHarness();
     const framework = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultDriverId: DRIVER_ID,
@@ -148,7 +149,7 @@ export function createFrameworkAdapterOrchestration(
 
     await sleep(0);
 
-    const childHandle = handle.spawn({
+    const childHandle = await spawnWhenRunning(handle, {
       agent: "worker",
       signal: textSignal("child"),
     });
@@ -160,22 +161,21 @@ export function createFrameworkAdapterOrchestration(
     ]);
     const childThreadId = findThreadId(childEvents);
 
+    const launch = {
+      childResult,
+      childRunsOnOwnThread:
+        childThreadId !== undefined && childThreadId !== thread.threadId,
+      childThreadId,
+      descendantThreadId: findDescendantThreadId(subtreeEvents),
+      parentThreadId: thread.threadId,
+      postAwaitSpawnError,
+      preStartAwaitResultError,
+      preStartSpawnError,
+    };
+
     return {
-      evidence: {
-        orchestration: {
-          launch: {
-            childResult,
-            childRunsOnOwnThread:
-              childThreadId !== undefined && childThreadId !== thread.threadId,
-            childThreadId,
-            descendantThreadId: findDescendantThreadId(subtreeEvents),
-            parentThreadId: thread.threadId,
-            postAwaitSpawnError,
-            preStartAwaitResultError,
-            preStartSpawnError,
-          },
-        },
-      },
+      evidence: { orchestration: { launch } },
+      result: { orchestration: { launch } },
     };
   }
 
@@ -223,7 +223,7 @@ export function createFrameworkAdapterOrchestration(
       "failureMessage",
       "runtime.orchestration.event-surfaces.failureMessage"
     );
-    const harness = createFakeKernelHarness();
+    const harness = createConformanceKernelHarness();
     const framework = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultDriverId: DRIVER_ID,
@@ -288,41 +288,33 @@ export function createFrameworkAdapterOrchestration(
     const failedAwaitResultError =
       await runFailedOrchestrationAwaitResult(failureMessage);
 
+    const surfaces = {
+      allEventsIncludeDescendants: descendantEvent !== undefined,
+      childAllEventsRemainAvailable:
+        findTextEvent(childSubtreeEvents, childText) !== undefined,
+      childResult,
+      descendantSourceAttributed:
+        dependencies.readRecordString(descendantEvent?.source, "agent") !==
+          undefined &&
+        dependencies.readRecordString(descendantEvent?.source, "threadId") !==
+          undefined &&
+        dependencies.readRecordString(descendantEvent?.source, "workerId") !==
+          undefined,
+      descendantSource: descendantEvent?.source,
+      eventsSelfOnly: !parentEvents.some(
+        (event) =>
+          dependencies.readRecordString(event, "type") === "text.done" &&
+          dependencies.readRecordString(event, "text") === childText
+      ),
+      failedAwaitResultError,
+      failedAwaitResultRejected:
+        failedAwaitResultError?.message === failureMessage,
+      noCanonicalWorkerResultInjection: !containsWorkerResult(parentMessages),
+    };
+
     return {
-      evidence: {
-        orchestration: {
-          surfaces: {
-            allEventsIncludeDescendants: descendantEvent !== undefined,
-            childAllEventsRemainAvailable:
-              findTextEvent(childSubtreeEvents, childText) !== undefined,
-            childResult,
-            descendantSourceAttributed:
-              dependencies.readRecordString(
-                descendantEvent?.source,
-                "agent"
-              ) !== undefined &&
-              dependencies.readRecordString(
-                descendantEvent?.source,
-                "threadId"
-              ) !== undefined &&
-              dependencies.readRecordString(
-                descendantEvent?.source,
-                "workerId"
-              ) !== undefined,
-            descendantSource: descendantEvent?.source,
-            eventsSelfOnly: !parentEvents.some(
-              (event) =>
-                dependencies.readRecordString(event, "type") === "text.done" &&
-                dependencies.readRecordString(event, "text") === childText
-            ),
-            failedAwaitResultError,
-            failedAwaitResultRejected:
-              failedAwaitResultError?.message === failureMessage,
-            noCanonicalWorkerResultInjection:
-              !containsWorkerResult(parentMessages),
-          },
-        },
-      },
+      evidence: { orchestration: { surfaces } },
+      result: { orchestration: { surfaces } },
     };
   }
 
@@ -405,7 +397,7 @@ export function createFrameworkAdapterOrchestration(
       },
       id: "special",
     } satisfies RuntimeDriver;
-    const harness = createFakeKernelHarness();
+    const harness = createConformanceKernelHarness();
     await harness.kernel.schema.register({
       ...structuredClone(DEFAULT_AGENT_SCHEMA),
       schemaId: "custom.agent.v1",
@@ -451,9 +443,7 @@ export function createFrameworkAdapterOrchestration(
 
     const parentEventsPromise = collectValues(handle.events());
 
-    await sleep(0);
-
-    const childHandle = handle.spawn({
+    const childHandle = await spawnWhenRunning(handle, {
       agent: "worker",
       signal: textSignal("child"),
     });
@@ -468,24 +458,23 @@ export function createFrameworkAdapterOrchestration(
         ? null
         : await framework.getThread(childThreadId);
 
+    const inheritance = {
+      childResult,
+      childThreadId,
+      driverIdInherited: childEvents.some(
+        (event) =>
+          dependencies.isRecord(event) &&
+          dependencies.readRecordString(event, "type") === "tool.result" &&
+          dependencies.isRecord(event.source) &&
+          event.source.driver === "special"
+      ),
+      schemaInherited: childThread?.schemaId === "custom.agent.v1",
+      toolsInherited: firstVisiblePartType(childResult) === "tool_result",
+    };
+
     return {
-      evidence: {
-        orchestration: {
-          inheritance: {
-            childResult,
-            childThreadId,
-            driverIdInherited: childEvents.some(
-              (event) =>
-                dependencies.readRecordString(event, "type") ===
-                  "tool.result" &&
-                dependencies.isRecord(event.source) &&
-                event.source.driver === "special"
-            ),
-            schemaInherited: childThread?.schemaId === "custom.agent.v1",
-            toolsInherited: firstVisiblePartType(childResult) === "tool_result",
-          },
-        },
-      },
+      evidence: { orchestration: { inheritance } },
+      result: { orchestration: { inheritance } },
     };
   }
 
@@ -501,7 +490,7 @@ export function createFrameworkAdapterOrchestration(
       "grandchildText",
       "runtime.orchestration.nested-attribution.grandchildText"
     );
-    const harness = createFakeKernelHarness();
+    const harness = createConformanceKernelHarness();
     const framework = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultDriverId: DRIVER_ID,
@@ -567,7 +556,7 @@ export function createFrameworkAdapterOrchestration(
 
     await Promise.resolve();
 
-    const grandchildHandle = childHandle.spawn({
+    const grandchildHandle = await spawnWhenRunning(childHandle, {
       agent: "worker-2",
       signal: textSignal("grandchild"),
     });
@@ -579,18 +568,17 @@ export function createFrameworkAdapterOrchestration(
     const rootGrandchildEvent = findTextEvent(rootEvents, grandchildText);
     const childGrandchildEvent = findTextEvent(childEvents, grandchildText);
 
+    const nested = {
+      childGrandchildSource: childGrandchildEvent?.source,
+      childReceivesGrandchild: childGrandchildEvent !== undefined,
+      grandchildResult,
+      rootGrandchildSource: rootGrandchildEvent?.source,
+      rootReceivesGrandchild: rootGrandchildEvent !== undefined,
+    };
+
     return {
-      evidence: {
-        orchestration: {
-          nested: {
-            childGrandchildSource: childGrandchildEvent?.source,
-            childReceivesGrandchild: childGrandchildEvent !== undefined,
-            grandchildResult,
-            rootGrandchildSource: rootGrandchildEvent?.source,
-            rootReceivesGrandchild: rootGrandchildEvent !== undefined,
-          },
-        },
-      },
+      evidence: { orchestration: { nested } },
+      result: { orchestration: { nested } },
     };
   }
 
@@ -605,7 +593,7 @@ export function createFrameworkAdapterOrchestration(
   async function runFailedOrchestrationAwaitResult(
     failureMessage: string
   ): Promise<Record<string, unknown> | undefined> {
-    const harness = createFakeKernelHarness();
+    const harness = createConformanceKernelHarness();
     const framework = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultDriverId: DRIVER_ID,
@@ -661,7 +649,7 @@ export function createFrameworkAdapterOrchestration(
     parentText: string,
     reviewerText: string
   ): Promise<AdapterProjection> {
-    const harness = createFakeKernelHarness();
+    const harness = createConformanceKernelHarness();
     const agents: Record<string, AgentConfig> = {
       primary: { name: "primary" },
       reviewer: { name: "reviewer" },
@@ -745,34 +733,32 @@ export function createFrameworkAdapterOrchestration(
         typeof event.source.workerId === "string"
     );
 
+    const surfaces = {
+      childResult,
+      handoffDescendantAgentPreserved:
+        readSourceAgent(childReviewerEvent) === "reviewer" &&
+        readSourceAgent(rootReviewerEvent) === "reviewer",
+      handoffHistoryControlEntryAbsent:
+        lastOutputOnlyEvidence.historyControlEntryAbsent,
+      handoffInvalidCompositionError: await runInvalidHandoffCompositionError(),
+      handoffLastOutputOnlyNoSourceSignal:
+        lastOutputOnlyEvidence.noSourceSignal,
+      handoffLastOutputOnlyText: lastOutputOnlyEvidence.firstUserText,
+      handoffRootSource: dependencies.isRecord(rootReviewerEvent)
+        ? rootReviewerEvent.source
+        : undefined,
+    };
+
     return {
-      evidence: {
-        orchestration: {
-          surfaces: {
-            childResult,
-            handoffDescendantAgentPreserved:
-              readSourceAgent(childReviewerEvent) === "reviewer" &&
-              readSourceAgent(rootReviewerEvent) === "reviewer",
-            handoffHistoryControlEntryAbsent:
-              lastOutputOnlyEvidence.historyControlEntryAbsent,
-            handoffInvalidCompositionError:
-              await runInvalidHandoffCompositionError(),
-            handoffLastOutputOnlyNoSourceSignal:
-              lastOutputOnlyEvidence.noSourceSignal,
-            handoffLastOutputOnlyText: lastOutputOnlyEvidence.firstUserText,
-            handoffRootSource: dependencies.isRecord(rootReviewerEvent)
-              ? rootReviewerEvent.source
-              : undefined,
-          },
-        },
-      },
+      evidence: { orchestration: { surfaces } },
+      result: { orchestration: { surfaces } },
     };
   }
 
   async function runInvalidHandoffCompositionError(): Promise<
     Record<string, unknown> | undefined
   > {
-    const harness = createFakeKernelHarness();
+    const harness = createConformanceKernelHarness();
     const framework = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultDriverId: DRIVER_ID,
@@ -833,7 +819,7 @@ export function createFrameworkAdapterOrchestration(
     historyControlEntryAbsent: boolean;
     noSourceSignal: boolean;
   }> {
-    const harness = createFakeKernelHarness();
+    const harness = createConformanceKernelHarness();
     const framework = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultDriverId: DRIVER_ID,
@@ -1111,5 +1097,41 @@ export function createFrameworkAdapterOrchestration(
     return new Promise((resolve) => {
       setTimeout(resolve, ms);
     });
+  }
+
+  async function spawnWhenRunning(
+    handle: Pick<OrchestrationHandle, "spawn" | "status">,
+    input: {
+      agent: string;
+      signal: ReturnType<typeof textSignal>;
+    },
+    timeoutMs = 1000
+  ): Promise<OrchestrationHandle> {
+    const start = Date.now();
+
+    while (true) {
+      try {
+        return handle.spawn(input);
+      } catch (error: unknown) {
+        const phase = handle.status().phase;
+        const shouldRetry =
+          error instanceof TuvrenRuntimeError &&
+          error.code === "orchestration_parent_inactive" &&
+          phase === "running";
+
+        if (!shouldRetry) {
+          throw error;
+        }
+
+        // Only retry the brief "running but not ready yet" race; if the phase
+        // has already moved away from running, retrying would turn a real
+        // pause/completion into a false positive.
+        if (Date.now() - start > timeoutMs) {
+          throw error;
+        }
+
+        await sleep(5);
+      }
+    }
   }
 }

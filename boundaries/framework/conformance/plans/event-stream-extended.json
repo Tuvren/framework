@@ -7,76 +7,75 @@
       "assertions": [
         {
           "contains": "state.snapshot",
-          "field": "$.frameEvents",
-          "kind": "evidenceField"
+          "kind": "eventSequence",
+          "path": "$.event"
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-events-include-state-snapshot",
-      "evidence": ["frameEvents"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
       "operation": "event-stream.runtime-sse-projection",
-      "scenario": "event-stream-scenarios"
+      "scenario": "event-stream-scenarios",
+      "evidence": ["events"]
     },
     {
       "assertions": [
         {
           "contains": "iteration.start",
-          "field": "$.frameEvents",
-          "kind": "evidenceField"
+          "kind": "eventSequence",
+          "path": "$.event"
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-events-include-iteration-start",
-      "evidence": ["frameEvents"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
       "operation": "event-stream.runtime-sse-projection",
-      "scenario": "event-stream-scenarios"
+      "scenario": "event-stream-scenarios",
+      "evidence": ["events"]
     },
     {
       "assertions": [
         {
           "contains": "tool.result",
-          "field": "$.frameEvents",
-          "kind": "evidenceField"
+          "kind": "eventSequence",
+          "path": "$.event"
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-events-include-tool-result",
-      "evidence": ["frameEvents"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
       "operation": "event-stream.runtime-sse-projection",
-      "scenario": "event-stream-scenarios"
+      "scenario": "event-stream-scenarios",
+      "evidence": ["events"]
     },
     {
       "assertions": [
         {
           "contains": "text.delta",
-          "field": "$.frameEvents",
-          "kind": "evidenceField"
+          "kind": "eventSequence",
+          "path": "$.event"
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-events-include-text-delta",
-      "evidence": ["frameEvents"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
       "operation": "event-stream.runtime-sse-projection",
-      "scenario": "event-stream-scenarios"
+      "scenario": "event-stream-scenarios",
+      "evidence": ["events"]
     },
     {
       "assertions": [
         {
           "equals": "turn.start",
-          "field": "$.sourceEventTypes.0",
-          "kind": "evidenceField"
+          "field": "$.events.0.payload.type",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-source-event-types-start-with-turn-start",
-      "evidence": ["sourceEventTypes.0"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -87,12 +86,11 @@
       "assertions": [
         {
           "equals": "turn.end",
-          "field": "$.frameEvents.23",
-          "kind": "evidenceField"
+          "field": "$.events.23.event",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-events-end-with-turn-end",
-      "evidence": ["frameEvents.23"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -103,171 +101,170 @@
       "assertions": [
         {
           "contains": "turn.start",
-          "field": "$.frameEvents",
-          "kind": "evidenceField"
+          "kind": "eventSequence",
+          "path": "$.event"
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-events-contain-turn-start",
-      "evidence": ["frameEvents"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
       "operation": "event-stream.runtime-sse-projection",
-      "scenario": "event-stream-scenarios"
+      "scenario": "event-stream-scenarios",
+      "evidence": ["events"]
     },
     {
       "assertions": [
         {
           "contains": "turn.end",
-          "field": "$.frameEvents",
-          "kind": "evidenceField"
+          "kind": "eventSequence",
+          "path": "$.event"
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-events-contain-turn-end",
-      "evidence": ["frameEvents"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
       "operation": "event-stream.runtime-sse-projection",
-      "scenario": "event-stream-scenarios"
+      "scenario": "event-stream-scenarios",
+      "evidence": ["events"]
     },
     {
       "assertions": [
         {
           "contains": "tool_call.start",
-          "field": "$.frameEvents",
-          "kind": "evidenceField"
+          "kind": "eventSequence",
+          "path": "$.event"
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-events-contain-tool-call-start",
-      "evidence": ["frameEvents"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
       "operation": "event-stream.runtime-sse-projection",
-      "scenario": "event-stream-scenarios"
+      "scenario": "event-stream-scenarios",
+      "evidence": ["events"]
     },
     {
       "assertions": [
         {
           "contains": "iteration.end",
-          "field": "$.frameEvents",
-          "kind": "evidenceField"
+          "kind": "eventSequence",
+          "path": "$.event"
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-events-contain-iteration-end",
-      "evidence": ["frameEvents"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
       "operation": "event-stream.runtime-sse-projection",
-      "scenario": "event-stream-scenarios"
+      "scenario": "event-stream-scenarios",
+      "evidence": ["events"]
     },
     {
       "assertions": [
         {
           "eventType": "error",
-          "field": "$.frameEvents",
-          "kind": "noEvent"
+          "kind": "noEvent",
+          "path": "$.event"
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-no-error-event",
-      "evidence": ["frameEvents"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
       "operation": "event-stream.runtime-sse-projection",
-      "scenario": "event-stream-scenarios"
+      "scenario": "event-stream-scenarios",
+      "evidence": ["events"]
     },
     {
       "assertions": [
         {
           "contains": "error",
-          "field": "$.frameEvents",
-          "kind": "evidenceField"
+          "kind": "eventSequence",
+          "path": "$.event"
         }
       ],
       "checkId": "event-stream-ext.sse.failed-provider-turn-frame-events-include-error",
-      "evidence": ["frameEvents"],
       "input": {
         "scenarioPath": "$.failed-provider-turn"
       },
       "operation": "event-stream.runtime-sse-projection",
-      "scenario": "event-stream-scenarios"
+      "scenario": "event-stream-scenarios",
+      "evidence": ["events"]
     },
     {
       "assertions": [
         {
           "contains": "approval.requested",
-          "field": "$.sourceEventTypes",
-          "kind": "evidenceField"
+          "kind": "eventSequence",
+          "path": "$.payload.type"
         }
       ],
       "checkId": "event-stream-ext.sse.paused-approval-turn-source-events-include-approval-requested",
-      "evidence": ["sourceEventTypes"],
       "input": {
         "scenarioPath": "$.paused-approval-turn"
       },
       "operation": "event-stream.runtime-sse-projection",
-      "scenario": "event-stream-scenarios"
+      "scenario": "event-stream-scenarios",
+      "evidence": ["events"]
     },
     {
       "assertions": [
         {
           "contains": "approval.requested",
-          "field": "$.sourceEventTypes",
-          "kind": "evidenceField"
+          "kind": "eventSequence",
+          "path": "$.payload.type"
         }
       ],
       "checkId": "event-stream-ext.sse.resumed-approval-turn-source-events-include-approval-requested",
-      "evidence": ["sourceEventTypes"],
       "input": {
         "scenarioPath": "$.resumed-approval-turn"
       },
       "operation": "event-stream.runtime-sse-projection",
-      "scenario": "event-stream-scenarios"
+      "scenario": "event-stream-scenarios",
+      "evidence": ["events"]
     },
     {
       "assertions": [
         {
           "contains": "approval.resolved",
-          "field": "$.sourceEventTypes",
-          "kind": "evidenceField"
+          "kind": "eventSequence",
+          "path": "$.payload.type"
         }
       ],
       "checkId": "event-stream-ext.sse.resumed-approval-turn-source-events-include-approval-resolved",
-      "evidence": ["sourceEventTypes"],
       "input": {
         "scenarioPath": "$.resumed-approval-turn"
       },
       "operation": "event-stream.runtime-sse-projection",
-      "scenario": "event-stream-scenarios"
+      "scenario": "event-stream-scenarios",
+      "evidence": ["events"]
     },
     {
       "assertions": [
         {
           "contains": "turn.end",
-          "field": "$.frameEvents",
-          "kind": "evidenceField"
+          "kind": "eventSequence",
+          "path": "$.event"
         }
       ],
       "checkId": "event-stream-ext.sse.resumed-approval-turn-frame-events-contain-turn-end",
-      "evidence": ["frameEvents"],
       "input": {
         "scenarioPath": "$.resumed-approval-turn"
       },
       "operation": "event-stream.runtime-sse-projection",
-      "scenario": "event-stream-scenarios"
+      "scenario": "event-stream-scenarios",
+      "evidence": ["events"]
     },
     {
       "assertions": [
         {
-          "field": "$.threadIds.0",
-          "kind": "evidenceField"
+          "field": "$.events.0.payload.threadId",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.sse.resumed-approval-turn-thread-id-present",
-      "evidence": ["threadIds.0"],
       "input": {
         "scenarioPath": "$.resumed-approval-turn"
       },
@@ -277,12 +274,11 @@
     {
       "assertions": [
         {
-          "field": "$.sourceThreadIds.0",
-          "kind": "evidenceField"
+          "field": "$.events.0.payload.source.threadId",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.sse.resumed-approval-turn-source-thread-id-present",
-      "evidence": ["sourceThreadIds.0"],
       "input": {
         "scenarioPath": "$.resumed-approval-turn"
       },
@@ -292,13 +288,12 @@
     {
       "assertions": [
         {
-          "field": "$.checkpointHashes.0",
-          "kind": "evidenceField",
+          "field": "$.events.1.payload.turnNodeHash",
+          "kind": "resultField",
           "matches": "^[a-f0-9]{64}$"
         }
       ],
       "checkId": "event-stream-ext.sse.resumed-approval-turn-checkpoint-hash-format",
-      "evidence": ["checkpointHashes.0"],
       "input": {
         "scenarioPath": "$.resumed-approval-turn"
       },
@@ -308,13 +303,12 @@
     {
       "assertions": [
         {
-          "field": "$.resumedFromHashes.0",
-          "kind": "evidenceField",
+          "field": "$.events.14.payload.resumedFrom",
+          "kind": "resultField",
           "matches": "^[a-f0-9]{64}$"
         }
       ],
       "checkId": "event-stream-ext.sse.resumed-approval-turn-resumed-from-hash-format",
-      "evidence": ["resumedFromHashes.0"],
       "input": {
         "scenarioPath": "$.resumed-approval-turn"
       },
@@ -325,28 +319,27 @@
       "assertions": [
         {
           "contains": "text.delta",
-          "field": "$.sourceEventTypes",
-          "kind": "evidenceField"
+          "kind": "eventSequence",
+          "path": "$.payload.type"
         }
       ],
       "checkId": "event-stream-ext.sse.resumed-approval-turn-source-events-include-text-delta",
-      "evidence": ["sourceEventTypes"],
       "input": {
         "scenarioPath": "$.resumed-approval-turn"
       },
       "operation": "event-stream.runtime-sse-projection",
-      "scenario": "event-stream-scenarios"
+      "scenario": "event-stream-scenarios",
+      "evidence": ["events"]
     },
     {
       "assertions": [
         {
           "equals": "turn.start",
-          "field": "$.firstDirectEventType",
-          "kind": "evidenceField"
+          "field": "$.firstDirectEvent.type",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.sse-eager.first-direct-event-turn-start",
-      "evidence": ["firstDirectEventType"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -357,12 +350,11 @@
       "assertions": [
         {
           "equals": "turn.start",
-          "field": "$.firstFrameEvent",
-          "kind": "evidenceField"
+          "field": "$.events.0.event",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.sse-eager.first-frame-event-turn-start",
-      "evidence": ["firstFrameEvent"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -373,12 +365,11 @@
       "assertions": [
         {
           "equals": "turn.start",
-          "field": "$.firstDirectEventType",
-          "kind": "evidenceField"
+          "field": "$.firstDirectEvent.type",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.sse-eager.failed-turn-first-direct-event-turn-start",
-      "evidence": ["firstDirectEventType"],
       "input": {
         "scenarioPath": "$.failed-provider-turn"
       },
@@ -389,12 +380,11 @@
       "assertions": [
         {
           "equals": "turn.start",
-          "field": "$.firstFrameEvent",
-          "kind": "evidenceField"
+          "field": "$.events.0.event",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.sse-eager.paused-turn-first-frame-event-turn-start",
-      "evidence": ["firstFrameEvent"],
       "input": {
         "scenarioPath": "$.paused-approval-turn"
       },
@@ -405,129 +395,130 @@
       "assertions": [
         {
           "contains": "RUN_STARTED",
-          "field": "$.eventTypes",
-          "kind": "evidenceField"
+          "kind": "eventSequence",
+          "path": "$.type"
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-types-include-run-started",
-      "evidence": ["eventTypes"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
       "operation": "event-stream.runtime-agui-projection",
-      "scenario": "event-stream-scenarios"
+      "scenario": "event-stream-scenarios",
+      "evidence": ["events"]
     },
     {
       "assertions": [
         {
           "contains": "RUN_FINISHED",
-          "field": "$.eventTypes",
-          "kind": "evidenceField"
+          "kind": "eventSequence",
+          "path": "$.type"
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-types-include-run-finished",
-      "evidence": ["eventTypes"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
       "operation": "event-stream.runtime-agui-projection",
-      "scenario": "event-stream-scenarios"
+      "scenario": "event-stream-scenarios",
+      "evidence": ["events"]
     },
     {
       "assertions": [
         {
           "contains": "STATE_SNAPSHOT",
-          "field": "$.eventTypes",
-          "kind": "evidenceField"
+          "kind": "eventSequence",
+          "path": "$.type"
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-types-include-state-snapshot",
-      "evidence": ["eventTypes"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
       "operation": "event-stream.runtime-agui-projection",
-      "scenario": "event-stream-scenarios"
+      "scenario": "event-stream-scenarios",
+      "evidence": ["events"]
     },
     {
       "assertions": [
         {
           "contains": "TOOL_CALL_START",
-          "field": "$.eventTypes",
-          "kind": "evidenceField"
+          "kind": "eventSequence",
+          "path": "$.type"
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-types-include-tool-call-start",
-      "evidence": ["eventTypes"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
       "operation": "event-stream.runtime-agui-projection",
-      "scenario": "event-stream-scenarios"
+      "scenario": "event-stream-scenarios",
+      "evidence": ["events"]
     },
     {
       "assertions": [
         {
           "contains": "TOOL_CALL_RESULT",
-          "field": "$.eventTypes",
-          "kind": "evidenceField"
+          "kind": "eventSequence",
+          "path": "$.type"
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-types-include-tool-call-result",
-      "evidence": ["eventTypes"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
       "operation": "event-stream.runtime-agui-projection",
-      "scenario": "event-stream-scenarios"
+      "scenario": "event-stream-scenarios",
+      "evidence": ["events"]
     },
     {
       "assertions": [
         {
           "contains": "TEXT_MESSAGE_START",
-          "field": "$.eventTypes",
-          "kind": "evidenceField"
+          "kind": "eventSequence",
+          "path": "$.type"
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-types-include-text-message-start",
-      "evidence": ["eventTypes"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
       "operation": "event-stream.runtime-agui-projection",
-      "scenario": "event-stream-scenarios"
+      "scenario": "event-stream-scenarios",
+      "evidence": ["events"]
     },
     {
       "assertions": [
         {
           "contains": "RUN_STARTED",
-          "field": "$.eventTypes",
-          "kind": "evidenceField"
+          "kind": "eventSequence",
+          "path": "$.type"
         },
         {
           "contains": "RUN_FINISHED",
-          "field": "$.eventTypes",
-          "kind": "evidenceField"
+          "kind": "eventSequence",
+          "path": "$.type"
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-types-include-run-started-and-finished",
-      "evidence": ["eventTypes"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
       "operation": "event-stream.runtime-agui-projection",
-      "scenario": "event-stream-scenarios"
+      "scenario": "event-stream-scenarios",
+      "evidence": ["events"]
     },
     {
       "assertions": [
         {
-          "contains": "agui_state_checkpoint_custom_fallback",
-          "field": "$.warningCodes",
-          "kind": "evidenceField"
+          "contains": {
+            "code": "agui_state_checkpoint_custom_fallback"
+          },
+          "field": "$.warnings",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-warnings-include-checkpoint-fallback",
-      "evidence": ["warningCodes"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -538,12 +529,11 @@
       "assertions": [
         {
           "equals": "RUN_ERROR",
-          "field": "$.eventTypes.8",
-          "kind": "evidenceField"
+          "field": "$.events.8.type",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.agui.failed-turn-event-types-end-with-run-error",
-      "evidence": ["eventTypes.8"],
       "input": {
         "scenarioPath": "$.failed-provider-turn"
       },
@@ -554,12 +544,11 @@
       "assertions": [
         {
           "field": "$.events.8.rawEvent.error.code",
-          "kind": "evidenceField",
+          "kind": "resultField",
           "matches": "^[a-z0-9]+(?:_[a-z0-9]+)*$"
         }
       ],
       "checkId": "event-stream-ext.agui.failed-turn-error-code-snake-case",
-      "evidence": ["events.8.rawEvent.error.code"],
       "input": {
         "scenarioPath": "$.failed-provider-turn"
       },
@@ -569,13 +558,14 @@
     {
       "assertions": [
         {
-          "contains": "agui_paused_turn_coerced_to_run_finished",
-          "field": "$.warningCodes",
-          "kind": "evidenceField"
+          "contains": {
+            "code": "agui_paused_turn_coerced_to_run_finished"
+          },
+          "field": "$.warnings",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.agui.paused-turn-warnings-include-paused-coercion",
-      "evidence": ["warningCodes"],
       "input": {
         "scenarioPath": "$.paused-approval-turn"
       },
@@ -586,12 +576,11 @@
       "assertions": [
         {
           "equals": "turn.start",
-          "field": "$.frameEvents.0",
-          "kind": "evidenceField"
+          "field": "$.events.0.event",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-event-00",
-      "evidence": ["frameEvents.0"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -602,12 +591,11 @@
       "assertions": [
         {
           "equals": "state.checkpoint",
-          "field": "$.frameEvents.1",
-          "kind": "evidenceField"
+          "field": "$.events.1.event",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-event-01",
-      "evidence": ["frameEvents.1"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -618,12 +606,11 @@
       "assertions": [
         {
           "equals": "state.snapshot",
-          "field": "$.frameEvents.2",
-          "kind": "evidenceField"
+          "field": "$.events.2.event",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-event-02",
-      "evidence": ["frameEvents.2"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -634,12 +621,11 @@
       "assertions": [
         {
           "equals": "iteration.start",
-          "field": "$.frameEvents.3",
-          "kind": "evidenceField"
+          "field": "$.events.3.event",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-event-03",
-      "evidence": ["frameEvents.3"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -650,12 +636,11 @@
       "assertions": [
         {
           "equals": "message.start",
-          "field": "$.frameEvents.4",
-          "kind": "evidenceField"
+          "field": "$.events.4.event",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-event-04",
-      "evidence": ["frameEvents.4"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -666,12 +651,11 @@
       "assertions": [
         {
           "equals": "tool_call.start",
-          "field": "$.frameEvents.5",
-          "kind": "evidenceField"
+          "field": "$.events.5.event",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-event-05",
-      "evidence": ["frameEvents.5"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -682,12 +666,11 @@
       "assertions": [
         {
           "equals": "tool_call.args_delta",
-          "field": "$.frameEvents.6",
-          "kind": "evidenceField"
+          "field": "$.events.6.event",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-event-06",
-      "evidence": ["frameEvents.6"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -698,12 +681,11 @@
       "assertions": [
         {
           "equals": "tool_call.done",
-          "field": "$.frameEvents.7",
-          "kind": "evidenceField"
+          "field": "$.events.7.event",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-event-07",
-      "evidence": ["frameEvents.7"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -714,12 +696,11 @@
       "assertions": [
         {
           "equals": "message.done",
-          "field": "$.frameEvents.8",
-          "kind": "evidenceField"
+          "field": "$.events.8.event",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-event-08",
-      "evidence": ["frameEvents.8"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -730,12 +711,11 @@
       "assertions": [
         {
           "equals": "tool.start",
-          "field": "$.frameEvents.9",
-          "kind": "evidenceField"
+          "field": "$.events.9.event",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-event-09",
-      "evidence": ["frameEvents.9"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -746,12 +726,11 @@
       "assertions": [
         {
           "equals": "tool.result",
-          "field": "$.frameEvents.10",
-          "kind": "evidenceField"
+          "field": "$.events.10.event",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-event-10",
-      "evidence": ["frameEvents.10"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -762,12 +741,11 @@
       "assertions": [
         {
           "equals": "state.checkpoint",
-          "field": "$.frameEvents.11",
-          "kind": "evidenceField"
+          "field": "$.events.11.event",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-event-11",
-      "evidence": ["frameEvents.11"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -778,12 +756,11 @@
       "assertions": [
         {
           "equals": "state.snapshot",
-          "field": "$.frameEvents.12",
-          "kind": "evidenceField"
+          "field": "$.events.12.event",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-event-12",
-      "evidence": ["frameEvents.12"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -794,12 +771,11 @@
       "assertions": [
         {
           "equals": "iteration.end",
-          "field": "$.frameEvents.13",
-          "kind": "evidenceField"
+          "field": "$.events.13.event",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-event-13",
-      "evidence": ["frameEvents.13"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -810,12 +786,11 @@
       "assertions": [
         {
           "equals": "iteration.start",
-          "field": "$.frameEvents.14",
-          "kind": "evidenceField"
+          "field": "$.events.14.event",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-event-14",
-      "evidence": ["frameEvents.14"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -826,12 +801,11 @@
       "assertions": [
         {
           "equals": "message.start",
-          "field": "$.frameEvents.15",
-          "kind": "evidenceField"
+          "field": "$.events.15.event",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-event-15",
-      "evidence": ["frameEvents.15"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -842,12 +816,11 @@
       "assertions": [
         {
           "equals": "text.delta",
-          "field": "$.frameEvents.16",
-          "kind": "evidenceField"
+          "field": "$.events.16.event",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-event-16",
-      "evidence": ["frameEvents.16"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -858,12 +831,11 @@
       "assertions": [
         {
           "equals": "text.done",
-          "field": "$.frameEvents.17",
-          "kind": "evidenceField"
+          "field": "$.events.17.event",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-event-17",
-      "evidence": ["frameEvents.17"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -874,12 +846,11 @@
       "assertions": [
         {
           "equals": "message.done",
-          "field": "$.frameEvents.18",
-          "kind": "evidenceField"
+          "field": "$.events.18.event",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-event-18",
-      "evidence": ["frameEvents.18"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -890,12 +861,11 @@
       "assertions": [
         {
           "equals": "state.checkpoint",
-          "field": "$.frameEvents.19",
-          "kind": "evidenceField"
+          "field": "$.events.19.event",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-event-19",
-      "evidence": ["frameEvents.19"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -906,12 +876,11 @@
       "assertions": [
         {
           "equals": "state.snapshot",
-          "field": "$.frameEvents.20",
-          "kind": "evidenceField"
+          "field": "$.events.20.event",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-event-20",
-      "evidence": ["frameEvents.20"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -922,12 +891,11 @@
       "assertions": [
         {
           "equals": "iteration.end",
-          "field": "$.frameEvents.21",
-          "kind": "evidenceField"
+          "field": "$.events.21.event",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-event-21",
-      "evidence": ["frameEvents.21"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -938,12 +906,11 @@
       "assertions": [
         {
           "equals": "state.checkpoint",
-          "field": "$.frameEvents.22",
-          "kind": "evidenceField"
+          "field": "$.events.22.event",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-event-22",
-      "evidence": ["frameEvents.22"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -954,12 +921,11 @@
       "assertions": [
         {
           "equals": "turn.end",
-          "field": "$.frameEvents.23",
-          "kind": "evidenceField"
+          "field": "$.events.23.event",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.sse.completed-turn-frame-event-23",
-      "evidence": ["frameEvents.23"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -970,12 +936,11 @@
       "assertions": [
         {
           "equals": "RUN_STARTED",
-          "field": "$.eventTypes.0",
-          "kind": "evidenceField"
+          "field": "$.events.0.type",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-00",
-      "evidence": ["eventTypes.0"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -986,12 +951,11 @@
       "assertions": [
         {
           "equals": "CUSTOM",
-          "field": "$.eventTypes.1",
-          "kind": "evidenceField"
+          "field": "$.events.1.type",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-01",
-      "evidence": ["eventTypes.1"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -1002,12 +966,11 @@
       "assertions": [
         {
           "equals": "STATE_SNAPSHOT",
-          "field": "$.eventTypes.2",
-          "kind": "evidenceField"
+          "field": "$.events.2.type",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-02",
-      "evidence": ["eventTypes.2"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -1018,12 +981,11 @@
       "assertions": [
         {
           "equals": "STEP_STARTED",
-          "field": "$.eventTypes.3",
-          "kind": "evidenceField"
+          "field": "$.events.3.type",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-03",
-      "evidence": ["eventTypes.3"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -1034,12 +996,11 @@
       "assertions": [
         {
           "equals": "TOOL_CALL_START",
-          "field": "$.eventTypes.4",
-          "kind": "evidenceField"
+          "field": "$.events.4.type",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-04",
-      "evidence": ["eventTypes.4"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -1050,12 +1011,11 @@
       "assertions": [
         {
           "equals": "TOOL_CALL_ARGS",
-          "field": "$.eventTypes.5",
-          "kind": "evidenceField"
+          "field": "$.events.5.type",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-05",
-      "evidence": ["eventTypes.5"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -1066,12 +1026,11 @@
       "assertions": [
         {
           "equals": "TOOL_CALL_END",
-          "field": "$.eventTypes.6",
-          "kind": "evidenceField"
+          "field": "$.events.6.type",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-06",
-      "evidence": ["eventTypes.6"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -1082,12 +1041,11 @@
       "assertions": [
         {
           "equals": "CUSTOM",
-          "field": "$.eventTypes.7",
-          "kind": "evidenceField"
+          "field": "$.events.7.type",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-07",
-      "evidence": ["eventTypes.7"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -1098,12 +1056,11 @@
       "assertions": [
         {
           "equals": "CUSTOM",
-          "field": "$.eventTypes.8",
-          "kind": "evidenceField"
+          "field": "$.events.8.type",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-08",
-      "evidence": ["eventTypes.8"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -1114,12 +1071,11 @@
       "assertions": [
         {
           "equals": "TOOL_CALL_RESULT",
-          "field": "$.eventTypes.9",
-          "kind": "evidenceField"
+          "field": "$.events.9.type",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-09",
-      "evidence": ["eventTypes.9"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -1130,12 +1086,11 @@
       "assertions": [
         {
           "equals": "CUSTOM",
-          "field": "$.eventTypes.10",
-          "kind": "evidenceField"
+          "field": "$.events.10.type",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-10",
-      "evidence": ["eventTypes.10"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -1146,12 +1101,11 @@
       "assertions": [
         {
           "equals": "STATE_SNAPSHOT",
-          "field": "$.eventTypes.11",
-          "kind": "evidenceField"
+          "field": "$.events.11.type",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-11",
-      "evidence": ["eventTypes.11"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -1162,12 +1116,11 @@
       "assertions": [
         {
           "equals": "STEP_FINISHED",
-          "field": "$.eventTypes.12",
-          "kind": "evidenceField"
+          "field": "$.events.12.type",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-12",
-      "evidence": ["eventTypes.12"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -1178,12 +1131,11 @@
       "assertions": [
         {
           "equals": "STEP_STARTED",
-          "field": "$.eventTypes.13",
-          "kind": "evidenceField"
+          "field": "$.events.13.type",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-13",
-      "evidence": ["eventTypes.13"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -1194,12 +1146,11 @@
       "assertions": [
         {
           "equals": "TEXT_MESSAGE_START",
-          "field": "$.eventTypes.14",
-          "kind": "evidenceField"
+          "field": "$.events.14.type",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-14",
-      "evidence": ["eventTypes.14"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -1210,12 +1161,11 @@
       "assertions": [
         {
           "equals": "TEXT_MESSAGE_CONTENT",
-          "field": "$.eventTypes.15",
-          "kind": "evidenceField"
+          "field": "$.events.15.type",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-15",
-      "evidence": ["eventTypes.15"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -1226,12 +1176,11 @@
       "assertions": [
         {
           "equals": "TEXT_MESSAGE_END",
-          "field": "$.eventTypes.16",
-          "kind": "evidenceField"
+          "field": "$.events.16.type",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-16",
-      "evidence": ["eventTypes.16"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -1242,12 +1191,11 @@
       "assertions": [
         {
           "equals": "CUSTOM",
-          "field": "$.eventTypes.17",
-          "kind": "evidenceField"
+          "field": "$.events.17.type",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-17",
-      "evidence": ["eventTypes.17"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -1258,12 +1206,11 @@
       "assertions": [
         {
           "equals": "CUSTOM",
-          "field": "$.eventTypes.18",
-          "kind": "evidenceField"
+          "field": "$.events.18.type",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-18",
-      "evidence": ["eventTypes.18"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -1274,12 +1221,11 @@
       "assertions": [
         {
           "equals": "STATE_SNAPSHOT",
-          "field": "$.eventTypes.19",
-          "kind": "evidenceField"
+          "field": "$.events.19.type",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-19",
-      "evidence": ["eventTypes.19"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -1290,12 +1236,11 @@
       "assertions": [
         {
           "equals": "STEP_FINISHED",
-          "field": "$.eventTypes.20",
-          "kind": "evidenceField"
+          "field": "$.events.20.type",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-20",
-      "evidence": ["eventTypes.20"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -1306,12 +1251,11 @@
       "assertions": [
         {
           "equals": "CUSTOM",
-          "field": "$.eventTypes.21",
-          "kind": "evidenceField"
+          "field": "$.events.21.type",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-21",
-      "evidence": ["eventTypes.21"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -1322,12 +1266,11 @@
       "assertions": [
         {
           "equals": "RUN_FINISHED",
-          "field": "$.eventTypes.22",
-          "kind": "evidenceField"
+          "field": "$.events.22.type",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.agui.completed-turn-event-22",
-      "evidence": ["eventTypes.22"],
       "input": {
         "scenarioPath": "$.completed-tool-turn"
       },
@@ -1338,12 +1281,11 @@
       "assertions": [
         {
           "equals": "RUN_STARTED",
-          "field": "$.eventTypes.0",
-          "kind": "evidenceField"
+          "field": "$.events.0.type",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.agui.failed-turn-event-00",
-      "evidence": ["eventTypes.0"],
       "input": {
         "scenarioPath": "$.failed-provider-turn"
       },
@@ -1354,12 +1296,11 @@
       "assertions": [
         {
           "equals": "CUSTOM",
-          "field": "$.eventTypes.1",
-          "kind": "evidenceField"
+          "field": "$.events.1.type",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.agui.failed-turn-event-01",
-      "evidence": ["eventTypes.1"],
       "input": {
         "scenarioPath": "$.failed-provider-turn"
       },
@@ -1370,12 +1311,11 @@
       "assertions": [
         {
           "equals": "STATE_SNAPSHOT",
-          "field": "$.eventTypes.2",
-          "kind": "evidenceField"
+          "field": "$.events.2.type",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.agui.failed-turn-event-02",
-      "evidence": ["eventTypes.2"],
       "input": {
         "scenarioPath": "$.failed-provider-turn"
       },
@@ -1386,12 +1326,11 @@
       "assertions": [
         {
           "equals": "STEP_STARTED",
-          "field": "$.eventTypes.3",
-          "kind": "evidenceField"
+          "field": "$.events.3.type",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.agui.failed-turn-event-03",
-      "evidence": ["eventTypes.3"],
       "input": {
         "scenarioPath": "$.failed-provider-turn"
       },
@@ -1402,12 +1341,11 @@
       "assertions": [
         {
           "equals": "CUSTOM",
-          "field": "$.eventTypes.4",
-          "kind": "evidenceField"
+          "field": "$.events.4.type",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.agui.failed-turn-event-04",
-      "evidence": ["eventTypes.4"],
       "input": {
         "scenarioPath": "$.failed-provider-turn"
       },
@@ -1418,12 +1356,11 @@
       "assertions": [
         {
           "equals": "STATE_SNAPSHOT",
-          "field": "$.eventTypes.5",
-          "kind": "evidenceField"
+          "field": "$.events.5.type",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.agui.failed-turn-event-05",
-      "evidence": ["eventTypes.5"],
       "input": {
         "scenarioPath": "$.failed-provider-turn"
       },
@@ -1434,12 +1371,11 @@
       "assertions": [
         {
           "equals": "STEP_FINISHED",
-          "field": "$.eventTypes.6",
-          "kind": "evidenceField"
+          "field": "$.events.6.type",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.agui.failed-turn-event-06",
-      "evidence": ["eventTypes.6"],
       "input": {
         "scenarioPath": "$.failed-provider-turn"
       },
@@ -1450,12 +1386,11 @@
       "assertions": [
         {
           "equals": "CUSTOM",
-          "field": "$.eventTypes.7",
-          "kind": "evidenceField"
+          "field": "$.events.7.type",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.agui.failed-turn-event-07",
-      "evidence": ["eventTypes.7"],
       "input": {
         "scenarioPath": "$.failed-provider-turn"
       },
@@ -1466,12 +1401,11 @@
       "assertions": [
         {
           "equals": "RUN_ERROR",
-          "field": "$.eventTypes.8",
-          "kind": "evidenceField"
+          "field": "$.events.8.type",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.agui.failed-turn-event-08",
-      "evidence": ["eventTypes.8"],
       "input": {
         "scenarioPath": "$.failed-provider-turn"
       },
@@ -1482,12 +1416,11 @@
       "assertions": [
         {
           "equals": "RUN_STARTED",
-          "field": "$.eventTypes.0",
-          "kind": "evidenceField"
+          "field": "$.events.0.type",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.agui.paused-turn-event-00",
-      "evidence": ["eventTypes.0"],
       "input": {
         "scenarioPath": "$.paused-approval-turn"
       },
@@ -1498,12 +1431,11 @@
       "assertions": [
         {
           "equals": "CUSTOM",
-          "field": "$.eventTypes.1",
-          "kind": "evidenceField"
+          "field": "$.events.1.type",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.agui.paused-turn-event-01",
-      "evidence": ["eventTypes.1"],
       "input": {
         "scenarioPath": "$.paused-approval-turn"
       },
@@ -1514,12 +1446,11 @@
       "assertions": [
         {
           "equals": "STATE_SNAPSHOT",
-          "field": "$.eventTypes.2",
-          "kind": "evidenceField"
+          "field": "$.events.2.type",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.agui.paused-turn-event-02",
-      "evidence": ["eventTypes.2"],
       "input": {
         "scenarioPath": "$.paused-approval-turn"
       },
@@ -1530,12 +1461,11 @@
       "assertions": [
         {
           "equals": "STEP_STARTED",
-          "field": "$.eventTypes.3",
-          "kind": "evidenceField"
+          "field": "$.events.3.type",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.agui.paused-turn-event-03",
-      "evidence": ["eventTypes.3"],
       "input": {
         "scenarioPath": "$.paused-approval-turn"
       },
@@ -1546,12 +1476,11 @@
       "assertions": [
         {
           "equals": "TOOL_CALL_START",
-          "field": "$.eventTypes.4",
-          "kind": "evidenceField"
+          "field": "$.events.4.type",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.agui.paused-turn-event-04",
-      "evidence": ["eventTypes.4"],
       "input": {
         "scenarioPath": "$.paused-approval-turn"
       },
@@ -1562,12 +1491,11 @@
       "assertions": [
         {
           "equals": "TOOL_CALL_ARGS",
-          "field": "$.eventTypes.5",
-          "kind": "evidenceField"
+          "field": "$.events.5.type",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.agui.paused-turn-event-05",
-      "evidence": ["eventTypes.5"],
       "input": {
         "scenarioPath": "$.paused-approval-turn"
       },
@@ -1578,12 +1506,11 @@
       "assertions": [
         {
           "equals": "TOOL_CALL_END",
-          "field": "$.eventTypes.6",
-          "kind": "evidenceField"
+          "field": "$.events.6.type",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.agui.paused-turn-event-06",
-      "evidence": ["eventTypes.6"],
       "input": {
         "scenarioPath": "$.paused-approval-turn"
       },
@@ -1594,12 +1521,11 @@
       "assertions": [
         {
           "equals": "CUSTOM",
-          "field": "$.eventTypes.7",
-          "kind": "evidenceField"
+          "field": "$.events.7.type",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.agui.paused-turn-event-07",
-      "evidence": ["eventTypes.7"],
       "input": {
         "scenarioPath": "$.paused-approval-turn"
       },
@@ -1610,12 +1536,11 @@
       "assertions": [
         {
           "equals": "CUSTOM",
-          "field": "$.eventTypes.8",
-          "kind": "evidenceField"
+          "field": "$.events.8.type",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.agui.paused-turn-event-08",
-      "evidence": ["eventTypes.8"],
       "input": {
         "scenarioPath": "$.paused-approval-turn"
       },
@@ -1626,12 +1551,11 @@
       "assertions": [
         {
           "equals": "STATE_SNAPSHOT",
-          "field": "$.eventTypes.9",
-          "kind": "evidenceField"
+          "field": "$.events.9.type",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.agui.paused-turn-event-09",
-      "evidence": ["eventTypes.9"],
       "input": {
         "scenarioPath": "$.paused-approval-turn"
       },
@@ -1642,12 +1566,11 @@
       "assertions": [
         {
           "equals": "STEP_FINISHED",
-          "field": "$.eventTypes.10",
-          "kind": "evidenceField"
+          "field": "$.events.10.type",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.agui.paused-turn-event-10",
-      "evidence": ["eventTypes.10"],
       "input": {
         "scenarioPath": "$.paused-approval-turn"
       },
@@ -1658,12 +1581,11 @@
       "assertions": [
         {
           "equals": "CUSTOM",
-          "field": "$.eventTypes.11",
-          "kind": "evidenceField"
+          "field": "$.events.11.type",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.agui.paused-turn-event-11",
-      "evidence": ["eventTypes.11"],
       "input": {
         "scenarioPath": "$.paused-approval-turn"
       },
@@ -1674,12 +1596,11 @@
       "assertions": [
         {
           "equals": "CUSTOM",
-          "field": "$.eventTypes.12",
-          "kind": "evidenceField"
+          "field": "$.events.12.type",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.agui.paused-turn-event-12",
-      "evidence": ["eventTypes.12"],
       "input": {
         "scenarioPath": "$.paused-approval-turn"
       },
@@ -1690,12 +1611,11 @@
       "assertions": [
         {
           "equals": "RUN_FINISHED",
-          "field": "$.eventTypes.13",
-          "kind": "evidenceField"
+          "field": "$.events.13.type",
+          "kind": "resultField"
         }
       ],
       "checkId": "event-stream-ext.agui.paused-turn-event-13",
-      "evidence": ["eventTypes.13"],
       "input": {
         "scenarioPath": "$.paused-approval-turn"
       },

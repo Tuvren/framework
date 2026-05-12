@@ -25,6 +25,7 @@ export type AssertionKind =
   | "terminalEvent"
   | "schemaValid"
   | "errorEnvelope"
+  | "resultField"
   | "stateField"
   | "evidenceField"
   | "ordering"
@@ -215,35 +216,87 @@ function validatePlanIntegrity(plan: ConformancePlan, label: string): void {
   const scenarioIds = new Set(Object.keys(plan.scenarios ?? {}));
 
   for (const check of plan.checks) {
-    if (checkIds.has(check.checkId)) {
-      throw new Error(`${label} repeats checkId ${check.checkId}`);
+    assertUniqueCheckId(checkIds, check.checkId, label);
+    validateCheckAssertions(check, label);
+    validateCheckReferences(check, fixtureIds, scenarioIds, label);
+  }
+}
+
+function assertUniqueCheckId(
+  seenCheckIds: Set<string>,
+  checkId: string,
+  label: string
+): void {
+  if (seenCheckIds.has(checkId)) {
+    throw new Error(`${label} repeats checkId ${checkId}`);
+  }
+
+  seenCheckIds.add(checkId);
+}
+
+function validateCheckAssertions(
+  check: ConformancePlanCheck,
+  label: string
+): void {
+  const context = `${label} check ${check.checkId}`;
+  const stepIds = new Set<string>();
+
+  for (const step of check.steps ?? []) {
+    assertUniqueStepId(stepIds, step.stepId, context);
+
+    for (const assertion of step.assertions ?? []) {
+      assertValidAssertion(assertion, context);
     }
+  }
 
-    checkIds.add(check.checkId);
+  for (const assertion of check.assertions) {
+    assertValidAssertion(assertion, context);
+  }
+}
 
-    const stepIds = new Set<string>();
+function assertUniqueStepId(
+  seenStepIds: Set<string>,
+  stepId: string,
+  context: string
+): void {
+  if (seenStepIds.has(stepId)) {
+    throw new Error(`${context} repeats stepId ${stepId}`);
+  }
 
-    for (const step of check.steps ?? []) {
-      if (stepIds.has(step.stepId)) {
-        throw new Error(
-          `${label} check ${check.checkId} repeats stepId ${step.stepId}`
-        );
-      }
+  seenStepIds.add(stepId);
+}
 
-      stepIds.add(step.stepId);
-    }
+function validateCheckReferences(
+  check: ConformancePlanCheck,
+  fixtureIds: ReadonlySet<string>,
+  scenarioIds: ReadonlySet<string>,
+  label: string
+): void {
+  if (check.fixture !== undefined && !fixtureIds.has(check.fixture)) {
+    throw new Error(
+      `${label} check ${check.checkId} references unknown fixture ${check.fixture}`
+    );
+  }
 
-    if (check.fixture !== undefined && !fixtureIds.has(check.fixture)) {
-      throw new Error(
-        `${label} check ${check.checkId} references unknown fixture ${check.fixture}`
-      );
-    }
+  if (check.scenario !== undefined && !scenarioIds.has(check.scenario)) {
+    throw new Error(
+      `${label} check ${check.checkId} references unknown scenario ${check.scenario}`
+    );
+  }
+}
 
-    if (check.scenario !== undefined && !scenarioIds.has(check.scenario)) {
-      throw new Error(
-        `${label} check ${check.checkId} references unknown scenario ${check.scenario}`
-      );
-    }
+function assertValidAssertion(
+  assertion: ConformancePlanAssertion,
+  context: string
+): void {
+  if (assertion.kind === "noEvent" && assertion.field !== undefined) {
+    throw new Error(`${context} has field configured on noEvent assertion`);
+  }
+
+  if (assertion.kind === "resultField" && assertion.field === undefined) {
+    throw new Error(
+      `${context} has no field configured on resultField assertion`
+    );
   }
 }
 
@@ -282,6 +335,10 @@ function assertionRequiredEvidencePath(
       return assertion.field === undefined
         ? undefined
         : normalizeEvidencePath(assertion.field);
+    case "resultField":
+      return assertion.field === undefined
+        ? undefined
+        : resultFieldRequiredEvidencePath(assertion.field);
     case "errorEnvelope":
       return normalizeEvidencePath(assertion.path ?? "$.result.error");
     default:
@@ -304,6 +361,16 @@ function stepAssertionRequiredEvidencePath(
       // Step assertions run against a step-local context, but required evidence
       // is checked against the final trace context after the lifecycle finishes.
       return `trace.${stepId}.evidence.${path}`;
+    case "resultField":
+      if (assertion.field === undefined) {
+        return undefined;
+      }
+
+      return assertion.field === "$"
+        ? `result.trace.${stepId}.result`
+        : `result.trace.${stepId}.result.${normalizeEvidencePath(
+            assertion.field
+          )}`;
     case "stateField":
       return `trace.${stepId}.state.${path}`;
     case "errorEnvelope":
@@ -315,4 +382,15 @@ function stepAssertionRequiredEvidencePath(
 
 function normalizeEvidencePath(path: string): string {
   return path.startsWith("$.") ? path.slice(2) : path;
+}
+
+function resultFieldRequiredEvidencePath(field: string): string {
+  if (field === "$") {
+    return "result";
+  }
+
+  // Required evidence is evaluated against the whole assertion context, so
+  // resultField paths must be rooted under `result` to avoid mirroring the
+  // evidence/state surface and accidentally accepting the wrong namespace.
+  return `result.${normalizeEvidencePath(field)}`;
 }

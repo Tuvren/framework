@@ -17,6 +17,7 @@
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { collectPlanEvidenceOracleShapeFailures } from "../../scripts/authority-guardrails/authority-guardrails.ts";
 import {
   assertConformanceEvidence,
   createCheckResult,
@@ -309,6 +310,7 @@ function check(
 async function runPlanCompilerCases(failures: string[]): Promise<void> {
   const directory = await mkdtemp(join(tmpdir(), "tuvren-meta-plan-"));
   const duplicateStepPlanPath = join(directory, "duplicate-step.json");
+  const evidenceOnlyPlanPath = join(directory, "evidence-only.json");
   const stepEvidencePlanPath = join(directory, "step-evidence.json");
 
   try {
@@ -351,6 +353,47 @@ async function runPlanCompilerCases(failures: string[]): Promise<void> {
       }
     }
 
+    const evidenceOnlyPlan = {
+      applicability: { capabilities: ["meta"] },
+      checks: [
+        {
+          assertions: [
+            {
+              field: "$.answer",
+              kind: "evidenceField",
+              equals: "ready",
+            },
+          ],
+          checkId: "meta.evidence-only",
+          evidence: ["answer"],
+          operation: "meta.operation",
+        },
+      ],
+      packetId: "tuvren.meta",
+      planId: "tuvren.meta.evidence-only",
+      planVersion: "0.1.0",
+    };
+    await writeFile(
+      evidenceOnlyPlanPath,
+      `${JSON.stringify(evidenceOnlyPlan, null, 2)}\n`
+    );
+    const compiledEvidenceOnlyPlan =
+      await loadConformancePlan(evidenceOnlyPlanPath);
+    const evidenceOnlyFailures = collectPlanEvidenceOracleShapeFailures(
+      compiledEvidenceOnlyPlan.plan,
+      evidenceOnlyPlanPath
+    );
+
+    if (
+      !evidenceOnlyFailures.some((failure) =>
+        failure.message.includes("meta.evidence-only")
+      )
+    ) {
+      failures.push(
+        "evidence-only plan unexpectedly passed the decisive-assertion guardrail"
+      );
+    }
+
     await writeFile(
       stepEvidencePlanPath,
       `${JSON.stringify(
@@ -390,6 +433,10 @@ async function runPlanCompilerCases(failures: string[]): Promise<void> {
 
     const stepPlan = await loadConformancePlan(stepEvidencePlanPath);
     const requiredEvidence = stepPlan.checks[0]?.requiredEvidence ?? [];
+    const stepPlanFailures = collectPlanEvidenceOracleShapeFailures(
+      stepPlan.plan,
+      stepEvidencePlanPath
+    );
 
     for (const expectedPath of [
       "trace.observe.evidence.value",
@@ -401,6 +448,16 @@ async function runPlanCompilerCases(failures: string[]): Promise<void> {
           `step assertion required evidence omitted ${expectedPath}`
         );
       }
+    }
+
+    if (
+      !stepPlanFailures.some((failure) =>
+        failure.message.includes("meta.step-evidence")
+      )
+    ) {
+      failures.push(
+        "step evidence-only plan unexpectedly passed the decisive-assertion guardrail"
+      );
     }
   } finally {
     await rm(directory, { force: true, recursive: true });

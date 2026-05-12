@@ -163,7 +163,6 @@
             "runtime-callable-af.approval-resume-same-turn",
             "runtime-callable-af.content-structured-data-parsed",
             "runtime-callable-af.content-tool-call-input-parsed",
-            "runtime-callable-af.input-signal-empty-parts-rejected",
             "runtime-callable-af.mixed-approval-gated-tool-start-after-resume",
             "runtime-callable-af.paused-cancel-rejection-and-stop",
             "runtime-callable-af.structured-output-default-draft07",
@@ -214,6 +213,7 @@
             "runtime-api.context-transform.shared-summary",
             "runtime-api.execute-turn.lifecycle",
             "runtime-api.recover-result.staged-result",
+            "runtime-callable-af.input-signal-empty-parts-rejected",
             "runtime-lifecycle-af.cancel-running-idempotent-fails-once",
             "runtime-lifecycle-af.cancel-running-stages-partial-status",
             "runtime-lifecycle-af.context-transform-creates-new-tree-heads",
@@ -619,7 +619,7 @@
           "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.rust-framework.json",
           "reportLabel": "Rust framework unsupported stub",
           "reportStatus": "unsupported",
-          "status": "pass",
+          "status": "unsupported",
           "suiteId": "tuvren.framework.promoted-authority",
           "suiteVersion": "0.1.0"
         }

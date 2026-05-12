@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-import { assertHashString, type HashString } from "@tuvren/core-types";
-import type { DriverExecutionContext } from "@tuvren/driver-api";
-import { assertDriverExecutionResult } from "@tuvren/driver-api";
+import { assertHashString } from "@tuvren/core-types";
+import {
+  assertDriverExecutionResult,
+  type DriverExecutionContext,
+} from "@tuvren/driver-api";
 import type { ProviderStreamChunk, TuvrenProvider } from "@tuvren/provider-api";
 import type {
   StructuredOutputRequest,
@@ -33,7 +35,6 @@ import {
   createDriverRegistry,
   createTuvrenRuntimeCore,
 } from "../../runtime-core/src/index.ts";
-import { createFakeKernelHarness } from "../../runtime-core/test/fake-kernel.ts";
 import {
   type AdapterProjection,
   AGENT_NAME,
@@ -42,6 +43,7 @@ import {
   collectValues,
   createClock,
   createConformanceIdFactory,
+  createConformanceKernelHarness,
   createDriverExecutionContext,
   createStaticDriver,
   DRIVER_ID,
@@ -168,6 +170,16 @@ export function createFrameworkAdapterProviderScenarios(
           },
         },
       },
+      result: {
+        provider: {
+          generate: {
+            callCount: generateCalls,
+            eventTypes: sequence.events.map((event) => event.type),
+            partKeys: sequence.response.parts.map((part) => Object.keys(part)),
+            response: sequence.response,
+          },
+        },
+      },
     };
   }
 
@@ -236,6 +248,27 @@ export function createFrameworkAdapterProviderScenarios(
           },
         },
       },
+      result: {
+        provider: {
+          stream: {
+            callCount: streamCalls,
+            chunkTypes: chunks.map((chunk) => chunk.type),
+            emittedEventTypes: emittedEvents.map((event) => event.type),
+            structuredDeltaIndex: findEventIndex(
+              emittedEvents,
+              "structured.delta"
+            ),
+            structuredDoneIndex: findEventIndex(
+              emittedEvents,
+              "structured.done"
+            ),
+            toolCallIdOwnedByFramework: isFirstToolCallIdOwnedByFramework(
+              sequence.response
+            ),
+            response: sequence.response,
+          },
+        },
+      },
     };
   }
 
@@ -260,7 +293,7 @@ export function createFrameworkAdapterProviderScenarios(
       "finalText",
       "runtime.tool-execute.finalText"
     );
-    const harness = createFakeKernelHarness();
+    const harness = createConformanceKernelHarness();
     let toolCalls = 0;
     const toolInputs: unknown[] = [];
     const toolOutputs: unknown[] = [];
@@ -344,6 +377,26 @@ export function createFrameworkAdapterProviderScenarios(
           },
         },
       },
+      result: {
+        tool: {
+          execution: {
+            callCount: toolCalls,
+            eventTypes: events.map((event) => readEventType(event)),
+            firstToolResultIndex: findEventIndex(events, "tool.result"),
+            parallelWaveStartedBeforeResults:
+              didParallelWaveStartBeforeResults(events),
+            secondToolStartIndex: findEventIndex(
+              events,
+              "tool.start",
+              "call-email"
+            ),
+            failureNames: toolFailures,
+            inputs: toolInputs,
+            outputs: toolOutputs,
+            toolResults: readToolResultParts(messages),
+          },
+        },
+      },
       state: {
         toolExecution: {
           error: dependencies.readFirstErrorEnvelope(events),
@@ -407,6 +460,19 @@ export function createFrameworkAdapterProviderScenarios(
           resolutionType: result.resolution.type,
         },
       },
+      result: {
+        validation: {
+          error:
+            result.resolution.type === "fail"
+              ? {
+                  code: readErrorCode(result.resolution.error),
+                  message: result.resolution.error.message,
+                }
+              : undefined,
+          dialect: resolveSchemaDialect(responseFormat.schema),
+          resolutionType: result.resolution.type,
+        },
+      },
     };
   }
 
@@ -432,7 +498,7 @@ export function createFrameworkAdapterProviderScenarios(
       "finalText",
       "runtime.context-transform.finalText"
     );
-    const harness = createFakeKernelHarness();
+    const harness = createConformanceKernelHarness();
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultDriverId: DRIVER_ID,
@@ -525,6 +591,28 @@ export function createFrameworkAdapterProviderScenarios(
           phase: handle.status().phase,
         },
       },
+      result: {
+        context: {
+          checkpointHashes,
+          createdNewHead:
+            sourceTurnNodeHash !== undefined &&
+            rewrittenTurnNodeHash !== undefined &&
+            sourceTurnNodeHash !== rewrittenTurnNodeHash,
+          driverObservedMessageCount: readDriverObservedMessageCount(events),
+          finalHeadChanged:
+            rewrittenTurnNodeHash !== undefined &&
+            finalTurnNodeHash !== undefined &&
+            rewrittenTurnNodeHash !== finalTurnNodeHash,
+          messageCount: messages.length,
+          rewrittenMessageCount: rewrittenMessages.length,
+          snapshotMessageCounts: readSnapshotMessageCounts(events),
+          sourceMessageCount: sourceMessages.length,
+          summaryText: dependencies.readAssistantText(messages, summaryText),
+        },
+        runtime: {
+          phase: handle.status().phase,
+        },
+      },
       state: {
         context: {
           manifest,
@@ -541,8 +629,8 @@ export function createFrameworkAdapterProviderScenarios(
     runToolExecution,
   };
 
-  function readCheckpointHashes(events: readonly unknown[]): HashString[] {
-    const hashes: HashString[] = [];
+  function readCheckpointHashes(events: readonly unknown[]): string[] {
+    const hashes: string[] = [];
 
     for (const event of events) {
       if (!isRecord(event) || event.type !== "state.checkpoint") {

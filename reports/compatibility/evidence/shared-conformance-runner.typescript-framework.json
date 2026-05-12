@@ -39,11 +39,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "driver-api.execute.resolution.1.evidenceField",
+          "assertionId": "driver-api.execute.resolution.1.resultField",
           "status": "pass"
         },
         {
           "assertionId": "driver-api.execute.resolution.requiredEvidence.driver.phase",
+          "status": "pass"
+        },
+        {
+          "assertionId": "driver-api.execute.resolution.requiredEvidence.result.driver.phase",
           "status": "pass"
         }
       ],
@@ -57,15 +61,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "driver-api.resume.approval.1.evidenceField",
+          "assertionId": "driver-api.resume.approval.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "driver-api.resume.approval.2.evidenceField",
+          "assertionId": "driver-api.resume.approval.2.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "driver-api.resume.approval.3.evidenceField",
+          "assertionId": "driver-api.resume.approval.3.resultField",
           "status": "pass"
         },
         {
@@ -79,6 +83,18 @@
         {
           "assertionId": "driver-api.resume.approval.requiredEvidence.driver.resolutionType",
           "status": "pass"
+        },
+        {
+          "assertionId": "driver-api.resume.approval.requiredEvidence.result.driver.approvalDecisionCallIds",
+          "status": "pass"
+        },
+        {
+          "assertionId": "driver-api.resume.approval.requiredEvidence.result.driver.pendingToolCallIds",
+          "status": "pass"
+        },
+        {
+          "assertionId": "driver-api.resume.approval.requiredEvidence.result.driver.resolutionType",
+          "status": "pass"
         }
       ],
       "checkId": "driver-api.resume.approval",
@@ -91,7 +107,7 @@
     {
       "assertionResults": [
         {
-          "assertionId": "driver-api.resume.requires-pending-call.1.evidenceField",
+          "assertionId": "driver-api.resume.requires-pending-call.1.resultField",
           "status": "pass"
         },
         {
@@ -100,6 +116,10 @@
         },
         {
           "assertionId": "driver-api.resume.requires-pending-call.requiredEvidence.driver.resolutionType",
+          "status": "pass"
+        },
+        {
+          "assertionId": "driver-api.resume.requires-pending-call.requiredEvidence.result.driver.resolutionType",
           "status": "pass"
         },
         {
@@ -121,19 +141,31 @@
     {
       "assertionResults": [
         {
-          "assertionId": "driver-api-af.invalid-loop-policy-tool-call-hard-fail.1.evidenceField",
+          "assertionId": "driver-api-af.invalid-loop-policy-tool-call-hard-fail.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "driver-api-af.invalid-loop-policy-tool-call-hard-fail.2.evidenceField",
+          "assertionId": "driver-api-af.invalid-loop-policy-tool-call-hard-fail.2.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "driver-api-af.invalid-loop-policy-tool-call-hard-fail.requiredEvidence.driver.errorCode",
+          "assertionId": "driver-api-af.invalid-loop-policy-tool-call-hard-fail.3.errorEnvelope",
           "status": "pass"
         },
         {
           "assertionId": "driver-api-af.invalid-loop-policy-tool-call-hard-fail.requiredEvidence.driver.resolutionType",
+          "status": "pass"
+        },
+        {
+          "assertionId": "driver-api-af.invalid-loop-policy-tool-call-hard-fail.requiredEvidence.result.driver.errorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "driver-api-af.invalid-loop-policy-tool-call-hard-fail.requiredEvidence.result.driver.resolutionType",
+          "status": "pass"
+        },
+        {
+          "assertionId": "driver-api-af.invalid-loop-policy-tool-call-hard-fail.requiredEvidence.result.error",
           "status": "pass"
         },
         {
@@ -151,11 +183,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "driver-api-ext.execute.hook-turn-phase-completed.1.evidenceField",
+          "assertionId": "driver-api-ext.execute.hook-turn-phase-completed.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "driver-api-ext.execute.hook-turn-phase-completed.requiredEvidence.driver.phase",
+          "assertionId": "driver-api-ext.execute.hook-turn-phase-completed.requiredEvidence.result.driver.phase",
           "status": "pass"
         }
       ],
@@ -169,11 +201,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "driver-api-ext.execute.hook-turn-phase-string.1.evidenceField",
+          "assertionId": "driver-api-ext.execute.hook-turn-phase-string.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "driver-api-ext.execute.hook-turn-phase-string.requiredEvidence.driver.phase",
+          "assertionId": "driver-api-ext.execute.hook-turn-phase-string.requiredEvidence.result.driver.phase",
           "status": "pass"
         }
       ],
@@ -209,11 +241,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "driver-api-ext.resume.approval-decision-call-id-includes-call-search.1.evidenceField",
+          "assertionId": "driver-api-ext.resume.approval-decision-call-id-includes-call-search.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "driver-api-ext.resume.approval-decision-call-id-includes-call-search.requiredEvidence.driver.approvalDecisionCallIds",
+          "assertionId": "driver-api-ext.resume.approval-decision-call-id-includes-call-search.requiredEvidence.result.driver.approvalDecisionCallIds",
           "status": "pass"
         }
       ],
@@ -227,11 +259,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "driver-api-ext.resume.approval-pending-call-id-list-non-empty.1.evidenceField",
+          "assertionId": "driver-api-ext.resume.approval-pending-call-id-list-non-empty.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "driver-api-ext.resume.approval-pending-call-id-list-non-empty.requiredEvidence.driver.pendingToolCallIds",
+          "assertionId": "driver-api-ext.resume.approval-pending-call-id-list-non-empty.requiredEvidence.result.driver.pendingToolCallIds",
           "status": "pass"
         }
       ],
@@ -245,11 +277,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "driver-api-ext.resume.approval-resolution-end-turn.1.evidenceField",
+          "assertionId": "driver-api-ext.resume.approval-resolution-end-turn.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "driver-api-ext.resume.approval-resolution-end-turn.requiredEvidence.driver.resolutionType",
+          "assertionId": "driver-api-ext.resume.approval-resolution-end-turn.requiredEvidence.result.driver.resolutionType",
           "status": "pass"
         }
       ],
@@ -285,11 +317,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "driver-api-ext.resume.missing-pending-call-resolution-fail.1.evidenceField",
+          "assertionId": "driver-api-ext.resume.missing-pending-call-resolution-fail.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "driver-api-ext.resume.missing-pending-call-resolution-fail.requiredEvidence.driver.resolutionType",
+          "assertionId": "driver-api-ext.resume.missing-pending-call-resolution-fail.requiredEvidence.result.driver.resolutionType",
           "status": "pass"
         }
       ],
@@ -303,19 +335,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream.agui.failed-turn-error-projection.1.evidenceField",
+          "assertionId": "event-stream.agui.failed-turn-error-projection.1.eventSequence",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream.agui.failed-turn-error-projection.2.evidenceField",
+          "assertionId": "event-stream.agui.failed-turn-error-projection.2.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream.agui.failed-turn-error-projection.3.evidenceField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "event-stream.agui.failed-turn-error-projection.requiredEvidence.eventTypes",
+          "assertionId": "event-stream.agui.failed-turn-error-projection.3.resultField",
           "status": "pass"
         },
         {
@@ -323,15 +351,11 @@
           "status": "pass"
         },
         {
-          "assertionId": "event-stream.agui.failed-turn-error-projection.requiredEvidence.events.8.rawEvent.error.code",
+          "assertionId": "event-stream.agui.failed-turn-error-projection.requiredEvidence.result.events.8.rawEvent.error.code",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream.agui.failed-turn-error-projection.requiredEvidence.events.8.rawEvent.type",
-          "status": "pass"
-        },
-        {
-          "assertionId": "event-stream.agui.failed-turn-error-projection.requiredEvidence.sourceEventTypes",
+          "assertionId": "event-stream.agui.failed-turn-error-projection.requiredEvidence.result.events.8.rawEvent.type",
           "status": "pass"
         }
       ],
@@ -345,19 +369,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream.agui.paused-turn-fallback.1.evidenceField",
+          "assertionId": "event-stream.agui.paused-turn-fallback.1.eventSequence",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream.agui.paused-turn-fallback.2.evidenceField",
+          "assertionId": "event-stream.agui.paused-turn-fallback.2.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream.agui.paused-turn-fallback.3.evidenceField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "event-stream.agui.paused-turn-fallback.requiredEvidence.eventTypes",
+          "assertionId": "event-stream.agui.paused-turn-fallback.3.resultField",
           "status": "pass"
         },
         {
@@ -365,15 +385,11 @@
           "status": "pass"
         },
         {
-          "assertionId": "event-stream.agui.paused-turn-fallback.requiredEvidence.events.11.rawEvent.type",
+          "assertionId": "event-stream.agui.paused-turn-fallback.requiredEvidence.result.events.11.rawEvent.type",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream.agui.paused-turn-fallback.requiredEvidence.sourceEventTypes",
-          "status": "pass"
-        },
-        {
-          "assertionId": "event-stream.agui.paused-turn-fallback.requiredEvidence.warningCodes",
+          "assertionId": "event-stream.agui.paused-turn-fallback.requiredEvidence.result.warnings",
           "status": "pass"
         }
       ],
@@ -387,19 +403,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream.agui.projection.1.evidenceField",
+          "assertionId": "event-stream.agui.projection.1.eventSequence",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream.agui.projection.2.evidenceField",
+          "assertionId": "event-stream.agui.projection.2.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream.agui.projection.3.evidenceField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "event-stream.agui.projection.requiredEvidence.eventTypes",
+          "assertionId": "event-stream.agui.projection.3.resultField",
           "status": "pass"
         },
         {
@@ -407,15 +419,11 @@
           "status": "pass"
         },
         {
-          "assertionId": "event-stream.agui.projection.requiredEvidence.sourceEventTypes",
+          "assertionId": "event-stream.agui.projection.requiredEvidence.result.events.0.rawEvent.type",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream.agui.projection.requiredEvidence.sourceEventTypes.0",
-          "status": "pass"
-        },
-        {
-          "assertionId": "event-stream.agui.projection.requiredEvidence.warningCodes",
+          "assertionId": "event-stream.agui.projection.requiredEvidence.result.warnings",
           "status": "pass"
         }
       ],
@@ -429,19 +437,19 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream.sse.eager-subscription.1.evidenceField",
+          "assertionId": "event-stream.sse.eager-subscription.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream.sse.eager-subscription.2.evidenceField",
+          "assertionId": "event-stream.sse.eager-subscription.2.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream.sse.eager-subscription.requiredEvidence.firstDirectEventType",
+          "assertionId": "event-stream.sse.eager-subscription.requiredEvidence.result.events.0.event",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream.sse.eager-subscription.requiredEvidence.firstFrameEvent",
+          "assertionId": "event-stream.sse.eager-subscription.requiredEvidence.result.firstDirectEvent.type",
           "status": "pass"
         }
       ],
@@ -455,35 +463,27 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream.sse.projection.1.evidenceField",
+          "assertionId": "event-stream.sse.projection.1.eventSequence",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream.sse.projection.2.evidenceField",
+          "assertionId": "event-stream.sse.projection.2.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream.sse.projection.3.evidenceField",
+          "assertionId": "event-stream.sse.projection.3.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream.sse.projection.requiredEvidence.frameEvents",
+          "assertionId": "event-stream.sse.projection.requiredEvidence.events",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream.sse.projection.requiredEvidence.framePayloads",
+          "assertionId": "event-stream.sse.projection.requiredEvidence.result.events.0.payload.type",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream.sse.projection.requiredEvidence.framePayloads.10.output.source",
-          "status": "pass"
-        },
-        {
-          "assertionId": "event-stream.sse.projection.requiredEvidence.sourceEventTypes",
-          "status": "pass"
-        },
-        {
-          "assertionId": "event-stream.sse.projection.requiredEvidence.sourceEventTypes.0",
+          "assertionId": "event-stream.sse.projection.requiredEvidence.result.events.10.payload.output.source",
           "status": "pass"
         }
       ],
@@ -497,11 +497,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-00.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-00.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-00.requiredEvidence.eventTypes.0",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-00.requiredEvidence.result.events.0.type",
           "status": "pass"
         }
       ],
@@ -515,11 +515,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-01.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-01.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-01.requiredEvidence.eventTypes.1",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-01.requiredEvidence.result.events.1.type",
           "status": "pass"
         }
       ],
@@ -533,11 +533,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-02.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-02.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-02.requiredEvidence.eventTypes.2",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-02.requiredEvidence.result.events.2.type",
           "status": "pass"
         }
       ],
@@ -551,11 +551,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-03.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-03.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-03.requiredEvidence.eventTypes.3",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-03.requiredEvidence.result.events.3.type",
           "status": "pass"
         }
       ],
@@ -569,11 +569,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-04.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-04.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-04.requiredEvidence.eventTypes.4",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-04.requiredEvidence.result.events.4.type",
           "status": "pass"
         }
       ],
@@ -587,11 +587,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-05.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-05.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-05.requiredEvidence.eventTypes.5",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-05.requiredEvidence.result.events.5.type",
           "status": "pass"
         }
       ],
@@ -605,11 +605,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-06.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-06.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-06.requiredEvidence.eventTypes.6",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-06.requiredEvidence.result.events.6.type",
           "status": "pass"
         }
       ],
@@ -623,11 +623,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-07.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-07.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-07.requiredEvidence.eventTypes.7",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-07.requiredEvidence.result.events.7.type",
           "status": "pass"
         }
       ],
@@ -641,11 +641,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-08.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-08.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-08.requiredEvidence.eventTypes.8",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-08.requiredEvidence.result.events.8.type",
           "status": "pass"
         }
       ],
@@ -659,11 +659,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-09.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-09.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-09.requiredEvidence.eventTypes.9",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-09.requiredEvidence.result.events.9.type",
           "status": "pass"
         }
       ],
@@ -677,11 +677,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-10.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-10.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-10.requiredEvidence.eventTypes.10",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-10.requiredEvidence.result.events.10.type",
           "status": "pass"
         }
       ],
@@ -695,11 +695,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-11.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-11.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-11.requiredEvidence.eventTypes.11",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-11.requiredEvidence.result.events.11.type",
           "status": "pass"
         }
       ],
@@ -713,11 +713,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-12.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-12.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-12.requiredEvidence.eventTypes.12",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-12.requiredEvidence.result.events.12.type",
           "status": "pass"
         }
       ],
@@ -731,11 +731,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-13.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-13.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-13.requiredEvidence.eventTypes.13",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-13.requiredEvidence.result.events.13.type",
           "status": "pass"
         }
       ],
@@ -749,11 +749,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-14.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-14.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-14.requiredEvidence.eventTypes.14",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-14.requiredEvidence.result.events.14.type",
           "status": "pass"
         }
       ],
@@ -767,11 +767,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-15.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-15.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-15.requiredEvidence.eventTypes.15",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-15.requiredEvidence.result.events.15.type",
           "status": "pass"
         }
       ],
@@ -785,11 +785,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-16.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-16.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-16.requiredEvidence.eventTypes.16",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-16.requiredEvidence.result.events.16.type",
           "status": "pass"
         }
       ],
@@ -803,11 +803,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-17.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-17.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-17.requiredEvidence.eventTypes.17",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-17.requiredEvidence.result.events.17.type",
           "status": "pass"
         }
       ],
@@ -821,11 +821,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-18.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-18.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-18.requiredEvidence.eventTypes.18",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-18.requiredEvidence.result.events.18.type",
           "status": "pass"
         }
       ],
@@ -839,11 +839,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-19.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-19.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-19.requiredEvidence.eventTypes.19",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-19.requiredEvidence.result.events.19.type",
           "status": "pass"
         }
       ],
@@ -857,11 +857,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-20.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-20.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-20.requiredEvidence.eventTypes.20",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-20.requiredEvidence.result.events.20.type",
           "status": "pass"
         }
       ],
@@ -875,11 +875,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-21.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-21.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-21.requiredEvidence.eventTypes.21",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-21.requiredEvidence.result.events.21.type",
           "status": "pass"
         }
       ],
@@ -893,11 +893,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-22.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-22.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-22.requiredEvidence.eventTypes.22",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-22.requiredEvidence.result.events.22.type",
           "status": "pass"
         }
       ],
@@ -911,11 +911,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-run-finished.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-run-finished.1.eventSequence",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-run-finished.requiredEvidence.eventTypes",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-run-finished.requiredEvidence.events",
           "status": "pass"
         }
       ],
@@ -929,11 +929,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-run-started.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-run-started.1.eventSequence",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-run-started.requiredEvidence.eventTypes",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-run-started.requiredEvidence.events",
           "status": "pass"
         }
       ],
@@ -947,15 +947,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-run-started-and-finished.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-run-started-and-finished.1.eventSequence",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-run-started-and-finished.2.evidenceField",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-run-started-and-finished.2.eventSequence",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-run-started-and-finished.requiredEvidence.eventTypes",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-run-started-and-finished.requiredEvidence.events",
           "status": "pass"
         }
       ],
@@ -969,11 +969,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-state-snapshot.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-state-snapshot.1.eventSequence",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-state-snapshot.requiredEvidence.eventTypes",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-state-snapshot.requiredEvidence.events",
           "status": "pass"
         }
       ],
@@ -987,11 +987,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-text-message-start.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-text-message-start.1.eventSequence",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-text-message-start.requiredEvidence.eventTypes",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-text-message-start.requiredEvidence.events",
           "status": "pass"
         }
       ],
@@ -1005,11 +1005,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-tool-call-result.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-tool-call-result.1.eventSequence",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-tool-call-result.requiredEvidence.eventTypes",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-tool-call-result.requiredEvidence.events",
           "status": "pass"
         }
       ],
@@ -1023,11 +1023,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-tool-call-start.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-tool-call-start.1.eventSequence",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-tool-call-start.requiredEvidence.eventTypes",
+          "assertionId": "event-stream-ext.agui.completed-turn-event-types-include-tool-call-start.requiredEvidence.events",
           "status": "pass"
         }
       ],
@@ -1041,11 +1041,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-warnings-include-checkpoint-fallback.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.completed-turn-warnings-include-checkpoint-fallback.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.completed-turn-warnings-include-checkpoint-fallback.requiredEvidence.warningCodes",
+          "assertionId": "event-stream-ext.agui.completed-turn-warnings-include-checkpoint-fallback.requiredEvidence.result.warnings",
           "status": "pass"
         }
       ],
@@ -1059,11 +1059,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.failed-turn-error-code-snake-case.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.failed-turn-error-code-snake-case.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.failed-turn-error-code-snake-case.requiredEvidence.events.8.rawEvent.error.code",
+          "assertionId": "event-stream-ext.agui.failed-turn-error-code-snake-case.requiredEvidence.result.events.8.rawEvent.error.code",
           "status": "pass"
         }
       ],
@@ -1077,11 +1077,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.failed-turn-event-00.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.failed-turn-event-00.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.failed-turn-event-00.requiredEvidence.eventTypes.0",
+          "assertionId": "event-stream-ext.agui.failed-turn-event-00.requiredEvidence.result.events.0.type",
           "status": "pass"
         }
       ],
@@ -1095,11 +1095,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.failed-turn-event-01.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.failed-turn-event-01.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.failed-turn-event-01.requiredEvidence.eventTypes.1",
+          "assertionId": "event-stream-ext.agui.failed-turn-event-01.requiredEvidence.result.events.1.type",
           "status": "pass"
         }
       ],
@@ -1113,11 +1113,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.failed-turn-event-02.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.failed-turn-event-02.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.failed-turn-event-02.requiredEvidence.eventTypes.2",
+          "assertionId": "event-stream-ext.agui.failed-turn-event-02.requiredEvidence.result.events.2.type",
           "status": "pass"
         }
       ],
@@ -1131,11 +1131,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.failed-turn-event-03.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.failed-turn-event-03.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.failed-turn-event-03.requiredEvidence.eventTypes.3",
+          "assertionId": "event-stream-ext.agui.failed-turn-event-03.requiredEvidence.result.events.3.type",
           "status": "pass"
         }
       ],
@@ -1149,11 +1149,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.failed-turn-event-04.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.failed-turn-event-04.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.failed-turn-event-04.requiredEvidence.eventTypes.4",
+          "assertionId": "event-stream-ext.agui.failed-turn-event-04.requiredEvidence.result.events.4.type",
           "status": "pass"
         }
       ],
@@ -1167,11 +1167,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.failed-turn-event-05.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.failed-turn-event-05.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.failed-turn-event-05.requiredEvidence.eventTypes.5",
+          "assertionId": "event-stream-ext.agui.failed-turn-event-05.requiredEvidence.result.events.5.type",
           "status": "pass"
         }
       ],
@@ -1185,11 +1185,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.failed-turn-event-06.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.failed-turn-event-06.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.failed-turn-event-06.requiredEvidence.eventTypes.6",
+          "assertionId": "event-stream-ext.agui.failed-turn-event-06.requiredEvidence.result.events.6.type",
           "status": "pass"
         }
       ],
@@ -1203,11 +1203,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.failed-turn-event-07.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.failed-turn-event-07.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.failed-turn-event-07.requiredEvidence.eventTypes.7",
+          "assertionId": "event-stream-ext.agui.failed-turn-event-07.requiredEvidence.result.events.7.type",
           "status": "pass"
         }
       ],
@@ -1221,11 +1221,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.failed-turn-event-08.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.failed-turn-event-08.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.failed-turn-event-08.requiredEvidence.eventTypes.8",
+          "assertionId": "event-stream-ext.agui.failed-turn-event-08.requiredEvidence.result.events.8.type",
           "status": "pass"
         }
       ],
@@ -1239,11 +1239,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.failed-turn-event-types-end-with-run-error.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.failed-turn-event-types-end-with-run-error.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.failed-turn-event-types-end-with-run-error.requiredEvidence.eventTypes.8",
+          "assertionId": "event-stream-ext.agui.failed-turn-event-types-end-with-run-error.requiredEvidence.result.events.8.type",
           "status": "pass"
         }
       ],
@@ -1257,11 +1257,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.paused-turn-event-00.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.paused-turn-event-00.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.paused-turn-event-00.requiredEvidence.eventTypes.0",
+          "assertionId": "event-stream-ext.agui.paused-turn-event-00.requiredEvidence.result.events.0.type",
           "status": "pass"
         }
       ],
@@ -1275,11 +1275,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.paused-turn-event-01.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.paused-turn-event-01.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.paused-turn-event-01.requiredEvidence.eventTypes.1",
+          "assertionId": "event-stream-ext.agui.paused-turn-event-01.requiredEvidence.result.events.1.type",
           "status": "pass"
         }
       ],
@@ -1293,11 +1293,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.paused-turn-event-02.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.paused-turn-event-02.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.paused-turn-event-02.requiredEvidence.eventTypes.2",
+          "assertionId": "event-stream-ext.agui.paused-turn-event-02.requiredEvidence.result.events.2.type",
           "status": "pass"
         }
       ],
@@ -1311,11 +1311,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.paused-turn-event-03.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.paused-turn-event-03.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.paused-turn-event-03.requiredEvidence.eventTypes.3",
+          "assertionId": "event-stream-ext.agui.paused-turn-event-03.requiredEvidence.result.events.3.type",
           "status": "pass"
         }
       ],
@@ -1329,11 +1329,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.paused-turn-event-04.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.paused-turn-event-04.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.paused-turn-event-04.requiredEvidence.eventTypes.4",
+          "assertionId": "event-stream-ext.agui.paused-turn-event-04.requiredEvidence.result.events.4.type",
           "status": "pass"
         }
       ],
@@ -1347,11 +1347,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.paused-turn-event-05.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.paused-turn-event-05.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.paused-turn-event-05.requiredEvidence.eventTypes.5",
+          "assertionId": "event-stream-ext.agui.paused-turn-event-05.requiredEvidence.result.events.5.type",
           "status": "pass"
         }
       ],
@@ -1365,11 +1365,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.paused-turn-event-06.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.paused-turn-event-06.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.paused-turn-event-06.requiredEvidence.eventTypes.6",
+          "assertionId": "event-stream-ext.agui.paused-turn-event-06.requiredEvidence.result.events.6.type",
           "status": "pass"
         }
       ],
@@ -1383,11 +1383,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.paused-turn-event-07.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.paused-turn-event-07.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.paused-turn-event-07.requiredEvidence.eventTypes.7",
+          "assertionId": "event-stream-ext.agui.paused-turn-event-07.requiredEvidence.result.events.7.type",
           "status": "pass"
         }
       ],
@@ -1401,11 +1401,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.paused-turn-event-08.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.paused-turn-event-08.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.paused-turn-event-08.requiredEvidence.eventTypes.8",
+          "assertionId": "event-stream-ext.agui.paused-turn-event-08.requiredEvidence.result.events.8.type",
           "status": "pass"
         }
       ],
@@ -1419,11 +1419,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.paused-turn-event-09.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.paused-turn-event-09.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.paused-turn-event-09.requiredEvidence.eventTypes.9",
+          "assertionId": "event-stream-ext.agui.paused-turn-event-09.requiredEvidence.result.events.9.type",
           "status": "pass"
         }
       ],
@@ -1437,11 +1437,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.paused-turn-event-10.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.paused-turn-event-10.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.paused-turn-event-10.requiredEvidence.eventTypes.10",
+          "assertionId": "event-stream-ext.agui.paused-turn-event-10.requiredEvidence.result.events.10.type",
           "status": "pass"
         }
       ],
@@ -1455,11 +1455,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.paused-turn-event-11.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.paused-turn-event-11.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.paused-turn-event-11.requiredEvidence.eventTypes.11",
+          "assertionId": "event-stream-ext.agui.paused-turn-event-11.requiredEvidence.result.events.11.type",
           "status": "pass"
         }
       ],
@@ -1473,11 +1473,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.paused-turn-event-12.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.paused-turn-event-12.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.paused-turn-event-12.requiredEvidence.eventTypes.12",
+          "assertionId": "event-stream-ext.agui.paused-turn-event-12.requiredEvidence.result.events.12.type",
           "status": "pass"
         }
       ],
@@ -1491,11 +1491,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.paused-turn-event-13.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.paused-turn-event-13.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.paused-turn-event-13.requiredEvidence.eventTypes.13",
+          "assertionId": "event-stream-ext.agui.paused-turn-event-13.requiredEvidence.result.events.13.type",
           "status": "pass"
         }
       ],
@@ -1509,11 +1509,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.agui.paused-turn-warnings-include-paused-coercion.1.evidenceField",
+          "assertionId": "event-stream-ext.agui.paused-turn-warnings-include-paused-coercion.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.agui.paused-turn-warnings-include-paused-coercion.requiredEvidence.warningCodes",
+          "assertionId": "event-stream-ext.agui.paused-turn-warnings-include-paused-coercion.requiredEvidence.result.warnings",
           "status": "pass"
         }
       ],
@@ -1527,11 +1527,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.sse-eager.failed-turn-first-direct-event-turn-start.1.evidenceField",
+          "assertionId": "event-stream-ext.sse-eager.failed-turn-first-direct-event-turn-start.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.sse-eager.failed-turn-first-direct-event-turn-start.requiredEvidence.firstDirectEventType",
+          "assertionId": "event-stream-ext.sse-eager.failed-turn-first-direct-event-turn-start.requiredEvidence.result.firstDirectEvent.type",
           "status": "pass"
         }
       ],
@@ -1545,11 +1545,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.sse-eager.first-direct-event-turn-start.1.evidenceField",
+          "assertionId": "event-stream-ext.sse-eager.first-direct-event-turn-start.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.sse-eager.first-direct-event-turn-start.requiredEvidence.firstDirectEventType",
+          "assertionId": "event-stream-ext.sse-eager.first-direct-event-turn-start.requiredEvidence.result.firstDirectEvent.type",
           "status": "pass"
         }
       ],
@@ -1563,11 +1563,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.sse-eager.first-frame-event-turn-start.1.evidenceField",
+          "assertionId": "event-stream-ext.sse-eager.first-frame-event-turn-start.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.sse-eager.first-frame-event-turn-start.requiredEvidence.firstFrameEvent",
+          "assertionId": "event-stream-ext.sse-eager.first-frame-event-turn-start.requiredEvidence.result.events.0.event",
           "status": "pass"
         }
       ],
@@ -1581,11 +1581,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.sse-eager.paused-turn-first-frame-event-turn-start.1.evidenceField",
+          "assertionId": "event-stream-ext.sse-eager.paused-turn-first-frame-event-turn-start.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.sse-eager.paused-turn-first-frame-event-turn-start.requiredEvidence.firstFrameEvent",
+          "assertionId": "event-stream-ext.sse-eager.paused-turn-first-frame-event-turn-start.requiredEvidence.result.events.0.event",
           "status": "pass"
         }
       ],
@@ -1599,11 +1599,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-00.1.evidenceField",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-00.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-00.requiredEvidence.frameEvents.0",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-00.requiredEvidence.result.events.0.event",
           "status": "pass"
         }
       ],
@@ -1617,11 +1617,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-01.1.evidenceField",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-01.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-01.requiredEvidence.frameEvents.1",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-01.requiredEvidence.result.events.1.event",
           "status": "pass"
         }
       ],
@@ -1635,11 +1635,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-02.1.evidenceField",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-02.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-02.requiredEvidence.frameEvents.2",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-02.requiredEvidence.result.events.2.event",
           "status": "pass"
         }
       ],
@@ -1653,11 +1653,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-03.1.evidenceField",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-03.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-03.requiredEvidence.frameEvents.3",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-03.requiredEvidence.result.events.3.event",
           "status": "pass"
         }
       ],
@@ -1671,11 +1671,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-04.1.evidenceField",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-04.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-04.requiredEvidence.frameEvents.4",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-04.requiredEvidence.result.events.4.event",
           "status": "pass"
         }
       ],
@@ -1689,11 +1689,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-05.1.evidenceField",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-05.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-05.requiredEvidence.frameEvents.5",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-05.requiredEvidence.result.events.5.event",
           "status": "pass"
         }
       ],
@@ -1707,11 +1707,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-06.1.evidenceField",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-06.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-06.requiredEvidence.frameEvents.6",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-06.requiredEvidence.result.events.6.event",
           "status": "pass"
         }
       ],
@@ -1725,11 +1725,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-07.1.evidenceField",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-07.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-07.requiredEvidence.frameEvents.7",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-07.requiredEvidence.result.events.7.event",
           "status": "pass"
         }
       ],
@@ -1743,11 +1743,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-08.1.evidenceField",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-08.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-08.requiredEvidence.frameEvents.8",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-08.requiredEvidence.result.events.8.event",
           "status": "pass"
         }
       ],
@@ -1761,11 +1761,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-09.1.evidenceField",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-09.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-09.requiredEvidence.frameEvents.9",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-09.requiredEvidence.result.events.9.event",
           "status": "pass"
         }
       ],
@@ -1779,11 +1779,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-10.1.evidenceField",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-10.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-10.requiredEvidence.frameEvents.10",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-10.requiredEvidence.result.events.10.event",
           "status": "pass"
         }
       ],
@@ -1797,11 +1797,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-11.1.evidenceField",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-11.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-11.requiredEvidence.frameEvents.11",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-11.requiredEvidence.result.events.11.event",
           "status": "pass"
         }
       ],
@@ -1815,11 +1815,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-12.1.evidenceField",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-12.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-12.requiredEvidence.frameEvents.12",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-12.requiredEvidence.result.events.12.event",
           "status": "pass"
         }
       ],
@@ -1833,11 +1833,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-13.1.evidenceField",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-13.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-13.requiredEvidence.frameEvents.13",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-13.requiredEvidence.result.events.13.event",
           "status": "pass"
         }
       ],
@@ -1851,11 +1851,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-14.1.evidenceField",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-14.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-14.requiredEvidence.frameEvents.14",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-14.requiredEvidence.result.events.14.event",
           "status": "pass"
         }
       ],
@@ -1869,11 +1869,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-15.1.evidenceField",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-15.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-15.requiredEvidence.frameEvents.15",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-15.requiredEvidence.result.events.15.event",
           "status": "pass"
         }
       ],
@@ -1887,11 +1887,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-16.1.evidenceField",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-16.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-16.requiredEvidence.frameEvents.16",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-16.requiredEvidence.result.events.16.event",
           "status": "pass"
         }
       ],
@@ -1905,11 +1905,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-17.1.evidenceField",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-17.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-17.requiredEvidence.frameEvents.17",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-17.requiredEvidence.result.events.17.event",
           "status": "pass"
         }
       ],
@@ -1923,11 +1923,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-18.1.evidenceField",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-18.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-18.requiredEvidence.frameEvents.18",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-18.requiredEvidence.result.events.18.event",
           "status": "pass"
         }
       ],
@@ -1941,11 +1941,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-19.1.evidenceField",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-19.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-19.requiredEvidence.frameEvents.19",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-19.requiredEvidence.result.events.19.event",
           "status": "pass"
         }
       ],
@@ -1959,11 +1959,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-20.1.evidenceField",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-20.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-20.requiredEvidence.frameEvents.20",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-20.requiredEvidence.result.events.20.event",
           "status": "pass"
         }
       ],
@@ -1977,11 +1977,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-21.1.evidenceField",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-21.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-21.requiredEvidence.frameEvents.21",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-21.requiredEvidence.result.events.21.event",
           "status": "pass"
         }
       ],
@@ -1995,11 +1995,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-22.1.evidenceField",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-22.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-22.requiredEvidence.frameEvents.22",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-22.requiredEvidence.result.events.22.event",
           "status": "pass"
         }
       ],
@@ -2013,11 +2013,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-23.1.evidenceField",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-23.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-23.requiredEvidence.frameEvents.23",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-event-23.requiredEvidence.result.events.23.event",
           "status": "pass"
         }
       ],
@@ -2031,11 +2031,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-contain-iteration-end.1.evidenceField",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-contain-iteration-end.1.eventSequence",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-contain-iteration-end.requiredEvidence.frameEvents",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-contain-iteration-end.requiredEvidence.events",
           "status": "pass"
         }
       ],
@@ -2049,11 +2049,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-contain-tool-call-start.1.evidenceField",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-contain-tool-call-start.1.eventSequence",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-contain-tool-call-start.requiredEvidence.frameEvents",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-contain-tool-call-start.requiredEvidence.events",
           "status": "pass"
         }
       ],
@@ -2067,11 +2067,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-contain-turn-end.1.evidenceField",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-contain-turn-end.1.eventSequence",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-contain-turn-end.requiredEvidence.frameEvents",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-contain-turn-end.requiredEvidence.events",
           "status": "pass"
         }
       ],
@@ -2085,11 +2085,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-contain-turn-start.1.evidenceField",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-contain-turn-start.1.eventSequence",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-contain-turn-start.requiredEvidence.frameEvents",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-contain-turn-start.requiredEvidence.events",
           "status": "pass"
         }
       ],
@@ -2103,11 +2103,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-end-with-turn-end.1.evidenceField",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-end-with-turn-end.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-end-with-turn-end.requiredEvidence.frameEvents.23",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-end-with-turn-end.requiredEvidence.result.events.23.event",
           "status": "pass"
         }
       ],
@@ -2121,11 +2121,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-include-iteration-start.1.evidenceField",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-include-iteration-start.1.eventSequence",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-include-iteration-start.requiredEvidence.frameEvents",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-include-iteration-start.requiredEvidence.events",
           "status": "pass"
         }
       ],
@@ -2139,11 +2139,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-include-state-snapshot.1.evidenceField",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-include-state-snapshot.1.eventSequence",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-include-state-snapshot.requiredEvidence.frameEvents",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-include-state-snapshot.requiredEvidence.events",
           "status": "pass"
         }
       ],
@@ -2157,11 +2157,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-include-text-delta.1.evidenceField",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-include-text-delta.1.eventSequence",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-include-text-delta.requiredEvidence.frameEvents",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-include-text-delta.requiredEvidence.events",
           "status": "pass"
         }
       ],
@@ -2175,11 +2175,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-include-tool-result.1.evidenceField",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-include-tool-result.1.eventSequence",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-include-tool-result.requiredEvidence.frameEvents",
+          "assertionId": "event-stream-ext.sse.completed-turn-frame-events-include-tool-result.requiredEvidence.events",
           "status": "pass"
         }
       ],
@@ -2197,7 +2197,7 @@
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-no-error-event.requiredEvidence.frameEvents",
+          "assertionId": "event-stream-ext.sse.completed-turn-no-error-event.requiredEvidence.events",
           "status": "pass"
         }
       ],
@@ -2211,11 +2211,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-source-event-types-start-with-turn-start.1.evidenceField",
+          "assertionId": "event-stream-ext.sse.completed-turn-source-event-types-start-with-turn-start.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.sse.completed-turn-source-event-types-start-with-turn-start.requiredEvidence.sourceEventTypes.0",
+          "assertionId": "event-stream-ext.sse.completed-turn-source-event-types-start-with-turn-start.requiredEvidence.result.events.0.payload.type",
           "status": "pass"
         }
       ],
@@ -2229,11 +2229,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.sse.failed-provider-turn-frame-events-include-error.1.evidenceField",
+          "assertionId": "event-stream-ext.sse.failed-provider-turn-frame-events-include-error.1.eventSequence",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.sse.failed-provider-turn-frame-events-include-error.requiredEvidence.frameEvents",
+          "assertionId": "event-stream-ext.sse.failed-provider-turn-frame-events-include-error.requiredEvidence.events",
           "status": "pass"
         }
       ],
@@ -2247,11 +2247,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.sse.paused-approval-turn-source-events-include-approval-requested.1.evidenceField",
+          "assertionId": "event-stream-ext.sse.paused-approval-turn-source-events-include-approval-requested.1.eventSequence",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.sse.paused-approval-turn-source-events-include-approval-requested.requiredEvidence.sourceEventTypes",
+          "assertionId": "event-stream-ext.sse.paused-approval-turn-source-events-include-approval-requested.requiredEvidence.events",
           "status": "pass"
         }
       ],
@@ -2265,11 +2265,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.sse.resumed-approval-turn-checkpoint-hash-format.1.evidenceField",
+          "assertionId": "event-stream-ext.sse.resumed-approval-turn-checkpoint-hash-format.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.sse.resumed-approval-turn-checkpoint-hash-format.requiredEvidence.checkpointHashes.0",
+          "assertionId": "event-stream-ext.sse.resumed-approval-turn-checkpoint-hash-format.requiredEvidence.result.events.1.payload.turnNodeHash",
           "status": "pass"
         }
       ],
@@ -2283,11 +2283,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.sse.resumed-approval-turn-frame-events-contain-turn-end.1.evidenceField",
+          "assertionId": "event-stream-ext.sse.resumed-approval-turn-frame-events-contain-turn-end.1.eventSequence",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.sse.resumed-approval-turn-frame-events-contain-turn-end.requiredEvidence.frameEvents",
+          "assertionId": "event-stream-ext.sse.resumed-approval-turn-frame-events-contain-turn-end.requiredEvidence.events",
           "status": "pass"
         }
       ],
@@ -2301,11 +2301,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.sse.resumed-approval-turn-resumed-from-hash-format.1.evidenceField",
+          "assertionId": "event-stream-ext.sse.resumed-approval-turn-resumed-from-hash-format.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.sse.resumed-approval-turn-resumed-from-hash-format.requiredEvidence.resumedFromHashes.0",
+          "assertionId": "event-stream-ext.sse.resumed-approval-turn-resumed-from-hash-format.requiredEvidence.result.events.14.payload.resumedFrom",
           "status": "pass"
         }
       ],
@@ -2319,11 +2319,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.sse.resumed-approval-turn-source-events-include-approval-requested.1.evidenceField",
+          "assertionId": "event-stream-ext.sse.resumed-approval-turn-source-events-include-approval-requested.1.eventSequence",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.sse.resumed-approval-turn-source-events-include-approval-requested.requiredEvidence.sourceEventTypes",
+          "assertionId": "event-stream-ext.sse.resumed-approval-turn-source-events-include-approval-requested.requiredEvidence.events",
           "status": "pass"
         }
       ],
@@ -2337,11 +2337,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.sse.resumed-approval-turn-source-events-include-approval-resolved.1.evidenceField",
+          "assertionId": "event-stream-ext.sse.resumed-approval-turn-source-events-include-approval-resolved.1.eventSequence",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.sse.resumed-approval-turn-source-events-include-approval-resolved.requiredEvidence.sourceEventTypes",
+          "assertionId": "event-stream-ext.sse.resumed-approval-turn-source-events-include-approval-resolved.requiredEvidence.events",
           "status": "pass"
         }
       ],
@@ -2355,11 +2355,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.sse.resumed-approval-turn-source-events-include-text-delta.1.evidenceField",
+          "assertionId": "event-stream-ext.sse.resumed-approval-turn-source-events-include-text-delta.1.eventSequence",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.sse.resumed-approval-turn-source-events-include-text-delta.requiredEvidence.sourceEventTypes",
+          "assertionId": "event-stream-ext.sse.resumed-approval-turn-source-events-include-text-delta.requiredEvidence.events",
           "status": "pass"
         }
       ],
@@ -2373,11 +2373,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.sse.resumed-approval-turn-source-thread-id-present.1.evidenceField",
+          "assertionId": "event-stream-ext.sse.resumed-approval-turn-source-thread-id-present.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.sse.resumed-approval-turn-source-thread-id-present.requiredEvidence.sourceThreadIds.0",
+          "assertionId": "event-stream-ext.sse.resumed-approval-turn-source-thread-id-present.requiredEvidence.result.events.0.payload.source.threadId",
           "status": "pass"
         }
       ],
@@ -2391,11 +2391,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "event-stream-ext.sse.resumed-approval-turn-thread-id-present.1.evidenceField",
+          "assertionId": "event-stream-ext.sse.resumed-approval-turn-thread-id-present.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "event-stream-ext.sse.resumed-approval-turn-thread-id-present.requiredEvidence.threadIds.0",
+          "assertionId": "event-stream-ext.sse.resumed-approval-turn-thread-id-present.requiredEvidence.result.events.0.payload.threadId",
           "status": "pass"
         }
       ],
@@ -2409,11 +2409,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "react-driver-callable.after-iteration.1.evidenceField",
+          "assertionId": "react-driver-callable.after-iteration.1.resultField",
           "status": "pass"
         },
         {
           "assertionId": "react-driver-callable.after-iteration.requiredEvidence.hooks.afterIteration",
+          "status": "pass"
+        },
+        {
+          "assertionId": "react-driver-callable.after-iteration.requiredEvidence.result.hooks.afterIteration",
           "status": "pass"
         }
       ],
@@ -2427,11 +2431,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "react-driver-callable.around-model.1.evidenceField",
+          "assertionId": "react-driver-callable.around-model.1.resultField",
           "status": "pass"
         },
         {
           "assertionId": "react-driver-callable.around-model.requiredEvidence.hooks.aroundModel",
+          "status": "pass"
+        },
+        {
+          "assertionId": "react-driver-callable.around-model.requiredEvidence.result.hooks.aroundModel",
           "status": "pass"
         }
       ],
@@ -2445,11 +2453,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "react-driver-callable.around-tool.1.evidenceField",
+          "assertionId": "react-driver-callable.around-tool.1.resultField",
           "status": "pass"
         },
         {
           "assertionId": "react-driver-callable.around-tool.requiredEvidence.hooks.aroundTool",
+          "status": "pass"
+        },
+        {
+          "assertionId": "react-driver-callable.around-tool.requiredEvidence.result.hooks.aroundTool",
           "status": "pass"
         }
       ],
@@ -2463,11 +2475,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "react-driver-callable.before-iteration.1.evidenceField",
+          "assertionId": "react-driver-callable.before-iteration.1.resultField",
           "status": "pass"
         },
         {
           "assertionId": "react-driver-callable.before-iteration.requiredEvidence.hooks.beforeIteration",
+          "status": "pass"
+        },
+        {
+          "assertionId": "react-driver-callable.before-iteration.requiredEvidence.result.hooks.beforeIteration",
           "status": "pass"
         }
       ],
@@ -2500,15 +2516,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "react-driver-af.around-model-post-stream-replacement.1.evidenceField",
+          "assertionId": "react-driver-af.around-model-post-stream-replacement.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-af.around-model-post-stream-replacement.2.evidenceField",
+          "assertionId": "react-driver-af.around-model-post-stream-replacement.2.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-af.around-model-post-stream-replacement.3.evidenceField",
+          "assertionId": "react-driver-af.around-model-post-stream-replacement.3.resultField",
           "status": "pass"
         },
         {
@@ -2522,6 +2538,18 @@
         {
           "assertionId": "react-driver-af.around-model-post-stream-replacement.requiredEvidence.aroundModel.streamedTextDone",
           "status": "pass"
+        },
+        {
+          "assertionId": "react-driver-af.around-model-post-stream-replacement.requiredEvidence.result.aroundModel.finalAssistantText",
+          "status": "pass"
+        },
+        {
+          "assertionId": "react-driver-af.around-model-post-stream-replacement.requiredEvidence.result.aroundModel.messageStartCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "react-driver-af.around-model-post-stream-replacement.requiredEvidence.result.aroundModel.streamedTextDone",
+          "status": "pass"
         }
       ],
       "checkId": "react-driver-af.around-model-post-stream-replacement",
@@ -2534,11 +2562,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "react-driver-af.around-model-retry-final-response-durable.1.evidenceField",
+          "assertionId": "react-driver-af.around-model-retry-final-response-durable.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-af.around-model-retry-final-response-durable.2.evidenceField",
+          "assertionId": "react-driver-af.around-model-retry-final-response-durable.2.resultField",
           "status": "pass"
         },
         {
@@ -2547,6 +2575,14 @@
         },
         {
           "assertionId": "react-driver-af.around-model-retry-final-response-durable.requiredEvidence.provider.generate.callCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "react-driver-af.around-model-retry-final-response-durable.requiredEvidence.result.aroundModel.finalAssistantText",
+          "status": "pass"
+        },
+        {
+          "assertionId": "react-driver-af.around-model-retry-final-response-durable.requiredEvidence.result.provider.generate.callCount",
           "status": "pass"
         }
       ],
@@ -2560,11 +2596,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "react-driver-af.extension.after-iteration-terminal-state-nondurable.1.evidenceField",
+          "assertionId": "react-driver-af.extension.after-iteration-terminal-state-nondurable.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-af.extension.after-iteration-terminal-state-nondurable.2.evidenceField",
+          "assertionId": "react-driver-af.extension.after-iteration-terminal-state-nondurable.2.resultField",
           "status": "pass"
         },
         {
@@ -2573,6 +2609,14 @@
         },
         {
           "assertionId": "react-driver-af.extension.after-iteration-terminal-state-nondurable.requiredEvidence.hooks.terminalMutationDurableText",
+          "status": "pass"
+        },
+        {
+          "assertionId": "react-driver-af.extension.after-iteration-terminal-state-nondurable.requiredEvidence.result.hooks.terminalMutationAttempted",
+          "status": "pass"
+        },
+        {
+          "assertionId": "react-driver-af.extension.after-iteration-terminal-state-nondurable.requiredEvidence.result.hooks.terminalMutationDurableText",
           "status": "pass"
         }
       ],
@@ -2586,11 +2630,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "react-driver-af.extension.around-tool-nesting.1.evidenceField",
+          "assertionId": "react-driver-af.extension.around-tool-nesting.1.resultField",
           "status": "pass"
         },
         {
           "assertionId": "react-driver-af.extension.around-tool-nesting.requiredEvidence.hooks.aroundToolTrace",
+          "status": "pass"
+        },
+        {
+          "assertionId": "react-driver-af.extension.around-tool-nesting.requiredEvidence.result.hooks.aroundToolTrace",
           "status": "pass"
         }
       ],
@@ -2604,11 +2652,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "react-driver-af.extension.phase-order-before-around-after.1.evidenceField",
+          "assertionId": "react-driver-af.extension.phase-order-before-around-after.1.resultField",
           "status": "pass"
         },
         {
           "assertionId": "react-driver-af.extension.phase-order-before-around-after.requiredEvidence.hooks.phaseTrace",
+          "status": "pass"
+        },
+        {
+          "assertionId": "react-driver-af.extension.phase-order-before-around-after.requiredEvidence.result.hooks.phaseTrace",
           "status": "pass"
         }
       ],
@@ -2622,11 +2674,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "react-driver-ext.after-iteration-twice.1.evidenceField",
+          "assertionId": "react-driver-ext.after-iteration-twice.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-ext.after-iteration-twice.requiredEvidence.hooks.afterIteration",
+          "assertionId": "react-driver-ext.after-iteration-twice.requiredEvidence.result.hooks.afterIteration",
           "status": "pass"
         }
       ],
@@ -2640,11 +2692,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "react-driver-ext.around-model-twice.1.evidenceField",
+          "assertionId": "react-driver-ext.around-model-twice.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-ext.around-model-twice.requiredEvidence.hooks.aroundModel",
+          "assertionId": "react-driver-ext.around-model-twice.requiredEvidence.result.hooks.aroundModel",
           "status": "pass"
         }
       ],
@@ -2658,11 +2710,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "react-driver-ext.around-tool-once.1.evidenceField",
+          "assertionId": "react-driver-ext.around-tool-once.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-ext.around-tool-once.requiredEvidence.hooks.aroundTool",
+          "assertionId": "react-driver-ext.around-tool-once.requiredEvidence.result.hooks.aroundTool",
           "status": "pass"
         }
       ],
@@ -2676,11 +2728,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "react-driver-ext.before-iteration-twice.1.evidenceField",
+          "assertionId": "react-driver-ext.before-iteration-twice.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-ext.before-iteration-twice.requiredEvidence.hooks.beforeIteration",
+          "assertionId": "react-driver-ext.before-iteration-twice.requiredEvidence.result.hooks.beforeIteration",
           "status": "pass"
         }
       ],
@@ -2713,11 +2765,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "react-driver-ext.hook-field-present.after-iteration-present.1.evidenceField",
+          "assertionId": "react-driver-ext.hook-field-present.after-iteration-present.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-ext.hook-field-present.after-iteration-present.requiredEvidence.hooks.afterIteration",
+          "assertionId": "react-driver-ext.hook-field-present.after-iteration-present.requiredEvidence.result.hooks.afterIteration",
           "status": "pass"
         }
       ],
@@ -2731,11 +2783,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "react-driver-ext.hook-field-present.around-model-present.1.evidenceField",
+          "assertionId": "react-driver-ext.hook-field-present.around-model-present.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-ext.hook-field-present.around-model-present.requiredEvidence.hooks.aroundModel",
+          "assertionId": "react-driver-ext.hook-field-present.around-model-present.requiredEvidence.result.hooks.aroundModel",
           "status": "pass"
         }
       ],
@@ -2749,11 +2801,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "react-driver-ext.hook-field-present.around-tool-present.1.evidenceField",
+          "assertionId": "react-driver-ext.hook-field-present.around-tool-present.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-ext.hook-field-present.around-tool-present.requiredEvidence.hooks.aroundTool",
+          "assertionId": "react-driver-ext.hook-field-present.around-tool-present.requiredEvidence.result.hooks.aroundTool",
           "status": "pass"
         }
       ],
@@ -2767,11 +2819,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "react-driver-ext.hook-field-present.before-iteration-present.1.evidenceField",
+          "assertionId": "react-driver-ext.hook-field-present.before-iteration-present.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-ext.hook-field-present.before-iteration-present.requiredEvidence.hooks.beforeIteration",
+          "assertionId": "react-driver-ext.hook-field-present.before-iteration-present.requiredEvidence.result.hooks.beforeIteration",
           "status": "pass"
         }
       ],
@@ -2785,19 +2837,19 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable.approval-resolve.1.evidenceField",
+          "assertionId": "runtime-callable.approval-resolve.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable.approval-resolve.2.evidenceField",
+          "assertionId": "runtime-callable.approval-resolve.2.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable.approval-resolve.3.evidenceField",
+          "assertionId": "runtime-callable.approval-resolve.3.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable.approval-resolve.4.evidenceField",
+          "assertionId": "runtime-callable.approval-resolve.4.resultField",
           "status": "pass"
         },
         {
@@ -2810,6 +2862,22 @@
         },
         {
           "assertionId": "runtime-callable.approval-resolve.requiredEvidence.approval.resumedPhase",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable.approval-resolve.requiredEvidence.result.approval.decisions.0.type",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable.approval-resolve.requiredEvidence.result.approval.pausedPhase",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable.approval-resolve.requiredEvidence.result.approval.resumedPhase",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable.approval-resolve.requiredEvidence.result.tool.execution.executedNames",
           "status": "pass"
         },
         {
@@ -2827,15 +2895,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable.provider-generate.1.evidenceField",
+          "assertionId": "runtime-callable.provider-generate.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable.provider-generate.2.evidenceField",
+          "assertionId": "runtime-callable.provider-generate.2.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable.provider-generate.3.evidenceField",
+          "assertionId": "runtime-callable.provider-generate.3.resultField",
           "status": "pass"
         },
         {
@@ -2849,6 +2917,18 @@
         {
           "assertionId": "runtime-callable.provider-generate.requiredEvidence.provider.generate.response.parts.0.text",
           "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable.provider-generate.requiredEvidence.result.provider.generate.callCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable.provider-generate.requiredEvidence.result.provider.generate.response.finishReason",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable.provider-generate.requiredEvidence.result.provider.generate.response.parts.0.text",
+          "status": "pass"
         }
       ],
       "checkId": "runtime-callable.provider-generate",
@@ -2861,19 +2941,19 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable.provider-stream.1.evidenceField",
+          "assertionId": "runtime-callable.provider-stream.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable.provider-stream.2.evidenceField",
+          "assertionId": "runtime-callable.provider-stream.2.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable.provider-stream.3.evidenceField",
+          "assertionId": "runtime-callable.provider-stream.3.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable.provider-stream.4.evidenceField",
+          "assertionId": "runtime-callable.provider-stream.4.resultField",
           "status": "pass"
         },
         {
@@ -2891,6 +2971,22 @@
         {
           "assertionId": "runtime-callable.provider-stream.requiredEvidence.provider.stream.response.parts.0.text",
           "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable.provider-stream.requiredEvidence.result.provider.stream.callCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable.provider-stream.requiredEvidence.result.provider.stream.chunkTypes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable.provider-stream.requiredEvidence.result.provider.stream.emittedEventTypes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable.provider-stream.requiredEvidence.result.provider.stream.response.parts.0.text",
+          "status": "pass"
         }
       ],
       "checkId": "runtime-callable.provider-stream",
@@ -2903,23 +2999,23 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable.timeout-retry-cancellation-idempotency.1.evidenceField",
+          "assertionId": "runtime-callable.timeout-retry-cancellation-idempotency.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable.timeout-retry-cancellation-idempotency.2.evidenceField",
+          "assertionId": "runtime-callable.timeout-retry-cancellation-idempotency.2.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable.timeout-retry-cancellation-idempotency.3.evidenceField",
+          "assertionId": "runtime-callable.timeout-retry-cancellation-idempotency.3.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable.timeout-retry-cancellation-idempotency.4.evidenceField",
+          "assertionId": "runtime-callable.timeout-retry-cancellation-idempotency.4.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable.timeout-retry-cancellation-idempotency.5.evidenceField",
+          "assertionId": "runtime-callable.timeout-retry-cancellation-idempotency.5.resultField",
           "status": "pass"
         },
         {
@@ -2939,6 +3035,26 @@
           "status": "pass"
         },
         {
+          "assertionId": "runtime-callable.timeout-retry-cancellation-idempotency.requiredEvidence.result.cancellation.cancelInvocations",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable.timeout-retry-cancellation-idempotency.requiredEvidence.result.cancellation.errorEventCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable.timeout-retry-cancellation-idempotency.requiredEvidence.result.cancellation.observedEventIndex",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable.timeout-retry-cancellation-idempotency.requiredEvidence.result.cancellation.observedEventType",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable.timeout-retry-cancellation-idempotency.requiredEvidence.result.runtime.phase",
+          "status": "pass"
+        },
+        {
           "assertionId": "runtime-callable.timeout-retry-cancellation-idempotency.requiredEvidence.runtime.phase",
           "status": "pass"
         }
@@ -2953,15 +3069,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable.tool-execute.1.evidenceField",
+          "assertionId": "runtime-callable.tool-execute.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable.tool-execute.2.evidenceField",
+          "assertionId": "runtime-callable.tool-execute.2.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable.tool-execute.3.evidenceField",
+          "assertionId": "runtime-callable.tool-execute.3.resultField",
           "status": "pass"
         },
         {
@@ -2970,6 +3086,18 @@
         },
         {
           "assertionId": "runtime-callable.tool-execute.5.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable.tool-execute.requiredEvidence.result.tool.execution.callCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable.tool-execute.requiredEvidence.result.tool.execution.inputs.0.query",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable.tool-execute.requiredEvidence.result.tool.execution.outputs.0.source",
           "status": "pass"
         },
         {
@@ -3003,7 +3131,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable.validation-failure.1.evidenceField",
+          "assertionId": "runtime-callable.validation-failure.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable.validation-failure.requiredEvidence.result.validation.resolutionType",
           "status": "pass"
         },
         {
@@ -3021,11 +3153,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable-af.approval-message-attaches-to-tool-result.1.evidenceField",
+          "assertionId": "runtime-callable-af.approval-message-attaches-to-tool-result.1.resultField",
           "status": "pass"
         },
         {
           "assertionId": "runtime-callable-af.approval-message-attaches-to-tool-result.requiredEvidence.approval.messageAttachment",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-af.approval-message-attaches-to-tool-result.requiredEvidence.result.approval.messageAttachment",
           "status": "pass"
         }
       ],
@@ -3039,19 +3175,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable-af.approval-reject-stages-tool-result.1.evidenceField",
+          "assertionId": "runtime-callable-af.approval-reject-stages-tool-result.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable-af.approval-reject-stages-tool-result.2.evidenceField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "runtime-callable-af.approval-reject-stages-tool-result.3.evidenceField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "runtime-callable-af.approval-reject-stages-tool-result.requiredEvidence.approval.resumedPhase",
+          "assertionId": "runtime-callable-af.approval-reject-stages-tool-result.2.resultField",
           "status": "pass"
         },
         {
@@ -3060,6 +3188,14 @@
         },
         {
           "assertionId": "runtime-callable-af.approval-reject-stages-tool-result.requiredEvidence.approval.toolResults.1.output.decisionType",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-af.approval-reject-stages-tool-result.requiredEvidence.result.approval.toolResults.1.isError",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-af.approval-reject-stages-tool-result.requiredEvidence.result.approval.toolResults.1.output.decisionType",
           "status": "pass"
         }
       ],
@@ -3073,11 +3209,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable-af.approval-resume-new-handle-only.1.evidenceField",
+          "assertionId": "runtime-callable-af.approval-resume-new-handle-only.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable-af.approval-resume-new-handle-only.2.evidenceField",
+          "assertionId": "runtime-callable-af.approval-resume-new-handle-only.2.resultField",
           "status": "pass"
         },
         {
@@ -3086,6 +3222,18 @@
         },
         {
           "assertionId": "runtime-callable-af.approval-resume-new-handle-only.requiredEvidence.approval.handleOwnership.resolveApprovalErrorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-af.approval-resume-new-handle-only.requiredEvidence.approval.resumedPhase",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-af.approval-resume-new-handle-only.requiredEvidence.result.approval.handleOwnership.cancelErrorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-af.approval-resume-new-handle-only.requiredEvidence.result.approval.handleOwnership.resolveApprovalErrorCode",
           "status": "pass"
         }
       ],
@@ -3099,11 +3247,19 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable-af.approval-resume-reruns-unfinished-tools-only.1.evidenceField",
+          "assertionId": "runtime-callable-af.approval-resume-reruns-unfinished-tools-only.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable-af.approval-resume-reruns-unfinished-tools-only.2.evidenceField",
+          "assertionId": "runtime-callable-af.approval-resume-reruns-unfinished-tools-only.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-af.approval-resume-reruns-unfinished-tools-only.requiredEvidence.result.tool.execution.executedNamesAfterResume",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-af.approval-resume-reruns-unfinished-tools-only.requiredEvidence.result.tool.execution.executedNamesBeforeResume",
           "status": "pass"
         },
         {
@@ -3125,19 +3281,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable-af.approval-resume-same-turn.1.evidenceField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "runtime-callable-af.approval-resume-same-turn.requiredEvidence.approval.pausedTurnIds",
-          "status": "pass"
-        },
-        {
-          "assertionId": "runtime-callable-af.approval-resume-same-turn.requiredEvidence.approval.resumedTurnIds",
+          "assertionId": "runtime-callable-af.approval-resume-same-turn.1.resultField",
           "status": "pass"
         },
         {
           "assertionId": "runtime-callable-af.approval-resume-same-turn.requiredEvidence.approval.sameTurn",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-af.approval-resume-same-turn.requiredEvidence.result.approval.sameTurn",
           "status": "pass"
         }
       ],
@@ -3151,11 +3303,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable-af.content-structured-data-parsed.1.evidenceField",
+          "assertionId": "runtime-callable-af.content-structured-data-parsed.1.resultField",
           "status": "pass"
         },
         {
           "assertionId": "runtime-callable-af.content-structured-data-parsed.requiredEvidence.provider.generate.response.parts.0.data.answer",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-af.content-structured-data-parsed.requiredEvidence.result.provider.generate.response.parts.0.data.answer",
           "status": "pass"
         }
       ],
@@ -3169,11 +3325,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable-af.content-tool-call-input-parsed.1.evidenceField",
+          "assertionId": "runtime-callable-af.content-tool-call-input-parsed.1.resultField",
           "status": "pass"
         },
         {
           "assertionId": "runtime-callable-af.content-tool-call-input-parsed.requiredEvidence.provider.generate.response.parts.0.input.query",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-af.content-tool-call-input-parsed.requiredEvidence.result.provider.generate.response.parts.0.input.query",
           "status": "pass"
         }
       ],
@@ -3187,33 +3347,7 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable-af.input-signal-empty-parts-rejected.1.evidenceField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "runtime-callable-af.input-signal-empty-parts-rejected.2.evidenceField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "runtime-callable-af.input-signal-empty-parts-rejected.requiredEvidence.inputSignal.accepted",
-          "status": "pass"
-        },
-        {
-          "assertionId": "runtime-callable-af.input-signal-empty-parts-rejected.requiredEvidence.inputSignal.error.code",
-          "status": "pass"
-        }
-      ],
-      "checkId": "runtime-callable-af.input-signal-empty-parts-rejected",
-      "details": {
-        "adapterId": "typescript-framework",
-        "planId": "tuvren.framework.runtime-api.callables-extended"
-      },
-      "status": "pass"
-    },
-    {
-      "assertionResults": [
-        {
-          "assertionId": "runtime-callable-af.mixed-approval-gated-tool-start-after-resume.1.evidenceField",
+          "assertionId": "runtime-callable-af.mixed-approval-gated-tool-start-after-resume.1.resultField",
           "status": "pass"
         },
         {
@@ -3222,6 +3356,10 @@
         },
         {
           "assertionId": "runtime-callable-af.mixed-approval-gated-tool-start-after-resume.requiredEvidence.approval.resumedEventTypes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-af.mixed-approval-gated-tool-start-after-resume.requiredEvidence.result.approval.gatedToolStartAfterResume",
           "status": "pass"
         }
       ],
@@ -3235,19 +3373,19 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable-af.paused-cancel-rejection-and-stop.1.evidenceField",
+          "assertionId": "runtime-callable-af.paused-cancel-rejection-and-stop.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable-af.paused-cancel-rejection-and-stop.2.evidenceField",
+          "assertionId": "runtime-callable-af.paused-cancel-rejection-and-stop.2.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable-af.paused-cancel-rejection-and-stop.3.evidenceField",
+          "assertionId": "runtime-callable-af.paused-cancel-rejection-and-stop.3.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable-af.paused-cancel-rejection-and-stop.4.evidenceField",
+          "assertionId": "runtime-callable-af.paused-cancel-rejection-and-stop.4.resultField",
           "status": "pass"
         },
         {
@@ -3260,6 +3398,22 @@
         },
         {
           "assertionId": "runtime-callable-af.paused-cancel-rejection-and-stop.requiredEvidence.approval.resumedTextAbsent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-af.paused-cancel-rejection-and-stop.requiredEvidence.result.approval.cancelledPhase",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-af.paused-cancel-rejection-and-stop.requiredEvidence.result.approval.cancelledToolResults.1.isError",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-af.paused-cancel-rejection-and-stop.requiredEvidence.result.approval.cancelledToolResults.1.output.decisionType",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-af.paused-cancel-rejection-and-stop.requiredEvidence.result.approval.resumedTextAbsent",
           "status": "pass"
         },
         {
@@ -3277,7 +3431,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable-af.structured-output-default-draft07.1.evidenceField",
+          "assertionId": "runtime-callable-af.structured-output-default-draft07.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-af.structured-output-default-draft07.requiredEvidence.result.validation.dialect",
           "status": "pass"
         },
         {
@@ -3295,11 +3453,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable-af.structured-provider-native-type-hidden.1.evidenceField",
+          "assertionId": "runtime-callable-af.structured-provider-native-type-hidden.1.resultField",
           "status": "pass"
         },
         {
           "assertionId": "runtime-callable-af.structured-provider-native-type-hidden.requiredEvidence.provider.generate.partKeys.0",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-af.structured-provider-native-type-hidden.requiredEvidence.result.provider.generate.partKeys.0",
           "status": "pass"
         }
       ],
@@ -3313,11 +3475,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable-af.structured-stream-synthesizes-delta-before-done.1.evidenceField",
+          "assertionId": "runtime-callable-af.structured-stream-synthesizes-delta-before-done.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable-af.structured-stream-synthesizes-delta-before-done.2.evidenceField",
+          "assertionId": "runtime-callable-af.structured-stream-synthesizes-delta-before-done.2.resultField",
           "status": "pass"
         },
         {
@@ -3326,6 +3488,14 @@
         },
         {
           "assertionId": "runtime-callable-af.structured-stream-synthesizes-delta-before-done.requiredEvidence.provider.stream.structuredDoneIndex",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-af.structured-stream-synthesizes-delta-before-done.requiredEvidence.result.provider.stream.structuredDeltaIndex",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-af.structured-stream-synthesizes-delta-before-done.requiredEvidence.result.provider.stream.structuredDoneIndex",
           "status": "pass"
         }
       ],
@@ -3339,11 +3509,19 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable-af.structured-validation-hard-fail-code.1.evidenceField",
+          "assertionId": "runtime-callable-af.structured-validation-hard-fail-code.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable-af.structured-validation-hard-fail-code.2.evidenceField",
+          "assertionId": "runtime-callable-af.structured-validation-hard-fail-code.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-af.structured-validation-hard-fail-code.requiredEvidence.result.validation.error.code",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-af.structured-validation-hard-fail-code.requiredEvidence.result.validation.resolutionType",
           "status": "pass"
         },
         {
@@ -3365,7 +3543,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable-af.tool-call-id-owned-by-framework.1.evidenceField",
+          "assertionId": "runtime-callable-af.tool-call-id-owned-by-framework.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-af.tool-call-id-owned-by-framework.2.resultField",
           "status": "pass"
         },
         {
@@ -3374,6 +3556,14 @@
         },
         {
           "assertionId": "runtime-callable-af.tool-call-id-owned-by-framework.requiredEvidence.provider.stream.toolCallIdOwnedByFramework",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-af.tool-call-id-owned-by-framework.requiredEvidence.result.provider.stream.response.parts.0.providerMetadata.providerCallId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-af.tool-call-id-owned-by-framework.requiredEvidence.result.provider.stream.toolCallIdOwnedByFramework",
           "status": "pass"
         }
       ],
@@ -3387,15 +3577,23 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable-af.tool-failure-produces-error-result-not-run-fail.1.evidenceField",
+          "assertionId": "runtime-callable-af.tool-failure-produces-error-result-not-run-fail.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable-af.tool-failure-produces-error-result-not-run-fail.2.evidenceField",
+          "assertionId": "runtime-callable-af.tool-failure-produces-error-result-not-run-fail.2.resultField",
           "status": "pass"
         },
         {
           "assertionId": "runtime-callable-af.tool-failure-produces-error-result-not-run-fail.3.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-af.tool-failure-produces-error-result-not-run-fail.requiredEvidence.result.tool.execution.toolResults.0.isError",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-af.tool-failure-produces-error-result-not-run-fail.requiredEvidence.result.tool.execution.toolResults.0.output.error",
           "status": "pass"
         },
         {
@@ -3421,7 +3619,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable-af.tool-parallel-wave-starts-before-results.1.evidenceField",
+          "assertionId": "runtime-callable-af.tool-parallel-wave-starts-before-results.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-af.tool-parallel-wave-starts-before-results.requiredEvidence.result.tool.execution.parallelWaveStartedBeforeResults",
           "status": "pass"
         },
         {
@@ -3443,11 +3645,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable-ext.approval-resolve.decision-call-id-matches.1.evidenceField",
+          "assertionId": "runtime-callable-ext.approval-resolve.decision-call-id-matches.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable-ext.approval-resolve.decision-call-id-matches.requiredEvidence.approval.decisions.0.callId",
+          "assertionId": "runtime-callable-ext.approval-resolve.decision-call-id-matches.requiredEvidence.result.approval.decisions.0.callId",
           "status": "pass"
         }
       ],
@@ -3461,11 +3663,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable-ext.approval-resolve.decision-type-approve.1.evidenceField",
+          "assertionId": "runtime-callable-ext.approval-resolve.decision-type-approve.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable-ext.approval-resolve.decision-type-approve.requiredEvidence.approval.decisions.0.type",
+          "assertionId": "runtime-callable-ext.approval-resolve.decision-type-approve.requiredEvidence.result.approval.decisions.0.type",
           "status": "pass"
         }
       ],
@@ -3479,11 +3681,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable-ext.approval-resolve.executed-after-resume-includes-approved-tool.1.evidenceField",
+          "assertionId": "runtime-callable-ext.approval-resolve.executed-after-resume-includes-approved-tool.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable-ext.approval-resolve.executed-after-resume-includes-approved-tool.requiredEvidence.tool.execution.executedNamesAfterResume",
+          "assertionId": "runtime-callable-ext.approval-resolve.executed-after-resume-includes-approved-tool.requiredEvidence.result.tool.execution.executedNamesAfterResume",
           "status": "pass"
         }
       ],
@@ -3497,11 +3699,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable-ext.approval-resolve.executed-before-resume-stays-pre-approval.1.evidenceField",
+          "assertionId": "runtime-callable-ext.approval-resolve.executed-before-resume-stays-pre-approval.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable-ext.approval-resolve.executed-before-resume-stays-pre-approval.requiredEvidence.tool.execution.executedNamesBeforeResume",
+          "assertionId": "runtime-callable-ext.approval-resolve.executed-before-resume-stays-pre-approval.requiredEvidence.result.tool.execution.executedNamesBeforeResume",
           "status": "pass"
         }
       ],
@@ -3515,11 +3717,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable-ext.approval-resolve.executed-tools-include-email.1.evidenceField",
+          "assertionId": "runtime-callable-ext.approval-resolve.executed-tools-include-email.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable-ext.approval-resolve.executed-tools-include-email.requiredEvidence.tool.execution.executedNames",
+          "assertionId": "runtime-callable-ext.approval-resolve.executed-tools-include-email.requiredEvidence.result.tool.execution.executedNames",
           "status": "pass"
         }
       ],
@@ -3533,11 +3735,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable-ext.approval-resolve.executed-tools-include-search.1.evidenceField",
+          "assertionId": "runtime-callable-ext.approval-resolve.executed-tools-include-search.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable-ext.approval-resolve.executed-tools-include-search.requiredEvidence.tool.execution.executedNames",
+          "assertionId": "runtime-callable-ext.approval-resolve.executed-tools-include-search.requiredEvidence.result.tool.execution.executedNames",
           "status": "pass"
         }
       ],
@@ -3551,11 +3753,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable-ext.approval-resolve.paused-approval-call-id-matches.1.evidenceField",
+          "assertionId": "runtime-callable-ext.approval-resolve.paused-approval-call-id-matches.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable-ext.approval-resolve.paused-approval-call-id-matches.requiredEvidence.approval.pausedApprovalCallIds.0",
+          "assertionId": "runtime-callable-ext.approval-resolve.paused-approval-call-id-matches.requiredEvidence.result.approval.pausedApprovalCallIds.0",
           "status": "pass"
         }
       ],
@@ -3569,11 +3771,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable-ext.approval-resolve.paused-event-types-include-approval-requested.1.evidenceField",
+          "assertionId": "runtime-callable-ext.approval-resolve.paused-event-types-include-approval-requested.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable-ext.approval-resolve.paused-event-types-include-approval-requested.requiredEvidence.approval.pausedEventTypes",
+          "assertionId": "runtime-callable-ext.approval-resolve.paused-event-types-include-approval-requested.requiredEvidence.result.approval.pausedEventTypes",
           "status": "pass"
         }
       ],
@@ -3587,11 +3789,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable-ext.approval-resolve.paused-phase-paused.1.evidenceField",
+          "assertionId": "runtime-callable-ext.approval-resolve.paused-phase-paused.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable-ext.approval-resolve.paused-phase-paused.requiredEvidence.approval.pausedPhase",
+          "assertionId": "runtime-callable-ext.approval-resolve.paused-phase-paused.requiredEvidence.result.approval.pausedPhase",
           "status": "pass"
         }
       ],
@@ -3605,11 +3807,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable-ext.approval-resolve.resumed-event-types-include-approval-resolved.1.evidenceField",
+          "assertionId": "runtime-callable-ext.approval-resolve.resumed-event-types-include-approval-resolved.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable-ext.approval-resolve.resumed-event-types-include-approval-resolved.requiredEvidence.approval.resumedEventTypes",
+          "assertionId": "runtime-callable-ext.approval-resolve.resumed-event-types-include-approval-resolved.requiredEvidence.result.approval.resumedEventTypes",
           "status": "pass"
         }
       ],
@@ -3623,11 +3825,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable-ext.approval-resolve.resumed-phase-completed.1.evidenceField",
+          "assertionId": "runtime-callable-ext.approval-resolve.resumed-phase-completed.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable-ext.approval-resolve.resumed-phase-completed.requiredEvidence.approval.resumedPhase",
+          "assertionId": "runtime-callable-ext.approval-resolve.resumed-phase-completed.requiredEvidence.result.approval.resumedPhase",
           "status": "pass"
         }
       ],
@@ -3641,11 +3843,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable-ext.cancel-execution.cancel-invocation-count.1.evidenceField",
+          "assertionId": "runtime-callable-ext.cancel-execution.cancel-invocation-count.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable-ext.cancel-execution.cancel-invocation-count.requiredEvidence.cancellation.cancelInvocations",
+          "assertionId": "runtime-callable-ext.cancel-execution.cancel-invocation-count.requiredEvidence.result.cancellation.cancelInvocations",
           "status": "pass"
         }
       ],
@@ -3659,11 +3861,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable-ext.cancel-execution.error-event-count-one.1.evidenceField",
+          "assertionId": "runtime-callable-ext.cancel-execution.error-event-count-one.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable-ext.cancel-execution.error-event-count-one.requiredEvidence.cancellation.errorEventCount",
+          "assertionId": "runtime-callable-ext.cancel-execution.error-event-count-one.requiredEvidence.result.cancellation.errorEventCount",
           "status": "pass"
         }
       ],
@@ -3677,11 +3879,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable-ext.cancel-execution.observed-event-index-zero.1.evidenceField",
+          "assertionId": "runtime-callable-ext.cancel-execution.observed-event-index-zero.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable-ext.cancel-execution.observed-event-index-zero.requiredEvidence.cancellation.observedEventIndex",
+          "assertionId": "runtime-callable-ext.cancel-execution.observed-event-index-zero.requiredEvidence.result.cancellation.observedEventIndex",
           "status": "pass"
         }
       ],
@@ -3695,11 +3897,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable-ext.cancel-execution.observed-event-type.1.evidenceField",
+          "assertionId": "runtime-callable-ext.cancel-execution.observed-event-type.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable-ext.cancel-execution.observed-event-type.requiredEvidence.cancellation.observedEventType",
+          "assertionId": "runtime-callable-ext.cancel-execution.observed-event-type.requiredEvidence.result.cancellation.observedEventType",
           "status": "pass"
         }
       ],
@@ -3713,11 +3915,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable-ext.cancel-execution.runtime-phase-failed.1.evidenceField",
+          "assertionId": "runtime-callable-ext.cancel-execution.runtime-phase-failed.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable-ext.cancel-execution.runtime-phase-failed.requiredEvidence.runtime.phase",
+          "assertionId": "runtime-callable-ext.cancel-execution.runtime-phase-failed.requiredEvidence.result.runtime.phase",
           "status": "pass"
         }
       ],
@@ -3731,11 +3933,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable-ext.provider-generate.call-count-positive.1.evidenceField",
+          "assertionId": "runtime-callable-ext.provider-generate.call-count-positive.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable-ext.provider-generate.call-count-positive.requiredEvidence.provider.generate.callCount",
+          "assertionId": "runtime-callable-ext.provider-generate.call-count-positive.requiredEvidence.result.provider.generate.callCount",
           "status": "pass"
         }
       ],
@@ -3749,11 +3951,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable-ext.provider-generate.finish-reason-string.1.evidenceField",
+          "assertionId": "runtime-callable-ext.provider-generate.finish-reason-string.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable-ext.provider-generate.finish-reason-string.requiredEvidence.provider.generate.response.finishReason",
+          "assertionId": "runtime-callable-ext.provider-generate.finish-reason-string.requiredEvidence.result.provider.generate.response.finishReason",
           "status": "pass"
         }
       ],
@@ -3767,11 +3969,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable-ext.provider-generate.first-part-text-shape.1.evidenceField",
+          "assertionId": "runtime-callable-ext.provider-generate.first-part-text-shape.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable-ext.provider-generate.first-part-text-shape.requiredEvidence.provider.generate.response.parts.0.type",
+          "assertionId": "runtime-callable-ext.provider-generate.first-part-text-shape.requiredEvidence.result.provider.generate.response.parts.0.type",
           "status": "pass"
         }
       ],
@@ -3785,11 +3987,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable-ext.provider-generate.response-finish-reason-equals-stop.1.evidenceField",
+          "assertionId": "runtime-callable-ext.provider-generate.response-finish-reason-equals-stop.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable-ext.provider-generate.response-finish-reason-equals-stop.requiredEvidence.provider.generate.response.finishReason",
+          "assertionId": "runtime-callable-ext.provider-generate.response-finish-reason-equals-stop.requiredEvidence.result.provider.generate.response.finishReason",
           "status": "pass"
         }
       ],
@@ -3803,11 +4005,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable-ext.provider-generate.response-parts-first-present.1.evidenceField",
+          "assertionId": "runtime-callable-ext.provider-generate.response-parts-first-present.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable-ext.provider-generate.response-parts-first-present.requiredEvidence.provider.generate.response.parts.0",
+          "assertionId": "runtime-callable-ext.provider-generate.response-parts-first-present.requiredEvidence.result.provider.generate.response.parts.0",
           "status": "pass"
         }
       ],
@@ -3821,11 +4023,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable-ext.provider-stream.chunk-types-include-finish.1.evidenceField",
+          "assertionId": "runtime-callable-ext.provider-stream.chunk-types-include-finish.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable-ext.provider-stream.chunk-types-include-finish.requiredEvidence.provider.stream.chunkTypes",
+          "assertionId": "runtime-callable-ext.provider-stream.chunk-types-include-finish.requiredEvidence.result.provider.stream.chunkTypes",
           "status": "pass"
         }
       ],
@@ -3839,11 +4041,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable-ext.provider-stream.chunk-types-text-delta-first.1.evidenceField",
+          "assertionId": "runtime-callable-ext.provider-stream.chunk-types-text-delta-first.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable-ext.provider-stream.chunk-types-text-delta-first.requiredEvidence.provider.stream.chunkTypes.0",
+          "assertionId": "runtime-callable-ext.provider-stream.chunk-types-text-delta-first.requiredEvidence.result.provider.stream.chunkTypes.0",
           "status": "pass"
         }
       ],
@@ -3857,11 +4059,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable-ext.provider-stream.emitted-event-types-include-message-done.1.evidenceField",
+          "assertionId": "runtime-callable-ext.provider-stream.emitted-event-types-include-message-done.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable-ext.provider-stream.emitted-event-types-include-message-done.requiredEvidence.provider.stream.emittedEventTypes",
+          "assertionId": "runtime-callable-ext.provider-stream.emitted-event-types-include-message-done.requiredEvidence.result.provider.stream.emittedEventTypes",
           "status": "pass"
         }
       ],
@@ -3875,11 +4077,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable-ext.provider-stream.emitted-event-types-include-message-start.1.evidenceField",
+          "assertionId": "runtime-callable-ext.provider-stream.emitted-event-types-include-message-start.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable-ext.provider-stream.emitted-event-types-include-message-start.requiredEvidence.provider.stream.emittedEventTypes",
+          "assertionId": "runtime-callable-ext.provider-stream.emitted-event-types-include-message-start.requiredEvidence.result.provider.stream.emittedEventTypes",
           "status": "pass"
         }
       ],
@@ -3893,11 +4095,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable-ext.provider-stream.emitted-event-types-text-delta.1.evidenceField",
+          "assertionId": "runtime-callable-ext.provider-stream.emitted-event-types-text-delta.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable-ext.provider-stream.emitted-event-types-text-delta.requiredEvidence.provider.stream.emittedEventTypes",
+          "assertionId": "runtime-callable-ext.provider-stream.emitted-event-types-text-delta.requiredEvidence.result.provider.stream.emittedEventTypes",
           "status": "pass"
         }
       ],
@@ -3911,11 +4113,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable-ext.provider-stream.response-text-matches-scenario.1.evidenceField",
+          "assertionId": "runtime-callable-ext.provider-stream.response-text-matches-scenario.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable-ext.provider-stream.response-text-matches-scenario.requiredEvidence.provider.stream.response.parts.0.text",
+          "assertionId": "runtime-callable-ext.provider-stream.response-text-matches-scenario.requiredEvidence.result.provider.stream.response.parts.0.text",
           "status": "pass"
         }
       ],
@@ -3929,11 +4131,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable-ext.tool-execute.call-count-equals-one.1.evidenceField",
+          "assertionId": "runtime-callable-ext.tool-execute.call-count-equals-one.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable-ext.tool-execute.call-count-equals-one.requiredEvidence.tool.execution.callCount",
+          "assertionId": "runtime-callable-ext.tool-execute.call-count-equals-one.requiredEvidence.result.tool.execution.callCount",
           "status": "pass"
         }
       ],
@@ -3947,11 +4149,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable-ext.tool-execute.input-query-matches.1.evidenceField",
+          "assertionId": "runtime-callable-ext.tool-execute.input-query-matches.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable-ext.tool-execute.input-query-matches.requiredEvidence.tool.execution.inputs.0.query",
+          "assertionId": "runtime-callable-ext.tool-execute.input-query-matches.requiredEvidence.result.tool.execution.inputs.0.query",
           "status": "pass"
         }
       ],
@@ -3969,7 +4171,7 @@
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable-ext.tool-execute.output-shape-matches-scenario.requiredEvidence.tool.execution.outputs.0",
+          "assertionId": "runtime-callable-ext.tool-execute.output-shape-matches-scenario.requiredEvidence.result.tool.execution.outputs.0",
           "status": "pass"
         }
       ],
@@ -3983,11 +4185,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable-ext.tool-execute.output-source-matches.1.evidenceField",
+          "assertionId": "runtime-callable-ext.tool-execute.output-source-matches.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable-ext.tool-execute.output-source-matches.requiredEvidence.tool.execution.outputs.0.source",
+          "assertionId": "runtime-callable-ext.tool-execute.output-source-matches.requiredEvidence.result.tool.execution.outputs.0.source",
           "status": "pass"
         }
       ],
@@ -4037,11 +4239,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable-ext.validate-structured-output.resolution-fail.1.evidenceField",
+          "assertionId": "runtime-callable-ext.validate-structured-output.resolution-fail.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable-ext.validate-structured-output.resolution-fail.requiredEvidence.validation.resolutionType",
+          "assertionId": "runtime-callable-ext.validate-structured-output.resolution-fail.requiredEvidence.result.validation.resolutionType",
           "status": "pass"
         }
       ],
@@ -4055,11 +4257,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-callable-ext.validate-structured-output.resolution-type-string.1.evidenceField",
+          "assertionId": "runtime-callable-ext.validate-structured-output.resolution-type-string.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-callable-ext.validate-structured-output.resolution-type-string.requiredEvidence.validation.resolutionType",
+          "assertionId": "runtime-callable-ext.validate-structured-output.resolution-type-string.requiredEvidence.result.validation.resolutionType",
           "status": "pass"
         }
       ],
@@ -4209,7 +4411,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-api.execute-turn.lifecycle.1.evidenceField",
+          "assertionId": "runtime-api.execute-turn.lifecycle.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api.execute-turn.lifecycle.requiredEvidence.result.runtime.phase",
           "status": "pass"
         },
         {
@@ -4270,15 +4476,49 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-lifecycle-af.cancel-running-idempotent-fails-once.1.evidenceField",
+          "assertionId": "runtime-callable-af.input-signal-empty-parts-rejected.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-af.cancel-running-idempotent-fails-once.2.evidenceField",
+          "assertionId": "runtime-callable-af.input-signal-empty-parts-rejected.2.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-af.cancel-running-idempotent-fails-once.3.evidenceField",
+          "assertionId": "runtime-callable-af.input-signal-empty-parts-rejected.requiredEvidence.inputSignal.accepted",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-af.input-signal-empty-parts-rejected.requiredEvidence.inputSignal.error.code",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-af.input-signal-empty-parts-rejected.requiredEvidence.result.inputSignal.accepted",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-callable-af.input-signal-empty-parts-rejected.requiredEvidence.result.inputSignal.error.code",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-callable-af.input-signal-empty-parts-rejected",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.lifecycle-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-lifecycle-af.cancel-running-idempotent-fails-once.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-af.cancel-running-idempotent-fails-once.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-af.cancel-running-idempotent-fails-once.3.resultField",
           "status": "pass"
         },
         {
@@ -4287,6 +4527,18 @@
         },
         {
           "assertionId": "runtime-lifecycle-af.cancel-running-idempotent-fails-once.requiredEvidence.cancellation.errorEventCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-af.cancel-running-idempotent-fails-once.requiredEvidence.result.cancellation.cancelInvocations",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-af.cancel-running-idempotent-fails-once.requiredEvidence.result.cancellation.errorEventCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-af.cancel-running-idempotent-fails-once.requiredEvidence.result.runtime.phase",
           "status": "pass"
         },
         {
@@ -4304,15 +4556,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-lifecycle-af.cancel-running-stages-partial-status.1.evidenceField",
+          "assertionId": "runtime-lifecycle-af.cancel-running-stages-partial-status.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-af.cancel-running-stages-partial-status.2.evidenceField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "runtime-lifecycle-af.cancel-running-stages-partial-status.3.evidenceField",
+          "assertionId": "runtime-lifecycle-af.cancel-running-stages-partial-status.2.resultField",
           "status": "pass"
         },
         {
@@ -4324,7 +4572,11 @@
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-af.cancel-running-stages-partial-status.requiredEvidence.runtime.phase",
+          "assertionId": "runtime-lifecycle-af.cancel-running-stages-partial-status.requiredEvidence.result.cancellation.partialAssistantText",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-af.cancel-running-stages-partial-status.requiredEvidence.result.cancellation.runtimeStatusPartial",
           "status": "pass"
         }
       ],
@@ -4338,19 +4590,7 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-lifecycle-af.context-transform-creates-new-tree-heads.1.evidenceField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "runtime-lifecycle-af.context-transform-creates-new-tree-heads.2.evidenceField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "runtime-lifecycle-af.context-transform-creates-new-tree-heads.3.evidenceField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "runtime-lifecycle-af.context-transform-creates-new-tree-heads.requiredEvidence.context.checkpointHashes",
+          "assertionId": "runtime-lifecycle-af.context-transform-creates-new-tree-heads.1.resultField",
           "status": "pass"
         },
         {
@@ -4358,11 +4598,7 @@
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-af.context-transform-creates-new-tree-heads.requiredEvidence.context.finalHeadChanged",
-          "status": "pass"
-        },
-        {
-          "assertionId": "runtime-lifecycle-af.context-transform-creates-new-tree-heads.requiredEvidence.context.snapshotMessageCounts",
+          "assertionId": "runtime-lifecycle-af.context-transform-creates-new-tree-heads.requiredEvidence.result.context.createdNewHead",
           "status": "pass"
         }
       ],
@@ -4376,11 +4612,27 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-lifecycle-af.context-transform-driver-sees-rewritten-context.1.evidenceField",
+          "assertionId": "runtime-lifecycle-af.context-transform-driver-sees-rewritten-context.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-af.context-transform-driver-sees-rewritten-context.2.resultField",
           "status": "pass"
         },
         {
           "assertionId": "runtime-lifecycle-af.context-transform-driver-sees-rewritten-context.requiredEvidence.context.driverObservedMessageCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-af.context-transform-driver-sees-rewritten-context.requiredEvidence.context.rewrittenMessageCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-af.context-transform-driver-sees-rewritten-context.requiredEvidence.result.context.driverObservedMessageCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-af.context-transform-driver-sees-rewritten-context.requiredEvidence.result.context.rewrittenMessageCount",
           "status": "pass"
         }
       ],
@@ -4394,27 +4646,27 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-lifecycle-af.context-transform-preserves-source-checkpoint.1.evidenceField",
+          "assertionId": "runtime-lifecycle-af.context-transform-preserves-source-checkpoint.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-af.context-transform-preserves-source-checkpoint.2.evidenceField",
+          "assertionId": "runtime-lifecycle-af.context-transform-preserves-source-checkpoint.2.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-af.context-transform-preserves-source-checkpoint.3.evidenceField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "runtime-lifecycle-af.context-transform-preserves-source-checkpoint.requiredEvidence.context.messageCount",
-          "status": "pass"
-        },
-        {
-          "assertionId": "runtime-lifecycle-af.context-transform-preserves-source-checkpoint.requiredEvidence.context.rewrittenMessageCount",
+          "assertionId": "runtime-lifecycle-af.context-transform-preserves-source-checkpoint.requiredEvidence.context.snapshotMessageCounts",
           "status": "pass"
         },
         {
           "assertionId": "runtime-lifecycle-af.context-transform-preserves-source-checkpoint.requiredEvidence.context.sourceMessageCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-af.context-transform-preserves-source-checkpoint.requiredEvidence.result.context.snapshotMessageCounts",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-af.context-transform-preserves-source-checkpoint.requiredEvidence.result.context.sourceMessageCount",
           "status": "pass"
         }
       ],
@@ -4538,11 +4790,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-lifecycle-ext.context-transform.message-count.1.evidenceField",
+          "assertionId": "runtime-lifecycle-ext.context-transform.message-count.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-ext.context-transform.message-count.requiredEvidence.context.messageCount",
+          "assertionId": "runtime-lifecycle-ext.context-transform.message-count.requiredEvidence.result.context.messageCount",
           "status": "pass"
         }
       ],
@@ -4556,11 +4808,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-lifecycle-ext.context-transform.runtime-phase-completed.1.evidenceField",
+          "assertionId": "runtime-lifecycle-ext.context-transform.runtime-phase-completed.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-ext.context-transform.runtime-phase-completed.requiredEvidence.runtime.phase",
+          "assertionId": "runtime-lifecycle-ext.context-transform.runtime-phase-completed.requiredEvidence.result.runtime.phase",
           "status": "pass"
         }
       ],
@@ -4574,11 +4826,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-lifecycle-ext.context-transform.summary-text.1.evidenceField",
+          "assertionId": "runtime-lifecycle-ext.context-transform.summary-text.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-ext.context-transform.summary-text.requiredEvidence.context.summaryText",
+          "assertionId": "runtime-lifecycle-ext.context-transform.summary-text.requiredEvidence.result.context.summaryText",
           "status": "pass"
         }
       ],
@@ -4592,11 +4844,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-lifecycle-ext.execute-turn.phase-completed.1.evidenceField",
+          "assertionId": "runtime-lifecycle-ext.execute-turn.phase-completed.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-ext.execute-turn.phase-completed.requiredEvidence.runtime.phase",
+          "assertionId": "runtime-lifecycle-ext.execute-turn.phase-completed.requiredEvidence.result.runtime.phase",
           "status": "pass"
         }
       ],
@@ -4610,11 +4862,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-lifecycle-ext.execute-turn.phase-enum.1.evidenceField",
+          "assertionId": "runtime-lifecycle-ext.execute-turn.phase-enum.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-ext.execute-turn.phase-enum.requiredEvidence.runtime.phase",
+          "assertionId": "runtime-lifecycle-ext.execute-turn.phase-enum.requiredEvidence.result.runtime.phase",
           "status": "pass"
         }
       ],
@@ -4628,11 +4880,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-lifecycle-ext.recover-result.first-object-type.1.evidenceField",
+          "assertionId": "runtime-lifecycle-ext.recover-result.first-object-type.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-ext.recover-result.first-object-type.requiredEvidence.recovery.firstObjectType",
+          "assertionId": "runtime-lifecycle-ext.recover-result.first-object-type.requiredEvidence.result.recovery.firstObjectType",
           "status": "pass"
         }
       ],
@@ -4646,11 +4898,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-lifecycle-ext.recover-result.first-task-id.1.evidenceField",
+          "assertionId": "runtime-lifecycle-ext.recover-result.first-task-id.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-ext.recover-result.first-task-id.requiredEvidence.recovery.firstTaskId",
+          "assertionId": "runtime-lifecycle-ext.recover-result.first-task-id.requiredEvidence.result.recovery.firstTaskId",
           "status": "pass"
         }
       ],
@@ -4664,11 +4916,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-lifecycle-ext.recover-result.last-turn-node-hash-format.1.evidenceField",
+          "assertionId": "runtime-lifecycle-ext.recover-result.last-turn-node-hash-format.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-ext.recover-result.last-turn-node-hash-format.requiredEvidence.recovery.lastTurnNodeHash",
+          "assertionId": "runtime-lifecycle-ext.recover-result.last-turn-node-hash-format.requiredEvidence.result.recovery.lastTurnNodeHash",
           "status": "pass"
         }
       ],
@@ -4682,11 +4934,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-lifecycle-ext.recover-result.uncommitted-count.1.evidenceField",
+          "assertionId": "runtime-lifecycle-ext.recover-result.uncommitted-count.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-ext.recover-result.uncommitted-count.requiredEvidence.recovery.uncommittedStagedResults",
+          "assertionId": "runtime-lifecycle-ext.recover-result.uncommitted-count.requiredEvidence.result.recovery.uncommittedStagedResults",
           "status": "pass"
         }
       ],
@@ -4700,43 +4952,43 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-lifecycle-ext.stale-recovery.finalize-terminal-status.1.evidenceField",
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.finalize-terminal-status.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-ext.stale-recovery.finalize-terminal-status.2.evidenceField",
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.finalize-terminal-status.2.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-ext.stale-recovery.finalize-terminal-status.3.evidenceField",
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.finalize-terminal-status.3.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-ext.stale-recovery.finalize-terminal-status.4.evidenceField",
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.finalize-terminal-status.4.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-ext.stale-recovery.finalize-terminal-status.5.evidenceField",
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.finalize-terminal-status.5.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-ext.stale-recovery.finalize-terminal-status.requiredEvidence.recovery.branchRuntimePhase",
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.finalize-terminal-status.requiredEvidence.result.recovery.branchRuntimePhase",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-ext.stale-recovery.finalize-terminal-status.requiredEvidence.recovery.driverExecuteCalls",
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.finalize-terminal-status.requiredEvidence.result.recovery.driverExecuteCalls",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-ext.stale-recovery.finalize-terminal-status.requiredEvidence.recovery.phase",
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.finalize-terminal-status.requiredEvidence.result.recovery.phase",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-ext.stale-recovery.finalize-terminal-status.requiredEvidence.recovery.sameTurn",
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.finalize-terminal-status.requiredEvidence.result.recovery.sameTurn",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-ext.stale-recovery.finalize-terminal-status.requiredEvidence.recovery.staleRunStatus",
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.finalize-terminal-status.requiredEvidence.result.recovery.staleRunStatus",
           "status": "pass"
         }
       ],
@@ -4750,43 +5002,43 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-lifecycle-ext.stale-recovery.handoff-context-active-agent.1.evidenceField",
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.handoff-context-active-agent.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-ext.stale-recovery.handoff-context-active-agent.2.evidenceField",
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.handoff-context-active-agent.2.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-ext.stale-recovery.handoff-context-active-agent.3.evidenceField",
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.handoff-context-active-agent.3.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-ext.stale-recovery.handoff-context-active-agent.4.evidenceField",
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.handoff-context-active-agent.4.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-ext.stale-recovery.handoff-context-active-agent.5.evidenceField",
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.handoff-context-active-agent.5.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-ext.stale-recovery.handoff-context-active-agent.requiredEvidence.recovery.activeAgent",
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.handoff-context-active-agent.requiredEvidence.result.recovery.activeAgent",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-ext.stale-recovery.handoff-context-active-agent.requiredEvidence.recovery.branchStatusActiveAgent",
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.handoff-context-active-agent.requiredEvidence.result.recovery.branchStatusActiveAgent",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-ext.stale-recovery.handoff-context-active-agent.requiredEvidence.recovery.phase",
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.handoff-context-active-agent.requiredEvidence.result.recovery.phase",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-ext.stale-recovery.handoff-context-active-agent.requiredEvidence.recovery.sameTurn",
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.handoff-context-active-agent.requiredEvidence.result.recovery.sameTurn",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-ext.stale-recovery.handoff-context-active-agent.requiredEvidence.recovery.staleRunStatus",
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.handoff-context-active-agent.requiredEvidence.result.recovery.staleRunStatus",
           "status": "pass"
         }
       ],
@@ -4800,43 +5052,43 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-lifecycle-ext.stale-recovery.same-signal-iterate.1.evidenceField",
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.same-signal-iterate.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-ext.stale-recovery.same-signal-iterate.2.evidenceField",
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.same-signal-iterate.2.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-ext.stale-recovery.same-signal-iterate.3.evidenceField",
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.same-signal-iterate.3.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-ext.stale-recovery.same-signal-iterate.4.evidenceField",
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.same-signal-iterate.4.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-ext.stale-recovery.same-signal-iterate.5.evidenceField",
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.same-signal-iterate.5.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-ext.stale-recovery.same-signal-iterate.requiredEvidence.recovery.originalUserMessageCount",
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.same-signal-iterate.requiredEvidence.result.recovery.originalUserMessageCount",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-ext.stale-recovery.same-signal-iterate.requiredEvidence.recovery.preemptCalls",
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.same-signal-iterate.requiredEvidence.result.recovery.preemptCalls",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-ext.stale-recovery.same-signal-iterate.requiredEvidence.recovery.recoveredAssistantVisible",
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.same-signal-iterate.requiredEvidence.result.recovery.recoveredAssistantVisible",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-ext.stale-recovery.same-signal-iterate.requiredEvidence.recovery.sameTurn",
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.same-signal-iterate.requiredEvidence.result.recovery.sameTurn",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-ext.stale-recovery.same-signal-iterate.requiredEvidence.recovery.staleRunStatus",
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.same-signal-iterate.requiredEvidence.result.recovery.staleRunStatus",
           "status": "pass"
         }
       ],
@@ -4850,43 +5102,43 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-lifecycle-ext.stale-recovery.signal-mismatch-fresh-turn.1.evidenceField",
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.signal-mismatch-fresh-turn.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-ext.stale-recovery.signal-mismatch-fresh-turn.2.evidenceField",
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.signal-mismatch-fresh-turn.2.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-ext.stale-recovery.signal-mismatch-fresh-turn.3.evidenceField",
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.signal-mismatch-fresh-turn.3.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-ext.stale-recovery.signal-mismatch-fresh-turn.4.evidenceField",
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.signal-mismatch-fresh-turn.4.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-ext.stale-recovery.signal-mismatch-fresh-turn.5.evidenceField",
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.signal-mismatch-fresh-turn.5.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-ext.stale-recovery.signal-mismatch-fresh-turn.requiredEvidence.recovery.freshUserMessageCount",
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.signal-mismatch-fresh-turn.requiredEvidence.result.recovery.freshUserMessageCount",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-ext.stale-recovery.signal-mismatch-fresh-turn.requiredEvidence.recovery.originalUserMessageCount",
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.signal-mismatch-fresh-turn.requiredEvidence.result.recovery.originalUserMessageCount",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-ext.stale-recovery.signal-mismatch-fresh-turn.requiredEvidence.recovery.preemptCalls",
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.signal-mismatch-fresh-turn.requiredEvidence.result.recovery.preemptCalls",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-ext.stale-recovery.signal-mismatch-fresh-turn.requiredEvidence.recovery.sameTurn",
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.signal-mismatch-fresh-turn.requiredEvidence.result.recovery.sameTurn",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-ext.stale-recovery.signal-mismatch-fresh-turn.requiredEvidence.recovery.staleRunStatus",
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.signal-mismatch-fresh-turn.requiredEvidence.result.recovery.staleRunStatus",
           "status": "pass"
         }
       ],
@@ -4900,11 +5152,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-orchestration-af.handoff-last-output-only-builder.1.evidenceField",
+          "assertionId": "runtime-orchestration-af.handoff-last-output-only-builder.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-orchestration-af.handoff-last-output-only-builder.2.evidenceField",
+          "assertionId": "runtime-orchestration-af.handoff-last-output-only-builder.2.resultField",
           "status": "pass"
         },
         {
@@ -4913,6 +5165,14 @@
         },
         {
           "assertionId": "runtime-orchestration-af.handoff-last-output-only-builder.requiredEvidence.orchestration.surfaces.handoffLastOutputOnlyText",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-orchestration-af.handoff-last-output-only-builder.requiredEvidence.result.orchestration.surfaces.handoffLastOutputOnlyNoSourceSignal",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-orchestration-af.handoff-last-output-only-builder.requiredEvidence.result.orchestration.surfaces.handoffLastOutputOnlyText",
           "status": "pass"
         }
       ],
@@ -4926,11 +5186,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-orchestration-af.handoff-rejects-multiple-intents.1.evidenceField",
+          "assertionId": "runtime-orchestration-af.handoff-rejects-multiple-intents.1.resultField",
           "status": "pass"
         },
         {
           "assertionId": "runtime-orchestration-af.handoff-rejects-multiple-intents.requiredEvidence.orchestration.surfaces.handoffInvalidCompositionError.code",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-orchestration-af.handoff-rejects-multiple-intents.requiredEvidence.result.orchestration.surfaces.handoffInvalidCompositionError.code",
           "status": "pass"
         }
       ],
@@ -4944,11 +5208,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-orchestration-af.handoff-resolution-not-history-entry.1.evidenceField",
+          "assertionId": "runtime-orchestration-af.handoff-resolution-not-history-entry.1.resultField",
           "status": "pass"
         },
         {
           "assertionId": "runtime-orchestration-af.handoff-resolution-not-history-entry.requiredEvidence.orchestration.surfaces.handoffHistoryControlEntryAbsent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-orchestration-af.handoff-resolution-not-history-entry.requiredEvidence.result.orchestration.surfaces.handoffHistoryControlEntryAbsent",
           "status": "pass"
         }
       ],
@@ -4962,15 +5230,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-orchestration-af.worker-forwarded-event-source.1.evidenceField",
+          "assertionId": "runtime-orchestration-af.worker-forwarded-event-source.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-orchestration-af.worker-forwarded-event-source.2.evidenceField",
+          "assertionId": "runtime-orchestration-af.worker-forwarded-event-source.2.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-orchestration-af.worker-forwarded-event-source.3.evidenceField",
+          "assertionId": "runtime-orchestration-af.worker-forwarded-event-source.3.resultField",
           "status": "pass"
         },
         {
@@ -4984,6 +5252,18 @@
         {
           "assertionId": "runtime-orchestration-af.worker-forwarded-event-source.requiredEvidence.orchestration.nested.rootGrandchildSource.workerId",
           "status": "pass"
+        },
+        {
+          "assertionId": "runtime-orchestration-af.worker-forwarded-event-source.requiredEvidence.result.orchestration.nested.rootGrandchildSource.agent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-orchestration-af.worker-forwarded-event-source.requiredEvidence.result.orchestration.nested.rootGrandchildSource.threadId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-orchestration-af.worker-forwarded-event-source.requiredEvidence.result.orchestration.nested.rootGrandchildSource.workerId",
+          "status": "pass"
         }
       ],
       "checkId": "runtime-orchestration-af.worker-forwarded-event-source",
@@ -4996,11 +5276,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-orchestration.inheritance.driver-id.1.evidenceField",
+          "assertionId": "runtime-orchestration.inheritance.driver-id.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-orchestration.inheritance.driver-id.requiredEvidence.orchestration.inheritance.driverIdInherited",
+          "assertionId": "runtime-orchestration.inheritance.driver-id.requiredEvidence.result.orchestration.inheritance.driverIdInherited",
           "status": "pass"
         }
       ],
@@ -5014,11 +5294,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-orchestration.inheritance.schema-id.1.evidenceField",
+          "assertionId": "runtime-orchestration.inheritance.schema-id.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-orchestration.inheritance.schema-id.requiredEvidence.orchestration.inheritance.schemaInherited",
+          "assertionId": "runtime-orchestration.inheritance.schema-id.requiredEvidence.result.orchestration.inheritance.schemaInherited",
           "status": "pass"
         }
       ],
@@ -5032,11 +5312,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-orchestration.inheritance.tools.1.evidenceField",
+          "assertionId": "runtime-orchestration.inheritance.tools.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-orchestration.inheritance.tools.requiredEvidence.orchestration.inheritance.toolsInherited",
+          "assertionId": "runtime-orchestration.inheritance.tools.requiredEvidence.result.orchestration.inheritance.toolsInherited",
           "status": "pass"
         }
       ],
@@ -5050,11 +5330,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-orchestration.launch.await-result-does-not-start-parent.1.evidenceField",
+          "assertionId": "runtime-orchestration.launch.await-result-does-not-start-parent.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-orchestration.launch.await-result-does-not-start-parent.requiredEvidence.orchestration.launch.postAwaitSpawnError.code",
+          "assertionId": "runtime-orchestration.launch.await-result-does-not-start-parent.requiredEvidence.result.orchestration.launch.postAwaitSpawnError.code",
           "status": "pass"
         }
       ],
@@ -5068,11 +5348,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-orchestration.launch.await-result-rejects-before-parent-start.1.evidenceField",
+          "assertionId": "runtime-orchestration.launch.await-result-rejects-before-parent-start.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-orchestration.launch.await-result-rejects-before-parent-start.requiredEvidence.orchestration.launch.preStartAwaitResultError.code",
+          "assertionId": "runtime-orchestration.launch.await-result-rejects-before-parent-start.requiredEvidence.result.orchestration.launch.preStartAwaitResultError.code",
           "status": "pass"
         }
       ],
@@ -5086,11 +5366,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-orchestration.launch.child-runs-on-own-thread.1.evidenceField",
+          "assertionId": "runtime-orchestration.launch.child-runs-on-own-thread.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-orchestration.launch.child-runs-on-own-thread.requiredEvidence.orchestration.launch.childRunsOnOwnThread",
+          "assertionId": "runtime-orchestration.launch.child-runs-on-own-thread.requiredEvidence.result.orchestration.launch.childRunsOnOwnThread",
           "status": "pass"
         }
       ],
@@ -5104,11 +5384,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-orchestration.launch.spawn-rejects-before-parent-start.1.evidenceField",
+          "assertionId": "runtime-orchestration.launch.spawn-rejects-before-parent-start.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-orchestration.launch.spawn-rejects-before-parent-start.requiredEvidence.orchestration.launch.preStartSpawnError.code",
+          "assertionId": "runtime-orchestration.launch.spawn-rejects-before-parent-start.requiredEvidence.result.orchestration.launch.preStartSpawnError.code",
           "status": "pass"
         }
       ],
@@ -5122,11 +5402,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-orchestration.lifecycle.child-cancel-parent-completes.1.evidenceField",
+          "assertionId": "runtime-orchestration.lifecycle.child-cancel-parent-completes.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-orchestration.lifecycle.child-cancel-parent-completes.requiredEvidence.orchestration.lifecycle.childCancelledWhileParentCompleted",
+          "assertionId": "runtime-orchestration.lifecycle.child-cancel-parent-completes.requiredEvidence.result.orchestration.lifecycle.childCancelledWhileParentCompleted",
           "status": "pass"
         }
       ],
@@ -5140,11 +5420,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-orchestration.lifecycle.child-pause-parent-completes.1.evidenceField",
+          "assertionId": "runtime-orchestration.lifecycle.child-pause-parent-completes.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-orchestration.lifecycle.child-pause-parent-completes.requiredEvidence.orchestration.lifecycle.parentCompletedWhileChildPaused",
+          "assertionId": "runtime-orchestration.lifecycle.child-pause-parent-completes.requiredEvidence.result.orchestration.lifecycle.parentCompletedWhileChildPaused",
           "status": "pass"
         }
       ],
@@ -5158,11 +5438,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-orchestration.lifecycle.child-resume-stays-local.1.evidenceField",
+          "assertionId": "runtime-orchestration.lifecycle.child-resume-stays-local.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-orchestration.lifecycle.child-resume-stays-local.requiredEvidence.orchestration.lifecycle.childResumedPhase",
+          "assertionId": "runtime-orchestration.lifecycle.child-resume-stays-local.requiredEvidence.result.orchestration.lifecycle.childResumedPhase",
           "status": "pass"
         }
       ],
@@ -5176,11 +5456,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-orchestration.lifecycle.completed-parent-rejects-spawn.1.evidenceField",
+          "assertionId": "runtime-orchestration.lifecycle.completed-parent-rejects-spawn.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-orchestration.lifecycle.completed-parent-rejects-spawn.requiredEvidence.orchestration.lifecycle.completedSpawnError.code",
+          "assertionId": "runtime-orchestration.lifecycle.completed-parent-rejects-spawn.requiredEvidence.result.orchestration.lifecycle.completedSpawnError.code",
           "status": "pass"
         }
       ],
@@ -5194,11 +5474,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-orchestration.lifecycle.parent-cancel-child-completes.1.evidenceField",
+          "assertionId": "runtime-orchestration.lifecycle.parent-cancel-child-completes.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-orchestration.lifecycle.parent-cancel-child-completes.requiredEvidence.orchestration.lifecycle.parentCancelledWhileChildCompleted",
+          "assertionId": "runtime-orchestration.lifecycle.parent-cancel-child-completes.requiredEvidence.result.orchestration.lifecycle.parentCancelledWhileChildCompleted",
           "status": "pass"
         }
       ],
@@ -5212,11 +5492,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-orchestration.lifecycle.parent-pause-child-continues.1.evidenceField",
+          "assertionId": "runtime-orchestration.lifecycle.parent-pause-child-continues.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-orchestration.lifecycle.parent-pause-child-continues.requiredEvidence.orchestration.lifecycle.parentPausedWhileChildCompleted",
+          "assertionId": "runtime-orchestration.lifecycle.parent-pause-child-continues.requiredEvidence.result.orchestration.lifecycle.parentPausedWhileChildCompleted",
           "status": "pass"
         }
       ],
@@ -5230,11 +5510,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-orchestration.lifecycle.paused-parent-rejects-spawn.1.evidenceField",
+          "assertionId": "runtime-orchestration.lifecycle.paused-parent-rejects-spawn.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-orchestration.lifecycle.paused-parent-rejects-spawn.requiredEvidence.orchestration.lifecycle.pausedSpawnError.code",
+          "assertionId": "runtime-orchestration.lifecycle.paused-parent-rejects-spawn.requiredEvidence.result.orchestration.lifecycle.pausedSpawnError.code",
           "status": "pass"
         }
       ],
@@ -5248,11 +5528,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-orchestration.nested.child-receives-grandchild.1.evidenceField",
+          "assertionId": "runtime-orchestration.nested.child-receives-grandchild.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-orchestration.nested.child-receives-grandchild.requiredEvidence.orchestration.nested.childReceivesGrandchild",
+          "assertionId": "runtime-orchestration.nested.child-receives-grandchild.requiredEvidence.result.orchestration.nested.childReceivesGrandchild",
           "status": "pass"
         }
       ],
@@ -5266,11 +5546,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-orchestration.nested.child-source-agent.1.evidenceField",
+          "assertionId": "runtime-orchestration.nested.child-source-agent.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-orchestration.nested.child-source-agent.requiredEvidence.orchestration.nested.childGrandchildSource.agent",
+          "assertionId": "runtime-orchestration.nested.child-source-agent.requiredEvidence.result.orchestration.nested.childGrandchildSource.agent",
           "status": "pass"
         }
       ],
@@ -5284,11 +5564,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-orchestration.nested.child-source-thread-id-present.1.evidenceField",
+          "assertionId": "runtime-orchestration.nested.child-source-thread-id-present.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-orchestration.nested.child-source-thread-id-present.requiredEvidence.orchestration.nested.childGrandchildSource.threadId",
+          "assertionId": "runtime-orchestration.nested.child-source-thread-id-present.requiredEvidence.result.orchestration.nested.childGrandchildSource.threadId",
           "status": "pass"
         }
       ],
@@ -5302,11 +5582,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-orchestration.nested.child-source-worker-id-present.1.evidenceField",
+          "assertionId": "runtime-orchestration.nested.child-source-worker-id-present.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-orchestration.nested.child-source-worker-id-present.requiredEvidence.orchestration.nested.childGrandchildSource.workerId",
+          "assertionId": "runtime-orchestration.nested.child-source-worker-id-present.requiredEvidence.result.orchestration.nested.childGrandchildSource.workerId",
           "status": "pass"
         }
       ],
@@ -5320,11 +5600,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-orchestration.nested.root-receives-grandchild.1.evidenceField",
+          "assertionId": "runtime-orchestration.nested.root-receives-grandchild.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-orchestration.nested.root-receives-grandchild.requiredEvidence.orchestration.nested.rootReceivesGrandchild",
+          "assertionId": "runtime-orchestration.nested.root-receives-grandchild.requiredEvidence.result.orchestration.nested.rootReceivesGrandchild",
           "status": "pass"
         }
       ],
@@ -5338,11 +5618,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-orchestration.nested.root-source-agent.1.evidenceField",
+          "assertionId": "runtime-orchestration.nested.root-source-agent.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-orchestration.nested.root-source-agent.requiredEvidence.orchestration.nested.rootGrandchildSource.agent",
+          "assertionId": "runtime-orchestration.nested.root-source-agent.requiredEvidence.result.orchestration.nested.rootGrandchildSource.agent",
           "status": "pass"
         }
       ],
@@ -5356,11 +5636,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-orchestration.nested.root-source-thread-id-present.1.evidenceField",
+          "assertionId": "runtime-orchestration.nested.root-source-thread-id-present.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-orchestration.nested.root-source-thread-id-present.requiredEvidence.orchestration.nested.rootGrandchildSource.threadId",
+          "assertionId": "runtime-orchestration.nested.root-source-thread-id-present.requiredEvidence.result.orchestration.nested.rootGrandchildSource.threadId",
           "status": "pass"
         }
       ],
@@ -5374,11 +5654,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-orchestration.nested.root-source-worker-id-present.1.evidenceField",
+          "assertionId": "runtime-orchestration.nested.root-source-worker-id-present.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-orchestration.nested.root-source-worker-id-present.requiredEvidence.orchestration.nested.rootGrandchildSource.workerId",
+          "assertionId": "runtime-orchestration.nested.root-source-worker-id-present.requiredEvidence.result.orchestration.nested.rootGrandchildSource.workerId",
           "status": "pass"
         }
       ],
@@ -5392,11 +5672,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-orchestration.surfaces.all-events-include-descendants.1.evidenceField",
+          "assertionId": "runtime-orchestration.surfaces.all-events-include-descendants.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-orchestration.surfaces.all-events-include-descendants.requiredEvidence.orchestration.surfaces.allEventsIncludeDescendants",
+          "assertionId": "runtime-orchestration.surfaces.all-events-include-descendants.requiredEvidence.result.orchestration.surfaces.allEventsIncludeDescendants",
           "status": "pass"
         }
       ],
@@ -5410,11 +5690,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-orchestration.surfaces.await-result-failure-rejects.1.evidenceField",
+          "assertionId": "runtime-orchestration.surfaces.await-result-failure-rejects.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-orchestration.surfaces.await-result-failure-rejects.requiredEvidence.orchestration.surfaces.failedAwaitResultRejected",
+          "assertionId": "runtime-orchestration.surfaces.await-result-failure-rejects.requiredEvidence.result.orchestration.surfaces.failedAwaitResultRejected",
           "status": "pass"
         }
       ],
@@ -5428,11 +5708,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-orchestration.surfaces.await-result-visible-result.1.evidenceField",
+          "assertionId": "runtime-orchestration.surfaces.await-result-visible-result.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-orchestration.surfaces.await-result-visible-result.requiredEvidence.orchestration.surfaces.childResult.0.text",
+          "assertionId": "runtime-orchestration.surfaces.await-result-visible-result.requiredEvidence.result.orchestration.surfaces.childResult.0.text",
           "status": "pass"
         }
       ],
@@ -5446,11 +5726,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-orchestration.surfaces.child-all-events-remains-available.1.evidenceField",
+          "assertionId": "runtime-orchestration.surfaces.child-all-events-remains-available.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-orchestration.surfaces.child-all-events-remains-available.requiredEvidence.orchestration.surfaces.childAllEventsRemainAvailable",
+          "assertionId": "runtime-orchestration.surfaces.child-all-events-remains-available.requiredEvidence.result.orchestration.surfaces.childAllEventsRemainAvailable",
           "status": "pass"
         }
       ],
@@ -5464,11 +5744,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-orchestration.surfaces.descendant-source-attributed.1.evidenceField",
+          "assertionId": "runtime-orchestration.surfaces.descendant-source-attributed.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-orchestration.surfaces.descendant-source-attributed.requiredEvidence.orchestration.surfaces.descendantSourceAttributed",
+          "assertionId": "runtime-orchestration.surfaces.descendant-source-attributed.requiredEvidence.result.orchestration.surfaces.descendantSourceAttributed",
           "status": "pass"
         }
       ],
@@ -5482,11 +5762,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-orchestration.surfaces.events-self-only.1.evidenceField",
+          "assertionId": "runtime-orchestration.surfaces.events-self-only.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-orchestration.surfaces.events-self-only.requiredEvidence.orchestration.surfaces.eventsSelfOnly",
+          "assertionId": "runtime-orchestration.surfaces.events-self-only.requiredEvidence.result.orchestration.surfaces.eventsSelfOnly",
           "status": "pass"
         }
       ],
@@ -5500,11 +5780,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-orchestration.surfaces.handoff-descendant-agent-preserved.1.evidenceField",
+          "assertionId": "runtime-orchestration.surfaces.handoff-descendant-agent-preserved.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-orchestration.surfaces.handoff-descendant-agent-preserved.requiredEvidence.orchestration.surfaces.handoffDescendantAgentPreserved",
+          "assertionId": "runtime-orchestration.surfaces.handoff-descendant-agent-preserved.requiredEvidence.result.orchestration.surfaces.handoffDescendantAgentPreserved",
           "status": "pass"
         }
       ],
@@ -5518,11 +5798,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-orchestration.surfaces.no-worker-result-injection.1.evidenceField",
+          "assertionId": "runtime-orchestration.surfaces.no-worker-result-injection.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-orchestration.surfaces.no-worker-result-injection.requiredEvidence.orchestration.surfaces.noCanonicalWorkerResultInjection",
+          "assertionId": "runtime-orchestration.surfaces.no-worker-result-injection.requiredEvidence.result.orchestration.surfaces.noCanonicalWorkerResultInjection",
           "status": "pass"
         }
       ],

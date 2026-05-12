@@ -12,11 +12,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "providers-ext.approval.error-code-stable.1.evidenceField",
+          "assertionId": "providers-ext.approval.error-code-stable.1.resultField",
           "status": "pass"
         },
         {
           "assertionId": "providers-ext.approval.error-code-stable.requiredEvidence.frameworkOwnedApprovalBoundary.errorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers-ext.approval.error-code-stable.requiredEvidence.result.frameworkOwnedApprovalBoundary.errorCode",
           "status": "pass"
         }
       ],
@@ -30,11 +34,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "providers-ext.approval.error-reason-stable.1.evidenceField",
+          "assertionId": "providers-ext.approval.error-reason-stable.1.resultField",
           "status": "pass"
         },
         {
           "assertionId": "providers-ext.approval.error-reason-stable.requiredEvidence.frameworkOwnedApprovalBoundary.errorReason",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers-ext.approval.error-reason-stable.requiredEvidence.result.frameworkOwnedApprovalBoundary.errorReason",
           "status": "pass"
         }
       ],
@@ -48,7 +56,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "providers-ext.strict.error-code-stable.1.evidenceField",
+          "assertionId": "providers-ext.strict.error-code-stable.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers-ext.strict.error-code-stable.requiredEvidence.result.strictStructuredOutput.generateErrorCode",
           "status": "pass"
         },
         {
@@ -66,7 +78,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "providers-ext.strict.error-reason-stable.1.evidenceField",
+          "assertionId": "providers-ext.strict.error-reason-stable.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers-ext.strict.error-reason-stable.requiredEvidence.result.strictStructuredOutput.generateErrorReason",
           "status": "pass"
         },
         {
@@ -84,7 +100,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "providers-ext.strict.provider-call-count-zero.1.evidenceField",
+          "assertionId": "providers-ext.strict.provider-call-count-zero.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers-ext.strict.provider-call-count-zero.requiredEvidence.result.strictStructuredOutput.generateCalls",
           "status": "pass"
         },
         {
@@ -102,7 +122,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "providers-ext.strict.stream-call-count-zero.1.evidenceField",
+          "assertionId": "providers-ext.strict.stream-call-count-zero.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers-ext.strict.stream-call-count-zero.requiredEvidence.result.strictStructuredOutput.streamCalls",
           "status": "pass"
         },
         {
@@ -120,7 +144,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "providers-ext.strict.stream-error-code-stable.1.evidenceField",
+          "assertionId": "providers-ext.strict.stream-error-code-stable.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers-ext.strict.stream-error-code-stable.requiredEvidence.result.strictStructuredOutput.streamErrorCode",
           "status": "pass"
         },
         {
@@ -138,7 +166,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "providers-ext.strict.stream-error-reason-stable.1.evidenceField",
+          "assertionId": "providers-ext.strict.stream-error-reason-stable.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers-ext.strict.stream-error-reason-stable.requiredEvidence.result.strictStructuredOutput.streamErrorReason",
           "status": "pass"
         },
         {
@@ -156,11 +188,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "providers-ext.tool-execution.generate-error-code-stable.1.evidenceField",
+          "assertionId": "providers-ext.tool-execution.generate-error-code-stable.1.resultField",
           "status": "pass"
         },
         {
           "assertionId": "providers-ext.tool-execution.generate-error-code-stable.requiredEvidence.frameworkOwnedToolExecution.generateErrorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers-ext.tool-execution.generate-error-code-stable.requiredEvidence.result.frameworkOwnedToolExecution.generateErrorCode",
           "status": "pass"
         }
       ],
@@ -174,11 +210,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "providers-ext.tool-execution.generate-error-reason-stable.1.evidenceField",
+          "assertionId": "providers-ext.tool-execution.generate-error-reason-stable.1.resultField",
           "status": "pass"
         },
         {
           "assertionId": "providers-ext.tool-execution.generate-error-reason-stable.requiredEvidence.frameworkOwnedToolExecution.generateErrorReason",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers-ext.tool-execution.generate-error-reason-stable.requiredEvidence.result.frameworkOwnedToolExecution.generateErrorReason",
           "status": "pass"
         }
       ],
@@ -192,11 +232,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "providers-ext.tool-execution.stream-error-code-stable.1.evidenceField",
+          "assertionId": "providers-ext.tool-execution.stream-error-code-stable.1.resultField",
           "status": "pass"
         },
         {
           "assertionId": "providers-ext.tool-execution.stream-error-code-stable.requiredEvidence.frameworkOwnedToolExecution.streamErrorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers-ext.tool-execution.stream-error-code-stable.requiredEvidence.result.frameworkOwnedToolExecution.streamErrorCode",
           "status": "pass"
         }
       ],
@@ -210,11 +254,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "providers-ext.tool-execution.stream-error-reason-stable.1.evidenceField",
+          "assertionId": "providers-ext.tool-execution.stream-error-reason-stable.1.resultField",
           "status": "pass"
         },
         {
           "assertionId": "providers-ext.tool-execution.stream-error-reason-stable.requiredEvidence.frameworkOwnedToolExecution.streamErrorReason",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers-ext.tool-execution.stream-error-reason-stable.requiredEvidence.result.frameworkOwnedToolExecution.streamErrorReason",
           "status": "pass"
         }
       ],
@@ -228,11 +276,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "providers-ext.tool-result.generate-does-not-resolve.1.evidenceField",
+          "assertionId": "providers-ext.tool-result.generate-does-not-resolve.1.resultField",
           "status": "pass"
         },
         {
           "assertionId": "providers-ext.tool-result.generate-does-not-resolve.requiredEvidence.frameworkOwnedToolResultBoundary.generateResolved",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers-ext.tool-result.generate-does-not-resolve.requiredEvidence.result.frameworkOwnedToolResultBoundary.generateResolved",
           "status": "pass"
         }
       ],
@@ -246,11 +298,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "providers-ext.tool-result.generate-error-code-stable.1.evidenceField",
+          "assertionId": "providers-ext.tool-result.generate-error-code-stable.1.resultField",
           "status": "pass"
         },
         {
           "assertionId": "providers-ext.tool-result.generate-error-code-stable.requiredEvidence.frameworkOwnedToolResultBoundary.generateErrorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers-ext.tool-result.generate-error-code-stable.requiredEvidence.result.frameworkOwnedToolResultBoundary.generateErrorCode",
           "status": "pass"
         }
       ],
@@ -264,11 +320,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "providers-ext.tool-result.generate-error-reason-stable.1.evidenceField",
+          "assertionId": "providers-ext.tool-result.generate-error-reason-stable.1.resultField",
           "status": "pass"
         },
         {
           "assertionId": "providers-ext.tool-result.generate-error-reason-stable.requiredEvidence.frameworkOwnedToolResultBoundary.generateErrorReason",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers-ext.tool-result.generate-error-reason-stable.requiredEvidence.result.frameworkOwnedToolResultBoundary.generateErrorReason",
           "status": "pass"
         }
       ],
@@ -282,11 +342,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "providers-ext.tool-result.stream-emits-no-canonical-chunks.1.evidenceField",
+          "assertionId": "providers-ext.tool-result.stream-emits-no-canonical-chunks.1.resultField",
           "status": "pass"
         },
         {
           "assertionId": "providers-ext.tool-result.stream-emits-no-canonical-chunks.requiredEvidence.frameworkOwnedToolResultBoundary.streamChunkCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers-ext.tool-result.stream-emits-no-canonical-chunks.requiredEvidence.result.frameworkOwnedToolResultBoundary.streamChunkCount",
           "status": "pass"
         }
       ],
@@ -300,11 +364,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "providers-ext.tool-result.stream-error-code-stable.1.evidenceField",
+          "assertionId": "providers-ext.tool-result.stream-error-code-stable.1.resultField",
           "status": "pass"
         },
         {
           "assertionId": "providers-ext.tool-result.stream-error-code-stable.requiredEvidence.frameworkOwnedToolResultBoundary.streamErrorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers-ext.tool-result.stream-error-code-stable.requiredEvidence.result.frameworkOwnedToolResultBoundary.streamErrorCode",
           "status": "pass"
         }
       ],
@@ -318,11 +386,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "providers-ext.tool-result.stream-error-reason-stable.1.evidenceField",
+          "assertionId": "providers-ext.tool-result.stream-error-reason-stable.1.resultField",
           "status": "pass"
         },
         {
           "assertionId": "providers-ext.tool-result.stream-error-reason-stable.requiredEvidence.frameworkOwnedToolResultBoundary.streamErrorReason",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers-ext.tool-result.stream-error-reason-stable.requiredEvidence.result.frameworkOwnedToolResultBoundary.streamErrorReason",
           "status": "pass"
         }
       ],
@@ -336,19 +408,19 @@
     {
       "assertionResults": [
         {
-          "assertionId": "providers.bridge.generate_mapping.1.evidenceField",
+          "assertionId": "providers.bridge.generate_mapping.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "providers.bridge.generate_mapping.2.evidenceField",
+          "assertionId": "providers.bridge.generate_mapping.2.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "providers.bridge.generate_mapping.3.evidenceField",
+          "assertionId": "providers.bridge.generate_mapping.3.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "providers.bridge.generate_mapping.4.evidenceField",
+          "assertionId": "providers.bridge.generate_mapping.4.resultField",
           "status": "pass"
         },
         {
@@ -366,6 +438,22 @@
         {
           "assertionId": "providers.bridge.generate_mapping.requiredEvidence.generate.responsePartTypes",
           "status": "pass"
+        },
+        {
+          "assertionId": "providers.bridge.generate_mapping.requiredEvidence.result.generate.providerMetadataKeys",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.bridge.generate_mapping.requiredEvidence.result.generate.responseFormatName",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.bridge.generate_mapping.requiredEvidence.result.generate.responseFormatType",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.bridge.generate_mapping.requiredEvidence.result.generate.responsePartTypes",
+          "status": "pass"
         }
       ],
       "checkId": "providers.bridge.generate_mapping",
@@ -378,11 +466,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "providers.bridge.provider_failure_normalization.1.evidenceField",
+          "assertionId": "providers.bridge.provider_failure_normalization.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "providers.bridge.provider_failure_normalization.2.evidenceField",
+          "assertionId": "providers.bridge.provider_failure_normalization.2.resultField",
           "status": "pass"
         },
         {
@@ -391,6 +479,14 @@
         },
         {
           "assertionId": "providers.bridge.provider_failure_normalization.requiredEvidence.failure.errorName",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.bridge.provider_failure_normalization.requiredEvidence.result.failure.errorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.bridge.provider_failure_normalization.requiredEvidence.result.failure.errorName",
           "status": "pass"
         }
       ],
@@ -404,11 +500,19 @@
     {
       "assertionResults": [
         {
-          "assertionId": "providers.bridge.stream_metadata_continuity.1.evidenceField",
+          "assertionId": "providers.bridge.stream_metadata_continuity.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "providers.bridge.stream_metadata_continuity.2.evidenceField",
+          "assertionId": "providers.bridge.stream_metadata_continuity.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.bridge.stream_metadata_continuity.requiredEvidence.result.stream.chunkTypes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.bridge.stream_metadata_continuity.requiredEvidence.result.stream.finishMetadataKeys",
           "status": "pass"
         },
         {
@@ -430,15 +534,23 @@
     {
       "assertionResults": [
         {
-          "assertionId": "providers.bridge.structured_output_stream.1.evidenceField",
+          "assertionId": "providers.bridge.structured_output_stream.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "providers.bridge.structured_output_stream.2.evidenceField",
+          "assertionId": "providers.bridge.structured_output_stream.2.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "providers.bridge.structured_output_stream.3.evidenceField",
+          "assertionId": "providers.bridge.structured_output_stream.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.bridge.structured_output_stream.requiredEvidence.result.structured.chunkTypes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.bridge.structured_output_stream.requiredEvidence.result.structured.doneName",
           "status": "pass"
         },
         {
@@ -460,11 +572,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "providers-ext.failure.error-code-snake-case.1.evidenceField",
+          "assertionId": "providers-ext.failure.error-code-snake-case.1.resultField",
           "status": "pass"
         },
         {
           "assertionId": "providers-ext.failure.error-code-snake-case.requiredEvidence.failure.errorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers-ext.failure.error-code-snake-case.requiredEvidence.result.failure.errorCode",
           "status": "pass"
         }
       ],
@@ -478,11 +594,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "providers-ext.failure.error-name-pascal-case.1.evidenceField",
+          "assertionId": "providers-ext.failure.error-name-pascal-case.1.resultField",
           "status": "pass"
         },
         {
           "assertionId": "providers-ext.failure.error-name-pascal-case.requiredEvidence.failure.errorName",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers-ext.failure.error-name-pascal-case.requiredEvidence.result.failure.errorName",
           "status": "pass"
         }
       ],
@@ -496,11 +616,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "providers-ext.generate.response-format-name-matches-pattern.1.evidenceField",
+          "assertionId": "providers-ext.generate.response-format-name-matches-pattern.1.resultField",
           "status": "pass"
         },
         {
           "assertionId": "providers-ext.generate.response-format-name-matches-pattern.requiredEvidence.generate.responseFormatName",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers-ext.generate.response-format-name-matches-pattern.requiredEvidence.result.generate.responseFormatName",
           "status": "pass"
         }
       ],
@@ -514,11 +638,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "providers-ext.generate.response-part-types-shape-array.1.evidenceField",
+          "assertionId": "providers-ext.generate.response-part-types-shape-array.1.resultField",
           "status": "pass"
         },
         {
           "assertionId": "providers-ext.generate.response-part-types-shape-array.requiredEvidence.generate.responsePartTypes.0",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers-ext.generate.response-part-types-shape-array.requiredEvidence.result.generate.responsePartTypes.0",
           "status": "pass"
         }
       ],
@@ -532,7 +660,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "providers-ext.structured.done-name-matches-identifier.1.evidenceField",
+          "assertionId": "providers-ext.structured.done-name-matches-identifier.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers-ext.structured.done-name-matches-identifier.requiredEvidence.result.structured.doneName",
           "status": "pass"
         },
         {
@@ -550,7 +682,11 @@
     {
       "assertionResults": [
         {
-          "assertionId": "providers-ext.structured.first-chunk-is-structured-delta-or-text-delta.1.evidenceField",
+          "assertionId": "providers-ext.structured.first-chunk-is-structured-delta-or-text-delta.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers-ext.structured.first-chunk-is-structured-delta-or-text-delta.requiredEvidence.result.structured.chunkTypes.0",
           "status": "pass"
         },
         {

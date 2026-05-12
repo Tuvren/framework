@@ -16,7 +16,7 @@
       "input": { "scenarioPath": "$.driver-hook-turn" },
       "assertions": [
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.driver.phase",
           "equals": "completed"
         }
@@ -30,17 +30,17 @@
       "input": { "scenarioPath": "$.driver-resume-approval" },
       "assertions": [
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.driver.resolutionType",
           "equals": "end_turn"
         },
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.driver.approvalDecisionCallIds",
           "equals": ["call-search"]
         },
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.driver.pendingToolCallIds",
           "equals": ["call-search"]
         }
@@ -58,7 +58,7 @@
       "input": { "scenarioPath": "$.driver-resume-missing-pending-call" },
       "assertions": [
         {
-          "kind": "evidenceField",
+          "kind": "resultField",
           "field": "$.driver.resolutionType",
           "equals": "fail"
         },
