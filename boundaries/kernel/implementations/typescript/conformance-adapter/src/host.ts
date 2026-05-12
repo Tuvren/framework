@@ -224,44 +224,38 @@ async function deterministicHashing(
     ),
   });
 
-  return {
-    evidence: {
-      hashes: {
-        rawOpaqueBytes: await hashOpaqueObjectBytes(
-          Uint8Array.from(rawOpaqueBytes)
-        ),
-        turnNodeIdentity: turnNodeHash,
-        turnTreeSchema: await hashKernelRecord(schemaRecord),
-      },
+  return createProjection({
+    hashes: {
+      rawOpaqueBytes: await hashOpaqueObjectBytes(Uint8Array.from(rawOpaqueBytes)),
+      turnNodeIdentity: turnNodeHash,
+      turnTreeSchema: await hashKernelRecord(schemaRecord),
     },
-  };
+  });
 }
 
 function schemaRoundtrip(
   fixture: Record<string, unknown>
 ): Record<string, unknown> {
-  return {
-    evidence: {
-      roundtrip: {
-        turnNodeIdentityRecord: decodeDeterministicKernelRecord(
-          hexToBytes(
-            readString(
-              fixture.turnNodeIdentityRecordCborHex,
-              "turnNodeIdentityRecordCborHex"
-            )
+  return createProjection({
+    roundtrip: {
+      turnNodeIdentityRecord: decodeDeterministicKernelRecord(
+        hexToBytes(
+          readString(
+            fixture.turnNodeIdentityRecordCborHex,
+            "turnNodeIdentityRecordCborHex"
           )
-        ),
-        turnTreeSchemaRecord: decodeDeterministicKernelRecord(
-          hexToBytes(
-            readString(
-              fixture.turnTreeSchemaRecordCborHex,
-              "turnTreeSchemaRecordCborHex"
-            )
+        )
+      ),
+      turnTreeSchemaRecord: decodeDeterministicKernelRecord(
+        hexToBytes(
+          readString(
+            fixture.turnTreeSchemaRecordCborHex,
+            "turnTreeSchemaRecordCborHex"
           )
-        ),
-      },
+        )
+      ),
     },
-  };
+  });
 }
 
 async function runModifyComposition(): Promise<Record<string, unknown>> {
@@ -285,14 +279,12 @@ async function runModifyComposition(): Promise<Record<string, unknown>> {
       );
     }
 
-    return {
-      evidence: {
-        verdict: {
-          kind: verdict.kind,
-          transform: verdict.transform,
-        },
+    return createProjection({
+      verdict: {
+        kind: verdict.kind,
+        transform: verdict.transform,
       },
-    };
+    });
   });
 }
 
@@ -316,7 +308,7 @@ async function runLogicalDiff(
       await kernel.tree.diff(created.rootTurnTreeHash, changedTree)
     ).toSorted();
 
-    return { evidence: { diffPaths } };
+    return createProjection({ diffPaths });
   });
 }
 
@@ -333,7 +325,7 @@ async function runBranchList(
     );
     const branchEntries = await kernel.branch.list("thread_conformance");
 
-    return { evidence: { branchEntries } };
+    return createProjection({ branchEntries });
   });
 }
 
@@ -394,15 +386,13 @@ async function runRecoveryState(
 
     const recovery = await kernel.run.recover("run_recovery");
 
-    return {
-      evidence: {
-        recovery: {
-          consumedStagedResults: recovery.consumedStagedResults.length,
-          lastCompletedStepId: recovery.lastCompletedStepId,
-          uncommittedStagedResults: recovery.uncommittedStagedResults.length,
-        },
+    return createProjection({
+      recovery: {
+        consumedStagedResults: recovery.consumedStagedResults.length,
+        lastCompletedStepId: recovery.lastCompletedStepId,
+        uncommittedStagedResults: recovery.uncommittedStagedResults.length,
       },
-    };
+    });
   });
 }
 
@@ -448,18 +438,14 @@ async function runCrossThreadLineage(): Promise<Record<string, unknown>> {
 
       // Unexpected acceptance is surfaced as evidence instead of crashing the
       // adapter so the shared runner can report one semantic failure cleanly.
-      return {
-        evidence: {
-          diagnostics: ["thread A node unexpectedly seeded thread B branch"],
-          errorCode: "unexpected_success",
-        },
-      };
+      return createProjection({
+        diagnostics: ["thread A node unexpectedly seeded thread B branch"],
+        errorCode: "unexpected_success",
+      });
     } catch (error: unknown) {
-      return {
-        evidence: {
-          errorCode: normalizeLogicalErrorCode(readErrorCode(error)),
-        },
-      };
+      return createProjection({
+        errorCode: normalizeLogicalErrorCode(readErrorCode(error)),
+      });
     }
   });
 }
@@ -687,23 +673,21 @@ async function runProtocolEdgeValidation(): Promise<Record<string, unknown>> {
       await kernel.branch.setHead(lateralThread.branchId, forkTurnNodeHash);
     });
 
-    return {
-      evidence: {
-        protocolEdgeValidation: {
-          branch: { lateralHeadCode },
-          run: {
-            busyBranchCode,
-            missingEventObjectCode,
-            outOfOrderStepCode,
-          },
-          schema: { duplicatePathCode },
-          tree: {
-            missingRequiredPathCode,
-            schemaMismatchCode,
-          },
+    return createProjection({
+      protocolEdgeValidation: {
+        branch: { lateralHeadCode },
+        run: {
+          busyBranchCode,
+          missingEventObjectCode,
+          outOfOrderStepCode,
+        },
+        schema: { duplicatePathCode },
+        tree: {
+          missingRequiredPathCode,
+          schemaMismatchCode,
         },
       },
-    };
+    });
   });
 }
 
@@ -780,15 +764,13 @@ async function runLeaseRenewal(): Promise<Record<string, unknown>> {
       staleTokenCode = normalizeLogicalErrorCode(readErrorCode(error));
     }
 
-    return {
-      evidence: {
-        renewal: {
-          ownerMismatchCode,
-          renewedLeaseExpiresAtMs: renewed.leaseExpiresAtMs,
-          staleTokenCode,
-        },
+    return createProjection({
+      renewal: {
+        ownerMismatchCode,
+        renewedLeaseExpiresAtMs: renewed.leaseExpiresAtMs,
+        staleTokenCode,
       },
-    };
+    });
   });
 }
 
@@ -876,17 +858,13 @@ async function runExpiredListing(): Promise<Record<string, unknown>> {
       throw new Error("expected paused stored run");
     }
 
-    return {
-      evidence: {
-        listing: {
-          expiredRunIds: expiredRuns.map((run) => run.runId),
-          pausedRunListed: expiredRuns.some(
-            (run) => run.runId === pausedRun.runId
-          ),
-          pausedRunStatus: pausedStoredRun.status,
-        },
+    return createProjection({
+      listing: {
+        expiredRunIds: expiredRuns.map((run) => run.runId),
+        pausedRunListed: expiredRuns.some((run) => run.runId === pausedRun.runId),
+        pausedRunStatus: pausedStoredRun.status,
       },
-    };
+    });
   });
 }
 
@@ -945,23 +923,21 @@ async function runStalePreemption(): Promise<Record<string, unknown>> {
       throw new Error("expected preempted branch");
     }
 
-    return {
-      evidence: {
-        preemption: {
-          branchHeadTurnNodeHash: updatedBranch.headTurnNodeHash,
-          leaseCleared:
-            storedRun.executionOwnerId === undefined &&
-            storedRun.fencingToken === undefined &&
-            storedRun.leaseExpiresAtMs === undefined,
-          preemptionReason: storedRun.preemptionReason ?? null,
-          recoveryHeadMatchesBranchHead:
-            recovery.lastTurnNodeHash === updatedBranch.headTurnNodeHash,
-          recoveryLastTurnNodeHash: recovery.lastTurnNodeHash,
-          runStatus: storedRun.status,
-          uncommittedStagedResults: recovery.uncommittedStagedResults.length,
-        },
+    return createProjection({
+      preemption: {
+        branchHeadTurnNodeHash: updatedBranch.headTurnNodeHash,
+        leaseCleared:
+          storedRun.executionOwnerId === undefined &&
+          storedRun.fencingToken === undefined &&
+          storedRun.leaseExpiresAtMs === undefined,
+        preemptionReason: storedRun.preemptionReason ?? null,
+        recoveryHeadMatchesBranchHead:
+          recovery.lastTurnNodeHash === updatedBranch.headTurnNodeHash,
+        recoveryLastTurnNodeHash: recovery.lastTurnNodeHash,
+        runStatus: storedRun.status,
+        uncommittedStagedResults: recovery.uncommittedStagedResults.length,
       },
-    };
+    });
   });
 }
 
@@ -978,14 +954,21 @@ async function runRestartRecovery(): Promise<Record<string, unknown>> {
       metadataPath
     );
 
-    return {
-      evidence: {
-        restartRecovery: reopened,
-      },
-    };
+    return createProjection({
+      restartRecovery: reopened,
+    });
   } finally {
     await rm(tempDirectory, { force: true, recursive: true });
   }
+}
+
+function createProjection<T extends Record<string, unknown>>(
+  evidence: T
+): Record<string, unknown> {
+  return {
+    evidence,
+    result: evidence,
+  };
 }
 
 function readStagedResults(value: unknown, label: string): StagedResult[] {

@@ -262,6 +262,12 @@ export function createFrameworkAdapterRecoveryScenarios(
       `${recoveryCase}_user_message`,
       prompt
     );
+    await stageRecoveredTurnLineage(
+      livenessHarness,
+      staleRunId,
+      `${recoveryCase}_turn_lineage`,
+      staleTurn.turnId
+    );
 
     switch (recoveryCase) {
       case "same_signal_iterate":
@@ -443,6 +449,21 @@ export function createFrameworkAdapterRecoveryScenarios(
       encodeDeterministicKernelRecord(status),
       taskId,
       "runtime_status",
+      "completed"
+    );
+  }
+
+  async function stageRecoveredTurnLineage(
+    livenessHarness: ReturnType<typeof createConformanceRunLivenessKernelHarness>,
+    runId: string,
+    taskId: string,
+    turnId: string
+  ): Promise<void> {
+    await livenessHarness.kernel.staging.stage(
+      runId,
+      encodeDeterministicKernelRecord({ activeTurnId: turnId }),
+      taskId,
+      "turn_lineage",
       "completed"
     );
   }

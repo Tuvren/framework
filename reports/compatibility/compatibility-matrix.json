@@ -274,8 +274,8 @@
             "runtime-orchestration.surfaces.no-worker-result-injection"
           ],
           "checkSummary": {
-            "failedChecks": 24,
-            "passedChecks": 241,
+            "failedChecks": 0,
+            "passedChecks": 265,
             "totalChecks": 265,
             "applicableChecks": 265,
             "nonApplicableChecks": 0
@@ -294,8 +294,8 @@
           ],
           "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.typescript-framework.json",
           "reportLabel": "TypeScript framework runtime baseline",
-          "reportStatus": "unexpected_fail",
-          "status": "fail",
+          "reportStatus": "full_pass",
+          "status": "pass",
           "suiteId": "tuvren.framework.promoted-authority",
           "suiteVersion": "0.1.0"
         }

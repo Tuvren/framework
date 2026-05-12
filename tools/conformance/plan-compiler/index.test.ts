@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-import { mkdtemp, readFile, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 import { describe, expect, test } from "bun:test";
 import { loadConformancePlan } from "./index.ts";
 
 describe("resultField required evidence", () => {
-  test("roots required evidence under result instead of a bare evidence path", async () => {
+  test("adds a result-rooted evidence requirement for resultField assertions", async () => {
     const compiledPlan = await loadConformancePlan(
       "boundaries/framework/conformance/plans/driver-api-core.json"
     );
@@ -30,7 +30,6 @@ describe("resultField required evidence", () => {
     );
 
     expect(check?.requiredEvidence).toContain("result.driver.phase");
-    expect(check?.requiredEvidence).not.toContain("driver.phase");
   });
 
   test("roots whole-result assertions at result", async () => {
@@ -111,7 +110,7 @@ describe("resultField required evidence", () => {
         delete targetAssertion.field;
       })
     ).rejects.toThrow(
-      "has no field configured on resultField assertion"
+      "must have required property 'field'"
     );
   });
 });
@@ -120,8 +119,9 @@ async function loadMutatedPlan(
   planPath: string,
   mutate: (plan: Record<string, unknown>) => void
 ) {
+  const sourcePlanPath = join(process.cwd(), planPath);
   const source = readRecord(
-    JSON.parse(await readFile(join(process.cwd(), planPath), "utf8")),
+    JSON.parse(await readFile(sourcePlanPath, "utf8")),
     planPath
   );
   mutate(source);
@@ -130,7 +130,31 @@ async function loadMutatedPlan(
   const tempPath = join(tempDir, "plan.json");
 
   await writeFile(tempPath, `${JSON.stringify(source, null, 2)}\n`, "utf8");
+  await copyPlanReferences(sourcePlanPath, tempDir, source.fixtures);
+  await copyPlanReferences(sourcePlanPath, tempDir, source.scenarios);
   return await loadConformancePlan(tempPath);
+}
+
+async function copyPlanReferences(
+  sourcePlanPath: string,
+  tempDir: string,
+  references: unknown
+): Promise<void> {
+  if (!isRecord(references)) {
+    return;
+  }
+
+  for (const relativePath of Object.values(references)) {
+    if (typeof relativePath !== "string") {
+      continue;
+    }
+
+    const sourcePath = join(dirname(sourcePlanPath), relativePath);
+    const tempPath = join(tempDir, relativePath);
+
+    await mkdir(dirname(tempPath), { recursive: true });
+    await writeFile(tempPath, await readFile(sourcePath, "utf8"), "utf8");
+  }
 }
 
 function readArray(value: unknown, label: string): unknown[] {
@@ -142,20 +166,20 @@ function readArray(value: unknown, label: string): unknown[] {
 }
 
 function readRecord(value: unknown, label: string): Record<string, unknown> {
-  if (typeof value !== "object" || value === null) {
+  if (!isRecord(value)) {
     throw new Error(`${label} must be an object`);
   }
 
-  return value as Record<string, unknown>;
+  return value;
 }
 
 function readRecordString(
   value: unknown,
   key: string
 ): string | undefined {
-  return typeof value === "object" &&
-    value !== null &&
-    typeof (value as Record<string, unknown>)[key] === "string"
-    ? (value as Record<string, unknown>)[key]
-    : undefined;
+  return isRecord(value) && typeof value[key] === "string" ? value[key] : undefined;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
 }

@@ -205,19 +205,17 @@ async function generateMapping(): Promise<Record<string, unknown>> {
     ? response.providerMetadata
     : {};
 
-  return {
-    evidence: {
-      generate: {
-        providerMetadataKeys: Object.keys(providerMetadata),
-        responseFormatName:
-          capturedOptions?.responseFormat?.type === "json"
-            ? capturedOptions.responseFormat.name
-            : undefined,
-        responseFormatType: capturedOptions?.responseFormat?.type,
-        responsePartTypes: response.parts.map((part) => part.type),
-      },
+  return createProjection({
+    generate: {
+      providerMetadataKeys: Object.keys(providerMetadata),
+      responseFormatName:
+        capturedOptions?.responseFormat?.type === "json"
+          ? capturedOptions.responseFormat.name
+          : undefined,
+      responseFormatType: capturedOptions?.responseFormat?.type,
+      responsePartTypes: response.parts.map((part) => part.type),
     },
-  };
+  });
 }
 
 async function streamMetadataContinuity(): Promise<Record<string, unknown>> {
@@ -259,16 +257,14 @@ async function streamMetadataContinuity(): Promise<Record<string, unknown>> {
   );
   const finishChunk = findFinishChunk(chunks, "tool_call");
 
-  return {
-    evidence: {
-      stream: {
-        chunkTypes: chunks.map((chunk) => chunk.type),
-        finishMetadataKeys: isRecord(finishChunk.providerMetadata)
-          ? Object.keys(finishChunk.providerMetadata)
-          : [],
-      },
+  return createProjection({
+    stream: {
+      chunkTypes: chunks.map((chunk) => chunk.type),
+      finishMetadataKeys: isRecord(finishChunk.providerMetadata)
+        ? Object.keys(finishChunk.providerMetadata)
+        : [],
     },
-  };
+  });
 }
 
 async function structuredOutputStream(): Promise<Record<string, unknown>> {
@@ -299,14 +295,12 @@ async function structuredOutputStream(): Promise<Record<string, unknown>> {
   );
   const structuredDoneChunk = findStructuredDoneChunk(chunks, "answer");
 
-  return {
-    evidence: {
-      structured: {
-        chunkTypes: chunks.map((chunk) => chunk.type),
-        doneName: structuredDoneChunk.name,
-      },
+  return createProjection({
+    structured: {
+      chunkTypes: chunks.map((chunk) => chunk.type),
+      doneName: structuredDoneChunk.name,
     },
-  };
+  });
 }
 
 async function providerFailureNormalization(): Promise<
@@ -323,18 +317,15 @@ async function providerFailureNormalization(): Promise<
     bridge.generate(providerTestkitFixtures.prompt)
   );
 
-  return {
-    evidence: {
-      failure: {
-        errorCode:
-          error instanceof TuvrenProviderError ? error.code : "unknown",
-        errorName:
-          error instanceof TuvrenProviderError
-            ? "TuvrenProviderError"
-            : error.constructor.name,
-      },
+  return createProjection({
+    failure: {
+      errorCode: error instanceof TuvrenProviderError ? error.code : "unknown",
+      errorName:
+        error instanceof TuvrenProviderError
+          ? "TuvrenProviderError"
+          : error.constructor.name,
     },
-  };
+  });
 }
 
 async function strictStructuredOutputRejection(): Promise<
@@ -382,24 +373,20 @@ async function strictStructuredOutputRejection(): Promise<
     );
   });
 
-  return {
-    evidence: {
-      strictStructuredOutput: {
-        generateCalls,
-        generateErrorCode:
-          generateError instanceof TuvrenProviderError
-            ? generateError.code
-            : "unknown",
-        generateErrorReason: readProviderErrorReason(generateError),
-        streamCalls,
-        streamErrorCode:
-          streamError instanceof TuvrenProviderError
-            ? streamError.code
-            : "unknown",
-        streamErrorReason: readProviderErrorReason(streamError),
-      },
+  return createProjection({
+    strictStructuredOutput: {
+      generateCalls,
+      generateErrorCode:
+        generateError instanceof TuvrenProviderError
+          ? generateError.code
+          : "unknown",
+      generateErrorReason: readProviderErrorReason(generateError),
+      streamCalls,
+      streamErrorCode:
+        streamError instanceof TuvrenProviderError ? streamError.code : "unknown",
+      streamErrorReason: readProviderErrorReason(streamError),
     },
-  };
+  });
 }
 
 async function providerOwnedToolExecutionRejection(): Promise<
@@ -447,22 +434,18 @@ async function providerOwnedToolExecutionRejection(): Promise<
     await collectProviderStreamChunks(streamBridge.stream(providerTestkitFixtures.toolPrompt));
   });
 
-  return {
-    evidence: {
-      frameworkOwnedToolExecution: {
-        generateErrorCode:
-          generateError instanceof TuvrenProviderError
-            ? generateError.code
-            : "unknown",
-        generateErrorReason: readProviderErrorReason(generateError),
-        streamErrorCode:
-          streamError instanceof TuvrenProviderError
-            ? streamError.code
-            : "unknown",
-        streamErrorReason: readProviderErrorReason(streamError),
-      },
+  return createProjection({
+    frameworkOwnedToolExecution: {
+      generateErrorCode:
+        generateError instanceof TuvrenProviderError
+          ? generateError.code
+          : "unknown",
+      generateErrorReason: readProviderErrorReason(generateError),
+      streamErrorCode:
+        streamError instanceof TuvrenProviderError ? streamError.code : "unknown",
+      streamErrorReason: readProviderErrorReason(streamError),
     },
-  };
+  });
 }
 
 async function providerOwnedToolResultRejection(): Promise<
@@ -520,24 +503,20 @@ async function providerOwnedToolResultRejection(): Promise<
       }
   });
 
-  return {
-    evidence: {
-      frameworkOwnedToolResultBoundary: {
-        generateErrorCode:
-          generateError instanceof TuvrenProviderError
-            ? generateError.code
-            : "unknown",
-        generateErrorReason: readProviderErrorReason(generateError),
-        generateResolved,
-        streamChunkCount,
-        streamErrorCode:
-          streamError instanceof TuvrenProviderError
-            ? streamError.code
-            : "unknown",
-        streamErrorReason: readProviderErrorReason(streamError),
-      },
+  return createProjection({
+    frameworkOwnedToolResultBoundary: {
+      generateErrorCode:
+        generateError instanceof TuvrenProviderError
+          ? generateError.code
+          : "unknown",
+      generateErrorReason: readProviderErrorReason(generateError),
+      generateResolved,
+      streamChunkCount,
+      streamErrorCode:
+        streamError instanceof TuvrenProviderError ? streamError.code : "unknown",
+      streamErrorReason: readProviderErrorReason(streamError),
     },
-  };
+  });
 }
 
 async function providerApprovalRequestRejection(): Promise<
@@ -562,21 +541,27 @@ async function providerApprovalRequestRejection(): Promise<
     await collectProviderStreamChunks(bridge.stream(providerTestkitFixtures.toolPrompt));
   });
 
-  return {
-    evidence: {
-      frameworkOwnedApprovalBoundary: {
-        errorCode:
-          error instanceof TuvrenProviderError ? error.code : "unknown",
-        errorReason: readProviderErrorReason(error),
-      },
+  return createProjection({
+    frameworkOwnedApprovalBoundary: {
+      errorCode: error instanceof TuvrenProviderError ? error.code : "unknown",
+      errorReason: readProviderErrorReason(error),
     },
-  };
+  });
 }
 
 function result(value: Record<string, unknown>): OperationOutcome {
   return {
     kind: "result",
     value,
+  };
+}
+
+function createProjection<T extends Record<string, unknown>>(
+  evidence: T
+): Record<string, unknown> {
+  return {
+    evidence,
+    result: evidence,
   };
 }
 

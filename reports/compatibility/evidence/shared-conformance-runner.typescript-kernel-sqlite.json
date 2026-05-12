@@ -19,6 +19,10 @@
         {
           "assertionId": "kernel.lineage.cross_thread_rejection.requiredEvidence.errorCode",
           "status": "pass"
+        },
+        {
+          "assertionId": "kernel.lineage.cross_thread_rejection.requiredEvidence.result.errorCode",
+          "status": "pass"
         }
       ],
       "checkId": "kernel.lineage.cross_thread_rejection",
@@ -37,6 +41,10 @@
         {
           "assertionId": "kernel.logical.branch_list.requiredEvidence.branchEntries",
           "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.branch_list.requiredEvidence.result.branchEntries.0.0",
+          "status": "pass"
         }
       ],
       "checkId": "kernel.logical.branch_list",
@@ -54,6 +62,10 @@
         },
         {
           "assertionId": "kernel.logical.diff_paths.requiredEvidence.diffPaths",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.diff_paths.requiredEvidence.result.diffPaths",
           "status": "pass"
         }
       ],
@@ -89,6 +101,18 @@
         {
           "assertionId": "kernel.logical.recovery_state.requiredEvidence.recovery.uncommittedStagedResults",
           "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.recovery_state.requiredEvidence.result.recovery.consumedStagedResults",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.recovery_state.requiredEvidence.result.recovery.lastCompletedStepId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.recovery_state.requiredEvidence.result.recovery.uncommittedStagedResults",
+          "status": "pass"
         }
       ],
       "checkId": "kernel.logical.recovery_state",
@@ -123,6 +147,18 @@
         {
           "assertionId": "kernel.protocol.deterministic_hashing.requiredEvidence.hashes.turnTreeSchema",
           "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.requiredEvidence.result.hashes.turnTreeSchema",
+          "status": "pass"
         }
       ],
       "checkId": "kernel.protocol.deterministic_hashing",
@@ -140,6 +176,14 @@
         },
         {
           "assertionId": "kernel.protocol.modify_composition.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.requiredEvidence.result.verdict.kind",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.requiredEvidence.result.verdict.transform",
           "status": "pass"
         },
         {
@@ -169,6 +213,14 @@
           "status": "pass"
         },
         {
+          "assertionId": "kernel.protocol.schema_roundtrip.requiredEvidence.result.roundtrip.turnNodeIdentityRecord.schemaId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.requiredEvidence.result.roundtrip.turnTreeSchemaRecord.schemaId",
+          "status": "pass"
+        },
+        {
           "assertionId": "kernel.protocol.schema_roundtrip.requiredEvidence.roundtrip.turnNodeIdentityRecord.schemaId",
           "status": "pass"
         },
@@ -193,6 +245,10 @@
         {
           "assertionId": "kernel-protocol-af.branch-set-head-rejects-lateral-lineage.requiredEvidence.protocolEdgeValidation.branch.lateralHeadCode",
           "status": "pass"
+        },
+        {
+          "assertionId": "kernel-protocol-af.branch-set-head-rejects-lateral-lineage.requiredEvidence.result.protocolEdgeValidation.branch.lateralHeadCode",
+          "status": "pass"
         }
       ],
       "checkId": "kernel-protocol-af.branch-set-head-rejects-lateral-lineage",
@@ -210,6 +266,10 @@
         },
         {
           "assertionId": "kernel-protocol-af.run-begin-step-rejects-out-of-order-step.requiredEvidence.protocolEdgeValidation.run.outOfOrderStepCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-protocol-af.run-begin-step-rejects-out-of-order-step.requiredEvidence.result.protocolEdgeValidation.run.outOfOrderStepCode",
           "status": "pass"
         }
       ],
@@ -229,6 +289,10 @@
         {
           "assertionId": "kernel-protocol-af.run-complete-rejects-missing-event-object.requiredEvidence.protocolEdgeValidation.run.missingEventObjectCode",
           "status": "pass"
+        },
+        {
+          "assertionId": "kernel-protocol-af.run-complete-rejects-missing-event-object.requiredEvidence.result.protocolEdgeValidation.run.missingEventObjectCode",
+          "status": "pass"
         }
       ],
       "checkId": "kernel-protocol-af.run-complete-rejects-missing-event-object",
@@ -246,6 +310,10 @@
         },
         {
           "assertionId": "kernel-protocol-af.run-create-rejects-busy-branch.requiredEvidence.protocolEdgeValidation.run.busyBranchCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-protocol-af.run-create-rejects-busy-branch.requiredEvidence.result.protocolEdgeValidation.run.busyBranchCode",
           "status": "pass"
         }
       ],
@@ -265,6 +333,10 @@
         {
           "assertionId": "kernel-protocol-af.schema-register-rejects-duplicate-path.requiredEvidence.protocolEdgeValidation.schema.duplicatePathCode",
           "status": "pass"
+        },
+        {
+          "assertionId": "kernel-protocol-af.schema-register-rejects-duplicate-path.requiredEvidence.result.protocolEdgeValidation.schema.duplicatePathCode",
+          "status": "pass"
         }
       ],
       "checkId": "kernel-protocol-af.schema-register-rejects-duplicate-path",
@@ -283,6 +355,10 @@
         {
           "assertionId": "kernel-protocol-af.tree-create-rejects-missing-required-path.requiredEvidence.protocolEdgeValidation.tree.missingRequiredPathCode",
           "status": "pass"
+        },
+        {
+          "assertionId": "kernel-protocol-af.tree-create-rejects-missing-required-path.requiredEvidence.result.protocolEdgeValidation.tree.missingRequiredPathCode",
+          "status": "pass"
         }
       ],
       "checkId": "kernel-protocol-af.tree-create-rejects-missing-required-path",
@@ -300,6 +376,10 @@
         },
         {
           "assertionId": "kernel-protocol-af.tree-diff-rejects-schema-mismatch.requiredEvidence.protocolEdgeValidation.tree.schemaMismatchCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-protocol-af.tree-diff-rejects-schema-mismatch.requiredEvidence.result.protocolEdgeValidation.tree.schemaMismatchCode",
           "status": "pass"
         }
       ],
@@ -335,6 +415,18 @@
         {
           "assertionId": "kernel.protocol.deterministic_hashing.f-all-ones-bytes.requiredEvidence.hashes.turnTreeSchema",
           "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-ones-bytes.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-ones-bytes.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-ones-bytes.requiredEvidence.result.hashes.turnTreeSchema",
+          "status": "pass"
         }
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-all-ones-bytes",
@@ -368,6 +460,18 @@
         },
         {
           "assertionId": "kernel.protocol.deterministic_hashing.f-all-ordered-paths.requiredEvidence.hashes.turnTreeSchema",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-ordered-paths.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-ordered-paths.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-ordered-paths.requiredEvidence.result.hashes.turnTreeSchema",
           "status": "pass"
         }
       ],
@@ -403,6 +507,18 @@
         {
           "assertionId": "kernel.protocol.deterministic_hashing.f-all-single-paths.requiredEvidence.hashes.turnTreeSchema",
           "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-single-paths.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-single-paths.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-single-paths.requiredEvidence.result.hashes.turnTreeSchema",
+          "status": "pass"
         }
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-all-single-paths",
@@ -436,6 +552,18 @@
         },
         {
           "assertionId": "kernel.protocol.deterministic_hashing.f-all-zero-bytes.requiredEvidence.hashes.turnTreeSchema",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-zero-bytes.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-zero-bytes.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-zero-bytes.requiredEvidence.result.hashes.turnTreeSchema",
           "status": "pass"
         }
       ],
@@ -471,6 +599,18 @@
         {
           "assertionId": "kernel.protocol.deterministic_hashing.f-deep-path-schema.requiredEvidence.hashes.turnTreeSchema",
           "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-deep-path-schema.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-deep-path-schema.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-deep-path-schema.requiredEvidence.result.hashes.turnTreeSchema",
+          "status": "pass"
         }
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-deep-path-schema",
@@ -504,6 +644,18 @@
         },
         {
           "assertionId": "kernel.protocol.deterministic_hashing.f-empty-bytes.requiredEvidence.hashes.turnTreeSchema",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-empty-bytes.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-empty-bytes.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-empty-bytes.requiredEvidence.result.hashes.turnTreeSchema",
           "status": "pass"
         }
       ],
@@ -539,6 +691,18 @@
         {
           "assertionId": "kernel.protocol.deterministic_hashing.f-large-bytes.requiredEvidence.hashes.turnTreeSchema",
           "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-large-bytes.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-large-bytes.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-large-bytes.requiredEvidence.result.hashes.turnTreeSchema",
+          "status": "pass"
         }
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-large-bytes",
@@ -572,6 +736,18 @@
         },
         {
           "assertionId": "kernel.protocol.deterministic_hashing.f-many-staged-results.requiredEvidence.hashes.turnTreeSchema",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-many-staged-results.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-many-staged-results.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-many-staged-results.requiredEvidence.result.hashes.turnTreeSchema",
           "status": "pass"
         }
       ],
@@ -607,6 +783,18 @@
         {
           "assertionId": "kernel.protocol.deterministic_hashing.f-mixed-status-staged.requiredEvidence.hashes.turnTreeSchema",
           "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-mixed-status-staged.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-mixed-status-staged.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-mixed-status-staged.requiredEvidence.result.hashes.turnTreeSchema",
+          "status": "pass"
         }
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-mixed-status-staged",
@@ -640,6 +828,18 @@
         },
         {
           "assertionId": "kernel.protocol.deterministic_hashing.f-multi-path-schema.requiredEvidence.hashes.turnTreeSchema",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-multi-path-schema.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-multi-path-schema.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-multi-path-schema.requiredEvidence.result.hashes.turnTreeSchema",
           "status": "pass"
         }
       ],
@@ -675,6 +875,18 @@
         {
           "assertionId": "kernel.protocol.deterministic_hashing.f-non-utf8-bytes.requiredEvidence.hashes.turnTreeSchema",
           "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-non-utf8-bytes.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-non-utf8-bytes.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-non-utf8-bytes.requiredEvidence.result.hashes.turnTreeSchema",
+          "status": "pass"
         }
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-non-utf8-bytes",
@@ -708,6 +920,18 @@
         },
         {
           "assertionId": "kernel.protocol.deterministic_hashing.f-single-byte.requiredEvidence.hashes.turnTreeSchema",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-single-byte.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-single-byte.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-single-byte.requiredEvidence.result.hashes.turnTreeSchema",
           "status": "pass"
         }
       ],
@@ -743,6 +967,18 @@
         {
           "assertionId": "kernel.protocol.deterministic_hashing.f-staged-failed.requiredEvidence.hashes.turnTreeSchema",
           "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-staged-failed.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-staged-failed.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-staged-failed.requiredEvidence.result.hashes.turnTreeSchema",
+          "status": "pass"
         }
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-staged-failed",
@@ -776,6 +1012,18 @@
         },
         {
           "assertionId": "kernel.protocol.deterministic_hashing.f-staged-interrupted.requiredEvidence.hashes.turnTreeSchema",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-staged-interrupted.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-staged-interrupted.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-staged-interrupted.requiredEvidence.result.hashes.turnTreeSchema",
           "status": "pass"
         }
       ],
@@ -811,6 +1059,18 @@
         {
           "assertionId": "kernel.protocol.deterministic_hashing.f-with-event-hash.requiredEvidence.hashes.turnTreeSchema",
           "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-with-event-hash.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-with-event-hash.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-with-event-hash.requiredEvidence.result.hashes.turnTreeSchema",
+          "status": "pass"
         }
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-with-event-hash",
@@ -844,6 +1104,18 @@
         },
         {
           "assertionId": "kernel.protocol.deterministic_hashing.f-with-prev-turn.requiredEvidence.hashes.turnTreeSchema",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-with-prev-turn.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-with-prev-turn.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-with-prev-turn.requiredEvidence.result.hashes.turnTreeSchema",
           "status": "pass"
         }
       ],
@@ -879,6 +1151,18 @@
         {
           "assertionId": "kernel.protocol.deterministic_hashing.f-zero-turn-tree-hash.requiredEvidence.hashes.turnTreeSchema",
           "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-zero-turn-tree-hash.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-zero-turn-tree-hash.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-zero-turn-tree-hash.requiredEvidence.result.hashes.turnTreeSchema",
+          "status": "pass"
         }
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-zero-turn-tree-hash",
@@ -896,6 +1180,14 @@
         },
         {
           "assertionId": "kernel.protocol.schema_roundtrip.f-all-ones-bytes.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-ones-bytes.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-ones-bytes.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
           "status": "pass"
         },
         {
@@ -925,6 +1217,14 @@
           "status": "pass"
         },
         {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-ordered-paths.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-ordered-paths.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
+          "status": "pass"
+        },
+        {
           "assertionId": "kernel.protocol.schema_roundtrip.f-all-ordered-paths.requiredEvidence.roundtrip.turnNodeIdentityRecord",
           "status": "pass"
         },
@@ -948,6 +1248,14 @@
         },
         {
           "assertionId": "kernel.protocol.schema_roundtrip.f-all-single-paths.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-single-paths.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-single-paths.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
           "status": "pass"
         },
         {
@@ -977,6 +1285,14 @@
           "status": "pass"
         },
         {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-zero-bytes.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-zero-bytes.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
+          "status": "pass"
+        },
+        {
           "assertionId": "kernel.protocol.schema_roundtrip.f-all-zero-bytes.requiredEvidence.roundtrip.turnNodeIdentityRecord",
           "status": "pass"
         },
@@ -1000,6 +1316,14 @@
         },
         {
           "assertionId": "kernel.protocol.schema_roundtrip.f-deep-path-schema.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-deep-path-schema.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-deep-path-schema.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
           "status": "pass"
         },
         {
@@ -1029,6 +1353,14 @@
           "status": "pass"
         },
         {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-empty-bytes.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-empty-bytes.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
+          "status": "pass"
+        },
+        {
           "assertionId": "kernel.protocol.schema_roundtrip.f-empty-bytes.requiredEvidence.roundtrip.turnNodeIdentityRecord",
           "status": "pass"
         },
@@ -1052,6 +1384,14 @@
         },
         {
           "assertionId": "kernel.protocol.schema_roundtrip.f-large-bytes.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-large-bytes.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-large-bytes.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
           "status": "pass"
         },
         {
@@ -1081,6 +1421,14 @@
           "status": "pass"
         },
         {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-many-staged-results.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-many-staged-results.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
+          "status": "pass"
+        },
+        {
           "assertionId": "kernel.protocol.schema_roundtrip.f-many-staged-results.requiredEvidence.roundtrip.turnNodeIdentityRecord",
           "status": "pass"
         },
@@ -1104,6 +1452,14 @@
         },
         {
           "assertionId": "kernel.protocol.schema_roundtrip.f-mixed-status-staged.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-mixed-status-staged.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-mixed-status-staged.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
           "status": "pass"
         },
         {
@@ -1133,6 +1489,14 @@
           "status": "pass"
         },
         {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-multi-path-schema.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-multi-path-schema.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
+          "status": "pass"
+        },
+        {
           "assertionId": "kernel.protocol.schema_roundtrip.f-multi-path-schema.requiredEvidence.roundtrip.turnNodeIdentityRecord",
           "status": "pass"
         },
@@ -1156,6 +1520,14 @@
         },
         {
           "assertionId": "kernel.protocol.schema_roundtrip.f-non-utf8-bytes.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-non-utf8-bytes.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-non-utf8-bytes.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
           "status": "pass"
         },
         {
@@ -1185,6 +1557,14 @@
           "status": "pass"
         },
         {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-single-byte.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-single-byte.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
+          "status": "pass"
+        },
+        {
           "assertionId": "kernel.protocol.schema_roundtrip.f-single-byte.requiredEvidence.roundtrip.turnNodeIdentityRecord",
           "status": "pass"
         },
@@ -1208,6 +1588,14 @@
         },
         {
           "assertionId": "kernel.protocol.schema_roundtrip.f-staged-failed.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-staged-failed.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-staged-failed.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
           "status": "pass"
         },
         {
@@ -1237,6 +1625,14 @@
           "status": "pass"
         },
         {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-staged-interrupted.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-staged-interrupted.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
+          "status": "pass"
+        },
+        {
           "assertionId": "kernel.protocol.schema_roundtrip.f-staged-interrupted.requiredEvidence.roundtrip.turnNodeIdentityRecord",
           "status": "pass"
         },
@@ -1260,6 +1656,14 @@
         },
         {
           "assertionId": "kernel.protocol.schema_roundtrip.f-with-event-hash.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-with-event-hash.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-with-event-hash.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
           "status": "pass"
         },
         {
@@ -1289,6 +1693,14 @@
           "status": "pass"
         },
         {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-with-prev-turn.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-with-prev-turn.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
+          "status": "pass"
+        },
+        {
           "assertionId": "kernel.protocol.schema_roundtrip.f-with-prev-turn.requiredEvidence.roundtrip.turnNodeIdentityRecord",
           "status": "pass"
         },
@@ -1312,6 +1724,14 @@
         },
         {
           "assertionId": "kernel.protocol.schema_roundtrip.f-zero-turn-tree-hash.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-zero-turn-tree-hash.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-zero-turn-tree-hash.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
           "status": "pass"
         },
         {
@@ -1354,6 +1774,18 @@
         },
         {
           "assertionId": "kernel-restart-af.invalid-staged-result-reexecutes.requiredEvidence.restartRecovery.uncommittedNotPromoted",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-restart-af.invalid-staged-result-reexecutes.requiredEvidence.result.restartRecovery.recoveredLastCompletedStepId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-restart-af.invalid-staged-result-reexecutes.requiredEvidence.result.restartRecovery.recoveredUncommittedCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-restart-af.invalid-staged-result-reexecutes.requiredEvidence.result.restartRecovery.uncommittedNotPromoted",
           "status": "pass"
         }
       ],
@@ -1417,6 +1849,30 @@
         {
           "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.requiredEvidence.restartRecovery.uncommittedNotPromoted",
           "status": "pass"
+        },
+        {
+          "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.requiredEvidence.result.restartRecovery.checkpointLineageSurvivesRestart",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.requiredEvidence.result.restartRecovery.committedStateVisible",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.requiredEvidence.result.restartRecovery.recoveredLastCompletedStepId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.requiredEvidence.result.restartRecovery.recoveredUncommittedCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.requiredEvidence.result.restartRecovery.recoveryHeadMatchesCommittedCheckpoint",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.requiredEvidence.result.restartRecovery.uncommittedNotPromoted",
+          "status": "pass"
         }
       ],
       "checkId": "kernel.restart-recovery.close_reopen_checkpoint",
@@ -1451,6 +1907,18 @@
         {
           "assertionId": "kernel-restart-af.expired-running-requires-preemption.requiredEvidence.preemption.runStatus",
           "status": "pass"
+        },
+        {
+          "assertionId": "kernel-restart-af.expired-running-requires-preemption.requiredEvidence.result.preemption.leaseCleared",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-restart-af.expired-running-requires-preemption.requiredEvidence.result.preemption.preemptionReason",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-restart-af.expired-running-requires-preemption.requiredEvidence.result.preemption.runStatus",
+          "status": "pass"
         }
       ],
       "checkId": "kernel-restart-af.expired-running-requires-preemption",
@@ -1476,6 +1944,14 @@
         },
         {
           "assertionId": "kernel-restart-af.paused-run-excluded-from-stale-preemption.requiredEvidence.listing.pausedRunStatus",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-restart-af.paused-run-excluded-from-stale-preemption.requiredEvidence.result.listing.pausedRunListed",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-restart-af.paused-run-excluded-from-stale-preemption.requiredEvidence.result.listing.pausedRunStatus",
           "status": "pass"
         }
       ],
@@ -1511,6 +1987,18 @@
         {
           "assertionId": "kernel.run-liveness.expired_listing.requiredEvidence.listing.pausedRunStatus",
           "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.expired_listing.requiredEvidence.result.listing.expiredRunIds",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.expired_listing.requiredEvidence.result.listing.pausedRunListed",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.expired_listing.requiredEvidence.result.listing.pausedRunStatus",
+          "status": "pass"
         }
       ],
       "checkId": "kernel.run-liveness.expired_listing",
@@ -1544,6 +2032,18 @@
         },
         {
           "assertionId": "kernel.run-liveness.lease_renewal.requiredEvidence.renewal.staleTokenCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.lease_renewal.requiredEvidence.result.renewal.ownerMismatchCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.lease_renewal.requiredEvidence.result.renewal.renewedLeaseExpiresAtMs",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.lease_renewal.requiredEvidence.result.renewal.staleTokenCode",
           "status": "pass"
         }
       ],
@@ -1602,6 +2102,26 @@
         },
         {
           "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.preemption.uncommittedStagedResults",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.result.preemption.leaseCleared",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.result.preemption.preemptionReason",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.result.preemption.recoveryHeadMatchesBranchHead",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.result.preemption.runStatus",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.result.preemption.uncommittedStagedResults",
           "status": "pass"
         }
       ],

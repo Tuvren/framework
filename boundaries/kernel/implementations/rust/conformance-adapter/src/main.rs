@@ -171,15 +171,13 @@ fn run_deterministic_hashing(input: &Value) -> Result<Value, KernelError> {
         "turnNodeIdentityRecord",
     )?)?;
 
-    Ok(json!({
-        "evidence": {
-            "hashes": {
-                "rawOpaqueBytes": hash_bytes_to_hex(&raw_bytes),
-                "turnTreeSchema": hash_kernel_record(&schema)?,
-                "turnNodeIdentity": hash_turn_node_identity(&node)?,
-            }
+    Ok(projection(json!({
+        "hashes": {
+            "rawOpaqueBytes": hash_bytes_to_hex(&raw_bytes),
+            "turnTreeSchema": hash_kernel_record(&schema)?,
+            "turnNodeIdentity": hash_turn_node_identity(&node)?,
         }
-    }))
+    })))
 }
 
 fn run_schema_roundtrip(input: &Value) -> Result<Value, KernelError> {
@@ -193,14 +191,12 @@ fn run_schema_roundtrip(input: &Value) -> Result<Value, KernelError> {
         "turnNodeIdentityRecordCborHex",
     )?)?)?;
 
-    Ok(json!({
-        "evidence": {
-            "roundtrip": {
-                "turnTreeSchemaRecord": kernel_record_to_json(&decoded_schema),
-                "turnNodeIdentityRecord": kernel_record_to_json(&decoded_node)
-            }
+    Ok(projection(json!({
+        "roundtrip": {
+            "turnTreeSchemaRecord": kernel_record_to_json(&decoded_schema),
+            "turnNodeIdentityRecord": kernel_record_to_json(&decoded_node)
         }
-    }))
+    })))
 }
 
 fn run_modify_composition() -> Result<Value, KernelError> {
@@ -240,14 +236,12 @@ fn run_modify_composition() -> Result<Value, KernelError> {
         ));
     };
 
-    Ok(json!({
-        "evidence": {
-            "verdict": {
-                "kind": "modify",
-                "transform": kernel_record_to_json(&transform),
-            }
+    Ok(projection(json!({
+        "verdict": {
+            "kind": "modify",
+            "transform": kernel_record_to_json(&transform),
         }
-    }))
+    })))
 }
 
 fn run_logical_diff(input: &Value) -> Result<Value, KernelError> {
@@ -267,7 +261,7 @@ fn run_logical_diff(input: &Value) -> Result<Value, KernelError> {
         kernel.tree_create("schema_main", changes, Some(&created.root_turn_tree_hash))?;
     let diff = kernel.tree_diff(&created.root_turn_tree_hash, &changed_tree)?;
 
-    Ok(json!({ "evidence": { "diffPaths": diff } }))
+    Ok(projection(json!({ "diffPaths": diff })))
 }
 
 fn run_branch_list(input: &Value) -> Result<Value, KernelError> {
@@ -278,7 +272,7 @@ fn run_branch_list(input: &Value) -> Result<Value, KernelError> {
     kernel.thread_create("thread_conformance", "schema_main", "branch_main")?;
     let branch_entries = kernel.branch_list("thread_conformance")?;
 
-    Ok(json!({ "evidence": { "branchEntries": branch_entries } }))
+    Ok(projection(json!({ "branchEntries": branch_entries })))
 }
 
 fn run_recovery_state(input: &Value) -> Result<Value, KernelError> {
@@ -288,15 +282,13 @@ fn run_recovery_state(input: &Value) -> Result<Value, KernelError> {
         parse_recovery_state(read_value(logical.get("recoveryState"), "recoveryState")?)?;
     run_recovery_fixture_scenario(&canonical_schema, &recovery_state)?;
 
-    Ok(json!({
-        "evidence": {
-            "recovery": {
-                "lastCompletedStepId": recovery_state.last_completed_step_id,
-                "consumedStagedResults": recovery_state.consumed_staged_results.len(),
-                "uncommittedStagedResults": recovery_state.uncommitted_staged_results.len()
-            }
+    Ok(projection(json!({
+        "recovery": {
+            "lastCompletedStepId": recovery_state.last_completed_step_id,
+            "consumedStagedResults": recovery_state.consumed_staged_results.len(),
+            "uncommittedStagedResults": recovery_state.uncommitted_staged_results.len()
         }
-    }))
+    })))
 }
 
 fn run_cross_thread_lineage() -> Result<Value, KernelError> {
@@ -331,17 +323,15 @@ fn run_cross_thread_lineage() -> Result<Value, KernelError> {
     // fails without turning a kernel regression into an adapter process panic.
     let lineage_error = match kernel.branch_create("branch_cross_thread", "thread_b", &node_a) {
         Ok(_) => {
-            return Ok(json!({
-                "evidence": {
-                    "errorCode": "unexpected_success",
-                    "diagnostics": ["thread A node unexpectedly seeded thread B branch"]
-                }
-            }));
+            return Ok(projection(json!({
+                "errorCode": "unexpected_success",
+                "diagnostics": ["thread A node unexpectedly seeded thread B branch"]
+            })));
         }
         Err(error) => error,
     };
 
-    Ok(json!({ "evidence": { "errorCode": lineage_error.payload.code } }))
+    Ok(projection(json!({ "errorCode": lineage_error.payload.code })))
 }
 
 fn run_lateral_turn_head_guard() -> Result<Value, KernelError> {
@@ -407,17 +397,22 @@ fn run_lateral_turn_head_guard() -> Result<Value, KernelError> {
     // fails without turning a kernel regression into an adapter process panic.
     let lateral_error = match kernel.turn_update_head("turn_main", &alt_node) {
         Ok(_) => {
-            return Ok(json!({
-                "evidence": {
-                    "errorCode": "unexpected_success",
-                    "diagnostics": ["turn head unexpectedly jumped to a lateral descendant"]
-                }
-            }));
+            return Ok(projection(json!({
+                "errorCode": "unexpected_success",
+                "diagnostics": ["turn head unexpectedly jumped to a lateral descendant"]
+            })));
         }
         Err(error) => error,
     };
 
-    Ok(json!({ "evidence": { "errorCode": lateral_error.payload.code } }))
+    Ok(projection(json!({ "errorCode": lateral_error.payload.code })))
+}
+
+fn projection(evidence: Value) -> Value {
+    json!({
+        "evidence": evidence.clone(),
+        "result": evidence,
+    })
 }
 
 fn parse_schema(value: &Value) -> Result<TurnTreeSchema, KernelError> {

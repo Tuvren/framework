@@ -280,17 +280,20 @@ export function createFrameworkAdapterDriver(
 
     assertDriverExecutionResultShape(result, "driver aroundModel replacement");
 
-    return {
-      evidence: {
-        aroundModel: {
-          finalAssistantText: readResultAssistantText(result),
-          messageStartCount: countEventsByType(emittedEvents, "message.start"),
-          streamedTextDone: readTextDoneValues(emittedEvents),
-        },
-        driver: {
-          resolutionType: result.resolution.type,
-        },
+    const projection = {
+      aroundModel: {
+        finalAssistantText: readResultAssistantText(result),
+        messageStartCount: countEventsByType(emittedEvents, "message.start"),
+        streamedTextDone: readTextDoneValues(emittedEvents),
       },
+      driver: {
+        resolutionType: result.resolution.type,
+      },
+    };
+
+    return {
+      evidence: projection,
+      result: projection,
     };
   }
 
@@ -335,20 +338,23 @@ export function createFrameworkAdapterDriver(
 
     assertDriverExecutionResultShape(result, "driver aroundModel retry");
 
-    return {
-      evidence: {
-        aroundModel: {
-          finalAssistantText: readResultAssistantText(result),
-        },
-        driver: {
-          resolutionType: result.resolution.type,
-        },
-        provider: {
-          generate: {
-            callCount: generateCalls,
-          },
+    const projection = {
+      aroundModel: {
+        finalAssistantText: readResultAssistantText(result),
+      },
+      driver: {
+        resolutionType: result.resolution.type,
+      },
+      provider: {
+        generate: {
+          callCount: generateCalls,
         },
       },
+    };
+
+    return {
+      evidence: projection,
+      result: projection,
     };
   }
 
