@@ -2,9 +2,9 @@
 
 ## 0. Version History & Changelog
 
+- v0.5.0 - Clarified that the first product-depth implementation line must prove the SDK through a serious REPL-style reference host, narrowed tolerated deferral of documented core runtime surfaces, and tightened the portability boundary to external-SDK-dependent integrations only.
 - v0.4.0 - Added the machine-enforced neutral authority capabilities, the authority-packet and conformance-plan domain terms, the no-implementation-oracle and no-prose-oracle prohibited patterns, and the runtime-maintainer success criterion that a new implementation must be buildable without reading another language's source as truth.
 - v0.3.0 - Added the multi-implementation portability posture, the runtime implementation maintainer actor, and explicit language-neutral semantic parity capabilities for the post-TypeScript transition line.
-- v0.2.0 - Reframed Tuvren Runtime as a driver-oriented runtime where the framework can host multiple execution drivers over shared kernel primitives, with ReAct as the initial driver.
 - ... [Older history truncated, refer to git logs]
 
 ## 1. Executive Summary & Target Archetype
@@ -23,6 +23,9 @@
 - Tuvren Runtime must support a shared runtime foundation that can host more than one execution driver over time rather than treating one agent loop as the entire product ontology.
 - Tuvren Runtime must preserve a language-neutral semantic core so future implementations can share one runtime meaning without turning the first TypeScript line into the permanent oracle.
 - Tuvren Runtime must enforce that cross-implementation meaning lives in boundary-owned machine-readable authority and executable evidence rather than in any single implementation language, runner codebase, or human-prose document.
+- The first product-depth implementation line must prove the SDK through a serious REPL-style reference host that exercises the runtime end to end without relying on private-only shortcuts that other hosts cannot use.
+- Documented core runtime surfaces are expected to become real product scope for the first product-depth implementation line; long-lived deferral is reserved for ecosystem expansion or integrations that inherently depend on external SDK ecosystems.
+- Every feature defined by the project’s semantic docs is intended to be portable across implementation lines unless it exists only as an adapter to an external SDK or ecosystem-specific protocol.
 
 ### 1.2 Success Criteria
 
@@ -30,6 +33,8 @@
 - A host can observe execution in real time and still rely on a durable post hoc history of what was committed.
 - A human supervisor can interrupt, approve, reject, or resume sensitive work without corrupting the execution lineage.
 - A multi-agent workflow can delegate, hand off, and continue work while preserving traceability and avoiding ambiguous control transfer.
+- A host application developer can build a serious operator-facing host from the same high-level SDK surface used by the first-party reference host rather than depending on private runtime seams.
+- A first-party reference host proves durable threads, branching, streaming, approvals, steering, orchestration, extension behavior, and persistence as one coherent operator experience.
 - A runtime maintainer can introduce a new implementation language against shared contracts and behavioral fixtures without redefining the product’s semantic model.
 - A runtime maintainer can build and judge a new implementation strictly from boundary-owned machine authority, generated artifacts, executable conformance evidence, and language-binding adapters, without reading another language's implementation, a generic runner's source code, or a Markdown document as the source of cross-language truth.
 
@@ -337,6 +342,7 @@
 
 - The PRD intentionally treats persistence, streaming, tool dispatch, approvals, context engineering, and orchestration as product capabilities because they materially define the user-facing value of Tuvren Runtime as a runtime.
 - The initial active product line is the shared runtime foundation plus the ReAct Driver, not a commitment to implement every possible driver pattern in the first release line.
+- The first product-depth implementation line is expected to prove nearly the whole documented runtime surface through a serious reference host rather than carrying large core features as indefinite “later” promises.
 - This PRD does not prescribe the concrete storage engine, programming language, packaging layout, or transport stack used to implement those capabilities.
 - Long-term portability is a boundary-preservation goal, not a rewrite mandate; future implementation lines must extend the shared semantic system rather than replace it wholesale.
 
@@ -347,6 +353,7 @@
 - Context engineering changes the active working set, not the fact that prior committed history still exists.
 - Semantic neutrality is not toolchain neutrality; implementations may use native package and build workflows while preserving shared runtime meaning at the boundary seams.
 - Authority-packet ownership is not artifact format ownership; an authority packet may pair multiple machine-readable formats (such as logical contract sources, binary grammar, transport projections, telemetry vocabulary, and conformance plans) under one boundary, but no single format silently becomes the meaning of the surface.
+- A proving host is not a privileged exception to the SDK story; it exists to prove that the same host-facing abstractions are sufficient for serious downstream products.
 
 ## 5. Non-Functional Constraints
 
@@ -371,6 +378,7 @@
 
 - A runtime kernel that preserves durable execution state, lineage, and recoverable history
 - A framework layer that executes agent turns, manages iteration, and incorporates model and tool work
+- A serious REPL-style reference host that proves the embeddable SDK can drive a real operator-facing agent product without private shortcuts
 - Canonical runtime representations for messages, reasoning content, structured output, tool calls, tool results, and file-like payloads
 - Context engineering for active-context pruning, summarization, compaction, or replacement while preserving audit history
 - Host-facing controls for event consumption, cancellation, steering, and approval resolution
@@ -385,6 +393,7 @@
 
 - A managed hosted control plane, SaaS product, or operations console
 - Concrete language, framework, storage engine, transport, or cloud-vendor selection
+- A UI-first showcase whose primary value is presentation rather than proving the host-building SDK
 - Automatic agent discovery, agent marketplace behavior, or dynamic agent self-registration
 - Cross-thread shared memory semantics beyond deliberate runtime coordination mechanisms
 - Branch merge semantics for reconciling divergent histories
@@ -449,4 +458,7 @@ Run --> "0..1" Handoff : may transfer control through
 
 - Formalize the project through the staged framework process, starting with a comprehensive PRD before architecture or implementation artifacts.
 - Preserve the conceptual separation already established between kernel concerns and framework concerns while keeping the PRD technology-agnostic.
-- Treat the current project as greenfield with specifications as source intent rather than implementation reality.
+- Treat the first product-depth implementation line as TypeScript, with a serious REPL CLI as the proving host for the embeddable SDK rather than as a separate product direction.
+- Keep the baseline TypeScript provider strategy limited to the AI SDK bridge while preserving Tuvren-owned provider semantics as portable authority.
+- Treat the canonical event stream and SSE projection as portable runtime surfaces, while allowing AG-UI integration to remain implementation-specific because it depends on external SDK ecosystems.
+- Keep package publication and final public-surface curation deferred until the proving host experience clarifies the right high-level SDK boundary.

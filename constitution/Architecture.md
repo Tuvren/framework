@@ -2,9 +2,9 @@
 
 ## 0. Version History & Changelog
 
+- v0.6.0 - Realigned the logical architecture around an SDK-first product line, a serious REPL-style proving host, portable canonical plus SSE stream surfaces, and a full documented orchestration scope for the first product-depth implementation line.
 - v0.5.0 - Added the machine-authority-packet surface (Authority Packet, Conformance Plan, Implementation Adapter, Generic Conformance Runner), the forbidden-authority-source failure class, and the packet-driven conformance flow that realizes PRD CAP-P0-037 / CAP-P1-038.
 - v0.4.0 - Added the multi-implementation asset boundaries, the cross-language conformance and compatibility flow, and the semantic-authority posture for the post-TypeScript transition line.
-- v0.3.0 - Narrowed shared-core orchestration to a minimal handle/tree primitive, moved ordered pipelines out of core semantics, and aligned approval/cancel responsibilities with the docs-first HITL model.
 - ... [Older history truncated, refer to git logs]
 
 ## 1. Architectural Strategy & Archetype Alignment
@@ -25,10 +25,12 @@
 - **Single source of execution truth:** Durable lineage and state are authoritative; streams, wrappers, and provider-native representations are informative but non-authoritative.
 - **In-process modularity first:** Containers are logical boundaries inside one embeddable runtime system, aligning with solo-dev realism and avoiding premature service decomposition.
 - **Adapter edges at trust boundaries:** Hosts, model providers, and external tools connect through explicit boundary adapters rather than leaking their protocols inward.
+- **Reference-host realism:** The first product-depth host must consume the same host-facing SDK boundary that downstream host developers use, rather than proving the runtime through privileged internal seams.
 - **Artifact-backed semantic authority:** Human semantic authority lives in the docs and constitution, while machine-readable contract, conformance, and interop assets make those semantics executable across implementations.
 - **Machine-enforced neutral authority:** Every cross-implementation semantic must be carried by a boundary-owned authority packet that pairs neutral machine-readable sources with at least one executable verification path. No implementation language file, generic runner source file, or human-prose document can act as the source of cross-language truth.
 - **History-preserving correction:** Rollback, steering, handoff, and context engineering create new lineage rather than rewriting the past.
 - **Driver plurality without product sprawl:** The architecture must support multiple drivers conceptually, but only one driver needs to be implemented to production depth at a time.
+- **Portable stream spine:** The canonical event stream and SSE projection are core runtime surfaces; ecosystem-specific protocol adapters may exist above them, but they must not become the product’s semantic center.
 
 ### 1.3 Named Trust Relationships
 
@@ -56,7 +58,7 @@
 ### Host Integration Boundary
 
 - **Logical Type:** External boundary adapter
-- **Responsibility:** Expose Tuvren Runtime to embedding environments, initiate turns, consume event streams, surface status, deliver steering, route approvals, and trigger cancellation.
+- **Responsibility:** Expose Tuvren Runtime to embedding environments, initiate turns, consume event streams, surface status, deliver steering, route approvals, and trigger cancellation. The first product-depth proof host is a serious REPL CLI built against this same boundary rather than a privileged internal harness.
 - **Inputs:** User or system signals, approval responses, steering signals, cancellation requests, runtime events.
 - **Outputs:** Turn-start requests, control signals, translated protocol events, host-visible execution status.
 - **Depends on:** Framework Shared Services, Event Stream Adapter Layer.
@@ -112,7 +114,7 @@
 ### Orchestration Runtime
 
 - **Logical Type:** Coordination service
-- **Responsibility:** Provide minimal handle/tree-based orchestration primitives for child execution, descendant event aggregation, and parent-child execution coordination without creating ambiguous control ownership.
+- **Responsibility:** Provide the documented handle/tree-based orchestration primitives for child execution, descendant event aggregation, parent-child execution coordination, handoff continuity, execution inheritance, and nested attribution without creating ambiguous control ownership.
 - **Inputs:** Child launch requests, child completion signals, parent execution status, and child subtree events.
 - **Outputs:** New execution handles for children, descendant-attributed event streams, and child completion access.
 - **Depends on:** Framework Shared Services, Context Assembly and Engineering, Event Stream Adapter Layer, Host Integration Boundary.
@@ -136,7 +138,7 @@
 ### Event Stream Adapter Layer
 
 - **Logical Type:** Outbound protocol adaptation boundary
-- **Responsibility:** Convert canonical Kraken runtime events into host-facing protocol shapes while preserving source attribution, execution ordering, and driver/runtime distinctions.
+- **Responsibility:** Convert canonical Kraken runtime events into host-facing protocol shapes while preserving source attribution, execution ordering, and driver/runtime distinctions. Canonical events and SSE are core portable surfaces; ecosystem-specific adapters are downstream projections.
 - **Inputs:** Canonical runtime events, custom events, worker-forwarded events, and driver-attributed event metadata.
 - **Outputs:** Protocol-ready event streams for host consumers.
 - **Depends on:** Framework Shared Services, Extension Runtime, Orchestration Runtime.
@@ -232,11 +234,13 @@
 - Framework Shared Services exist so host control, event vocabulary, context manifest handling, and execution-handle semantics do not get welded to the first driver.
 - Driver Runtime is a logical boundary, not a promise that every future driver needs a separate process or deployment unit.
 - The current active driver is ReAct-oriented, but the architecture keeps room for future workflow-oriented drivers such as pipeline, router, evaluator-optimizer, or orchestrator-worker patterns.
-- Ordered multi-agent pipelines are not a shared-core semantic. If they remain in scope, they belong above the shared handoff/orchestration primitives as driver-level policy.
+- Ordered multi-agent pipelines are in current product scope, but they remain driver-level orchestration policy above the shared handoff/orchestration primitives rather than shared-core semantics.
+- The first product-depth proof host is a serious REPL CLI that must consume the same host-facing boundary other hosts use; it may exercise more scenarios than downstream hosts need, but it must not bypass the boundary with private orchestration or persistence shortcuts.
 - Contract authority, behavioral conformance, and interop transport are separate containers on purpose; no single artifact type is allowed to silently become the meaning of the runtime.
 - Native language toolchains may differ, but their outputs must still fit the same boundary-owned contract, conformance, and compatibility system.
 - Authority Packet Surface, Conformance Plan Authority, Implementation Adapter Boundary, and Generic Conformance Runner are first-class containers because their absence is the failure mode that lets a TypeScript file, Rust crate, runner source file, or Markdown document quietly become the cross-language oracle.
 - Implementation Adapter Boundary is logically per-language but does not imply a separate process; an adapter may be in-process for the language under test while the Generic Conformance Runner remains language-agnostic.
+- Canonical stream semantics and SSE translation are part of the portable runtime contract. AG-UI or similar ecosystem adapters may exist above them, but they remain secondary projections rather than cross-language product authority.
 
 ## 3. Container Diagram (Mermaid)
 
@@ -400,7 +404,7 @@ Kernel-->>Framework: active head now points to rewritten context state
 Framework-->>Host: next iteration sees redirected context without erasing prior history
 ```
 
-### 4.4 Driver Handoff and Minimal Child Orchestration
+### 4.4 Driver Handoff and Documented Child Orchestration
 
 - **Maps to PRD capability:** CAP-P0-023, CAP-P0-026, CAP-P0-027, CAP-P1-029, CAP-P0-033
 
@@ -420,8 +424,8 @@ Context->>Kernel: create new TurnTree with rewritten message set and rebuilt man
 Kernel-->>Framework: committed handoff checkpoint
 Framework->>Orch: spawn child execution handle when delegation is requested
 Orch->>Events: emit descendant-attributed orchestration events
-Orch-->>Framework: child execution handle plus aggregated subtree events
-Framework-->>Driver: continue with updated control ownership or child coordination primitives
+Orch-->>Framework: child execution handle, inherited execution surface, and aggregated subtree events
+Framework-->>Driver: continue with updated control ownership or child coordination primitives, preserving handoff and nested attribution semantics
 ```
 
 ### 4.5 Multi-Implementation Conformance and Compatibility Validation
@@ -477,6 +481,34 @@ Runner-->>Report: emit per-check evidence keyed by packetId, planVersion, adapte
 Report-->>Maintainer: pass/fail per check with evidence paths, no implementation oracle traversed
 ```
 
+### 4.7 Serious REPL Host Proves the SDK End to End
+
+- **Maps to PRD capability:** CAP-P0-005, CAP-P0-010, CAP-P0-016, CAP-P0-019, CAP-P0-020, CAP-P0-023, CAP-P0-026, CAP-P0-027, CAP-P1-022, CAP-P1-024
+
+```mermaid
+sequenceDiagram
+participant Operator as REPL Operator
+participant Host as Reference REPL Host
+participant Framework as Framework Shared Services
+participant Driver as Driver Runtime
+participant Tooling as Tool Execution Gateway
+participant Orch as Orchestration Runtime
+participant Kernel as Kernel Boundary
+participant State as Durable State Boundary
+participant SSE as Event Stream Adapter Layer
+
+Operator->>Host: start or resume thread, issue command, inspect status
+Host->>Framework: executeTurn / steer / resolveApproval / cancel via host-facing SDK
+Framework->>Driver: run active turn over durable state
+Driver->>Tooling: execute or pause tool batches
+Driver->>Orch: spawn workers or hand off control when requested
+Framework->>Kernel: checkpoint progress, manifests, and orchestration state
+Kernel->>State: durably commit thread, branch, and turn state
+Framework->>SSE: publish canonical stream and SSE projection
+SSE-->>Host: ordered host-consumable runtime events
+Host-->>Operator: real-time control, inspection, and durable reload without private runtime shortcuts
+```
+
 ## 5. Resilience & Cross-Cutting Concerns
 
 - **Security / Identity Strategy:** Host applications authenticate and authorize their own callers before exposing Tuvren Runtime controls; the Kraken engine itself treats host commands, provider responses, and tool outputs as boundary inputs that require validation and normalization.
@@ -498,6 +530,10 @@ Report-->>Maintainer: pass/fail per check with evidence paths, no implementation
 - **Risk:** Host-facing contracts and event vocabulary drift if adapters or drivers bypass shared framework services.
 - **Why it matters:** Different hosts would observe different runtime truths, weakening portability and operability.
 - **Mitigation or follow-up:** Route host controls and canonical event publication through the shared framework layer even when a driver has specialized execution behavior.
+
+- **Risk:** The first-party proving host relies on privileged seams that downstream hosts cannot use, creating false confidence in the SDK.
+- **Why it matters:** The product would appear host-buildable while still depending on implementation-local shortcuts, undermining both SDK quality and later portability work.
+- **Mitigation or follow-up:** Treat the serious REPL host as an SDK consumer at the Host Integration Boundary, require end-to-end proving flows through canonical controls and streams, and reject product-proof claims that bypass the host-facing abstractions.
 
 - **Risk:** TypeScript-first repo structure or test tooling becomes a permanent exception that later languages have to work around.
 - **Why it matters:** A one-off structure would turn every future implementation into an adapter to historical accidents instead of a peer in one boundary-owned semantic system.

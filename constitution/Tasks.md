@@ -2,271 +2,296 @@
 
 ## 0. Version History & Changelog
 
+- v0.21.0 - Replaced the AG-closed maintenance posture with an active TypeScript productization plan centered on constitutional archive cleanup, host-facing package normalization, a serious REPL proving host, PostgreSQL, and portability-gate conformance closure before Rust resumes.
 - v0.20.0 - Closed Epic AG in current repo reality through non-self-attesting promoted-plan hardening, real-kernel framework proof, refreshed compatibility evidence, and passing AG-gated `bun run codegen`, `bun run conformance`, `bun run compatibility:evidence`, `bun run interop-smoke`, `bun run release-check`, and `bun run verify`; TypeScript freeze-readiness is reaffirmed for the currently promoted supported applicable surfaces.
 - v0.19.0 - Activated Epic AG for non-self-attesting conformance hardening, superseding the Epic AF freeze-readiness conclusion without reopening AD, AE, or AF.
-- v0.18.0 - Closed Epic AF in current repo reality through the generated conformance gap plan, promoted AF shared-runner checks, freshness and authority guardrails, refreshed compatibility evidence, and clean freeze validation; TypeScript was considered freeze-ready for the then-promoted surfaces.
-- v0.17.0 - Closed Epic AE in current repo reality through the modular boundary hardening inventory, repo-wide `boundaries/**/*.ts` size audit, and a clean `bun run verify`; remaining active implementation scope was Epic AF.
 - ... [Older history truncated, refer to git logs]
 
 ## 1. Executive Summary & Active Critical Path
 
-- **Total Active Story Points:** 0
-- **Critical Path:** None. Epic AG is closed in current repo reality.
-- **Planning Assumptions:** TechSpec v0.17.0 records the AG-hardened conformance contract and the post-AG freeze-readiness posture. Epics A-AG remain archived context. Fresh AG-gated `bun run codegen`, `bun run conformance`, `bun run compatibility:evidence`, `bun run interop-smoke`, `bun run release-check`, and `bun run verify` evidence reaffirms TypeScript freeze-readiness for the currently promoted supported applicable surfaces. Rust framework product behavior remains unsupported and out of product scope.
+- **Total Active Story Points:** 59
+- **Critical Path:** `KRT-AH001 -> KRT-AH002 -> KRT-AI001 -> KRT-AI002 -> KRT-AJ001 -> KRT-AJ002 -> KRT-AJ003 -> KRT-AK001 -> KRT-AK002 -> KRT-AK003 -> KRT-AL001 -> KRT-AL002 -> KRT-AL003`
+- **Planning Assumptions:** `docs/` remains the timeless semantic authority; `constitution/` remains the live planning framework; stale constitutional support material moves under `constitution/archived/`; the SDK is the main product; the serious REPL CLI is the proving host; canonical stream plus SSE are portable surfaces; AG-UI and the TypeScript AI SDK bridge implementation are the standing implementation-specific exceptions; PostgreSQL lands before Rust; and Rust remains blocked until `product proof gate`, `platform gate`, and `portability gate` all pass.
 
 ### Brownfield Continuity Note
 
-- Epic AG supersedes the freeze-readiness conclusion from Epic AF, not the work history.
-- Epics AD, AE, and AF remain closed archived context and must not be reopened through AG ticket execution.
-- Epic AG is now closed in current repo reality; the ticket list below remains as the closure record for the hardening work that produced the live readiness claim.
+- Epics A-AG remain historical context, not the active forward-execution path.
+- The current repo already proves a promoted semantic subset and a private playground host path, but the active plan now targets full TypeScript product proof rather than maintenance of the AG subset alone.
+- Historical closure inventories may remain available for audit until archive migration lands, but they do not define current execution scope.
 
 ### Sequential Scope Rule
 
-- No future implementation line, new driver, new provider family, new backend family, or new host protocol is activated by this plan.
-- A later TechSpec/Tasks revision must explicitly activate any product implementation line after AG closes.
-- Rust framework remains unsupported, not failed and not passed, until it advertises real framework capabilities.
+- No Rust framework or Rust product-line expansion is active in this plan.
+- No first-class Tuvren provider packages are active in this plan.
+- No AG-UI portability work is active in this plan beyond preserving correct TypeScript projection behavior.
+- Public package publication remains deferred until the proving-host build and lived SDK curation clarify the stable high-level surface.
 
 ### Planning Heuristic
 
-- Prefer epic slices that look likely to land comfortably below roughly `5,000` lines of new code and treat roughly `10,000` lines as a warning threshold.
-- This is a scoping heuristic for planning clarity, not an execution cap or a substitute for code review judgment.
+- Prefer ticket slices that fit focused solo-dev execution while preserving strict gates around product proof, backend rigor, and conformance truthfulness.
+- Treat “green because a private harness succeeds” as insufficient evidence once a proving-host ticket exists on the critical path.
 
 ## 2. Project Phasing & Iteration Strategy
 
-### Delivery Cadence Posture
-
-- No sprint or release-train cadence is assumed in this plan.
-- This section uses "iteration strategy" only because the planning framework requires that heading; the content below is dependency phasing and hardening sequence, not a commitment to Scrum-style iterations.
-
 ### Current Active Scope
 
-- No implementation epic is currently active.
-- Current maintenance scope is to keep docs, contracts, conformance plans, generated artifacts, and evidence aligned with the AG-closed baseline.
-- TypeScript freeze-readiness is reaffirmed only for the currently promoted supported applicable surfaces proven by the AG-gated evidence stack.
-- This closure does not activate Rust framework product behavior, new drivers, new providers, new host protocols, or new backend families.
+- Narrow the live constitutional authority path and archive stale support material under `constitution/archived/`.
+- Normalize host-facing TypeScript package naming and topology immediately before the proving-host build.
+- Build a serious REPL host entirely on the intended high-level SDK surface.
+- Add PostgreSQL as the next official backend and prove it under strict backend semantics.
+- Close the portability gate across the intended portable runtime surface before Rust resumes.
 
 ### Future / Deferred Scope
 
-- Rust framework product implementation work is deferred until a later TechSpec/Tasks revision explicitly activates that line.
-- Rust framework remains unsupported, not failed and not passed, until it advertises real framework capabilities.
-- New product implementation lines remain deferred until AG closes and a later TechSpec/Tasks revision explicitly activates them.
-- `LanguageModelV2` / `ProviderV2` compatibility is deferred.
-- AI SDK agent loops, AI SDK UI message protocols, AI SDK transport helpers, LangChain bridges, provider-native tool support, and first-class Tuvren provider packages are deferred.
-- ACP, A2A, or any additional host protocol beyond SSE and AG-UI is deferred until a future TechSpec revision names it.
-- Future concrete drivers beyond ReAct, official peer backends beyond memory/SQLite, and future product implementation lines beyond the current TypeScript/Rust lanes are deferred until a later plan explicitly authorizes them.
-- FFI-based Rust embedding is deferred until after the process-boundary kernel seam and the AG conformance-hardening closure are both proven boring and durable.
-- Deno portability checks remain deferred until public package surfaces stabilize enough to avoid testing scaffolding churn.
-- Authority packets for surfaces beyond the current promoted packet families remain deferred unless a later TechSpec revision classifies them as promote-now blockers.
+- Rust framework and Rust product-line work
+- First-class Tuvren provider packages and provider-family expansion beyond the TypeScript AI SDK bridge
+- AG-UI as a required cross-language portable surface
+- Additional host protocols beyond the current canonical stream and SSE surfaces
+- Public package publication and final long-lived package curation after the proving-host experience stabilizes
 
 ### Archived or Already Completed Scope
 
-- Epics A-Q established the architecture-first TypeScript baseline, shared contracts, ReAct/runtime execution path, provider bridge, host stream adapters, playground host, and release/portability hardening.
-- Epics R-V established the multi-language transition foundation, contract/conformance artifactization, kernel interop governance, Rust kernel baseline, and TypeScript-framework-to-Rust-kernel interop evidence.
-- Epics W-AF promoted the first shared semantic authority surfaces, normalized topology, enforced neutral machine authority, closed the TypeScript kernel gap, promoted run-liveness, promoted framework orchestration, closed the docs-to-authority freeze gate, completed TypeScript modular boundary hardening, and produced historical TypeScript freeze evidence.
-- Epic AG closed in current repo reality through non-self-attesting promoted-plan hardening, real-kernel framework proof, raw compatibility status enforcement, live guardrails, refreshed compatibility evidence, and clean AG-gated repo validation. TypeScript freeze-readiness is reaffirmed for the currently promoted supported applicable surfaces, while Rust framework remains unsupported.
-- Epic AF evidence remains archived historical context; AG regenerated the live evidence used by the current readiness claim.
+- Epics A-Q established the baseline TypeScript runtime, ReAct path, provider bridge, stream adapters, playground host, and release-hardening work.
+- Epics R-AG established the multi-language transition foundation, shared conformance architecture, kernel interop, and the AG hardening subset that remains historical evidence for promoted surfaces.
+- That work remains valuable audit context, but the active path is now TypeScript product proof, TypeScript platform completion, and then portability-gate closure.
 
 ## 3. Build Order (Mermaid)
 
 ```mermaid
 flowchart LR
-  KRTAG001[KRT-AG001 Oracle Inventory] --> KRTAG002[KRT-AG002 Schema and Runner Contract]
-  KRTAG001 --> KRTAG003[KRT-AG003 Compatibility Status Algebra]
-  KRTAG002 --> KRTAG004[KRT-AG004 Provider Adapter Raw Observations]
-  KRTAG002 --> KRTAG005[KRT-AG005 Framework Real-Kernel Proof Lane]
-  KRTAG004 --> KRTAG006[KRT-AG006 Promoted Plan Rewrite]
-  KRTAG005 --> KRTAG006
-  KRTAG003 --> KRTAG007[KRT-AG007 Guardrail Enforcement]
-  KRTAG006 --> KRTAG007
-  KRTAG007 --> KRTAG008[KRT-AG008 Live Closure Claims]
-  KRTAG008 --> KRTAG009[KRT-AG009 Fresh Evidence and Freeze Reassessment]
+  KRTAH001[KRT-AH001 Archive Sweep] --> KRTAH002[KRT-AH002 Live Authority Cleanup]
+  KRTAH002 --> KRTAI001[KRT-AI001 SDK Naming Audit]
+  KRTAI001 --> KRTAI002[KRT-AI002 Package Normalization]
+  KRTAI002 --> KRTAJ001[KRT-AJ001 REPL Host Contract]
+  KRTAJ001 --> KRTAJ002[KRT-AJ002 REPL Host Implementation]
+  KRTAJ002 --> KRTAJ003[KRT-AJ003 Proving-Host Validation]
+  KRTAJ003 --> KRTAK001[KRT-AK001 PostgreSQL Design Spike]
+  KRTAK001 --> KRTAK002[KRT-AK002 PostgreSQL Implementation]
+  KRTAK002 --> KRTAK003[KRT-AK003 PostgreSQL Proof]
+  KRTAK003 --> KRTAL001[KRT-AL001 Portability Gap Inventory]
+  KRTAL001 --> KRTAL002[KRT-AL002 Portable Semantics Closure]
+  KRTAL002 --> KRTAL003[KRT-AL003 Rust Re-entry Reassessment]
 ```
 
 ## 4. Ticket List
 
-### Epic AG - Non-Self-Attesting Conformance Hardening (Closed In Current Repo Reality)
+### Epic AH — Constitutional Authority Reset (KRT)
 
-**KRT-AG001 Conformance Oracle Inventory**
-
-- **Type:** Spike
+**KRT-AH001 Constitutional Archive Sweep**
+- **Type:** Chore
 - **Effort:** 3
 - **Dependencies:** None
-- **Capability / Contract Mapping:** TechSpec v0.16.0 ADR-030, ADR-031; TechSpec §4.10, §4.12, §4.13
-- **Description:** Inventory all current self-attesting or stale proof paths before changing contracts or plans.
+- **Capability / Contract Mapping:** PRD `CAP-P1-032`, `CAP-P0-037`, `CAP-P1-038`; TechSpec `§1.1` documentation posture, `§5.3`
+- **Description:** Separate historical constitutional support material from the live authority path and prepare the archive structure that will keep planning history available without letting it behave like current authority.
 - **Acceptance Criteria (Gherkin):**
-
 ```gherkin
-Given Authority Packet-referenced plans, promoted adapters, compatibility evidence, and closure reports exist
-When the oracle inventory is completed
-Then every Authority Packet-referenced plan is classified for evidence-only checks
-And every evidence-rooted `schemaValid` or `noEvent` assertion is classified
-And every promoted adapter semantic verifier/assert import is classified
-And every promoted adapter `/test/` harness dependency is classified
-And every pass-with-zero-applicable evidence entry is classified
-And every stale closure claim is classified with its owning artifact and required AG follow-up
+Given `constitution/` contains live planning artifacts and stale historical support material
+When the constitutional archive sweep is completed
+Then every retained non-live constitutional planning or closure artifact is targeted for relocation under `constitution/archived/`
+And no archived artifact remains referenced as current authority from the four live constitutional documents
+And every retained historical artifact outside the live path is labeled as historical context only
 ```
 
-**KRT-AG002 Schema and Runner Contract**
+**KRT-AH002 Live Authority Path Cleanup**
+- **Type:** Chore
+- **Effort:** 3
+- **Dependencies:** `KRT-AH001`
+- **Capability / Contract Mapping:** PRD `CAP-P0-037`, `CAP-P1-038`; TechSpec `§5.3`, `§5.4`
+- **Description:** Remove stale active-voice readiness and closure claims from the live constitutional path so the repo’s authoritative reading path is concise and truthful.
+- **Acceptance Criteria (Gherkin):**
+```gherkin
+Given archived historical material has been separated from the live constitutional path
+When the live authority path cleanup is completed
+Then `docs/` remains the timeless semantic authority
+And only `constitution/PRD.md`, `constitution/Architecture.md`, `constitution/TechSpec.md`, and `constitution/Tasks.md` remain on the live constitutional execution path
+And stale closure or freeze language no longer implies current product readiness without fresh evidence
+```
 
+### Epic AI — TypeScript SDK Surface Normalization (KRT)
+
+**KRT-AI001 High-Level SDK Naming and Surface Audit**
+- **Type:** Spike
+- **Effort:** 2
+- **Dependencies:** `KRT-AH002`
+- **Capability / Contract Mapping:** PRD `CAP-P0-019`, `CAP-P0-020`, `CAP-P1-032`; TechSpec ADR-032, ADR-033
+- **Description:** Audit the host-facing TypeScript packages and identify the rename, merge, split, and internal-only changes needed before the proving-host build.
+- **Acceptance Criteria (Gherkin):**
+```gherkin
+Given the serious REPL host must prove the same high-level SDK surface downstream hosts will use
+When the high-level SDK naming and surface audit is completed
+Then every host-facing package in the proving-host path is classified as keep, rename, merge, split, or internal
+And confusing names or package boundaries that would hinder the proving-host build are explicitly identified
+And the audit does not prematurely freeze public package publication beyond the proving-host needs
+```
+
+**KRT-AI002 Host-Facing Package Normalization**
 - **Type:** Feature
 - **Effort:** 5
-- **Dependencies:** KRT-AG001
-- **Capability / Contract Mapping:** TechSpec §4.12; ADR-030
-- **Description:** Add non-evidence decisive assertion semantics to the conformance plan schema and shared runner.
+- **Dependencies:** `KRT-AI001`
+- **Capability / Contract Mapping:** PRD `CAP-P0-019`, `CAP-P0-020`, `CAP-P1-032`; TechSpec `§5.4`
+- **Description:** Apply the host-facing rename and topology normalization so the proving host can depend only on the intended high-level SDK surface.
 - **Acceptance Criteria (Gherkin):**
-
 ```gherkin
-Given promoted checks must not pass from adapter evidence alone
-When the schema and runner contract is updated
-Then `resultField` exists in the conformance schema, compiler, assertion engine, and tests
-And every promoted check requires at least one decisive non-evidence assertion
-And `evidenceField` cannot satisfy the decisive assertion requirement
-And `schemaValid` over evidence is non-decisive
-And `noEvent` reads runner-owned event observations
-And meta-conformance proves evidence-only plans are rejected
+Given the host-facing package audit has identified the required normalization
+When the host-facing packages are renamed or restructured
+Then the serious REPL host can depend only on the intended high-level SDK surface
+And internal-only packages are no longer required in the proving-host path
+And existing behavior remains covered by automated build, typecheck, and validation lanes
 ```
 
-**KRT-AG003 Compatibility Status Algebra**
+### Epic AJ — Serious REPL Host Proof (KRT)
 
+**KRT-AJ001 Reference REPL Host Contract**
 - **Type:** Feature
 - **Effort:** 3
-- **Dependencies:** KRT-AG001
-- **Capability / Contract Mapping:** TechSpec §4.10; ADR-031
-- **Description:** Replace ambiguous raw compatibility status handling with the four-state status algebra.
+- **Dependencies:** `KRT-AI002`
+- **Capability / Contract Mapping:** PRD `CAP-P0-019`, `CAP-P0-020`, `CAP-P0-023`, `CAP-P0-026`, `CAP-P0-027`; TechSpec ADR-032
+- **Description:** Define the serious REPL host command tree, scenario mode, and operator contract strictly around the host-facing SDK without inventing private proving-only seams.
 - **Acceptance Criteria (Gherkin):**
-
 ```gherkin
-Given compatibility evidence currently risks treating unsupported or empty suites as pass
-When compatibility status algebra is implemented
-Then raw status supports `pass`, `fail`, `unsupported`, and `not_applicable`
-And pass with zero applicable checks is invalid
-And unsupported evidence records zero applicable checks without raw pass
-And `reportStatus` cannot contradict raw status
-And `rust-framework` evidence regenerates as unsupported instead of pass
+Given the normalized high-level SDK surface exists
+When the reference REPL host contract is defined
+Then the host exposes thread and branch controls, execution controls, approval resolution, steering, orchestration actions, persistence selection, and event inspection through the host-facing SDK
+And the contract includes both interactive REPL use and scripted end-to-end scenario execution
+And no required host action depends on private runtime-only APIs
 ```
 
-**KRT-AG004 Provider Adapter Raw Observations**
-
+**KRT-AJ002 Serious REPL Host Implementation**
 - **Type:** Feature
 - **Effort:** 8
-- **Dependencies:** KRT-AG002
-- **Capability / Contract Mapping:** provider-api authority packet; provider conformance plans; TechSpec §4.13
-- **Description:** Remove provider semantic verdict logic from the TypeScript provider adapter and expose only raw observations plus diagnostics.
+- **Dependencies:** `KRT-AJ001`
+- **Capability / Contract Mapping:** PRD `CAP-P0-005`, `CAP-P0-010`, `CAP-P0-013`, `CAP-P0-016`, `CAP-P0-019`, `CAP-P0-020`, `CAP-P0-023`, `CAP-P0-026`, `CAP-P0-027`, `CAP-P1-022`, `CAP-P1-024`
+- **Description:** Build the serious REPL host using only the intended high-level SDK surface, proving the documented runtime behaviors as one coherent operator-facing product.
 - **Acceptance Criteria (Gherkin):**
-
 ```gherkin
-Given provider conformance must be judged by the shared runner
-When provider adapter observations are hardened
-Then the TypeScript provider adapter no longer imports provider semantic verifier/assert helpers
-And provider operations return raw result, events, state, and diagnostics
-And provider errors expose stable implementation observations or error envelopes
-And expected provider semantics live only in plans
-And provider evidence remains diagnostic only
+Given the reference REPL host contract is approved
+When the serious REPL host is implemented
+Then an operator can drive durable threads and branches, streaming, tools, approvals, steering, cancellation, orchestration, extension-powered behavior, structured output, and SQLite-backed reload from the host
+And the same host supports non-persistent `memory` mode for proving flows that do not require durable reload
+And the host consumes only the intended high-level SDK surface
+And the host does not depend on playground-only shortcuts or implementation-local harness seams
 ```
 
-**KRT-AG005 Framework Real-Kernel Proof Lane**
-
+**KRT-AJ003 Proving-Host End-to-End Validation**
 - **Type:** Feature
-- **Effort:** 8
-- **Dependencies:** KRT-AG002
-- **Capability / Contract Mapping:** runtime-api authority packet; framework conformance plans; kernel interop contract
-- **Description:** Replace promoted framework proof paths that depend on fake kernel behavior with a real kernel-backed lane or an explicitly bounded testkit contract.
-- **Acceptance Criteria (Gherkin):**
-
-```gherkin
-Given promoted framework checks must prove runtime behavior rather than fake-kernel behavior
-When the real-kernel proof lane is implemented
-Then promoted framework checks no longer depend on `runtime-core/test/fake-kernel.ts` as the main proof path
-And a real kernel-backed lane covers completed turn, approval pause/resume, cancellation, recovery, tool staging, and handoff/orchestration continuity where applicable
-And any remaining fake harness is package-local only or promoted as an explicit bounded testkit
-And framework conformance still reports unsupported surfaces truthfully when capabilities are not advertised
-```
-
-**KRT-AG006 Promoted Plan Rewrite and Check Compression**
-
-- **Type:** Feature
-- **Effort:** 8
-- **Dependencies:** KRT-AG004, KRT-AG005
-- **Capability / Contract Mapping:** Authority Packet-referenced conformance plans; TechSpec §4.12
-- **Description:** Rewrite promoted plans so runner-observed domains carry semantic proof and duplicate micro-checks are compressed where ordered assertions express the same behavior.
-- **Acceptance Criteria (Gherkin):**
-
-```gherkin
-Given promoted plans may contain evidence-only or adapter-summarized checks
-When promoted plans are rewritten
-Then no Authority Packet-referenced check is evidence-only
-And semantic values formerly asserted through evidence move into result, events, or state
-And event-stream checks assert ordered event observations rather than adapter-reported event-type arrays
-And micro-check inflation is compressed where one ordered assertion expresses the same behavior
-And traceability to packet, plan, fixture, scenario, and compatibility evidence is preserved
-```
-
-**KRT-AG007 Guardrail Enforcement**
-
-- **Type:** Chore
 - **Effort:** 5
-- **Dependencies:** KRT-AG003, KRT-AG006
-- **Capability / Contract Mapping:** TechSpec §5.3; ADR-030, ADR-031
-- **Description:** Add fail-closed validation so AG invariants cannot regress silently.
+- **Dependencies:** `KRT-AJ002`
+- **Capability / Contract Mapping:** PRD `CAP-P0-019`, `CAP-P0-020`, `CAP-P0-023`, `CAP-P0-026`, `CAP-P0-027`, `CAP-P1-022`, `CAP-P1-024`; TechSpec ADR-032, ADR-033
+- **Description:** Add automated end-to-end validation so the serious REPL host becomes the real product-proof surface instead of a manual demo.
 - **Acceptance Criteria (Gherkin):**
-
 ```gherkin
-Given AG invariants must be enforced by tooling
-When guardrails are added
-Then verify and codegen fail on evidence-only promoted checks
-And verify and codegen fail on pass-with-zero-applicable evidence
-And verify and codegen fail on promoted adapter semantic verifier/assert imports
-And verify and codegen fail on promoted adapter implementation-local `/test/` imports unless explicitly allowed by a boundary-owned testkit
-And fixture self-tests prove each guardrail fails closed
+Given the serious REPL host exists
+When proving-host end-to-end validation is added
+Then automated scenario runs cover at least threads and branches, approvals, steering, cancellation, orchestration, extensions, structured output, and reload
+And those scenario runs explicitly cover both `memory` and SQLite-backed host execution where each mode is relevant
+And TypeScript AI SDK bridge-backed provider scenarios remain covered as a first-class TypeScript product obligation even though the bridge implementation is not itself a required portable surface
+And interactive REPL flows and scripted scenario mode share the same host-facing implementation path
+And product-proof claims cite proving-host evidence rather than private playground-only evidence
 ```
 
-**KRT-AG008 Live Closure Claims**
+### Epic AK — PostgreSQL Product Backend (KRT)
 
-- **Type:** Chore
+**KRT-AK001 PostgreSQL Backend Design Spike**
+- **Type:** Spike
 - **Effort:** 3
-- **Dependencies:** KRT-AG007
-- **Capability / Contract Mapping:** TechSpec §5.3; compatibility ledger; closure reports
-- **Description:** Replace stale closure prose with generated or executable readiness claims.
+- **Dependencies:** `KRT-AJ003`
+- **Capability / Contract Mapping:** PRD `CAP-P0-001`, `CAP-P0-005`, `CAP-P0-006`, `CAP-P0-008`; TechSpec `§1.1` backend posture, ADR-007, ADR-033
+- **Description:** Define the PostgreSQL backend’s physical model, migration strategy, and semantic constraints against the existing kernel contract before implementation begins.
 - **Acceptance Criteria (Gherkin):**
-
 ```gherkin
-Given closure claims can become stale prose
-When live closure claims are implemented
-Then measurable closure claims are generated from live scans or removed
-And boundary size, conformance count, status algebra, and guardrail claims are backed by executable checks
-And historical closure inventories remain archived context rather than current proof
-And release-readiness text names exact commands and artifacts that generated the claim
+Given the serious REPL host proves the SDK on memory and SQLite
+When the PostgreSQL backend design spike is completed
+Then the backend’s physical model, migration strategy, transaction semantics, and host compatibility constraints are defined against the existing kernel contract
+And no PostgreSQL optimization weakens the shared kernel-visible guarantees
+And the design identifies any contract or conformance additions required before implementation
 ```
 
-**KRT-AG009 Fresh Evidence and Freeze Reassessment**
+**KRT-AK002 PostgreSQL Backend Implementation**
+- **Type:** Feature
+- **Effort:** 8
+- **Dependencies:** `KRT-AK001`
+- **Capability / Contract Mapping:** PRD `CAP-P0-001`, `CAP-P0-005`, `CAP-P0-006`, `CAP-P0-008`, `CAP-P0-030`; TechSpec ADR-006, ADR-007
+- **Description:** Implement PostgreSQL as the next first-class backend without weakening kernel semantics, host-facing behavior, or proving-host assumptions.
+- **Acceptance Criteria (Gherkin):**
+```gherkin
+Given the PostgreSQL backend design is approved
+When the PostgreSQL backend is implemented
+Then the backend satisfies the same strict kernel-visible semantics as memory and SQLite
+And the backend owns its migrations, validation, and runtime integration without changing host-facing framework semantics
+And the backend is executable through the same high-level SDK and proving-host flows as the existing backends
+```
 
+**KRT-AK003 PostgreSQL Proof and Parity Validation**
+- **Type:** Feature
+- **Effort:** 5
+- **Dependencies:** `KRT-AK002`
+- **Capability / Contract Mapping:** PRD `CAP-P0-001`, `CAP-P0-005`, `CAP-P0-006`, `CAP-P0-008`; TechSpec ADR-007, ADR-033
+- **Description:** Prove PostgreSQL under strict backend validation and host-proof scenarios so it becomes part of the platform gate rather than a speculative future backend.
+- **Acceptance Criteria (Gherkin):**
+```gherkin
+Given the PostgreSQL backend implementation exists
+When parity validation is executed
+Then backend conformance covers the promoted kernel and framework semantics expected of first-class backends
+And proving-host end-to-end scenarios run successfully against PostgreSQL where persistence is required
+And PostgreSQL passes strict verification lanes rather than being accepted as a best-effort optional backend
+```
+
+### Epic AL — Portability Gate Closure (KRT)
+
+**KRT-AL001 Portable-Surface Conformance Gap Inventory**
+- **Type:** Spike
+- **Effort:** 3
+- **Dependencies:** `KRT-AK003`
+- **Capability / Contract Mapping:** PRD `CAP-P0-037`, `CAP-P1-038`, `CAP-P1-035`, `CAP-P1-036`; TechSpec ADR-033
+- **Description:** Inventory the remaining gap between the productized TypeScript line and the fully portable surface that must be packet/plan/runner-owned before Rust resumes.
+- **Acceptance Criteria (Gherkin):**
+```gherkin
+Given the TypeScript product line proves the intended SDK and backends end to end
+When the portable-surface conformance gap inventory is completed
+Then every documented portable surface in the active product scope is classified as packet/plan/runner-owned, implementation-specific by explicit exception, or missing portability work
+And canonical stream plus SSE are treated as required portable surfaces
+And AG-UI plus the TypeScript AI SDK bridge implementation are the only standing implementation-specific exceptions unless a new explicit decision changes that rule
+And the inventory separately records `memory` proving obligations and TypeScript AI SDK bridge-backed product obligations so they remain tested even where they are not portable targets
+```
+
+**KRT-AL002 Portable Semantics Promotion Closure**
+- **Type:** Feature
+- **Effort:** 8
+- **Dependencies:** `KRT-AL001`
+- **Capability / Contract Mapping:** PRD `CAP-P0-037`, `CAP-P1-038`, `CAP-P1-035`, `CAP-P1-036`; TechSpec `§4.11`, `§4.12`, `§4.13`, ADR-030, ADR-033
+- **Description:** Promote the remaining intended portable semantics into authority packets, conformance plans, fixtures, generated artifacts, and runner-observed checks.
+- **Acceptance Criteria (Gherkin):**
+```gherkin
+Given the portability gap inventory identifies missing portable semantics
+When the remaining portable TypeScript semantics are promoted
+Then the intended portable surface is carried by authority packets, conformance plans, fixtures, generated artifacts, and runner-observed checks rather than implementation-local tests
+And provider-agnostic semantics remain Tuvren-owned instead of AI-SDK-shaped
+And orchestration, extensions, host-proof semantics, canonical stream, and SSE assertions no longer depend on implementation-local summary logic where runner-observed proof is possible
+```
+
+**KRT-AL003 Rust Re-entry Gate Reassessment**
 - **Type:** Chore
 - **Effort:** 3
-- **Dependencies:** KRT-AG008
-- **Capability / Contract Mapping:** TechSpec v0.16.0 freeze-readiness posture; reports/compatibility
-- **Description:** Regenerate evidence under AG gates and decide whether TypeScript freeze-readiness can be reaffirmed.
+- **Dependencies:** `KRT-AL002`
+- **Capability / Contract Mapping:** PRD `CAP-P1-035`, `CAP-P1-038`; TechSpec ADR-033, `§5.4`
+- **Description:** Reassess the staged gates from fresh evidence and state plainly whether Rust framework/product work may begin.
 - **Acceptance Criteria (Gherkin):**
-
 ```gherkin
-Given AG guardrails and live closure claims are complete
-When fresh evidence and freeze reassessment are performed
-Then conformance evidence is regenerated under AG gates
-And the compatibility matrix reports truthful `pass`, `fail`, `unsupported`, or `not_applicable`
-And `bun run codegen` has no drift
-And `bun run conformance`, `bun run compatibility:evidence`, `bun run interop-smoke`, `bun run release-check`, and `bun run verify` pass for supported applicable surfaces
-And Tasks and TechSpec state whether TypeScript freeze-readiness is reaffirmed under AG rules
+Given the portability-gate closure work is complete
+When the re-entry gate is reassessed
+Then fresh evidence states whether `product proof gate`, `platform gate`, and `portability gate` have all passed
+And Rust framework/product work remains blocked unless all staged gates are satisfied
+And the constitutional docs name the exact evidence and remaining blockers instead of relying on stale historical closure language
 ```
 
 ## 5. Issue-Level Definition of Done
 
-- No Authority Packet-referenced conformance check is evidence-only.
-- No promoted check relies on `schemaValid` over evidence as its only semantic proof.
-- No promoted event absence check reads adapter evidence arrays.
-- `resultField` exists in schema, compiler, assertion engine, and tests.
-- Raw compatibility status distinguishes `pass`, `fail`, `unsupported`, and `not_applicable`.
-- `status: "pass"` with `applicableChecks: 0` is impossible.
-- Promoted adapters do not import semantic verifier/assert helpers.
-- Promoted framework proof does not depend on implementation-local fake-kernel behavior.
-- Closure claims are generated or removed; stale prose cannot certify readiness.
-- Final evidence is regenerated under AG gates.
-- Rust framework remains unsupported unless a later revision explicitly activates real product behavior.
+- Historical constitutional support material no longer behaves like live authority once archived.
+- The serious REPL host proves the SDK through the same host-facing abstractions downstream hosts are expected to use.
+- End-to-end scenario automation exists for the proving host and covers durable reload, approvals, steering, orchestration, extensions, structured output, and persistence flows.
+- `memory` mode and SQLite mode are both explicitly covered where their differing product obligations matter.
+- SQLite and PostgreSQL satisfy the same strict kernel-visible semantics expected of first-class backends.
+- Canonical stream semantics and SSE translation are portable runner-owned surfaces; AG-UI remains an explicitly implementation-specific projection.
+- Provider-agnostic semantics remain Tuvren-owned and do not depend on AI SDK bridge shapes to define cross-language truth.
+- TypeScript AI SDK bridge-backed provider scenarios remain a required TypeScript product-proof lane even though the bridge implementation itself is not a cross-language portability target.
+- The `product proof gate`, `platform gate`, and `portability gate` are evidenced from fresh checks before Rust framework/product work can resume.
