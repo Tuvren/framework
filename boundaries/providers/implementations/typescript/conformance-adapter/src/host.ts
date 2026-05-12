@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import type {
   LanguageModelV3,
   LanguageModelV3CallOptions,
@@ -28,10 +26,7 @@ import {
   assertTuvrenModelResponse,
   type ProviderStreamChunk,
   type StructuredOutputRequest,
-  type TuvrenModelResponse,
-  type TuvrenPrompt,
 } from "@tuvren/provider-api";
-import { assertTuvrenMessage } from "@tuvren/runtime-api";
 import type {
   AdapterCapabilities,
   AdapterControls,
@@ -40,23 +35,7 @@ import type {
 import { createAdapterErrorEnvelope } from "../../../../../../tools/conformance/adapter-protocol/index.js";
 import { serveStdioAdapter } from "../../../../../../tools/conformance/adapter-protocol/stdio-host.js";
 import { createAiSdkProviderBridge } from "../../bridge-ai-sdk/src/index.ts";
-
-interface ProviderConformanceFixtureSet {
-  prompt: TuvrenPrompt;
-  response: TuvrenModelResponse;
-  structuredPrompt: TuvrenPrompt;
-  toolPrompt: TuvrenPrompt;
-}
-
-const PROVIDER_FIXTURE_PATH = fileURLToPath(
-  new URL(
-    "../../../../conformance/fixtures/provider-fixtures.json",
-    import.meta.url
-  )
-);
-
-const providerTestkitFixtures: ProviderConformanceFixtureSet =
-  readProviderTestkitFixtures();
+import { providerTestkitFixtures } from "../../testkit/src/lib/provider-conformance-fixtures.ts";
 
 class TypeScriptProviderAdapter {
   initialize(
@@ -119,35 +98,6 @@ class TypeScriptProviderAdapter {
 }
 
 await serveStdioAdapter(new TypeScriptProviderAdapter());
-
-function readProviderTestkitFixtures(): ProviderConformanceFixtureSet {
-  const fileText = readFileSync(PROVIDER_FIXTURE_PATH, "utf8");
-  const value = JSON.parse(fileText);
-
-  if (!isRecord(value)) {
-    throw new Error("provider fixture file must contain a JSON object");
-  }
-
-  assertProviderConformanceFixtureSet(value);
-
-  return value;
-}
-
-function assertProviderConformanceFixtureSet(
-  value: unknown
-): asserts value is ProviderConformanceFixtureSet {
-  if (!isRecord(value)) {
-    throw new Error("provider fixture file must be a valid object");
-  }
-
-  assertFixturePrompt(value.prompt, "provider fixture prompt");
-  assertFixturePrompt(
-    value.structuredPrompt,
-    "provider fixture structuredPrompt"
-  );
-  assertFixturePrompt(value.toolPrompt, "provider fixture toolPrompt");
-  assertTuvrenModelResponse(value.response, "provider fixture response");
-}
 
 async function generateMapping(): Promise<Record<string, unknown>> {
   let capturedOptions: LanguageModelV3CallOptions | undefined;
@@ -727,77 +677,4 @@ function readStructuredResponseFormat(): StructuredOutputRequest {
   }
 
   return responseFormat;
-}
-
-function assertFixturePrompt(
-  value: unknown,
-  label: string
-): asserts value is TuvrenPrompt {
-  if (!isRecord(value)) {
-    throw new Error(`${label} must be an object`);
-  }
-
-  if (!Array.isArray(value.messages) || value.messages.length === 0) {
-    throw new Error(`${label}.messages must be a non-empty array`);
-  }
-
-  for (const [index, message] of value.messages.entries()) {
-    assertTuvrenMessage(message, `${label}.messages[${index}]`);
-  }
-
-  if (value.responseFormat !== undefined) {
-    assertStructuredOutputRequest(
-      value.responseFormat,
-      `${label}.responseFormat`
-    );
-  }
-
-  if (value.tools !== undefined) {
-    if (!Array.isArray(value.tools)) {
-      throw new Error(`${label}.tools must be an array`);
-    }
-
-    for (const [index, tool] of value.tools.entries()) {
-      assertRenderedToolDefinition(tool, `${label}.tools[${index}]`);
-    }
-  }
-}
-
-function assertStructuredOutputRequest(
-  value: unknown,
-  label: string
-): asserts value is StructuredOutputRequest {
-  if (!isRecord(value)) {
-    throw new Error(`${label} must be an object`);
-  }
-
-  if (!isRecord(value.schema)) {
-    throw new Error(`${label}.schema must be an object`);
-  }
-
-  if (value.name !== undefined && typeof value.name !== "string") {
-    throw new Error(`${label}.name must be a string`);
-  }
-
-  if (value.strict !== undefined && typeof value.strict !== "boolean") {
-    throw new Error(`${label}.strict must be a boolean`);
-  }
-}
-
-function assertRenderedToolDefinition(value: unknown, label: string): void {
-  if (!isRecord(value)) {
-    throw new Error(`${label} must be an object`);
-  }
-
-  if (typeof value.name !== "string" || value.name.length === 0) {
-    throw new Error(`${label}.name must be a non-empty string`);
-  }
-
-  if (typeof value.description !== "string") {
-    throw new Error(`${label}.description must be a string`);
-  }
-
-  if (!isRecord(value.inputSchema)) {
-    throw new Error(`${label}.inputSchema must be an object`);
-  }
 }

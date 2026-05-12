@@ -200,8 +200,13 @@ export function createConformanceRunLivenessKernelHarness(
       run: {
         ...baseKernel.run,
         async complete(runId, status, eventHash) {
+          const completion = await baseKernel.run.complete(
+            runId,
+            status,
+            eventHash
+          );
           leasedRuns.delete(runId);
-          return await baseKernel.run.complete(runId, status, eventHash);
+          return completion;
         },
       },
       runLiveness: {
@@ -213,13 +218,14 @@ export function createConformanceRunLivenessKernelHarness(
         },
         async preemptExpired(runId, preemptingOwnerId, nowMs, reason) {
           preemptCalls += 1;
-          leasedRuns.delete(runId);
-          return await baseKernel.runLiveness.preemptExpired(
+          const recovery = await baseKernel.runLiveness.preemptExpired(
             runId,
             preemptingOwnerId,
             nowMs,
             reason
           );
+          leasedRuns.delete(runId);
+          return recovery;
         },
         async renewLease(
           runId,
@@ -228,12 +234,24 @@ export function createConformanceRunLivenessKernelHarness(
           nextLeaseExpiresAtMs
         ) {
           renewLeaseCalls += 1;
-          return await baseKernel.runLiveness.renewLease(
+          const renewal = await baseKernel.runLiveness.renewLease(
             runId,
             executionOwnerId,
             fencingToken,
             nextLeaseExpiresAtMs
           );
+          const leasedRun = leasedRuns.get(runId);
+
+          if (leasedRun !== undefined) {
+            leasedRuns.set(runId, {
+              ...leasedRun,
+              executionOwnerId,
+              fencingToken: renewal.fencingToken,
+              leaseExpiresAtMs: renewal.leaseExpiresAtMs,
+            });
+          }
+
+          return renewal;
         },
       },
     },
