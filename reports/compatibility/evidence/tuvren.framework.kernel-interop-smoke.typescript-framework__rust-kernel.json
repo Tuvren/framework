@@ -563,6 +563,7 @@
           "tuvren.runtime.driver.id",
           "tuvren.runtime.parent_checkpoint.hash",
           "tuvren.runtime.provider.id",
+          "tuvren.runtime.run.id",
           "tuvren.runtime.turn.id"
         ],
         "scenario": "orchestration"

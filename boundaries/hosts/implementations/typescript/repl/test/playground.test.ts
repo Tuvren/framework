@@ -495,17 +495,22 @@ describe("repl host scenarios", () => {
     await runReplCommand(shell, ".turn approve edit");
     await runReplCommand(shell, ".turn await");
 
+    expect(shell.activeTurn).toBe(undefined);
     expect(
       shell.lastProjection?.canonical.some(
         (event) => event.type === "approval.resolved"
       )
     ).toBe(true);
+    expect((await runReplCommand(shell, ".turn cancel")).output).toBe(
+      "No active turn is currently running."
+    );
     const headBeforeOrchestration = shell.thread?.headTurnNodeHash;
 
     await runReplCommand(shell, ".orch start");
     await runReplCommand(shell, ".orch spawn worker Run proof child");
     await runReplCommand(shell, ".orch await");
 
+    expect(shell.activeOrchestration).toBe(undefined);
     expect(
       shell.lastOrchestrationEvents?.some(
         (event) => event.source?.workerId !== undefined
@@ -521,6 +526,43 @@ describe("repl host scenarios", () => {
     const activeBranchId = shell.thread?.branchId;
     await runReplCommand(shell, ".branch fork");
     expect(shell.thread?.branchId).not.toBe(activeBranchId);
+
+    const forkMessages = readCommandArray(
+      await runReplCommand(shell, ".messages show")
+    );
+    expect(forkMessages.length).toBe(activeMessages.length);
+    expect(
+      (await runReplCommand(shell, ".orch spawn worker retry")).output
+    ).toBe("No active orchestration root exists.");
+  });
+
+  test("keeps the active thread head aligned when orchestration emits descendant checkpoints", async () => {
+    const shell = createReplShell({
+      backend: "memory",
+      providerMode: "fixture",
+      scenario: "streaming",
+    });
+
+    await runReplCommand(shell, ".thread new");
+    const activeThreadId = shell.thread?.threadId;
+
+    if (activeThreadId === undefined) {
+      throw new Error("expected active thread id after .thread new");
+    }
+
+    await runReplCommand(shell, ".orch start");
+    await runReplCommand(shell, ".orch spawn worker Run proof child");
+    await runReplCommand(shell, ".orch await");
+
+    expect(shell.thread?.threadId).toBe(activeThreadId);
+    expect(shell.thread?.headTurnNodeHash).not.toBe(
+      shell.thread?.rootTurnNodeHash
+    );
+
+    const activeMessages = readCommandArray(
+      await runReplCommand(shell, ".messages show")
+    );
+    await runReplCommand(shell, ".branch fork");
 
     const forkMessages = readCommandArray(
       await runReplCommand(shell, ".messages show")

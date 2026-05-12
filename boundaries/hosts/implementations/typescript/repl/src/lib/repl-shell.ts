@@ -393,14 +393,18 @@ async function awaitTurn(shell: ReplShell): Promise<ReplCommandResult> {
   }
 
   const projection = await activeTurn.projectionPromise;
+  const phase = activeTurn.handle.status().phase;
   shell.lastProjection = projection;
   shell.thread = withHead(activeTurn.thread, projection);
+  if (isTerminalPhase(phase)) {
+    shell.activeTurn = undefined;
+  }
 
   return {
     output: formatJson({
       checks: {
         error: readProjectionError(projection) ?? null,
-        phase: activeTurn.handle.status().phase,
+        phase,
       },
       eventTypes: projection.canonical.map((event) => event.type),
       thread: shell.thread,
@@ -560,6 +564,9 @@ async function awaitOrchestration(
   } satisfies PlaygroundStreamProjection;
   shell.thread = withHead(active.thread, projection);
   active.thread = shell.thread;
+  if (isTerminalPhase(active.handle.status().phase)) {
+    shell.activeOrchestration = undefined;
+  }
 
   return {
     output: formatJson({
@@ -695,4 +702,10 @@ async function collect<T>(events: AsyncIterable<T>): Promise<T[]> {
 
 function formatJson(value: unknown): string {
   return JSON.stringify(value, null, 2);
+}
+
+function isTerminalPhase(
+  phase: ReturnType<ExecutionHandle["status"]>["phase"]
+): boolean {
+  return phase === "completed" || phase === "failed";
 }

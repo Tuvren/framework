@@ -503,13 +503,16 @@ export function withHead(
   thread: PlaygroundThreadSummary,
   projection: PlaygroundStreamProjection
 ): PlaygroundThreadSummary {
+  // Orchestration streams can interleave descendant checkpoints, so only
+  // derive the active head from checkpoints emitted on the active thread.
   const checkpoint = [...projection.canonical]
     .reverse()
     .find(
       (
         event
       ): event is Extract<TuvrenStreamEvent, { type: "state.checkpoint" }> =>
-        event.type === "state.checkpoint"
+        event.type === "state.checkpoint" &&
+        event.source?.threadId === thread.threadId
     );
 
   return {
