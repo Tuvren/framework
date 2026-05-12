@@ -14,16 +14,24 @@
  * limitations under the License.
  */
 
+import { createMemoryBackend } from "@tuvren/backend-memory";
+import {
+  type HashString as CoreHashString,
+  isHashString,
+} from "@tuvren/core-types";
 import type {
   DriverExecutionContext,
   DriverExecutionResult,
   RuntimeDriver,
 } from "@tuvren/driver-api";
-import { createMemoryBackend } from "@tuvren/backend-memory";
 import {
-  isHashString,
-  type HashString as CoreHashString,
-} from "@tuvren/core-types";
+  decodeDeterministicKernelRecord,
+  type RunRecord,
+  type RuntimeKernel,
+  type RuntimeKernelRunLiveness,
+  type TurnTreeManifest,
+} from "@tuvren/kernel-protocol";
+import { createRuntimeKernel } from "@tuvren/kernel-runtime";
 import type { TuvrenProvider } from "@tuvren/provider-api";
 import type {
   ContextManifest,
@@ -35,20 +43,12 @@ import type {
   TuvrenStreamEvent,
   TuvrenToolDefinition,
 } from "@tuvren/runtime-api";
-import {
-  decodeDeterministicKernelRecord,
-  type RuntimeKernel,
-  type RuntimeKernelRunLiveness,
-  type RunRecord,
-  type TurnTreeManifest,
-} from "@tuvren/kernel-protocol";
-import { createRuntimeKernel } from "@tuvren/kernel-runtime";
+import { decodeStoredRun } from "../../../../../kernel/implementations/typescript/runtime-kernel/src/lib/runtime-kernel-storage.ts";
 import { createReActDriver } from "../../drivers/react/src/index.ts";
 import {
   createDriverRegistry,
   createTuvrenRuntimeCore,
 } from "../../runtime-core/src/index.ts";
-import { decodeStoredRun } from "../../../../../kernel/implementations/typescript/runtime-kernel/src/lib/runtime-kernel-storage.ts";
 
 export interface AdapterProjection {
   events?: readonly unknown[];
@@ -132,9 +132,11 @@ export function createConformanceKernelHarness(options?: {
     },
     async readBranchRuns(branchId) {
       return await backend.transact((tx) =>
-        tx.runs.listByBranch(branchId).then((storedRuns) =>
-          storedRuns.map((storedRun) => decodeStoredRun(storedRun))
-        )
+        tx.runs
+          .listByBranch(branchId)
+          .then((storedRuns) =>
+            storedRuns.map((storedRun) => decodeStoredRun(storedRun))
+          )
       );
     },
     async readRunningStagedMessages(branchId) {

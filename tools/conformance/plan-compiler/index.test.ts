@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
-import { tmpdir } from "node:os";
 import { describe, expect, test } from "bun:test";
+import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
 import { loadConformancePlan } from "./index.ts";
 
 describe("resultField required evidence", () => {
@@ -38,12 +38,18 @@ describe("resultField required evidence", () => {
       (plan) => {
         const checks = readArray(plan.checks, "checks");
         const targetCheck = readRecord(
-          checks.find((entry) => readRecordString(entry, "checkId") === "driver-api.execute.resolution"),
+          checks.find(
+            (entry) =>
+              readRecordString(entry, "checkId") ===
+              "driver-api.execute.resolution"
+          ),
           "driver-api.execute.resolution check"
         );
         const assertions = readArray(targetCheck.assertions, "assertions");
         const targetAssertion = readRecord(
-          assertions.find((entry) => readRecordString(entry, "kind") === "resultField"),
+          assertions.find(
+            (entry) => readRecordString(entry, "kind") === "resultField"
+          ),
           "driver-api.execute.resolution resultField assertion"
         );
 
@@ -93,25 +99,30 @@ describe("resultField required evidence", () => {
 
   test("rejects resultField assertions without a field", async () => {
     await expect(
-      loadMutatedPlan("boundaries/framework/conformance/plans/driver-api-core.json", (plan) => {
-        const checks = readArray(plan.checks, "checks");
-        const targetCheck = readRecord(
-          checks.find(
-            (entry) => readRecordString(entry, "checkId") === "driver-api.execute.resolution"
-          ),
-          "driver-api.execute.resolution check"
-        );
-        const assertions = readArray(targetCheck.assertions, "assertions");
-        const targetAssertion = readRecord(
-          assertions.find((entry) => readRecordString(entry, "kind") === "resultField"),
-          "driver-api.execute.resolution resultField assertion"
-        );
+      loadMutatedPlan(
+        "boundaries/framework/conformance/plans/driver-api-core.json",
+        (plan) => {
+          const checks = readArray(plan.checks, "checks");
+          const targetCheck = readRecord(
+            checks.find(
+              (entry) =>
+                readRecordString(entry, "checkId") ===
+                "driver-api.execute.resolution"
+            ),
+            "driver-api.execute.resolution check"
+          );
+          const assertions = readArray(targetCheck.assertions, "assertions");
+          const targetAssertion = readRecord(
+            assertions.find(
+              (entry) => readRecordString(entry, "kind") === "resultField"
+            ),
+            "driver-api.execute.resolution resultField assertion"
+          );
 
-        delete targetAssertion.field;
-      })
-    ).rejects.toThrow(
-      "must have required property 'field'"
-    );
+          targetAssertion.field = undefined;
+        }
+      )
+    ).rejects.toThrow("must have required property 'field'");
   });
 });
 
@@ -173,11 +184,10 @@ function readRecord(value: unknown, label: string): Record<string, unknown> {
   return value;
 }
 
-function readRecordString(
-  value: unknown,
-  key: string
-): string | undefined {
-  return isRecord(value) && typeof value[key] === "string" ? value[key] : undefined;
+function readRecordString(value: unknown, key: string): string | undefined {
+  return isRecord(value) && typeof value[key] === "string"
+    ? value[key]
+    : undefined;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

@@ -83,9 +83,7 @@ describe("terminalEvent default path", () => {
 describe("noEvent event assertions", () => {
   test("passes when the observed event sequence omits the event type", () => {
     const [evaluation] = evaluateAssertions(
-      buildCheck([
-        { eventType: "error", kind: "noEvent" },
-      ]),
+      buildCheck([{ eventType: "error", kind: "noEvent" }]),
       { events: [{ type: "turn.start" }, { type: "turn.end" }] }
     );
     expect(evaluation?.status).toBe("pass");
@@ -93,10 +91,14 @@ describe("noEvent event assertions", () => {
 
   test("fails when the observed event sequence contains the event type", () => {
     const [evaluation] = evaluateAssertions(
-      buildCheck([
-        { eventType: "error", kind: "noEvent" },
-      ]),
-      { events: [{ type: "turn.start" }, { type: "error" }, { type: "turn.end" }] }
+      buildCheck([{ eventType: "error", kind: "noEvent" }]),
+      {
+        events: [
+          { type: "turn.start" },
+          { type: "error" },
+          { type: "turn.end" },
+        ],
+      }
     );
     expect(evaluation?.status).toBe("fail");
   });

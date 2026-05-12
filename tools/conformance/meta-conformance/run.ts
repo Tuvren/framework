@@ -352,7 +352,7 @@ async function runPlanCompilerCases(failures: string[]): Promise<void> {
       }
     }
 
-  await writeFile(
+    await writeFile(
       evidenceOnlyPlanPath,
       `${JSON.stringify(
         {
@@ -382,7 +382,9 @@ async function runPlanCompilerCases(failures: string[]): Promise<void> {
 
     if (
       hasDecisiveAssertion({
-        assertions: [{ field: "$.answer", kind: "evidenceField", equals: "ready" }],
+        assertions: [
+          { field: "$.answer", kind: "evidenceField", equals: "ready" },
+        ],
         checkId: "meta.evidence-only",
         operation: "meta.operation",
       })

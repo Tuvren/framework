@@ -471,16 +471,16 @@ function createAssertionContext(
     };
   }
 
-    return {
-      evidence: readOptionalRecord(outcome.value.evidence),
-      events: readOptionalArray(outcome.value.events),
-      fixture: input.fixture,
-      input: input.checkInput,
-      result: outcome.value.result,
-      scenario: input.scenario,
-      state: readOptionalRecord(outcome.value.state),
-    };
-  }
+  return {
+    evidence: readOptionalRecord(outcome.value.evidence),
+    events: readOptionalArray(outcome.value.events),
+    fixture: input.fixture,
+    input: input.checkInput,
+    result: outcome.value.result,
+    scenario: input.scenario,
+    state: readOptionalRecord(outcome.value.state),
+  };
+}
 
 function mergeInspectedState(
   context: AssertionContext,

@@ -651,9 +651,7 @@ function readAssertions(assertions: unknown): Record<string, unknown>[] {
   return assertions.filter(isRecord);
 }
 
-function hasDecisiveAssertion(
-  assertions: Record<string, unknown>[]
-): boolean {
+function hasDecisiveAssertion(assertions: Record<string, unknown>[]): boolean {
   return assertions.some(isDecisiveAssertion);
 }
 
@@ -1134,41 +1132,42 @@ async function runFixtureSelfTests(): Promise<GuardrailFailure[]> {
     });
   }
 
-  const schemaOverEvidencePlanFailures =
-    collectPlanEvidenceOracleShapeFailures(
-      {
-        checks: [
-          {
-            assertions: [
-              {
-                kind: "schemaValid",
-                path: "$.evidence",
-                schema: "$.evidence.schema",
-              },
-            ],
-            checkId: "fixture.schema-valid-evidence",
-            operation: "runtime.assertion",
-            evidence: ["schema"],
-          },
-          {
-            assertions: [
-              {
-                kind: "schemaValid",
-                path: "$.state",
-                schema: "$.evidence.schema",
-              },
-            ],
-            checkId: "fixture.schema-valid-state",
-            operation: "runtime.assertion",
-          },
-        ],
-      },
-      "fixture schemaValid classification plan"
-    );
+  const schemaOverEvidencePlanFailures = collectPlanEvidenceOracleShapeFailures(
+    {
+      checks: [
+        {
+          assertions: [
+            {
+              kind: "schemaValid",
+              path: "$.evidence",
+              schema: "$.evidence.schema",
+            },
+          ],
+          checkId: "fixture.schema-valid-evidence",
+          operation: "runtime.assertion",
+          evidence: ["schema"],
+        },
+        {
+          assertions: [
+            {
+              kind: "schemaValid",
+              path: "$.state",
+              schema: "$.evidence.schema",
+            },
+          ],
+          checkId: "fixture.schema-valid-state",
+          operation: "runtime.assertion",
+        },
+      ],
+    },
+    "fixture schemaValid classification plan"
+  );
 
-  if (!schemaOverEvidencePlanFailures.some((failure) =>
+  if (
+    !schemaOverEvidencePlanFailures.some((failure) =>
       failure.message.includes("fixture.schema-valid-evidence")
-    )) {
+    )
+  ) {
     failures.push({
       check: "guardrail-fixture",
       message:
@@ -1208,9 +1207,8 @@ async function runFixtureSelfTests(): Promise<GuardrailFailure[]> {
   );
 
   if (
-    !stepEvidenceOnlyPlanFailures.some(
-      (failure) =>
-        failure.message.includes("fixture.step-evidence-only step trace")
+    !stepEvidenceOnlyPlanFailures.some((failure) =>
+      failure.message.includes("fixture.step-evidence-only step trace")
     )
   ) {
     failures.push({

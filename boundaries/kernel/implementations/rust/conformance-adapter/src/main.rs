@@ -331,7 +331,9 @@ fn run_cross_thread_lineage() -> Result<Value, KernelError> {
         Err(error) => error,
     };
 
-    Ok(projection(json!({ "errorCode": lineage_error.payload.code })))
+    Ok(projection(
+        json!({ "errorCode": lineage_error.payload.code }),
+    ))
 }
 
 fn run_lateral_turn_head_guard() -> Result<Value, KernelError> {
@@ -405,7 +407,9 @@ fn run_lateral_turn_head_guard() -> Result<Value, KernelError> {
         Err(error) => error,
     };
 
-    Ok(projection(json!({ "errorCode": lateral_error.payload.code })))
+    Ok(projection(
+        json!({ "errorCode": lateral_error.payload.code }),
+    ))
 }
 
 fn projection(evidence: Value) -> Value {

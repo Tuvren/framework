@@ -34,8 +34,8 @@ import {
   assistantText,
   assistantToolCalls,
   collectValues,
-  createConformanceKernelHarness,
   createConformanceIdFactory,
+  createConformanceKernelHarness,
   createDriverExecutionContext,
   createScenarioProvider,
   createStaticDriver,
@@ -43,6 +43,8 @@ import {
   type ScenarioToolCall,
   textSignal,
 } from "./framework-adapter-runtime.ts";
+
+const HASH_STRING_PATTERN = /^[0-9a-f]{64}$/i;
 
 export interface FrameworkAdapterDriverDependencies {
   errorToEnvelope(error: unknown): Record<string, unknown>;
@@ -664,10 +666,7 @@ function readAssistantText(messages: readonly unknown[]): string | undefined {
   return undefined;
 }
 
-function assertDriverExecutionResultShape(
-  value: unknown,
-  label: string
-): void {
+function assertDriverExecutionResultShape(value: unknown, label: string): void {
   if (!isRecord(value)) {
     throw new Error(`${label} must be an object`);
   }
@@ -690,7 +689,7 @@ function assertDriverExecutionResultShape(
 }
 
 function assertHashStringShape(value: unknown, label: string): void {
-  if (typeof value !== "string" || !/^[0-9a-f]{64}$/i.test(value)) {
+  if (typeof value !== "string" || !HASH_STRING_PATTERN.test(value)) {
     throw new Error(`${label} must be a hex hash string`);
   }
 }

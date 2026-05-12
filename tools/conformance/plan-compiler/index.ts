@@ -216,43 +216,72 @@ function validatePlanIntegrity(plan: ConformancePlan, label: string): void {
   const scenarioIds = new Set(Object.keys(plan.scenarios ?? {}));
 
   for (const check of plan.checks) {
-    if (checkIds.has(check.checkId)) {
-      throw new Error(`${label} repeats checkId ${check.checkId}`);
+    assertUniqueCheckId(checkIds, check.checkId, label);
+    validateCheckAssertions(check, label);
+    validateCheckReferences(check, fixtureIds, scenarioIds, label);
+  }
+}
+
+function assertUniqueCheckId(
+  seenCheckIds: Set<string>,
+  checkId: string,
+  label: string
+): void {
+  if (seenCheckIds.has(checkId)) {
+    throw new Error(`${label} repeats checkId ${checkId}`);
+  }
+
+  seenCheckIds.add(checkId);
+}
+
+function validateCheckAssertions(
+  check: ConformancePlanCheck,
+  label: string
+): void {
+  const context = `${label} check ${check.checkId}`;
+  const stepIds = new Set<string>();
+
+  for (const step of check.steps ?? []) {
+    assertUniqueStepId(stepIds, step.stepId, context);
+
+    for (const assertion of step.assertions ?? []) {
+      assertValidAssertion(assertion, context);
     }
+  }
 
-    checkIds.add(check.checkId);
+  for (const assertion of check.assertions) {
+    assertValidAssertion(assertion, context);
+  }
+}
 
-    const stepIds = new Set<string>();
+function assertUniqueStepId(
+  seenStepIds: Set<string>,
+  stepId: string,
+  context: string
+): void {
+  if (seenStepIds.has(stepId)) {
+    throw new Error(`${context} repeats stepId ${stepId}`);
+  }
 
-    for (const step of check.steps ?? []) {
-      if (stepIds.has(step.stepId)) {
-        throw new Error(
-          `${label} check ${check.checkId} repeats stepId ${step.stepId}`
-        );
-      }
+  seenStepIds.add(stepId);
+}
 
-      for (const assertion of step.assertions ?? []) {
-        assertValidAssertion(assertion, `${label} check ${check.checkId}`);
-      }
+function validateCheckReferences(
+  check: ConformancePlanCheck,
+  fixtureIds: ReadonlySet<string>,
+  scenarioIds: ReadonlySet<string>,
+  label: string
+): void {
+  if (check.fixture !== undefined && !fixtureIds.has(check.fixture)) {
+    throw new Error(
+      `${label} check ${check.checkId} references unknown fixture ${check.fixture}`
+    );
+  }
 
-      stepIds.add(step.stepId);
-    }
-
-    for (const assertion of check.assertions) {
-      assertValidAssertion(assertion, `${label} check ${check.checkId}`);
-    }
-
-    if (check.fixture !== undefined && !fixtureIds.has(check.fixture)) {
-      throw new Error(
-        `${label} check ${check.checkId} references unknown fixture ${check.fixture}`
-      );
-    }
-
-    if (check.scenario !== undefined && !scenarioIds.has(check.scenario)) {
-      throw new Error(
-        `${label} check ${check.checkId} references unknown scenario ${check.scenario}`
-      );
-    }
+  if (check.scenario !== undefined && !scenarioIds.has(check.scenario)) {
+    throw new Error(
+      `${label} check ${check.checkId} references unknown scenario ${check.scenario}`
+    );
   }
 }
 
@@ -265,7 +294,9 @@ function assertValidAssertion(
   }
 
   if (assertion.kind === "resultField" && assertion.field === undefined) {
-    throw new Error(`${context} has no field configured on resultField assertion`);
+    throw new Error(
+      `${context} has no field configured on resultField assertion`
+    );
   }
 }
 

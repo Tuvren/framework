@@ -124,10 +124,10 @@
           "pairId": { "type": "string" },
           "suiteId": { "type": "string" },
           "suiteVersion": { "type": "string" },
-                "status": {
-                  "type": "string",
-                  "enum": ["fail", "not_applicable", "pass", "unsupported"]
-                },
+          "status": {
+            "type": "string",
+            "enum": ["fail", "not_applicable", "pass", "unsupported"]
+          },
           "reportStatus": {
             "type": "string",
             "enum": [

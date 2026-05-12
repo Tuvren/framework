@@ -38,13 +38,15 @@ import {
   assistantToolCalls,
   collectValues,
   createClock,
-  createConformanceKernelHarness,
   createConformanceIdFactory,
+  createConformanceKernelHarness,
   createDriverExecutionContext,
   createStaticDriver,
   DRIVER_ID,
   textSignal,
 } from "./framework-adapter-runtime.ts";
+
+const HASH_STRING_PATTERN = /^[0-9a-f]{64}$/i;
 
 export interface FrameworkAdapterProviderScenarioDependencies {
   readAssistantText(
@@ -440,10 +442,7 @@ export function createFrameworkAdapterProviderScenarios(
       })
     );
 
-    assertDriverExecutionResultShape(
-      result,
-      "structured validation result"
-    );
+    assertDriverExecutionResultShape(result, "structured validation result");
 
     return {
       evidence: {
@@ -730,7 +729,7 @@ export function createFrameworkAdapterProviderScenarios(
   }
 
   function assertHashStringShape(value: unknown, label: string): void {
-    if (typeof value !== "string" || !/^[0-9a-f]{64}$/i.test(value)) {
+    if (typeof value !== "string" || !HASH_STRING_PATTERN.test(value)) {
       throw new Error(`${label} must be a hex hash string`);
     }
   }

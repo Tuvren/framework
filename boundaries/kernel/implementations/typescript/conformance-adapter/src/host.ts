@@ -226,7 +226,9 @@ async function deterministicHashing(
 
   return createProjection({
     hashes: {
-      rawOpaqueBytes: await hashOpaqueObjectBytes(Uint8Array.from(rawOpaqueBytes)),
+      rawOpaqueBytes: await hashOpaqueObjectBytes(
+        Uint8Array.from(rawOpaqueBytes)
+      ),
       turnNodeIdentity: turnNodeHash,
       turnTreeSchema: await hashKernelRecord(schemaRecord),
     },
@@ -861,7 +863,9 @@ async function runExpiredListing(): Promise<Record<string, unknown>> {
     return createProjection({
       listing: {
         expiredRunIds: expiredRuns.map((run) => run.runId),
-        pausedRunListed: expiredRuns.some((run) => run.runId === pausedRun.runId),
+        pausedRunListed: expiredRuns.some(
+          (run) => run.runId === pausedRun.runId
+        ),
         pausedRunStatus: pausedStoredRun.status,
       },
     });

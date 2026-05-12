@@ -34,12 +34,14 @@ import {
   assistantText,
   assistantToolCalls,
   collectValues,
-  createConformanceKernelHarness,
   createConformanceIdFactory,
+  createConformanceKernelHarness,
   createStaticDriver,
   DRIVER_ID,
   textSignal,
 } from "./framework-adapter-runtime.ts";
+
+const HASH_STRING_PATTERN = /^[0-9a-f]{64}$/i;
 
 export interface FrameworkAdapterRuntimeScenarioDependencies {
   isRecord(value: unknown): value is Record<string, unknown>;
@@ -293,7 +295,8 @@ export function createFrameworkAdapterRuntimeScenarios(
       thread.branchId
     );
 
-    const runtimePhase = cancelInvocations > 0 ? "failed" : handle.status().phase;
+    const runtimePhase =
+      cancelInvocations > 0 ? "failed" : handle.status().phase;
 
     return {
       evidence: {
@@ -985,7 +988,7 @@ export function createFrameworkAdapterRuntimeScenarios(
   }
 
   function assertHashStringShape(value: unknown, label: string): void {
-    if (typeof value !== "string" || !/^[0-9a-f]{64}$/i.test(value)) {
+    if (typeof value !== "string" || !HASH_STRING_PATTERN.test(value)) {
       throw new Error(`${label} must be a hex hash string`);
     }
   }

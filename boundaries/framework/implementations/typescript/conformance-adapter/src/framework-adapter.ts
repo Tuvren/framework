@@ -586,69 +586,109 @@ function assertProviderStreamChunkShape(
 
   switch (value.type) {
     case "text_delta":
-      if (typeof value.text !== "string") {
-        throw new Error(`${label} must include chunk text`);
-      }
+      assertChunkStringField(value, "text", label, "chunk text");
       return;
     case "reasoning_delta":
-      if (typeof value.text !== "string") {
-        throw new Error(`${label} must include reasoning text`);
-      }
+      assertChunkStringField(value, "text", label, "reasoning text");
       return;
     case "reasoning_done":
       return;
     case "structured_delta":
-      if (typeof value.delta !== "string") {
-        throw new Error(`${label} must include structured delta`);
-      }
+      assertChunkStringField(value, "delta", label, "structured delta");
       return;
     case "structured_done":
-      if (value.data === undefined) {
-        throw new Error(`${label} must include structured data`);
-      }
+      assertChunkDefinedField(value, "data", label, "structured data");
       return;
     case "tool_call_start":
-      if (
-        typeof value.providerCallId !== "string" ||
-        typeof value.name !== "string"
-      ) {
-        throw new Error(`${label} must include a provider call id and name`);
-      }
+      assertToolCallStartChunk(value, label);
       return;
     case "tool_call_args_delta":
-      if (
-        typeof value.providerCallId !== "string" ||
-        typeof value.delta !== "string"
-      ) {
-        throw new Error(`${label} must include a provider call id and delta`);
-      }
+      assertToolCallArgsDeltaChunk(value, label);
       return;
     case "tool_call_done":
-      if (
-        typeof value.providerCallId !== "string" ||
-        typeof value.name !== "string" ||
-        value.input === undefined
-      ) {
-        throw new Error(
-          `${label} must include a provider call id, name, and input`
-        );
-      }
+      assertToolCallDoneChunk(value, label);
       return;
     case "finish":
-      if (
-        typeof value.finishReason !== "string" ||
-        !PROVIDER_FINISH_REASONS.has(value.finishReason)
-      ) {
-        throw new Error(`${label} must include a finish reason`);
-      }
+      assertFinishChunk(value, label);
       return;
     case "error":
-      if (value.error === undefined) {
-        throw new Error(`${label} must include an error payload`);
-      }
+      assertChunkDefinedField(value, "error", label, "an error payload");
       return;
     default:
       throw new Error(`${label} has unsupported chunk type ${value.type}`);
+  }
+}
+
+function assertChunkStringField(
+  chunk: Record<string, unknown>,
+  field: "delta" | "text",
+  label: string,
+  description: string
+): void {
+  if (typeof chunk[field] !== "string") {
+    throw new Error(`${label} must include ${description}`);
+  }
+}
+
+function assertChunkDefinedField(
+  chunk: Record<string, unknown>,
+  field: "data" | "error",
+  label: string,
+  description: string
+): void {
+  if (chunk[field] === undefined) {
+    throw new Error(`${label} must include ${description}`);
+  }
+}
+
+function assertToolCallStartChunk(
+  chunk: Record<string, unknown>,
+  label: string
+): void {
+  if (
+    typeof chunk.providerCallId !== "string" ||
+    typeof chunk.name !== "string"
+  ) {
+    throw new Error(`${label} must include a provider call id and name`);
+  }
+}
+
+function assertToolCallArgsDeltaChunk(
+  chunk: Record<string, unknown>,
+  label: string
+): void {
+  if (
+    typeof chunk.providerCallId !== "string" ||
+    typeof chunk.delta !== "string"
+  ) {
+    throw new Error(`${label} must include a provider call id and delta`);
+  }
+}
+
+function assertToolCallDoneChunk(
+  chunk: Record<string, unknown>,
+  label: string
+): void {
+  if (
+    typeof chunk.providerCallId !== "string" ||
+    typeof chunk.name !== "string" ||
+    chunk.input === undefined
+  ) {
+    throw new Error(
+      `${label} must include a provider call id, name, and input`
+    );
+  }
+}
+
+function assertFinishChunk(
+  chunk: Record<string, unknown>,
+  label: string
+): void {
+  if (
+    typeof chunk.finishReason !== "string" ||
+    !PROVIDER_FINISH_REASONS.has(chunk.finishReason)
+  ) {
+    throw new Error(`${label} must include a finish reason`);
   }
 }
 

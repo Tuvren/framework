@@ -25,9 +25,9 @@ import {
   type AdapterProjection,
   assistantText,
   collectValues,
+  createConformanceIdFactory,
   createConformanceKernelHarness,
   createConformanceRunLivenessKernelHarness,
-  createConformanceIdFactory,
   createStaticDriver,
   DRIVER_ID,
   textSignal,
@@ -351,7 +351,8 @@ export function createFrameworkAdapterRecoveryScenarios(
         recoveredAssistantText ?? ""
       ),
       sameTurn: observedTurnId === staleTurn.turnId,
-      staleRunStatus: branchRuns.find((run) => run.runId === staleRunId)?.status ?? null,
+      staleRunStatus:
+        branchRuns.find((run) => run.runId === staleRunId)?.status ?? null,
     };
 
     return {
@@ -420,7 +421,9 @@ export function createFrameworkAdapterRecoveryScenarios(
   }
 
   async function stageRecoveredMessage(
-    livenessHarness: ReturnType<typeof createConformanceRunLivenessKernelHarness>,
+    livenessHarness: ReturnType<
+      typeof createConformanceRunLivenessKernelHarness
+    >,
     runId: string,
     taskId: string,
     text: string,
@@ -439,7 +442,9 @@ export function createFrameworkAdapterRecoveryScenarios(
   }
 
   async function stageRecoveredRuntimeStatus(
-    livenessHarness: ReturnType<typeof createConformanceRunLivenessKernelHarness>,
+    livenessHarness: ReturnType<
+      typeof createConformanceRunLivenessKernelHarness
+    >,
     runId: string,
     taskId: string,
     status: { activeAgent: string; state: "completed" | "running" }
@@ -454,7 +459,9 @@ export function createFrameworkAdapterRecoveryScenarios(
   }
 
   async function stageRecoveredTurnLineage(
-    livenessHarness: ReturnType<typeof createConformanceRunLivenessKernelHarness>,
+    livenessHarness: ReturnType<
+      typeof createConformanceRunLivenessKernelHarness
+    >,
     runId: string,
     taskId: string,
     turnId: string

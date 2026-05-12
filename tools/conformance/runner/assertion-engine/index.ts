@@ -311,7 +311,8 @@ function hasRequiredEvidence(context: AssertionContext, path: string): boolean {
     // again.
     return (
       context.result !== undefined &&
-      readPath(context.result, `$.${path.slice("result.".length)}`) !== undefined
+      readPath(context.result, `$.${path.slice("result.".length)}`) !==
+        undefined
     );
   }
 

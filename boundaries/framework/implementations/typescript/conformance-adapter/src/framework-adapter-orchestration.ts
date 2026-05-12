@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import type { RuntimeDriver } from "@tuvren/driver-api";
 import { TuvrenRuntimeError } from "@tuvren/core-types";
+import type { RuntimeDriver } from "@tuvren/driver-api";
 import type { AgentConfig } from "@tuvren/runtime-api";
 import {
   createDriverRegistry,
@@ -29,8 +29,8 @@ import {
   assistantText,
   assistantToolCalls,
   collectValues,
-  createConformanceKernelHarness,
   createConformanceIdFactory,
+  createConformanceKernelHarness,
   createStaticDriver,
   DRIVER_ID,
   textSignal,
@@ -740,7 +740,8 @@ export function createFrameworkAdapterOrchestration(
       handoffHistoryControlEntryAbsent:
         lastOutputOnlyEvidence.historyControlEntryAbsent,
       handoffInvalidCompositionError: await runInvalidHandoffCompositionError(),
-      handoffLastOutputOnlyNoSourceSignal: lastOutputOnlyEvidence.noSourceSignal,
+      handoffLastOutputOnlyNoSourceSignal:
+        lastOutputOnlyEvidence.noSourceSignal,
       handoffLastOutputOnlyText: lastOutputOnlyEvidence.firstUserText,
       handoffRootSource: dependencies.isRecord(rootReviewerEvent)
         ? rootReviewerEvent.source
@@ -1099,10 +1100,7 @@ export function createFrameworkAdapterOrchestration(
 
   async function spawnWhenRunning(
     handle: {
-      spawn(input: {
-        agent: string;
-        signal: ReturnType<typeof textSignal>;
-      }): {
+      spawn(input: { agent: string; signal: ReturnType<typeof textSignal> }): {
         awaitResult(): Promise<unknown>;
         events(): AsyncIterable<unknown>;
       };
