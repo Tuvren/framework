@@ -53,6 +53,31 @@
     {
       "assertions": [
         {
+          "equals": "fail",
+          "field": "$.driver.resolutionType",
+          "kind": "resultField"
+        },
+        {
+          "equals": "invalid_loop_policy",
+          "field": "$.driver.errorCode",
+          "kind": "resultField"
+        },
+        {
+          "kind": "errorEnvelope",
+          "path": "$.result.error"
+        }
+      ],
+      "checkId": "driver-api-af.invalid-loop-policy-tool-call-hard-fail",
+      "input": {
+        "scenarioPath": "$.driver-invalid-loop-policy-tool-call"
+      },
+      "operation": "driver.execute",
+      "scenario": "driver-api-scenarios",
+      "evidence": ["driver.resolutionType", "result.error.code"]
+    },
+    {
+      "assertions": [
+        {
           "equals": "end_turn",
           "field": "$.driver.resolutionType",
           "kind": "resultField"

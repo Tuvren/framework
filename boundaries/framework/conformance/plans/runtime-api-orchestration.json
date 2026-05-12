@@ -325,6 +325,62 @@
       "assertions": [
         {
           "equals": true,
+          "field": "$.orchestration.surfaces.handoffHistoryControlEntryAbsent",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "runtime-orchestration-af.handoff-resolution-not-history-entry",
+      "input": {
+        "scenarioPath": "$.orchestration-handoff-attribution"
+      },
+      "operation": "runtime.orchestration.event-surfaces",
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["orchestration.surfaces.handoffHistoryControlEntryAbsent"]
+    },
+    {
+      "assertions": [
+        {
+          "equals": true,
+          "field": "$.orchestration.surfaces.handoffLastOutputOnlyNoSourceSignal",
+          "kind": "resultField"
+        },
+        {
+          "equals": "Passing this to reviewer.",
+          "field": "$.orchestration.surfaces.handoffLastOutputOnlyText",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "runtime-orchestration-af.handoff-last-output-only-builder",
+      "input": {
+        "scenarioPath": "$.orchestration-handoff-attribution"
+      },
+      "operation": "runtime.orchestration.event-surfaces",
+      "scenario": "runtime-api-scenarios",
+      "evidence": [
+        "orchestration.surfaces.handoffLastOutputOnlyNoSourceSignal",
+        "orchestration.surfaces.handoffLastOutputOnlyText"
+      ]
+    },
+    {
+      "assertions": [
+        {
+          "equals": "invalid_driver_result",
+          "field": "$.orchestration.surfaces.handoffInvalidCompositionError.code",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "runtime-orchestration-af.handoff-rejects-multiple-intents",
+      "input": {
+        "scenarioPath": "$.orchestration-handoff-attribution"
+      },
+      "operation": "runtime.orchestration.event-surfaces",
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["orchestration.surfaces.handoffInvalidCompositionError.code"]
+    },
+    {
+      "assertions": [
+        {
+          "equals": true,
           "field": "$.orchestration.inheritance.driverIdInherited",
           "kind": "resultField"
         }
@@ -448,6 +504,36 @@
       "operation": "runtime.orchestration.nested-attribution",
       "scenario": "runtime-api-scenarios",
       "evidence": ["result.orchestration.nested.rootGrandchildSource.workerId"]
+    },
+    {
+      "assertions": [
+        {
+          "equals": "worker-2",
+          "field": "$.orchestration.nested.rootGrandchildSource.agent",
+          "kind": "resultField"
+        },
+        {
+          "field": "$.orchestration.nested.rootGrandchildSource.threadId",
+          "kind": "resultField",
+          "matches": "^.+$"
+        },
+        {
+          "field": "$.orchestration.nested.rootGrandchildSource.workerId",
+          "kind": "resultField",
+          "matches": "^.+$"
+        }
+      ],
+      "checkId": "runtime-orchestration-af.worker-forwarded-event-source",
+      "input": {
+        "scenarioPath": "$.orchestration-nested-attribution"
+      },
+      "operation": "runtime.orchestration.nested-attribution",
+      "scenario": "runtime-api-scenarios",
+      "evidence": [
+        "orchestration.nested.rootGrandchildSource.agent",
+        "orchestration.nested.rootGrandchildSource.threadId",
+        "orchestration.nested.rootGrandchildSource.workerId"
+      ]
     },
     {
       "assertions": [

@@ -70,6 +70,127 @@
     {
       "assertions": [
         {
+          "equals": [
+            "beforeIteration",
+            "aroundModel.before",
+            "aroundModel.after",
+            "aroundTool.before",
+            "aroundTool.after",
+            "afterIteration",
+            "beforeIteration",
+            "aroundModel.before",
+            "aroundModel.after",
+            "afterIteration"
+          ],
+          "field": "$.hooks.phaseTrace",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "react-driver-af.extension.phase-order-before-around-after",
+      "input": {
+        "scenarioPath": "$.driver-hook-turn"
+      },
+      "operation": "driver.execute",
+      "scenario": "driver-api-scenarios",
+      "evidence": ["hooks.phaseTrace"]
+    },
+    {
+      "assertions": [
+        {
+          "equals": ["aroundTool.before", "tool.execute", "aroundTool.after"],
+          "field": "$.hooks.aroundToolTrace",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "react-driver-af.extension.around-tool-nesting",
+      "input": {
+        "scenarioPath": "$.driver-hook-turn"
+      },
+      "operation": "driver.execute",
+      "scenario": "driver-api-scenarios",
+      "evidence": ["hooks.aroundToolTrace"]
+    },
+    {
+      "assertions": [
+        {
+          "equals": true,
+          "field": "$.hooks.terminalMutationAttempted",
+          "kind": "resultField"
+        },
+        {
+          "equals": "driver hook turn completed",
+          "field": "$.hooks.terminalMutationDurableText",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "react-driver-af.extension.after-iteration-terminal-state-nondurable",
+      "input": {
+        "scenarioPath": "$.driver-hook-turn"
+      },
+      "operation": "driver.execute",
+      "scenario": "driver-api-scenarios",
+      "evidence": [
+        "hooks.terminalMutationAttempted",
+        "hooks.terminalMutationDurableText"
+      ]
+    },
+    {
+      "assertions": [
+        {
+          "equals": "modified",
+          "field": "$.aroundModel.finalAssistantText",
+          "kind": "resultField"
+        },
+        {
+          "equals": 1,
+          "field": "$.aroundModel.messageStartCount",
+          "kind": "resultField"
+        },
+        {
+          "equals": ["provider"],
+          "field": "$.aroundModel.streamedTextDone",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "react-driver-af.around-model-post-stream-replacement",
+      "input": {
+        "scenarioPath": "$.driver-around-model-post-stream-replacement"
+      },
+      "operation": "driver.execute",
+      "scenario": "driver-api-scenarios",
+      "evidence": [
+        "aroundModel.finalAssistantText",
+        "aroundModel.messageStartCount",
+        "aroundModel.streamedTextDone"
+      ]
+    },
+    {
+      "assertions": [
+        {
+          "equals": "second attempt",
+          "field": "$.aroundModel.finalAssistantText",
+          "kind": "resultField"
+        },
+        {
+          "equals": 2,
+          "field": "$.provider.generate.callCount",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "react-driver-af.around-model-retry-final-response-durable",
+      "input": {
+        "scenarioPath": "$.driver-around-model-retry-final-response"
+      },
+      "operation": "driver.execute",
+      "scenario": "driver-api-scenarios",
+      "evidence": [
+        "aroundModel.finalAssistantText",
+        "provider.generate.callCount"
+      ]
+    },
+    {
+      "assertions": [
+        {
           "field": "$.hooks.beforeIteration",
           "kind": "resultField"
         }

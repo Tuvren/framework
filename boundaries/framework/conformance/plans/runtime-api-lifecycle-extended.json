@@ -38,6 +38,27 @@
     {
       "assertions": [
         {
+          "equals": false,
+          "field": "$.inputSignal.accepted",
+          "kind": "resultField"
+        },
+        {
+          "equals": "invalid_tuvren_message",
+          "field": "$.inputSignal.error.code",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "runtime-callable-af.input-signal-empty-parts-rejected",
+      "input": {
+        "scenarioPath": "$.input-signal-empty-parts"
+      },
+      "operation": "runtime.execute-turn",
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["inputSignal.error.code", "inputSignal.accepted"]
+    },
+    {
+      "assertions": [
+        {
           "equals": "paused",
           "field": "$.trace.approval.evidence.approval.pausedPhase",
           "kind": "stateField"
@@ -196,6 +217,124 @@
       "operation": "runtime.context-transform",
       "scenario": "runtime-api-scenarios",
       "evidence": ["result.runtime.phase"]
+    },
+    {
+      "assertions": [
+        {
+          "equals": true,
+          "field": "$.context.createdNewHead",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "runtime-lifecycle-af.context-transform-creates-new-tree-heads",
+      "input": {
+        "scenarioPath": "$.context-transform-append-summary"
+      },
+      "operation": "runtime.context-transform",
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["context.createdNewHead"]
+    },
+    {
+      "assertions": [
+        {
+          "equals": 1,
+          "field": "$.context.sourceMessageCount",
+          "kind": "resultField"
+        },
+        {
+          "equals": [1, 2, 3],
+          "field": "$.context.snapshotMessageCounts",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "runtime-lifecycle-af.context-transform-preserves-source-checkpoint",
+      "input": {
+        "scenarioPath": "$.context-transform-append-summary"
+      },
+      "operation": "runtime.context-transform",
+      "scenario": "runtime-api-scenarios",
+      "evidence": [
+        "context.sourceMessageCount",
+        "context.snapshotMessageCounts"
+      ]
+    },
+    {
+      "assertions": [
+        {
+          "equals": 2,
+          "field": "$.context.rewrittenMessageCount",
+          "kind": "resultField"
+        },
+        {
+          "equals": 2,
+          "field": "$.context.driverObservedMessageCount",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "runtime-lifecycle-af.context-transform-driver-sees-rewritten-context",
+      "input": {
+        "scenarioPath": "$.context-transform-append-summary"
+      },
+      "operation": "runtime.context-transform",
+      "scenario": "runtime-api-scenarios",
+      "evidence": [
+        "context.rewrittenMessageCount",
+        "context.driverObservedMessageCount"
+      ]
+    },
+    {
+      "assertions": [
+        {
+          "equals": 2,
+          "field": "$.cancellation.cancelInvocations",
+          "kind": "resultField"
+        },
+        {
+          "equals": 1,
+          "field": "$.cancellation.errorEventCount",
+          "kind": "resultField"
+        },
+        {
+          "equals": "failed",
+          "field": "$.runtime.phase",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "runtime-lifecycle-af.cancel-running-idempotent-fails-once",
+      "controls": {
+        "cancelAfterEvent": "turn.start",
+        "deadlineMs": 1000
+      },
+      "operation": "runtime.cancel-execution",
+      "evidence": [
+        "cancellation.cancelInvocations",
+        "cancellation.errorEventCount",
+        "runtime.phase"
+      ]
+    },
+    {
+      "assertions": [
+        {
+          "equals": true,
+          "field": "$.cancellation.runtimeStatusPartial",
+          "kind": "resultField"
+        },
+        {
+          "equals": "interrupted",
+          "field": "$.cancellation.partialAssistantText",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "runtime-lifecycle-af.cancel-running-stages-partial-status",
+      "controls": {
+        "cancelAfterEvent": "iteration.end",
+        "deadlineMs": 1000
+      },
+      "operation": "runtime.cancel-execution",
+      "evidence": [
+        "cancellation.runtimeStatusPartial",
+        "cancellation.partialAssistantText"
+      ]
     },
     {
       "assertions": [

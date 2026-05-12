@@ -3,9 +3,7 @@
   "planVersion": "0.1.0",
   "packetId": "tuvren.framework.event-stream",
   "applicability": {
-    "capabilities": [
-      "framework.event-stream"
-    ]
+    "capabilities": ["framework.event-stream"]
   },
   "scenarios": {
     "event-stream-scenarios": "../scenarios/event-stream-scenarios.json"
@@ -60,9 +58,7 @@
           "equals": "shared event stream scenario"
         }
       ],
-      "evidence": [
-        "events"
-      ]
+      "evidence": ["events"]
     },
     {
       "checkId": "event-stream.sse.eager-subscription",
@@ -142,9 +138,7 @@
           ]
         }
       ],
-      "evidence": [
-        "events"
-      ]
+      "evidence": ["events"]
     },
     {
       "checkId": "event-stream.agui.failed-turn-error-projection",
@@ -180,9 +174,7 @@
           "matches": "^[a-z0-9]+(?:_[a-z0-9]+)*$"
         }
       ],
-      "evidence": [
-        "events"
-      ]
+      "evidence": ["events"]
     },
     {
       "checkId": "event-stream.agui.paused-turn-fallback",
@@ -236,9 +228,7 @@
           ]
         }
       ],
-      "evidence": [
-        "events"
-      ]
+      "evidence": ["events"]
     }
   ]
 }

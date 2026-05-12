@@ -381,6 +381,61 @@ function buildRuntimeApiOrchestration(): Plan {
         assertions: [
           {
             equals: true,
+            field: "$.orchestration.surfaces.handoffHistoryControlEntryAbsent",
+            kind: "evidenceField",
+          },
+        ],
+        checkId:
+          "runtime-orchestration-af.handoff-resolution-not-history-entry",
+        evidence: ["orchestration.surfaces.handoffHistoryControlEntryAbsent"],
+        input: { scenarioPath: "$.orchestration-handoff-attribution" },
+        operation: "runtime.orchestration.event-surfaces",
+        scenario: "runtime-api-scenarios",
+      },
+      {
+        assertions: [
+          {
+            equals: true,
+            field:
+              "$.orchestration.surfaces.handoffLastOutputOnlyNoSourceSignal",
+            kind: "evidenceField",
+          },
+          {
+            equals: "Passing this to reviewer.",
+            field: "$.orchestration.surfaces.handoffLastOutputOnlyText",
+            kind: "evidenceField",
+          },
+        ],
+        checkId: "runtime-orchestration-af.handoff-last-output-only-builder",
+        evidence: [
+          "orchestration.surfaces.handoffLastOutputOnlyNoSourceSignal",
+          "orchestration.surfaces.handoffLastOutputOnlyText",
+        ],
+        input: { scenarioPath: "$.orchestration-handoff-attribution" },
+        operation: "runtime.orchestration.event-surfaces",
+        scenario: "runtime-api-scenarios",
+      },
+      {
+        assertions: [
+          {
+            equals: "invalid_driver_result",
+            field:
+              "$.orchestration.surfaces.handoffInvalidCompositionError.code",
+            kind: "evidenceField",
+          },
+        ],
+        checkId: "runtime-orchestration-af.handoff-rejects-multiple-intents",
+        evidence: [
+          "orchestration.surfaces.handoffInvalidCompositionError.code",
+        ],
+        input: { scenarioPath: "$.orchestration-handoff-attribution" },
+        operation: "runtime.orchestration.event-surfaces",
+        scenario: "runtime-api-scenarios",
+      },
+      {
+        assertions: [
+          {
+            equals: true,
             field: "$.orchestration.inheritance.driverIdInherited",
             kind: "evidenceField",
           },
@@ -485,6 +540,34 @@ function buildRuntimeApiOrchestration(): Plan {
         ],
         checkId: "runtime-orchestration.nested.root-source-worker-id-present",
         evidence: ["orchestration.nested.rootGrandchildSource.workerId"],
+        input: { scenarioPath: "$.orchestration-nested-attribution" },
+        operation: "runtime.orchestration.nested-attribution",
+        scenario: "runtime-api-scenarios",
+      },
+      {
+        assertions: [
+          {
+            equals: "worker-2",
+            field: "$.orchestration.nested.rootGrandchildSource.agent",
+            kind: "evidenceField",
+          },
+          {
+            field: "$.orchestration.nested.rootGrandchildSource.threadId",
+            kind: "evidenceField",
+            matches: "^.+$",
+          },
+          {
+            field: "$.orchestration.nested.rootGrandchildSource.workerId",
+            kind: "evidenceField",
+            matches: "^.+$",
+          },
+        ],
+        checkId: "runtime-orchestration-af.worker-forwarded-event-source",
+        evidence: [
+          "orchestration.nested.rootGrandchildSource.agent",
+          "orchestration.nested.rootGrandchildSource.threadId",
+          "orchestration.nested.rootGrandchildSource.workerId",
+        ],
         input: { scenarioPath: "$.orchestration-nested-attribution" },
         operation: "runtime.orchestration.nested-attribution",
         scenario: "runtime-api-scenarios",
@@ -598,7 +681,49 @@ function buildRuntimeApiCallablesExtended(): Plan {
         kind: "evidenceField",
       },
       ["provider.generate.response.finishReason"]
-    )
+    ),
+    {
+      assertions: [
+        {
+          equals: "shared docs",
+          field: "$.provider.generate.response.parts.0.input.query",
+          kind: "evidenceField",
+        },
+      ],
+      checkId: "runtime-callable-af.content-tool-call-input-parsed",
+      evidence: ["provider.generate.response.parts.0.input.query"],
+      input: { scenarioPath: "$.provider-generate-tool-call" },
+      operation: "runtime.provider-generate",
+      scenario: "runtime-api-scenarios",
+    },
+    {
+      assertions: [
+        {
+          equals: 42,
+          field: "$.provider.generate.response.parts.0.data.answer",
+          kind: "evidenceField",
+        },
+      ],
+      checkId: "runtime-callable-af.content-structured-data-parsed",
+      evidence: ["provider.generate.response.parts.0.data.answer"],
+      input: { scenarioPath: "$.provider-generate-structured" },
+      operation: "runtime.provider-generate",
+      scenario: "runtime-api-scenarios",
+    },
+    {
+      assertions: [
+        {
+          equals: ["type", "name", "data"],
+          field: "$.provider.generate.partKeys.0",
+          kind: "evidenceField",
+        },
+      ],
+      checkId: "runtime-callable-af.structured-provider-native-type-hidden",
+      evidence: ["provider.generate.partKeys.0"],
+      input: { scenarioPath: "$.provider-generate-structured" },
+      operation: "runtime.provider-generate",
+      scenario: "runtime-api-scenarios",
+    }
   );
 
   // runtime.provider-stream
@@ -668,7 +793,53 @@ function buildRuntimeApiCallablesExtended(): Plan {
         kind: "evidenceField",
       },
       ["provider.stream.response.parts.0.text"]
-    )
+    ),
+    {
+      assertions: [
+        {
+          equals: 1,
+          field: "$.provider.stream.structuredDeltaIndex",
+          kind: "evidenceField",
+        },
+        {
+          equals: 2,
+          field: "$.provider.stream.structuredDoneIndex",
+          kind: "evidenceField",
+        },
+      ],
+      checkId:
+        "runtime-callable-af.structured-stream-synthesizes-delta-before-done",
+      evidence: [
+        "provider.stream.structuredDeltaIndex",
+        "provider.stream.structuredDoneIndex",
+      ],
+      input: { scenarioPath: "$.provider-stream-structured-final" },
+      operation: "runtime.provider-stream",
+      scenario: "runtime-api-scenarios",
+    },
+    {
+      assertions: [
+        {
+          equals: true,
+          field: "$.provider.stream.toolCallIdOwnedByFramework",
+          kind: "evidenceField",
+        },
+        {
+          equals: "native-call-1",
+          field:
+            "$.provider.stream.response.parts.0.providerMetadata.providerCallId",
+          kind: "evidenceField",
+        },
+      ],
+      checkId: "runtime-callable-af.tool-call-id-owned-by-framework",
+      evidence: [
+        "provider.stream.response.parts.0.providerMetadata.providerCallId",
+        "provider.stream.toolCallIdOwnedByFramework",
+      ],
+      input: { scenarioPath: "$.provider-stream-tool-call-native" },
+      operation: "runtime.provider-stream",
+      scenario: "runtime-api-scenarios",
+    }
   );
 
   // runtime.tool-execute
@@ -734,7 +905,53 @@ function buildRuntimeApiCallablesExtended(): Plan {
         kind: "stateField",
       },
       ["toolExecution.status.manifest.toolResults.total"]
-    )
+    ),
+    {
+      assertions: [
+        {
+          equals: true,
+          field: "$.tool.execution.toolResults.0.isError",
+          kind: "evidenceField",
+        },
+        {
+          equals: "shared tool failed",
+          field: "$.tool.execution.toolResults.0.output.error",
+          kind: "evidenceField",
+        },
+        {
+          equals: "completed",
+          field: "$.toolExecution.status.phase",
+          kind: "stateField",
+        },
+      ],
+      checkId:
+        "runtime-callable-af.tool-failure-produces-error-result-not-run-fail",
+      evidence: [
+        "tool.execution.toolResults.0.isError",
+        "tool.execution.toolResults.0.output.error",
+        "toolExecution.status.phase",
+      ],
+      input: { scenarioPath: "$.tool-execute-failure" },
+      operation: "runtime.tool-execute",
+      scenario: "runtime-api-scenarios",
+    },
+    {
+      assertions: [
+        {
+          equals: true,
+          field: "$.tool.execution.parallelWaveStartedBeforeResults",
+          kind: "evidenceField",
+        },
+      ],
+      checkId: "runtime-callable-af.tool-parallel-wave-starts-before-results",
+      evidence: [
+        "tool.execution.eventTypes",
+        "tool.execution.parallelWaveStartedBeforeResults",
+      ],
+      input: { scenarioPath: "$.tool-execute-parallel-wave" },
+      operation: "runtime.tool-execute",
+      scenario: "runtime-api-scenarios",
+    }
   );
 
   // runtime.approval-resolve
@@ -849,7 +1066,155 @@ function buildRuntimeApiCallablesExtended(): Plan {
         kind: "evidenceField",
       },
       ["approval.resumedEventTypes"]
-    )
+    ),
+    {
+      assertions: [
+        {
+          equals: true,
+          field: "$.approval.sameTurn",
+          kind: "evidenceField",
+        },
+      ],
+      checkId: "runtime-callable-af.approval-resume-same-turn",
+      evidence: ["approval.sameTurn"],
+      input: { scenarioPath: "$.paused-turn-resume" },
+      operation: "runtime.approval-resolve",
+      scenario: "runtime-api-scenarios",
+    },
+    {
+      assertions: [
+        {
+          equals: ["search"],
+          field: "$.tool.execution.executedNamesBeforeResume",
+          kind: "evidenceField",
+        },
+        {
+          equals: ["search", "email"],
+          field: "$.tool.execution.executedNamesAfterResume",
+          kind: "evidenceField",
+        },
+      ],
+      checkId:
+        "runtime-callable-af.approval-resume-reruns-unfinished-tools-only",
+      evidence: [
+        "tool.execution.executedNamesBeforeResume",
+        "tool.execution.executedNamesAfterResume",
+      ],
+      input: { scenarioPath: "$.paused-turn-resume" },
+      operation: "runtime.approval-resolve",
+      scenario: "runtime-api-scenarios",
+    },
+    {
+      assertions: [
+        {
+          equals: "invalid_approval_resolution",
+          field: "$.approval.handleOwnership.cancelErrorCode",
+          kind: "evidenceField",
+        },
+        {
+          equals: "invalid_approval_resolution",
+          field: "$.approval.handleOwnership.resolveApprovalErrorCode",
+          kind: "evidenceField",
+        },
+      ],
+      checkId: "runtime-callable-af.approval-resume-new-handle-only",
+      evidence: [
+        "approval.handleOwnership.cancelErrorCode",
+        "approval.handleOwnership.resolveApprovalErrorCode",
+        "approval.resumedPhase",
+      ],
+      input: { scenarioPath: "$.paused-turn-resume" },
+      operation: "runtime.approval-resolve",
+      scenario: "runtime-api-scenarios",
+    },
+    {
+      assertions: [
+        {
+          equals: true,
+          field: "$.approval.toolResults.1.isError",
+          kind: "evidenceField",
+        },
+        {
+          equals: "reject",
+          field: "$.approval.toolResults.1.output.decisionType",
+          kind: "evidenceField",
+        },
+      ],
+      checkId: "runtime-callable-af.approval-reject-stages-tool-result",
+      evidence: [
+        "approval.toolResults.1.isError",
+        "approval.toolResults.1.output.decisionType",
+      ],
+      input: { scenarioPath: "$.paused-turn-reject" },
+      operation: "runtime.approval-resolve",
+      scenario: "runtime-api-scenarios",
+    },
+    {
+      assertions: [
+        {
+          equals: "Rejected by shared conformance.",
+          field: "$.approval.messageAttachment",
+          kind: "evidenceField",
+        },
+      ],
+      checkId: "runtime-callable-af.approval-message-attaches-to-tool-result",
+      evidence: ["approval.messageAttachment"],
+      input: { scenarioPath: "$.paused-turn-reject" },
+      operation: "runtime.approval-resolve",
+      scenario: "runtime-api-scenarios",
+    },
+    {
+      assertions: [
+        {
+          equals: "completed",
+          field: "$.approval.cancelledPhase",
+          kind: "evidenceField",
+        },
+        {
+          equals: true,
+          field: "$.approval.cancelledToolResults.1.isError",
+          kind: "evidenceField",
+        },
+        {
+          equals: "reject",
+          field: "$.approval.cancelledToolResults.1.output.decisionType",
+          kind: "evidenceField",
+        },
+        {
+          equals: true,
+          field: "$.approval.resumedTextAbsent",
+          kind: "evidenceField",
+        },
+      ],
+      checkId: "runtime-callable-af.paused-cancel-rejection-and-stop",
+      evidence: [
+        "approval.cancelledPhase",
+        "approval.cancelledToolResults.1.isError",
+        "approval.resumedTextAbsent",
+        "tool.execution.executedNamesAfterCancel",
+      ],
+      input: { scenarioPath: "$.paused-turn-cancel" },
+      operation: "runtime.approval-resolve",
+      scenario: "runtime-api-scenarios",
+    },
+    {
+      assertions: [
+        {
+          equals: true,
+          field: "$.approval.gatedToolStartAfterResume",
+          kind: "evidenceField",
+        },
+      ],
+      checkId:
+        "runtime-callable-af.mixed-approval-gated-tool-start-after-resume",
+      evidence: [
+        "approval.resumedEventTypes",
+        "approval.gatedToolStartAfterResume",
+      ],
+      input: { scenarioPath: "$.paused-turn-resume" },
+      operation: "runtime.approval-resolve",
+      scenario: "runtime-api-scenarios",
+    }
   );
 
   // runtime.validate-structured-output
@@ -883,7 +1248,40 @@ function buildRuntimeApiCallablesExtended(): Plan {
         matches: "^(fail|repair|warn|pass)$",
       },
       ["validation.resolutionType"]
-    )
+    ),
+    {
+      assertions: [
+        {
+          equals: "draft-07",
+          field: "$.validation.dialect",
+          kind: "evidenceField",
+        },
+      ],
+      checkId: "runtime-callable-af.structured-output-default-draft07",
+      evidence: ["validation.dialect"],
+      input: { scenarioPath: "$.structured-validation-failure" },
+      operation: "runtime.validate-structured-output",
+      scenario: "runtime-api-scenarios",
+    },
+    {
+      assertions: [
+        {
+          equals: "structured_output_validation",
+          field: "$.validation.error.code",
+          kind: "evidenceField",
+        },
+        {
+          equals: "fail",
+          field: "$.validation.resolutionType",
+          kind: "evidenceField",
+        },
+      ],
+      checkId: "runtime-callable-af.structured-validation-hard-fail-code",
+      evidence: ["validation.error.code", "validation.resolutionType"],
+      input: { scenarioPath: "$.structured-validation-failure" },
+      operation: "runtime.validate-structured-output",
+      scenario: "runtime-api-scenarios",
+    }
   );
 
   // runtime.cancel-execution
@@ -1000,6 +1398,25 @@ function buildRuntimeApiLifecycleExtended(): Plan {
       checkId: "runtime-lifecycle-ext.execute-turn.phase-enum",
       evidence: ["runtime.phase"],
       input: { scenarioPath: "$.completed-turn" },
+      operation: "runtime.execute-turn",
+      scenario: "runtime-api-scenarios",
+    },
+    {
+      assertions: [
+        {
+          equals: false,
+          field: "$.inputSignal.accepted",
+          kind: "evidenceField",
+        },
+        {
+          equals: "invalid_tuvren_message",
+          field: "$.inputSignal.error.code",
+          kind: "evidenceField",
+        },
+      ],
+      checkId: "runtime-callable-af.input-signal-empty-parts-rejected",
+      evidence: ["inputSignal.error.code", "inputSignal.accepted"],
+      input: { scenarioPath: "$.input-signal-empty-parts" },
       operation: "runtime.execute-turn",
       scenario: "runtime-api-scenarios",
     }
@@ -1157,6 +1574,114 @@ function buildRuntimeApiLifecycleExtended(): Plan {
       input: { scenarioPath: "$.context-transform-append-summary" },
       operation: "runtime.context-transform",
       scenario: "runtime-api-scenarios",
+    },
+    {
+      assertions: [
+        {
+          equals: true,
+          field: "$.context.createdNewHead",
+          kind: "evidenceField",
+        },
+      ],
+      checkId: "runtime-lifecycle-af.context-transform-creates-new-tree-heads",
+      evidence: ["context.createdNewHead"],
+      input: { scenarioPath: "$.context-transform-append-summary" },
+      operation: "runtime.context-transform",
+      scenario: "runtime-api-scenarios",
+    },
+    {
+      assertions: [
+        {
+          equals: 1,
+          field: "$.context.sourceMessageCount",
+          kind: "evidenceField",
+        },
+        {
+          equals: [1, 2, 3],
+          field: "$.context.snapshotMessageCounts",
+          kind: "evidenceField",
+        },
+      ],
+      checkId:
+        "runtime-lifecycle-af.context-transform-preserves-source-checkpoint",
+      evidence: ["context.sourceMessageCount", "context.snapshotMessageCounts"],
+      input: { scenarioPath: "$.context-transform-append-summary" },
+      operation: "runtime.context-transform",
+      scenario: "runtime-api-scenarios",
+    },
+    {
+      assertions: [
+        {
+          equals: 2,
+          field: "$.context.rewrittenMessageCount",
+          kind: "evidenceField",
+        },
+        {
+          equals: 2,
+          field: "$.context.driverObservedMessageCount",
+          kind: "evidenceField",
+        },
+      ],
+      checkId:
+        "runtime-lifecycle-af.context-transform-driver-sees-rewritten-context",
+      evidence: [
+        "context.rewrittenMessageCount",
+        "context.driverObservedMessageCount",
+      ],
+      input: { scenarioPath: "$.context-transform-append-summary" },
+      operation: "runtime.context-transform",
+      scenario: "runtime-api-scenarios",
+    }
+  );
+
+  checks.push(
+    {
+      assertions: [
+        {
+          equals: 2,
+          field: "$.cancellation.cancelInvocations",
+          kind: "evidenceField",
+        },
+        {
+          equals: 1,
+          field: "$.cancellation.errorEventCount",
+          kind: "evidenceField",
+        },
+        {
+          equals: "failed",
+          field: "$.runtime.phase",
+          kind: "evidenceField",
+        },
+      ],
+      checkId: "runtime-lifecycle-af.cancel-running-idempotent-fails-once",
+      evidence: [
+        "cancellation.cancelInvocations",
+        "cancellation.errorEventCount",
+        "runtime.phase",
+      ],
+      controls: { cancelAfterEvent: "turn.start", deadlineMs: 1000 },
+      operation: "runtime.cancel-execution",
+    },
+    {
+      assertions: [
+        {
+          equals: true,
+          field: "$.cancellation.runtimeStatusPartial",
+          kind: "evidenceField",
+        },
+        {
+          equals: "interrupted",
+          field: "$.cancellation.partialAssistantText",
+          kind: "evidenceField",
+        },
+      ],
+      checkId: "runtime-lifecycle-af.cancel-running-stages-partial-status",
+      evidence: [
+        "cancellation.runtimeStatusPartial",
+        "cancellation.partialAssistantText",
+      ],
+      controls: { cancelAfterEvent: "iteration.end", deadlineMs: 1000 },
+      operation: "runtime.cancel-execution",
     }
   );
 
@@ -2234,7 +2759,9 @@ function normalizeGeneratedResultSurfaceCheck(check: PlanCheck): PlanCheck {
     ...(evidence === undefined
       ? {}
       : {
-          evidence: evidence.map(normalizeGeneratedResultRequiredEvidencePath),
+          evidence: isAfPromotedCheck(check.checkId)
+            ? evidence
+            : evidence.map(normalizeGeneratedResultRequiredEvidencePath),
         }),
   };
 }
@@ -2274,6 +2801,16 @@ function normalizeGeneratedResultRequiredEvidencePath(path: string): string {
   }
 
   return `result.${path}`;
+}
+
+function isAfPromotedCheck(checkId: string): boolean {
+  return (
+    checkId.startsWith("driver-api-af.") ||
+    checkId.startsWith("react-driver-af.") ||
+    checkId.startsWith("runtime-callable-af.") ||
+    checkId.startsWith("runtime-lifecycle-af.") ||
+    checkId.startsWith("runtime-orchestration-af.")
+  );
 }
 
 // Driver API extended — broader assertions on driver.execute and driver.resume
@@ -2316,7 +2853,27 @@ function buildDriverApiExtended(): Plan {
       { kind: "errorEnvelope", path: "$.result.error" },
       ["result.error.code"],
       "$.driver-provider-failure"
-    )
+    ),
+    {
+      assertions: [
+        {
+          equals: "fail",
+          field: "$.driver.resolutionType",
+          kind: "evidenceField",
+        },
+        {
+          equals: "invalid_loop_policy",
+          field: "$.driver.errorCode",
+          kind: "evidenceField",
+        },
+        { kind: "errorEnvelope", path: "$.result.error" },
+      ],
+      checkId: "driver-api-af.invalid-loop-policy-tool-call-hard-fail",
+      evidence: ["driver.resolutionType", "result.error.code"],
+      input: { scenarioPath: "$.driver-invalid-loop-policy-tool-call" },
+      operation: "driver.execute",
+      scenario: "driver-api-scenarios",
+    }
     // Snake-case-shape and non-empty-message probes were removed: evidenceField
     // reads context.evidence, but the error envelope lives at context.result —
     // those checks always failed regardless of adapter correctness. The
@@ -2424,7 +2981,119 @@ function buildReactDriverExtended(): Plan {
     hookCheck("before-iteration-twice", "hooks.beforeIteration", 2),
     hookCheck("around-model-twice", "hooks.aroundModel", 2),
     hookCheck("after-iteration-twice", "hooks.afterIteration", 2),
-    hookCheck("around-tool-once", "hooks.aroundTool", 1)
+    hookCheck("around-tool-once", "hooks.aroundTool", 1),
+    {
+      assertions: [
+        {
+          equals: [
+            "beforeIteration",
+            "aroundModel.before",
+            "aroundModel.after",
+            "aroundTool.before",
+            "aroundTool.after",
+            "afterIteration",
+            "beforeIteration",
+            "aroundModel.before",
+            "aroundModel.after",
+            "afterIteration",
+          ],
+          field: "$.hooks.phaseTrace",
+          kind: "evidenceField",
+        },
+      ],
+      checkId: "react-driver-af.extension.phase-order-before-around-after",
+      evidence: ["hooks.phaseTrace"],
+      input: { scenarioPath: "$.driver-hook-turn" },
+      operation: "driver.execute",
+      scenario: "driver-api-scenarios",
+    },
+    {
+      assertions: [
+        {
+          equals: ["aroundTool.before", "tool.execute", "aroundTool.after"],
+          field: "$.hooks.aroundToolTrace",
+          kind: "evidenceField",
+        },
+      ],
+      checkId: "react-driver-af.extension.around-tool-nesting",
+      evidence: ["hooks.aroundToolTrace"],
+      input: { scenarioPath: "$.driver-hook-turn" },
+      operation: "driver.execute",
+      scenario: "driver-api-scenarios",
+    },
+    {
+      assertions: [
+        {
+          equals: true,
+          field: "$.hooks.terminalMutationAttempted",
+          kind: "evidenceField",
+        },
+        {
+          equals: "driver hook turn completed",
+          field: "$.hooks.terminalMutationDurableText",
+          kind: "evidenceField",
+        },
+      ],
+      checkId:
+        "react-driver-af.extension.after-iteration-terminal-state-nondurable",
+      evidence: [
+        "hooks.terminalMutationAttempted",
+        "hooks.terminalMutationDurableText",
+      ],
+      input: { scenarioPath: "$.driver-hook-turn" },
+      operation: "driver.execute",
+      scenario: "driver-api-scenarios",
+    },
+    {
+      assertions: [
+        {
+          equals: "modified",
+          field: "$.aroundModel.finalAssistantText",
+          kind: "evidenceField",
+        },
+        {
+          equals: 1,
+          field: "$.aroundModel.messageStartCount",
+          kind: "evidenceField",
+        },
+        {
+          equals: ["provider"],
+          field: "$.aroundModel.streamedTextDone",
+          kind: "evidenceField",
+        },
+      ],
+      checkId: "react-driver-af.around-model-post-stream-replacement",
+      evidence: [
+        "aroundModel.finalAssistantText",
+        "aroundModel.messageStartCount",
+        "aroundModel.streamedTextDone",
+      ],
+      input: { scenarioPath: "$.driver-around-model-post-stream-replacement" },
+      operation: "driver.execute",
+      scenario: "driver-api-scenarios",
+    },
+    {
+      assertions: [
+        {
+          equals: "second attempt",
+          field: "$.aroundModel.finalAssistantText",
+          kind: "evidenceField",
+        },
+        {
+          equals: 2,
+          field: "$.provider.generate.callCount",
+          kind: "evidenceField",
+        },
+      ],
+      checkId: "react-driver-af.around-model-retry-final-response-durable",
+      evidence: [
+        "aroundModel.finalAssistantText",
+        "provider.generate.callCount",
+      ],
+      input: { scenarioPath: "$.driver-around-model-retry-final-response" },
+      operation: "driver.execute",
+      scenario: "driver-api-scenarios",
+    }
   );
 
   // Hook ordering: assert that beforeIteration hits at least 1 and afterIteration matches.
