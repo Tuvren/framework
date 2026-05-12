@@ -34,7 +34,7 @@
       "dependsOn": ["build"],
       "options": {
         "cwd": "boundaries/hosts/implementations/typescript/repl",
-        "command": "node dist/cli.js"
+        "command": "node dist/cli.js --scenario streaming --backend memory --provider fixture"
       }
     },
     "scenario-gemini": {

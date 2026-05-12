@@ -28,7 +28,7 @@
       ],
       "@tuvren/repl-host": ["./src/index.ts"]
     },
-    "types": ["node"]
+    "types": ["bun", "node"]
   },
   "include": [
     "src/**/*.ts",

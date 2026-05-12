@@ -379,10 +379,18 @@ describe("repl host scenarios", () => {
     const previousFetch = globalThis.fetch;
     let fetchCalled = false;
 
-    globalThis.fetch = (_input, _init) => {
-      fetchCalled = true;
-      return Promise.reject(new Error("playground test fetch sentinel"));
-    };
+    globalThis.fetch = Object.assign(
+      (
+        _input: string | URL | Request,
+        _init?: BunFetchRequestInit
+      ): Promise<Response> => {
+        fetchCalled = true;
+        return Promise.reject(new Error("playground test fetch sentinel"));
+      },
+      {
+        preconnect: previousFetch.preconnect,
+      }
+    );
     try {
       await withTemporaryEnvAsync(
         {
@@ -492,6 +500,7 @@ describe("repl host scenarios", () => {
         (event) => event.type === "approval.resolved"
       )
     ).toBe(true);
+    const headBeforeOrchestration = shell.thread?.headTurnNodeHash;
 
     await runReplCommand(shell, ".orch start");
     await runReplCommand(shell, ".orch spawn worker Run proof child");
@@ -502,6 +511,21 @@ describe("repl host scenarios", () => {
         (event) => event.source?.workerId !== undefined
       )
     ).toBe(true);
+    expect(shell.thread?.headTurnNodeHash).not.toBe(headBeforeOrchestration);
+
+    const activeMessages = readCommandArray(
+      await runReplCommand(shell, ".messages show")
+    );
+    expect(activeMessages.length).toBeGreaterThan(0);
+
+    const activeBranchId = shell.thread?.branchId;
+    await runReplCommand(shell, ".branch fork");
+    expect(shell.thread?.branchId).not.toBe(activeBranchId);
+
+    const forkMessages = readCommandArray(
+      await runReplCommand(shell, ".messages show")
+    );
+    expect(forkMessages.length).toBe(activeMessages.length);
   });
 
   test("resets shell state when the backend command is used", async () => {
@@ -580,3 +604,19 @@ describe("repl host scenarios", () => {
     expect(await inspector.readBranchStatus(thread.branchId)).toEqual(null);
   });
 });
+
+function readCommandArray(
+  result: Awaited<ReturnType<typeof runReplCommand>>
+): unknown[] {
+  if (result.output === undefined) {
+    throw new Error("expected command output");
+  }
+
+  const parsed: unknown = JSON.parse(result.output);
+
+  if (!Array.isArray(parsed)) {
+    throw new Error("expected JSON array output");
+  }
+
+  return parsed;
+}

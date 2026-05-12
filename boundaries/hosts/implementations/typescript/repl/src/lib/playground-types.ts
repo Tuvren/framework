@@ -24,6 +24,7 @@ import type {
   InputSignal,
   TuvrenProvider,
   TuvrenRuntime,
+  TuvrenRuntimeTelemetryAttributeKey,
   TuvrenStreamEvent,
   TuvrenToolDefinition,
 } from "@tuvren/runtime";
@@ -86,7 +87,7 @@ export interface PlaygroundStreamProjection {
 
 export interface PlaygroundTelemetryEvidence {
   attributes: Record<string, string | string[] | null>;
-  observedKeys: string[];
+  observedKeys: TuvrenRuntimeTelemetryAttributeKey[];
   schemaUrl: string;
 }
 

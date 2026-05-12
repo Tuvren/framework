@@ -553,6 +553,13 @@ async function awaitOrchestration(
 
   active.rootResult = await active.handle.awaitResult();
   shell.lastOrchestrationEvents = await active.eventsPromise;
+  const projection = {
+    agui: [],
+    canonical: shell.lastOrchestrationEvents,
+    sse: [],
+  } satisfies PlaygroundStreamProjection;
+  shell.thread = withHead(active.thread, projection);
+  active.thread = shell.thread;
 
   return {
     output: formatJson({
