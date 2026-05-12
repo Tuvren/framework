@@ -21,7 +21,7 @@
     "codegen": "bun run docs:authority-freeze:check && bun run docs:af-gap-plan:check && bun tools/scripts/authority-packet/validate-authority-packets.ts && bun tools/conformance/plan-compiler/validate-plans.ts && bun tools/conformance/adapter-protocol/validate-adapter-protocol.ts && bun tools/conformance/meta-conformance/run.ts && bun tools/scripts/authority-guardrails/authority-guardrails.ts && bun run nx run-many -t codegen -p shared-core-types,framework-runtime-api,framework-event-stream,framework-driver-api,framework-tool-contracts,provider-api,telemetry-semconv,compatibility-reporting,kernel-interop-grpc",
     "interop-smoke": "bun run nx run-many -t interop-smoke -p kernel-interop-grpc,kernel-rust-grpc-service,host-repl --parallel=1",
     "proving-host:interop-smoke": "bun run nx run host-repl:interop-smoke --skipNxCache --excludeTaskDependencies",
-    "proving-host:scenario-sqlite": "bun run nx run host-repl:scenario-sqlite --excludeTaskDependencies",
+    "proving-host:scenario-sqlite": "bun run nx run host-repl:scenario-sqlite",
     "docs:authority-freeze": "bun tools/scripts/docs-authority-freeze-gate.ts",
     "docs:authority-freeze:check": "bun tools/scripts/docs-authority-freeze-gate.ts --check",
     "docs:af-gap-plan": "bun tools/scripts/epic-af-conformance-gap-plan.ts",

@@ -468,6 +468,7 @@ describe("repl host scenarios", () => {
     expect(report.status.phase).toBe("completed");
     expectScenarioChecksPassed(report.checks);
     expect(report.checks.descendantEventsObserved).toBe(true);
+    expect(report.telemetry.attributes["tuvren.runtime.run.id"]).not.toBe(null);
   });
 
   test("drives approval and orchestration through the interactive shell commands", async () => {

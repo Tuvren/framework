@@ -188,13 +188,20 @@ function createTelemetryEvidence(input: {
       (event) => event.source?.driver !== undefined
     )?.source?.driver ??
     null;
-  const runIds = input.projection.agui.flatMap((event) => {
+  const runIdsFromAgUi = input.projection.agui.flatMap((event) => {
     if (event.type !== "RUN_STARTED") {
       return [];
     }
 
     return typeof event.runId === "string" ? [event.runId] : [];
   });
+  // AG-UI uses the canonical turn id as its run id projection, so fallback to
+  // turn starts when a scenario intentionally omits AG-UI output, such as the
+  // orchestration proof that currently evaluates canonical descendant events.
+  const runIds =
+    runIdsFromAgUi.length > 0
+      ? runIdsFromAgUi
+      : turnStarts.map((event) => event.turnId);
   const attributes = {
     "tuvren.runtime.backend.id": input.config.backend,
     "tuvren.runtime.branch.id": input.thread.branchId,

@@ -60,6 +60,8 @@ const INTEROP_BUILD_DIRECTORIES: readonly string[] = [
   "boundaries/framework/implementations/typescript/stream-agui",
   "boundaries/providers/implementations/typescript/bridge-ai-sdk",
   "boundaries/framework/implementations/typescript/runtime-core",
+  "boundaries/kernel/implementations/typescript/runtime-kernel",
+  "boundaries/framework/implementations/typescript/runtime",
   "boundaries/hosts/implementations/typescript/repl",
 ];
 const WAIT_TIMEOUT_MS = 30_000;
