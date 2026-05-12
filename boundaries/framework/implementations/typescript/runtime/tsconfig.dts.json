@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "declaration": true,
+    "declarationMap": false,
+    "emitDeclarationOnly": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "outDir": "./dist",
+    "paths": {
+      "@tuvren/core-types": [
+        "../../../../shared/contracts/core-types/implementations/typescript/dist/index.d.ts"
+      ],
+      "@tuvren/driver-react": ["../drivers/react/dist/index.d.ts"],
+      "@tuvren/kernel-protocol": [
+        "../../../../kernel/contracts/protocol/implementations/typescript/dist/index.d.ts"
+      ],
+      "@tuvren/kernel-runtime": [
+        "../../../../kernel/implementations/typescript/runtime-kernel/dist/index.d.ts"
+      ],
+      "@tuvren/runtime-api": [
+        "../../../contracts/runtime-api/implementations/typescript/dist/index.d.ts"
+      ],
+      "@tuvren/runtime-core": ["../runtime-core/dist/index.d.ts"]
+    },
+    "rootDir": "./src",
+    "target": "esnext",
+    "types": ["node"],
+    "verbatimModuleSyntax": true
+  },
+  "include": ["src/**/*.ts"]
+}

@@ -15,18 +15,18 @@
  */
 
 import type { AGUIEvent } from "@ag-ui/core";
-import type { HashString } from "@tuvren/core-types";
-import type { TuvrenStreamEvent } from "@tuvren/event-stream";
 import type {
   AgentConfig,
   ApprovalResponse,
   ExecutionHandle,
   ExecutionStatus,
+  HashString,
   InputSignal,
   TuvrenProvider,
   TuvrenRuntime,
+  TuvrenStreamEvent,
   TuvrenToolDefinition,
-} from "@tuvren/runtime-api";
+} from "@tuvren/runtime";
 import type { TuvrenSseFrame } from "@tuvren/stream-sse";
 
 export type PlaygroundBackendMode = "memory" | "sqlite";

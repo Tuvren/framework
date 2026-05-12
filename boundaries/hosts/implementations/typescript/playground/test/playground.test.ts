@@ -17,7 +17,6 @@
 import { describe, expect, test } from "bun:test";
 import { tmpdir } from "node:os";
 import { createMemoryBackend } from "@tuvren/backend-memory";
-import { createRuntimeKernel } from "@tuvren/kernel-runtime";
 import {
   AIMOCK_PLAYGROUND_PROVIDER_MODES,
   createPlaygroundHost,
@@ -29,9 +28,10 @@ import {
   runPlaygroundScenarioMatrix,
 } from "@tuvren/playground-host";
 import {
+  createRuntimeKernel,
   TUVREN_RUNTIME_TELEMETRY_ATTRIBUTE_KEYS,
   TUVREN_RUNTIME_TELEMETRY_SCHEMA_URL,
-} from "@tuvren/runtime-core";
+} from "@tuvren/runtime";
 import { createPlaygroundKernelInspector } from "../src/lib/playground-kernel.js";
 import {
   expectPlaygroundConfigError,

@@ -2,6 +2,7 @@
 
 ## 0. Version History & Changelog
 
+- v0.23.0 - Closed Epic AI in current repo reality through a checked-in SDK-surface audit, a curated `@tuvren/runtime` host-facing facade, playground rewiring away from lower-level runtime packages, and fresh host/runtime validation evidence.
 - v0.22.0 - Clarified that the proving-host and portability-gate evidence must become part of the repo's canonical verification path, and kept the portability scope focused on in-scope runtime semantics rather than explanatory or ecosystem-only material.
 - v0.21.0 - Replaced the AG-closed maintenance posture with an active TypeScript productization plan centered on constitutional archive cleanup, host-facing package normalization, a serious REPL proving host, PostgreSQL, and portability-gate conformance closure before Rust resumes.
 - v0.20.0 - Closed Epic AG in current repo reality through non-self-attesting promoted-plan hardening, real-kernel framework proof, refreshed compatibility evidence, and passing AG-gated `bun run codegen`, `bun run conformance`, `bun run compatibility:evidence`, `bun run interop-smoke`, `bun run release-check`, and `bun run verify`; TypeScript freeze-readiness is reaffirmed for the currently promoted supported applicable surfaces.
@@ -36,8 +37,7 @@
 ### Current Active Scope
 
 - Narrow the live constitutional authority path and archive stale support material under `constitution/archived/`.
-- Normalize host-facing TypeScript package naming and topology immediately before the proving-host build.
-- Build a serious REPL host entirely on the intended high-level SDK surface.
+- Build a serious REPL host entirely on the curated `@tuvren/runtime` high-level SDK surface.
 - Add PostgreSQL as the next official backend and prove it under strict backend semantics.
 - Close the portability gate across the intended portable runtime surface before Rust resumes.
 
@@ -52,6 +52,7 @@
 ### Archived or Already Completed Scope
 
 - Epics A-Q established the baseline TypeScript runtime, ReAct path, provider bridge, stream adapters, playground host, and release-hardening work.
+- Epic AI closed the current host-facing TypeScript package audit/normalization path through [`constitution/spikes/epic-ai-high-level-sdk-surface-audit.md`](./spikes/epic-ai-high-level-sdk-surface-audit.md).
 - Epics R-AG established the multi-language transition foundation, shared conformance architecture, kernel interop, and the AG hardening subset that remains historical evidence for promoted surfaces.
 - That work remains valuable audit context, but the active path is now TypeScript product proof, TypeScript platform completion, and then portability-gate closure.
 
@@ -111,6 +112,8 @@ And stale closure or freeze language no longer implies current product readiness
 ```
 
 ### Epic AI — TypeScript SDK Surface Normalization (KRT)
+
+Epic AI is closed in current repo reality through [`constitution/spikes/epic-ai-high-level-sdk-surface-audit.md`](./spikes/epic-ai-high-level-sdk-surface-audit.md).
 
 **KRT-AI001 High-Level SDK Naming and Surface Audit**
 - **Type:** Spike

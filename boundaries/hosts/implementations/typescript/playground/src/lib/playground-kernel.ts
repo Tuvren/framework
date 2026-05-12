@@ -15,14 +15,12 @@
  */
 
 import {
+  decodeDeterministicKernelRecord,
   type HashString,
+  type RuntimeKernel,
   TuvrenRuntimeError,
   TuvrenValidationError,
-} from "@tuvren/core-types";
-import {
-  decodeDeterministicKernelRecord,
-  type RuntimeKernel,
-} from "@tuvren/kernel-protocol";
+} from "@tuvren/runtime";
 
 export interface PlaygroundKernelHarness {
   kernel: RuntimeKernel;

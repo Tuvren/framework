@@ -70,6 +70,9 @@
       "@tuvren/framework-testkit": [
         "./boundaries/framework/implementations/typescript/testkit/src/index.ts"
       ],
+      "@tuvren/runtime": [
+        "./boundaries/framework/implementations/typescript/runtime/src/index.ts"
+      ],
       "@tuvren/playground-host": [
         "./boundaries/hosts/implementations/typescript/playground/src/index.ts"
       ]

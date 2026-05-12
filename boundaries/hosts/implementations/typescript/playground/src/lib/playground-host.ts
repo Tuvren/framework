@@ -16,16 +16,17 @@
 
 import { createMemoryBackend } from "@tuvren/backend-memory";
 import { createSqliteBackend } from "@tuvren/backend-sqlite";
-import { TuvrenRuntimeError } from "@tuvren/core-types";
-import { createReActDriver, REACT_DRIVER_ID } from "@tuvren/driver-react";
-import type { RuntimeBackend } from "@tuvren/kernel-protocol";
-import { createRuntimeKernel } from "@tuvren/kernel-runtime";
-import type { ExecutionHandle } from "@tuvren/runtime-api";
 import {
   createDriverRegistry,
   createGrpcRuntimeKernel,
+  createReActDriver,
+  createRuntimeKernel,
   createTuvrenRuntimeCore,
-} from "@tuvren/runtime-core";
+  type ExecutionHandle,
+  REACT_DRIVER_ID,
+  type RuntimeBackend,
+  TuvrenRuntimeError,
+} from "@tuvren/runtime";
 import { toAgUiEvents } from "@tuvren/stream-agui";
 import { teeTuvrenStreamEvents } from "@tuvren/stream-core";
 import { toSseFrames } from "@tuvren/stream-sse";
