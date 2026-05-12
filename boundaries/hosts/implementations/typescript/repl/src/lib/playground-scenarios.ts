@@ -412,6 +412,11 @@ async function runBranchingScenario(
     threadId: thread.threadId,
     turnNodeHash: sourceThread.headTurnNodeHash ?? thread.rootTurnNodeHash,
   });
+  const branchedThread = {
+    ...sourceThread,
+    branchId: branch.branchId,
+    headTurnNodeHash: branch.headTurnNodeHash,
+  };
   const branchMessagesBeforeTurn = await host.readBranchMessages(
     branch.branchId
   );
@@ -440,7 +445,7 @@ async function runBranchingScenario(
     config,
     handle: branchHandle,
     projection,
-    thread: withHead(thread, projection),
+    thread: withHead(branchedThread, projection),
   });
 }
 

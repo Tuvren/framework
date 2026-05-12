@@ -47,6 +47,11 @@ async function runInteractiveShell(
     input: process.stdin,
     output: process.stdout,
   });
+  let interfaceClosed = false;
+
+  rl.on("close", () => {
+    interfaceClosed = true;
+  });
 
   process.stdout.write(
     [
@@ -79,7 +84,7 @@ async function runInteractiveShell(
         process.stderr.write(`${renderError(error)}\n`);
       }
 
-      if (shouldPrompt) {
+      if (shouldPrompt && !interfaceClosed) {
         rl.prompt();
       }
     }

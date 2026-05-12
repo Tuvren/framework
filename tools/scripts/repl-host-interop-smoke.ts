@@ -210,6 +210,7 @@ async function waitForPort(
     await delay(200);
   }
 
+  await stopProcessTree(processHandle);
   throw new Error(
     await renderProcessFailure(
       processHandle,

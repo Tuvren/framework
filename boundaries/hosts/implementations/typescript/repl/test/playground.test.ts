@@ -824,10 +824,15 @@ describe("repl host scenarios", () => {
   });
 
   test("interactive CLI exits cleanly for piped sessions", async () => {
-    const result = await runCliSession(".thread new\n.exit\n");
+    for (const stdin of [
+      ".thread new\n.exit\n",
+      ".turn start streaming\n.exit\n",
+    ]) {
+      const result = await runCliSession(stdin);
 
-    expect(result.exitCode).toBe(0);
-    expect(result.stderr.includes("ERR_USE_AFTER_CLOSE")).toBe(false);
+      expect(result.exitCode).toBe(0);
+      expect(result.stderr.includes("ERR_USE_AFTER_CLOSE")).toBe(false);
+    }
   });
 });
 
