@@ -82,9 +82,15 @@ export function loadPlaygroundConfig(
     providerMode: parseProviderMode(
       options.provider ?? readReplEnv(env, "PROVIDER_MODE")
     ),
-    scenario: parseScenario(options.scenario ?? readReplEnv(env, "SCENARIO")),
+    scenario: parseScenario(
+      normalizeScenarioValue(options.scenario ?? readReplEnv(env, "SCENARIO"))
+    ),
     sqlitePath: normalizeSqlitePath(
       options.sqlitePath ?? readReplEnv(env, "SQLITE_PATH")
+    ),
+    systemPrompt: normalizeSystemPrompt(
+      readReplEnv(env, "SYSTEM_PROMPT") ??
+        readReplEnv(env, "SYSTEM_INSTRUCTIONS")
     ),
   } satisfies PlaygroundConfig;
 
@@ -141,6 +147,26 @@ function normalizeModelId(value: string | undefined): string | undefined {
   return normalized.length === 0 ? undefined : normalized;
 }
 
+function normalizeScenarioValue(value: string | undefined): string | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  const normalized = value.trim();
+
+  return normalized.length === 0 ? undefined : normalized;
+}
+
+function normalizeSystemPrompt(value: string | undefined): string | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  const normalized = value.trim();
+
+  return normalized.length === 0 ? undefined : normalized;
+}
+
 export function resolveGoogleApiKey(
   env: Record<string, string | undefined>
 ): string | undefined {
@@ -174,6 +200,8 @@ export function readReplEnv(
     | "PROVIDER_MODE"
     | "SCENARIO"
     | "SQLITE_PATH"
+    | "SYSTEM_INSTRUCTIONS"
+    | "SYSTEM_PROMPT"
 ): string | undefined {
   return env[`TUVREN_REPL_${suffix}`] ?? env[`TUVREN_PLAYGROUND_${suffix}`];
 }

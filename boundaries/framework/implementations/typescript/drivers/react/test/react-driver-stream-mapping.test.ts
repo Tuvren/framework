@@ -268,6 +268,100 @@ describe("driver-react streamed mapping", () => {
     ]);
   });
 
+  test("closes reasoning before streamed tool calls when the provider ends reasoning late", async () => {
+    const emittedEvents: TuvrenStreamEvent[] = [];
+    const provider = {
+      async generate() {
+        throw new Error("generate should not be called");
+      },
+      id: "provider",
+      async *stream() {
+        yield {
+          text: "thinking through the weather lookup",
+          type: "reasoning_delta",
+        } as const;
+        yield {
+          name: "weather",
+          providerCallId: "native-call-1",
+          type: "tool_call_start",
+        } as const;
+        yield {
+          delta: '{"location":"London","unit":"celsius"}',
+          providerCallId: "native-call-1",
+          type: "tool_call_args_delta",
+        } as const;
+        yield {
+          input: {
+            location: "London",
+            unit: "celsius",
+          },
+          name: "weather",
+          providerCallId: "native-call-1",
+          type: "tool_call_done",
+        } as const;
+        yield {
+          type: "reasoning_done",
+        } as const;
+        yield {
+          finishReason: "tool_call",
+          type: "finish",
+        } as const;
+      },
+    } satisfies TuvrenProvider;
+    const driver = createReActDriver({
+      providerCallMode: "stream",
+      toolExecutionMode: "parallel",
+    }).create();
+
+    const result = await driver.execute(
+      createDriverExecutionContext({
+        config: {
+          model: provider,
+          name: "primary",
+        },
+        emittedEvents,
+      })
+    );
+
+    expect(result.resolution).toEqual({
+      type: "continue_iteration",
+    });
+    expect(result.messages).toEqual([
+      {
+        parts: [
+          {
+            providerMetadata: undefined,
+            redacted: false,
+            text: "thinking through the weather lookup",
+            type: "reasoning",
+          },
+          {
+            callId: expect.any(String),
+            input: {
+              location: "London",
+              unit: "celsius",
+            },
+            name: "weather",
+            providerMetadata: {
+              providerCallId: "native-call-1",
+            },
+            type: "tool_call",
+          },
+        ],
+        role: "assistant",
+      },
+    ]);
+    expect(emittedEvents.map((event) => event.type)).toEqual([
+      "message.start",
+      "reasoning.delta",
+      "reasoning.done",
+      "tool_call.start",
+      "tool_call.args_delta",
+      "tool_call.done",
+      "message.done",
+    ]);
+  });
+
   test("synthesizes structured deltas when provider streams final structured data only", async () => {
     const emittedEvents: TuvrenStreamEvent[] = [];
     const provider = {

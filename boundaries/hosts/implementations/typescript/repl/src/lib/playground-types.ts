@@ -62,6 +62,7 @@ export interface PlaygroundConfig {
   providerMode: PlaygroundProviderMode;
   scenario: PlaygroundScenarioName;
   sqlitePath?: string;
+  systemPrompt?: string;
 }
 
 export interface PlaygroundTurnInput {

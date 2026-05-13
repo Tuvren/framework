@@ -195,10 +195,20 @@ async function runOrchestrationScenario(
       primary: {
         model: host.provider,
         name: "primary",
+        ...(config.systemPrompt === undefined
+          ? {}
+          : {
+              systemPrompt: config.systemPrompt,
+            }),
       },
       worker: {
         model: host.provider,
         name: "worker",
+        ...(config.systemPrompt === undefined
+          ? {}
+          : {
+              systemPrompt: config.systemPrompt,
+            }),
       },
     },
     framework: host.runtime,

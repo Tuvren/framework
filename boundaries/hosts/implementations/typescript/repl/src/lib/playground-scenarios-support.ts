@@ -455,7 +455,8 @@ export function readProjectionError(
 }
 
 export function startProjectionCapture(
-  handle: ExecutionHandle
+  handle: ExecutionHandle,
+  onCanonicalEvent?: (event: TuvrenStreamEvent) => void
 ): Promise<PlaygroundStreamProjection> {
   const [canonicalBranch, sseBranch, aguiBranch] = teeTuvrenStreamEvents(
     handle.events(),
@@ -463,7 +464,7 @@ export function startProjectionCapture(
   );
 
   return Promise.all([
-    collect(canonicalBranch),
+    collect(canonicalBranch, onCanonicalEvent),
     collect(toSseFrames(sseBranch)),
     collect(toAgUiEvents(aguiBranch)),
   ]).then(([canonical, sse, agui]) => ({
@@ -474,7 +475,8 @@ export function startProjectionCapture(
 }
 
 export function projectContinuationCapture(
-  handle: ExecutionHandle
+  handle: ExecutionHandle,
+  onCanonicalEvent?: (event: TuvrenStreamEvent) => void
 ): Promise<PlaygroundStreamProjection> {
   const [canonicalBranch, sseBranch] = teeTuvrenStreamEvents(
     handle.events(),
@@ -482,7 +484,7 @@ export function projectContinuationCapture(
   );
 
   return Promise.all([
-    collect(canonicalBranch),
+    collect(canonicalBranch, onCanonicalEvent),
     collect(toSseFrames(sseBranch)),
   ]).then(([canonical, sse]) => ({
     agui: [],
@@ -809,10 +811,14 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-async function collect<T>(events: AsyncIterable<T>): Promise<T[]> {
+async function collect<T>(
+  events: AsyncIterable<T>,
+  onItem?: (item: T) => void
+): Promise<T[]> {
   const output: T[] = [];
 
   for await (const event of events) {
+    onItem?.(event);
     output.push(event);
   }
 

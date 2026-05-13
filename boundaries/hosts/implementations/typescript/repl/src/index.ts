@@ -46,4 +46,5 @@ export {
   createReplShell,
   REPL_HELP_TEXT,
   runReplCommand,
+  runReplInput,
 } from "./lib/repl-shell.js";

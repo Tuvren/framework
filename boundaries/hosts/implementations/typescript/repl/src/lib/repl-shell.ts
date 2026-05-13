@@ -84,6 +84,9 @@ export const REPL_HELP_TEXT = [
   ".help                         Show available commands",
   ".exit                         Exit the REPL host",
   ".status                       Show current shell state",
+  "<text>                        Send a plain chat turn and stream the reply",
+  "Paused approvals: 1 approve, 2 reject, 3 edit",
+  "Built-in tools: calculator, weather (mock), search, email",
   ".backend <memory|sqlite> [path|auto]",
   ".thread new                   Create a new active thread",
   ".thread show                  Show the active thread",
@@ -133,6 +136,10 @@ export interface ReplCommandResult {
   output?: string;
 }
 
+export interface ReplInputOptions {
+  onCanonicalEvent?: (event: TuvrenStreamEvent) => void;
+}
+
 export function createReplShell(config: PlaygroundConfig): ReplShell {
   return {
     config,
@@ -140,9 +147,38 @@ export function createReplShell(config: PlaygroundConfig): ReplShell {
   };
 }
 
+export async function runReplInput(
+  shell: ReplShell,
+  input: string,
+  options?: ReplInputOptions
+): Promise<ReplCommandResult> {
+  const trimmed = input.trim();
+
+  if (trimmed.length === 0) {
+    return {};
+  }
+
+  if (trimmed.startsWith(".")) {
+    return await runReplCommand(shell, trimmed, options);
+  }
+
+  const approvalShortcutMode = readApprovalShortcutMode(shell, trimmed);
+
+  if (approvalShortcutMode !== undefined) {
+    return await approveTurn(
+      shell,
+      approvalShortcutMode,
+      options?.onCanonicalEvent
+    );
+  }
+
+  return await runFreeformTurn(shell, trimmed, options?.onCanonicalEvent);
+}
+
 export async function runReplCommand(
   shell: ReplShell,
-  input: string
+  input: string,
+  options?: ReplInputOptions
 ): Promise<ReplCommandResult> {
   const trimmed = input.trim();
 
@@ -171,9 +207,13 @@ export async function runReplCommand(
     case ".events":
       return await showEvents(shell, args);
     case ".turn":
-      return await handleTurnCommand(shell, args);
+      return await handleTurnCommand(shell, args, options?.onCanonicalEvent);
     case ".orch":
-      return await handleOrchestrationCommand(shell, args);
+      return await handleOrchestrationCommand(
+        shell,
+        args,
+        options?.onCanonicalEvent
+      );
     default:
       return {
         output: `Unknown command "${command}". Use .help to inspect the command tree.`,
@@ -332,17 +372,22 @@ function showEvents(
 
 async function handleTurnCommand(
   shell: ReplShell,
-  args: readonly string[]
+  args: readonly string[],
+  onCanonicalEvent?: (event: TuvrenStreamEvent) => void
 ): Promise<ReplCommandResult> {
   const subcommand = args[0];
 
   switch (subcommand) {
     case "start":
-      return await startTurn(shell, args.slice(1));
+      return await startTurn(shell, args.slice(1), onCanonicalEvent);
     case "await":
-      return await awaitTurn(shell);
+      return await awaitTurn(shell, onCanonicalEvent);
     case "approve":
-      return await approveTurn(shell, args[1] ?? "approve");
+      return await approveTurn(
+        shell,
+        normalizeApprovalMode(args[1] ?? "approve"),
+        onCanonicalEvent
+      );
     case "steer":
       return steerTurn(shell, args.slice(1).join(" "));
     case "cancel":
@@ -356,13 +401,14 @@ async function handleTurnCommand(
 
 async function handleOrchestrationCommand(
   shell: ReplShell,
-  args: readonly string[]
+  args: readonly string[],
+  onCanonicalEvent?: (event: TuvrenStreamEvent) => void
 ): Promise<ReplCommandResult> {
   const subcommand = args[0];
 
   switch (subcommand) {
     case "start":
-      return await startOrchestration(shell);
+      return await startOrchestration(shell, onCanonicalEvent);
     case "spawn":
       return await spawnOrchestrationChild(shell, args.slice(1));
     case "await":
@@ -384,7 +430,8 @@ async function handleOrchestrationCommand(
 
 async function startTurn(
   shell: ReplShell,
-  args: readonly string[]
+  args: readonly string[],
+  onCanonicalEvent?: (event: TuvrenStreamEvent) => void
 ): Promise<ReplCommandResult> {
   const input = args.join(" ").trim();
 
@@ -421,9 +468,20 @@ async function startTurn(
 
   shell.activeTurn = {
     handle,
-    projectionPromise: startProjectionCapture(handle),
+    projectionPromise: startProjectionCapture(handle, onCanonicalEvent),
     thread,
   };
+
+  if (onCanonicalEvent !== undefined && shouldAutoAwaitTurnStart(input)) {
+    const activeTurn = shell.activeTurn;
+
+    if (activeTurn === undefined) {
+      return { output: "No active turn is currently running." };
+    }
+
+    const projection = await activeTurn.projectionPromise;
+    return finalizeInteractiveTurn(shell, activeTurn, projection);
+  }
 
   return {
     output: formatJson({
@@ -434,7 +492,10 @@ async function startTurn(
   };
 }
 
-async function awaitTurn(shell: ReplShell): Promise<ReplCommandResult> {
+async function awaitTurn(
+  shell: ReplShell,
+  onCanonicalEvent?: (event: TuvrenStreamEvent) => void
+): Promise<ReplCommandResult> {
   const activeTurn = shell.activeTurn;
 
   if (activeTurn === undefined) {
@@ -442,12 +503,22 @@ async function awaitTurn(shell: ReplShell): Promise<ReplCommandResult> {
   }
 
   const projection = await activeTurn.projectionPromise;
-  const phase = activeTurn.handle.status().phase;
-  shell.lastProjection = projection;
-  shell.lastCanonicalEvents = projection.canonical;
-  shell.thread = withHead(activeTurn.thread, projection);
-  if (isTerminalPhase(phase)) {
-    shell.activeTurn = undefined;
+  const phase = finalizeTurnProjection(shell, activeTurn, projection);
+
+  if (onCanonicalEvent !== undefined) {
+    const projectionError = readProjectionError(projection);
+
+    if (phase === "paused") {
+      return {
+        output: readPausedTurnMessage(),
+      };
+    }
+
+    if (projectionError !== undefined) {
+      return { output: projectionError.message };
+    }
+
+    return {};
   }
 
   return {
@@ -464,7 +535,8 @@ async function awaitTurn(shell: ReplShell): Promise<ReplCommandResult> {
 
 async function approveTurn(
   shell: ReplShell,
-  mode: string
+  mode: string,
+  onCanonicalEvent?: (event: TuvrenStreamEvent) => void
 ): Promise<ReplCommandResult> {
   const activeTurn = shell.activeTurn;
 
@@ -481,15 +553,21 @@ async function approveTurn(
   const baseProjection = await activeTurn.projectionPromise;
   const response = createApprovalResponse(approval, mode);
   const resumedHandle = shell.host.approve(activeTurn.handle, response);
-  const continuationPromise = projectContinuationCapture(resumedHandle).then(
-    (continuation) => mergeProjections(baseProjection, continuation)
-  );
-
-  shell.activeTurn = {
+  const resumedActiveTurn = {
     handle: resumedHandle,
-    projectionPromise: continuationPromise,
+    projectionPromise: projectContinuationCapture(
+      resumedHandle,
+      onCanonicalEvent
+    ).then((continuation) => mergeProjections(baseProjection, continuation)),
     thread: activeTurn.thread,
-  };
+  } satisfies ActiveTurnState;
+
+  shell.activeTurn = resumedActiveTurn;
+
+  if (onCanonicalEvent !== undefined) {
+    const projection = await resumedActiveTurn.projectionPromise;
+    return finalizeInteractiveTurn(shell, resumedActiveTurn, projection);
+  }
 
   return {
     output: formatJson({
@@ -528,7 +606,8 @@ function cancelTurn(shell: ReplShell): ReplCommandResult {
 }
 
 async function startOrchestration(
-  shell: ReplShell
+  shell: ReplShell,
+  onCanonicalEvent?: (event: TuvrenStreamEvent) => void
 ): Promise<ReplCommandResult> {
   if (hasActiveShellWork(shell)) {
     return {
@@ -543,10 +622,20 @@ async function startOrchestration(
       primary: {
         model: shell.host.provider,
         name: "primary",
+        ...(shell.config.systemPrompt === undefined
+          ? {}
+          : {
+              systemPrompt: shell.config.systemPrompt,
+            }),
       },
       worker: {
         model: shell.host.provider,
         name: "worker",
+        ...(shell.config.systemPrompt === undefined
+          ? {}
+          : {
+              systemPrompt: shell.config.systemPrompt,
+            }),
       },
     },
     framework: shell.host.runtime,
@@ -559,7 +648,7 @@ async function startOrchestration(
   });
 
   shell.activeOrchestration = {
-    eventsPromise: collect(handle.allEvents()),
+    eventsPromise: collect(handle.allEvents(), onCanonicalEvent),
     handle,
     thread,
   };
@@ -685,6 +774,70 @@ async function ensureThread(
   return shell.thread;
 }
 
+async function runFreeformTurn(
+  shell: ReplShell,
+  input: string,
+  onCanonicalEvent?: (event: TuvrenStreamEvent) => void
+): Promise<ReplCommandResult> {
+  if (hasActiveShellWork(shell)) {
+    return {
+      output:
+        "Active work already exists on the current branch. Await, approve, steer, or cancel it before starting another turn.",
+    };
+  }
+
+  const thread = await ensureThread(shell);
+  const handle = shell.host.executeTurn({
+    branchId: thread.branchId,
+    signal: textSignal(input),
+    threadId: thread.threadId,
+  });
+  const activeTurn = {
+    handle,
+    projectionPromise: startProjectionCapture(handle, onCanonicalEvent),
+    thread,
+  } satisfies ActiveTurnState;
+
+  shell.activeTurn = activeTurn;
+
+  const projection = await activeTurn.projectionPromise;
+  const phase = finalizeTurnProjection(shell, activeTurn, projection);
+  const projectionError = readProjectionError(projection);
+
+  if (phase === "paused") {
+    return {
+      output: readPausedTurnMessage(),
+    };
+  }
+
+  if (projectionError !== undefined) {
+    return { output: projectionError.message };
+  }
+
+  return {};
+}
+
+function finalizeInteractiveTurn(
+  shell: ReplShell,
+  activeTurn: ActiveTurnState,
+  projection: PlaygroundStreamProjection
+): ReplCommandResult {
+  const phase = finalizeTurnProjection(shell, activeTurn, projection);
+  const projectionError = readProjectionError(projection);
+
+  if (phase === "paused") {
+    return {
+      output: readPausedTurnMessage(),
+    };
+  }
+
+  if (projectionError !== undefined) {
+    return { output: projectionError.message };
+  }
+
+  return {};
+}
+
 function createTurnExecutionRequest(
   config: PlaygroundConfig,
   input: string
@@ -792,6 +945,14 @@ function isTurnScenarioName(value: string): value is PlaygroundScenarioName {
   return TURN_SCENARIO_NAMES.has(value as PlaygroundScenarioName);
 }
 
+function shouldAutoAwaitTurnStart(value: string): boolean {
+  if (!isTurnScenarioName(value)) {
+    return false;
+  }
+
+  return value !== "cancel" && value !== "steering";
+}
+
 function readUnsupportedTurnScenarioMessage(value: string): string | undefined {
   if (!isScenarioName(value) || isTurnScenarioName(value)) {
     return undefined;
@@ -802,10 +963,14 @@ function readUnsupportedTurnScenarioMessage(value: string): string | undefined {
     : `Scenario "${value}" is not supported through .turn start. Use the scripted scenario runner instead.`;
 }
 
-async function collect<T>(events: AsyncIterable<T>): Promise<T[]> {
+async function collect<T>(
+  events: AsyncIterable<T>,
+  onEvent?: (event: T) => void
+): Promise<T[]> {
   const output: T[] = [];
 
   for await (const event of events) {
+    onEvent?.(event);
     output.push(event);
   }
 
@@ -855,8 +1020,63 @@ function isTerminalPhase(
   return phase === "completed" || phase === "failed";
 }
 
+function finalizeTurnProjection(
+  shell: ReplShell,
+  activeTurn: ActiveTurnState,
+  projection: PlaygroundStreamProjection
+): ReturnType<ExecutionHandle["status"]>["phase"] {
+  const phase = activeTurn.handle.status().phase;
+
+  shell.lastProjection = projection;
+  shell.lastCanonicalEvents = projection.canonical;
+  shell.thread = withHead(activeTurn.thread, projection);
+
+  if (isTerminalPhase(phase)) {
+    shell.activeTurn = undefined;
+  }
+
+  return phase;
+}
+
 function observeCancellation(promise: Promise<unknown>): void {
   promise.catch(() => undefined);
+}
+
+function readPausedTurnMessage(): string {
+  return 'Turn paused for approval. Press 1 to approve, 2 to reject, 3 to edit, or use ".turn approve [approve|edit|reject]" to continue.';
+}
+
+function readApprovalShortcutMode(
+  shell: ReplShell,
+  input: string
+): string | undefined {
+  if (shell.activeTurn?.handle.status().approval === undefined) {
+    return undefined;
+  }
+
+  switch (input) {
+    case "1":
+      return "approve";
+    case "2":
+      return "reject";
+    case "3":
+      return "edit";
+    default:
+      return undefined;
+  }
+}
+
+function normalizeApprovalMode(mode: string): string {
+  switch (mode) {
+    case "1":
+      return "approve";
+    case "2":
+      return "reject";
+    case "3":
+      return "edit";
+    default:
+      return mode;
+  }
 }
 
 export function readShellTextArgument(

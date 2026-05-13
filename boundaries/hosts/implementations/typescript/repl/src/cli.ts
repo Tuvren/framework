@@ -21,9 +21,10 @@ import {
   haveAllChecksPassed,
   loadReplConfig,
   readReplEnv,
-  runReplCommand,
+  runReplInput,
   runReplScenario,
 } from "./index.js";
+import { createLiveTurnWriter } from "./lib/repl-live-output.js";
 
 const argv = process.argv.slice(2);
 await main(argv);
@@ -80,9 +81,20 @@ async function runInteractiveShell(
   try {
     for await (const line of rl) {
       let shouldPrompt = !process.stdin.readableEnded;
+      const liveOutput = createLiveTurnWriter((chunk) => {
+        process.stdout.write(chunk);
+      }, {
+        useAnsiColors: shouldUseAnsiColors(process.stdout, process.env),
+      });
 
       try {
-        const result = await runReplCommand(shell, line);
+        const result = await runReplInput(shell, line, {
+          onCanonicalEvent: (event) => {
+            liveOutput.observe(event);
+          },
+        });
+
+        liveOutput.finish();
 
         if (result.output !== undefined) {
           process.stdout.write(`${result.output}\n`);
@@ -118,4 +130,21 @@ function hasExplicitScenarioSelection(
 
 function renderError(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+function shouldUseAnsiColors(
+  stream: Pick<NodeJS.WriteStream, "isTTY">,
+  env: Record<string, string | undefined>
+): boolean {
+  if (env.NO_COLOR !== undefined) {
+    return false;
+  }
+
+  const forceColor = env.FORCE_COLOR?.trim().toLowerCase();
+
+  if (forceColor !== undefined) {
+    return forceColor !== "0" && forceColor !== "false";
+  }
+
+  return stream.isTTY === true;
 }

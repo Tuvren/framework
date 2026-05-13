@@ -34,7 +34,7 @@ interface PendingToolCall {
 }
 
 type AccumulatedPart =
-  | { kind: "text"; text: string }
+  | { done: boolean; kind: "text"; text: string }
   | { done: boolean; kind: "reasoning"; text: string; signature?: string }
   | {
       data?: unknown;
@@ -85,14 +85,15 @@ export class StreamAccumulator {
               },
             ];
       case "reasoning_done":
-        this.completeReasoning();
-        return [
-          {
-            messageId: this.messageId,
-            timestamp: this.now(),
-            type: "reasoning.done",
-          },
-        ];
+        return this.completeReasoning()
+          ? [
+              {
+                messageId: this.messageId,
+                timestamp: this.now(),
+                type: "reasoning.done",
+              },
+            ]
+          : [];
       case "structured_delta":
         this.appendStructuredDelta(chunk.delta);
         return [
@@ -106,7 +107,10 @@ export class StreamAccumulator {
       case "structured_done":
         return this.completeStructuredAndCreateEvents(chunk.data, chunk.name);
       case "tool_call_start":
-        return [this.startToolCall(chunk.providerCallId, chunk.name)];
+        return [
+          ...this.completeOpenAssistantPartForToolCall(),
+          this.startToolCall(chunk.providerCallId, chunk.name),
+        ];
       case "tool_call_args_delta":
         this.appendToolCallArgs(chunk.providerCallId, chunk.delta);
         return [
@@ -239,12 +243,13 @@ export class StreamAccumulator {
   private appendText(delta: string): void {
     const lastPart = this.parts.at(-1);
 
-    if (lastPart?.kind === "text") {
+    if (lastPart?.kind === "text" && !lastPart.done) {
       lastPart.text += delta;
       return;
     }
 
     this.parts.push({
+      done: false,
       kind: "text",
       text: delta,
     });
@@ -267,12 +272,23 @@ export class StreamAccumulator {
     });
   }
 
-  private completeReasoning(): void {
-    const lastPart = this.parts.at(-1);
+  private completeReasoning(): boolean {
+    for (let index = this.parts.length - 1; index >= 0; index -= 1) {
+      const part = this.parts[index];
 
-    if (lastPart?.kind === "reasoning") {
-      lastPart.done = true;
+      if (part?.kind !== "reasoning") {
+        continue;
+      }
+
+      if (part.done) {
+        return false;
+      }
+
+      part.done = true;
+      return true;
     }
+
+    return false;
   }
 
   private appendStructuredDelta(delta: string): void {
@@ -424,18 +440,61 @@ export class StreamAccumulator {
     return events;
   }
 
+  private completeOpenAssistantPartForToolCall(): TuvrenStreamEvent[] {
+    const lastPart = this.parts.at(-1);
+
+    if (lastPart === undefined) {
+      return [];
+    }
+
+    switch (lastPart.kind) {
+      case "reasoning":
+        if (lastPart.done) {
+          return [];
+        }
+
+        lastPart.done = true;
+        return [
+          {
+            messageId: this.messageId,
+            timestamp: this.now(),
+            type: "reasoning.done",
+          },
+        ];
+      case "text":
+        if (lastPart.done) {
+          return [];
+        }
+
+        lastPart.done = true;
+        return [
+          {
+            messageId: this.messageId,
+            text: lastPart.text,
+            timestamp: this.now(),
+            type: "text.done",
+          },
+        ];
+      default:
+        return [];
+    }
+  }
+
   private createPartialCompletionEvents(): TuvrenStreamEvent[] {
     const events: TuvrenStreamEvent[] = [];
 
     for (const part of this.parts) {
       switch (part.kind) {
         case "text":
-          events.push({
-            messageId: this.messageId,
-            text: part.text,
-            timestamp: this.now(),
-            type: "text.done",
-          });
+          if (!part.done) {
+            events.push({
+              messageId: this.messageId,
+              text: part.text,
+              timestamp: this.now(),
+              type: "text.done",
+            });
+            part.done = true;
+          }
           break;
         case "reasoning":
           if (!part.done) {
@@ -525,12 +584,15 @@ export class StreamAccumulator {
     for (const part of this.parts) {
       switch (part.kind) {
         case "text":
-          events.push({
-            messageId: this.messageId,
-            text: part.text,
-            timestamp: this.now(),
-            type: "text.done",
-          });
+          if (!part.done) {
+            events.push({
+              messageId: this.messageId,
+              text: part.text,
+              timestamp: this.now(),
+              type: "text.done",
+            });
+            part.done = true;
+          }
           break;
         case "reasoning":
           if (!part.done) {
