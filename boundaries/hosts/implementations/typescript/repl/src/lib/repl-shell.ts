@@ -85,6 +85,7 @@ export const REPL_HELP_TEXT = [
   ".exit                         Exit the REPL host",
   ".status                       Show current shell state",
   "<text>                        Send a plain chat turn and stream the reply",
+  "Freeform turns auto-await; use .turn start/.turn await for steer/cancel",
   "Paused approvals: 1 approve, 2 reject, 3 edit",
   "Built-in tools: calculator, weather (mock), search, email",
   ".backend <memory|sqlite> [path|auto]",
@@ -104,6 +105,18 @@ export const REPL_HELP_TEXT = [
   ".orch cancel                  Cancel the active orchestration",
   ".orch events                  Show the last orchestration event types",
 ] as const;
+const KNOWN_TOP_LEVEL_REPL_COMMANDS = new Set<string>([
+  ".backend",
+  ".branch",
+  ".events",
+  ".exit",
+  ".help",
+  ".messages",
+  ".orch",
+  ".status",
+  ".thread",
+  ".turn",
+]);
 
 interface ActiveTurnState {
   handle: ExecutionHandle;
@@ -158,7 +171,9 @@ export async function runReplInput(
     return {};
   }
 
-  if (trimmed.startsWith(".")) {
+  const [command] = trimmed.split(COMMAND_SPLIT_PATTERN);
+
+  if (command !== undefined && KNOWN_TOP_LEVEL_REPL_COMMANDS.has(command)) {
     return await runReplCommand(shell, trimmed, options);
   }
 
@@ -800,6 +815,9 @@ async function runFreeformTurn(
 
   shell.activeTurn = activeTurn;
 
+  // Keep plain-text turns synchronous so the live stream completes before the
+  // next prompt is rendered. Operators can use .turn start/.turn await when
+  // they need mid-turn controls like steer or cancel.
   const projection = await activeTurn.projectionPromise;
   const phase = finalizeTurnProjection(shell, activeTurn, projection);
   const projectionError = readProjectionError(projection);

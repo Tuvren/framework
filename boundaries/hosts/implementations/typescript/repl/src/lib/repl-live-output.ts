@@ -72,9 +72,15 @@ export function createLiveTurnWriter(
             activeLine = undefined;
           }
           return;
+        case "structured.done":
+          writeAssistantCompletion(renderInlineValue(event.data), "blue");
+          return;
         case "structured.delta":
           ensureLine("assistant");
           write(styleText(event.delta, "blue"));
+          return;
+        case "text.done":
+          writeAssistantCompletion(event.text, "cyan");
           return;
         case "text.delta":
           ensureLine("assistant");
@@ -155,6 +161,15 @@ export function createLiveTurnWriter(
     }
 
     write(`${styleText(`${label}> `, color)}${styleText(message, color)}\n`);
+  }
+
+  function writeAssistantCompletion(text: string, color: LiveColor): void {
+    if (activeLine === "assistant" || text.length === 0) {
+      return;
+    }
+
+    ensureLine("assistant");
+    write(styleText(text, color));
   }
 
   function renderInlineValue(value: unknown): string {

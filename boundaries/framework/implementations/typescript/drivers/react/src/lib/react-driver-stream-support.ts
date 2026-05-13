@@ -108,7 +108,7 @@ export class StreamAccumulator {
         return this.completeStructuredAndCreateEvents(chunk.data, chunk.name);
       case "tool_call_start":
         return [
-          ...this.completeOpenAssistantPartForToolCall(),
+          ...this.completeOpenAssistantPartsForToolCall(),
           this.startToolCall(chunk.providerCallId, chunk.name),
         ];
       case "tool_call_args_delta":
@@ -440,43 +440,49 @@ export class StreamAccumulator {
     return events;
   }
 
-  private completeOpenAssistantPartForToolCall(): TuvrenStreamEvent[] {
-    const lastPart = this.parts.at(-1);
+  private completeOpenAssistantPartsForToolCall(): TuvrenStreamEvent[] {
+    const events: TuvrenStreamEvent[] = [];
 
-    if (lastPart === undefined) {
-      return [];
+    for (const part of this.parts) {
+      const event = this.createToolCallBoundaryCompletionEvent(part);
+
+      if (event !== undefined) {
+        events.push(event);
+      }
     }
 
-    switch (lastPart.kind) {
+    return events;
+  }
+
+  private createToolCallBoundaryCompletionEvent(
+    part: AccumulatedPart
+  ): TuvrenStreamEvent | undefined {
+    switch (part.kind) {
       case "reasoning":
-        if (lastPart.done) {
-          return [];
+        if (part.done) {
+          return undefined;
         }
 
-        lastPart.done = true;
-        return [
-          {
-            messageId: this.messageId,
-            timestamp: this.now(),
-            type: "reasoning.done",
-          },
-        ];
+        part.done = true;
+        return {
+          messageId: this.messageId,
+          timestamp: this.now(),
+          type: "reasoning.done",
+        };
       case "text":
-        if (lastPart.done) {
-          return [];
+        if (part.done) {
+          return undefined;
         }
 
-        lastPart.done = true;
-        return [
-          {
-            messageId: this.messageId,
-            text: lastPart.text,
-            timestamp: this.now(),
-            type: "text.done",
-          },
-        ];
+        part.done = true;
+        return {
+          messageId: this.messageId,
+          text: part.text,
+          timestamp: this.now(),
+          type: "text.done",
+        };
       default:
-        return [];
+        return undefined;
     }
   }
 

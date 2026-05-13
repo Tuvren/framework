@@ -108,6 +108,7 @@ async function runInteractiveShell(
           break;
         }
       } catch (error: unknown) {
+        liveOutput.finish();
         process.stderr.write(`${renderError(error)}\n`);
       }
 

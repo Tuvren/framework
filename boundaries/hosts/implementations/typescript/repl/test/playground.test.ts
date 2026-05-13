@@ -885,6 +885,26 @@ describe("repl host scenarios", () => {
     ).toBe(false);
   });
 
+  test("treats unknown leading-dot input as a streamed freeform turn", async () => {
+    const shell = createReplShell({
+      backend: "memory",
+      providerMode: "fixture",
+      scenario: "streaming",
+    });
+    const streamedChunks: string[] = [];
+    const result = await runReplInput(shell, ".env file", {
+      onCanonicalEvent(event) {
+        if (event.type === "text.delta") {
+          streamedChunks.push(event.delta);
+        }
+      },
+    });
+
+    expect(result.output).toBe(undefined);
+    expect(streamedChunks.join("")).toBe("Playground streaming complete.");
+    expect(shell.activeTurn).toBe(undefined);
+  });
+
   test("applies env-driven system prompt to freeform turns", async () => {
     const host = createPlaygroundHost({
       backend: "memory",
@@ -1091,6 +1111,46 @@ describe("repl host scenarios", () => {
 
     expect(chunks.join("")).toBe(
       "thinking> Considering the request.\nassistant> Hello from Tuvren.\n"
+    );
+  });
+
+  test("renders assistant completions when only done events exist", () => {
+    const chunks: string[] = [];
+    const writer = createLiveTurnWriter((chunk) => {
+      chunks.push(chunk);
+    });
+
+    writer.observe({
+      messageId: "message-1",
+      text: "Final only",
+      timestamp: 0,
+      type: "text.done",
+    });
+    writer.observe({
+      finishReason: "stop",
+      messageId: "message-1",
+      timestamp: 0,
+      type: "message.done",
+    });
+    writer.observe({
+      data: {
+        answer: "ok",
+      },
+      messageId: "message-2",
+      name: "answer",
+      timestamp: 0,
+      type: "structured.done",
+    });
+    writer.observe({
+      finishReason: "stop",
+      messageId: "message-2",
+      timestamp: 0,
+      type: "message.done",
+    });
+    writer.finish();
+
+    expect(chunks.join("")).toBe(
+      'assistant> Final only\nassistant> {"answer":"ok"}\n'
     );
   });
 
@@ -1516,6 +1576,14 @@ describe("repl host scenarios", () => {
     expect(
       result.stdout.includes('Unknown command "Hello from the REPL"')
     ).toBe(false);
+  });
+
+  test("interactive CLI treats unknown leading-dot input as plain text", async () => {
+    const result = await runCliSession(".env file\n.exit\n");
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout.includes("Playground streaming complete.")).toBe(true);
+    expect(result.stdout.includes('Unknown command ".env"')).toBe(false);
   });
 
   test("interactive CLI honors TUVREN_REPL_SCENARIO aliases", async () => {
