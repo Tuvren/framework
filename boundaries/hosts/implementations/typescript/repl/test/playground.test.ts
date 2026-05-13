@@ -332,6 +332,27 @@ describe("repl host scenarios", () => {
     );
   });
 
+  test("rejects rust-grpc kernel configuration for postgres backend", () => {
+    expectPlaygroundConfigError(
+      () =>
+        loadPlaygroundConfig(
+          {
+            TUVREN_PLAYGROUND_KERNEL_GRPC_BASE_URL: "http://127.0.0.1:50051",
+            TUVREN_PLAYGROUND_KERNEL_MODE: "rust-grpc",
+          },
+          [
+            "--backend",
+            "postgres",
+            "--postgres-database",
+            "tuvren_runtime",
+            "--postgres-schema",
+            "auto",
+          ]
+        ),
+      "rust-grpc repl kernel currently supports only the memory backend baseline"
+    );
+  });
+
   test("allocates disposable SQLite smoke paths on demand", () => {
     const config = loadPlaygroundConfig({}, [
       "--backend",
@@ -344,6 +365,21 @@ describe("repl host scenarios", () => {
     expect(config.sqlitePath?.startsWith(tmpdir())).toBe(true);
     expect(config.sqlitePath?.includes("tuvren-playground-")).toBe(true);
     expect(config.sqlitePath?.endsWith(".sqlite")).toBe(true);
+  });
+
+  test("allocates disposable PostgreSQL schema names on demand", () => {
+    const config = loadPlaygroundConfig({}, [
+      "--backend",
+      "postgres",
+      "--postgres-schema",
+      "auto",
+    ]);
+
+    expect(config.backend).toBe("postgres");
+    expect(config.postgresDatabase).toBe("tuvren_runtime");
+    expect(config.postgresSchemaName?.startsWith("tuvren-playground-")).toBe(
+      true
+    );
   });
 
   test("runs every non-reload fixture scenario under the memory backend", async () => {
@@ -1569,6 +1605,48 @@ describe("repl host scenarios", () => {
 
     try {
       await runReplCommand(shell, ".backend sqlite auto");
+    } catch (error: unknown) {
+      actualMessage = error instanceof Error ? error.message : String(error);
+    }
+
+    expect(actualMessage).toBe(
+      "rust-grpc repl kernel currently supports only the memory backend baseline"
+    );
+  });
+
+  test("switches the shell backend to postgres with an auto schema", async () => {
+    const shell = createReplShell({
+      backend: "memory",
+      providerMode: "fixture",
+      scenario: "streaming",
+    });
+
+    const result = await runReplCommand(
+      shell,
+      ".backend postgres tuvren_runtime auto"
+    );
+
+    expect(shell.config.backend).toBe("postgres");
+    expect(shell.config.postgresDatabase).toBe("tuvren_runtime");
+    expect(shell.config.postgresSchemaName?.startsWith("tuvren-repl-")).toBe(
+      true
+    );
+    expect(result.output).toContain("\"backend\": \"postgres\"");
+  });
+
+  test("rejects rust-grpc backend switching to postgres through the shell", async () => {
+    const shell = createReplShell({
+      backend: "memory",
+      kernelGrpcBaseUrl: "http://127.0.0.1:50051",
+      kernelMode: "rust-grpc",
+      providerMode: "fixture",
+      scenario: "streaming",
+    });
+
+    let actualMessage = "";
+
+    try {
+      await runReplCommand(shell, ".backend postgres tuvren_runtime auto");
     } catch (error: unknown) {
       actualMessage = error instanceof Error ? error.message : String(error);
     }

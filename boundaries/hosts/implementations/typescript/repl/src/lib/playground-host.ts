@@ -15,6 +15,7 @@
  */
 
 import { createMemoryBackend } from "@tuvren/backend-memory";
+import { createPostgresBackend } from "@tuvren/backend-postgres";
 import { createSqliteBackend } from "@tuvren/backend-sqlite";
 import {
   createDriverRegistry,
@@ -178,6 +179,13 @@ function createKernelHarness(
 function createBackend(config: PlaygroundConfig): RuntimeBackend {
   if (config.backend === "memory") {
     return createMemoryBackend();
+  }
+
+  if (config.backend === "postgres") {
+    return createPostgresBackend({
+      database: config.postgresDatabase,
+      schemaName: config.postgresSchemaName,
+    });
   }
 
   if (config.sqlitePath === undefined) {

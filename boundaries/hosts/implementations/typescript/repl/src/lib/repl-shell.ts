@@ -89,7 +89,7 @@ export const REPL_HELP_TEXT = [
   "Unknown leading-dot input is treated as chat text; use .help to verify commands",
   "Paused approvals: 1 approve, 2 reject, 3 edit",
   "Built-in tools: calculator, weather (mock), search, email",
-  ".backend <memory|sqlite> [path|auto]",
+  ".backend <memory|sqlite|postgres> [path|database] [schema|auto]",
   ".thread new                   Create a new active thread",
   ".thread show                  Show the active thread",
   ".branch fork                  Fork the active branch from the current head",
@@ -252,7 +252,10 @@ function readShellStatus(shell: ReplShell): Record<string, unknown> {
     activeTurnPhase: shell.activeTurn?.handle.status().phase,
     backend: shell.config.backend,
     kernelMode: shell.config.kernelMode ?? "typescript-local",
+    postgresDatabase: shell.config.postgresDatabase,
+    postgresSchemaName: shell.config.postgresSchemaName,
     providerMode: shell.config.providerMode,
+    sqlitePath: shell.config.sqlitePath,
   };
 }
 
@@ -262,27 +265,54 @@ function selectBackend(
 ): ReplCommandResult {
   const backend = args[0];
 
-  if (backend !== "memory" && backend !== "sqlite") {
+  if (backend !== "memory" && backend !== "postgres" && backend !== "sqlite") {
     return {
-      output: 'Expected ".backend <memory|sqlite> [path|auto]".',
+      output:
+        'Expected ".backend <memory|sqlite|postgres> [path|database] [schema|auto]".',
     };
   }
 
-  const nextConfig: PlaygroundConfig =
-    backend === "memory"
-      ? {
-          ...shell.config,
-          backend,
-          sqlitePath: undefined,
-        }
-      : {
-          ...shell.config,
-          backend,
-          sqlitePath:
-            readShellTextArgument(args.slice(1)) === "auto"
-              ? join(tmpdir(), `tuvren-repl-${randomUUID()}.sqlite`)
-              : readShellTextArgument(args.slice(1)),
-        };
+  let nextConfig: PlaygroundConfig;
+
+  if (backend === "memory") {
+    nextConfig = {
+      ...shell.config,
+      backend,
+      postgresSchemaName: undefined,
+      sqlitePath: undefined,
+    };
+  } else if (backend === "postgres") {
+    const database = args[1];
+    const rawSchema = readShellTextArgument(args.slice(2));
+
+    if (database === undefined || database.length === 0) {
+      return {
+        output:
+          'PostgreSQL mode requires a database name and optionally a schema or the literal value "auto".',
+      };
+    }
+
+    nextConfig = {
+      ...shell.config,
+      backend,
+      postgresDatabase: database,
+      postgresSchemaName:
+        rawSchema === "auto"
+          ? `tuvren-repl-${randomUUID().replaceAll("-", "_")}`
+          : rawSchema,
+      sqlitePath: undefined,
+    };
+  } else {
+    nextConfig = {
+      ...shell.config,
+      backend,
+      postgresSchemaName: undefined,
+      sqlitePath:
+        readShellTextArgument(args.slice(1)) === "auto"
+          ? join(tmpdir(), `tuvren-repl-${randomUUID()}.sqlite`)
+          : readShellTextArgument(args.slice(1)),
+    };
+  }
 
   if (backend === "sqlite" && nextConfig.sqlitePath === undefined) {
     return {
@@ -304,6 +334,8 @@ function selectBackend(
   return {
     output: formatJson({
       backend: shell.config.backend,
+      postgresDatabase: shell.config.postgresDatabase ?? null,
+      postgresSchemaName: shell.config.postgresSchemaName ?? null,
       sqlitePath: shell.config.sqlitePath ?? null,
     }),
   };

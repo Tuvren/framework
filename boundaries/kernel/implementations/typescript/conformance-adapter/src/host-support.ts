@@ -62,7 +62,7 @@ let canonicalSchemaPromise: Promise<TurnTreeSchema> | undefined;
 
 export async function withConformanceKernel<T>(
   schema: TurnTreeSchema,
-  config: { adapterId: string; backend: "memory" | "sqlite" },
+  config: { adapterId: string; backend: "memory" | "postgres" | "sqlite" },
   execute: (kernel: ReturnType<typeof createRuntimeKernel>) => Promise<T>
 ): Promise<T> {
   const configuredKernel = await createConformanceKernel(schema, config);
@@ -75,7 +75,7 @@ export async function withConformanceKernel<T>(
 }
 
 export async function withConfiguredBackend<T>(
-  config: { adapterId: string; backend: "memory" | "sqlite" },
+  config: { adapterId: string; backend: "memory" | "postgres" | "sqlite" },
   execute: (backend: RuntimeBackend) => Promise<T>
 ): Promise<T> {
   const configuredBackend = await createConfiguredBackend(config);
@@ -280,7 +280,7 @@ export function readString(value: unknown, label: string): string {
 
 async function createConformanceKernel(
   schema: TurnTreeSchema,
-  config: { adapterId: string; backend: "memory" | "sqlite" }
+  config: { adapterId: string; backend: "memory" | "postgres" | "sqlite" }
 ): Promise<{
   cleanup(): Promise<void>;
   kernel: ReturnType<typeof createRuntimeKernel>;
@@ -298,8 +298,28 @@ async function createConformanceKernel(
 
 async function createConfiguredBackend(config: {
   adapterId: string;
-  backend: "memory" | "sqlite";
+  backend: "memory" | "postgres" | "sqlite";
 }): Promise<ConfiguredBackendHandle> {
+  if (config.backend === "postgres") {
+    const postgresBackendModuleUrl = new URL(
+      "../../backend-postgres/dist/index.js",
+      import.meta.url
+    );
+    const { createPostgresBackend } = await import(postgresBackendModuleUrl.href);
+    const schemaName = `${config.adapterId.replaceAll("-", "_")}_${randomUUID().replaceAll("-", "_")}`;
+    return {
+      backend: createPostgresBackend({
+        database: process.env.PGDATABASE ?? "tuvren_runtime",
+        schemaName,
+      }),
+      cleanup: async () => {
+        // The managed devenv Postgres service owns process lifecycle. The
+        // backend itself is intentionally connection-only and the schema is
+        // disposable, so adapter cleanup stays side-effect free here.
+      },
+    };
+  }
+
   if (config.backend === "sqlite") {
     const sqliteBackendModuleUrl = new URL(
       "../../backend-sqlite/dist/index.js",

@@ -1,0 +1,44 @@
+{
+  "adapterId": "typescript-kernel-postgres",
+  "implementationId": "typescript-kernel-postgres",
+  "language": "typescript",
+  "boundary": "kernel",
+  "protocol": {
+    "name": "tuvren.conformance-adapter",
+    "version": "0.1.0",
+    "transport": "json-rpc-2.0-stdio"
+  },
+  "command": [
+    "node",
+    "boundaries/kernel/implementations/typescript/conformance-adapter/dist/host.mjs",
+    "--adapter-id",
+    "typescript-kernel-postgres",
+    "--backend",
+    "postgres",
+    "--capability",
+    "kernel.protocol",
+    "--capability",
+    "kernel.edge-validation",
+    "--capability",
+    "kernel.logical",
+    "--capability",
+    "kernel.run-liveness",
+    "--capability",
+    "kernel.persistence.durable",
+    "--capability",
+    "kernel.restart-recovery"
+  ],
+  "capabilities": [
+    "kernel.protocol",
+    "kernel.edge-validation",
+    "kernel.logical",
+    "kernel.run-liveness",
+    "kernel.persistence.durable",
+    "kernel.restart-recovery"
+  ],
+  "authorityPackets": [
+    "boundaries/kernel/contracts/protocol/spec/authority-packet.json"
+  ],
+  "suiteId": "tuvren.kernel.protocol",
+  "suiteVersion": "0.1.0"
+}

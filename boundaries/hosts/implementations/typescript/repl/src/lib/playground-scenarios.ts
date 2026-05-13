@@ -545,6 +545,7 @@ async function runReloadScenario(
   const projection = await host.project(handle);
   const sourceThread = withHead(thread, projection);
   const supportsReloadPersistence =
+    config.backend === "postgres" ||
     config.backend === "sqlite" ||
     (config.kernelMode ?? "typescript-local") === "rust-grpc";
 

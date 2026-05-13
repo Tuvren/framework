@@ -5,6 +5,15 @@
     toolchainFile = ./rust-toolchain.toml;
   };
 
+  services.postgres = {
+    enable = true;
+    initialDatabases = [
+      {
+        name = "tuvren_runtime";
+      }
+    ];
+  };
+
   packages = [
     pkgs.bun
     pkgs.buf

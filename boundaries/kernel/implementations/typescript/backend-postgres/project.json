@@ -1,0 +1,40 @@
+{
+  "name": "backend-postgres",
+  "$schema": "../../../../../node_modules/nx/schemas/project-schema.json",
+  "root": "boundaries/kernel/implementations/typescript/backend-postgres",
+  "sourceRoot": "boundaries/kernel/implementations/typescript/backend-postgres/src",
+  "projectType": "library",
+  "tags": ["boundary:kernel", "layer:implementation"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["^build"],
+      "options": {
+        "cwd": "boundaries/kernel/implementations/typescript/backend-postgres",
+        "command": "bunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bunx --bun @biomejs/biome check boundaries/kernel/implementations/typescript/backend-postgres"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bash -lc 'devenv up -d postgres && trap \"devenv processes down\" EXIT && devenv shell -- bash -lc \"cd boundaries/kernel/implementations/typescript/backend-postgres && bun test\"'"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["^build"],
+      "options": {
+        "cwd": "boundaries/kernel/implementations/typescript/backend-postgres",
+        "command": "bunx --bun tsc --project tsconfig.lib.json --noEmit --pretty false && bunx --bun tsc --project tsconfig.typecheck.json --noEmit --pretty false"
+      }
+    }
+  }
+}

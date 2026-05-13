@@ -30,7 +30,7 @@ import type {
 } from "@tuvren/runtime";
 import type { TuvrenSseFrame } from "@tuvren/stream-sse";
 
-export type PlaygroundBackendMode = "memory" | "sqlite";
+export type PlaygroundBackendMode = "memory" | "postgres" | "sqlite";
 export type PlaygroundKernelMode = "rust-grpc" | "typescript-local";
 export type PlaygroundProviderMode =
   | "aimock-anthropic"
@@ -59,6 +59,8 @@ export interface PlaygroundConfig {
   kernelGrpcBaseUrl?: string;
   kernelMode?: PlaygroundKernelMode;
   modelId?: string;
+  postgresDatabase?: string;
+  postgresSchemaName?: string;
   providerMode: PlaygroundProviderMode;
   scenario: PlaygroundScenarioName;
   sqlitePath?: string;

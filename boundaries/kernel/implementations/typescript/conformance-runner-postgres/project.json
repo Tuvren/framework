@@ -1,0 +1,31 @@
+{
+  "name": "kernel-typescript-postgres-conformance-runner",
+  "$schema": "../../../../../node_modules/nx/schemas/project-schema.json",
+  "root": "boundaries/kernel/implementations/typescript/conformance-runner-postgres",
+  "projectType": "library",
+  "tags": [
+    "boundary:kernel",
+    "language:typescript",
+    "layer:conformance-runner"
+  ],
+  "targets": {
+    "conformance": {
+      "executor": "nx:run-commands",
+      "dependsOn": [
+        {
+          "projects": [
+            "backend-postgres",
+            "kernel-runtime",
+            "kernel-typescript-conformance-adapter"
+          ],
+          "target": "build",
+          "params": "ignore"
+        }
+      ],
+      "options": {
+        "cwd": ".",
+        "command": "bash -lc 'devenv up -d postgres && trap \"devenv processes down\" EXIT && devenv shell -- bun tools/conformance/runner/run.ts --adapter boundaries/kernel/implementations/typescript/conformance-adapter/adapter-postgres.json'"
+      }
+    }
+  }
+}

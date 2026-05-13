@@ -2,6 +2,7 @@
 
 ## 0. Version History & Changelog
 
+- v0.26.0 - Closed Epic AK in current repo reality by landing `@tuvren/backend-postgres`, wiring PostgreSQL proving-host and conformance lanes through `devenv`, and moving the active critical path fully onto portability-gate closure.
 - v0.25.0 - Closed Epic AJ in current repo reality by landing the serious `@tuvren/repl-host` proving host, wiring named proving-host validation targets into the canonical verification path, and refreshing measured host-proof evidence away from the playground-only product gate.
 - v0.24.0 - Closed Epic AI in current repo reality through a checked-in SDK-surface audit, a curated `@tuvren/runtime` host-facing facade, playground rewiring away from lower-level runtime packages, and fresh host/runtime validation evidence.
 - v0.23.0 - Closed Epic AH by archiving historical constitutional support material under `constitution/archived/`, moving active generated support artifacts to `constitution/support/live/`, and advancing the active critical path to the SDK audit and proving-host work.
@@ -12,8 +13,8 @@
 
 ## 1. Executive Summary & Active Critical Path
 
-- **Total Active Story Points:** 30
-- **Critical Path:** `KRT-AK001 -> KRT-AK002 -> KRT-AK003 -> KRT-AL001 -> KRT-AL002 -> KRT-AL003`
+- **Total Active Story Points:** 14
+- **Critical Path:** `KRT-AL001 -> KRT-AL002 -> KRT-AL003`
 - **Planning Assumptions:** `docs/` remains the timeless semantic authority; the live constitutional authority chain is `constitution/PRD.md`, `constitution/Architecture.md`, `constitution/TechSpec.md`, and `constitution/Tasks.md`; `constitution/support/live/` holds generated support artifacts consumed by docs portability classification or canonical verification without extending that authority chain; historical constitutional support material lives under `constitution/archived/`; the SDK is the main product; the serious REPL CLI is the proving host; canonical stream plus SSE are portable surfaces; AG-UI and the TypeScript AI SDK bridge implementation are the standing implementation-specific exceptions; PostgreSQL lands before Rust; and Rust remains blocked until `product proof gate`, `platform gate`, and `portability gate` all pass.
 
 ### Brownfield Continuity Note
@@ -38,9 +39,8 @@
 
 ### Current Active Scope
 
-- Add PostgreSQL as the next official backend and prove it under strict backend semantics.
 - Close the portability gate across the intended portable runtime surface before Rust resumes.
-- Keep the proving-host `product proof gate` green while platform and portability work proceed.
+- Keep the proving-host `product proof gate` and the PostgreSQL-backed `platform gate` lanes green while portability work proceeds.
 
 ### Future / Deferred Scope
 
@@ -56,6 +56,7 @@
 - Epics A-Q established the baseline TypeScript runtime, ReAct path, provider bridge, stream adapters, playground host, and release-hardening work.
 - Epic AI completed the current host-facing TypeScript package audit/normalization path through [epic-ai-high-level-sdk-surface-audit.md](./archived/spikes/epic-ai-high-level-sdk-surface-audit.md).
 - Epic AJ completed the serious REPL proving-host path, including shared interactive/scenario host wiring, named `proving-host:*` validation targets, Node-backed SQLite reload proof, Rust-kernel interop proof, and refreshed compatibility evidence.
+- Epic AK completed the PostgreSQL platform-gate path by landing `@tuvren/backend-postgres`, wiring REPL PostgreSQL reload proof plus TypeScript PostgreSQL conformance through `devenv`, and integrating those lanes into the canonical verification path.
 - Epics R-AG established the multi-language transition foundation, shared conformance architecture, kernel interop, and the AG hardening subset that remains historical evidence for promoted surfaces.
 - That work remains valuable audit context, but the active path is now TypeScript platform completion and then portability-gate closure.
 
@@ -63,9 +64,7 @@
 
 ```mermaid
 flowchart LR
-  KRTAK001[KRT-AK001 PostgreSQL Design Spike] --> KRTAK002[KRT-AK002 PostgreSQL Implementation]
-  KRTAK002 --> KRTAK003[KRT-AK003 PostgreSQL Proof]
-  KRTAK003 --> KRTAL001[KRT-AL001 Portability Gap Inventory]
+  KRTAL001[KRT-AL001 Portability Gap Inventory]
   KRTAL001 --> KRTAL002[KRT-AL002 Portable Semantics Closure]
   KRTAL002 --> KRTAL003[KRT-AL003 Rust Re-entry Reassessment]
 ```
@@ -207,7 +206,10 @@ And the repo's canonical verification path consumes those proving-host validatio
 
 ### Epic AK — PostgreSQL Product Backend (KRT)
 
+**Status:** Completed in v0.26.0
+
 **KRT-AK001 PostgreSQL Backend Design Spike**
+- **Status:** Completed in v0.26.0
 - **Type:** Spike
 - **Effort:** 3
 - **Dependencies:** `KRT-AJ003`
@@ -223,6 +225,7 @@ And the design identifies any contract or conformance additions required before 
 ```
 
 **KRT-AK002 PostgreSQL Backend Implementation**
+- **Status:** Completed in v0.26.0
 - **Type:** Feature
 - **Effort:** 8
 - **Dependencies:** `KRT-AK001`
@@ -238,6 +241,7 @@ And the backend is executable through the same high-level SDK and proving-host f
 ```
 
 **KRT-AK003 PostgreSQL Proof and Parity Validation**
+- **Status:** Completed in v0.26.0
 - **Type:** Feature
 - **Effort:** 5
 - **Dependencies:** `KRT-AK002`
@@ -307,7 +311,7 @@ And the constitutional docs name the exact evidence and remaining blockers inste
 - Historical constitutional support material no longer behaves like live authority once archived.
 - The serious REPL host proves the SDK through the same host-facing abstractions downstream hosts are expected to use.
 - End-to-end scenario automation exists for the proving host and covers durable reload, approvals, steering, orchestration, extensions, structured output, and persistence flows.
-- `memory` mode and SQLite mode are both explicitly covered where their differing product obligations matter.
+- `memory`, SQLite, and PostgreSQL modes are explicitly covered where their differing product obligations matter.
 - SQLite and PostgreSQL satisfy the same strict kernel-visible semantics expected of first-class backends.
 - Canonical stream semantics and SSE translation are portable runner-owned surfaces; AG-UI remains an explicitly implementation-specific projection.
 - Provider-agnostic semantics remain Tuvren-owned and do not depend on AI SDK bridge shapes to define cross-language truth.

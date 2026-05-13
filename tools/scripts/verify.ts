@@ -50,6 +50,7 @@ export const WORKSPACE_TEST_PROJECTS: readonly string[] = [
   // Keep the kernel testkit in the repo-global test lane so boundary-owned
   // fixture drift cannot hide behind the narrower conformance-runner coverage.
   "kernel-testkit",
+  "backend-postgres",
   "kernel-typescript-conformance-runner",
   "framework-typescript-conformance-runner",
   "providers-typescript-conformance-runner",
@@ -72,6 +73,7 @@ export const WORKSPACE_BUILD_PROJECTS: readonly string[] = [
   "kernel-testkit",
   "backend-memory",
   "backend-sqlite",
+  "backend-postgres",
   "provider-api",
   "providers-testkit",
   "providers-bridge-ai-sdk",
@@ -318,6 +320,10 @@ export const DEFAULT_VERIFICATION_STEPS: readonly VerificationStep[] = [
   {
     command: ["bun", "run", "proving-host:scenario-sqlite"],
     id: "Node-backed proving-host SQLite reload scenario",
+  },
+  {
+    command: ["bun", "run", "proving-host:scenario-postgres"],
+    id: "PostgreSQL-backed proving-host reload scenario",
   },
 ];
 

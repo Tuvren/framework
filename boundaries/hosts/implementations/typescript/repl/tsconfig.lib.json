@@ -23,6 +23,9 @@
       "path": "../../../../kernel/implementations/typescript/backend-memory/tsconfig.lib.json"
     },
     {
+      "path": "../../../../kernel/implementations/typescript/backend-postgres/tsconfig.lib.json"
+    },
+    {
       "path": "../../../../kernel/implementations/typescript/backend-sqlite/tsconfig.lib.json"
     },
     {

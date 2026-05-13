@@ -8,6 +8,9 @@
       "@tuvren/backend-memory": [
         "../../../../kernel/implementations/typescript/backend-memory/src/index.ts"
       ],
+      "@tuvren/backend-postgres": [
+        "../../../../kernel/implementations/typescript/backend-postgres/src/index.ts"
+      ],
       "@tuvren/backend-sqlite": [
         "../../../../kernel/implementations/typescript/backend-sqlite/src/index.ts"
       ],
@@ -35,6 +38,7 @@
     "test/**/*.ts",
     "smoke/**/*.ts",
     "../../../../kernel/implementations/typescript/backend-memory/src/**/*.ts",
+    "../../../../kernel/implementations/typescript/backend-postgres/src/**/*.ts",
     "../../../../kernel/implementations/typescript/backend-sqlite/src/**/*.ts",
     "../../../../framework/implementations/typescript/runtime/src/**/*.ts",
     "../../../../framework/implementations/typescript/stream-core/src/**/*.ts",

@@ -26,7 +26,9 @@ import type {
   PlaygroundScenarioName,
 } from "./playground-types.js";
 
+const AUTO_POSTGRES_SCHEMA_VALUE = "auto";
 const AUTO_SQLITE_PATH_VALUE = "auto";
+const DEFAULT_POSTGRES_DATABASE = "tuvren_runtime";
 export const INVALID_REPL_CONFIG_CODE = "invalid_repl_config";
 export const DEFAULT_GEMINI_PLAYGROUND_MODEL_ID = "gemini-2.5-flash";
 export const AIMOCK_PLAYGROUND_PROVIDER_MODES = [
@@ -40,6 +42,8 @@ const OPTION_KEY_MAP = {
   "kernel-grpc-base-url": "kernelGrpcBaseUrl",
   "kernel-mode": "kernelMode",
   "model-id": "modelId",
+  "postgres-database": "postgresDatabase",
+  "postgres-schema": "postgresSchemaName",
   provider: "provider",
   scenario: "scenario",
   "sqlite-path": "sqlitePath",
@@ -79,6 +83,14 @@ export function loadPlaygroundConfig(
       options.kernelMode ?? readReplEnv(env, "KERNEL_MODE")
     ),
     modelId: normalizeModelId(options.modelId ?? readReplEnv(env, "MODEL_ID")),
+    postgresDatabase: normalizePostgresDatabase(
+      options.postgresDatabase ??
+        readReplEnv(env, "POSTGRES_DATABASE") ??
+        env.PGDATABASE
+    ),
+    postgresSchemaName: normalizePostgresSchemaName(
+      options.postgresSchemaName ?? readReplEnv(env, "POSTGRES_SCHEMA")
+    ),
     providerMode: parseProviderMode(
       options.provider ?? readReplEnv(env, "PROVIDER_MODE")
     ),
@@ -102,6 +114,10 @@ export function loadPlaygroundConfig(
       config.providerMode === "ai-sdk-google"
         ? (config.modelId ?? DEFAULT_GEMINI_PLAYGROUND_MODEL_ID)
         : config.modelId,
+    postgresDatabase:
+      config.backend === "postgres"
+        ? (config.postgresDatabase ?? DEFAULT_POSTGRES_DATABASE)
+        : config.postgresDatabase,
   };
 }
 
@@ -145,6 +161,28 @@ function normalizeModelId(value: string | undefined): string | undefined {
   const normalized = value.trim();
 
   return normalized.length === 0 ? undefined : normalized;
+}
+
+function normalizePostgresDatabase(
+  value: string | undefined
+): string | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  const normalized = value.trim();
+
+  return normalized.length === 0 ? undefined : normalized;
+}
+
+function normalizePostgresSchemaName(
+  value: string | undefined
+): string | undefined {
+  if (value !== AUTO_POSTGRES_SCHEMA_VALUE) {
+    return value;
+  }
+
+  return `tuvren-playground-${randomUUID().replaceAll("-", "_")}`;
 }
 
 function normalizeScenarioValue(value: string | undefined): string | undefined {
@@ -197,6 +235,8 @@ export function readReplEnv(
     | "KERNEL_GRPC_BASE_URL"
     | "KERNEL_MODE"
     | "MODEL_ID"
+    | "POSTGRES_DATABASE"
+    | "POSTGRES_SCHEMA"
     | "PROVIDER_MODE"
     | "SCENARIO"
     | "SQLITE_PATH"
@@ -301,6 +341,7 @@ function parseBackend(value: string | undefined): PlaygroundBackendMode {
 
   switch (normalized) {
     case "memory":
+    case "postgres":
     case "sqlite":
       return normalized;
     default:

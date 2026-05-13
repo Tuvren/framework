@@ -184,6 +184,28 @@
         "@copilotkit/aimock": "1.15.1",
       },
     },
+    "boundaries/hosts/implementations/typescript/repl": {
+      "name": "@tuvren/repl-host",
+      "version": "0.0.0",
+      "dependencies": {
+        "@ag-ui/core": "0.0.52",
+        "@ai-sdk/anthropic": "3.0.66",
+        "@ai-sdk/google": "3.0.64",
+        "@ai-sdk/openai": "3.0.53",
+        "@ai-sdk/provider": "3.0.8",
+        "@tuvren/backend-memory": "workspace:*",
+        "@tuvren/backend-postgres": "workspace:*",
+        "@tuvren/backend-sqlite": "workspace:*",
+        "@tuvren/provider-bridge-ai-sdk": "workspace:*",
+        "@tuvren/runtime": "workspace:*",
+        "@tuvren/stream-agui": "workspace:*",
+        "@tuvren/stream-core": "workspace:*",
+        "@tuvren/stream-sse": "workspace:*",
+      },
+      "devDependencies": {
+        "@copilotkit/aimock": "1.15.1",
+      },
+    },
     "boundaries/kernel/contracts/protocol/implementations/typescript": {
       "name": "@tuvren/kernel-protocol",
       "version": "0.0.0",
@@ -198,6 +220,18 @@
       "dependencies": {
         "@tuvren/core-types": "workspace:*",
         "@tuvren/kernel-protocol": "workspace:*",
+      },
+      "devDependencies": {
+        "@tuvren/kernel-testkit": "workspace:*",
+      },
+    },
+    "boundaries/kernel/implementations/typescript/backend-postgres": {
+      "name": "@tuvren/backend-postgres",
+      "version": "0.0.0",
+      "dependencies": {
+        "@tuvren/core-types": "workspace:*",
+        "@tuvren/kernel-protocol": "workspace:*",
+        "postgres": "3.4.9",
       },
       "devDependencies": {
         "@tuvren/kernel-testkit": "workspace:*",
@@ -842,6 +876,8 @@
 
     "@tuvren/backend-memory": ["@tuvren/backend-memory@workspace:boundaries/kernel/implementations/typescript/backend-memory"],
 
+    "@tuvren/backend-postgres": ["@tuvren/backend-postgres@workspace:boundaries/kernel/implementations/typescript/backend-postgres"],
+
     "@tuvren/backend-sqlite": ["@tuvren/backend-sqlite@workspace:boundaries/kernel/implementations/typescript/backend-sqlite"],
 
     "@tuvren/core-types": ["@tuvren/core-types@workspace:boundaries/shared/contracts/core-types/implementations/typescript"],
@@ -873,6 +909,8 @@
     "@tuvren/provider-testkit": ["@tuvren/provider-testkit@workspace:boundaries/providers/implementations/typescript/testkit"],
 
     "@tuvren/providers-typescript-conformance-runner": ["@tuvren/providers-typescript-conformance-runner@workspace:boundaries/providers/implementations/typescript/conformance-runner"],
+
+    "@tuvren/repl-host": ["@tuvren/repl-host@workspace:boundaries/hosts/implementations/typescript/repl"],
 
     "@tuvren/runtime": ["@tuvren/runtime@workspace:boundaries/framework/implementations/typescript/runtime"],
 
@@ -1349,6 +1387,8 @@
     "pkg-types": ["pkg-types@1.3.1", "", { "dependencies": { "confbox": "^0.1.8", "mlly": "^1.7.4", "pathe": "^2.0.1" } }, "sha512-/Jm5M4RvtBFVkKWRu2BLUTNP8/M2a+UwuAX+ae4770q1qVGtfjG+WTCupoZixokjmHiry8uI+dlY8KXYV5HVVQ=="],
 
     "postcss-load-config": ["postcss-load-config@6.0.1", "", { "dependencies": { "lilconfig": "^3.1.1" }, "peerDependencies": { "jiti": ">=1.21.0", "postcss": ">=8.0.9", "tsx": "^4.8.1", "yaml": "^2.4.2" }, "optionalPeers": ["jiti", "postcss", "tsx", "yaml"] }, "sha512-oPtTM4oerL+UXmx+93ytZVN82RrlY/wPUV8IeDxFrzIjXOLF1pN+EmKPLbubvKHT2HC20xXsCAH2Z+CKV6Oz/g=="],
+
+    "postgres": ["postgres@3.4.9", "", {}, "sha512-GD3qdB0x1z9xgFI6cdRD6xu2Sp2WCOEoe3mtnyB5Ee0XrrL5Pe+e4CCnJrRMnL1zYtRDZmQQVbvOttLnKDLnaw=="],
 
     "prebuild-install": ["prebuild-install@7.1.3", "", { "dependencies": { "detect-libc": "^2.0.0", "expand-template": "^2.0.3", "github-from-package": "0.0.0", "minimist": "^1.2.3", "mkdirp-classic": "^0.5.3", "napi-build-utils": "^2.0.0", "node-abi": "^3.3.0", "pump": "^3.0.0", "rc": "^1.2.7", "simple-get": "^4.0.0", "tar-fs": "^2.0.0", "tunnel-agent": "^0.6.0" }, "bin": { "prebuild-install": "bin.js" } }, "sha512-8Mf2cbV7x1cXPUILADGI3wuhfqWvtiLA1iclTDbFRZkgRQS0NqsPZphna9V+HyTEadheuPmjaJMsbzKQFOzLug=="],
 

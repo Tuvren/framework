@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import { randomUUID } from "node:crypto";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -51,7 +52,7 @@ import {
 
 interface KernelAdapterConfig {
   adapterId: string;
-  backend: "memory" | "sqlite";
+  backend: "memory" | "postgres" | "sqlite";
   capabilities: string[];
 }
 
@@ -141,8 +142,8 @@ function readAdapterConfig(args: readonly string[]): KernelAdapterConfig {
 
     if (arg === "--backend") {
       const value = args[index + 1];
-      if (value !== "memory" && value !== "sqlite") {
-        throw new Error("--backend must be memory or sqlite");
+      if (value !== "memory" && value !== "postgres" && value !== "sqlite") {
+        throw new Error("--backend must be memory, postgres, or sqlite");
       }
       backend = value;
       index += 1;
@@ -170,7 +171,7 @@ function readAdapterConfig(args: readonly string[]): KernelAdapterConfig {
 function defaultCapabilities(
   backend: KernelAdapterConfig["backend"]
 ): string[] {
-  if (backend === "sqlite") {
+  if (backend === "sqlite" || backend === "postgres") {
     return [
       "kernel.protocol",
       "kernel.edge-validation",
@@ -951,6 +952,142 @@ async function runRestartRecovery(): Promise<Record<string, unknown>> {
   const metadataPath = join(tempDirectory, "restart-metadata.json");
 
   try {
+    if (ADAPTER_CONFIG.backend === "postgres") {
+      const { createPostgresBackend } = await import(
+        new URL("../../backend-postgres/dist/index.js", import.meta.url).href
+      );
+      const restartSchema: TurnTreeSchema = {
+        incorporationRules: [{ objectType: "message", targetPath: "messages" }],
+        paths: [
+          { collection: "ordered", path: "messages" },
+          { collection: "single", path: "context.manifest" },
+        ],
+        schemaId: "schema_restart_recovery",
+      };
+      const schemaName = `restart_${randomUUID().replaceAll("-", "_")}`;
+      const backend = createPostgresBackend({
+        database: process.env.PGDATABASE ?? "tuvren_runtime",
+        schemaName,
+      });
+      const firstKernel = createRuntimeKernel({ backend });
+      const schemaId = await firstKernel.schema.register(restartSchema);
+      const thread = await firstKernel.thread.create(
+        "thread_restart",
+        schemaId,
+        "branch_restart"
+      );
+      const turn = await firstKernel.turn.create(
+        "turn_restart",
+        thread.threadId,
+        thread.branchId,
+        null,
+        thread.rootTurnNodeHash
+      );
+      await firstKernel.run.create(
+        "run_restart",
+        turn.turnId,
+        thread.branchId,
+        schemaId,
+        thread.rootTurnNodeHash,
+        [
+          { deterministic: false, id: "model_call", sideEffects: false },
+          { deterministic: false, id: "tool_execution", sideEffects: true },
+        ]
+      );
+      await firstKernel.run.beginStep("run_restart", "model_call");
+      const committed = await firstKernel.staging.stage(
+        "run_restart",
+        new TextEncoder().encode("committed assistant output"),
+        "message_committed",
+        "message",
+        "completed"
+      );
+      const checkpoint = await firstKernel.run.completeStep(
+        "run_restart",
+        "model_call"
+      );
+
+      if (checkpoint.turnNodeHash === undefined) {
+        throw new Error(
+          "expected checkpoint hash for postgres restart recovery"
+        );
+      }
+
+      await firstKernel.run.beginStep("run_restart", "tool_execution");
+      const uncommitted = await firstKernel.staging.stage(
+        "run_restart",
+        new TextEncoder().encode("uncommitted tool output"),
+        "message_uncommitted",
+        "message",
+        "completed"
+      );
+
+      const reopenedKernel = createRuntimeKernel({
+        backend: createPostgresBackend({
+          database: process.env.PGDATABASE ?? "tuvren_runtime",
+          schemaName,
+        }),
+      });
+      const branch = await reopenedKernel.branch.get(thread.branchId);
+
+      if (branch === null) {
+        throw new Error(`expected branch "${thread.branchId}" after reopen`);
+      }
+
+      const committedNode = await reopenedKernel.node.get(
+        checkpoint.turnNodeHash
+      );
+
+      if (committedNode === null) {
+        throw new Error(
+          `expected committed turn node "${checkpoint.turnNodeHash}" after reopen`
+        );
+      }
+
+      const manifest = await reopenedKernel.tree.manifest(
+        committedNode.turnTreeHash
+      );
+      const committedMessages = Array.isArray(manifest.messages)
+        ? manifest.messages
+        : [];
+      const recovery = await reopenedKernel.run.recover("run_restart");
+      const walkBackHashes: string[] = [];
+
+      for await (const turnNode of reopenedKernel.node.walkBack(
+        branch.headTurnNodeHash
+      )) {
+        walkBackHashes.push(turnNode.hash);
+
+        if (walkBackHashes.length === 2) {
+          break;
+        }
+      }
+
+      return createProjection({
+        restartRecovery: {
+          checkpointLineageSurvivesRestart:
+            committedNode.previousTurnNodeHash === thread.rootTurnNodeHash &&
+            walkBackHashes[0] === checkpoint.turnNodeHash &&
+            walkBackHashes[1] === thread.rootTurnNodeHash,
+          committedMessageCount: committedMessages.length,
+          committedStateVisible:
+            branch.headTurnNodeHash === checkpoint.turnNodeHash &&
+            committedMessages.length === 1 &&
+            committedMessages[0] === committed.objectHash,
+          recoveredLastCompletedStepId: recovery.lastCompletedStepId,
+          recoveredUncommittedCount: recovery.uncommittedStagedResults.length,
+          recoveryHeadMatchesCommittedCheckpoint:
+            recovery.lastTurnNodeHash === checkpoint.turnNodeHash,
+          uncommittedNotPromoted:
+            !committedMessages.includes(uncommitted.objectHash) &&
+            recovery.uncommittedStagedResults.some(
+              (stagedResult) =>
+                stagedResult.objectHash === uncommitted.objectHash
+            ),
+        },
+      });
+    }
+
     await runRestartRecoveryPhase("write", databasePath, metadataPath);
     const reopened = await runRestartRecoveryPhase(
       "read",
