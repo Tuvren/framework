@@ -490,17 +490,6 @@ async function startTurn(
     thread,
   };
 
-  if (onCanonicalEvent !== undefined && shouldAutoAwaitTurnStart(input)) {
-    const activeTurn = shell.activeTurn;
-
-    if (activeTurn === undefined) {
-      return { output: "No active turn is currently running." };
-    }
-
-    const projection = await activeTurn.projectionPromise;
-    return finalizeInteractiveTurn(shell, activeTurn, projection);
-  }
-
   return {
     output: formatJson({
       branchId: thread.branchId,
@@ -964,14 +953,6 @@ function isScenarioName(value: string): value is PlaygroundScenarioName {
 
 function isTurnScenarioName(value: string): value is PlaygroundScenarioName {
   return TURN_SCENARIO_NAMES.has(value as PlaygroundScenarioName);
-}
-
-function shouldAutoAwaitTurnStart(value: string): boolean {
-  if (!isTurnScenarioName(value)) {
-    return false;
-  }
-
-  return value !== "cancel" && value !== "steering";
 }
 
 function readUnsupportedTurnScenarioMessage(value: string): string | undefined {

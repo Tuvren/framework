@@ -908,6 +908,35 @@ describe("repl host scenarios", () => {
     expect(shell.activeTurn).toBe(undefined);
   });
 
+  test("keeps .turn start awaitable while canonical events are observed", async () => {
+    const shell = createReplShell({
+      backend: "memory",
+      providerMode: "fixture",
+      scenario: "streaming",
+    });
+    const eventTypes: string[] = [];
+
+    await runReplCommand(shell, ".thread new");
+    const startResult = await runReplCommand(shell, ".turn start streaming", {
+      onCanonicalEvent(event) {
+        eventTypes.push(event.type);
+      },
+    });
+
+    expect(startResult.output).toContain('"threadId"');
+    expect(shell.activeTurn).not.toBe(undefined);
+
+    const awaitResult = await runReplCommand(shell, ".turn await", {
+      onCanonicalEvent(event) {
+        eventTypes.push(event.type);
+      },
+    });
+
+    expect(awaitResult.output).toBe(undefined);
+    expect(shell.activeTurn).toBe(undefined);
+    expect(eventTypes).toContain("text.delta");
+  });
+
   test("applies env-driven system prompt to freeform turns", async () => {
     const host = createPlaygroundHost({
       backend: "memory",
@@ -1122,7 +1151,16 @@ describe("repl host scenarios", () => {
       },
     });
 
-    expect(startResult.output).toContain("Turn paused for approval.");
+    expect(startResult.output).toContain('"threadId"');
+    expect(shell.activeTurn).not.toBe(undefined);
+
+    const awaitResult = await runReplInput(shell, ".turn await", {
+      onCanonicalEvent(event) {
+        eventTypes.push(event.type);
+      },
+    });
+
+    expect(awaitResult.output).toContain("Turn paused for approval.");
     expect(shell.activeTurn?.handle.status().phase).toBe("paused");
 
     const approveResult = await runReplInput(shell, "1", {
