@@ -2,6 +2,7 @@
 
 ## 0. Version History & Changelog
 
+- v0.27.0 - Closed Epic AL in current repo reality by promoting the remaining intended portable surface (tool contracts, kernel CDDL registration, SSE projection, kernel and framework interop packets, telemetry semantic conventions, TechSpec verification-path enum alignment, portability-gate canonical replacement of the AF gap plan freshness proxy), landing the KRT-AL003 re-entry reassessment under `constitution/support/live/epic-al-rust-re-entry-gate-reassessment.md`, and stating plainly that the `product proof gate`, `platform gate`, and `portability gate` now all pass under fresh canonical-verification-path evidence. Rust framework/product work remains blocked until a new epic explicitly reopens that scope.
 - v0.26.0 - Closed Epic AK in current repo reality by landing `@tuvren/backend-postgres`, wiring PostgreSQL proving-host and conformance lanes through `devenv`, and moving the active critical path fully onto portability-gate closure.
 - v0.25.0 - Closed Epic AJ in current repo reality by landing the serious `@tuvren/repl-host` proving host, wiring named proving-host validation targets into the canonical verification path, and refreshing measured host-proof evidence away from the playground-only product gate.
 - v0.24.0 - Closed Epic AI in current repo reality through a checked-in SDK-surface audit, a curated `@tuvren/runtime` host-facing facade, playground rewiring away from lower-level runtime packages, and fresh host/runtime validation evidence.
@@ -13,22 +14,23 @@
 
 ## 1. Executive Summary & Active Critical Path
 
-- **Total Active Story Points:** 14
-- **Critical Path:** `KRT-AL001 -> KRT-AL002 -> KRT-AL003`
-- **Planning Assumptions:** `docs/` remains the timeless semantic authority; the live constitutional authority chain is `constitution/PRD.md`, `constitution/Architecture.md`, `constitution/TechSpec.md`, and `constitution/Tasks.md`; `constitution/support/live/` holds generated support artifacts consumed by docs portability classification or canonical verification without extending that authority chain; historical constitutional support material lives under `constitution/archived/`; the SDK is the main product; the serious REPL CLI is the proving host; canonical stream plus SSE are portable surfaces; AG-UI and the TypeScript AI SDK bridge implementation are the standing implementation-specific exceptions; PostgreSQL lands before Rust; and Rust remains blocked until `product proof gate`, `platform gate`, and `portability gate` all pass.
+- **Total Active Story Points:** 0
+- **Critical Path:** none. Epic AL closed in v0.27.0; no active forward path is scheduled.
+- **Planning Assumptions:** `docs/` remains the timeless semantic authority; the live constitutional authority chain is `constitution/PRD.md`, `constitution/Architecture.md`, `constitution/TechSpec.md`, and `constitution/Tasks.md`; `constitution/support/live/` holds generated support artifacts consumed by docs portability classification or canonical verification without extending that authority chain; historical constitutional support material lives under `constitution/archived/`; the SDK is the main product; the serious REPL CLI is the proving host; canonical stream plus SSE are portable surfaces; AG-UI and the TypeScript AI SDK bridge implementation are the standing implementation-specific exceptions; PostgreSQL is the second first-class backend alongside SQLite and memory; the `product proof gate`, `platform gate`, and `portability gate` now all pass under fresh evidence; Rust framework/product work remains blocked until a new epic explicitly reopens that scope, names the line, preserves the staged gates as prerequisites under fresh evidence, and adds only the line-specific evidence that goes beyond those gates.
 
 ### Brownfield Continuity Note
 
 - Epics A-AG remain historical context, not the active forward-execution path.
-- The current repo now proves the host-facing SDK through the serious REPL host and its named proving-host validation lanes, while the remaining active plan targets platform-gate and portability-gate closure rather than maintenance of the AG subset alone.
-- Historical closure inventories now live under `constitution/archived/` for audit only, and they do not define current execution scope.
+- The current repo proves the host-facing SDK through the serious REPL host and its named proving-host validation lanes, exercises PostgreSQL as a first-class backend across kernel conformance and proving-host reload, and closes the portability gate through `tools/scripts/portability-gate.ts` plus packet/plan/runner-owned coverage of the remaining intended portable surface.
+- Historical closure inventories live under `constitution/archived/` for audit only, and they do not define current execution scope.
 
 ### Sequential Scope Rule
 
-- No Rust framework or Rust product-line expansion is active in this plan.
-- No first-class Tuvren provider packages are active in this plan.
+- No Rust framework or Rust product-line expansion is active in this plan. Rust framework/product activation requires a new epic that explicitly reopens that scope and re-satisfies the staged gates under fresh evidence.
+- No first-class Tuvren provider packages are active in this plan beyond the TypeScript AI SDK bridge.
 - No AG-UI portability work is active in this plan beyond preserving correct TypeScript projection behavior.
-- Public package publication remains deferred until the proving-host build and lived SDK curation clarify the stable high-level surface.
+- No additional host protocols beyond the canonical stream and SSE surfaces are active in this plan.
+- Public package publication remains deferred until the lived host-facing SDK experience matures further beyond the proving-host build.
 
 ### Planning Heuristic
 
@@ -39,16 +41,16 @@
 
 ### Current Active Scope
 
-- Close the portability gate across the intended portable runtime surface before Rust resumes.
-- Keep the proving-host `product proof gate` and the PostgreSQL-backed `platform gate` lanes green while portability work proceeds.
+- No active forward path is scheduled. Epic AL closed the portability gate in v0.27.0, the `product proof gate` and `platform gate` lanes are green in the canonical verification path, and any further work that would reopen Rust framework/product, add a Tuvren-native provider line, expand provider families, add a new host protocol, add a new official backend, or add a new driver family requires a fresh epic decision that explicitly reopens that scope.
 
 ### Future / Deferred Scope
 
-- Rust framework and Rust product-line work
-- First-class Tuvren provider packages and provider-family expansion beyond the TypeScript AI SDK bridge
-- AG-UI as a required cross-language portable surface
-- Additional host protocols beyond the current canonical stream and SSE surfaces
-- Public package publication and final long-lived package curation after the proving-host experience stabilizes
+- Rust framework and Rust product-line work — blocked until a new epic explicitly reopens that scope under the staged gates that Epic AL just satisfied.
+- First-class Tuvren provider packages and provider-family expansion beyond the TypeScript AI SDK bridge.
+- AG-UI as a required cross-language portable surface (currently a standing exception).
+- Additional host protocols beyond the canonical stream and SSE surfaces.
+- Additional official backends beyond memory, SQLite, and PostgreSQL.
+- Public package publication and final long-lived package curation after the proving-host experience matures further.
 
 ### Archived or Already Completed Scope
 
@@ -57,8 +59,9 @@
 - Epic AI completed the current host-facing TypeScript package audit/normalization path through [epic-ai-high-level-sdk-surface-audit.md](./archived/spikes/epic-ai-high-level-sdk-surface-audit.md).
 - Epic AJ completed the serious REPL proving-host path, including shared interactive/scenario host wiring, named `proving-host:*` validation targets, Node-backed SQLite reload proof, Rust-kernel interop proof, and refreshed compatibility evidence.
 - Epic AK completed the PostgreSQL platform-gate path by landing `@tuvren/backend-postgres`, wiring REPL PostgreSQL reload proof plus TypeScript PostgreSQL conformance through `devenv`, and integrating those lanes into the canonical verification path.
+- Epic AL closed the portability gate by promoting tool contracts, kernel CDDL registration, SSE projection, kernel and framework interop packets, and telemetry semantic conventions into packet/plan/runner-owned authority, by landing `tools/scripts/portability-gate.ts` as the canonical portability proxy in the verify lane, and by recording the staged-gate re-entry verdict in `constitution/support/live/epic-al-rust-re-entry-gate-reassessment.md`.
 - Epics R-AG established the multi-language transition foundation, shared conformance architecture, kernel interop, and the AG hardening subset that remains historical evidence for promoted surfaces.
-- That work remains valuable audit context, but the active path is now TypeScript platform completion and then portability-gate closure.
+- That work remains valuable audit context. No active forward path is scheduled.
 
 ## 3. Build Order (Mermaid)
 
@@ -258,7 +261,10 @@ And PostgreSQL passes strict verification lanes rather than being accepted as a 
 
 ### Epic AL — Portability Gate Closure (KRT)
 
+**Status:** Completed in v0.27.0
+
 **KRT-AL001 Portable-Surface Conformance Gap Inventory**
+- **Status:** Completed in v0.27.0
 - **Type:** Spike
 - **Effort:** 3
 - **Dependencies:** `KRT-AK003`
@@ -276,6 +282,7 @@ And explanatory documentation and ecosystem-only adapter notes are not allowed t
 ```
 
 **KRT-AL002 Portable Semantics Promotion Closure**
+- **Status:** Completed in v0.27.0
 - **Type:** Feature
 - **Effort:** 8
 - **Dependencies:** `KRT-AL001`
@@ -292,6 +299,7 @@ And `package.json` entry points and `tools/scripts/verify.ts` treat the promoted
 ```
 
 **KRT-AL003 Rust Re-entry Gate Reassessment**
+- **Status:** Completed in v0.27.0
 - **Type:** Chore
 - **Effort:** 3
 - **Dependencies:** `KRT-AL002`

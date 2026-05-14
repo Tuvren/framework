@@ -187,72 +187,95 @@ function checkFreshnessDeclarations(
   return failures;
 }
 
+interface FreshnessCheckEntry {
+  artifact: string;
+  artifactPath: string;
+}
+
+function groupFreshnessChecksByCommand(
+  manifest: AuthorityPacketManifest
+): Map<string, FreshnessCheckEntry[]> {
+  // One regenerate command may produce multiple artifacts. Group freshness
+  // checks by command so we snapshot every relevant artifact before running
+  // the command once, then compare each artifact's after-state. Running the
+  // command separately per artifact would mask drift on every artifact past
+  // the first because the command itself updates them all in lockstep.
+  const checksByCommand = new Map<string, FreshnessCheckEntry[]>();
+
+  for (const check of manifest.freshnessChecks ?? []) {
+    const artifactPath = resolve(REPO_ROOT, check.artifact);
+
+    if (!existsSync(artifactPath)) {
+      continue;
+    }
+
+    const entry: FreshnessCheckEntry = {
+      artifact: check.artifact,
+      artifactPath,
+    };
+    const existing = checksByCommand.get(check.regenerateCommand);
+
+    if (existing === undefined) {
+      checksByCommand.set(check.regenerateCommand, [entry]);
+    } else {
+      existing.push(entry);
+    }
+  }
+
+  return checksByCommand;
+}
+
+async function checkFreshnessForCommand(
+  packetId: string,
+  command: string,
+  checks: readonly FreshnessCheckEntry[]
+): Promise<GuardrailFailure[]> {
+  const failures: GuardrailFailure[] = [];
+  const beforeSnapshots = new Map<string, FileSnapshot[]>();
+
+  for (const check of checks) {
+    beforeSnapshots.set(check.artifact, await snapshotPath(check.artifactPath));
+  }
+
+  const result = await runRegenerateCommand(command);
+
+  if (!result.ok) {
+    for (const check of checks) {
+      failures.push({
+        check: "freshness-check",
+        message: `${packetId} regenerate command failed for ${check.artifact}: ${result.message}`,
+      });
+    }
+    return failures;
+  }
+
+  for (const check of checks) {
+    const after = await snapshotPath(check.artifactPath);
+    const before = beforeSnapshots.get(check.artifact) ?? [];
+
+    if (!snapshotsAreEqual(before, after)) {
+      failures.push({
+        check: "freshness-check",
+        message: `${packetId} generated artifact drifted after ${command}: ${check.artifact}`,
+      });
+    }
+  }
+
+  return failures;
+}
+
 async function checkFreshnessDrift(
   manifests: readonly AuthorityPacketManifest[]
 ): Promise<GuardrailFailure[]> {
   const failures: GuardrailFailure[] = [];
 
   for (const manifest of manifests) {
-    // One regenerate command may produce multiple artifacts. Group freshness
-    // checks by command so we snapshot every relevant artifact before running
-    // the command once, then compare each artifact's after-state. Running the
-    // command separately per artifact would mask drift on every artifact past
-    // the first because the command itself updates them all in lockstep.
-    const checksByCommand = new Map<
-      string,
-      Array<{ artifact: string; artifactPath: string }>
-    >();
-
-    for (const check of manifest.freshnessChecks ?? []) {
-      const artifactPath = resolve(REPO_ROOT, check.artifact);
-
-      if (!existsSync(artifactPath)) {
-        continue;
-      }
-
-      const existing = checksByCommand.get(check.regenerateCommand);
-      const entry = { artifact: check.artifact, artifactPath };
-
-      if (existing === undefined) {
-        checksByCommand.set(check.regenerateCommand, [entry]);
-      } else {
-        existing.push(entry);
-      }
-    }
+    const checksByCommand = groupFreshnessChecksByCommand(manifest);
 
     for (const [command, checks] of checksByCommand.entries()) {
-      const beforeSnapshots = new Map<string, FileSnapshot[]>();
-
-      for (const check of checks) {
-        beforeSnapshots.set(
-          check.artifact,
-          await snapshotPath(check.artifactPath)
-        );
-      }
-
-      const result = await runRegenerateCommand(command);
-
-      if (!result.ok) {
-        for (const check of checks) {
-          failures.push({
-            check: "freshness-check",
-            message: `${manifest.packetId} regenerate command failed for ${check.artifact}: ${result.message}`,
-          });
-        }
-        continue;
-      }
-
-      for (const check of checks) {
-        const after = await snapshotPath(check.artifactPath);
-        const before = beforeSnapshots.get(check.artifact) ?? [];
-
-        if (!snapshotsAreEqual(before, after)) {
-          failures.push({
-            check: "freshness-check",
-            message: `${manifest.packetId} generated artifact drifted after ${command}: ${check.artifact}`,
-          });
-        }
-      }
+      failures.push(
+        ...(await checkFreshnessForCommand(manifest.packetId, command, checks))
+      );
     }
   }
 

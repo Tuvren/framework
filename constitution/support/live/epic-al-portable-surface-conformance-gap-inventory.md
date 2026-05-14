@@ -481,8 +481,28 @@ candidates for future tickets:
   future epics.
 - The interop-smoke target's pre-existing E2BIG environmental sensitivity
   (esbuild service argument-list limit when many tsup invocations chain) is
-  unrelated to AL002 and remains a maintenance follow-up in
-  `tools/scripts/repl-host-interop-smoke.ts`.
+  unrelated to AL002 and was resolved during KRT-AL003 by rerouting the
+  smoke's pre-build through `bun run nx run host-repl:build --skipNxCache`
+  so Nx isolates each per-package tsup invocation. See the KRT-AL003
+  reassessment record for the full follow-up resolution log.
+
+## 9c. KRT-AL003 closure status
+
+KRT-AL003 reassessed the staged gates against fresh canonical-lane evidence
+and recorded the verdict in
+`constitution/support/live/epic-al-rust-re-entry-gate-reassessment.md`. All
+three gates pass under fresh evidence: the `portability gate` through this
+inventory's promoted authority plus `tools/scripts/portability-gate.ts`; the
+`product proof gate` through the `proving-host:interop-smoke`,
+`proving-host:scenario-sqlite`, and `proving-host:scenario-postgres` lanes;
+the `platform gate` through PostgreSQL backend tests, PostgreSQL kernel
+conformance, and the PostgreSQL proving-host reload scenario. Rust
+framework/product work remains blocked until a new epic explicitly reopens
+that scope. Resolved during AL003: the interop-smoke E2BIG environmental
+sensitivity (now delegated to Nx), latent post-AK lint/typecheck issues
+under `backend-postgres` and the kernel TypeScript conformance adapter, and
+a `devenv up -d postgres` readiness race in the backend-postgres test
+helper.
 
 ## 10. Hand-off to KRT-AL002
 

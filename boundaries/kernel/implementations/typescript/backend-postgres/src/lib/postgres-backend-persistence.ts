@@ -30,11 +30,8 @@ import {
   assertStoredTurnTreePath,
   decodeDeterministicKernelRecord,
   encodeDeterministicKernelRecord,
-  type StoredBranch,
   type StoredObject,
-  type StoredObserveAnnotation,
   type StoredOrderedPathChunk,
-  type StoredRun,
   type StoredSchema,
   type StoredStagedResult,
   type StoredThread,
@@ -91,22 +88,6 @@ interface PersistedSnapshotRow {
   snapshot_cbor: Uint8Array;
 }
 
-interface PostgresBackendSnapshot extends Record<string, unknown> {
-  branches: StoredBranch[];
-  objects: StoredObject[];
-  observeAnnotations: StoredObserveAnnotation[];
-  orderedPathChunks: StoredOrderedPathChunk[];
-  runs: StoredRun[];
-  schemas: StoredSchema[];
-  stagedResults: StoredStagedResult[];
-  threads: StoredThread[];
-  turnNodes: StoredTurnNode[];
-  turnTreePaths: StoredTurnTreePath[];
-  turnTrees: StoredTurnTree[];
-  turns: StoredTurn[];
-  version: number;
-}
-
 export function createPostgresClient(
   options: PostgresBackendPersistenceOptions
 ): Sql {
@@ -130,9 +111,7 @@ export function createPostgresClient(
   return postgres(configuration);
 }
 
-export function normalizeSchemaName(
-  schemaName: string | undefined
-): string {
+export function normalizeSchemaName(schemaName: string | undefined): string {
   const normalized = schemaName ?? "public";
 
   if (!VALID_SCHEMA_NAME_PATTERN.test(normalized)) {
@@ -151,12 +130,20 @@ export async function ensurePostgresSchemaInitialized(
   schemaName: string,
   now: () => EpochMs
 ): Promise<void> {
-  const migrationsTable = qualifyIdentifier(schemaName, "backend_postgres_migrations");
-  const snapshotsTable = qualifyIdentifier(schemaName, "backend_postgres_snapshots");
+  const migrationsTable = qualifyIdentifier(
+    schemaName,
+    "backend_postgres_migrations"
+  );
+  const snapshotsTable = qualifyIdentifier(
+    schemaName,
+    "backend_postgres_snapshots"
+  );
   const initialSnapshotBytes = encodeSnapshot(createEmptyState());
 
   await sql.begin(async (tx) => {
-    await tx.unsafe(`CREATE SCHEMA IF NOT EXISTS ${quoteIdentifier(schemaName)}`);
+    await tx.unsafe(
+      `CREATE SCHEMA IF NOT EXISTS ${quoteIdentifier(schemaName)}`
+    );
     await tx.unsafe(
       `CREATE TABLE IF NOT EXISTS ${migrationsTable} (
         name TEXT PRIMARY KEY,
@@ -191,10 +178,13 @@ export async function ensurePostgresSchemaInitialized(
 }
 
 export async function loadPersistedStateForUpdate(
-  sql: Sql | TransactionSql<{}>,
+  sql: Sql | TransactionSql<Record<string, never>>,
   schemaName: string
 ): Promise<BackendState> {
-  const snapshotsTable = qualifyIdentifier(schemaName, "backend_postgres_snapshots");
+  const snapshotsTable = qualifyIdentifier(
+    schemaName,
+    "backend_postgres_snapshots"
+  );
   const rows = await sql.unsafe<PersistedSnapshotRow[]>(
     `SELECT schema_version, snapshot_cbor
        FROM ${snapshotsTable}
@@ -215,7 +205,10 @@ export async function loadPersistedStateForUpdate(
     throw persistenceError(
       "postgres backend snapshot version is unsupported",
       "postgres_backend_snapshot_version_unsupported",
-      { actualVersion: row.schema_version, expectedVersion: CURRENT_SNAPSHOT_VERSION }
+      {
+        actualVersion: row.schema_version,
+        expectedVersion: CURRENT_SNAPSHOT_VERSION,
+      }
     );
   }
 
@@ -223,12 +216,15 @@ export async function loadPersistedStateForUpdate(
 }
 
 export async function persistStateSnapshot(
-  sql: Sql | TransactionSql<{}>,
+  sql: Sql | TransactionSql<Record<string, never>>,
   schemaName: string,
   state: BackendState,
   updatedAtMs: EpochMs
 ): Promise<void> {
-  const snapshotsTable = qualifyIdentifier(schemaName, "backend_postgres_snapshots");
+  const snapshotsTable = qualifyIdentifier(
+    schemaName,
+    "backend_postgres_snapshots"
+  );
   const snapshotBytes = encodeSnapshot(state);
 
   await sql.unsafe(
@@ -259,13 +255,14 @@ function encodeSnapshot(state: BackendState): Uint8Array {
       state.orderedPathChunks.values(),
       cloneStoredOrderedPathChunk
     ).sort(compareStoredOrderedPathChunk),
-    runs: Array.from(state.runs.values(), cloneStoredRun).sort(compareStoredRun),
+    runs: Array.from(state.runs.values(), cloneStoredRun).sort(
+      compareStoredRun
+    ),
     schemas: Array.from(state.schemas.values(), cloneStoredSchema).sort(
       compareStoredSchema
     ),
-    stagedResults: Array.from(
-      state.stagedResults.values(),
-      (records) => Array.from(records.values(), cloneStoredStagedResult)
+    stagedResults: Array.from(state.stagedResults.values(), (records) =>
+      Array.from(records.values(), cloneStoredStagedResult)
     )
       .flat()
       .sort(compareStoredStagedResult),
@@ -275,9 +272,8 @@ function encodeSnapshot(state: BackendState): Uint8Array {
     turnNodes: Array.from(state.turnNodes.values(), cloneStoredTurnNode).sort(
       compareStoredTurnNode
     ),
-    turnTreePaths: Array.from(
-      state.turnTreePaths.values(),
-      (records) => Array.from(records.values(), cloneStoredTurnTreePath)
+    turnTreePaths: Array.from(state.turnTreePaths.values(), (records) =>
+      Array.from(records.values(), cloneStoredTurnTreePath)
     )
       .flat()
       .sort(compareStoredTurnTreePath),
@@ -300,11 +296,19 @@ function decodeSnapshot(value: Uint8Array): BackendState {
   const snapshot = readSnapshotRecord(decoded);
   const state = createEmptyState();
 
-  for (const record of readSnapshotArray(snapshot.objects, assertStoredObject, "objects")) {
+  for (const record of readSnapshotArray(
+    snapshot.objects,
+    assertStoredObject,
+    "objects"
+  )) {
     state.objects.set(record.hash, cloneStoredObject(record));
   }
 
-  for (const record of readSnapshotArray(snapshot.schemas, assertStoredSchema, "schemas")) {
+  for (const record of readSnapshotArray(
+    snapshot.schemas,
+    assertStoredSchema,
+    "schemas"
+  )) {
     state.schemas.set(record.schemaId, cloneStoredSchema(record));
   }
 
@@ -368,19 +372,35 @@ function decodeSnapshot(value: Uint8Array): BackendState {
     state.turnNodes.set(record.hash, cloneStoredTurnNode(record));
   }
 
-  for (const record of readSnapshotArray(snapshot.threads, assertStoredThread, "threads")) {
+  for (const record of readSnapshotArray(
+    snapshot.threads,
+    assertStoredThread,
+    "threads"
+  )) {
     state.threads.set(record.threadId, cloneStoredThread(record));
   }
 
-  for (const record of readSnapshotArray(snapshot.branches, assertStoredBranch, "branches")) {
+  for (const record of readSnapshotArray(
+    snapshot.branches,
+    assertStoredBranch,
+    "branches"
+  )) {
     state.branches.set(record.branchId, cloneStoredBranch(record));
   }
 
-  for (const record of readSnapshotArray(snapshot.turns, assertStoredTurn, "turns")) {
+  for (const record of readSnapshotArray(
+    snapshot.turns,
+    assertStoredTurn,
+    "turns"
+  )) {
     state.turns.set(record.turnId, cloneStoredTurn(record));
   }
 
-  for (const record of readSnapshotArray(snapshot.runs, assertStoredRun, "runs")) {
+  for (const record of readSnapshotArray(
+    snapshot.runs,
+    assertStoredRun,
+    "runs"
+  )) {
     state.runs.set(record.runId, cloneStoredRun(record));
   }
 
@@ -449,10 +469,7 @@ function readSnapshotArray<T>(
   });
 }
 
-function readUntypedSnapshotArray(
-  value: unknown,
-  label: string
-): unknown[] {
+function readUntypedSnapshotArray(value: unknown, label: string): unknown[] {
   if (!Array.isArray(value)) {
     throw persistenceError(
       `postgres backend snapshot field "${label}" must be an array`,

@@ -116,7 +116,12 @@ async function validateVocabularyTarget(
     return;
   }
 
-  if (!vocabularyTargetPath.endsWith(".yaml") && !vocabularyTargetPath.endsWith(".yml")) {
+  if (
+    !(
+      vocabularyTargetPath.endsWith(".yaml") ||
+      vocabularyTargetPath.endsWith(".yml")
+    )
+  ) {
     failures.push({
       manifestPath,
       message: `vocabulary-check target must be a YAML file: ${vocabularyTargetPath}`,

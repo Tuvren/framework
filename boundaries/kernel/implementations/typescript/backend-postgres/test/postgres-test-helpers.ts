@@ -16,6 +16,7 @@
 
 import { randomUUID } from "node:crypto";
 import process from "node:process";
+import { setTimeout as delay } from "node:timers/promises";
 import postgres from "postgres";
 import type { PostgresBackendOptions } from "../src/index.js";
 
@@ -30,17 +31,42 @@ interface DevenvPostgresEnvironment {
 }
 
 export async function assertDevenvPostgresReady(): Promise<void> {
-  const sql = createSqlClient();
+  // The Nx target launches PostgreSQL through `devenv up -d postgres`, which
+  // returns as soon as the supervised process starts rather than when the
+  // server is accepting connections. On a cold devenv shell the socket file
+  // may not exist yet, surfacing as `ENOENT` on the first probe. Retry the
+  // readiness query up to the budget below so the test does not depend on
+  // an implicit timing assumption between `devenv up` and the test runner.
+  const totalBudgetMs = 30_000;
+  const retryDelayMs = 250;
+  const startedAt = Date.now();
+  let lastError: unknown;
 
-  try {
-    const result = await sql<{ ready: number }[]>`SELECT 1 AS ready`;
+  while (Date.now() - startedAt < totalBudgetMs) {
+    const sql = createSqlClient();
 
-    if (result[0]?.ready !== 1) {
-      throw new Error("devenv postgres readiness query returned no row");
+    try {
+      const result = await sql<{ ready: number }[]>`SELECT 1 AS ready`;
+
+      if (result[0]?.ready !== 1) {
+        throw new Error("devenv postgres readiness query returned no row");
+      }
+
+      return;
+    } catch (error: unknown) {
+      lastError = error;
+    } finally {
+      await sql.end({ timeout: 0 });
     }
-  } finally {
-    await sql.end({ timeout: 0 });
+
+    await delay(retryDelayMs);
   }
+
+  const message =
+    lastError instanceof Error ? lastError.message : String(lastError);
+  throw new Error(
+    `devenv postgres did not become ready within ${totalBudgetMs}ms: ${message}`
+  );
 }
 
 export function createPostgresTestBackendOptions(
@@ -125,7 +151,9 @@ function readDevenvPostgresEnvironment(): DevenvPostgresEnvironment {
   const port = Number.parseInt(portValue, 10);
 
   if (!Number.isSafeInteger(port) || port <= 0) {
-    throw new Error(`PGPORT must be a positive integer, received "${portValue}"`);
+    throw new Error(
+      `PGPORT must be a positive integer, received "${portValue}"`
+    );
   }
 
   return {

@@ -956,7 +956,7 @@ function extractTrailingJsonObject(stdout: string): string {
   for (let index = lines.length - 1; index >= 0; index -= 1) {
     const line = lines[index];
 
-    if (line !== undefined && line.startsWith("}")) {
+    if (line?.startsWith("}")) {
       // Walk backward looking for the matching column-zero `{` that opened
       // this trailing object. Use indentation as a proxy for nesting depth
       // since the runners emit pretty-printed JSON.
@@ -970,7 +970,10 @@ function extractTrailingJsonObject(stdout: string): string {
       }
 
       if (openIndex !== -1) {
-        return lines.slice(openIndex, index + 1).join("\n").trim();
+        return lines
+          .slice(openIndex, index + 1)
+          .join("\n")
+          .trim();
       }
 
       break;

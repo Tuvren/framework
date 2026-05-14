@@ -50,8 +50,8 @@ interface AuthorityPacketManifest {
 }
 
 interface PortabilityGateFailure {
-  rule: string;
   message: string;
+  rule: string;
 }
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
@@ -83,47 +83,56 @@ const EXPECTED_PACKET_TOPOLOGY: ReadonlyArray<{
 }> = [
   {
     packetId: "tuvren.shared.core-types",
-    packetPath: "boundaries/shared/contracts/core-types/spec/authority-packet.json",
+    packetPath:
+      "boundaries/shared/contracts/core-types/spec/authority-packet.json",
     classification: "portable",
   },
   {
     packetId: "tuvren.kernel.protocol",
-    packetPath: "boundaries/kernel/contracts/protocol/spec/authority-packet.json",
+    packetPath:
+      "boundaries/kernel/contracts/protocol/spec/authority-packet.json",
     classification: "portable",
   },
   {
     packetId: "tuvren.framework.runtime-api",
-    packetPath: "boundaries/framework/contracts/runtime-api/spec/authority-packet.json",
+    packetPath:
+      "boundaries/framework/contracts/runtime-api/spec/authority-packet.json",
     classification: "portable",
   },
   {
     packetId: "tuvren.framework.event-stream",
-    packetPath: "boundaries/framework/contracts/event-stream/spec/authority-packet.json",
+    packetPath:
+      "boundaries/framework/contracts/event-stream/spec/authority-packet.json",
     classification: "portable",
   },
   {
     packetId: "tuvren.framework.event-stream-sse",
-    packetPath: "boundaries/framework/contracts/event-stream-sse/spec/authority-packet.json",
+    packetPath:
+      "boundaries/framework/contracts/event-stream-sse/spec/authority-packet.json",
     classification: "portable",
   },
   {
     packetId: "tuvren.framework.driver-api",
-    packetPath: "boundaries/framework/contracts/driver-api/spec/authority-packet.json",
+    packetPath:
+      "boundaries/framework/contracts/driver-api/spec/authority-packet.json",
     classification: "portable",
   },
   {
     packetId: "tuvren.framework.react-driver",
-    packetPath: "boundaries/framework/contracts/react-driver/spec/authority-packet.json",
+    packetPath:
+      "boundaries/framework/contracts/react-driver/spec/authority-packet.json",
     classification: "portable",
   },
   {
     packetId: "tuvren.framework.tool-contracts",
-    packetPath: "boundaries/framework/contracts/tool-contracts/spec/authority-packet.json",
+    packetPath:
+      "boundaries/framework/contracts/tool-contracts/spec/authority-packet.json",
     classification: "portable",
   },
   {
     packetId: "tuvren.providers.provider-api",
-    packetPath: "boundaries/providers/contracts/provider-api/spec/authority-packet.json",
+    packetPath:
+      "boundaries/providers/contracts/provider-api/spec/authority-packet.json",
     classification: "portable",
   },
   {
@@ -133,7 +142,8 @@ const EXPECTED_PACKET_TOPOLOGY: ReadonlyArray<{
   },
   {
     packetId: "tuvren.framework.interop-rust-kernel",
-    packetPath: "boundaries/framework/interop/rust-kernel/spec/authority-packet.json",
+    packetPath:
+      "boundaries/framework/interop/rust-kernel/spec/authority-packet.json",
     classification: "interop",
   },
   {
@@ -152,10 +162,10 @@ const EXPECTED_PACKET_TOPOLOGY: ReadonlyArray<{
  * downstream projections of their portable parent contracts (the AI SDK
  * bridge IS a binding projection of `tuvren.providers.provider-api`).
  */
-const STANDING_EXCEPTION_SURFACES: ReadonlyArray<{
+const STANDING_EXCEPTION_SURFACES: readonly {
   label: string;
-  forbiddenSurfaceNames: ReadonlyArray<string>;
-}> = [
+  forbiddenSurfaceNames: readonly string[];
+}[] = [
   {
     label: "AG-UI projection (@tuvren/stream-agui)",
     forbiddenSurfaceNames: ["ag-ui", "stream-agui", "event-stream-agui"],
@@ -183,8 +193,10 @@ const REQUIRED_AUTHORITATIVE_SOURCES: ReadonlyArray<{
 }> = [
   {
     packetId: "tuvren.kernel.protocol",
-    sourcePath: "boundaries/kernel/contracts/protocol/spec/cddl/kernel-records.cddl",
-    rationale: "KRT-AL002 G2: kernel CDDL grammar must remain registered authority",
+    sourcePath:
+      "boundaries/kernel/contracts/protocol/spec/cddl/kernel-records.cddl",
+    rationale:
+      "KRT-AL002 G2: kernel CDDL grammar must remain registered authority",
   },
   {
     packetId: "tuvren.framework.tool-contracts",
@@ -206,8 +218,7 @@ const REQUIRED_AUTHORITATIVE_SOURCES: ReadonlyArray<{
   },
   {
     packetId: "tuvren.framework.event-stream-sse",
-    sourcePath:
-      "boundaries/framework/conformance/plans/event-stream-sse.json",
+    sourcePath: "boundaries/framework/conformance/plans/event-stream-sse.json",
     rationale: "KRT-AL002 G3: SSE conformance plan",
   },
   {
@@ -262,8 +273,12 @@ async function runPortabilityGate(): Promise<PortabilityGateFailure[]> {
   );
 
   failures.push(...checkInventoryExists());
-  failures.push(...checkExpectedPacketsPresent(expectedPacketIds, onDiskManifests));
-  failures.push(...checkNoUnexpectedPackets(expectedPacketIds, onDiskManifests));
+  failures.push(
+    ...checkExpectedPacketsPresent(expectedPacketIds, onDiskManifests)
+  );
+  failures.push(
+    ...checkNoUnexpectedPackets(expectedPacketIds, onDiskManifests)
+  );
   failures.push(...checkExecutableVerification(onDiskManifests));
   failures.push(...checkStandingExceptions(onDiskManifests));
   failures.push(...checkRequiredSources(onDiskManifests));
@@ -271,7 +286,9 @@ async function runPortabilityGate(): Promise<PortabilityGateFailure[]> {
   return failures;
 }
 
-async function loadAllManifests(): Promise<Map<string, AuthorityPacketManifest>> {
+async function loadAllManifests(): Promise<
+  Map<string, AuthorityPacketManifest>
+> {
   const manifests = new Map<string, AuthorityPacketManifest>();
   const paths = await findManifestPaths(BOUNDARIES_ROOT);
 

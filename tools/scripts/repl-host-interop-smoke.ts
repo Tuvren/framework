@@ -42,28 +42,6 @@ const REPL_HOST_DIST_PATH = resolve(
   REPO_ROOT,
   "boundaries/hosts/implementations/typescript/repl/dist/index.js"
 );
-// Epic X moved the TypeScript contract package roots under
-// implementations/typescript while leaving neutral specs and generated
-// artifacts at the contract roots, so the smoke builds runnable JS from the
-// implementation roots after codegen refreshes the contract-root artifacts.
-const INTEROP_BUILD_DIRECTORIES: readonly string[] = [
-  "boundaries/shared/contracts/core-types/implementations/typescript",
-  "boundaries/framework/contracts/runtime-api/implementations/typescript",
-  "boundaries/framework/contracts/driver-api/implementations/typescript",
-  "boundaries/providers/contracts/provider-api/implementations/typescript",
-  "boundaries/kernel/contracts/protocol/implementations/typescript",
-  "boundaries/kernel/implementations/typescript/backend-memory",
-  "boundaries/kernel/implementations/typescript/backend-sqlite",
-  "boundaries/framework/implementations/typescript/drivers/react",
-  "boundaries/framework/implementations/typescript/stream-core",
-  "boundaries/framework/implementations/typescript/stream-sse",
-  "boundaries/framework/implementations/typescript/stream-agui",
-  "boundaries/providers/implementations/typescript/bridge-ai-sdk",
-  "boundaries/framework/implementations/typescript/runtime-core",
-  "boundaries/kernel/implementations/typescript/runtime-kernel",
-  "boundaries/framework/implementations/typescript/runtime",
-  "boundaries/hosts/implementations/typescript/repl",
-];
 const WAIT_TIMEOUT_MS = 30_000;
 
 await main();
@@ -106,26 +84,25 @@ async function main(): Promise<void> {
 }
 
 async function ensureInteropArtifacts(): Promise<void> {
-  // The authoritative interop smoke owns the exact prerequisites it executes:
-  // generate the governed bindings first, then emit only the runnable JS
-  // bundles the smoke imports at runtime. This intentionally avoids unrelated
-  // declaration-generation or Nx task-graph fan-out so the lane stays focused
-  // on the real TypeScript-to-Rust execution seam.
+  // Defer to Nx for the workspace build graph: `host-repl:build` pulls in
+  // `^build` and the explicit `kernel-interop-grpc:codegen` dependency from
+  // `runtime-core`'s project.json, so this single invocation produces a fresh
+  // `host-repl/dist/index.js` (the module imported below) plus every upstream
+  // workspace dist the smoke transitively needs. Earlier revisions hand-rolled
+  // 16 sequential `bunx --bun tsup` invocations here, which collapsed under
+  // `E2BIG` once Bun's accumulated spawn state reached the host-repl tsup;
+  // the Nx executor isolates each underlying tsup call inside its own fresh
+  // subprocess and removes that environmental sensitivity. `--skipNxCache`
+  // keeps the smoke's evidence freshly measured per ADR-033 rather than
+  // accepting whatever the local Nx cache already retained.
   await runRequiredCommand([
     "bun",
     "run",
     "nx",
     "run",
-    "kernel-interop-grpc:codegen",
+    "host-repl:build",
     "--skipNxCache",
   ]);
-
-  for (const directory of INTEROP_BUILD_DIRECTORIES) {
-    await runRequiredCommand(
-      ["bunx", "--bun", "tsup", "--config", "tsup.config.ts"],
-      { cwd: resolve(REPO_ROOT, directory) }
-    );
-  }
 }
 
 async function loadReplHostModule(): Promise<ReplHostInteropModule> {

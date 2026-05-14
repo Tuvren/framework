@@ -20,7 +20,14 @@
     "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
     "boundary": {
       "type": "string",
-      "enum": ["framework", "kernel", "providers", "shared", "hosts", "telemetry"]
+      "enum": [
+        "framework",
+        "kernel",
+        "providers",
+        "shared",
+        "hosts",
+        "telemetry"
+      ]
     },
     "surface": { "type": "string", "minLength": 1 },
     "humanAuthorityRefs": {
