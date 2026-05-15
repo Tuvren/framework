@@ -276,9 +276,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 265,
-            "totalChecks": 265,
+            "totalChecks": 283,
             "applicableChecks": 265,
-            "nonApplicableChecks": 0
+            "nonApplicableChecks": 18
           },
           "declaredCapabilities": [
             "framework.driver-api",
@@ -611,9 +611,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 0,
-            "totalChecks": 265,
+            "totalChecks": 283,
             "applicableChecks": 0,
-            "nonApplicableChecks": 265
+            "nonApplicableChecks": 283
           },
           "declaredCapabilities": [],
           "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.rust-framework.json",

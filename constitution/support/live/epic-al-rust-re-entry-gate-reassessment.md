@@ -105,16 +105,22 @@ new epic that explicitly reopens that scope. The following items are recorded
 explicitly so the next planning step does not mistake them for either passed
 gates or for blockers of the existing staged gates:
 
-- **§8.E5 SSE adapter capability** — The framework TypeScript conformance
-  adapter does not yet declare the `framework.event-stream-sse` capability or
-  dispatch the `event-stream-sse.decode-trace` and
-  `event-stream-sse.report-wire-compliance` operations. The seventeen SSE plan
-  checks are decisive and registered, but they remain non-applicable on the
-  current TypeScript framework adapter run. AL002 deliberately deferred the
-  adapter wiring so the SSE projection authority landed cleanly first. Closing
-  this would convert the SSE plan's seventeen non-applicable lines into pass
-  evidence; it does not change the portability gate's pass verdict because the
-  surface, packet, plan, fixtures, and runner are in place.
+- **§8.E5 SSE adapter capability** — The framework TypeScript and Rust
+  conformance adapter manifests now both reference
+  `boundaries/framework/contracts/event-stream-sse/spec/authority-packet.json`,
+  so the seventeen SSE plan checks enter the shared runner's plan
+  discovery and surface in the measured conformance evidence rows.
+  Neither framework adapter has yet declared the
+  `framework.event-stream-sse` capability or implemented the
+  `event-stream-sse.decode-trace` and `event-stream-sse.report-wire-compliance`
+  operations, so the checks land as `nonApplicable` rather than as pass
+  evidence on each adapter's evidence file. Closing this remaining wiring
+  would convert those `nonApplicable` lines into pass evidence; it does
+  not change the portability gate's pass verdict because the surface,
+  packet, plan, fixtures, runner, and adapter-manifest references are
+  all in place. The portability gate now enforces the adapter-coverage
+  rule as the structural guarantee that future packet promotions cannot
+  skip this wiring.
 - **§8.E6 tool-argument streaming completeness assertion** — AL002 promoted
   the tool-contracts packet and plan but did not add a decisive assertion over
   concatenated `ToolCallArgsDelta` payloads. The portable surface for tool

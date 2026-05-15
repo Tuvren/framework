@@ -26,6 +26,7 @@
   ],
   "authorityPackets": [
     "boundaries/framework/contracts/event-stream/spec/authority-packet.json",
+    "boundaries/framework/contracts/event-stream-sse/spec/authority-packet.json",
     "boundaries/framework/contracts/runtime-api/spec/authority-packet.json",
     "boundaries/framework/contracts/driver-api/spec/authority-packet.json",
     "boundaries/framework/contracts/react-driver/spec/authority-packet.json",

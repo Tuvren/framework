@@ -43,10 +43,18 @@ import { fileURLToPath } from "node:url";
 interface AuthorityPacketManifest {
   authoritativeSources: Array<{ format: string; path: string }>;
   bindingProjections?: Record<string, string>;
+  boundary: string;
+  conformancePlans?: Array<{ path: string; planId: string }>;
   packetId: string;
   surface: string;
   verificationPaths: Array<{ kind: string; target: string }>;
   version: string;
+}
+
+interface AdapterManifest {
+  adapterId: string;
+  authorityPackets: string[];
+  boundary: string;
 }
 
 interface PortabilityGateFailure {
@@ -61,6 +69,7 @@ const INVENTORY_PATH = resolve(
   "constitution/support/live/epic-al-portable-surface-conformance-gap-inventory.md"
 );
 const MANIFEST_FILE_NAME = "authority-packet.json";
+const ADAPTER_MANIFEST_FILE_NAME = "adapter.json";
 
 const EXECUTABLE_VERIFICATION_KINDS: ReadonlySet<string> = new Set([
   "schema-validation",
@@ -268,6 +277,7 @@ async function main(): Promise<void> {
 async function runPortabilityGate(): Promise<PortabilityGateFailure[]> {
   const failures: PortabilityGateFailure[] = [];
   const onDiskManifests = await loadAllManifests();
+  const adapterManifests = await loadAllAdapterManifests();
   const expectedPacketIds = new Set(
     EXPECTED_PACKET_TOPOLOGY.map((entry) => entry.packetId)
   );
@@ -291,6 +301,68 @@ async function runPortabilityGate(): Promise<PortabilityGateFailure[]> {
   failures.push(...checkExecutableVerification(onDiskManifests));
   failures.push(...checkStandingExceptions(onDiskManifests));
   failures.push(...checkRequiredSources(onDiskManifests));
+  failures.push(...checkAdapterCoverage(onDiskManifests, adapterManifests));
+
+  return failures;
+}
+
+function checkAdapterCoverage(
+  onDisk: ReadonlyMap<string, AuthorityPacketManifest>,
+  adapterManifests: ReadonlyMap<string, AdapterManifest>
+): PortabilityGateFailure[] {
+  // A packet that declares `conformancePlans` is only meaningful if at least
+  // one adapter manifest of the matching boundary references the packet path
+  // in its `authorityPackets` list, because the shared runner walks plans
+  // strictly through adapter manifests. Otherwise the portability gate could
+  // pass while the packet's plan is invisible to every measured conformance
+  // run — exactly the gap that landed the `framework.event-stream-sse` plan
+  // in zero TypeScript / Rust evidence rows until this guardrail caught it.
+  const failures: PortabilityGateFailure[] = [];
+  const adaptersByBoundary = new Map<string, AdapterManifest[]>();
+
+  for (const adapter of adapterManifests.values()) {
+    const existing = adaptersByBoundary.get(adapter.boundary);
+
+    if (existing === undefined) {
+      adaptersByBoundary.set(adapter.boundary, [adapter]);
+    } else {
+      existing.push(adapter);
+    }
+  }
+
+  for (const [packetPath, manifest] of onDisk.entries()) {
+    const planCount = manifest.conformancePlans?.length ?? 0;
+
+    if (planCount === 0) {
+      continue;
+    }
+
+    const adapters = adaptersByBoundary.get(manifest.boundary) ?? [];
+
+    if (adapters.length === 0) {
+      failures.push({
+        rule: "adapter-coverage",
+        message: `packet ${manifest.packetId} declares ${planCount} conformance plan(s) but no adapter manifest exists for boundary ${manifest.boundary}; the shared runner cannot discover this packet's plans`,
+      });
+      continue;
+    }
+
+    const referencingAdapters = adapters.filter((adapter) =>
+      adapter.authorityPackets.includes(packetPath)
+    );
+
+    if (referencingAdapters.length === 0) {
+      const adapterIds = adapters
+        .map((adapter) => adapter.adapterId)
+        .sort()
+        .join(", ");
+
+      failures.push({
+        rule: "adapter-coverage",
+        message: `packet ${manifest.packetId} at ${packetPath} declares ${planCount} conformance plan(s) but no ${manifest.boundary}-boundary adapter manifest references it; add ${packetPath} to one or more of: ${adapterIds}`,
+      });
+    }
+  }
 
   return failures;
 }
@@ -330,7 +402,7 @@ async function loadAllManifests(): Promise<
   Map<string, AuthorityPacketManifest>
 > {
   const manifests = new Map<string, AuthorityPacketManifest>();
-  const paths = await findManifestPaths(BOUNDARIES_ROOT);
+  const paths = await findFilesByName(BOUNDARIES_ROOT, MANIFEST_FILE_NAME);
 
   for (const manifestPath of paths) {
     const manifest = JSON.parse(
@@ -342,7 +414,29 @@ async function loadAllManifests(): Promise<
   return manifests;
 }
 
-async function findManifestPaths(directory: string): Promise<string[]> {
+async function loadAllAdapterManifests(): Promise<
+  Map<string, AdapterManifest>
+> {
+  const manifests = new Map<string, AdapterManifest>();
+  const paths = await findFilesByName(
+    BOUNDARIES_ROOT,
+    ADAPTER_MANIFEST_FILE_NAME
+  );
+
+  for (const manifestPath of paths) {
+    const manifest = JSON.parse(
+      await readFile(manifestPath, "utf8")
+    ) as AdapterManifest;
+    manifests.set(relative(REPO_ROOT, manifestPath), manifest);
+  }
+
+  return manifests;
+}
+
+async function findFilesByName(
+  directory: string,
+  fileName: string
+): Promise<string[]> {
   if (!existsSync(directory)) {
     return [];
   }
@@ -354,11 +448,11 @@ async function findManifestPaths(directory: string): Promise<string[]> {
     const entryPath = resolve(directory, entry.name);
 
     if (entry.isDirectory()) {
-      paths.push(...(await findManifestPaths(entryPath)));
+      paths.push(...(await findFilesByName(entryPath, fileName)));
       continue;
     }
 
-    if (entry.isFile() && entry.name === MANIFEST_FILE_NAME) {
+    if (entry.isFile() && entry.name === fileName) {
       paths.push(entryPath);
     }
   }
