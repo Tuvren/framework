@@ -108,7 +108,7 @@ gates or for blockers of the existing staged gates:
 - **§8.E5 SSE adapter capability** — The framework TypeScript and Rust
   conformance adapter manifests now both reference
   `boundaries/framework/contracts/event-stream-sse/spec/authority-packet.json`,
-  so the seventeen SSE plan checks enter the shared runner's plan
+  so the nineteen SSE plan checks enter the shared runner's plan
   discovery and surface in the measured conformance evidence rows.
   Neither framework adapter has yet declared the
   `framework.event-stream-sse` capability or implemented the

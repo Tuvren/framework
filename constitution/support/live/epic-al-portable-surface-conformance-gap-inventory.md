@@ -455,7 +455,7 @@ expected-topology table.
 | --- | --- | --- |
 | G1 tool-contracts | closed | `tuvren.framework.tool-contracts` packet + `tool-contracts-extended.json` plan; AF tool checks relocated under `tool-contracts-af.*` prefix |
 | G2 kernel CDDL registration | closed | `boundaries/kernel/contracts/protocol/spec/cddl/kernel-records.cddl` registered as `cddl` authoritative source on the kernel-protocol packet (version 0.2.0) |
-| G3 SSE projection | closed | `tuvren.framework.event-stream-sse` packet, TypeSpec source, sixteen WHATWG-normative byte-trace fixtures, and `event-stream-sse.core` conformance plan with seventeen decisive checks |
+| G3 SSE projection | closed | `tuvren.framework.event-stream-sse` packet, TypeSpec source, eighteen WHATWG-normative byte-trace fixtures (including the empty-`id:` reset and the unterminated-final-frame edge added under AL003 review followup), and `event-stream-sse.core` conformance plan with nineteen decisive checks |
 | G4 kernel gRPC interop packet | closed | `tuvren.kernel.interop-grpc` packet referencing the existing `.proto` files and interop-smoke target |
 | G5 framework rust-kernel interop packet | closed | `tuvren.framework.interop-rust-kernel` packet referencing the suite manifest and host-repl interop-smoke target |
 | G6 telemetry semconv packet | closed | `tuvren.telemetry.semconv` packet (TechSpec §4.11 boundary enum extended to include `telemetry`), Weaver-driven freshness checks, new `vocabulary-check` runner at `tools/conformance/vocabulary/validate-vocabulary.ts` |

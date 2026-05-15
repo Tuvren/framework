@@ -276,9 +276,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 265,
-            "totalChecks": 283,
+            "totalChecks": 285,
             "applicableChecks": 265,
-            "nonApplicableChecks": 18
+            "nonApplicableChecks": 20
           },
           "declaredCapabilities": [
             "framework.driver-api",
@@ -294,7 +294,7 @@
           ],
           "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.typescript-framework.json",
           "reportLabel": "TypeScript framework runtime baseline",
-          "reportStatus": "full_pass",
+          "reportStatus": "capability_subset_pass",
           "status": "pass",
           "suiteId": "tuvren.framework.promoted-authority",
           "suiteVersion": "0.1.0"
@@ -611,9 +611,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 0,
-            "totalChecks": 283,
+            "totalChecks": 285,
             "applicableChecks": 0,
-            "nonApplicableChecks": 283
+            "nonApplicableChecks": 285
           },
           "declaredCapabilities": [],
           "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.rust-framework.json",

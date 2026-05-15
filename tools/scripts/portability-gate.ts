@@ -249,6 +249,13 @@ const REQUIRED_AUTHORITATIVE_SOURCES: ReadonlyArray<{
     rationale: "KRT-AL002 G5: rust-kernel interop suite manifest",
   },
   {
+    packetId: "tuvren.framework.interop-rust-kernel",
+    sourcePath:
+      "boundaries/framework/interop/rust-kernel/schemas/suite-manifest.schema.json",
+    rationale:
+      "KRT-AL002 G5: rust-kernel interop suite manifest JSON Schema (authoritative source for the manifest shape)",
+  },
+  {
     packetId: "tuvren.telemetry.semconv",
     sourcePath: "telemetry/semconv/tuvren-runtime.yaml",
     rationale: "KRT-AL002 G6: telemetry semconv YAML",
@@ -310,13 +317,15 @@ function checkAdapterCoverage(
   onDisk: ReadonlyMap<string, AuthorityPacketManifest>,
   adapterManifests: ReadonlyMap<string, AdapterManifest>
 ): PortabilityGateFailure[] {
-  // A packet that declares `conformancePlans` is only meaningful if at least
-  // one adapter manifest of the matching boundary references the packet path
-  // in its `authorityPackets` list, because the shared runner walks plans
-  // strictly through adapter manifests. Otherwise the portability gate could
-  // pass while the packet's plan is invisible to every measured conformance
-  // run — exactly the gap that landed the `framework.event-stream-sse` plan
-  // in zero TypeScript / Rust evidence rows until this guardrail caught it.
+  // A packet that declares `conformancePlans` must be referenced by *every*
+  // adapter manifest of the matching boundary, not just one. The shared
+  // runner discovers plans per adapter manifest (`tools/conformance/runner/
+  // run.ts:606-620`), so a packet that one adapter references but another
+  // omits silently disappears from the omitting adapter's measured evidence
+  // even though the portability gate would still pass. For a cross-
+  // implementation portability gate, "at least one adapter somewhere in the
+  // boundary" is too weak — every measured implementation lane has to see
+  // the plan.
   const failures: PortabilityGateFailure[] = [];
   const adaptersByBoundary = new Map<string, AdapterManifest[]>();
 
@@ -347,19 +356,19 @@ function checkAdapterCoverage(
       continue;
     }
 
-    const referencingAdapters = adapters.filter((adapter) =>
-      adapter.authorityPackets.includes(packetPath)
+    const missingAdapters = adapters.filter(
+      (adapter) => !adapter.authorityPackets.includes(packetPath)
     );
 
-    if (referencingAdapters.length === 0) {
-      const adapterIds = adapters
+    if (missingAdapters.length > 0) {
+      const missingAdapterIds = missingAdapters
         .map((adapter) => adapter.adapterId)
         .sort()
         .join(", ");
 
       failures.push({
         rule: "adapter-coverage",
-        message: `packet ${manifest.packetId} at ${packetPath} declares ${planCount} conformance plan(s) but no ${manifest.boundary}-boundary adapter manifest references it; add ${packetPath} to one or more of: ${adapterIds}`,
+        message: `packet ${manifest.packetId} at ${packetPath} declares ${planCount} conformance plan(s) but is not referenced by every ${manifest.boundary}-boundary adapter manifest; add ${packetPath} to: ${missingAdapterIds}`,
       });
     }
   }

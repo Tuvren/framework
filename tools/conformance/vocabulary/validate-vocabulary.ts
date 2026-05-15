@@ -203,17 +203,19 @@ async function validateVocabularyTarget(
     rawArtifact.attributes.map((attribute) => attribute.key)
   );
 
-  // Resolved keys that are not even mentioned as attribute or group ids in the
-  // source YAML signal Weaver drift: the artifact has emitted an attribute
-  // the source vocabulary no longer covers.
+  // The resolved artifact is an attribute registry (`otel-attributes.json`),
+  // so its keys must match attribute ids declared in the source YAML —
+  // group ids are NOT valid resolved keys. Accepting group ids here would
+  // widen the validator in the exact direction it should reject: a Weaver
+  // regression that emits a group name as a registry key has to fail.
   const orphanedKeys = [...resolvedKeys].filter(
-    (key) => !(extraction.attributeIds.has(key) || extraction.groupIds.has(key))
+    (key) => !extraction.attributeIds.has(key)
   );
 
   if (orphanedKeys.length > 0) {
     failures.push({
       manifestPath,
-      message: `vocabulary-check: resolved artifact has keys that are not declared in ${vocabularyTargetPath}: ${orphanedKeys.sort().join(", ")}`,
+      message: `vocabulary-check: resolved artifact has keys that are not declared as attribute ids in ${vocabularyTargetPath}: ${orphanedKeys.sort().join(", ")}`,
     });
   }
 
@@ -229,6 +231,13 @@ async function validateVocabularyTarget(
   }
 }
 
+interface RawGroup {
+  attributes: unknown;
+  extendsId: string | undefined;
+  id: string | undefined;
+  memberAttributes: unknown;
+}
+
 function extractSemconvVocabulary(
   yamlContent: string
 ): ExtractedSemconvVocabulary | undefined {
@@ -236,16 +245,18 @@ function extractSemconvVocabulary(
   // deeply namespaced group ids (e.g. Weaver's `attributes.http.client.authority`
   // style) are still recognized as groups, not misclassified as attributes
   // because of their dot depth. The Weaver semconv schema places attribute ids
-  // strictly under `groups[*].attributes[*].id`; group ids live at
-  // `groups[*].id`. Nested `member_attributes` (used by some Weaver groups)
-  // are walked as attribute lists too.
+  // strictly under `groups[*].attributes[*].id` (or `attribute.ref` for
+  // attributes reused from a registry group); group ids live at `groups[*].id`.
+  // Groups may also declare `extends: <other-group-id>` to inherit the parent
+  // group's attributes, so we resolve that edge transitively before producing
+  // the effective per-group attribute set.
   const parsed: unknown = yaml.parse(yamlContent);
 
   if (!(isRecord(parsed) && Array.isArray(parsed.groups))) {
     return undefined;
   }
 
-  const attributeIds = new Set<string>();
+  const rawGroups = new Map<string, RawGroup>();
   const groupIds = new Set<string>();
 
   for (const groupEntry of parsed.groups) {
@@ -253,15 +264,74 @@ function extractSemconvVocabulary(
       continue;
     }
 
-    if (typeof groupEntry.id === "string") {
-      groupIds.add(groupEntry.id);
+    if (typeof groupEntry.id !== "string") {
+      continue;
     }
 
-    collectAttributeIds(groupEntry.attributes, attributeIds);
-    collectAttributeIds(groupEntry.member_attributes, attributeIds);
+    groupIds.add(groupEntry.id);
+    rawGroups.set(groupEntry.id, {
+      attributes: groupEntry.attributes,
+      extendsId:
+        typeof groupEntry.extends === "string" ? groupEntry.extends : undefined,
+      id: groupEntry.id,
+      memberAttributes: groupEntry.member_attributes,
+    });
+  }
+
+  const resolvedAttributesByGroup = new Map<string, Set<string>>();
+
+  for (const groupId of rawGroups.keys()) {
+    resolvedAttributesByGroup.set(
+      groupId,
+      resolveGroupAttributes(groupId, rawGroups, new Set())
+    );
+  }
+
+  const attributeIds = new Set<string>();
+
+  for (const groupAttributes of resolvedAttributesByGroup.values()) {
+    for (const id of groupAttributes) {
+      attributeIds.add(id);
+    }
   }
 
   return { attributeIds, groupIds };
+}
+
+function resolveGroupAttributes(
+  groupId: string,
+  rawGroups: ReadonlyMap<string, RawGroup>,
+  visited: Set<string>
+): Set<string> {
+  const ids = new Set<string>();
+
+  if (visited.has(groupId)) {
+    // Defensive: short-circuit on a cyclic `extends` chain rather than
+    // recursing forever. Weaver's schema forbids cycles, but we don't trust
+    // the source enough to assume it.
+    return ids;
+  }
+
+  visited.add(groupId);
+
+  const raw = rawGroups.get(groupId);
+
+  if (raw === undefined) {
+    return ids;
+  }
+
+  collectAttributeIds(raw.attributes, ids);
+  collectAttributeIds(raw.memberAttributes, ids);
+
+  if (raw.extendsId !== undefined) {
+    const inherited = resolveGroupAttributes(raw.extendsId, rawGroups, visited);
+
+    for (const id of inherited) {
+      ids.add(id);
+    }
+  }
+
+  return ids;
 }
 
 function collectAttributeIds(
@@ -273,8 +343,19 @@ function collectAttributeIds(
   }
 
   for (const attribute of attributesValue) {
-    if (isRecord(attribute) && typeof attribute.id === "string") {
+    if (!isRecord(attribute)) {
+      continue;
+    }
+
+    // Weaver supports two declaration shapes inside a group's attribute list:
+    //   - `{ id: "attr.name", type: ..., ... }` declares an attribute inline.
+    //   - `{ ref: "attr.name", ... }` reuses an attribute defined elsewhere
+    //     (typically in a registry group). Both forms contribute the same
+    //     attribute id to the effective vocabulary.
+    if (typeof attribute.id === "string") {
       attributeIds.add(attribute.id);
+    } else if (typeof attribute.ref === "string") {
+      attributeIds.add(attribute.ref);
     }
   }
 }

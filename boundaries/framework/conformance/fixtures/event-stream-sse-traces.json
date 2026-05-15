@@ -9,7 +9,12 @@
       "encodedBytes": "data: hello\n\n",
       "lineEnding": "LF",
       "expectedDecodedStream": {
-        "events": [{ "type": "message", "data": "hello" }]
+        "events": [
+          {
+            "type": "message",
+            "data": "hello"
+          }
+        ]
       }
     },
     "multi-data-lf-concat": {
@@ -17,7 +22,12 @@
       "encodedBytes": "data: first\ndata: second\n\n",
       "lineEnding": "LF",
       "expectedDecodedStream": {
-        "events": [{ "type": "message", "data": "first\nsecond" }]
+        "events": [
+          {
+            "type": "message",
+            "data": "first\nsecond"
+          }
+        ]
       }
     },
     "crlf-line-terminator": {
@@ -25,7 +35,12 @@
       "encodedBytes": "data: crlf-ok\r\n\r\n",
       "lineEnding": "CRLF",
       "expectedDecodedStream": {
-        "events": [{ "type": "message", "data": "crlf-ok" }]
+        "events": [
+          {
+            "type": "message",
+            "data": "crlf-ok"
+          }
+        ]
       }
     },
     "cr-line-terminator": {
@@ -33,7 +48,12 @@
       "encodedBytes": "data: cr-ok\r\r",
       "lineEnding": "CR",
       "expectedDecodedStream": {
-        "events": [{ "type": "message", "data": "cr-ok" }]
+        "events": [
+          {
+            "type": "message",
+            "data": "cr-ok"
+          }
+        ]
       }
     },
     "named-event-type": {
@@ -41,7 +61,12 @@
       "encodedBytes": "event: tuvren.turn.start\ndata: payload\n\n",
       "lineEnding": "LF",
       "expectedDecodedStream": {
-        "events": [{ "type": "tuvren.turn.start", "data": "payload" }]
+        "events": [
+          {
+            "type": "tuvren.turn.start",
+            "data": "payload"
+          }
+        ]
       }
     },
     "id-sets-last-event-id": {
@@ -49,7 +74,13 @@
       "encodedBytes": "id: 42\ndata: with-id\n\n",
       "lineEnding": "LF",
       "expectedDecodedStream": {
-        "events": [{ "type": "message", "data": "with-id", "id": "42" }],
+        "events": [
+          {
+            "type": "message",
+            "data": "with-id",
+            "id": "42"
+          }
+        ],
         "lastEventId": "42"
       }
     },
@@ -59,10 +90,38 @@
       "lineEnding": "LF",
       "expectedDecodedStream": {
         "events": [
-          { "type": "message", "data": "keep", "id": "legit" },
-          { "type": "message", "data": "still-legit", "id": "legit" }
+          {
+            "type": "message",
+            "data": "keep",
+            "id": "legit"
+          },
+          {
+            "type": "message",
+            "data": "still-legit",
+            "id": "legit"
+          }
         ],
         "lastEventId": "legit"
+      }
+    },
+    "id-empty-resets-last-event-id": {
+      "description": "Per WHATWG `https://html.spec.whatwg.org/multipage/server-sent-events.html#event-stream-interpretation`, an `id:` field with an empty value sets the last-event-id buffer to the empty string, which suppresses the `Last-Event-ID` header on reconnect. The reset MUST be observable on subsequent dispatched events and on the surfaced `lastEventId`.",
+      "encodedBytes": "id: 42\ndata: first\n\nid:\ndata: second\n\n",
+      "lineEnding": "LF",
+      "expectedDecodedStream": {
+        "events": [
+          {
+            "type": "message",
+            "data": "first",
+            "id": "42"
+          },
+          {
+            "type": "message",
+            "data": "second",
+            "id": ""
+          }
+        ],
+        "lastEventId": ""
       }
     },
     "retry-digits-only": {
@@ -71,8 +130,16 @@
       "lineEnding": "LF",
       "expectedDecodedStream": {
         "events": [
-          { "type": "message", "data": "with-retry", "retryMs": 5000 },
-          { "type": "message", "data": "ignored-retry", "retryMs": 5000 }
+          {
+            "type": "message",
+            "data": "with-retry",
+            "retryMs": 5000
+          },
+          {
+            "type": "message",
+            "data": "ignored-retry",
+            "retryMs": 5000
+          }
         ],
         "reconnectDelayMs": 5000
       }
@@ -82,7 +149,12 @@
       "encodedBytes": ": heartbeat\ndata: real-event\n\n",
       "lineEnding": "LF",
       "expectedDecodedStream": {
-        "events": [{ "type": "message", "data": "real-event" }]
+        "events": [
+          {
+            "type": "message",
+            "data": "real-event"
+          }
+        ]
       }
     },
     "leading-space-stripped-once": {
@@ -90,7 +162,12 @@
       "encodedBytes": "data:  two-leading-spaces\n\n",
       "lineEnding": "LF",
       "expectedDecodedStream": {
-        "events": [{ "type": "message", "data": " two-leading-spaces" }]
+        "events": [
+          {
+            "type": "message",
+            "data": " two-leading-spaces"
+          }
+        ]
       }
     },
     "field-without-value": {
@@ -98,7 +175,12 @@
       "encodedBytes": "data\ndata\n\n",
       "lineEnding": "LF",
       "expectedDecodedStream": {
-        "events": [{ "type": "message", "data": "\n" }]
+        "events": [
+          {
+            "type": "message",
+            "data": "\n"
+          }
+        ]
       }
     },
     "empty-data-buffer-no-dispatch": {
@@ -106,7 +188,12 @@
       "encodedBytes": ": only-comment\n\ndata: after-empty-frame\n\n",
       "lineEnding": "LF",
       "expectedDecodedStream": {
-        "events": [{ "type": "message", "data": "after-empty-frame" }]
+        "events": [
+          {
+            "type": "message",
+            "data": "after-empty-frame"
+          }
+        ]
       }
     },
     "leading-bom-stripped": {
@@ -114,7 +201,12 @@
       "encodedBytes": "﻿data: bom-was-stripped\n\n",
       "lineEnding": "LF",
       "expectedDecodedStream": {
-        "events": [{ "type": "message", "data": "bom-was-stripped" }]
+        "events": [
+          {
+            "type": "message",
+            "data": "bom-was-stripped"
+          }
+        ]
       }
     },
     "event-type-resets-between-frames": {
@@ -123,8 +215,14 @@
       "lineEnding": "LF",
       "expectedDecodedStream": {
         "events": [
-          { "type": "typed", "data": "first" },
-          { "type": "message", "data": "second" }
+          {
+            "type": "typed",
+            "data": "first"
+          },
+          {
+            "type": "message",
+            "data": "second"
+          }
         ]
       }
     },
@@ -134,9 +232,18 @@
       "lineEnding": "LF",
       "expectedDecodedStream": {
         "events": [
-          { "type": "message", "data": "a" },
-          { "type": "message", "data": "b" },
-          { "type": "message", "data": "c" }
+          {
+            "type": "message",
+            "data": "a"
+          },
+          {
+            "type": "message",
+            "data": "b"
+          },
+          {
+            "type": "message",
+            "data": "c"
+          }
         ]
       }
     },
@@ -146,11 +253,36 @@
       "lineEnding": "LF",
       "expectedDecodedStream": {
         "events": [
-          { "type": "message", "data": "one", "id": "a1" },
-          { "type": "message", "data": "two", "id": "a1" },
-          { "type": "message", "data": "three", "id": "a2" }
+          {
+            "type": "message",
+            "data": "one",
+            "id": "a1"
+          },
+          {
+            "type": "message",
+            "data": "two",
+            "id": "a1"
+          },
+          {
+            "type": "message",
+            "data": "three",
+            "id": "a2"
+          }
         ],
         "lastEventId": "a2"
+      }
+    },
+    "unterminated-final-frame-no-dispatch": {
+      "description": "Per WHATWG: at end-of-stream any pending data must be discarded; an incomplete frame that lacks the terminating empty line MUST NOT dispatch. A conformant decoder dispatches only the frames that were closed with a blank-line transition and drops the trailing partial frame.",
+      "encodedBytes": "data: completed\n\ndata: never-dispatches",
+      "lineEnding": "LF",
+      "expectedDecodedStream": {
+        "events": [
+          {
+            "type": "message",
+            "data": "completed"
+          }
+        ]
       }
     }
   },

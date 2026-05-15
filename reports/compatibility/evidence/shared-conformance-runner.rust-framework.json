@@ -32,6 +32,7 @@
     "event-stream-sse.empty-data-buffer-no-dispatch",
     "event-stream-sse.event-type-resets-between-frames",
     "event-stream-sse.field-without-value",
+    "event-stream-sse.id-empty-resets-last-event-id",
     "event-stream-sse.id-persists-until-next-id",
     "event-stream-sse.id-sets-last-event-id",
     "event-stream-sse.id-with-null-byte-ignored",
@@ -42,6 +43,7 @@
     "event-stream-sse.named-event-type",
     "event-stream-sse.retry-digits-only",
     "event-stream-sse.single-data-default-type",
+    "event-stream-sse.unterminated-final-frame-no-dispatch",
     "event-stream-sse.wire-compliance-self-report",
     "event-stream.agui.failed-turn-error-projection",
     "event-stream.agui.paused-turn-fallback",
@@ -303,9 +305,9 @@
   "summary": {
     "failedChecks": 0,
     "passedChecks": 0,
-    "totalChecks": 283,
+    "totalChecks": 285,
     "applicableChecks": 0,
-    "nonApplicableChecks": 283
+    "nonApplicableChecks": 285
   },
   "suiteId": "tuvren.framework.promoted-authority",
   "suiteVersion": "0.1.0"

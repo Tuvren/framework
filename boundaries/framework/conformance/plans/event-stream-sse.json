@@ -114,6 +114,36 @@
     {
       "assertions": [
         {
+          "equals": "42",
+          "field": "$.sse.decoded.events.0.id",
+          "kind": "resultField"
+        },
+        {
+          "equals": "",
+          "field": "$.sse.decoded.events.1.id",
+          "kind": "resultField"
+        },
+        {
+          "equals": "",
+          "field": "$.sse.decoded.lastEventId",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "event-stream-sse.id-empty-resets-last-event-id",
+      "input": {
+        "fixturePath": "$.id-empty-resets-last-event-id.encodedBytes"
+      },
+      "operation": "event-stream-sse.decode-trace",
+      "fixture": "event-stream-sse-traces",
+      "evidence": [
+        "sse.decoded.events.0.id",
+        "sse.decoded.events.1.id",
+        "sse.decoded.lastEventId"
+      ]
+    },
+    {
+      "assertions": [
+        {
           "equals": 5000,
           "field": "$.sse.decoded.events.0.retryMs",
           "kind": "resultField"
@@ -286,6 +316,27 @@
         "sse.decoded.events.2.id",
         "sse.decoded.lastEventId"
       ]
+    },
+    {
+      "assertions": [
+        {
+          "equals": [{ "type": "message", "data": "completed" }],
+          "field": "$.sse.decoded.events",
+          "kind": "resultField"
+        },
+        {
+          "equals": 1,
+          "field": "$.sse.decoded.events.length",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "event-stream-sse.unterminated-final-frame-no-dispatch",
+      "input": {
+        "fixturePath": "$.unterminated-final-frame-no-dispatch.encodedBytes"
+      },
+      "operation": "event-stream-sse.decode-trace",
+      "fixture": "event-stream-sse-traces",
+      "evidence": ["sse.decoded.events"]
     },
     {
       "assertions": [
