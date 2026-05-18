@@ -298,14 +298,14 @@
 
 - **Status:** accepted
 - **Context:** The Kraken Kernel Specification at `docs/KrakenKernelSpecification.md` declares "28 operations. 10 groups" but the actual TypeScript `RuntimeKernel` surface already exposes 29 operations (`branch.list(threadId)` was added without updating the syscall-count narrative). PRD v0.7.0 adds first-party thread enumeration (CAP-P0-039) to support host listing of owned threads; Architecture v0.7.0 places the new primitive on the Kernel Boundary as structural mechanism that parallels `branch.list`. Adding the syscall ripples through the authority packet, four conformance plans, both kernel implementations (TypeScript and Rust), the gRPC interop projection, and all three TypeScript backends.
-- **Decision:** Promote one new kernel syscall and one count correction in the same change. The new syscall is `thread.list(options?: { limit?: number; cursor?: KernelCursor; filter?: { schemaId?: string } }): Promise<{ threads: StoredThread[]; nextCursor?: KernelCursor }>`. The corrected syscall count is **30 operations across 10 groups** (the 28-vs-29 documentation drift is resolved by counting `branch.list` and the new `thread.list` together). Backends advertise the `thread.enumeration` capability bit (§3.7) so substrates that cannot enumerate efficiently (object-store-style backends) may advertise non-support; the kernel rejects `thread.list` invocations on backends without the bit with a `TuvrenPersistenceError` carrying code `kernel_capability_unsupported`. The new RPC is `KernelThreadService.ThreadList`; protobuf and TypeScript codecs are regenerated. The four kernel conformance plans gain a `kernel-protocol.thread.enumeration` check set evaluated per-backend-capability.
+- **Decision:** Promote one new kernel syscall and one count correction in the same change. The new syscall is `thread.list(options?: { limit?: number; cursor?: KernelThreadListCursor; filter?: { schemaId?: string } }): Promise<{ threads: StoredThread[]; nextCursor?: KernelThreadListCursor }>`. The corrected syscall count is **30 operations across 10 groups** (the 28-vs-29 documentation drift is resolved by counting `branch.list` and the new `thread.list` together). Backends advertise the `thread.enumeration` capability bit (§3.7) so substrates that cannot enumerate efficiently (object-store-style backends) may advertise non-support; the kernel rejects `thread.list` invocations on backends without the bit with a `TuvrenPersistenceError` carrying code `kernel_capability_unsupported`. The new RPC is `KernelThreadService.ThreadList`; protobuf and TypeScript codecs are regenerated. The four kernel conformance plans gain a `kernel-protocol.thread.enumeration` check set evaluated per-backend-capability.
 - **Consequences:** `docs/KrakenKernelSpecification.md` bumps to v0.10. The kernel authority packet at `boundaries/kernel/contracts/protocol/spec/authority-packet.json` gains a new check-set declaration and bumps its packet version. Both the Rust `InMemoryKernel` and the TypeScript `runtime-kernel` add `thread.list`; the three TypeScript backends (`@tuvren/backend-memory`, `@tuvren/backend-sqlite`, `@tuvren/backend-postgres`) implement the `ThreadRepository.list(options?)` repository method and advertise the capability bit. The gRPC `kernel_services.proto` adds the `ThreadList` RPC and its request/response messages; `bun run codegen` regenerates `runtime-core/src/lib/generated/kernel-interop/`. The shared semantic conformance runner has no behavioral change; only the plans gain new check entries. The TypeScript-Rust interop smoke suite covers the new RPC. All kernel-spec text that previously cited "28 operations" is corrected to "30 operations" in the same change.
 
 ### ADR-035 Promote `awaitResult()` to Base `ExecutionHandle` and Define `ExecutionResult`
 
 - **Status:** accepted
 - **Context:** PRD v0.7.0 CAP-P0-042 asserts that every execution handle must expose a unified terminal-value surface. The Kraken Framework Specification §7.1 currently defines `ExecutionHandle` with `events/cancel/steer/resolveApproval/status` only; §10.6 adds `awaitResult(): Promise<unknown>` to `OrchestrationHandle`. Single-turn hosts must currently derive completion by draining `events()` and inspecting `status()` — the REPL host hand-rolls exactly this plumbing in `startProjectionCapture`. The framework conformance plan `runtime-api-orchestration.json` contains two existing `awaitResult` checks scoped to `OrchestrationHandle`.
-- **Decision:** Promote `awaitResult(): Promise<ExecutionResult>` to the base `ExecutionHandle` interface in `@tuvren/core/execution`. Define `ExecutionResult` as a discriminated union typed as `| { status: "completed"; phase: "completed"; finalAssistantMessage?: TuvrenMessage; executionStatus: ExecutionStatus } | { status: "failed"; phase: "failed"; error: TuvrenError; executionStatus: ExecutionStatus }`. `OrchestrationHandle.awaitResult()` is overridden to additionally include the subtree-aggregated final value when descendants exist, with its return type narrowed to `OrchestrationResult` extending `ExecutionResult`. Semantics: `awaitResult()` rejects only on cancellation (with `TuvrenRuntimeError code: execution_cancelled`); both `completed` and `failed` phases resolve the promise; the same handle may be awaited multiple times and returns the same `ExecutionResult`. Per ADR-030 (Adapter Evidence Is Not a Semantic Oracle), this change requires migrating the two existing `awaitResult` checks in `runtime-api-orchestration.json` to a new `runtime-api-handle-terminal-value` check set in `runtime-api-callables.json` that exercises the base-handle surface; the orchestration plan keeps its subtree-result checks.
+- **Decision:** Promote `awaitResult(): Promise<ExecutionResult>` to the base `ExecutionHandle` interface in `@tuvren/core/execution`. Define `ExecutionResult` as a discriminated union typed as `| { status: "completed"; finalAssistantMessage?: TuvrenMessage; executionStatus: ExecutionStatus } | { status: "failed"; error: TuvrenError; executionStatus: ExecutionStatus }` where `status` is the sole discriminant (invariant: `executionStatus.phase === status` for all terminal results). `OrchestrationHandle.awaitResult()` is overridden to additionally include the subtree-aggregated final value when descendants exist, with its return type narrowed to `OrchestrationResult` extending `ExecutionResult`. Semantics: `awaitResult()` rejects only on cancellation (with `TuvrenRuntimeError code: execution_cancelled`); both `completed` and `failed` phases resolve the promise. Rationale for resolve-on-failure: discriminated-union resolution is safer than dual-path reject-on-failure because it prevents callers from silently swallowing `failed` results behind a bare catch and allows exhaustive pattern matching without try/catch; the cancellation path remains a rejection because it is not a normal execution outcome and represents an externally imposed termination. The same handle may be awaited multiple times and returns the same `ExecutionResult`. Per ADR-030 (Adapter Evidence Is Not a Semantic Oracle), this change requires migrating the two existing `awaitResult` checks in `runtime-api-orchestration.json` to a new `runtime-api-handle-terminal-value` check set in `runtime-api-callables.json` that exercises the base-handle surface; the orchestration plan keeps its subtree-result checks.
 - **Consequences:** `docs/KrakenFrameworkSpecification.md` §7.1 bumps to v0.18 to add `awaitResult` to the base handle. The runtime-api authority packet binding appendix at `boundaries/framework/contracts/runtime-api/spec/bindings/typescript.md` adds `awaitResult` to its `ExecutionHandle` binding section. `@tuvren/core/execution` exports the new `ExecutionResult` discriminated union. `@tuvren/runtime`'s internal `RuntimeExecutionHandle` class implements `awaitResult` by collecting all events into a private buffer, returning on the first `turn.end` event, and synthesizing the result from event content plus the final `status()` snapshot. The conformance migration is part of the same epic.
 
 ### ADR-036 `TuvrenRuntime` Durable-Read Surface
@@ -419,14 +419,16 @@
   export type DriverKind = "react";
 
   export interface CreateTuvrenOptions {
-    backend: BackendKind | RuntimeBackend | {
-      kind: BackendKind;
-      options?: SqliteBackendOptions | PostgresBackendOptions | MemoryBackendOptions;
-    };
-    driver?: DriverKind | RuntimeDriverFactory | {
-      kind: DriverKind;
-      options?: ReActDriverOptions;
-    };
+    backend:
+      | BackendKind
+      | RuntimeBackend
+      | { kind: "memory"; options?: MemoryBackendOptions }
+      | { kind: "sqlite"; options: SqliteBackendOptions }
+      | { kind: "postgres"; options: PostgresBackendOptions };
+    driver?:
+      | DriverKind
+      | RuntimeDriverFactory
+      | { kind: "react"; options?: ReActDriverOptions };
     provider?: TuvrenProvider;
     tools?: Array<TuvrenToolDefinition | McpToolSource>;
     extensions?: TuvrenExtension[];
@@ -444,7 +446,7 @@
 
   export function createTuvren(options: CreateTuvrenOptions): Promise<TuvrenInstance>;
   ```
-  Defaults: `backend` is mandatory (no surprise persistence choice); `driver` defaults to `"react"`; `provider` is optional (turns may pass per-call providers in `AgentConfig.model`); `tools` accepts both literal `TuvrenToolDefinition` arrays and `McpToolSource` references that contribute their `.tools` to the global registry; `extensions` is optional. The factory wires the chosen backend through the appropriate backend factory, constructs the kernel via `createRuntimeKernel({ backend })`, builds a driver registry containing the requested driver, and constructs the framework runtime via the existing internal `createTuvrenRuntimeCore` (now an internal helper of `@tuvren/runtime`). `[Symbol.asyncDispose]` closes any MCP tool sources, releases backend resources (closes the SQLite file handle, returns the PostgreSQL pool, etc.), and resolves any pending kernel work cleanly. The function does not accept inline `RuntimeBackend` factory invocations — passing `{ backend: "sqlite", options: { databasePath: "./db" } }` is preferred over the explicit-factory form to keep the batteries-included path obvious.
+  Defaults: `backend` is mandatory (no surprise persistence choice); `driver` defaults to `"react"`; `provider` is optional (turns may pass per-call providers in `AgentConfig.model`); `tools` accepts both literal `TuvrenToolDefinition` arrays and `McpToolSource` references that contribute their `.tools` to the global registry; `extensions` is optional. The factory wires the chosen backend through the appropriate backend factory, constructs the kernel via `createRuntimeKernel({ backend })`, builds a driver registry containing the requested driver, and constructs the framework runtime via the existing internal `createTuvrenRuntimeCore` (now an internal helper of `@tuvren/runtime`). `[Symbol.asyncDispose]` closes any MCP tool sources, releases backend resources (closes the SQLite file handle, returns the PostgreSQL pool, etc.), and resolves any pending kernel work cleanly. Prefer the kind-tagged shorthand form `{ backend: "sqlite", options: { databasePath: "./db" } }` over the explicit `RuntimeBackend` factory form; the shorthand is more readable and makes the batteries-included intent explicit. Passing a pre-built `RuntimeBackend` remains legal for advanced composition scenarios.
 - **Consequences:** `@tuvren/runtime/src/index.ts` exports only `createTuvren`, the curated primitive re-exports from `@tuvren/core/*` subpaths, the backend factories, the kernel factories, the driver factory, and the orchestration runtime factory. The current `createTuvrenRuntimeCore` is renamed to `createTuvrenRuntime` internally (per Architecture §1 principle that internals must not bleed into the public name). The convenience composition is the only batteries-included entrypoint; advanced hosts that need fine-grained control still import the lower-level factories from `@tuvren/runtime` (they remain re-exported) or compose them from `@tuvren/core/execution` types and the leaf packages directly. A new conformance check set `runtime-api-batteries-included` in `runtime-api-callables-extended.json` exercises the factory's compositional correctness.
 
 ### ADR-041 Consolidate the Reference Host on `@tuvren/repl-host` and Retire `@tuvren/playground-host`
@@ -1103,7 +1105,9 @@ export interface TuvrenRuntime {
 
   listBranches(input: {
     threadId: string;
-  }): Promise<BranchSummary[]>;
+    limit?: number;
+    cursor?: ListBranchesCursor;
+  }): Promise<{ branches: BranchSummary[]; nextCursor?: ListBranchesCursor }>;
 
   getTurnState(input: {
     threadId: string;
@@ -1119,7 +1123,7 @@ export interface TuvrenRuntime {
   readBranchMessages(input: {
     branchId: string;
     limit?: number;
-    before?: BranchMessagesCursor;
+    after?: BranchMessagesCursor;  // oldest-first order; cursor advances forward through history
   }): Promise<{ messages: TuvrenMessage[]; nextCursor?: BranchMessagesCursor }>;
 }
 
@@ -2678,10 +2682,16 @@ export interface ReActDriverOptions {
   toolExecutionMode?: "parallel" | "sequential";
 }
 
+// The actual RuntimeCoreOptions (in runtime-core/src/lib/runtime-core.ts) includes additional
+// factory-managed fields: kernel, driverRegistry, defaultDriverId. createTuvren controls those
+// internally and excludes them via the Omit below; hosts only ever configure the three fields shown.
 export interface RuntimeCoreOptions {
   defaultMaxParallelToolCalls?: number;
   manifestExtensionStateWarningBudgetBytes?: number | false;
   onWarning?: (warning: RuntimeWarning) => void;
+  /** @internal — managed by createTuvren */ kernel?: RuntimeKernel;
+  /** @internal — managed by createTuvren */ driverRegistry?: unknown;
+  /** @internal — managed by createTuvren */ defaultDriverId?: string;
 }
 
 export interface CreateTuvrenOptions {
