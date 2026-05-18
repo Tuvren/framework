@@ -2,17 +2,17 @@
 
 ## 0. Version History & Changelog
 
+- v0.7.0 - Promoted host-developer ergonomics, single-tenant durable-read surface, kernel-level thread enumeration, unified handle terminal-value surface, schema-agnostic tool authoring, MCP client integration, headless reference-host mode, transcript persistence, and consolidated curated SDK package layout to in-scope product capabilities; retired the playground host and the split contract packages.
 - v0.6.0 - Tightened the portability promise to in-scope runtime features defined by the semantic docs so explanatory material and ecosystem-only adapters do not blur the portability gate.
 - v0.5.0 - Clarified that the first product-depth implementation line must prove the SDK through a serious REPL-style reference host, narrowed tolerated deferral of documented core runtime surfaces, and tightened the portability boundary to external-SDK-dependent integrations only.
-- v0.4.0 - Added the machine-enforced neutral authority capabilities, the authority-packet and conformance-plan domain terms, the no-implementation-oracle and no-prose-oracle prohibited patterns, and the runtime-maintainer success criterion that a new implementation must be buildable without reading another language's source as truth.
 - ... [Older history truncated, refer to git logs]
 
 ## 1. Executive Summary & Target Archetype
 
 - **Target Archetype:** Embeddable stateful agent and workflow runtime kernel plus driver-oriented framework/SDK
-- **Vision:** Tuvren Runtime becomes a trustworthy substrate for building long-lived agent systems whose progress, state transitions, interruptions, and control transfers remain durable, inspectable, and recoverable instead of opaque and fragile.
-- **Problem:** Existing agent runtimes often make state continuity, tool execution, pause/resume, context shaping, and multi-agent control feel incidental or ad hoc, while many workflow systems hard-code one execution style as if it were the whole product. That makes long-running agent work hard to audit, hard to recover after interruption, hard to govern, and hard to adapt cleanly across different execution models.
-- **Jobs to Be Done:** Enable a builder to run durable agent or workflow execution with explicit history; let a host observe and steer execution safely; let a system execute tools, approvals, and handoffs without losing continuity; and let downstream teams reason about what happened, why it happened, and how to resume, redirect, or swap execution strategy without discarding the shared runtime foundation.
+- **Vision:** Tuvren Runtime becomes a trustworthy substrate for building long-lived agent systems whose progress, state transitions, interruptions, and control transfers remain durable, inspectable, and recoverable instead of opaque and fragile, and whose host-developer surface is ergonomic enough that serious operator-facing products can be built directly on the SDK without private shortcuts.
+- **Problem:** Existing agent runtimes often make state continuity, tool execution, pause/resume, context shaping, and multi-agent control feel incidental or ad hoc, while many workflow systems hard-code one execution style as if it were the whole product. Equally, even when their underlying engines are sound, their host-developer surfaces force every consumer to compose low-level primitives, hand-roll terminal-value handling, reach around the SDK to read durable state, or commit to a single tool-authoring style. That makes long-running agent work hard to audit, hard to recover after interruption, hard to govern, hard to adapt cleanly across different execution models, and hard to build a credible product on without leaking implementation accidents into every host.
+- **Jobs to Be Done:** Enable a builder to run durable agent or workflow execution with explicit history; let a host observe and steer execution safely; let a system execute tools, approvals, and handoffs without losing continuity; let downstream teams reason about what happened, why it happened, and how to resume, redirect, or swap execution strategy without discarding the shared runtime foundation; let a host developer assemble a serious operator-facing product (CLI, IDE integration, web console, ambient agent runner) from one curated SDK entrypoint without bypassing the host-facing boundary; and let a host inspect, list, and replay its own durable state without coupling to kernel internals.
 
 ### 1.1 Product Posture
 
@@ -26,6 +26,8 @@
 - The first product-depth implementation line must prove the SDK through a serious REPL-style reference host that exercises the runtime end to end without relying on private-only shortcuts that other hosts cannot use.
 - Documented core runtime surfaces are expected to become real product scope for the first product-depth implementation line; long-lived deferral is reserved for ecosystem expansion or integrations that inherently depend on external SDK ecosystems.
 - Every in-scope runtime feature defined by the project’s semantic docs is intended to be portable across implementation lines unless it exists only as an adapter to an external SDK or ecosystem-specific protocol.
+- Host-developer ergonomics are a first-class product outcome on equal footing with semantic correctness. A curated host-facing SDK boundary, a batteries-included entrypoint, schema-agnostic tool authoring, and a first-party tool ecosystem surface are part of the product, not a courtesy facade.
+- Single-tenant durable state must be inspectable, enumerable, and replayable through the host-facing SDK rather than through private kernel access; the first-party reference host must not need any seam that downstream hosts cannot also use.
 
 ### 1.2 Success Criteria
 
@@ -34,7 +36,12 @@
 - A human supervisor can interrupt, approve, reject, or resume sensitive work without corrupting the execution lineage.
 - A multi-agent workflow can delegate, hand off, and continue work while preserving traceability and avoiding ambiguous control transfer.
 - A host application developer can build a serious operator-facing host from the same high-level SDK surface used by the first-party reference host rather than depending on private runtime seams.
-- A first-party reference host proves durable threads, branching, streaming, approvals, steering, orchestration, extension behavior, and persistence as one coherent operator experience.
+- A host application developer can issue a first Turn from one batteries-included entrypoint without composing kernel, backend, driver registry, and runtime factories by hand, while retaining the ability to swap any of those substrates when product needs require it.
+- A host application developer can author tools using Zod, Standard Schema, or wrapped JSON Schema with type inference flowing into the execute callback, and can also pass raw JSON Schema at the contract boundary without breaking compatibility.
+- A host application developer can attach external Model Context Protocol servers (stdio or HTTP/SSE) as first-class tool sources without writing a bespoke bridge.
+- A host application developer can list the threads owned by the runtime, list branches inside a thread, read the state at any TurnNode, walk turn history with a cursor, and read durable messages on a branch through the host-facing SDK alone.
+- A first-party reference host proves durable threads, branching, streaming, approvals, steering, orchestration, extension behavior, and persistence as one coherent operator experience, in both an interactive readline mode and a headless stdin-driven mode, while reading durable state exclusively through the host-facing SDK.
+- A test author or operations script can drive the reference host headlessly through stdin and capture an on-disk transcript that can later be replayed for postmortems or regressions.
 - A runtime maintainer can introduce a new implementation language against shared contracts and behavioral fixtures without redefining the product’s semantic model.
 - A runtime maintainer can build and judge a new implementation strictly from boundary-owned machine authority, generated artifacts, executable conformance evidence, and language-binding adapters, without reading another language's implementation, a generic runner's source code, or a Markdown document as the source of cross-language truth.
 
@@ -46,6 +53,9 @@
 - **Host control vs. runtime execution:** The host initiates, observes, and influences execution, but the runtime remains responsible for the execution lifecycle itself.
 - **Framework vs. driver:** The framework supplies shared runtime services and contracts, while a driver defines one concrete execution model built on that shared foundation.
 - **Machine authority vs. implementation projection:** Cross-implementation meaning lives in boundary-owned machine authority and executable evidence; an implementation language, generic runner codebase, or human-prose document is a projection of that authority and is never the source of cross-language truth.
+- **Single-tenant durable reads vs. cross-tenant discovery:** Listing, reading, and replaying state for the runtime instance the host owns is a host-facing SDK capability; cross-tenant search, multi-tenant access control, and full-text indexed querying are deferred to a future hosted/server projection and are not part of the embeddable SDK.
+- **SDK ergonomics vs. semantic correctness:** A curated host-facing surface, batteries-included composition, type-inferring helpers, and re-exported primitives are product responsibilities; they are not a substitute for the underlying semantic contracts, and they must not silently weaken any guarantee the boundary contracts make.
+- **Authoring style vs. boundary contract:** Tool authoring may use Zod, Standard Schema, wrapped JSON Schema, or future schema adapters; the boundary contract still accepts raw JSON Schema and a `CustomSchema` interop shape. Authoring helpers add type inference and ergonomic defaults without narrowing what is legal at the contract seam.
 
 ## 2. Ubiquitous Language (Glossary)
 
@@ -72,7 +82,15 @@
 | Extension           | A composable policy or behavior unit that can observe, influence, or wrap execution.                                                         | plugin blob, middleware soup           |
 | Handoff             | A controlled transfer of active execution responsibility from one agent configuration to another.                                            | worker result, tool call               |
 | Worker              | A subordinate agent execution used to perform delegated work and return results.                                                             | handoff, branch clone                  |
-| ExecutionHandle     | The host-facing control surface for consuming events and issuing runtime controls.                                                           | adapter, transport                     |
+| ExecutionHandle     | The host-facing control surface for consuming events, awaiting a terminal value, and issuing runtime controls.                               | adapter, transport                     |
+| Execution Result    | The terminal-value surface a host receives when an execution reaches a completed or failed phase.                                            | last event, raw status                 |
+| Batteries-Included Entrypoint | The single curated factory that assembles kernel, backend, driver registry, and runtime so a host can issue a Turn without composing lower-level primitives by hand.            | helper, scaffold              |
+| Durable-Read Surface | The host-facing SDK capability set that lists threads, lists branches, reads state at a TurnNode, walks turn history, and reads durable messages on a branch.                  | inspector, internal API       |
+| Schema Adapter      | A normalization wrapper that lets the tool-authoring helper accept Zod, Standard Schema, wrapped JSON Schema, or future schema kinds while preserving type inference and provider-wire JSON Schema. | validator, schema lib                |
+| MCP Tool Source     | A first-class tool source that connects to an external Model Context Protocol server and exposes its tools as Tuvren tool definitions.        | bridge, proxy                          |
+| Headless Host Mode  | The non-interactive operating mode of the reference host that consumes line-delimited input on stdin and emits structured output, intended for tests and scripts.              | daemon, server               |
+| Transcript          | A durable on-disk capture of a reference-host session that can later be replayed for postmortems or regression tests.                         | log file, history dump                 |
+| Curated SDK Surface | The single host-facing SDK boundary composed of `@tuvren/core` (subpath-exported primitives) and `@tuvren/runtime` (slim convenience entrypoint), with leaf packages peer-depending on `@tuvren/core` for version-skew safety. | barrel, megapackage         |
 | Authority Packet    | A boundary-owned bundle that names the machine-readable sources, generated artifacts, conformance evidence, and binding projections that together carry one cross-implementation semantic surface.       | spec doc, README, schema folder        |
 | Conformance Plan    | An executable, data-owned description of the named semantic checks, fixtures, scenarios, assertions, and required evidence that an implementation must satisfy for a given authority packet.             | test suite, runner script              |
 | Implementation Adapter | The language-specific seam that exposes a particular implementation to a generic conformance runner over a neutral operation, event, cancellation, error, and state-inspection surface.                | bespoke test harness, fixture loader   |
@@ -90,16 +108,16 @@
 ### 3.2 Host Application Developer
 
 - **Role:** Host Application Developer
-- **Context:** Exposes Tuvren Runtime through an API, UI, CLI, editor integration, or protocol bridge.
-- **Goals:** Start turns, consume streamed events, inject steering, route approvals, and surface execution status without owning the runtime semantics.
-- **Frictions:** Needs a clear control surface and event vocabulary instead of reverse-engineering runtime internals.
+- **Context:** Exposes Tuvren Runtime through an API, UI, CLI, editor integration, or protocol bridge. Builds an operator-facing product (for example an IDE coding agent, a CLI assistant, an ambient agent runner, or a web console) on top of the host-facing SDK and expects to reach a working first Turn within minutes, list and inspect threads owned by the runtime, replay past sessions, and connect external Model Context Protocol servers without writing bespoke adapters.
+- **Goals:** Start turns, consume streamed events, await terminal values, inject steering, route approvals, surface execution status, list threads and branches the host owns, read state at any TurnNode, replay past sessions, and connect external tool servers without owning the runtime semantics.
+- **Frictions:** Needs one batteries-included entrypoint instead of composing five low-level factories; needs a uniform terminal-value surface instead of hand-rolling completion detection from event streams; needs first-party durable reads instead of reaching around the SDK into kernel internals; needs to keep schema-authoring choices open (Zod, Standard Schema, raw JSON Schema) rather than being forced into one validator; needs first-class MCP support to access the existing tool ecosystem.
 
 ### 3.3 Extension and Tool Author
 
 - **Role:** Extension and Tool Author
 - **Context:** Adds cross-cutting policy, observability, gating, or domain-specific tool behavior around agent execution.
-- **Goals:** Intervene in execution predictably, add tools cleanly, and express approvals or policy decisions without breaking runtime guarantees.
-- **Frictions:** Ad hoc hook systems are easy to misuse and often blur durable behavior with ephemeral wrappers.
+- **Goals:** Intervene in execution predictably, add tools cleanly, express approvals or policy decisions without breaking runtime guarantees, and author tools using their preferred schema toolkit while still getting type inference for the execute callback's input.
+- **Frictions:** Ad hoc hook systems are easy to misuse and often blur durable behavior with ephemeral wrappers; tool-authoring surfaces that force one validator narrow the ecosystem and lose type inference whenever the host's chosen toolkit differs.
 
 ### 3.4 Human Approver or Supervisor
 
@@ -122,6 +140,13 @@
 - **Goals:** Consume stable contracts, prove behavior against shared fixtures, preserve observability and compatibility signals, and add new implementation lines without creating a shadow specification.
 - **Frictions:** Ports often drift into rewrites, language-specific toolchains often leak into semantic boundaries, and shared behavior usually becomes folklore unless parity is enforced mechanically.
 
+### 3.7 Reference-Host Operator and Test Author
+
+- **Role:** Reference-Host Operator and Test Author
+- **Context:** Uses the first-party reference host to exercise, demo, debug, or regression-test the runtime end to end, either at the interactive REPL or as a headless stdin-driven process inside CI, evaluation suites, or operations scripts.
+- **Goals:** Drive the runtime through every host-facing capability the SDK exposes, capture on-disk transcripts of meaningful sessions, replay those transcripts for postmortems and regressions, and trust that everything the reference host can do is achievable by any downstream host through the same SDK.
+- **Frictions:** Interactive-only tooling is hard to embed in CI; transcript-less debugging is fragile; reference hosts that pierce private seams give false confidence about what downstream products can build.
+
 ## 4. Functional Capabilities
 
 ### Epic: Durable Stateful Runtime Foundation
@@ -140,6 +165,11 @@
 - **Capability ID:** CAP-P0-003
 - **Capability:** The product must allow active work to continue on named alternate continuations without destroying previously committed history.
 - **Rationale:** Exploration, rollback, and correction require preserved prior paths rather than destructive overwrite.
+
+- **Priority:** P0
+- **Capability ID:** CAP-P0-039
+- **Capability:** The product must support first-party enumeration of the threads owned by a runtime instance at the kernel-level structural boundary, with a backend-advertised capability bit so storage substrates that cannot enumerate efficiently can opt out and remain conformant.
+- **Rationale:** A host application developer cannot build a serious operator-facing product (recent-threads pane, multi-thread debugger, replay UI) without listing the threads the runtime owns; the kernel already exposes branch enumeration inside a thread, and thread enumeration is the symmetric structural primitive that completes that picture without violating the mechanism-not-policy rule.
 
 ### Epic: Turn Execution and Recovery
 
@@ -209,6 +239,16 @@
 - **Capability:** The product must validate tool inputs against declared contracts before execution and surface failures as agent-visible results rather than silent runtime corruption.
 - **Rationale:** Tooling reliability depends on explicit validation and recoverable failure semantics.
 
+- **Priority:** P0
+- **Capability ID:** CAP-P0-040
+- **Capability:** The product must offer a tool-authoring helper that accepts multiple schema authoring styles (Zod v3 and v4, Standard Schema-compliant schemas, and wrapped JSON Schema) without locking the host into one validator, while preserving strict TypeScript inference for the execute callback's input parameter and continuing to accept raw JSON Schema and the existing `CustomSchema` interop shape at the boundary contract.
+- **Rationale:** A tool ecosystem that forces one validator narrows adoption, loses type inference whenever the host's chosen toolkit differs, and contradicts the product posture that ergonomics is a first-class outcome; the boundary contract must remain stable for portability, but the authoring helper is where the SDK earns its DX.
+
+- **Priority:** P0
+- **Capability ID:** CAP-P0-041
+- **Capability:** The product must integrate with the Model Context Protocol as a first-class tool source, allowing a host to connect to any MCP server over stdio or HTTP/SSE and consume its advertised tools as Tuvren tool definitions without writing a bespoke bridge.
+- **Rationale:** MCP is the emerging standard for AI tool ecosystems in 2026; a runtime claiming to rival LangChain/LangGraph cannot ignore the most active tool-ecosystem surface without forcing every host to write its own MCP adapter.
+
 ### Epic: Human-in-the-Loop Governance
 
 - **Priority:** P0
@@ -247,6 +287,38 @@
 - **Capability ID:** CAP-P1-022
 - **Capability:** The product must support non-destructive steering that injects user intent between iterations of a running turn.
 - **Rationale:** Hosts need a way to redirect active work without discarding committed progress.
+
+- **Priority:** P0
+- **Capability ID:** CAP-P0-042
+- **Capability:** The product must expose a unified terminal-value surface on every execution handle so that a host can await an execution's completion as a single promise resolving to a structured execution result, without having to derive completion from raw event iteration or status polling. The same surface must exist on both single-turn execution handles and orchestration handles.
+- **Rationale:** Every serious host treats "await this turn's final value" as a primitive; today only orchestration handles expose it, forcing single-turn hosts to hand-roll the same plumbing the reference host already wrote internally.
+
+### Epic: Single-Tenant Durable-Read Surface
+
+- **Priority:** P0
+- **Capability ID:** CAP-P0-043
+- **Capability:** The product must let a host list the threads owned by the runtime instance it is operating, with cursor-based pagination and optional filters, through the host-facing SDK alone.
+- **Rationale:** A serious operator-facing product needs a recent-threads or thread-picker surface; today the host cannot list threads at all, which forces it either to maintain a parallel index or to pierce kernel internals.
+
+- **Priority:** P0
+- **Capability ID:** CAP-P0-044
+- **Capability:** The product must let a host list the branches that exist within a thread it owns through the host-facing SDK.
+- **Rationale:** Branching is a first-party kernel concept; the host cannot reason about exploratory paths or rollback positions without enumerating them, and the kernel already supports the underlying structural enumeration.
+
+- **Priority:** P0
+- **Capability ID:** CAP-P0-045
+- **Capability:** The product must let a host read the structured runtime state at any specific TurnNode of a branch it owns through the host-facing SDK.
+- **Rationale:** Debugging, replay, and time-travel inspection all require reading the exact state at a chosen turn, not only the current head.
+
+- **Priority:** P0
+- **Capability ID:** CAP-P0-046
+- **Capability:** The product must let a host walk the turn history of a branch it owns through the host-facing SDK, using a cursor that is meaningful inside the runtime's lineage model, in newest-first order, and as an async iterator that does not require loading the entire history into memory.
+- **Rationale:** Conversation history scrollback and audit trails are bounded by the host's display window, not by the runtime's full lineage depth; an async-iterator cursor is the only shape that scales to long-lived threads.
+
+- **Priority:** P0
+- **Capability ID:** CAP-P0-047
+- **Capability:** The product must let a host read the durable conversational messages of a branch it owns through the host-facing SDK without requiring the host to reconstruct messages from TurnTree references and the content-addressed object store by hand.
+- **Rationale:** Reading "the messages on this branch" is the most common host operation; today it requires composing tree resolution, store reads, and content decoding manually, which is exactly why the reference host had to introduce a private inspector.
 
 ### Epic: Extensibility and Policy Composition
 
@@ -331,6 +403,30 @@
 - **Capability:** The product must let a new implementation be built and judged against shared meaning by inspecting only authority packets, generated artifacts, conformance plans, fixtures, language-binding adapters, and measured evidence, without reading another language's implementation source, a generic runner's hard-coded assertions, or Markdown prose as the binding semantic source.
 - **Rationale:** Adding a new language line is only an honest portability claim when the work is reproducible from boundary-owned machine authority alone.
 
+### Epic: Host Developer Ergonomics
+
+- **Priority:** P0
+- **Capability ID:** CAP-P0-048
+- **Capability:** The product must expose a single batteries-included entrypoint that assembles a working runtime (kernel, backend, driver registry, framework runtime) from one curated factory call so a host developer can issue a first Turn without composing five lower-level factories, while retaining the ability to substitute any of those substrates when the host's needs require it.
+- **Rationale:** First-Turn time-to-value is a measurable adoption lever; every serious agent SDK in 2026 has a one-call composition story, and the absence of one is the strongest single contributor to perceived complexity in the current host-facing surface.
+
+- **Priority:** P0
+- **Capability ID:** CAP-P0-049
+- **Capability:** The product must expose one curated host-facing SDK boundary composed of a single shared-primitive package with named subpath exports and a slim convenience package that bundles the batteries-included entrypoint and the curated primitive re-exports, with all leaf packages (backends, stream adapters, drivers, provider bridges, MCP client) peer-depending on the shared-primitive package so that consumers experience a coherent SDK surface and never carry mismatched primitive versions.
+- **Rationale:** The current split into multiple separately-versioned contract packages forces every consumer to depend on the right combination of five primitive packages and risks version skew between primitive packages; one shared-primitive package with subpath exports is the convergent pattern in comparable ecosystems and is the only way to ship a coherent SDK without bundle-size penalties or unsafe duplicated primitive instances.
+
+### Epic: Reference Host Operational Ergonomics
+
+- **Priority:** P1
+- **Capability ID:** CAP-P1-050
+- **Capability:** The product must expose a headless operating mode of the reference host that consumes line-delimited input on stdin and emits structured output, intended for tests, scripts, and operations tooling, sharing the same package, same command set, and same execution path as the interactive mode.
+- **Rationale:** Interactive-only proving hosts cannot be exercised in CI without bespoke scaffolding; a stdin-driven mode shares all behavior with the interactive surface and gives test authors and operations scripts a single durable target.
+
+- **Priority:** P1
+- **Capability ID:** CAP-P1-051
+- **Capability:** The product must allow the reference host to capture a session transcript to durable on-disk storage and to replay a captured transcript against a fresh runtime instance for postmortems and regression tests.
+- **Rationale:** Debugging interactive sessions without a transcript is fragile; replayability turns one-off operator sessions into reusable regression fixtures and makes incident investigation tractable.
+
 ### Epic: Reader and Operator Clarity
 
 - **Priority:** P1
@@ -340,11 +436,12 @@
 
 ### 4.1 Scope Notes
 
-- The PRD intentionally treats persistence, streaming, tool dispatch, approvals, context engineering, and orchestration as product capabilities because they materially define the user-facing value of Tuvren Runtime as a runtime.
+- The PRD intentionally treats persistence, streaming, tool dispatch, approvals, context engineering, orchestration, host-developer ergonomics, single-tenant durable reads, and the curated SDK surface as product capabilities because they materially define the user-facing value of Tuvren Runtime as a runtime.
 - The initial active product line is the shared runtime foundation plus the ReAct Driver, not a commitment to implement every possible driver pattern in the first release line.
 - The first product-depth implementation line is expected to prove nearly the whole documented runtime surface through a serious reference host rather than carrying large core features as indefinite “later” promises.
-- This PRD does not prescribe the concrete storage engine, programming language, packaging layout, or transport stack used to implement those capabilities.
+- This PRD does not prescribe the concrete storage engine, programming language, packaging layout, or transport stack used to implement those capabilities, except where it explicitly commits to one curated host-facing SDK boundary and to the MCP wire protocol as the supported tool-ecosystem surface.
 - Long-term portability is a boundary-preservation goal, not a rewrite mandate; future implementation lines must extend the shared semantic system rather than replace it wholesale.
+- The proving-host clarification of the right high-level SDK boundary that was previously deferred is now considered closed; the consolidated curated SDK surface and the batteries-included entrypoint are the v1 commitments and downstream artifacts may plan around them.
 
 ### 4.2 Distinction Notes
 
@@ -353,15 +450,20 @@
 - Context engineering changes the active working set, not the fact that prior committed history still exists.
 - Semantic neutrality is not toolchain neutrality; implementations may use native package and build workflows while preserving shared runtime meaning at the boundary seams.
 - Authority-packet ownership is not artifact format ownership; an authority packet may pair multiple machine-readable formats (such as logical contract sources, binary grammar, transport projections, telemetry vocabulary, and conformance plans) under one boundary, but no single format silently becomes the meaning of the surface.
-- A proving host is not a privileged exception to the SDK story; it exists to prove that the same host-facing abstractions are sufficient for serious downstream products.
+- A proving host is not a privileged exception to the SDK story; it exists to prove that the same host-facing abstractions are sufficient for serious downstream products, which means the proving host cannot rely on any seam that is not part of the host-facing SDK boundary.
+- A durable-read surface is not a hosted discovery service; it lets a host inspect, list, and replay the state of the runtime instance it owns, but it does not provide cross-tenant search, indexed querying, or multi-tenant access control.
+- A schema-authoring helper is not a boundary contract; the helper accepts richer schema shapes for type inference and ergonomics, but the boundary contract still accepts raw JSON Schema and the existing `CustomSchema` interop shape, so portability and conformance are unaffected.
+- The MCP client integration is not an MCP server projection; the runtime can consume any MCP server's tools, but does not expose itself as an MCP server in v1.
+- A headless mode is not a script-file interpreter; the reference host accepts line-delimited input on stdin, exactly the same input shape as the interactive mode, with no out-of-band scripting language.
+- A curated SDK surface is not a megapackage; primitives live in one shared package with subpath exports, but backends, stream adapters, drivers, provider bridges, and the MCP client remain separate leaf packages that peer-depend on the shared primitives.
 
 ## 5. Non-Functional Constraints
 
-- **Performance:** The product must remain usable for long-lived agent sessions, and routine context-management decisions should rely on compact structural state rather than repeated full-history rescans whenever practical.
-- **Reliability:** The product must make committed progress durable, distinguish incomplete work from committed work, and converge safely after interruptions without ambiguous replay.
-- **Security & Privacy:** Sensitive actions must be governable through approval workflows; provider-specific continuity artifacts must be preserved only as required for correct operation; runtime state and event surfaces must remain inspectable enough for supervision and audit.
-- **Operability:** The product must be embeddable into different host surfaces, support real-time observation, and expose explicit control points for cancellation, steering, approval, and status inspection.
-- **Domain-specific Constraints:** The product must preserve a clear separation between low-level runtime mechanism and higher-level agent policy; the canonical runtime language must remain provider-neutral; history-preserving correction must be preferred over destructive overwrite; active-context reshaping must never imply that prior committed history ceased to exist; and future implementation languages must prove parity against shared semantic assets rather than reinterpret the product independently.
+- **Performance:** The product must remain usable for long-lived agent sessions, and routine context-management decisions should rely on compact structural state rather than repeated full-history rescans whenever practical. Durable-read operations against a single thread or branch must scale to bounded host display windows without forcing the host to load entire history into memory at once.
+- **Reliability:** The product must make committed progress durable, distinguish incomplete work from committed work, and converge safely after interruptions without ambiguous replay. Headless reference-host mode and transcript replay must produce deterministic outputs for the same inputs whenever the underlying runtime is itself deterministic.
+- **Security & Privacy:** Sensitive actions must be governable through approval workflows; provider-specific continuity artifacts must be preserved only as required for correct operation; runtime state and event surfaces must remain inspectable enough for supervision and audit. External MCP servers must be treated as untrusted boundaries: tool inputs and outputs cross a process or network boundary and must be validated and surfaced as agent-visible results rather than implicitly trusted.
+- **Operability:** The product must be embeddable into different host surfaces, support real-time observation, and expose explicit control points for cancellation, steering, approval, and status inspection. The host-facing SDK must allow a host to inspect, list, and replay its own durable state without reaching around the SDK boundary.
+- **Domain-specific Constraints:** The product must preserve a clear separation between low-level runtime mechanism and higher-level agent policy; the canonical runtime language must remain provider-neutral; history-preserving correction must be preferred over destructive overwrite; active-context reshaping must never imply that prior committed history ceased to exist; future implementation languages must prove parity against shared semantic assets rather than reinterpret the product independently; and the first-party reference host must consume only the same host-facing SDK boundary that downstream hosts use.
 
 ### Prohibited Patterns
 
@@ -371,6 +473,10 @@
 - The product must not collapse delegation, handoff, approval, and cancellation into one generic control concept.
 - The product must not let any implementation language file, generic runner source file, or human-prose document act as the authoritative source of a cross-implementation semantic.
 - The product must not satisfy a portability or compatibility claim through smoke success, object existence, or runner-internal assertions alone; every such claim must trace to an authority packet plus measured evidence.
+- The product must not let the first-party reference host depend on any private seam that downstream hosts cannot use; durable-read needs that today justify a private inspector must instead be promoted onto the host-facing SDK boundary.
+- The product must not lock tool authoring into a single schema validator; the tool-authoring helper must accept multiple schema shapes without breaking the underlying boundary contract.
+- The product must not expose cross-tenant search, indexed querying, or multi-tenant access control through the embeddable SDK; those concerns belong to a separately-scoped future hosted/server projection.
+- The product must not let the curated SDK surface split shared primitives into multiple separately-versioned packages; primitives ship under one shared package so leaf packages can peer-depend on a single primitive instance.
 
 ## 6. Boundary Analysis
 
@@ -378,21 +484,30 @@
 
 - A runtime kernel that preserves durable execution state, lineage, and recoverable history
 - A framework layer that executes agent turns, manages iteration, and incorporates model and tool work
-- A serious REPL-style reference host that proves the embeddable SDK can drive a real operator-facing agent product without private shortcuts
+- A serious REPL-style reference host that proves the embeddable SDK can drive a real operator-facing agent product without private shortcuts, in both an interactive and a headless mode
+- A headless operating mode for the reference host that consumes line-delimited stdin input and emits structured output
+- Transcript capture and replay for reference-host sessions
 - Canonical runtime representations for messages, reasoning content, structured output, tool calls, tool results, and file-like payloads
 - Context engineering for active-context pruning, summarization, compaction, or replacement while preserving audit history
-- Host-facing controls for event consumption, cancellation, steering, and approval resolution
+- Host-facing controls for event consumption, awaiting terminal values, cancellation, steering, and approval resolution
+- A unified terminal-value surface on every execution handle
+- A single-tenant durable-read surface on the host-facing SDK covering thread listing, branch listing, state at any TurnNode, cursor-based turn history walking, and branch-message reads
+- A first-party kernel-level thread enumeration primitive with backend-advertised capability for substrates that cannot enumerate efficiently
 - Human-in-the-loop approval flows for sensitive tool execution
 - Extension and policy composition at defined lifecycle points
 - Provider-neutral model integration with canonical streaming and non-streaming behavior
 - Multi-agent orchestration patterns including workers, handoffs, and sequences
+- A batteries-included host-facing SDK entrypoint that assembles kernel, backend, driver registry, and framework runtime from one curated factory call
+- A consolidated curated SDK surface composed of one shared-primitive package with subpath exports and a slim convenience entrypoint, with leaf packages peer-depending on the shared primitives
+- A schema-agnostic tool-authoring helper supporting Zod, Standard Schema, and wrapped JSON Schema with strict type inference while preserving raw JSON Schema and the existing `CustomSchema` interop shape at the boundary contract
+- A first-class Model Context Protocol client integration that consumes external MCP servers over stdio and HTTP/SSE as tool sources
 - A language-neutral semantic foundation that can support more than one implementation line over time through shared contracts, conformance artifacts, and compatibility evidence
 - A boundary-owned machine authority surface where every cross-implementation semantic is anchored to authority packets, generated artifacts, conformance plans, and measured evidence rather than to any one language's implementation, runner code, or prose document
 
 ### Out of Scope
 
 - A managed hosted control plane, SaaS product, or operations console
-- Concrete language, framework, storage engine, transport, or cloud-vendor selection
+- Concrete cloud-vendor selection beyond the curated host-facing SDK boundary and the MCP wire protocol
 - A UI-first showcase whose primary value is presentation rather than proving the host-building SDK
 - Automatic agent discovery, agent marketplace behavior, or dynamic agent self-registration
 - Cross-thread shared memory semantics beyond deliberate runtime coordination mechanisms
@@ -402,6 +517,13 @@
 - Domain-specific business tools, vertical workflows, or provider-exclusive capabilities as core product requirements
 - A simultaneous full-framework port across multiple languages before the shared semantic system is artifact-backed and stable
 - Bespoke per-implementation conformance suites that re-encode product semantics inside runner code instead of consuming a shared, data-owned conformance plan
+- Cross-tenant thread search, multi-tenant access control, and full-text indexed querying through the embeddable SDK (deferred to a future hosted/server projection)
+- A server or REST projection of the durable-read surface (same future projection)
+- A Model Context Protocol server projection that lets external clients consume the runtime as an MCP server (only the client side is in scope)
+- Schema adapters beyond Zod, Standard Schema, and wrapped JSON Schema in the core surface (additional adapters such as Valibot, ArkType, or Effect Schema ship as separate optional packages)
+- Driver hot-swap or additional drivers beyond the ReAct baseline in v1
+- Per-call approval edit forms beyond the existing approve/reject/edit verbs in the reference host (UX scope, not runtime semantics)
+- A script-file interpreter or external scripting language for the headless reference-host mode
 
 ## 7. Conceptual Diagrams (Mermaid)
 
@@ -412,16 +534,20 @@ C4Context
 title System Context
 Person(builder, "Runtime Integrator", "Builds agentic products on top of Tuvren Runtime")
 Person(approver, "Human Approver", "Reviews sensitive actions when approval is required")
-System(runtime, "Tuvren Runtime", "Embeddable stateful agent runtime kernel plus framework")
+Person(operator, "Reference-Host Operator", "Drives the reference host interactively or headlessly for demos, tests, and replays")
+System(runtime, "Tuvren Runtime", "Embeddable stateful agent runtime kernel plus framework with curated host-facing SDK")
 System_Ext(host, "Host Application", "API, UI, CLI, editor, or service embedding Tuvren Runtime")
 System_Ext(modelProviders, "Model Providers", "Generate responses and tool-call intents")
 System_Ext(externalTools, "External Tools and Systems", "Operations invoked by the runtime")
+System_Ext(mcpServers, "External MCP Servers", "Advertise tools consumed by the runtime over stdio or HTTP/SSE")
 
-Rel(builder, runtime, "Configures agents, tools, policies, and embeddings")
-Rel(host, runtime, "Starts turns, consumes events, injects steering, resolves approvals")
+Rel(builder, runtime, "Configures agents, tools, policies, and embeddings through the curated SDK")
+Rel(host, runtime, "Starts turns, awaits results, consumes events, lists threads and branches, replays history, injects steering, resolves approvals")
 Rel(approver, host, "Approves, edits, or rejects pending actions")
+Rel(operator, host, "Drives reference host interactively or headlessly; captures and replays transcripts")
 Rel(runtime, modelProviders, "Sends prompts and receives model outputs")
 Rel(runtime, externalTools, "Executes tool actions and records results")
+Rel(runtime, mcpServers, "Connects as an MCP client, consumes advertised tools as runtime tool definitions")
 ```
 
 ### 7.2 Domain Model
@@ -440,6 +566,11 @@ class ApprovalRequest
 class AgentConfig
 class WorkerExecution
 class Handoff
+class ExecutionHandle
+class ExecutionResult
+class DurableReadSurface
+class ToolSource
+class McpToolSource
 
 Thread "1" --> "*" Branch : contains
 Branch "1" --> "*" Turn : hosts
@@ -452,6 +583,13 @@ Run --> "0..1" ApprovalRequest : may pause for
 Run --> "0..1" AgentConfig : executes with
 Run --> "0..*" WorkerExecution : may delegate
 Run --> "0..1" Handoff : may transfer control through
+ExecutionHandle --> "0..1" ExecutionResult : resolves to on terminal phase
+DurableReadSurface --> "*" Thread : enumerates
+DurableReadSurface --> "*" Branch : enumerates inside a thread
+DurableReadSurface --> "*" TurnNode : reads state at
+DurableReadSurface --> "*" TuvrenMessage : reads on a branch
+ToolSource <|-- McpToolSource
+AgentConfig --> "*" ToolSource : draws tools from
 ```
 
 ## Appendix: Operator Preferences
@@ -461,4 +599,9 @@ Run --> "0..1" Handoff : may transfer control through
 - Treat the first product-depth implementation line as TypeScript, with a serious REPL CLI as the proving host for the embeddable SDK rather than as a separate product direction.
 - Keep the baseline TypeScript provider strategy limited to the AI SDK bridge while preserving Tuvren-owned provider semantics as portable authority.
 - Treat the canonical event stream and SSE projection as portable runtime surfaces, while allowing AG-UI integration to remain implementation-specific because it depends on external SDK ecosystems.
-- Keep package publication and final public-surface curation deferred until the proving host experience clarifies the right high-level SDK boundary.
+- The proving host has now clarified the right high-level SDK boundary; the v1 commitment is one shared-primitive package with subpath exports plus one slim convenience package, with leaf packages peer-depending on the shared primitive package. Package publication and long-lived public-surface curation are no longer deferred and can be planned against this layout.
+- Prefer path-level imports (subpath exports) for the shared-primitive layer; keep backends, stream adapters, drivers, provider bridges, and the MCP client as separate root-only-exported leaf packages.
+- Treat schema-agnostic tool authoring as a first-class DX property; the v1 supported authoring styles are Zod (v3 and v4), Standard Schema-compliant schemas, and wrapped JSON Schema; additional adapters ship as separate optional packages and are not part of the core surface.
+- Treat MCP client integration over both stdio and HTTP/SSE as v1 scope; MCP server-side projection remains deferred.
+- Treat headless mode for the reference host as stdin-driven only; do not introduce a script-file interpreter or external scripting language.
+- Treat the kernel-level `thread.list` syscall addition as the structural completion of the existing `branch.list` primitive; advertise enumeration capability per backend so object-store-style substrates can opt out and remain conformant.
