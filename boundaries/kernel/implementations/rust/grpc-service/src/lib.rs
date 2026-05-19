@@ -24,9 +24,10 @@ use tonic::{Code, Request, Response, Status};
 use tuvren_kernel_rust::{
     BranchRecord, InMemoryKernel, IncorporationRule, KernelError, KernelRecord, KernelResult,
     PathCollectionKind, PathDefinition, PathValue, RunCompletionStatus, RunStatus, SetHeadResult,
-    StagedResult, StagedResultStatus, StepDeclaration, ThreadCreateResult, ThreadRecord, TurnNode,
-    TurnRecord, TurnTreeManifest, TurnTreeSchema, Verdict, VerdictDisposition,
-    decode_deterministic_kernel_record, encode_deterministic_kernel_record,
+    StagedResult, StagedResultStatus, StepDeclaration, StoredThreadEntry, ThreadCreateResult,
+    ThreadListOptions, ThreadRecord, TurnNode, TurnRecord, TurnTreeManifest, TurnTreeSchema,
+    Verdict, VerdictDisposition, decode_deterministic_kernel_record,
+    encode_deterministic_kernel_record,
 };
 
 pub mod proto {
@@ -356,6 +357,41 @@ impl KernelThreadService for KernelGrpcServiceImpl {
         Ok(Response::new(proto::ThreadGetResponse {
             found: thread.is_some(),
             thread: thread.map(thread_to_proto),
+        }))
+    }
+
+    async fn thread_list(
+        &self,
+        request: Request<proto::ThreadListRequest>,
+    ) -> Result<Response<proto::ThreadListResponse>, Status> {
+        let req = request.into_inner();
+        let cursor = req.cursor.map(|c| {
+            // Cursor is "lastCreatedAtMs:lastThreadId" — parse on the server.
+            // The TS adapter encodes/decodes the opaque KernelThreadListCursor;
+            // for Rust-to-Rust calls we expose a simple colon-delimited form.
+            let parts: Vec<&str> = c.splitn(2, ':').collect();
+            if parts.len() == 2
+                && let Ok(ms) = parts[0].parse::<i64>()
+            {
+                return (ms, parts[1].to_string());
+            }
+            (0, c)
+        });
+        let options = ThreadListOptions {
+            limit: req.limit.map(|l| l as usize),
+            cursor,
+            filter_schema_id: req.filter_schema_id,
+        };
+        let (entries, next_cursor) = self
+            .kernel
+            .thread_list(options)
+            .map_err(status_from_kernel_error)?;
+        Ok(Response::new(proto::ThreadListResponse {
+            entries: entries
+                .into_iter()
+                .map(stored_thread_entry_to_proto)
+                .collect(),
+            next_cursor: next_cursor.map(|(ms, id)| format!("{ms}:{id}")),
         }))
     }
 }
@@ -1051,6 +1087,15 @@ fn thread_to_proto(thread: ThreadRecord) -> proto::ThreadRecord {
         root_turn_node_hash: thread.root_turn_node_hash,
         schema_id: thread.schema_id,
         thread_id: thread.thread_id,
+    }
+}
+
+fn stored_thread_entry_to_proto(entry: StoredThreadEntry) -> proto::StoredThreadEntry {
+    proto::StoredThreadEntry {
+        thread_id: entry.thread_id,
+        schema_id: entry.schema_id,
+        root_turn_node_hash: entry.root_turn_node_hash,
+        created_at_ms: entry.created_at_ms,
     }
 }
 

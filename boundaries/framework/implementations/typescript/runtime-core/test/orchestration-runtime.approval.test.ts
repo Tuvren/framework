@@ -332,11 +332,14 @@ describe("orchestration-runtime approval", () => {
     await rootEventsPromise;
 
     expect(resumedChildHandle).not.toBe(childHandle);
-    expect(childResult).toEqual([
-      {
-        text: "Worker resumed with approval.",
-        type: "text",
-      },
-    ]);
+    expect(childResult.status).toBe("completed");
+    if (childResult.status !== "completed") {
+      throw new Error("unreachable");
+    }
+    expect(childResult.finalAssistantMessage).toEqual({
+      parts: [{ text: "Worker resumed with approval.", type: "text" }],
+      providerMetadata: undefined,
+      role: "assistant",
+    });
   });
 });

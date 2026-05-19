@@ -319,9 +319,12 @@ describe("orchestration-runtime child lifecycle", () => {
       agent: "worker",
       signal: textSignal("child"),
     });
-    await expect(childHandle.awaitResult()).rejects.toThrow(
-      "child start failed"
-    );
+    const childResult = await childHandle.awaitResult();
+    expect(childResult.status).toBe("failed");
+    if (childResult.status !== "failed") {
+      throw new Error("unreachable");
+    }
+    expect(childResult.error.message).toBe("child start failed");
     await delay(40);
     const events = subtreeCapture.events;
 
@@ -384,12 +387,15 @@ describe("orchestration-runtime child lifecycle", () => {
       await harness.readBranchMessages(thread.branchId)
     );
 
-    expect(childResult).toEqual([
-      {
-        text: "Worker complete.",
-        type: "text",
-      },
-    ]);
+    expect(childResult.status).toBe("completed");
+    if (childResult.status !== "completed") {
+      throw new Error("unreachable");
+    }
+    expect(childResult.finalAssistantMessage).toEqual({
+      parts: [{ text: "Worker complete.", type: "text" }],
+      providerMetadata: undefined,
+      role: "assistant",
+    });
     expect(
       events.some(
         (event) =>
@@ -544,13 +550,16 @@ describe("orchestration-runtime child lifecycle", () => {
       signal: textSignal("report"),
     });
 
-    expect(await childHandle.awaitResult()).toEqual([
-      {
-        data: { ok: true },
-        name: "report",
-        type: "structured",
-      },
-    ]);
+    const childResult = await childHandle.awaitResult();
+    expect(childResult.status).toBe("completed");
+    if (childResult.status !== "completed") {
+      throw new Error("unreachable");
+    }
+    expect(childResult.finalAssistantMessage).toEqual({
+      parts: [{ data: { ok: true }, name: "report", type: "structured" }],
+      providerMetadata: undefined,
+      role: "assistant",
+    });
   });
 
   test("awaitResult resolves persisted assistant output even when the child driver does not stream it explicitly", async () => {
@@ -606,12 +615,16 @@ describe("orchestration-runtime child lifecycle", () => {
       signal: textSignal("worker"),
     });
 
-    expect(await childHandle.awaitResult()).toEqual([
-      {
-        text: "Worker without explicit streaming.",
-        type: "text",
-      },
-    ]);
+    const childResult = await childHandle.awaitResult();
+    expect(childResult.status).toBe("completed");
+    if (childResult.status !== "completed") {
+      throw new Error("unreachable");
+    }
+    expect(childResult.finalAssistantMessage).toEqual({
+      parts: [{ text: "Worker without explicit streaming.", type: "text" }],
+      providerMetadata: undefined,
+      role: "assistant",
+    });
   });
 
   test("awaitResult preserves file parts in the final visible result surface", async () => {
@@ -676,17 +689,26 @@ describe("orchestration-runtime child lifecycle", () => {
       signal: textSignal("file"),
     });
 
-    expect(await childHandle.awaitResult()).toEqual([
-      {
-        data: new Uint8Array([1, 2, 3]),
-        filename: "report.csv",
-        mediaType: "text/csv",
-        type: "file",
-      },
-    ]);
+    const childResult = await childHandle.awaitResult();
+    expect(childResult.status).toBe("completed");
+    if (childResult.status !== "completed") {
+      throw new Error("unreachable");
+    }
+    expect(childResult.finalAssistantMessage).toEqual({
+      parts: [
+        {
+          data: new Uint8Array([1, 2, 3]),
+          filename: "report.csv",
+          mediaType: "text/csv",
+          type: "file",
+        },
+      ],
+      providerMetadata: undefined,
+      role: "assistant",
+    });
   });
 
-  test("awaitResult preserves tool-only child completions in call order", async () => {
+  test("awaitResult captures tool call parts in finalAssistantMessage for tool-only completions", async () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
@@ -793,19 +815,30 @@ describe("orchestration-runtime child lifecycle", () => {
       signal: textSignal("tool-only"),
     });
 
-    expect(await childHandle.awaitResult()).toEqual([
-      {
-        callId: "call-first",
-        name: "first",
-        output: { status: "first" },
-        type: "tool_result",
-      },
-      {
-        callId: "call-second",
-        name: "second",
-        output: { status: "second" },
-        type: "tool_result",
-      },
-    ]);
+    const childResult = await childHandle.awaitResult();
+    expect(childResult.status).toBe("completed");
+    if (childResult.status !== "completed") {
+      throw new Error("unreachable");
+    }
+    expect(childResult.finalAssistantMessage).toEqual({
+      parts: [
+        {
+          callId: "call-first",
+          input: { query: "first" },
+          name: "first",
+          providerMetadata: undefined,
+          type: "tool_call",
+        },
+        {
+          callId: "call-second",
+          input: { query: "second" },
+          name: "second",
+          providerMetadata: undefined,
+          type: "tool_call",
+        },
+      ],
+      providerMetadata: undefined,
+      role: "assistant",
+    });
   });
 });

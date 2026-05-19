@@ -18,11 +18,10 @@ import { type EpochMs, TuvrenRuntimeError } from "@tuvren/core-types";
 import type {
   AgentConfig,
   ApprovalResponse,
-  ContentPart,
   ExecutionHandle,
+  ExecutionResult,
   ExecutionStatus,
   InputSignal,
-  ToolResultPart,
   TuvrenErrorProjection,
   TuvrenStreamEvent,
 } from "@tuvren/runtime-api";
@@ -79,13 +78,12 @@ export class OrchestrationNode {
   private lastErrorProjection?: TuvrenErrorProjection;
   private readonly now: () => EpochMs;
   private readonly pendingSteering: InputSignal[] = [];
-  private readonly resultState = createDeferred<unknown>();
+  private readonly resultState = createDeferred<void>();
   private readonly runtime: OrchestrationRuntimeNodeHost;
   private selfPhase: ExecutionStatus["phase"] = "running";
   private selfEventsClaimed = false;
   private selfEventsQueue?: AsyncEventQueue<TuvrenStreamEvent>;
   private selfResultResolved = false;
-  private selfVisibleResult?: ContentPart[];
   private startedExecution = false;
   private readonly subtreeEventSubscribers = new Set<
     AsyncEventQueue<TuvrenStreamEvent>
@@ -169,7 +167,11 @@ export class OrchestrationNode {
     });
   }
 
-  async awaitResult(): Promise<unknown> {
+  get nodeWorkerId(): string | undefined {
+    return this.workerId;
+  }
+
+  async awaitResult(): Promise<ExecutionResult> {
     if (!this.startedExecution) {
       throw new TuvrenRuntimeError(
         "awaitResult() requires the orchestration handle to start execution first",
@@ -183,7 +185,23 @@ export class OrchestrationNode {
     this.activeResultAwaiters += 1;
 
     try {
-      return await this.resultState.promise;
+      await this.resultState.promise;
+
+      if (this.currentBinding !== undefined) {
+        return await this.currentBinding.handle.awaitResult();
+      }
+
+      // Initialization failed — no binding was ever established.
+      const projection = this.lastErrorProjection;
+      const error = new TuvrenRuntimeError(
+        projection?.message ?? "orchestration execution failed",
+        { code: projection?.code ?? "execution_failed" }
+      );
+      return {
+        error,
+        executionStatus: this.currentStatus(),
+        status: "failed",
+      };
     } finally {
       this.activeResultAwaiters -= 1;
       this.maybeCancelUnobservedExecution();
@@ -531,9 +549,7 @@ export class OrchestrationNode {
     this.selfResultResolved = true;
     const projection = projectError(error);
     this.lastErrorProjection = projection;
-    this.resultState.resolve(
-      Promise.reject(Object.assign(new Error(projection.message), projection))
-    );
+    this.resultState.resolve();
   }
 
   private settleResultFailureFromProjection(): void {
@@ -552,7 +568,7 @@ export class OrchestrationNode {
     }
 
     this.selfResultResolved = true;
-    this.resultState.resolve(this.selfVisibleResult);
+    this.resultState.resolve(undefined);
   }
 
   private async observeChildSettlement(
@@ -676,108 +692,27 @@ export class OrchestrationNode {
     }
   }
 
-  private trackVisibleResult(
-    event: TuvrenStreamEvent,
-    state: {
-      assistantParts: ContentPart[];
-      lastVisible: ContentPart[] | undefined;
-      toolResults: ToolResultPart[];
-    }
-  ): void {
-    switch (event.type) {
-      case "message.start":
-        state.assistantParts = [];
-        return;
-      case "file.done":
-        state.assistantParts.push({
-          data:
-            typeof event.data === "string"
-              ? event.data
-              : new Uint8Array(event.data),
-          filename: event.filename,
-          mediaType: event.mediaType,
-          type: "file",
-        });
-        return;
-      case "text.done":
-        state.assistantParts.push({
-          text: event.text,
-          type: "text",
-        });
-        return;
-      case "structured.done":
-        state.assistantParts.push({
-          data: structuredClone(event.data),
-          name: event.name,
-          type: "structured",
-        });
-        return;
-      case "tool.result":
-        state.toolResults.push({
-          callId: event.callId,
-          isError: event.isError,
-          name: event.name,
-          output: event.output,
-          type: "tool_result",
-        });
-        state.lastVisible = state.toolResults.map((result) => ({
-          ...result,
-          output: structuredClone(result.output),
-          providerMetadata:
-            result.providerMetadata === undefined
-              ? undefined
-              : structuredClone(result.providerMetadata),
-        }));
-        return;
-      case "message.done":
-        if (state.assistantParts.length > 0) {
-          state.lastVisible = state.assistantParts.map((part) =>
-            cloneVisibleContentPart(part)
-          );
-          state.toolResults = [];
-        }
-
-        state.assistantParts = [];
-        return;
-      case "error":
-        this.lastErrorProjection = event.error;
-        return;
-      default:
-        return;
-    }
-  }
-
   private async watchCurrentBinding(
     generation: number,
     bindingPromise: Promise<ExecutionBinding>
   ): Promise<void> {
     try {
       const binding = await bindingPromise;
-      const visibleState = {
-        assistantParts: [],
-        lastVisible: this.selfVisibleResult,
-        toolResults:
-          this.selfVisibleResult?.filter(
-            (part): part is ToolResultPart => part.type === "tool_result"
-          ) ?? [],
-      } satisfies {
-        assistantParts: ContentPart[];
-        lastVisible: ContentPart[] | undefined;
-        toolResults: ToolResultPart[];
-      };
 
       for await (const event of binding.handle.events()) {
         if (generation !== this.bindingGeneration) {
           return;
         }
 
+        if (event.type === "error") {
+          this.lastErrorProjection = event.error;
+        }
+
         const decoratedEvent = this.decorateEvent(event, binding);
-        this.trackVisibleResult(event, visibleState);
         this.selfEventsQueue?.push(cloneValue(decoratedEvent));
         this.publishSubtreeEvent(decoratedEvent);
       }
 
-      this.selfVisibleResult = visibleState.lastVisible;
       this.selfEventsQueue?.close();
 
       if (generation !== this.bindingGeneration) {
@@ -817,11 +752,7 @@ export class OrchestrationNode {
   }
 
   private async waitUntilSettled(): Promise<void> {
-    try {
-      await this.resultState.promise;
-    } catch {
-      return;
-    }
+    await this.resultState.promise;
   }
 }
 
@@ -912,42 +843,4 @@ function createIteratorDoneResult<T>(): IteratorResult<T, undefined> {
     done: true,
     value: undefined,
   };
-}
-
-function cloneVisibleContentPart(part: ContentPart): ContentPart {
-  switch (part.type) {
-    case "file":
-      return {
-        data:
-          typeof part.data === "string" ? part.data : new Uint8Array(part.data),
-        filename: part.filename,
-        mediaType: part.mediaType,
-        providerMetadata:
-          part.providerMetadata === undefined
-            ? undefined
-            : structuredClone(part.providerMetadata),
-        type: "file",
-      };
-    case "structured":
-      return {
-        data: structuredClone(part.data),
-        name: part.name,
-        providerMetadata:
-          part.providerMetadata === undefined
-            ? undefined
-            : structuredClone(part.providerMetadata),
-        type: "structured",
-      };
-    case "text":
-      return {
-        providerMetadata:
-          part.providerMetadata === undefined
-            ? undefined
-            : structuredClone(part.providerMetadata),
-        text: part.text,
-        type: "text",
-      };
-    default:
-      return part;
-  }
 }

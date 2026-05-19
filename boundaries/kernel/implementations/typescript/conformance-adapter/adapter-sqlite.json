@@ -26,7 +26,9 @@
     "--capability",
     "kernel.persistence.durable",
     "--capability",
-    "kernel.restart-recovery"
+    "kernel.restart-recovery",
+    "--capability",
+    "kernel-protocol.thread.enumeration"
   ],
   "capabilities": [
     "kernel.protocol",
@@ -34,7 +36,8 @@
     "kernel.logical",
     "kernel.run-liveness",
     "kernel.persistence.durable",
-    "kernel.restart-recovery"
+    "kernel.restart-recovery",
+    "kernel-protocol.thread.enumeration"
   ],
   "authorityPackets": [
     "boundaries/kernel/contracts/protocol/spec/authority-packet.json"

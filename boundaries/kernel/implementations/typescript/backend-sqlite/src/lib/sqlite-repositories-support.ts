@@ -22,6 +22,7 @@ import {
   assertStoredStagedResult,
   assertStoredThread,
   type RuntimeBackendTx as KrakenBackendTx,
+  type ListThreadsCursorPayload,
   type StoredObject,
   type StoredObserveAnnotation,
   type StoredOrderedPathChunk,
@@ -430,6 +431,74 @@ export function createSupportRepositories(
         writeTracker.recordThreadPut(record);
 
         return Promise.resolve();
+      },
+      list(options) {
+        assertTransactionActive();
+        const params: (string | number)[] = [];
+        const conditions: string[] = [];
+
+        if (options?.cursor !== undefined) {
+          const { lastCreatedAtMs, lastThreadId } = options.cursor;
+          conditions.push(
+            "(created_at_ms > ? OR (created_at_ms = ? AND thread_id > ?))"
+          );
+          params.push(lastCreatedAtMs, lastCreatedAtMs, lastThreadId);
+        }
+
+        if (options?.filter?.schemaId !== undefined) {
+          conditions.push("schema_id = ?");
+          params.push(options.filter.schemaId);
+        }
+
+        const where =
+          conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+
+        const limit = options?.limit;
+        const fetchLimit = limit === undefined ? undefined : limit + 1;
+        const limitClause =
+          fetchLimit === undefined ? "" : `LIMIT ${fetchLimit}`;
+
+        const rows = db
+          .prepare<
+            (string | number)[],
+            {
+              thread_id: string;
+              schema_id: string;
+              root_turn_node_hash: string;
+              created_at_ms: number;
+            }
+          >(
+            `SELECT thread_id, schema_id, root_turn_node_hash, created_at_ms
+             FROM threads
+             ${where}
+             ORDER BY created_at_ms ASC, thread_id ASC
+             ${limitClause}`
+          )
+          .all(...params);
+
+        let threads: StoredThread[] = rows.map((row) => ({
+          threadId: row.thread_id,
+          schemaId: row.schema_id,
+          rootTurnNodeHash: row.root_turn_node_hash,
+          createdAtMs: row.created_at_ms as StoredThread["createdAtMs"],
+        }));
+
+        let nextCursor: ListThreadsCursorPayload | undefined;
+        if (limit !== undefined && threads.length > limit) {
+          threads = threads.slice(0, limit);
+          const last = threads.at(-1);
+          if (last !== undefined) {
+            nextCursor = {
+              v: 1,
+              kind: "list-threads",
+              lastThreadId: last.threadId,
+              lastCreatedAtMs: last.createdAtMs,
+              filter: options?.filter,
+            };
+          }
+        }
+
+        return Promise.resolve({ threads, nextCursor });
       },
     },
   };

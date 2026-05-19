@@ -7,7 +7,7 @@ Epic AD is closed in current repo reality.
 ## Delivered Scope
 
 - The active freeze-readiness scope was already activated in `constitution/Tasks.md` and `constitution/TechSpec.md` before this closure pass.
-- The normative docs claim inventory covers 226 matrix rows and 223 independent claims from `docs/KrakenFrameworkSpecification.md` and `docs/KrakenKernelSpecification.md`.
+- The normative docs claim inventory covers 231 matrix rows and 228 independent claims from `docs/KrakenFrameworkSpecification.md` and `docs/KrakenKernelSpecification.md`.
 - The docs-to-authority coverage matrix assigns exactly one primary classification to every row and links duplicate rows through `duplicateOf` instead of treating them as separate independent requirements.
 - Framework deferred-surface decisions and kernel/backend/provider local-surface decisions are checked in as Epic AD handoff records.
 - Docs preambles now distinguish human semantic authority from machine portability authority and point readers to the AD matrix for freeze-readiness classification.

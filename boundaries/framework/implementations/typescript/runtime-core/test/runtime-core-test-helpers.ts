@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import { TuvrenRuntimeError } from "@tuvren/core-types";
 import type { RuntimeDriver as KrakenDriver } from "@tuvren/driver-api";
 import {
   decodeDeterministicKernelRecord,
@@ -24,6 +25,7 @@ import type {
   AgentConfig,
   ContextManifest,
   ExecutionHandle,
+  ExecutionResult,
   ExecutionStatus,
   HandoffContextPlan,
   HandoffSourceContext,
@@ -221,6 +223,20 @@ export function createStubExecutionHandle(
   });
 
   const handle: ExecutionHandle = {
+    async awaitResult(): Promise<ExecutionResult> {
+      await closedPromise;
+
+      if (phase === "failed") {
+        throw new TuvrenRuntimeError("Execution was cancelled", {
+          code: "execution_cancelled",
+        });
+      }
+
+      return {
+        executionStatus: { iterationCount: 0, phase },
+        status: "completed",
+      };
+    },
     cancel() {
       phase = "failed";
 
@@ -352,6 +368,22 @@ export function createStaticExecutionHandle(
   status: ExecutionStatus
 ): ExecutionHandle {
   return {
+    awaitResult(): Promise<ExecutionResult> {
+      if (status.phase === "completed") {
+        return Promise.resolve({
+          executionStatus: status,
+          status: "completed",
+        });
+      }
+
+      return Promise.resolve({
+        error: new TuvrenRuntimeError("Execution failed", {
+          code: "execution_failed",
+        }),
+        executionStatus: status,
+        status: "failed",
+      });
+    },
     cancel() {
       return undefined;
     },

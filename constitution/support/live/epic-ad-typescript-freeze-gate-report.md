@@ -8,14 +8,14 @@ Rust framework product work remains blocked until a later TechSpec/Tasks revisio
 
 ## Authority-Backed and Conformance-Covered Claims
 
-- Independent claims currently classified as authority-backed and conformance-covered: 194
+- Independent claims currently classified as authority-backed and conformance-covered: 195
 - Duplicate matrix rows linked by `duplicateOf`: 3
 - Evidence anchors: framework, provider, and kernel authority packets; shared conformance plans; boundary fixtures/scenarios; adapter capabilities; and compatibility evidence under `reports/compatibility/evidence/`.
 
 ## Remaining Surfaces
 
-- Potentially blocking because still implementation-local or stale-docs-corrected: 0
-- Non-blocking because they are explicitly implementation-defined or deferred: 29
+- Potentially blocking because still implementation-local or stale-docs-corrected: 3
+- Non-blocking because they are explicitly implementation-defined or deferred: 30
 
 ## Remaining Surface Detail
 
@@ -28,7 +28,8 @@ Every remaining non-authority surface is listed below with its current posture. 
 | framework driver framing | 2 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
 | future framework drivers | 1 | explicitly-deferred | Future TechSpec/Tasks revision after TypeScript freeze closure | No, if kept local/deferred |
 | kernel backend acceleration indexes | 2 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
-| kernel backend physical storage | 1 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
+| kernel backend physical storage | 2 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
+| kernel capability-gated syscalls | 3 | missing-conformance-follow-up | KRT-AM010 | Yes, until AF/docs evidence resolves it |
 | kernel deferred maintenance surfaces | 1 | explicitly-deferred | Future TechSpec/Tasks revision after TypeScript freeze closure | No, if kept local/deferred |
 | kernel docs-to-authority framing | 1 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
 | kernel storage structural sharing | 1 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |

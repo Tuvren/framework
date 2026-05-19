@@ -43,6 +43,7 @@ import {
   StagingStageResponseSchema,
   ThreadCreateResponseSchema,
   ThreadGetResponseSchema,
+  ThreadListResponseSchema,
   TreeResolveResponseSchema,
   TurnCreateResponseSchema,
   TurnGetResponseSchema,
@@ -56,6 +57,7 @@ import {
   decodeKernelRecordBytes,
   fromBranchHeadListEntries,
   fromProtoManifestEntries,
+  fromStoredThreadEntry,
   requireBranchRecord,
   requireComposedVerdict,
   requirePathValue,
@@ -394,6 +396,27 @@ export function createGrpcRuntimeKernel(
             : null;
         } catch (error: unknown) {
           throw toTransportError(error, "thread.get");
+        }
+      },
+      async list(options) {
+        try {
+          const response = await threadClient.threadList({
+            limit: options?.limit === undefined ? undefined : options.limit,
+            cursor: options?.cursor ?? undefined,
+            filterSchemaId: options?.filter?.schemaId ?? undefined,
+          });
+          return {
+            threads: response.entries.map((entry, index) =>
+              fromStoredThreadEntry(
+                entry,
+                `${ThreadListResponseSchema.typeName}.entries[${index}]`
+              )
+            ),
+            nextCursor:
+              response.nextCursor === "" ? undefined : response.nextCursor,
+          };
+        } catch (error: unknown) {
+          throw toTransportError(error, "thread.list");
         }
       },
     },

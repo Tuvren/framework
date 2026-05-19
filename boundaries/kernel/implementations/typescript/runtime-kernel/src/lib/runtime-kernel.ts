@@ -18,12 +18,15 @@ import { randomUUID } from "node:crypto";
 import {
   type EpochMs,
   TuvrenLineageError,
+  TuvrenPersistenceError,
   TuvrenRuntimeError,
   TuvrenValidationError,
 } from "@tuvren/core-types";
 import {
   assertTurnTreeSchema,
   type BranchHeadListEntry,
+  type KernelThreadListCursor,
+  type ListThreadsCursorPayload,
   type RuntimeBackend,
   type RuntimeKernel,
   type RuntimeKernelRunLiveness,
@@ -77,6 +80,55 @@ import {
   toStoredStagedResult,
   toTurnRecord,
 } from "./runtime-kernel-storage.js";
+
+function encodeCursor(
+  payload: ListThreadsCursorPayload
+): KernelThreadListCursor {
+  return Buffer.from(JSON.stringify(payload), "utf8").toString("base64url");
+}
+
+function decodeCursor(
+  cursor: KernelThreadListCursor
+): ListThreadsCursorPayload {
+  let raw: string;
+  try {
+    raw = Buffer.from(cursor, "base64url").toString("utf8");
+  } catch {
+    throw new TuvrenValidationError(
+      "thread.list cursor is not valid base64url",
+      {
+        code: "invalid_durable_read_cursor",
+      }
+    );
+  }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new TuvrenValidationError(
+      "thread.list cursor payload is not valid JSON",
+      {
+        code: "invalid_durable_read_cursor",
+      }
+    );
+  }
+  if (
+    typeof parsed !== "object" ||
+    parsed === null ||
+    (parsed as ListThreadsCursorPayload).v !== 1 ||
+    (parsed as ListThreadsCursorPayload).kind !== "list-threads" ||
+    typeof (parsed as ListThreadsCursorPayload).lastThreadId !== "string" ||
+    typeof (parsed as ListThreadsCursorPayload).lastCreatedAtMs !== "number"
+  ) {
+    throw new TuvrenValidationError(
+      "thread.list cursor payload has unexpected shape",
+      {
+        code: "invalid_durable_read_cursor",
+      }
+    );
+  }
+  return parsed as ListThreadsCursorPayload;
+}
 
 export interface RuntimeKernelOptions {
   backend: RuntimeBackend;
@@ -391,6 +443,39 @@ export function createRuntimeKernel(
                 schemaId: thread.schemaId,
                 threadId: thread.threadId,
               };
+        });
+      },
+
+      async list(options) {
+        if (!backend.capabilities()["thread.enumeration"]) {
+          throw new TuvrenPersistenceError(
+            "thread.list is not supported by this backend",
+            { code: "kernel_capability_unsupported" }
+          );
+        }
+        return await backend.transact(async (tx) => {
+          if (tx.threads.list === undefined) {
+            throw new TuvrenPersistenceError(
+              "backend advertises thread.enumeration but does not implement ThreadRepository.list",
+              { code: "kernel_capability_unsupported" }
+            );
+          }
+          const decodedCursor =
+            options?.cursor === undefined
+              ? undefined
+              : decodeCursor(options.cursor);
+          const result = await tx.threads.list({
+            limit: options?.limit,
+            cursor: decodedCursor,
+            filter: options?.filter,
+          });
+          return {
+            threads: result.threads,
+            nextCursor:
+              result.nextCursor === undefined
+                ? undefined
+                : encodeCursor(result.nextCursor),
+          };
         });
       },
     },

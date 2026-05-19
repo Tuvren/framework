@@ -1,7 +1,11 @@
 {
   "adapterId": "rust-kernel",
   "boundary": "kernel",
-  "capabilities": ["kernel.logical", "kernel.protocol"],
+  "capabilities": [
+    "kernel-protocol.thread.enumeration",
+    "kernel.logical",
+    "kernel.protocol"
+  ],
   "checkResults": [
     {
       "assertionResults": [
@@ -226,6 +230,64 @@
       "details": {
         "adapterId": "rust-kernel",
         "planId": "tuvren.kernel.protocol.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.logical.thread_list.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.thread_list.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.thread_list.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.thread_list.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.thread_list.requiredEvidence.result.threadEnumeration.count",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.thread_list.requiredEvidence.result.threadEnumeration.firstThreadId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.thread_list.requiredEvidence.result.threadEnumeration.hasCursor",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.thread_list.requiredEvidence.result.threadEnumeration.pagedCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.thread_list.requiredEvidence.threadEnumeration.count",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.thread_list.requiredEvidence.threadEnumeration.firstThreadId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.thread_list.requiredEvidence.threadEnumeration.hasCursor",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.thread_list.requiredEvidence.threadEnumeration.pagedCount",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.logical.thread_list",
+      "details": {
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
     },
@@ -1620,9 +1682,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 41,
-    "totalChecks": 55,
-    "applicableChecks": 41,
+    "passedChecks": 42,
+    "totalChecks": 56,
+    "applicableChecks": 42,
     "nonApplicableChecks": 14
   },
   "suiteId": "tuvren.kernel.protocol",

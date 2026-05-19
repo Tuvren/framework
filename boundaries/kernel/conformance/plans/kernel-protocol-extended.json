@@ -909,6 +909,39 @@
       "checkId": "kernel-protocol-af.branch-set-head-rejects-lateral-lineage",
       "evidence": ["protocolEdgeValidation.branch.lateralHeadCode"],
       "operation": "kernel.protocol.edge-validation"
+    },
+    {
+      "checkId": "kernel.logical.thread_list",
+      "operation": "kernel.logical.thread-list",
+      "capabilities": ["kernel-protocol.thread.enumeration"],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.threadEnumeration.count",
+          "equals": 2
+        },
+        {
+          "kind": "resultField",
+          "field": "$.threadEnumeration.firstThreadId",
+          "equals": "thread_enum_a"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.threadEnumeration.pagedCount",
+          "equals": 1
+        },
+        {
+          "kind": "resultField",
+          "field": "$.threadEnumeration.hasCursor",
+          "equals": true
+        }
+      ],
+      "evidence": [
+        "threadEnumeration.count",
+        "threadEnumeration.firstThreadId",
+        "threadEnumeration.pagedCount",
+        "threadEnumeration.hasCursor"
+      ]
     }
   ],
   "fixtures": {
@@ -932,5 +965,5 @@
   },
   "packetId": "tuvren.kernel.protocol",
   "planId": "tuvren.kernel.protocol.extended",
-  "planVersion": "0.1.0"
+  "planVersion": "0.2.0"
 }

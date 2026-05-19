@@ -398,8 +398,37 @@ export interface ObserveAnnotationRepository {
   set(record: StoredObserveAnnotation): Promise<void>;
 }
 
+/**
+ * ADR-034: internal cursor payload shape for thread.list pagination.
+ * Backends that implement ThreadRepository.list encode and decode this
+ * structure. It is not exposed to kernel callers; callers see only the
+ * opaque KernelThreadListCursor string.
+ */
+export interface ListThreadsCursorPayload {
+  filter?: { schemaId?: string };
+  kind: "list-threads";
+  lastCreatedAtMs: EpochMs;
+  lastThreadId: string;
+  v: 1;
+}
+
 export interface ThreadRepository {
   get(threadId: string): Promise<StoredThread | null>;
+  /**
+   * ADR-034: optional per BackendCapability descriptor. Backends that
+   * advertise thread.enumeration:true MUST implement this method. Ordering
+   * is (createdAtMs ASC, threadId ASC). The cursor resumes strictly after
+   * the (lastCreatedAtMs, lastThreadId) pair. filter.schemaId restricts
+   * results to threads created with the matching schema id.
+   */
+  list?(options?: {
+    limit?: number;
+    cursor?: ListThreadsCursorPayload;
+    filter?: { schemaId?: string };
+  }): Promise<{
+    threads: StoredThread[];
+    nextCursor?: ListThreadsCursorPayload;
+  }>;
   put(record: StoredThread): Promise<void>;
 }
 
@@ -444,10 +473,34 @@ export interface RuntimeBackendTx {
   turnTrees: TurnTreeRepository;
 }
 
+/**
+ * ADR-034: per-backend capability descriptor. Each backend advertises which
+ * optional kernel-level structural enumerations it supports efficiently so
+ * the kernel can reject unsupported syscalls with a typed error rather than
+ * degrading silently. See KrakenKernelSpecification §9.
+ */
+export interface BackendCapability {
+  /**
+   * Backend supports efficient thread enumeration via ThreadRepository.list.
+   * Required for hosts that consume TuvrenRuntime.listThreads.
+   */
+  readonly "thread.enumeration": boolean;
+  /** Reserved for future capability bits. */
+  readonly [extraCapability: string]: boolean | undefined;
+}
+
 export interface RuntimeBackend {
+  capabilities(): BackendCapability;
   health(): Promise<{ ok: true } | { ok: false; reason: string }>;
   transact<T>(work: (tx: RuntimeBackendTx) => Promise<T>): Promise<T>;
 }
+
+/**
+ * ADR-034: opaque cursor token for thread.list pagination at the kernel
+ * protocol level. Internally encodes (lastCreatedAtMs, lastThreadId) as a
+ * URL-safe base64 JSON payload; callers treat it as an opaque string.
+ */
+export type KernelThreadListCursor = string;
 
 export interface RuntimeKernel {
   branch: {
@@ -515,6 +568,19 @@ export interface RuntimeKernel {
       initialBranchId: string
     ): Promise<ThreadCreateResult>;
     get(threadId: string): Promise<ThreadRecord | null>;
+    /**
+     * ADR-034: capability-gated thread enumeration. Rejects with
+     * TuvrenPersistenceError code "kernel_capability_unsupported" when the
+     * backend does not advertise thread.enumeration.
+     */
+    list(options?: {
+      limit?: number;
+      cursor?: KernelThreadListCursor;
+      filter?: { schemaId?: string };
+    }): Promise<{
+      threads: StoredThread[];
+      nextCursor?: KernelThreadListCursor;
+    }>;
   };
   tree: {
     create(

@@ -1,6 +1,6 @@
 {
   "packetId": "tuvren.kernel.protocol",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "boundary": "kernel",
   "surface": "protocol",
   "humanAuthorityRefs": ["docs/KrakenKernelSpecification.md"],
@@ -42,7 +42,7 @@
     },
     {
       "planId": "tuvren.kernel.protocol.extended",
-      "planVersion": "0.1.0",
+      "planVersion": "0.2.0",
       "path": "boundaries/kernel/conformance/plans/kernel-protocol-extended.json"
     },
     {

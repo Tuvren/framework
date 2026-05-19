@@ -342,6 +342,7 @@
             "kernel-protocol-af.schema-register-rejects-duplicate-path",
             "kernel-protocol-af.tree-create-rejects-missing-required-path",
             "kernel-protocol-af.tree-diff-rejects-schema-mismatch",
+            "kernel.logical.thread_list",
             "kernel.protocol.deterministic_hashing.f-all-ones-bytes",
             "kernel.protocol.deterministic_hashing.f-all-ordered-paths",
             "kernel.protocol.deterministic_hashing.f-all-single-paths",
@@ -384,12 +385,13 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 53,
-            "totalChecks": 55,
-            "applicableChecks": 53,
+            "passedChecks": 54,
+            "totalChecks": 56,
+            "applicableChecks": 54,
             "nonApplicableChecks": 2
           },
           "declaredCapabilities": [
+            "kernel-protocol.thread.enumeration",
             "kernel.edge-validation",
             "kernel.logical",
             "kernel.protocol",
@@ -425,6 +427,7 @@
             "kernel-protocol-af.schema-register-rejects-duplicate-path",
             "kernel-protocol-af.tree-create-rejects-missing-required-path",
             "kernel-protocol-af.tree-diff-rejects-schema-mismatch",
+            "kernel.logical.thread_list",
             "kernel.protocol.deterministic_hashing.f-all-ones-bytes",
             "kernel.protocol.deterministic_hashing.f-all-ordered-paths",
             "kernel.protocol.deterministic_hashing.f-all-single-paths",
@@ -469,12 +472,13 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 55,
-            "totalChecks": 55,
-            "applicableChecks": 55,
+            "passedChecks": 56,
+            "totalChecks": 56,
+            "applicableChecks": 56,
             "nonApplicableChecks": 0
           },
           "declaredCapabilities": [
+            "kernel-protocol.thread.enumeration",
             "kernel.edge-validation",
             "kernel.logical",
             "kernel.persistence.durable",
@@ -512,6 +516,7 @@
             "kernel-protocol-af.schema-register-rejects-duplicate-path",
             "kernel-protocol-af.tree-create-rejects-missing-required-path",
             "kernel-protocol-af.tree-diff-rejects-schema-mismatch",
+            "kernel.logical.thread_list",
             "kernel.protocol.deterministic_hashing.f-all-ones-bytes",
             "kernel.protocol.deterministic_hashing.f-all-ordered-paths",
             "kernel.protocol.deterministic_hashing.f-all-single-paths",
@@ -556,12 +561,13 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 55,
-            "totalChecks": 55,
-            "applicableChecks": 55,
+            "passedChecks": 56,
+            "totalChecks": 56,
+            "applicableChecks": 56,
             "nonApplicableChecks": 0
           },
           "declaredCapabilities": [
+            "kernel-protocol.thread.enumeration",
             "kernel.edge-validation",
             "kernel.logical",
             "kernel.persistence.durable",
@@ -651,6 +657,7 @@
             "kernel.protocol.deterministic_hashing",
             "kernel.protocol.modify_composition",
             "kernel.protocol.schema_roundtrip",
+            "kernel.logical.thread_list",
             "kernel.protocol.deterministic_hashing.f-all-ones-bytes",
             "kernel.protocol.deterministic_hashing.f-all-ordered-paths",
             "kernel.protocol.deterministic_hashing.f-all-single-paths",
@@ -688,12 +695,16 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 41,
-            "totalChecks": 55,
-            "applicableChecks": 41,
+            "passedChecks": 42,
+            "totalChecks": 56,
+            "applicableChecks": 42,
             "nonApplicableChecks": 14
           },
-          "declaredCapabilities": ["kernel.logical", "kernel.protocol"],
+          "declaredCapabilities": [
+            "kernel-protocol.thread.enumeration",
+            "kernel.logical",
+            "kernel.protocol"
+          ],
           "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.rust-kernel.json",
           "reportLabel": "Rust process-local kernel baseline",
           "reportStatus": "capability_subset_pass",

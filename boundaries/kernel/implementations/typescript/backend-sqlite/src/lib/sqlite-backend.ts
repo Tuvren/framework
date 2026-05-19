@@ -25,6 +25,7 @@ import {
   assertStoredTurnNodeIdentity,
   assertStoredTurnTreeIdentity,
   assertStoredTurnTreePath,
+  type BackendCapability,
   encodeDeterministicKernelRecord,
   hashKernelRecord,
   type RuntimeBackend as KrakenBackend,
@@ -171,6 +172,10 @@ export interface SqliteBackendOptions {
   now?: () => EpochMs;
 }
 
+const SQLITE_BACKEND_CAPABILITIES: BackendCapability = {
+  "thread.enumeration": true,
+};
+
 class SqliteBackend implements KrakenBackend {
   private readonly db: Database.Database;
   private readonly now: () => number;
@@ -181,6 +186,10 @@ class SqliteBackend implements KrakenBackend {
     this.now = options.now ?? Date.now;
     this.db = openConfiguredDatabase(options.databasePath);
     runMigrations(this.db, this.now);
+  }
+
+  capabilities(): BackendCapability {
+    return SQLITE_BACKEND_CAPABILITIES;
   }
 
   private async queueConnectionWork<T>(work: () => Promise<T>): Promise<T> {

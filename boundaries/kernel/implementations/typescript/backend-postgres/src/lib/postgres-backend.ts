@@ -32,11 +32,14 @@ import {
   assertStoredTurnTree,
   assertStoredTurnTreeIdentity,
   assertStoredTurnTreePath,
+  type BackendCapability,
   type RuntimeBackend as KrakenBackend,
   type RuntimeBackendTx as KrakenBackendTx,
+  type ListThreadsCursorPayload,
   type StoredBranch,
   type StoredRun,
   type StoredStagedResult,
+  type StoredThread,
   type StoredTurnTreePath,
 } from "@tuvren/kernel-protocol";
 import type { Sql } from "postgres";
@@ -120,6 +123,10 @@ interface PostgresBackendDestroyOptions {
 export interface PostgresBackendOptions
   extends PostgresBackendPersistenceOptions {}
 
+const POSTGRES_BACKEND_CAPABILITIES: BackendCapability = {
+  "thread.enumeration": true,
+};
+
 class PostgresBackend implements KrakenBackend {
   private readonly connectionOptions: PostgresBackendPersistenceOptions;
   private destroyed = false;
@@ -137,6 +144,10 @@ class PostgresBackend implements KrakenBackend {
     this.schemaName = normalizeSchemaName(resolvedOptions.schemaName);
     this.sql = createPostgresClient(resolvedOptions);
     this.now = resolvedOptions.now ?? Date.now;
+  }
+
+  capabilities(): BackendCapability {
+    return POSTGRES_BACKEND_CAPABILITIES;
   }
 
   async health(): Promise<{ ok: true } | { ok: false; reason: string }> {
@@ -721,6 +732,54 @@ function createRepositories(
           "stored thread"
         );
         return Promise.resolve();
+      },
+      list(options) {
+        assertTransactionActive();
+        let threads: StoredThread[] = Array.from(
+          state.threads.values(),
+          cloneStoredThread
+        );
+
+        if (options?.filter?.schemaId !== undefined) {
+          const { schemaId } = options.filter;
+          threads = threads.filter((t) => t.schemaId === schemaId);
+        }
+
+        threads.sort((a, b) => {
+          if (a.createdAtMs !== b.createdAtMs) {
+            return a.createdAtMs < b.createdAtMs ? -1 : 1;
+          }
+          return a.threadId.localeCompare(b.threadId);
+        });
+
+        if (options?.cursor !== undefined) {
+          const { lastCreatedAtMs, lastThreadId } = options.cursor;
+          const idx = threads.findIndex(
+            (t) =>
+              t.createdAtMs > lastCreatedAtMs ||
+              (t.createdAtMs === lastCreatedAtMs && t.threadId > lastThreadId)
+          );
+          threads = idx === -1 ? [] : threads.slice(idx);
+        }
+
+        const limit = options?.limit;
+        let nextCursor: ListThreadsCursorPayload | undefined;
+
+        if (limit !== undefined && threads.length > limit) {
+          threads = threads.slice(0, limit);
+          const last = threads.at(-1);
+          if (last !== undefined) {
+            nextCursor = {
+              v: 1,
+              kind: "list-threads",
+              lastThreadId: last.threadId,
+              lastCreatedAtMs: last.createdAtMs,
+              filter: options?.filter,
+            };
+          }
+        }
+
+        return Promise.resolve({ threads, nextCursor });
       },
     },
     turnNodes: {

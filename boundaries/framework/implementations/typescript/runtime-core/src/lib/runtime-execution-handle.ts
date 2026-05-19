@@ -18,10 +18,13 @@ import { TuvrenRuntimeError } from "@tuvren/core-types";
 import type { RuntimeDriver as KrakenDriver } from "@tuvren/driver-api";
 import type {
   ApprovalResponse,
+  ContentPart,
   ExecutionHandle,
+  ExecutionResult,
   ExecutionStatus,
   InputSignal,
   TuvrenErrorProjection,
+  TuvrenMessage,
   TuvrenStreamEvent,
 } from "@tuvren/runtime-api";
 import { assertApprovalResponseForRequest } from "@tuvren/runtime-api";
@@ -65,6 +68,12 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
   private readonly steeringQueue: InputSignal[] = [];
   private started = false;
   private statusSnapshot: ExecutionStatus;
+  private resultSettled = false;
+  private resultResolve!: (value: ExecutionResult) => void;
+  private resultReject!: (reason: unknown) => void;
+  private readonly resultPromise: Promise<ExecutionResult>;
+  private pendingAssistantParts: ContentPart[] = [];
+  private lastFinalAssistantMessage?: TuvrenMessage;
   readonly request: ExecutionSessionRequest;
   readonly resumedFrom?: ResumeContext;
   turnId: string;
@@ -93,6 +102,12 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
       iterationCount: 0,
       phase: "running",
     };
+
+    this.resultPromise = new Promise<ExecutionResult>((resolve, reject) => {
+      this.resultResolve = resolve;
+      this.resultReject = reject;
+    });
+    this.resultPromise.catch(() => undefined);
   }
 
   cancel(): void {
@@ -182,6 +197,10 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
 
   finish(): void {
     this.eventsQueue.close();
+    const phase = this.statusSnapshot.phase;
+    if (!this.resultSettled && phase !== "running" && phase !== "paused") {
+      this.settleResult(phase);
+    }
   }
 
   abortWithError(error: Error): void {
@@ -208,6 +227,111 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
 
   publish(event: TuvrenStreamEvent): void {
     this.eventsQueue.push(cloneValue(event));
+    this.trackEventForResult(event);
+  }
+
+  private trackEventForResult(event: TuvrenStreamEvent): void {
+    switch (event.type) {
+      case "message.start":
+        this.pendingAssistantParts = [];
+        return;
+      case "text.done":
+        this.pendingAssistantParts.push({ text: event.text, type: "text" });
+        return;
+      case "file.done":
+        this.pendingAssistantParts.push({
+          data:
+            typeof event.data === "string"
+              ? event.data
+              : new Uint8Array(event.data),
+          filename: event.filename,
+          mediaType: event.mediaType,
+          type: "file",
+        });
+        return;
+      case "structured.done":
+        this.pendingAssistantParts.push({
+          data: structuredClone(event.data),
+          name: event.name,
+          type: "structured",
+        });
+        return;
+      case "tool_call.done":
+        this.pendingAssistantParts.push({
+          callId: event.callId,
+          input: event.input,
+          name: event.name,
+          providerMetadata: event.providerMetadata,
+          type: "tool_call",
+        });
+        return;
+      case "message.done":
+        if (this.pendingAssistantParts.length > 0) {
+          this.lastFinalAssistantMessage = {
+            parts: this.pendingAssistantParts as [
+              ContentPart,
+              ...ContentPart[],
+            ],
+            providerMetadata: undefined,
+            role: "assistant",
+          };
+        }
+        this.pendingAssistantParts = [];
+        return;
+      case "turn.end":
+        this.settleResult(event.status);
+        return;
+      default:
+        return;
+    }
+  }
+
+  private settleResult(turnEndStatus: "completed" | "paused" | "failed"): void {
+    if (turnEndStatus === "paused" || this.resultSettled) {
+      return;
+    }
+
+    this.resultSettled = true;
+
+    const { reason } = this.abortController.signal;
+    const cancelledByUser =
+      reason instanceof TuvrenRuntimeError &&
+      reason.code === "runtime_execution_cancelled";
+
+    if (turnEndStatus === "failed" && cancelledByUser) {
+      this.resultReject(
+        new TuvrenRuntimeError("Execution was cancelled", {
+          code: "execution_cancelled",
+        })
+      );
+      return;
+    }
+
+    const executionStatus = cloneExecutionStatus(this.statusSnapshot);
+
+    if (turnEndStatus === "completed") {
+      this.resultResolve({
+        executionStatus,
+        finalAssistantMessage: this.lastFinalAssistantMessage,
+        status: "completed",
+      });
+    } else {
+      const projection = this.lastErrorProjection;
+      const error = new TuvrenRuntimeError(
+        projection?.message ?? "Execution failed",
+        { code: projection?.code ?? "execution_failed" }
+      );
+      this.resultResolve({ error, executionStatus, status: "failed" });
+    }
+  }
+
+  awaitResult(): Promise<ExecutionResult> {
+    if (!this.started) {
+      this.started = true;
+      detachPromise(this.runtime.startExecution(this));
+    }
+
+    return this.resultPromise;
   }
 
   rememberError(error: TuvrenErrorProjection): void {

@@ -24,5 +24,8 @@ pub use cbor::{
 pub use identity::{
     hash_bytes_to_hex, hash_kernel_record, hash_turn_node_identity, schema_to_record,
 };
-pub use memory::{InMemoryKernel, InMemoryKernelOptions};
+pub use memory::{
+    BackendCapability, InMemoryKernel, InMemoryKernelOptions, StoredThreadEntry, ThreadListOptions,
+    ThreadListResult,
+};
 pub use types::*;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type { EpochMs, HashString } from "@tuvren/core-types";
+import type { EpochMs, HashString, TuvrenError } from "@tuvren/core-types";
 
 export type TuvrenJsonValue =
   | null
@@ -762,17 +762,37 @@ export interface ExecutionStatus {
   phase: "running" | "paused" | "completed" | "failed";
 }
 
+// `status` is the sole discriminant; `executionStatus.phase === status` for all terminal results.
+export type ExecutionResult =
+  | {
+      status: "completed";
+      finalAssistantMessage?: TuvrenMessage;
+      executionStatus: ExecutionStatus;
+    }
+  | {
+      status: "failed";
+      error: TuvrenError;
+      executionStatus: ExecutionStatus;
+    };
+
+// Type intersection (not interface extension) because TS2312 forbids interfaces
+// from extending discriminated unions.
+export type OrchestrationResult = ExecutionResult & {
+  childResults: Record<string, ExecutionResult>;
+};
+
 export interface ExecutionHandle {
   cancel(): void;
   events(): AsyncIterable<TuvrenStreamEvent>;
   resolveApproval(response: ApprovalResponse): ExecutionHandle;
   status(): ExecutionStatus;
   steer(signal: InputSignal): void;
+  awaitResult(): Promise<ExecutionResult>;
 }
 
 export interface OrchestrationHandle extends ExecutionHandle {
   allEvents(): AsyncIterable<TuvrenStreamEvent>;
-  awaitResult(): Promise<unknown>;
+  awaitResult(): Promise<OrchestrationResult>;
   resolveApproval(response: ApprovalResponse): OrchestrationHandle;
   spawn(input: { agent: string; signal: InputSignal }): OrchestrationHandle;
 }

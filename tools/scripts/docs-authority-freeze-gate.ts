@@ -1449,6 +1449,7 @@ function classifyKernelAppendixSection(
         "run-creation-legality",
         "turn-update-legality",
         "schema",
+        "thread",
         "turntree",
         "turnnode",
         "branch",
@@ -1510,6 +1511,15 @@ function classifyKernelCoreSection(
 
   if (section.startsWith("8")) {
     return authorityDecision("kernel invariants", EVIDENCE.kernelProtocol);
+  }
+
+  if (section.startsWith("9")) {
+    return missingConformanceDecision(
+      "kernel capability-gated syscalls",
+      EVIDENCE.kernelProtocol,
+      "KRT-AM010",
+      "ADR-034 capability gate semantics are authority-backed; conformance plans gain thread.enumeration check sets in KRT-AM010."
+    );
   }
 
   return null;

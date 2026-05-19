@@ -22,13 +22,16 @@
     "--capability",
     "kernel.logical",
     "--capability",
-    "kernel.run-liveness"
+    "kernel.run-liveness",
+    "--capability",
+    "kernel-protocol.thread.enumeration"
   ],
   "capabilities": [
     "kernel.protocol",
     "kernel.edge-validation",
     "kernel.logical",
-    "kernel.run-liveness"
+    "kernel.run-liveness",
+    "kernel-protocol.thread.enumeration"
   ],
   "authorityPackets": [
     "boundaries/kernel/contracts/protocol/spec/authority-packet.json"

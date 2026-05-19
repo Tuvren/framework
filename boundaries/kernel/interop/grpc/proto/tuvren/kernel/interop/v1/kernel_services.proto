@@ -33,6 +33,10 @@ service KernelNodeService {
 service KernelThreadService {
   rpc ThreadCreate(ThreadCreateRequest) returns (ThreadCreateResponse);
   rpc ThreadGet(ThreadGetRequest) returns (ThreadGetResponse);
+  // ADR-034: capability-gated thread enumeration. The remote kernel returns a
+  // typed kernel_capability_unsupported error envelope when the underlying
+  // backend does not advertise thread.enumeration.
+  rpc ThreadList(ThreadListRequest) returns (ThreadListResponse);
 }
 
 service KernelBranchService {
@@ -189,6 +193,18 @@ message ThreadGetRequest {
 message ThreadGetResponse {
   bool found = 1;
   ThreadRecord thread = 2;
+}
+
+message ThreadListRequest {
+  optional uint32 limit = 1;
+  // Opaque cursor string produced by a prior ThreadListResponse.next_cursor.
+  optional string cursor = 2;
+  optional string filter_schema_id = 3;
+}
+
+message ThreadListResponse {
+  repeated StoredThreadEntry entries = 1;
+  optional string next_cursor = 2;
 }
 
 message BranchCreateRequest {

@@ -21,8 +21,8 @@ use serde_json::{Map, Value, json};
 use tuvren_kernel_rust::{
     InMemoryKernel, KernelError, KernelRecord, PathCollectionKind, PathDefinition, PathValue,
     RecoveryState, RunCompletionStatus, StagedResult, StagedResultStatus, StepDeclaration,
-    TurnNode, TurnTreeSchema, decode_deterministic_kernel_record, hash_bytes_to_hex,
-    hash_kernel_record, hash_turn_node_identity, kernel_record_from_json,
+    ThreadListOptions, TurnNode, TurnTreeSchema, decode_deterministic_kernel_record,
+    hash_bytes_to_hex, hash_kernel_record, hash_turn_node_identity, kernel_record_from_json,
 };
 
 const CANONICAL_SCHEMA_PATH: &str =
@@ -108,7 +108,11 @@ fn dispatch_request(request: JsonRpcRequest) -> Result<Value, AdapterErrorEnvelo
     match request.method.as_str() {
         "initialize" => Ok(json!(AdapterCapabilities {
             adapter_id: "rust-kernel",
-            capabilities: vec!["kernel.protocol", "kernel.logical"],
+            capabilities: vec![
+                "kernel.protocol",
+                "kernel.logical",
+                "kernel-protocol.thread.enumeration"
+            ],
             packet_id: read_param_string(&request.params, "packetId")?,
             plan_version: read_param_string(&request.params, "planVersion")?,
         })),
@@ -134,6 +138,7 @@ fn dispatch_operation(operation: &str, input: &Value) -> OperationOutcome {
         "kernel.protocol.modify-composition" => run_modify_composition(),
         "kernel.logical.diff-paths" => run_logical_diff(input),
         "kernel.logical.branch-list" => run_branch_list(input),
+        "kernel.logical.thread-list" => run_thread_list(),
         "kernel.logical.recovery-state" => run_recovery_state(input),
         "kernel.lineage.cross-thread-rejection" => run_cross_thread_lineage(),
         "kernel.turn.lateral-head-guard" => run_lateral_turn_head_guard(),
@@ -269,6 +274,27 @@ fn run_branch_list(input: &Value) -> Result<Value, KernelError> {
     let branch_entries = kernel.branch_list("thread_conformance")?;
 
     Ok(projection(json!({ "branchEntries": branch_entries })))
+}
+
+fn run_thread_list() -> Result<Value, KernelError> {
+    let canonical_schema = read_json(Path::new(CANONICAL_SCHEMA_PATH))?;
+    let kernel = InMemoryKernel::new();
+    kernel.schema_register(parse_schema(&canonical_schema)?)?;
+    kernel.thread_create("thread_enum_a", "schema_main", "branch_enum_a")?;
+    kernel.thread_create("thread_enum_b", "schema_main", "branch_enum_b")?;
+    let (all_threads, _) = kernel.thread_list(ThreadListOptions::default())?;
+    let (paged, next_cursor) = kernel.thread_list(ThreadListOptions {
+        limit: Some(1),
+        ..Default::default()
+    })?;
+    Ok(projection(json!({
+        "threadEnumeration": {
+            "count": all_threads.len(),
+            "firstThreadId": all_threads.first().map(|t| t.thread_id.as_str()).unwrap_or(""),
+            "pagedCount": paged.len(),
+            "hasCursor": next_cursor.is_some()
+        }
+    })))
 }
 
 fn run_recovery_state(input: &Value) -> Result<Value, KernelError> {

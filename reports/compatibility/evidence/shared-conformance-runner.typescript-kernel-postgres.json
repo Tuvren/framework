@@ -2,6 +2,7 @@
   "adapterId": "typescript-kernel-postgres",
   "boundary": "kernel",
   "capabilities": [
+    "kernel-protocol.thread.enumeration",
     "kernel.edge-validation",
     "kernel.logical",
     "kernel.persistence.durable",
@@ -384,6 +385,64 @@
         }
       ],
       "checkId": "kernel-protocol-af.tree-diff-rejects-schema-mismatch",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.logical.thread_list.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.thread_list.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.thread_list.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.thread_list.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.thread_list.requiredEvidence.result.threadEnumeration.count",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.thread_list.requiredEvidence.result.threadEnumeration.firstThreadId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.thread_list.requiredEvidence.result.threadEnumeration.hasCursor",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.thread_list.requiredEvidence.result.threadEnumeration.pagedCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.thread_list.requiredEvidence.threadEnumeration.count",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.thread_list.requiredEvidence.threadEnumeration.firstThreadId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.thread_list.requiredEvidence.threadEnumeration.hasCursor",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.thread_list.requiredEvidence.threadEnumeration.pagedCount",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.logical.thread_list",
       "details": {
         "adapterId": "typescript-kernel-postgres",
         "planId": "tuvren.kernel.protocol.extended"
@@ -2150,9 +2209,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 55,
-    "totalChecks": 55,
-    "applicableChecks": 55,
+    "passedChecks": 56,
+    "totalChecks": 56,
+    "applicableChecks": 56,
     "nonApplicableChecks": 0
   },
   "suiteId": "tuvren.kernel.protocol",

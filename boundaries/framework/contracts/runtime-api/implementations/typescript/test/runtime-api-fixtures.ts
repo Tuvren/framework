@@ -20,8 +20,10 @@ import type {
   ApprovalRequest,
   ContextManifest,
   ExecutionHandle,
+  ExecutionResult,
   ExecutionStatus,
   OrchestrationHandle,
+  OrchestrationResult,
   OrchestrationRuntime,
   ProviderStreamChunk,
   TuvrenMessage,
@@ -39,6 +41,12 @@ function emptyEvents<T>(): AsyncIterable<T> {
 }
 
 const noopExecutionHandle: ExecutionHandle = {
+  async awaitResult(): Promise<ExecutionResult> {
+    return {
+      executionStatus: { iterationCount: 0, phase: "completed" },
+      status: "completed",
+    };
+  },
   cancel() {
     return;
   },
@@ -57,6 +65,12 @@ const noopExecutionHandle: ExecutionHandle = {
 };
 
 const resumedExecutionHandle: ExecutionHandle = {
+  async awaitResult(): Promise<ExecutionResult> {
+    return {
+      executionStatus: { iterationCount: 2, phase: "completed" },
+      status: "completed",
+    };
+  },
   cancel() {
     return;
   },
@@ -117,8 +131,12 @@ const noopOrchestrationHandle: OrchestrationHandle = {
   allEvents() {
     return emptyEvents();
   },
-  awaitResult() {
-    return Promise.resolve({ ok: true });
+  awaitResult(): Promise<OrchestrationResult> {
+    return Promise.resolve({
+      childResults: {},
+      executionStatus: { iterationCount: 0, phase: "completed" as const },
+      status: "completed" as const,
+    });
   },
   resolveApproval() {
     return resumedOrchestrationHandle;
@@ -133,8 +151,12 @@ resumedOrchestrationHandle = {
   allEvents() {
     return emptyEvents();
   },
-  awaitResult() {
-    return Promise.resolve({ ok: "resumed" });
+  awaitResult(): Promise<OrchestrationResult> {
+    return Promise.resolve({
+      childResults: {},
+      executionStatus: { iterationCount: 2, phase: "completed" as const },
+      status: "completed" as const,
+    });
   },
   resolveApproval() {
     return this;
@@ -149,8 +171,12 @@ childOrchestrationHandle = {
   allEvents() {
     return emptyEvents();
   },
-  awaitResult() {
-    return Promise.resolve("child result");
+  awaitResult(): Promise<OrchestrationResult> {
+    return Promise.resolve({
+      childResults: {},
+      executionStatus: { iterationCount: 0, phase: "completed" as const },
+      status: "completed" as const,
+    });
   },
   resolveApproval() {
     return this;

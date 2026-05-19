@@ -52,6 +52,32 @@ struct StoredTurnTree {
     schema_id: String,
 }
 
+/// ADR-034: capability descriptor returned by InMemoryKernel::capabilities().
+#[derive(Clone, Debug)]
+pub struct BackendCapability {
+    pub thread_enumeration: bool,
+}
+
+/// ADR-034: options for thread_list.
+#[derive(Clone, Debug, Default)]
+pub struct ThreadListOptions {
+    pub limit: Option<usize>,
+    /// Opaque cursor: (last_created_at_ms, last_thread_id).
+    pub cursor: Option<(EpochMs, String)>,
+    pub filter_schema_id: Option<String>,
+}
+
+pub type ThreadListResult = KernelResult<(Vec<StoredThreadEntry>, Option<(EpochMs, String)>)>;
+
+/// ADR-034: a stored thread record with creation timestamp for enumeration.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct StoredThreadEntry {
+    pub thread_id: String,
+    pub schema_id: String,
+    pub root_turn_node_hash: HashString,
+    pub created_at_ms: EpochMs,
+}
+
 #[derive(Default)]
 struct KernelState {
     archive_counter: u64,
@@ -62,6 +88,7 @@ struct KernelState {
     schemas: HashMap<String, TurnTreeSchema>,
     staged_results: HashMap<String, Vec<StagedResult>>,
     threads: HashMap<String, ThreadRecord>,
+    thread_created_at: HashMap<String, EpochMs>,
     turn_nodes: HashMap<HashString, TurnNode>,
     turn_order: Vec<String>,
     turns: HashMap<String, TurnRecord>,
@@ -346,6 +373,7 @@ impl InMemoryKernel {
         state
             .turn_nodes
             .insert(root_node.hash.clone(), root_node.clone());
+        let created_at_ms = (self.now)();
         state.threads.insert(
             thread_id.to_string(),
             ThreadRecord {
@@ -354,6 +382,9 @@ impl InMemoryKernel {
                 thread_id: thread_id.to_string(),
             },
         );
+        state
+            .thread_created_at
+            .insert(thread_id.to_string(), created_at_ms);
         state.branches.insert(
             initial_branch_id.to_string(),
             BranchRecord {
@@ -368,6 +399,67 @@ impl InMemoryKernel {
             root_turn_tree_hash,
             thread_id: thread_id.to_string(),
         })
+    }
+
+    /// ADR-034: returns the capability descriptor for this backend.
+    pub fn capabilities(&self) -> BackendCapability {
+        BackendCapability {
+            thread_enumeration: true,
+        }
+    }
+
+    /// ADR-034: list threads sorted by (created_at_ms ASC, thread_id ASC).
+    /// Supports cursor-based pagination and optional schemaId filter.
+    pub fn thread_list(&self, options: ThreadListOptions) -> ThreadListResult {
+        let state = self.lock_state()?;
+        let mut entries: Vec<StoredThreadEntry> = state
+            .threads
+            .values()
+            .filter_map(|t| {
+                let created_at_ms = *state.thread_created_at.get(&t.thread_id)?;
+                if options
+                    .filter_schema_id
+                    .as_ref()
+                    .is_some_and(|id| id != &t.schema_id)
+                {
+                    return None;
+                }
+                Some(StoredThreadEntry {
+                    thread_id: t.thread_id.clone(),
+                    schema_id: t.schema_id.clone(),
+                    root_turn_node_hash: t.root_turn_node_hash.clone(),
+                    created_at_ms,
+                })
+            })
+            .collect();
+
+        entries.sort_by(|a, b| {
+            a.created_at_ms
+                .cmp(&b.created_at_ms)
+                .then_with(|| a.thread_id.cmp(&b.thread_id))
+        });
+
+        if let Some((last_created_at_ms, ref last_thread_id)) = options.cursor {
+            entries.retain(|e| {
+                e.created_at_ms > last_created_at_ms
+                    || (e.created_at_ms == last_created_at_ms
+                        && e.thread_id.as_str() > last_thread_id.as_str())
+            });
+        }
+
+        let next_cursor = if let Some(limit) = options.limit {
+            if entries.len() > limit {
+                entries.truncate(limit);
+                let last = entries.last().unwrap();
+                Some((last.created_at_ms, last.thread_id.clone()))
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
+        Ok((entries, next_cursor))
     }
 
     pub fn thread_get(&self, thread_id: &str) -> KernelResult<Option<ThreadRecord>> {
@@ -1669,4 +1761,205 @@ fn default_now_ms() -> EpochMs {
         .duration_since(UNIX_EPOCH)
         .map(|duration| i64::try_from(duration.as_millis()).unwrap_or(i64::MAX))
         .unwrap_or(0)
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::{Arc, Mutex};
+
+    use super::*;
+    use crate::types::TurnTreeSchema;
+
+    fn minimal_schema(schema_id: &str) -> TurnTreeSchema {
+        TurnTreeSchema {
+            incorporation_rules: vec![],
+            paths: vec![],
+            schema_id: schema_id.to_string(),
+        }
+    }
+
+    /// Build a kernel whose `now` clock returns successive values from a
+    /// pre-defined list so tests produce deterministic `created_at_ms` stamps.
+    fn kernel_with_clock(ticks: &[EpochMs]) -> InMemoryKernel {
+        let ticks = Arc::new(Mutex::new(ticks.to_vec()));
+        let idx = Arc::new(Mutex::new(0usize));
+        InMemoryKernel::with_options(InMemoryKernelOptions {
+            now: Some(Arc::new(move || {
+                let mut i = idx.lock().unwrap();
+                let t = ticks.lock().unwrap();
+                let v = t[*i];
+                *i = (*i + 1).min(t.len() - 1);
+                v
+            })),
+        })
+    }
+
+    /// Create a thread and its initial branch; returns the thread_id.
+    fn make_thread(kernel: &InMemoryKernel, thread_id: &str, schema_id: &str) -> String {
+        let branch_id = format!("{thread_id}-b");
+        kernel
+            .thread_create(thread_id, schema_id, &branch_id)
+            .expect("thread_create");
+        thread_id.to_string()
+    }
+
+    #[test]
+    fn thread_list_empty_returns_no_entries() {
+        let kernel = InMemoryKernel::new();
+        kernel
+            .schema_register(minimal_schema("s1"))
+            .expect("schema_register");
+        let (entries, cursor) = kernel
+            .thread_list(ThreadListOptions::default())
+            .expect("thread_list");
+        assert!(entries.is_empty());
+        assert!(cursor.is_none());
+    }
+
+    #[test]
+    fn thread_list_returns_all_threads_sorted_by_created_at_then_id() {
+        // Three threads: t2 earliest, t3 middle, t1 latest (by clock tick).
+        // Alphabetically t1 < t2 < t3, but order is by created_at_ms first.
+        let kernel = kernel_with_clock(&[100, 200, 300]);
+        kernel
+            .schema_register(minimal_schema("s1"))
+            .expect("schema_register");
+        make_thread(&kernel, "t2", "s1"); // tick 100
+        make_thread(&kernel, "t3", "s1"); // tick 200
+        make_thread(&kernel, "t1", "s1"); // tick 300
+
+        let (entries, cursor) = kernel
+            .thread_list(ThreadListOptions::default())
+            .expect("thread_list");
+
+        assert_eq!(cursor, None);
+        let ids: Vec<&str> = entries.iter().map(|e| e.thread_id.as_str()).collect();
+        assert_eq!(ids, vec!["t2", "t3", "t1"]);
+        assert_eq!(entries[0].created_at_ms, 100);
+        assert_eq!(entries[1].created_at_ms, 200);
+        assert_eq!(entries[2].created_at_ms, 300);
+    }
+
+    #[test]
+    fn thread_list_tie_broken_alphabetically_by_thread_id() {
+        // Two threads share the same tick; thread_id breaks the tie.
+        let kernel = kernel_with_clock(&[500, 500]);
+        kernel
+            .schema_register(minimal_schema("s1"))
+            .expect("schema_register");
+        make_thread(&kernel, "zz", "s1"); // tick 500
+        make_thread(&kernel, "aa", "s1"); // tick 500
+
+        let (entries, _) = kernel
+            .thread_list(ThreadListOptions::default())
+            .expect("thread_list");
+
+        let ids: Vec<&str> = entries.iter().map(|e| e.thread_id.as_str()).collect();
+        assert_eq!(ids, vec!["aa", "zz"]);
+    }
+
+    #[test]
+    fn thread_list_limit_returns_page_and_cursor() {
+        let kernel = kernel_with_clock(&[10, 20, 30]);
+        kernel
+            .schema_register(minimal_schema("s1"))
+            .expect("schema_register");
+        make_thread(&kernel, "a", "s1"); // tick 10
+        make_thread(&kernel, "b", "s1"); // tick 20
+        make_thread(&kernel, "c", "s1"); // tick 30
+
+        let (page, cursor) = kernel
+            .thread_list(ThreadListOptions {
+                limit: Some(2),
+                ..Default::default()
+            })
+            .expect("thread_list page 1");
+
+        let ids: Vec<&str> = page.iter().map(|e| e.thread_id.as_str()).collect();
+        assert_eq!(ids, vec!["a", "b"]);
+        assert_eq!(cursor, Some((20, "b".to_string())));
+    }
+
+    #[test]
+    fn thread_list_cursor_continues_from_previous_page() {
+        let kernel = kernel_with_clock(&[10, 20, 30]);
+        kernel
+            .schema_register(minimal_schema("s1"))
+            .expect("schema_register");
+        make_thread(&kernel, "a", "s1");
+        make_thread(&kernel, "b", "s1");
+        make_thread(&kernel, "c", "s1");
+
+        // Fetch page 1
+        let (_, cursor) = kernel
+            .thread_list(ThreadListOptions {
+                limit: Some(2),
+                ..Default::default()
+            })
+            .expect("page 1");
+
+        // Fetch page 2 using cursor
+        let (page2, cursor2) = kernel
+            .thread_list(ThreadListOptions {
+                limit: Some(2),
+                cursor,
+                ..Default::default()
+            })
+            .expect("page 2");
+
+        let ids: Vec<&str> = page2.iter().map(|e| e.thread_id.as_str()).collect();
+        assert_eq!(ids, vec!["c"]);
+        assert_eq!(cursor2, None, "no further pages");
+    }
+
+    #[test]
+    fn thread_list_filter_by_schema_id() {
+        let kernel = kernel_with_clock(&[1, 2, 3]);
+        kernel
+            .schema_register(minimal_schema("schema-a"))
+            .expect("schema a");
+        kernel
+            .schema_register(minimal_schema("schema-b"))
+            .expect("schema b");
+        make_thread(&kernel, "t-a1", "schema-a");
+        make_thread(&kernel, "t-b1", "schema-b");
+        make_thread(&kernel, "t-a2", "schema-a");
+
+        let (entries, _) = kernel
+            .thread_list(ThreadListOptions {
+                filter_schema_id: Some("schema-a".to_string()),
+                ..Default::default()
+            })
+            .expect("filtered list");
+
+        let ids: Vec<&str> = entries.iter().map(|e| e.thread_id.as_str()).collect();
+        assert_eq!(ids, vec!["t-a1", "t-a2"]);
+        assert!(entries.iter().all(|e| e.schema_id == "schema-a"));
+    }
+
+    #[test]
+    fn thread_list_limit_exact_fit_returns_no_cursor() {
+        let kernel = kernel_with_clock(&[10, 20]);
+        kernel
+            .schema_register(minimal_schema("s1"))
+            .expect("schema_register");
+        make_thread(&kernel, "x", "s1");
+        make_thread(&kernel, "y", "s1");
+
+        let (entries, cursor) = kernel
+            .thread_list(ThreadListOptions {
+                limit: Some(2),
+                ..Default::default()
+            })
+            .expect("thread_list");
+
+        assert_eq!(entries.len(), 2);
+        assert_eq!(cursor, None, "exactly limit entries means no next page");
+    }
+
+    #[test]
+    fn capabilities_advertises_thread_enumeration() {
+        let kernel = InMemoryKernel::new();
+        assert!(kernel.capabilities().thread_enumeration);
+    }
 }

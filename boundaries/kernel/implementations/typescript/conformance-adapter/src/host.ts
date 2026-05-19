@@ -99,6 +99,8 @@ class TypeScriptKernelAdapter {
           return result(await runBranchList(readFixture(input)));
         case "kernel.logical.recovery-state":
           return result(await runRecoveryState(readFixture(input)));
+        case "kernel.logical.thread-list":
+          return result(await runThreadList());
         case "kernel.lineage.cross-thread-rejection":
           return result(await runCrossThreadLineage());
         case "kernel.run-liveness.lease-renewal":
@@ -186,6 +188,7 @@ function defaultCapabilities(
       "kernel.run-liveness",
       "kernel.persistence.durable",
       "kernel.restart-recovery",
+      "kernel-protocol.thread.enumeration",
     ];
   }
 
@@ -194,6 +197,7 @@ function defaultCapabilities(
     "kernel.edge-validation",
     "kernel.logical",
     "kernel.run-liveness",
+    "kernel-protocol.thread.enumeration",
   ];
 }
 
@@ -335,6 +339,34 @@ async function runBranchList(
     const branchEntries = await kernel.branch.list("thread_conformance");
 
     return createProjection({ branchEntries });
+  });
+}
+
+async function runThreadList(): Promise<Record<string, unknown>> {
+  const schema = await loadCanonicalSchema();
+  return await withConformanceKernel(schema, ADAPTER_CONFIG, async (kernel) => {
+    await kernel.thread.create(
+      "thread_enum_a",
+      schema.schemaId,
+      "branch_enum_a"
+    );
+    await kernel.thread.create(
+      "thread_enum_b",
+      schema.schemaId,
+      "branch_enum_b"
+    );
+    const { threads: allThreads } = await kernel.thread.list();
+    const { threads: pagedThreads, nextCursor } = await kernel.thread.list({
+      limit: 1,
+    });
+    return createProjection({
+      threadEnumeration: {
+        count: allThreads.length,
+        firstThreadId: allThreads[0]?.threadId ?? null,
+        pagedCount: pagedThreads.length,
+        hasCursor: nextCursor !== undefined,
+      },
+    });
   });
 }
 

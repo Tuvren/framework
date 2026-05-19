@@ -57,6 +57,7 @@ import {
   type StagedResultStatus,
   type StepContext,
   type StepDeclaration,
+  type StoredThread,
   type ThreadCreateResult,
   type ThreadRecord,
   type TurnNode,
@@ -71,6 +72,7 @@ import type {
   BranchListResponse,
   TreeManifestResponse,
 } from "./generated/kernel-interop/tuvren/kernel/interop/v1/kernel_services_pb";
+import type { StoredThreadEntry as ProtoStoredThreadEntry } from "./generated/kernel-interop/tuvren/kernel/interop/v1/kernel_types_pb";
 import {
   ObserveResultSchema,
   PathValueEntrySchema,
@@ -295,6 +297,23 @@ export function requireThreadRecord(
   };
   assertThreadRecord(record, label);
   return record;
+}
+
+export function fromStoredThreadEntry(
+  value: ProtoStoredThreadEntry,
+  label: string
+): StoredThread {
+  const createdAtMs = fromProtoEpochMs(
+    value.createdAtMs,
+    `${label}.createdAtMs`
+  );
+  const thread: StoredThread = {
+    threadId: value.threadId,
+    schemaId: value.schemaId,
+    rootTurnNodeHash: value.rootTurnNodeHash,
+    createdAtMs,
+  };
+  return thread;
 }
 
 export function requireTurnNode(

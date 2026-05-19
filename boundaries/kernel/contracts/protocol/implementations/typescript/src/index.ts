@@ -26,6 +26,7 @@ export {
 } from "./lib/kernel-identity.js";
 export type {
   AbortVerdict,
+  BackendCapability,
   BranchHeadListEntry,
   BranchRecord,
   BranchRepository,
@@ -34,6 +35,8 @@ export type {
   InterruptedStagedResult,
   InterruptedStoredStagedResult,
   KernelSignal,
+  KernelThreadListCursor,
+  ListThreadsCursorPayload,
   ModifyVerdict,
   ObjectRepository,
   ObserveAnnotationRepository,

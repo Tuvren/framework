@@ -1,6 +1,6 @@
 # Kraken Kernel Specification
 
-**Version**: v0.9
+**Version**: v0.10
 **Status**: Frozen human semantic authority; machine portability classified by Epic AD
 
 Read this before the framework specification. This document freezes the human semantic model for the kernel primitives only.
@@ -17,7 +17,7 @@ The kernel is the structural persistence engine of the Kraken execution engine i
 
 The kernel provides mechanism without policy: immutable content storage, structured state snapshots, a history DAG, durable write-ahead tracking, and stepwise execution with declarative checkpointing. It does not know what a "model call" is, what a "tool" is, or what "context assembly" means.
 
-The framework — specified in `KrakenFrameworkSpecification.md` — provides agent-specific behavior built on the kernel's 28 operations. The kernel is language-agnostic and implementable in a native language with the framework as an SDK in any language on top.
+The framework — specified in `KrakenFrameworkSpecification.md` — provides agent-specific behavior built on the kernel's 30 operations across 10 groups. The kernel is language-agnostic and implementable in a native language with the framework as an SDK in any language on top.
 
 ---
 
@@ -660,7 +660,9 @@ Pure algebra. The framework manages hook registration, execution, and timeout. T
 
 ## 7. Syscall Surface
 
-28 operations. 10 groups. Every operation carries explicit identity for all scoped entities.
+30 operations across 10 groups. Every operation carries explicit identity for all scoped entities.
+
+`branch.list` (structural enumeration, v0.9+) and `thread.list` (structural enumeration, v0.10+) together account for the corrected count. Earlier revisions cited "28 operations" while `branch.list` had already been added. `thread.list` is added in v0.10 alongside the count correction.
 
 ```
 // ─── Object Store (3) ────────────────────────────────────────────
@@ -683,9 +685,10 @@ tree.manifest(treeHash) → Record<path, PathValue>
 node.get(hash) → TurnNode | null
 node.walkBack(fromHash) → Iterator<TurnNode>
 
-// ─── Thread (2) ─────────────────────────────────────────────────
+// ─── Thread (3) ─────────────────────────────────────────────────
 thread.create(threadId, schemaId, initialBranchId) → ThreadCreateResult
 thread.get(threadId) → Thread | null
+thread.list(options?) → { threads: StoredThread[], nextCursor? }  // capability-gated (§9)
 
 // ─── Branch (4) ─────────────────────────────────────────────────
 branch.create(branchId, threadId, fromTurnNodeHash) → Branch
@@ -849,6 +852,8 @@ Backend choice is an implementation concern. Correctness semantics are not.
 
 **`thread.get(threadId)`** — Returns Thread or null.
 
+**`thread.list(options?)`** — Capability-gated (§9). Requires backend to advertise `thread.enumeration` capability. Parameters: `limit?` (positive integer), `cursor?` (opaque; encodes the last-seen `createdAtMs` and `threadId`), `filter.schemaId?` (restricts results to threads created with this schema). Returns `{ threads: StoredThread[], nextCursor? }` sorted `(createdAtMs ASC, threadId ASC)`. Rejection: if backend does not advertise `thread.enumeration`, the kernel rejects with `TuvrenPersistenceError` code `kernel_capability_unsupported` rather than degrading silently.
+
 ### Branch
 
 **`branch.create(branchId, threadId, fromTurnNodeHash)`** — `branchId` unique. `threadId` exists. `fromTurnNodeHash` exists and belongs to Thread by lineage walk.
@@ -891,6 +896,35 @@ Backend choice is an implementation concern. Correctness semantics are not.
 
 ---
 
+## 9. Capability-Gated Syscalls
+
+Some kernel syscalls are **capability-gated**: a backend must explicitly advertise support before the kernel will invoke them. A backend that does not advertise a capability cannot be called for its capability-gated operations; the kernel rejects such invocations with a typed error instead of delegating silently and producing undefined behavior.
+
+### 9.1 BackendCapability Descriptor
+
+Each `RuntimeBackend` implementation exposes a synchronous `capabilities()` accessor returning a `BackendCapability` descriptor. The descriptor is computed at backend construction and not persisted. The kernel captures the capability descriptor at startup and consults it on the dispatch path of every capability-gated syscall.
+
+**Constraints:**
+
+- The descriptor must be **honest**: advertising a capability without implementing the backing method correctly is a backend bug, not a kernel concern.
+- Adding a new capability bit is a **semver-minor** change. Removing or repurposing an existing bit is a **semver-major** change.
+- Backends advertising `false` for a capability must not implement the optional backing method. The kernel will never call it.
+
+### 9.2 `thread.enumeration` Capability
+
+Controls whether `thread.list` is available on a given backend.
+
+- **`true`**: Backend implements `ThreadRepository.list(options?)` with (createdAtMs ASC, threadId ASC) ordering, durable cursor stability under concurrent inserts, and read-after-write consistency for newly created threads.
+- **`false`**: Backend does not implement `ThreadRepository.list`. Any `thread.list` invocation against this backend is rejected by the kernel with `TuvrenPersistenceError` code `kernel_capability_unsupported`.
+
+All first-party backends (`backend-memory`, `backend-sqlite`, `backend-postgres`, Rust `InMemoryKernel`) advertise `thread.enumeration: true`. The capability flag exists to keep the kernel contract honest for future object-store-style backends that cannot enumerate threads efficiently.
+
+### 9.3 Cursor Shape for `thread.list`
+
+The `cursor` parameter to `thread.list` is **opaque to callers** at the kernel API level. Internally, the cursor encodes a `(lastCreatedAtMs: EpochMs, lastThreadId: string)` pair that identifies the last thread seen in the previous page. The backend resumes enumeration strictly after that pair, preserving stable pagination even when new threads are inserted concurrently.
+
+---
+
 ## Appendix C: Primitive Summary
 
 **Storage**: Object, Blob, Hash.
@@ -911,4 +945,4 @@ Backend choice is an implementation concern. Correctness semantics are not.
 
 ---
 
-_v0.9. Kernel has 28 operations, 18 invariants, 10 operation groups. Frozen. Companion rationale is explanatory only and non-contract._
+_v0.10. Kernel has 30 operations across 10 groups, 18 invariants. `thread.list` added (capability-gated, §9); count corrected from v0.9's erroneous "28" (branch.list had been added without updating the count). Companion rationale is explanatory only and non-contract._

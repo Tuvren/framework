@@ -225,3 +225,13 @@ message BranchHeadListEntry {
   string branch_id = 1;
   string head_turn_node_hash = 2;
 }
+
+// ADR-034: thread list entry including creation timestamp for cursor construction.
+message StoredThreadEntry {
+  string thread_id = 1;
+  string schema_id = 2;
+  string root_turn_node_hash = 3;
+  // int64 mirrors EpochMs; Protobuf-ES exposes this as bigint — adapters must
+  // range-check before narrowing to the JS safe-integer EpochMs type.
+  int64 created_at_ms = 4;
+}

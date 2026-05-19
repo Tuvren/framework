@@ -1,6 +1,6 @@
 # Kraken Framework Specification
 
-**Version**: v0.17
+**Version**: v0.18
 **Status**: Human semantic authority; machine portability classified by Epic AD
 **Basis**: Kernel Specification v0.9 (frozen)
 
@@ -1408,8 +1408,19 @@ ExecutionHandle
 ├─ cancel(): void
 ├─ steer(signal: InputSignal): void
 ├─ resolveApproval(response: ApprovalResponse): ExecutionHandle
-└─ status(): ExecutionStatus
+├─ status(): ExecutionStatus
+└─ awaitResult(): Promise<ExecutionResult>
 ```
+
+`ExecutionResult` is a discriminated union where `status` is the sole discriminant:
+
+```
+ExecutionResult
+  | { status: "completed"; finalAssistantMessage?: TuvrenMessage; executionStatus: ExecutionStatus }
+  | { status: "failed"; error: TuvrenError; executionStatus: ExecutionStatus }
+```
+
+`executionStatus.phase === status` is an invariant for all terminal results.
 
 **`events()`** — the primary output. The host iterates this to receive all execution events. Iteration drives execution — the driver advances as the consumer pulls events. The stream is single-consumer per handle; calling `events()` again after consumption starts is invalid. If the only consumer abandons a still-running `events()` stream without calling `cancel()` separately, shared core treats that stream abandonment as cancellation of the running execution. Paused Handles remain explicit control surfaces: abandoning an already-paused stream does not synthesize rejection.
 
@@ -1434,6 +1445,8 @@ ExecutionStatus
 ├─ pauseReason?: string
 └─ approval?: ApprovalRequest
 ```
+
+**`awaitResult()`** — a terminal-value surface that resolves once the execution reaches a completed or failed phase. The promise resolves (not rejects) for both `completed` and `failed` outcomes, allowing callers to use exhaustive pattern matching on the discriminated `ExecutionResult` without a try/catch. The promise rejects only for cancellation, using `TuvrenRuntimeError` with `code: "execution_cancelled"`. Awaiting the same handle multiple times returns the same settled `ExecutionResult`. Calling `awaitResult()` does not interfere with concurrent `events()` iteration. For a paused Turn, `awaitResult()` does not settle on the original handle; the host obtains a new handle from `resolveApproval()` and awaits that handle instead.
 
 ### 7.2 Host Responsibilities
 
@@ -2147,8 +2160,18 @@ OrchestrationHandle extends ExecutionHandle
 ├─ resolveApproval(response: ApprovalResponse) → OrchestrationHandle
 ├─ spawn(input: { agent: string, signal: InputSignal }) → OrchestrationHandle
 ├─ allEvents(): AsyncIterable<TuvrenStreamEvent>
-└─ awaitResult(): Promise<unknown>
+└─ awaitResult(): Promise<OrchestrationResult>
 ```
+
+`OrchestrationResult` extends `ExecutionResult` with subtree-aggregated child results:
+
+```
+OrchestrationResult = ExecutionResult & {
+  childResults: Record<string, ExecutionResult>
+}
+```
+
+`childResults` is keyed by descendant worker identity and populated for spawned children whose `awaitResult()` settled before or during parent completion. It is an intersection type (not an interface extension) because TypeScript forbids interfaces from extending discriminated unions.
 
 **Construction**:
 
@@ -2180,7 +2203,7 @@ Child handles are ordinary execution handles:
 - descendant events in `allEvents()` MUST carry `source` attribution sufficient to identify the originating execution node
 - child launches inherit the caller's explicit execution surface (for example `driverId` and per-request `tools`) because `spawn()` intentionally does not define its own override bag
 
-`awaitResult()` waits for the child execution to reach a terminal state. It resolves with the child execution's final visible result surface on successful completion and rejects on failed completion. The shared core does not prescribe how higher layers feed that result into parent conversational context.
+`awaitResult()` on `OrchestrationHandle` overrides the base `ExecutionHandle.awaitResult()` surface to return `OrchestrationResult`. The parent's own `ExecutionResult` is resolved via the base-handle semantics (§7.1). After the parent settles, child results are aggregated into `childResults` keyed by worker identity. Child failures are recorded in `childResults` without failing the parent unless the parent itself also failed. The promise rejects only on cancellation, identical to the base-handle cancellation semantics.
 
 ### 10.7 Extension Scoping
 

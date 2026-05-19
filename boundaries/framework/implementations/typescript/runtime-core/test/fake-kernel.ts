@@ -37,6 +37,7 @@ import {
   type RuntimeKernelRunLiveness,
   type StagedResult,
   type StepContext,
+  type StoredThread,
   type TurnNode,
   type TurnRecord,
   type TurnTreeManifest,
@@ -70,6 +71,7 @@ interface FakeKernelState {
   threads: Map<
     string,
     {
+      createdAtMs: EpochMs;
       rootTurnNodeHash: HashString;
       schemaId: string;
       threadId: string;
@@ -370,6 +372,7 @@ export function createFakeKernelHarness(): FakeKernelHarness {
           null
         );
         state.threads.set(threadId, {
+          createdAtMs: clock++ as EpochMs,
           rootTurnNodeHash,
           schemaId,
           threadId,
@@ -388,6 +391,55 @@ export function createFakeKernelHarness(): FakeKernelHarness {
       },
       async get(threadId) {
         return state.threads.get(threadId) ?? null;
+      },
+      async list(options) {
+        let threads: StoredThread[] = Array.from(state.threads.values()).map(
+          (t) => ({
+            createdAtMs: t.createdAtMs,
+            rootTurnNodeHash: t.rootTurnNodeHash,
+            schemaId: t.schemaId,
+            threadId: t.threadId,
+          })
+        );
+
+        if (options?.filter?.schemaId !== undefined) {
+          const filterSchemaId = options.filter.schemaId;
+          threads = threads.filter((t) => t.schemaId === filterSchemaId);
+        }
+
+        threads.sort((a, b) =>
+          a.createdAtMs === b.createdAtMs
+            ? a.threadId.localeCompare(b.threadId)
+            : a.createdAtMs - b.createdAtMs
+        );
+
+        if (options?.cursor !== undefined) {
+          const { lastCreatedAtMs, lastThreadId } = JSON.parse(
+            Buffer.from(options.cursor, "base64url").toString("utf8")
+          ) as { lastCreatedAtMs: number; lastThreadId: string };
+          threads = threads.filter(
+            (t) =>
+              t.createdAtMs > lastCreatedAtMs ||
+              (t.createdAtMs === lastCreatedAtMs && t.threadId > lastThreadId)
+          );
+        }
+
+        let nextCursor: string | undefined;
+        if (options?.limit !== undefined && threads.length > options.limit) {
+          threads = threads.slice(0, options.limit);
+          const last = threads.at(-1);
+          if (last !== undefined) {
+            nextCursor = Buffer.from(
+              JSON.stringify({
+                lastCreatedAtMs: last.createdAtMs,
+                lastThreadId: last.threadId,
+              }),
+              "utf8"
+            ).toString("base64url");
+          }
+        }
+
+        return { threads, nextCursor };
       },
     },
     tree: {

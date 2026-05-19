@@ -105,7 +105,7 @@ flowchart LR
 
 ### Epic AM — Kernel `thread.list` Syscall + 28→30 Count Correction (KRT)
 
-**Status:** Active — critical path entry for the v0.28.0 chain
+**Status:** Closed — all 11 tickets implemented and verified under `bun run verify` + `bun run compatibility:evidence`. Correction to KRT-AM010 scope: `kernel.logical.thread_list` was placed in `kernel-protocol-extended.json` only (not all four plans) to avoid duplicate check IDs in the conformance runner's `nonApplicableCheckIds` across plans.
 
 **KRT-AM001 Kernel Specification v0.10 Bump and Count Correction**
 - **Type:** Chore
