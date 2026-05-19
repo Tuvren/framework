@@ -78,7 +78,7 @@ export class OrchestrationNode {
   private lastErrorProjection?: TuvrenErrorProjection;
   private readonly now: () => EpochMs;
   private readonly pendingSteering: InputSignal[] = [];
-  private readonly resultState = createDeferred<unknown>();
+  private readonly resultState = createDeferred<void>();
   private readonly runtime: OrchestrationRuntimeNodeHost;
   private selfPhase: ExecutionStatus["phase"] = "running";
   private selfEventsClaimed = false;
@@ -185,11 +185,7 @@ export class OrchestrationNode {
     this.activeResultAwaiters += 1;
 
     try {
-      try {
-        await this.resultState.promise;
-      } catch {
-        // Ignored — success and failure both delegate to currentBinding below.
-      }
+      await this.resultState.promise;
 
       if (this.currentBinding !== undefined) {
         return await this.currentBinding.handle.awaitResult();
@@ -553,9 +549,7 @@ export class OrchestrationNode {
     this.selfResultResolved = true;
     const projection = projectError(error);
     this.lastErrorProjection = projection;
-    this.resultState.resolve(
-      Promise.reject(Object.assign(new Error(projection.message), projection))
-    );
+    this.resultState.resolve();
   }
 
   private settleResultFailureFromProjection(): void {
@@ -758,11 +752,7 @@ export class OrchestrationNode {
   }
 
   private async waitUntilSettled(): Promise<void> {
-    try {
-      await this.resultState.promise;
-    } catch {
-      return;
-    }
+    await this.resultState.promise;
   }
 }
 
@@ -854,4 +844,3 @@ function createIteratorDoneResult<T>(): IteratorResult<T, undefined> {
     value: undefined,
   };
 }
-
