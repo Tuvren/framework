@@ -113,12 +113,13 @@ describe("orchestration-runtime", () => {
       childEventsPromise,
     ]);
 
-    expect(grandchildResult).toEqual([
-      {
-        text: "Grandchild complete.",
-        type: "text",
-      },
-    ]);
+    expect(grandchildResult.status).toBe("completed");
+    if (grandchildResult.status !== "completed") throw new Error("unreachable");
+    expect(grandchildResult.finalAssistantMessage).toEqual({
+      parts: [{ text: "Grandchild complete.", type: "text" }],
+      providerMetadata: undefined,
+      role: "assistant",
+    });
     expect(
       new Set(
         allEvents
@@ -134,7 +135,7 @@ describe("orchestration-runtime", () => {
     ).toBe(true);
   });
 
-  test("rejects awaitResult when child execution fails", async () => {
+  test("resolves awaitResult with status=failed when child execution fails", async () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntimeCore({
       defaultDriverId: "fake",
@@ -178,7 +179,10 @@ describe("orchestration-runtime", () => {
       signal: textSignal("failure"),
     });
 
-    await expect(childHandle.awaitResult()).rejects.toThrow("worker exploded");
+    const childResult = await childHandle.awaitResult();
+    expect(childResult.status).toBe("failed");
+    if (childResult.status !== "failed") throw new Error("unreachable");
+    expect(childResult.error.message).toBe("worker exploded");
   });
 
   test("inherits the caller driverId and explicit tools when spawning a child", async () => {
@@ -301,14 +305,7 @@ describe("orchestration-runtime", () => {
           event.name === "research"
       )
     ).toBe(true);
-    expect(childResult).toEqual([
-      {
-        callId: "call-research",
-        name: "research",
-        output: { status: "inherited" },
-        type: "tool_result",
-      },
-    ]);
+    expect(childResult.status).toBe("completed");
   });
 
   test("inherits an explicit parent execution schema when spawning a child", async () => {
@@ -406,9 +403,9 @@ describe("orchestration-runtime", () => {
     ]);
 
     rootHandle.cancel();
-    await expect(handle.awaitResult()).rejects.toThrow(
-      "orchestration execution failed"
-    );
+    await expect(handle.awaitResult()).rejects.toMatchObject({
+      code: "execution_cancelled",
+    });
   });
 
   test("keeps live extension receiver state mutable during orchestrated execution", async () => {
@@ -568,12 +565,13 @@ describe("orchestration-runtime", () => {
         event.source?.workerId !== undefined
     );
 
-    expect(childResult).toEqual([
-      {
-        text: "Reviewer done.",
-        type: "text",
-      },
-    ]);
+    expect(childResult.status).toBe("completed");
+    if (childResult.status !== "completed") throw new Error("unreachable");
+    expect(childResult.finalAssistantMessage).toEqual({
+      parts: [{ text: "Reviewer done.", type: "text" }],
+      providerMetadata: undefined,
+      role: "assistant",
+    });
     expect(childReviewerEvent?.source?.agent).toBe("reviewer");
     expect(rootReviewerEvent?.source?.agent).toBe("reviewer");
   });
@@ -709,9 +707,9 @@ describe("orchestration-runtime", () => {
     });
 
     rootHandle.cancel();
-    await expect(handle.awaitResult()).rejects.toThrow(
-      "orchestration execution failed"
-    );
+    await expect(handle.awaitResult()).rejects.toMatchObject({
+      code: "execution_cancelled",
+    });
     await subtreeCapture.done;
   });
 
@@ -830,11 +828,99 @@ describe("orchestration-runtime", () => {
           event.output.status === "original"
       )
     ).toBe(true);
-    expect(await childHandle.awaitResult()).toEqual([
-      {
-        text: "Worker complete.",
-        type: "text",
+    const childResult = await childHandle.awaitResult();
+    expect(childResult.status).toBe("completed");
+    if (childResult.status !== "completed") throw new Error("unreachable");
+    expect(childResult.finalAssistantMessage).toEqual({
+      parts: [{ text: "Worker complete.", type: "text" }],
+      providerMetadata: undefined,
+      role: "assistant",
+    });
+  });
+
+  test("awaitResult aggregates childResults for parent-plus-two-children orchestration", async () => {
+    const harness = createFakeKernelHarness();
+    const framework = createTuvrenRuntimeCore({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([
+        createStaticDriver(async (context) => {
+          if (context.config.name === "worker-alpha") {
+            await delay(5);
+            return {
+              messages: [assistantText("Alpha complete.")],
+              resolution: { reason: "done", type: "end_turn" },
+            };
+          }
+
+          if (context.config.name === "worker-beta") {
+            await delay(10);
+            return {
+              messages: [assistantText("Beta complete.")],
+              resolution: { reason: "done", type: "end_turn" },
+            };
+          }
+
+          await delay(20);
+          return {
+            messages: [assistantText("Parent complete.")],
+            resolution: { reason: "done", type: "end_turn" },
+          };
+        }),
+      ]),
+      kernel: harness.kernel,
+    });
+    const orchestration = createOrchestrationRuntime({
+      agents: {
+        primary: { name: "primary" },
+        "worker-alpha": { name: "worker-alpha" },
+        "worker-beta": { name: "worker-beta" },
       },
-    ]);
+      framework,
+    });
+    const thread = await framework.createThread({});
+    const handle = orchestration.executeTurn({
+      agent: "primary",
+      branchId: thread.branchId,
+      signal: textSignal("Start root"),
+      threadId: thread.threadId,
+    });
+
+    detachTestPromise(collectEvents(handle.events()));
+    await delay(0);
+    const alphaHandle = handle.spawn({
+      agent: "worker-alpha",
+      signal: textSignal("alpha"),
+    });
+    const betaHandle = handle.spawn({
+      agent: "worker-beta",
+      signal: textSignal("beta"),
+    });
+
+    const parentResult = await handle.awaitResult();
+
+    expect(parentResult.status).toBe("completed");
+    if (parentResult.status !== "completed") throw new Error("unreachable");
+    expect(parentResult.finalAssistantMessage).toEqual({
+      parts: [{ text: "Parent complete.", type: "text" }],
+      providerMetadata: undefined,
+      role: "assistant",
+    });
+    expect(Object.keys(parentResult.childResults)).toHaveLength(2);
+
+    const childTexts = Object.values(parentResult.childResults)
+      .map((r) => {
+        if (r.status !== "completed") return undefined;
+        const msg = r.finalAssistantMessage;
+        if (msg?.role !== "assistant") return undefined;
+        const part = msg.parts[0];
+        return part.type === "text" ? part.text : undefined;
+      })
+      .filter((t): t is string => t !== undefined)
+      .sort();
+
+    expect(childTexts).toEqual(["Alpha complete.", "Beta complete."]);
+
+    detachTestPromise(alphaHandle.awaitResult());
+    detachTestPromise(betaHandle.awaitResult());
   });
 });

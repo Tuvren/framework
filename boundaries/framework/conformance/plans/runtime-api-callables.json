@@ -1,6 +1,6 @@
 {
   "planId": "tuvren.framework.runtime-api.callables",
-  "planVersion": "0.1.0",
+  "planVersion": "0.2.0",
   "packetId": "tuvren.framework.runtime-api",
   "applicability": {
     "capabilities": ["framework.runtime-api"]
@@ -196,6 +196,78 @@
         "cancellation.cancelInvocations",
         "cancellation.errorEventCount",
         "runtime.phase"
+      ]
+    },
+    {
+      "checkId": "runtime-api-handle-terminal-value.complete",
+      "operation": "runtime.handle-terminal-value",
+      "scenario": "runtime-api-scenarios",
+      "input": { "scenarioPath": "$.handle-terminal-value-complete" },
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.handle.awaitResult.status",
+          "equals": "completed"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.handle.awaitResult.finalAssistantMessage.parts.0.text",
+          "equals": "Terminal complete."
+        }
+      ]
+    },
+    {
+      "checkId": "runtime-api-handle-terminal-value.failure-resolves",
+      "operation": "runtime.handle-terminal-value",
+      "scenario": "runtime-api-scenarios",
+      "input": { "scenarioPath": "$.handle-terminal-value-failure" },
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.handle.awaitResult.status",
+          "equals": "failed"
+        }
+      ]
+    },
+    {
+      "checkId": "runtime-api-handle-terminal-value.cancel-rejects",
+      "operation": "runtime.handle-terminal-value",
+      "scenario": "runtime-api-scenarios",
+      "input": { "scenarioPath": "$.handle-terminal-value-cancelled" },
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.handle.awaitResult.rejected",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.handle.awaitResult.error.code",
+          "equals": "execution_cancelled"
+        }
+      ]
+    },
+    {
+      "checkId": "runtime-api-handle-terminal-value.idempotent",
+      "operation": "runtime.handle-terminal-value",
+      "scenario": "runtime-api-scenarios",
+      "input": { "scenarioPath": "$.handle-terminal-value-idempotent" },
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.handle.awaitResult.allCompleted",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.handle.awaitResult.callCount",
+          "equals": 3
+        },
+        {
+          "kind": "resultField",
+          "field": "$.handle.awaitResult.resultsIdentical",
+          "equals": true
+        }
       ]
     }
   ]

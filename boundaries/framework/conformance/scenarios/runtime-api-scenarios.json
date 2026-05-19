@@ -390,7 +390,6 @@
   "orchestration-event-surfaces": {
     "operation": "runtime.orchestration.event-surfaces",
     "childText": "Worker complete.",
-    "failureMessage": "worker exploded",
     "parentText": "Parent complete."
   },
   "orchestration-handoff-attribution": {
@@ -409,5 +408,21 @@
   "orchestration-nested-attribution": {
     "operation": "runtime.orchestration.nested-attribution",
     "grandchildText": "Grandchild complete."
+  },
+  "handle-terminal-value-complete": {
+    "operation": "runtime.handle-terminal-value",
+    "case": "complete"
+  },
+  "handle-terminal-value-failure": {
+    "operation": "runtime.handle-terminal-value",
+    "case": "failure"
+  },
+  "handle-terminal-value-cancelled": {
+    "operation": "runtime.handle-terminal-value",
+    "case": "cancelled"
+  },
+  "handle-terminal-value-idempotent": {
+    "operation": "runtime.handle-terminal-value",
+    "case": "idempotent"
   }
 }

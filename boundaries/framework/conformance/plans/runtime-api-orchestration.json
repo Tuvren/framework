@@ -23,22 +23,6 @@
       "assertions": [
         {
           "equals": "orchestration_parent_not_started",
-          "field": "$.orchestration.launch.preStartAwaitResultError.code",
-          "kind": "resultField"
-        }
-      ],
-      "checkId": "runtime-orchestration.launch.await-result-rejects-before-parent-start",
-      "input": {
-        "scenarioPath": "$.orchestration-launch-preconditions"
-      },
-      "operation": "runtime.orchestration.launch-preconditions",
-      "scenario": "runtime-api-scenarios",
-      "evidence": ["result.orchestration.launch.preStartAwaitResultError.code"]
-    },
-    {
-      "assertions": [
-        {
-          "equals": "orchestration_parent_not_started",
           "field": "$.orchestration.launch.postAwaitSpawnError.code",
           "kind": "resultField"
         }
@@ -239,7 +223,7 @@
       "assertions": [
         {
           "equals": "Worker complete.",
-          "field": "$.orchestration.surfaces.childResult.0.text",
+          "field": "$.orchestration.surfaces.childResultText",
           "kind": "resultField"
         }
       ],
@@ -249,7 +233,7 @@
       },
       "operation": "runtime.orchestration.event-surfaces",
       "scenario": "runtime-api-scenarios",
-      "evidence": ["result.orchestration.surfaces.childResult.0.text"]
+      "evidence": ["result.orchestration.surfaces.childResultText"]
     },
     {
       "assertions": [
@@ -286,22 +270,6 @@
       "evidence": [
         "result.orchestration.surfaces.childAllEventsRemainAvailable"
       ]
-    },
-    {
-      "assertions": [
-        {
-          "equals": true,
-          "field": "$.orchestration.surfaces.failedAwaitResultRejected",
-          "kind": "resultField"
-        }
-      ],
-      "checkId": "runtime-orchestration.surfaces.await-result-failure-rejects",
-      "input": {
-        "scenarioPath": "$.orchestration-event-surfaces"
-      },
-      "operation": "runtime.orchestration.event-surfaces",
-      "scenario": "runtime-api-scenarios",
-      "evidence": ["result.orchestration.surfaces.failedAwaitResultRejected"]
     },
     {
       "assertions": [
@@ -586,7 +554,7 @@
   ],
   "packetId": "tuvren.framework.runtime-api",
   "planId": "tuvren.framework.runtime-api.orchestration",
-  "planVersion": "0.1.0",
+  "planVersion": "0.2.0",
   "scenarios": {
     "runtime-api-scenarios": "../scenarios/runtime-api-scenarios.json"
   }

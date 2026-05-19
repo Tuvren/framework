@@ -20,6 +20,7 @@ import type {
   ApprovalResponse,
   ContentPart,
   ExecutionHandle,
+  ExecutionResult,
   ExecutionStatus,
   InputSignal,
   ToolResultPart,
@@ -169,7 +170,11 @@ export class OrchestrationNode {
     });
   }
 
-  async awaitResult(): Promise<unknown> {
+  get nodeWorkerId(): string | undefined {
+    return this.workerId;
+  }
+
+  async awaitResult(): Promise<ExecutionResult> {
     if (!this.startedExecution) {
       throw new TuvrenRuntimeError(
         "awaitResult() requires the orchestration handle to start execution first",
@@ -183,7 +188,27 @@ export class OrchestrationNode {
     this.activeResultAwaiters += 1;
 
     try {
-      return await this.resultState.promise;
+      try {
+        await this.resultState.promise;
+      } catch {
+        // Ignored — success and failure both delegate to currentBinding below.
+      }
+
+      if (this.currentBinding !== undefined) {
+        return await this.currentBinding.handle.awaitResult();
+      }
+
+      // Initialization failed — no binding was ever established.
+      const projection = this.lastErrorProjection;
+      const error = new TuvrenRuntimeError(
+        projection?.message ?? "orchestration execution failed",
+        { code: projection?.code ?? "execution_failed" }
+      );
+      return {
+        error,
+        executionStatus: this.currentStatus(),
+        status: "failed",
+      };
     } finally {
       this.activeResultAwaiters -= 1;
       this.maybeCancelUnobservedExecution();

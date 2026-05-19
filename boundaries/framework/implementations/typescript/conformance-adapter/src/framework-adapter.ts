@@ -273,6 +273,8 @@ export class TypeScriptFrameworkAdapter implements ImplementationAdapter {
         return runtimeScenarios.runApprovalResume(input);
       case "runtime.branch-create":
         return runtimeScenarios.runBranchCreate();
+      case "runtime.handle-terminal-value":
+        return runtimeScenarios.runHandleTerminalValue(input);
       case "runtime.provider-generate":
         return runtimeScenarios.runProviderGenerate(input);
       case "runtime.provider-stream":

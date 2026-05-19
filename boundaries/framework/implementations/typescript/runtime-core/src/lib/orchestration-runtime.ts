@@ -19,9 +19,11 @@ import { type EpochMs, TuvrenRuntimeError } from "@tuvren/core-types";
 import type {
   AgentConfig,
   ApprovalResponse,
+  ExecutionResult,
   ExecutionStatus,
   InputSignal,
   OrchestrationHandle,
+  OrchestrationResult,
   OrchestrationRuntime,
   TuvrenRuntime,
   TuvrenStreamEvent,
@@ -49,6 +51,10 @@ class OrchestrationHandleImpl implements OrchestrationHandle {
   private active = true;
   private inactiveStatus?: ExecutionStatus;
   private readonly node: OrchestrationNode;
+  private readonly spawnedChildNodes: Array<{
+    node: OrchestrationNode;
+    workerId: string;
+  }> = [];
 
   constructor(node: OrchestrationNode) {
     this.node = node;
@@ -59,9 +65,26 @@ class OrchestrationHandleImpl implements OrchestrationHandle {
     return this.node.allEvents();
   }
 
-  async awaitResult(): Promise<unknown> {
+  async awaitResult(): Promise<OrchestrationResult> {
     this.assertActive("awaitResult");
-    return await this.node.awaitResult();
+    const ownResult = await this.node.awaitResult();
+    const childResults = await this.collectChildResults();
+
+    if (ownResult.status === "completed") {
+      return {
+        childResults,
+        executionStatus: ownResult.executionStatus,
+        finalAssistantMessage: ownResult.finalAssistantMessage,
+        status: "completed",
+      };
+    }
+
+    return {
+      childResults,
+      error: ownResult.error,
+      executionStatus: ownResult.executionStatus,
+      status: "failed",
+    };
   }
 
   cancel(): void {
@@ -84,12 +107,17 @@ class OrchestrationHandleImpl implements OrchestrationHandle {
 
   spawn(input: { agent: string; signal: InputSignal }): OrchestrationHandle {
     this.assertActive("spawn");
-    return new OrchestrationHandleImpl(
-      this.node.spawn({
-        agent: input.agent,
-        signal: input.signal,
-      })
-    );
+    const childNode = this.node.spawn({
+      agent: input.agent,
+      signal: input.signal,
+    });
+    const workerId = childNode.nodeWorkerId;
+
+    if (workerId !== undefined) {
+      this.spawnedChildNodes.push({ node: childNode, workerId });
+    }
+
+    return new OrchestrationHandleImpl(childNode);
   }
 
   status(): ExecutionStatus {
@@ -104,6 +132,37 @@ class OrchestrationHandleImpl implements OrchestrationHandle {
   steer(signal: InputSignal): void {
     this.assertActive("steer");
     this.node.steer(signal);
+  }
+
+  private async collectChildResults(): Promise<Record<string, ExecutionResult>> {
+    if (this.spawnedChildNodes.length === 0) {
+      return {};
+    }
+
+    const entries = await Promise.all(
+      this.spawnedChildNodes.map(async ({ node, workerId }) => {
+        let result: ExecutionResult;
+
+        try {
+          result = await node.awaitResult();
+        } catch (error: unknown) {
+          result = {
+            error:
+              error instanceof TuvrenRuntimeError
+                ? error
+                : new TuvrenRuntimeError("Child execution was cancelled", {
+                    code: "execution_cancelled",
+                  }),
+            executionStatus: node.currentStatus(),
+            status: "failed",
+          };
+        }
+
+        return [workerId, result] as const;
+      })
+    );
+
+    return Object.fromEntries(entries);
   }
 
   private assertActive(methodName: string): void {

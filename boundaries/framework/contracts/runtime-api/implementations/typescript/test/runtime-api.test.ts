@@ -198,8 +198,8 @@ describe("runtime-api contracts", () => {
     });
 
     expect(resumedHandle).not.toBe(handle);
-    expect(await childHandle.awaitResult()).toBe("child result");
-    expect(await resumedHandle.awaitResult()).toEqual({ ok: "resumed" });
+    expect((await childHandle.awaitResult()).status).toBe("completed");
+    expect((await resumedHandle.awaitResult()).status).toBe("completed");
   });
 
   test("rejects malformed contract values", () => {

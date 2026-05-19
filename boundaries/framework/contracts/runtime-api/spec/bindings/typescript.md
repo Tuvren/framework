@@ -9,23 +9,66 @@ Portable packet artifacts project TypeScript `Uint8Array` values as `uint8[]`
 JSON arrays. Host-facing callable surfaces such as `ExecutionHandle` remain
 binding-only and are not emitted as JSON Schema artifacts.
 
+## ExecutionHandle binding
+
+The base `ExecutionHandle` is the return type of `TuvrenRuntime.executeTurn()`.
+TypeScript bindings not in the TypeSpec:
+
+- `ExecutionHandle.awaitResult() -> Promise<ExecutionResult>`
+
+`ExecutionResult` is a discriminated union keyed on `status`:
+
+```typescript
+type ExecutionResult =
+  | { status: "completed"; finalAssistantMessage?: TuvrenMessage; executionStatus: ExecutionStatus }
+  | { status: "failed"; error: TuvrenError; executionStatus: ExecutionStatus };
+```
+
+ADR-035 semantics for `awaitResult()`:
+
+- `status: "completed"` — the turn ended normally; `finalAssistantMessage` is
+  the last assistant message emitted by the driver, or `undefined` when the
+  final driver iteration produced only tool results.
+- `status: "failed"` — the driver returned an invalid result or the execution
+  encountered an unrecoverable error; the result resolves (does not reject).
+- Cancellation via `cancel()` is the only path that causes `awaitResult()` to
+  reject; the rejection carries a `TuvrenRuntimeError` with
+  `code: "execution_cancelled"`.
+- Calling `awaitResult()` multiple times on the same handle is idempotent: all
+  subsequent calls resolve immediately with the same `ExecutionResult`.
+
+## OrchestrationHandle binding
+
 TypeScript orchestration bindings stay in this appendix rather than JSON Schema
 artifacts:
 
 - `OrchestrationRuntime.executeTurn(...) -> OrchestrationHandle`
 - `OrchestrationHandle.spawn(...) -> OrchestrationHandle`
 - `OrchestrationHandle.allEvents() -> AsyncIterable<TuvrenStreamEvent>`
-- `OrchestrationHandle.awaitResult() -> Promise<unknown>`
+- `OrchestrationHandle.awaitResult() -> Promise<OrchestrationResult>`
 
-The portable semantics for those bindings are not defined by TypeScript source.
-They are defined by the runtime-api authority packet plus the shared
+`OrchestrationResult` extends `ExecutionResult` with an aggregated child map:
+
+```typescript
+type OrchestrationResult = ExecutionResult & {
+  childResults: Record<string, ExecutionResult>;
+};
+```
+
+`childResults` maps worker IDs (the `workerId` assigned by the orchestration
+runtime to each spawned child) to that child's `ExecutionResult`. A cancelled
+child whose `awaitResult()` rejection is caught during aggregation is recorded
+as `{ status: "failed", error: TuvrenRuntimeError(execution_cancelled), ... }`.
+
+The portable semantics for orchestration bindings are not defined by TypeScript
+source. They are defined by the runtime-api authority packet plus the shared
 orchestration conformance plan:
 
 - launch preconditions for `spawn()` and `awaitResult()`
 - run-local pause, resume, and cancel behavior across parent and child handles
 - `events()` as self-only and `allEvents()` as self-plus-descendants
 - descendant `source` attribution on subtree streams
-- child final visible result behavior from `awaitResult()`
+- child final visible result text from `awaitResult()`
 - absence of a canonical injected parent `worker_result`
 - explicit execution-surface inheritance for `driverId`, per-request `tools`,
   and explicit parent `schemaId`

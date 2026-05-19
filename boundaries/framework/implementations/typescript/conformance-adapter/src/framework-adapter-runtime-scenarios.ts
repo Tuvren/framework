@@ -134,6 +134,7 @@ export function createFrameworkAdapterRuntimeScenarios(
   }): Promise<AdapterProjection>;
   runCompletedRuntimeTurn(input: unknown): Promise<AdapterProjection>;
   runContextTransform(input: unknown): Promise<AdapterProjection>;
+  runHandleTerminalValue(input: unknown): Promise<AdapterProjection>;
   runProviderGenerate(input: unknown): Promise<AdapterProjection>;
   runProviderStream(input: unknown): Promise<AdapterProjection>;
   runRecoverResult(input: unknown): Promise<AdapterProjection>;
@@ -704,12 +705,201 @@ export function createFrameworkAdapterRuntimeScenarios(
     }
   }
 
+  async function runHandleTerminalValue(
+    input: unknown
+  ): Promise<AdapterProjection> {
+    const scenario = dependencies.readOperationScenario(
+      input,
+      "runtime.handle-terminal-value"
+    );
+    const caseValue =
+      dependencies.readRecordString(scenario, "case") ?? "complete";
+
+    if (caseValue === "complete") {
+      const harness = createConformanceKernelHarness();
+      const runtime = createTuvrenRuntimeCore({
+        createId: createConformanceIdFactory(),
+        defaultDriverId: DRIVER_ID,
+        driverRegistry: createDriverRegistry([
+          createStaticDriver(() => ({
+            messages: [assistantText("Terminal complete.")],
+            resolution: { reason: "done", type: "end_turn" },
+          })),
+        ]),
+        kernel: harness.kernel,
+      });
+      const thread = await runtime.createThread({});
+      const handle = runtime.executeTurn({
+        branchId: thread.branchId,
+        config: { name: AGENT_NAME },
+        signal: textSignal("complete"),
+        threadId: thread.threadId,
+      });
+      const result = await handle.awaitResult();
+      const finalMsg =
+        result.status === "completed" ? result.finalAssistantMessage : undefined;
+      const textPart =
+        finalMsg?.role === "assistant"
+          ? finalMsg.parts.find((p) => p.type === "text")
+          : undefined;
+
+      return {
+        result: {
+          handle: {
+            awaitResult: {
+              finalAssistantMessage:
+                textPart?.type === "text"
+                  ? { parts: [{ text: textPart.text, type: "text" }] }
+                  : undefined,
+              status: result.status,
+            },
+          },
+        },
+      };
+    }
+
+    if (caseValue === "failure") {
+      const harness = createConformanceKernelHarness();
+      const failureDriver = {
+        async execute() {
+          return {
+            // biome-ignore lint/performance/useTopLevelRegex: conformance test bypass
+            messages: JSON.parse('[{"role":"assistant","parts":[123]}]'),
+            resolution: { reason: "done", type: "end_turn" },
+          };
+        },
+        id: DRIVER_ID,
+      } satisfies RuntimeDriver;
+      const runtime = createTuvrenRuntimeCore({
+        createId: createConformanceIdFactory(),
+        defaultDriverId: DRIVER_ID,
+        driverRegistry: createDriverRegistry([failureDriver]),
+        kernel: harness.kernel,
+      });
+      const thread = await runtime.createThread({});
+      const handle = runtime.executeTurn({
+        branchId: thread.branchId,
+        config: { name: AGENT_NAME },
+        signal: textSignal("failure"),
+        threadId: thread.threadId,
+      });
+      const result = await handle.awaitResult();
+
+      return {
+        result: {
+          handle: {
+            awaitResult: { status: result.status },
+          },
+        },
+      };
+    }
+
+    if (caseValue === "cancelled") {
+      const harness = createConformanceKernelHarness();
+      let driverStarted = false;
+      const cancelDriver = {
+        async execute(context) {
+          driverStarted = true;
+          await waitForAbort(context.signal);
+          return { resolution: { type: "continue_iteration" } };
+        },
+        id: DRIVER_ID,
+      } satisfies RuntimeDriver;
+      const runtime = createTuvrenRuntimeCore({
+        createId: createConformanceIdFactory(),
+        defaultDriverId: DRIVER_ID,
+        driverRegistry: createDriverRegistry([cancelDriver]),
+        kernel: harness.kernel,
+      });
+      const thread = await runtime.createThread({});
+      const handle = runtime.executeTurn({
+        branchId: thread.branchId,
+        config: { name: AGENT_NAME },
+        signal: textSignal("cancel"),
+        threadId: thread.threadId,
+      });
+      const resultPromise = handle.awaitResult();
+
+      while (!driverStarted) {
+        await new Promise<void>((resolve) => {
+          setTimeout(resolve, 5);
+        });
+      }
+
+      handle.cancel();
+
+      let rejected = false;
+      let errorEnvelope: Record<string, unknown> | undefined;
+
+      try {
+        await resultPromise;
+      } catch (error: unknown) {
+        rejected = true;
+        errorEnvelope = readErrorEnvelope(error);
+      }
+
+      return {
+        result: {
+          handle: {
+            awaitResult: { error: errorEnvelope, rejected },
+          },
+        },
+      };
+    }
+
+    if (caseValue === "idempotent") {
+      const harness = createConformanceKernelHarness();
+      const runtime = createTuvrenRuntimeCore({
+        createId: createConformanceIdFactory(),
+        defaultDriverId: DRIVER_ID,
+        driverRegistry: createDriverRegistry([
+          createStaticDriver(() => ({
+            messages: [assistantText("Idempotent.")],
+            resolution: { reason: "done", type: "end_turn" },
+          })),
+        ]),
+        kernel: harness.kernel,
+      });
+      const thread = await runtime.createThread({});
+      const handle = runtime.executeTurn({
+        branchId: thread.branchId,
+        config: { name: AGENT_NAME },
+        signal: textSignal("idempotent"),
+        threadId: thread.threadId,
+      });
+      const result1 = await handle.awaitResult();
+      const result2 = await handle.awaitResult();
+      const result3 = await handle.awaitResult();
+
+      const allCompleted =
+        result1.status === "completed" &&
+        result2.status === "completed" &&
+        result3.status === "completed";
+      const resultsIdentical =
+        JSON.stringify(result2) === JSON.stringify(result1) &&
+        JSON.stringify(result3) === JSON.stringify(result1);
+
+      return {
+        result: {
+          handle: {
+            awaitResult: { allCompleted, callCount: 3, resultsIdentical },
+          },
+        },
+      };
+    }
+
+    throw new Error(
+      `runtime.handle-terminal-value: unknown case "${caseValue}"`
+    );
+  }
+
   return {
     runApprovalResume,
     runBranchCreate,
     runCancelledRuntimeTurn,
     runCompletedRuntimeTurn,
     runContextTransform: providerScenarios.runContextTransform,
+    runHandleTerminalValue,
     runProviderGenerate: providerScenarios.runProviderGenerate,
     runProviderStream: providerScenarios.runProviderStream,
     runRecoverResult: recoveryScenarios.runRecoverResult,
