@@ -170,13 +170,8 @@ export async function listThreads(
     }
   }
 
-  let kernelResult: {
-    threads: { createdAtMs: number; rootTurnNodeHash: string; schemaId: string; threadId: string }[];
-    nextCursor?: string;
-  };
-
   // kernel_capability_unsupported propagates naturally — no catch needed.
-  kernelResult = await kernel.thread.list({
+  const kernelResult = await kernel.thread.list({
     limit: options?.limit,
     cursor: cursorPayload
       ? encodeCursor({
@@ -371,7 +366,13 @@ export async function* getTurnHistory(
     // Resume: the cursor names the node whose predecessor is next.
     // We need the node named in the cursor to find its previousTurnNodeHash.
     const cursorNode = await kernel.node.get(cursorPayload.lastTurnNodeHash);
-    if (cursorNode === null || cursorNode.previousTurnNodeHash === null) {
+    if (cursorNode === null) {
+      throw new TuvrenPersistenceError(
+        `cursor turn node "${cursorPayload.lastTurnNodeHash}" is missing from the store`,
+        { code: "kernel_store_object_missing" }
+      );
+    }
+    if (cursorNode.previousTurnNodeHash === null) {
       return;
     }
     startHash = cursorNode.previousTurnNodeHash;
