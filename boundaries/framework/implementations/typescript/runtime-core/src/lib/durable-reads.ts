@@ -249,11 +249,15 @@ async function buildTurnSnapshot(
   const contextManifestValue = manifest["context.manifest"];
   if (typeof contextManifestValue === "string") {
     const bytes = await kernel.store.get(contextManifestValue);
-    if (bytes !== null) {
-      const decoded = decodeDeterministicKernelRecord(bytes);
-      assertContextManifest(decoded, `manifest at "${contextManifestValue}"`);
-      contextManifest = decoded;
+    if (bytes === null) {
+      throw new TuvrenPersistenceError(
+        `context manifest object "${contextManifestValue}" is referenced in the turn tree but missing from the store`,
+        { code: "kernel_store_object_missing" }
+      );
     }
+    const decoded = decodeDeterministicKernelRecord(bytes);
+    assertContextManifest(decoded, `manifest at "${contextManifestValue}"`);
+    contextManifest = decoded;
   }
 
   // paths: all entries from the TurnTree manifest.
@@ -287,6 +291,13 @@ export async function getTurnState(
   if (branch === null) {
     throw new TuvrenLineageError(
       `branch "${input.branchId}" does not exist`,
+      { code: "missing_branch" }
+    );
+  }
+
+  if (branch.threadId !== input.threadId) {
+    throw new TuvrenLineageError(
+      `branch "${input.branchId}" belongs to thread "${branch.threadId}", not "${input.threadId}"`,
       { code: "missing_branch" }
     );
   }
@@ -345,6 +356,13 @@ export async function* getTurnHistory(
   if (branch === null) {
     throw new TuvrenLineageError(
       `branch "${input.branchId}" does not exist`,
+      { code: "missing_branch" }
+    );
+  }
+
+  if (branch.threadId !== input.threadId) {
+    throw new TuvrenLineageError(
+      `branch "${input.branchId}" belongs to thread "${branch.threadId}", not "${input.threadId}"`,
       { code: "missing_branch" }
     );
   }

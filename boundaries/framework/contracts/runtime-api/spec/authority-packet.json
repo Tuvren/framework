@@ -53,7 +53,7 @@
     },
     {
       "planId": "tuvren.framework.runtime-api.callables-extended",
-      "planVersion": "0.2.0",
+      "planVersion": "0.3.0",
       "path": "boundaries/framework/conformance/plans/runtime-api-callables-extended.json"
     },
     {
@@ -63,7 +63,7 @@
     },
     {
       "planId": "tuvren.framework.runtime-api.orchestration",
-      "planVersion": "0.2.0",
+      "planVersion": "0.3.0",
       "path": "boundaries/framework/conformance/plans/runtime-api-orchestration.json"
     }
   ],

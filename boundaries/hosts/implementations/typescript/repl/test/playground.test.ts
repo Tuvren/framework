@@ -1792,7 +1792,7 @@ describe("repl host scenarios", () => {
     expect(report.summary.failedScenarios).toEqual(["reload"]);
   });
 
-  test("runtime.readBranchMessages tolerates schemas without a messages path", async () => {
+  test("runtime.readBranchMessages returns empty array on a fresh branch before any turn", async () => {
     const host = createPlaygroundHost({
       backend: "memory",
       providerMode: "fixture",
