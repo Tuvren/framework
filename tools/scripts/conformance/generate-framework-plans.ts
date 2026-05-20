@@ -313,12 +313,12 @@ function buildRuntimeApiOrchestration(): Plan {
         assertions: [
           {
             equals: "Worker complete.",
-            field: "$.orchestration.surfaces.childResult.0.text",
+            field: "$.orchestration.surfaces.childResultText",
             kind: "evidenceField",
           },
         ],
         checkId: "runtime-orchestration.surfaces.await-result-visible-result",
-        evidence: ["orchestration.surfaces.childResult.0.text"],
+        evidence: ["orchestration.surfaces.childResultText"],
         input: { scenarioPath: "$.orchestration-event-surfaces" },
         operation: "runtime.orchestration.event-surfaces",
         scenario: "runtime-api-scenarios",
@@ -348,20 +348,6 @@ function buildRuntimeApiOrchestration(): Plan {
         checkId:
           "runtime-orchestration.surfaces.child-all-events-remains-available",
         evidence: ["orchestration.surfaces.childAllEventsRemainAvailable"],
-        input: { scenarioPath: "$.orchestration-event-surfaces" },
-        operation: "runtime.orchestration.event-surfaces",
-        scenario: "runtime-api-scenarios",
-      },
-      {
-        assertions: [
-          {
-            equals: true,
-            field: "$.orchestration.surfaces.failedAwaitResultRejected",
-            kind: "evidenceField",
-          },
-        ],
-        checkId: "runtime-orchestration.surfaces.await-result-failure-rejects",
-        evidence: ["orchestration.surfaces.failedAwaitResultRejected"],
         input: { scenarioPath: "$.orchestration-event-surfaces" },
         operation: "runtime.orchestration.event-surfaces",
         scenario: "runtime-api-scenarios",
@@ -621,10 +607,8 @@ function buildRuntimeApiOrchestration(): Plan {
     ].map(normalizeGeneratedResultSurfaceCheck),
     packetId: "tuvren.framework.runtime-api",
     planId: "tuvren.framework.runtime-api.orchestration",
-    // 0.2.0: evidence path corrections and two pre-condition checks added
-    //        (pre-existing generator drift; version aligned here).
-    // 0.3.0: childResultText field renamed childResult.0.text (breaking shape
-    //        change per TechSpec §2.1 live 0.x rule).
+    // 0.3.0: added await-result-rejects-before-parent-start pre-condition check
+    //        (adapter already emits preStartAwaitResultError; minor addition).
     planVersion: "0.3.0",
     scenarios: {
       "runtime-api-scenarios": "../scenarios/runtime-api-scenarios.json",

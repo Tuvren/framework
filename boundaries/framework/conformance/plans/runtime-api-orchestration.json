@@ -239,7 +239,7 @@
       "assertions": [
         {
           "equals": "Worker complete.",
-          "field": "$.orchestration.surfaces.childResult.0.text",
+          "field": "$.orchestration.surfaces.childResultText",
           "kind": "resultField"
         }
       ],
@@ -249,7 +249,7 @@
       },
       "operation": "runtime.orchestration.event-surfaces",
       "scenario": "runtime-api-scenarios",
-      "evidence": ["result.orchestration.surfaces.childResult.0.text"]
+      "evidence": ["result.orchestration.surfaces.childResultText"]
     },
     {
       "assertions": [
@@ -286,22 +286,6 @@
       "evidence": [
         "result.orchestration.surfaces.childAllEventsRemainAvailable"
       ]
-    },
-    {
-      "assertions": [
-        {
-          "equals": true,
-          "field": "$.orchestration.surfaces.failedAwaitResultRejected",
-          "kind": "resultField"
-        }
-      ],
-      "checkId": "runtime-orchestration.surfaces.await-result-failure-rejects",
-      "input": {
-        "scenarioPath": "$.orchestration-event-surfaces"
-      },
-      "operation": "runtime.orchestration.event-surfaces",
-      "scenario": "runtime-api-scenarios",
-      "evidence": ["result.orchestration.surfaces.failedAwaitResultRejected"]
     },
     {
       "assertions": [

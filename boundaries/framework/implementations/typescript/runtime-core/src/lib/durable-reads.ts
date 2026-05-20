@@ -32,6 +32,7 @@ import {
   type ThreadSummary,
   type TurnHistoryCursor,
   type TurnSnapshot,
+  type TuvrenMessage,
 } from "@tuvren/runtime-api";
 
 // ── Internal cursor payload shapes (TechSpec §3.8) ──────────────────────────
@@ -339,6 +340,15 @@ export async function* getTurnHistory(
 
   let startHash: string;
 
+  // Validate branch existence on both the initial call and cursor resume.
+  const branch = await kernel.branch.get(input.branchId);
+  if (branch === null) {
+    throw new TuvrenLineageError(
+      `branch "${input.branchId}" does not exist`,
+      { code: "missing_branch" }
+    );
+  }
+
   if (cursorPayload !== undefined) {
     // Resume: the cursor names the node whose predecessor is next.
     // We need the node named in the cursor to find its previousTurnNodeHash.
@@ -348,13 +358,6 @@ export async function* getTurnHistory(
     }
     startHash = cursorNode.previousTurnNodeHash;
   } else {
-    const branch = await kernel.branch.get(input.branchId);
-    if (branch === null) {
-      throw new TuvrenLineageError(
-        `branch "${input.branchId}" does not exist`,
-        { code: "missing_branch" }
-      );
-    }
     startHash = branch.headTurnNodeHash;
   }
 
@@ -381,7 +384,7 @@ export async function readBranchMessages(
     limit?: number;
     after?: BranchMessagesCursor;
   }
-): Promise<{ messages: import("@tuvren/runtime-api").TuvrenMessage[]; nextCursor?: BranchMessagesCursor }> {
+): Promise<{ messages: TuvrenMessage[]; nextCursor?: BranchMessagesCursor }> {
   let cursorPayload: BranchMessagesCursorPayload | undefined;
 
   if (input.after !== undefined) {
@@ -500,7 +503,7 @@ export async function readBranchMessages(
       : messageHashes.length;
 
   const slicedHashes = messageHashes.slice(startIndex, endIndex);
-  const messages: import("@tuvren/runtime-api").TuvrenMessage[] = [];
+  const messages: TuvrenMessage[] = [];
 
   for (const hash of slicedHashes) {
     const bytes = await kernel.store.get(hash);
