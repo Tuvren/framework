@@ -810,6 +810,35 @@ export interface OrchestrationRuntime {
   }): OrchestrationHandle;
 }
 
+// ── Durable-Read Return Types (ADR-036) ─────────────────────────────────────
+
+export interface ThreadSummary {
+  threadId: string;
+  schemaId: string;
+  rootTurnNodeHash: HashString;
+  createdAtMs: EpochMs;
+}
+
+export interface BranchSummary {
+  branchId: string;
+  threadId: string;
+  headTurnNodeHash: HashString;
+}
+
+export interface TurnSnapshot {
+  turnNodeHash: HashString;
+  previousTurnNodeHash: HashString | null;
+  turnTreeHash: HashString;
+  schemaId: string;
+  eventHash: HashString | null;
+  manifest: ContextManifest | null;
+  paths: Record<string, HashString[] | HashString | null>;
+}
+
+export type ListThreadsCursor = string;   // opaque to host; see TechSpec §3.8
+export type TurnHistoryCursor = string;   // opaque to host; see TechSpec §3.8
+export type BranchMessagesCursor = string; // opaque to host; see TechSpec §3.8
+
 export interface TuvrenRuntime {
   createBranch(input: {
     branchId?: string;
@@ -853,4 +882,32 @@ export interface TuvrenRuntime {
     headTurnNodeHash: HashString;
     archiveBranchId?: string;
   }>;
+
+  // ── Durable-Read Surface (ADR-036) ──────────────────────────────────────
+  listThreads(options?: {
+    limit?: number;
+    cursor?: ListThreadsCursor;
+    filter?: { schemaId?: string };
+  }): Promise<{ threads: ThreadSummary[]; nextCursor?: ListThreadsCursor }>;
+
+  // listBranches is intentionally unbounded: branches per thread are bounded
+  // by O(1) active divergence paths in v1 and kernel.branch.list is unpaginated.
+  listBranches(input: { threadId: string }): Promise<BranchSummary[]>;
+
+  getTurnState(input: {
+    threadId: string;
+    branchId: string;
+    turnNodeHash?: HashString;
+  }): Promise<TurnSnapshot>;
+
+  getTurnHistory(
+    input: { threadId: string; branchId: string },
+    options?: { limit?: number; before?: TurnHistoryCursor },
+  ): AsyncIterableIterator<TurnSnapshot>;
+
+  readBranchMessages(input: {
+    branchId: string;
+    limit?: number;
+    after?: BranchMessagesCursor;
+  }): Promise<{ messages: TuvrenMessage[]; nextCursor?: BranchMessagesCursor }>;
 }

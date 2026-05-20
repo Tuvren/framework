@@ -30,6 +30,12 @@
       "@tuvren/kernel-protocol": [
         "../../../../kernel/contracts/protocol/implementations/typescript/src/index.ts"
       ],
+      "@tuvren/backend-memory": [
+        "../../../../kernel/implementations/typescript/backend-memory/src/index.ts"
+      ],
+      "@tuvren/kernel-runtime": [
+        "../../../../kernel/implementations/typescript/runtime-kernel/src/index.ts"
+      ],
       "@tuvren/runtime-core": ["./src/index.ts"],
       "@tuvren/stream-core": ["../stream-core/src/index.ts"],
       "@tuvren/stream-sse": ["../stream-sse/src/index.ts"],
@@ -45,6 +51,8 @@
     "../../../contracts/runtime-api/implementations/typescript/src/**/*.ts",
     "../../../contracts/driver-api/implementations/typescript/src/**/*.ts",
     "../../../../kernel/contracts/protocol/implementations/typescript/src/**/*.ts",
+    "../../../../kernel/implementations/typescript/backend-memory/src/**/*.ts",
+    "../../../../kernel/implementations/typescript/runtime-kernel/src/**/*.ts",
     "../../../../shared/contracts/core-types/implementations/typescript/src/**/*.ts",
     "../stream-core/src/**/*.ts",
     "../stream-sse/src/**/*.ts",

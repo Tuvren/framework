@@ -308,6 +308,29 @@ export const frameworkContractFixtures = {
         headTurnNodeHash: "3".repeat(64),
       });
     },
+    listThreads() {
+      return Promise.resolve({ threads: [] });
+    },
+    listBranches() {
+      return Promise.resolve([]);
+    },
+    getTurnState() {
+      return Promise.resolve({
+        eventHash: null,
+        manifest: null,
+        paths: {},
+        previousTurnNodeHash: null,
+        schemaId: "tuvren.agent.v1",
+        turnNodeHash: "1".repeat(64),
+        turnTreeHash: "2".repeat(64),
+      });
+    },
+    async *getTurnHistory() {
+      // no-op iterator
+    },
+    readBranchMessages() {
+      return Promise.resolve({ messages: [] });
+    },
   } satisfies TuvrenRuntime,
   streamEvent: {
     messageId: "message_1",

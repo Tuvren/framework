@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-import { assertHashString } from "@tuvren/core-types";
+import { assertHashString, TuvrenPersistenceError } from "@tuvren/core-types";
 import type { RuntimeDriver } from "@tuvren/driver-api";
 import type {
   ApprovalDecision,
+  BranchMessagesCursor,
   ExecutionHandle,
   InputSignal,
   TuvrenMessage,
@@ -134,6 +135,15 @@ export function createFrameworkAdapterRuntimeScenarios(
   }): Promise<AdapterProjection>;
   runCompletedRuntimeTurn(input: unknown): Promise<AdapterProjection>;
   runContextTransform(input: unknown): Promise<AdapterProjection>;
+  runDurableReadGetTurnHistory(): Promise<AdapterProjection>;
+  runDurableReadGetTurnState(): Promise<AdapterProjection>;
+  runDurableReadGetTurnStateLineage(): Promise<AdapterProjection>;
+  runDurableReadListBranches(): Promise<AdapterProjection>;
+  runDurableReadListThreads(): Promise<AdapterProjection>;
+  runDurableReadListThreadsCapabilityRejected(): Promise<AdapterProjection>;
+  runDurableReadListThreadsPaginate(): Promise<AdapterProjection>;
+  runDurableReadReadBranchMessages(): Promise<AdapterProjection>;
+  runDurableReadReadBranchMessagesHeadDrift(): Promise<AdapterProjection>;
   runHandleTerminalValue(input: unknown): Promise<AdapterProjection>;
   runProviderGenerate(input: unknown): Promise<AdapterProjection>;
   runProviderStream(input: unknown): Promise<AdapterProjection>;
@@ -893,12 +903,291 @@ export function createFrameworkAdapterRuntimeScenarios(
     );
   }
 
+  // ── Durable-read scenarios (KRT-AO006) ────────────────────────────────────
+
+  function makeDurableReadRuntime(harness: ReturnType<typeof createConformanceKernelHarness>) {
+    return createTuvrenRuntimeCore({
+      createId: createConformanceIdFactory(),
+      defaultDriverId: DRIVER_ID,
+      driverRegistry: createDriverRegistry([
+        createStaticDriver(() => ({
+          messages: [assistantText("conformance")],
+          resolution: { reason: "done", type: "end_turn" },
+        })),
+      ]),
+      kernel: harness.kernel,
+    });
+  }
+
+  async function runDurableReadListThreads(): Promise<AdapterProjection> {
+    const harness = createConformanceKernelHarness();
+    const runtime = makeDurableReadRuntime(harness);
+    await runtime.createThread({});
+    await runtime.createThread({});
+    const result = await runtime.listThreads();
+    return {
+      result: {
+        durableRead: {
+          listThreads: {
+            hasCursor: result.nextCursor !== undefined,
+            threadCount: result.threads.length,
+          },
+        },
+      },
+    };
+  }
+
+  async function runDurableReadListThreadsPaginate(): Promise<AdapterProjection> {
+    const harness = createConformanceKernelHarness();
+    const runtime = makeDurableReadRuntime(harness);
+    await runtime.createThread({});
+    await runtime.createThread({});
+    const page1 = await runtime.listThreads({ limit: 1 });
+    if (page1.nextCursor === undefined) {
+      return {
+        result: {
+          durableRead: {
+            listThreads: {
+              hasFirstCursor: false,
+              page1Count: page1.threads.length,
+            },
+          },
+        },
+      };
+    }
+    const page2 = await runtime.listThreads({ limit: 10, cursor: page1.nextCursor });
+    const uniqueIds = new Set([
+      ...page1.threads.map((t) => t.threadId),
+      ...page2.threads.map((t) => t.threadId),
+    ]);
+    return {
+      result: {
+        durableRead: {
+          listThreads: {
+            hasFirstCursor: true,
+            hasSecondCursor: page2.nextCursor !== undefined,
+            page1Count: page1.threads.length,
+            page2Count: page2.threads.length,
+            uniqueIds: uniqueIds.size,
+          },
+        },
+      },
+    };
+  }
+
+  async function runDurableReadListThreadsCapabilityRejected(): Promise<AdapterProjection> {
+    const harness = createConformanceKernelHarness();
+    const capKernel = {
+      ...harness.kernel,
+      thread: {
+        ...harness.kernel.thread,
+        list: async () => {
+          throw new TuvrenPersistenceError(
+            "thread enumeration unsupported by this backend",
+            { code: "kernel_capability_unsupported" }
+          );
+        },
+      },
+    } as typeof harness.kernel;
+    const runtime = createTuvrenRuntimeCore({
+      createId: createConformanceIdFactory(),
+      defaultDriverId: DRIVER_ID,
+      driverRegistry: createDriverRegistry([
+        createStaticDriver(() => ({
+          messages: [assistantText("conformance")],
+          resolution: { reason: "done", type: "end_turn" },
+        })),
+      ]),
+      kernel: capKernel,
+    });
+    try {
+      await runtime.listThreads();
+      return {
+        result: {
+          durableRead: {
+            listThreads: { raised: false },
+          },
+        },
+      };
+    } catch (error: unknown) {
+      const code =
+        dependencies.isRecord(error) && typeof error.code === "string"
+          ? error.code
+          : undefined;
+      return {
+        result: {
+          durableRead: {
+            listThreads: { errorCode: code, raised: true },
+          },
+        },
+      };
+    }
+  }
+
+  async function runDurableReadListBranches(): Promise<AdapterProjection> {
+    const harness = createConformanceKernelHarness();
+    const runtime = makeDurableReadRuntime(harness);
+    const thread = await runtime.createThread({});
+    await runtime.createBranch({
+      fromTurnNodeHash: thread.rootTurnNodeHash,
+      threadId: thread.threadId,
+    });
+    const branches = await runtime.listBranches({ threadId: thread.threadId });
+    const allHaveThreadId = branches.every((b) => b.threadId === thread.threadId);
+    return {
+      result: {
+        durableRead: {
+          listBranches: {
+            allHaveThreadId,
+            branchCount: branches.length,
+          },
+        },
+      },
+    };
+  }
+
+  async function runDurableReadGetTurnState(): Promise<AdapterProjection> {
+    const harness = createConformanceKernelHarness();
+    const runtime = makeDurableReadRuntime(harness);
+    const thread = await runtime.createThread({});
+    const snapshot = await runtime.getTurnState({
+      branchId: thread.branchId,
+      threadId: thread.threadId,
+    });
+    return {
+      result: {
+        durableRead: {
+          getTurnState: {
+            hasTurnNodeHash: typeof snapshot.turnNodeHash === "string",
+            hasTurnTreeHash: typeof snapshot.turnTreeHash === "string",
+            previousTurnNull: snapshot.previousTurnNodeHash === null,
+          },
+        },
+      },
+    };
+  }
+
+  async function runDurableReadGetTurnStateLineage(): Promise<AdapterProjection> {
+    const harness = createConformanceKernelHarness();
+    const runtime = makeDurableReadRuntime(harness);
+    const thread = await runtime.createThread({});
+    const snapshot = await runtime.getTurnState({
+      branchId: thread.branchId,
+      threadId: thread.threadId,
+      turnNodeHash: thread.rootTurnNodeHash,
+    });
+    return {
+      result: {
+        durableRead: {
+          getTurnState: {
+            matchesExpectedHash:
+              snapshot.turnNodeHash === thread.rootTurnNodeHash,
+          },
+        },
+      },
+    };
+  }
+
+  async function runDurableReadGetTurnHistory(): Promise<AdapterProjection> {
+    const harness = createConformanceKernelHarness();
+    const runtime = makeDurableReadRuntime(harness);
+    const thread = await runtime.createThread({});
+    const snapshots: unknown[] = [];
+    for await (const snap of runtime.getTurnHistory({
+      branchId: thread.branchId,
+      threadId: thread.threadId,
+    })) {
+      snapshots.push(snap);
+    }
+    const first = snapshots[0];
+    const firstSnapshotHasHash =
+      dependencies.isRecord(first) && typeof first.turnNodeHash === "string";
+    return {
+      result: {
+        durableRead: {
+          getTurnHistory: {
+            firstSnapshotHasHash,
+            snapshotCount: snapshots.length,
+          },
+        },
+      },
+    };
+  }
+
+  async function runDurableReadReadBranchMessages(): Promise<AdapterProjection> {
+    const harness = createConformanceKernelHarness();
+    const runtime = makeDurableReadRuntime(harness);
+    const thread = await runtime.createThread({});
+    const result = await runtime.readBranchMessages({
+      branchId: thread.branchId,
+    });
+    return {
+      result: {
+        durableRead: {
+          readBranchMessages: {
+            hasCursor: result.nextCursor !== undefined,
+            messageCount: result.messages.length,
+          },
+        },
+      },
+    };
+  }
+
+  async function runDurableReadReadBranchMessagesHeadDrift(): Promise<AdapterProjection> {
+    const harness = createConformanceKernelHarness();
+    const runtime = makeDurableReadRuntime(harness);
+    const thread = await runtime.createThread({});
+    const staleCursor = Buffer.from(
+      JSON.stringify({
+        v: 1,
+        kind: "branch-messages",
+        branchId: thread.branchId,
+        positionFromOldest: 99,
+        branchHeadAtCursorIssuance: "0".repeat(64),
+      })
+    ).toString("base64url") as BranchMessagesCursor;
+    try {
+      await runtime.readBranchMessages({
+        after: staleCursor,
+        branchId: thread.branchId,
+      });
+      return {
+        result: {
+          durableRead: {
+            readBranchMessages: { raised: false },
+          },
+        },
+      };
+    } catch (error: unknown) {
+      const code =
+        dependencies.isRecord(error) && typeof error.code === "string"
+          ? error.code
+          : undefined;
+      return {
+        result: {
+          durableRead: {
+            readBranchMessages: { errorCode: code, raised: true },
+          },
+        },
+      };
+    }
+  }
+
   return {
     runApprovalResume,
     runBranchCreate,
     runCancelledRuntimeTurn,
     runCompletedRuntimeTurn,
     runContextTransform: providerScenarios.runContextTransform,
+    runDurableReadGetTurnHistory,
+    runDurableReadGetTurnState,
+    runDurableReadGetTurnStateLineage,
+    runDurableReadListBranches,
+    runDurableReadListThreads,
+    runDurableReadListThreadsCapabilityRejected,
+    runDurableReadListThreadsPaginate,
+    runDurableReadReadBranchMessages,
+    runDurableReadReadBranchMessagesHeadDrift,
     runHandleTerminalValue,
     runProviderGenerate: providerScenarios.runProviderGenerate,
     runProviderStream: providerScenarios.runProviderStream,

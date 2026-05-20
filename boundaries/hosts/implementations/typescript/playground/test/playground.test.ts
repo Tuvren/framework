@@ -16,7 +16,6 @@
 
 import { describe, expect, test } from "bun:test";
 import { tmpdir } from "node:os";
-import { createMemoryBackend } from "@tuvren/backend-memory";
 import {
   AIMOCK_PLAYGROUND_PROVIDER_MODES,
   createPlaygroundHost,
@@ -28,11 +27,9 @@ import {
   runPlaygroundScenarioMatrix,
 } from "@tuvren/playground-host";
 import {
-  createRuntimeKernel,
   TUVREN_RUNTIME_TELEMETRY_ATTRIBUTE_KEYS,
   TUVREN_RUNTIME_TELEMETRY_SCHEMA_URL,
 } from "@tuvren/runtime";
-import { createPlaygroundKernelInspector } from "../src/lib/playground-kernel.js";
 import {
   expectPlaygroundConfigError,
   expectScenarioChecksPassed,
@@ -482,21 +479,15 @@ describe("playground host scenarios", () => {
     expect(report.summary.failedScenarios).toEqual(["reload"]);
   });
 
-  test("playground inspector tolerates schemas without messages or runtime.status paths", async () => {
-    const kernel = createRuntimeKernel({ backend: createMemoryBackend() });
-    const schemaId = await kernel.schema.register({
-      incorporationRules: [],
-      paths: [{ collection: "single", path: "context.manifest" }],
-      schemaId: "schema_playground_custom",
+  test("runtime.readBranchMessages returns empty array on a fresh branch before any turn", async () => {
+    const host = createPlaygroundHost({
+      backend: "memory",
+      providerMode: "fixture",
+      scenario: "streaming",
     });
-    const thread = await kernel.thread.create(
-      "thread_playground_custom",
-      schemaId,
-      "branch_playground_custom"
-    );
-    const inspector = createPlaygroundKernelInspector(kernel);
+    const thread = await host.createThread();
 
-    expect(await inspector.readBranchMessages(thread.branchId)).toEqual([]);
-    expect(await inspector.readBranchStatus(thread.branchId)).toEqual(null);
+    const messages = await host.readBranchMessages(thread.branchId);
+    expect(messages).toEqual([]);
   });
 });

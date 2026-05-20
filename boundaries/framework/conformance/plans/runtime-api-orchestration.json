@@ -23,6 +23,22 @@
       "assertions": [
         {
           "equals": "orchestration_parent_not_started",
+          "field": "$.orchestration.launch.preStartAwaitResultError.code",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "runtime-orchestration.launch.await-result-rejects-before-parent-start",
+      "input": {
+        "scenarioPath": "$.orchestration-launch-preconditions"
+      },
+      "operation": "runtime.orchestration.launch-preconditions",
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["result.orchestration.launch.preStartAwaitResultError.code"]
+    },
+    {
+      "assertions": [
+        {
+          "equals": "orchestration_parent_not_started",
           "field": "$.orchestration.launch.postAwaitSpawnError.code",
           "kind": "resultField"
         }
@@ -554,7 +570,7 @@
   ],
   "packetId": "tuvren.framework.runtime-api",
   "planId": "tuvren.framework.runtime-api.orchestration",
-  "planVersion": "0.2.0",
+  "planVersion": "0.3.0",
   "scenarios": {
     "runtime-api-scenarios": "../scenarios/runtime-api-scenarios.json"
   }

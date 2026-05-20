@@ -18,6 +18,15 @@
     "runtime.orchestration.lifecycle-locality",
     "runtime.orchestration.event-surfaces",
     "runtime.orchestration.execution-inheritance",
-    "runtime.orchestration.nested-attribution"
+    "runtime.orchestration.nested-attribution",
+    "runtime.durable-read.list-threads",
+    "runtime.durable-read.list-threads-paginate",
+    "runtime.durable-read.list-threads-capability-rejected",
+    "runtime.durable-read.list-branches",
+    "runtime.durable-read.get-turn-state",
+    "runtime.durable-read.get-turn-state-lineage",
+    "runtime.durable-read.get-turn-history",
+    "runtime.durable-read.read-branch-messages",
+    "runtime.durable-read.read-branch-messages-head-drift"
   ]
 }

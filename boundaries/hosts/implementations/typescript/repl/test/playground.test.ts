@@ -18,7 +18,6 @@ import { describe, expect, test } from "bun:test";
 import { spawn } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createMemoryBackend } from "@tuvren/backend-memory";
 import {
   AIMOCK_REPL_PROVIDER_MODES as AIMOCK_PLAYGROUND_PROVIDER_MODES,
   createReplHost as createPlaygroundHost,
@@ -33,14 +32,12 @@ import {
   runReplInput,
 } from "@tuvren/repl-host";
 import {
-  createRuntimeKernel,
   TUVREN_RUNTIME_TELEMETRY_ATTRIBUTE_KEYS,
   TUVREN_RUNTIME_TELEMETRY_SCHEMA_URL,
   type TuvrenPrompt,
   type TuvrenProvider,
   type TuvrenToolDefinition,
 } from "@tuvren/runtime";
-import { createPlaygroundKernelInspector } from "../src/lib/playground-kernel.js";
 import {
   createScenarioExecutionPlan,
   withHead,
@@ -1795,22 +1792,16 @@ describe("repl host scenarios", () => {
     expect(report.summary.failedScenarios).toEqual(["reload"]);
   });
 
-  test("playground inspector tolerates schemas without messages or runtime.status paths", async () => {
-    const kernel = createRuntimeKernel({ backend: createMemoryBackend() });
-    const schemaId = await kernel.schema.register({
-      incorporationRules: [],
-      paths: [{ collection: "single", path: "context.manifest" }],
-      schemaId: "schema_playground_custom",
+  test("runtime.readBranchMessages returns empty array on a fresh branch before any turn", async () => {
+    const host = createPlaygroundHost({
+      backend: "memory",
+      providerMode: "fixture",
+      scenario: "streaming",
     });
-    const thread = await kernel.thread.create(
-      "thread_playground_custom",
-      schemaId,
-      "branch_playground_custom"
-    );
-    const inspector = createPlaygroundKernelInspector(kernel);
+    const thread = await host.createThread();
 
-    expect(await inspector.readBranchMessages(thread.branchId)).toEqual([]);
-    expect(await inspector.readBranchStatus(thread.branchId)).toEqual(null);
+    const messages = await host.readBranchMessages(thread.branchId);
+    expect(messages).toEqual([]);
   });
 
   test("preserves the previous head when only descendant checkpoints are present", () => {

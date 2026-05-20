@@ -30,10 +30,6 @@ import {
 import { toAgUiEvents } from "@tuvren/stream-agui";
 import { teeTuvrenStreamEvents } from "@tuvren/stream-core";
 import { toSseFrames } from "@tuvren/stream-sse";
-import {
-  createPlaygroundKernelInspector,
-  type PlaygroundKernelHarness,
-} from "./playground-kernel.js";
 import { createPlaygroundProvider } from "./playground-provider.js";
 import type {
   PlaygroundConfig,
@@ -43,7 +39,7 @@ import type {
 } from "./playground-types.js";
 
 export function createPlaygroundHost(config: PlaygroundConfig): PlaygroundHost {
-  const harness = createKernelHarness(config);
+  const kernel = createKernel(config);
   const provider = createPlaygroundProvider({
     aimockBaseUrl: config.aimockBaseUrl,
     googleApiKey: config.googleApiKey,
@@ -58,7 +54,7 @@ export function createPlaygroundHost(config: PlaygroundConfig): PlaygroundHost {
         providerCallMode: "stream",
       }),
     ]),
-    kernel: harness.kernel,
+    kernel,
   });
 
   return {
@@ -101,10 +97,8 @@ export function createPlaygroundHost(config: PlaygroundConfig): PlaygroundHost {
       return await projectHandle(handle);
     },
     async readBranchMessages(branchId) {
-      return await harness.readBranchMessages(branchId);
-    },
-    async readBranchStatus(branchId) {
-      return await harness.readBranchStatus(branchId);
+      const result = await runtime.readBranchMessages({ branchId });
+      return result.messages;
     },
     runtime,
     steer(handle, signal) {
@@ -139,9 +133,7 @@ async function projectHandle(
   };
 }
 
-function createKernelHarness(
-  config: PlaygroundConfig
-): PlaygroundKernelHarness {
+function createKernel(config: PlaygroundConfig) {
   if ((config.kernelMode ?? "typescript-local") === "rust-grpc") {
     if (config.kernelGrpcBaseUrl === undefined) {
       throw new TuvrenRuntimeError(
@@ -155,19 +147,13 @@ function createKernelHarness(
     // Epic V keeps the runtime switch below `TuvrenRuntime`: the host swaps
     // only the `RuntimeKernel` implementation so turn semantics, drivers, and
     // provider orchestration stay identical across local and remote kernels.
-    const kernel = createGrpcRuntimeKernel({
+    return createGrpcRuntimeKernel({
       baseUrl: config.kernelGrpcBaseUrl,
     });
-
-    return {
-      kernel,
-      ...createPlaygroundKernelInspector(kernel),
-    };
   }
 
   const backend = createBackend(config);
-  const kernel = createRuntimeKernel({ backend });
-  return { kernel, ...createPlaygroundKernelInspector(kernel) };
+  return createRuntimeKernel({ backend });
 }
 
 function createBackend(config: PlaygroundConfig): RuntimeBackend {

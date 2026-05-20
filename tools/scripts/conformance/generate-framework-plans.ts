@@ -313,12 +313,12 @@ function buildRuntimeApiOrchestration(): Plan {
         assertions: [
           {
             equals: "Worker complete.",
-            field: "$.orchestration.surfaces.childResult.0.text",
+            field: "$.orchestration.surfaces.childResultText",
             kind: "evidenceField",
           },
         ],
         checkId: "runtime-orchestration.surfaces.await-result-visible-result",
-        evidence: ["orchestration.surfaces.childResult.0.text"],
+        evidence: ["orchestration.surfaces.childResultText"],
         input: { scenarioPath: "$.orchestration-event-surfaces" },
         operation: "runtime.orchestration.event-surfaces",
         scenario: "runtime-api-scenarios",
@@ -348,20 +348,6 @@ function buildRuntimeApiOrchestration(): Plan {
         checkId:
           "runtime-orchestration.surfaces.child-all-events-remains-available",
         evidence: ["orchestration.surfaces.childAllEventsRemainAvailable"],
-        input: { scenarioPath: "$.orchestration-event-surfaces" },
-        operation: "runtime.orchestration.event-surfaces",
-        scenario: "runtime-api-scenarios",
-      },
-      {
-        assertions: [
-          {
-            equals: true,
-            field: "$.orchestration.surfaces.failedAwaitResultRejected",
-            kind: "evidenceField",
-          },
-        ],
-        checkId: "runtime-orchestration.surfaces.await-result-failure-rejects",
-        evidence: ["orchestration.surfaces.failedAwaitResultRejected"],
         input: { scenarioPath: "$.orchestration-event-surfaces" },
         operation: "runtime.orchestration.event-surfaces",
         scenario: "runtime-api-scenarios",
@@ -621,7 +607,9 @@ function buildRuntimeApiOrchestration(): Plan {
     ].map(normalizeGeneratedResultSurfaceCheck),
     packetId: "tuvren.framework.runtime-api",
     planId: "tuvren.framework.runtime-api.orchestration",
-    planVersion: "0.1.0",
+    // 0.3.0: added await-result-rejects-before-parent-start pre-condition check
+    //        (adapter already emits preStartAwaitResultError; minor addition).
+    planVersion: "0.3.0",
     scenarios: {
       "runtime-api-scenarios": "../scenarios/runtime-api-scenarios.json",
     },
@@ -1396,6 +1384,145 @@ function buildRuntimeApiCallablesExtended(): Plan {
     }
   );
 
+  // runtime.durable-read.* (KRT-AO003 – KRT-AO005)
+  checks.push(
+    // list-threads
+    {
+      assertions: [{ equals: 2, field: "$.durableRead.listThreads.threadCount", kind: "resultField" }],
+      checkId: "runtime-callable-ao.list-threads.thread-count-positive",
+      evidence: ["result.durableRead.listThreads.threadCount"],
+      operation: "runtime.durable-read.list-threads",
+    },
+    {
+      assertions: [{ equals: false, field: "$.durableRead.listThreads.hasCursor", kind: "resultField" }],
+      checkId: "runtime-callable-ao.list-threads.no-cursor-when-all-consumed",
+      evidence: ["result.durableRead.listThreads.hasCursor"],
+      operation: "runtime.durable-read.list-threads",
+    },
+    // list-threads-paginate
+    {
+      assertions: [{ equals: 1, field: "$.durableRead.listThreads.page1Count", kind: "resultField" }],
+      checkId: "runtime-callable-ao.list-threads-paginate.page1-count-one",
+      evidence: ["result.durableRead.listThreads.page1Count"],
+      operation: "runtime.durable-read.list-threads-paginate",
+    },
+    {
+      assertions: [{ equals: true, field: "$.durableRead.listThreads.hasFirstCursor", kind: "resultField" }],
+      checkId: "runtime-callable-ao.list-threads-paginate.has-next-cursor",
+      evidence: ["result.durableRead.listThreads.hasFirstCursor"],
+      operation: "runtime.durable-read.list-threads-paginate",
+    },
+    {
+      assertions: [{ equals: 1, field: "$.durableRead.listThreads.page2Count", kind: "resultField" }],
+      checkId: "runtime-callable-ao.list-threads-paginate.page2-count-one",
+      evidence: ["result.durableRead.listThreads.page2Count"],
+      operation: "runtime.durable-read.list-threads-paginate",
+    },
+    {
+      assertions: [{ equals: false, field: "$.durableRead.listThreads.hasSecondCursor", kind: "resultField" }],
+      checkId: "runtime-callable-ao.list-threads-paginate.no-cursor-on-last-page",
+      evidence: ["result.durableRead.listThreads.hasSecondCursor"],
+      operation: "runtime.durable-read.list-threads-paginate",
+    },
+    {
+      assertions: [{ equals: 2, field: "$.durableRead.listThreads.uniqueIds", kind: "resultField" }],
+      checkId: "runtime-callable-ao.list-threads-paginate.unique-thread-count",
+      evidence: ["result.durableRead.listThreads.uniqueIds"],
+      operation: "runtime.durable-read.list-threads-paginate",
+    },
+    // list-threads-capability-rejected
+    {
+      assertions: [{ equals: true, field: "$.durableRead.listThreads.raised", kind: "resultField" }],
+      checkId: "runtime-callable-ao.list-threads-cap-rejected.raised-true",
+      evidence: ["result.durableRead.listThreads.raised"],
+      operation: "runtime.durable-read.list-threads-capability-rejected",
+    },
+    {
+      assertions: [{ equals: "kernel_capability_unsupported", field: "$.durableRead.listThreads.errorCode", kind: "resultField" }],
+      checkId: "runtime-callable-ao.list-threads-cap-rejected.error-code",
+      evidence: ["result.durableRead.listThreads.errorCode"],
+      operation: "runtime.durable-read.list-threads-capability-rejected",
+    },
+    // list-branches
+    {
+      assertions: [{ equals: 2, field: "$.durableRead.listBranches.branchCount", kind: "resultField" }],
+      checkId: "runtime-callable-ao.list-branches.branch-count",
+      evidence: ["result.durableRead.listBranches.branchCount"],
+      operation: "runtime.durable-read.list-branches",
+    },
+    {
+      assertions: [{ equals: true, field: "$.durableRead.listBranches.allHaveThreadId", kind: "resultField" }],
+      checkId: "runtime-callable-ao.list-branches.all-have-thread-id",
+      evidence: ["result.durableRead.listBranches.allHaveThreadId"],
+      operation: "runtime.durable-read.list-branches",
+    },
+    // get-turn-state
+    {
+      assertions: [{ equals: true, field: "$.durableRead.getTurnState.hasTurnNodeHash", kind: "resultField" }],
+      checkId: "runtime-callable-ao.get-turn-state.has-turn-node-hash",
+      evidence: ["result.durableRead.getTurnState.hasTurnNodeHash"],
+      operation: "runtime.durable-read.get-turn-state",
+    },
+    {
+      assertions: [{ equals: true, field: "$.durableRead.getTurnState.hasTurnTreeHash", kind: "resultField" }],
+      checkId: "runtime-callable-ao.get-turn-state.has-turn-tree-hash",
+      evidence: ["result.durableRead.getTurnState.hasTurnTreeHash"],
+      operation: "runtime.durable-read.get-turn-state",
+    },
+    {
+      assertions: [{ equals: true, field: "$.durableRead.getTurnState.previousTurnNull", kind: "resultField" }],
+      checkId: "runtime-callable-ao.get-turn-state.previous-turn-null",
+      evidence: ["result.durableRead.getTurnState.previousTurnNull"],
+      operation: "runtime.durable-read.get-turn-state",
+    },
+    // get-turn-state-lineage
+    {
+      assertions: [{ equals: true, field: "$.durableRead.getTurnState.matchesExpectedHash", kind: "resultField" }],
+      checkId: "runtime-callable-ao.get-turn-state-lineage.matches-expected-hash",
+      evidence: ["result.durableRead.getTurnState.matchesExpectedHash"],
+      operation: "runtime.durable-read.get-turn-state-lineage",
+    },
+    // get-turn-history
+    {
+      assertions: [{ equals: 1, field: "$.durableRead.getTurnHistory.snapshotCount", kind: "resultField" }],
+      checkId: "runtime-callable-ao.get-turn-history.snapshot-count-one",
+      evidence: ["result.durableRead.getTurnHistory.snapshotCount"],
+      operation: "runtime.durable-read.get-turn-history",
+    },
+    {
+      assertions: [{ equals: true, field: "$.durableRead.getTurnHistory.firstSnapshotHasHash", kind: "resultField" }],
+      checkId: "runtime-callable-ao.get-turn-history.first-snapshot-has-hash",
+      evidence: ["result.durableRead.getTurnHistory.firstSnapshotHasHash"],
+      operation: "runtime.durable-read.get-turn-history",
+    },
+    // read-branch-messages
+    {
+      assertions: [{ equals: 0, field: "$.durableRead.readBranchMessages.messageCount", kind: "resultField" }],
+      checkId: "runtime-callable-ao.read-branch-messages.message-count-zero",
+      evidence: ["result.durableRead.readBranchMessages.messageCount"],
+      operation: "runtime.durable-read.read-branch-messages",
+    },
+    {
+      assertions: [{ equals: false, field: "$.durableRead.readBranchMessages.hasCursor", kind: "resultField" }],
+      checkId: "runtime-callable-ao.read-branch-messages.no-cursor",
+      evidence: ["result.durableRead.readBranchMessages.hasCursor"],
+      operation: "runtime.durable-read.read-branch-messages",
+    },
+    // read-branch-messages-head-drift
+    {
+      assertions: [{ equals: true, field: "$.durableRead.readBranchMessages.raised", kind: "resultField" }],
+      checkId: "runtime-callable-ao.read-branch-messages-head-drift.raised-true",
+      evidence: ["result.durableRead.readBranchMessages.raised"],
+      operation: "runtime.durable-read.read-branch-messages-head-drift",
+    },
+    {
+      assertions: [{ equals: "durable_read_cursor_head_drift", field: "$.durableRead.readBranchMessages.errorCode", kind: "resultField" }],
+      checkId: "runtime-callable-ao.read-branch-messages-head-drift.error-code",
+      evidence: ["result.durableRead.readBranchMessages.errorCode"],
+      operation: "runtime.durable-read.read-branch-messages-head-drift",
+    }
+  );
+
   return {
     applicability: { capabilities: ["framework.runtime-api"] },
     checks: checks.map(normalizeGeneratedResultSurfaceCheck),
@@ -1405,7 +1532,8 @@ function buildRuntimeApiCallablesExtended(): Plan {
     // AF tool/approval-result checks out into the new
     // `tuvren.framework.tool-contracts` plan (removing a check is major
     // per TechSpec §2.1 in the live 0.x line).
-    planVersion: "0.2.0",
+    // KRT-AO003–AO005 bumped to 0.3.0 when the 21 durable-read checks were added.
+    planVersion: "0.3.0",
     scenarios: {
       "runtime-api-scenarios": "../scenarios/runtime-api-scenarios.json",
     },

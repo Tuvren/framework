@@ -273,6 +273,24 @@ export class TypeScriptFrameworkAdapter implements ImplementationAdapter {
         return runtimeScenarios.runApprovalResume(input);
       case "runtime.branch-create":
         return runtimeScenarios.runBranchCreate();
+      case "runtime.durable-read.list-threads":
+        return runtimeScenarios.runDurableReadListThreads();
+      case "runtime.durable-read.list-threads-paginate":
+        return runtimeScenarios.runDurableReadListThreadsPaginate();
+      case "runtime.durable-read.list-threads-capability-rejected":
+        return runtimeScenarios.runDurableReadListThreadsCapabilityRejected();
+      case "runtime.durable-read.list-branches":
+        return runtimeScenarios.runDurableReadListBranches();
+      case "runtime.durable-read.get-turn-state":
+        return runtimeScenarios.runDurableReadGetTurnState();
+      case "runtime.durable-read.get-turn-state-lineage":
+        return runtimeScenarios.runDurableReadGetTurnStateLineage();
+      case "runtime.durable-read.get-turn-history":
+        return runtimeScenarios.runDurableReadGetTurnHistory();
+      case "runtime.durable-read.read-branch-messages":
+        return runtimeScenarios.runDurableReadReadBranchMessages();
+      case "runtime.durable-read.read-branch-messages-head-drift":
+        return runtimeScenarios.runDurableReadReadBranchMessagesHeadDrift();
       case "runtime.handle-terminal-value":
         return runtimeScenarios.runHandleTerminalValue(input);
       case "runtime.provider-generate":

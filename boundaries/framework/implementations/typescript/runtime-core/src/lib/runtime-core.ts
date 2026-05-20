@@ -32,15 +32,29 @@ import type {
 import type {
   AgentConfig,
   ApprovalResponse,
+  BranchMessagesCursor,
+  BranchSummary,
   ExecutionHandle,
   HandoffContextBuilder,
+  ListThreadsCursor,
   RuntimeResolution,
+  ThreadSummary,
   ToolCallPart,
   ToolResultPart,
+  TurnHistoryCursor,
+  TurnSnapshot,
+  TuvrenMessage,
   TuvrenModelResponse,
   TuvrenRuntime,
   TuvrenStreamEvent,
 } from "@tuvren/runtime-api";
+import {
+  getTurnHistory,
+  getTurnState,
+  listBranches,
+  listThreads,
+  readBranchMessages,
+} from "./durable-reads.js";
 import { createDriverRegistry } from "./driver-registry.js";
 import {
   executeRuntimeIterationPhaseFacade,
@@ -574,6 +588,42 @@ class RuntimeCore implements TuvrenRuntime {
 
   executeTurn(input: ExecutionSessionRequest): ExecutionHandle {
     return this.createExecutionHandle(input);
+  }
+
+  // ── Durable-Read Surface (KRT-AO003..AO005) ────────────────────────────
+  async listThreads(options?: {
+    limit?: number;
+    cursor?: ListThreadsCursor;
+    filter?: { schemaId?: string };
+  }): Promise<{ threads: ThreadSummary[]; nextCursor?: ListThreadsCursor }> {
+    return listThreads(this.options.kernel, options);
+  }
+
+  async listBranches(input: { threadId: string }): Promise<BranchSummary[]> {
+    return listBranches(this.options.kernel, input);
+  }
+
+  async getTurnState(input: {
+    threadId: string;
+    branchId: string;
+    turnNodeHash?: HashString;
+  }): Promise<TurnSnapshot> {
+    return getTurnState(this.options.kernel, input);
+  }
+
+  getTurnHistory(
+    input: { threadId: string; branchId: string },
+    options?: { limit?: number; before?: TurnHistoryCursor }
+  ): AsyncIterableIterator<TurnSnapshot> {
+    return getTurnHistory(this.options.kernel, input, options);
+  }
+
+  async readBranchMessages(input: {
+    branchId: string;
+    limit?: number;
+    after?: BranchMessagesCursor;
+  }): Promise<{ messages: TuvrenMessage[]; nextCursor?: BranchMessagesCursor }> {
+    return readBranchMessages(this.options.kernel, input);
   }
 
   async getThread(threadId: string): Promise<{

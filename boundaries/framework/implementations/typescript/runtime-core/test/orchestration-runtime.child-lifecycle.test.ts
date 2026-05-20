@@ -299,6 +299,19 @@ describe("orchestration-runtime child lifecycle", () => {
       async setBranchHead() {
         throw new Error("setBranchHead was not expected");
       },
+      async listThreads() {
+        return { threads: [] };
+      },
+      async listBranches() {
+        return [];
+      },
+      async getTurnState() {
+        throw new Error("getTurnState was not expected");
+      },
+      async *getTurnHistory() {},
+      async readBranchMessages() {
+        return { messages: [] };
+      },
     } satisfies TuvrenRuntime;
     const orchestration = createOrchestrationRuntime({
       agents: {

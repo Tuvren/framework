@@ -147,7 +147,6 @@ export interface PlaygroundHost {
   project(handle: ExecutionHandle): Promise<PlaygroundStreamProjection>;
   provider: TuvrenProvider;
   readBranchMessages(branchId: string): Promise<unknown[]>;
-  readBranchStatus(branchId: string): Promise<unknown | null>;
   runtime: TuvrenRuntime;
   steer(handle: ExecutionHandle, signal: InputSignal): void;
 }

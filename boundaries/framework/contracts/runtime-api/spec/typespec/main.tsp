@@ -288,8 +288,19 @@ enum RuntimeOperationName {
   orchestrationEventSurfaces: "runtime.orchestration.event-surfaces",
   orchestrationExecutionInheritance:
     "runtime.orchestration.execution-inheritance",
-  orchestrationNestedAttribution:
-    "runtime.orchestration.nested-attribution",
+  orchestrationNestedAttribution: "runtime.orchestration.nested-attribution",
+  // KRT-AO003–AO005 durable-read surface (ADR-036)
+  durableReadListThreads: "runtime.durable-read.list-threads",
+  durableReadListThreadsPaginate: "runtime.durable-read.list-threads-paginate",
+  durableReadListThreadsCapabilityRejected:
+    "runtime.durable-read.list-threads-capability-rejected",
+  durableReadListBranches: "runtime.durable-read.list-branches",
+  durableReadGetTurnState: "runtime.durable-read.get-turn-state",
+  durableReadGetTurnStateLineage: "runtime.durable-read.get-turn-state-lineage",
+  durableReadGetTurnHistory: "runtime.durable-read.get-turn-history",
+  durableReadReadBranchMessages: "runtime.durable-read.read-branch-messages",
+  durableReadReadBranchMessagesHeadDrift:
+    "runtime.durable-read.read-branch-messages-head-drift",
 }
 
 model RuntimeOperation {
