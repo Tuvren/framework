@@ -16,7 +16,6 @@
 
 import {
   TuvrenLineageError,
-  TuvrenPersistenceError,
   TuvrenValidationError,
 } from "@tuvren/core-types";
 import {
@@ -179,29 +178,20 @@ export async function listThreads(
     nextCursor?: string;
   };
 
-  try {
-    kernelResult = await kernel.thread.list({
-      limit: options?.limit,
-      cursor: cursorPayload
-        ? encodeCursor({
-            v: 1 as const,
-            kind: "list-threads" as const,
-            lastThreadId: cursorPayload.lastThreadId,
-            lastCreatedAtMs: cursorPayload.lastCreatedAtMs,
-            filter: cursorPayload.filter,
-          })
-        : undefined,
-      filter: options?.filter,
-    });
-  } catch (error: unknown) {
-    if (
-      error instanceof TuvrenPersistenceError &&
-      error.code === "kernel_capability_unsupported"
-    ) {
-      throw error;
-    }
-    throw error;
-  }
+  // kernel_capability_unsupported propagates naturally — no catch needed.
+  kernelResult = await kernel.thread.list({
+    limit: options?.limit,
+    cursor: cursorPayload
+      ? encodeCursor({
+          v: 1 as const,
+          kind: "list-threads" as const,
+          lastThreadId: cursorPayload.lastThreadId,
+          lastCreatedAtMs: cursorPayload.lastCreatedAtMs,
+          filter: cursorPayload.filter,
+        })
+      : undefined,
+    filter: options?.filter,
+  });
 
   const threads: ThreadSummary[] = kernelResult.threads.map((t) => ({
     createdAtMs: t.createdAtMs,
@@ -326,6 +316,12 @@ export async function getTurnState(
 }
 
 // ── getTurnHistory (KRT-AO004) ────────────────────────────────────────────────
+// Contract (TechSpec §5.5.3) returns AsyncIterableIterator<TurnSnapshot>,
+// so there is no nextCursor field in the yielded values. Hosts that need
+// paginated resumption must track the last snapshot's turnNodeHash and
+// construct a new `before` cursor externally via the runtime's opaque token.
+// Emitting resumable cursors from the generator itself requires a contract
+// amendment; deferred to a future epic.
 
 export async function* getTurnHistory(
   kernel: KrakenKernel,
@@ -449,17 +445,37 @@ export async function readBranchMessages(
     const recordedHead = cursorPayload.branchHeadAtCursorIssuance;
 
     if (currentHead !== recordedHead) {
-      // Head moved — verify the prefix up to cursor position still matches.
-      // We do this by checking that the messages array still has at least
-      // `position` entries (if head drifted and messages diverged, the
-      // caller must restart).
-      if (messageHashes.length < position) {
+      // Head moved — load the recorded head's message list and compare the
+      // prefix hash slice up to cursor position. Content-addressed storage
+      // guarantees prefix stability for the same branch, but we verify
+      // explicitly so the error fires on any corruption or invalid cursor.
+      let recordedMessageHashes: string[] = [];
+      const recordedHeadNode = await kernel.node.get(recordedHead);
+      if (recordedHeadNode !== null) {
+        try {
+          const resolved = await kernel.tree.resolve(recordedHeadNode.turnTreeHash, "messages");
+          if (Array.isArray(resolved)) {
+            recordedMessageHashes = resolved.filter((h): h is string => typeof h === "string");
+          }
+        } catch {
+          // Resolve failure means the prefix cannot be verified; treat as drift.
+        }
+      }
+
+      const currentPrefix = messageHashes.slice(0, position);
+      const recordedPrefix = recordedMessageHashes.slice(0, position);
+      // Both the recorded head and the current head must supply at least
+      // `position` messages, and each corresponding hash must be identical.
+      if (
+        recordedPrefix.length < position ||
+        currentPrefix.length < position ||
+        currentPrefix.some((h, i) => h !== recordedPrefix[i])
+      ) {
         throw new TuvrenValidationError(
           "branch head moved and message history has diverged from the cursor position",
           { code: "durable_read_cursor_head_drift" }
         );
       }
-      // Prefix is stable: resume after position.
     }
     startIndex = position;
   }

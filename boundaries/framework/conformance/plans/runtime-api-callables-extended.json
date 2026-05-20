@@ -804,8 +804,8 @@
         }
       ],
       "checkId": "runtime-callable-ao.list-threads.thread-count-positive",
-      "operation": "runtime.durable-read.list-threads",
-      "evidence": ["result.durableRead.listThreads.threadCount"]
+      "evidence": ["result.durableRead.listThreads.threadCount"],
+      "operation": "runtime.durable-read.list-threads"
     },
     {
       "assertions": [
@@ -816,8 +816,8 @@
         }
       ],
       "checkId": "runtime-callable-ao.list-threads.no-cursor-when-all-consumed",
-      "operation": "runtime.durable-read.list-threads",
-      "evidence": ["result.durableRead.listThreads.hasCursor"]
+      "evidence": ["result.durableRead.listThreads.hasCursor"],
+      "operation": "runtime.durable-read.list-threads"
     },
     {
       "assertions": [
@@ -828,8 +828,8 @@
         }
       ],
       "checkId": "runtime-callable-ao.list-threads-paginate.page1-count-one",
-      "operation": "runtime.durable-read.list-threads-paginate",
-      "evidence": ["result.durableRead.listThreads.page1Count"]
+      "evidence": ["result.durableRead.listThreads.page1Count"],
+      "operation": "runtime.durable-read.list-threads-paginate"
     },
     {
       "assertions": [
@@ -840,8 +840,8 @@
         }
       ],
       "checkId": "runtime-callable-ao.list-threads-paginate.has-next-cursor",
-      "operation": "runtime.durable-read.list-threads-paginate",
-      "evidence": ["result.durableRead.listThreads.hasFirstCursor"]
+      "evidence": ["result.durableRead.listThreads.hasFirstCursor"],
+      "operation": "runtime.durable-read.list-threads-paginate"
     },
     {
       "assertions": [
@@ -852,8 +852,8 @@
         }
       ],
       "checkId": "runtime-callable-ao.list-threads-paginate.page2-count-one",
-      "operation": "runtime.durable-read.list-threads-paginate",
-      "evidence": ["result.durableRead.listThreads.page2Count"]
+      "evidence": ["result.durableRead.listThreads.page2Count"],
+      "operation": "runtime.durable-read.list-threads-paginate"
     },
     {
       "assertions": [
@@ -864,8 +864,8 @@
         }
       ],
       "checkId": "runtime-callable-ao.list-threads-paginate.no-cursor-on-last-page",
-      "operation": "runtime.durable-read.list-threads-paginate",
-      "evidence": ["result.durableRead.listThreads.hasSecondCursor"]
+      "evidence": ["result.durableRead.listThreads.hasSecondCursor"],
+      "operation": "runtime.durable-read.list-threads-paginate"
     },
     {
       "assertions": [
@@ -876,8 +876,8 @@
         }
       ],
       "checkId": "runtime-callable-ao.list-threads-paginate.unique-thread-count",
-      "operation": "runtime.durable-read.list-threads-paginate",
-      "evidence": ["result.durableRead.listThreads.uniqueIds"]
+      "evidence": ["result.durableRead.listThreads.uniqueIds"],
+      "operation": "runtime.durable-read.list-threads-paginate"
     },
     {
       "assertions": [
@@ -888,8 +888,8 @@
         }
       ],
       "checkId": "runtime-callable-ao.list-threads-cap-rejected.raised-true",
-      "operation": "runtime.durable-read.list-threads-capability-rejected",
-      "evidence": ["result.durableRead.listThreads.raised"]
+      "evidence": ["result.durableRead.listThreads.raised"],
+      "operation": "runtime.durable-read.list-threads-capability-rejected"
     },
     {
       "assertions": [
@@ -900,8 +900,8 @@
         }
       ],
       "checkId": "runtime-callable-ao.list-threads-cap-rejected.error-code",
-      "operation": "runtime.durable-read.list-threads-capability-rejected",
-      "evidence": ["result.durableRead.listThreads.errorCode"]
+      "evidence": ["result.durableRead.listThreads.errorCode"],
+      "operation": "runtime.durable-read.list-threads-capability-rejected"
     },
     {
       "assertions": [
@@ -912,8 +912,8 @@
         }
       ],
       "checkId": "runtime-callable-ao.list-branches.branch-count",
-      "operation": "runtime.durable-read.list-branches",
-      "evidence": ["result.durableRead.listBranches.branchCount"]
+      "evidence": ["result.durableRead.listBranches.branchCount"],
+      "operation": "runtime.durable-read.list-branches"
     },
     {
       "assertions": [
@@ -924,8 +924,8 @@
         }
       ],
       "checkId": "runtime-callable-ao.list-branches.all-have-thread-id",
-      "operation": "runtime.durable-read.list-branches",
-      "evidence": ["result.durableRead.listBranches.allHaveThreadId"]
+      "evidence": ["result.durableRead.listBranches.allHaveThreadId"],
+      "operation": "runtime.durable-read.list-branches"
     },
     {
       "assertions": [
@@ -936,8 +936,8 @@
         }
       ],
       "checkId": "runtime-callable-ao.get-turn-state.has-turn-node-hash",
-      "operation": "runtime.durable-read.get-turn-state",
-      "evidence": ["result.durableRead.getTurnState.hasTurnNodeHash"]
+      "evidence": ["result.durableRead.getTurnState.hasTurnNodeHash"],
+      "operation": "runtime.durable-read.get-turn-state"
     },
     {
       "assertions": [
@@ -948,8 +948,8 @@
         }
       ],
       "checkId": "runtime-callable-ao.get-turn-state.has-turn-tree-hash",
-      "operation": "runtime.durable-read.get-turn-state",
-      "evidence": ["result.durableRead.getTurnState.hasTurnTreeHash"]
+      "evidence": ["result.durableRead.getTurnState.hasTurnTreeHash"],
+      "operation": "runtime.durable-read.get-turn-state"
     },
     {
       "assertions": [
@@ -960,8 +960,8 @@
         }
       ],
       "checkId": "runtime-callable-ao.get-turn-state.previous-turn-null",
-      "operation": "runtime.durable-read.get-turn-state",
-      "evidence": ["result.durableRead.getTurnState.previousTurnNull"]
+      "evidence": ["result.durableRead.getTurnState.previousTurnNull"],
+      "operation": "runtime.durable-read.get-turn-state"
     },
     {
       "assertions": [
@@ -972,8 +972,8 @@
         }
       ],
       "checkId": "runtime-callable-ao.get-turn-state-lineage.matches-expected-hash",
-      "operation": "runtime.durable-read.get-turn-state-lineage",
-      "evidence": ["result.durableRead.getTurnState.matchesExpectedHash"]
+      "evidence": ["result.durableRead.getTurnState.matchesExpectedHash"],
+      "operation": "runtime.durable-read.get-turn-state-lineage"
     },
     {
       "assertions": [
@@ -984,8 +984,8 @@
         }
       ],
       "checkId": "runtime-callable-ao.get-turn-history.snapshot-count-one",
-      "operation": "runtime.durable-read.get-turn-history",
-      "evidence": ["result.durableRead.getTurnHistory.snapshotCount"]
+      "evidence": ["result.durableRead.getTurnHistory.snapshotCount"],
+      "operation": "runtime.durable-read.get-turn-history"
     },
     {
       "assertions": [
@@ -996,8 +996,8 @@
         }
       ],
       "checkId": "runtime-callable-ao.get-turn-history.first-snapshot-has-hash",
-      "operation": "runtime.durable-read.get-turn-history",
-      "evidence": ["result.durableRead.getTurnHistory.firstSnapshotHasHash"]
+      "evidence": ["result.durableRead.getTurnHistory.firstSnapshotHasHash"],
+      "operation": "runtime.durable-read.get-turn-history"
     },
     {
       "assertions": [
@@ -1008,8 +1008,8 @@
         }
       ],
       "checkId": "runtime-callable-ao.read-branch-messages.message-count-zero",
-      "operation": "runtime.durable-read.read-branch-messages",
-      "evidence": ["result.durableRead.readBranchMessages.messageCount"]
+      "evidence": ["result.durableRead.readBranchMessages.messageCount"],
+      "operation": "runtime.durable-read.read-branch-messages"
     },
     {
       "assertions": [
@@ -1020,8 +1020,8 @@
         }
       ],
       "checkId": "runtime-callable-ao.read-branch-messages.no-cursor",
-      "operation": "runtime.durable-read.read-branch-messages",
-      "evidence": ["result.durableRead.readBranchMessages.hasCursor"]
+      "evidence": ["result.durableRead.readBranchMessages.hasCursor"],
+      "operation": "runtime.durable-read.read-branch-messages"
     },
     {
       "assertions": [
@@ -1032,8 +1032,8 @@
         }
       ],
       "checkId": "runtime-callable-ao.read-branch-messages-head-drift.raised-true",
-      "operation": "runtime.durable-read.read-branch-messages-head-drift",
-      "evidence": ["result.durableRead.readBranchMessages.raised"]
+      "evidence": ["result.durableRead.readBranchMessages.raised"],
+      "operation": "runtime.durable-read.read-branch-messages-head-drift"
     },
     {
       "assertions": [
@@ -1044,13 +1044,13 @@
         }
       ],
       "checkId": "runtime-callable-ao.read-branch-messages-head-drift.error-code",
-      "operation": "runtime.durable-read.read-branch-messages-head-drift",
-      "evidence": ["result.durableRead.readBranchMessages.errorCode"]
+      "evidence": ["result.durableRead.readBranchMessages.errorCode"],
+      "operation": "runtime.durable-read.read-branch-messages-head-drift"
     }
   ],
   "packetId": "tuvren.framework.runtime-api",
   "planId": "tuvren.framework.runtime-api.callables-extended",
-  "planVersion": "0.2.0",
+  "planVersion": "0.3.0",
   "scenarios": {
     "runtime-api-scenarios": "../scenarios/runtime-api-scenarios.json"
   }
