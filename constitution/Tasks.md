@@ -2,21 +2,21 @@
 
 ## 0. Version History & Changelog
 
+- v0.28.2 - Reflected current repo reality after Epics AM, AN, AO, and AP landed: the active critical path now starts at Epic AQ, active scope drops to AQ-AT, and the package posture records `@tuvren/core` / `@tuvren/runtime` as the source-bearing surface with one-cycle compatibility shims for the retired contract handles and `@tuvren/runtime-core`.
 - v0.28.1 - Pruned inactive completed epic ticket bodies from the live ticket list and restored the stage-4 changelog to the required three-entry history shape; archived scope remains summarized in Project Phasing for continuity.
 - v0.28.0 - Opened the v0.27.0 constitutional revision execution chain (PRD v0.7.0, Architecture v0.7.0, TechSpec v0.27.0): Epic AM (kernel `thread.list` syscall + 28→30 count correction), Epic AN (`ExecutionHandle.awaitResult` promotion to base + `ExecutionResult` type), Epic AO (`TuvrenRuntime` durable-read surface + REPL kernel-inspector deletion), Epic AP (`@tuvren/core` consolidation + folding `runtime-core` into `@tuvren/runtime`), Epic AQ (Schema Authoring Helper with `defineTool` + `FlexibleSchema` + `asSchema`), Epic AR (`createTuvren` batteries-included factory), Epic AS (`@tuvren/mcp-client` MCP Client Container with stdio + HTTP/SSE transports), Epic AT (Reference Host consolidation, headless stdin mode, transcript capture/replay, `@tuvren/playground-host` retirement). Set Epic AM as the active critical path entry.
-- v0.27.0 - Closed Epic AL in current repo reality by promoting the remaining intended portable surface (tool contracts, kernel CDDL registration, SSE projection, kernel and framework interop packets, telemetry semantic conventions, TechSpec verification-path enum alignment, portability-gate canonical replacement of the AF gap plan freshness proxy), landing the KRT-AL003 re-entry reassessment under `constitution/support/live/epic-al-rust-re-entry-gate-reassessment.md`, and stating plainly that the `product proof gate`, `platform gate`, and `portability gate` now all pass under fresh canonical-verification-path evidence. Rust framework/product work remains blocked until a new epic explicitly reopens that scope.
 - ... [Older history truncated, refer to git logs]
 
 ## 1. Executive Summary & Active Critical Path
 
-- **Total Active Story Points:** 203 (across 8 new epics — AM 32, AN 13, AO 26, AP 37, AQ 15, AR 15, AS 31, AT 34 — 63 atomic tickets in total)
-- **Critical Path:** `KRT-AM001 → KRT-AM002 → KRT-AM003 → KRT-AM004 → KRT-AM005..AM008 → KRT-AM009 → KRT-AM010 → KRT-AM011 → KRT-AO001..AO007 → KRT-AP001 → KRT-AP002..AP011 → KRT-AQ001..AQ005 → KRT-AS001..AS009 → KRT-AT009`. Epic AN is sequenceable in parallel with the latter half of Epic AM (independent surface). Epic AR is sequenceable in parallel with Epic AQ. Epic AT001..AT008 are sequenceable in parallel with Epic AS (they depend on AO, AP, and AR); only KRT-AT009 depends on KRT-AS009. KRT-AS009 itself depends on KRT-AR005, so AR is also on the critical path before AS closes: `(AQ005, AR005) → AS001..AS008 → AS009 → AT009`. The longest single-thread sequence runs through the kernel bump, the durable-read surface, the package consolidation, the schema helper, the MCP client (AS001..AS009), and the MCP-scenario ticket (AT009).
-- **Planning Assumptions:** PRD v0.7.0, Architecture v0.7.0, and TechSpec v0.27.0 (ADR-034 through ADR-041) are approved upstream and govern this execution chain. The `docs/KrakenKernelSpecification.md` bump to v0.10 (count correction plus `thread.list`) and `docs/KrakenFrameworkSpecification.md` bump to v0.18 (base-handle `awaitResult`) are in scope for this chain. The `product proof gate`, `platform gate`, and `portability gate` from Epic AL remain the staged-gate baseline; this chain extends the productized TypeScript line without reopening Rust framework/product work. `@modelcontextprotocol/sdk@1.29.0`, `zod@4.4.3`, and `@standard-schema/spec@1.1.0` are the locked external dependency versions per TechSpec §1. The host-facing SDK consolidation into `@tuvren/core` plus the slim `@tuvren/runtime` convenience package is the v1 commitment.
+- **Total Active Story Points:** 95 (across 4 active epics — AQ 15, AR 15, AS 31, AT 34 — 34 atomic tickets total). Epics AM (32), AN (13), AO (26), and AP (37) are closed and remain in this live plan only as recently completed context for their downstream dependencies.
+- **Critical Path:** `(KRT-AQ001..AQ005, KRT-AR001..AR005) → KRT-AS001..AS009 → KRT-AT009`. Epic AR is sequenceable in parallel with Epic AQ until `KRT-AR005` gates `KRT-AS009`; AT001..AT003 can start after the already-closed AO/AP prerequisites, AT004..AT008 wait on their specific AR prerequisites and can run alongside AS, and only KRT-AT009 depends on KRT-AS009. The remaining longest single-thread path runs through the schema helper, the batteries-included factory, the MCP client, and the MCP-backed proving-host scenario.
+- **Planning Assumptions:** PRD v0.7.0, Architecture v0.7.0, and TechSpec v0.27.1 (ADR-034 through ADR-041) are approved upstream and govern this execution chain. The `docs/KrakenKernelSpecification.md` bump to v0.10 (count correction plus `thread.list`) and `docs/KrakenFrameworkSpecification.md` bump to v0.18 (base-handle `awaitResult`) are now landed. The `product proof gate`, `platform gate`, and `portability gate` from Epic AL remain the staged-gate baseline; this chain extends the productized TypeScript line without reopening Rust framework/product work. `@modelcontextprotocol/sdk@1.29.0`, `zod@4.4.3`, and `@standard-schema/spec@1.1.0` are the locked external dependency versions per TechSpec §1. The host-facing SDK consolidation into source-bearing `@tuvren/core` plus the slim `@tuvren/runtime` convenience package is landed; deprecated one-cycle shims preserve the old contract handles and `@tuvren/runtime-core` until the next minor cleanup.
 
 ### Brownfield Continuity Note
 
 - Epics A-AL remain historical context. Epic AL's closure of the staged gates is the foundation this chain extends.
-- The current repo proves the host-facing SDK through the serious REPL host (`@tuvren/repl-host`) and its named `proving-host:*` validation lanes; exercises PostgreSQL as a first-class backend across kernel conformance and proving-host reload; closes the portability gate through `tools/scripts/portability-gate.ts`; and depends on the still-split contract packages (`@tuvren/core-types`, `@tuvren/runtime-api`, `@tuvren/event-stream`, `@tuvren/tool-contracts`, `@tuvren/driver-api`) plus the still-existing `@tuvren/playground-host` and the `createPlaygroundKernelInspector` boundary-pierce. This chain retires every one of those last items and rebuilds the host-facing surface around `@tuvren/core` + `@tuvren/runtime`.
+- The current repo proves the host-facing SDK through the serious REPL host (`@tuvren/repl-host`) and its named `proving-host:*` validation lanes; exercises PostgreSQL as a first-class backend across kernel conformance and proving-host reload; closes the portability gate through `tools/scripts/portability-gate.ts`; and now carries the shared primitive surface in `@tuvren/core` with source-bearing runtime implementation in `@tuvren/runtime`. The old contract package handles and `@tuvren/runtime-core` are compatibility shims only; `@tuvren/playground-host` and the remaining playground-named REPL internals are still active retirement targets in Epic AT.
 - Historical closure inventories live under `constitution/archived/` for audit only.
 
 ### Sequential Scope Rule
@@ -36,8 +36,8 @@
 
 ### Current Active Scope
 
-- **Block 1 — Boundary correctness gate (Epics AM, AN, AO):** make the host-facing SDK self-sufficient before reshaping its packaging. The kernel gains `thread.list` (correcting the 28-vs-29 documentation drift to 30 in the same change), `ExecutionHandle` gains `awaitResult` on the base interface, and `TuvrenRuntime` gains a five-method durable-read surface (`listThreads`, `listBranches`, `getTurnState`, `getTurnHistory`, `readBranchMessages`). The boundary-piercing `createPlaygroundKernelInspector` in the REPL host is deleted once the new surface is available. This block alone discharges the "private seam" risk Architecture v0.6.0 §6 flagged.
-- **Block 2 — Curated surface + ergonomics (Epics AP, AQ, AR):** consolidate the five split contract packages (`@tuvren/core-types`, `@tuvren/runtime-api`, `@tuvren/event-stream`, `@tuvren/tool-contracts`, `@tuvren/driver-api`) into one subpath-exported `@tuvren/core` with leaf packages peer-depending on it; fold `@tuvren/runtime-core` into the slim `@tuvren/runtime` convenience package; add the schema-agnostic `defineTool` helper (Zod / Standard Schema / wrapped JSON Schema with type inference); add the `createTuvren({...})` batteries-included factory.
+- **Block 1 — Boundary correctness gate (Epics AM, AN, AO):** closed. The kernel now exposes `thread.list` with the corrected 30-operation narrative, `ExecutionHandle` exposes base-handle `awaitResult`, and `TuvrenRuntime` exposes the five-method durable-read surface (`listThreads`, `listBranches`, `getTurnState`, `getTurnHistory`, `readBranchMessages`).
+- **Block 2 — Curated surface + ergonomics (Epics AP, AQ, AR):** partially closed. Epic AP landed `@tuvren/core`, folded the source-bearing runtime implementation into `@tuvren/runtime`, and left one-cycle deprecated shims for old handles. Active work now starts with the schema-agnostic `defineTool` helper (Zod / Standard Schema / wrapped JSON Schema with type inference) and the `createTuvren({...})` batteries-included factory.
 - **Block 3 — Capability spikes (Epics AS, AT):** add `@tuvren/mcp-client` as a first-class tool source over stdio + HTTP/SSE transports; retire `@tuvren/playground-host`, rename internal REPL host modules to drop the playground naming, add headless stdin mode for the reference host, add JSONL transcript capture/replay.
 
 ### Future / Deferred Scope
@@ -65,22 +65,23 @@
 - Epic AK completed the PostgreSQL platform-gate path by landing `@tuvren/backend-postgres`, wiring REPL PostgreSQL reload proof plus TypeScript PostgreSQL conformance through `devenv`, and integrating those lanes into the canonical verification path.
 - Epic AL closed the portability gate by promoting tool contracts, kernel CDDL registration, SSE projection, kernel and framework interop packets, and telemetry semantic conventions into packet/plan/runner-owned authority, by landing `tools/scripts/portability-gate.ts` as the canonical portability proxy in the verify lane, and by recording the staged-gate re-entry verdict in `constitution/support/live/epic-al-rust-re-entry-gate-reassessment.md`.
 - Epics R-AG established the multi-language transition foundation, shared conformance architecture, kernel interop, and the AG hardening subset that remains historical evidence for promoted surfaces.
-- That work remains valuable audit context. The active forward path is now Epics AM through AT (the v0.27.0 constitutional revision execution chain).
+- Epics AM through AP closed the kernel enumeration, base-handle terminal-value, durable-read, and package-consolidation portions of the v0.27.0 constitutional revision chain.
+- That work remains valuable audit context. The active forward path is now Epics AQ through AT.
 
 ## 3. Build Order (Mermaid)
 
 ```mermaid
 flowchart LR
   subgraph block1["Block 1 — Boundary correctness gate"]
-    AM["Epic AM — Kernel thread.list + count correction"]
-    AN["Epic AN — ExecutionHandle.awaitResult"]
-    AO["Epic AO — TuvrenRuntime durable-read surface"]
+    AM["Epic AM — Kernel thread.list + count correction (closed)"]
+    AN["Epic AN — ExecutionHandle.awaitResult (closed)"]
+    AO["Epic AO — TuvrenRuntime durable-read surface (closed)"]
     AM --> AO
     AN --> AO
   end
 
   subgraph block2["Block 2 — Curated surface + ergonomics"]
-    AP["Epic AP — @tuvren/core consolidation"]
+    AP["Epic AP — @tuvren/core consolidation (closed)"]
     AQ["Epic AQ — Schema Authoring Helper"]
     AR["Epic AR — createTuvren batteries-included"]
     AP --> AQ
@@ -286,7 +287,7 @@ And no checked-in support artifact is stale relative to its sources
 
 ### Epic AN — `ExecutionHandle.awaitResult` Promotion to Base + `ExecutionResult` Type (KRT)
 
-**Status:** Active — sequenceable in parallel with the latter half of Epic AM
+**Status:** Closed — all 6 tickets implemented and verified under `bun run verify` + `bun run compatibility:evidence`; compatibility evidence now includes the `runtime-api-handle-terminal-value` check set.
 
 **KRT-AN001 Framework Specification v0.18 Bump**
 - **Type:** Chore
@@ -385,7 +386,7 @@ And the packet passes authority-packet freshness checks via `bun run codegen`
 
 ### Epic AO — `TuvrenRuntime` Durable-Read Surface (KRT)
 
-**Status:** Active — depends on Epic AM (needs `thread.list`) and Epic AN (clean handle pattern)
+**Status:** Closed — all 7 tickets implemented and verified under `bun run verify` + `bun run compatibility:evidence`; compatibility evidence now includes durable-read coverage for list/read paths and capability rejection.
 
 **KRT-AO001 `TuvrenRuntime` Five-Method Signature Addition**
 - **Type:** Feature
@@ -503,7 +504,7 @@ And the REPL proving-host scenario suite still passes
 
 ### Epic AP — `@tuvren/core` Consolidation + Fold `runtime-core` Into `@tuvren/runtime` (KRT)
 
-**Status:** Active — atomic epic; MUST land as one merge to avoid intermediate broken state
+**Status:** Closed — all 11 tickets implemented and verified under `bun run verify` + `bun run compatibility:evidence`. Closure kept the five retired contract handles and `@tuvren/runtime-core` as deprecated one-cycle compatibility shims while making `@tuvren/core` and `@tuvren/runtime` the source-bearing surfaces.
 
 **KRT-AP001 Atomic-Merge Feasibility Spike**
 - **Type:** Spike
