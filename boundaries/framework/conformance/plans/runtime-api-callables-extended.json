@@ -1046,6 +1046,250 @@
       "checkId": "runtime-callable-ao.read-branch-messages-head-drift.error-code",
       "evidence": ["result.durableRead.readBranchMessages.errorCode"],
       "operation": "runtime.durable-read.read-branch-messages-head-drift"
+    },
+    {
+      "assertions": [
+        {
+          "equals": true,
+          "field": "$.schemaAuthoring.hasSchemaSymbol",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "schema-authoring.branch1-already-wrapped.has-schema-symbol",
+      "evidence": ["result.schemaAuthoring.hasSchemaSymbol"],
+      "input": { "branch": "already-wrapped" },
+      "operation": "runtime.schema-authoring.route"
+    },
+    {
+      "assertions": [
+        {
+          "equals": true,
+          "field": "$.schemaAuthoring.hasSchemaSymbol",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "schema-authoring.branch2-zod-v4.has-schema-symbol",
+      "evidence": ["result.schemaAuthoring.hasSchemaSymbol"],
+      "input": { "branch": "zod-v4" },
+      "operation": "runtime.schema-authoring.route"
+    },
+    {
+      "assertions": [
+        {
+          "equals": "number",
+          "field": "$.schemaAuthoring.jsonSchemaType",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "schema-authoring.branch2-zod-v4.json-schema-type",
+      "evidence": ["result.schemaAuthoring.jsonSchemaType"],
+      "input": { "branch": "zod-v4" },
+      "operation": "runtime.schema-authoring.route"
+    },
+    {
+      "assertions": [
+        {
+          "equals": true,
+          "field": "$.schemaAuthoring.validateSuccess",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "schema-authoring.branch2-zod-v4.validate-success",
+      "evidence": ["result.schemaAuthoring.validateSuccess"],
+      "input": { "branch": "zod-v4" },
+      "operation": "runtime.schema-authoring.route"
+    },
+    {
+      "assertions": [
+        {
+          "equals": true,
+          "field": "$.schemaAuthoring.hasSchemaSymbol",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "schema-authoring.branch3-standard-non-zod.has-schema-symbol",
+      "evidence": ["result.schemaAuthoring.hasSchemaSymbol"],
+      "input": { "branch": "standard-non-zod" },
+      "operation": "runtime.schema-authoring.route"
+    },
+    {
+      "assertions": [
+        {
+          "equals": true,
+          "field": "$.schemaAuthoring.validateSuccess",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "schema-authoring.branch3-standard-non-zod.validate-success",
+      "evidence": ["result.schemaAuthoring.validateSuccess"],
+      "input": { "branch": "standard-non-zod" },
+      "operation": "runtime.schema-authoring.route"
+    },
+    {
+      "assertions": [
+        {
+          "equals": true,
+          "field": "$.schemaAuthoring.hasSchemaSymbol",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "schema-authoring.branch4-zod-v3-compat.has-schema-symbol",
+      "evidence": ["result.schemaAuthoring.hasSchemaSymbol"],
+      "input": { "branch": "standard-zod-v3" },
+      "operation": "runtime.schema-authoring.route"
+    },
+    {
+      "assertions": [
+        {
+          "equals": true,
+          "field": "$.schemaAuthoring.validateSuccess",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "schema-authoring.branch4-zod-v3-compat.routes-via-zod-safeParse",
+      "evidence": ["result.schemaAuthoring.validateSuccess"],
+      "input": { "branch": "standard-zod-v3" },
+      "operation": "runtime.schema-authoring.route"
+    },
+    {
+      "assertions": [
+        {
+          "equals": true,
+          "field": "$.schemaAuthoring.hasSchemaSymbol",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "schema-authoring.branch5-lazy.has-schema-symbol",
+      "evidence": ["result.schemaAuthoring.hasSchemaSymbol"],
+      "input": { "branch": "lazy" },
+      "operation": "runtime.schema-authoring.route"
+    },
+    {
+      "assertions": [
+        {
+          "equals": "boolean",
+          "field": "$.schemaAuthoring.jsonSchemaType",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "schema-authoring.branch5-lazy.json-schema-type-from-inner",
+      "evidence": ["result.schemaAuthoring.jsonSchemaType"],
+      "input": { "branch": "lazy" },
+      "operation": "runtime.schema-authoring.route"
+    },
+    {
+      "assertions": [
+        {
+          "equals": true,
+          "field": "$.schemaAuthoring.hasSchemaSymbol",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "schema-authoring.branch6-json-object.has-schema-symbol",
+      "evidence": ["result.schemaAuthoring.hasSchemaSymbol"],
+      "input": { "branch": "json-schema-object" },
+      "operation": "runtime.schema-authoring.route"
+    },
+    {
+      "assertions": [
+        {
+          "equals": "object",
+          "field": "$.schemaAuthoring.jsonSchemaType",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "schema-authoring.branch6-json-object.passthrough-json-schema",
+      "evidence": ["result.schemaAuthoring.jsonSchemaType"],
+      "input": { "branch": "json-schema-object" },
+      "operation": "runtime.schema-authoring.route"
+    },
+    {
+      "assertions": [
+        {
+          "equals": false,
+          "field": "$.schemaAuthoring.hasValidate",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "schema-authoring.branch6-json-object.no-validate-fn",
+      "evidence": ["result.schemaAuthoring.hasValidate"],
+      "input": { "branch": "json-schema-object" },
+      "operation": "runtime.schema-authoring.route"
+    },
+    {
+      "assertions": [
+        {
+          "equals": true,
+          "field": "$.schemaAuthoring.jsonSchemaIsBoolean",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "schema-authoring.branch6-bool-true.json-schema-is-boolean",
+      "evidence": ["result.schemaAuthoring.jsonSchemaIsBoolean"],
+      "input": { "branch": "json-schema-bool-true" },
+      "operation": "runtime.schema-authoring.route"
+    },
+    {
+      "assertions": [
+        {
+          "equals": true,
+          "field": "$.schemaAuthoring.jsonSchemaValue",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "schema-authoring.branch6-bool-true.json-schema-value-true",
+      "evidence": ["result.schemaAuthoring.jsonSchemaValue"],
+      "input": { "branch": "json-schema-bool-true" },
+      "operation": "runtime.schema-authoring.route"
+    },
+    {
+      "assertions": [
+        {
+          "equals": false,
+          "field": "$.schemaAuthoring.jsonSchemaValue",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "schema-authoring.branch6-bool-false.json-schema-value-false",
+      "evidence": ["result.schemaAuthoring.jsonSchemaValue"],
+      "input": { "branch": "json-schema-bool-false" },
+      "operation": "runtime.schema-authoring.route"
+    },
+    {
+      "assertions": [
+        {
+          "equals": "test-tool",
+          "field": "$.schemaAuthoring.defineTool.name",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "schema-authoring.define-tool.name-preserved",
+      "evidence": ["result.schemaAuthoring.defineTool.name"],
+      "operation": "runtime.schema-authoring.define-tool"
+    },
+    {
+      "assertions": [
+        {
+          "equals": "string",
+          "field": "$.schemaAuthoring.defineTool.jsonSchemaType",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "schema-authoring.define-tool.json-schema-type",
+      "evidence": ["result.schemaAuthoring.defineTool.jsonSchemaType"],
+      "operation": "runtime.schema-authoring.define-tool"
+    },
+    {
+      "assertions": [
+        {
+          "equals": true,
+          "field": "$.schemaAuthoring.defineTool.validateSuccess",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "schema-authoring.define-tool.validate-passthrough-success",
+      "evidence": ["result.schemaAuthoring.defineTool.validateSuccess"],
+      "operation": "runtime.schema-authoring.define-tool"
     }
   ],
   "packetId": "tuvren.shared.core",

@@ -42,6 +42,7 @@ import type {
   ScenarioToolCall,
 } from "./framework-adapter-runtime.ts";
 import { createFrameworkAdapterRuntimeScenarios } from "./framework-adapter-runtime-scenarios.ts";
+import { createFrameworkAdapterSchemaAuthoring } from "./framework-adapter-schema-authoring.ts";
 
 export type {
   AdapterCapabilities,
@@ -109,6 +110,8 @@ const eventStreamScenarios = createFrameworkAdapterEventStream({
   readScenarioInput,
   readStringProperty,
 });
+
+const schemaAuthoringScenarios = createFrameworkAdapterSchemaAuthoring();
 
 const runtimeScenarios = createFrameworkAdapterRuntimeScenarios({
   isRecord,
@@ -321,6 +324,10 @@ export class TypeScriptFrameworkAdapter implements ImplementationAdapter {
         );
       case "runtime.orchestration.nested-attribution":
         return orchestrationScenarios.runOrchestrationNestedAttribution(input);
+      case "runtime.schema-authoring.route":
+        return schemaAuthoringScenarios.runSchemaAuthoringRoute(input);
+      case "runtime.schema-authoring.define-tool":
+        return schemaAuthoringScenarios.runSchemaAuthoringDefineTool(input);
       case "driver.execute":
         return driverScenarios.runDriverExecute(input);
       case "driver.resume":
