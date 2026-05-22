@@ -22,10 +22,10 @@ export type {
   TuvrenModelResponse,
   TuvrenPrompt,
   TuvrenProvider,
-} from "./lib/runtime-contracts.js";
+} from "@tuvren/core/provider";
 export {
   assertProviderStreamChunk,
   assertTuvrenModelResponse,
   isProviderStreamChunk,
   isTuvrenModelResponse,
-} from "./lib/runtime-contracts.js";
+} from "@tuvren/core/provider";

@@ -45,8 +45,8 @@ export type {
   TurnStartEvent,
   TuvrenErrorProjection,
   TuvrenStreamEvent,
-} from "./lib/runtime-contracts.js";
+} from "@tuvren/core/events";
 export {
   assertTuvrenStreamEvent,
   isTuvrenStreamEvent,
-} from "./lib/runtime-contracts.js";
+} from "@tuvren/core/events";

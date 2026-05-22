@@ -57,11 +57,11 @@ export type {
   TuvrenExtension,
   TuvrenMessage,
   TuvrenRuntime,
-} from "./lib/runtime-contracts.js";
+} from "@tuvren/core/execution";
 export {
   assertContextManifest,
   assertExecutionStatus,
   assertTuvrenMessage,
   isExecutionStatus,
   isTuvrenMessage,
-} from "./lib/runtime-contracts.js";
+} from "@tuvren/core/execution";

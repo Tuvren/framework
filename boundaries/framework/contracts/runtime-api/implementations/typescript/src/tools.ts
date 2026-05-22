@@ -39,7 +39,7 @@ export type {
   TuvrenToolResultBatch,
   ValidationErrorPayload,
   ValidationResult,
-} from "./lib/runtime-contracts.js";
+} from "@tuvren/core/tools";
 export {
   assertApprovalRequest,
   assertApprovalResponse,
@@ -49,4 +49,4 @@ export {
   isApprovalResponse,
   isApprovalResponseForRequest,
   isTuvrenToolDefinition,
-} from "./lib/runtime-contracts.js";
+} from "@tuvren/core/tools";
