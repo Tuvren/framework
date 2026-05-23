@@ -1,0 +1,27 @@
+{
+  "name": "framework-batteries-included-conformance-runner",
+  "$schema": "../../../../../node_modules/nx/schemas/project-schema.json",
+  "root": "boundaries/framework/implementations/typescript/conformance-runner-batteries-included",
+  "projectType": "library",
+  "tags": [
+    "boundary:framework",
+    "language:typescript",
+    "layer:conformance-runner"
+  ],
+  "targets": {
+    "conformance": {
+      "executor": "nx:run-commands",
+      "dependsOn": [
+        {
+          "projects": ["framework-typescript-conformance-adapter"],
+          "target": "build-batteries-included",
+          "params": "ignore"
+        }
+      ],
+      "options": {
+        "cwd": ".",
+        "command": "bash -lc 'devenv shell -- bun tools/conformance/runner/run.ts --adapter boundaries/framework/implementations/typescript/conformance-adapter/adapter-batteries-included.json'"
+      }
+    }
+  }
+}

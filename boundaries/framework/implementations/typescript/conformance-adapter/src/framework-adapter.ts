@@ -33,6 +33,7 @@ import {
   createAdapterErrorEnvelope,
   type OperationOutcome,
 } from "../../../../../../tools/conformance/adapter-protocol/index.js";
+import { createFrameworkAdapterBatteriesIncluded } from "./framework-adapter-batteries-included.ts";
 import { createFrameworkAdapterDriver } from "./framework-adapter-driver.ts";
 import { createFrameworkAdapterEventStream } from "./framework-adapter-event-stream.ts";
 import { createFrameworkAdapterEventStreamSse } from "./framework-adapter-event-stream-sse.ts";
@@ -111,6 +112,7 @@ const eventStreamScenarios = createFrameworkAdapterEventStream({
   readStringProperty,
 });
 
+const batteriesIncludedScenarios = createFrameworkAdapterBatteriesIncluded();
 const schemaAuthoringScenarios = createFrameworkAdapterSchemaAuthoring();
 
 const runtimeScenarios = createFrameworkAdapterRuntimeScenarios({
@@ -324,6 +326,8 @@ export class TypeScriptFrameworkAdapter implements ImplementationAdapter {
         );
       case "runtime.orchestration.nested-attribution":
         return orchestrationScenarios.runOrchestrationNestedAttribution(input);
+      case "runtime.batteries-included.lifecycle":
+        return batteriesIncludedScenarios.runBatteriesIncludedLifecycle(input);
       case "runtime.schema-authoring.route":
         return schemaAuthoringScenarios.runSchemaAuthoringRoute(input);
       case "runtime.schema-authoring.define-tool":

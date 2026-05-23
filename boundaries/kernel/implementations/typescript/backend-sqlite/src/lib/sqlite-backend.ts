@@ -229,6 +229,11 @@ class SqliteBackend implements KrakenBackend {
     });
   }
 
+  close(): Promise<void> {
+    this.db.close();
+    return Promise.resolve();
+  }
+
   transact<T>(work: (tx: KrakenBackendTx) => Promise<T>): Promise<T> {
     if (this.transactionContext.getStore() === true) {
       throw persistenceError(
@@ -285,7 +290,7 @@ class SqliteBackend implements KrakenBackend {
  */
 export function createSqliteBackend(
   options: SqliteBackendOptions
-): KrakenBackend {
+): KrakenBackend & { close(): Promise<void> } {
   return new SqliteBackend(options);
 }
 

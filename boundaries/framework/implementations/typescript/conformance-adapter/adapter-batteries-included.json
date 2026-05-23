@@ -1,0 +1,23 @@
+{
+  "adapterId": "typescript-framework-batteries-included",
+  "implementationId": "typescript-framework",
+  "language": "typescript",
+  "boundary": "framework",
+  "protocol": {
+    "name": "tuvren.conformance-adapter",
+    "version": "0.1.0",
+    "transport": "json-rpc-2.0-stdio"
+  },
+  "command": [
+    "node",
+    "boundaries/framework/implementations/typescript/conformance-adapter/dist/batteries-included-node-host.mjs"
+  ],
+  "capabilities": ["framework.batteries-included"],
+  "authorityPackets": [
+    "boundaries/shared/contracts/core/spec/authority-packet.json",
+    "boundaries/framework/contracts/event-stream-sse/spec/authority-packet.json",
+    "boundaries/framework/contracts/react-driver/spec/authority-packet.json"
+  ],
+  "suiteId": "tuvren.framework.runtime-api.batteries-included",
+  "suiteVersion": "0.1.0"
+}

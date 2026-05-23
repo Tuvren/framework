@@ -5070,6 +5070,366 @@
     {
       "assertionResults": [
         {
+          "assertionId": "schema-authoring.branch1-already-wrapped.has-schema-symbol.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.branch1-already-wrapped.has-schema-symbol.requiredEvidence.result.schemaAuthoring.hasSchemaSymbol",
+          "status": "pass"
+        }
+      ],
+      "checkId": "schema-authoring.branch1-already-wrapped.has-schema-symbol",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "schema-authoring.branch2-zod-v4.has-schema-symbol.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.branch2-zod-v4.has-schema-symbol.requiredEvidence.result.schemaAuthoring.hasSchemaSymbol",
+          "status": "pass"
+        }
+      ],
+      "checkId": "schema-authoring.branch2-zod-v4.has-schema-symbol",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "schema-authoring.branch2-zod-v4.json-schema-type.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.branch2-zod-v4.json-schema-type.requiredEvidence.result.schemaAuthoring.jsonSchemaType",
+          "status": "pass"
+        }
+      ],
+      "checkId": "schema-authoring.branch2-zod-v4.json-schema-type",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "schema-authoring.branch2-zod-v4.validate-success.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.branch2-zod-v4.validate-success.requiredEvidence.result.schemaAuthoring.validateSuccess",
+          "status": "pass"
+        }
+      ],
+      "checkId": "schema-authoring.branch2-zod-v4.validate-success",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "schema-authoring.branch3-standard-non-zod.has-schema-symbol.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.branch3-standard-non-zod.has-schema-symbol.requiredEvidence.result.schemaAuthoring.hasSchemaSymbol",
+          "status": "pass"
+        }
+      ],
+      "checkId": "schema-authoring.branch3-standard-non-zod.has-schema-symbol",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "schema-authoring.branch3-standard-non-zod.validate-success.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.branch3-standard-non-zod.validate-success.requiredEvidence.result.schemaAuthoring.validateSuccess",
+          "status": "pass"
+        }
+      ],
+      "checkId": "schema-authoring.branch3-standard-non-zod.validate-success",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "schema-authoring.branch4-zod-v3-compat.has-schema-symbol.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.branch4-zod-v3-compat.has-schema-symbol.requiredEvidence.result.schemaAuthoring.hasSchemaSymbol",
+          "status": "pass"
+        }
+      ],
+      "checkId": "schema-authoring.branch4-zod-v3-compat.has-schema-symbol",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "schema-authoring.branch4-zod-v3-compat.routes-via-zod-safeParse.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.branch4-zod-v3-compat.routes-via-zod-safeParse.requiredEvidence.result.schemaAuthoring.validateSuccess",
+          "status": "pass"
+        }
+      ],
+      "checkId": "schema-authoring.branch4-zod-v3-compat.routes-via-zod-safeParse",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "schema-authoring.branch5-lazy.has-schema-symbol.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.branch5-lazy.has-schema-symbol.requiredEvidence.result.schemaAuthoring.hasSchemaSymbol",
+          "status": "pass"
+        }
+      ],
+      "checkId": "schema-authoring.branch5-lazy.has-schema-symbol",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "schema-authoring.branch5-lazy.json-schema-type-from-inner.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.branch5-lazy.json-schema-type-from-inner.requiredEvidence.result.schemaAuthoring.jsonSchemaType",
+          "status": "pass"
+        }
+      ],
+      "checkId": "schema-authoring.branch5-lazy.json-schema-type-from-inner",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "schema-authoring.branch6-bool-false.json-schema-is-boolean.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.branch6-bool-false.json-schema-is-boolean.requiredEvidence.result.schemaAuthoring.jsonSchemaIsBoolean",
+          "status": "pass"
+        }
+      ],
+      "checkId": "schema-authoring.branch6-bool-false.json-schema-is-boolean",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "schema-authoring.branch6-bool-false.json-schema-value-false.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.branch6-bool-false.json-schema-value-false.requiredEvidence.result.schemaAuthoring.jsonSchemaValue",
+          "status": "pass"
+        }
+      ],
+      "checkId": "schema-authoring.branch6-bool-false.json-schema-value-false",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "schema-authoring.branch6-bool-true.json-schema-is-boolean.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.branch6-bool-true.json-schema-is-boolean.requiredEvidence.result.schemaAuthoring.jsonSchemaIsBoolean",
+          "status": "pass"
+        }
+      ],
+      "checkId": "schema-authoring.branch6-bool-true.json-schema-is-boolean",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "schema-authoring.branch6-bool-true.json-schema-value-true.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.branch6-bool-true.json-schema-value-true.requiredEvidence.result.schemaAuthoring.jsonSchemaValue",
+          "status": "pass"
+        }
+      ],
+      "checkId": "schema-authoring.branch6-bool-true.json-schema-value-true",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "schema-authoring.branch6-json-object.has-schema-symbol.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.branch6-json-object.has-schema-symbol.requiredEvidence.result.schemaAuthoring.hasSchemaSymbol",
+          "status": "pass"
+        }
+      ],
+      "checkId": "schema-authoring.branch6-json-object.has-schema-symbol",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "schema-authoring.branch6-json-object.no-validate-fn.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.branch6-json-object.no-validate-fn.requiredEvidence.result.schemaAuthoring.hasValidate",
+          "status": "pass"
+        }
+      ],
+      "checkId": "schema-authoring.branch6-json-object.no-validate-fn",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "schema-authoring.branch6-json-object.passthrough-json-schema.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.branch6-json-object.passthrough-json-schema.requiredEvidence.result.schemaAuthoring.jsonSchemaType",
+          "status": "pass"
+        }
+      ],
+      "checkId": "schema-authoring.branch6-json-object.passthrough-json-schema",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "schema-authoring.define-tool.json-schema-type.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.define-tool.json-schema-type.requiredEvidence.result.schemaAuthoring.defineTool.jsonSchemaType",
+          "status": "pass"
+        }
+      ],
+      "checkId": "schema-authoring.define-tool.json-schema-type",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "schema-authoring.define-tool.name-preserved.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.define-tool.name-preserved.requiredEvidence.result.schemaAuthoring.defineTool.name",
+          "status": "pass"
+        }
+      ],
+      "checkId": "schema-authoring.define-tool.name-preserved",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "schema-authoring.define-tool.validate-passthrough-success.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "schema-authoring.define-tool.validate-passthrough-success.requiredEvidence.result.schemaAuthoring.defineTool.validateSuccess",
+          "status": "pass"
+        }
+      ],
+      "checkId": "schema-authoring.define-tool.validate-passthrough-success",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "runtime-api.approval-resolve.paused-resume.1.stateField",
           "status": "pass"
         },
@@ -6749,17 +7109,30 @@
   ],
   "exitCode": 0,
   "implementationId": "typescript-framework",
-  "nonApplicableCheckIds": [],
+  "nonApplicableCheckIds": [
+    "batteries-included.lifecycle.memory.constructed",
+    "batteries-included.lifecycle.memory.disposed",
+    "batteries-included.lifecycle.memory.messages-read",
+    "batteries-included.lifecycle.memory.turn-completed",
+    "batteries-included.lifecycle.postgres.constructed",
+    "batteries-included.lifecycle.postgres.disposed",
+    "batteries-included.lifecycle.postgres.messages-read",
+    "batteries-included.lifecycle.postgres.turn-completed",
+    "batteries-included.lifecycle.sqlite.constructed",
+    "batteries-included.lifecycle.sqlite.disposed",
+    "batteries-included.lifecycle.sqlite.messages-read",
+    "batteries-included.lifecycle.sqlite.turn-completed"
+  ],
   "project": "framework-typescript-conformance-runner",
   "reportLabel": "TypeScript framework runtime baseline",
-  "reportStatus": "full_pass",
+  "reportStatus": "capability_subset_pass",
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 308,
-    "totalChecks": 308,
-    "applicableChecks": 308,
-    "nonApplicableChecks": 0
+    "passedChecks": 328,
+    "totalChecks": 340,
+    "applicableChecks": 328,
+    "nonApplicableChecks": 12
   },
   "suiteId": "tuvren.framework.promoted-authority",
   "suiteVersion": "0.1.0"

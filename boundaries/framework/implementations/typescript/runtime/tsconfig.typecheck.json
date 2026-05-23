@@ -8,6 +8,13 @@
       "@tuvren/backend-memory": [
         "../../../../kernel/implementations/typescript/backend-memory/src/index.ts"
       ],
+      "@tuvren/backend-sqlite": [
+        "../../../../kernel/implementations/typescript/backend-sqlite/src/index.ts"
+      ],
+      "@tuvren/backend-postgres": [
+        "../../../../kernel/implementations/typescript/backend-postgres/src/index.ts"
+      ],
+      "@tuvren/driver-react": ["../drivers/react/src/index.ts"],
       "@tuvren/core": [
         "../../../../shared/contracts/core/implementations/typescript/src/index.ts"
       ],
@@ -83,6 +90,9 @@
     "../../../contracts/driver-api/implementations/typescript/src/**/*.ts",
     "../../../../kernel/contracts/protocol/implementations/typescript/src/**/*.ts",
     "../../../../kernel/implementations/typescript/backend-memory/src/**/*.ts",
+    "../../../../kernel/implementations/typescript/backend-sqlite/src/**/*.ts",
+    "../../../../kernel/implementations/typescript/backend-postgres/src/**/*.ts",
+    "../drivers/react/src/**/*.ts",
     "../../../../kernel/implementations/typescript/runtime-kernel/src/**/*.ts",
     "../../../../shared/contracts/core-types/implementations/typescript/src/**/*.ts",
     "../stream-core/src/**/*.ts",

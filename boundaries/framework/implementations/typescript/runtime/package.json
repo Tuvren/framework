@@ -19,6 +19,10 @@
     "@bufbuild/protobuf": "2.11.0",
     "@connectrpc/connect": "2.1.1",
     "@connectrpc/connect-node": "2.1.1",
+    "@tuvren/backend-memory": "workspace:*",
+    "@tuvren/backend-postgres": "workspace:*",
+    "@tuvren/backend-sqlite": "workspace:*",
+    "@tuvren/driver-react": "workspace:*",
     "@tuvren/kernel-protocol": "workspace:*",
     "@tuvren/kernel-runtime": "workspace:*",
     "ajv": "8.18.0"

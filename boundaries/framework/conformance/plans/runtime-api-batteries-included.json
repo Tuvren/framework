@@ -1,0 +1,166 @@
+{
+  "applicability": {
+    "capabilities": ["framework.batteries-included"]
+  },
+  "checks": [
+    {
+      "assertions": [
+        {
+          "equals": true,
+          "field": "$.batteriesIncluded.lifecycle.constructed",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "batteries-included.lifecycle.memory.constructed",
+      "evidence": ["result.batteriesIncluded.lifecycle.constructed"],
+      "input": { "backend": "memory" },
+      "operation": "runtime.batteries-included.lifecycle"
+    },
+    {
+      "assertions": [
+        {
+          "equals": true,
+          "field": "$.batteriesIncluded.lifecycle.turnCompleted",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "batteries-included.lifecycle.memory.turn-completed",
+      "evidence": ["result.batteriesIncluded.lifecycle.turnCompleted"],
+      "input": { "backend": "memory" },
+      "operation": "runtime.batteries-included.lifecycle"
+    },
+    {
+      "assertions": [
+        {
+          "equals": true,
+          "field": "$.batteriesIncluded.lifecycle.messagesRead",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "batteries-included.lifecycle.memory.messages-read",
+      "evidence": ["result.batteriesIncluded.lifecycle.messagesRead"],
+      "input": { "backend": "memory" },
+      "operation": "runtime.batteries-included.lifecycle"
+    },
+    {
+      "assertions": [
+        {
+          "equals": true,
+          "field": "$.batteriesIncluded.lifecycle.disposed",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "batteries-included.lifecycle.memory.disposed",
+      "evidence": ["result.batteriesIncluded.lifecycle.disposed"],
+      "input": { "backend": "memory" },
+      "operation": "runtime.batteries-included.lifecycle"
+    },
+    {
+      "assertions": [
+        {
+          "equals": true,
+          "field": "$.batteriesIncluded.lifecycle.constructed",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "batteries-included.lifecycle.sqlite.constructed",
+      "evidence": ["result.batteriesIncluded.lifecycle.constructed"],
+      "input": { "backend": "sqlite" },
+      "operation": "runtime.batteries-included.lifecycle"
+    },
+    {
+      "assertions": [
+        {
+          "equals": true,
+          "field": "$.batteriesIncluded.lifecycle.turnCompleted",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "batteries-included.lifecycle.sqlite.turn-completed",
+      "evidence": ["result.batteriesIncluded.lifecycle.turnCompleted"],
+      "input": { "backend": "sqlite" },
+      "operation": "runtime.batteries-included.lifecycle"
+    },
+    {
+      "assertions": [
+        {
+          "equals": true,
+          "field": "$.batteriesIncluded.lifecycle.messagesRead",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "batteries-included.lifecycle.sqlite.messages-read",
+      "evidence": ["result.batteriesIncluded.lifecycle.messagesRead"],
+      "input": { "backend": "sqlite" },
+      "operation": "runtime.batteries-included.lifecycle"
+    },
+    {
+      "assertions": [
+        {
+          "equals": true,
+          "field": "$.batteriesIncluded.lifecycle.disposed",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "batteries-included.lifecycle.sqlite.disposed",
+      "evidence": ["result.batteriesIncluded.lifecycle.disposed"],
+      "input": { "backend": "sqlite" },
+      "operation": "runtime.batteries-included.lifecycle"
+    },
+    {
+      "assertions": [
+        {
+          "equals": true,
+          "field": "$.batteriesIncluded.lifecycle.constructed",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "batteries-included.lifecycle.postgres.constructed",
+      "evidence": ["result.batteriesIncluded.lifecycle.constructed"],
+      "input": { "backend": "postgres" },
+      "operation": "runtime.batteries-included.lifecycle"
+    },
+    {
+      "assertions": [
+        {
+          "equals": true,
+          "field": "$.batteriesIncluded.lifecycle.turnCompleted",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "batteries-included.lifecycle.postgres.turn-completed",
+      "evidence": ["result.batteriesIncluded.lifecycle.turnCompleted"],
+      "input": { "backend": "postgres" },
+      "operation": "runtime.batteries-included.lifecycle"
+    },
+    {
+      "assertions": [
+        {
+          "equals": true,
+          "field": "$.batteriesIncluded.lifecycle.messagesRead",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "batteries-included.lifecycle.postgres.messages-read",
+      "evidence": ["result.batteriesIncluded.lifecycle.messagesRead"],
+      "input": { "backend": "postgres" },
+      "operation": "runtime.batteries-included.lifecycle"
+    },
+    {
+      "assertions": [
+        {
+          "equals": true,
+          "field": "$.batteriesIncluded.lifecycle.disposed",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "batteries-included.lifecycle.postgres.disposed",
+      "evidence": ["result.batteriesIncluded.lifecycle.disposed"],
+      "input": { "backend": "postgres" },
+      "operation": "runtime.batteries-included.lifecycle"
+    }
+  ],
+  "packetId": "tuvren.shared.core",
+  "planId": "tuvren.framework.runtime-api.batteries-included",
+  "planVersion": "0.1.0"
+}

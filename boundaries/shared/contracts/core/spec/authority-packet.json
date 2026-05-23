@@ -79,6 +79,10 @@
     {
       "path": "boundaries/framework/conformance/plans/driver-api-extended.json",
       "format": "conformance-plan"
+    },
+    {
+      "path": "boundaries/framework/conformance/plans/runtime-api-batteries-included.json",
+      "format": "conformance-plan"
     }
   ],
   "generatedArtifacts": [
@@ -139,6 +143,11 @@
       "planId": "tuvren.framework.driver-api.extended",
       "planVersion": "0.1.0",
       "path": "boundaries/framework/conformance/plans/driver-api-extended.json"
+    },
+    {
+      "planId": "tuvren.framework.runtime-api.batteries-included",
+      "planVersion": "0.1.0",
+      "path": "boundaries/framework/conformance/plans/runtime-api-batteries-included.json"
     }
   ],
   "bindingSections": {
@@ -239,6 +248,10 @@
     {
       "kind": "conformance-plan",
       "target": "boundaries/framework/conformance/plans/driver-api-extended.json"
+    },
+    {
+      "kind": "conformance-plan",
+      "target": "boundaries/framework/conformance/plans/runtime-api-batteries-included.json"
     },
     {
       "kind": "freshness-check",

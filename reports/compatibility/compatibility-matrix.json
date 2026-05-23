@@ -246,6 +246,26 @@
             "runtime-callable-ext.tool-execute.state-tool-results-total-one",
             "runtime-callable-ext.validate-structured-output.resolution-fail",
             "runtime-callable-ext.validate-structured-output.resolution-type-string",
+            "schema-authoring.branch1-already-wrapped.has-schema-symbol",
+            "schema-authoring.branch2-zod-v4.has-schema-symbol",
+            "schema-authoring.branch2-zod-v4.json-schema-type",
+            "schema-authoring.branch2-zod-v4.validate-success",
+            "schema-authoring.branch3-standard-non-zod.has-schema-symbol",
+            "schema-authoring.branch3-standard-non-zod.validate-success",
+            "schema-authoring.branch4-zod-v3-compat.has-schema-symbol",
+            "schema-authoring.branch4-zod-v3-compat.routes-via-zod-safeParse",
+            "schema-authoring.branch5-lazy.has-schema-symbol",
+            "schema-authoring.branch5-lazy.json-schema-type-from-inner",
+            "schema-authoring.branch6-bool-false.json-schema-is-boolean",
+            "schema-authoring.branch6-bool-false.json-schema-value-false",
+            "schema-authoring.branch6-bool-true.json-schema-is-boolean",
+            "schema-authoring.branch6-bool-true.json-schema-value-true",
+            "schema-authoring.branch6-json-object.has-schema-symbol",
+            "schema-authoring.branch6-json-object.no-validate-fn",
+            "schema-authoring.branch6-json-object.passthrough-json-schema",
+            "schema-authoring.define-tool.json-schema-type",
+            "schema-authoring.define-tool.name-preserved",
+            "schema-authoring.define-tool.validate-passthrough-success",
             "runtime-api.approval-resolve.paused-resume",
             "runtime-api.branch-create.recovery",
             "runtime-api.cancel-execution.failure",
@@ -318,10 +338,10 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 308,
-            "totalChecks": 308,
-            "applicableChecks": 308,
-            "nonApplicableChecks": 0
+            "passedChecks": 328,
+            "totalChecks": 340,
+            "applicableChecks": 328,
+            "nonApplicableChecks": 12
           },
           "declaredCapabilities": [
             "framework.driver-api",
@@ -338,7 +358,7 @@
           ],
           "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.typescript-framework.json",
           "reportLabel": "TypeScript framework runtime baseline",
-          "reportStatus": "full_pass",
+          "reportStatus": "capability_subset_pass",
           "status": "pass",
           "suiteId": "tuvren.framework.promoted-authority",
           "suiteVersion": "0.1.0"
@@ -748,9 +768,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 0,
-            "totalChecks": 308,
+            "totalChecks": 340,
             "applicableChecks": 0,
-            "nonApplicableChecks": 308
+            "nonApplicableChecks": 340
           },
           "declaredCapabilities": [],
           "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.rust-framework.json",

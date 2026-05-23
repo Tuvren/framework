@@ -2,6 +2,7 @@
 
 ## 0. Version History & Changelog
 
+- v0.28.3 - Closed Epic AR: `createTuvren` factory, `TuvrenInstance` types, `[Symbol.asyncDispose]` cleanup wiring, curated re-exports on `@tuvren/runtime`, and full `runtime-api-batteries-included` conformance across memory, SQLite, and PostgreSQL backends. Active scope drops to AS-AT (19 tickets, 65 points). Block 2 is fully closed.
 - v0.28.2 - Reflected current repo reality after Epics AM, AN, AO, and AP landed: the active critical path now starts at Epic AQ, active scope drops to AQ-AT, and the package posture records `@tuvren/core` / `@tuvren/runtime` as the source-bearing surface with one-cycle compatibility shims for the retired contract handles and `@tuvren/runtime-core`.
 - v0.28.1 - Pruned inactive completed epic ticket bodies from the live ticket list and restored the stage-4 changelog to the required three-entry history shape; archived scope remains summarized in Project Phasing for continuity.
 - v0.28.0 - Opened the v0.27.0 constitutional revision execution chain (PRD v0.7.0, Architecture v0.7.0, TechSpec v0.27.0): Epic AM (kernel `thread.list` syscall + 28→30 count correction), Epic AN (`ExecutionHandle.awaitResult` promotion to base + `ExecutionResult` type), Epic AO (`TuvrenRuntime` durable-read surface + REPL kernel-inspector deletion), Epic AP (`@tuvren/core` consolidation + folding `runtime-core` into `@tuvren/runtime`), Epic AQ (Schema Authoring Helper with `defineTool` + `FlexibleSchema` + `asSchema`), Epic AR (`createTuvren` batteries-included factory), Epic AS (`@tuvren/mcp-client` MCP Client Container with stdio + HTTP/SSE transports), Epic AT (Reference Host consolidation, headless stdin mode, transcript capture/replay, `@tuvren/playground-host` retirement). Set Epic AM as the active critical path entry.
@@ -9,8 +10,8 @@
 
 ## 1. Executive Summary & Active Critical Path
 
-- **Total Active Story Points:** 95 (across 4 active epics — AQ 15, AR 15, AS 31, AT 34 — 28 atomic tickets total). Epics AM (32), AN (13), AO (26), and AP (37) are closed and remain in this live plan only as recently completed context for their downstream dependencies.
-- **Critical Path:** `(KRT-AQ001..AQ005, KRT-AR001..AR005) → KRT-AS001..AS009 → KRT-AT009`. Epic AR is sequenceable in parallel with Epic AQ until `KRT-AR005` gates `KRT-AS009`; AT001..AT003 can start after the already-closed AO/AP prerequisites, AT004..AT008 wait on their specific AR prerequisites and can run alongside AS, and only KRT-AT009 depends on KRT-AS009. The remaining longest single-thread path runs through the schema helper, the batteries-included factory, the MCP client, and the MCP-backed proving-host scenario.
+- **Total Active Story Points:** 65 (across 2 active epics — AS 31, AT 34 — 19 atomic tickets total). Epics AM (32), AN (13), AO (26), AP (37), AQ (15), and AR (15) are closed and remain in this live plan only as recently completed context for their downstream dependencies.
+- **Critical Path:** `KRT-AS001..AS009 → KRT-AT009`. AT001..AT003 can start after the already-closed AO/AP prerequisites, AT004..AT008 wait on their specific AR prerequisites and can run alongside AS, and only KRT-AT009 depends on KRT-AS009. The remaining longest single-thread path runs through the MCP client and the MCP-backed proving-host scenario.
 - **Planning Assumptions:** PRD v0.7.0, Architecture v0.7.0, and TechSpec v0.27.1 (ADR-034 through ADR-041) are approved upstream and govern this execution chain. The `docs/KrakenKernelSpecification.md` bump to v0.10 (count correction plus `thread.list`) and `docs/KrakenFrameworkSpecification.md` bump to v0.18 (base-handle `awaitResult`) are now landed. The `product proof gate`, `platform gate`, and `portability gate` from Epic AL remain the staged-gate baseline; this chain extends the productized TypeScript line without reopening Rust framework/product work. `@modelcontextprotocol/sdk@1.29.0`, `zod@4.4.3`, and `@standard-schema/spec@1.1.0` are the locked external dependency versions per TechSpec §1. The host-facing SDK consolidation into source-bearing `@tuvren/core` plus the slim `@tuvren/runtime` convenience package is landed; deprecated one-cycle shims preserve the old contract handles and `@tuvren/runtime-core` until the next minor cleanup.
 
 ### Brownfield Continuity Note
@@ -37,7 +38,7 @@
 ### Current Active Scope
 
 - **Block 1 — Boundary correctness gate (Epics AM, AN, AO):** closed. The kernel now exposes `thread.list` with the corrected 30-operation narrative, `ExecutionHandle` exposes base-handle `awaitResult`, and `TuvrenRuntime` exposes the five-method durable-read surface (`listThreads`, `listBranches`, `getTurnState`, `getTurnHistory`, `readBranchMessages`).
-- **Block 2 — Curated surface + ergonomics (Epics AP, AQ, AR):** partially closed. Epic AP landed `@tuvren/core`, folded the source-bearing runtime implementation into `@tuvren/runtime`, and left one-cycle deprecated shims for old handles. Active work now starts with the schema-agnostic `defineTool` helper (Zod / Standard Schema / wrapped JSON Schema with type inference) and the `createTuvren({...})` batteries-included factory.
+- **Block 2 — Curated surface + ergonomics (Epics AP, AQ, AR):** closed. Epic AP landed `@tuvren/core` and folded the source-bearing runtime implementation into `@tuvren/runtime`. Epic AQ added the schema-agnostic `defineTool` helper (Zod / Standard Schema / wrapped JSON Schema with type inference). Epic AR added the `createTuvren({...})` batteries-included factory with full lifecycle conformance across memory, SQLite, and PostgreSQL backends.
 - **Block 3 — Capability spikes (Epics AS, AT):** add `@tuvren/mcp-client` as a first-class tool source over stdio + HTTP/SSE transports; retire `@tuvren/playground-host`, rename internal REPL host modules to drop the playground naming, add headless stdin mode for the reference host, add JSONL transcript capture/replay.
 
 ### Future / Deferred Scope
@@ -769,7 +770,7 @@ And typecheck passes for hosts using both the curated re-exports and direct @tuv
 
 ### Epic AR — `createTuvren` Batteries-Included Factory (KRT)
 
-**Status:** Active — depends on Epic AP; sequenceable in parallel with Epic AQ
+**Status:** Done — all five tickets closed (KRT-AR001..AR005)
 
 **KRT-AR001 `CreateTuvrenOptions` and `TuvrenInstance` Types**
 - **Type:** Feature

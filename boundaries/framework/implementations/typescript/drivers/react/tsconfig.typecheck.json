@@ -67,7 +67,6 @@
       "@tuvren/runtime-api/tools": [
         "../../../../contracts/runtime-api/implementations/typescript/src/tools.ts"
       ],
-      "@tuvren/runtime": ["../../runtime/src/index.ts"],
       "@tuvren/runtime-core": ["../../runtime-core/src/index.ts"],
       "@tuvren/stream-agui": ["../../stream-agui/src/index.ts"],
       "@tuvren/stream-core": ["../../stream-core/src/index.ts"],
@@ -83,8 +82,6 @@
     "../../../../contracts/driver-api/implementations/typescript/src/**/*.ts",
     "../../../../../providers/contracts/provider-api/implementations/typescript/src/**/*.ts",
     "../../../../../shared/contracts/core-types/implementations/typescript/src/**/*.ts",
-    "../../runtime/src/**/*.ts",
-    "../../runtime/test/**/*.ts",
     "../../testkit/src/**/*.ts",
     "../../stream-agui/src/**/*.ts",
     "../../stream-core/src/**/*.ts",

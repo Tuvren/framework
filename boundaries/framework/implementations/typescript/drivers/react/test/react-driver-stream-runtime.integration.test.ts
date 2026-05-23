@@ -19,13 +19,11 @@
 import { describe, expect, test } from "bun:test";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type { TuvrenProvider } from "@tuvren/core/provider";
-import {
-  createDriverRegistry,
-  createTuvrenRuntime as createTuvrenRuntimeCore,
-} from "@tuvren/runtime";
 import { toAgUiEvents } from "@tuvren/stream-agui";
 import { teeTuvrenStreamEvents } from "@tuvren/stream-core";
 import { toSseFrames } from "@tuvren/stream-sse";
+import { createDriverRegistry } from "../../../runtime/src/lib/driver-registry.ts";
+import { createTuvrenRuntime as createTuvrenRuntimeCore } from "../../../runtime/src/lib/runtime-core.ts";
 import { createFakeKernelHarness } from "../../../runtime/test/fake-kernel.ts";
 import { createReActDriver, REACT_DRIVER_ID } from "../src/index.ts";
 import {

@@ -40,6 +40,14 @@ Use native tools as ecosystem truth and Nx as a wrapper.
 - Run `bun run verify` before claiming broad workspace readiness.
 - Run `bun run nx run <project>:test`, `:typecheck`, or `:build` for narrow TypeScript checks.
 
+## Services
+Manage long-lived devenv services once per session, not per command.
+
+- Run `devenv up -d` once at the start of any session that requires postgres or other devenv-managed services. Do not embed `devenv up` inside scripts, Nx targets, or runner commands that may be invoked multiple times.
+- `devenv up` is **not idempotent** — it exits with "Processes already running" if the devenv daemon is already active. Calling it a second time from a conformance runner or test harness will fail the entire run.
+- Conformance runners that need postgres must use `devenv shell -- <command>` to inherit the environment (socket paths, env vars) rather than calling `devenv up` themselves. The caller is responsible for starting the service before invoking any runner.
+- Run `devenv processes down` to stop all devenv-managed services cleanly at the end of a session or to recover from a stale daemon that is blocking a new `devenv up`.
+
 ## Code
 Keep public naming and boundaries clean.
 

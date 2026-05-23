@@ -25,7 +25,7 @@ import type {
   TuvrenPrompt,
   TuvrenProvider,
 } from "@tuvren/core/provider";
-import { createContextManifest as createRuntimeContextManifest } from "@tuvren/runtime";
+import { createContextManifest as createRuntimeContextManifest } from "../../../runtime/src/lib/context-manifest.ts";
 import { createReActDriver } from "../src/index.ts";
 import {
   createDriverExecutionContext,

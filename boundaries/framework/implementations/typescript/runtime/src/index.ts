@@ -15,6 +15,12 @@
  */
 
 // biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional curated host-facing SDK surface.
+export type { MemoryBackendOptions } from "@tuvren/backend-memory";
+export { createMemoryBackend } from "@tuvren/backend-memory";
+export type { PostgresBackendOptions } from "@tuvren/backend-postgres";
+export { createPostgresBackend } from "@tuvren/backend-postgres";
+export type { SqliteBackendOptions } from "@tuvren/backend-sqlite";
+export { createSqliteBackend } from "@tuvren/backend-sqlite";
 export type {
   EpochMs,
   HashString,
@@ -106,6 +112,8 @@ export {
   standardSchema,
   zodSchema,
 } from "@tuvren/core/tools";
+export type { ReActDriverOptions } from "@tuvren/driver-react";
+export { createReActDriver, REACT_DRIVER_ID } from "@tuvren/driver-react";
 export type {
   RuntimeBackend,
   RuntimeKernel,
@@ -124,6 +132,14 @@ export {
   createEmptyContextManifest,
   updateContextManifest,
 } from "./lib/context-manifest.js";
+export type {
+  BackendKind,
+  CreateTuvrenOptions,
+  DriverKind,
+  McpToolSource,
+  TuvrenInstance,
+} from "./lib/create-tuvren.js";
+export { createTuvren } from "./lib/create-tuvren.js";
 export { createDriverRegistry } from "./lib/driver-registry.js";
 export type { ExtensionStateUpdate } from "./lib/extension-runtime.js";
 export {
