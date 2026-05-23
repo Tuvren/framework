@@ -18,7 +18,10 @@
 export type { MemoryBackendOptions } from "@tuvren/backend-memory";
 export { createMemoryBackend } from "@tuvren/backend-memory";
 export type { PostgresBackendOptions } from "@tuvren/backend-postgres";
-export { createPostgresBackend } from "@tuvren/backend-postgres";
+export {
+  createPostgresBackend,
+  destroyPostgresBackend,
+} from "@tuvren/backend-postgres";
 export type { SqliteBackendOptions } from "@tuvren/backend-sqlite";
 export { createSqliteBackend } from "@tuvren/backend-sqlite";
 export type {

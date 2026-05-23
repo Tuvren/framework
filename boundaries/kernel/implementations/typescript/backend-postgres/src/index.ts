@@ -16,4 +16,7 @@
 
 export type { PostgresBackendOptions } from "./lib/postgres-backend.js";
 // biome-ignore lint/performance/noBarrelFile: This package entrypoint is the intentional public contract surface.
-export { createPostgresBackend } from "./lib/postgres-backend.js";
+export {
+  createPostgresBackend,
+  destroyPostgresBackend,
+} from "./lib/postgres-backend.js";

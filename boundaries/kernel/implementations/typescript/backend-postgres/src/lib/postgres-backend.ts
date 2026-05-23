@@ -288,6 +288,25 @@ export function createPostgresBackend(
   return new PostgresBackend(options);
 }
 
+/**
+ * Drops the postgres schema named in `options.schemaName` using a fresh
+ * short-lived connection. Safe to call after the backend's own pool has been
+ * closed. Intended for test/conformance teardown of throwaway schemas.
+ */
+export async function destroyPostgresBackend(
+  options: PostgresBackendOptions
+): Promise<void> {
+  const schemaName = normalizeSchemaName(options.schemaName);
+  const cleanupClient = createPostgresClient(options);
+  try {
+    await cleanupClient.unsafe(
+      `DROP SCHEMA IF EXISTS ${quoteIdentifier(schemaName)} CASCADE`
+    );
+  } finally {
+    await cleanupClient.end({ timeout: 0 });
+  }
+}
+
 function createRepositories(
   state: BackendState,
   now: () => number,

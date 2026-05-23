@@ -18,8 +18,11 @@ import { randomUUID } from "node:crypto";
 import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { CreateTuvrenOptions } from "@tuvren/runtime";
-import { createTuvren } from "@tuvren/runtime";
+import type {
+  CreateTuvrenOptions,
+  PostgresBackendOptions,
+} from "@tuvren/runtime";
+import { createTuvren, destroyPostgresBackend } from "@tuvren/runtime";
 import {
   type AdapterProjection,
   collectValues,
@@ -43,7 +46,8 @@ async function runBatteriesIncludedLifecycle(
   input: unknown
 ): Promise<AdapterProjection> {
   const backendKind = readBackendKind(input);
-  const { backendSpec, cleanupPath } = buildBackendSpec(backendKind);
+  const { backendSpec, cleanupPath, cleanupBackend } =
+    buildBackendSpec(backendKind);
   const provider = createScenarioProvider(
     [BATTERIES_INCLUDED_MOCK_RESPONSE],
     () => undefined
@@ -82,6 +86,9 @@ async function runBatteriesIncludedLifecycle(
     if (cleanupPath !== undefined) {
       await rm(cleanupPath, { force: true, recursive: true });
     }
+    if (cleanupBackend !== undefined) {
+      await cleanupBackend();
+    }
   }
 
   return {
@@ -115,35 +122,46 @@ function readBackendKind(input: unknown): string {
 function buildBackendSpec(kind: string): {
   backendSpec: CreateTuvrenOptions["backend"];
   cleanupPath: string | undefined;
+  cleanupBackend: (() => Promise<void>) | undefined;
 } {
   switch (kind) {
     case "memory":
-      return { backendSpec: "memory", cleanupPath: undefined };
+      return {
+        backendSpec: "memory",
+        cleanupBackend: undefined,
+        cleanupPath: undefined,
+      };
     case "sqlite": {
       const dir = join(tmpdir(), `tuvren-bi-${randomUUID()}`);
       const databasePath = join(dir, "kernel.sqlite");
       return {
         backendSpec: { kind: "sqlite", options: { databasePath } },
+        cleanupBackend: undefined,
         cleanupPath: dir,
       };
     }
     case "postgres": {
+      if (process.env.PGHOST === undefined) {
+        throw new Error(
+          "batteries-included.lifecycle postgres: PGHOST is not set. " +
+            "Start the devenv postgres service before running this conformance lane."
+        );
+      }
       const schemaName = `bi_${randomUUID().replaceAll("-", "_")}`;
+      const pgOptions: PostgresBackendOptions = {
+        database: process.env.PGDATABASE ?? "tuvren_runtime",
+        host: process.env.PGHOST,
+        password: process.env.PGPASSWORD,
+        port:
+          process.env.PGPORT === undefined
+            ? undefined
+            : Number(process.env.PGPORT),
+        schemaName,
+        username: process.env.PGUSER,
+      };
       return {
-        backendSpec: {
-          kind: "postgres",
-          options: {
-            database: process.env.PGDATABASE ?? "tuvren_runtime",
-            host: process.env.PGHOST,
-            password: process.env.PGPASSWORD,
-            port:
-              process.env.PGPORT === undefined
-                ? undefined
-                : Number(process.env.PGPORT),
-            schemaName,
-            username: process.env.PGUSER,
-          },
-        },
+        backendSpec: { kind: "postgres", options: pgOptions },
+        cleanupBackend: () => destroyPostgresBackend(pgOptions),
         cleanupPath: undefined,
       };
     }
