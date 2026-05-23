@@ -86,14 +86,25 @@ export { assertTuvrenModelResponse } from "@tuvren/core/provider";
 export type {
   ApprovalRequest,
   ApprovalResponse,
+  FlexibleSchema,
+  LazySchema,
   PendingToolCall,
+  Schema,
+  StandardSchema,
   ToolExecutionResult,
   TuvrenToolDefinition,
+  ZodSchema,
 } from "@tuvren/core/tools";
 export {
+  asSchema,
   assertApprovalRequest,
   assertApprovalResponse,
   assertTuvrenToolDefinition,
+  defineTool,
+  jsonSchema,
+  schemaSymbol,
+  standardSchema,
+  zodSchema,
 } from "@tuvren/core/tools";
 export type {
   RuntimeBackend,

@@ -36,11 +36,18 @@
         "command": "bunx --bun @biomejs/biome check boundaries/shared/contracts/core/implementations/typescript"
       }
     },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "boundaries/shared/contracts/core/implementations/typescript",
+        "command": "bun test"
+      }
+    },
     "typecheck": {
       "executor": "nx:run-commands",
       "options": {
         "cwd": "boundaries/shared/contracts/core/implementations/typescript",
-        "command": "tsc --project tsconfig.lib.json --noEmit --pretty false"
+        "command": "tsc --project tsconfig.lib.json --noEmit --pretty false && tsc --project tsconfig.spec.json --noEmit --pretty false"
       }
     }
   }

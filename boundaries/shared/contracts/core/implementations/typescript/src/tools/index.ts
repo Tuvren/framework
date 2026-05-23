@@ -50,3 +50,18 @@ export type {
   ValidationErrorPayload,
   ValidationResult,
 } from "../lib/runtime-contract-shapes.js";
+export type {
+  FlexibleSchema,
+  LazySchema,
+  Schema,
+  StandardSchema,
+  ZodSchema,
+} from "../lib/schema-authoring.js";
+export {
+  asSchema,
+  defineTool,
+  jsonSchema,
+  schemaSymbol,
+  standardSchema,
+  zodSchema,
+} from "../lib/schema-authoring.js";

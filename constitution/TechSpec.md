@@ -354,7 +354,7 @@
     },
   ): TuvrenToolDefinition;
   ```
-  with `FlexibleSchema<INPUT>` defined as `Schema<INPUT> | ZodSchema<INPUT> | StandardSchema<INPUT> | LazySchema<INPUT>` where `Schema<INPUT>` is a Tuvren-branded wrapper carrying `_type: INPUT` and `jsonSchema: TuvrenJsonSchema`. The centralized `asSchema(schema)` normalizer routes by **fixed precedence**:
+  with `FlexibleSchema<INPUT>` defined as `Schema<INPUT> | ZodSchema<INPUT> | StandardSchema<INPUT> | LazySchema<INPUT> | TuvrenJsonSchema` where `Schema<INPUT>` is a Tuvren-branded wrapper carrying `_type: INPUT` and `jsonSchema: TuvrenJsonSchema`, and the bare `TuvrenJsonSchema` member is the legacy path that produces `INPUT = unknown`. The centralized `asSchema(schema)` normalizer routes by **fixed precedence**:
   1. Already-wrapped: `schemaSymbol in schema` → use directly
   2. Zod v4 marker: `'_zod' in schema` → wrap with `zodSchema(...)`
   3. Standard Schema marker: `'~standard' in schema` (and vendor is not `'zod'`) → wrap with `standardSchema(...)`
@@ -2535,14 +2535,11 @@ export interface Schema<T = unknown> {
 // library directly.
 export type ZodSchema<T = unknown> =
   | import("zod/v3").Schema<T, import("zod/v3").ZodTypeDef, unknown>
-  | import("zod/v4").$ZodType<T, unknown>;
+  | import("zod/v4").ZodType<T>;
 
 export type StandardSchema<T = unknown> = StandardSchemaV1<unknown, T>;
 
-export type LazySchema<T = unknown> = () =>
-  | Schema<T>
-  | ZodSchema<T>
-  | StandardSchema<T>;
+export type LazySchema<T = unknown> = () => FlexibleSchema<T>;
 
 export type FlexibleSchema<T = unknown> =
   | Schema<T>
