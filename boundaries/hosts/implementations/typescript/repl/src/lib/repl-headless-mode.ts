@@ -115,6 +115,14 @@ export async function runReplHeadlessMode(
         });
         await Promise.all(transcriptWrites);
         const output = result.output ?? readHeadlessStreamText(canonicalEvents);
+        await options.transcriptWriter?.writeEntry({
+          ...(result.exit === true ? { exit: true } : {}),
+          ordinal: currentOrdinal,
+          output: output ?? null,
+          recordKind: "output",
+          recordedAtMs: now(),
+          v: 1,
+        });
         const durableRead = readHeadlessDurableReadRecord(
           input,
           currentOrdinal,
@@ -126,14 +134,6 @@ export async function runReplHeadlessMode(
           await options.transcriptWriter?.writeEntry(durableRead);
         }
 
-        await options.transcriptWriter?.writeEntry({
-          ...(result.exit === true ? { exit: true } : {}),
-          ordinal: currentOrdinal,
-          output: output ?? null,
-          recordKind: "output",
-          recordedAtMs: now(),
-          v: 1,
-        });
         writeHeadlessOutput(options.output, {
           ...(result.exit === true ? { exit: true } : {}),
           ordinal: currentOrdinal,

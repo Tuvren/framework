@@ -323,6 +323,14 @@ async function writeTranscriptOutput(
     return false;
   }
 
+  await transcriptWriter?.writeEntry({
+    ...(result.exit === true ? { exit: true } : {}),
+    ordinal,
+    output: result.output ?? null,
+    recordKind: "output",
+    recordedAtMs: Date.now(),
+    v: 1,
+  });
   const durableRead = readTranscriptDurableReadRecord(
     input,
     ordinal,
@@ -333,15 +341,6 @@ async function writeTranscriptOutput(
   if (durableRead !== undefined) {
     await transcriptWriter?.writeEntry(durableRead);
   }
-
-  await transcriptWriter?.writeEntry({
-    ...(result.exit === true ? { exit: true } : {}),
-    ordinal,
-    output: result.output ?? null,
-    recordKind: "output",
-    recordedAtMs: Date.now(),
-    v: 1,
-  });
 
   return true;
 }

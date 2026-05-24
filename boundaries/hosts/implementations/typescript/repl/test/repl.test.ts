@@ -2141,7 +2141,26 @@ describe("repl host scenarios", () => {
       entries.push(entry);
     }
 
-    expect(entries.map((entry) => entry.recordKind)).toContain("durable-read");
+    expect(entries.map((entry) => entry.recordKind)).toEqual([
+      "input",
+      "stream-event",
+      "stream-event",
+      "stream-event",
+      "stream-event",
+      "stream-event",
+      "stream-event",
+      "stream-event",
+      "stream-event",
+      "stream-event",
+      "stream-event",
+      "stream-event",
+      "stream-event",
+      "stream-event",
+      "output",
+      "input",
+      "output",
+      "durable-read",
+    ]);
     expect(
       entries.some(
         (entry) =>
@@ -2470,8 +2489,26 @@ describe("repl host scenarios", () => {
     ).toBe(true);
   });
 
-  test("records non-deterministic replay output without asserting equality", async () => {
+  test("asserts deterministic commands in non-deterministic transcripts", async () => {
     const transcript = await createStatusReplayTranscript({
+      outputOverride: "{}",
+      providerMode: "ai-sdk-mock",
+    });
+    const report = await replayReplTranscript(transcript);
+
+    expect(report.status).toBe("failed");
+    expect(report).toMatchObject({
+      deterministicAsserted: true,
+      inputCount: 1,
+      nonDeterministicRecorded: false,
+      providerMode: "ai-sdk-mock",
+    });
+    expect(report.mismatches[0]?.recordKind).toBe("output");
+  });
+
+  test("records non-deterministic freeform replay output without asserting equality", async () => {
+    const transcript = await createFreeformReplayTranscript({
+      includeStreamEvents: true,
       outputOverride: "{}",
       providerMode: "ai-sdk-mock",
     });
@@ -2480,7 +2517,6 @@ describe("repl host scenarios", () => {
     expect(report).toMatchObject({
       deterministicAsserted: false,
       inputCount: 1,
-      mismatches: [],
       nonDeterministicRecorded: true,
       providerMode: "ai-sdk-mock",
       status: "passed",
@@ -2630,6 +2666,8 @@ async function createStatusReplayTranscript(input: {
 async function createFreeformReplayTranscript(input: {
   durableReads?: ReplTranscriptEntry[];
   includeStreamEvents: boolean;
+  outputOverride?: string;
+  providerMode?: string;
 }) {
   const header = {
     ...createTranscriptHeaderFixture(),
@@ -2637,7 +2675,7 @@ async function createFreeformReplayTranscript(input: {
       backend: {
         kind: "memory",
       },
-      providerMode: "fixture",
+      providerMode: input.providerMode ?? "fixture",
     },
   } satisfies ReplTranscriptHeader;
   const shell = createReplShell({
@@ -2672,16 +2710,16 @@ async function createFreeformReplayTranscript(input: {
             })}\n`
         )
       : []),
-    ...(input.durableReads ?? []).map(
-      (entry) => `${serializeReplTranscriptRecord(entry)}\n`
-    ),
     `${serializeReplTranscriptRecord({
       ordinal: 0,
-      output: "REPL streaming complete.",
+      output: input.outputOverride ?? "REPL streaming complete.",
       recordedAtMs: 2100,
       recordKind: "output",
       v: 1,
     })}\n`,
+    ...(input.durableReads ?? []).map(
+      (entry) => `${serializeReplTranscriptRecord(entry)}\n`
+    ),
   ];
 
   return await readReplTranscriptFromLines(lines.map((line) => line.trimEnd()));

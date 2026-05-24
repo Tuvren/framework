@@ -50,6 +50,7 @@ export interface ReplReplayReport {
   nonDeterministicRecorded: boolean;
   providerMode: string;
   status: "failed" | "passed";
+  warnings: string[];
 }
 
 export async function replayReplTranscript(
@@ -63,9 +64,13 @@ export async function replayReplTranscript(
   const host = await createReplHostUsingCreateTuvren(replayConfig);
   const shell = createReplShellFromHost(replayConfig, host);
   const mismatches: ReplReplayMismatch[] = [];
+  let deterministicAsserted = false;
+  let nonDeterministicRecorded = false;
 
   try {
     for (const group of groups) {
+      const assertDeterministic =
+        deterministic || isDeterministicReplayInput(group.input.input);
       const liveEvents: TuvrenStreamEvent[] = [];
       const result = await runReplayInput(shell, group.input.input, liveEvents);
       const output = result.output ?? readReplayStreamText(liveEvents);
@@ -78,10 +83,13 @@ export async function replayReplTranscript(
         v: 1,
       } satisfies ReplTranscriptOutputRecord;
 
-      if (deterministic) {
+      if (assertDeterministic) {
+        deterministicAsserted = true;
         compareRecordedOutput(group, liveOutput, mismatches);
         compareRecordedStreamEvents(group, liveEvents, mismatches);
         compareRecordedDurableReads(group, result.output, mismatches);
+      } else {
+        nonDeterministicRecorded = true;
       }
     }
   } finally {
@@ -90,12 +98,13 @@ export async function replayReplTranscript(
 
   return {
     backend: transcript.header.config.backend,
-    deterministicAsserted: deterministic,
+    deterministicAsserted,
     inputCount: groups.length,
     mismatches,
-    nonDeterministicRecorded: !deterministic,
+    nonDeterministicRecorded,
     providerMode: transcript.header.config.providerMode,
     status: mismatches.length === 0 ? "passed" : "failed",
+    warnings: readReplayWarnings(transcript.header),
   };
 }
 
@@ -122,41 +131,112 @@ async function collectReplayGroups(
   entries: AsyncIterable<ReplTranscriptEntry>
 ): Promise<ReplayGroup[]> {
   const groups = new Map<number, ReplayGroup>();
+  let expectedInputOrdinal = 0;
 
   for await (const entry of entries) {
     if (entry.recordKind === "input") {
-      if (groups.has(entry.ordinal)) {
-        throw new Error(`duplicate transcript input ordinal ${entry.ordinal}`);
-      }
-
-      groups.set(entry.ordinal, {
-        durableReads: [],
-        input: entry,
-        streamEvents: [],
-      });
+      appendReplayInputGroup(groups, entry, expectedInputOrdinal);
+      expectedInputOrdinal += 1;
       continue;
     }
 
-    const group = groups.get(entry.ordinal);
-
-    if (group === undefined) {
-      throw new Error(
-        `transcript entry ordinal ${entry.ordinal} has no preceding input`
-      );
-    }
-
-    if (entry.recordKind === "output") {
-      group.output = entry;
-    } else if (entry.recordKind === "durable-read") {
-      group.durableReads.push(entry);
-    } else if (entry.recordKind === "stream-event") {
-      group.streamEvents.push(entry);
-    }
+    appendReplayGroupEntry(readReplayGroup(groups, entry), entry);
   }
 
-  return [...groups.values()].sort(
-    (left, right) => left.input.ordinal - right.input.ordinal
-  );
+  return [...groups.values()];
+}
+
+function appendReplayInputGroup(
+  groups: Map<number, ReplayGroup>,
+  entry: ReplTranscriptInputRecord,
+  expectedOrdinal: number
+): void {
+  if (groups.has(entry.ordinal)) {
+    throw new Error(`duplicate transcript input ordinal ${entry.ordinal}`);
+  }
+
+  if (entry.ordinal !== expectedOrdinal) {
+    throw new Error(
+      `transcript input ordinal ${entry.ordinal} must be ${expectedOrdinal}`
+    );
+  }
+
+  groups.set(entry.ordinal, {
+    durableReads: [],
+    input: entry,
+    streamEvents: [],
+  });
+}
+
+function readReplayGroup(
+  groups: Map<number, ReplayGroup>,
+  entry: Exclude<ReplTranscriptEntry, ReplTranscriptInputRecord>
+): ReplayGroup {
+  const group = groups.get(entry.ordinal);
+
+  if (group === undefined) {
+    throw new Error(
+      `transcript entry ordinal ${entry.ordinal} has no preceding input`
+    );
+  }
+
+  return group;
+}
+
+function appendReplayGroupEntry(
+  group: ReplayGroup,
+  entry: Exclude<ReplTranscriptEntry, ReplTranscriptInputRecord>
+): void {
+  switch (entry.recordKind) {
+    case "durable-read":
+      appendReplayDurableRead(group, entry);
+      return;
+    case "output":
+      appendReplayOutput(group, entry);
+      return;
+    case "stream-event":
+      appendReplayStreamEvent(group, entry);
+      return;
+    default:
+      throw new Error("unsupported transcript replay entry");
+  }
+}
+
+function appendReplayOutput(
+  group: ReplayGroup,
+  entry: ReplTranscriptOutputRecord
+): void {
+  if (group.output !== undefined) {
+    throw new Error(`duplicate transcript output ordinal ${entry.ordinal}`);
+  }
+
+  group.output = entry;
+}
+
+function appendReplayDurableRead(
+  group: ReplayGroup,
+  entry: ReplTranscriptDurableReadRecord
+): void {
+  if (group.output === undefined) {
+    throw new Error(
+      `transcript durable-read ordinal ${entry.ordinal} must follow output`
+    );
+  }
+
+  group.durableReads.push(entry);
+}
+
+function appendReplayStreamEvent(
+  group: ReplayGroup,
+  entry: ReplTranscriptStreamEventRecord
+): void {
+  if (group.output !== undefined) {
+    throw new Error(
+      `transcript stream-event ordinal ${entry.ordinal} must precede output`
+    );
+  }
+
+  group.streamEvents.push(entry);
 }
 
 function compareRecordedOutput(
@@ -308,6 +388,26 @@ function createReplayConfig(header: ReplTranscriptHeader): ReplConfig {
     systemPrompt: header.config.systemPrompt,
     ...readPostgresOptions(backend.options),
   };
+}
+
+function isDeterministicReplayInput(input: string): boolean {
+  return (
+    input === ".events show" ||
+    input === ".help" ||
+    input === ".messages show" ||
+    input === ".status" ||
+    input === ".thread new" ||
+    input === ".thread show" ||
+    input === ".exit"
+  );
+}
+
+function readReplayWarnings(header: ReplTranscriptHeader): string[] {
+  return header.runtimeVersion === "@tuvren/runtime@0.0.0"
+    ? []
+    : [
+        `transcript runtimeVersion ${header.runtimeVersion} differs from @tuvren/runtime@0.0.0`,
+      ];
 }
 
 function serializeReplayComparableStreamEvent(
