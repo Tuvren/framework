@@ -1060,7 +1060,7 @@
           "kind": "resultField"
         },
         {
-          "equals": 1,
+          "equals": 2,
           "field": "$.provingHost.replay.inputCount",
           "kind": "resultField"
         },
@@ -1103,7 +1103,7 @@
       "input": {
         "backend": "memory",
         "providerMode": "fixture",
-        "stdin": "Hello from conformance replay\n"
+        "stdin": ".thread new\nHello from conformance replay\n"
       },
       "operation": "runtime.proving-host.headless-transcript-replay"
     },

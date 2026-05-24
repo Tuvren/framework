@@ -464,7 +464,11 @@ function isHeadlessFailureJsonl(
   argv: readonly string[],
   env: Record<string, string | undefined>
 ): boolean {
-  return argv.includes("--headless") || isHeadlessMode(env);
+  return (
+    argv.includes("--headless") ||
+    argv.includes("--replay") ||
+    isHeadlessMode(env)
+  );
 }
 
 function shouldUseAnsiColors(

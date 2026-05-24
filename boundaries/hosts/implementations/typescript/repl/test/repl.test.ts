@@ -2185,6 +2185,50 @@ describe("repl host scenarios", () => {
     });
   });
 
+  test("CLI replays deterministic command transcripts with volatile JSON ids", async () => {
+    const transcriptPath = join(
+      tmpdir(),
+      `tuvren-repl-thread-replay-${Date.now()}.jsonl`
+    );
+    const recordResult = await runCliProcess({
+      argv: [
+        "--backend",
+        "memory",
+        "--provider",
+        "fixture",
+        "--headless",
+        "--record",
+        transcriptPath,
+      ],
+      stdin: ".thread new\n",
+    });
+    const replayResult = await runCliProcess({
+      argv: ["--replay", transcriptPath],
+    });
+
+    expect(recordResult.exitCode).toBe(0);
+    expect(replayResult.exitCode).toBe(0);
+    expect(JSON.parse(replayResult.stdout)).toMatchObject({
+      deterministicAsserted: true,
+      inputCount: 1,
+      mismatches: [],
+      providerMode: "fixture",
+      status: "passed",
+    });
+  });
+
+  test("CLI replay failures are structured when transcript cannot be opened", async () => {
+    const result = await runCliProcess({
+      argv: ["--replay", join(tmpdir(), `missing-${Date.now()}.jsonl`)],
+    });
+    const records = parseHeadlessOutputRecords(result.stdout);
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toBe("");
+    expect(records).toHaveLength(1);
+    expect(records[0]?.error?.message).toContain("ENOENT");
+  });
+
   test("CLI emits JSONL errors for headless startup failures", async () => {
     const result = await runCliProcess({
       argv: [

@@ -180,8 +180,8 @@ function compareRecordedOutput(
     ...recorded,
     recordedAtMs: liveOutput.recordedAtMs,
   } satisfies ReplTranscriptOutputRecord;
-  const expected = serializeReplTranscriptRecord(normalizedRecorded);
-  const actual = serializeReplTranscriptRecord(liveOutput);
+  const expected = serializeReplayComparableOutput(normalizedRecorded);
+  const actual = serializeReplayComparableOutput(liveOutput);
 
   if (expected !== actual) {
     mismatches.push({
@@ -190,6 +190,32 @@ function compareRecordedOutput(
       ordinal: group.input.ordinal,
       recordKind: "output",
     });
+  }
+}
+
+function serializeReplayComparableOutput(
+  output: ReplTranscriptOutputRecord
+): string {
+  return serializeReplTranscriptRecord({
+    ...output,
+    output:
+      output.output === null ? null : normalizeReplayOutputText(output.output),
+  });
+}
+
+function normalizeReplayOutputText(output: string): string {
+  const parsed = parseJsonOutput(output);
+
+  return parsed === undefined
+    ? output
+    : JSON.stringify(normalizeReplayEvent(parsed));
+}
+
+function parseJsonOutput(output: string): unknown | undefined {
+  try {
+    return JSON.parse(output);
+  } catch {
+    return undefined;
   }
 }
 
@@ -316,7 +342,11 @@ function normalizeReplayEvent(value: unknown): unknown {
 
 function isVolatileReplayEventKey(key: string): boolean {
   return (
+    key === "branchId" ||
+    key === "headTurnNodeHash" ||
     key === "messageId" ||
+    key === "rootTurnNodeHash" ||
+    key === "rootTurnTreeHash" ||
     key === "threadId" ||
     key === "timestamp" ||
     key === "turnId" ||
