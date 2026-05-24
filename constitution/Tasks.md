@@ -1411,13 +1411,14 @@ And the cross-surface absence assertions remain the responsibility of KRT-AW004
 - **Effort:** 5
 - **Dependencies:** `KRT-AW001`, `KRT-AW002`, `KRT-AW003`, `KRT-AV004`
 - **Capability / Contract Mapping:** PRD `CAP-P0-055`; TechSpec ADR-044, §5.6.3
-- **Description:** Add a `secret-isolation` check set to `providers-mcp-client.json`, `framework-operational-telemetry.json`, and `runtime-api-callables-extended.json`. The fixture configures a provider key and an MCP bearer token, runs a turn that persists state, emits telemetry, and records a transcript, then asserts none of the configured secret values appear in persisted kernel records, captured telemetry attributes or error summaries, or the recorded transcript.
+- **Description:** Add a `secret-isolation` check set to `providers-mcp-client.json`, `framework-operational-telemetry.json`, and `runtime-api-callables-extended.json`. The fixture configures a provider key plus MCP bearer-auth and header-auth secrets, runs a turn that persists state, emits canonical stream events and telemetry, and records a transcript, then asserts none of the configured secret values appear in persisted kernel records, captured canonical stream events, captured telemetry attributes or error summaries, or the recorded transcript.
 - **Acceptance Criteria (Gherkin):**
 ```gherkin
 Given the telemetry secret-screening helpers, transcript redactor, and edge-confinement fixtures exist
 When the secret-isolation check set is added to the MCP, telemetry, and runtime-api plans
-Then a fixture configures a provider key and an MCP bearer token and runs a turn
+Then a fixture configures a provider key plus MCP bearer-auth and header-auth secrets and runs a turn
 And the check set asserts neither secret value appears in any persisted kernel record
+And the check set asserts neither secret value appears in captured canonical stream events
 And the check set asserts neither secret value appears in captured telemetry attributes or error summaries
 And the check set asserts neither secret value appears in the recorded transcript
 And bun run conformance includes the new check set automatically
@@ -1454,6 +1455,7 @@ And the canonical turn.end event marks the failed terminal state while the bound
 And a bounded-execution telemetry event is emitted when a sink is configured
 And a hung model call or tool execution cannot outlive maxWallClockMs because deadline or cancellation is propagated into the in-flight work
 And parallel tool execution never exceeds maxConcurrentToolCalls because the framework throttles to the configured cap
+And when AgentConfig.maxParallelToolCalls or defaultMaxParallelToolCalls is present, the effective parallel-tool limit is clamped to maxConcurrentToolCalls
 And unset bound fields take the documented safe defaults
 And invalid non-finite or non-positive bound values are rejected at construction time
 And supplying both top-level bounds and runtimeOptions.bounds is rejected as invalid_createtuvren_options
@@ -1472,6 +1474,7 @@ Given the framework bounds guard is implemented
 When the runtime-api-execution-bounds check set is added
 Then a runaway aimock driver breaching maxIterations, maxToolCalls, or maxWallClockMs yields a failed result with code execution_bound_exceeded and correct details
 And maxConcurrentToolCalls is enforced by throttling parallel tool execution to the configured cap
+And AgentConfig.maxParallelToolCalls and defaultMaxParallelToolCalls are clamped by maxConcurrentToolCalls rather than bypassing it
 And invalid non-finite or non-positive bound configuration is rejected
 And a within-bounds control turn completes normally
 And bun run conformance includes the new check set automatically
@@ -1539,6 +1542,6 @@ The execution chain is not closed until every applicable statement below is true
 - The durability and recovery guarantees are verified under fault injection: a testkit-only fault-injection seam (`createFaultInjectingBackend`) drives the `kernel-crash-recovery` check set; SQLite and PostgreSQL pass the durable crash-recovery subset; `memory` passes the in-process atomicity and concurrency subset; no torn or partial lineage is observable after any injected fault; and the seam is never reachable from any production path.
 - A first-class operational telemetry surface (`@tuvren/core/telemetry` `TuvrenTelemetrySink`) emits lineage-keyed spans and events at turn/iteration/model/tool/checkpoint/recovery/bounded-execution/error points, defaults to `NoopTelemetrySink`, isolates a throwing sink, and is conformance-covered by `framework-operational-telemetry.json` through deterministic steady-state plus targeted recovery fixtures; `@tuvren/telemetry-otel` provides the vendor-neutral OpenTelemetry projection as a standing implementation-specific exception while the semconv vocabulary remains portable authority.
 - The framework enforces execution bounds (`maxIterations`, `maxToolCalls`, `maxWallClockMs`) above driver discretion, including deadline or cancellation propagation so in-flight model/tool work cannot outlive `maxWallClockMs`; breaching a hard-stop bound yields a `failed` `ExecutionResult` with code `execution_bound_exceeded`, a failed terminal `turn.end` event, and a bounded-execution telemetry event, with the bound metadata carried by the `ExecutionResult` and telemetry rather than the canonical event shape, verified by `runtime-api-execution-bounds`. `maxConcurrentToolCalls` is enforced as a throttle on parallel tool execution, and invalid non-finite or non-positive bound configuration is rejected.
-- Secret isolation is enforced and verified: credentials are confined to the Provider Gateway and MCP Client edges; the durable, telemetry, and transcript surfaces are credential-free zones; transcript headers redact credential-shaped backend options; the telemetry secret-screening helpers exclude credential-shaped attributes and sanitize telemetry error summaries; and the `secret-isolation` check set asserts that a configured provider key and MCP bearer token appear in no persisted record, no captured telemetry attribute or error summary, and no recorded transcript.
+- Secret isolation is enforced and verified: credentials are confined to the Provider Gateway and MCP Client edges; the durable, canonical-stream, telemetry, and transcript surfaces are credential-free zones; transcript headers redact credential-shaped backend options; the telemetry secret-screening helpers exclude credential-shaped attributes and sanitize telemetry error summaries; and the `secret-isolation` check set asserts that a configured provider key plus MCP bearer-auth and header-auth secrets appear in no persisted record, no captured canonical stream event, no captured telemetry attribute or error summary, and no recorded transcript.
 - The trust-boundary guarantees are verified: approval-gated tool work is non-bypassable, and untrusted MCP/tool inputs are validated before execution with failures surfaced as agent-visible results.
 - `docs/KrakenKernelSpecification.md` states the Crash Recovery Invariant and `docs/KrakenFrameworkSpecification.md` states the Execution Bounds guard that the conformance plans verify; `bun run verify` exits zero from a clean checkout after the production-trust block closes.
