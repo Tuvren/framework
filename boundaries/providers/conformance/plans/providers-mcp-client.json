@@ -1,0 +1,135 @@
+{
+  "planId": "tuvren.providers.mcp-client",
+  "planVersion": "0.1.0",
+  "packetId": "tuvren.providers.mcp",
+  "applicability": {
+    "capabilities": ["providers.mcp-client"]
+  },
+  "checks": [
+    {
+      "checkId": "providers.mcp.translation-rules-and-transport-parity",
+      "operation": "providers.mcp-client.translation-rules",
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.mcpClient.stdio.toolNames",
+          "contains": "mcp.echo"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.mcpClient.stdio.echoDescription",
+          "equals": "Echoes back the input string"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.mcpClient.stdio.echoInputSchemaType",
+          "equals": "object"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.mcpClient.stdio.echoMetadataOriginalName",
+          "equals": "echo"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.mcpClient.parity.toolNamesEqual",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.mcpClient.parity.echoOutputEqual",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.mcpClient.parity.structuredOutputEqual",
+          "equals": true
+        }
+      ],
+      "evidence": [
+        "mcpClient.stdio.toolNames",
+        "mcpClient.stdio.echoDescription",
+        "mcpClient.stdio.echoInputSchemaType",
+        "mcpClient.stdio.echoMetadataOriginalName",
+        "mcpClient.parity.toolNamesEqual",
+        "mcpClient.parity.echoOutputEqual",
+        "mcpClient.parity.structuredOutputEqual"
+      ]
+    },
+    {
+      "checkId": "providers.mcp.auth-headers",
+      "operation": "providers.mcp-client.auth-headers",
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.mcpClient.auth.succeeded",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.mcpClient.auth.output.echoed",
+          "equals": "headers"
+        }
+      ],
+      "evidence": ["mcpClient.auth.succeeded", "mcpClient.auth.output"]
+    },
+    {
+      "checkId": "providers.mcp.validation-errors",
+      "operation": "providers.mcp-client.validation-errors",
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.mcpClient.validation.inputIsError",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.mcpClient.validation.inputErrorCode",
+          "equals": "mcp_tool_input_invalid"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.mcpClient.validation.outputIsError",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.mcpClient.validation.outputErrorCode",
+          "equals": "mcp_tool_output_invalid"
+        }
+      ],
+      "evidence": [
+        "mcpClient.validation.inputIsError",
+        "mcpClient.validation.inputErrorCode",
+        "mcpClient.validation.outputIsError",
+        "mcpClient.validation.outputErrorCode"
+      ]
+    },
+    {
+      "checkId": "providers.mcp.transport-error-normalization",
+      "operation": "providers.mcp-client.transport-error-normalization",
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.mcpClient.transportFailure.isError",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.mcpClient.transportFailure.errorCode",
+          "equals": "mcp_transport_failure"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.mcpClient.transportFailure.observedErrorCount",
+          "equals": 1
+        }
+      ],
+      "evidence": [
+        "mcpClient.transportFailure.isError",
+        "mcpClient.transportFailure.errorCode",
+        "mcpClient.transportFailure.observedErrorCount"
+      ]
+    }
+  ]
+}

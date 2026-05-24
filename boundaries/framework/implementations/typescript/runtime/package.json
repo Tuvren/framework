@@ -25,6 +25,7 @@
     "@tuvren/driver-react": "workspace:*",
     "@tuvren/kernel-protocol": "workspace:*",
     "@tuvren/kernel-runtime": "workspace:*",
+    "@tuvren/mcp-client": "workspace:*",
     "ajv": "8.18.0"
   },
   "peerDependencies": {

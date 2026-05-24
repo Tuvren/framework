@@ -36,21 +36,22 @@ authoritative behavioral specs are not authority for any cross-language semantic
 - Prior planning evidence:
   - `constitution/support/live/epic-af-conformance-gap-plan.md` / `.json`
   - `constitution/support/live/epic-ad-docs-to-authority-coverage-matrix.json`
-- Current authority packets (the 8 promoted surfaces after Epic AP package consolidation):
+- Current authority packets (the 9 promoted surfaces after Epic AP package consolidation plus Epic AS):
   - `boundaries/shared/contracts/core/spec/authority-packet.json`
   - `boundaries/kernel/contracts/protocol/spec/authority-packet.json`
   - `boundaries/framework/contracts/event-stream-sse/spec/authority-packet.json`
   - `boundaries/framework/contracts/react-driver/spec/authority-packet.json`
   - `boundaries/providers/contracts/provider-api/spec/authority-packet.json`
+  - `boundaries/providers/contracts/mcp/spec/authority-packet.json`
   - `boundaries/kernel/interop/grpc/spec/authority-packet.json`
   - `boundaries/framework/interop/rust-kernel/spec/authority-packet.json`
   - `boundaries/telemetry/semconv/spec/authority-packet.json`
-- Current conformance plans (19):
+- Current conformance plans (21):
   - kernel: `kernel-protocol-core`, `kernel-protocol-extended`, `kernel-restart-recovery`, `kernel-run-liveness`
-  - framework: `runtime-api-lifecycle`, `runtime-api-lifecycle-extended`, `runtime-api-callables`, `runtime-api-callables-extended`, `runtime-api-orchestration`, `event-stream-core`, `event-stream-extended`, `event-stream-sse`, `driver-api-core`, `driver-api-extended`, `react-driver-callables`, `react-driver-extended`, `tool-contracts-extended`
-  - providers: `provider-api-bridge`, `provider-api-bridge-extended`
+  - framework: `runtime-api-lifecycle`, `runtime-api-lifecycle-extended`, `runtime-api-callables`, `runtime-api-callables-extended`, `runtime-api-orchestration`, `runtime-api-batteries-included`, `event-stream-core`, `event-stream-extended`, `event-stream-sse`, `driver-api-core`, `driver-api-extended`, `react-driver-callables`, `react-driver-extended`, `tool-contracts-extended`
+  - providers: `provider-api-bridge`, `provider-api-bridge-extended`, `providers-mcp-client`
 - Canonical verification path entries relevant to portability today:
-  - `tools/scripts/verify.ts` step `Epic AL portability gate` (`bun run portability:check`) — the current portability proxy over the eight-packet inventory, two standing exceptions, and ten required authoritative sources
+  - `tools/scripts/verify.ts` step `Epic AL portability gate` (`bun run portability:check`) — the current portability proxy over the nine-packet inventory, two standing exceptions, and eleven required authoritative sources
   - `tools/scripts/verify.ts` step `docs:authority-freeze:check` — the docs-to-authority freeze gate from Epic AD
   - `tools/scripts/verify.ts` step `docs:af-gap-plan:check` — historical AF gap plan freshness evidence; retained in `verify` and `codegen`, but no longer the portability proxy
   - `tools/scripts/portability-check.ts` — verifies that 18 `@tuvren/*` packages can be `import()`-ed from both Bun and Node; package-publish health, not semantic conformance
@@ -78,11 +79,12 @@ the surface's current decisive-assertion coverage.
 
 | Surface | Packet | Plans | Decisive coverage | Notes |
 | --- | --- | --- | --- | --- |
-| Shared core primitives | `tuvren.shared.core` (`boundaries/shared/contracts/core/spec/authority-packet.json`) | `runtime-api-lifecycle{,-extended}`, `runtime-api-callables{,-extended}`, `runtime-api-orchestration`, `event-stream-core`, `event-stream-extended`, `driver-api-core`, `driver-api-extended`, `tool-contracts-extended` | `resultField`, `stateField`, `eventSequence`, `terminalEvent`, `noEvent`, `errorEnvelope` per plan inspection | Epic AP absorbed the former `core-types`, `runtime-api`, `event-stream`, `driver-api`, and `tool-contracts` packets into one consolidated core packet with binding sections for the eight `@tuvren/core/*` subpaths. |
+| Shared core primitives | `tuvren.shared.core` (`boundaries/shared/contracts/core/spec/authority-packet.json`) | `runtime-api-lifecycle{,-extended}`, `runtime-api-callables{,-extended}`, `runtime-api-orchestration`, `runtime-api-batteries-included`, `event-stream-core`, `event-stream-extended`, `driver-api-core`, `driver-api-extended`, `tool-contracts-extended` | `resultField`, `stateField`, `eventSequence`, `terminalEvent`, `noEvent`, `errorEnvelope` per plan inspection | Epic AP absorbed the former `core-types`, `runtime-api`, `event-stream`, `driver-api`, and `tool-contracts` packets into one consolidated core packet with binding sections for the eight `@tuvren/core/*` subpaths. |
 | Kernel protocol semantics | `tuvren.kernel.protocol` (`boundaries/kernel/contracts/protocol/spec/authority-packet.json`) | `kernel-protocol-core`, `kernel-protocol-extended`, `kernel-run-liveness`, `kernel-restart-recovery` | `resultField`, `stateField`, `eventSequence` per plan inspection | Records appendix matrix and recovery edges promoted by AF KRT-AF006 are runner-observed. KRT-AL002 registered `spec/cddl/kernel-records.cddl` as a CDDL authoritative source on the packet. |
 | Framework SSE projection | `tuvren.framework.event-stream-sse` (`boundaries/framework/contracts/event-stream-sse/spec/authority-packet.json`) | `event-stream-sse` | `eventSequence`, `resultField`, `ordering`, `errorEnvelope` per plan inspection | KRT-AL002/AL003 promoted the EventSource-compatible wire projection through TypeSpec, byte-trace fixtures, and WHATWG-conformant adapter decoding. |
 | Framework ReAct driver behavior | `tuvren.framework.react-driver` (`boundaries/framework/contracts/react-driver/spec/authority-packet.json`) | `react-driver-callables`, `react-driver-extended` | `eventSequence`, `stateField`, `noEvent` per plan inspection | No TypeSpec; data-owned per ADR-025. AF promoted hook ordering, around-hook nesting, after-iteration terminality, and live/durable aroundModel reconciliation. |
 | Provider bridge contract | `tuvren.providers.provider-api` (`boundaries/providers/contracts/provider-api/spec/authority-packet.json`) | `provider-api-bridge`, `provider-api-bridge-extended` | `resultField`, `eventSequence`, `errorEnvelope` per plan inspection | The provider-neutral contract is portable. The `bridge-ai-sdk` projection (TS implementation that adapts the AI SDK to this contract) is a standing exception — see §4. |
+| MCP Client Container translation contract | `tuvren.providers.mcp` (`boundaries/providers/contracts/mcp/spec/authority-packet.json`) | `providers-mcp-client` | `resultField` per plan inspection | Epic AS promotes the Tuvren-owned translation, validation, auth-header, and transport-parity rules for `@tuvren/mcp-client`. The upstream MCP wire protocol remains owned by the official `@modelcontextprotocol/sdk`; Tuvren's authority packet covers the tool-source projection only. |
 
 ## 4. Standing implementation-specific exceptions
 

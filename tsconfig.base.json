@@ -70,6 +70,9 @@
       "@tuvren/provider-testkit": [
         "./boundaries/providers/implementations/typescript/testkit/src/index.ts"
       ],
+      "@tuvren/mcp-client": [
+        "./boundaries/providers/implementations/typescript/mcp-client/src/index.ts"
+      ],
       "@tuvren/runtime-core": [
         "./boundaries/framework/implementations/typescript/runtime-core/src/index.ts"
       ],

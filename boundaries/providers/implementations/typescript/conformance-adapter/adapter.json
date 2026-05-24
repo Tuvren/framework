@@ -17,10 +17,12 @@
     "providers.ai-sdk-bridge",
     "providers.framework-owned-approval-boundary",
     "providers.framework-owned-tool-execution",
+    "providers.mcp-client",
     "providers.rejects-native-strict-structured-output"
   ],
   "authorityPackets": [
-    "boundaries/providers/contracts/provider-api/spec/authority-packet.json"
+    "boundaries/providers/contracts/provider-api/spec/authority-packet.json",
+    "boundaries/providers/contracts/mcp/spec/authority-packet.json"
   ],
   "suiteId": "tuvren.providers.provider-api",
   "suiteVersion": "0.1.0"

@@ -462,6 +462,23 @@ async function resolveExecutableToolCall(
   };
 }
 
+function isDirectToolResult(
+  value: unknown,
+  toolCall: ExecutableToolCall
+): value is ToolResultPart {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "type" in value &&
+    value.type === "tool_result" &&
+    "callId" in value &&
+    value.callId === toolCall.toolCall.callId &&
+    "name" in value &&
+    value.name === toolCall.tool.name &&
+    "output" in value
+  );
+}
+
 function resolveResumeDecision(
   pendingToolCall: PendingToolCall,
   decision: ApprovalDecision,
@@ -834,6 +851,13 @@ async function runAroundToolHandlers(
     }
 
     await startPromise;
+
+    if (isDirectToolResult(output, toolCall)) {
+      return {
+        result: output,
+        updates: [],
+      };
+    }
 
     return {
       result: {

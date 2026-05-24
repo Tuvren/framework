@@ -130,6 +130,8 @@ export {
 } from "@tuvren/kernel-protocol";
 export type { RuntimeKernelOptions } from "@tuvren/kernel-runtime";
 export { createRuntimeKernel } from "@tuvren/kernel-runtime";
+export type { McpToolSource } from "@tuvren/mcp-client";
+export { createMcpToolSource } from "@tuvren/mcp-client";
 export {
   createContextManifest,
   createEmptyContextManifest,
@@ -139,7 +141,6 @@ export type {
   BackendKind,
   CreateTuvrenOptions,
   DriverKind,
-  McpToolSource,
   TuvrenInstance,
 } from "./lib/create-tuvren.js";
 export { createTuvren } from "./lib/create-tuvren.js";

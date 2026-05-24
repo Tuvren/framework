@@ -1,5 +1,5 @@
 {
-  "name": "@tuvren/provider-testkit",
+  "name": "@tuvren/mcp-client",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -12,12 +12,17 @@
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "peerDependenciesMeta": {
+    "@tuvren/core": {
+      "optional": false
+    }
+  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.29.0",
-    "@modelcontextprotocol/server-everything": "2026.1.26",
-    "@tuvren/core": "workspace:*",
-    "@tuvren/provider-api": "workspace:*",
     "ajv": "8.18.0",
     "zod": "4.4.3"
+  },
+  "peerDependencies": {
+    "@tuvren/core": "workspace:*"
   }
 }

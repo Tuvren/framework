@@ -34,6 +34,7 @@ import type { ReActDriverOptions } from "@tuvren/driver-react";
 import { createReActDriver } from "@tuvren/driver-react";
 import type { RuntimeBackend, RuntimeKernel } from "@tuvren/kernel-protocol";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
+import type { McpToolSource } from "@tuvren/mcp-client";
 import { createDriverRegistry } from "./driver-registry.js";
 import { createOrchestrationRuntime } from "./orchestration-runtime.js";
 import {
@@ -58,13 +59,6 @@ export type DriverKind = "react";
  * interface and the re-export from `@tuvren/runtime` in KRT-AS009 makes
  * the two structurally compatible.
  */
-export interface McpToolSource {
-  close(): Promise<void>;
-  refresh(): Promise<{ tools: TuvrenToolDefinition[] }>;
-  readonly serverName: string;
-  readonly tools: TuvrenToolDefinition[];
-}
-
 export interface CreateTuvrenOptions {
   /**
    * Backend spec or pre-built `RuntimeBackend` instance. When an explicit

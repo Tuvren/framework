@@ -32,6 +32,9 @@
       "path": "../../../../kernel/implementations/typescript/backend-postgres/tsconfig.lib.json"
     },
     {
+      "path": "../../../../providers/implementations/typescript/mcp-client/tsconfig.lib.json"
+    },
+    {
       "path": "../drivers/react/tsconfig.lib.json"
     }
   ]

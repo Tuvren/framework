@@ -1,0 +1,29 @@
+{
+  "extends": "./tsconfig.lib.json",
+  "compilerOptions": {
+    "composite": false,
+    "rootDir": "../../../../../",
+    "allowImportingTsExtensions": true,
+    "paths": {
+      "@tuvren/core": [
+        "../../../../shared/contracts/core/implementations/typescript/src/index.ts"
+      ],
+      "@tuvren/core/errors": [
+        "../../../../shared/contracts/core/implementations/typescript/src/errors/index.ts"
+      ],
+      "@tuvren/core/tools": [
+        "../../../../shared/contracts/core/implementations/typescript/src/tools/index.ts"
+      ],
+      "@tuvren/mcp-client": ["./src/index.ts"],
+      "@tuvren/provider-testkit": ["../testkit/src/index.ts"]
+    },
+    "types": ["bun", "node"]
+  },
+  "include": [
+    "src/**/*.ts",
+    "test/**/*.ts",
+    "smoke/**/*.ts",
+    "../testkit/src/**/*.ts",
+    "../../../../shared/contracts/core/implementations/typescript/src/**/*.ts"
+  ]
+}

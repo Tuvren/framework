@@ -55,6 +55,9 @@
       "@tuvren/kernel-runtime": [
         "../../../../kernel/implementations/typescript/runtime-kernel/src/index.ts"
       ],
+      "@tuvren/mcp-client": [
+        "../../../../providers/implementations/typescript/mcp-client/src/index.ts"
+      ],
       "@tuvren/runtime": ["./src/index.ts"],
       "@tuvren/runtime-api": [
         "../../../contracts/runtime-api/implementations/typescript/src/index.ts"
@@ -94,6 +97,7 @@
     "../../../../kernel/implementations/typescript/backend-postgres/src/**/*.ts",
     "../drivers/react/src/**/*.ts",
     "../../../../kernel/implementations/typescript/runtime-kernel/src/**/*.ts",
+    "../../../../providers/implementations/typescript/mcp-client/src/**/*.ts",
     "../../../../shared/contracts/core-types/implementations/typescript/src/**/*.ts",
     "../stream-core/src/**/*.ts",
     "../stream-sse/src/**/*.ts",

@@ -11,7 +11,7 @@
 
 - **Total Active Story Points:** 65 (across 2 active epics — AS 31, AT 34 — 19 atomic tickets total). Epics AM (32), AN (13), AO (26), AP (37), AQ (15), and AR (15) are closed and remain in this live plan only as recently completed context for their downstream dependencies.
 - **Critical Path:** `KRT-AS001..AS009 → KRT-AT009`. AT001..AT003 can start after the already-closed AO/AP prerequisites, AT004..AT008 wait on their specific AR prerequisites and can run alongside AS, and only KRT-AT009 depends on KRT-AS009. The remaining longest single-thread path runs through the MCP client and the MCP-backed proving-host scenario.
-- **Planning Assumptions:** PRD v0.7.0, Architecture v0.7.0, and TechSpec v0.27.2 (ADR-034 through ADR-041) are approved upstream and govern this execution chain. The `docs/KrakenKernelSpecification.md` bump to v0.10 (count correction plus `thread.list`) and `docs/KrakenFrameworkSpecification.md` bump to v0.18 (base-handle `awaitResult`) are now landed. The `product proof gate`, `platform gate`, and `portability gate` from Epic AL remain the staged-gate baseline; this chain extends the productized TypeScript line without reopening Rust framework/product work. `@modelcontextprotocol/sdk@1.29.0`, `zod@4.4.3`, and `@standard-schema/spec@1.1.0` are the locked external dependency versions per TechSpec §1; the MCP client package must satisfy the pinned SDK's upstream `zod` peer requirement internally without adding `zod` to Tuvren's public peer surface. The host-facing SDK consolidation into source-bearing `@tuvren/core` plus the slim `@tuvren/runtime` convenience package is landed; deprecated one-cycle shims preserve the old contract handles and `@tuvren/runtime-core` until the next minor cleanup.
+- **Planning Assumptions:** PRD v0.7.0, Architecture v0.7.0, and TechSpec v0.27.3 (ADR-034 through ADR-041) are approved upstream and govern this execution chain. The `docs/KrakenKernelSpecification.md` bump to v0.10 (count correction plus `thread.list`) and `docs/KrakenFrameworkSpecification.md` bump to v0.18 (base-handle `awaitResult`) are now landed. The `product proof gate`, `platform gate`, and `portability gate` from Epic AL remain the staged-gate baseline; this chain extends the productized TypeScript line without reopening Rust framework/product work. `@modelcontextprotocol/sdk@1.29.0`, `@modelcontextprotocol/server-everything@2026.1.26`, `zod@4.4.3`, and `@standard-schema/spec@1.1.0` are the locked external dependency versions per TechSpec §1; the MCP client package must satisfy the pinned SDK's upstream `zod` peer requirement internally without adding `zod` to Tuvren's public peer surface. The host-facing SDK consolidation into source-bearing `@tuvren/core` plus the slim `@tuvren/runtime` convenience package is landed; deprecated one-cycle shims preserve the old contract handles and `@tuvren/runtime-core` until the next minor cleanup.
 
 ### Brownfield Continuity Note
 
@@ -38,7 +38,7 @@
 
 - **Block 1 — Boundary correctness gate (Epics AM, AN, AO):** closed. The kernel now exposes `thread.list` with the corrected 30-operation narrative, `ExecutionHandle` exposes base-handle `awaitResult`, and `TuvrenRuntime` exposes the five-method durable-read surface (`listThreads`, `listBranches`, `getTurnState`, `getTurnHistory`, `readBranchMessages`).
 - **Block 2 — Curated surface + ergonomics (Epics AP, AQ, AR):** closed. Epic AP landed `@tuvren/core` and folded the source-bearing runtime implementation into `@tuvren/runtime`. Epic AQ added the schema-agnostic `defineTool` helper (Zod / Standard Schema / wrapped JSON Schema with type inference). Epic AR added the `createTuvren({...})` batteries-included factory with full lifecycle conformance across memory, SQLite, and PostgreSQL backends.
-- **Block 3 — Capability spikes (Epics AS, AT):** add `@tuvren/mcp-client` as a first-class tool source over stdio + HTTP/SSE transports; retire `@tuvren/playground-host`, rename internal REPL host modules to drop the playground naming, add headless stdin mode for the reference host, add JSONL transcript capture/replay.
+- **Block 3 — Capability spikes (Epics AS, AT):** add `@tuvren/mcp-client` as a first-class tool source over stdio + Streamable HTTP-backed public `http-sse` transports; retire `@tuvren/playground-host`, rename internal REPL host modules to drop the playground naming, add headless stdin mode for the reference host, add JSONL transcript capture/replay.
 
 ### Future / Deferred Scope
 
@@ -900,20 +900,20 @@ And unit tests cover handshake success, listTools, a successful invokeTool round
 And the stdio implementation does not expose zod in @tuvren/mcp-client's public API
 ```
 
-**KRT-AS004 HTTP/SSE Transport Implementation**
+**KRT-AS004 HTTP/SSE-Named Streamable HTTP Transport Implementation**
 - **Type:** Feature
 - **Effort:** 5
 - **Dependencies:** `KRT-AS003`
 - **Capability / Contract Mapping:** PRD `CAP-P0-041`; TechSpec §4.15, ADR-039
-- **Description:** Implement the HTTP/SSE transport using the SDK's HTTP/SSE primitives. The HTTP/SSE transport must conform to the same internal `MCPClient` interface as stdio so transport choice does not fragment behavior (per Architecture v0.7.0 §6 MCP transport fragmentation mitigation).
+- **Description:** Implement Tuvren's public `transport: "http-sse"` lane using the SDK's non-deprecated Streamable HTTP client transport. The historical public transport name remains for TechSpec compatibility, but the deprecated upstream SSE transport must not be used. The HTTP/SSE-named transport must conform to the same internal `MCPClient` interface as stdio so transport choice does not fragment behavior (per Architecture v0.7.0 §6 MCP transport fragmentation mitigation).
 - **Acceptance Criteria (Gherkin):**
 ```gherkin
 Given the stdio transport is implemented
-When the HTTP/SSE transport is implemented
-Then the HTTP/SSE implementation conforms to the same internal MCPClient interface as stdio
-And the transport handles connection establishment, SSE event consumption, request/response correlation, and graceful close
+When the HTTP/SSE-named transport is implemented
+Then the implementation uses the SDK's non-deprecated Streamable HTTP transport and conforms to the same internal MCPClient interface as stdio
+And the transport handles connection establishment, request/response correlation, and graceful close
 And authentication (bearer + arbitrary header) is honored
-And unit tests cover handshake success, listTools, a successful invokeTool round-trip, and graceful close against a mock HTTP/SSE server
+And unit tests cover handshake success, listTools, a successful invokeTool round-trip, and graceful close against a mock Streamable HTTP server
 ```
 
 **KRT-AS005 `createMcpToolSource` + `McpToolSource` + Translation Rules**
@@ -934,20 +934,20 @@ And source.close() releases transport resources cleanly
 And source.refresh() re-lists tools from the server
 ```
 
-**KRT-AS006 Mock MCP Server in `@tuvren/provider-testkit`**
+**KRT-AS006 MCP Test Servers in `@tuvren/provider-testkit`**
 - **Type:** Feature
 - **Effort:** 3
 - **Dependencies:** `KRT-AS003`
 - **Capability / Contract Mapping:** PRD `CAP-P0-041`; TechSpec ADR-039
-- **Description:** Add a deterministic mock MCP server to `@tuvren/provider-testkit` that supports both stdio and HTTP/SSE transports for use in the conformance plan and downstream host tests. The mock advertises a deterministic tool set and produces deterministic tool results for given inputs.
+- **Description:** Add MCP test-server helpers to `@tuvren/provider-testkit` for use in the conformance plan and downstream host tests. Prefer official upstream test implementations where they can cover the behavior (`@modelcontextprotocol/server-everything` over stdio and Streamable HTTP), and keep a small deterministic in-repo mock only for Tuvren-specific auth, invalid-output, and failure-injection cases.
 - **Acceptance Criteria (Gherkin):**
 ```gherkin
 Given the MCP client implementations exist
-When the mock MCP server is added to provider-testkit
-Then the mock supports both stdio and HTTP/SSE transports through one configuration surface
-And the mock's tool advertisements and tool results are deterministic for the same inputs
-And the mock's transport-error simulation can be triggered through test configuration
-And the mock is usable both from unit tests in @tuvren/mcp-client and from the providers-mcp-client conformance plan
+When the MCP test-server helpers are added to provider-testkit
+Then official everything-server helpers support stdio and Streamable HTTP transports
+And the in-repo mock's tool advertisements and tool results are deterministic for the same inputs
+And the in-repo mock's auth and transport-error simulation can be triggered through test configuration
+And both helper families are usable from unit tests in @tuvren/mcp-client and from the providers-mcp-client conformance plan
 ```
 
 **KRT-AS007 MCP Authority Packet + Portability Gate Update**
@@ -955,17 +955,17 @@ And the mock is usable both from unit tests in @tuvren/mcp-client and from the p
 - **Effort:** 2
 - **Dependencies:** `KRT-AS005`
 - **Capability / Contract Mapping:** PRD `CAP-P0-041`, `CAP-P0-037`; TechSpec ADR-026, ADR-039
-- **Description:** Create the authority packet at `boundaries/providers/contracts/mcp/spec/authority-packet.json` declaring the MCP tool-source translation contract. The wire protocol itself is owned by `@modelcontextprotocol/sdk`; Tuvren's packet describes the translation rules and the conformance plan that verifies them. Also update `tools/scripts/portability-gate.ts` to expect 9 packets (was 8 after Epic AP; this MCP packet is the 9th).
+- **Description:** Create the authority packet at `boundaries/providers/contracts/mcp/spec/authority-packet.json` declaring the MCP tool-source translation contract. The wire protocol itself is owned by `@modelcontextprotocol/sdk`; Tuvren's packet describes the translation rules and the conformance plan that verifies them. Also update the Epic AL portability inventory consumed by `tools/scripts/portability-gate.ts` so the MCP packet becomes the 9th expected packet.
 - **Acceptance Criteria (Gherkin):**
 ```gherkin
-Given createMcpToolSource is implemented and portability-gate.ts expects 8 packets
+Given createMcpToolSource is implemented and the portability inventory expects 8 packets
 When the MCP authority packet is created
 Then the packet declares the translation contract as its authoritative source
 And the packet references the upcoming providers-mcp-client conformance plan
 And the packet declares forbidden authority sources (implementation language source, prose docs)
 And the packet passes authority-packet freshness verification
-And portability-gate.ts is updated to expect 9 packets
-And `bun run nx run-many --target=portability-gate` passes with the new count
+And the portability inventory is updated to expect 9 packets
+And `bun run portability:check` passes with the new count
 ```
 
 **KRT-AS008 `providers-mcp-client` Conformance Plan with Both-Transport Parity**
@@ -973,13 +973,13 @@ And `bun run nx run-many --target=portability-gate` passes with the new count
 - **Effort:** 5
 - **Dependencies:** `KRT-AS006`, `KRT-AS007`
 - **Capability / Contract Mapping:** PRD `CAP-P0-041`, `CAP-P1-036`; TechSpec ADR-039, ADR-030
-- **Description:** Add a `providers-mcp-client.json` conformance plan exercising the seven translation rules and transport-error normalization. Run every scenario against both stdio and HTTP/SSE transports using the mock MCP server to enforce behavioral parity (per Architecture v0.7.0 §6 mitigation).
+- **Description:** Add a `providers-mcp-client.json` conformance plan exercising the seven translation rules and transport-error normalization. Run the translation parity scenario against both stdio and Streamable HTTP using the official everything server, and use the deterministic in-repo mock for auth, invalid-output, and transport-error injection (per Architecture v0.7.0 §6 mitigation).
 - **Acceptance Criteria (Gherkin):**
 ```gherkin
-Given the mock MCP server and the authority packet exist
+Given the MCP test-server helpers and the authority packet exist
 When the providers-mcp-client.json conformance plan is added
 Then the plan covers every translation rule from ADR-039
-And every scenario runs against both stdio and HTTP/SSE transports with `pass` evidence
+And the parity scenario runs against both stdio and Streamable HTTP transports with `pass` evidence
 And transport-error normalization is verified by injecting failures through the mock
 And `bun run conformance` includes the new plan automatically
 ```
@@ -1174,7 +1174,7 @@ The execution chain is not closed until every applicable statement below is true
 - `@tuvren/runtime-core` is folded into `@tuvren/runtime`; the slim convenience package exposes `createTuvren` plus curated re-exports as one host-developer entrypoint.
 - Every leaf integration package peer-depends on `@tuvren/core` so consumers cannot end up with version-skewed primitive instances.
 - The Schema Authoring Helper (`defineTool`, `FlexibleSchema`, `asSchema`, `jsonSchema`, `zodSchema`, `standardSchema`) is implemented in `@tuvren/core/tools`, re-exported through `@tuvren/runtime`, and conformance-covered by the `runtime-api-schema-authoring` check set with at least one fixture per precedence branch including the documented ambiguous cases.
-- `@tuvren/mcp-client` is implemented as a first-class tool source over both stdio and HTTP/SSE transports with behavioral parity enforced by `providers-mcp-client.json`; the mock MCP server in `@tuvren/provider-testkit` exercises both transports.
+- `@tuvren/mcp-client` is implemented as a first-class tool source over both stdio and Streamable HTTP-backed public `http-sse` transports with behavioral parity enforced by `providers-mcp-client.json`; official and mock MCP helpers in `@tuvren/provider-testkit` exercise those paths.
 - `createTuvren({...})` assembles a working `TuvrenInstance` from one factory call against any of the three official backends; `[Symbol.asyncDispose]` cleanup is verified for SQLite handles, PostgreSQL pools, and MCP transport sessions.
 - `@tuvren/playground-host` is deleted from the workspace; the REPL is the sole proving host with renamed internal modules (no `playground-*.ts` files remain) and supports both interactive readline and headless stdin operating modes from one package and one command set.
 - Transcript capture (`--record`) and replay (`--replay`) are implemented per the JSONL format in TechSpec §3.9; deterministic-mode replay asserts equality and fails non-zero on mismatch; non-deterministic-mode replay captures and reports without asserting.

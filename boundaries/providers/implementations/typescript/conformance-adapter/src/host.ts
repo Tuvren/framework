@@ -21,6 +21,7 @@ import type {
   LanguageModelV3StreamPart,
 } from "@ai-sdk/provider";
 import { TuvrenProviderError } from "@tuvren/core";
+import type { ToolExecutionContext, ToolResultPart } from "@tuvren/core/tools";
 import {
   assertProviderStreamChunk,
   assertTuvrenModelResponse,
@@ -35,6 +36,12 @@ import type {
 import { createAdapterErrorEnvelope } from "../../../../../../tools/conformance/adapter-protocol/index.js";
 import { serveStdioAdapter } from "../../../../../../tools/conformance/adapter-protocol/stdio-host.js";
 import { createAiSdkProviderBridge } from "../../bridge-ai-sdk/src/index.ts";
+import { createMcpToolSource } from "../../mcp-client/src/index.ts";
+import {
+  createOfficialMcpEverythingStdioCommand,
+  startMockMcpHttpServer,
+  startOfficialMcpEverythingStreamableHttpServer,
+} from "../../testkit/src/index.ts";
 import { providerConformanceFixtures } from "./provider-conformance-fixtures.ts";
 
 class TypeScriptProviderAdapter {
@@ -49,6 +56,7 @@ class TypeScriptProviderAdapter {
         "providers.ai-sdk-bridge",
         "providers.framework-owned-approval-boundary",
         "providers.framework-owned-tool-execution",
+        "providers.mcp-client",
         "providers.rejects-native-strict-structured-output",
       ],
       packetId,
@@ -79,6 +87,14 @@ class TypeScriptProviderAdapter {
           return result(await providerOwnedToolExecutionRejection());
         case "providers.bridge.provider-approval-request-rejection":
           return result(await providerApprovalRequestRejection());
+        case "providers.mcp-client.translation-rules":
+          return result(await mcpClientTranslationRules());
+        case "providers.mcp-client.auth-headers":
+          return result(await mcpClientAuthHeaders());
+        case "providers.mcp-client.validation-errors":
+          return result(await mcpClientValidationErrors());
+        case "providers.mcp-client.transport-error-normalization":
+          return result(await mcpClientTransportErrorNormalization());
         default:
           return {
             error: {
@@ -486,6 +502,277 @@ async function providerApprovalRequestRejection(): Promise<
       errorReason: readProviderErrorReason(error),
     },
   });
+}
+
+async function mcpClientTranslationRules(): Promise<Record<string, unknown>> {
+  const stdio = createOfficialMcpEverythingStdioCommand();
+  const httpServer = await startOfficialMcpEverythingStreamableHttpServer();
+  const stdioSource = await createMcpToolSource({
+    ...stdio,
+    name: "mcp",
+    transport: "stdio",
+  });
+  const httpSource = await createMcpToolSource({
+    endpoint: httpServer.endpoint,
+    name: "mcp",
+    transport: "http-sse",
+  });
+
+  try {
+    const stdioProjection = await projectMcpToolSource(stdioSource.tools);
+    const httpProjection = await projectMcpToolSource(httpSource.tools);
+
+    return createProjection({
+      mcpClient: {
+        http: httpProjection,
+        parity: {
+          echoOutputEqual:
+            JSON.stringify(stdioProjection.echoOutput) ===
+            JSON.stringify(httpProjection.echoOutput),
+          structuredOutputEqual:
+            JSON.stringify(stdioProjection.structuredOutput) ===
+            JSON.stringify(httpProjection.structuredOutput),
+          toolNamesEqual:
+            JSON.stringify(stdioProjection.toolNames) ===
+            JSON.stringify(httpProjection.toolNames),
+        },
+        stdio: stdioProjection,
+      },
+    });
+  } finally {
+    await stdioSource.close();
+    await httpSource.close();
+    await httpServer.close();
+  }
+}
+
+async function mcpClientAuthHeaders(): Promise<Record<string, unknown>> {
+  const server = await startMockMcpHttpServer({
+    requireHeaders: {
+      authorization: "Bearer conformance-token",
+      "x-mcp-conformance": "enabled",
+    },
+  });
+  const source = await createMcpToolSource({
+    auth: { kind: "bearer", token: "conformance-token" },
+    endpoint: server.endpoint,
+    headers: { "x-mcp-conformance": "enabled" },
+    name: "auth",
+    transport: "http-sse",
+  });
+
+  try {
+    const echo = requireMcpTool(source.tools, "auth.echo");
+    const output = await echo.execute(
+      { message: "headers" },
+      createToolContext("mcp-auth", "auth.echo")
+    );
+
+    return createProjection({
+      mcpClient: {
+        auth: {
+          output,
+          succeeded: true,
+        },
+      },
+    });
+  } finally {
+    await source.close();
+    await server.close();
+  }
+}
+
+async function mcpClientValidationErrors(): Promise<Record<string, unknown>> {
+  const command = createOfficialMcpEverythingStdioCommand();
+  const invalidServer = await startMockMcpHttpServer({
+    returnInvalidEchoOutput: true,
+  });
+  const source = await createMcpToolSource({
+    ...command,
+    name: "validating",
+    transport: "stdio",
+  });
+  const invalidSource = await createMcpToolSource({
+    endpoint: invalidServer.endpoint,
+    name: "invalid",
+    transport: "http-sse",
+  });
+
+  try {
+    const sum = requireMcpTool(source.tools, "validating.get-sum");
+    const inputError = asToolResultPart(
+      await sum.execute(
+        { a: "one", b: 2 },
+        createToolContext("mcp-input", "validating.get-sum")
+      )
+    );
+    const echo = requireMcpTool(invalidSource.tools, "invalid.echo");
+    const outputError = asToolResultPart(
+      await echo.execute(
+        { message: "bad-output" },
+        createToolContext("mcp-output", "invalid.echo")
+      )
+    );
+
+    return createProjection({
+      mcpClient: {
+        validation: {
+          inputErrorCode: readToolErrorCode(inputError),
+          inputIsError: inputError.isError === true,
+          outputErrorCode: readToolErrorCode(outputError),
+          outputIsError: outputError.isError === true,
+        },
+      },
+    });
+  } finally {
+    await source.close();
+    await invalidSource.close();
+    await invalidServer.close();
+  }
+}
+
+async function mcpClientTransportErrorNormalization(): Promise<
+  Record<string, unknown>
+> {
+  const server = await startMockMcpHttpServer({
+    failToolCallsWithTransportClose: true,
+  });
+  const observedErrors: TuvrenProviderError[] = [];
+  const source = await createMcpToolSource({
+    endpoint: server.endpoint,
+    name: "failure",
+    onError(error) {
+      observedErrors.push(error);
+    },
+    transport: "http-sse",
+  });
+
+  try {
+    const echo = requireMcpTool(source.tools, "failure.echo");
+    const resultPart = asToolResultPart(
+      await echo.execute(
+        { message: "boom" },
+        createToolContext("mcp-transport", "failure.echo")
+      )
+    );
+
+    return createProjection({
+      mcpClient: {
+        transportFailure: {
+          errorCode: readToolErrorCode(resultPart),
+          isError: resultPart.isError === true,
+          observedErrorCount: observedErrors.length,
+        },
+      },
+    });
+  } finally {
+    await source.close();
+    await server.close();
+  }
+}
+
+async function projectMcpToolSource(
+  tools: readonly {
+    description: string;
+    execute: (
+      input: unknown,
+      context: ToolExecutionContext
+    ) => Promise<unknown> | unknown;
+    inputSchema: unknown;
+    metadata?: Record<string, unknown>;
+    name: string;
+  }[]
+): Promise<Record<string, unknown>> {
+  const echo = requireMcpTool(tools, "mcp.echo");
+  const structured = requireMcpTool(tools, "mcp.get-structured-content");
+  const echoOutput = await echo.execute(
+    { message: "hello" },
+    createToolContext("mcp-echo", "mcp.echo")
+  );
+  const structuredOutput = await structured.execute(
+    { location: "Chicago" },
+    createToolContext("mcp-structured", "mcp.get-structured-content")
+  );
+
+  return {
+    echoDescription: echo.description,
+    echoInputSchemaType: readInputSchemaType(echo.inputSchema),
+    echoMetadataOriginalName: readMcpOriginalName(echo.metadata),
+    echoOutput,
+    structuredOutput,
+    toolNames: tools.map((tool) => tool.name).sort(),
+  };
+}
+
+function requireMcpTool<
+  T extends {
+    execute: (
+      input: unknown,
+      context: ToolExecutionContext
+    ) => Promise<unknown> | unknown;
+    name: string;
+  },
+>(tools: readonly T[], name: string): T {
+  const tool = tools.find((candidate) => candidate.name === name);
+
+  if (tool === undefined) {
+    throw new Error(`missing MCP tool ${name}`);
+  }
+
+  return tool;
+}
+
+function createToolContext(callId: string, name: string): ToolExecutionContext {
+  return { callId, name };
+}
+
+function asToolResultPart(value: unknown): ToolResultPart {
+  if (
+    typeof value === "object" &&
+    value !== null &&
+    "type" in value &&
+    value.type === "tool_result"
+  ) {
+    return value as ToolResultPart;
+  }
+
+  throw new Error("expected MCP tool result part");
+}
+
+function readToolErrorCode(part: ToolResultPart): string | undefined {
+  if (!isRecord(part.output)) {
+    return undefined;
+  }
+
+  const error = part.output.error;
+
+  return isRecord(error) && typeof error.code === "string"
+    ? error.code
+    : undefined;
+}
+
+function readInputSchemaType(schema: unknown): unknown {
+  if (
+    typeof schema === "object" &&
+    schema !== null &&
+    "toJSONSchema" in schema &&
+    typeof schema.toJSONSchema === "function"
+  ) {
+    const jsonSchema = schema.toJSONSchema();
+    return isRecord(jsonSchema) ? jsonSchema.type : undefined;
+  }
+
+  return isRecord(schema) ? schema.type : undefined;
+}
+
+function readMcpOriginalName(metadata: unknown): string | undefined {
+  if (!(isRecord(metadata) && isRecord(metadata.mcp))) {
+    return undefined;
+  }
+
+  return typeof metadata.mcp.originalName === "string"
+    ? metadata.mcp.originalName
+    : undefined;
 }
 
 function result(value: Record<string, unknown>): OperationOutcome {

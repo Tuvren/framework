@@ -160,6 +160,106 @@ describe("framework-runtime-core", () => {
     ).toHaveLength(1);
   });
 
+  test("passes through direct tool result parts returned by a tool", async () => {
+    const harness = createFakeKernelHarness();
+    const driver = {
+      async execute(context) {
+        const toolMessages = context.messages.filter(
+          (message) => message.role === "tool"
+        );
+
+        if (toolMessages.length === 0) {
+          return {
+            messages: [
+              assistantToolCalls([
+                {
+                  callId: "call-direct-result",
+                  input: { query: "direct" },
+                  name: "direct-result",
+                },
+              ]),
+            ],
+            resolution: {
+              type: "continue_iteration",
+            },
+          };
+        }
+
+        return {
+          messages: [assistantText("Tool result accepted.")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+    const runtime = createTuvrenRuntime({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+
+    await runtime
+      .executeTurn({
+        branchId: thread.branchId,
+        config: {
+          name: "primary",
+          tools: [
+            {
+              description: "Return a complete result part",
+              execute() {
+                return {
+                  callId: "call-direct-result",
+                  isError: true,
+                  name: "direct-result",
+                  output: {
+                    error: {
+                      code: "mcp_transport_failure",
+                      name: "TuvrenProviderError",
+                    },
+                  },
+                  type: "tool_result",
+                };
+              },
+              inputSchema: {
+                properties: {
+                  query: { type: "string" },
+                },
+                required: ["query"],
+                type: "object",
+              },
+              name: "direct-result",
+            },
+          ],
+        },
+        signal: textSignal("Run direct result tool"),
+        threadId: thread.threadId,
+      })
+      .awaitResult();
+
+    const [toolMessage] = extractToolMessages(
+      await harness.readBranchMessages(thread.branchId)
+    );
+    expect(toolMessage?.parts[0]).toEqual({
+      callId: "call-direct-result",
+      isError: true,
+      name: "direct-result",
+      output: {
+        error: {
+          code: "mcp_transport_failure",
+          name: "TuvrenProviderError",
+        },
+      },
+      type: "tool_result",
+    });
+  });
+
   test("persists tool messages in call order even when parallel completion order differs", async () => {
     const harness = createFakeKernelHarness();
     const driver = {

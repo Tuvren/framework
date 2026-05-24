@@ -16,6 +16,18 @@
 
 // biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional testkit surface.
 export type {
+  MockMcpServerOptions,
+  RunningMockMcpHttpServer,
+  RunningOfficialMcpEverythingServer,
+} from "./lib/mock-mcp-server.js";
+export {
+  createMockMcpStdioCommand,
+  createOfficialMcpEverythingStdioCommand,
+  serveMockMcpStdio,
+  startMockMcpHttpServer,
+  startOfficialMcpEverythingStreamableHttpServer,
+} from "./lib/mock-mcp-server.js";
+export type {
   ProviderGenerateVerification,
   ProviderRejectionVerification,
   ProviderStreamVerification,

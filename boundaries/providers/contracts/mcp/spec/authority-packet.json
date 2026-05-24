@@ -1,0 +1,42 @@
+{
+  "packetId": "tuvren.providers.mcp",
+  "version": "0.1.0",
+  "boundary": "providers",
+  "surface": "mcp-client",
+  "humanAuthorityRefs": [
+    "constitution/TechSpec.md#415-mcp-client-container",
+    "constitution/TechSpec.md#adr-039-mcp-client-container-unified-mcpclient-over-stdio--httpsse",
+    "constitution/Architecture.md#mcp-client-container"
+  ],
+  "authoritativeSources": [
+    {
+      "path": "boundaries/providers/conformance/plans/providers-mcp-client.json",
+      "format": "conformance-plan"
+    }
+  ],
+  "conformancePlans": [
+    {
+      "planId": "tuvren.providers.mcp-client",
+      "planVersion": "0.1.0",
+      "path": "boundaries/providers/conformance/plans/providers-mcp-client.json"
+    }
+  ],
+  "bindingProjections": {
+    "typescript": "boundaries/providers/implementations/typescript/mcp-client",
+    "typescript-provider-testkit": "boundaries/providers/implementations/typescript/testkit"
+  },
+  "forbiddenAuthoritySources": [
+    "boundaries/providers/implementations/typescript/mcp-client",
+    "boundaries/providers/implementations/typescript/testkit",
+    "boundaries/providers/implementations/typescript/conformance-runner",
+    "boundaries/providers/implementations/typescript/conformance-adapter",
+    "docs",
+    "constitution"
+  ],
+  "verificationPaths": [
+    {
+      "kind": "conformance-plan",
+      "target": "boundaries/providers/conformance/plans/providers-mcp-client.json"
+    }
+  ]
+}

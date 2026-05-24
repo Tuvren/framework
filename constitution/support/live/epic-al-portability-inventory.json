@@ -1,8 +1,8 @@
 {
-  "manifestVersion": "0.2.0",
+  "manifestVersion": "0.3.0",
   "manifestId": "epic-al.portability-inventory",
   "humanInventoryRef": "constitution/support/live/epic-al-portable-surface-conformance-gap-inventory.md",
-  "description": "Machine-readable companion to the Epic AL portable-surface conformance gap inventory. v0.2.0 reflects the Epic AP package consolidation (ADR-037): tuvren.shared.core-types, tuvren.framework.runtime-api, tuvren.framework.event-stream, tuvren.framework.driver-api, and tuvren.framework.tool-contracts are absorbed into tuvren.shared.core; expectedPackets count drops from 12 to 8. The portability gate at `tools/scripts/portability-gate.ts` consumes this file to enforce that the on-disk packet topology, standing exceptions, and required authoritative sources have not drifted from the inventory's recorded closure state. Editing either the human inventory MD or this JSON without the matching counterpart change must be treated as drift and rejected during review. The gate fails closed if this file is missing, malformed, or names paths that do not exist on disk.",
+  "description": "Machine-readable companion to the Epic AL portable-surface conformance gap inventory. v0.3.0 reflects Epic AS promoting the MCP Client Container translation contract as the ninth expected packet: tuvren.providers.mcp. The portability gate at `tools/scripts/portability-gate.ts` consumes this file to enforce that the on-disk packet topology, standing exceptions, and required authoritative sources have not drifted from the inventory's recorded closure state. Editing either the human inventory MD or this JSON without the matching counterpart change must be treated as drift and rejected during review. The gate fails closed if this file is missing, malformed, or names paths that do not exist on disk.",
   "expectedPackets": [
     {
       "packetId": "tuvren.shared.core",
@@ -33,6 +33,12 @@
       "packetPath": "boundaries/providers/contracts/provider-api/spec/authority-packet.json",
       "classification": "portable",
       "inventorySection": "§3 / §9b"
+    },
+    {
+      "packetId": "tuvren.providers.mcp",
+      "packetPath": "boundaries/providers/contracts/mcp/spec/authority-packet.json",
+      "classification": "portable",
+      "inventorySection": "§3 / Epic AS"
     },
     {
       "packetId": "tuvren.kernel.interop-grpc",
@@ -111,6 +117,13 @@
       "sourceFormat": "proto",
       "rationale": "KRT-AL002 G4: kernel gRPC services proto",
       "inventorySection": "§6.G4 / §9b"
+    },
+    {
+      "packetId": "tuvren.providers.mcp",
+      "sourcePath": "boundaries/providers/conformance/plans/providers-mcp-client.json",
+      "sourceFormat": "conformance-plan",
+      "rationale": "KRT-AS008: MCP Client Container translation, validation, auth, and transport parity conformance plan",
+      "inventorySection": "§3 / Epic AS"
     },
     {
       "packetId": "tuvren.kernel.interop-grpc",
