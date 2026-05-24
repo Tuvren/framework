@@ -10,7 +10,7 @@
 ## 1. Executive Summary & Active Critical Path
 
 - **Total Active Story Points:** 83 across the production-trust block — Epic AU (23), Epic AV (24), and Epic AW (36). Epics AM (32), AN (13), AO (26), AP (37), AQ (15), AR (15), AS (31), and AT (34) are closed and remain in this live plan as recently completed context for audit.
-- **Critical Path:** `KRT-AW001 → KRT-AV001 → KRT-AV002 → KRT-AV004 → KRT-AW004`, with the durability-proof track `KRT-AU001 → KRT-AU002 → KRT-AU003 → KRT-AU004 → KRT-AU005` and the execution-bounds track `KRT-AW005 → KRT-AW006 → KRT-AW007 → KRT-AW008` running in parallel. Epic AU is fully independent of AV/AW and may start immediately; `KRT-AW001` (the telemetry secret-screening helpers) is the one cross-epic prerequisite that AV emission consumes.
+- **Critical Path:** `KRT-AW001 → KRT-AV001 → KRT-AV002`, then the branch splits: `KRT-AV004 → KRT-AW004` for telemetry-secret isolation, while `KRT-AW005` converges with `KRT-AV002` into `KRT-AW006 → KRT-AW007 → KRT-AW008` for execution bounds. The durability-proof track `KRT-AU001 → KRT-AU002 → KRT-AU003 → KRT-AU004 → KRT-AU005` remains fully independent and may start immediately.
 - **Planning Assumptions:** PRD v0.8.0, Architecture v0.8.0, and TechSpec v0.28.0 (ADR-042 through ADR-045) are approved upstream and govern this block; the prior chain (PRD v0.7.0 / Architecture v0.7.0 / TechSpec v0.27.x, ADR-034 through ADR-041, Epics AM-AT) is closed. The production-trust block hardens the existing TypeScript line and does NOT reopen Rust framework/product work, additional drivers, additional host protocols, additional backends, or broader provider families. The `product proof gate`, `platform gate`, and `portability gate` from Epic AL remain the staged-gate baseline. The locked external dependency versions per TechSpec §1 still apply; `@tuvren/telemetry-otel` pins its `@opentelemetry/*` versions in Epic AV per the §1 pin-on-activation rule. The new `@tuvren/core/telemetry` subpath raises the curated core surface from 8 to 9 subpaths; `@tuvren/telemetry-otel` is an implementation-specific projection (a standing portability exception alongside AG-UI) while the canonical telemetry vocabulary (`telemetry/semconv/tuvren-runtime.yaml`) remains portable authority.
 
 ### Brownfield Continuity Note
@@ -132,6 +132,7 @@ flowchart LR
   closed --> AW5
   closed --> AW9
   AW1 --> AV2
+  AV2 --> AW6
   AV4 --> AW4
 ```
 
@@ -1301,6 +1302,7 @@ And a throwing sink is isolated and never fails the turn
 And createTuvren and RuntimeCoreOptions accept an optional telemetry sink defaulting to NoopTelemetrySink
 And host-supplied attributes pass through the semconv allowlist before reaching the sink
 And telemetry error summaries are sanitized before reaching the sink
+And supplying both top-level telemetry and runtimeOptions.telemetry is rejected as invalid_createtuvren_options
 And the telemetry surface reuses the same canonical event vocabulary as the event stream
 ```
 
@@ -1325,7 +1327,7 @@ And a unit test verifies the record-to-OTel mapping
 - **Effort:** 5
 - **Dependencies:** `KRT-AV002`
 - **Capability / Contract Mapping:** PRD `CAP-P0-052`; TechSpec ADR-042, ADR-030, §5.6.2
-- **Description:** Add `framework-operational-telemetry.json` (check set `runtime-api-operational-telemetry`) under `boundaries/framework/conformance/plans/`. Drive a deterministic aimock turn and assert the expected lineage-keyed spans/events for turn/iteration/model/tool/checkpoint through an in-memory capture sink added to `@tuvren/framework-testkit`, then drive a targeted restart/recovery fixture that asserts the recovery records. The OTel mapping stays out of the portable plan (covered by KRT-AV003's unit test).
+- **Description:** Add `framework-operational-telemetry.json` (check set `runtime-api-operational-telemetry`) under `boundaries/framework/conformance/plans/`. Drive a deterministic aimock turn and assert the expected lineage-keyed spans/events for turn/iteration/model/tool/checkpoint through an in-memory capture sink added to `@tuvren/framework-testkit`, then drive a targeted restart/recovery fixture that asserts the recovery records. Record the new plan in `boundaries/shared/contracts/core/spec/authority-packet.json` so the framework runner discovers it. The OTel mapping stays out of the portable plan (covered by KRT-AV003's unit test).
 - **Acceptance Criteria (Gherkin):**
 ```gherkin
 Given framework emission is wired and an in-memory capture sink exists in the framework testkit
@@ -1333,6 +1335,7 @@ When the framework-operational-telemetry.json plan is added
 Then a deterministic aimock turn emits the expected lineage-keyed spans and events for turn, iteration, model, tool, and checkpoint
 And a targeted restart or recovery fixture emits the expected recovery records
 And the check set asserts those records through the in-memory capture sink, not the OTel projection
+And the merged core authority packet records framework-operational-telemetry.json so bun run conformance discovers it
 And bun run conformance includes the new check set automatically
 ```
 
@@ -1438,21 +1441,22 @@ And typecheck passes
 **KRT-AW006 Framework-Enforced Bounds Guard in `@tuvren/runtime`**
 - **Type:** Feature
 - **Effort:** 8
-- **Dependencies:** `KRT-AW005`
+- **Dependencies:** `KRT-AW005`, `KRT-AV002`
 - **Capability / Contract Mapping:** PRD `CAP-P0-054`; TechSpec ADR-043, §4.19, §5.6.4
-- **Description:** Implement the framework bounds guard in `@tuvren/runtime`'s turn/run orchestration shell. Enforce `maxIterations` and `maxToolCalls` at iteration and tool-batch boundaries above the driver's `LoopPolicy`, enforce `maxWallClockMs` as an end-to-end deadline that propagates cancellation into in-flight model/tool work, and enforce `maxConcurrentToolCalls` by throttling tool concurrency to the configured cap. On breach of a hard-stop bound, stop the loop, checkpoint a safe terminal outcome, finalize the turn as a `failed` `ExecutionResult` with `TuvrenRuntimeError` code `execution_bound_exceeded` and `details: ExecutionBoundExceededDetails`, emit a matching `turn.end` event, and emit a bounded-execution telemetry event when a sink is configured. Add `bounds?: ExecutionBounds` to `CreateTuvrenOptions` and `RuntimeCoreOptions` with the §3.11 safe defaults, and reject invalid non-finite or non-positive bound values at construction time. A driver cannot raise or disable a bound.
+- **Description:** Implement the framework bounds guard in `@tuvren/runtime`'s turn/run orchestration shell. Enforce `maxIterations` and `maxToolCalls` at iteration and tool-batch boundaries above the driver's `LoopPolicy`, enforce `maxWallClockMs` as an end-to-end deadline that propagates cancellation into in-flight model/tool work, and enforce `maxConcurrentToolCalls` by throttling tool concurrency to the configured cap. On breach of a hard-stop bound, stop the loop, checkpoint a safe terminal outcome, finalize the turn as a `failed` `ExecutionResult` with `TuvrenRuntimeError` code `execution_bound_exceeded` and `details: ExecutionBoundExceededDetails`, let the canonical `turn.end` event mark the failed terminal state, and emit a bounded-execution telemetry event when a sink is configured. Add `bounds?: ExecutionBounds` to `CreateTuvrenOptions` and `RuntimeCoreOptions` with the §3.11 safe defaults, and reject invalid non-finite or non-positive bound values at construction time. A driver cannot raise or disable a bound.
 - **Acceptance Criteria (Gherkin):**
 ```gherkin
 Given ExecutionBounds is defined and the runtime owns the turn loop
 When the framework bounds guard is implemented
 Then exceeding maxIterations, maxToolCalls, or maxWallClockMs stops the loop above driver discretion
 And the turn finalizes as a failed ExecutionResult with code execution_bound_exceeded and correct details
-And a turn.end event carries the same bound metadata
+And the canonical turn.end event marks the failed terminal state while the bound metadata remains on the failed ExecutionResult and bounded-execution telemetry event
 And a bounded-execution telemetry event is emitted when a sink is configured
 And a hung model call or tool execution cannot outlive maxWallClockMs because deadline or cancellation is propagated into the in-flight work
 And parallel tool execution never exceeds maxConcurrentToolCalls because the framework throttles to the configured cap
 And unset bound fields take the documented safe defaults
 And invalid non-finite or non-positive bound values are rejected at construction time
+And supplying both top-level bounds and runtimeOptions.bounds is rejected as invalid_createtuvren_options
 And a driver that always requests continue cannot exceed the framework bound
 ```
 
@@ -1534,7 +1538,7 @@ The execution chain is not closed until every applicable statement below is true
 - The canonical verification path through `tools/scripts/verify.ts` exercises both interactive and headless proving-host variants; `bun run verify` exits zero from a clean checkout after the chain closes.
 - The durability and recovery guarantees are verified under fault injection: a testkit-only fault-injection seam (`createFaultInjectingBackend`) drives the `kernel-crash-recovery` check set; SQLite and PostgreSQL pass the durable crash-recovery subset; `memory` passes the in-process atomicity and concurrency subset; no torn or partial lineage is observable after any injected fault; and the seam is never reachable from any production path.
 - A first-class operational telemetry surface (`@tuvren/core/telemetry` `TuvrenTelemetrySink`) emits lineage-keyed spans and events at turn/iteration/model/tool/checkpoint/recovery/bounded-execution/error points, defaults to `NoopTelemetrySink`, isolates a throwing sink, and is conformance-covered by `framework-operational-telemetry.json` through deterministic steady-state plus targeted recovery fixtures; `@tuvren/telemetry-otel` provides the vendor-neutral OpenTelemetry projection as a standing implementation-specific exception while the semconv vocabulary remains portable authority.
-- The framework enforces execution bounds (`maxIterations`, `maxToolCalls`, `maxWallClockMs`) above driver discretion, including deadline or cancellation propagation so in-flight model/tool work cannot outlive `maxWallClockMs`; breaching a hard-stop bound yields a `failed` `ExecutionResult` with code `execution_bound_exceeded`, a matching `turn.end` event, and a bounded-execution telemetry event, verified by `runtime-api-execution-bounds`. `maxConcurrentToolCalls` is enforced as a throttle on parallel tool execution, and invalid non-finite or non-positive bound configuration is rejected.
+- The framework enforces execution bounds (`maxIterations`, `maxToolCalls`, `maxWallClockMs`) above driver discretion, including deadline or cancellation propagation so in-flight model/tool work cannot outlive `maxWallClockMs`; breaching a hard-stop bound yields a `failed` `ExecutionResult` with code `execution_bound_exceeded`, a failed terminal `turn.end` event, and a bounded-execution telemetry event, with the bound metadata carried by the `ExecutionResult` and telemetry rather than the canonical event shape, verified by `runtime-api-execution-bounds`. `maxConcurrentToolCalls` is enforced as a throttle on parallel tool execution, and invalid non-finite or non-positive bound configuration is rejected.
 - Secret isolation is enforced and verified: credentials are confined to the Provider Gateway and MCP Client edges; the durable, telemetry, and transcript surfaces are credential-free zones; transcript headers redact credential-shaped backend options; the telemetry secret-screening helpers exclude credential-shaped attributes and sanitize telemetry error summaries; and the `secret-isolation` check set asserts that a configured provider key and MCP bearer token appear in no persisted record, no captured telemetry attribute or error summary, and no recorded transcript.
 - The trust-boundary guarantees are verified: approval-gated tool work is non-bypassable, and untrusted MCP/tool inputs are validated before execution with failures surfaced as agent-visible results.
 - `docs/KrakenKernelSpecification.md` states the Crash Recovery Invariant and `docs/KrakenFrameworkSpecification.md` states the Execution Bounds guard that the conformance plans verify; `bun run verify` exits zero from a clean checkout after the production-trust block closes.
