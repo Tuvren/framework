@@ -14,23 +14,23 @@
  * limitations under the License.
  */
 
-import { runPlaygroundScenario } from "./playground-scenarios.js";
+import { runReplScenario } from "./repl-scenarios.js";
 import type {
-  PlaygroundConfig,
-  PlaygroundScenarioMatrixReport,
-  PlaygroundScenarioName,
-  PlaygroundScenarioReport,
-} from "./playground-types.js";
+  ReplConfig,
+  ReplScenarioMatrixReport,
+  ReplScenarioName,
+  ReplScenarioReport,
+} from "./repl-types.js";
 
-export async function runPlaygroundScenarioMatrix(input: {
-  config: Omit<PlaygroundConfig, "scenario">;
-  scenarios: readonly PlaygroundScenarioName[];
-}): Promise<PlaygroundScenarioMatrixReport> {
-  const reports: PlaygroundScenarioReport[] = [];
-  const failedScenarios: PlaygroundScenarioName[] = [];
+export async function runReplScenarioMatrix(input: {
+  config: Omit<ReplConfig, "scenario">;
+  scenarios: readonly ReplScenarioName[];
+}): Promise<ReplScenarioMatrixReport> {
+  const reports: ReplScenarioReport[] = [];
+  const failedScenarios: ReplScenarioName[] = [];
 
   for (const scenario of input.scenarios) {
-    const report = await runPlaygroundScenario({
+    const report = await runReplScenario({
       ...input.config,
       scenario,
     });

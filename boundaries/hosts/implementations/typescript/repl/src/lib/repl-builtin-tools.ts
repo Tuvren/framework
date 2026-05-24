@@ -38,10 +38,10 @@ const WEATHER_CONDITIONS = [
 type CalculatorOperation = (typeof CALCULATOR_OPERATIONS)[number];
 type WeatherUnit = "celsius" | "fahrenheit";
 
-export function createPlaygroundTools(): TuvrenToolDefinition[] {
+export function createReplBuiltinTools(): TuvrenToolDefinition[] {
   return [
     {
-      description: "Search deterministic playground documents",
+      description: "Search deterministic REPL documents",
       execute(input) {
         const query =
           typeof input === "object" &&
@@ -71,7 +71,7 @@ export function createPlaygroundTools(): TuvrenToolDefinition[] {
     },
     {
       approval: true,
-      description: "Send a deterministic playground email",
+      description: "Send a deterministic REPL email",
       execute(input) {
         const to =
           typeof input === "object" &&

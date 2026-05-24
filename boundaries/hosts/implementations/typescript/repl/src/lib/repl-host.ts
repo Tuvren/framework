@@ -15,12 +15,14 @@
  */
 
 import { createMemoryBackend } from "@tuvren/backend-memory";
+import { createPostgresBackend } from "@tuvren/backend-postgres";
 import { createSqliteBackend } from "@tuvren/backend-sqlite";
 import { createReActDriver, REACT_DRIVER_ID } from "@tuvren/driver-react";
 import {
   createDriverRegistry,
   createGrpcRuntimeKernel,
   createRuntimeKernel,
+  createTuvren,
   createTuvrenRuntime as createTuvrenRuntimeCore,
   type ExecutionHandle,
   type RuntimeBackend,
@@ -29,17 +31,18 @@ import {
 import { toAgUiEvents } from "@tuvren/stream-agui";
 import { teeTuvrenStreamEvents } from "@tuvren/stream-core";
 import { toSseFrames } from "@tuvren/stream-sse";
-import { createPlaygroundProvider } from "./playground-provider.js";
+import { INVALID_REPL_CONFIG_CODE } from "./repl-config.js";
+import { createReplProvider } from "./repl-provider.js";
 import type {
-  PlaygroundConfig,
-  PlaygroundHost,
-  PlaygroundStreamProjection,
-  PlaygroundThreadSummary,
-} from "./playground-types.js";
+  ReplConfig,
+  ReplHost,
+  ReplStreamProjection,
+  ReplThreadSummary,
+} from "./repl-types.js";
 
-export function createPlaygroundHost(config: PlaygroundConfig): PlaygroundHost {
+export function createReplHost(config: ReplConfig): ReplHost {
   const kernel = createKernel(config);
-  const provider = createPlaygroundProvider({
+  const provider = createReplProvider({
     aimockBaseUrl: config.aimockBaseUrl,
     googleApiKey: config.googleApiKey,
     modelId: config.modelId,
@@ -56,6 +59,49 @@ export function createPlaygroundHost(config: PlaygroundConfig): PlaygroundHost {
     kernel,
   });
 
+  return createReplHostFromParts(config, runtime, provider);
+}
+
+export async function createReplHostUsingCreateTuvren(
+  config: ReplConfig
+): Promise<ReplHost> {
+  const provider = createReplProvider({
+    aimockBaseUrl: config.aimockBaseUrl,
+    googleApiKey: config.googleApiKey,
+    modelId: config.modelId,
+    mode: config.providerMode,
+    scenario: config.scenario,
+  });
+  const instance = await createTuvren({
+    backend: createTuvrenBackendConfig(config),
+    ...(config.kernelMode === "rust-grpc"
+      ? { kernel: createKernel(config) }
+      : {}),
+    driver: {
+      kind: "react",
+      options: {
+        providerCallMode: "stream",
+      },
+    },
+    provider,
+  });
+
+  return createReplHostFromParts(
+    config,
+    instance.runtime,
+    provider,
+    async () => {
+      await instance[Symbol.asyncDispose]();
+    }
+  );
+}
+
+function createReplHostFromParts(
+  config: ReplConfig,
+  runtime: ReplHost["runtime"],
+  provider: ReplHost["provider"],
+  dispose?: () => Promise<void>
+): ReplHost {
   return {
     approve(handle, response) {
       return handle.resolveApproval(response);
@@ -71,6 +117,7 @@ export function createPlaygroundHost(config: PlaygroundConfig): PlaygroundHost {
       handle.cancel();
     },
     config,
+    ...(dispose === undefined ? {} : { dispose }),
     async createThread() {
       const thread = await runtime.createThread({});
       return {
@@ -81,12 +128,15 @@ export function createPlaygroundHost(config: PlaygroundConfig): PlaygroundHost {
       };
     },
     executeTurn(input) {
+      const requestedConfig = input.config;
+
       return runtime.executeTurn({
         branchId: input.branchId,
         config: {
-          ...input.config,
-          model: input.config?.model ?? provider,
-          name: input.config?.name ?? "primary",
+          ...requestedConfig,
+          model: requestedConfig?.model ?? provider,
+          name: requestedConfig?.name ?? "primary",
+          systemPrompt: requestedConfig?.systemPrompt ?? config.systemPrompt,
         },
         signal: input.signal,
         threadId: input.threadId,
@@ -99,6 +149,7 @@ export function createPlaygroundHost(config: PlaygroundConfig): PlaygroundHost {
       const result = await runtime.readBranchMessages({ branchId });
       return result.messages;
     },
+    provider,
     runtime,
     steer(handle, signal) {
       handle.steer(signal);
@@ -107,14 +158,14 @@ export function createPlaygroundHost(config: PlaygroundConfig): PlaygroundHost {
 }
 
 export async function createThreadSummary(
-  host: PlaygroundHost
-): Promise<PlaygroundThreadSummary> {
+  host: ReplHost
+): Promise<ReplThreadSummary> {
   return await host.createThread();
 }
 
 async function projectHandle(
   handle: ExecutionHandle
-): Promise<PlaygroundStreamProjection> {
+): Promise<ReplStreamProjection> {
   const [canonicalBranch, sseBranch, aguiBranch] = teeTuvrenStreamEvents(
     handle.events(),
     3
@@ -132,13 +183,13 @@ async function projectHandle(
   };
 }
 
-function createKernel(config: PlaygroundConfig) {
+function createKernel(config: ReplConfig) {
   if ((config.kernelMode ?? "typescript-local") === "rust-grpc") {
     if (config.kernelGrpcBaseUrl === undefined) {
       throw new TuvrenRuntimeError(
-        "rust-grpc playground kernel requires a gRPC base URL",
+        "rust-grpc repl kernel requires a gRPC base URL",
         {
-          code: "invalid_playground_config",
+          code: INVALID_REPL_CONFIG_CODE,
         }
       );
     }
@@ -155,16 +206,23 @@ function createKernel(config: PlaygroundConfig) {
   return createRuntimeKernel({ backend });
 }
 
-function createBackend(config: PlaygroundConfig): RuntimeBackend {
+function createBackend(config: ReplConfig): RuntimeBackend {
   if (config.backend === "memory") {
     return createMemoryBackend();
   }
 
+  if (config.backend === "postgres") {
+    return createPostgresBackend({
+      database: config.postgresDatabase,
+      schemaName: config.postgresSchemaName,
+    });
+  }
+
   if (config.sqlitePath === undefined) {
     throw new TuvrenRuntimeError(
-      "sqlite playground backend requires a database path",
+      "sqlite repl backend requires a database path",
       {
-        code: "invalid_playground_config",
+        code: INVALID_REPL_CONFIG_CODE,
       }
     );
   }
@@ -172,6 +230,40 @@ function createBackend(config: PlaygroundConfig): RuntimeBackend {
   return createSqliteBackend({
     databasePath: config.sqlitePath,
   });
+}
+
+function createTuvrenBackendConfig(
+  config: ReplConfig
+): Parameters<typeof createTuvren>[0]["backend"] {
+  if (config.backend === "memory") {
+    return "memory";
+  }
+
+  if (config.backend === "postgres") {
+    return {
+      kind: "postgres",
+      options: {
+        database: config.postgresDatabase,
+        schemaName: config.postgresSchemaName,
+      },
+    };
+  }
+
+  if (config.sqlitePath === undefined) {
+    throw new TuvrenRuntimeError(
+      "sqlite repl backend requires a database path",
+      {
+        code: INVALID_REPL_CONFIG_CODE,
+      }
+    );
+  }
+
+  return {
+    kind: "sqlite",
+    options: {
+      databasePath: config.sqlitePath,
+    },
+  };
 }
 
 async function collect<T>(events: AsyncIterable<T>): Promise<T[]> {

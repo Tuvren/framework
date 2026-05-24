@@ -32,21 +32,19 @@ import {
   TuvrenRuntimeError,
 } from "@tuvren/runtime";
 import {
-  DEFAULT_GEMINI_PLAYGROUND_MODEL_ID,
+  DEFAULT_GEMINI_REPL_MODEL_ID,
+  INVALID_REPL_CONFIG_CODE,
   isAimockProviderMode,
   resolveGoogleApiKey,
-} from "./playground-config.js";
-import type {
-  PlaygroundProviderMode,
-  PlaygroundScenarioName,
-} from "./playground-types.js";
+} from "./repl-config.js";
+import type { ReplProviderMode, ReplScenarioName } from "./repl-types.js";
 
-export function createPlaygroundProvider(input: {
+export function createReplProvider(input: {
   aimockBaseUrl?: string;
   googleApiKey?: string;
   modelId?: string;
-  mode: PlaygroundProviderMode;
-  scenario: PlaygroundScenarioName;
+  mode: ReplProviderMode;
+  scenario: ReplScenarioName;
 }): TuvrenProvider {
   if (isAimockProviderMode(input.mode)) {
     return createAimockProvider(input.mode, input.aimockBaseUrl, input.modelId);
@@ -54,7 +52,7 @@ export function createPlaygroundProvider(input: {
 
   if (input.mode === "ai-sdk-mock") {
     return createAiSdkProviderBridge({
-      id: "playground:ai-sdk-mock",
+      id: "repl:ai-sdk-mock",
       model: createMockLanguageModel(input.scenario),
     });
   }
@@ -64,9 +62,9 @@ export function createPlaygroundProvider(input: {
 
     if (apiKey === undefined) {
       throw new TuvrenRuntimeError(
-        "ai-sdk-google playground provider requires GOOGLE_GENERATIVE_AI_API_KEY or GEMINI_API_KEY",
+        "ai-sdk-google repl provider requires GOOGLE_GENERATIVE_AI_API_KEY or GEMINI_API_KEY",
         {
-          code: "invalid_playground_config",
+          code: INVALID_REPL_CONFIG_CODE,
         }
       );
     }
@@ -76,8 +74,8 @@ export function createPlaygroundProvider(input: {
     });
 
     return createAiSdkProviderBridge({
-      id: "playground:ai-sdk-google",
-      model: google(input.modelId ?? DEFAULT_GEMINI_PLAYGROUND_MODEL_ID),
+      id: "repl:ai-sdk-google",
+      model: google(input.modelId ?? DEFAULT_GEMINI_REPL_MODEL_ID),
     });
   }
 
@@ -85,7 +83,7 @@ export function createPlaygroundProvider(input: {
 }
 
 function createAimockProvider(
-  mode: Extract<PlaygroundProviderMode, `aimock-${string}`>,
+  mode: Extract<ReplProviderMode, `aimock-${string}`>,
   baseUrl: string | undefined,
   modelId: string | undefined
 ): TuvrenProvider {
@@ -93,9 +91,9 @@ function createAimockProvider(
 
   if (aimockBaseUrl === undefined || aimockBaseUrl.length === 0) {
     throw new TuvrenRuntimeError(
-      `${mode} playground provider requires --aimock-base-url or TUVREN_PLAYGROUND_AIMOCK_BASE_URL`,
+      `${mode} repl provider requires --aimock-base-url, TUVREN_REPL_AIMOCK_BASE_URL, or TUVREN_PLAYGROUND_AIMOCK_BASE_URL`,
       {
-        code: "invalid_playground_config",
+        code: INVALID_REPL_CONFIG_CODE,
       }
     );
   }
@@ -108,7 +106,7 @@ function createAimockProvider(
       });
 
       return createAiSdkProviderBridge({
-        id: "playground:aimock-openai",
+        id: "repl:aimock-openai",
         model: openai.chat(modelId ?? "gpt-4o-mini"),
       });
     }
@@ -119,7 +117,7 @@ function createAimockProvider(
       });
 
       return createAiSdkProviderBridge({
-        id: "playground:aimock-anthropic",
+        id: "repl:aimock-anthropic",
         model: anthropic(modelId ?? "claude-3-5-haiku-latest"),
       });
     }
@@ -130,28 +128,26 @@ function createAimockProvider(
       });
 
       return createAiSdkProviderBridge({
-        id: "playground:aimock-google",
-        model: google(modelId ?? DEFAULT_GEMINI_PLAYGROUND_MODEL_ID),
+        id: "repl:aimock-google",
+        model: google(modelId ?? DEFAULT_GEMINI_REPL_MODEL_ID),
       });
     }
     default:
       throw new TuvrenRuntimeError(
-        `unsupported aimock playground provider "${mode}"`,
+        `unsupported aimock repl provider "${mode}"`,
         {
-          code: "invalid_playground_config",
+          code: INVALID_REPL_CONFIG_CODE,
         }
       );
   }
 }
 
-function createFixtureProvider(
-  scenario: PlaygroundScenarioName
-): TuvrenProvider {
+function createFixtureProvider(scenario: ReplScenarioName): TuvrenProvider {
   return {
     generate(prompt) {
       return Promise.resolve(createFixtureResponse(prompt, scenario));
     },
-    id: `playground:fixture:${scenario}`,
+    id: `repl:fixture:${scenario}`,
     stream(prompt) {
       return streamFixtureChunks(prompt, scenario);
     },
@@ -160,11 +156,11 @@ function createFixtureProvider(
 
 async function* streamFixtureChunks(
   prompt: TuvrenPrompt,
-  scenario: PlaygroundScenarioName
+  scenario: ReplScenarioName
 ): AsyncIterable<ProviderStreamChunk> {
   await Promise.resolve();
 
-  if (scenario === "steering") {
+  if (scenario === "orchestration" || scenario === "steering") {
     // Keep a deterministic steering window wide enough for the full Nx verify
     // lane. A shorter delay was fast in isolation but too tight once the
     // broader workspace load and stream fanout were active.
@@ -224,7 +220,7 @@ async function* streamFixtureChunks(
 
 function createFixtureResponse(
   prompt: TuvrenPrompt,
-  scenario: PlaygroundScenarioName
+  scenario: ReplScenarioName
 ): TuvrenModelResponse {
   if (prompt.messages.some((message) => message.role === "tool")) {
     return {
@@ -278,12 +274,12 @@ function createFixtureResponse(
         parts: [
           {
             data: { scenario, status: "ready" },
-            name: "playground_summary",
+            name: "repl_summary",
             type: "structured",
           },
         ],
         providerMetadata: {
-          playground: { mode: "fixture" },
+          repl: { mode: "fixture" },
         },
       };
     case "tools":
@@ -311,13 +307,31 @@ function createFixtureResponse(
           },
         ],
         providerMetadata: {
-          playground: {
+          repl: {
             requestId: "fixture-request-1",
           },
         },
         usage: {
           inputTokens: 8,
           outputTokens: 5,
+        },
+      };
+    case "extension":
+      return {
+        finishReason: "stop",
+        parts: [{ text: "Extension flow complete.", type: "text" }],
+        usage: {
+          inputTokens: 9,
+          outputTokens: 4,
+        },
+      };
+    case "orchestration":
+      return {
+        finishReason: "stop",
+        parts: [{ text: "Orchestration flow complete.", type: "text" }],
+        usage: {
+          inputTokens: 9,
+          outputTokens: 4,
         },
       };
     case "cancel":
@@ -330,7 +344,7 @@ function createFixtureResponse(
     case "streaming":
       return {
         finishReason: "stop",
-        parts: [{ text: `Playground ${scenario} complete.`, type: "text" }],
+        parts: [{ text: `REPL ${scenario} complete.`, type: "text" }],
         usage: {
           inputTokens: 9,
           outputTokens: 6,
@@ -339,14 +353,12 @@ function createFixtureResponse(
     default:
       return {
         finishReason: "stop",
-        parts: [{ text: "Playground complete.", type: "text" }],
+        parts: [{ text: "REPL complete.", type: "text" }],
       };
   }
 }
 
-function createMockLanguageModel(
-  scenario: PlaygroundScenarioName
-): LanguageModelV3 {
+function createMockLanguageModel(scenario: ReplScenarioName): LanguageModelV3 {
   return {
     doGenerate() {
       return Promise.resolve(createGenerateResult(scenario));
@@ -357,15 +369,15 @@ function createMockLanguageModel(
         stream: streamAiSdkParts(result),
       });
     },
-    modelId: "playground-mock-model",
-    provider: "playground-mock-provider",
+    modelId: "repl-mock-model",
+    provider: "repl-mock-provider",
     specificationVersion: "v3",
     supportedUrls: {},
   };
 }
 
 function createGenerateResult(
-  scenario: PlaygroundScenarioName,
+  scenario: ReplScenarioName,
   _options?: LanguageModelV3CallOptions
 ): LanguageModelV3GenerateResult {
   const text =
@@ -377,7 +389,7 @@ function createGenerateResult(
     content: [
       {
         providerMetadata: {
-          playground: {
+          repl: {
             scenario,
           },
         },
@@ -391,10 +403,10 @@ function createGenerateResult(
     },
     response: {
       headers: {
-        "x-playground": "ai-sdk-mock",
+        "x-repl": "ai-sdk-mock",
       },
-      id: "playground-response",
-      modelId: "playground-mock-model",
+      id: "repl-response",
+      modelId: "repl-mock-model",
       timestamp: new Date(0),
     },
     usage: {
@@ -410,7 +422,7 @@ function createGenerateResult(
         total: 5,
       },
       raw: {
-        playground: {
+        repl: {
           scenario,
         },
       },
@@ -457,7 +469,7 @@ function streamAiSdkParts(
       controller.enqueue({
         finishReason: result.finishReason,
         providerMetadata: {
-          playground: {
+          repl: {
             response: "streamed",
           },
         },

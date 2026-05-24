@@ -16,6 +16,11 @@
           "projects": ["kernel-interop-grpc"],
           "target": "codegen",
           "params": "ignore"
+        },
+        {
+          "projects": ["host-repl"],
+          "target": "build",
+          "params": "ignore"
         }
       ],
       "options": {

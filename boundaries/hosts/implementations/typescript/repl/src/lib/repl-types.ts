@@ -30,16 +30,16 @@ import type {
 } from "@tuvren/runtime";
 import type { TuvrenSseFrame } from "@tuvren/stream-sse";
 
-export type PlaygroundBackendMode = "memory" | "postgres" | "sqlite";
-export type PlaygroundKernelMode = "rust-grpc" | "typescript-local";
-export type PlaygroundProviderMode =
+export type ReplBackendMode = "memory" | "postgres" | "sqlite";
+export type ReplKernelMode = "rust-grpc" | "typescript-local";
+export type ReplProviderMode =
   | "aimock-anthropic"
   | "aimock-google"
   | "aimock-openai"
   | "ai-sdk-google"
   | "ai-sdk-mock"
   | "fixture";
-export type PlaygroundScenarioName =
+export type ReplScenarioName =
   | "approval"
   | "branching"
   | "cancel"
@@ -52,29 +52,29 @@ export type PlaygroundScenarioName =
   | "structured"
   | "tools";
 
-export interface PlaygroundConfig {
+export interface ReplConfig {
   aimockBaseUrl?: string;
-  backend: PlaygroundBackendMode;
+  backend: ReplBackendMode;
   googleApiKey?: string;
   kernelGrpcBaseUrl?: string;
-  kernelMode?: PlaygroundKernelMode;
+  kernelMode?: ReplKernelMode;
   modelId?: string;
   postgresDatabase?: string;
   postgresSchemaName?: string;
-  providerMode: PlaygroundProviderMode;
-  scenario: PlaygroundScenarioName;
+  providerMode: ReplProviderMode;
+  scenario: ReplScenarioName;
   sqlitePath?: string;
   systemPrompt?: string;
 }
 
-export interface PlaygroundTurnInput {
+export interface ReplTurnInput {
   branchId: string;
   config?: AgentConfig;
   signal: InputSignal;
   threadId: string;
 }
 
-export interface PlaygroundThreadSummary {
+export interface ReplThreadSummary {
   branchId: string;
   headTurnNodeHash?: HashString;
   rootTurnNodeHash: HashString;
@@ -82,20 +82,20 @@ export interface PlaygroundThreadSummary {
   threadId: string;
 }
 
-export interface PlaygroundStreamProjection {
+export interface ReplStreamProjection {
   agui: AGUIEvent[];
   canonical: TuvrenStreamEvent[];
   sse: TuvrenSseFrame[];
 }
 
-export interface PlaygroundTelemetryEvidence {
+export interface ReplTelemetryEvidence {
   attributes: Record<string, string | string[] | null>;
   observedKeys: TuvrenRuntimeTelemetryAttributeKey[];
   schemaUrl: string;
 }
 
-export interface PlaygroundScenarioReport {
-  backend: PlaygroundBackendMode;
+export interface ReplScenarioReport {
+  backend: ReplBackendMode;
   checks: Record<string, boolean>;
   error?: {
     code?: string;
@@ -106,30 +106,30 @@ export interface PlaygroundScenarioReport {
     canonicalTypes: string[];
     sseEvents: string[];
   };
-  kernelMode: PlaygroundKernelMode;
-  providerMode: PlaygroundProviderMode;
-  scenario: PlaygroundScenarioName;
+  kernelMode: ReplKernelMode;
+  providerMode: ReplProviderMode;
+  scenario: ReplScenarioName;
   status: ExecutionStatus;
-  telemetry: PlaygroundTelemetryEvidence;
-  thread: PlaygroundThreadSummary;
+  telemetry: ReplTelemetryEvidence;
+  thread: ReplThreadSummary;
 }
 
-export interface PlaygroundScenarioMatrixReport {
-  backend: PlaygroundBackendMode;
-  kernelMode: PlaygroundKernelMode;
+export interface ReplScenarioMatrixReport {
+  backend: ReplBackendMode;
+  kernelMode: ReplKernelMode;
   modelId?: string;
-  providerMode: PlaygroundProviderMode;
-  reports: PlaygroundScenarioReport[];
-  scenarios: PlaygroundScenarioName[];
+  providerMode: ReplProviderMode;
+  reports: ReplScenarioReport[];
+  scenarios: ReplScenarioName[];
   summary: {
     allChecksPassed: boolean;
     failedScenarioCount: number;
-    failedScenarios: PlaygroundScenarioName[];
+    failedScenarios: ReplScenarioName[];
     passedScenarioCount: number;
   };
 }
 
-export interface PlaygroundHost {
+export interface ReplHost {
   approve(handle: ExecutionHandle, response: ApprovalResponse): ExecutionHandle;
   branchFromHead(input: {
     branchId?: string;
@@ -141,17 +141,18 @@ export interface PlaygroundHost {
     threadId: string;
   }>;
   cancel(handle: ExecutionHandle): void;
-  config: PlaygroundConfig;
-  createThread(): Promise<PlaygroundThreadSummary>;
-  executeTurn(input: PlaygroundTurnInput): ExecutionHandle;
-  project(handle: ExecutionHandle): Promise<PlaygroundStreamProjection>;
+  config: ReplConfig;
+  createThread(): Promise<ReplThreadSummary>;
+  dispose?(): Promise<void>;
+  executeTurn(input: ReplTurnInput): ExecutionHandle;
+  project(handle: ExecutionHandle): Promise<ReplStreamProjection>;
   provider: TuvrenProvider;
   readBranchMessages(branchId: string): Promise<unknown[]>;
   runtime: TuvrenRuntime;
   steer(handle: ExecutionHandle, signal: InputSignal): void;
 }
 
-export interface PlaygroundScenarioExecutionPlan {
+export interface ReplScenarioExecutionPlan {
   config?: Omit<AgentConfig, "name">;
   model?: TuvrenProvider;
   signal: InputSignal;

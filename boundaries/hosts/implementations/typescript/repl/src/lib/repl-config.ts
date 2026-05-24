@@ -19,19 +19,19 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { TuvrenRuntimeError } from "@tuvren/runtime";
 import type {
-  PlaygroundBackendMode,
-  PlaygroundConfig,
-  PlaygroundKernelMode,
-  PlaygroundProviderMode,
-  PlaygroundScenarioName,
-} from "./playground-types.js";
+  ReplBackendMode,
+  ReplConfig,
+  ReplKernelMode,
+  ReplProviderMode,
+  ReplScenarioName,
+} from "./repl-types.js";
 
 const AUTO_POSTGRES_SCHEMA_VALUE = "auto";
 const AUTO_SQLITE_PATH_VALUE = "auto";
 const DEFAULT_POSTGRES_DATABASE = "tuvren_runtime";
 export const INVALID_REPL_CONFIG_CODE = "invalid_repl_config";
-export const DEFAULT_GEMINI_PLAYGROUND_MODEL_ID = "gemini-2.5-flash";
-export const AIMOCK_PLAYGROUND_PROVIDER_MODES = [
+export const DEFAULT_GEMINI_REPL_MODEL_ID = "gemini-2.5-flash";
+export const AIMOCK_REPL_PROVIDER_MODES = [
   "aimock-openai",
   "aimock-anthropic",
   "aimock-google",
@@ -49,7 +49,7 @@ const OPTION_KEY_MAP = {
   "sqlite-path": "sqlitePath",
 } as const;
 
-export const DEFAULT_PLAYGROUND_SCENARIOS: readonly PlaygroundScenarioName[] = [
+export const DEFAULT_REPL_SCENARIOS: readonly ReplScenarioName[] = [
   "streaming",
   "structured",
   "tools",
@@ -62,13 +62,18 @@ export const DEFAULT_PLAYGROUND_SCENARIOS: readonly PlaygroundScenarioName[] = [
   "orchestration",
 ];
 
-export const DEFAULT_GEMINI_PLAYGROUND_SCENARIOS: readonly PlaygroundScenarioName[] =
-  ["streaming", "metadata", "structured", "tools", "approval"];
+export const DEFAULT_GEMINI_REPL_SCENARIOS: readonly ReplScenarioName[] = [
+  "streaming",
+  "metadata",
+  "structured",
+  "tools",
+  "approval",
+];
 
-export function loadPlaygroundConfig(
+export function loadReplConfig(
   env: Record<string, string | undefined>,
   argv: readonly string[]
-): PlaygroundConfig {
+): ReplConfig {
   const options = parseArgs(argv);
   const config = {
     aimockBaseUrl: normalizeAimockBaseUrl(
@@ -104,15 +109,15 @@ export function loadPlaygroundConfig(
       readReplEnv(env, "SYSTEM_PROMPT") ??
         readReplEnv(env, "SYSTEM_INSTRUCTIONS")
     ),
-  } satisfies PlaygroundConfig;
+  } satisfies ReplConfig;
 
-  assertValidPlaygroundConfig(config);
+  assertValidReplConfig(config);
 
   return {
     ...config,
     modelId:
       config.providerMode === "ai-sdk-google"
-        ? (config.modelId ?? DEFAULT_GEMINI_PLAYGROUND_MODEL_ID)
+        ? (config.modelId ?? DEFAULT_GEMINI_REPL_MODEL_ID)
         : config.modelId,
     postgresDatabase:
       config.backend === "postgres"
@@ -150,7 +155,7 @@ function normalizeSqlitePath(value: string | undefined): string | undefined {
 
   // The Nx SQLite smoke target passes "auto" so repeated validation cannot
   // inherit stale durable state from a previous run.
-  return join(tmpdir(), `tuvren-playground-${randomUUID()}.sqlite`);
+  return join(tmpdir(), `tuvren-repl-${randomUUID()}.sqlite`);
 }
 
 function normalizeModelId(value: string | undefined): string | undefined {
@@ -182,7 +187,7 @@ function normalizePostgresSchemaName(
     return value;
   }
 
-  return `tuvren-playground-${randomUUID().replaceAll("-", "_")}`;
+  return `tuvren-repl-${randomUUID().replaceAll("-", "_")}`;
 }
 
 function normalizeScenarioValue(value: string | undefined): string | undefined {
@@ -220,11 +225,9 @@ export function resolveGoogleApiKey(
 }
 
 export function isAimockProviderMode(
-  value: PlaygroundProviderMode
-): value is (typeof AIMOCK_PLAYGROUND_PROVIDER_MODES)[number] {
-  return (AIMOCK_PLAYGROUND_PROVIDER_MODES as readonly string[]).includes(
-    value
-  );
+  value: ReplProviderMode
+): value is (typeof AIMOCK_REPL_PROVIDER_MODES)[number] {
+  return (AIMOCK_REPL_PROVIDER_MODES as readonly string[]).includes(value);
 }
 
 export function readReplEnv(
@@ -246,7 +249,7 @@ export function readReplEnv(
   return env[`TUVREN_REPL_${suffix}`] ?? env[`TUVREN_PLAYGROUND_${suffix}`];
 }
 
-export function assertValidPlaygroundConfig(config: PlaygroundConfig): void {
+export function assertValidReplConfig(config: ReplConfig): void {
   if (config.backend === "sqlite" && config.sqlitePath === undefined) {
     throw new TuvrenRuntimeError(
       "sqlite repl scenarios require --sqlite-path, TUVREN_REPL_SQLITE_PATH, or TUVREN_PLAYGROUND_SQLITE_PATH",
@@ -336,7 +339,7 @@ function parseArgs(argv: readonly string[]): Record<string, string> {
   return options;
 }
 
-function parseBackend(value: string | undefined): PlaygroundBackendMode {
+function parseBackend(value: string | undefined): ReplBackendMode {
   const normalized = value ?? "memory";
 
   switch (normalized) {
@@ -351,7 +354,7 @@ function parseBackend(value: string | undefined): PlaygroundBackendMode {
   }
 }
 
-function parseKernelMode(value: string | undefined): PlaygroundKernelMode {
+function parseKernelMode(value: string | undefined): ReplKernelMode {
   const normalized = value ?? "typescript-local";
 
   switch (normalized) {
@@ -368,7 +371,7 @@ function parseKernelMode(value: string | undefined): PlaygroundKernelMode {
   }
 }
 
-function parseProviderMode(value: string | undefined): PlaygroundProviderMode {
+function parseProviderMode(value: string | undefined): ReplProviderMode {
   const normalized = value ?? "fixture";
 
   switch (normalized) {
@@ -389,7 +392,7 @@ function parseProviderMode(value: string | undefined): PlaygroundProviderMode {
   }
 }
 
-function parseScenario(value: string | undefined): PlaygroundScenarioName {
+function parseScenario(value: string | undefined): ReplScenarioName {
   const normalized = value ?? "streaming";
 
   switch (normalized) {

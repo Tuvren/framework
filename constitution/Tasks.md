@@ -16,7 +16,7 @@
 ### Brownfield Continuity Note
 
 - Epics A-AL remain historical context. Epic AL's closure of the staged gates is the foundation this chain extends.
-- The current repo proves the host-facing SDK through the serious REPL host (`@tuvren/repl-host`) and its named `proving-host:*` validation lanes; exercises PostgreSQL as a first-class backend across kernel conformance and proving-host reload; closes the portability gate through `tools/scripts/portability-gate.ts`; and now carries the shared primitive surface in `@tuvren/core` with source-bearing runtime implementation in `@tuvren/runtime`. The old contract package handles and `@tuvren/runtime-core` are compatibility shims only; `@tuvren/playground-host` and the remaining playground-named REPL internals are still active retirement targets in Epic AT.
+- The current repo proves the host-facing SDK through the serious REPL host (`@tuvren/repl-host`) and its named `proving-host:*` validation lanes; exercises PostgreSQL as a first-class backend across kernel conformance and proving-host reload; closes the portability gate through `tools/scripts/portability-gate.ts`; and now carries the shared primitive surface in `@tuvren/core` with source-bearing runtime implementation in `@tuvren/runtime`. The old contract package handles and `@tuvren/runtime-core` are compatibility shims only; Epic AT retired `@tuvren/playground-host` and the remaining playground-named REPL internals in favor of the production REPL/headless CLI.
 - Historical closure inventories live under `constitution/archived/` for audit only.
 
 ### Sequential Scope Rule
@@ -38,7 +38,7 @@
 
 - **Block 1 — Boundary correctness gate (Epics AM, AN, AO):** closed. The kernel now exposes `thread.list` with the corrected 30-operation narrative, `ExecutionHandle` exposes base-handle `awaitResult`, and `TuvrenRuntime` exposes the five-method durable-read surface (`listThreads`, `listBranches`, `getTurnState`, `getTurnHistory`, `readBranchMessages`).
 - **Block 2 — Curated surface + ergonomics (Epics AP, AQ, AR):** closed. Epic AP landed `@tuvren/core` and folded the source-bearing runtime implementation into `@tuvren/runtime`. Epic AQ added the schema-agnostic `defineTool` helper (Zod / Standard Schema / wrapped JSON Schema with type inference). Epic AR added the `createTuvren({...})` batteries-included factory with full lifecycle conformance across memory, SQLite, and PostgreSQL backends.
-- **Block 3 — Capability spikes (Epics AS, AT):** add `@tuvren/mcp-client` as a first-class tool source over stdio + Streamable HTTP-backed public `http-sse` transports; retire `@tuvren/playground-host`, rename internal REPL host modules to drop the playground naming, add headless stdin mode for the reference host, add JSONL transcript capture/replay.
+- **Block 3 — Capability spikes (Epics AS, AT):** add `@tuvren/mcp-client` as a first-class tool source over stdio + Streamable HTTP-backed public `http-sse` transports; retire `@tuvren/playground-host`, rename internal REPL host modules to drop the playground naming, add headless stdin mode for the reference host, add streaming JSONL output, and add JSONL transcript capture/replay.
 
 ### Future / Deferred Scope
 
@@ -1001,7 +1001,7 @@ And typecheck passes for hosts using both the curated re-export and direct @tuvr
 
 ### Epic AT — Reference Host Consolidation + Headless + Transcript (KRT)
 
-**Status:** Active — depends on Epics AO, AP, AQ, AR, AS
+**Status:** Done — all 9 tickets implemented and validated through focused REPL tests, transcript replay conformance, proving-host interactive/headless target lanes, and Rust interop smoke with headless MCP coverage.
 
 **KRT-AT001 Delete `@tuvren/playground-host` and Clean Up Nx Targets**
 - **Type:** Chore

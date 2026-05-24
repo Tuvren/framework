@@ -1050,6 +1050,55 @@
     {
       "assertions": [
         {
+          "equals": "passed",
+          "field": "$.provingHost.replay.status",
+          "kind": "resultField"
+        },
+        {
+          "equals": true,
+          "field": "$.provingHost.replay.deterministicAsserted",
+          "kind": "resultField"
+        },
+        {
+          "equals": 1,
+          "field": "$.provingHost.replay.inputCount",
+          "kind": "resultField"
+        },
+        {
+          "equals": [],
+          "field": "$.provingHost.replay.mismatches",
+          "kind": "resultField"
+        },
+        {
+          "contains": "header",
+          "field": "$.provingHost.transcriptRecordKinds",
+          "kind": "resultField"
+        },
+        {
+          "contains": "output",
+          "field": "$.provingHost.headlessRecordKinds",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "proving-host-headless-transcript-replay.deterministic-memory-pass",
+      "evidence": [
+        "result.provingHost.replay.status",
+        "result.provingHost.replay.deterministicAsserted",
+        "result.provingHost.replay.inputCount",
+        "result.provingHost.replay.mismatches",
+        "result.provingHost.transcriptRecordKinds",
+        "result.provingHost.headlessRecordKinds"
+      ],
+      "input": {
+        "backend": "memory",
+        "providerMode": "fixture",
+        "stdin": ".status\n"
+      },
+      "operation": "runtime.proving-host.headless-transcript-replay"
+    },
+    {
+      "assertions": [
+        {
           "equals": true,
           "field": "$.schemaAuthoring.hasSchemaSymbol",
           "kind": "resultField"

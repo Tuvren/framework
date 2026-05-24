@@ -13,38 +13,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional proving-host surface.
 
-// biome-ignore lint/performance/noBarrelFile: This package entrypoint is the intentional proving-host surface.
+export { createProofExtension } from "./lib/proof-extension.js";
 export {
-  AIMOCK_PLAYGROUND_PROVIDER_MODES as AIMOCK_REPL_PROVIDER_MODES,
-  DEFAULT_GEMINI_PLAYGROUND_MODEL_ID,
-  DEFAULT_GEMINI_PLAYGROUND_SCENARIOS as DEFAULT_GEMINI_REPL_SCENARIOS,
-  DEFAULT_PLAYGROUND_SCENARIOS as DEFAULT_REPL_SCENARIOS,
+  AIMOCK_REPL_PROVIDER_MODES,
+  DEFAULT_GEMINI_REPL_MODEL_ID,
+  DEFAULT_GEMINI_REPL_SCENARIOS,
+  DEFAULT_REPL_SCENARIOS,
   isAimockProviderMode,
-  loadPlaygroundConfig as loadReplConfig,
+  loadReplConfig,
   readReplEnv,
   resolveGoogleApiKey,
-} from "./lib/playground-config.js";
-export { createPlaygroundHost as createReplHost } from "./lib/playground-host.js";
+} from "./lib/repl-config.js";
+export { createReplHost } from "./lib/repl-host.js";
 export {
   haveAllChecksPassed,
-  runPlaygroundScenarioMatrix as runReplScenarioMatrix,
-} from "./lib/playground-matrix.js";
-export { runPlaygroundScenario as runReplScenario } from "./lib/playground-scenarios.js";
-export type {
-  PlaygroundBackendMode as ReplBackendMode,
-  PlaygroundConfig as ReplConfig,
-  PlaygroundHost as ReplHost,
-  PlaygroundKernelMode as ReplKernelMode,
-  PlaygroundProviderMode as ReplProviderMode,
-  PlaygroundScenarioMatrixReport as ReplScenarioMatrixReport,
-  PlaygroundScenarioName as ReplScenarioName,
-  PlaygroundScenarioReport as ReplScenarioReport,
-} from "./lib/playground-types.js";
-export { createProofExtension } from "./lib/proof-extension.js";
+  runReplScenarioMatrix,
+} from "./lib/repl-scenario-matrix.js";
+export { runReplScenario } from "./lib/repl-scenarios.js";
 export {
   createReplShell,
   REPL_HELP_TEXT,
   runReplCommand,
   runReplInput,
 } from "./lib/repl-shell.js";
+export type {
+  ReplBackendMode,
+  ReplConfig,
+  ReplHost,
+  ReplKernelMode,
+  ReplProviderMode,
+  ReplScenarioMatrixReport,
+  ReplScenarioName,
+  ReplScenarioReport,
+} from "./lib/repl-types.js";

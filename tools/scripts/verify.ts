@@ -63,7 +63,6 @@ export const WORKSPACE_TEST_PROJECTS: readonly string[] = [
   "framework-runtime-core",
   "framework-runtime",
   "framework-driver-react",
-  "host-playground",
   "host-repl",
 ];
 
@@ -88,7 +87,6 @@ export const WORKSPACE_BUILD_PROJECTS: readonly string[] = [
   "framework-stream-core",
   "framework-stream-sse",
   "framework-stream-agui",
-  "host-playground",
   "host-repl",
 ];
 
@@ -107,7 +105,6 @@ export const WORKSPACE_EXPORT_SMOKE_PROJECTS: readonly string[] = [
   "framework-stream-core",
   "framework-stream-sse",
   "framework-stream-agui",
-  "host-playground",
   "host-repl",
 ];
 
@@ -303,7 +300,7 @@ export const DEFAULT_VERIFICATION_STEPS: readonly VerificationStep[] = [
   },
   {
     command: ["bun", "run", "proving-host:interop-smoke"],
-    id: "cross-language proving-host interop smoke",
+    id: "cross-language proving-host interactive/headless interop smoke",
   },
   {
     command: [
@@ -327,11 +324,11 @@ export const DEFAULT_VERIFICATION_STEPS: readonly VerificationStep[] = [
   },
   {
     command: ["bun", "run", "proving-host:scenario-sqlite"],
-    id: "Node-backed proving-host SQLite reload scenario",
+    id: "Node-backed proving-host SQLite interactive/headless scenario",
   },
   {
     command: ["bun", "run", "proving-host:scenario-postgres"],
-    id: "PostgreSQL-backed proving-host reload scenario",
+    id: "PostgreSQL-backed proving-host interactive/headless scenario",
   },
 ];
 
