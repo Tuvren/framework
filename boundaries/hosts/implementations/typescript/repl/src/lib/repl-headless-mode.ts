@@ -181,14 +181,28 @@ function readHeadlessDurableReadRecord(
     return undefined;
   }
 
+  const result = parseHeadlessDurableReadOutput(output);
+
+  if (result === undefined) {
+    return undefined;
+  }
+
   return {
     operation: "readBranchMessages",
     ordinal,
     recordKind: "durable-read",
     recordedAtMs,
-    result: JSON.parse(output) as unknown,
+    result,
     v: 1,
   };
+}
+
+function parseHeadlessDurableReadOutput(output: string): unknown | undefined {
+  try {
+    return JSON.parse(output);
+  } catch {
+    return undefined;
+  }
 }
 
 function readHeadlessStreamText(

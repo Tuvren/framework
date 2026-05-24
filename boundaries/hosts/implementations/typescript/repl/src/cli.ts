@@ -62,7 +62,10 @@ async function main(argv: readonly string[]): Promise<void> {
     const config = loadReplConfig(process.env, options.configArgv);
     const headless = options.headless || isHeadlessMode(process.env);
 
-    if (hasExplicitScenarioSelection(process.env, options.configArgv)) {
+    if (
+      !headless &&
+      hasExplicitScenarioSelection(process.env, options.configArgv)
+    ) {
       const report = await runReplScenario(config);
 
       process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
@@ -355,14 +358,28 @@ function readTranscriptDurableReadRecord(
     return undefined;
   }
 
+  const result = parseDurableReadOutput(output);
+
+  if (result === undefined) {
+    return undefined;
+  }
+
   return {
     operation: "readBranchMessages",
     ordinal,
     recordKind: "durable-read",
     recordedAtMs,
-    result: JSON.parse(output) as unknown,
+    result,
     v: 1,
   };
+}
+
+function parseDurableReadOutput(output: string): unknown | undefined {
+  try {
+    return JSON.parse(output);
+  } catch {
+    return undefined;
+  }
 }
 
 async function writeTranscriptErrorOutput(

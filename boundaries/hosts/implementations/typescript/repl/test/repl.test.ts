@@ -1999,6 +1999,39 @@ describe("repl host scenarios", () => {
     expect(records[1]?.exit).toBe(true);
   });
 
+  test("headless mode leaves empty message history output intact", async () => {
+    const shell = createReplShell({
+      backend: "memory",
+      providerMode: "fixture",
+      scenario: "streaming",
+    });
+    const chunks: string[] = [];
+
+    await runReplHeadlessMode({
+      input: Readable.from([".messages show\n.exit\n"]),
+      now: () => 7890,
+      output: {
+        write(chunk: string | Uint8Array): boolean {
+          chunks.push(String(chunk));
+          return true;
+        },
+      },
+      shell,
+    });
+
+    const records = parseHeadlessOutputRecords(chunks.join(""));
+
+    expect(records).toHaveLength(2);
+    expect(records[0]).toMatchObject({
+      ordinal: 0,
+      output: "No active thread exists.",
+      recordKind: "output",
+      recordedAtMs: 7890,
+    });
+    expect(records[0]?.error).toBeUndefined();
+    expect(records[1]?.exit).toBe(true);
+  });
+
   test("CLI --headless emits one JSON output record per stdin input", async () => {
     const result = await runCliProcess({
       argv: ["--backend", "memory", "--provider", "fixture", "--headless"],
@@ -2013,6 +2046,29 @@ describe("repl host scenarios", () => {
     expect(records[0]?.recordKind).toBe("output");
     expect(records[0]?.ordinal).toBe(0);
     expect(records[0]?.output).toBe("REPL streaming complete.");
+    expect(records[1]?.exit).toBe(true);
+  });
+
+  test("CLI --headless takes precedence over explicit scenario selection", async () => {
+    const result = await runCliProcess({
+      argv: [
+        "--backend",
+        "memory",
+        "--provider",
+        "fixture",
+        "--scenario",
+        "streaming",
+        "--headless",
+      ],
+      stdin: ".status\n.exit\n",
+    });
+    const records = parseHeadlessOutputRecords(result.stdout);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).toBe("");
+    expect(result.stdout.includes('"checks"')).toBe(false);
+    expect(records).toHaveLength(2);
+    expect(String(records[0]?.output)).toContain('"backend": "memory"');
     expect(records[1]?.exit).toBe(true);
   });
 

@@ -2,7 +2,7 @@
 
 ## 0. Version History & Changelog
 
-- v0.7.1 - Clarified current-versus-target Reference Host posture after Epics AM-AP landed: durable reads now remove the kernel-inspector seam, while playground package retirement, REPL internal renames, headless mode, and transcript replay remain Epic AT target work.
+- v0.7.1 - Clarified current Reference Host posture after Epics AM-AT landed: durable reads now remove the kernel-inspector seam, the MCP client is first-class, and the retired playground host has been consolidated into a REPL CLI with headless mode, streaming JSONL output, and transcript replay.
 - v0.7.0 - Added the Durable-Read Surface responsibility on Framework Shared Services, thread enumeration as a kernel structural primitive with backend-advertised capability, the Curated Host-Facing SDK container with shared-primitive plus slim-convenience split, the Schema Authoring Helper and MCP Tool Source responsibilities under the Tool Execution Gateway, and the headless plus transcript responsibilities on the Reference Host; promoted the SDK-only proving-host invariant from a risk-mitigation aspiration to a satisfied invariant; added new logical risks for the kernel-spec amendment cascade, schema-adapter detection ambiguity, MCP transport fragmentation, and durable-read pagination shape divergence.
 - v0.6.0 - Realigned the logical architecture around an SDK-first product line, a serious REPL-style proving host, portable canonical plus SSE stream surfaces, and a full documented orchestration scope for the first product-depth implementation line.
 - ... [Older history truncated, refer to git logs]

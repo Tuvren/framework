@@ -57,7 +57,7 @@
       "dependsOn": ["build"],
       "options": {
         "cwd": "boundaries/hosts/implementations/typescript/repl",
-        "command": "bash -lc 'node dist/cli.js --scenario reload --backend sqlite --provider fixture --sqlite-path auto && printf \".status\\n.turn start streaming\\n.turn await\\n.exit\\n\" | node dist/cli.js --headless --stream-jsonl --backend sqlite --provider fixture --sqlite-path auto'"
+        "command": "bash -lc 'node dist/cli.js --scenario reload --backend sqlite --provider fixture --sqlite-path auto && printf \".status\\n.turn start streaming\\n.turn await\\n.exit\\n\" | node dist/cli.js --headless --stream-jsonl --backend sqlite --provider fixture --sqlite-path auto | bun smoke/assert-headless-jsonl.ts'"
       }
     },
     "scenario-postgres": {
@@ -65,7 +65,7 @@
       "dependsOn": ["build"],
       "options": {
         "cwd": ".",
-        "command": "devenv shell -- bash -lc 'cd boundaries/hosts/implementations/typescript/repl && node dist/cli.js --scenario reload --backend postgres --provider fixture --postgres-database tuvren_runtime --postgres-schema auto && printf \".status\\n.turn start streaming\\n.turn await\\n.exit\\n\" | node dist/cli.js --headless --stream-jsonl --backend postgres --provider fixture --postgres-database tuvren_runtime --postgres-schema auto'"
+        "command": "devenv shell -- bash -lc 'cd boundaries/hosts/implementations/typescript/repl && node dist/cli.js --scenario reload --backend postgres --provider fixture --postgres-database tuvren_runtime --postgres-schema auto && printf \".status\\n.turn start streaming\\n.turn await\\n.exit\\n\" | node dist/cli.js --headless --stream-jsonl --backend postgres --provider fixture --postgres-database tuvren_runtime --postgres-schema auto | bun smoke/assert-headless-jsonl.ts'"
       }
     },
     "test": {

@@ -361,16 +361,28 @@ function readReplayDurableReads(
     return [];
   }
 
-  return [
-    {
-      operation: "readBranchMessages",
-      ordinal: group.input.ordinal,
-      recordKind: "durable-read",
-      recordedAtMs: 0,
-      result: JSON.parse(output) as unknown,
-      v: 1,
-    },
-  ];
+  const result = parseReplayDurableReadOutput(output);
+
+  return result === undefined
+    ? []
+    : [
+        {
+          operation: "readBranchMessages",
+          ordinal: group.input.ordinal,
+          recordKind: "durable-read",
+          recordedAtMs: 0,
+          result,
+          v: 1,
+        },
+      ];
+}
+
+function parseReplayDurableReadOutput(output: string): unknown | undefined {
+  try {
+    return JSON.parse(output);
+  } catch {
+    return undefined;
+  }
 }
 
 function createReplayConfig(header: ReplTranscriptHeader): ReplConfig {
