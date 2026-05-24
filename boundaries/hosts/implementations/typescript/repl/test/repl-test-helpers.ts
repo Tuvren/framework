@@ -16,10 +16,7 @@
 
 import { expect } from "bun:test";
 import type { ChatCompletionRequest, LLMock } from "@copilotkit/aimock";
-import type {
-  ReplProviderMode as PlaygroundProviderMode,
-  ReplScenarioReport as PlaygroundScenarioReport,
-} from "@tuvren/repl-host";
+import type { ReplProviderMode, ReplScenarioReport } from "@tuvren/repl-host";
 import { TuvrenRuntimeError } from "@tuvren/runtime";
 
 export const AIMOCK_PROVIDER_CASES: readonly AimockProviderCase[] = [
@@ -53,7 +50,7 @@ export interface AimockProviderCase {
   expectedQuerySuffix?: string;
   id: "anthropic" | "google" | "openai";
   metadataModelId: string;
-  mode: Extract<PlaygroundProviderMode, `aimock-${string}`>;
+  mode: Extract<ReplProviderMode, `aimock-${string}`>;
   modelId: string;
 }
 
@@ -145,7 +142,7 @@ export function doesAimockRequestPathMatch(
 }
 
 export function expectSurfaceCoverage(
-  report: PlaygroundScenarioReport,
+  report: ReplScenarioReport,
   expected: {
     aguiTypes: readonly string[];
     canonicalTypes: readonly string[];
@@ -182,7 +179,7 @@ export function assertStructuredResponseFormat(value: unknown): void {
 
   const properties = schema.properties;
 
-  expect(jsonSchema.name).toBe("playground_summary");
+  expect(jsonSchema.name).toBe("repl_summary");
   expect(schema.type).toBe("object");
   expect(schema.required).toEqual(["scenario", "status"]);
   expect(isPlainRecord(properties)).toBe(true);
@@ -285,7 +282,7 @@ export function hasApprovalToolContinuation(
   );
 }
 
-export function expectPlaygroundConfigError(
+export function expectReplConfigError(
   loadConfig: () => unknown,
   expectedMessage: string
 ): void {

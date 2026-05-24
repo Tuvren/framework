@@ -16,24 +16,24 @@
 
 import { describe, expect, test } from "bun:test";
 import {
-  createReplHost as createPlaygroundHost,
-  DEFAULT_GEMINI_REPL_SCENARIOS as DEFAULT_GEMINI_PLAYGROUND_SCENARIOS,
-  DEFAULT_REPL_SCENARIOS as DEFAULT_PLAYGROUND_SCENARIOS,
+  createReplHost,
+  DEFAULT_GEMINI_REPL_SCENARIOS,
+  DEFAULT_REPL_SCENARIOS,
   haveAllChecksPassed,
-  loadReplConfig as loadPlaygroundConfig,
-  runReplScenario as runPlaygroundScenario,
-  runReplScenarioMatrix as runPlaygroundScenarioMatrix,
+  loadReplConfig,
+  runReplScenario,
+  runReplScenarioMatrix,
 } from "@tuvren/repl-host";
 
 describe("@tuvren/repl-host package exports", () => {
   test("exposes the proving-host surface", () => {
-    expect(typeof createPlaygroundHost).toBe("function");
+    expect(typeof createReplHost).toBe("function");
     expect(typeof haveAllChecksPassed).toBe("function");
-    expect(typeof loadPlaygroundConfig).toBe("function");
-    expect(typeof runPlaygroundScenario).toBe("function");
-    expect(typeof runPlaygroundScenarioMatrix).toBe("function");
-    expect(DEFAULT_GEMINI_PLAYGROUND_SCENARIOS).toContain("approval");
-    expect(DEFAULT_PLAYGROUND_SCENARIOS).toContain("streaming");
-    expect(DEFAULT_PLAYGROUND_SCENARIOS).toContain("orchestration");
+    expect(typeof loadReplConfig).toBe("function");
+    expect(typeof runReplScenario).toBe("function");
+    expect(typeof runReplScenarioMatrix).toBe("function");
+    expect(DEFAULT_GEMINI_REPL_SCENARIOS).toContain("approval");
+    expect(DEFAULT_REPL_SCENARIOS).toContain("streaming");
+    expect(DEFAULT_REPL_SCENARIOS).toContain("orchestration");
   });
 });

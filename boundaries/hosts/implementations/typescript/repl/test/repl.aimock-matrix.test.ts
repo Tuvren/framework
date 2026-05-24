@@ -16,7 +16,7 @@
 
 import { describe, expect, test } from "bun:test";
 import { LLMock } from "@copilotkit/aimock";
-import { runReplScenario as runPlaygroundScenario } from "@tuvren/repl-host";
+import { runReplScenario } from "@tuvren/repl-host";
 import {
   AIMOCK_PROVIDER_CASES,
   createAimockBaseUrl,
@@ -26,7 +26,7 @@ import {
   hasApprovalToolContinuation,
   hasSearchToolContinuation,
   registerStructuredFixture,
-} from "./playground-test-helpers.ts";
+} from "./repl-test-helpers.ts";
 
 describe("repl host scenarios aimock matrix", () => {
   test("runs streamed text through aimock over Anthropic and Gemini provider boundaries", async () => {
@@ -51,7 +51,7 @@ describe("repl host scenarios aimock matrix", () => {
       await mock.start();
 
       try {
-        const report = await runPlaygroundScenario({
+        const report = await runReplScenario({
           aimockBaseUrl: createAimockBaseUrl(mock.url, provider.mode),
           backend: "memory",
           providerMode: provider.mode,
@@ -83,7 +83,7 @@ describe("repl host scenarios aimock matrix", () => {
       await mock.start();
 
       try {
-        const report = await runPlaygroundScenario({
+        const report = await runReplScenario({
           aimockBaseUrl: createAimockBaseUrl(mock.url, provider.mode),
           backend: "memory",
           providerMode: provider.mode,
@@ -141,7 +141,7 @@ describe("repl host scenarios aimock matrix", () => {
       await mock.start();
 
       try {
-        const report = await runPlaygroundScenario({
+        const report = await runReplScenario({
           aimockBaseUrl: createAimockBaseUrl(mock.url, provider.mode),
           backend: "memory",
           providerMode: provider.mode,
@@ -220,7 +220,7 @@ describe("repl host scenarios aimock matrix", () => {
       await mock.start();
 
       try {
-        const report = await runPlaygroundScenario({
+        const report = await runReplScenario({
           aimockBaseUrl: createAimockBaseUrl(mock.url, provider.mode),
           backend: "memory",
           providerMode: provider.mode,
@@ -272,7 +272,7 @@ describe("repl host scenarios aimock matrix", () => {
       await mock.start();
 
       try {
-        const report = await runPlaygroundScenario({
+        const report = await runReplScenario({
           aimockBaseUrl: createAimockBaseUrl(mock.url, provider.mode),
           backend: "memory",
           providerMode: provider.mode,
@@ -323,7 +323,7 @@ describe("repl host scenarios aimock matrix", () => {
       await mock.start();
 
       try {
-        const report = await runPlaygroundScenario({
+        const report = await runReplScenario({
           aimockBaseUrl: createAimockBaseUrl(mock.url, provider.mode),
           backend: "memory",
           providerMode: provider.mode,
@@ -360,7 +360,7 @@ describe("repl host scenarios aimock matrix", () => {
       await mock.start();
 
       try {
-        const report = await runPlaygroundScenario({
+        const report = await runReplScenario({
           aimockBaseUrl: createAimockBaseUrl(mock.url, provider.mode),
           backend: "memory",
           providerMode: provider.mode,
@@ -395,7 +395,7 @@ describe("repl host scenarios aimock matrix", () => {
       await mock.start();
 
       try {
-        const report = await runPlaygroundScenario({
+        const report = await runReplScenario({
           aimockBaseUrl: createAimockBaseUrl(mock.url, provider.mode),
           backend: "memory",
           providerMode: provider.mode,
@@ -423,7 +423,7 @@ describe("repl host scenarios aimock matrix", () => {
       await mock.start();
 
       try {
-        const report = await runPlaygroundScenario({
+        const report = await runReplScenario({
           aimockBaseUrl: createAimockBaseUrl(mock.url, provider.mode),
           backend: "memory",
           providerMode: provider.mode,

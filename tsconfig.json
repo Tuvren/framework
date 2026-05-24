@@ -18,9 +18,6 @@
       "path": "./boundaries/framework/implementations/typescript/drivers/react"
     },
     {
-      "path": "./boundaries/hosts/implementations/typescript/playground"
-    },
-    {
       "path": "./boundaries/framework/contracts/tool-contracts/implementations/typescript"
     },
     {

@@ -18,42 +18,54 @@ import { describe, expect, test } from "bun:test";
 import { spawn } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { Readable } from "node:stream";
 import {
-  AIMOCK_REPL_PROVIDER_MODES as AIMOCK_PLAYGROUND_PROVIDER_MODES,
-  createReplHost as createPlaygroundHost,
+  AIMOCK_REPL_PROVIDER_MODES,
+  createReplHost,
   createReplShell,
-  DEFAULT_GEMINI_REPL_SCENARIOS as DEFAULT_GEMINI_PLAYGROUND_SCENARIOS,
-  DEFAULT_REPL_SCENARIOS as DEFAULT_PLAYGROUND_SCENARIOS,
+  DEFAULT_GEMINI_REPL_SCENARIOS,
+  DEFAULT_REPL_SCENARIOS,
   haveAllChecksPassed,
-  loadReplConfig as loadPlaygroundConfig,
-  runReplScenario as runPlaygroundScenario,
-  runReplScenarioMatrix as runPlaygroundScenarioMatrix,
+  loadReplConfig,
   runReplCommand,
   runReplInput,
+  runReplScenario,
+  runReplScenarioMatrix,
 } from "@tuvren/repl-host";
 import {
   TUVREN_RUNTIME_TELEMETRY_ATTRIBUTE_KEYS,
   TUVREN_RUNTIME_TELEMETRY_SCHEMA_URL,
   type TuvrenPrompt,
   type TuvrenProvider,
+  type TuvrenStreamEvent,
   type TuvrenToolDefinition,
 } from "@tuvren/runtime";
 import {
+  createReplBuiltinTools,
+  textSignal,
+} from "../src/lib/repl-builtin-tools.js";
+import { runReplHeadlessMode } from "../src/lib/repl-headless-mode.js";
+import { createLiveTurnWriter } from "../src/lib/repl-live-output.js";
+import { replayReplTranscript } from "../src/lib/repl-replay.js";
+import {
   createScenarioExecutionPlan,
   withHead,
-} from "../src/lib/playground-scenarios-support.js";
-import {
-  createPlaygroundTools,
-  textSignal,
-} from "../src/lib/playground-tools.js";
-import { createLiveTurnWriter } from "../src/lib/repl-live-output.js";
+} from "../src/lib/repl-scenarios-support.js";
 import { readShellTextArgument } from "../src/lib/repl-shell.js";
 import {
-  expectPlaygroundConfigError,
+  createReplTranscriptWriter,
+  type ReplTranscriptEntry,
+  type ReplTranscriptHeader,
+  readReplTranscriptFile,
+  readReplTranscriptFromLines,
+  serializeReplTranscriptRecord,
+} from "../src/lib/repl-transcript.js";
+import {
+  expectReplConfigError,
   expectScenarioChecksPassed,
   withTemporaryEnv,
   withTemporaryEnvAsync,
-} from "./playground-test-helpers.ts";
+} from "./repl-test-helpers.ts";
 
 function createPromptObservingProvider(
   id: string,
@@ -92,7 +104,7 @@ function createToolExecutionContext(
 
 describe("repl host scenarios", () => {
   test("loads deterministic default configuration", () => {
-    const config = loadPlaygroundConfig({}, []);
+    const config = loadReplConfig({}, []);
 
     expect(config).toEqual({
       aimockBaseUrl: undefined,
@@ -109,14 +121,14 @@ describe("repl host scenarios", () => {
   });
 
   test("loads aimock provider configuration from argv and env", () => {
-    expect(AIMOCK_PLAYGROUND_PROVIDER_MODES).toEqual([
+    expect(AIMOCK_REPL_PROVIDER_MODES).toEqual([
       "aimock-openai",
       "aimock-anthropic",
       "aimock-google",
     ]);
 
-    for (const providerMode of AIMOCK_PLAYGROUND_PROVIDER_MODES) {
-      const argvConfig = loadPlaygroundConfig({}, [
+    for (const providerMode of AIMOCK_REPL_PROVIDER_MODES) {
+      const argvConfig = loadReplConfig({}, [
         "--provider",
         providerMode,
         "--aimock-base-url",
@@ -126,7 +138,7 @@ describe("repl host scenarios", () => {
       expect(argvConfig.providerMode).toBe(providerMode);
       expect(argvConfig.aimockBaseUrl).toBe("http://127.0.0.1:4010/v1");
 
-      const envConfig = loadPlaygroundConfig(
+      const envConfig = loadReplConfig(
         {
           TUVREN_PLAYGROUND_AIMOCK_BASE_URL: "http://127.0.0.1:4011/v1",
           TUVREN_PLAYGROUND_PROVIDER_MODE: providerMode,
@@ -140,7 +152,7 @@ describe("repl host scenarios", () => {
   });
 
   test("loads ai-sdk-google configuration from argv and env", () => {
-    const argvConfig = loadPlaygroundConfig(
+    const argvConfig = loadReplConfig(
       {
         GOOGLE_GENERATIVE_AI_API_KEY: "google-key",
       },
@@ -151,7 +163,7 @@ describe("repl host scenarios", () => {
     expect(argvConfig.googleApiKey).toBe("google-key");
     expect(argvConfig.modelId).toBe("gemini-2.5-pro");
 
-    const envConfig = loadPlaygroundConfig(
+    const envConfig = loadReplConfig(
       {
         GEMINI_API_KEY: "gemini-key",
         TUVREN_PLAYGROUND_MODEL_ID: "gemini-2.5-flash-lite",
@@ -166,7 +178,7 @@ describe("repl host scenarios", () => {
   });
 
   test("loads rust-grpc kernel configuration from argv and env", () => {
-    const argvConfig = loadPlaygroundConfig({}, [
+    const argvConfig = loadReplConfig({}, [
       "--kernel-mode",
       "rust-grpc",
       "--kernel-grpc-base-url",
@@ -176,7 +188,7 @@ describe("repl host scenarios", () => {
     expect(argvConfig.kernelMode).toBe("rust-grpc");
     expect(argvConfig.kernelGrpcBaseUrl).toBe("http://127.0.0.1:50051");
 
-    const envConfig = loadPlaygroundConfig(
+    const envConfig = loadReplConfig(
       {
         TUVREN_PLAYGROUND_KERNEL_GRPC_BASE_URL: "http://127.0.0.1:50052",
         TUVREN_PLAYGROUND_KERNEL_MODE: "rust-grpc",
@@ -189,7 +201,7 @@ describe("repl host scenarios", () => {
   });
 
   test("uses parsed Gemini credentials for programmatic callers without mutating process.env", () => {
-    const config = loadPlaygroundConfig(
+    const config = loadReplConfig(
       {
         GEMINI_API_KEY: "gemini-key",
         TUVREN_PLAYGROUND_PROVIDER_MODE: "ai-sdk-google",
@@ -206,7 +218,7 @@ describe("repl host scenarios", () => {
         let thrownError: unknown;
 
         try {
-          createPlaygroundHost(config);
+          createReplHost(config);
         } catch (error: unknown) {
           thrownError = error;
         }
@@ -217,7 +229,7 @@ describe("repl host scenarios", () => {
   });
 
   test("loads REPL-prefixed env aliases", () => {
-    const config = loadPlaygroundConfig(
+    const config = loadReplConfig(
       {
         TUVREN_REPL_AIMOCK_BASE_URL: "http://127.0.0.1:4012/v1",
         TUVREN_REPL_KERNEL_GRPC_BASE_URL: "http://127.0.0.1:50053",
@@ -237,8 +249,8 @@ describe("repl host scenarios", () => {
     expect(config.systemPrompt).toBe("Be concise.");
   });
 
-  test("loads playground system-instructions alias", () => {
-    const config = loadPlaygroundConfig(
+  test("loads legacy system-instructions alias", () => {
+    const config = loadReplConfig(
       {
         TUVREN_PLAYGROUND_SYSTEM_INSTRUCTIONS: "Prefer bullet points.",
       },
@@ -249,22 +261,22 @@ describe("repl host scenarios", () => {
   });
 
   test("rejects unsupported REPL options before configuration is loaded", () => {
-    expectPlaygroundConfigError(
-      () => loadPlaygroundConfig({}, ["--bogus", "value"]),
+    expectReplConfigError(
+      () => loadReplConfig({}, ["--bogus", "value"]),
       "unsupported repl option --bogus"
     );
   });
 
   test("rejects aimock provider configuration without a usable base URL", () => {
-    for (const providerMode of AIMOCK_PLAYGROUND_PROVIDER_MODES) {
-      expectPlaygroundConfigError(
-        () => loadPlaygroundConfig({}, ["--provider", providerMode]),
+    for (const providerMode of AIMOCK_REPL_PROVIDER_MODES) {
+      expectReplConfigError(
+        () => loadReplConfig({}, ["--provider", providerMode]),
         `${providerMode} repl provider requires --aimock-base-url, TUVREN_REPL_AIMOCK_BASE_URL, or TUVREN_PLAYGROUND_AIMOCK_BASE_URL`
       );
 
-      expectPlaygroundConfigError(
+      expectReplConfigError(
         () =>
-          loadPlaygroundConfig(
+          loadReplConfig(
             {
               TUVREN_PLAYGROUND_AIMOCK_BASE_URL: "   ",
               TUVREN_PLAYGROUND_PROVIDER_MODE: providerMode,
@@ -277,14 +289,14 @@ describe("repl host scenarios", () => {
   });
 
   test("rejects ai-sdk-google configuration without a usable API key", () => {
-    expectPlaygroundConfigError(
-      () => loadPlaygroundConfig({}, ["--provider", "ai-sdk-google"]),
+    expectReplConfigError(
+      () => loadReplConfig({}, ["--provider", "ai-sdk-google"]),
       "ai-sdk-google repl provider requires GOOGLE_GENERATIVE_AI_API_KEY or GEMINI_API_KEY"
     );
 
-    expectPlaygroundConfigError(
+    expectReplConfigError(
       () =>
-        loadPlaygroundConfig(
+        loadReplConfig(
           {
             GEMINI_API_KEY: "   ",
             GOOGLE_GENERATIVE_AI_API_KEY: "",
@@ -297,14 +309,14 @@ describe("repl host scenarios", () => {
   });
 
   test("rejects rust-grpc kernel configuration without a usable base URL", () => {
-    expectPlaygroundConfigError(
-      () => loadPlaygroundConfig({}, ["--kernel-mode", "rust-grpc"]),
+    expectReplConfigError(
+      () => loadReplConfig({}, ["--kernel-mode", "rust-grpc"]),
       "rust-grpc repl kernel requires --kernel-grpc-base-url, TUVREN_REPL_KERNEL_GRPC_BASE_URL, or TUVREN_PLAYGROUND_KERNEL_GRPC_BASE_URL"
     );
 
-    expectPlaygroundConfigError(
+    expectReplConfigError(
       () =>
-        loadPlaygroundConfig(
+        loadReplConfig(
           {
             TUVREN_PLAYGROUND_KERNEL_GRPC_BASE_URL: " ",
             TUVREN_PLAYGROUND_KERNEL_MODE: "rust-grpc",
@@ -316,9 +328,9 @@ describe("repl host scenarios", () => {
   });
 
   test("rejects rust-grpc kernel configuration for sqlite backend", () => {
-    expectPlaygroundConfigError(
+    expectReplConfigError(
       () =>
-        loadPlaygroundConfig(
+        loadReplConfig(
           {
             TUVREN_PLAYGROUND_KERNEL_GRPC_BASE_URL: "http://127.0.0.1:50051",
             TUVREN_PLAYGROUND_KERNEL_MODE: "rust-grpc",
@@ -330,9 +342,9 @@ describe("repl host scenarios", () => {
   });
 
   test("rejects rust-grpc kernel configuration for postgres backend", () => {
-    expectPlaygroundConfigError(
+    expectReplConfigError(
       () =>
-        loadPlaygroundConfig(
+        loadReplConfig(
           {
             TUVREN_PLAYGROUND_KERNEL_GRPC_BASE_URL: "http://127.0.0.1:50051",
             TUVREN_PLAYGROUND_KERNEL_MODE: "rust-grpc",
@@ -351,7 +363,7 @@ describe("repl host scenarios", () => {
   });
 
   test("allocates disposable SQLite smoke paths on demand", () => {
-    const config = loadPlaygroundConfig({}, [
+    const config = loadReplConfig({}, [
       "--backend",
       "sqlite",
       "--sqlite-path",
@@ -360,12 +372,12 @@ describe("repl host scenarios", () => {
 
     expect(config.backend).toBe("sqlite");
     expect(config.sqlitePath?.startsWith(tmpdir())).toBe(true);
-    expect(config.sqlitePath?.includes("tuvren-playground-")).toBe(true);
+    expect(config.sqlitePath?.includes("tuvren-repl-")).toBe(true);
     expect(config.sqlitePath?.endsWith(".sqlite")).toBe(true);
   });
 
   test("allocates disposable PostgreSQL schema names on demand", () => {
-    const config = loadPlaygroundConfig({}, [
+    const config = loadReplConfig({}, [
       "--backend",
       "postgres",
       "--postgres-schema",
@@ -374,18 +386,16 @@ describe("repl host scenarios", () => {
 
     expect(config.backend).toBe("postgres");
     expect(config.postgresDatabase).toBe("tuvren_runtime");
-    expect(config.postgresSchemaName?.startsWith("tuvren-playground-")).toBe(
-      true
-    );
+    expect(config.postgresSchemaName?.startsWith("tuvren-repl-")).toBe(true);
   });
 
   test("runs every non-reload fixture scenario under the memory backend", async () => {
-    for (const scenario of DEFAULT_PLAYGROUND_SCENARIOS) {
+    for (const scenario of DEFAULT_REPL_SCENARIOS) {
       if (scenario === "reload") {
         continue;
       }
 
-      const report = await runPlaygroundScenario({
+      const report = await runReplScenario({
         backend: "memory",
         providerMode: "fixture",
         scenario,
@@ -397,7 +407,7 @@ describe("repl host scenarios", () => {
   });
 
   test("runs the streaming scenario through canonical, SSE, and AG-UI outputs", async () => {
-    const report = await runPlaygroundScenario({
+    const report = await runReplScenario({
       backend: "memory",
       providerMode: "fixture",
       scenario: "streaming",
@@ -412,7 +422,7 @@ describe("repl host scenarios", () => {
   });
 
   test("emits telemetry evidence using the generated runtime vocabulary", async () => {
-    const report = await runPlaygroundScenario({
+    const report = await runReplScenario({
       backend: "memory",
       providerMode: "fixture",
       scenario: "streaming",
@@ -439,7 +449,7 @@ describe("repl host scenarios", () => {
   });
 
   test("runs approval pause and edited approval resume", async () => {
-    const report = await runPlaygroundScenario({
+    const report = await runReplScenario({
       backend: "memory",
       providerMode: "fixture",
       scenario: "approval",
@@ -454,7 +464,7 @@ describe("repl host scenarios", () => {
   });
 
   test("runs AI SDK mock provider mode without credentials", async () => {
-    const report = await runPlaygroundScenario({
+    const report = await runReplScenario({
       backend: "memory",
       providerMode: "ai-sdk-mock",
       scenario: "metadata",
@@ -466,7 +476,7 @@ describe("repl host scenarios", () => {
     expect(report.events.canonicalTypes).toContain("message.done");
   });
 
-  test("creates the Gemini playground host when a key is present", () => {
+  test("creates the Gemini REPL host when a key is present", () => {
     withTemporaryEnv(
       {
         GEMINI_API_KEY: "test-gemini-key",
@@ -476,7 +486,7 @@ describe("repl host scenarios", () => {
         let thrownError: unknown;
 
         try {
-          createPlaygroundHost({
+          createReplHost({
             backend: "memory",
             modelId: "gemini-2.5-flash",
             providerMode: "ai-sdk-google",
@@ -492,7 +502,7 @@ describe("repl host scenarios", () => {
   });
 
   test("uses parsed Gemini credentials through the tools scenario wrapper", async () => {
-    const config = loadPlaygroundConfig(
+    const config = loadReplConfig(
       {
         GEMINI_API_KEY: "gemini-key",
         TUVREN_PLAYGROUND_PROVIDER_MODE: "ai-sdk-google",
@@ -509,7 +519,7 @@ describe("repl host scenarios", () => {
         _init?: BunFetchRequestInit
       ): Promise<Response> => {
         fetchCalled = true;
-        return Promise.reject(new Error("playground test fetch sentinel"));
+        return Promise.reject(new Error("repl test fetch sentinel"));
       },
       {
         preconnect: previousFetch.preconnect,
@@ -522,13 +532,11 @@ describe("repl host scenarios", () => {
           GOOGLE_GENERATIVE_AI_API_KEY: undefined,
         },
         async () => {
-          const report = await runPlaygroundScenario(config);
+          const report = await runReplScenario(config);
 
           expect(fetchCalled).toBe(true);
           expect(report.status.phase).toBe("failed");
-          expect(report.error?.message).toContain(
-            "playground test fetch sentinel"
-          );
+          expect(report.error?.message).toContain("repl test fetch sentinel");
         }
       );
     } finally {
@@ -536,7 +544,7 @@ describe("repl host scenarios", () => {
     }
   });
 
-  test("rejects the Gemini playground host when no key is present", async () => {
+  test("rejects the Gemini REPL host when no key is present", async () => {
     await withTemporaryEnvAsync(
       {
         GEMINI_API_KEY: undefined,
@@ -546,7 +554,7 @@ describe("repl host scenarios", () => {
         let actualMessage: string | undefined;
 
         try {
-          await runPlaygroundScenario({
+          await runReplScenario({
             backend: "memory",
             modelId: "gemini-2.5-flash",
             providerMode: "ai-sdk-google",
@@ -565,7 +573,7 @@ describe("repl host scenarios", () => {
   });
 
   test("runs steering through the host control path", async () => {
-    const report = await runPlaygroundScenario({
+    const report = await runReplScenario({
       backend: "memory",
       providerMode: "fixture",
       scenario: "steering",
@@ -577,7 +585,7 @@ describe("repl host scenarios", () => {
   });
 
   test("runs extension-powered behavior through the host", async () => {
-    const report = await runPlaygroundScenario({
+    const report = await runReplScenario({
       backend: "memory",
       providerMode: "fixture",
       scenario: "extension",
@@ -591,7 +599,7 @@ describe("repl host scenarios", () => {
   });
 
   test("runs orchestration through descendant-aware host handles", async () => {
-    const report = await runPlaygroundScenario({
+    const report = await runReplScenario({
       backend: "memory",
       providerMode: "fixture",
       scenario: "orchestration",
@@ -908,7 +916,7 @@ describe("repl host scenarios", () => {
     });
 
     expect(result.output).toBe(undefined);
-    expect(streamedChunks.join("")).toBe("Playground streaming complete.");
+    expect(streamedChunks.join("")).toBe("REPL streaming complete.");
     expect(shell.activeTurn).toBe(undefined);
     expect(shell.thread).not.toBe(undefined);
     expect(
@@ -937,7 +945,7 @@ describe("repl host scenarios", () => {
     });
 
     expect(result.output).toBe(undefined);
-    expect(streamedChunks.join("")).toBe("Playground streaming complete.");
+    expect(streamedChunks.join("")).toBe("REPL streaming complete.");
     expect(shell.activeTurn).toBe(undefined);
   });
 
@@ -972,7 +980,7 @@ describe("repl host scenarios", () => {
   });
 
   test("applies env-driven system prompt to freeform turns", async () => {
-    const host = createPlaygroundHost({
+    const host = createReplHost({
       backend: "memory",
       providerMode: "fixture",
       scenario: "streaming",
@@ -1031,7 +1039,7 @@ describe("repl host scenarios", () => {
   });
 
   test("does not inject repl tools into programmatic host turns by default", async () => {
-    const host = createPlaygroundHost({
+    const host = createReplHost({
       backend: "memory",
       providerMode: "fixture",
       scenario: "streaming",
@@ -1060,7 +1068,7 @@ describe("repl host scenarios", () => {
   });
 
   test("allows callers to opt out of repl tools explicitly", async () => {
-    const host = createPlaygroundHost({
+    const host = createReplHost({
       backend: "memory",
       providerMode: "fixture",
       scenario: "streaming",
@@ -1090,7 +1098,7 @@ describe("repl host scenarios", () => {
   });
 
   test("respects explicit tool overrides for scenario-style turns", async () => {
-    const host = createPlaygroundHost({
+    const host = createReplHost({
       backend: "memory",
       providerMode: "fixture",
       scenario: "streaming",
@@ -1753,7 +1761,7 @@ describe("repl host scenarios", () => {
   });
 
   test("aggregates matrix success for deterministic scenarios", async () => {
-    const report = await runPlaygroundScenarioMatrix({
+    const report = await runReplScenarioMatrix({
       config: {
         backend: "memory",
         modelId: undefined,
@@ -1776,7 +1784,7 @@ describe("repl host scenarios", () => {
   });
 
   test("aggregates matrix failures for reload on memory", async () => {
-    const report = await runPlaygroundScenarioMatrix({
+    const report = await runReplScenarioMatrix({
       config: {
         backend: "memory",
         modelId: undefined,
@@ -1786,14 +1794,14 @@ describe("repl host scenarios", () => {
       scenarios: ["reload"],
     });
 
-    expect(DEFAULT_GEMINI_PLAYGROUND_SCENARIOS).toContain("approval");
+    expect(DEFAULT_GEMINI_REPL_SCENARIOS).toContain("approval");
     expect(report.summary.allChecksPassed).toBe(false);
     expect(report.summary.failedScenarioCount).toBe(1);
     expect(report.summary.failedScenarios).toEqual(["reload"]);
   });
 
   test("runtime.readBranchMessages returns empty array on a fresh branch before any turn", async () => {
-    const host = createPlaygroundHost({
+    const host = createReplHost({
       backend: "memory",
       providerMode: "fixture",
       scenario: "streaming",
@@ -1851,7 +1859,7 @@ describe("repl host scenarios", () => {
     const result = await runCliSession("Hello from the REPL\n.exit\n");
 
     expect(result.exitCode).toBe(0);
-    expect(result.stdout.includes("Playground streaming complete.")).toBe(true);
+    expect(result.stdout.includes("REPL streaming complete.")).toBe(true);
     expect(
       result.stdout.includes('Unknown command "Hello from the REPL"')
     ).toBe(false);
@@ -1861,8 +1869,595 @@ describe("repl host scenarios", () => {
     const result = await runCliSession(".env file\n.exit\n");
 
     expect(result.exitCode).toBe(0);
-    expect(result.stdout.includes("Playground streaming complete.")).toBe(true);
+    expect(result.stdout.includes("REPL streaming complete.")).toBe(true);
     expect(result.stdout.includes('Unknown command ".env"')).toBe(false);
+  });
+
+  test("headless mode dispatches stdin through the repl input path", async () => {
+    const shell = createReplShell({
+      backend: "memory",
+      providerMode: "fixture",
+      scenario: "streaming",
+    });
+    const chunks: string[] = [];
+
+    await runReplHeadlessMode({
+      input: Readable.from([".status\n\n.exit\n"]),
+      now: () => 1234,
+      output: {
+        write(chunk: string | Uint8Array): boolean {
+          chunks.push(String(chunk));
+          return true;
+        },
+      },
+      shell,
+    });
+
+    const records = parseHeadlessOutputRecords(chunks.join(""));
+
+    expect(records).toHaveLength(2);
+    expect(Object.keys(records[0] ?? {})).toEqual([
+      "ordinal",
+      "output",
+      "recordKind",
+      "recordedAtMs",
+      "v",
+    ]);
+    expect(records[0]).toMatchObject({
+      ordinal: 0,
+      recordKind: "output",
+      recordedAtMs: 1234,
+      v: 1,
+    });
+    expect(String(records[0]?.output)).toContain('"backend": "memory"');
+    expect(records[1]).toEqual({
+      exit: true,
+      ordinal: 1,
+      output: null,
+      recordKind: "output",
+      recordedAtMs: 1234,
+      v: 1,
+    });
+  });
+
+  test("headless mode can stream canonical events as jsonl records", async () => {
+    const shell = createReplShell({
+      backend: "memory",
+      providerMode: "fixture",
+      scenario: "streaming",
+    });
+    const chunks: string[] = [];
+
+    await runReplHeadlessMode({
+      input: Readable.from(["Hello from streaming headless mode\n.exit\n"]),
+      now: () => 5678,
+      output: {
+        write(chunk: string | Uint8Array): boolean {
+          chunks.push(String(chunk));
+          return true;
+        },
+      },
+      shell,
+      streamEvents: true,
+    });
+
+    const records = parseHeadlessOutputRecords(chunks.join(""));
+    const streamEvents = records.filter(
+      (record) => record.recordKind === "stream-event"
+    );
+    const outputRecords = records.filter(
+      (record) => record.recordKind === "output"
+    );
+
+    expect(streamEvents.length).toBeGreaterThan(0);
+    expect(Object.keys(streamEvents[0] ?? {})).toEqual([
+      "event",
+      "ordinal",
+      "recordKind",
+      "recordedAtMs",
+      "v",
+    ]);
+    expect(streamEvents.every((record) => record.ordinal === 0)).toBe(true);
+    expect(streamEvents.map((record) => record.event?.type)).toContain(
+      "text.delta"
+    );
+    expect(outputRecords).toHaveLength(2);
+    expect(outputRecords[0]?.ordinal).toBe(0);
+    expect(outputRecords[0]?.output).toBe("REPL streaming complete.");
+    expect(outputRecords[1]?.exit).toBe(true);
+  });
+
+  test("headless mode emits final assistant text without stream JSONL", async () => {
+    const shell = createReplShell({
+      backend: "memory",
+      providerMode: "fixture",
+      scenario: "streaming",
+    });
+    const chunks: string[] = [];
+
+    await runReplHeadlessMode({
+      input: Readable.from(["Hello from non-streaming headless mode\n.exit\n"]),
+      now: () => 6789,
+      output: {
+        write(chunk: string | Uint8Array): boolean {
+          chunks.push(String(chunk));
+          return true;
+        },
+      },
+      shell,
+    });
+
+    const records = parseHeadlessOutputRecords(chunks.join(""));
+
+    expect(records).toHaveLength(2);
+    expect(records[0]).toMatchObject({
+      ordinal: 0,
+      output: "REPL streaming complete.",
+      recordKind: "output",
+      recordedAtMs: 6789,
+    });
+    expect(records[1]?.exit).toBe(true);
+  });
+
+  test("headless mode leaves empty message history output intact", async () => {
+    const shell = createReplShell({
+      backend: "memory",
+      providerMode: "fixture",
+      scenario: "streaming",
+    });
+    const chunks: string[] = [];
+
+    await runReplHeadlessMode({
+      input: Readable.from([".messages show\n.exit\n"]),
+      now: () => 7890,
+      output: {
+        write(chunk: string | Uint8Array): boolean {
+          chunks.push(String(chunk));
+          return true;
+        },
+      },
+      shell,
+    });
+
+    const records = parseHeadlessOutputRecords(chunks.join(""));
+
+    expect(records).toHaveLength(2);
+    expect(records[0]).toMatchObject({
+      ordinal: 0,
+      output: "No active thread exists.",
+      recordKind: "output",
+      recordedAtMs: 7890,
+    });
+    expect(records[0]?.error).toBeUndefined();
+    expect(records[1]?.exit).toBe(true);
+  });
+
+  test("CLI --headless emits one JSON output record per stdin input", async () => {
+    const result = await runCliProcess({
+      argv: ["--backend", "memory", "--provider", "fixture", "--headless"],
+      stdin: "Hello from headless CLI\n.exit\n",
+    });
+    const records = parseHeadlessOutputRecords(result.stdout);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).toBe("");
+    expect(result.stdout.includes("Tuvren REPL Host")).toBe(false);
+    expect(records).toHaveLength(2);
+    expect(records[0]?.recordKind).toBe("output");
+    expect(records[0]?.ordinal).toBe(0);
+    expect(records[0]?.output).toBe("REPL streaming complete.");
+    expect(records[1]?.exit).toBe(true);
+  });
+
+  test("CLI --headless takes precedence over explicit scenario selection", async () => {
+    const result = await runCliProcess({
+      argv: [
+        "--backend",
+        "memory",
+        "--provider",
+        "fixture",
+        "--scenario",
+        "streaming",
+        "--headless",
+      ],
+      stdin: ".status\n.exit\n",
+    });
+    const records = parseHeadlessOutputRecords(result.stdout);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).toBe("");
+    expect(result.stdout.includes('"checks"')).toBe(false);
+    expect(records).toHaveLength(2);
+    expect(String(records[0]?.output)).toContain('"backend": "memory"');
+    expect(records[1]?.exit).toBe(true);
+  });
+
+  test("CLI --headless --stream-jsonl emits canonical stream-event records", async () => {
+    const result = await runCliProcess({
+      argv: [
+        "--backend",
+        "memory",
+        "--provider",
+        "fixture",
+        "--headless",
+        "--stream-jsonl",
+      ],
+      stdin: "Hello from streaming CLI\n.exit\n",
+    });
+    const records = parseHeadlessOutputRecords(result.stdout);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).toBe("");
+    expect(
+      records.some(
+        (record) =>
+          record.recordKind === "stream-event" &&
+          record.event?.type === "text.delta"
+      )
+    ).toBe(true);
+    expect(
+      records.some(
+        (record) => record.recordKind === "output" && record.ordinal === 0
+      )
+    ).toBe(true);
+  });
+
+  test("CLI headless mode can be selected through TUVREN_REPL_MODE", async () => {
+    const result = await runCliProcess({
+      argv: ["--backend", "memory", "--provider", "fixture"],
+      envOverrides: {
+        TUVREN_REPL_MODE: "headless",
+      },
+      stdin: ".status\n.exit\n",
+    });
+    const records = parseHeadlessOutputRecords(result.stdout);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).toBe("");
+    expect(result.stdout.includes("Tuvren REPL Host")).toBe(false);
+    expect(records).toHaveLength(2);
+    expect(records[0]?.recordKind).toBe("output");
+    expect(String(records[0]?.output)).toContain('"backend": "memory"');
+    expect(records[1]?.exit).toBe(true);
+  });
+
+  test("CLI records headless sessions as replayable transcripts", async () => {
+    const transcriptPath = join(
+      tmpdir(),
+      `tuvren-repl-record-${Date.now()}.jsonl`
+    );
+    const result = await runCliProcess({
+      argv: [
+        "--backend",
+        "memory",
+        "--provider",
+        "fixture",
+        "--headless",
+        "--record",
+        transcriptPath,
+      ],
+      stdin: ".status\n.exit\n",
+    });
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).toBe("");
+
+    const transcript = await readReplTranscriptFile(transcriptPath);
+    const entries: ReplTranscriptEntry[] = [];
+
+    for await (const entry of transcript.entries()) {
+      entries.push(entry);
+    }
+
+    expect(transcript.header.config).toMatchObject({
+      backend: { kind: "memory" },
+      providerMode: "fixture",
+    });
+    expect(entries.map((entry) => entry.recordKind)).toEqual([
+      "input",
+      "output",
+      "input",
+      "output",
+    ]);
+    expect(entries[0]).toMatchObject({
+      input: ".status",
+      ordinal: 0,
+      recordKind: "input",
+    });
+    expect(entries[1]).toMatchObject({
+      ordinal: 0,
+      recordKind: "output",
+    });
+  });
+
+  test("CLI records durable reads in headless transcripts", async () => {
+    const transcriptPath = join(
+      tmpdir(),
+      `tuvren-repl-durable-read-${Date.now()}.jsonl`
+    );
+    const result = await runCliProcess({
+      argv: [
+        "--backend",
+        "memory",
+        "--provider",
+        "fixture",
+        "--headless",
+        "--record",
+        transcriptPath,
+      ],
+      stdin: "Hello before durable read\n.messages   show\n",
+    });
+
+    expect(result.exitCode).toBe(0);
+
+    const transcript = await readReplTranscriptFile(transcriptPath);
+    const entries: ReplTranscriptEntry[] = [];
+
+    for await (const entry of transcript.entries()) {
+      entries.push(entry);
+    }
+
+    expect(entries.map((entry) => entry.recordKind)).toEqual([
+      "input",
+      "stream-event",
+      "stream-event",
+      "stream-event",
+      "stream-event",
+      "stream-event",
+      "stream-event",
+      "stream-event",
+      "stream-event",
+      "stream-event",
+      "stream-event",
+      "stream-event",
+      "stream-event",
+      "stream-event",
+      "output",
+      "input",
+      "output",
+      "durable-read",
+    ]);
+    expect(
+      entries.some(
+        (entry) =>
+          entry.recordKind === "durable-read" &&
+          entry.operation === "readBranchMessages" &&
+          Array.isArray(entry.result)
+      )
+    ).toBe(true);
+  });
+
+  test("CLI replays deterministic transcripts and emits a JSON report", async () => {
+    const transcriptPath = join(
+      tmpdir(),
+      `tuvren-repl-replay-${Date.now()}.jsonl`
+    );
+    const recordResult = await runCliProcess({
+      argv: [
+        "--backend",
+        "memory",
+        "--provider",
+        "fixture",
+        "--headless",
+        "--record",
+        transcriptPath,
+      ],
+      stdin: "Hello from replay\n",
+    });
+    const replayResult = await runCliProcess({
+      argv: ["--replay", transcriptPath],
+    });
+
+    expect(recordResult.exitCode).toBe(0);
+    expect(replayResult.exitCode).toBe(0);
+    expect(replayResult.stderr).toBe("");
+    expect(JSON.parse(replayResult.stdout)).toMatchObject({
+      deterministicAsserted: true,
+      inputCount: 1,
+      mismatches: [],
+      providerMode: "fixture",
+      status: "passed",
+    });
+  });
+
+  test("CLI replays deterministic structured transcripts with recorded scenario", async () => {
+    const transcriptPath = join(
+      tmpdir(),
+      `tuvren-repl-structured-replay-${Date.now()}.jsonl`
+    );
+    const recordResult = await runCliProcess({
+      argv: [
+        "--backend",
+        "memory",
+        "--provider",
+        "fixture",
+        "--scenario",
+        "structured",
+        "--headless",
+        "--record",
+        transcriptPath,
+      ],
+      stdin: "Hello structured replay\n",
+    });
+    const replayResult = await runCliProcess({
+      argv: ["--replay", transcriptPath],
+    });
+    const records = parseHeadlessOutputRecords(recordResult.stdout);
+
+    expect(recordResult.exitCode).toBe(0);
+    expect(records[0]?.output).toBe(
+      '{"scenario":"structured","status":"ready"}'
+    );
+    expect(replayResult.exitCode).toBe(0);
+    expect(replayResult.stderr).toBe("");
+    expect(JSON.parse(replayResult.stdout)).toMatchObject({
+      deterministicAsserted: true,
+      inputCount: 1,
+      mismatches: [],
+      providerMode: "fixture",
+      status: "passed",
+    });
+
+    const transcript = await readReplTranscriptFile(transcriptPath);
+
+    expect(transcript.header.config).toMatchObject({
+      providerMode: "fixture",
+      scenario: "structured",
+    });
+  });
+
+  test("CLI records interactive streamed sessions as replayable transcripts", async () => {
+    const transcriptPath = join(
+      tmpdir(),
+      `tuvren-repl-interactive-replay-${Date.now()}.jsonl`
+    );
+    const recordResult = await runCliProcess({
+      argv: [
+        "--backend",
+        "memory",
+        "--provider",
+        "fixture",
+        "--record",
+        transcriptPath,
+      ],
+      stdin: "Hello from interactive replay\n.exit\n",
+    });
+    const replayResult = await runCliProcess({
+      argv: ["--replay", transcriptPath],
+    });
+
+    expect(recordResult.exitCode).toBe(0);
+    expect(replayResult.exitCode).toBe(0);
+    expect(replayResult.stderr).toBe("");
+    expect(JSON.parse(replayResult.stdout)).toMatchObject({
+      deterministicAsserted: true,
+      inputCount: 2,
+      mismatches: [],
+      providerMode: "fixture",
+      status: "passed",
+    });
+
+    const transcript = await readReplTranscriptFile(transcriptPath);
+    const entries: ReplTranscriptEntry[] = [];
+
+    for await (const entry of transcript.entries()) {
+      entries.push(entry);
+    }
+
+    expect(
+      entries.some(
+        (entry) =>
+          entry.recordKind === "output" &&
+          entry.ordinal === 0 &&
+          entry.output === "REPL streaming complete."
+      )
+    ).toBe(true);
+  });
+
+  test("CLI replays deterministic command transcripts with volatile JSON ids", async () => {
+    const transcriptPath = join(
+      tmpdir(),
+      `tuvren-repl-thread-replay-${Date.now()}.jsonl`
+    );
+    const recordResult = await runCliProcess({
+      argv: [
+        "--backend",
+        "memory",
+        "--provider",
+        "fixture",
+        "--headless",
+        "--record",
+        transcriptPath,
+      ],
+      stdin: ".thread new\n",
+    });
+    const replayResult = await runCliProcess({
+      argv: ["--replay", transcriptPath],
+    });
+
+    expect(recordResult.exitCode).toBe(0);
+    expect(replayResult.exitCode).toBe(0);
+    expect(JSON.parse(replayResult.stdout)).toMatchObject({
+      deterministicAsserted: true,
+      inputCount: 1,
+      mismatches: [],
+      providerMode: "fixture",
+      status: "passed",
+    });
+  });
+
+  test("CLI replay failures are structured when transcript cannot be opened", async () => {
+    const result = await runCliProcess({
+      argv: ["--replay", join(tmpdir(), `missing-${Date.now()}.jsonl`)],
+    });
+    const records = parseHeadlessOutputRecords(result.stdout);
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toBe("");
+    expect(records).toHaveLength(1);
+    expect(records[0]?.error?.message).toContain("ENOENT");
+  });
+
+  test("CLI emits JSONL errors for headless startup failures", async () => {
+    const result = await runCliProcess({
+      argv: [
+        "--backend",
+        "memory",
+        "--provider",
+        "ai-sdk-google",
+        "--headless",
+      ],
+      envOverrides: {
+        GEMINI_API_KEY: undefined,
+        GOOGLE_GENERATIVE_AI_API_KEY: undefined,
+      },
+      stdin: "Hello\n",
+    });
+    const records = parseHeadlessOutputRecords(result.stdout);
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toBe("");
+    expect(records).toHaveLength(1);
+    expect(records[0]?.error?.message).toContain(
+      "ai-sdk-google repl provider requires"
+    );
+  });
+
+  test("CLI reports record path failures without unhandled stream errors", async () => {
+    const result = await runCliProcess({
+      argv: [
+        "--backend",
+        "memory",
+        "--provider",
+        "fixture",
+        "--headless",
+        "--record",
+        join(tmpdir(), `missing-${Date.now()}`, "session.jsonl"),
+      ],
+      stdin: ".status\n",
+    });
+    const records = parseHeadlessOutputRecords(result.stdout);
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toBe("");
+    expect(records).toHaveLength(1);
+    expect(records[0]?.error?.message).toContain("ENOENT");
+  });
+
+  test("CLI help documents headless, streaming JSONL, record, and replay controls", async () => {
+    const result = await runCliProcess({
+      argv: ["--backend", "memory", "--provider", "fixture", "--headless"],
+      stdin: ".help\n.exit\n",
+    });
+    const records = parseHeadlessOutputRecords(result.stdout);
+    const help = String(records[0]?.output);
+
+    expect(result.exitCode).toBe(0);
+    expect(help).toContain("--headless");
+    expect(help).toContain("--stream-jsonl");
+    expect(help).toContain("--record <path>");
+    expect(help).toContain("--replay <path>");
+    expect(help).toContain("TUVREN_REPL_MODE=headless");
   });
 
   test("interactive CLI honors TUVREN_REPL_SCENARIO aliases", async () => {
@@ -1909,6 +2504,207 @@ describe("repl host scenarios", () => {
     expect(result.stderr.trim().split("\n")).toHaveLength(1);
     expect(result.stdout).toBe("");
   });
+
+  test("writes and lazily reads every transcript record kind with stable JSONL ordering", async () => {
+    const header = createTranscriptHeaderFixture();
+    const entries = createTranscriptEntryFixtures();
+    const lines: string[] = [];
+    const writer = await createReplTranscriptWriter({
+      header,
+      write(line) {
+        lines.push(line);
+      },
+    });
+
+    for (const entry of entries) {
+      await writer.writeEntry(entry);
+    }
+
+    await writer.close();
+
+    expect(lines[0]).toBe(`${serializeReplTranscriptRecord(header)}\n`);
+    expect(JSON.parse(lines[0] ?? "")).toEqual(header);
+    expect(Object.keys(JSON.parse(lines[0] ?? ""))).toEqual([
+      "config",
+      "recordKind",
+      "recordedAtMs",
+      "runtimeVersion",
+      "v",
+    ]);
+    expect(Object.keys(JSON.parse(lines[1] ?? ""))).toEqual([
+      "input",
+      "ordinal",
+      "recordKind",
+      "recordedAtMs",
+      "v",
+    ]);
+
+    const reader = await readReplTranscriptFromLines(
+      lines.map((line) => line.trimEnd())
+    );
+
+    expect(reader.header).toEqual(header);
+
+    const readEntries: ReplTranscriptEntry[] = [];
+
+    for await (const entry of reader.entries()) {
+      readEntries.push(entry);
+    }
+
+    expect(readEntries).toEqual(entries);
+    expect([
+      `${serializeReplTranscriptRecord(reader.header)}\n`,
+      ...readEntries.map(
+        (entry) => `${serializeReplTranscriptRecord(entry)}\n`
+      ),
+    ]).toEqual(lines);
+  });
+
+  test("rejects malformed transcript files before yielding entries", async () => {
+    await expect(readReplTranscriptFromLines([])).rejects.toThrow(
+      "transcript is empty"
+    );
+    await expect(
+      readReplTranscriptFromLines([
+        serializeReplTranscriptRecord(
+          createTranscriptEntryFixtures()[0] ?? {
+            input: ".status",
+            ordinal: 0,
+            recordKind: "input",
+            recordedAtMs: 1,
+            v: 1,
+          }
+        ),
+      ])
+    ).rejects.toThrow("transcript first record must be a header");
+  });
+
+  test("replays deterministic transcripts and reports output mismatches", async () => {
+    const passingTranscript = await createStatusReplayTranscript({
+      providerMode: "fixture",
+    });
+    const passingReport = await replayReplTranscript(passingTranscript);
+
+    expect(passingReport).toMatchObject({
+      deterministicAsserted: true,
+      inputCount: 1,
+      mismatches: [],
+      nonDeterministicRecorded: false,
+      providerMode: "fixture",
+      status: "passed",
+    });
+
+    const failingTranscript = await createStatusReplayTranscript({
+      outputOverride: "{}",
+      providerMode: "fixture",
+    });
+    const failingReport = await replayReplTranscript(failingTranscript);
+
+    expect(failingReport.status).toBe("failed");
+    expect(failingReport.mismatches).toHaveLength(1);
+    expect(failingReport.mismatches[0]?.recordKind).toBe("output");
+  });
+
+  test("deterministic replay fails when stream-event evidence is missing", async () => {
+    const transcript = await createFreeformReplayTranscript({
+      includeStreamEvents: false,
+    });
+    const report = await replayReplTranscript(transcript);
+
+    expect(report.status).toBe("failed");
+    expect(
+      report.mismatches.some((entry) => entry.recordKind === "stream-event")
+    ).toBe(true);
+  });
+
+  test("deterministic replay fails when durable-read evidence is tampered", async () => {
+    const transcript = await createFreeformReplayTranscript({
+      durableReads: [
+        {
+          operation: "readBranchMessages",
+          ordinal: 0,
+          recordedAtMs: 2010,
+          recordKind: "durable-read",
+          result: [{ role: "assistant", text: "tampered" }],
+          v: 1,
+        },
+      ],
+      includeStreamEvents: true,
+    });
+    const report = await replayReplTranscript(transcript);
+
+    expect(report.status).toBe("failed");
+    expect(
+      report.mismatches.some((entry) => entry.recordKind === "durable-read")
+    ).toBe(true);
+  });
+
+  test("asserts deterministic commands in non-deterministic transcripts", async () => {
+    const transcript = await createStatusReplayTranscript({
+      outputOverride: "{}",
+      providerMode: "ai-sdk-mock",
+    });
+    const report = await replayReplTranscript(transcript);
+
+    expect(report.status).toBe("failed");
+    expect(report).toMatchObject({
+      deterministicAsserted: true,
+      inputCount: 1,
+      nonDeterministicRecorded: false,
+      providerMode: "ai-sdk-mock",
+    });
+    expect(report.mismatches[0]?.recordKind).toBe("output");
+  });
+
+  test("records non-deterministic freeform replay output without asserting equality", async () => {
+    const transcript = await createFreeformReplayTranscript({
+      includeStreamEvents: true,
+      outputOverride: "{}",
+      providerMode: "ai-sdk-mock",
+    });
+    const report = await replayReplTranscript(transcript);
+
+    expect(report).toMatchObject({
+      deterministicAsserted: false,
+      inputCount: 1,
+      nonDeterministicRecorded: true,
+      providerMode: "ai-sdk-mock",
+      status: "passed",
+    });
+  });
+
+  test("non-deterministic replay fails when output evidence is missing", async () => {
+    const header = {
+      ...createTranscriptHeaderFixture(),
+      config: {
+        backend: {
+          kind: "memory",
+        },
+        providerMode: "ai-sdk-mock",
+        scenario: "streaming",
+      },
+    } satisfies ReplTranscriptHeader;
+    const transcript = await readReplTranscriptFromLines([
+      serializeReplTranscriptRecord(header),
+      serializeReplTranscriptRecord({
+        input: "Hello without output evidence",
+        ordinal: 0,
+        recordedAtMs: 2001,
+        recordKind: "input",
+        v: 1,
+      }),
+    ]);
+    const report = await replayReplTranscript(transcript);
+
+    expect(report.status).toBe("failed");
+    expect(report).toMatchObject({
+      deterministicAsserted: false,
+      inputCount: 1,
+      nonDeterministicRecorded: true,
+      providerMode: "ai-sdk-mock",
+    });
+    expect(report.mismatches[0]?.recordKind).toBe("output");
+  });
 });
 
 function readCommandArray(
@@ -1925,6 +2721,192 @@ function readCommandArray(
   }
 
   return parsed;
+}
+
+function parseHeadlessOutputRecords(output: string): Array<{
+  error?: { message: string };
+  event?: { type?: string };
+  exit?: boolean;
+  ordinal: number;
+  output?: string | null;
+  recordKind: string;
+  recordedAtMs: number;
+  v: number;
+}> {
+  return output
+    .trim()
+    .split("\n")
+    .filter((line) => line.length > 0)
+    .map((line) => JSON.parse(line));
+}
+
+function createTranscriptHeaderFixture(): ReplTranscriptHeader {
+  return {
+    config: {
+      backend: {
+        kind: "sqlite",
+        options: {
+          path: "/tmp/tuvren transcript.sqlite",
+        },
+      },
+      modelId: "fixture-model",
+      providerMode: "fixture",
+      scenario: "streaming",
+      systemPrompt: "Be concise.",
+    },
+    recordedAtMs: 1000,
+    recordKind: "header",
+    runtimeVersion: "@tuvren/runtime@0.27.0",
+    v: 1,
+  };
+}
+
+function createTranscriptEntryFixtures(): ReplTranscriptEntry[] {
+  return [
+    {
+      input: ".status",
+      ordinal: 0,
+      recordedAtMs: 1001,
+      recordKind: "input",
+      v: 1,
+    },
+    {
+      event: {
+        delta: "Hello",
+        messageId: "message-1",
+        timestamp: 1002,
+        type: "text.delta",
+      },
+      ordinal: 0,
+      recordedAtMs: 1002,
+      recordKind: "stream-event",
+      v: 1,
+    },
+    {
+      exit: false,
+      ordinal: 0,
+      output: '{"backend":"memory"}',
+      recordedAtMs: 1003,
+      recordKind: "output",
+      v: 1,
+    },
+    {
+      operation: "readBranchMessages",
+      ordinal: 0,
+      recordedAtMs: 1004,
+      recordKind: "durable-read",
+      result: [
+        {
+          role: "assistant",
+          text: "Hello",
+        },
+      ],
+      v: 1,
+    },
+  ];
+}
+
+async function createStatusReplayTranscript(input: {
+  outputOverride?: string;
+  providerMode: string;
+}) {
+  const header = {
+    ...createTranscriptHeaderFixture(),
+    config: {
+      backend: {
+        kind: "memory",
+      },
+      providerMode: input.providerMode,
+    },
+  } satisfies ReplTranscriptHeader;
+  const shell = createReplShell({
+    backend: "memory",
+    providerMode: "fixture",
+    scenario: "streaming",
+  });
+  const result = await runReplInput(shell, ".status");
+  const output = input.outputOverride ?? result.output ?? null;
+  const lines = [
+    `${serializeReplTranscriptRecord(header)}\n`,
+    `${serializeReplTranscriptRecord({
+      input: ".status",
+      ordinal: 0,
+      recordedAtMs: 2001,
+      recordKind: "input",
+      v: 1,
+    })}\n`,
+    `${serializeReplTranscriptRecord({
+      ordinal: 0,
+      output,
+      recordedAtMs: 2002,
+      recordKind: "output",
+      v: 1,
+    })}\n`,
+  ];
+
+  return await readReplTranscriptFromLines(lines.map((line) => line.trimEnd()));
+}
+
+async function createFreeformReplayTranscript(input: {
+  durableReads?: ReplTranscriptEntry[];
+  includeStreamEvents: boolean;
+  outputOverride?: string;
+  providerMode?: string;
+}) {
+  const header = {
+    ...createTranscriptHeaderFixture(),
+    config: {
+      backend: {
+        kind: "memory",
+      },
+      providerMode: input.providerMode ?? "fixture",
+    },
+  } satisfies ReplTranscriptHeader;
+  const shell = createReplShell({
+    backend: "memory",
+    providerMode: "fixture",
+    scenario: "streaming",
+  });
+  const events: TuvrenStreamEvent[] = [];
+  await runReplInput(shell, "Hello freeform replay", {
+    onCanonicalEvent(event) {
+      events.push(event);
+    },
+  });
+  const lines = [
+    `${serializeReplTranscriptRecord(header)}\n`,
+    `${serializeReplTranscriptRecord({
+      input: "Hello freeform replay",
+      ordinal: 0,
+      recordedAtMs: 2001,
+      recordKind: "input",
+      v: 1,
+    })}\n`,
+    ...(input.includeStreamEvents
+      ? events.map(
+          (event, index) =>
+            `${serializeReplTranscriptRecord({
+              event,
+              ordinal: 0,
+              recordedAtMs: 2002 + index,
+              recordKind: "stream-event",
+              v: 1,
+            })}\n`
+        )
+      : []),
+    `${serializeReplTranscriptRecord({
+      ordinal: 0,
+      output: input.outputOverride ?? "REPL streaming complete.",
+      recordedAtMs: 2100,
+      recordKind: "output",
+      v: 1,
+    })}\n`,
+    ...(input.durableReads ?? []).map(
+      (entry) => `${serializeReplTranscriptRecord(entry)}\n`
+    ),
+  ];
+
+  return await readReplTranscriptFromLines(lines.map((line) => line.trimEnd()));
 }
 
 async function waitForCondition(
@@ -1945,7 +2927,7 @@ async function waitForCondition(
 }
 
 function findToolDefinition(name: string): TuvrenToolDefinition {
-  const tool = createPlaygroundTools().find((entry) => entry.name === name);
+  const tool = createReplBuiltinTools().find((entry) => entry.name === name);
 
   if (tool === undefined) {
     throw new Error(`expected repl tool "${name}"`);

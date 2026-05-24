@@ -38,6 +38,7 @@ import { createFrameworkAdapterDriver } from "./framework-adapter-driver.ts";
 import { createFrameworkAdapterEventStream } from "./framework-adapter-event-stream.ts";
 import { createFrameworkAdapterEventStreamSse } from "./framework-adapter-event-stream-sse.ts";
 import { createFrameworkAdapterOrchestration } from "./framework-adapter-orchestration.ts";
+import { createFrameworkAdapterProvingHost } from "./framework-adapter-proving-host.ts";
 import type {
   AdapterProjection,
   ScenarioToolCall,
@@ -113,6 +114,7 @@ const eventStreamScenarios = createFrameworkAdapterEventStream({
 });
 
 const batteriesIncludedScenarios = createFrameworkAdapterBatteriesIncluded();
+const provingHostScenarios = createFrameworkAdapterProvingHost();
 const schemaAuthoringScenarios = createFrameworkAdapterSchemaAuthoring();
 
 const runtimeScenarios = createFrameworkAdapterRuntimeScenarios({
@@ -328,6 +330,8 @@ export class TypeScriptFrameworkAdapter implements ImplementationAdapter {
         return orchestrationScenarios.runOrchestrationNestedAttribution(input);
       case "runtime.batteries-included.lifecycle":
         return batteriesIncludedScenarios.runBatteriesIncludedLifecycle(input);
+      case "runtime.proving-host.headless-transcript-replay":
+        return provingHostScenarios.runHeadlessTranscriptReplay(input);
       case "runtime.schema-authoring.route":
         return schemaAuthoringScenarios.runSchemaAuthoringRoute(input);
       case "runtime.schema-authoring.define-tool":

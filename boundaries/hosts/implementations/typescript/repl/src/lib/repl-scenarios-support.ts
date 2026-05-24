@@ -27,21 +27,26 @@ import {
 import { toAgUiEvents } from "@tuvren/stream-agui";
 import { teeTuvrenStreamEvents } from "@tuvren/stream-core";
 import { toSseFrames } from "@tuvren/stream-sse";
-import { isAimockProviderMode } from "./playground-config.js";
-import { createPlaygroundProvider } from "./playground-provider.js";
-import { createPlaygroundTools, textSignal } from "./playground-tools.js";
+import { createReplBuiltinTools, textSignal } from "./repl-builtin-tools.js";
+import {
+  INVALID_REPL_CONFIG_CODE,
+  isAimockProviderMode,
+} from "./repl-config.js";
+import { createReplProvider } from "./repl-provider.js";
 import type {
-  PlaygroundConfig,
-  PlaygroundHost,
-  PlaygroundScenarioExecutionPlan,
-  PlaygroundScenarioReport,
-  PlaygroundStreamProjection,
-  PlaygroundTelemetryEvidence,
-  PlaygroundThreadSummary,
-} from "./playground-types.js";
+  ReplConfig,
+  ReplHost,
+  ReplScenarioExecutionPlan,
+  ReplScenarioReport,
+  ReplStreamProjection,
+  ReplTelemetryEvidence,
+  ReplThreadSummary,
+} from "./repl-types.js";
+
+const NO_TOOLS: [] = [];
 
 export function readMetadataObserved(
-  config: PlaygroundConfig,
+  config: ReplConfig,
   messages: unknown[]
 ): boolean {
   if (config.scenario !== "metadata") {
@@ -60,7 +65,7 @@ export function readMetadataObserved(
 }
 
 export function readToolHistoryPreserved(
-  config: PlaygroundConfig,
+  config: ReplConfig,
   durableToolCallProviderCallIdCount: number,
   durableToolCallThoughtSignatureCount: number
 ): boolean {
@@ -80,7 +85,7 @@ export function readToolHistoryPreserved(
 }
 
 export function readToolTraceObserved(
-  config: PlaygroundConfig,
+  config: ReplConfig,
   toolCallProviderCallIdCount: number,
   toolCallThoughtSignatureCount: number
 ): boolean {
@@ -100,8 +105,8 @@ export function readToolTraceObserved(
 }
 
 export function readApprovalToolMetadataObserved(
-  config: PlaygroundConfig,
-  projection: PlaygroundStreamProjection,
+  config: ReplConfig,
+  projection: ReplStreamProjection,
   messages: unknown[]
 ): boolean {
   if (config.providerMode === "ai-sdk-google") {
@@ -119,7 +124,7 @@ export function readApprovalToolMetadataObserved(
 }
 
 export function readApprovalToolMetadataHistory(
-  config: PlaygroundConfig,
+  config: ReplConfig,
   messages: unknown[],
   durableToolCallProviderCallIdCount: number
 ): boolean {
@@ -136,15 +141,15 @@ export function readApprovalToolMetadataHistory(
 
 export function createReport(input: {
   checks: Record<string, boolean>;
-  config: PlaygroundConfig;
+  config: ReplConfig;
   error?: {
     code?: string;
     message: string;
   };
   handle: ExecutionHandle;
-  projection: PlaygroundStreamProjection;
-  thread: PlaygroundThreadSummary;
-}): PlaygroundScenarioReport {
+  projection: ReplStreamProjection;
+  thread: ReplThreadSummary;
+}): ReplScenarioReport {
   return {
     backend: input.config.backend,
     checks: input.checks,
@@ -164,10 +169,10 @@ export function createReport(input: {
 }
 
 function createTelemetryEvidence(input: {
-  config: PlaygroundConfig;
-  projection: PlaygroundStreamProjection;
-  thread: PlaygroundThreadSummary;
-}): PlaygroundTelemetryEvidence {
+  config: ReplConfig;
+  projection: ReplStreamProjection;
+  thread: ReplThreadSummary;
+}): ReplTelemetryEvidence {
   const turnStarts = input.projection.canonical.filter(
     (event): event is Extract<TuvrenStreamEvent, { type: "turn.start" }> =>
       event.type === "turn.start"
@@ -188,13 +193,20 @@ function createTelemetryEvidence(input: {
       (event) => event.source?.driver !== undefined
     )?.source?.driver ??
     null;
-  const runIds = input.projection.agui.flatMap((event) => {
+  const runIdsFromAgUi = input.projection.agui.flatMap((event) => {
     if (event.type !== "RUN_STARTED") {
       return [];
     }
 
     return typeof event.runId === "string" ? [event.runId] : [];
   });
+  // AG-UI uses the canonical turn id as its run id projection, so fallback to
+  // turn starts when a scenario intentionally omits AG-UI output, such as the
+  // orchestration proof that currently evaluates canonical descendant events.
+  const runIds =
+    runIdsFromAgUi.length > 0
+      ? runIdsFromAgUi
+      : turnStarts.map((event) => event.turnId);
   const attributes = {
     "tuvren.runtime.backend.id": input.config.backend,
     "tuvren.runtime.branch.id": input.thread.branchId,
@@ -218,7 +230,7 @@ function createTelemetryEvidence(input: {
     "tuvren.runtime.turn.id": collapseTelemetryValues(
       turnStarts.map((event) => event.turnId)
     ),
-  } satisfies PlaygroundTelemetryEvidence["attributes"];
+  } satisfies ReplTelemetryEvidence["attributes"];
 
   return {
     attributes,
@@ -251,12 +263,15 @@ function collapseTelemetryValues(
 }
 
 export function createScenarioExecutionPlan(
-  config: PlaygroundConfig
-): PlaygroundScenarioExecutionPlan {
+  config: ReplConfig
+): ReplScenarioExecutionPlan {
+  const defaultModel = createScenarioProvider(config, {});
+
   if (config.providerMode !== "ai-sdk-google") {
     return {
+      model: defaultModel,
       signal: textSignal(`Run ${config.scenario}`),
-      tools: createPlaygroundTools(),
+      tools: createReplBuiltinTools(),
     };
   }
 
@@ -291,37 +306,45 @@ export function createScenarioExecutionPlan(
     }
     case "structured":
       return {
+        model: defaultModel,
         signal: textSignal(
-          'Return a playground_summary object. Set scenario to "structured" and status to "ready".'
+          'Return a repl_summary object. Set scenario to "structured" and status to "ready".'
         ),
+        tools: NO_TOOLS,
       };
     case "metadata":
       return {
+        model: defaultModel,
         signal: textSignal(
           "Reply with a short sentence confirming provider metadata is preserved."
         ),
+        tools: NO_TOOLS,
       };
     case "streaming":
       return {
+        model: defaultModel,
         signal: textSignal(
           "Reply with a short single-sentence streaming confirmation."
         ),
+        tools: NO_TOOLS,
       };
     default:
       return {
+        model: defaultModel,
         signal: textSignal(`Run ${config.scenario}`),
+        tools: NO_TOOLS,
       };
   }
 }
 
 function createScenarioProvider(
-  config: PlaygroundConfig,
+  config: ReplConfig,
   settings: {
     requiredToolResultsBeforeRelease?: number;
     toolChoice?: string;
   }
 ): TuvrenProvider {
-  const provider = createPlaygroundProvider({
+  const provider = createReplProvider({
     aimockBaseUrl: config.aimockBaseUrl,
     googleApiKey: config.googleApiKey,
     modelId: config.modelId,
@@ -393,11 +416,11 @@ function countPromptToolResults(messages: TuvrenPrompt["messages"]): number {
 }
 
 function findToolDefinition(name: "email" | "search") {
-  const tool = createPlaygroundTools().find((entry) => entry.name === name);
+  const tool = createReplBuiltinTools().find((entry) => entry.name === name);
 
   if (tool === undefined) {
-    throw new TuvrenRuntimeError(`missing playground tool "${name}"`, {
-      code: "invalid_playground_config",
+    throw new TuvrenRuntimeError(`missing repl tool "${name}"`, {
+      code: INVALID_REPL_CONFIG_CODE,
     });
   }
 
@@ -405,8 +428,8 @@ function findToolDefinition(name: "email" | "search") {
 }
 
 export function readProjectionError(
-  projection: PlaygroundStreamProjection
-): PlaygroundScenarioReport["error"] | undefined {
+  projection: ReplStreamProjection
+): ReplScenarioReport["error"] | undefined {
   const errorEvent = [...projection.canonical]
     .reverse()
     .find(
@@ -438,15 +461,16 @@ export function readProjectionError(
 }
 
 export function startProjectionCapture(
-  handle: ExecutionHandle
-): Promise<PlaygroundStreamProjection> {
+  handle: ExecutionHandle,
+  onCanonicalEvent?: (event: TuvrenStreamEvent) => void
+): Promise<ReplStreamProjection> {
   const [canonicalBranch, sseBranch, aguiBranch] = teeTuvrenStreamEvents(
     handle.events(),
     3
   );
 
   return Promise.all([
-    collect(canonicalBranch),
+    collect(canonicalBranch, onCanonicalEvent),
     collect(toSseFrames(sseBranch)),
     collect(toAgUiEvents(aguiBranch)),
   ]).then(([canonical, sse, agui]) => ({
@@ -457,27 +481,29 @@ export function startProjectionCapture(
 }
 
 export function projectContinuationCapture(
-  handle: ExecutionHandle
-): Promise<PlaygroundStreamProjection> {
-  const [canonicalBranch, sseBranch] = teeTuvrenStreamEvents(
+  handle: ExecutionHandle,
+  onCanonicalEvent?: (event: TuvrenStreamEvent) => void
+): Promise<ReplStreamProjection> {
+  const [canonicalBranch, sseBranch, aguiBranch] = teeTuvrenStreamEvents(
     handle.events(),
-    2
+    3
   );
 
   return Promise.all([
-    collect(canonicalBranch),
+    collect(canonicalBranch, onCanonicalEvent),
     collect(toSseFrames(sseBranch)),
-  ]).then(([canonical, sse]) => ({
-    agui: [],
+    collect(toAgUiEvents(aguiBranch)),
+  ]).then(([canonical, sse, agui]) => ({
+    agui,
     canonical,
     sse,
   }));
 }
 
 export function mergeProjections(
-  left: PlaygroundStreamProjection,
-  right: PlaygroundStreamProjection
-): PlaygroundStreamProjection {
+  left: ReplStreamProjection,
+  right: ReplStreamProjection
+): ReplStreamProjection {
   return {
     agui: [...left.agui, ...right.agui],
     canonical: [...left.canonical, ...right.canonical],
@@ -486,21 +512,27 @@ export function mergeProjections(
 }
 
 export function withHead(
-  thread: PlaygroundThreadSummary,
-  projection: PlaygroundStreamProjection
-): PlaygroundThreadSummary {
+  thread: ReplThreadSummary,
+  projection: ReplStreamProjection
+): ReplThreadSummary {
+  // Orchestration streams can interleave descendant checkpoints, so only
+  // derive the active head from checkpoints emitted on the active thread.
   const checkpoint = [...projection.canonical]
     .reverse()
     .find(
       (
         event
       ): event is Extract<TuvrenStreamEvent, { type: "state.checkpoint" }> =>
-        event.type === "state.checkpoint"
+        event.type === "state.checkpoint" &&
+        event.source?.threadId === thread.threadId
     );
 
   return {
     ...thread,
-    headTurnNodeHash: checkpoint?.turnNodeHash ?? thread.rootTurnNodeHash,
+    headTurnNodeHash:
+      checkpoint?.turnNodeHash ??
+      thread.headTurnNodeHash ??
+      thread.rootTurnNodeHash,
   };
 }
 
@@ -513,7 +545,7 @@ function hasProviderMetadataEvidence(value: unknown): boolean {
 
   if (
     isPlainRecord(providerMetadata) &&
-    (isPlainRecord(providerMetadata.playground) ||
+    (isPlainRecord(providerMetadata.repl) ||
       isPlainRecord(providerMetadata.fixture) ||
       isPlainRecord(providerMetadata.aiSdkBridge))
   ) {
@@ -609,7 +641,7 @@ function hasGoogleProviderMetadataEvidence(value: unknown): boolean {
 }
 
 export function countToolCallThoughtSignatureEvents(
-  projection: PlaygroundStreamProjection
+  projection: ReplStreamProjection
 ): number {
   return projection.canonical.filter((event) => {
     if (event.type !== "tool_call.done") {
@@ -649,7 +681,7 @@ export function countDurableToolCallThoughtSignatures(
 }
 
 export function countToolCallProviderCallIdEvents(
-  projection: PlaygroundStreamProjection
+  projection: ReplStreamProjection
 ): number {
   return projection.canonical.filter((event) => {
     if (event.type !== "tool_call.done") {
@@ -786,10 +818,14 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-async function collect<T>(events: AsyncIterable<T>): Promise<T[]> {
+async function collect<T>(
+  events: AsyncIterable<T>,
+  onItem?: (item: T) => void
+): Promise<T[]> {
   const output: T[] = [];
 
   for await (const event of events) {
+    onItem?.(event);
     output.push(event);
   }
 
@@ -804,7 +840,7 @@ export async function waitFor(
 
   while (!condition()) {
     if (Date.now() - startedAt >= timeoutMilliseconds) {
-      throw new Error("timed out waiting for playground condition");
+      throw new Error("timed out waiting for repl condition");
     }
 
     await new Promise<void>((resolve) => {
@@ -814,7 +850,7 @@ export async function waitFor(
 }
 
 export async function steerWhenRunning(
-  host: PlaygroundHost,
+  host: ReplHost,
   handle: ExecutionHandle,
   signal: InputSignal,
   timeoutMilliseconds = 1000
@@ -827,24 +863,30 @@ export async function steerWhenRunning(
       return;
     } catch (error: unknown) {
       if (
-        !(
-          error instanceof TuvrenRuntimeError &&
-          error.code === "invalid_steering_state" &&
-          handle.status().phase === "running"
-        )
+        !isInvalidSteeringStateError(error) ||
+        handle.status().phase !== "running"
       ) {
         throw error;
       }
     }
 
     if (Date.now() - startedAt >= timeoutMilliseconds) {
-      throw new Error("timed out waiting for playground steering acceptance");
+      throw new Error("timed out waiting for repl steering acceptance");
     }
 
     await new Promise<void>((resolve) => {
       setTimeout(resolve, 5);
     });
   }
+}
+
+function isInvalidSteeringStateError(
+  error: unknown
+): error is TuvrenRuntimeError {
+  return (
+    error instanceof TuvrenRuntimeError &&
+    error.code === "invalid_steering_state"
+  );
 }
 
 export function readSteeringMessageDurable(messages: unknown[]): boolean {

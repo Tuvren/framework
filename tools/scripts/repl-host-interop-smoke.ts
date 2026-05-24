@@ -42,6 +42,10 @@ const REPL_HOST_DIST_PATH = resolve(
   REPO_ROOT,
   "boundaries/hosts/implementations/typescript/repl/dist/index.js"
 );
+const REPL_HOST_CLI_PATH = resolve(
+  REPO_ROOT,
+  "boundaries/hosts/implementations/typescript/repl/dist/cli.js"
+);
 const WAIT_TIMEOUT_MS = 30_000;
 
 await main();
@@ -78,6 +82,8 @@ async function main(): Promise<void> {
         `repl host interop smoke failed for scenarios: ${summary.failedScenarios.join(", ")}`
       );
     }
+
+    await runHeadlessInteropSmoke(grpcBaseUrl);
   } finally {
     await stopProcessTree(service);
   }
@@ -140,6 +146,116 @@ async function runRequiredCommand(
   if (result.code !== 0) {
     throw new Error(`command failed: ${command.join(" ")}`);
   }
+}
+
+async function runHeadlessInteropSmoke(grpcBaseUrl: string): Promise<void> {
+  const result = await runCliWithInput(
+    [
+      "node",
+      REPL_HOST_CLI_PATH,
+      "--headless",
+      "--stream-jsonl",
+      "--backend",
+      "memory",
+      "--provider",
+      "fixture",
+      "--kernel-mode",
+      "rust-grpc",
+      "--kernel-grpc-base-url",
+      grpcBaseUrl,
+    ],
+    ".turn start streaming\n.turn await\n.mcp smoke\n.exit\n"
+  );
+
+  if (result.code !== 0) {
+    throw new Error(
+      `headless repl host interop smoke failed\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`
+    );
+  }
+
+  const records = parseJsonlRecords(result.stdout);
+  const streamEventSeen = records.some(
+    (record) =>
+      isRecord(record) &&
+      record.recordKind === "stream-event" &&
+      isRecord(record.event) &&
+      record.event.type === "text.delta"
+  );
+  const mcpOutputSeen = records.some(
+    (record) =>
+      isRecord(record) &&
+      record.recordKind === "output" &&
+      typeof record.output === "string" &&
+      record.output.includes("mcp.echo")
+  );
+
+  if (!(streamEventSeen && mcpOutputSeen)) {
+    throw new Error(
+      `headless repl host interop smoke did not observe streaming and MCP outputs\nstdout:\n${result.stdout}`
+    );
+  }
+
+  process.stdout.write(
+    `${JSON.stringify(
+      {
+        headlessInteropSmoke: {
+          mcpOutputSeen,
+          recordCount: records.length,
+          streamEventSeen,
+        },
+      },
+      null,
+      2
+    )}\n`
+  );
+}
+
+function runCliWithInput(
+  command: readonly string[],
+  stdin: string
+): Promise<{ code: number; stderr: string; stdout: string }> {
+  const [executable, ...args] = command;
+
+  if (executable === undefined) {
+    throw new Error("runCliWithInput requires an executable");
+  }
+
+  return new Promise((resolveRun, reject) => {
+    const child = spawn(executable, args, {
+      cwd: REPO_ROOT,
+      env: process.env,
+      stdio: "pipe",
+    });
+    const stderrChunks: Uint8Array[] = [];
+    const stdoutChunks: Uint8Array[] = [];
+
+    child.stderr?.on("data", (chunk: Uint8Array) => {
+      stderrChunks.push(chunk);
+    });
+    child.stdout?.on("data", (chunk: Uint8Array) => {
+      stdoutChunks.push(chunk);
+    });
+    child.stdin.end(stdin);
+    child.once("error", reject);
+    child.once("close", (code) => {
+      resolveRun({
+        code: code ?? 1,
+        stderr: Buffer.concat(stderrChunks).toString("utf8"),
+        stdout: Buffer.concat(stdoutChunks).toString("utf8"),
+      });
+    });
+  });
+}
+
+function parseJsonlRecords(text: string): unknown[] {
+  return text
+    .split("\n")
+    .filter((line) => line.trim().length > 0)
+    .map((line) => JSON.parse(line) as unknown);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 async function reservePort(): Promise<number> {

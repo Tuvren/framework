@@ -19,7 +19,13 @@ import {
   type LoopPolicy,
   type TuvrenStreamEvent,
 } from "@tuvren/runtime";
-import { createPlaygroundHost } from "./playground-host.js";
+import {
+  createProofExtension,
+  PROOF_EXTENSION_EVENT_NAME,
+  PROOF_EXTENSION_NAME,
+} from "./proof-extension.js";
+import { textSignal } from "./repl-builtin-tools.js";
+import { createReplHost } from "./repl-host.js";
 import {
   countDurableToolCallProviderCallIds,
   countDurableToolCallThoughtSignatures,
@@ -41,31 +47,22 @@ import {
   steerWhenRunning,
   waitFor,
   withHead,
-} from "./playground-scenarios-support.js";
-import { textSignal } from "./playground-tools.js";
-import type {
-  PlaygroundConfig,
-  PlaygroundScenarioReport,
-} from "./playground-types.js";
-import {
-  createProofExtension,
-  PROOF_EXTENSION_EVENT_NAME,
-  PROOF_EXTENSION_NAME,
-} from "./proof-extension.js";
+} from "./repl-scenarios-support.js";
+import type { ReplConfig, ReplScenarioReport } from "./repl-types.js";
 
 const CONTINUE_ONCE_POLICY: LoopPolicy = {
   evaluate(_response, _manifest, iterationCount) {
     return {
       continue: iterationCount < 2,
       executeTools: true,
-      reason: "playground_continue_once",
+      reason: "repl_continue_once",
     };
   },
 };
 
-export async function runPlaygroundScenario(
-  config: PlaygroundConfig
-): Promise<PlaygroundScenarioReport> {
+export async function runReplScenario(
+  config: ReplConfig
+): Promise<ReplScenarioReport> {
   switch (config.scenario) {
     case "approval":
       return await runApprovalScenario(config);
@@ -93,9 +90,9 @@ export async function runPlaygroundScenario(
 }
 
 async function runSingleTurnScenario(
-  config: PlaygroundConfig
-): Promise<PlaygroundScenarioReport> {
-  const host = createPlaygroundHost(config);
+  config: ReplConfig
+): Promise<ReplScenarioReport> {
+  const host = createReplHost(config);
   const thread = await host.createThread();
   const executionPlan = createScenarioExecutionPlan(config);
   const handle = host.executeTurn({
@@ -109,7 +106,7 @@ async function runSingleTurnScenario(
       responseFormat:
         config.scenario === "structured"
           ? {
-              name: "playground_summary",
+              name: "repl_summary",
               schema: {
                 properties: {
                   scenario: { type: "string" },
@@ -186,9 +183,9 @@ async function runSingleTurnScenario(
 }
 
 async function runOrchestrationScenario(
-  config: PlaygroundConfig
-): Promise<PlaygroundScenarioReport> {
-  const host = createPlaygroundHost(config);
+  config: ReplConfig
+): Promise<ReplScenarioReport> {
+  const host = createReplHost(config);
   const thread = await host.createThread();
   const orchestration = createOrchestrationRuntime({
     agents: {
@@ -258,9 +255,9 @@ async function runOrchestrationScenario(
 }
 
 async function runApprovalScenario(
-  config: PlaygroundConfig
-): Promise<PlaygroundScenarioReport> {
-  const host = createPlaygroundHost(config);
+  config: ReplConfig
+): Promise<ReplScenarioReport> {
+  const host = createReplHost(config);
   const thread = await host.createThread();
   const executionPlan = createScenarioExecutionPlan(config);
   const pausedHandle = host.executeTurn({
@@ -350,14 +347,14 @@ async function runApprovalScenario(
             subject: "Edited status update",
             to: "ops@example.com",
           },
-          message: "Playground approved with deterministic input.",
+          message: "REPL approved with deterministic input.",
           type: "edit",
         };
       }
 
       return {
         callId: toolCall.callId,
-        message: "Playground approved with deterministic input.",
+        message: "REPL approved with deterministic input.",
         type: "approve",
       };
     }),
@@ -411,9 +408,9 @@ async function runApprovalScenario(
 }
 
 async function runBranchingScenario(
-  config: PlaygroundConfig
-): Promise<PlaygroundScenarioReport> {
-  const host = createPlaygroundHost(config);
+  config: ReplConfig
+): Promise<ReplScenarioReport> {
+  const host = createReplHost(config);
   const thread = await host.createThread();
   const firstHandle = host.executeTurn({
     branchId: thread.branchId,
@@ -464,9 +461,9 @@ async function runBranchingScenario(
 }
 
 async function runSteeringScenario(
-  config: PlaygroundConfig
-): Promise<PlaygroundScenarioReport> {
-  const host = createPlaygroundHost(config);
+  config: ReplConfig
+): Promise<ReplScenarioReport> {
+  const host = createReplHost(config);
   const thread = await host.createThread();
   const handle = host.executeTurn({
     branchId: thread.branchId,
@@ -499,9 +496,9 @@ async function runSteeringScenario(
 }
 
 async function runCancelScenario(
-  config: PlaygroundConfig
-): Promise<PlaygroundScenarioReport> {
-  const host = createPlaygroundHost(config);
+  config: ReplConfig
+): Promise<ReplScenarioReport> {
+  const host = createReplHost(config);
   const thread = await host.createThread();
   const handle = host.executeTurn({
     branchId: thread.branchId,
@@ -537,9 +534,9 @@ async function runCancelScenario(
 }
 
 async function runReloadScenario(
-  config: PlaygroundConfig
-): Promise<PlaygroundScenarioReport> {
-  const host = createPlaygroundHost(config);
+  config: ReplConfig
+): Promise<ReplScenarioReport> {
+  const host = createReplHost(config);
   const thread = await host.createThread();
   const handle = host.executeTurn({
     branchId: thread.branchId,
@@ -571,7 +568,7 @@ async function runReloadScenario(
     });
   }
 
-  const reloadedHost = createPlaygroundHost(config);
+  const reloadedHost = createReplHost(config);
   const reloadedThread = await reloadedHost.runtime.getThread(thread.threadId);
   const reloadedMessages = await reloadedHost.readBranchMessages(
     thread.branchId

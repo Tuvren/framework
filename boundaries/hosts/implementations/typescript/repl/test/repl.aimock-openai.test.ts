@@ -16,16 +16,16 @@
 
 import { describe, expect, test } from "bun:test";
 import { LLMock } from "@copilotkit/aimock";
-import { runPlaygroundScenario } from "@tuvren/playground-host";
+import { runReplScenario } from "@tuvren/repl-host";
 import {
   assertStructuredResponseFormat,
   expectScenarioChecksPassed,
   expectSurfaceCoverage,
   hasApprovalToolContinuation,
   hasSearchToolContinuation,
-} from "./playground-test-helpers.ts";
+} from "./repl-test-helpers.ts";
 
-describe("playground host scenarios aimock openai", () => {
+describe("repl host scenarios aimock openai", () => {
   test("runs streamed text through aimock over the AI SDK OpenAI provider boundary", async () => {
     const mock = new LLMock({
       logLevel: "silent",
@@ -45,7 +45,7 @@ describe("playground host scenarios aimock openai", () => {
     await mock.start();
 
     try {
-      const report = await runPlaygroundScenario({
+      const report = await runReplScenario({
         aimockBaseUrl: `${mock.url}/v1`,
         backend: "memory",
         providerMode: "aimock-openai",
@@ -107,7 +107,7 @@ describe("playground host scenarios aimock openai", () => {
     await mock.start();
 
     try {
-      const report = await runPlaygroundScenario({
+      const report = await runReplScenario({
         aimockBaseUrl: `${mock.url}/v1`,
         backend: "memory",
         providerMode: "aimock-openai",
@@ -170,7 +170,7 @@ describe("playground host scenarios aimock openai", () => {
     await mock.start();
 
     try {
-      const report = await runPlaygroundScenario({
+      const report = await runReplScenario({
         aimockBaseUrl: `${mock.url}/v1`,
         backend: "memory",
         providerMode: "aimock-openai",
@@ -258,7 +258,7 @@ describe("playground host scenarios aimock openai", () => {
     await mock.start();
 
     try {
-      const report = await runPlaygroundScenario({
+      const report = await runReplScenario({
         aimockBaseUrl: `${mock.url}/v1`,
         backend: "memory",
         providerMode: "aimock-openai",
@@ -320,7 +320,7 @@ describe("playground host scenarios aimock openai", () => {
     await mock.start();
 
     try {
-      const report = await runPlaygroundScenario({
+      const report = await runReplScenario({
         aimockBaseUrl: `${mock.url}/v1`,
         backend: "memory",
         providerMode: "aimock-openai",
@@ -369,7 +369,7 @@ describe("playground host scenarios aimock openai", () => {
     await mock.start();
 
     try {
-      const report = await runPlaygroundScenario({
+      const report = await runReplScenario({
         aimockBaseUrl: `${mock.url}/v1`,
         backend: "memory",
         providerMode: "aimock-openai",
@@ -403,7 +403,7 @@ describe("playground host scenarios aimock openai", () => {
     await mock.start();
 
     try {
-      const report = await runPlaygroundScenario({
+      const report = await runReplScenario({
         aimockBaseUrl: `${mock.url}/v1`,
         backend: "memory",
         providerMode: "aimock-openai",
@@ -438,7 +438,7 @@ describe("playground host scenarios aimock openai", () => {
     await mock.start();
 
     try {
-      const report = await runPlaygroundScenario({
+      const report = await runReplScenario({
         aimockBaseUrl: `${mock.url}/v1`,
         backend: "memory",
         providerMode: "aimock-openai",
@@ -467,7 +467,7 @@ describe("playground host scenarios aimock openai", () => {
     await mock.start();
 
     try {
-      const report = await runPlaygroundScenario({
+      const report = await runReplScenario({
         aimockBaseUrl: `${mock.url}/v1`,
         backend: "memory",
         providerMode: "aimock-openai",

@@ -144,12 +144,6 @@ const DOCUMENTED_PACKAGE_SURFACES: readonly DocumentedPackageSurface[] = [
   },
   {
     classification: "mixed-runtime validated",
-    packageName: "@tuvren/playground-host",
-    reason:
-      "Bun unit tests cover non-reload scenarios; Node CLI covers SQLite reload",
-  },
-  {
-    classification: "mixed-runtime validated",
     packageName: "@tuvren/repl-host",
     reason:
       "Bun tests cover the interactive shell plus memory scenarios; Node CLI covers SQLite reload",

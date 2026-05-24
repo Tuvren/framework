@@ -15,9 +15,13 @@
  */
 
 import { randomUUID } from "node:crypto";
+import { existsSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import process from "node:process";
+import { fileURLToPath } from "node:url";
 import {
+  createMcpToolSource,
   createOrchestrationRuntime,
   type ExecutionHandle,
   type InputSignal,
@@ -25,8 +29,10 @@ import {
   type OrchestrationHandle,
   type TuvrenStreamEvent,
 } from "@tuvren/runtime";
-import { assertValidPlaygroundConfig } from "./playground-config.js";
-import { createPlaygroundHost } from "./playground-host.js";
+import { createProofExtension } from "./proof-extension.js";
+import { createReplBuiltinTools, textSignal } from "./repl-builtin-tools.js";
+import { assertValidReplConfig } from "./repl-config.js";
+import { createReplHost } from "./repl-host.js";
 import {
   createScenarioExecutionPlan,
   mergeProjections,
@@ -34,19 +40,27 @@ import {
   readProjectionError,
   startProjectionCapture,
   withHead,
-} from "./playground-scenarios-support.js";
-import { createPlaygroundTools, textSignal } from "./playground-tools.js";
+} from "./repl-scenarios-support.js";
 import type {
-  PlaygroundConfig,
-  PlaygroundHost,
-  PlaygroundScenarioName,
-  PlaygroundStreamProjection,
-  PlaygroundThreadSummary,
-} from "./playground-types.js";
-import { createProofExtension } from "./proof-extension.js";
+  ReplConfig,
+  ReplHost,
+  ReplScenarioName,
+  ReplStreamProjection,
+  ReplThreadSummary,
+} from "./repl-types.js";
 
 const COMMAND_SPLIT_PATTERN = /\s+/u;
-const SCENARIO_NAMES = new Set<PlaygroundScenarioName>([
+const MOCK_MCP_STDIO_SERVER_PATH_SEGMENTS = [
+  "boundaries",
+  "providers",
+  "implementations",
+  "typescript",
+  "testkit",
+  "src",
+  "bin",
+  "mock-mcp-stdio.ts",
+] as const;
+const SCENARIO_NAMES = new Set<ReplScenarioName>([
   "approval",
   "branching",
   "cancel",
@@ -59,7 +73,7 @@ const SCENARIO_NAMES = new Set<PlaygroundScenarioName>([
   "structured",
   "tools",
 ]);
-const TURN_SCENARIO_NAMES = new Set<PlaygroundScenarioName>([
+const TURN_SCENARIO_NAMES = new Set<ReplScenarioName>([
   "approval",
   "cancel",
   "extension",
@@ -81,6 +95,8 @@ const CONTINUE_ONCE_POLICY: LoopPolicy = {
 };
 
 export const REPL_HELP_TEXT = [
+  "CLI flags: --headless, --stream-jsonl, --record <path>, --replay <path>",
+  "Env: TUVREN_REPL_MODE=headless runs stdin/stdout JSONL mode",
   ".help                         Show available commands",
   ".exit                         Exit the REPL host",
   ".status                       Show current shell state",
@@ -95,6 +111,7 @@ export const REPL_HELP_TEXT = [
   ".branch fork                  Fork the active branch from the current head",
   ".messages show                Show durable messages for the active branch",
   ".events show                  Show the last captured canonical events",
+  ".mcp smoke                    Exercise the runtime MCP tool-source export",
   ".turn start <scenario|text>   Start a turn on the active branch",
   ".turn await                   Await the active turn and capture projections",
   ".turn approve [approve|edit|reject]",
@@ -113,6 +130,7 @@ const KNOWN_TOP_LEVEL_REPL_COMMANDS = new Set<string>([
   ".exit",
   ".help",
   ".messages",
+  ".mcp",
   ".orch",
   ".status",
   ".thread",
@@ -121,8 +139,8 @@ const KNOWN_TOP_LEVEL_REPL_COMMANDS = new Set<string>([
 
 interface ActiveTurnState {
   handle: ExecutionHandle;
-  projectionPromise: Promise<PlaygroundStreamProjection>;
-  thread: PlaygroundThreadSummary;
+  projectionPromise: Promise<ReplStreamProjection>;
+  thread: ReplThreadSummary;
 }
 
 interface ActiveOrchestrationState {
@@ -131,18 +149,18 @@ interface ActiveOrchestrationState {
   eventsPromise: Promise<TuvrenStreamEvent[]>;
   handle: OrchestrationHandle;
   rootResult?: unknown;
-  thread: PlaygroundThreadSummary;
+  thread: ReplThreadSummary;
 }
 
 export interface ReplShell {
   activeOrchestration?: ActiveOrchestrationState;
   activeTurn?: ActiveTurnState;
-  config: PlaygroundConfig;
-  host: PlaygroundHost;
+  config: ReplConfig;
+  host: ReplHost;
   lastCanonicalEvents?: TuvrenStreamEvent[];
   lastOrchestrationEvents?: TuvrenStreamEvent[];
-  lastProjection?: PlaygroundStreamProjection;
-  thread?: PlaygroundThreadSummary;
+  lastProjection?: ReplStreamProjection;
+  thread?: ReplThreadSummary;
 }
 
 export interface ReplCommandResult {
@@ -158,10 +176,17 @@ interface ApproveTurnOptions {
   awaitCompletion?: boolean;
 }
 
-export function createReplShell(config: PlaygroundConfig): ReplShell {
+export function createReplShell(config: ReplConfig): ReplShell {
+  return createReplShellFromHost(config, createReplHost(config));
+}
+
+export function createReplShellFromHost(
+  config: ReplConfig,
+  host: ReplHost
+): ReplShell {
   return {
     config,
-    host: createPlaygroundHost(config),
+    host,
   };
 }
 
@@ -229,6 +254,8 @@ export async function runReplCommand(
       return await showMessages(shell, args);
     case ".events":
       return await showEvents(shell, args);
+    case ".mcp":
+      return await handleMcpCommand(args);
     case ".turn":
       return await handleTurnCommand(shell, args, options?.onCanonicalEvent);
     case ".orch":
@@ -241,6 +268,46 @@ export async function runReplCommand(
       return {
         output: `Unknown command "${command}". Use .help to inspect the command tree.`,
       };
+  }
+}
+
+async function handleMcpCommand(
+  args: readonly string[]
+): Promise<ReplCommandResult> {
+  if (args[0] !== "smoke") {
+    return { output: 'Expected ".mcp smoke".' };
+  }
+
+  const source = await createMcpToolSource({
+    command: "bun",
+    args: [findMockMcpStdioServerPath()],
+    name: "mcp",
+    transport: "stdio",
+  });
+
+  try {
+    const tool = source.tools.find((entry) => entry.name === "mcp.echo");
+
+    if (tool === undefined) {
+      return { output: 'MCP smoke failed: missing "mcp.echo" tool.' };
+    }
+
+    const output = await tool.execute(
+      { message: "hello from repl" },
+      {
+        callId: "repl-mcp-smoke",
+        name: tool.name,
+      }
+    );
+
+    return {
+      output: formatJson({
+        echo: output,
+        toolNames: source.tools.map((entry) => entry.name).sort(),
+      }),
+    };
+  } finally {
+    await source.close();
   }
 }
 
@@ -272,7 +339,7 @@ function selectBackend(
     };
   }
 
-  let nextConfig: PlaygroundConfig;
+  let nextConfig: ReplConfig;
 
   if (backend === "memory") {
     nextConfig = {
@@ -322,10 +389,10 @@ function selectBackend(
     };
   }
 
-  assertValidPlaygroundConfig(nextConfig);
+  assertValidReplConfig(nextConfig);
   cancelActiveShellWork(shell);
   shell.config = nextConfig;
-  shell.host = createPlaygroundHost(nextConfig);
+  shell.host = createReplHost(nextConfig);
   shell.activeOrchestration = undefined;
   shell.activeTurn = undefined;
   shell.lastCanonicalEvents = undefined;
@@ -784,7 +851,7 @@ async function awaitOrchestration(
       agui: [],
       canonical: shell.lastCanonicalEvents,
       sse: [],
-    } satisfies PlaygroundStreamProjection;
+    } satisfies ReplStreamProjection;
     shell.thread = withHead(active.thread, projection);
     active.thread = shell.thread;
     if (isTerminalPhase(active.handle.status().phase)) {
@@ -829,9 +896,7 @@ function cancelOrchestration(shell: ReplShell): ReplCommandResult {
   return { output: "Cancellation requested for the active orchestration." };
 }
 
-async function ensureThread(
-  shell: ReplShell
-): Promise<PlaygroundThreadSummary> {
+async function ensureThread(shell: ReplShell): Promise<ReplThreadSummary> {
   if (shell.thread === undefined) {
     shell.thread = await shell.host.createThread();
   }
@@ -856,7 +921,7 @@ async function runFreeformTurn(
     branchId: thread.branchId,
     config: {
       name: "primary",
-      tools: createPlaygroundTools(),
+      tools: createReplBuiltinTools(),
     },
     signal: textSignal(input),
     threadId: thread.threadId,
@@ -892,7 +957,7 @@ async function runFreeformTurn(
 function finalizeInteractiveTurn(
   shell: ReplShell,
   activeTurn: ActiveTurnState,
-  projection: PlaygroundStreamProjection
+  projection: ReplStreamProjection
 ): ReplCommandResult {
   const phase = finalizeTurnProjection(shell, activeTurn, projection);
   const projectionError = readProjectionError(projection);
@@ -911,10 +976,10 @@ function finalizeInteractiveTurn(
 }
 
 function createTurnExecutionRequest(
-  config: PlaygroundConfig,
+  config: ReplConfig,
   input: string
 ): {
-  config?: Parameters<PlaygroundHost["executeTurn"]>[0]["config"];
+  config?: Parameters<ReplHost["executeTurn"]>[0]["config"];
   signal: InputSignal;
 } {
   if (!isTurnScenarioName(input)) {
@@ -926,7 +991,7 @@ function createTurnExecutionRequest(
   const scenarioConfig = {
     ...config,
     scenario: input,
-  } satisfies PlaygroundConfig;
+  } satisfies ReplConfig;
   const executionPlan = createScenarioExecutionPlan(scenarioConfig);
 
   return {
@@ -952,7 +1017,7 @@ function createTurnExecutionRequest(
       responseFormat:
         input === "structured"
           ? {
-              name: "playground_summary",
+              name: "repl_summary",
               schema: {
                 properties: {
                   scenario: { type: "string" },
@@ -1009,12 +1074,12 @@ function createApprovalResponse(
   };
 }
 
-function isScenarioName(value: string): value is PlaygroundScenarioName {
-  return SCENARIO_NAMES.has(value as PlaygroundScenarioName);
+function isScenarioName(value: string): value is ReplScenarioName {
+  return SCENARIO_NAMES.has(value as ReplScenarioName);
 }
 
-function isTurnScenarioName(value: string): value is PlaygroundScenarioName {
-  return TURN_SCENARIO_NAMES.has(value as PlaygroundScenarioName);
+function isTurnScenarioName(value: string): value is ReplScenarioName {
+  return TURN_SCENARIO_NAMES.has(value as ReplScenarioName);
 }
 
 function readUnsupportedTurnScenarioMessage(value: string): string | undefined {
@@ -1087,7 +1152,7 @@ function isTerminalPhase(
 function finalizeTurnProjection(
   shell: ReplShell,
   activeTurn: ActiveTurnState,
-  projection: PlaygroundStreamProjection
+  projection: ReplStreamProjection
 ): ReturnType<ExecutionHandle["status"]>["phase"] {
   const phase = activeTurn.handle.status().phase;
 
@@ -1141,6 +1206,33 @@ function normalizeApprovalMode(mode: string): string {
     default:
       return mode;
   }
+}
+
+function findMockMcpStdioServerPath(): string {
+  for (const start of [
+    process.cwd(),
+    dirname(fileURLToPath(import.meta.url)),
+  ]) {
+    let current = start;
+
+    while (true) {
+      const candidate = join(current, ...MOCK_MCP_STDIO_SERVER_PATH_SEGMENTS);
+
+      if (existsSync(candidate)) {
+        return candidate;
+      }
+
+      const parent = dirname(current);
+
+      if (parent === current) {
+        break;
+      }
+
+      current = parent;
+    }
+  }
+
+  throw new Error("unable to locate mock MCP stdio server");
 }
 
 export function readShellTextArgument(
