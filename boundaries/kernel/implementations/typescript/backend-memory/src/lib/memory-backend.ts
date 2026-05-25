@@ -111,6 +111,17 @@ interface MutableRepositories extends KrakenBackendTx {
   readonly now: () => number;
 }
 
+interface BackendFaultHooks {
+  afterCommitBeforeAck?(): Promise<void>;
+  beforeCommit?(): Promise<void>;
+  midCommit?(commit: () => Promise<void>): Promise<void>;
+}
+
+interface BackendFaultInjectionControl {
+  setFaultHooks(hooks: BackendFaultHooks | null): void;
+  supportsFaultPoint(point: string): boolean;
+}
+
 export interface MemoryBackendOptions {
   now?: () => EpochMs;
 }
@@ -118,8 +129,24 @@ export interface MemoryBackendOptions {
 const MEMORY_BACKEND_CAPABILITIES: BackendCapability = {
   "thread.enumeration": true,
 };
+const FAULT_INJECTION_CONTROL = Symbol(
+  "tuvren.kernel.testkit.fault-injection-control"
+);
 
 class MemoryBackend implements KrakenBackend {
+  readonly [FAULT_INJECTION_CONTROL]: BackendFaultInjectionControl = {
+    setFaultHooks: (hooks) => {
+      this.faultState.hooks = hooks;
+    },
+    supportsFaultPoint: (point) =>
+      point === "before-commit" ||
+      point === "mid-commit" ||
+      point === "after-commit-before-ack",
+  };
+
+  private readonly faultState: { hooks: BackendFaultHooks | null } = {
+    hooks: null,
+  };
   private readonly transactionContext = new AsyncLocalStorage<boolean>();
   private transactionQueue: Promise<void> = Promise.resolve();
   private state: BackendState = createEmptyState();
@@ -173,7 +200,32 @@ class MemoryBackend implements KrakenBackend {
       }
 
       validateCommittedState(draftState, this.state);
-      this.state = draftState;
+      await this.faultState.hooks?.beforeCommit?.();
+
+      let committed = false;
+      const commit = (): Promise<void> => {
+        if (committed) {
+          throw new Error("memory backend commit hook attempted double commit");
+        }
+
+        this.state = draftState;
+        committed = true;
+        return Promise.resolve();
+      };
+
+      if (this.faultState.hooks?.midCommit === undefined) {
+        await commit();
+      } else {
+        await this.faultState.hooks.midCommit(commit);
+
+        if (!committed) {
+          throw new Error(
+            "memory backend mid-commit hook must call commit exactly once"
+          );
+        }
+      }
+
+      await this.faultState.hooks?.afterCommitBeforeAck?.();
       return result;
     } finally {
       releaseQueue?.();

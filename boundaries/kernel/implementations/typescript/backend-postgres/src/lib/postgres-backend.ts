@@ -116,6 +116,17 @@ interface MutableRepositories extends KrakenBackendTx {
   readonly now: () => number;
 }
 
+interface BackendFaultHooks {
+  afterCommitBeforeAck?(): Promise<void>;
+  beforeCommit?(): Promise<void>;
+  midCommit?(commit: () => Promise<void>): Promise<void>;
+}
+
+interface BackendFaultInjectionControl {
+  setFaultHooks(hooks: BackendFaultHooks | null): void;
+  supportsFaultPoint(point: string): boolean;
+}
+
 interface PostgresBackendDestroyOptions {
   dropSchema?: boolean;
 }
@@ -126,10 +137,26 @@ export interface PostgresBackendOptions
 const POSTGRES_BACKEND_CAPABILITIES: BackendCapability = {
   "thread.enumeration": true,
 };
+const FAULT_INJECTION_CONTROL = Symbol(
+  "tuvren.kernel.testkit.fault-injection-control"
+);
 
 class PostgresBackend implements KrakenBackend {
+  readonly [FAULT_INJECTION_CONTROL]: BackendFaultInjectionControl = {
+    setFaultHooks: (hooks) => {
+      this.faultState.hooks = hooks;
+    },
+    supportsFaultPoint: (point) =>
+      point === "before-commit" ||
+      point === "mid-commit" ||
+      point === "after-commit-before-ack",
+  };
+
   private readonly connectionOptions: PostgresBackendPersistenceOptions;
   private destroyed = false;
+  private readonly faultState: { hooks: BackendFaultHooks | null } = {
+    hooks: null,
+  };
   private initializationPromise: Promise<void> | undefined;
   private readonly schemaName: string;
   private readonly sql: Sql;
@@ -207,12 +234,20 @@ class PostgresBackend implements KrakenBackend {
     await priorTransaction;
 
     try {
-      let hasResult = false;
-      let result: T | undefined;
+      const reserved = (await this.sql.reserve()) as Sql & {
+        release(): Promise<void>;
+      };
+      let inTransaction = false;
 
-      await this.sql.begin(async (tx): Promise<void> => {
+      try {
+        let hasResult = false;
+        let result: T | undefined;
+
+        await reserved.unsafe("BEGIN");
+        inTransaction = true;
+
         const baseState = await loadPersistedStateForUpdate(
-          tx,
+          reserved,
           this.schemaName
         );
         const draftState = cloneState(baseState);
@@ -233,16 +268,57 @@ class PostgresBackend implements KrakenBackend {
         }
 
         validateCommittedState(draftState, baseState);
-        await persistStateSnapshot(tx, this.schemaName, draftState, this.now());
-      });
+        await this.faultState.hooks?.beforeCommit?.();
 
-      if (!hasResult) {
-        throw new Error(
-          "postgres backend transaction completed without a result"
-        );
+        let committed = false;
+        const commit = async (): Promise<void> => {
+          if (committed) {
+            throw new Error(
+              "postgres backend commit hook attempted double commit"
+            );
+          }
+
+          await persistStateSnapshot(
+            reserved,
+            this.schemaName,
+            draftState,
+            this.now()
+          );
+          await reserved.unsafe("COMMIT");
+          inTransaction = false;
+          committed = true;
+        };
+
+        if (this.faultState.hooks?.midCommit === undefined) {
+          await commit();
+        } else {
+          await this.faultState.hooks.midCommit(commit);
+
+          if (!committed) {
+            throw new Error(
+              "postgres backend mid-commit hook must call commit exactly once"
+            );
+          }
+        }
+
+        await this.faultState.hooks?.afterCommitBeforeAck?.();
+
+        if (!hasResult) {
+          throw new Error(
+            "postgres backend transaction completed without a result"
+          );
+        }
+
+        return result as T;
+      } catch (error: unknown) {
+        if (inTransaction) {
+          await reserved.unsafe("ROLLBACK");
+        }
+
+        throw error;
+      } finally {
+        await reserved.release();
       }
-
-      return result as T;
     } finally {
       releaseQueue?.();
     }

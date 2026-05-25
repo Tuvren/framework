@@ -24,7 +24,7 @@
       ],
       "options": {
         "cwd": ".",
-        "command": "bash -lc 'devenv up -d postgres && trap \"devenv processes down\" EXIT && devenv shell -- bun tools/conformance/runner/run.ts --adapter boundaries/kernel/implementations/typescript/conformance-adapter/adapter-postgres.json'"
+        "command": "devenv shell -- bun tools/conformance/runner/run.ts --adapter boundaries/kernel/implementations/typescript/conformance-adapter/adapter-postgres.json"
       }
     }
   }

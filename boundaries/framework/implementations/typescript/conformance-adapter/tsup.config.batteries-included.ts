@@ -30,6 +30,9 @@ const MIGRATIONS_SRC = join(
 const MIGRATIONS_DEST = join(configDir, "dist/migrations");
 
 export default defineConfig({
+  banner: {
+    js: 'import { createRequire as createNodeRequire } from "node:module"; const require = createNodeRequire(import.meta.url);',
+  },
   clean: false,
   dts: false,
   entry: ["src/batteries-included-node-host.ts"],
@@ -38,6 +41,7 @@ export default defineConfig({
   noExternal: [/^@tuvren\//],
   onSuccess: `rm -rf "${MIGRATIONS_DEST}" && cp -r "${MIGRATIONS_SRC}" "${MIGRATIONS_DEST}"`,
   outDir: "dist",
+  platform: "node",
   sourcemap: false,
   target: "esnext",
 });

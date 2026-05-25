@@ -3720,6 +3720,76 @@
     {
       "assertionResults": [
         {
+          "assertionId": "proving-host-headless-transcript-replay.deterministic-memory-pass.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "proving-host-headless-transcript-replay.deterministic-memory-pass.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "proving-host-headless-transcript-replay.deterministic-memory-pass.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "proving-host-headless-transcript-replay.deterministic-memory-pass.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "proving-host-headless-transcript-replay.deterministic-memory-pass.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "proving-host-headless-transcript-replay.deterministic-memory-pass.6.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "proving-host-headless-transcript-replay.deterministic-memory-pass.7.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "proving-host-headless-transcript-replay.deterministic-memory-pass.8.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "proving-host-headless-transcript-replay.deterministic-memory-pass.requiredEvidence.result.provingHost.headlessOutputs",
+          "status": "pass"
+        },
+        {
+          "assertionId": "proving-host-headless-transcript-replay.deterministic-memory-pass.requiredEvidence.result.provingHost.headlessRecordKinds",
+          "status": "pass"
+        },
+        {
+          "assertionId": "proving-host-headless-transcript-replay.deterministic-memory-pass.requiredEvidence.result.provingHost.replay.deterministicAsserted",
+          "status": "pass"
+        },
+        {
+          "assertionId": "proving-host-headless-transcript-replay.deterministic-memory-pass.requiredEvidence.result.provingHost.replay.inputCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "proving-host-headless-transcript-replay.deterministic-memory-pass.requiredEvidence.result.provingHost.replay.mismatches",
+          "status": "pass"
+        },
+        {
+          "assertionId": "proving-host-headless-transcript-replay.deterministic-memory-pass.requiredEvidence.result.provingHost.replay.status",
+          "status": "pass"
+        },
+        {
+          "assertionId": "proving-host-headless-transcript-replay.deterministic-memory-pass.requiredEvidence.result.provingHost.transcriptRecordKinds",
+          "status": "pass"
+        }
+      ],
+      "checkId": "proving-host-headless-transcript-replay.deterministic-memory-pass",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "runtime-callable-af.approval-reject-stages-tool-result.1.resultField",
           "status": "pass"
         },
@@ -7129,9 +7199,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 328,
-    "totalChecks": 340,
-    "applicableChecks": 328,
+    "passedChecks": 329,
+    "totalChecks": 341,
+    "applicableChecks": 329,
     "nonApplicableChecks": 12
   },
   "suiteId": "tuvren.framework.promoted-authority",

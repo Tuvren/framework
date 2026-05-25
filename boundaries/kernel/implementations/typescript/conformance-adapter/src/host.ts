@@ -18,7 +18,12 @@ import { randomUUID } from "node:crypto";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { TurnTreeSchema } from "@tuvren/kernel-protocol";
+import type {
+  RuntimeBackend,
+  StoredBranch,
+  StoredThread,
+  TurnTreeSchema,
+} from "@tuvren/kernel-protocol";
 import {
   assertStagedResult,
   decodeDeterministicKernelRecord,
@@ -28,6 +33,16 @@ import {
   type StagedResult,
 } from "@tuvren/kernel-protocol";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
+import {
+  createCanonicalKernelTestSchema,
+  createCanonicalTurnTreePaths,
+  createFaultInjectingBackend,
+  createStoredObjectRecord,
+  createStoredSchemaRecord,
+  createStoredTurnNodeRecord,
+  createStoredTurnTreeRecord,
+  type FaultPoint,
+} from "@tuvren/kernel-testkit";
 import type {
   AdapterCapabilities,
   AdapterControls,
@@ -61,6 +76,16 @@ interface DisposablePostgresBackend {
   close(): Promise<void>;
   destroy(options?: { dropSchema?: boolean }): Promise<void>;
   dropSchema(): Promise<void>;
+}
+
+interface ManagedRuntimeBackend extends RuntimeBackend {
+  close?(): Promise<void>;
+  destroy?(options?: { dropSchema?: boolean }): Promise<void>;
+}
+
+interface CrashRecoveryBackendHarness {
+  cleanup(): Promise<void>;
+  createBackend(): Promise<ManagedRuntimeBackend>;
 }
 
 const ADAPTER_CONFIG = readAdapterConfig(process.argv.slice(2));
@@ -111,6 +136,12 @@ class TypeScriptKernelAdapter {
           return result(await runStalePreemption());
         case "kernel.restart-recovery.close-reopen-checkpoint":
           return result(await runRestartRecovery());
+        case "kernel.restart-recovery.crash-recovery-durable":
+          return result(await runDurableCrashRecovery());
+        case "kernel.restart-recovery.crash-recovery-in-process":
+          return result(await runInProcessCrashRecovery());
+        case "kernel.restart-recovery.concurrent-writer":
+          return result(await runConcurrentWriterConflict());
         default:
           return {
             error: {
@@ -197,6 +228,7 @@ function defaultCapabilities(
     "kernel.edge-validation",
     "kernel.logical",
     "kernel.run-liveness",
+    "kernel.restart-recovery",
     "kernel-protocol.thread.enumeration",
   ];
 }
@@ -1156,6 +1188,604 @@ async function runPostgresRestartRecovery(): Promise<Record<string, unknown>> {
       await firstBackend.dropSchema();
     } else {
       await reopenedBackend.destroy({ dropSchema: true });
+    }
+  }
+}
+
+async function runDurableCrashRecovery(): Promise<Record<string, unknown>> {
+  const harness = await createCrashRecoveryHarness(ADAPTER_CONFIG.backend);
+
+  try {
+    return createProjection({
+      crashRecovery: {
+        afterCommitBeforeAck: await runCrashRecoveryFaultPoint(
+          harness,
+          "after-commit-before-ack",
+          true
+        ),
+        beforeCommit: await runCrashRecoveryFaultPoint(
+          harness,
+          "before-commit",
+          true
+        ),
+        midCommit: await runCrashRecoveryFaultPoint(
+          harness,
+          "mid-commit",
+          true
+        ),
+      },
+    });
+  } finally {
+    await harness.cleanup();
+  }
+}
+
+async function runInProcessCrashRecovery(): Promise<Record<string, unknown>> {
+  const harness = await createCrashRecoveryHarness(ADAPTER_CONFIG.backend);
+
+  try {
+    return createProjection({
+      crashRecovery: {
+        afterCommitBeforeAck: await runCrashRecoveryFaultPoint(
+          harness,
+          "after-commit-before-ack",
+          false
+        ),
+        beforeCommit: await runCrashRecoveryFaultPoint(
+          harness,
+          "before-commit",
+          false
+        ),
+        midCommit: await runCrashRecoveryFaultPoint(
+          harness,
+          "mid-commit",
+          false
+        ),
+      },
+    });
+  } finally {
+    await harness.cleanup();
+  }
+}
+
+async function runCrashRecoveryFaultPoint(
+  harness: CrashRecoveryBackendHarness,
+  point: FaultPoint,
+  reopenDurably: boolean
+): Promise<Record<string, unknown>> {
+  const baseBackend = await harness.createBackend();
+  const kernel = createRuntimeKernel({ backend: baseBackend });
+  const schema = {
+    ...createCanonicalKernelTestSchema(),
+    schemaId: `schema_fault_${point.replaceAll("-", "_")}`,
+  } satisfies TurnTreeSchema;
+  const schemaId = await kernel.schema.register(schema);
+  const thread = await kernel.thread.create(
+    `thread_fault_${point.replaceAll("-", "_")}`,
+    schemaId,
+    `branch_fault_${point.replaceAll("-", "_")}`
+  );
+  const turn = await kernel.turn.create(
+    `turn_fault_${point.replaceAll("-", "_")}`,
+    thread.threadId,
+    thread.branchId,
+    null,
+    thread.rootTurnNodeHash
+  );
+  const runId = `run_fault_${point.replaceAll("-", "_")}`;
+
+  await kernel.run.create(
+    runId,
+    turn.turnId,
+    thread.branchId,
+    schemaId,
+    thread.rootTurnNodeHash,
+    [
+      { deterministic: false, id: "model_call", sideEffects: false },
+      { deterministic: false, id: "tool_execution", sideEffects: true },
+    ]
+  );
+
+  await kernel.run.beginStep(runId, "model_call");
+  const committed = await kernel.staging.stage(
+    runId,
+    new TextEncoder().encode(`committed output ${point}`),
+    `message_committed_${point.replaceAll("-", "_")}`,
+    "message",
+    "completed"
+  );
+  const firstCheckpoint = await kernel.run.completeStep(runId, "model_call");
+
+  if (firstCheckpoint.turnNodeHash === undefined) {
+    throw new Error(`expected baseline checkpoint for ${point}`);
+  }
+
+  const faultBackend = createFaultInjectingBackend(baseBackend, {
+    match: { operation: "checkpoint" },
+    point,
+    policy: "once",
+  }) as ManagedRuntimeBackend;
+  const faultKernel = createRuntimeKernel({ backend: faultBackend });
+
+  await faultKernel.run.beginStep(runId, "tool_execution");
+  const pending = await faultKernel.staging.stage(
+    runId,
+    new TextEncoder().encode(`pending output ${point}`),
+    `message_pending_${point.replaceAll("-", "_")}`,
+    "message",
+    "completed"
+  );
+
+  let injectedErrorCode = "no_error";
+
+  try {
+    await faultKernel.run.completeStep(runId, "tool_execution");
+  } catch (error: unknown) {
+    injectedErrorCode = readErrorCode(error);
+  }
+
+  let inspectionBackend: ManagedRuntimeBackend = baseBackend;
+
+  if (reopenDurably) {
+    await closeManagedBackend(baseBackend);
+    inspectionBackend = await harness.createBackend();
+  }
+
+  try {
+    const inspectionKernel = createRuntimeKernel({
+      backend: inspectionBackend,
+    });
+    const branch = await inspectionKernel.branch.get(thread.branchId);
+
+    if (branch === null) {
+      throw new Error(`expected branch "${thread.branchId}" after ${point}`);
+    }
+
+    const headNode = await inspectionKernel.node.get(branch.headTurnNodeHash);
+
+    if (headNode === null) {
+      throw new Error(
+        `expected branch head "${branch.headTurnNodeHash}" after ${point}`
+      );
+    }
+
+    const manifest = await inspectionKernel.tree.manifest(
+      headNode.turnTreeHash
+    );
+    const messages = Array.isArray(manifest.messages) ? manifest.messages : [];
+    const recovery = await inspectionKernel.run.recover(runId);
+    const walkBackHashes: string[] = [];
+
+    for await (const turnNode of inspectionKernel.node.walkBack(
+      branch.headTurnNodeHash
+    )) {
+      walkBackHashes.push(turnNode.hash);
+
+      if (walkBackHashes.length === 3) {
+        break;
+      }
+    }
+
+    const committedFaultCheckpoint = point !== "before-commit";
+
+    return {
+      headMatchesExpectedCheckpoint: committedFaultCheckpoint
+        ? branch.headTurnNodeHash !== firstCheckpoint.turnNodeHash
+        : branch.headTurnNodeHash === firstCheckpoint.turnNodeHash,
+      injectedErrorCode,
+      lineageConsistent: committedFaultCheckpoint
+        ? walkBackHashes[1] === firstCheckpoint.turnNodeHash &&
+          walkBackHashes[2] === thread.rootTurnNodeHash
+        : walkBackHashes[0] === firstCheckpoint.turnNodeHash &&
+          walkBackHashes[1] === thread.rootTurnNodeHash,
+      pendingMessageCommitted: messages.includes(pending.objectHash),
+      recoveryStateConsistent: committedFaultCheckpoint
+        ? recovery.lastCompletedStepId === "tool_execution" &&
+          recovery.lastTurnNodeHash === branch.headTurnNodeHash &&
+          recovery.uncommittedStagedResults.length === 0
+        : recovery.lastCompletedStepId === "model_call" &&
+          recovery.lastTurnNodeHash === firstCheckpoint.turnNodeHash &&
+          recovery.uncommittedStagedResults.some(
+            (stagedResult) => stagedResult.objectHash === pending.objectHash
+          ),
+      visibleCommittedMessageCount: messages.filter(
+        (hash) => hash === committed.objectHash || hash === pending.objectHash
+      ).length,
+    };
+  } finally {
+    if (inspectionBackend !== baseBackend) {
+      await closeManagedBackend(inspectionBackend);
+    }
+  }
+}
+
+async function runConcurrentWriterConflict(): Promise<Record<string, unknown>> {
+  if (ADAPTER_CONFIG.backend === "memory") {
+    const { createMemoryBackend } = await import(
+      new URL("../../backend-memory/dist/index.js", import.meta.url).href
+    );
+    const seamBackend = createMemoryBackend();
+    const raceBackend = createMemoryBackend();
+
+    return createProjection({
+      crashRecoveryConcurrency: await runConcurrentWriterConflictOnBackends(
+        raceBackend,
+        raceBackend
+      ),
+      faultPlanConcurrentWriter:
+        await runFaultPlanConcurrentWriterExercise(seamBackend),
+    });
+  }
+
+  const harness = await createCrashRecoveryHarness(ADAPTER_CONFIG.backend);
+
+  try {
+    const [seamBackend, firstBackend, secondBackend] = await Promise.all([
+      harness.createBackend(),
+      harness.createBackend(),
+      harness.createBackend(),
+    ]);
+
+    try {
+      return createProjection({
+        crashRecoveryConcurrency: await runConcurrentWriterConflictOnBackends(
+          firstBackend,
+          secondBackend
+        ),
+        faultPlanConcurrentWriter:
+          await runFaultPlanConcurrentWriterExercise(seamBackend),
+      });
+    } finally {
+      await Promise.all([
+        closeManagedBackend(seamBackend),
+        closeManagedBackend(firstBackend),
+        closeManagedBackend(secondBackend),
+      ]);
+    }
+  } finally {
+    await harness.cleanup();
+  }
+}
+
+async function runConcurrentWriterConflictOnBackends(
+  primaryBackend: RuntimeBackend,
+  secondaryBackend: RuntimeBackend
+): Promise<Record<string, unknown>> {
+  const schema = createCanonicalKernelTestSchema();
+  const schemaRecord = createStoredSchemaRecord(schema, 1);
+  const turnTree = await createStoredTurnTreeRecord(
+    schema,
+    {
+      "context.manifest": null,
+      messages: [],
+    },
+    2
+  );
+  const eventObjectA = await createStoredObjectRecord(new Uint8Array([1]), 3);
+  const eventObjectB = await createStoredObjectRecord(new Uint8Array([2]), 4);
+  const rootNode = await createStoredTurnNodeRecord({
+    consumedStagedResults: [],
+    createdAtMs: 5,
+    eventHash: null,
+    previousTurnNodeHash: null,
+    schemaId: schema.schemaId,
+    turnTreeHash: turnTree.hash,
+  });
+  const siblingNodeA = await createStoredTurnNodeRecord({
+    consumedStagedResults: [],
+    createdAtMs: 6,
+    eventHash: eventObjectA.hash,
+    previousTurnNodeHash: rootNode.hash,
+    schemaId: schema.schemaId,
+    turnTreeHash: turnTree.hash,
+  });
+  const siblingNodeB = await createStoredTurnNodeRecord({
+    consumedStagedResults: [],
+    createdAtMs: 7,
+    eventHash: eventObjectB.hash,
+    previousTurnNodeHash: rootNode.hash,
+    schemaId: schema.schemaId,
+    turnTreeHash: turnTree.hash,
+  });
+  const thread: StoredThread = {
+    createdAtMs: 8,
+    rootTurnNodeHash: rootNode.hash,
+    schemaId: schema.schemaId,
+    threadId: "thread_concurrent_branch_head",
+  };
+  const branch: StoredBranch = {
+    branchId: "branch_concurrent_branch_head",
+    createdAtMs: 9,
+    headTurnNodeHash: rootNode.hash,
+    threadId: thread.threadId,
+    updatedAtMs: 9,
+  };
+
+  await primaryBackend.transact(async (tx) => {
+    await tx.schemas.put(schemaRecord);
+    await tx.turnTrees.put(turnTree);
+    await tx.turnTreePaths.putMany(
+      createCanonicalTurnTreePaths(turnTree, {
+        "context.manifest": null,
+        messages: [],
+      })
+    );
+    await tx.objects.put(eventObjectA);
+    await tx.objects.put(eventObjectB);
+    await tx.turnNodes.put(rootNode);
+    await tx.turnNodes.put(siblingNodeA);
+    await tx.turnNodes.put(siblingNodeB);
+    await tx.threads.put(thread);
+    await tx.branches.set(branch);
+  });
+
+  const [firstResult, secondResult] = await Promise.allSettled([
+    primaryBackend.transact(async (tx) => {
+      await tx.branches.set({
+        ...branch,
+        headTurnNodeHash: siblingNodeA.hash,
+        updatedAtMs: 10,
+      });
+    }),
+    secondaryBackend.transact(async (tx) => {
+      await tx.branches.set({
+        ...branch,
+        headTurnNodeHash: siblingNodeB.hash,
+        updatedAtMs: 11,
+      });
+    }),
+  ]);
+
+  let finalHead: string | null = null;
+
+  await primaryBackend.transact(async (tx) => {
+    finalHead =
+      (await tx.branches.get(branch.branchId))?.headTurnNodeHash ?? null;
+  });
+
+  const winningHead =
+    firstResult.status === "fulfilled" ? siblingNodeA.hash : siblingNodeB.hash;
+  const losingResult =
+    firstResult.status === "rejected" ? firstResult : secondResult;
+  const losingErrorCode =
+    losingResult.status === "rejected"
+      ? readErrorCode(losingResult.reason)
+      : "missing_rejection";
+  let retryAfterLossErrorCode: string | null = null;
+
+  if (!losingErrorCode.endsWith("_branch_head_lateral_move")) {
+    const losingBackend =
+      firstResult.status === "rejected" ? primaryBackend : secondaryBackend;
+    const losingHead =
+      firstResult.status === "rejected" ? siblingNodeA.hash : siblingNodeB.hash;
+    const followUpUpdatedAtMs = firstResult.status === "rejected" ? 12 : 13;
+
+    try {
+      await losingBackend.transact(async (tx) => {
+        await tx.branches.set({
+          ...branch,
+          headTurnNodeHash: losingHead,
+          updatedAtMs: followUpUpdatedAtMs,
+        });
+      });
+    } catch (error: unknown) {
+      retryAfterLossErrorCode = readErrorCode(error);
+    }
+  }
+
+  return {
+    finalHeadMatchesWinner: finalHead === winningHead,
+    finalHeadIsCommittedSibling:
+      finalHead === siblingNodeA.hash || finalHead === siblingNodeB.hash,
+    losingErrorCode,
+    retryAfterLossErrorCode,
+    singleWriterRejected:
+      [firstResult, secondResult].filter(
+        (result) => result.status === "rejected"
+      ).length === 1,
+    typedLateralConflictObserved:
+      losingErrorCode.endsWith("_branch_head_lateral_move") ||
+      retryAfterLossErrorCode?.endsWith("_branch_head_lateral_move") === true,
+  };
+}
+
+async function runFaultPlanConcurrentWriterExercise(
+  baseBackend: RuntimeBackend
+): Promise<Record<string, unknown>> {
+  const schema = {
+    ...createCanonicalKernelTestSchema(),
+    schemaId: "schema_fault_plan_concurrent_writer",
+  } satisfies TurnTreeSchema;
+  const schemaRecord = createStoredSchemaRecord(schema, 21);
+  const turnTree = await createStoredTurnTreeRecord(
+    schema,
+    {
+      "context.manifest": null,
+      messages: [],
+    },
+    22
+  );
+  const rootNode = await createStoredTurnNodeRecord({
+    consumedStagedResults: [],
+    createdAtMs: 23,
+    eventHash: null,
+    previousTurnNodeHash: null,
+    schemaId: schema.schemaId,
+    turnTreeHash: turnTree.hash,
+  });
+  const childNode = await createStoredTurnNodeRecord({
+    consumedStagedResults: [],
+    createdAtMs: 24,
+    eventHash: null,
+    previousTurnNodeHash: rootNode.hash,
+    schemaId: schema.schemaId,
+    turnTreeHash: turnTree.hash,
+  });
+  const thread: StoredThread = {
+    createdAtMs: 25,
+    rootTurnNodeHash: rootNode.hash,
+    schemaId: schema.schemaId,
+    threadId: "thread_fault_plan_concurrent_writer",
+  };
+  const branch: StoredBranch = {
+    branchId: "branch_fault_plan_concurrent_writer",
+    createdAtMs: 26,
+    headTurnNodeHash: rootNode.hash,
+    threadId: thread.threadId,
+    updatedAtMs: 26,
+  };
+
+  await baseBackend.transact(async (tx) => {
+    await tx.schemas.put(schemaRecord);
+    await tx.turnTrees.put(turnTree);
+    await tx.turnTreePaths.putMany(
+      createCanonicalTurnTreePaths(turnTree, {
+        "context.manifest": null,
+        messages: [],
+      })
+    );
+    await tx.turnNodes.put(rootNode);
+    await tx.threads.put(thread);
+    await tx.branches.set(branch);
+  });
+
+  const faultBackend = createFaultInjectingBackend(baseBackend, {
+    concurrentWriter: {
+      branchId: branch.branchId,
+    },
+    match: {
+      branchId: branch.branchId,
+      operation: "checkpoint",
+    },
+    point: "before-commit",
+    policy: "once",
+  });
+
+  let injectedErrorCode = "no_error";
+
+  try {
+    await faultBackend.transact(async (tx) => {
+      await tx.turnNodes.put(childNode);
+      await tx.branches.set({
+        ...branch,
+        headTurnNodeHash: childNode.hash,
+        updatedAtMs: 27,
+      });
+    });
+  } catch (error: unknown) {
+    injectedErrorCode = readErrorCode(error);
+  }
+
+  const inspection = await baseBackend.transact(async (tx) => {
+    const currentBranch = await tx.branches.get(branch.branchId);
+    const currentHead =
+      currentBranch === null
+        ? null
+        : await tx.turnNodes.get(currentBranch.headTurnNodeHash);
+
+    return {
+      branch: currentBranch,
+      head: currentHead,
+    };
+  });
+
+  return {
+    injectedErrorCode,
+    writerAdvancedHead:
+      inspection.branch !== null &&
+      inspection.branch.headTurnNodeHash !== branch.headTurnNodeHash &&
+      inspection.branch.headTurnNodeHash !== childNode.hash,
+    writerProducedSiblingHead:
+      inspection.head !== null &&
+      inspection.head.previousTurnNodeHash === rootNode.hash,
+  };
+}
+
+async function createCrashRecoveryHarness(
+  backend: KernelAdapterConfig["backend"]
+): Promise<CrashRecoveryBackendHarness> {
+  if (backend === "memory") {
+    const { createMemoryBackend } = await import(
+      new URL("../../backend-memory/dist/index.js", import.meta.url).href
+    );
+
+    return {
+      cleanup: async () => {
+        // Memory harnesses have no external resources to release.
+      },
+      createBackend: async () => createMemoryBackend() as ManagedRuntimeBackend,
+    };
+  }
+
+  if (backend === "sqlite") {
+    const { createSqliteBackend } = await import(
+      new URL("../../backend-sqlite/dist/index.js", import.meta.url).href
+    );
+    const tempDirectory = await mkdtemp(
+      join(tmpdir(), `tuvren-crash-recovery-${process.pid}-`)
+    );
+    const databasePath = join(tempDirectory, "kernel.sqlite");
+    const handles = new Set<ManagedRuntimeBackend>();
+
+    return {
+      cleanup: async () => {
+        for (const handle of handles) {
+          await closeManagedBackend(handle, true);
+        }
+
+        await rm(tempDirectory, { force: true, recursive: true });
+      },
+      createBackend: () => {
+        const handle = createSqliteBackend({
+          databasePath,
+        }) as ManagedRuntimeBackend;
+        handles.add(handle);
+        return Promise.resolve(handle);
+      },
+    };
+  }
+
+  const postgresBackendModule = await import(
+    new URL("../../backend-postgres/dist/index.js", import.meta.url).href
+  );
+  const schemaName = `crash_${randomUUID().replaceAll("-", "_")}`;
+  const options = {
+    database: process.env.PGDATABASE ?? "tuvren_runtime",
+    schemaName,
+  };
+  const handles = new Set<ManagedRuntimeBackend>();
+
+  return {
+    cleanup: async () => {
+      for (const handle of handles) {
+        await closeManagedBackend(handle, true);
+      }
+
+      await postgresBackendModule.destroyPostgresBackend(options);
+    },
+    createBackend: () => {
+      const handle = postgresBackendModule.createPostgresBackend(
+        options
+      ) as ManagedRuntimeBackend;
+      handles.add(handle);
+      return Promise.resolve(handle);
+    },
+  };
+}
+
+async function closeManagedBackend(
+  backend: ManagedRuntimeBackend,
+  ignoreErrors = false
+): Promise<void> {
+  if (typeof backend.close !== "function") {
+    return;
+  }
+
+  try {
+    await backend.close();
+  } catch (error: unknown) {
+    if (!ignoreErrors) {
+      throw error;
     }
   }
 }

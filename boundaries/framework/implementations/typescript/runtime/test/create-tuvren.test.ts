@@ -36,8 +36,9 @@ function makeMockBackend(): {
   const inner = createMemoryBackend();
   const closed = { count: 0 };
   const backend = Object.assign(inner, {
-    async close() {
+    close() {
       closed.count++;
+      return Promise.resolve();
     },
   });
   return { backend, closed };
@@ -46,8 +47,8 @@ function makeMockBackend(): {
 function makeThrowingBackend(): RuntimeBackend & { close(): Promise<void> } {
   const inner = createMemoryBackend();
   return Object.assign(inner, {
-    async close(): Promise<void> {
-      throw new Error("backend close error");
+    close(): Promise<void> {
+      return Promise.reject(new Error("backend close error"));
     },
   });
 }
@@ -58,11 +59,12 @@ function makeMockMcpSource(name = "test-server"): McpToolSource & {
   const closed = { count: 0 };
   return {
     closed,
-    async close() {
+    close() {
       closed.count++;
+      return Promise.resolve();
     },
-    async refresh() {
-      return { tools: [] };
+    refresh() {
+      return Promise.resolve({ tools: [] });
     },
     serverName: name,
     tools: [],
@@ -73,15 +75,15 @@ function makeMinimalDriverFactory(id = "test-driver"): KrakenDriverFactory {
   return {
     create() {
       return {
-        async execute() {
-          return {
+        execute() {
+          return Promise.resolve({
             messages: [],
             resolution: { reason: "done", type: "end_turn" },
-          };
+          });
         },
         id,
-        async resume() {
-          throw new Error("resume not expected");
+        resume() {
+          return Promise.reject(new Error("resume not expected"));
         },
       };
     },
@@ -204,7 +206,10 @@ describe("createTuvren", () => {
     });
 
     test("'react' string is accepted", async () => {
-      const instance = await createTuvren({ backend: "memory", driver: "react" });
+      const instance = await createTuvren({
+        backend: "memory",
+        driver: "react",
+      });
       expect(instance.runtime).toBeDefined();
       await instance[Symbol.asyncDispose]();
     });
@@ -229,7 +234,10 @@ describe("createTuvren", () => {
 
     test("explicit RuntimeDriverFactory is accepted", async () => {
       const factory = makeMinimalDriverFactory("custom");
-      const instance = await createTuvren({ backend: "memory", driver: factory });
+      const instance = await createTuvren({
+        backend: "memory",
+        driver: factory,
+      });
       await createThreadAndVerify(instance);
       await instance[Symbol.asyncDispose]();
     });
@@ -300,11 +308,11 @@ describe("createTuvren", () => {
 
     test("disposal error aggregation: errors from MCP source and backend are joined into one Error", async () => {
       const throwingSource: McpToolSource = {
-        async close() {
-          throw new Error("mcp close error");
+        close() {
+          return Promise.reject(new Error("mcp close error"));
         },
-        async refresh() {
-          return { tools: [] };
+        refresh() {
+          return Promise.resolve({ tools: [] });
         },
         serverName: "throwing-server",
         tools: [],
@@ -353,7 +361,7 @@ describe("createTuvren", () => {
       // A minimal stub — createTuvren only stores it in the instance and the
       // default AgentConfig; no actual calls are made here.
       const fakeProvider = {
-        generate: async () => {
+        generate: () => {
           throw new Error("not called in this test");
         },
         id: "fake-provider",

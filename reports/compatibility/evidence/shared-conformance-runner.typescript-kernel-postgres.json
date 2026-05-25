@@ -1858,6 +1858,560 @@
     {
       "assertionResults": [
         {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.6.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.7.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.crashRecoveryConcurrency.finalHeadIsCommittedSibling",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.crashRecoveryConcurrency.finalHeadMatchesWinner",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.crashRecoveryConcurrency.losingErrorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.crashRecoveryConcurrency.retryAfterLossErrorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.crashRecoveryConcurrency.singleWriterRejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.crashRecoveryConcurrency.typedLateralConflictObserved",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.faultPlanConcurrentWriter.injectedErrorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.faultPlanConcurrentWriter.writerAdvancedHead",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.faultPlanConcurrentWriter.writerProducedSiblingHead",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.result.crashRecoveryConcurrency.finalHeadIsCommittedSibling",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.result.crashRecoveryConcurrency.finalHeadMatchesWinner",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.result.crashRecoveryConcurrency.singleWriterRejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.result.crashRecoveryConcurrency.typedLateralConflictObserved",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.result.faultPlanConcurrentWriter.injectedErrorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.result.faultPlanConcurrentWriter.writerAdvancedHead",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.result.faultPlanConcurrentWriter.writerProducedSiblingHead",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.crash-recovery.concurrent_writer",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.restart-recovery"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.6.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.7.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.8.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.9.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.10.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.11.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.12.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.13.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.14.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.15.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.16.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.17.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.18.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.afterCommitBeforeAck.headMatchesExpectedCheckpoint",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.afterCommitBeforeAck.injectedErrorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.afterCommitBeforeAck.lineageConsistent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.afterCommitBeforeAck.pendingMessageCommitted",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.afterCommitBeforeAck.recoveryStateConsistent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.afterCommitBeforeAck.visibleCommittedMessageCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.beforeCommit.headMatchesExpectedCheckpoint",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.beforeCommit.injectedErrorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.beforeCommit.lineageConsistent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.beforeCommit.pendingMessageCommitted",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.beforeCommit.recoveryStateConsistent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.beforeCommit.visibleCommittedMessageCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.midCommit.headMatchesExpectedCheckpoint",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.midCommit.injectedErrorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.midCommit.lineageConsistent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.midCommit.pendingMessageCommitted",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.midCommit.recoveryStateConsistent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.midCommit.visibleCommittedMessageCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.afterCommitBeforeAck.headMatchesExpectedCheckpoint",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.afterCommitBeforeAck.injectedErrorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.afterCommitBeforeAck.lineageConsistent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.afterCommitBeforeAck.pendingMessageCommitted",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.afterCommitBeforeAck.recoveryStateConsistent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.afterCommitBeforeAck.visibleCommittedMessageCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.beforeCommit.headMatchesExpectedCheckpoint",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.beforeCommit.injectedErrorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.beforeCommit.lineageConsistent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.beforeCommit.pendingMessageCommitted",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.beforeCommit.recoveryStateConsistent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.beforeCommit.visibleCommittedMessageCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.midCommit.headMatchesExpectedCheckpoint",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.midCommit.injectedErrorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.midCommit.lineageConsistent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.midCommit.pendingMessageCommitted",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.midCommit.recoveryStateConsistent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.midCommit.visibleCommittedMessageCount",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.crash-recovery.durable_fault_points",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.restart-recovery"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.6.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.7.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.8.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.9.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.10.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.11.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.12.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.13.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.14.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.15.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.16.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.17.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.18.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.afterCommitBeforeAck.headMatchesExpectedCheckpoint",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.afterCommitBeforeAck.injectedErrorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.afterCommitBeforeAck.lineageConsistent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.afterCommitBeforeAck.pendingMessageCommitted",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.afterCommitBeforeAck.recoveryStateConsistent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.afterCommitBeforeAck.visibleCommittedMessageCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.beforeCommit.headMatchesExpectedCheckpoint",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.beforeCommit.injectedErrorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.beforeCommit.lineageConsistent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.beforeCommit.pendingMessageCommitted",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.beforeCommit.recoveryStateConsistent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.beforeCommit.visibleCommittedMessageCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.midCommit.headMatchesExpectedCheckpoint",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.midCommit.injectedErrorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.midCommit.lineageConsistent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.midCommit.pendingMessageCommitted",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.midCommit.recoveryStateConsistent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.midCommit.visibleCommittedMessageCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.afterCommitBeforeAck.headMatchesExpectedCheckpoint",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.afterCommitBeforeAck.injectedErrorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.afterCommitBeforeAck.lineageConsistent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.afterCommitBeforeAck.pendingMessageCommitted",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.afterCommitBeforeAck.recoveryStateConsistent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.afterCommitBeforeAck.visibleCommittedMessageCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.beforeCommit.headMatchesExpectedCheckpoint",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.beforeCommit.injectedErrorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.beforeCommit.lineageConsistent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.beforeCommit.pendingMessageCommitted",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.beforeCommit.recoveryStateConsistent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.beforeCommit.visibleCommittedMessageCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.midCommit.headMatchesExpectedCheckpoint",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.midCommit.injectedErrorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.midCommit.lineageConsistent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.midCommit.pendingMessageCommitted",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.midCommit.recoveryStateConsistent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.midCommit.visibleCommittedMessageCount",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.crash-recovery.in_process_fault_points",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.restart-recovery"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.1.resultField",
           "status": "pass"
         },
@@ -2209,9 +2763,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 56,
-    "totalChecks": 56,
-    "applicableChecks": 56,
+    "passedChecks": 59,
+    "totalChecks": 59,
+    "applicableChecks": 59,
     "nonApplicableChecks": 0
   },
   "suiteId": "tuvren.kernel.protocol",

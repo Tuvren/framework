@@ -24,6 +24,8 @@
     "--capability",
     "kernel.run-liveness",
     "--capability",
+    "kernel.restart-recovery",
+    "--capability",
     "kernel-protocol.thread.enumeration"
   ],
   "capabilities": [
@@ -31,6 +33,7 @@
     "kernel.edge-validation",
     "kernel.logical",
     "kernel.run-liveness",
+    "kernel.restart-recovery",
     "kernel-protocol.thread.enumeration"
   ],
   "authorityPackets": [

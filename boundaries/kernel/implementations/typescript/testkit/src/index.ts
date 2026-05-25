@@ -23,6 +23,8 @@ export type {
   BackendFactory,
   BackendTestSuiteApi,
 } from "./lib/backend-test-suite-types.js";
+export type { FaultPlan, FaultPoint } from "./lib/fault-injecting-backend.js";
+export { createFaultInjectingBackend } from "./lib/fault-injecting-backend.js";
 export {
   createCanonicalKernelTestSchema,
   createCanonicalTurnTreePaths,

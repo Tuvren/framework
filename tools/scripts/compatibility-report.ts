@@ -157,6 +157,7 @@ interface ConformanceRunner {
   implementationId: string;
   language: string;
   manifestPath?: string;
+  prerequisiteCommands?: string[][];
   project: string;
   reportLabel: string;
 }
@@ -208,6 +209,17 @@ const CONFORMANCE_RUNNERS: readonly ConformanceRunner[] = [
     ],
     implementationId: "typescript-framework",
     language: "typescript",
+    prerequisiteCommands: [
+      [
+        "bun",
+        "run",
+        "nx",
+        "run",
+        "kernel-interop-grpc:codegen",
+        "--skipNxCache",
+      ],
+      ["bun", "run", "nx", "run", "host-repl:build", "--skipNxCache"],
+    ],
     project: "framework-typescript-conformance-runner",
     reportLabel: "TypeScript framework runtime baseline",
   },
@@ -457,6 +469,19 @@ async function runConformanceTarget(
 }> {
   // The compatibility matrix is meant to be measured evidence, not replayed
   // cached console output, so each conformance lane is forced to execute.
+  for (const prerequisiteCommand of runner.prerequisiteCommands ?? []) {
+    const prerequisiteResult = await runCommand(prerequisiteCommand, {
+      captureOutput: true,
+      cwd: REPO_ROOT,
+    });
+
+    if (prerequisiteResult.code !== 0) {
+      throw new Error(
+        `compatibility prerequisite failed for ${runner.implementationId}: ${prerequisiteCommand.join(" ")}`
+      );
+    }
+  }
+
   const command = [
     ...(runner.command ?? [
       "bun",
@@ -485,7 +510,15 @@ async function runConformanceTarget(
           runner.implementationId,
           "runner exited without structured conformance evidence"
         );
-  const parsedEvidence = readConformanceEvidence(commandResult.stdout);
+  const parsedEvidence =
+    readConformanceEvidence(commandResult.stdout) ??
+    readConformanceEvidence(commandResult.stderr) ??
+    readConformanceEvidence(
+      `${commandResult.stdout}\n${commandResult.stderr}`.trim()
+    ) ??
+    readConformanceEvidence(
+      `${commandResult.stderr}\n${commandResult.stdout}`.trim()
+    );
   const evidencePayload =
     parsedEvidence === undefined
       ? createFallbackEvidence(
@@ -876,45 +909,15 @@ function readInteropTelemetrySummary(
 function readInteropScenarioReport(
   stdout: string
 ): InteropScenarioReport | undefined {
-  let parsed: unknown;
+  for (const candidate of extractJsonObjectCandidates(stdout).reverse()) {
+    const report = parseInteropScenarioReportCandidate(candidate);
 
-  try {
-    parsed = JSON.parse(extractTrailingJsonObject(stdout));
-  } catch {
-    return undefined;
+    if (report !== undefined) {
+      return report;
+    }
   }
 
-  if (
-    !(
-      isRecord(parsed) &&
-      Array.isArray(parsed.reports) &&
-      Array.isArray(parsed.scenarios)
-    )
-  ) {
-    return undefined;
-  }
-
-  const scenarios = readExpectedInteropScenarios(parsed.scenarios);
-
-  if (scenarios.length === 0) {
-    return undefined;
-  }
-
-  const reports = parsed.reports
-    .map((report) => readInteropScenarioEntry(report))
-    .filter(
-      (report): report is InteropScenarioReport["reports"][number] =>
-        report !== undefined
-    );
-
-  if (reports.length !== scenarios.length) {
-    return undefined;
-  }
-
-  return {
-    reports,
-    scenarios,
-  };
+  return undefined;
 }
 
 function readExpectedInteropScenarios(value: unknown[]): string[] {
@@ -1080,6 +1083,182 @@ function extractTrailingJsonObject(stdout: string): string {
   }
 
   return trimmed.slice(objectStart + 1);
+}
+
+function extractJsonObjectCandidates(stdout: string): string[] {
+  const candidates: string[] = [];
+  let depth = 0;
+  let startIndex = -1;
+  let inString = false;
+  let escaped = false;
+
+  for (let index = 0; index < stdout.length; index += 1) {
+    const character = stdout[index];
+
+    if (character === undefined) {
+      continue;
+    }
+
+    const stringState = advanceJsonStringState({
+      character,
+      escaped,
+      inString,
+    });
+    escaped = stringState.escaped;
+    inString = stringState.inString;
+
+    if (stringState.handled) {
+      continue;
+    }
+
+    const braceState = advanceJsonBraceState({
+      candidates,
+      character,
+      depth,
+      index,
+      startIndex,
+      stdout,
+    });
+    depth = braceState.depth;
+    startIndex = braceState.startIndex;
+  }
+
+  return candidates;
+}
+
+function advanceJsonStringState(input: {
+  character: string;
+  escaped: boolean;
+  inString: boolean;
+}): { escaped: boolean; handled: boolean; inString: boolean } {
+  if (input.escaped) {
+    return {
+      escaped: false,
+      handled: true,
+      inString: input.inString,
+    };
+  }
+
+  if (input.character === "\\") {
+    return {
+      escaped: true,
+      handled: true,
+      inString: input.inString,
+    };
+  }
+
+  if (input.character === '"') {
+    return {
+      escaped: false,
+      handled: true,
+      inString: !input.inString,
+    };
+  }
+
+  if (input.inString) {
+    return {
+      escaped: false,
+      handled: true,
+      inString: true,
+    };
+  }
+
+  return {
+    escaped: false,
+    handled: false,
+    inString: false,
+  };
+}
+
+function advanceJsonBraceState(input: {
+  candidates: string[];
+  character: string;
+  depth: number;
+  index: number;
+  startIndex: number;
+  stdout: string;
+}): { depth: number; startIndex: number } {
+  if (input.character === "{") {
+    if (input.depth === 0) {
+      return {
+        depth: 1,
+        startIndex: input.index,
+      };
+    }
+
+    return {
+      depth: input.depth + 1,
+      startIndex: input.startIndex,
+    };
+  }
+
+  if (input.character !== "}" || input.depth === 0) {
+    return {
+      depth: input.depth,
+      startIndex: input.startIndex,
+    };
+  }
+
+  const nextDepth = input.depth - 1;
+
+  if (nextDepth === 0 && input.startIndex !== -1) {
+    input.candidates.push(
+      input.stdout.slice(input.startIndex, input.index + 1)
+    );
+    return {
+      depth: 0,
+      startIndex: -1,
+    };
+  }
+
+  return {
+    depth: nextDepth,
+    startIndex: input.startIndex,
+  };
+}
+
+function parseInteropScenarioReportCandidate(
+  candidate: string
+): InteropScenarioReport | undefined {
+  let parsed: unknown;
+
+  try {
+    parsed = JSON.parse(candidate);
+  } catch {
+    return undefined;
+  }
+
+  if (
+    !(
+      isRecord(parsed) &&
+      Array.isArray(parsed.reports) &&
+      Array.isArray(parsed.scenarios)
+    )
+  ) {
+    return undefined;
+  }
+
+  const scenarios = readExpectedInteropScenarios(parsed.scenarios);
+
+  if (scenarios.length === 0) {
+    return undefined;
+  }
+
+  const reports = parsed.reports
+    .map((report) => readInteropScenarioEntry(report))
+    .filter(
+      (report): report is InteropScenarioReport["reports"][number] =>
+        report !== undefined
+    );
+
+  if (reports.length !== scenarios.length) {
+    return undefined;
+  }
+
+  return {
+    reports,
+    scenarios,
+  };
 }
 
 function readConformanceEvidence(

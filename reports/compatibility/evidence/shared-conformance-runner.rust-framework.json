@@ -196,6 +196,7 @@
     "runtime-callable.timeout-retry-cancellation-idempotency",
     "runtime-callable.tool-execute",
     "runtime-callable.validation-failure",
+    "proving-host-headless-transcript-replay.deterministic-memory-pass",
     "runtime-callable-af.approval-reject-stages-tool-result",
     "runtime-callable-af.approval-resume-new-handle-only",
     "runtime-callable-af.approval-resume-reruns-unfinished-tools-only",
@@ -360,9 +361,9 @@
   "summary": {
     "failedChecks": 0,
     "passedChecks": 0,
-    "totalChecks": 340,
+    "totalChecks": 341,
     "applicableChecks": 0,
-    "nonApplicableChecks": 340
+    "nonApplicableChecks": 341
   },
   "suiteId": "tuvren.framework.promoted-authority",
   "suiteVersion": "0.1.0"

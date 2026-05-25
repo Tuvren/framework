@@ -179,6 +179,7 @@
             "runtime-callable.timeout-retry-cancellation-idempotency",
             "runtime-callable.tool-execute",
             "runtime-callable.validation-failure",
+            "proving-host-headless-transcript-replay.deterministic-memory-pass",
             "runtime-callable-af.approval-reject-stages-tool-result",
             "runtime-callable-af.approval-resume-new-handle-only",
             "runtime-callable-af.approval-resume-reruns-unfinished-tools-only",
@@ -338,9 +339,9 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 328,
-            "totalChecks": 340,
-            "applicableChecks": 328,
+            "passedChecks": 329,
+            "totalChecks": 341,
+            "applicableChecks": 329,
             "nonApplicableChecks": 12
           },
           "declaredCapabilities": [
@@ -421,6 +422,8 @@
             "kernel.protocol.schema_roundtrip.f-with-event-hash",
             "kernel.protocol.schema_roundtrip.f-with-prev-turn",
             "kernel.protocol.schema_roundtrip.f-zero-turn-tree-hash",
+            "kernel.crash-recovery.concurrent_writer",
+            "kernel.crash-recovery.in_process_fault_points",
             "kernel-restart-af.expired-running-requires-preemption",
             "kernel-restart-af.paused-run-excluded-from-stale-preemption",
             "kernel.run-liveness.expired_listing",
@@ -429,16 +432,17 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 54,
-            "totalChecks": 56,
-            "applicableChecks": 54,
-            "nonApplicableChecks": 2
+            "passedChecks": 56,
+            "totalChecks": 59,
+            "applicableChecks": 56,
+            "nonApplicableChecks": 3
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",
             "kernel.edge-validation",
             "kernel.logical",
             "kernel.protocol",
+            "kernel.restart-recovery",
             "kernel.run-liveness"
           ],
           "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.typescript-kernel-memory.json",
@@ -507,6 +511,9 @@
             "kernel.protocol.schema_roundtrip.f-with-prev-turn",
             "kernel.protocol.schema_roundtrip.f-zero-turn-tree-hash",
             "kernel-restart-af.invalid-staged-result-reexecutes",
+            "kernel.crash-recovery.concurrent_writer",
+            "kernel.crash-recovery.durable_fault_points",
+            "kernel.crash-recovery.in_process_fault_points",
             "kernel.restart-recovery.close_reopen_checkpoint",
             "kernel-restart-af.expired-running-requires-preemption",
             "kernel-restart-af.paused-run-excluded-from-stale-preemption",
@@ -516,9 +523,9 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 56,
-            "totalChecks": 56,
-            "applicableChecks": 56,
+            "passedChecks": 59,
+            "totalChecks": 59,
+            "applicableChecks": 59,
             "nonApplicableChecks": 0
           },
           "declaredCapabilities": [
@@ -596,6 +603,9 @@
             "kernel.protocol.schema_roundtrip.f-with-prev-turn",
             "kernel.protocol.schema_roundtrip.f-zero-turn-tree-hash",
             "kernel-restart-af.invalid-staged-result-reexecutes",
+            "kernel.crash-recovery.concurrent_writer",
+            "kernel.crash-recovery.durable_fault_points",
+            "kernel.crash-recovery.in_process_fault_points",
             "kernel.restart-recovery.close_reopen_checkpoint",
             "kernel-restart-af.expired-running-requires-preemption",
             "kernel-restart-af.paused-run-excluded-from-stale-preemption",
@@ -605,9 +615,9 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 56,
-            "totalChecks": 56,
-            "applicableChecks": 56,
+            "passedChecks": 59,
+            "totalChecks": 59,
+            "applicableChecks": 59,
             "nonApplicableChecks": 0
           },
           "declaredCapabilities": [
@@ -635,6 +645,10 @@
       "results": [
         {
           "checkIds": [
+            "providers.mcp.auth-headers",
+            "providers.mcp.translation-rules-and-transport-parity",
+            "providers.mcp.transport-error-normalization",
+            "providers.mcp.validation-errors",
             "providers-ext.approval.error-code-stable",
             "providers-ext.approval.error-reason-stable",
             "providers-ext.strict.error-code-stable",
@@ -666,15 +680,16 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 28,
-            "totalChecks": 28,
-            "applicableChecks": 28,
+            "passedChecks": 32,
+            "totalChecks": 32,
+            "applicableChecks": 32,
             "nonApplicableChecks": 0
           },
           "declaredCapabilities": [
             "providers.ai-sdk-bridge",
             "providers.framework-owned-approval-boundary",
             "providers.framework-owned-tool-execution",
+            "providers.mcp-client",
             "providers.provider-api",
             "providers.rejects-native-strict-structured-output"
           ],
@@ -740,9 +755,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 42,
-            "totalChecks": 56,
+            "totalChecks": 59,
             "applicableChecks": 42,
-            "nonApplicableChecks": 14
+            "nonApplicableChecks": 17
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",
@@ -768,9 +783,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 0,
-            "totalChecks": 340,
+            "totalChecks": 341,
             "applicableChecks": 0,
-            "nonApplicableChecks": 340
+            "nonApplicableChecks": 341
           },
           "declaredCapabilities": [],
           "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.rust-framework.json",

@@ -150,9 +150,23 @@ import { TransactionWriteTracker } from "./sqlite-write-tracker.js";
 const ORDERED_PATH_CHUNK_THRESHOLD = 32;
 const ORDERED_PATH_CHUNK_SIZE = 32;
 const SQLITE_BUSY_TIMEOUT_MS = 5000;
+const FAULT_INJECTION_CONTROL = Symbol(
+  "tuvren.kernel.testkit.fault-injection-control"
+);
 
 interface MutableRepositories extends KrakenBackendTx {
   readonly now: () => number;
+}
+
+interface BackendFaultHooks {
+  afterCommitBeforeAck?(): Promise<void>;
+  beforeCommit?(): Promise<void>;
+  midCommit?(commit: () => Promise<void>): Promise<void>;
+}
+
+interface BackendFaultInjectionControl {
+  setFaultHooks(hooks: BackendFaultHooks | null): void;
+  supportsFaultPoint(point: string): boolean;
 }
 
 export interface SqliteBackendOptions {
@@ -177,7 +191,20 @@ const SQLITE_BACKEND_CAPABILITIES: BackendCapability = {
 };
 
 class SqliteBackend implements KrakenBackend {
+  readonly [FAULT_INJECTION_CONTROL]: BackendFaultInjectionControl = {
+    setFaultHooks: (hooks) => {
+      this.faultState.hooks = hooks;
+    },
+    supportsFaultPoint: (point) =>
+      point === "before-commit" ||
+      point === "mid-commit" ||
+      point === "after-commit-before-ack",
+  };
+
   private readonly db: Database.Database;
+  private readonly faultState: { hooks: BackendFaultHooks | null } = {
+    hooks: null,
+  };
   private readonly now: () => number;
   private readonly transactionContext = new AsyncLocalStorage<boolean>();
   private transactionQueue: Promise<void> = Promise.resolve();
@@ -261,7 +288,34 @@ class SqliteBackend implements KrakenBackend {
           );
           active = false;
           validateTransactionWriteSet(this.db, writeTracker);
-          this.db.exec("COMMIT");
+          await this.faultState.hooks?.beforeCommit?.();
+
+          let committed = false;
+          const commit = (): Promise<void> => {
+            if (committed) {
+              throw new Error(
+                "sqlite backend commit hook attempted double commit"
+              );
+            }
+
+            this.db.exec("COMMIT");
+            committed = true;
+            return Promise.resolve();
+          };
+
+          if (this.faultState.hooks?.midCommit === undefined) {
+            await commit();
+          } else {
+            await this.faultState.hooks.midCommit(commit);
+
+            if (!committed) {
+              throw new Error(
+                "sqlite backend mid-commit hook must call commit exactly once"
+              );
+            }
+          }
+
+          await this.faultState.hooks?.afterCommitBeforeAck?.();
           return result;
         } catch (error: unknown) {
           active = false;

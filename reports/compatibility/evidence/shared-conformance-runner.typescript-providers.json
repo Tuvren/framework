@@ -5,10 +5,243 @@
     "providers.ai-sdk-bridge",
     "providers.framework-owned-approval-boundary",
     "providers.framework-owned-tool-execution",
+    "providers.mcp-client",
     "providers.provider-api",
     "providers.rejects-native-strict-structured-output"
   ],
   "checkResults": [
+    {
+      "assertionResults": [
+        {
+          "assertionId": "providers.mcp.auth-headers.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.mcp.auth-headers.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.mcp.auth-headers.requiredEvidence.mcpClient.auth.output",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.mcp.auth-headers.requiredEvidence.mcpClient.auth.succeeded",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.mcp.auth-headers.requiredEvidence.result.mcpClient.auth.output.echoed",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.mcp.auth-headers.requiredEvidence.result.mcpClient.auth.succeeded",
+          "status": "pass"
+        }
+      ],
+      "checkId": "providers.mcp.auth-headers",
+      "details": {
+        "adapterId": "typescript-providers",
+        "planId": "tuvren.providers.mcp-client"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "providers.mcp.translation-rules-and-transport-parity.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.mcp.translation-rules-and-transport-parity.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.mcp.translation-rules-and-transport-parity.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.mcp.translation-rules-and-transport-parity.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.mcp.translation-rules-and-transport-parity.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.mcp.translation-rules-and-transport-parity.6.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.mcp.translation-rules-and-transport-parity.7.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.mcp.translation-rules-and-transport-parity.requiredEvidence.mcpClient.parity.echoOutputEqual",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.mcp.translation-rules-and-transport-parity.requiredEvidence.mcpClient.parity.structuredOutputEqual",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.mcp.translation-rules-and-transport-parity.requiredEvidence.mcpClient.parity.toolNamesEqual",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.mcp.translation-rules-and-transport-parity.requiredEvidence.mcpClient.stdio.echoDescription",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.mcp.translation-rules-and-transport-parity.requiredEvidence.mcpClient.stdio.echoInputSchemaType",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.mcp.translation-rules-and-transport-parity.requiredEvidence.mcpClient.stdio.echoMetadataOriginalName",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.mcp.translation-rules-and-transport-parity.requiredEvidence.mcpClient.stdio.toolNames",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.mcp.translation-rules-and-transport-parity.requiredEvidence.result.mcpClient.parity.echoOutputEqual",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.mcp.translation-rules-and-transport-parity.requiredEvidence.result.mcpClient.parity.structuredOutputEqual",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.mcp.translation-rules-and-transport-parity.requiredEvidence.result.mcpClient.parity.toolNamesEqual",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.mcp.translation-rules-and-transport-parity.requiredEvidence.result.mcpClient.stdio.echoDescription",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.mcp.translation-rules-and-transport-parity.requiredEvidence.result.mcpClient.stdio.echoInputSchemaType",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.mcp.translation-rules-and-transport-parity.requiredEvidence.result.mcpClient.stdio.echoMetadataOriginalName",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.mcp.translation-rules-and-transport-parity.requiredEvidence.result.mcpClient.stdio.toolNames",
+          "status": "pass"
+        }
+      ],
+      "checkId": "providers.mcp.translation-rules-and-transport-parity",
+      "details": {
+        "adapterId": "typescript-providers",
+        "planId": "tuvren.providers.mcp-client"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "providers.mcp.transport-error-normalization.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.mcp.transport-error-normalization.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.mcp.transport-error-normalization.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.mcp.transport-error-normalization.requiredEvidence.mcpClient.transportFailure.errorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.mcp.transport-error-normalization.requiredEvidence.mcpClient.transportFailure.isError",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.mcp.transport-error-normalization.requiredEvidence.mcpClient.transportFailure.observedErrorCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.mcp.transport-error-normalization.requiredEvidence.result.mcpClient.transportFailure.errorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.mcp.transport-error-normalization.requiredEvidence.result.mcpClient.transportFailure.isError",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.mcp.transport-error-normalization.requiredEvidence.result.mcpClient.transportFailure.observedErrorCount",
+          "status": "pass"
+        }
+      ],
+      "checkId": "providers.mcp.transport-error-normalization",
+      "details": {
+        "adapterId": "typescript-providers",
+        "planId": "tuvren.providers.mcp-client"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "providers.mcp.validation-errors.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.mcp.validation-errors.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.mcp.validation-errors.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.mcp.validation-errors.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.mcp.validation-errors.requiredEvidence.mcpClient.validation.inputErrorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.mcp.validation-errors.requiredEvidence.mcpClient.validation.inputIsError",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.mcp.validation-errors.requiredEvidence.mcpClient.validation.outputErrorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.mcp.validation-errors.requiredEvidence.mcpClient.validation.outputIsError",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.mcp.validation-errors.requiredEvidence.result.mcpClient.validation.inputErrorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.mcp.validation-errors.requiredEvidence.result.mcpClient.validation.inputIsError",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.mcp.validation-errors.requiredEvidence.result.mcpClient.validation.outputErrorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "providers.mcp.validation-errors.requiredEvidence.result.mcpClient.validation.outputIsError",
+          "status": "pass"
+        }
+      ],
+      "checkId": "providers.mcp.validation-errors",
+      "details": {
+        "adapterId": "typescript-providers",
+        "planId": "tuvren.providers.mcp-client"
+      },
+      "status": "pass"
+    },
     {
       "assertionResults": [
         {
@@ -717,9 +950,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 28,
-    "totalChecks": 28,
-    "applicableChecks": 28,
+    "passedChecks": 32,
+    "totalChecks": 32,
+    "applicableChecks": 32,
     "nonApplicableChecks": 0
   },
   "suiteId": "tuvren.providers.provider-api",
