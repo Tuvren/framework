@@ -16,7 +16,7 @@ Kernel, backend, provider, and tool surfaces are separated from cross-language a
 | kernel invariants | 9 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
 | kernel logical operations | 14 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
 | kernel protocol records | 11 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
-| kernel recovery edge states | 3 | authority-backed-conformance-covered | KRT-AF006 | No, if kept local/deferred |
+| kernel recovery edge states | 7 | authority-backed-conformance-covered | KRT-AF006 | No, if kept local/deferred |
 | kernel run liveness | 10 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
 | kernel storage structural sharing | 1 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
 | provider API bridge | 2 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |

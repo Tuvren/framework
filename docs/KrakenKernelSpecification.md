@@ -1,6 +1,6 @@
 # Kraken Kernel Specification
 
-**Version**: v0.10
+**Version**: v0.11
 **Status**: Frozen human semantic authority; machine portability classified by Epic AD
 
 Read this before the framework specification. This document freezes the human semantic model for the kernel primitives only.
@@ -488,6 +488,15 @@ CHECKPOINT TRANSACTION (atomic):
 
 When `treeHash` is provided, the framework has constructed the TurnTree via `tree.create` before calling `completeStep`. StagedResults are still consumed and recorded on the TurnNode — they document what work was performed, preserving the recovery protocol.
 
+#### Crash Recovery Invariant
+
+For every checkpoint transaction, recovery is **resume-or-fail-clean**:
+
+- If the post-checkpoint TurnNode is durably visible, the checkpoint is treated as committed and the recovered Branch Head must reference that committed TurnNode.
+- If the post-checkpoint TurnNode is not durably visible, the checkpoint is treated as not committed and the recovered Branch Head must remain at the last previously committed TurnNode.
+- No recovery path may expose a torn or partial TurnNode, a partially advanced Branch Head, or staged work that is simultaneously both committed and uncommitted.
+- When the kernel or framework cannot prove that work is fully committed, recovery must resume only the unfinished work or fail the Turn cleanly; it must not invent ambiguous lineage.
+
 ### 5.6 Checkpoint Obligations
 
 **Planned checkpoints**: after any step where `!deterministic || sideEffects`.
@@ -945,4 +954,4 @@ The `cursor` parameter to `thread.list` is **opaque to callers** at the kernel A
 
 ---
 
-_v0.10. Kernel has 30 operations across 10 groups, 18 invariants. `thread.list` added (capability-gated, §9); count corrected from v0.9's erroneous "28" (branch.list had been added without updating the count). Companion rationale is explanatory only and non-contract._
+_v0.11. Kernel has 30 operations across 10 groups, 18 invariants. `thread.list` remains the latest syscall addition (capability-gated, §9); v0.11 adds the normative Crash Recovery Invariant note for the AU durability proof without changing the syscall count. Companion rationale is explanatory only and non-contract._

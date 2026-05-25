@@ -25,7 +25,7 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": ".",
-        "command": "bash -lc 'devenv up -d postgres && trap \"devenv processes down\" EXIT && devenv shell -- bash -lc \"cd boundaries/kernel/implementations/typescript/backend-postgres && bun test\"'"
+        "command": "devenv shell -- bash -lc \"cd boundaries/kernel/implementations/typescript/backend-postgres && bun test\""
       }
     },
     "typecheck": {

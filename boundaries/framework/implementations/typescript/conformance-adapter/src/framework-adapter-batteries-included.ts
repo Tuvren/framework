@@ -18,23 +18,70 @@ import { randomUUID } from "node:crypto";
 import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import type { InputSignal } from "@tuvren/core/execution";
 import type {
-  CreateTuvrenOptions,
-  PostgresBackendOptions,
-} from "@tuvren/runtime";
-import { createTuvren, destroyPostgresBackend } from "@tuvren/runtime";
-import {
-  type AdapterProjection,
-  collectValues,
-  createScenarioProvider,
-  textSignal,
-} from "./framework-adapter-runtime.ts";
+  TuvrenModelResponse,
+  TuvrenProvider,
+} from "@tuvren/core/provider";
+import type { PostgresBackendOptions } from "../../../../../kernel/implementations/typescript/backend-postgres/src/index.ts";
+import { destroyPostgresBackend } from "../../../../../kernel/implementations/typescript/backend-postgres/src/index.ts";
+import type { CreateTuvrenOptions } from "../../runtime/src/lib/create-tuvren.ts";
+import { createTuvren } from "../../runtime/src/lib/create-tuvren.ts";
+
+interface AdapterProjection {
+  events?: readonly unknown[];
+  evidence?: Record<string, unknown>;
+  result?: unknown;
+  state?: Record<string, unknown>;
+}
 
 const BATTERIES_INCLUDED_MOCK_RESPONSE = {
-  finishReason: "stop" as const,
-  parts: [{ text: "batteries-included-ok", type: "text" as const }],
+  finishReason: "stop",
+  parts: [{ text: "batteries-included-ok", type: "text" }],
   usage: { inputTokens: 5, outputTokens: 3 },
-};
+} satisfies TuvrenModelResponse;
+
+function createScenarioProvider(
+  responses: readonly TuvrenModelResponse[]
+): TuvrenProvider {
+  let responseIndex = 0;
+
+  return {
+    generate() {
+      const response = responses[responseIndex] ?? responses.at(-1);
+
+      if (response === undefined) {
+        return Promise.reject(
+          new Error("driver scenario must provide at least one response")
+        );
+      }
+
+      responseIndex += 1;
+      return Promise.resolve(structuredClone(response));
+    },
+    id: "provider",
+    async *stream() {
+      await Promise.resolve();
+      yield* [];
+    },
+  };
+}
+
+function textSignal(text: string): InputSignal {
+  return {
+    parts: [{ text, type: "text" }],
+  };
+}
+
+async function collectValues<T>(values: AsyncIterable<T>): Promise<T[]> {
+  const collected: T[] = [];
+
+  for await (const value of values) {
+    collected.push(value);
+  }
+
+  return collected;
+}
 
 export function createFrameworkAdapterBatteriesIncluded(): {
   runBatteriesIncludedLifecycle(input: unknown): Promise<AdapterProjection>;
@@ -48,10 +95,7 @@ async function runBatteriesIncludedLifecycle(
   const backendKind = readBackendKind(input);
   const { backendSpec, cleanupPath, cleanupBackend } =
     buildBackendSpec(backendKind);
-  const provider = createScenarioProvider(
-    [BATTERIES_INCLUDED_MOCK_RESPONSE],
-    () => undefined
-  );
+  const provider = createScenarioProvider([BATTERIES_INCLUDED_MOCK_RESPONSE]);
 
   const instance = await createTuvren({
     backend: backendSpec,
@@ -108,15 +152,19 @@ async function runBatteriesIncludedLifecycle(
 }
 
 function readBackendKind(input: unknown): string {
-  if (typeof input !== "object" || input === null) {
+  if (!isRecord(input)) {
     return "memory";
   }
-  const checkInput = (input as Record<string, unknown>).checkInput;
-  if (typeof checkInput !== "object" || checkInput === null) {
+  const checkInput = input.checkInput;
+  if (!isRecord(checkInput)) {
     return "memory";
   }
-  const backend = (checkInput as Record<string, unknown>).backend;
+  const backend = checkInput.backend;
   return typeof backend === "string" ? backend : "memory";
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
 }
 
 function buildBackendSpec(kind: string): {

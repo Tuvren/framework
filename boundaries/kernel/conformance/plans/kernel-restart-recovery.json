@@ -1,14 +1,15 @@
 {
   "planId": "tuvren.kernel.restart-recovery",
-  "planVersion": "0.1.0",
+  "planVersion": "0.2.0",
   "packetId": "tuvren.kernel.protocol",
   "applicability": {
-    "capabilities": ["kernel.persistence.durable", "kernel.restart-recovery"]
+    "capabilities": ["kernel.restart-recovery"]
   },
   "checks": [
     {
       "checkId": "kernel.restart-recovery.close_reopen_checkpoint",
       "operation": "kernel.restart-recovery.close-reopen-checkpoint",
+      "capabilities": ["kernel.persistence.durable"],
       "controls": {
         "deadlineMs": 180000
       },
@@ -57,6 +58,7 @@
     {
       "checkId": "kernel-restart-af.invalid-staged-result-reexecutes",
       "operation": "kernel.restart-recovery.close-reopen-checkpoint",
+      "capabilities": ["kernel.persistence.durable"],
       "controls": {
         "deadlineMs": 180000
       },
@@ -81,6 +83,280 @@
         "restartRecovery.uncommittedNotPromoted",
         "restartRecovery.recoveredUncommittedCount",
         "restartRecovery.recoveredLastCompletedStepId"
+      ]
+    },
+    {
+      "checkId": "kernel.crash-recovery.durable_fault_points",
+      "operation": "kernel.restart-recovery.crash-recovery-durable",
+      "capabilities": ["kernel.persistence.durable"],
+      "controls": {
+        "deadlineMs": 180000
+      },
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.crashRecovery.beforeCommit.injectedErrorCode",
+          "equals": "kernel_persistence_fault_injected"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.crashRecovery.beforeCommit.headMatchesExpectedCheckpoint",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.crashRecovery.beforeCommit.lineageConsistent",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.crashRecovery.beforeCommit.pendingMessageCommitted",
+          "equals": false
+        },
+        {
+          "kind": "resultField",
+          "field": "$.crashRecovery.beforeCommit.recoveryStateConsistent",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.crashRecovery.beforeCommit.visibleCommittedMessageCount",
+          "equals": 1
+        },
+        {
+          "kind": "resultField",
+          "field": "$.crashRecovery.midCommit.injectedErrorCode",
+          "equals": "kernel_persistence_fault_injected"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.crashRecovery.midCommit.headMatchesExpectedCheckpoint",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.crashRecovery.midCommit.lineageConsistent",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.crashRecovery.midCommit.pendingMessageCommitted",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.crashRecovery.midCommit.recoveryStateConsistent",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.crashRecovery.midCommit.visibleCommittedMessageCount",
+          "equals": 2
+        },
+        {
+          "kind": "resultField",
+          "field": "$.crashRecovery.afterCommitBeforeAck.injectedErrorCode",
+          "equals": "kernel_persistence_fault_injected"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.crashRecovery.afterCommitBeforeAck.headMatchesExpectedCheckpoint",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.crashRecovery.afterCommitBeforeAck.lineageConsistent",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.crashRecovery.afterCommitBeforeAck.pendingMessageCommitted",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.crashRecovery.afterCommitBeforeAck.recoveryStateConsistent",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.crashRecovery.afterCommitBeforeAck.visibleCommittedMessageCount",
+          "equals": 2
+        }
+      ],
+      "evidence": [
+        "crashRecovery.beforeCommit.injectedErrorCode",
+        "crashRecovery.beforeCommit.headMatchesExpectedCheckpoint",
+        "crashRecovery.beforeCommit.lineageConsistent",
+        "crashRecovery.beforeCommit.pendingMessageCommitted",
+        "crashRecovery.beforeCommit.recoveryStateConsistent",
+        "crashRecovery.beforeCommit.visibleCommittedMessageCount",
+        "crashRecovery.midCommit.injectedErrorCode",
+        "crashRecovery.midCommit.headMatchesExpectedCheckpoint",
+        "crashRecovery.midCommit.lineageConsistent",
+        "crashRecovery.midCommit.pendingMessageCommitted",
+        "crashRecovery.midCommit.recoveryStateConsistent",
+        "crashRecovery.midCommit.visibleCommittedMessageCount",
+        "crashRecovery.afterCommitBeforeAck.injectedErrorCode",
+        "crashRecovery.afterCommitBeforeAck.headMatchesExpectedCheckpoint",
+        "crashRecovery.afterCommitBeforeAck.lineageConsistent",
+        "crashRecovery.afterCommitBeforeAck.pendingMessageCommitted",
+        "crashRecovery.afterCommitBeforeAck.recoveryStateConsistent",
+        "crashRecovery.afterCommitBeforeAck.visibleCommittedMessageCount"
+      ]
+    },
+    {
+      "checkId": "kernel.crash-recovery.in_process_fault_points",
+      "operation": "kernel.restart-recovery.crash-recovery-in-process",
+      "controls": {
+        "deadlineMs": 180000
+      },
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.crashRecovery.beforeCommit.injectedErrorCode",
+          "equals": "kernel_persistence_fault_injected"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.crashRecovery.beforeCommit.headMatchesExpectedCheckpoint",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.crashRecovery.beforeCommit.lineageConsistent",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.crashRecovery.beforeCommit.pendingMessageCommitted",
+          "equals": false
+        },
+        {
+          "kind": "resultField",
+          "field": "$.crashRecovery.beforeCommit.recoveryStateConsistent",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.crashRecovery.beforeCommit.visibleCommittedMessageCount",
+          "equals": 1
+        },
+        {
+          "kind": "resultField",
+          "field": "$.crashRecovery.midCommit.injectedErrorCode",
+          "equals": "kernel_persistence_fault_injected"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.crashRecovery.midCommit.headMatchesExpectedCheckpoint",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.crashRecovery.midCommit.lineageConsistent",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.crashRecovery.midCommit.pendingMessageCommitted",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.crashRecovery.midCommit.recoveryStateConsistent",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.crashRecovery.midCommit.visibleCommittedMessageCount",
+          "equals": 2
+        },
+        {
+          "kind": "resultField",
+          "field": "$.crashRecovery.afterCommitBeforeAck.injectedErrorCode",
+          "equals": "kernel_persistence_fault_injected"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.crashRecovery.afterCommitBeforeAck.headMatchesExpectedCheckpoint",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.crashRecovery.afterCommitBeforeAck.lineageConsistent",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.crashRecovery.afterCommitBeforeAck.pendingMessageCommitted",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.crashRecovery.afterCommitBeforeAck.recoveryStateConsistent",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.crashRecovery.afterCommitBeforeAck.visibleCommittedMessageCount",
+          "equals": 2
+        }
+      ],
+      "evidence": [
+        "crashRecovery.beforeCommit.injectedErrorCode",
+        "crashRecovery.beforeCommit.headMatchesExpectedCheckpoint",
+        "crashRecovery.beforeCommit.lineageConsistent",
+        "crashRecovery.beforeCommit.pendingMessageCommitted",
+        "crashRecovery.beforeCommit.recoveryStateConsistent",
+        "crashRecovery.beforeCommit.visibleCommittedMessageCount",
+        "crashRecovery.midCommit.injectedErrorCode",
+        "crashRecovery.midCommit.headMatchesExpectedCheckpoint",
+        "crashRecovery.midCommit.lineageConsistent",
+        "crashRecovery.midCommit.pendingMessageCommitted",
+        "crashRecovery.midCommit.recoveryStateConsistent",
+        "crashRecovery.midCommit.visibleCommittedMessageCount",
+        "crashRecovery.afterCommitBeforeAck.injectedErrorCode",
+        "crashRecovery.afterCommitBeforeAck.headMatchesExpectedCheckpoint",
+        "crashRecovery.afterCommitBeforeAck.lineageConsistent",
+        "crashRecovery.afterCommitBeforeAck.pendingMessageCommitted",
+        "crashRecovery.afterCommitBeforeAck.recoveryStateConsistent",
+        "crashRecovery.afterCommitBeforeAck.visibleCommittedMessageCount"
+      ]
+    },
+    {
+      "checkId": "kernel.crash-recovery.concurrent_writer",
+      "operation": "kernel.restart-recovery.concurrent-writer",
+      "controls": {
+        "deadlineMs": 180000
+      },
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.crashRecoveryConcurrency.singleWriterRejected",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.crashRecoveryConcurrency.finalHeadIsCommittedSibling",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.crashRecoveryConcurrency.finalHeadMatchesWinner",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.crashRecoveryConcurrency.losingErrorCode",
+          "matches": "_branch_head_lateral_move$"
+        }
+      ],
+      "evidence": [
+        "crashRecoveryConcurrency.singleWriterRejected",
+        "crashRecoveryConcurrency.finalHeadIsCommittedSibling",
+        "crashRecoveryConcurrency.finalHeadMatchesWinner",
+        "crashRecoveryConcurrency.losingErrorCode"
       ]
     }
   ]

@@ -31,12 +31,12 @@ interface DevenvPostgresEnvironment {
 }
 
 export async function assertDevenvPostgresReady(): Promise<void> {
-  // The Nx target launches PostgreSQL through `devenv up -d postgres`, which
-  // returns as soon as the supervised process starts rather than when the
-  // server is accepting connections. On a cold devenv shell the socket file
-  // may not exist yet, surfacing as `ENOENT` on the first probe. Retry the
-  // readiness query up to the budget below so the test does not depend on
-  // an implicit timing assumption between `devenv up` and the test runner.
+  // The session starts PostgreSQL through `devenv up -d` and the Nx targets
+  // run inside `devenv shell`, but the daemon can still report ready before
+  // the server accepts connections. On a cold shell the socket file may not
+  // exist yet, surfacing as `ENOENT` on the first probe. Retry the readiness
+  // query up to the budget below so the test does not depend on an implicit
+  // timing assumption between service startup and the test runner.
   const totalBudgetMs = 30_000;
   const retryDelayMs = 250;
   const startedAt = Date.now();

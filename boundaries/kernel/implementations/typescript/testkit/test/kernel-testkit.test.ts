@@ -16,10 +16,13 @@
 
 import { describe, expect, test } from "bun:test";
 import { deepStrictEqual, strictEqual } from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { encodeDeterministicKernelRecord } from "@tuvren/kernel-protocol";
 import {
   createCanonicalKernelTestSchema,
   createCanonicalTurnTreePaths,
+  createFaultInjectingBackend,
   createHashFromIndex,
   createStoredObjectRecord,
   createStoredSchemaRecord,
@@ -169,5 +172,47 @@ describe("@tuvren/kernel-testkit fixtures", () => {
       true
     );
     expect(registrations.some((entry) => entry.kind === "test")).toBe(true);
+  });
+
+  test("exports the fault injection seam and keeps it out of production paths", () => {
+    expect(typeof createFaultInjectingBackend).toBe("function");
+
+    const repositoryRoot = fileURLToPath(
+      new URL("../../../../../../", import.meta.url)
+    );
+    const search = spawnSync(
+      "rg",
+      [
+        "-n",
+        "@tuvren/kernel-testkit|createFaultInjectingBackend|FaultPlan",
+        "boundaries",
+        "-g",
+        "!**/dist/**",
+      ],
+      {
+        cwd: repositoryRoot,
+        encoding: "utf8",
+      }
+    );
+
+    if (search.error !== undefined) {
+      throw search.error;
+    }
+
+    const unexpectedMatches = search.stdout
+      .split("\n")
+      .filter((line) => line.length > 0)
+      .filter(
+        (line) =>
+          !(
+            line.includes("/testkit/") ||
+            line.includes("/conformance-adapter/") ||
+            line.includes("/test/") ||
+            line.includes("/bench/") ||
+            line.includes("package.json:")
+          )
+      );
+
+    expect(unexpectedMatches).toEqual([]);
   });
 });

@@ -1,7 +1,7 @@
 {
   "generatedBy": "bun tools/scripts/epic-af-conformance-gap-plan.ts",
   "matrixPath": "constitution/support/live/epic-ad-docs-to-authority-coverage-matrix.json",
-  "promoteNowClaims": 100,
+  "promoteNowClaims": 104,
   "surfaces": [
     {
       "adapterOperation": "runtime.approval-resolve; runtime.cancel-execution",
@@ -223,6 +223,7 @@
       "authorityPacket": "boundaries/kernel/contracts/protocol/spec/authority-packet.json",
       "claimIds": [
         "KER-1C9229916315",
+        "KER-31DD1923EEFB",
         "KER-36BDA9C8EAD8",
         "KER-3B60173B3983",
         "KER-41407CFFA30B",
@@ -238,7 +239,6 @@
         "KER-ACCA4D458DED",
         "KER-BBF71E1726AD",
         "KER-BFDDF853237E",
-        "KER-C5CC81817FCE",
         "KER-C6D3E87F842E",
         "KER-C79A21671F76",
         "KER-D955F623F729",
@@ -277,7 +277,15 @@
       ],
       "adapterCapability": "kernel.restart-recovery",
       "authorityPacket": "boundaries/kernel/contracts/protocol/spec/authority-packet.json",
-      "claimIds": ["KER-007A3ECFB49F", "KER-22511C79A15E", "KER-F8785E02207A"],
+      "claimIds": [
+        "KER-007A3ECFB49F",
+        "KER-22511C79A15E",
+        "KER-954A089E63C9",
+        "KER-A1939623180E",
+        "KER-BBADB56A18CD",
+        "KER-E39FB4D19647",
+        "KER-F8785E02207A"
+      ],
       "classifications": ["authority-backed-conformance-covered"],
       "compatibilityEvidence": "reports/compatibility/evidence/shared-conformance-runner.typescript-kernel-sqlite.json",
       "fixture": "boundaries/kernel/conformance/fixtures/kernel-protocol-logical.json",

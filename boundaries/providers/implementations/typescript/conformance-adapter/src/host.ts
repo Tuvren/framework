@@ -28,6 +28,11 @@ import {
   type ProviderStreamChunk,
   type StructuredOutputRequest,
 } from "@tuvren/provider-api";
+import {
+  createOfficialMcpEverythingStdioCommand,
+  startMockMcpHttpServer,
+  startOfficialMcpEverythingStreamableHttpServer,
+} from "@tuvren/provider-testkit";
 import type {
   AdapterCapabilities,
   AdapterControls,
@@ -39,11 +44,6 @@ import { createAiSdkProviderBridge } from "../../bridge-ai-sdk/src/index.ts";
 import { createMcpToolSource } from "../../mcp-client/src/index.ts";
 import type { MCPClient } from "../../mcp-client/src/lib/mcp-sdk-client.ts";
 import { createMcpToolSourceInternal } from "../../mcp-client/src/lib/mcp-tool-source.ts";
-import {
-  createOfficialMcpEverythingStdioCommand,
-  startMockMcpHttpServer,
-  startOfficialMcpEverythingStreamableHttpServer,
-} from "../../testkit/src/index.ts";
 import { providerConformanceFixtures } from "./provider-conformance-fixtures.ts";
 
 class TypeScriptProviderAdapter {

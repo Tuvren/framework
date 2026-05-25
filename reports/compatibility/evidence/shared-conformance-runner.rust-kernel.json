@@ -1669,6 +1669,9 @@
     "kernel-protocol-af.tree-create-rejects-missing-required-path",
     "kernel-protocol-af.tree-diff-rejects-schema-mismatch",
     "kernel-restart-af.invalid-staged-result-reexecutes",
+    "kernel.crash-recovery.concurrent_writer",
+    "kernel.crash-recovery.durable_fault_points",
+    "kernel.crash-recovery.in_process_fault_points",
     "kernel.restart-recovery.close_reopen_checkpoint",
     "kernel-restart-af.expired-running-requires-preemption",
     "kernel-restart-af.paused-run-excluded-from-stale-preemption",
@@ -1683,9 +1686,9 @@
   "summary": {
     "failedChecks": 0,
     "passedChecks": 42,
-    "totalChecks": 56,
+    "totalChecks": 59,
     "applicableChecks": 42,
-    "nonApplicableChecks": 14
+    "nonApplicableChecks": 17
   },
   "suiteId": "tuvren.kernel.protocol",
   "suiteVersion": "0.1.0"

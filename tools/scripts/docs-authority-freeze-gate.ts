@@ -1435,6 +1435,15 @@ function classifyKernelRunLivenessSection(
     );
   }
 
+  if (section === "crash-recovery-invariant") {
+    return missingConformanceDecision(
+      "kernel recovery edge states",
+      EVIDENCE.restartRecovery,
+      "KRT-AF006",
+      "Checkpoint commit visibility and resume-or-fail-clean recovery semantics are covered by the promoted restart-recovery authority lane."
+    );
+  }
+
   return null;
 }
 
