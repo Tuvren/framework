@@ -105,7 +105,9 @@
       "inputs": [
         "production",
         "^production",
-        "{workspaceRoot}/tsconfig.base.json"
+        "{workspaceRoot}/tsconfig.base.json",
+        "{workspaceRoot}/tools/scripts/typecheck-project.ts",
+        "{workspaceRoot}/tools/scripts/lib/command-runner.ts"
       ]
     }
   },

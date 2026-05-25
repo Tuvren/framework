@@ -227,16 +227,58 @@ const CONFORMANCE_RUNNERS: readonly ConformanceRunner[] = [
   {
     adapterManifestPath:
       "boundaries/kernel/implementations/typescript/conformance-adapter/adapter.json",
+    command: [
+      "bun",
+      "tools/conformance/runner/run.ts",
+      "--adapter",
+      "boundaries/kernel/implementations/typescript/conformance-adapter/adapter.json",
+      "--concurrency",
+      "4",
+    ],
     implementationId: "typescript-kernel-memory",
     language: "typescript",
+    prerequisiteCommands: [
+      [
+        "bun",
+        "run",
+        "nx",
+        "run-many",
+        "-t",
+        "build",
+        "-p",
+        "backend-memory,kernel-runtime,kernel-typescript-conformance-adapter",
+        "--skipNxCache",
+      ],
+    ],
     project: "kernel-typescript-conformance-runner",
     reportLabel: "TypeScript process-local kernel baseline",
   },
   {
     adapterManifestPath:
       "boundaries/kernel/implementations/typescript/conformance-adapter/adapter-sqlite.json",
+    command: [
+      "bun",
+      "tools/conformance/runner/run.ts",
+      "--adapter",
+      "boundaries/kernel/implementations/typescript/conformance-adapter/adapter-sqlite.json",
+      "--concurrency",
+      "4",
+    ],
     implementationId: "typescript-kernel-sqlite",
     language: "typescript",
+    prerequisiteCommands: [
+      [
+        "bun",
+        "run",
+        "nx",
+        "run-many",
+        "-t",
+        "build",
+        "-p",
+        "backend-sqlite,kernel-runtime,kernel-typescript-conformance-adapter",
+        "--skipNxCache",
+      ],
+    ],
     project: "kernel-typescript-sqlite-conformance-runner",
     reportLabel: "TypeScript SQLite durable kernel",
   },
@@ -251,8 +293,29 @@ const CONFORMANCE_RUNNERS: readonly ConformanceRunner[] = [
     // Postgres service before refreshing measured evidence.
     adapterManifestPath:
       "boundaries/kernel/implementations/typescript/conformance-adapter/adapter-postgres.json",
+    command: [
+      "bun",
+      "tools/conformance/runner/run.ts",
+      "--adapter",
+      "boundaries/kernel/implementations/typescript/conformance-adapter/adapter-postgres.json",
+      "--concurrency",
+      "4",
+    ],
     implementationId: "typescript-kernel-postgres",
     language: "typescript",
+    prerequisiteCommands: [
+      [
+        "bun",
+        "run",
+        "nx",
+        "run-many",
+        "-t",
+        "build",
+        "-p",
+        "backend-postgres,kernel-runtime,kernel-typescript-conformance-adapter",
+        "--skipNxCache",
+      ],
+    ],
     project: "kernel-typescript-postgres-conformance-runner",
     reportLabel: "TypeScript PostgreSQL durable kernel",
   },
@@ -471,7 +534,12 @@ async function checkCompatibilityEvidence(): Promise<void> {
         );
       }
 
-      await checkEvidenceFile(result.evidencePath, failures);
+      await checkImplementationEvidenceFile(
+        result.evidencePath,
+        implementation,
+        result,
+        failures
+      );
     }
   }
 
@@ -484,7 +552,7 @@ async function checkCompatibilityEvidence(): Promise<void> {
       );
     }
 
-    await checkEvidenceFile(result.evidencePath, failures);
+    await checkInteropEvidenceFile(result.evidencePath, result, failures);
   }
 
   const evidenceEntries = await readdir(EVIDENCE_DIRECTORY);
@@ -518,15 +586,19 @@ async function checkCompatibilityEvidence(): Promise<void> {
   console.log("compatibility evidence check passed");
 }
 
-async function checkEvidenceFile(
+async function checkImplementationEvidenceFile(
   evidencePath: string,
+  implementation: CompatibilityImplementation,
+  result: CompatibilityImplementationResult,
   failures: string[]
 ): Promise<void> {
   const absolutePath = resolve(REPO_ROOT, evidencePath);
-  const evidence = JSON.parse(await readFile(absolutePath, "utf8")) as {
-    reportStatus?: unknown;
-    status?: unknown;
-  };
+  const evidence = JSON.parse(await readFile(absolutePath, "utf8"));
+
+  if (!isRecord(evidence)) {
+    failures.push(`${evidencePath} must contain a JSON object`);
+    return;
+  }
 
   if (
     evidence.status === "fail" ||
@@ -535,6 +607,185 @@ async function checkEvidenceFile(
     failures.push(
       `${evidencePath} records ${String(evidence.reportStatus ?? evidence.status)}`
     );
+  }
+
+  compareEvidenceField(
+    evidencePath,
+    "implementationId",
+    evidence.implementationId,
+    implementation.implementationId,
+    failures
+  );
+  compareEvidenceField(
+    evidencePath,
+    "suiteId",
+    evidence.suiteId,
+    result.suiteId,
+    failures
+  );
+  compareEvidenceField(
+    evidencePath,
+    "suiteVersion",
+    evidence.suiteVersion,
+    result.suiteVersion,
+    failures
+  );
+  compareEvidenceField(
+    evidencePath,
+    "status",
+    evidence.status,
+    result.status,
+    failures
+  );
+  compareEvidenceField(
+    evidencePath,
+    "reportStatus",
+    evidence.reportStatus,
+    result.reportStatus,
+    failures
+  );
+  compareCheckIds(
+    evidencePath,
+    evidence.checkResults,
+    result.checkIds,
+    failures
+  );
+  compareCheckSummary(
+    evidencePath,
+    evidence.summary,
+    result.checkSummary,
+    failures
+  );
+}
+
+async function checkInteropEvidenceFile(
+  evidencePath: string,
+  result: CompatibilityInteropResult,
+  failures: string[]
+): Promise<void> {
+  const absolutePath = resolve(REPO_ROOT, evidencePath);
+  const evidence = JSON.parse(await readFile(absolutePath, "utf8"));
+
+  if (!isRecord(evidence)) {
+    failures.push(`${evidencePath} must contain a JSON object`);
+    return;
+  }
+
+  if (
+    evidence.status === "fail" ||
+    evidence.reportStatus === "unexpected_fail"
+  ) {
+    failures.push(
+      `${evidencePath} records ${String(evidence.reportStatus ?? evidence.status)}`
+    );
+  }
+
+  compareEvidenceField(
+    evidencePath,
+    "pairId",
+    evidence.pairId,
+    result.pairId,
+    failures
+  );
+  compareEvidenceField(
+    evidencePath,
+    "suiteId",
+    evidence.suiteId,
+    result.suiteId,
+    failures
+  );
+  compareEvidenceField(
+    evidencePath,
+    "suiteVersion",
+    evidence.suiteVersion,
+    result.suiteVersion,
+    failures
+  );
+  compareEvidenceField(
+    evidencePath,
+    "status",
+    evidence.status,
+    result.status,
+    failures
+  );
+  compareEvidenceField(
+    evidencePath,
+    "reportStatus",
+    evidence.reportStatus,
+    result.reportStatus,
+    failures
+  );
+  compareCheckIds(
+    evidencePath,
+    evidence.checkResults,
+    result.checkIds,
+    failures
+  );
+  compareCheckSummary(
+    evidencePath,
+    evidence.summary,
+    result.checkSummary,
+    failures
+  );
+}
+
+function compareEvidenceField(
+  evidencePath: string,
+  fieldName: string,
+  actual: unknown,
+  expected: string,
+  failures: string[]
+): void {
+  if (actual !== expected) {
+    failures.push(
+      `${evidencePath} ${fieldName} is ${JSON.stringify(actual)}, expected ${JSON.stringify(expected)}`
+    );
+  }
+}
+
+function compareCheckIds(
+  evidencePath: string,
+  checkResults: unknown,
+  expectedCheckIds: readonly string[],
+  failures: string[]
+): void {
+  if (!Array.isArray(checkResults)) {
+    failures.push(`${evidencePath} checkResults must be an array`);
+    return;
+  }
+
+  const actualCheckIds = checkResults.map((checkResult) =>
+    isRecord(checkResult) ? checkResult.checkId : undefined
+  );
+
+  if (JSON.stringify(actualCheckIds) !== JSON.stringify(expectedCheckIds)) {
+    failures.push(`${evidencePath} checkResults do not match matrix checkIds`);
+  }
+}
+
+function compareCheckSummary(
+  evidencePath: string,
+  summary: unknown,
+  expectedSummary: CompatibilityCheckSummary,
+  failures: string[]
+): void {
+  if (!isRecord(summary)) {
+    failures.push(`${evidencePath} summary must be an object`);
+    return;
+  }
+
+  for (const fieldName of [
+    "applicableChecks",
+    "failedChecks",
+    "nonApplicableChecks",
+    "passedChecks",
+    "totalChecks",
+  ] as const) {
+    if (summary[fieldName] !== expectedSummary[fieldName]) {
+      failures.push(
+        `${evidencePath} summary.${fieldName} is ${JSON.stringify(summary[fieldName])}, expected ${JSON.stringify(expectedSummary[fieldName])}`
+      );
+    }
   }
 }
 

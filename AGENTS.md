@@ -42,6 +42,7 @@ Use native tools as ecosystem truth and Nx as a wrapper.
 - Run `bun run compatibility:evidence` only to refresh checked-in compatibility evidence, including intentional red lanes.
 - Run `bun run verify:kernel` for the cached fast kernel lane before broader verification when working on kernel-owned behavior.
 - Run `bun run verify:kernel:fresh` when you need the same kernel lane forced through uncached Nx targets.
+- `verify:kernel` includes PostgreSQL conformance; on a clean session, make sure direnv has loaded the repo environment and run `devenv up -d` once before either kernel verify lane.
 - Run `bun run verify` before claiming broad workspace readiness.
 - Run `bun run nx run <project>:test`, `:typecheck`, or `:build` for narrow TypeScript checks.
 

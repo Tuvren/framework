@@ -82,6 +82,7 @@ function createKernelVerificationSteps(options: {
         "-p",
         KERNEL_TYPECHECK_PROJECTS.join(","),
         "--parallel=4",
+        ...cacheModeArgs,
       ],
       id: "kernel TypeScript typecheck",
     },
