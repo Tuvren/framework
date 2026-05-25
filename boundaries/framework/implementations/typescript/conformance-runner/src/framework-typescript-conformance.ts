@@ -22,6 +22,7 @@ const child = spawn(
     "tools/conformance/runner/run.ts",
     "--adapter",
     "boundaries/framework/implementations/typescript/conformance-adapter/adapter.json",
+    "--summary-only",
   ],
   {
     cwd: new URL("../../../../../..", import.meta.url),

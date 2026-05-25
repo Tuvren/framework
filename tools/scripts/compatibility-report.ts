@@ -527,6 +527,8 @@ async function checkCompatibilityEvidence(): Promise<void> {
     matrixEvidencePaths,
     failures
   );
+  checkConformanceRunnerInventory(matrix.implementations, failures);
+  checkInteropRunnerInventory(matrix.interop, failures);
 
   for (const result of matrix.interop) {
     matrixEvidencePaths.add(result.evidencePath);
@@ -577,18 +579,24 @@ async function checkLiveSuiteTopology(
 ): Promise<void> {
   const liveSuites = await readLiveCompatibilitySuites();
   const liveSuiteKeys = new Set(
-    liveSuites.map((suite) => createSuiteKey(suite.suiteId, suite.suiteVersion))
+    liveSuites.map((suite) =>
+      createSuiteKey(suite.boundary, suite.suiteId, suite.suiteVersion)
+    )
   );
   const matrixSuiteKeys = new Set(
     matrixSuites.map((suite) =>
-      createSuiteKey(suite.suiteId, suite.suiteVersion)
+      createSuiteKey(suite.boundary, suite.suiteId, suite.suiteVersion)
     )
   );
 
   for (const liveSuite of liveSuites) {
     if (
       !matrixSuiteKeys.has(
-        createSuiteKey(liveSuite.suiteId, liveSuite.suiteVersion)
+        createSuiteKey(
+          liveSuite.boundary,
+          liveSuite.suiteId,
+          liveSuite.suiteVersion
+        )
       )
     ) {
       failures.push(
@@ -600,11 +608,47 @@ async function checkLiveSuiteTopology(
   for (const matrixSuite of matrixSuites) {
     if (
       !liveSuiteKeys.has(
-        createSuiteKey(matrixSuite.suiteId, matrixSuite.suiteVersion)
+        createSuiteKey(
+          matrixSuite.boundary,
+          matrixSuite.suiteId,
+          matrixSuite.suiteVersion
+        )
       )
     ) {
       failures.push(
         `compatibility matrix suite ${matrixSuite.suiteId}@${matrixSuite.suiteVersion} is not present in live runner topology`
+      );
+    }
+  }
+}
+
+function checkConformanceRunnerInventory(
+  implementations: readonly CompatibilityImplementation[],
+  failures: string[]
+): void {
+  const matrixImplementationIds = new Set(
+    implementations.map((implementation) => implementation.implementationId)
+  );
+
+  for (const runner of CONFORMANCE_RUNNERS) {
+    if (!matrixImplementationIds.has(runner.implementationId)) {
+      failures.push(
+        `compatibility matrix is missing live implementation ${runner.implementationId}`
+      );
+    }
+  }
+}
+
+function checkInteropRunnerInventory(
+  interopResults: readonly CompatibilityInteropResult[],
+  failures: string[]
+): void {
+  const matrixPairIds = new Set(interopResults.map((result) => result.pairId));
+
+  for (const runner of INTEROP_RUNNERS) {
+    if (!matrixPairIds.has(runner.pairId)) {
+      failures.push(
+        `compatibility matrix is missing live interop pair ${runner.pairId}`
       );
     }
   }
@@ -736,7 +780,10 @@ async function readLiveCompatibilitySuites(): Promise<CompatibilitySuite[]> {
   for (const runner of CONFORMANCE_RUNNERS) {
     const manifest = await readAdapterManifest(runner.adapterManifestPath);
     const suite = readAdapterSuite(manifest, runner.adapterManifestPath);
-    suitesByKey.set(createSuiteKey(suite.suiteId, suite.suiteVersion), suite);
+    suitesByKey.set(
+      createSuiteKey(suite.boundary, suite.suiteId, suite.suiteVersion),
+      suite
+    );
   }
 
   for (const runner of INTEROP_RUNNERS) {
@@ -746,7 +793,10 @@ async function readLiveCompatibilitySuites(): Promise<CompatibilitySuite[]> {
       suiteId: suiteManifest.suiteId,
       suiteVersion: suiteManifest.suiteVersion,
     };
-    suitesByKey.set(createSuiteKey(suite.suiteId, suite.suiteVersion), suite);
+    suitesByKey.set(
+      createSuiteKey(suite.boundary, suite.suiteId, suite.suiteVersion),
+      suite
+    );
   }
 
   return [...suitesByKey.values()];
@@ -894,8 +944,12 @@ function compareLiveConformanceResult(
   }
 }
 
-function createSuiteKey(suiteId: string, suiteVersion: string): string {
-  return `${suiteId}@${suiteVersion}`;
+function createSuiteKey(
+  boundary: string,
+  suiteId: string,
+  suiteVersion: string
+): string {
+  return `${boundary}:${suiteId}@${suiteVersion}`;
 }
 
 function hasSameStringSet(

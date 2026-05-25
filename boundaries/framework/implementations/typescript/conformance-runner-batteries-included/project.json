@@ -20,7 +20,7 @@
       ],
       "options": {
         "cwd": ".",
-        "command": "bun tools/conformance/runner/run.ts --adapter boundaries/framework/implementations/typescript/conformance-adapter/adapter-batteries-included.json"
+        "command": "bun tools/conformance/runner/run.ts --adapter boundaries/framework/implementations/typescript/conformance-adapter/adapter-batteries-included.json --summary-only"
       }
     }
   }
