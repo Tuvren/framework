@@ -150,7 +150,7 @@ import { TransactionWriteTracker } from "./sqlite-write-tracker.js";
 const ORDERED_PATH_CHUNK_THRESHOLD = 32;
 const ORDERED_PATH_CHUNK_SIZE = 32;
 const SQLITE_BUSY_TIMEOUT_MS = 5000;
-const FAULT_INJECTION_CONTROL = Symbol.for(
+const FAULT_INJECTION_CONTROL = Symbol(
   "tuvren.kernel.testkit.fault-injection-control"
 );
 

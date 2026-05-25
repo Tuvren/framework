@@ -137,7 +137,7 @@ export interface PostgresBackendOptions
 const POSTGRES_BACKEND_CAPABILITIES: BackendCapability = {
   "thread.enumeration": true,
 };
-const FAULT_INJECTION_CONTROL = Symbol.for(
+const FAULT_INJECTION_CONTROL = Symbol(
   "tuvren.kernel.testkit.fault-injection-control"
 );
 

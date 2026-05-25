@@ -26,6 +26,10 @@ import type {
   StoredTurn,
   StoredTurnNode,
 } from "@tuvren/kernel-protocol";
+import {
+  createStoredObjectRecord,
+  createStoredTurnNodeRecord,
+} from "./kernel-test-fixtures.js";
 
 export type FaultPoint =
   | "before-commit"
@@ -62,9 +66,14 @@ interface TransactionRecording {
   operation: FaultOperation;
 }
 
-const FAULT_INJECTION_CONTROL = Symbol.for(
-  "tuvren.kernel.testkit.fault-injection-control"
-);
+interface ConcurrentWriterSnapshot {
+  branch: StoredBranch;
+  head: StoredTurnNode;
+}
+
+type TransactionOutcome<T> =
+  | { status: "fulfilled"; value: T }
+  | { error: unknown; status: "rejected" };
 
 export function createFaultInjectingBackend(
   inner: RuntimeBackend,
@@ -84,7 +93,15 @@ export function createFaultInjectingBackend(
       return inner.health();
     },
     async transact<T>(work: (tx: RuntimeBackendTx) => Promise<T>): Promise<T> {
+      const concurrentWriterSnapshot =
+        plan.concurrentWriter === undefined
+          ? undefined
+          : await readConcurrentWriterSnapshot(
+              inner,
+              plan.concurrentWriter.branchId
+            );
       const recording = createTransactionRecording();
+      let shouldRunConcurrentWriter = false;
       let shouldInject = false;
 
       const hooks =
@@ -104,45 +121,65 @@ export function createFaultInjectingBackend(
         control.setFaultHooks(hooks);
       }
 
+      let outcome: TransactionOutcome<T>;
+
       try {
-        return await inner.transact(async (tx) => {
-          const result = await work(
-            createRecordingTransactionProxy(tx, recording)
-          );
-          shouldInject = matchesFaultPlan(plan, recording, consumed);
+        outcome = {
+          status: "fulfilled",
+          value: await inner.transact(async (tx) => {
+            const result = await work(
+              createRecordingTransactionProxy(tx, recording)
+            );
+            shouldInject = matchesFaultPlan(plan, recording, consumed);
+            shouldRunConcurrentWriter =
+              shouldInject && concurrentWriterSnapshot !== undefined;
 
-          if (
-            shouldInject &&
-            control === undefined &&
-            plan.point === "before-commit"
-          ) {
-            consumed = true;
-            throw createInjectedFaultError(recording.operation, plan.point);
-          }
+            if (
+              shouldInject &&
+              control === undefined &&
+              plan.point === "before-commit"
+            ) {
+              consumed = true;
+              throw createInjectedFaultError(recording.operation, plan.point);
+            }
 
-          if (shouldInject && control === undefined) {
-            throw createUnsupportedFaultPointError(plan.point);
-          }
+            if (shouldInject && control === undefined) {
+              throw createUnsupportedFaultPointError(plan.point);
+            }
 
-          return result;
-        });
+            return result;
+          }),
+        };
+      } catch (error: unknown) {
+        outcome = {
+          error,
+          status: "rejected",
+        };
       } finally {
         control?.setFaultHooks(null);
       }
+
+      if (shouldRunConcurrentWriter && concurrentWriterSnapshot !== undefined) {
+        await runConcurrentWriter(inner, concurrentWriterSnapshot);
+      }
+
+      if (outcome.status === "rejected") {
+        throw outcome.error;
+      }
+
+      return outcome.value;
     },
   };
 
-  const closable = inner as {
-    close?: () => Promise<void>;
-    destroy?: (options?: { dropSchema?: boolean }) => Promise<void>;
-  };
+  const closeMethod = readOptionalMethod(inner, "close");
+  const destroyMethod = readOptionalMethod(inner, "destroy");
 
-  if (typeof closable.close === "function") {
-    decorated.close = closable.close.bind(inner);
+  if (closeMethod !== undefined) {
+    decorated.close = closeMethod.bind(inner);
   }
 
-  if (typeof closable.destroy === "function") {
-    decorated.destroy = closable.destroy.bind(inner);
+  if (destroyMethod !== undefined) {
+    decorated.destroy = destroyMethod.bind(inner);
   }
 
   return decorated;
@@ -151,21 +188,28 @@ export function createFaultInjectingBackend(
 function readFaultInjectionControl(
   backend: RuntimeBackend
 ): BackendFaultInjectionControl | undefined {
-  const value = Reflect.get(
-    backend as object,
-    FAULT_INJECTION_CONTROL
-  ) as unknown;
+  // Discover the backend-local seam by shape so production code does not get a
+  // stable global symbol lookup key for the hidden test hook.
+  for (const symbol of Object.getOwnPropertySymbols(backend)) {
+    const value = Reflect.get(backend, symbol);
 
-  if (
-    typeof value !== "object" ||
-    value === null ||
-    typeof Reflect.get(value, "setFaultHooks") !== "function" ||
-    typeof Reflect.get(value, "supportsFaultPoint") !== "function"
-  ) {
-    return undefined;
+    if (isBackendFaultInjectionControl(value)) {
+      return value;
+    }
   }
 
-  return value as BackendFaultInjectionControl;
+  return undefined;
+}
+
+function isBackendFaultInjectionControl(
+  value: unknown
+): value is BackendFaultInjectionControl {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof Reflect.get(value, "setFaultHooks") === "function" &&
+    typeof Reflect.get(value, "supportsFaultPoint") === "function"
+  );
 }
 
 function createFaultHooks(
@@ -241,6 +285,10 @@ function createRecordingTransactionProxy(
     ...tx,
     branches: {
       ...tx.branches,
+      get(branchId) {
+        recording.branchIds.add(branchId);
+        return tx.branches.get(branchId);
+      },
       set(record: StoredBranch) {
         recording.branchIds.add(record.branchId);
         return tx.branches.set(record);
@@ -271,6 +319,56 @@ function createRecordingTransactionProxy(
       },
     },
   };
+}
+
+async function readConcurrentWriterSnapshot(
+  backend: RuntimeBackend,
+  branchId: string
+): Promise<ConcurrentWriterSnapshot | undefined> {
+  return await backend.transact(async (tx) => {
+    const branch = await tx.branches.get(branchId);
+
+    if (branch === null) {
+      return undefined;
+    }
+
+    const head = await tx.turnNodes.get(branch.headTurnNodeHash);
+
+    if (head === null) {
+      return undefined;
+    }
+
+    return { branch, head };
+  });
+}
+
+async function runConcurrentWriter(
+  backend: RuntimeBackend,
+  snapshot: ConcurrentWriterSnapshot
+): Promise<void> {
+  const createdAtMs = Math.max(snapshot.head.createdAtMs + 1, Date.now());
+  const siblingEvent = await createStoredObjectRecord(
+    new Uint8Array([0x63, 0x77]),
+    createdAtMs
+  );
+  const siblingNode = await createStoredTurnNodeRecord({
+    consumedStagedResults: [],
+    createdAtMs,
+    eventHash: siblingEvent.hash,
+    previousTurnNodeHash: snapshot.head.hash,
+    schemaId: snapshot.head.schemaId,
+    turnTreeHash: snapshot.head.turnTreeHash,
+  });
+
+  await backend.transact(async (tx) => {
+    await tx.objects.put(siblingEvent);
+    await tx.turnNodes.put(siblingNode);
+    await tx.branches.set({
+      ...snapshot.branch,
+      headTurnNodeHash: siblingNode.hash,
+      updatedAtMs: Math.max(snapshot.branch.updatedAtMs + 1, Date.now()),
+    });
+  });
 }
 
 function matchesFaultPlan(
@@ -332,4 +430,12 @@ function createUnsupportedFaultPointError(
       details: { point },
     }
   );
+}
+
+function readOptionalMethod(
+  value: object,
+  key: "close" | "destroy"
+): ((...args: unknown[]) => Promise<void>) | undefined {
+  const method = Reflect.get(value, key);
+  return typeof method === "function" ? method : undefined;
 }
