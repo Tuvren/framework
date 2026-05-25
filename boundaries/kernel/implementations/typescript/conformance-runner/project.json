@@ -23,8 +23,8 @@
         }
       ],
       "options": {
-        "cwd": "boundaries/kernel/implementations/typescript/conformance-runner",
-        "command": "bun ./src/kernel-typescript-conformance.ts"
+        "cwd": ".",
+        "command": "bun tools/conformance/runner/run.ts --adapter boundaries/kernel/implementations/typescript/conformance-adapter/adapter.json --concurrency 4 --summary-only"
       }
     },
     "lint": {
@@ -44,8 +44,8 @@
     "typecheck": {
       "executor": "nx:run-commands",
       "options": {
-        "cwd": "boundaries/kernel/implementations/typescript/conformance-runner",
-        "command": "bunx --bun tsc --project tsconfig.typecheck.json --noEmit --pretty false"
+        "cwd": ".",
+        "command": "bun tools/scripts/typecheck-project.ts boundaries/kernel/implementations/typescript/conformance-runner"
       }
     }
   }

@@ -2748,11 +2748,11 @@
   ],
   "command": [
     "bun",
-    "run",
-    "nx",
-    "run",
-    "kernel-typescript-sqlite-conformance-runner:conformance",
-    "--skipNxCache"
+    "tools/conformance/runner/run.ts",
+    "--adapter",
+    "[adapter-manifest]",
+    "--concurrency",
+    "4"
   ],
   "exitCode": 0,
   "implementationId": "typescript-kernel-sqlite",

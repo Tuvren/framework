@@ -32,20 +32,28 @@ Use native tools as ecosystem truth and Nx as a wrapper.
 - Prefer native commands behind Nx targets when adding cross-language build, test, codegen, or interop lanes.
 - Make generators leave checked-in artifacts formatter-clean; do not rely on a one-off manual format after regeneration.
 - Encode generated-artifact prerequisites in Nx targets when source imports gitignored or derived files.
+- Use Nx cache deliberately: keep generated outputs such as `dist/`, `.tmp*`, coverage, and `*.tsbuildinfo` out of target inputs, declare real outputs on cacheable targets, and do not add broad `^build` prerequisites to read-only checks like `typecheck` unless the command actually imports generated files.
+- Keep TypeScript `typecheck` targets source-only; declaration config validation (`tsconfig.dts.json`) belongs to `build` because it may depend on generated `dist/*.d.ts` from package dependencies.
+- Prefer cached iteration commands first (`bun run typecheck`, `bun run verify:kernel`); use explicit fresh lanes such as `bun run verify:kernel:fresh` only when proving uncached behavior or refreshing evidence.
+- When an Nx lane feels slow, inspect the task graph and cache hits before changing semantics: compare repeated runs, check whether generated files are poisoning inputs, and keep shared command logic in scripts rather than duplicating long shell snippets across `project.json` files.
 
 ## Commands
 - Run `bun run lint`, `format`, `typecheck`, `codegen`, `interop-smoke`, and `verify` for repo checks.
 - Run `bun run conformance` for active conformance lanes.
 - Run `bun run compatibility:evidence` only to refresh checked-in compatibility evidence, including intentional red lanes.
+- Run `bun run verify:kernel` for the cached fast kernel lane before broader verification when working on kernel-owned behavior.
+- Run `bun run verify:kernel:fresh` when you need the same kernel lane forced through uncached Nx targets.
+- `verify:kernel` includes PostgreSQL conformance; on a clean session, make sure direnv has loaded the repo environment and run `devenv up -d` once before either kernel verify lane.
 - Run `bun run verify` before claiming broad workspace readiness.
 - Run `bun run nx run <project>:test`, `:typecheck`, or `:build` for narrow TypeScript checks.
 
 ## Services
-Manage long-lived devenv services once per session, not per command.
+Load the toolchain through direnv, and manage long-lived devenv services only when a command actually needs them.
 
-- Run `devenv up -d` once at the start of any session that requires postgres or other devenv-managed services. Do not embed `devenv up` inside scripts, Nx targets, or runner commands that may be invoked multiple times.
+- Let `.envrc` / direnv provide the repository environment before running Bun, Cargo, Buf, TypeSpec, Weaver, Nx, or validation commands.
+- Run `devenv up -d` once at the start of a session only when postgres or another devenv-managed service is required. Do not embed `devenv up` inside scripts, Nx targets, or runner commands that may be invoked multiple times.
 - `devenv up` is **not idempotent** — it exits with "Processes already running" if the devenv daemon is already active. Calling it a second time from a conformance runner or test harness will fail the entire run.
-- Conformance runners that need postgres must use `devenv shell -- <command>` to inherit the environment (socket paths, env vars) rather than calling `devenv up` themselves. The caller is responsible for starting the service before invoking any runner.
+- Commands that need postgres assume direnv has already loaded the environment and that the caller has started the service with `devenv up -d`; they must run the underlying `bun`, `cargo`, or native command directly.
 - Run `devenv processes down` to stop all devenv-managed services cleanly at the end of a session or to recover from a stale daemon that is blocking a new `devenv up`.
 
 ## Code

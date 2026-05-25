@@ -52,8 +52,8 @@
         }
       ],
       "options": {
-        "cwd": "boundaries/framework/implementations/typescript/conformance-runner",
-        "command": "bunx --bun tsc --project tsconfig.typecheck.json --noEmit --pretty false"
+        "cwd": ".",
+        "command": "bun tools/scripts/typecheck-project.ts boundaries/framework/implementations/typescript/conformance-runner"
       }
     }
   }

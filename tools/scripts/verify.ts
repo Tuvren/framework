@@ -16,6 +16,10 @@
 
 import { spawn } from "node:child_process";
 import process from "node:process";
+import {
+  assertWorktreeUnchanged,
+  readWorktreeSnapshot,
+} from "./lib/worktree-guard.js";
 
 export interface VerificationStep {
   command: readonly string[];
@@ -243,9 +247,9 @@ export const DEFAULT_VERIFICATION_STEPS: readonly VerificationStep[] = [
       "codegen",
       "-p",
       "shared-core-types,framework-runtime-api,framework-event-stream,framework-event-stream-sse,framework-driver-api,framework-tool-contracts,provider-api,telemetry-semconv,compatibility-reporting,kernel-interop-grpc",
-      // Compatibility codegen shells out to the conformance runners to produce
-      // measured evidence, so verify forces a fresh execution here instead of
-      // accepting cached artifacts from another workspace state.
+      // Compatibility codegen is now a read-only evidence freshness check, so
+      // verify forces it to inspect the current checkout rather than reusing a
+      // cached result from another workspace state.
       "--skipNxCache",
     ],
     id: "telemetry, compatibility, and interop code generation",
@@ -338,8 +342,14 @@ export async function runVerification(
   const results: VerificationResult[] = [];
 
   for (const step of steps) {
+    const before = await readWorktreeSnapshot(process.cwd());
     const result = await runVerificationStep(step);
     results.push(result);
+
+    await assertWorktreeUnchanged(before, {
+      cwd: process.cwd(),
+      label: `verification step "${step.id}"`,
+    });
 
     if (result.code !== 0) {
       return results;

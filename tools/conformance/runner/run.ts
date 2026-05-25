@@ -61,6 +61,7 @@ interface CliOptions {
     count: number;
     index: number;
   };
+  summaryOnly: boolean;
 }
 
 interface AuthorityPacketManifest {
@@ -146,7 +147,24 @@ async function main(): Promise<void> {
     await writeFile(evidencePath, text);
   }
 
-  process.stdout.write(text);
+  if (options.summaryOnly) {
+    process.stdout.write(
+      `${JSON.stringify(
+        {
+          adapterId: evidence.adapterId,
+          implementationId: evidence.implementationId,
+          status: evidence.status,
+          summary: evidence.summary,
+          suiteId: evidence.suiteId,
+          suiteVersion: evidence.suiteVersion,
+        },
+        null,
+        2
+      )}\n`
+    );
+  } else {
+    process.stdout.write(text);
+  }
 
   if (evidence.status === "fail" && !options.allowFailingEvidence) {
     process.exitCode = 1;
@@ -785,6 +803,7 @@ function parseArgs(args: readonly string[]): CliOptions {
     concurrency: 1,
     packets: [],
     plans: [],
+    summaryOnly: false,
   };
 
   for (let index = 0; index < args.length; index += 1) {
@@ -826,6 +845,9 @@ function parseArgs(args: readonly string[]): CliOptions {
         break;
       case "--allow-failing-evidence":
         options.allowFailingEvidence = true;
+        break;
+      case "--summary-only":
+        options.summaryOnly = true;
         break;
       default:
         throw new Error(`unknown runner argument ${String(arg)}`);

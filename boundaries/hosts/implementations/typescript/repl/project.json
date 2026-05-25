@@ -64,8 +64,8 @@
       "executor": "nx:run-commands",
       "dependsOn": ["build"],
       "options": {
-        "cwd": ".",
-        "command": "devenv shell -- bash -lc 'cd boundaries/hosts/implementations/typescript/repl && node dist/cli.js --scenario reload --backend postgres --provider fixture --postgres-database tuvren_runtime --postgres-schema auto && printf \".status\\n.turn start streaming\\n.turn await\\n.exit\\n\" | node dist/cli.js --headless --stream-jsonl --backend postgres --provider fixture --postgres-database tuvren_runtime --postgres-schema auto | bun smoke/assert-headless-jsonl.ts'"
+        "cwd": "boundaries/hosts/implementations/typescript/repl",
+        "command": "bash -lc 'node dist/cli.js --scenario reload --backend postgres --provider fixture --postgres-database tuvren_runtime --postgres-schema auto && printf \".status\\n.turn start streaming\\n.turn await\\n.exit\\n\" | node dist/cli.js --headless --stream-jsonl --backend postgres --provider fixture --postgres-database tuvren_runtime --postgres-schema auto | bun smoke/assert-headless-jsonl.ts'"
       }
     },
     "test": {
@@ -85,10 +85,9 @@
     },
     "typecheck": {
       "executor": "nx:run-commands",
-      "dependsOn": ["^build"],
       "options": {
-        "cwd": "boundaries/hosts/implementations/typescript/repl",
-        "command": "bunx --bun tsc --project tsconfig.lib.json --noEmit --pretty false && bunx --bun tsc --project tsconfig.typecheck.json --noEmit --pretty false && bunx --bun tsc --project tsconfig.dts.json --noEmit --pretty false"
+        "cwd": ".",
+        "command": "bun tools/scripts/typecheck-project.ts boundaries/hosts/implementations/typescript/repl"
       }
     }
   }

@@ -46,8 +46,8 @@
     "typecheck": {
       "executor": "nx:run-commands",
       "options": {
-        "cwd": "boundaries/shared/contracts/core/implementations/typescript",
-        "command": "tsc --project tsconfig.lib.json --noEmit --pretty false && tsc --project tsconfig.spec.json --noEmit --pretty false"
+        "cwd": ".",
+        "command": "bun tools/scripts/typecheck-project.ts boundaries/shared/contracts/core/implementations/typescript tsconfig.lib.json tsconfig.spec.json"
       }
     }
   }

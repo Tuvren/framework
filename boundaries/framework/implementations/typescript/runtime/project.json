@@ -57,12 +57,11 @@
           "projects": ["kernel-interop-grpc"],
           "target": "codegen",
           "params": "ignore"
-        },
-        "^build"
+        }
       ],
       "options": {
-        "cwd": "boundaries/framework/implementations/typescript/runtime",
-        "command": "bunx --bun tsc --project tsconfig.lib.json --noEmit --pretty false && bunx --bun tsc --project tsconfig.typecheck.json --noEmit --pretty false && bunx --bun tsc --project tsconfig.dts.json --noEmit --pretty false"
+        "cwd": ".",
+        "command": "bun tools/scripts/typecheck-project.ts boundaries/framework/implementations/typescript/runtime"
       }
     }
   }

@@ -24,7 +24,7 @@
       ],
       "options": {
         "cwd": ".",
-        "command": "devenv shell -- bun tools/conformance/runner/run.ts --adapter boundaries/kernel/implementations/typescript/conformance-adapter/adapter-postgres.json"
+        "command": "bun tools/conformance/runner/run.ts --adapter boundaries/kernel/implementations/typescript/conformance-adapter/adapter-postgres.json --concurrency 4 --summary-only"
       }
     }
   }

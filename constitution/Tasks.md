@@ -1214,7 +1214,7 @@ And the findings name the scenarios the kernel-crash-recovery check set must cov
 - **Effort:** 5
 - **Dependencies:** `KRT-AU001`
 - **Capability / Contract Mapping:** PRD `CAP-P0-005`, `CAP-P0-006`; TechSpec ADR-045, §3.12, §4.20
-- **Description:** Implement `createFaultInjectingBackend(inner, plan)` and the `FaultPlan` type in `@tuvren/kernel-testkit` per §3.12 / §4.20. Wrap `transact` for transaction selection and branch scoping, and for supported durable backends add and consume backend-specific test-only persistence hooks so the seam can interrupt at `before-commit`, `mid-commit`, and `after-commit-before-ack`; support a `concurrentWriter` racing a branch head; honor `once` / `always` policy and the logical `match` predicate. `mid-commit` must be available only when the inner backend exposes the required test hooks; it must not be faked by pretending `RuntimeBackend.transact` alone can observe partial durable writes. Injected faults surface as the same `TuvrenPersistenceError` / `TuvrenRecoveryError` types real failures use. Add a dependency-direction check asserting no production package imports the seam.
+- **Description:** Implement `createFaultInjectingBackend(inner, plan)` and the `FaultPlan` type in `@tuvren/kernel-testkit` per §3.12 / §4.20. Wrap `transact` for transaction selection and branch scoping, and for supported durable backends add and consume backend-specific test-only persistence hooks so the seam can interrupt at `before-commit`, `mid-commit`, and `after-commit-before-ack`; support a `concurrentWriter` racing a branch head after the matched commit is interrupted; honor `once` / `always` policy and the logical checkpoint `match` predicate. `mid-commit` must be available only when the inner backend exposes the required test hooks; it must not be faked by pretending `RuntimeBackend.transact` alone can observe partial durable writes. Injected commit faults surface as the same `TuvrenPersistenceError` type real persistence failures use. Add a dependency-direction check asserting no production package imports the seam.
 - **Acceptance Criteria (Gherkin):**
 ```gherkin
 Given the §3.12 FaultPlan shape and §4.20 seam contract
@@ -1223,7 +1223,7 @@ Then a test can wrap any supported RuntimeBackend and inject a fault at before-c
 And mid-commit injection is available only when the inner backend exposes the required test-only commit hooks
 And SQLite and PostgreSQL expose those test-only commit hooks through the testkit seam rather than through production APIs
 And the seam can simulate a concurrent writer racing the same branch head
-And injected faults surface as the same TuvrenPersistenceError or TuvrenRecoveryError types real failures use
+And injected commit faults surface as the same TuvrenPersistenceError type real persistence failures use
 And a dependency check confirms no production package imports the seam
 ```
 

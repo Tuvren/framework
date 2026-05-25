@@ -14,11 +14,7 @@
  * limitations under the License.
  */
 
-import {
-  type TuvrenError,
-  TuvrenPersistenceError,
-  TuvrenRecoveryError,
-} from "@tuvren/core";
+import { type TuvrenError, TuvrenPersistenceError } from "@tuvren/core";
 import type {
   RuntimeBackend,
   RuntimeBackendTx,
@@ -42,13 +38,13 @@ export interface FaultPlan {
   };
   match?: {
     branchId?: string;
-    operation?: "checkpoint" | "recovery";
+    operation?: "checkpoint";
   };
   point: FaultPoint;
   policy: "always" | "once";
 }
 
-type FaultOperation = "checkpoint" | "recovery" | "unknown";
+type FaultOperation = "checkpoint" | "unknown";
 
 interface BackendFaultHooks {
   afterCommitBeforeAck?(): Promise<void>;
@@ -408,19 +404,9 @@ function matchesFaultPlan(
 }
 
 function createInjectedFaultError(
-  operation: FaultOperation,
+  _operation: FaultOperation,
   point: FaultPoint
 ): TuvrenError {
-  if (operation === "recovery") {
-    return new TuvrenRecoveryError(
-      `injected ${point} recovery fault interrupted verification`,
-      {
-        code: "kernel_recovery_fault_injected",
-        details: { point },
-      }
-    );
-  }
-
   return new TuvrenPersistenceError(
     `injected ${point} persistence fault interrupted verification`,
     {

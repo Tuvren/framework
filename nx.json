@@ -2,7 +2,13 @@
   "$schema": "./node_modules/nx/schemas/nx-schema.json",
   "plugins": ["@nx/js/typescript"],
   "namedInputs": {
-    "default": ["{projectRoot}/**/*"],
+    "default": [
+      "{projectRoot}/**/*",
+      "!{projectRoot}/dist/**/*",
+      "!{projectRoot}/.tmp*/**/*",
+      "!{projectRoot}/coverage/**/*",
+      "!{projectRoot}/*.tsbuildinfo"
+    ],
     "production": ["default"]
   },
   "targetDefaults": {
@@ -59,6 +65,7 @@
     },
     "build": {
       "cache": true,
+      "outputs": ["{projectRoot}/dist"],
       "inputs": [
         "default",
         "^production",
@@ -98,7 +105,9 @@
       "inputs": [
         "production",
         "^production",
-        "{workspaceRoot}/tsconfig.base.json"
+        "{workspaceRoot}/tsconfig.base.json",
+        "{workspaceRoot}/tools/scripts/typecheck-project.ts",
+        "{workspaceRoot}/tools/scripts/lib/command-runner.ts"
       ]
     }
   },

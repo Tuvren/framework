@@ -1111,13 +1111,12 @@ export type FaultPoint = "before-commit" | "mid-commit" | "after-commit-before-a
 
 export interface FaultPlan {
   point: FaultPoint;
-  // Restrict injection to matching logical operations (checkpoint/recovery)
-  // and/or a specific branch.
-  match?: { operation?: "checkpoint" | "recovery"; branchId?: string };
+  // Restrict injection to matching checkpoint commits and/or a specific branch.
+  match?: { operation?: "checkpoint"; branchId?: string };
   // "once" injects on first match then passes through; "always" repeats.
   policy: "once" | "always";
   // Optionally simulate a concurrent writer racing the same branch head
-  // immediately before the matched commit.
+  // after the matched commit is interrupted.
   concurrentWriter?: { branchId: string };
 }
 
@@ -2981,7 +2980,7 @@ export declare const NoopTelemetrySink: TuvrenTelemetrySink;
 - **Style:** testkit library API (no production surface)
 - **Ownership:** `@tuvren/kernel-testkit` owns `createFaultInjectingBackend` and `FaultPlan` (§3.12).
 - **Compatibility Strategy:** §2.1 recovery verification compatibility. Testkit-only; not part of any public-runtime contract.
-- **Error model:** Injected faults surface as the same `TuvrenPersistenceError` / `TuvrenRecoveryError` types the runtime already raises on real persistence failure, so recovery code under test cannot tell an injected fault from a real one.
+- **Error model:** Injected checkpoint-commit faults surface as `TuvrenPersistenceError`, the same error family the runtime already raises on real persistence failure, so recovery code under test cannot tell an injected persistence fault from a real one. The seam does not claim a separate recovery-operation injection mode.
 
 - `createFaultInjectingBackend(inner, plan)` wraps a real backend and interrupts `transact` at the `FaultPlan.point` relative to the durable commit, optionally racing a concurrent writer (§3.12).
 - The seam is consumed only by the `kernel-crash-recovery` check set in `kernel-restart-recovery.json` and by recovery scenario tests; it must not be imported by `@tuvren/core`, `@tuvren/runtime`, any backend, the host-facing SDK, any driver, or the reference host.

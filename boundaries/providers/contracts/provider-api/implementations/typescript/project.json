@@ -60,10 +60,9 @@
     },
     "typecheck": {
       "executor": "nx:run-commands",
-      "dependsOn": ["^build"],
       "options": {
-        "cwd": "boundaries/providers/contracts/provider-api/implementations/typescript",
-        "command": "tsc --project tsconfig.lib.json --noEmit --pretty false && tsc --project tsconfig.dts.json --noEmit --pretty false && tsc --project tsconfig.typecheck.json --noEmit --pretty false"
+        "cwd": ".",
+        "command": "bun tools/scripts/typecheck-project.ts boundaries/providers/contracts/provider-api/implementations/typescript"
       }
     }
   }

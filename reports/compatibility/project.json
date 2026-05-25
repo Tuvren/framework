@@ -7,13 +7,16 @@
   "targets": {
     "codegen": {
       "executor": "nx:run-commands",
-      "outputs": [
-        "{workspaceRoot}/reports/compatibility/compatibility-matrix.json",
-        "{workspaceRoot}/reports/compatibility/evidence"
-      ],
       "options": {
         "cwd": ".",
-        "command": "bun tools/scripts/compatibility-report.ts"
+        "command": "bun tools/scripts/compatibility-report.ts --check"
+      }
+    },
+    "check": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bun tools/scripts/compatibility-report.ts --check"
       }
     },
     "evidence-refresh": {

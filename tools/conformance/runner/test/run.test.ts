@@ -126,6 +126,36 @@ describe("conformance runner state handling", () => {
       assertionId: "runner.state.dispatch-precedes-inspect.1.stateField",
       status: "pass",
     });
+
+    const summaryResult = await runCommand([
+      "bun",
+      "tools/conformance/runner/run.ts",
+      "--adapter",
+      adapterPath,
+      "--plan",
+      planPath,
+      "--check",
+      "runner.state.dispatch-precedes-inspect",
+      "--summary-only",
+    ]);
+
+    expect(summaryResult.stderr).toBe("");
+    expect(summaryResult.code).toBe(0);
+
+    const summary = JSON.parse(summaryResult.stdout) as {
+      checkResults?: unknown;
+      status: string;
+      summary: { failedChecks: number; passedChecks: number };
+    };
+
+    expect(summary).toMatchObject({
+      status: "pass",
+      summary: {
+        failedChecks: 0,
+        passedChecks: 1,
+      },
+    });
+    expect(summary.checkResults).toBeUndefined();
   });
 
   test("merges inspected state with adapter error state", async () => {

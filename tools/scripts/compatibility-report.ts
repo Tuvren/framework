@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, relative, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
@@ -196,6 +196,7 @@ const COMPATIBILITY_METADATA = {
 // Evidence refresh can intentionally record known red lanes, but the default
 // compatibility codegen path remains a pass/fail gate for verification.
 const ALLOW_FAILING_EVIDENCE_FLAG = "--allow-failing-evidence";
+const CHECK_FLAG = "--check";
 
 const CONFORMANCE_RUNNERS: readonly ConformanceRunner[] = [
   {
@@ -225,17 +226,83 @@ const CONFORMANCE_RUNNERS: readonly ConformanceRunner[] = [
   },
   {
     adapterManifestPath:
+      "boundaries/framework/implementations/typescript/conformance-adapter/adapter-batteries-included.json",
+    command: [
+      "bun",
+      "tools/conformance/runner/run.ts",
+      "--adapter",
+      "boundaries/framework/implementations/typescript/conformance-adapter/adapter-batteries-included.json",
+    ],
+    implementationId: "typescript-framework",
+    language: "typescript",
+    prerequisiteCommands: [
+      [
+        "bun",
+        "run",
+        "nx",
+        "run",
+        "framework-typescript-conformance-adapter:build-batteries-included",
+        "--skipNxCache",
+      ],
+    ],
+    project: "framework-batteries-included-conformance-runner",
+    reportLabel: "TypeScript framework batteries-included runtime",
+  },
+  {
+    adapterManifestPath:
       "boundaries/kernel/implementations/typescript/conformance-adapter/adapter.json",
+    command: [
+      "bun",
+      "tools/conformance/runner/run.ts",
+      "--adapter",
+      "boundaries/kernel/implementations/typescript/conformance-adapter/adapter.json",
+      "--concurrency",
+      "4",
+    ],
     implementationId: "typescript-kernel-memory",
     language: "typescript",
+    prerequisiteCommands: [
+      [
+        "bun",
+        "run",
+        "nx",
+        "run-many",
+        "-t",
+        "build",
+        "-p",
+        "backend-memory,kernel-runtime,kernel-typescript-conformance-adapter",
+        "--skipNxCache",
+      ],
+    ],
     project: "kernel-typescript-conformance-runner",
     reportLabel: "TypeScript process-local kernel baseline",
   },
   {
     adapterManifestPath:
       "boundaries/kernel/implementations/typescript/conformance-adapter/adapter-sqlite.json",
+    command: [
+      "bun",
+      "tools/conformance/runner/run.ts",
+      "--adapter",
+      "boundaries/kernel/implementations/typescript/conformance-adapter/adapter-sqlite.json",
+      "--concurrency",
+      "4",
+    ],
     implementationId: "typescript-kernel-sqlite",
     language: "typescript",
+    prerequisiteCommands: [
+      [
+        "bun",
+        "run",
+        "nx",
+        "run-many",
+        "-t",
+        "build",
+        "-p",
+        "backend-sqlite,kernel-runtime,kernel-typescript-conformance-adapter",
+        "--skipNxCache",
+      ],
+    ],
     project: "kernel-typescript-sqlite-conformance-runner",
     reportLabel: "TypeScript SQLite durable kernel",
   },
@@ -245,14 +312,34 @@ const CONFORMANCE_RUNNERS: readonly ConformanceRunner[] = [
     // the compatibility matrix needs to record it alongside the memory and
     // SQLite tiers — otherwise the PR's "memory + SQLite + PostgreSQL"
     // platform-gate claim is not actually proved in checked-in evidence.
-    // This lane runs through Nx because the runner depends on devenv to spin
-    // up the local Postgres process; the Nx target encapsulates that
-    // start/stop wiring (`devenv up -d postgres` → run → `devenv processes
-    // down`).
+    // This lane runs through Nx so it shares the canonical Postgres runner
+    // target. The caller is responsible for starting the direnv-provisioned
+    // Postgres service before refreshing measured evidence.
     adapterManifestPath:
       "boundaries/kernel/implementations/typescript/conformance-adapter/adapter-postgres.json",
+    command: [
+      "bun",
+      "tools/conformance/runner/run.ts",
+      "--adapter",
+      "boundaries/kernel/implementations/typescript/conformance-adapter/adapter-postgres.json",
+      "--concurrency",
+      "4",
+    ],
     implementationId: "typescript-kernel-postgres",
     language: "typescript",
+    prerequisiteCommands: [
+      [
+        "bun",
+        "run",
+        "nx",
+        "run-many",
+        "-t",
+        "build",
+        "-p",
+        "backend-postgres,kernel-runtime,kernel-typescript-conformance-adapter",
+        "--skipNxCache",
+      ],
+    ],
     project: "kernel-typescript-postgres-conformance-runner",
     reportLabel: "TypeScript PostgreSQL durable kernel",
   },
@@ -317,6 +404,12 @@ async function main(): Promise<void> {
   const allowFailingEvidence = process.argv.includes(
     ALLOW_FAILING_EVIDENCE_FLAG
   );
+
+  if (process.argv.includes(CHECK_FLAG)) {
+    await checkCompatibilityEvidence();
+    return;
+  }
+
   // Compatibility evidence must prove the SQLite lane can rebuild from a clean
   // checkout instead of inheriting prior local dist residue.
   await resetHermeticBuildBoundary();
@@ -336,12 +429,12 @@ async function main(): Promise<void> {
 
   for (const runner of CONFORMANCE_RUNNERS) {
     expectedCapabilitiesByRunner.set(
-      runner.implementationId,
+      createConformanceRunnerKey(runner),
       await computeExpectedCapabilitiesFromTopology(runner.adapterManifestPath)
     );
   }
 
-  const seenSuiteIds = new Set<string>();
+  const seenSuiteKeys = new Set<string>();
   const suites: CompatibilitySuite[] = [];
   const implementations: CompatibilityImplementation[] = [];
   const interop: CompatibilityInteropResult[] = [];
@@ -353,7 +446,7 @@ async function main(): Promise<void> {
         ? undefined
         : await readSuiteManifest(runner.manifestPath);
     const expectedCapabilities = expectedCapabilitiesByRunner.get(
-      runner.implementationId
+      createConformanceRunnerKey(runner)
     );
 
     if (expectedCapabilities === undefined) {
@@ -368,26 +461,25 @@ async function main(): Promise<void> {
       expectedCapabilities
     );
 
-    if (!seenSuiteIds.has(result.suite.suiteId)) {
+    const suiteKey = createSuiteKey(
+      result.suite.boundary,
+      result.suite.suiteId,
+      result.suite.suiteVersion
+    );
+
+    if (!seenSuiteKeys.has(suiteKey)) {
       suites.push({
         boundary: result.suite.boundary,
         suiteId: result.suite.suiteId,
         suiteVersion: result.suite.suiteVersion,
       });
-      seenSuiteIds.add(result.suite.suiteId);
+      seenSuiteKeys.add(suiteKey);
     }
-    // Epic R establishes the first measured TypeScript baseline only. Later
-    // language lines append peer implementation evidence here rather than
-    // treating TypeScript as the semantic root.
-    implementations.push({
-      implementationId: runner.implementationId,
-      language: runner.language,
-      results: [result.matrixResult],
-      // The current TypeScript line is still an unreleased workspace
-      // implementation, so the matrix records that explicitly instead of
-      // echoing the private testkit packages' placeholder 0.0.0 versions.
-      version: TRANSITION_IMPLEMENTATION_VERSION,
-    });
+    upsertCompatibilityImplementation(
+      implementations,
+      runner,
+      result.matrixResult
+    );
 
     if (result.matrixResult.status === "fail") {
       hasFailure = true;
@@ -396,14 +488,19 @@ async function main(): Promise<void> {
 
   for (const runner of INTEROP_RUNNERS) {
     const suiteManifest = await readSuiteManifest(runner.manifestPath);
+    const suiteKey = createSuiteKey(
+      suiteManifest.boundary,
+      suiteManifest.suiteId,
+      suiteManifest.suiteVersion
+    );
 
-    if (!seenSuiteIds.has(suiteManifest.suiteId)) {
+    if (!seenSuiteKeys.has(suiteKey)) {
       suites.push({
         boundary: suiteManifest.boundary,
         suiteId: suiteManifest.suiteId,
         suiteVersion: suiteManifest.suiteVersion,
       });
-      seenSuiteIds.add(suiteManifest.suiteId);
+      seenSuiteKeys.add(suiteKey);
     }
 
     const result = await runInteropTarget(runner, suiteManifest);
@@ -439,6 +536,836 @@ async function main(): Promise<void> {
 
   if (hasFailure && !allowFailingEvidence) {
     throw new Error("one or more conformance targets failed");
+  }
+}
+
+function upsertCompatibilityImplementation(
+  implementations: CompatibilityImplementation[],
+  runner: ConformanceRunner,
+  result: CompatibilityImplementationResult
+): void {
+  const existingImplementation = implementations.find(
+    (implementation) =>
+      implementation.implementationId === runner.implementationId &&
+      implementation.language === runner.language &&
+      implementation.version === TRANSITION_IMPLEMENTATION_VERSION
+  );
+
+  if (existingImplementation === undefined) {
+    // The current workspace implementations are unreleased, so the matrix
+    // records that explicitly instead of echoing private package placeholders.
+    implementations.push({
+      implementationId: runner.implementationId,
+      language: runner.language,
+      results: [result],
+      version: TRANSITION_IMPLEMENTATION_VERSION,
+    });
+    return;
+  }
+
+  existingImplementation.results.push(result);
+}
+
+async function checkCompatibilityEvidence(): Promise<void> {
+  const matrix = JSON.parse(
+    await readFile(COMPATIBILITY_MATRIX_PATH, "utf8")
+  ) as CompatibilityMatrix;
+  assertCompatibilityMatrix(matrix);
+  await assertCompatibilityMatrixSchema(matrix);
+
+  const matrixEvidencePaths = new Set<string>();
+  const failures: string[] = [];
+
+  await checkLiveSuiteTopology(matrix.suites, failures);
+  await checkImplementationEvidence(
+    matrix.implementations,
+    matrixEvidencePaths,
+    failures
+  );
+  await checkConformanceRunnerInventory(matrix.implementations, failures);
+  checkInteropRunnerInventory(matrix.interop, failures);
+
+  const liveInteropEntries = await readLiveInteropRunners();
+
+  for (const result of matrix.interop) {
+    const liveEntry = liveInteropEntries.find(
+      (entry) => entry.runner.pairId === result.pairId
+    );
+
+    if (liveEntry === undefined) {
+      failures.push(
+        `compatibility matrix interop pair ${result.pairId} is not present in live runner topology`
+      );
+      continue;
+    }
+
+    matrixEvidencePaths.add(result.evidencePath);
+    compareLiveInteropResult(liveEntry.liveRunner, result, failures);
+
+    if (result.status === "fail" || result.reportStatus === "unexpected_fail") {
+      failures.push(
+        `${result.pairId} ${result.suiteId} records ${result.reportStatus}`
+      );
+    }
+
+    await checkInteropEvidenceFile(
+      result.evidencePath,
+      result,
+      liveEntry.liveRunner,
+      failures
+    );
+  }
+
+  const evidenceEntries = await readdir(EVIDENCE_DIRECTORY);
+
+  for (const entry of evidenceEntries) {
+    if (!entry.endsWith(".json")) {
+      continue;
+    }
+
+    const evidencePath = relative(
+      REPO_ROOT,
+      resolve(EVIDENCE_DIRECTORY, entry)
+    );
+
+    if (!matrixEvidencePaths.has(evidencePath)) {
+      failures.push(
+        `${evidencePath} is not referenced by the compatibility matrix`
+      );
+    }
+  }
+
+  if (failures.length > 0) {
+    throw new Error(
+      [
+        "compatibility evidence check failed:",
+        ...failures.map((failure) => `- ${failure}`),
+      ].join("\n")
+    );
+  }
+
+  console.log("compatibility evidence check passed");
+}
+
+async function checkLiveSuiteTopology(
+  matrixSuites: readonly CompatibilitySuite[],
+  failures: string[]
+): Promise<void> {
+  const liveSuites = await readLiveCompatibilitySuites();
+  const liveSuiteKeys = new Set(
+    liveSuites.map((suite) =>
+      createSuiteKey(suite.boundary, suite.suiteId, suite.suiteVersion)
+    )
+  );
+  const matrixSuiteKeys = new Set(
+    matrixSuites.map((suite) =>
+      createSuiteKey(suite.boundary, suite.suiteId, suite.suiteVersion)
+    )
+  );
+
+  for (const liveSuite of liveSuites) {
+    if (
+      !matrixSuiteKeys.has(
+        createSuiteKey(
+          liveSuite.boundary,
+          liveSuite.suiteId,
+          liveSuite.suiteVersion
+        )
+      )
+    ) {
+      failures.push(
+        `compatibility matrix is missing live suite ${liveSuite.suiteId}@${liveSuite.suiteVersion}`
+      );
+    }
+  }
+
+  for (const matrixSuite of matrixSuites) {
+    if (
+      !liveSuiteKeys.has(
+        createSuiteKey(
+          matrixSuite.boundary,
+          matrixSuite.suiteId,
+          matrixSuite.suiteVersion
+        )
+      )
+    ) {
+      failures.push(
+        `compatibility matrix suite ${matrixSuite.suiteId}@${matrixSuite.suiteVersion} is not present in live runner topology`
+      );
+    }
+  }
+}
+
+async function checkConformanceRunnerInventory(
+  implementations: readonly CompatibilityImplementation[],
+  failures: string[]
+): Promise<void> {
+  const matrixRunnerKeys = new Set(
+    implementations.flatMap((implementation) =>
+      implementation.results.map((result) =>
+        createCompatibilityRunnerKey(
+          implementation.implementationId,
+          result.suiteId,
+          result.suiteVersion
+        )
+      )
+    )
+  );
+
+  for (const runner of CONFORMANCE_RUNNERS) {
+    const liveRunner = await readLiveConformanceRunner(runner);
+    const runnerKey = createCompatibilityRunnerKey(
+      runner.implementationId,
+      liveRunner.suite.suiteId,
+      liveRunner.suite.suiteVersion
+    );
+
+    if (!matrixRunnerKeys.has(runnerKey)) {
+      failures.push(
+        `compatibility matrix is missing live implementation ${runner.implementationId} for ${liveRunner.suite.suiteId}@${liveRunner.suite.suiteVersion}`
+      );
+    }
+  }
+}
+
+function checkInteropRunnerInventory(
+  interopResults: readonly CompatibilityInteropResult[],
+  failures: string[]
+): void {
+  const matrixPairIds = new Set(interopResults.map((result) => result.pairId));
+
+  for (const runner of INTEROP_RUNNERS) {
+    if (!matrixPairIds.has(runner.pairId)) {
+      failures.push(
+        `compatibility matrix is missing live interop pair ${runner.pairId}`
+      );
+    }
+  }
+}
+
+async function checkImplementationEvidence(
+  implementations: readonly CompatibilityImplementation[],
+  matrixEvidencePaths: Set<string>,
+  failures: string[]
+): Promise<void> {
+  const liveEntries = await Promise.all(
+    CONFORMANCE_RUNNERS.map(async (runner) => ({
+      liveRunner: await readLiveConformanceRunner(runner),
+      runner,
+    }))
+  );
+
+  for (const implementation of implementations) {
+    for (const result of implementation.results) {
+      const liveEntry = liveEntries.find(
+        (entry) =>
+          entry.runner.implementationId === implementation.implementationId &&
+          entry.liveRunner.suite.suiteId === result.suiteId &&
+          entry.liveRunner.suite.suiteVersion === result.suiteVersion
+      );
+
+      if (liveEntry === undefined) {
+        failures.push(
+          `compatibility matrix implementation ${implementation.implementationId} ${result.suiteId}@${result.suiteVersion} is not present in live runner topology`
+        );
+        continue;
+      }
+
+      matrixEvidencePaths.add(result.evidencePath);
+      compareLiveConformanceResult(
+        implementation.implementationId,
+        liveEntry.liveRunner,
+        result,
+        failures
+      );
+
+      if (
+        result.status === "fail" ||
+        result.reportStatus === "unexpected_fail"
+      ) {
+        failures.push(
+          `${implementation.implementationId} ${result.suiteId} records ${result.reportStatus}`
+        );
+      }
+
+      await checkImplementationEvidenceFile(
+        result.evidencePath,
+        implementation,
+        result,
+        liveEntry.liveRunner,
+        failures
+      );
+    }
+  }
+}
+
+async function checkImplementationEvidenceFile(
+  evidencePath: string,
+  implementation: CompatibilityImplementation,
+  result: CompatibilityImplementationResult,
+  liveRunner: LiveConformanceRunner,
+  failures: string[]
+): Promise<void> {
+  const absolutePath = resolve(REPO_ROOT, evidencePath);
+  const evidence = JSON.parse(await readFile(absolutePath, "utf8"));
+
+  if (!isRecord(evidence)) {
+    failures.push(`${evidencePath} must contain a JSON object`);
+    return;
+  }
+
+  if (
+    evidence.status === "fail" ||
+    evidence.reportStatus === "unexpected_fail"
+  ) {
+    failures.push(
+      `${evidencePath} records ${String(evidence.reportStatus ?? evidence.status)}`
+    );
+  }
+
+  compareEvidenceField(
+    evidencePath,
+    "implementationId",
+    evidence.implementationId,
+    implementation.implementationId,
+    failures
+  );
+  compareEvidenceField(
+    evidencePath,
+    "boundary",
+    evidence.boundary,
+    liveRunner.suite.boundary,
+    failures
+  );
+  compareEvidenceField(
+    evidencePath,
+    "suiteId",
+    evidence.suiteId,
+    result.suiteId,
+    failures
+  );
+  compareEvidenceField(
+    evidencePath,
+    "suiteVersion",
+    evidence.suiteVersion,
+    result.suiteVersion,
+    failures
+  );
+  compareEvidenceField(
+    evidencePath,
+    "status",
+    evidence.status,
+    result.status,
+    failures
+  );
+  compareEvidenceField(
+    evidencePath,
+    "reportStatus",
+    evidence.reportStatus,
+    result.reportStatus,
+    failures
+  );
+  compareCheckIds(
+    evidencePath,
+    evidence.checkResults,
+    result.checkIds,
+    failures
+  );
+  compareCheckSummary(
+    evidencePath,
+    evidence.summary,
+    result.checkSummary,
+    failures
+  );
+  compareNonApplicableCheckIds(
+    evidencePath,
+    evidence.nonApplicableCheckIds,
+    liveRunner.nonApplicableCheckIds,
+    failures
+  );
+  compareStringSet(
+    evidencePath,
+    "capabilities",
+    evidence.capabilities,
+    result.declaredCapabilities ?? [],
+    failures
+  );
+  compareStringSet(
+    `compatibility matrix ${implementation.implementationId}`,
+    "declaredCapabilities",
+    result.declaredCapabilities ?? [],
+    liveRunner.capabilities,
+    failures
+  );
+}
+
+async function readLiveCompatibilitySuites(): Promise<CompatibilitySuite[]> {
+  const suitesByKey = new Map<string, CompatibilitySuite>();
+
+  for (const runner of CONFORMANCE_RUNNERS) {
+    const manifest = await readAdapterManifest(runner.adapterManifestPath);
+    const suite = readAdapterSuite(manifest, runner.adapterManifestPath);
+    suitesByKey.set(
+      createSuiteKey(suite.boundary, suite.suiteId, suite.suiteVersion),
+      suite
+    );
+  }
+
+  for (const runner of INTEROP_RUNNERS) {
+    const suiteManifest = await readSuiteManifest(runner.manifestPath);
+    const suite = {
+      boundary: suiteManifest.boundary,
+      suiteId: suiteManifest.suiteId,
+      suiteVersion: suiteManifest.suiteVersion,
+    };
+    suitesByKey.set(
+      createSuiteKey(suite.boundary, suite.suiteId, suite.suiteVersion),
+      suite
+    );
+  }
+
+  return [...suitesByKey.values()];
+}
+
+interface LiveConformanceRunner {
+  applicableCheckIds: readonly string[];
+  capabilities: readonly string[];
+  nonApplicableCheckIds: readonly string[];
+  suite: CompatibilitySuite;
+}
+
+async function readLiveConformanceRunner(
+  runner: ConformanceRunner
+): Promise<LiveConformanceRunner> {
+  const manifest = await readAdapterManifest(runner.adapterManifestPath);
+  const suite = readAdapterSuite(manifest, runner.adapterManifestPath);
+  const capabilities = new Set(readStringArray(manifest.capabilities));
+  const packetPaths = readStringArray(manifest.authorityPackets);
+  const applicableCheckIds: string[] = [];
+  const allCheckIds: string[] = [];
+  const seenPlanPaths = new Set<string>();
+
+  for (const packetPath of packetPaths) {
+    const packetManifest = JSON.parse(
+      await readFile(resolve(REPO_ROOT, packetPath), "utf8")
+    ) as {
+      conformancePlans?: Array<{ path?: unknown }>;
+    };
+
+    for (const plan of packetManifest.conformancePlans ?? []) {
+      if (typeof plan.path !== "string") {
+        continue;
+      }
+
+      const planPath = resolve(REPO_ROOT, plan.path);
+
+      if (seenPlanPaths.has(planPath)) {
+        continue;
+      }
+
+      seenPlanPaths.add(planPath);
+
+      const planJson = await readFile(planPath, "utf8");
+      const planChecks = readLivePlanChecks(planJson, capabilities);
+      applicableCheckIds.push(...planChecks.applicableCheckIds);
+      allCheckIds.push(...planChecks.allCheckIds);
+    }
+  }
+
+  const applicableCheckIdSet = new Set(applicableCheckIds);
+
+  return {
+    applicableCheckIds,
+    capabilities: [...capabilities],
+    nonApplicableCheckIds: allCheckIds.filter(
+      (checkId) => !applicableCheckIdSet.has(checkId)
+    ),
+    suite,
+  };
+}
+
+interface LiveInteropRunner {
+  checkIds: readonly string[];
+  suite: CompatibilitySuite;
+}
+
+async function readLiveInteropRunners(): Promise<
+  Array<{ liveRunner: LiveInteropRunner; runner: InteropRunner }>
+> {
+  return await Promise.all(
+    INTEROP_RUNNERS.map(async (runner) => ({
+      liveRunner: await readLiveInteropRunner(runner),
+      runner,
+    }))
+  );
+}
+
+async function readLiveInteropRunner(
+  runner: InteropRunner
+): Promise<LiveInteropRunner> {
+  const suiteManifest = await readSuiteManifest(runner.manifestPath);
+
+  return {
+    checkIds: suiteManifest.checks
+      .filter((check) => check.interopPairs?.includes(runner.pairId))
+      .map((check) => check.checkId),
+    suite: {
+      boundary: suiteManifest.boundary,
+      suiteId: suiteManifest.suiteId,
+      suiteVersion: suiteManifest.suiteVersion,
+    },
+  };
+}
+
+async function readAdapterManifest(
+  adapterManifestPath: string
+): Promise<Record<string, unknown>> {
+  const manifest = JSON.parse(
+    await readFile(resolve(REPO_ROOT, adapterManifestPath), "utf8")
+  );
+
+  if (!isRecord(manifest)) {
+    throw new Error(`${adapterManifestPath} must contain a JSON object`);
+  }
+
+  return manifest;
+}
+
+function readAdapterSuite(
+  manifest: Record<string, unknown>,
+  adapterManifestPath: string
+): CompatibilitySuite {
+  if (
+    typeof manifest.boundary !== "string" ||
+    typeof manifest.suiteId !== "string" ||
+    typeof manifest.suiteVersion !== "string"
+  ) {
+    throw new Error(
+      `${adapterManifestPath} must declare boundary, suiteId, and suiteVersion`
+    );
+  }
+
+  return {
+    boundary: manifest.boundary,
+    suiteId: manifest.suiteId,
+    suiteVersion: manifest.suiteVersion,
+  };
+}
+
+function readLivePlanChecks(
+  planJson: string,
+  capabilities: ReadonlySet<string>
+): { allCheckIds: string[]; applicableCheckIds: string[] } {
+  const plan = JSON.parse(planJson) as {
+    applicability?: { capabilities?: unknown };
+    checks?: Array<{ capabilities?: unknown; checkId?: unknown }>;
+  };
+  const allCheckIds = (plan.checks ?? [])
+    .map((check) => check.checkId)
+    .filter((checkId): checkId is string => typeof checkId === "string");
+
+  if (
+    !hasRequiredCapabilities(plan.applicability?.capabilities, capabilities)
+  ) {
+    return { allCheckIds, applicableCheckIds: [] };
+  }
+
+  const applicableCheckIds: string[] = [];
+
+  for (const check of plan.checks ?? []) {
+    if (typeof check.checkId !== "string") {
+      continue;
+    }
+
+    if (hasRequiredCapabilities(check.capabilities, capabilities)) {
+      applicableCheckIds.push(check.checkId);
+    }
+  }
+
+  return {
+    allCheckIds,
+    applicableCheckIds,
+  };
+}
+
+function hasRequiredCapabilities(
+  requiredCapabilities: unknown,
+  capabilities: ReadonlySet<string>
+): boolean {
+  return readStringArray(requiredCapabilities).every((capability) =>
+    capabilities.has(capability)
+  );
+}
+
+function compareLiveConformanceResult(
+  implementationId: string,
+  liveRunner: LiveConformanceRunner,
+  result: CompatibilityImplementationResult,
+  failures: string[]
+): void {
+  compareEvidenceField(
+    `compatibility matrix ${implementationId}`,
+    "suiteId",
+    result.suiteId,
+    liveRunner.suite.suiteId,
+    failures
+  );
+  compareEvidenceField(
+    `compatibility matrix ${implementationId}`,
+    "suiteVersion",
+    result.suiteVersion,
+    liveRunner.suite.suiteVersion,
+    failures
+  );
+
+  if (!hasSameStringSet(result.checkIds, liveRunner.applicableCheckIds)) {
+    failures.push(
+      `compatibility matrix ${implementationId} checkIds do not match live conformance plan topology`
+    );
+  }
+}
+
+function compareLiveInteropResult(
+  liveRunner: LiveInteropRunner,
+  result: CompatibilityInteropResult,
+  failures: string[]
+): void {
+  compareEvidenceField(
+    `compatibility matrix ${result.pairId}`,
+    "suiteId",
+    result.suiteId,
+    liveRunner.suite.suiteId,
+    failures
+  );
+  compareEvidenceField(
+    `compatibility matrix ${result.pairId}`,
+    "suiteVersion",
+    result.suiteVersion,
+    liveRunner.suite.suiteVersion,
+    failures
+  );
+
+  if (!hasSameStringSet(result.checkIds, liveRunner.checkIds)) {
+    failures.push(
+      `compatibility matrix ${result.pairId} checkIds do not match live interop suite topology`
+    );
+  }
+}
+
+function createSuiteKey(
+  boundary: string,
+  suiteId: string,
+  suiteVersion: string
+): string {
+  return `${boundary}:${suiteId}@${suiteVersion}`;
+}
+
+function createConformanceRunnerKey(runner: ConformanceRunner): string {
+  return `${runner.project}:${runner.implementationId}`;
+}
+
+function createCompatibilityRunnerKey(
+  implementationId: string,
+  suiteId: string,
+  suiteVersion: string
+): string {
+  return `${implementationId}:${suiteId}@${suiteVersion}`;
+}
+
+function hasSameStringSet(
+  actualValues: readonly string[],
+  expectedValues: readonly string[]
+): boolean {
+  if (actualValues.length !== expectedValues.length) {
+    return false;
+  }
+
+  const actual = new Set(actualValues);
+
+  return expectedValues.every((expectedValue) => actual.has(expectedValue));
+}
+
+async function checkInteropEvidenceFile(
+  evidencePath: string,
+  result: CompatibilityInteropResult,
+  liveRunner: LiveInteropRunner,
+  failures: string[]
+): Promise<void> {
+  const absolutePath = resolve(REPO_ROOT, evidencePath);
+  const evidence = JSON.parse(await readFile(absolutePath, "utf8"));
+
+  if (!isRecord(evidence)) {
+    failures.push(`${evidencePath} must contain a JSON object`);
+    return;
+  }
+
+  if (
+    evidence.status === "fail" ||
+    evidence.reportStatus === "unexpected_fail"
+  ) {
+    failures.push(
+      `${evidencePath} records ${String(evidence.reportStatus ?? evidence.status)}`
+    );
+  }
+
+  compareEvidenceField(
+    evidencePath,
+    "pairId",
+    evidence.pairId,
+    result.pairId,
+    failures
+  );
+  compareEvidenceField(
+    evidencePath,
+    "boundary",
+    evidence.boundary,
+    liveRunner.suite.boundary,
+    failures
+  );
+  compareEvidenceField(
+    evidencePath,
+    "suiteId",
+    evidence.suiteId,
+    result.suiteId,
+    failures
+  );
+  compareEvidenceField(
+    evidencePath,
+    "suiteVersion",
+    evidence.suiteVersion,
+    result.suiteVersion,
+    failures
+  );
+  compareEvidenceField(
+    evidencePath,
+    "status",
+    evidence.status,
+    result.status,
+    failures
+  );
+  compareEvidenceField(
+    evidencePath,
+    "reportStatus",
+    evidence.reportStatus,
+    result.reportStatus,
+    failures
+  );
+  compareCheckIds(
+    evidencePath,
+    evidence.checkResults,
+    result.checkIds,
+    failures
+  );
+  compareCheckSummary(
+    evidencePath,
+    evidence.summary,
+    result.checkSummary,
+    failures
+  );
+  compareStringSet(
+    evidencePath,
+    "checkResults",
+    Array.isArray(evidence.checkResults)
+      ? evidence.checkResults
+          .map((checkResult) =>
+            isRecord(checkResult) ? checkResult.checkId : undefined
+          )
+          .filter((checkId): checkId is string => typeof checkId === "string")
+      : [],
+    liveRunner.checkIds,
+    failures
+  );
+}
+
+function compareEvidenceField(
+  evidencePath: string,
+  fieldName: string,
+  actual: unknown,
+  expected: string,
+  failures: string[]
+): void {
+  if (actual !== expected) {
+    failures.push(
+      `${evidencePath} ${fieldName} is ${JSON.stringify(actual)}, expected ${JSON.stringify(expected)}`
+    );
+  }
+}
+
+function compareCheckIds(
+  evidencePath: string,
+  checkResults: unknown,
+  expectedCheckIds: readonly string[],
+  failures: string[]
+): void {
+  if (!Array.isArray(checkResults)) {
+    failures.push(`${evidencePath} checkResults must be an array`);
+    return;
+  }
+
+  const actualCheckIds = checkResults.map((checkResult) =>
+    isRecord(checkResult) ? checkResult.checkId : undefined
+  );
+
+  if (JSON.stringify(actualCheckIds) !== JSON.stringify(expectedCheckIds)) {
+    failures.push(`${evidencePath} checkResults do not match matrix checkIds`);
+  }
+}
+
+function compareCheckSummary(
+  evidencePath: string,
+  summary: unknown,
+  expectedSummary: CompatibilityCheckSummary,
+  failures: string[]
+): void {
+  if (!isRecord(summary)) {
+    failures.push(`${evidencePath} summary must be an object`);
+    return;
+  }
+
+  for (const fieldName of [
+    "applicableChecks",
+    "failedChecks",
+    "nonApplicableChecks",
+    "passedChecks",
+    "totalChecks",
+  ] as const) {
+    if (summary[fieldName] !== expectedSummary[fieldName]) {
+      failures.push(
+        `${evidencePath} summary.${fieldName} is ${JSON.stringify(summary[fieldName])}, expected ${JSON.stringify(expectedSummary[fieldName])}`
+      );
+    }
+  }
+}
+
+function compareNonApplicableCheckIds(
+  evidencePath: string,
+  actualValue: unknown,
+  expectedCheckIds: readonly string[],
+  failures: string[]
+): void {
+  const actualCheckIds =
+    actualValue === undefined ? [] : readStringArray(actualValue);
+
+  if (!hasSameStringSet(actualCheckIds, expectedCheckIds)) {
+    failures.push(
+      `${evidencePath} nonApplicableCheckIds do not match live conformance plan topology`
+    );
+  }
+}
+
+function compareStringSet(
+  evidencePath: string,
+  fieldName: string,
+  actualValue: unknown,
+  expectedValues: readonly string[],
+  failures: string[]
+): void {
+  const actualValues = readStringArray(actualValue);
+
+  if (!hasSameStringSet(actualValues, expectedValues)) {
+    failures.push(
+      `${evidencePath} ${fieldName} does not match expected values`
+    );
   }
 }
 
@@ -498,7 +1425,7 @@ async function runConformanceTarget(
   });
   const evidenceFilePath = resolve(
     EVIDENCE_DIRECTORY,
-    `shared-conformance-runner.${runner.implementationId}.json`
+    `shared-conformance-runner.${runner.project}.json`
   );
   const relativeEvidencePath = relative(REPO_ROOT, evidenceFilePath);
   const fallbackCheckResults =

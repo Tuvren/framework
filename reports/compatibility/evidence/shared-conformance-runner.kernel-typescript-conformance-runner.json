@@ -1,11 +1,10 @@
 {
-  "adapterId": "typescript-kernel-postgres",
+  "adapterId": "typescript-kernel-memory",
   "boundary": "kernel",
   "capabilities": [
     "kernel-protocol.thread.enumeration",
     "kernel.edge-validation",
     "kernel.logical",
-    "kernel.persistence.durable",
     "kernel.protocol",
     "kernel.restart-recovery",
     "kernel.run-liveness"
@@ -28,7 +27,7 @@
       ],
       "checkId": "kernel.lineage.cross_thread_rejection",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.core"
       },
       "status": "pass"
@@ -50,7 +49,7 @@
       ],
       "checkId": "kernel.logical.branch_list",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.core"
       },
       "status": "pass"
@@ -72,7 +71,7 @@
       ],
       "checkId": "kernel.logical.diff_paths",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.core"
       },
       "status": "pass"
@@ -118,7 +117,7 @@
       ],
       "checkId": "kernel.logical.recovery_state",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.core"
       },
       "status": "pass"
@@ -164,7 +163,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.core"
       },
       "status": "pass"
@@ -198,7 +197,7 @@
       ],
       "checkId": "kernel.protocol.modify_composition",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.core"
       },
       "status": "pass"
@@ -232,7 +231,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.core"
       },
       "status": "pass"
@@ -254,7 +253,7 @@
       ],
       "checkId": "kernel-protocol-af.branch-set-head-rejects-lateral-lineage",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -276,7 +275,7 @@
       ],
       "checkId": "kernel-protocol-af.run-begin-step-rejects-out-of-order-step",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -298,7 +297,7 @@
       ],
       "checkId": "kernel-protocol-af.run-complete-rejects-missing-event-object",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -320,7 +319,7 @@
       ],
       "checkId": "kernel-protocol-af.run-create-rejects-busy-branch",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -342,7 +341,7 @@
       ],
       "checkId": "kernel-protocol-af.schema-register-rejects-duplicate-path",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -364,7 +363,7 @@
       ],
       "checkId": "kernel-protocol-af.tree-create-rejects-missing-required-path",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -386,7 +385,7 @@
       ],
       "checkId": "kernel-protocol-af.tree-diff-rejects-schema-mismatch",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -444,7 +443,7 @@
       ],
       "checkId": "kernel.logical.thread_list",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -490,7 +489,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-all-ones-bytes",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -536,7 +535,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-all-ordered-paths",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -582,7 +581,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-all-single-paths",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -628,7 +627,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-all-zero-bytes",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -674,7 +673,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-deep-path-schema",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -720,7 +719,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-empty-bytes",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -766,7 +765,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-large-bytes",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -812,7 +811,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-many-staged-results",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -858,7 +857,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-mixed-status-staged",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -904,7 +903,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-multi-path-schema",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -950,7 +949,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-non-utf8-bytes",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -996,7 +995,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-single-byte",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -1042,7 +1041,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-staged-failed",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -1088,7 +1087,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-staged-interrupted",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -1134,7 +1133,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-with-event-hash",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -1180,7 +1179,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-with-prev-turn",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -1226,7 +1225,7 @@
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-zero-turn-tree-hash",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -1260,7 +1259,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-all-ones-bytes",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -1294,7 +1293,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-all-ordered-paths",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -1328,7 +1327,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-all-single-paths",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -1362,7 +1361,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-all-zero-bytes",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -1396,7 +1395,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-deep-path-schema",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -1430,7 +1429,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-empty-bytes",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -1464,7 +1463,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-large-bytes",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -1498,7 +1497,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-many-staged-results",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -1532,7 +1531,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-mixed-status-staged",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -1566,7 +1565,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-multi-path-schema",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -1600,7 +1599,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-non-utf8-bytes",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -1634,7 +1633,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-single-byte",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -1668,7 +1667,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-staged-failed",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -1702,7 +1701,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-staged-interrupted",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -1736,7 +1735,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-with-event-hash",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -1770,7 +1769,7 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-with-prev-turn",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
       },
       "status": "pass"
@@ -1804,54 +1803,8 @@
       ],
       "checkId": "kernel.protocol.schema_roundtrip.f-zero-turn-tree-hash",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended"
-      },
-      "status": "pass"
-    },
-    {
-      "assertionResults": [
-        {
-          "assertionId": "kernel-restart-af.invalid-staged-result-reexecutes.1.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel-restart-af.invalid-staged-result-reexecutes.2.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel-restart-af.invalid-staged-result-reexecutes.3.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel-restart-af.invalid-staged-result-reexecutes.requiredEvidence.restartRecovery.recoveredLastCompletedStepId",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel-restart-af.invalid-staged-result-reexecutes.requiredEvidence.restartRecovery.recoveredUncommittedCount",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel-restart-af.invalid-staged-result-reexecutes.requiredEvidence.restartRecovery.uncommittedNotPromoted",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel-restart-af.invalid-staged-result-reexecutes.requiredEvidence.result.restartRecovery.recoveredLastCompletedStepId",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel-restart-af.invalid-staged-result-reexecutes.requiredEvidence.result.restartRecovery.recoveredUncommittedCount",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel-restart-af.invalid-staged-result-reexecutes.requiredEvidence.result.restartRecovery.uncommittedNotPromoted",
-          "status": "pass"
-        }
-      ],
-      "checkId": "kernel-restart-af.invalid-staged-result-reexecutes",
-      "details": {
-        "adapterId": "typescript-kernel-postgres",
-        "planId": "tuvren.kernel.restart-recovery"
       },
       "status": "pass"
     },
@@ -1952,233 +1905,7 @@
       ],
       "checkId": "kernel.crash-recovery.concurrent_writer",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
-        "planId": "tuvren.kernel.restart-recovery"
-      },
-      "status": "pass"
-    },
-    {
-      "assertionResults": [
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.1.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.2.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.3.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.4.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.5.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.6.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.7.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.8.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.9.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.10.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.11.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.12.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.13.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.14.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.15.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.16.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.17.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.18.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.afterCommitBeforeAck.headMatchesExpectedCheckpoint",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.afterCommitBeforeAck.injectedErrorCode",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.afterCommitBeforeAck.lineageConsistent",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.afterCommitBeforeAck.pendingMessageCommitted",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.afterCommitBeforeAck.recoveryStateConsistent",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.afterCommitBeforeAck.visibleCommittedMessageCount",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.beforeCommit.headMatchesExpectedCheckpoint",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.beforeCommit.injectedErrorCode",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.beforeCommit.lineageConsistent",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.beforeCommit.pendingMessageCommitted",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.beforeCommit.recoveryStateConsistent",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.beforeCommit.visibleCommittedMessageCount",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.midCommit.headMatchesExpectedCheckpoint",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.midCommit.injectedErrorCode",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.midCommit.lineageConsistent",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.midCommit.pendingMessageCommitted",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.midCommit.recoveryStateConsistent",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.midCommit.visibleCommittedMessageCount",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.afterCommitBeforeAck.headMatchesExpectedCheckpoint",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.afterCommitBeforeAck.injectedErrorCode",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.afterCommitBeforeAck.lineageConsistent",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.afterCommitBeforeAck.pendingMessageCommitted",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.afterCommitBeforeAck.recoveryStateConsistent",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.afterCommitBeforeAck.visibleCommittedMessageCount",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.beforeCommit.headMatchesExpectedCheckpoint",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.beforeCommit.injectedErrorCode",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.beforeCommit.lineageConsistent",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.beforeCommit.pendingMessageCommitted",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.beforeCommit.recoveryStateConsistent",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.beforeCommit.visibleCommittedMessageCount",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.midCommit.headMatchesExpectedCheckpoint",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.midCommit.injectedErrorCode",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.midCommit.lineageConsistent",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.midCommit.pendingMessageCommitted",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.midCommit.recoveryStateConsistent",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.midCommit.visibleCommittedMessageCount",
-          "status": "pass"
-        }
-      ],
-      "checkId": "kernel.crash-recovery.durable_fault_points",
-      "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.restart-recovery"
       },
       "status": "pass"
@@ -2404,93 +2131,7 @@
       ],
       "checkId": "kernel.crash-recovery.in_process_fault_points",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
-        "planId": "tuvren.kernel.restart-recovery"
-      },
-      "status": "pass"
-    },
-    {
-      "assertionResults": [
-        {
-          "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.1.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.2.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.3.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.4.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.5.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.6.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.requiredEvidence.restartRecovery.checkpointLineageSurvivesRestart",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.requiredEvidence.restartRecovery.committedMessageCount",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.requiredEvidence.restartRecovery.committedStateVisible",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.requiredEvidence.restartRecovery.recoveredLastCompletedStepId",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.requiredEvidence.restartRecovery.recoveredUncommittedCount",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.requiredEvidence.restartRecovery.recoveryHeadMatchesCommittedCheckpoint",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.requiredEvidence.restartRecovery.uncommittedNotPromoted",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.requiredEvidence.result.restartRecovery.checkpointLineageSurvivesRestart",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.requiredEvidence.result.restartRecovery.committedStateVisible",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.requiredEvidence.result.restartRecovery.recoveredLastCompletedStepId",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.requiredEvidence.result.restartRecovery.recoveredUncommittedCount",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.requiredEvidence.result.restartRecovery.recoveryHeadMatchesCommittedCheckpoint",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.requiredEvidence.result.restartRecovery.uncommittedNotPromoted",
-          "status": "pass"
-        }
-      ],
-      "checkId": "kernel.restart-recovery.close_reopen_checkpoint",
-      "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.restart-recovery"
       },
       "status": "pass"
@@ -2536,7 +2177,7 @@
       ],
       "checkId": "kernel-restart-af.expired-running-requires-preemption",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.run-liveness"
       },
       "status": "pass"
@@ -2570,7 +2211,7 @@
       ],
       "checkId": "kernel-restart-af.paused-run-excluded-from-stale-preemption",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.run-liveness"
       },
       "status": "pass"
@@ -2616,7 +2257,7 @@
       ],
       "checkId": "kernel.run-liveness.expired_listing",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.run-liveness"
       },
       "status": "pass"
@@ -2662,7 +2303,7 @@
       ],
       "checkId": "kernel.run-liveness.lease_renewal",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.run-liveness"
       },
       "status": "pass"
@@ -2740,7 +2381,7 @@
       ],
       "checkId": "kernel.run-liveness.stale_preemption",
       "details": {
-        "adapterId": "typescript-kernel-postgres",
+        "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.run-liveness"
       },
       "status": "pass"
@@ -2748,25 +2389,29 @@
   ],
   "command": [
     "bun",
-    "run",
-    "nx",
-    "run",
-    "kernel-typescript-postgres-conformance-runner:conformance",
-    "--skipNxCache"
+    "tools/conformance/runner/run.ts",
+    "--adapter",
+    "[adapter-manifest]",
+    "--concurrency",
+    "4"
   ],
   "exitCode": 0,
-  "implementationId": "typescript-kernel-postgres",
-  "nonApplicableCheckIds": [],
-  "project": "kernel-typescript-postgres-conformance-runner",
-  "reportLabel": "TypeScript PostgreSQL durable kernel",
-  "reportStatus": "full_pass",
+  "implementationId": "typescript-kernel-memory",
+  "nonApplicableCheckIds": [
+    "kernel-restart-af.invalid-staged-result-reexecutes",
+    "kernel.crash-recovery.durable_fault_points",
+    "kernel.restart-recovery.close_reopen_checkpoint"
+  ],
+  "project": "kernel-typescript-conformance-runner",
+  "reportLabel": "TypeScript process-local kernel baseline",
+  "reportStatus": "capability_subset_pass",
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 59,
+    "passedChecks": 56,
     "totalChecks": 59,
-    "applicableChecks": 59,
-    "nonApplicableChecks": 0
+    "applicableChecks": 56,
+    "nonApplicableChecks": 3
   },
   "suiteId": "tuvren.kernel.protocol",
   "suiteVersion": "0.1.0"

@@ -24,7 +24,7 @@
       ],
       "options": {
         "cwd": ".",
-        "command": "bun tools/conformance/runner/run.ts --adapter boundaries/kernel/implementations/typescript/conformance-adapter/adapter-sqlite.json"
+        "command": "bun tools/conformance/runner/run.ts --adapter boundaries/kernel/implementations/typescript/conformance-adapter/adapter-sqlite.json --concurrency 4 --summary-only"
       }
     }
   }

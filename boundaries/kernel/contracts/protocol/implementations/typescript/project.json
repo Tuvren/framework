@@ -43,10 +43,9 @@
     },
     "typecheck": {
       "executor": "nx:run-commands",
-      "dependsOn": ["^build"],
       "options": {
-        "cwd": "boundaries/kernel/contracts/protocol/implementations/typescript",
-        "command": "tsc --project tsconfig.lib.json --noEmit --pretty false && tsc --project tsconfig.typecheck.json --noEmit --pretty false"
+        "cwd": ".",
+        "command": "bun tools/scripts/typecheck-project.ts boundaries/kernel/contracts/protocol/implementations/typescript"
       }
     }
   }

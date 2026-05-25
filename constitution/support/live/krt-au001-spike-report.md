@@ -30,7 +30,7 @@ The characterization used the current runtime-kernel checkpoint path, the new te
    - `mid-commit` and `after-commit-before-ack`: the checkpoint is fully committed and recoverable despite the surfaced error, with no torn or partial lineage
 
 6. Brownfield validation drift existed outside the kernel logic.
-   The PostgreSQL Nx targets still embedded `devenv up -d`, which conflicted with the repo's own service-management rule and contributed to stale PID/socket behavior during verification. AU aligned those targets to run under `devenv shell` only.
+   The PostgreSQL Nx targets still embedded service lifecycle assumptions, which conflicted with the repo's own service-management rule and contributed to stale PID/socket behavior during verification. AU aligned those targets to run directly in the direnv-loaded environment after the caller starts PostgreSQL with `devenv up -d`.
 
 ## Scenarios The `kernel-crash-recovery` Checks Must Cover
 

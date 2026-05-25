@@ -1,0 +1,575 @@
+{
+  "adapterId": "typescript-framework-batteries-included",
+  "boundary": "framework",
+  "capabilities": ["framework.batteries-included"],
+  "checkResults": [
+    {
+      "assertionResults": [
+        {
+          "assertionId": "batteries-included.lifecycle.memory.constructed.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "batteries-included.lifecycle.memory.constructed.requiredEvidence.result.batteriesIncluded.lifecycle.constructed",
+          "status": "pass"
+        }
+      ],
+      "checkId": "batteries-included.lifecycle.memory.constructed",
+      "details": {
+        "adapterId": "typescript-framework-batteries-included",
+        "planId": "tuvren.framework.runtime-api.batteries-included"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "batteries-included.lifecycle.memory.disposed.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "batteries-included.lifecycle.memory.disposed.requiredEvidence.result.batteriesIncluded.lifecycle.disposed",
+          "status": "pass"
+        }
+      ],
+      "checkId": "batteries-included.lifecycle.memory.disposed",
+      "details": {
+        "adapterId": "typescript-framework-batteries-included",
+        "planId": "tuvren.framework.runtime-api.batteries-included"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "batteries-included.lifecycle.memory.messages-read.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "batteries-included.lifecycle.memory.messages-read.requiredEvidence.result.batteriesIncluded.lifecycle.messagesRead",
+          "status": "pass"
+        }
+      ],
+      "checkId": "batteries-included.lifecycle.memory.messages-read",
+      "details": {
+        "adapterId": "typescript-framework-batteries-included",
+        "planId": "tuvren.framework.runtime-api.batteries-included"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "batteries-included.lifecycle.memory.turn-completed.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "batteries-included.lifecycle.memory.turn-completed.requiredEvidence.result.batteriesIncluded.lifecycle.turnCompleted",
+          "status": "pass"
+        }
+      ],
+      "checkId": "batteries-included.lifecycle.memory.turn-completed",
+      "details": {
+        "adapterId": "typescript-framework-batteries-included",
+        "planId": "tuvren.framework.runtime-api.batteries-included"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "batteries-included.lifecycle.postgres.constructed.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "batteries-included.lifecycle.postgres.constructed.requiredEvidence.result.batteriesIncluded.lifecycle.constructed",
+          "status": "pass"
+        }
+      ],
+      "checkId": "batteries-included.lifecycle.postgres.constructed",
+      "details": {
+        "adapterId": "typescript-framework-batteries-included",
+        "planId": "tuvren.framework.runtime-api.batteries-included"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "batteries-included.lifecycle.postgres.disposed.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "batteries-included.lifecycle.postgres.disposed.requiredEvidence.result.batteriesIncluded.lifecycle.disposed",
+          "status": "pass"
+        }
+      ],
+      "checkId": "batteries-included.lifecycle.postgres.disposed",
+      "details": {
+        "adapterId": "typescript-framework-batteries-included",
+        "planId": "tuvren.framework.runtime-api.batteries-included"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "batteries-included.lifecycle.postgres.messages-read.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "batteries-included.lifecycle.postgres.messages-read.requiredEvidence.result.batteriesIncluded.lifecycle.messagesRead",
+          "status": "pass"
+        }
+      ],
+      "checkId": "batteries-included.lifecycle.postgres.messages-read",
+      "details": {
+        "adapterId": "typescript-framework-batteries-included",
+        "planId": "tuvren.framework.runtime-api.batteries-included"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "batteries-included.lifecycle.postgres.turn-completed.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "batteries-included.lifecycle.postgres.turn-completed.requiredEvidence.result.batteriesIncluded.lifecycle.turnCompleted",
+          "status": "pass"
+        }
+      ],
+      "checkId": "batteries-included.lifecycle.postgres.turn-completed",
+      "details": {
+        "adapterId": "typescript-framework-batteries-included",
+        "planId": "tuvren.framework.runtime-api.batteries-included"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "batteries-included.lifecycle.sqlite.constructed.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "batteries-included.lifecycle.sqlite.constructed.requiredEvidence.result.batteriesIncluded.lifecycle.constructed",
+          "status": "pass"
+        }
+      ],
+      "checkId": "batteries-included.lifecycle.sqlite.constructed",
+      "details": {
+        "adapterId": "typescript-framework-batteries-included",
+        "planId": "tuvren.framework.runtime-api.batteries-included"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "batteries-included.lifecycle.sqlite.disposed.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "batteries-included.lifecycle.sqlite.disposed.requiredEvidence.result.batteriesIncluded.lifecycle.disposed",
+          "status": "pass"
+        }
+      ],
+      "checkId": "batteries-included.lifecycle.sqlite.disposed",
+      "details": {
+        "adapterId": "typescript-framework-batteries-included",
+        "planId": "tuvren.framework.runtime-api.batteries-included"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "batteries-included.lifecycle.sqlite.messages-read.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "batteries-included.lifecycle.sqlite.messages-read.requiredEvidence.result.batteriesIncluded.lifecycle.messagesRead",
+          "status": "pass"
+        }
+      ],
+      "checkId": "batteries-included.lifecycle.sqlite.messages-read",
+      "details": {
+        "adapterId": "typescript-framework-batteries-included",
+        "planId": "tuvren.framework.runtime-api.batteries-included"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "batteries-included.lifecycle.sqlite.turn-completed.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "batteries-included.lifecycle.sqlite.turn-completed.requiredEvidence.result.batteriesIncluded.lifecycle.turnCompleted",
+          "status": "pass"
+        }
+      ],
+      "checkId": "batteries-included.lifecycle.sqlite.turn-completed",
+      "details": {
+        "adapterId": "typescript-framework-batteries-included",
+        "planId": "tuvren.framework.runtime-api.batteries-included"
+      },
+      "status": "pass"
+    }
+  ],
+  "command": [
+    "bun",
+    "tools/conformance/runner/run.ts",
+    "--adapter",
+    "[adapter-manifest]"
+  ],
+  "exitCode": 0,
+  "implementationId": "typescript-framework",
+  "nonApplicableCheckIds": [
+    "driver-api.error.envelope",
+    "driver-api.execute.resolution",
+    "driver-api.resume.approval",
+    "driver-api.resume.requires-pending-call",
+    "driver-api-af.invalid-loop-policy-tool-call-hard-fail",
+    "driver-api-ext.execute.hook-turn-phase-completed",
+    "driver-api-ext.execute.hook-turn-phase-string",
+    "driver-api-ext.execute.provider-failure-error-envelope",
+    "driver-api-ext.resume.approval-decision-call-id-includes-call-search",
+    "driver-api-ext.resume.approval-pending-call-id-list-non-empty",
+    "driver-api-ext.resume.approval-resolution-end-turn",
+    "driver-api-ext.resume.missing-pending-call-error-envelope",
+    "driver-api-ext.resume.missing-pending-call-resolution-fail",
+    "event-stream-sse.comment-line-ignored",
+    "event-stream-sse.cr-line-terminator",
+    "event-stream-sse.crlf-line-terminator",
+    "event-stream-sse.empty-data-buffer-no-dispatch",
+    "event-stream-sse.event-type-resets-between-frames",
+    "event-stream-sse.field-without-value",
+    "event-stream-sse.id-empty-resets-last-event-id",
+    "event-stream-sse.id-persists-until-next-id",
+    "event-stream-sse.id-sets-last-event-id",
+    "event-stream-sse.id-with-null-byte-ignored",
+    "event-stream-sse.leading-bom-stripped",
+    "event-stream-sse.leading-space-stripped-once",
+    "event-stream-sse.multi-data-lf-concat",
+    "event-stream-sse.multiple-frames-ordered",
+    "event-stream-sse.named-event-type",
+    "event-stream-sse.retry-digits-only",
+    "event-stream-sse.single-data-default-type",
+    "event-stream-sse.unterminated-final-frame-no-dispatch",
+    "event-stream-sse.wire-compliance-self-report",
+    "event-stream.agui.failed-turn-error-projection",
+    "event-stream.agui.paused-turn-fallback",
+    "event-stream.agui.projection",
+    "event-stream.sse.eager-subscription",
+    "event-stream.sse.projection",
+    "event-stream-ext.agui.completed-turn-event-00",
+    "event-stream-ext.agui.completed-turn-event-01",
+    "event-stream-ext.agui.completed-turn-event-02",
+    "event-stream-ext.agui.completed-turn-event-03",
+    "event-stream-ext.agui.completed-turn-event-04",
+    "event-stream-ext.agui.completed-turn-event-05",
+    "event-stream-ext.agui.completed-turn-event-06",
+    "event-stream-ext.agui.completed-turn-event-07",
+    "event-stream-ext.agui.completed-turn-event-08",
+    "event-stream-ext.agui.completed-turn-event-09",
+    "event-stream-ext.agui.completed-turn-event-10",
+    "event-stream-ext.agui.completed-turn-event-11",
+    "event-stream-ext.agui.completed-turn-event-12",
+    "event-stream-ext.agui.completed-turn-event-13",
+    "event-stream-ext.agui.completed-turn-event-14",
+    "event-stream-ext.agui.completed-turn-event-15",
+    "event-stream-ext.agui.completed-turn-event-16",
+    "event-stream-ext.agui.completed-turn-event-17",
+    "event-stream-ext.agui.completed-turn-event-18",
+    "event-stream-ext.agui.completed-turn-event-19",
+    "event-stream-ext.agui.completed-turn-event-20",
+    "event-stream-ext.agui.completed-turn-event-21",
+    "event-stream-ext.agui.completed-turn-event-22",
+    "event-stream-ext.agui.completed-turn-event-types-include-run-finished",
+    "event-stream-ext.agui.completed-turn-event-types-include-run-started",
+    "event-stream-ext.agui.completed-turn-event-types-include-run-started-and-finished",
+    "event-stream-ext.agui.completed-turn-event-types-include-state-snapshot",
+    "event-stream-ext.agui.completed-turn-event-types-include-text-message-start",
+    "event-stream-ext.agui.completed-turn-event-types-include-tool-call-result",
+    "event-stream-ext.agui.completed-turn-event-types-include-tool-call-start",
+    "event-stream-ext.agui.completed-turn-warnings-include-checkpoint-fallback",
+    "event-stream-ext.agui.failed-turn-error-code-snake-case",
+    "event-stream-ext.agui.failed-turn-event-00",
+    "event-stream-ext.agui.failed-turn-event-01",
+    "event-stream-ext.agui.failed-turn-event-02",
+    "event-stream-ext.agui.failed-turn-event-03",
+    "event-stream-ext.agui.failed-turn-event-04",
+    "event-stream-ext.agui.failed-turn-event-05",
+    "event-stream-ext.agui.failed-turn-event-06",
+    "event-stream-ext.agui.failed-turn-event-07",
+    "event-stream-ext.agui.failed-turn-event-08",
+    "event-stream-ext.agui.failed-turn-event-types-end-with-run-error",
+    "event-stream-ext.agui.paused-turn-event-00",
+    "event-stream-ext.agui.paused-turn-event-01",
+    "event-stream-ext.agui.paused-turn-event-02",
+    "event-stream-ext.agui.paused-turn-event-03",
+    "event-stream-ext.agui.paused-turn-event-04",
+    "event-stream-ext.agui.paused-turn-event-05",
+    "event-stream-ext.agui.paused-turn-event-06",
+    "event-stream-ext.agui.paused-turn-event-07",
+    "event-stream-ext.agui.paused-turn-event-08",
+    "event-stream-ext.agui.paused-turn-event-09",
+    "event-stream-ext.agui.paused-turn-event-10",
+    "event-stream-ext.agui.paused-turn-event-11",
+    "event-stream-ext.agui.paused-turn-event-12",
+    "event-stream-ext.agui.paused-turn-event-13",
+    "event-stream-ext.agui.paused-turn-warnings-include-paused-coercion",
+    "event-stream-ext.sse-eager.failed-turn-first-direct-event-turn-start",
+    "event-stream-ext.sse-eager.first-direct-event-turn-start",
+    "event-stream-ext.sse-eager.first-frame-event-turn-start",
+    "event-stream-ext.sse-eager.paused-turn-first-frame-event-turn-start",
+    "event-stream-ext.sse.completed-turn-frame-event-00",
+    "event-stream-ext.sse.completed-turn-frame-event-01",
+    "event-stream-ext.sse.completed-turn-frame-event-02",
+    "event-stream-ext.sse.completed-turn-frame-event-03",
+    "event-stream-ext.sse.completed-turn-frame-event-04",
+    "event-stream-ext.sse.completed-turn-frame-event-05",
+    "event-stream-ext.sse.completed-turn-frame-event-06",
+    "event-stream-ext.sse.completed-turn-frame-event-07",
+    "event-stream-ext.sse.completed-turn-frame-event-08",
+    "event-stream-ext.sse.completed-turn-frame-event-09",
+    "event-stream-ext.sse.completed-turn-frame-event-10",
+    "event-stream-ext.sse.completed-turn-frame-event-11",
+    "event-stream-ext.sse.completed-turn-frame-event-12",
+    "event-stream-ext.sse.completed-turn-frame-event-13",
+    "event-stream-ext.sse.completed-turn-frame-event-14",
+    "event-stream-ext.sse.completed-turn-frame-event-15",
+    "event-stream-ext.sse.completed-turn-frame-event-16",
+    "event-stream-ext.sse.completed-turn-frame-event-17",
+    "event-stream-ext.sse.completed-turn-frame-event-18",
+    "event-stream-ext.sse.completed-turn-frame-event-19",
+    "event-stream-ext.sse.completed-turn-frame-event-20",
+    "event-stream-ext.sse.completed-turn-frame-event-21",
+    "event-stream-ext.sse.completed-turn-frame-event-22",
+    "event-stream-ext.sse.completed-turn-frame-event-23",
+    "event-stream-ext.sse.completed-turn-frame-events-contain-iteration-end",
+    "event-stream-ext.sse.completed-turn-frame-events-contain-tool-call-start",
+    "event-stream-ext.sse.completed-turn-frame-events-contain-turn-end",
+    "event-stream-ext.sse.completed-turn-frame-events-contain-turn-start",
+    "event-stream-ext.sse.completed-turn-frame-events-end-with-turn-end",
+    "event-stream-ext.sse.completed-turn-frame-events-include-iteration-start",
+    "event-stream-ext.sse.completed-turn-frame-events-include-state-snapshot",
+    "event-stream-ext.sse.completed-turn-frame-events-include-text-delta",
+    "event-stream-ext.sse.completed-turn-frame-events-include-tool-result",
+    "event-stream-ext.sse.completed-turn-no-error-event",
+    "event-stream-ext.sse.completed-turn-source-event-types-start-with-turn-start",
+    "event-stream-ext.sse.failed-provider-turn-frame-events-include-error",
+    "event-stream-ext.sse.paused-approval-turn-source-events-include-approval-requested",
+    "event-stream-ext.sse.resumed-approval-turn-checkpoint-hash-format",
+    "event-stream-ext.sse.resumed-approval-turn-frame-events-contain-turn-end",
+    "event-stream-ext.sse.resumed-approval-turn-resumed-from-hash-format",
+    "event-stream-ext.sse.resumed-approval-turn-source-events-include-approval-requested",
+    "event-stream-ext.sse.resumed-approval-turn-source-events-include-approval-resolved",
+    "event-stream-ext.sse.resumed-approval-turn-source-events-include-text-delta",
+    "event-stream-ext.sse.resumed-approval-turn-source-thread-id-present",
+    "event-stream-ext.sse.resumed-approval-turn-thread-id-present",
+    "react-driver-callable.after-iteration",
+    "react-driver-callable.around-model",
+    "react-driver-callable.around-tool",
+    "react-driver-callable.before-iteration",
+    "react-driver-callable.checkpoint",
+    "react-driver-af.around-model-post-stream-replacement",
+    "react-driver-af.around-model-retry-final-response-durable",
+    "react-driver-af.extension.after-iteration-terminal-state-nondurable",
+    "react-driver-af.extension.around-tool-nesting",
+    "react-driver-af.extension.phase-order-before-around-after",
+    "react-driver-ext.after-iteration-twice",
+    "react-driver-ext.around-model-twice",
+    "react-driver-ext.around-tool-once",
+    "react-driver-ext.before-iteration-twice",
+    "react-driver-ext.checkpoint-manifest-path-count",
+    "react-driver-ext.hook-field-present.after-iteration-present",
+    "react-driver-ext.hook-field-present.around-model-present",
+    "react-driver-ext.hook-field-present.around-tool-present",
+    "react-driver-ext.hook-field-present.before-iteration-present",
+    "runtime-api-handle-terminal-value.cancel-rejects",
+    "runtime-api-handle-terminal-value.complete",
+    "runtime-api-handle-terminal-value.failure-resolves",
+    "runtime-api-handle-terminal-value.idempotent",
+    "runtime-callable.approval-resolve",
+    "runtime-callable.provider-generate",
+    "runtime-callable.provider-stream",
+    "runtime-callable.timeout-retry-cancellation-idempotency",
+    "runtime-callable.tool-execute",
+    "runtime-callable.validation-failure",
+    "proving-host-headless-transcript-replay.deterministic-memory-pass",
+    "runtime-callable-af.approval-reject-stages-tool-result",
+    "runtime-callable-af.approval-resume-new-handle-only",
+    "runtime-callable-af.approval-resume-reruns-unfinished-tools-only",
+    "runtime-callable-af.approval-resume-same-turn",
+    "runtime-callable-af.content-structured-data-parsed",
+    "runtime-callable-af.content-tool-call-input-parsed",
+    "runtime-callable-af.paused-cancel-rejection-and-stop",
+    "runtime-callable-af.structured-output-default-draft07",
+    "runtime-callable-af.structured-provider-native-type-hidden",
+    "runtime-callable-af.structured-stream-synthesizes-delta-before-done",
+    "runtime-callable-af.structured-validation-hard-fail-code",
+    "runtime-callable-ao.get-turn-history.first-snapshot-has-hash",
+    "runtime-callable-ao.get-turn-history.snapshot-count-one",
+    "runtime-callable-ao.get-turn-state-lineage.matches-expected-hash",
+    "runtime-callable-ao.get-turn-state.has-turn-node-hash",
+    "runtime-callable-ao.get-turn-state.has-turn-tree-hash",
+    "runtime-callable-ao.get-turn-state.previous-turn-null",
+    "runtime-callable-ao.list-branches.all-have-thread-id",
+    "runtime-callable-ao.list-branches.branch-count",
+    "runtime-callable-ao.list-threads-cap-rejected.error-code",
+    "runtime-callable-ao.list-threads-cap-rejected.raised-true",
+    "runtime-callable-ao.list-threads-paginate.has-next-cursor",
+    "runtime-callable-ao.list-threads-paginate.no-cursor-on-last-page",
+    "runtime-callable-ao.list-threads-paginate.page1-count-one",
+    "runtime-callable-ao.list-threads-paginate.page2-count-one",
+    "runtime-callable-ao.list-threads-paginate.unique-thread-count",
+    "runtime-callable-ao.list-threads.no-cursor-when-all-consumed",
+    "runtime-callable-ao.list-threads.thread-count-positive",
+    "runtime-callable-ao.read-branch-messages-head-drift.error-code",
+    "runtime-callable-ao.read-branch-messages-head-drift.raised-true",
+    "runtime-callable-ao.read-branch-messages.message-count-zero",
+    "runtime-callable-ao.read-branch-messages.no-cursor",
+    "runtime-callable-ext.approval-resolve.decision-call-id-matches",
+    "runtime-callable-ext.approval-resolve.decision-type-approve",
+    "runtime-callable-ext.approval-resolve.executed-after-resume-includes-approved-tool",
+    "runtime-callable-ext.approval-resolve.executed-before-resume-stays-pre-approval",
+    "runtime-callable-ext.approval-resolve.executed-tools-include-email",
+    "runtime-callable-ext.approval-resolve.executed-tools-include-search",
+    "runtime-callable-ext.approval-resolve.paused-approval-call-id-matches",
+    "runtime-callable-ext.approval-resolve.paused-event-types-include-approval-requested",
+    "runtime-callable-ext.approval-resolve.paused-phase-paused",
+    "runtime-callable-ext.approval-resolve.resumed-event-types-include-approval-resolved",
+    "runtime-callable-ext.approval-resolve.resumed-phase-completed",
+    "runtime-callable-ext.cancel-execution.cancel-invocation-count",
+    "runtime-callable-ext.cancel-execution.error-event-count-one",
+    "runtime-callable-ext.cancel-execution.observed-event-index-zero",
+    "runtime-callable-ext.cancel-execution.observed-event-type",
+    "runtime-callable-ext.cancel-execution.runtime-phase-failed",
+    "runtime-callable-ext.provider-generate.call-count-positive",
+    "runtime-callable-ext.provider-generate.finish-reason-string",
+    "runtime-callable-ext.provider-generate.first-part-text-shape",
+    "runtime-callable-ext.provider-generate.response-finish-reason-equals-stop",
+    "runtime-callable-ext.provider-generate.response-parts-first-present",
+    "runtime-callable-ext.provider-stream.chunk-types-include-finish",
+    "runtime-callable-ext.provider-stream.chunk-types-text-delta-first",
+    "runtime-callable-ext.provider-stream.emitted-event-types-include-message-done",
+    "runtime-callable-ext.provider-stream.emitted-event-types-include-message-start",
+    "runtime-callable-ext.provider-stream.emitted-event-types-text-delta",
+    "runtime-callable-ext.provider-stream.response-text-matches-scenario",
+    "runtime-callable-ext.tool-execute.call-count-equals-one",
+    "runtime-callable-ext.tool-execute.input-query-matches",
+    "runtime-callable-ext.tool-execute.output-shape-matches-scenario",
+    "runtime-callable-ext.tool-execute.output-source-matches",
+    "runtime-callable-ext.tool-execute.state-phase-completed",
+    "runtime-callable-ext.tool-execute.state-tool-results-total-one",
+    "runtime-callable-ext.validate-structured-output.resolution-fail",
+    "runtime-callable-ext.validate-structured-output.resolution-type-string",
+    "schema-authoring.branch1-already-wrapped.has-schema-symbol",
+    "schema-authoring.branch2-zod-v4.has-schema-symbol",
+    "schema-authoring.branch2-zod-v4.json-schema-type",
+    "schema-authoring.branch2-zod-v4.validate-success",
+    "schema-authoring.branch3-standard-non-zod.has-schema-symbol",
+    "schema-authoring.branch3-standard-non-zod.validate-success",
+    "schema-authoring.branch4-zod-v3-compat.has-schema-symbol",
+    "schema-authoring.branch4-zod-v3-compat.routes-via-zod-safeParse",
+    "schema-authoring.branch5-lazy.has-schema-symbol",
+    "schema-authoring.branch5-lazy.json-schema-type-from-inner",
+    "schema-authoring.branch6-bool-false.json-schema-is-boolean",
+    "schema-authoring.branch6-bool-false.json-schema-value-false",
+    "schema-authoring.branch6-bool-true.json-schema-is-boolean",
+    "schema-authoring.branch6-bool-true.json-schema-value-true",
+    "schema-authoring.branch6-json-object.has-schema-symbol",
+    "schema-authoring.branch6-json-object.no-validate-fn",
+    "schema-authoring.branch6-json-object.passthrough-json-schema",
+    "schema-authoring.define-tool.json-schema-type",
+    "schema-authoring.define-tool.name-preserved",
+    "schema-authoring.define-tool.validate-passthrough-success",
+    "runtime-api.approval-resolve.paused-resume",
+    "runtime-api.branch-create.recovery",
+    "runtime-api.cancel-execution.failure",
+    "runtime-api.context-transform.shared-summary",
+    "runtime-api.execute-turn.lifecycle",
+    "runtime-api.recover-result.staged-result",
+    "runtime-callable-af.input-signal-empty-parts-rejected",
+    "runtime-lifecycle-af.cancel-running-idempotent-fails-once",
+    "runtime-lifecycle-af.cancel-running-stages-partial-status",
+    "runtime-lifecycle-af.context-transform-creates-new-tree-heads",
+    "runtime-lifecycle-af.context-transform-driver-sees-rewritten-context",
+    "runtime-lifecycle-af.context-transform-preserves-source-checkpoint",
+    "runtime-lifecycle-ext.approval-resolve.paused-phase-trace",
+    "runtime-lifecycle-ext.approval-resolve.resumed-phase-trace",
+    "runtime-lifecycle-ext.branch-create.created-head-hash-format",
+    "runtime-lifecycle-ext.branch-create.source-head-hash-format",
+    "runtime-lifecycle-ext.branch-create.source-message-count",
+    "runtime-lifecycle-ext.branch-create.source-phase-completed",
+    "runtime-lifecycle-ext.context-transform.message-count",
+    "runtime-lifecycle-ext.context-transform.runtime-phase-completed",
+    "runtime-lifecycle-ext.context-transform.summary-text",
+    "runtime-lifecycle-ext.execute-turn.phase-completed",
+    "runtime-lifecycle-ext.execute-turn.phase-enum",
+    "runtime-lifecycle-ext.recover-result.first-object-type",
+    "runtime-lifecycle-ext.recover-result.first-task-id",
+    "runtime-lifecycle-ext.recover-result.last-turn-node-hash-format",
+    "runtime-lifecycle-ext.recover-result.uncommitted-count",
+    "runtime-lifecycle-ext.stale-recovery.finalize-terminal-status",
+    "runtime-lifecycle-ext.stale-recovery.handoff-context-active-agent",
+    "runtime-lifecycle-ext.stale-recovery.same-signal-iterate",
+    "runtime-lifecycle-ext.stale-recovery.signal-mismatch-fresh-turn",
+    "runtime-orchestration-af.handoff-last-output-only-builder",
+    "runtime-orchestration-af.handoff-rejects-multiple-intents",
+    "runtime-orchestration-af.handoff-resolution-not-history-entry",
+    "runtime-orchestration-af.worker-forwarded-event-source",
+    "runtime-orchestration.inheritance.driver-id",
+    "runtime-orchestration.inheritance.schema-id",
+    "runtime-orchestration.inheritance.tools",
+    "runtime-orchestration.launch.await-result-does-not-start-parent",
+    "runtime-orchestration.launch.await-result-rejects-before-parent-start",
+    "runtime-orchestration.launch.child-runs-on-own-thread",
+    "runtime-orchestration.launch.spawn-rejects-before-parent-start",
+    "runtime-orchestration.lifecycle.child-cancel-parent-completes",
+    "runtime-orchestration.lifecycle.child-pause-parent-completes",
+    "runtime-orchestration.lifecycle.child-resume-stays-local",
+    "runtime-orchestration.lifecycle.completed-parent-rejects-spawn",
+    "runtime-orchestration.lifecycle.parent-cancel-child-completes",
+    "runtime-orchestration.lifecycle.parent-pause-child-continues",
+    "runtime-orchestration.lifecycle.paused-parent-rejects-spawn",
+    "runtime-orchestration.nested.child-receives-grandchild",
+    "runtime-orchestration.nested.child-source-agent",
+    "runtime-orchestration.nested.child-source-thread-id-present",
+    "runtime-orchestration.nested.child-source-worker-id-present",
+    "runtime-orchestration.nested.root-receives-grandchild",
+    "runtime-orchestration.nested.root-source-agent",
+    "runtime-orchestration.nested.root-source-thread-id-present",
+    "runtime-orchestration.nested.root-source-worker-id-present",
+    "runtime-orchestration.surfaces.all-events-include-descendants",
+    "runtime-orchestration.surfaces.await-result-visible-result",
+    "runtime-orchestration.surfaces.child-all-events-remains-available",
+    "runtime-orchestration.surfaces.descendant-source-attributed",
+    "runtime-orchestration.surfaces.events-self-only",
+    "runtime-orchestration.surfaces.handoff-descendant-agent-preserved",
+    "runtime-orchestration.surfaces.no-worker-result-injection",
+    "tool-contracts-af.approval-message-attaches-to-tool-result",
+    "tool-contracts-af.mixed-approval-gated-tool-start-after-resume",
+    "tool-contracts-af.tool-call-id-owned-by-framework",
+    "tool-contracts-af.tool-failure-produces-error-result-not-run-fail",
+    "tool-contracts-af.tool-parallel-wave-starts-before-results"
+  ],
+  "project": "framework-batteries-included-conformance-runner",
+  "reportLabel": "TypeScript framework batteries-included runtime",
+  "reportStatus": "capability_subset_pass",
+  "status": "pass",
+  "summary": {
+    "failedChecks": 0,
+    "passedChecks": 12,
+    "totalChecks": 341,
+    "applicableChecks": 12,
+    "nonApplicableChecks": 329
+  },
+  "suiteId": "tuvren.framework.runtime-api.batteries-included",
+  "suiteVersion": "0.1.0"
+}

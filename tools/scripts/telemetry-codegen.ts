@@ -184,7 +184,7 @@ async function ensureWeaverIsAvailable(): Promise<void> {
     });
   } catch {
     throw new Error(
-      'weaver is required on PATH; activate the repo environment (for example via ".envrc" or "devenv shell") before running telemetry code generation'
+      "weaver is required on PATH; activate the repo environment with direnv before running telemetry code generation"
     );
   }
 
@@ -193,7 +193,7 @@ async function ensureWeaverIsAvailable(): Promise<void> {
   }
 
   throw new Error(
-    'weaver is required on PATH; activate the repo environment (for example via ".envrc" or "devenv shell") before running telemetry code generation'
+    "weaver is required on PATH; activate the repo environment with direnv before running telemetry code generation"
   );
 }
 

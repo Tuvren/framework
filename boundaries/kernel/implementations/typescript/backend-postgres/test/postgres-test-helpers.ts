@@ -31,12 +31,12 @@ interface DevenvPostgresEnvironment {
 }
 
 export async function assertDevenvPostgresReady(): Promise<void> {
-  // The session starts PostgreSQL through `devenv up -d` and the Nx targets
-  // run inside `devenv shell`, but the daemon can still report ready before
-  // the server accepts connections. On a cold shell the socket file may not
-  // exist yet, surfacing as `ENOENT` on the first probe. Retry the readiness
-  // query up to the budget below so the test does not depend on an implicit
-  // timing assumption between service startup and the test runner.
+  // The session starts PostgreSQL through `devenv up -d`, but the daemon can
+  // still report ready before the server accepts connections. On a cold shell
+  // the socket file may not exist yet, surfacing as `ENOENT` on the first
+  // probe. Retry the readiness query up to the budget below so the test does
+  // not depend on an implicit timing assumption between service startup and
+  // the test runner.
   const totalBudgetMs = 30_000;
   const retryDelayMs = 250;
   const startedAt = Date.now();
@@ -132,13 +132,13 @@ function readDevenvPostgresEnvironment(): DevenvPostgresEnvironment {
 
   if (host === undefined || host.length === 0) {
     throw new Error(
-      "PGHOST is missing. Run PostgreSQL-backed tests through `devenv up` and `devenv shell`."
+      "PGHOST is missing. Load the repo environment with direnv and start PostgreSQL with `devenv up -d` before running PostgreSQL-backed tests."
     );
   }
 
   if (portValue === undefined || portValue.length === 0) {
     throw new Error(
-      "PGPORT is missing. Run PostgreSQL-backed tests through `devenv up` and `devenv shell`."
+      "PGPORT is missing. Load the repo environment with direnv and start PostgreSQL with `devenv up -d` before running PostgreSQL-backed tests."
     );
   }
 
