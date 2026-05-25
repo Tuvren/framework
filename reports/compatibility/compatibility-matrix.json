@@ -357,11 +357,48 @@
             "providers.framework-owned-tool-execution",
             "providers.rejects-native-strict-structured-output"
           ],
-          "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.typescript-framework.json",
+          "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
           "reportLabel": "TypeScript framework runtime baseline",
           "reportStatus": "capability_subset_pass",
           "status": "pass",
           "suiteId": "tuvren.framework.promoted-authority",
+          "suiteVersion": "0.1.0"
+        }
+      ],
+      "version": "unreleased-workspace"
+    },
+    {
+      "implementationId": "typescript-framework",
+      "language": "typescript",
+      "results": [
+        {
+          "checkIds": [
+            "batteries-included.lifecycle.memory.constructed",
+            "batteries-included.lifecycle.memory.disposed",
+            "batteries-included.lifecycle.memory.messages-read",
+            "batteries-included.lifecycle.memory.turn-completed",
+            "batteries-included.lifecycle.postgres.constructed",
+            "batteries-included.lifecycle.postgres.disposed",
+            "batteries-included.lifecycle.postgres.messages-read",
+            "batteries-included.lifecycle.postgres.turn-completed",
+            "batteries-included.lifecycle.sqlite.constructed",
+            "batteries-included.lifecycle.sqlite.disposed",
+            "batteries-included.lifecycle.sqlite.messages-read",
+            "batteries-included.lifecycle.sqlite.turn-completed"
+          ],
+          "checkSummary": {
+            "failedChecks": 0,
+            "passedChecks": 12,
+            "totalChecks": 341,
+            "applicableChecks": 12,
+            "nonApplicableChecks": 329
+          },
+          "declaredCapabilities": ["framework.batteries-included"],
+          "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.framework-batteries-included-conformance-runner.json",
+          "reportLabel": "TypeScript framework batteries-included runtime",
+          "reportStatus": "capability_subset_pass",
+          "status": "pass",
+          "suiteId": "tuvren.framework.runtime-api.batteries-included",
           "suiteVersion": "0.1.0"
         }
       ],
@@ -445,7 +482,7 @@
             "kernel.restart-recovery",
             "kernel.run-liveness"
           ],
-          "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.typescript-kernel-memory.json",
+          "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-conformance-runner.json",
           "reportLabel": "TypeScript process-local kernel baseline",
           "reportStatus": "capability_subset_pass",
           "status": "pass",
@@ -537,7 +574,7 @@
             "kernel.restart-recovery",
             "kernel.run-liveness"
           ],
-          "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.typescript-kernel-sqlite.json",
+          "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-sqlite-conformance-runner.json",
           "reportLabel": "TypeScript SQLite durable kernel",
           "reportStatus": "full_pass",
           "status": "pass",
@@ -629,7 +666,7 @@
             "kernel.restart-recovery",
             "kernel.run-liveness"
           ],
-          "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.typescript-kernel-postgres.json",
+          "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-postgres-conformance-runner.json",
           "reportLabel": "TypeScript PostgreSQL durable kernel",
           "reportStatus": "full_pass",
           "status": "pass",
@@ -693,7 +730,7 @@
             "providers.provider-api",
             "providers.rejects-native-strict-structured-output"
           ],
-          "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.typescript-providers.json",
+          "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.providers-typescript-conformance-runner.json",
           "reportLabel": "TypeScript AI SDK provider bridge",
           "reportStatus": "full_pass",
           "status": "pass",
@@ -764,7 +801,7 @@
             "kernel.logical",
             "kernel.protocol"
           ],
-          "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.rust-kernel.json",
+          "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.kernel-rust-conformance-runner.json",
           "reportLabel": "Rust process-local kernel baseline",
           "reportStatus": "capability_subset_pass",
           "status": "pass",
@@ -788,7 +825,7 @@
             "nonApplicableChecks": 341
           },
           "declaredCapabilities": [],
-          "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.rust-framework.json",
+          "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.framework-rust-conformance-runner.json",
           "reportLabel": "Rust framework unsupported stub",
           "reportStatus": "unsupported",
           "status": "unsupported",
@@ -831,6 +868,11 @@
     {
       "boundary": "framework",
       "suiteId": "tuvren.framework.promoted-authority",
+      "suiteVersion": "0.1.0"
+    },
+    {
+      "boundary": "framework",
+      "suiteId": "tuvren.framework.runtime-api.batteries-included",
       "suiteVersion": "0.1.0"
     },
     {

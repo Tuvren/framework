@@ -226,6 +226,30 @@ const CONFORMANCE_RUNNERS: readonly ConformanceRunner[] = [
   },
   {
     adapterManifestPath:
+      "boundaries/framework/implementations/typescript/conformance-adapter/adapter-batteries-included.json",
+    command: [
+      "bun",
+      "tools/conformance/runner/run.ts",
+      "--adapter",
+      "boundaries/framework/implementations/typescript/conformance-adapter/adapter-batteries-included.json",
+    ],
+    implementationId: "typescript-framework",
+    language: "typescript",
+    prerequisiteCommands: [
+      [
+        "bun",
+        "run",
+        "nx",
+        "run",
+        "framework-typescript-conformance-adapter:build-batteries-included",
+        "--skipNxCache",
+      ],
+    ],
+    project: "framework-batteries-included-conformance-runner",
+    reportLabel: "TypeScript framework batteries-included runtime",
+  },
+  {
+    adapterManifestPath:
       "boundaries/kernel/implementations/typescript/conformance-adapter/adapter.json",
     command: [
       "bun",
@@ -405,12 +429,12 @@ async function main(): Promise<void> {
 
   for (const runner of CONFORMANCE_RUNNERS) {
     expectedCapabilitiesByRunner.set(
-      runner.implementationId,
+      createConformanceRunnerKey(runner),
       await computeExpectedCapabilitiesFromTopology(runner.adapterManifestPath)
     );
   }
 
-  const seenSuiteIds = new Set<string>();
+  const seenSuiteKeys = new Set<string>();
   const suites: CompatibilitySuite[] = [];
   const implementations: CompatibilityImplementation[] = [];
   const interop: CompatibilityInteropResult[] = [];
@@ -422,7 +446,7 @@ async function main(): Promise<void> {
         ? undefined
         : await readSuiteManifest(runner.manifestPath);
     const expectedCapabilities = expectedCapabilitiesByRunner.get(
-      runner.implementationId
+      createConformanceRunnerKey(runner)
     );
 
     if (expectedCapabilities === undefined) {
@@ -437,13 +461,19 @@ async function main(): Promise<void> {
       expectedCapabilities
     );
 
-    if (!seenSuiteIds.has(result.suite.suiteId)) {
+    const suiteKey = createSuiteKey(
+      result.suite.boundary,
+      result.suite.suiteId,
+      result.suite.suiteVersion
+    );
+
+    if (!seenSuiteKeys.has(suiteKey)) {
       suites.push({
         boundary: result.suite.boundary,
         suiteId: result.suite.suiteId,
         suiteVersion: result.suite.suiteVersion,
       });
-      seenSuiteIds.add(result.suite.suiteId);
+      seenSuiteKeys.add(suiteKey);
     }
     // Epic R establishes the first measured TypeScript baseline only. Later
     // language lines append peer implementation evidence here rather than
@@ -465,14 +495,19 @@ async function main(): Promise<void> {
 
   for (const runner of INTEROP_RUNNERS) {
     const suiteManifest = await readSuiteManifest(runner.manifestPath);
+    const suiteKey = createSuiteKey(
+      suiteManifest.boundary,
+      suiteManifest.suiteId,
+      suiteManifest.suiteVersion
+    );
 
-    if (!seenSuiteIds.has(suiteManifest.suiteId)) {
+    if (!seenSuiteKeys.has(suiteKey)) {
       suites.push({
         boundary: suiteManifest.boundary,
         suiteId: suiteManifest.suiteId,
         suiteVersion: suiteManifest.suiteVersion,
       });
-      seenSuiteIds.add(suiteManifest.suiteId);
+      seenSuiteKeys.add(suiteKey);
     }
 
     const result = await runInteropTarget(runner, suiteManifest);
@@ -527,7 +562,7 @@ async function checkCompatibilityEvidence(): Promise<void> {
     matrixEvidencePaths,
     failures
   );
-  checkConformanceRunnerInventory(matrix.implementations, failures);
+  await checkConformanceRunnerInventory(matrix.implementations, failures);
   checkInteropRunnerInventory(matrix.interop, failures);
 
   for (const result of matrix.interop) {
@@ -622,18 +657,33 @@ async function checkLiveSuiteTopology(
   }
 }
 
-function checkConformanceRunnerInventory(
+async function checkConformanceRunnerInventory(
   implementations: readonly CompatibilityImplementation[],
   failures: string[]
-): void {
-  const matrixImplementationIds = new Set(
-    implementations.map((implementation) => implementation.implementationId)
+): Promise<void> {
+  const matrixRunnerKeys = new Set(
+    implementations.flatMap((implementation) =>
+      implementation.results.map((result) =>
+        createCompatibilityRunnerKey(
+          implementation.implementationId,
+          result.suiteId,
+          result.suiteVersion
+        )
+      )
+    )
   );
 
   for (const runner of CONFORMANCE_RUNNERS) {
-    if (!matrixImplementationIds.has(runner.implementationId)) {
+    const liveRunner = await readLiveConformanceRunner(runner);
+    const runnerKey = createCompatibilityRunnerKey(
+      runner.implementationId,
+      liveRunner.suite.suiteId,
+      liveRunner.suite.suiteVersion
+    );
+
+    if (!matrixRunnerKeys.has(runnerKey)) {
       failures.push(
-        `compatibility matrix is missing live implementation ${runner.implementationId}`
+        `compatibility matrix is missing live implementation ${runner.implementationId} for ${liveRunner.suite.suiteId}@${liveRunner.suite.suiteVersion}`
       );
     }
   }
@@ -659,26 +709,33 @@ async function checkImplementationEvidence(
   matrixEvidencePaths: Set<string>,
   failures: string[]
 ): Promise<void> {
+  const liveEntries = await Promise.all(
+    CONFORMANCE_RUNNERS.map(async (runner) => ({
+      liveRunner: await readLiveConformanceRunner(runner),
+      runner,
+    }))
+  );
+
   for (const implementation of implementations) {
-    const runner = CONFORMANCE_RUNNERS.find(
-      (candidate) =>
-        candidate.implementationId === implementation.implementationId
-    );
-
-    if (runner === undefined) {
-      failures.push(
-        `compatibility matrix implementation ${implementation.implementationId} is not present in live runner topology`
-      );
-      continue;
-    }
-
-    const liveRunner = await readLiveConformanceRunner(runner);
-
     for (const result of implementation.results) {
+      const liveEntry = liveEntries.find(
+        (entry) =>
+          entry.runner.implementationId === implementation.implementationId &&
+          entry.liveRunner.suite.suiteId === result.suiteId &&
+          entry.liveRunner.suite.suiteVersion === result.suiteVersion
+      );
+
+      if (liveEntry === undefined) {
+        failures.push(
+          `compatibility matrix implementation ${implementation.implementationId} ${result.suiteId}@${result.suiteVersion} is not present in live runner topology`
+        );
+        continue;
+      }
+
       matrixEvidencePaths.add(result.evidencePath);
       compareLiveConformanceResult(
         implementation.implementationId,
-        liveRunner,
+        liveEntry.liveRunner,
         result,
         failures
       );
@@ -696,6 +753,7 @@ async function checkImplementationEvidence(
         result.evidencePath,
         implementation,
         result,
+        liveEntry.liveRunner,
         failures
       );
     }
@@ -706,6 +764,7 @@ async function checkImplementationEvidenceFile(
   evidencePath: string,
   implementation: CompatibilityImplementation,
   result: CompatibilityImplementationResult,
+  liveRunner: LiveConformanceRunner,
   failures: string[]
 ): Promise<void> {
   const absolutePath = resolve(REPO_ROOT, evidencePath);
@@ -730,6 +789,13 @@ async function checkImplementationEvidenceFile(
     "implementationId",
     evidence.implementationId,
     implementation.implementationId,
+    failures
+  );
+  compareEvidenceField(
+    evidencePath,
+    "boundary",
+    evidence.boundary,
+    liveRunner.suite.boundary,
     failures
   );
   compareEvidenceField(
@@ -772,6 +838,12 @@ async function checkImplementationEvidenceFile(
     result.checkSummary,
     failures
   );
+  compareNonApplicableCheckIds(
+    evidencePath,
+    evidence.nonApplicableCheckIds,
+    liveRunner.nonApplicableCheckIds,
+    failures
+  );
 }
 
 async function readLiveCompatibilitySuites(): Promise<CompatibilitySuite[]> {
@@ -804,6 +876,7 @@ async function readLiveCompatibilitySuites(): Promise<CompatibilitySuite[]> {
 
 interface LiveConformanceRunner {
   applicableCheckIds: readonly string[];
+  nonApplicableCheckIds: readonly string[];
   suite: CompatibilitySuite;
 }
 
@@ -815,6 +888,7 @@ async function readLiveConformanceRunner(
   const capabilities = new Set(readStringArray(manifest.capabilities));
   const packetPaths = readStringArray(manifest.authorityPackets);
   const applicableCheckIds: string[] = [];
+  const allCheckIds: string[] = [];
 
   for (const packetPath of packetPaths) {
     const packetManifest = JSON.parse(
@@ -831,11 +905,17 @@ async function readLiveConformanceRunner(
       const planJson = await readFile(resolve(REPO_ROOT, plan.path), "utf8");
       const planChecks = readLivePlanChecks(planJson, capabilities);
       applicableCheckIds.push(...planChecks.applicableCheckIds);
+      allCheckIds.push(...planChecks.allCheckIds);
     }
   }
 
+  const applicableCheckIdSet = new Set(applicableCheckIds);
+
   return {
     applicableCheckIds,
+    nonApplicableCheckIds: allCheckIds.filter(
+      (checkId) => !applicableCheckIdSet.has(checkId)
+    ),
     suite,
   };
 }
@@ -878,16 +958,19 @@ function readAdapterSuite(
 function readLivePlanChecks(
   planJson: string,
   capabilities: ReadonlySet<string>
-): { applicableCheckIds: string[] } {
+): { allCheckIds: string[]; applicableCheckIds: string[] } {
   const plan = JSON.parse(planJson) as {
     applicability?: { capabilities?: unknown };
     checks?: Array<{ capabilities?: unknown; checkId?: unknown }>;
   };
+  const allCheckIds = (plan.checks ?? [])
+    .map((check) => check.checkId)
+    .filter((checkId): checkId is string => typeof checkId === "string");
 
   if (
     !hasRequiredCapabilities(plan.applicability?.capabilities, capabilities)
   ) {
-    return { applicableCheckIds: [] };
+    return { allCheckIds, applicableCheckIds: [] };
   }
 
   const applicableCheckIds: string[] = [];
@@ -903,6 +986,7 @@ function readLivePlanChecks(
   }
 
   return {
+    allCheckIds,
     applicableCheckIds,
   };
 }
@@ -950,6 +1034,18 @@ function createSuiteKey(
   suiteVersion: string
 ): string {
   return `${boundary}:${suiteId}@${suiteVersion}`;
+}
+
+function createConformanceRunnerKey(runner: ConformanceRunner): string {
+  return `${runner.project}:${runner.implementationId}`;
+}
+
+function createCompatibilityRunnerKey(
+  implementationId: string,
+  suiteId: string,
+  suiteVersion: string
+): string {
+  return `${implementationId}:${suiteId}@${suiteVersion}`;
 }
 
 function hasSameStringSet(
@@ -1096,6 +1192,22 @@ function compareCheckSummary(
   }
 }
 
+function compareNonApplicableCheckIds(
+  evidencePath: string,
+  actualValue: unknown,
+  expectedCheckIds: readonly string[],
+  failures: string[]
+): void {
+  const actualCheckIds =
+    actualValue === undefined ? [] : readStringArray(actualValue);
+
+  if (!hasSameStringSet(actualCheckIds, expectedCheckIds)) {
+    failures.push(
+      `${evidencePath} nonApplicableCheckIds do not match live conformance plan topology`
+    );
+  }
+}
+
 async function resetHermeticBuildBoundary(): Promise<void> {
   await Promise.all(
     HERMETIC_BUILD_OUTPUT_DIRECTORIES.map(async (directoryPath) =>
@@ -1152,7 +1264,7 @@ async function runConformanceTarget(
   });
   const evidenceFilePath = resolve(
     EVIDENCE_DIRECTORY,
-    `shared-conformance-runner.${runner.implementationId}.json`
+    `shared-conformance-runner.${runner.project}.json`
   );
   const relativeEvidencePath = relative(REPO_ROOT, evidenceFilePath);
   const fallbackCheckResults =
