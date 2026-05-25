@@ -159,12 +159,22 @@ export function createFaultInjectingBackend(
         control?.setFaultHooks(null);
       }
 
+      let concurrentWriterError: unknown;
+
       if (shouldRunConcurrentWriter && concurrentWriterSnapshot !== undefined) {
-        await runConcurrentWriter(inner, concurrentWriterSnapshot);
+        try {
+          await runConcurrentWriter(inner, concurrentWriterSnapshot);
+        } catch (error: unknown) {
+          concurrentWriterError = error;
+        }
       }
 
       if (outcome.status === "rejected") {
         throw outcome.error;
+      }
+
+      if (concurrentWriterError !== undefined) {
+        throw concurrentWriterError;
       }
 
       return outcome.value;

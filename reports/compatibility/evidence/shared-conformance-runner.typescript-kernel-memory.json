@@ -1827,6 +1827,18 @@
           "status": "pass"
         },
         {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.6.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.7.resultField",
+          "status": "pass"
+        },
+        {
           "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.crashRecoveryConcurrency.finalHeadIsCommittedSibling",
           "status": "pass"
         },
@@ -1839,7 +1851,27 @@
           "status": "pass"
         },
         {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.crashRecoveryConcurrency.retryAfterLossErrorCode",
+          "status": "pass"
+        },
+        {
           "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.crashRecoveryConcurrency.singleWriterRejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.crashRecoveryConcurrency.typedLateralConflictObserved",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.faultPlanConcurrentWriter.injectedErrorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.faultPlanConcurrentWriter.writerAdvancedHead",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.faultPlanConcurrentWriter.writerProducedSiblingHead",
           "status": "pass"
         },
         {
@@ -1851,11 +1883,23 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.result.crashRecoveryConcurrency.losingErrorCode",
+          "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.result.crashRecoveryConcurrency.singleWriterRejected",
           "status": "pass"
         },
         {
-          "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.result.crashRecoveryConcurrency.singleWriterRejected",
+          "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.result.crashRecoveryConcurrency.typedLateralConflictObserved",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.result.faultPlanConcurrentWriter.injectedErrorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.result.faultPlanConcurrentWriter.writerAdvancedHead",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.result.faultPlanConcurrentWriter.writerProducedSiblingHead",
           "status": "pass"
         }
       ],

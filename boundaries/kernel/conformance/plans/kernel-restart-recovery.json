@@ -348,15 +348,35 @@
         },
         {
           "kind": "resultField",
-          "field": "$.crashRecoveryConcurrency.losingErrorCode",
-          "matches": "_branch_head_lateral_move$"
+          "field": "$.crashRecoveryConcurrency.typedLateralConflictObserved",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.faultPlanConcurrentWriter.injectedErrorCode",
+          "equals": "kernel_persistence_fault_injected"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.faultPlanConcurrentWriter.writerAdvancedHead",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.faultPlanConcurrentWriter.writerProducedSiblingHead",
+          "equals": true
         }
       ],
       "evidence": [
         "crashRecoveryConcurrency.singleWriterRejected",
         "crashRecoveryConcurrency.finalHeadIsCommittedSibling",
         "crashRecoveryConcurrency.finalHeadMatchesWinner",
-        "crashRecoveryConcurrency.losingErrorCode"
+        "crashRecoveryConcurrency.losingErrorCode",
+        "crashRecoveryConcurrency.retryAfterLossErrorCode",
+        "crashRecoveryConcurrency.typedLateralConflictObserved",
+        "faultPlanConcurrentWriter.injectedErrorCode",
+        "faultPlanConcurrentWriter.writerAdvancedHead",
+        "faultPlanConcurrentWriter.writerProducedSiblingHead"
       ]
     }
   ]

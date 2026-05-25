@@ -1404,20 +1404,24 @@ async function runConcurrentWriterConflict(): Promise<Record<string, unknown>> {
     const { createMemoryBackend } = await import(
       new URL("../../backend-memory/dist/index.js", import.meta.url).href
     );
-    const backend = createMemoryBackend();
+    const seamBackend = createMemoryBackend();
+    const raceBackend = createMemoryBackend();
 
     return createProjection({
       crashRecoveryConcurrency: await runConcurrentWriterConflictOnBackends(
-        backend,
-        backend
+        raceBackend,
+        raceBackend
       ),
+      faultPlanConcurrentWriter:
+        await runFaultPlanConcurrentWriterExercise(seamBackend),
     });
   }
 
   const harness = await createCrashRecoveryHarness(ADAPTER_CONFIG.backend);
 
   try {
-    const [firstBackend, secondBackend] = await Promise.all([
+    const [seamBackend, firstBackend, secondBackend] = await Promise.all([
+      harness.createBackend(),
       harness.createBackend(),
       harness.createBackend(),
     ]);
@@ -1428,9 +1432,12 @@ async function runConcurrentWriterConflict(): Promise<Record<string, unknown>> {
           firstBackend,
           secondBackend
         ),
+        faultPlanConcurrentWriter:
+          await runFaultPlanConcurrentWriterExercise(seamBackend),
       });
     } finally {
       await Promise.all([
+        closeManagedBackend(seamBackend),
         closeManagedBackend(firstBackend),
         closeManagedBackend(secondBackend),
       ]);
@@ -1540,10 +1547,11 @@ async function runConcurrentWriterConflictOnBackends(
     firstResult.status === "fulfilled" ? siblingNodeA.hash : siblingNodeB.hash;
   const losingResult =
     firstResult.status === "rejected" ? firstResult : secondResult;
-  let losingErrorCode =
+  const losingErrorCode =
     losingResult.status === "rejected"
       ? readErrorCode(losingResult.reason)
       : "missing_rejection";
+  let retryAfterLossErrorCode: string | null = null;
 
   if (!losingErrorCode.endsWith("_branch_head_lateral_move")) {
     const losingBackend =
@@ -1561,7 +1569,7 @@ async function runConcurrentWriterConflictOnBackends(
         });
       });
     } catch (error: unknown) {
-      losingErrorCode = readErrorCode(error);
+      retryAfterLossErrorCode = readErrorCode(error);
     }
   }
 
@@ -1570,10 +1578,126 @@ async function runConcurrentWriterConflictOnBackends(
     finalHeadIsCommittedSibling:
       finalHead === siblingNodeA.hash || finalHead === siblingNodeB.hash,
     losingErrorCode,
+    retryAfterLossErrorCode,
     singleWriterRejected:
       [firstResult, secondResult].filter(
         (result) => result.status === "rejected"
       ).length === 1,
+    typedLateralConflictObserved:
+      losingErrorCode.endsWith("_branch_head_lateral_move") ||
+      retryAfterLossErrorCode?.endsWith("_branch_head_lateral_move") === true,
+  };
+}
+
+async function runFaultPlanConcurrentWriterExercise(
+  baseBackend: RuntimeBackend
+): Promise<Record<string, unknown>> {
+  const schema = {
+    ...createCanonicalKernelTestSchema(),
+    schemaId: "schema_fault_plan_concurrent_writer",
+  } satisfies TurnTreeSchema;
+  const schemaRecord = createStoredSchemaRecord(schema, 21);
+  const turnTree = await createStoredTurnTreeRecord(
+    schema,
+    {
+      "context.manifest": null,
+      messages: [],
+    },
+    22
+  );
+  const rootNode = await createStoredTurnNodeRecord({
+    consumedStagedResults: [],
+    createdAtMs: 23,
+    eventHash: null,
+    previousTurnNodeHash: null,
+    schemaId: schema.schemaId,
+    turnTreeHash: turnTree.hash,
+  });
+  const childNode = await createStoredTurnNodeRecord({
+    consumedStagedResults: [],
+    createdAtMs: 24,
+    eventHash: null,
+    previousTurnNodeHash: rootNode.hash,
+    schemaId: schema.schemaId,
+    turnTreeHash: turnTree.hash,
+  });
+  const thread: StoredThread = {
+    createdAtMs: 25,
+    rootTurnNodeHash: rootNode.hash,
+    schemaId: schema.schemaId,
+    threadId: "thread_fault_plan_concurrent_writer",
+  };
+  const branch: StoredBranch = {
+    branchId: "branch_fault_plan_concurrent_writer",
+    createdAtMs: 26,
+    headTurnNodeHash: rootNode.hash,
+    threadId: thread.threadId,
+    updatedAtMs: 26,
+  };
+
+  await baseBackend.transact(async (tx) => {
+    await tx.schemas.put(schemaRecord);
+    await tx.turnTrees.put(turnTree);
+    await tx.turnTreePaths.putMany(
+      createCanonicalTurnTreePaths(turnTree, {
+        "context.manifest": null,
+        messages: [],
+      })
+    );
+    await tx.turnNodes.put(rootNode);
+    await tx.threads.put(thread);
+    await tx.branches.set(branch);
+  });
+
+  const faultBackend = createFaultInjectingBackend(baseBackend, {
+    concurrentWriter: {
+      branchId: branch.branchId,
+    },
+    match: {
+      branchId: branch.branchId,
+      operation: "checkpoint",
+    },
+    point: "before-commit",
+    policy: "once",
+  });
+
+  let injectedErrorCode = "no_error";
+
+  try {
+    await faultBackend.transact(async (tx) => {
+      await tx.turnNodes.put(childNode);
+      await tx.branches.set({
+        ...branch,
+        headTurnNodeHash: childNode.hash,
+        updatedAtMs: 27,
+      });
+    });
+  } catch (error: unknown) {
+    injectedErrorCode = readErrorCode(error);
+  }
+
+  const inspection = await baseBackend.transact(async (tx) => {
+    const currentBranch = await tx.branches.get(branch.branchId);
+    const currentHead =
+      currentBranch === null
+        ? null
+        : await tx.turnNodes.get(currentBranch.headTurnNodeHash);
+
+    return {
+      branch: currentBranch,
+      head: currentHead,
+    };
+  });
+
+  return {
+    injectedErrorCode,
+    writerAdvancedHead:
+      inspection.branch !== null &&
+      inspection.branch.headTurnNodeHash !== branch.headTurnNodeHash &&
+      inspection.branch.headTurnNodeHash !== childNode.hash,
+    writerProducedSiblingHead:
+      inspection.head !== null &&
+      inspection.head.previousTurnNodeHash === rootNode.hash,
   };
 }
 

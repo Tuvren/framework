@@ -19,8 +19,8 @@ import { deepStrictEqual, strictEqual } from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import type {
-  RuntimeBackendTx,
   RuntimeBackend,
+  RuntimeBackendTx,
   StoredBranch,
   StoredObject,
   StoredObserveAnnotation,
@@ -259,7 +259,10 @@ describe("@tuvren/kernel-testkit fixtures", () => {
     });
     await writeChildHead(faultBackend);
 
-    const branchHead = await readBranchHeadHash(backend, seeded.branch.branchId);
+    const branchHead = await readBranchHeadHash(
+      backend,
+      seeded.branch.branchId
+    );
     expect(branchHead).toBe(seeded.childNode.hash);
   });
 
@@ -293,7 +296,10 @@ describe("@tuvren/kernel-testkit fixtures", () => {
       code: "kernel_persistence_fault_injected",
     });
 
-    const branchHead = await readBranchHeadHash(backend, seeded.branch.branchId);
+    const branchHead = await readBranchHeadHash(
+      backend,
+      seeded.branch.branchId
+    );
     expect(branchHead).toBe(seeded.branch.headTurnNodeHash);
   });
 
@@ -318,7 +324,10 @@ describe("@tuvren/kernel-testkit fixtures", () => {
       });
     });
 
-    const branchHead = await readBranchHeadHash(backend, seeded.branch.branchId);
+    const branchHead = await readBranchHeadHash(
+      backend,
+      seeded.branch.branchId
+    );
     expect(branchHead).toBe(seeded.childNode.hash);
   });
 
@@ -365,9 +374,51 @@ describe("@tuvren/kernel-testkit fixtures", () => {
       throw new Error("expected concurrent writer head turn node");
     }
 
-    expect(finalBranch.headTurnNodeHash).not.toBe(seeded.branch.headTurnNodeHash);
+    expect(finalBranch.headTurnNodeHash).not.toBe(
+      seeded.branch.headTurnNodeHash
+    );
     expect(finalBranch.headTurnNodeHash).not.toBe(seeded.childNode.hash);
     expect(finalHead.previousTurnNodeHash).toBe(seeded.rootNode.hash);
+  });
+
+  test("preserves the injected fault when the concurrent writer also fails", async () => {
+    const backend = createTestBackend();
+    const seeded = await seedFaultInjectionBranch(
+      backend,
+      "branch_concurrent_writer_mid_commit"
+    );
+    const faultBackend = createFaultInjectingBackend(backend, {
+      concurrentWriter: {
+        branchId: seeded.branch.branchId,
+      },
+      match: {
+        branchId: seeded.branch.branchId,
+        operation: "checkpoint",
+      },
+      point: "mid-commit",
+      policy: "once",
+    });
+
+    await expect(
+      faultBackend.transact(async (tx) => {
+        await tx.turnNodes.put(seeded.childNode);
+        await tx.branches.set({
+          ...seeded.branch,
+          headTurnNodeHash: seeded.childNode.hash,
+          updatedAtMs: seeded.branch.updatedAtMs + 1,
+        });
+      })
+    ).rejects.toMatchObject({
+      code: "kernel_persistence_fault_injected",
+    });
+
+    const finalBranch = await readBranch(backend, seeded.branch.branchId);
+
+    if (finalBranch === null) {
+      throw new Error("expected branch after preserved mid-commit fault");
+    }
+
+    expect(finalBranch.headTurnNodeHash).toBe(seeded.childNode.hash);
   });
 });
 
@@ -446,13 +497,11 @@ function createTestBackend(): RuntimeBackend {
     objects: new Map<string, StoredObject>(),
     turnNodes: new Map<string, StoredTurnNode>(),
   };
-  let hooks:
-    | {
-        afterCommitBeforeAck?(): Promise<void>;
-        beforeCommit?(): Promise<void>;
-        midCommit?(commit: () => Promise<void>): Promise<void>;
-      }
-    | null = null;
+  let hooks: {
+    afterCommitBeforeAck?(): Promise<void>;
+    beforeCommit?(): Promise<void>;
+    midCommit?(commit: () => Promise<void>): Promise<void>;
+  } | null = null;
   let transactionQueue = Promise.resolve();
 
   const backend: RuntimeBackend & Record<PropertyKey, unknown> = {
@@ -492,7 +541,7 @@ function createTestBackend(): RuntimeBackend {
         await hooks?.beforeCommit?.();
 
         let committed = false;
-        const commit = async (): Promise<void> => {
+        const commit = (): Promise<void> => {
           if (committed) {
             throw new Error("test backend commit hook attempted double commit");
           }
@@ -501,6 +550,7 @@ function createTestBackend(): RuntimeBackend {
           state.objects = draft.objects;
           state.turnNodes = draft.turnNodes;
           committed = true;
+          return Promise.resolve();
         };
 
         if (hooks?.midCommit === undefined) {
