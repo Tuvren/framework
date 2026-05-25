@@ -363,14 +363,7 @@
           "status": "pass",
           "suiteId": "tuvren.framework.promoted-authority",
           "suiteVersion": "0.1.0"
-        }
-      ],
-      "version": "unreleased-workspace"
-    },
-    {
-      "implementationId": "typescript-framework",
-      "language": "typescript",
-      "results": [
+        },
         {
           "checkIds": [
             "batteries-included.lifecycle.memory.constructed",

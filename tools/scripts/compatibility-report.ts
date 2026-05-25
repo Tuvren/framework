@@ -475,18 +475,11 @@ async function main(): Promise<void> {
       });
       seenSuiteKeys.add(suiteKey);
     }
-    // Epic R establishes the first measured TypeScript baseline only. Later
-    // language lines append peer implementation evidence here rather than
-    // treating TypeScript as the semantic root.
-    implementations.push({
-      implementationId: runner.implementationId,
-      language: runner.language,
-      results: [result.matrixResult],
-      // The current TypeScript line is still an unreleased workspace
-      // implementation, so the matrix records that explicitly instead of
-      // echoing the private testkit packages' placeholder 0.0.0 versions.
-      version: TRANSITION_IMPLEMENTATION_VERSION,
-    });
+    upsertCompatibilityImplementation(
+      implementations,
+      runner,
+      result.matrixResult
+    );
 
     if (result.matrixResult.status === "fail") {
       hasFailure = true;
@@ -544,6 +537,33 @@ async function main(): Promise<void> {
   if (hasFailure && !allowFailingEvidence) {
     throw new Error("one or more conformance targets failed");
   }
+}
+
+function upsertCompatibilityImplementation(
+  implementations: CompatibilityImplementation[],
+  runner: ConformanceRunner,
+  result: CompatibilityImplementationResult
+): void {
+  const existingImplementation = implementations.find(
+    (implementation) =>
+      implementation.implementationId === runner.implementationId &&
+      implementation.language === runner.language &&
+      implementation.version === TRANSITION_IMPLEMENTATION_VERSION
+  );
+
+  if (existingImplementation === undefined) {
+    // The current workspace implementations are unreleased, so the matrix
+    // records that explicitly instead of echoing private package placeholders.
+    implementations.push({
+      implementationId: runner.implementationId,
+      language: runner.language,
+      results: [result],
+      version: TRANSITION_IMPLEMENTATION_VERSION,
+    });
+    return;
+  }
+
+  existingImplementation.results.push(result);
 }
 
 async function checkCompatibilityEvidence(): Promise<void> {
