@@ -187,7 +187,7 @@ const EVIDENCE = {
     authorityPacket:
       "boundaries/shared/contracts/core/spec/authority-packet.json",
     compatibilityEvidence:
-      "reports/compatibility/evidence/shared-conformance-runner.typescript-framework.json",
+      "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
     conformancePlan:
       "boundaries/framework/conformance/plans/driver-api-core.json; boundaries/framework/conformance/plans/driver-api-extended.json",
     fixture:
@@ -200,7 +200,7 @@ const EVIDENCE = {
     authorityPacket:
       "boundaries/shared/contracts/core/spec/authority-packet.json",
     compatibilityEvidence:
-      "reports/compatibility/evidence/shared-conformance-runner.typescript-framework.json",
+      "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
     conformancePlan:
       "boundaries/framework/conformance/plans/event-stream-core.json; boundaries/framework/conformance/plans/event-stream-extended.json",
     fixture: "boundaries/framework/conformance/fixtures/stream-events.json",
@@ -212,7 +212,7 @@ const EVIDENCE = {
     authorityPacket:
       "boundaries/kernel/contracts/protocol/spec/authority-packet.json",
     compatibilityEvidence:
-      "reports/compatibility/evidence/shared-conformance-runner.typescript-kernel-sqlite.json; reports/compatibility/evidence/shared-conformance-runner.rust-kernel.json",
+      "reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-sqlite-conformance-runner.json; reports/compatibility/evidence/shared-conformance-runner.kernel-rust-conformance-runner.json",
     conformancePlan:
       "boundaries/kernel/conformance/plans/kernel-protocol-core.json; boundaries/kernel/conformance/plans/kernel-protocol-extended.json",
     fixture:
@@ -225,7 +225,7 @@ const EVIDENCE = {
     authorityPacket:
       "boundaries/providers/contracts/provider-api/spec/authority-packet.json",
     compatibilityEvidence:
-      "reports/compatibility/evidence/shared-conformance-runner.typescript-providers.json",
+      "reports/compatibility/evidence/shared-conformance-runner.providers-typescript-conformance-runner.json",
     conformancePlan:
       "boundaries/providers/conformance/plans/provider-api-bridge.json; boundaries/providers/conformance/plans/provider-api-bridge-extended.json",
     fixture: "boundaries/providers/conformance/fixtures/provider-fixtures.json",
@@ -237,7 +237,7 @@ const EVIDENCE = {
     authorityPacket:
       "boundaries/framework/contracts/react-driver/spec/authority-packet.json",
     compatibilityEvidence:
-      "reports/compatibility/evidence/shared-conformance-runner.typescript-framework.json",
+      "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
     conformancePlan:
       "boundaries/framework/conformance/plans/react-driver-callables.json; boundaries/framework/conformance/plans/react-driver-extended.json",
     fixture:
@@ -250,7 +250,7 @@ const EVIDENCE = {
     authorityPacket:
       "boundaries/shared/contracts/core/spec/authority-packet.json",
     compatibilityEvidence:
-      "reports/compatibility/evidence/shared-conformance-runner.typescript-framework.json",
+      "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
     conformancePlan:
       "boundaries/framework/conformance/plans/runtime-api-lifecycle.json; boundaries/framework/conformance/plans/runtime-api-lifecycle-extended.json; boundaries/framework/conformance/plans/runtime-api-callables.json; boundaries/framework/conformance/plans/runtime-api-callables-extended.json",
     fixture:
@@ -268,7 +268,7 @@ const EVIDENCE = {
     authorityPacket:
       "boundaries/shared/contracts/core/spec/authority-packet.json",
     compatibilityEvidence:
-      "reports/compatibility/evidence/shared-conformance-runner.typescript-framework.json",
+      "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
     conformancePlan:
       "boundaries/framework/conformance/plans/tool-contracts-extended.json",
     fixture:
@@ -281,7 +281,7 @@ const EVIDENCE = {
     authorityPacket:
       "boundaries/shared/contracts/core/spec/authority-packet.json",
     compatibilityEvidence:
-      "reports/compatibility/evidence/shared-conformance-runner.typescript-framework.json",
+      "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
     conformancePlan:
       "boundaries/framework/conformance/plans/runtime-api-orchestration.json",
     fixture:
@@ -294,7 +294,7 @@ const EVIDENCE = {
     authorityPacket:
       "boundaries/kernel/contracts/protocol/spec/authority-packet.json",
     compatibilityEvidence:
-      "reports/compatibility/evidence/shared-conformance-runner.typescript-kernel-sqlite.json; reports/compatibility/evidence/shared-conformance-runner.typescript-framework.json",
+      "reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-sqlite-conformance-runner.json; reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
     conformancePlan:
       "boundaries/kernel/conformance/plans/kernel-run-liveness.json",
     fixture:
@@ -307,7 +307,7 @@ const EVIDENCE = {
     authorityPacket:
       "boundaries/kernel/contracts/protocol/spec/authority-packet.json",
     compatibilityEvidence:
-      "reports/compatibility/evidence/shared-conformance-runner.typescript-kernel-sqlite.json",
+      "reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-sqlite-conformance-runner.json",
     conformancePlan:
       "boundaries/kernel/conformance/plans/kernel-restart-recovery.json",
     fixture:
