@@ -315,9 +315,12 @@
     "runtime-lifecycle-ext.stale-recovery.handoff-context-active-agent",
     "runtime-lifecycle-ext.stale-recovery.same-signal-iterate",
     "runtime-lifecycle-ext.stale-recovery.signal-mismatch-fresh-turn",
+    "runtime-api-operational-telemetry.approval-events",
     "runtime-api-operational-telemetry.completed-turn-events",
     "runtime-api-operational-telemetry.completed-turn-spans",
     "runtime-api-operational-telemetry.error-path",
+    "runtime-api-operational-telemetry.recovery-records",
+    "runtime-api-operational-telemetry.tool-spans",
     "runtime-orchestration-af.handoff-last-output-only-builder",
     "runtime-orchestration-af.handoff-rejects-multiple-intents",
     "runtime-orchestration-af.handoff-resolution-not-history-entry",
@@ -364,9 +367,9 @@
   "summary": {
     "failedChecks": 0,
     "passedChecks": 0,
-    "totalChecks": 344,
+    "totalChecks": 347,
     "applicableChecks": 0,
-    "nonApplicableChecks": 344
+    "nonApplicableChecks": 347
   },
   "suiteId": "tuvren.framework.promoted-authority",
   "suiteVersion": "0.1.0"

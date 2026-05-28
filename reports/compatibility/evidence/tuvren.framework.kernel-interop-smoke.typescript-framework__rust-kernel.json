@@ -38,6 +38,7 @@
               "tuvren.runtime.parent_checkpoint.hash",
               "tuvren.runtime.provider.id",
               "tuvren.runtime.run.id",
+              "tuvren.runtime.thread.id",
               "tuvren.runtime.turn.id"
             ],
             "scenario": "streaming",
@@ -84,6 +85,7 @@
               "tuvren.runtime.parent_checkpoint.hash",
               "tuvren.runtime.provider.id",
               "tuvren.runtime.run.id",
+              "tuvren.runtime.thread.id",
               "tuvren.runtime.turn.id"
             ],
             "scenario": "structured",
@@ -130,6 +132,7 @@
               "tuvren.runtime.parent_checkpoint.hash",
               "tuvren.runtime.provider.id",
               "tuvren.runtime.run.id",
+              "tuvren.runtime.thread.id",
               "tuvren.runtime.tool_call.id",
               "tuvren.runtime.turn.id"
             ],
@@ -178,6 +181,7 @@
               "tuvren.runtime.provider.id",
               "tuvren.runtime.resumed_from.hash",
               "tuvren.runtime.run.id",
+              "tuvren.runtime.thread.id",
               "tuvren.runtime.tool_call.id",
               "tuvren.runtime.turn.id"
             ],
@@ -214,9 +218,11 @@
               "tuvren.runtime.branch.id",
               "tuvren.runtime.checkpoint.hash",
               "tuvren.runtime.driver.id",
+              "tuvren.runtime.error.code",
               "tuvren.runtime.parent_checkpoint.hash",
               "tuvren.runtime.provider.id",
               "tuvren.runtime.run.id",
+              "tuvren.runtime.thread.id",
               "tuvren.runtime.turn.id"
             ],
             "scenario": "cancel",
@@ -251,6 +257,7 @@
               "tuvren.runtime.parent_checkpoint.hash",
               "tuvren.runtime.provider.id",
               "tuvren.runtime.run.id",
+              "tuvren.runtime.thread.id",
               "tuvren.runtime.turn.id"
             ],
             "scenario": "metadata",
@@ -301,6 +308,7 @@
               "tuvren.runtime.parent_checkpoint.hash",
               "tuvren.runtime.provider.id",
               "tuvren.runtime.run.id",
+              "tuvren.runtime.thread.id",
               "tuvren.runtime.turn.id"
             ],
             "scenario": "branching",
@@ -343,6 +351,7 @@
               "tuvren.runtime.parent_checkpoint.hash",
               "tuvren.runtime.provider.id",
               "tuvren.runtime.run.id",
+              "tuvren.runtime.thread.id",
               "tuvren.runtime.turn.id"
             ],
             "scenario": "steering",
@@ -397,6 +406,7 @@
               "tuvren.runtime.parent_checkpoint.hash",
               "tuvren.runtime.provider.id",
               "tuvren.runtime.run.id",
+              "tuvren.runtime.thread.id",
               "tuvren.runtime.turn.id"
             ],
             "scenario": "reload",
@@ -427,10 +437,12 @@
       "tuvren.runtime.branch.id",
       "tuvren.runtime.checkpoint.hash",
       "tuvren.runtime.driver.id",
+      "tuvren.runtime.error.code",
       "tuvren.runtime.parent_checkpoint.hash",
       "tuvren.runtime.provider.id",
       "tuvren.runtime.resumed_from.hash",
       "tuvren.runtime.run.id",
+      "tuvren.runtime.thread.id",
       "tuvren.runtime.tool_call.id",
       "tuvren.runtime.turn.id"
     ],
@@ -444,6 +456,7 @@
           "tuvren.runtime.parent_checkpoint.hash",
           "tuvren.runtime.provider.id",
           "tuvren.runtime.run.id",
+          "tuvren.runtime.thread.id",
           "tuvren.runtime.turn.id"
         ],
         "scenario": "streaming"
@@ -457,6 +470,7 @@
           "tuvren.runtime.parent_checkpoint.hash",
           "tuvren.runtime.provider.id",
           "tuvren.runtime.run.id",
+          "tuvren.runtime.thread.id",
           "tuvren.runtime.turn.id"
         ],
         "scenario": "structured"
@@ -470,6 +484,7 @@
           "tuvren.runtime.parent_checkpoint.hash",
           "tuvren.runtime.provider.id",
           "tuvren.runtime.run.id",
+          "tuvren.runtime.thread.id",
           "tuvren.runtime.tool_call.id",
           "tuvren.runtime.turn.id"
         ],
@@ -485,6 +500,7 @@
           "tuvren.runtime.provider.id",
           "tuvren.runtime.resumed_from.hash",
           "tuvren.runtime.run.id",
+          "tuvren.runtime.thread.id",
           "tuvren.runtime.tool_call.id",
           "tuvren.runtime.turn.id"
         ],
@@ -496,9 +512,11 @@
           "tuvren.runtime.branch.id",
           "tuvren.runtime.checkpoint.hash",
           "tuvren.runtime.driver.id",
+          "tuvren.runtime.error.code",
           "tuvren.runtime.parent_checkpoint.hash",
           "tuvren.runtime.provider.id",
           "tuvren.runtime.run.id",
+          "tuvren.runtime.thread.id",
           "tuvren.runtime.turn.id"
         ],
         "scenario": "cancel"
@@ -512,6 +530,7 @@
           "tuvren.runtime.parent_checkpoint.hash",
           "tuvren.runtime.provider.id",
           "tuvren.runtime.run.id",
+          "tuvren.runtime.thread.id",
           "tuvren.runtime.turn.id"
         ],
         "scenario": "metadata"
@@ -525,6 +544,7 @@
           "tuvren.runtime.parent_checkpoint.hash",
           "tuvren.runtime.provider.id",
           "tuvren.runtime.run.id",
+          "tuvren.runtime.thread.id",
           "tuvren.runtime.turn.id"
         ],
         "scenario": "branching"
@@ -538,6 +558,7 @@
           "tuvren.runtime.parent_checkpoint.hash",
           "tuvren.runtime.provider.id",
           "tuvren.runtime.run.id",
+          "tuvren.runtime.thread.id",
           "tuvren.runtime.turn.id"
         ],
         "scenario": "steering"
@@ -551,6 +572,7 @@
           "tuvren.runtime.parent_checkpoint.hash",
           "tuvren.runtime.provider.id",
           "tuvren.runtime.run.id",
+          "tuvren.runtime.thread.id",
           "tuvren.runtime.turn.id"
         ],
         "scenario": "extension"
@@ -564,6 +586,7 @@
           "tuvren.runtime.parent_checkpoint.hash",
           "tuvren.runtime.provider.id",
           "tuvren.runtime.run.id",
+          "tuvren.runtime.thread.id",
           "tuvren.runtime.turn.id"
         ],
         "scenario": "orchestration"
@@ -577,6 +600,7 @@
           "tuvren.runtime.parent_checkpoint.hash",
           "tuvren.runtime.provider.id",
           "tuvren.runtime.run.id",
+          "tuvren.runtime.thread.id",
           "tuvren.runtime.turn.id"
         ],
         "scenario": "reload"

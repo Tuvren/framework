@@ -298,9 +298,12 @@
             "runtime-lifecycle-ext.stale-recovery.handoff-context-active-agent",
             "runtime-lifecycle-ext.stale-recovery.same-signal-iterate",
             "runtime-lifecycle-ext.stale-recovery.signal-mismatch-fresh-turn",
+            "runtime-api-operational-telemetry.approval-events",
             "runtime-api-operational-telemetry.completed-turn-events",
             "runtime-api-operational-telemetry.completed-turn-spans",
             "runtime-api-operational-telemetry.error-path",
+            "runtime-api-operational-telemetry.recovery-records",
+            "runtime-api-operational-telemetry.tool-spans",
             "runtime-orchestration-af.handoff-last-output-only-builder",
             "runtime-orchestration-af.handoff-rejects-multiple-intents",
             "runtime-orchestration-af.handoff-resolution-not-history-entry",
@@ -342,9 +345,9 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 332,
-            "totalChecks": 344,
-            "applicableChecks": 332,
+            "passedChecks": 335,
+            "totalChecks": 347,
+            "applicableChecks": 335,
             "nonApplicableChecks": 12
           },
           "declaredCapabilities": [
@@ -385,9 +388,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 12,
-            "totalChecks": 344,
+            "totalChecks": 347,
             "applicableChecks": 12,
-            "nonApplicableChecks": 332
+            "nonApplicableChecks": 335
           },
           "declaredCapabilities": ["framework.batteries-included"],
           "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.framework-batteries-included-conformance-runner.json",
@@ -816,9 +819,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 0,
-            "totalChecks": 344,
+            "totalChecks": 347,
             "applicableChecks": 0,
-            "nonApplicableChecks": 344
+            "nonApplicableChecks": 347
           },
           "declaredCapabilities": [],
           "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.framework-rust-conformance-runner.json",

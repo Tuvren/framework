@@ -22,6 +22,10 @@ import type {
   TuvrenTelemetrySink,
 } from "@tuvren/core/telemetry";
 import { createDriverRegistry, createTuvrenRuntime } from "../src/index.ts";
+import {
+  filterTelemetryAttributes,
+  sanitizeTelemetryErrorSummary,
+} from "../src/lib/telemetry-secret-screening.ts";
 import { createFakeKernelHarness } from "./fake-kernel.ts";
 import {
   assistantText,
@@ -125,6 +129,39 @@ describe("runtime operational telemetry", () => {
     await collectEvents(handle.events());
 
     expect(handle.status().phase).toBe("completed");
+  });
+
+  test("redacts credential-shaped error summaries", () => {
+    expect(
+      sanitizeTelemetryErrorSummary("backend failed password=hunter2")
+    ).toBe("[redacted]");
+    expect(sanitizeTelemetryErrorSummary("provider token=abc123")).toBe(
+      "[redacted]"
+    );
+  });
+
+  test("preserves UUID identity attributes while dropping secret-looking values", () => {
+    const attributes = filterTelemetryAttributes({
+      "tuvren.runtime.branch.id": "123e4567-e89b-12d3-a456-426614174000",
+      "tuvren.runtime.provider.id": "abcdefghijklmnopqrstuvwxyzabcdef123456",
+      "tuvren.runtime.run.id": "123e4567-e89b-12d3-a456-426614174001",
+      "tuvren.runtime.thread.id": "123e4567-e89b-12d3-a456-426614174002",
+      "tuvren.runtime.turn.id": "123e4567-e89b-12d3-a456-426614174003",
+    });
+
+    expect(attributes["tuvren.runtime.branch.id"]).toBe(
+      "123e4567-e89b-12d3-a456-426614174000"
+    );
+    expect(attributes["tuvren.runtime.provider.id"]).toBeUndefined();
+    expect(attributes["tuvren.runtime.run.id"]).toBe(
+      "123e4567-e89b-12d3-a456-426614174001"
+    );
+    expect(attributes["tuvren.runtime.thread.id"]).toBe(
+      "123e4567-e89b-12d3-a456-426614174002"
+    );
+    expect(attributes["tuvren.runtime.turn.id"]).toBe(
+      "123e4567-e89b-12d3-a456-426614174003"
+    );
   });
 });
 

@@ -23,14 +23,25 @@ const URL_CREDENTIAL_PATTERN = /[a-z][a-z0-9+.-]*:\/\/[^/\s:@]+:[^/\s@]+@/iu;
 const CONNECTION_STRING_PATTERN =
   /\b(?:postgres|postgresql|mysql|mongodb|redis):\/\/\S+/iu;
 const AUTH_HEADER_PATTERN = /\b(?:authorization|x-api-key)\s*[:=]\s*\S+/iu;
+const CREDENTIAL_ASSIGNMENT_PATTERN =
+  /\b(?:authorization|api[-_.]?key|bearer|client[-_.]?secret|credential|password|private[-_.]?key|secret|token)\s*[:=]\s*(?:"[^"]*"|'[^']*'|[^\s,;]+)/iu;
 const JWT_PATTERN = /\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/u;
 const LONG_SECRETISH_PATTERN = /\b[A-Za-z0-9_~+/.-]{32,}={0,2}\b/u;
 const CANONICAL_HASH_PATTERN = /^[a-f0-9]{64}$/iu;
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const REDACTED = "[redacted]";
 const HASH_ATTRIBUTE_KEYS: ReadonlySet<string> = new Set([
   "tuvren.runtime.checkpoint.hash",
   "tuvren.runtime.parent_checkpoint.hash",
   "tuvren.runtime.resumed_from.hash",
+]);
+const ID_ATTRIBUTE_KEYS: ReadonlySet<string> = new Set([
+  "tuvren.runtime.branch.id",
+  "tuvren.runtime.run.id",
+  "tuvren.runtime.thread.id",
+  "tuvren.runtime.tool_call.id",
+  "tuvren.runtime.turn.id",
 ]);
 
 const ALLOWED_ATTRIBUTE_KEYS: ReadonlySet<string> = new Set(
@@ -83,6 +94,10 @@ function sanitizeTelemetryAttributeValue(
     return value;
   }
 
+  if (ID_ATTRIBUTE_KEYS.has(key) && UUID_PATTERN.test(value)) {
+    return value;
+  }
+
   const sanitized = sanitizeSecretLikeText(value);
   return sanitized === REDACTED ? undefined : sanitized;
 }
@@ -96,6 +111,7 @@ function sanitizeSecretLikeText(value: string): string {
     URL_CREDENTIAL_PATTERN.test(value) ||
     CONNECTION_STRING_PATTERN.test(value) ||
     AUTH_HEADER_PATTERN.test(value) ||
+    CREDENTIAL_ASSIGNMENT_PATTERN.test(value) ||
     JWT_PATTERN.test(value) ||
     LONG_SECRETISH_PATTERN.test(value)
   ) {

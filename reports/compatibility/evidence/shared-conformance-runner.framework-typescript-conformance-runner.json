@@ -6377,6 +6377,28 @@
     {
       "assertionResults": [
         {
+          "assertionId": "runtime-api-operational-telemetry.approval-events.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-operational-telemetry.approval-events.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-operational-telemetry.approval-events.requiredEvidence.result.telemetry.eventKinds",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-api-operational-telemetry.approval-events",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.operational-telemetry"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "runtime-api-operational-telemetry.completed-turn-events.1.resultField",
           "status": "pass"
         },
@@ -6427,6 +6449,10 @@
           "status": "pass"
         },
         {
+          "assertionId": "runtime-api-operational-telemetry.completed-turn-spans.5.resultField",
+          "status": "pass"
+        },
+        {
           "assertionId": "runtime-api-operational-telemetry.completed-turn-spans.requiredEvidence.result.telemetry.spanKinds",
           "status": "pass"
         },
@@ -6462,6 +6488,50 @@
         }
       ],
       "checkId": "runtime-api-operational-telemetry.error-path",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.operational-telemetry"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-api-operational-telemetry.recovery-records.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-operational-telemetry.recovery-records.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-operational-telemetry.recovery-records.requiredEvidence.result.telemetry.eventKinds",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-operational-telemetry.recovery-records.requiredEvidence.result.telemetry.spanKinds",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-api-operational-telemetry.recovery-records",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.operational-telemetry"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-api-operational-telemetry.tool-spans.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-operational-telemetry.tool-spans.requiredEvidence.result.telemetry.spanKinds",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-api-operational-telemetry.tool-spans",
       "details": {
         "adapterId": "typescript-framework",
         "planId": "tuvren.framework.runtime-api.operational-telemetry"
@@ -7293,9 +7363,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 332,
-    "totalChecks": 344,
-    "applicableChecks": 332,
+    "passedChecks": 335,
+    "totalChecks": 347,
+    "applicableChecks": 335,
     "nonApplicableChecks": 12
   },
   "suiteId": "tuvren.framework.promoted-authority",
