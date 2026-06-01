@@ -1363,11 +1363,207 @@
       "checkId": "schema-authoring.define-tool.validate-passthrough-success",
       "evidence": ["result.schemaAuthoring.defineTool.validateSuccess"],
       "operation": "runtime.schema-authoring.define-tool"
+    },
+    {
+      "assertions": [
+        {
+          "equals": "tuvren-server",
+          "field": "$.capabilityOrchestration.backCompat.startAttribution.executionClass",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "capability-orch.aw001.definetool-resolves-tuvren-server",
+      "evidence": [
+        "result.capabilityOrchestration.backCompat.startAttribution.executionClass"
+      ],
+      "input": {
+        "scenarioPath": "$.capability-orchestration-foundation"
+      },
+      "operation": "runtime.capability-orchestration.foundation",
+      "scenario": "runtime-api-scenarios"
+    },
+    {
+      "assertions": [
+        {
+          "equals": "tuvren",
+          "field": "$.capabilityOrchestration.backCompat.startAttribution.owner",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "capability-orch.aw001.tuvren-server-owner-is-tuvren",
+      "evidence": [
+        "result.capabilityOrchestration.backCompat.startAttribution.owner"
+      ],
+      "input": {
+        "scenarioPath": "$.capability-orchestration-foundation"
+      },
+      "operation": "runtime.capability-orchestration.foundation",
+      "scenario": "runtime-api-scenarios"
+    },
+    {
+      "assertions": [
+        {
+          "equals": "conformance-tool",
+          "field": "$.capabilityOrchestration.backCompat.startAttribution.capabilityId",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "capability-orch.aw001.capability-id-matches-tool-name",
+      "evidence": [
+        "result.capabilityOrchestration.backCompat.startAttribution.capabilityId"
+      ],
+      "input": {
+        "scenarioPath": "$.capability-orchestration-foundation"
+      },
+      "operation": "runtime.capability-orchestration.foundation",
+      "scenario": "runtime-api-scenarios"
+    },
+    {
+      "assertions": [
+        {
+          "equals": true,
+          "field": "$.capabilityOrchestration.backCompat.startAttribution.observation.canAudit",
+          "kind": "resultField"
+        },
+        {
+          "equals": true,
+          "field": "$.capabilityOrchestration.backCompat.startAttribution.observation.canCancel",
+          "kind": "resultField"
+        },
+        {
+          "equals": true,
+          "field": "$.capabilityOrchestration.backCompat.startAttribution.observation.canRetry",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "capability-orch.aw001.tuvren-server-full-lifecycle-observation",
+      "evidence": [
+        "result.capabilityOrchestration.backCompat.startAttribution.observation.canAudit",
+        "result.capabilityOrchestration.backCompat.startAttribution.observation.canCancel",
+        "result.capabilityOrchestration.backCompat.startAttribution.observation.canRetry"
+      ],
+      "input": {
+        "scenarioPath": "$.capability-orchestration-foundation"
+      },
+      "operation": "runtime.capability-orchestration.foundation",
+      "scenario": "runtime-api-scenarios"
+    },
+    {
+      "assertions": [
+        {
+          "equals": "tuvren-server",
+          "field": "$.capabilityOrchestration.backCompat.resultAttribution.executionClass",
+          "kind": "resultField"
+        },
+        {
+          "equals": "tuvren",
+          "field": "$.capabilityOrchestration.backCompat.resultAttribution.owner",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "capability-orch.aw001.result-event-carries-attribution",
+      "evidence": [
+        "result.capabilityOrchestration.backCompat.resultAttribution.executionClass",
+        "result.capabilityOrchestration.backCompat.resultAttribution.owner"
+      ],
+      "input": {
+        "scenarioPath": "$.capability-orchestration-foundation"
+      },
+      "operation": "runtime.capability-orchestration.foundation",
+      "scenario": "runtime-api-scenarios"
+    },
+    {
+      "assertions": [
+        {
+          "equals": "cap-call-1",
+          "field": "$.capabilityOrchestration.backCompat.startEventCallId",
+          "kind": "resultField"
+        },
+        {
+          "equals": "conformance-tool",
+          "field": "$.capabilityOrchestration.backCompat.startEventName",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "capability-orch.aw001.attribution-additive-existing-fields-present",
+      "evidence": [
+        "result.capabilityOrchestration.backCompat.startEventCallId",
+        "result.capabilityOrchestration.backCompat.startEventName"
+      ],
+      "input": {
+        "scenarioPath": "$.capability-orchestration-foundation"
+      },
+      "operation": "runtime.capability-orchestration.foundation",
+      "scenario": "runtime-api-scenarios"
+    },
+    {
+      "assertions": [
+        {
+          "equals": false,
+          "field": "$.capabilityPolicy.exposure.denied.exposed",
+          "kind": "resultField"
+        },
+        {
+          "equals": true,
+          "field": "$.capabilityPolicy.exposure.denied.hasReason",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "capability-orch.aw001.exposure-denied-surface-withheld",
+      "evidence": [
+        "result.capabilityPolicy.exposure.denied.exposed",
+        "result.capabilityPolicy.exposure.denied.hasReason"
+      ],
+      "operation": "runtime.capability-orchestration.policy-decisions"
+    },
+    {
+      "assertions": [
+        {
+          "equals": true,
+          "field": "$.capabilityPolicy.exposure.permitted.exposed",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "capability-orch.aw001.exposure-permitted-surface-passes",
+      "evidence": ["result.capabilityPolicy.exposure.permitted.exposed"],
+      "operation": "runtime.capability-orchestration.policy-decisions"
+    },
+    {
+      "assertions": [
+        {
+          "equals": false,
+          "field": "$.capabilityPolicy.invocation.denied.admitted",
+          "kind": "resultField"
+        },
+        {
+          "equals": true,
+          "field": "$.capabilityPolicy.invocation.denied.hasReason",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "capability-orch.aw001.invocation-denied-capability-not-admitted",
+      "evidence": [
+        "result.capabilityPolicy.invocation.denied.admitted",
+        "result.capabilityPolicy.invocation.denied.hasReason"
+      ],
+      "operation": "runtime.capability-orchestration.policy-decisions"
+    },
+    {
+      "assertions": [
+        {
+          "equals": true,
+          "field": "$.capabilityPolicy.invocation.permitted.admitted",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "capability-orch.aw001.invocation-permitted-capability-admitted",
+      "evidence": ["result.capabilityPolicy.invocation.permitted.admitted"],
+      "operation": "runtime.capability-orchestration.policy-decisions"
     }
   ],
   "packetId": "tuvren.shared.core",
   "planId": "tuvren.framework.runtime-api.callables-extended",
-  "planVersion": "0.3.0",
+  "planVersion": "0.4.0",
   "scenarios": {
     "runtime-api-scenarios": "../scenarios/runtime-api-scenarios.json"
   }

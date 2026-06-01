@@ -214,6 +214,10 @@ function createTelemetryEvidence(input: {
   const attributes = {
     "tuvren.runtime.backend.id": input.config.backend,
     "tuvren.runtime.branch.id": input.thread.branchId,
+    // ADR-046 AW006: capability attribution attributes are observed on tool_call
+    // spans in turns that execute defineTool tools; null when no tool is called.
+    "tuvren.runtime.capability.execution_class": null,
+    "tuvren.runtime.capability.owner": null,
     "tuvren.runtime.checkpoint.hash": collapseTelemetryValues(
       checkpoints.map((event) => event.turnNodeHash)
     ),
