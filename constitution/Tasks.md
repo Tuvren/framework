@@ -122,7 +122,7 @@ flowchart LR
 
 ### Completed Work Ledger (Epics AT–AW)
 
-Completed ticket detail is removed from the active execution plan and retained through git history plus archived support artifacts. This ledger is the live audit summary for the five most recently closed epics; older closure records live in git history and `constitution/archived/`.
+Completed ticket detail is removed from the active execution plan and retained through git history plus archived support artifacts. This ledger is the live audit summary for the four most recently closed epics; older closure records live in git history and `constitution/archived/`.
 
 | Epic | Points | Closed Outcome | Evidence Anchor |
 | --- | ---: | --- | --- |

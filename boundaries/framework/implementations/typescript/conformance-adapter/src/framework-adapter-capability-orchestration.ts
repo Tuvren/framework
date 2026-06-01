@@ -15,10 +15,10 @@
  */
 
 import {
+  createCapabilityPolicyEngine,
   createDriverRegistry,
   createTuvrenRuntime as createTuvrenRuntimeCore,
 } from "@tuvren/runtime";
-import { createCapabilityPolicyEngine } from "../../runtime/src/lib/capability-policy-engine.ts";
 import {
   type AdapterProjection,
   AGENT_NAME,

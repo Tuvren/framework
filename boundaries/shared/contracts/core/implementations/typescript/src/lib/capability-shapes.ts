@@ -192,8 +192,13 @@ export interface CapabilityPolicyContext {
  */
 export interface CapabilityPolicyEngine {
   /**
-   * Evaluate exposure-time policy over candidate surfaces. Denied surfaces
-   * must not reach the model's tool list.
+   * Evaluate exposure-time policy over candidate surfaces. Returns decisions
+   * indicating which surfaces may be included in the model-visible set.
+   *
+   * The runtime must filter denied surfaces before presenting the tool list
+   * to the model. This enforcement wiring lands in Epic BB; for the foundation
+   * phase (Epic AW), the baseline engine returns correct decisions but the
+   * runtime does not yet act on them during tool-set construction.
    */
   evaluateExposure(
     surfaces: ToolSurface[],
