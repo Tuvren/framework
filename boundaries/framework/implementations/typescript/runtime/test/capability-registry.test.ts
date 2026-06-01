@@ -173,4 +173,33 @@ describe("CapabilityRegistry — eligible surface candidate set", () => {
       registry.registerCapability(makeCapability("web.search"))
     ).toThrow();
   });
+
+  // Design note: "one surface can map to different capabilities by context"
+  // (Gherkin AW002) means different registry instances per agent segment can
+  // host the same surface name mapped to different capabilityIds. Within a
+  // single registry, a surface name is unique. The per-segment context
+  // selection — i.e. choosing which registry (or filtered view) applies for a
+  // given provider/model context — is a Capability Policy Engine concern
+  // (AW004). This test proves the per-registry uniqueness invariant that
+  // makes the cross-segment design safe.
+  test("same surface name in two distinct registry instances can resolve to different capability ids", () => {
+    // Segment A: "search" maps to "provider.search" (e.g. provider-native)
+    const registryA = createCapabilityRegistry();
+    registryA.registerCapability(makeCapability("provider.search"));
+    registryA.registerSurface(makeSurface("search", "provider.search"));
+
+    // Segment B: "search" maps to "tuvren.search" (e.g. server-side fallback)
+    const registryB = createCapabilityRegistry();
+    registryB.registerCapability(makeCapability("tuvren.search"));
+    registryB.registerSurface(makeSurface("search", "tuvren.search"));
+
+    const surfaceA = registryA.getEligibleSurfaces()[0];
+    const surfaceB = registryB.getEligibleSurfaces()[0];
+
+    expect(surfaceA?.name).toBe("search");
+    expect(surfaceB?.name).toBe("search");
+    // Same surface name, different capabilityId per context
+    expect(surfaceA?.capabilityId).toBe("provider.search");
+    expect(surfaceB?.capabilityId).toBe("tuvren.search");
+  });
 });

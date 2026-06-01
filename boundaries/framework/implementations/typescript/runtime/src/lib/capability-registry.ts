@@ -23,9 +23,14 @@ import type { Capability, ToolSurface } from "@tuvren/core/capabilities";
  * Invariants:
  * - A ToolSurface is distinct from its backing Capability; one Capability may
  *   back multiple ToolSurfaces.
- * - `getEligibleSurfaces()` returns the pre-policy candidate set for an agent
- *   segment. Policy (exposure-time withholding) is applied by the Capability
- *   Policy Engine, not here.
+ * - `getEligibleSurfaces()` returns the **global pre-policy candidate set**.
+ *   Per-segment narrowing (filtering by provider/model context) and
+ *   exposure-time withholding are both Capability Policy Engine concerns
+ *   (AW004). A registry instance holds the surfaces for one agent segment;
+ *   the "one surface can map to different capabilities by context" guarantee
+ *   is realized by providing distinct registry instances to distinct segments —
+ *   the same surface name in two registry instances may reference different
+ *   capabilityIds without conflict.
  */
 export interface CapabilityRegistry {
   /** Return all registered capabilities. */
