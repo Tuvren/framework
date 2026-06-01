@@ -2,6 +2,7 @@
 
 ## 0. Version History & Changelog
 
+- v0.9.0 - Realized the capability-orchestration model in the logical layer: reframed the single Tool Execution Gateway into a capability-orchestration surface by adding the Capability Registry, Binding & Endpoint Resolver, and Capability Policy Engine containers plus the Client Endpoint Boundary for the Tuvren-client execution class; described the four execution classes (provider-native, provider-mediated developer-provided, Tuvren-server, Tuvren-client) as ownership/observation profiles; classified MCP as a binding mechanism across classes; and added the compositional-model principle, execution-class trust relationships and failure classes, three critical flows (exposure-time tool-surface planning, invocation-time binding/policy with provider-native attribution, Tuvren-client lease/dispatch), and matching resilience models and logical risks. Traces to PRD CAP-P0-056 through CAP-P1-063. Existing tool execution becomes the Tuvren-server endpoint; no existing container is removed.
 - v0.8.0 - Realized the production-trust block in the logical layer: added the Telemetry & Observability Boundary container (correlated operational-telemetry surface plus vendor-neutral export edge, distinct from the real-time host event stream) tracing to CAP-P0-052 / CAP-P1-053; added framework-owned Execution Bound enforcement (CAP-P0-054) and a cross-cutting Secret Isolation Model (CAP-P0-055); added a Recovery & Durability Verification Model with a verification-time fault-injection seam and crash-recovery conformance backing the sharpened Reliability guarantee; added matching architectural principles, trust relationships, failure classes, three critical flows (crash-recovery, telemetry capture/export, bounded-execution stop), and logical risks.
 - v0.7.1 - Clarified current Reference Host posture after Epics AM-AT landed: durable reads now remove the kernel-inspector seam, the MCP client is first-class, and the retired playground host has been consolidated into a REPL CLI with headless mode, streaming JSONL output, and transcript replay.
 - v0.7.0 - Added the Durable-Read Surface responsibility on Framework Shared Services, thread enumeration as a kernel structural primitive with backend-advertised capability, the Curated Host-Facing SDK container with shared-primitive plus slim-convenience split, the Schema Authoring Helper and MCP Tool Source responsibilities under the Tool Execution Gateway, and the headless plus transcript responsibilities on the Reference Host; promoted the SDK-only proving-host invariant from a risk-mitigation aspiration to a satisfied invariant; added new logical risks for the kernel-spec amendment cascade, schema-adapter detection ambiguity, MCP transport fragmentation, and durable-read pagination shape divergence.
@@ -9,7 +10,7 @@
 
 ## 1. Architectural Strategy & Archetype Alignment
 
-- **Architectural Pattern:** Layered modular runtime with a narrow kernel boundary, shared framework services, pluggable drivers, explicit adapter edges, and a curated host-facing SDK surface composed of one shared-primitive container plus a slim convenience container with leaf integration containers peer-depending on the shared primitives.
+- **Architectural Pattern:** Layered modular runtime with a narrow kernel boundary, shared framework services, pluggable drivers, explicit adapter edges, a capability-orchestration surface above the execution edges that separates the model-facing tool surface from the underlying capability and routes each invocation to a known execution class, and a curated host-facing SDK surface composed of one shared-primitive container plus a slim convenience container with leaf integration containers peer-depending on the shared primitives.
 - **Why this pattern fits the PRD:** Tuvren Runtime must be embeddable, durable, provider-neutral, capable of supporting more than one execution style over time without redefining its durable core, and ergonomic enough that serious operator-facing host products can be built directly on the host-facing SDK without private shortcuts. A layered modular runtime preserves a stable mechanism foundation while letting shared framework services and individual drivers evolve independently, and the curated host-facing SDK shape lets the product satisfy host-developer ergonomics without weakening any underlying semantic boundary.
 - **Core trade-offs accepted:** The design prioritizes explicit boundaries, recoverability, inspectability, and host-developer ergonomics over minimum surface area; it accepts more internal structure than a lightweight prompt wrapper; it accepts a deliberate split between a shared-primitive container (subpath-exported) and a slim convenience container (re-exporting curated primitives plus a batteries-included composition) rather than collapsing into one umbrella or fragmenting into many separately-versioned contract packages; and it rejects distributed topology until the product proves that one in-process runtime can no longer carry the scope.
 
@@ -37,6 +38,7 @@
 - **Execution is bounded by the framework, not the driver:** A driver may decide whether to continue a loop, but the framework enforces hard bounds on iterations, tool calls, and resource budget so that a misbehaving driver, model, or tool cannot loop forever or exhaust resources. When a bound is reached the framework forces a safe, observable terminal outcome rather than relying on driver discretion.
 - **Secrets live only at the integration edges:** Credentials needed to reach providers and external tools (provider keys, MCP server auth) are confined to the Provider Gateway and MCP Client Container edges. They must never enter durable lineage, operational telemetry, or transcripts; the surfaces that make Tuvren inspectable must not become the channel through which secrets leak.
 - **Durability and recovery guarantees are verification-backed:** The recovery and durability promises are not asserted by design alone. A verification-time fault-injection seam at the persistence boundary and crash-recovery conformance scenarios prove that an interruption at any point resolves to resume-from-checkpoint or clean failure with no torn or partial lineage.
+- **Capability orchestration over single-tool execution:** Tools are not one developer-defined executable shape. The framework separates the model-facing Tool Surface from the underlying Capability, binds each capability to one of four execution classes (provider-native, provider-mediated developer-provided, Tuvren-server, Tuvren-client) and a concrete Endpoint, applies policy before exposure and before invocation, and bounds what it can observe or control per class. The model is compositional (Tool Surface × Capability × Binding × Endpoint × Policy × Observation), not an `origin` flag and not a rigid tool subclass taxonomy. MCP is a binding mechanism whose execution class depends on who invokes or runs the MCP server. The runtime never implies stronger control than the execution class actually grants.
 
 ### 1.3 Named Trust Relationships
 
@@ -50,6 +52,8 @@
 - **Untrusted semantic candidates:** Implementation language source trees, generic runner code, and human-prose documents are untrusted as cross-language semantic sources. They may project, validate, or describe authority, but they may not become it.
 - **Edge-confined credential boundary:** Provider keys and external MCP server credentials are held only at the Provider Gateway and MCP Client Container edges for the duration of a request. The Kernel Boundary, Durable State Boundary, Telemetry & Observability Boundary, and transcript surfaces are credential-free zones: they must never receive, persist, or emit secrets.
 - **Operator-facing telemetry consumer:** External observability tooling consumes exported operational telemetry. It is an outbound consumer of a vendor-neutral projection and never a source of runtime truth; the canonical telemetry vocabulary it consumes is boundary-owned authority, while the export format is an ecosystem-specific projection.
+- **Provider-owned invocation boundary:** Provider-native and provider-mediated invocations are owned by the model provider (and, for provider-mediated, a developer endpoint the provider calls). The runtime configures and exposes them and records only provider-exposed events and results; it does not assume full invocation-lifecycle control, and it represents them as known capabilities with explicit observation limits.
+- **Leased client-endpoint boundary:** A Tuvren-client endpoint executes capabilities in a client environment that may hold authority the server does not. The runtime owns orchestration and policy; the client endpoint owns environmental execution. Client endpoints are leased, may be unavailable, and may return late or stale results; their reported results are partially observed inputs, not trusted runtime truth.
 
 ### 1.4 Failure Classes
 
@@ -69,6 +73,10 @@
 - **Torn-checkpoint-under-crash risk:** A process crash lands in the middle of a checkpoint commit, threatening partial or corrupt lineage unless commits are atomic and recovery distinguishes committed from incomplete work; this risk must be proven addressed by fault injection rather than assumed.
 - **Secret-leakage risk:** Credentials used transiently to reach a provider or tool leak into durable lineage, operational telemetry, or transcripts, so that the very surfaces that make Tuvren inspectable and replayable also expose secrets.
 - **Telemetry-vocabulary divergence risk:** The operational telemetry surface grows a second, parallel vocabulary that drifts from the canonical runtime event vocabulary, so operators and host UIs come to describe the same runtime activity in incompatible terms.
+- **Execution-class misrepresentation risk:** The runtime models a provider-owned or client-owned invocation as if it were a locally executed function, implying control (cancel, retry, audit) or observation it does not actually have.
+- **Binding ambiguity risk:** A capability has multiple possible bindings and the runtime resolves to the wrong execution class or endpoint, or exposes a surface whose binding is unavailable, so a model-visible call cannot be honored or is honored under the wrong owner.
+- **Client-endpoint unavailability and staleness risk:** A leased client endpoint is absent, slow, or returns a result after its lease expired, and the runtime either blocks, double-dispatches, or accepts a stale result as authoritative.
+- **Partial-observability misattribution risk:** Provider-mediated invocations (for example provider-invoked remote MCP) expose only partial events; the runtime overstates what it observed or persists an incomplete record as if it were complete.
 
 ## 2. System Containers
 
@@ -123,7 +131,7 @@
 ### Provider Gateway
 
 - **Logical Type:** External integration boundary
-- **Responsibility:** Translate canonical prompts to provider-facing requests and translate provider outputs and streams back into canonical Kraken representations while preserving provider continuity artifacts without promoting provider-specific ontology inward. Provider credentials are held only at this edge for the duration of a request and are excluded from durable lineage, operational telemetry, and transcripts; opaque provider continuity artifacts that must persist for correct multi-turn operation are not credentials and must not carry secret material.
+- **Responsibility:** Translate canonical prompts to provider-facing requests and translate provider outputs and streams back into canonical Kraken representations while preserving provider continuity artifacts without promoting provider-specific ontology inward. Provider credentials are held only at this edge for the duration of a request and are excluded from durable lineage, operational telemetry, and transcripts; opaque provider continuity artifacts that must persist for correct multi-turn operation are not credentials and must not carry secret material. Within the capability-orchestration model this gateway also owns provider-native capabilities (the provider executes the tool; Tuvren enables/configures the surface and records only provider-exposed tool events and results) and provider-mediated developer-provided capabilities (the provider invokes a developer endpoint; Tuvren configures the mediated relationship and records what the provider/tool protocol exposes). For these classes Tuvren does not assume full invocation-lifecycle control.
 - **Inputs:** Canonical prompt, rendered tool definitions, structured-output requests, model configuration.
 - **Outputs:** Canonical model responses, normalized stream chunks, continuity artifacts, and provider failure signals.
 - **Depends on:** External Model Providers.
@@ -131,7 +139,7 @@
 ### Tool Execution Gateway
 
 - **Logical Type:** External integration boundary
-- **Responsibility:** Resolve tools, validate inputs, apply approval gating, execute tool work, stage tool results incrementally, return canonical tool result messages to the runtime, and integrate multiple Tool Source Containers (including built-in registries and the MCP Client Container) into one unified tool resolution surface for the active agent segment. Tool definitions consumed by this gateway adhere to the boundary CustomSchema contract; the Schema Authoring Helper normalizes richer authoring shapes into that contract upstream of this gateway.
+- **Responsibility:** Resolve tools, validate inputs, apply approval gating, execute tool work, stage tool results incrementally, return canonical tool result messages to the runtime, and integrate multiple Tool Source Containers (including built-in registries and the MCP Client Container) into one unified tool resolution surface for the active agent segment. Tool definitions consumed by this gateway adhere to the boundary CustomSchema contract; the Schema Authoring Helper normalizes richer authoring shapes into that contract upstream of this gateway. Within the capability-orchestration model this gateway is the Tuvren-server execution class: it owns the full invocation lifecycle (validate, dispatch, stage, retry or cancel where supported, audit) for capabilities the Binding & Endpoint Resolver bound to server-side execution. Today's developer-defined runtime-executed tools resolve here unchanged; capabilities bound to provider-native, provider-mediated, or Tuvren-client execution are not executed here.
 - **Inputs:** Canonical tool calls, tool registry definitions drawn from one or more Tool Source Containers, approval decisions, tool execution context.
 - **Outputs:** Canonical tool results, approval requests, partial batch completion state, and tool-related events.
 - **Depends on:** External Tools and Systems, Tool Source Container (one or more), Extension Runtime, Kernel Boundary.
@@ -147,7 +155,7 @@
 ### Tool Source Container
 
 - **Logical Type:** Tool-discovery integration boundary
-- **Responsibility:** Provide one source of tool definitions to the Tool Execution Gateway. Multiple Tool Source Containers may exist concurrently for one active agent segment (for example: a built-in static registry, an extension-contributed registry, and one or more MCP Client Containers). Each source is responsible for translating its native tool advertisement format into Tuvren tool definitions matching the boundary CustomSchema contract before they reach the Tool Execution Gateway.
+- **Responsibility:** Provide one source of tool definitions to the Tool Execution Gateway. Multiple Tool Source Containers may exist concurrently for one active agent segment (for example: a built-in static registry, an extension-contributed registry, and one or more MCP Client Containers). Each source is responsible for translating its native tool advertisement format into Tuvren tool definitions matching the boundary CustomSchema contract before they reach the Tool Execution Gateway. Within the capability-orchestration model a tool source contributes capabilities and their model-facing tool surfaces to the Capability Registry; the Binding & Endpoint Resolver then decides which execution class and endpoint serves each one.
 - **Inputs:** Source-specific tool advertisements (static definitions, MCP server tool lists, extension contributions).
 - **Outputs:** Tuvren tool definitions registered with the Tool Execution Gateway.
 - **Depends on:** Shared Primitive Container (boundary tool definition shape), source-specific upstream systems.
@@ -155,10 +163,42 @@
 ### MCP Client Container
 
 - **Logical Type:** External tool-ecosystem integration boundary
-- **Responsibility:** Implement the Model Context Protocol client side over both stdio and HTTP/SSE transports as one unified client interface. Establish and maintain the MCP session lifecycle (initialization handshake, tool list discovery, tool invocation, tool result reception, transport-level error handling, session shutdown). Translate MCP tool advertisements into Tuvren tool definitions (an MCP-flavored Tool Source Container). Treat the external MCP server as an untrusted boundary: validate tool inputs against the advertised schema before sending across the transport and validate tool outputs against the advertised result shape before surfacing them as agent-visible results. The MCP server-side projection (exposing Tuvren itself as an MCP server) is explicitly out of scope; only the client side is in this container. External MCP server credentials (transport auth, headers, tokens) are held only at this edge and are excluded from durable lineage, operational telemetry, and transcripts.
+- **Responsibility:** Implement the Model Context Protocol client side over both stdio and HTTP/SSE transports as one unified client interface. Establish and maintain the MCP session lifecycle (initialization handshake, tool list discovery, tool invocation, tool result reception, transport-level error handling, session shutdown). Translate MCP tool advertisements into Tuvren tool definitions (an MCP-flavored Tool Source Container). Treat the external MCP server as an untrusted boundary: validate tool inputs against the advertised schema before sending across the transport and validate tool outputs against the advertised result shape before surfacing them as agent-visible results. The MCP server-side projection (exposing Tuvren itself as an MCP server) is explicitly out of scope; only the client side is in this container. External MCP server credentials (transport auth, headers, tokens) are held only at this edge and are excluded from durable lineage, operational telemetry, and transcripts. Within the capability-orchestration model MCP is a binding mechanism, not an execution class: an MCP server may be invoked by the provider (provider-mediated, configured through the Provider Gateway), by Tuvren server-side (Tuvren-server, this container), or by a client endpoint (Tuvren-client, run through the Client Endpoint Boundary). Execution class is determined by who invokes or runs the server, not by the protocol.
 - **Inputs:** External MCP server endpoint specifications (transport choice, command or URL), MCP protocol messages from the server, tool invocations from the Tool Execution Gateway.
 - **Outputs:** Tuvren tool definitions for each MCP-advertised tool; canonical tool results from MCP tool invocations; MCP session lifecycle events translated into runtime events.
 - **Depends on:** External MCP Servers, Tool Source Container interface, Shared Primitive Container, Extension Runtime (for connection lifecycle hooks).
+
+### Capability Registry
+
+- **Logical Type:** Capability composition boundary
+- **Responsibility:** Hold the capabilities a runtime instance may use and the model-facing tool surfaces that present them, drawn from one or more Tool Source Containers and from provider-native and provider-mediated declarations. Decide which tool surfaces are eligible to be exposed for a given agent segment before policy is applied. Keep the model-facing Tool Surface distinct from the underlying Capability so one capability can back multiple surfaces and one surface can resolve to different capabilities across providers.
+- **Inputs:** Capability and tool-surface contributions from Tool Source Containers, provider-native tool declarations, provider-mediated tool configurations, agent-segment configuration.
+- **Outputs:** The candidate set of capabilities and tool surfaces for an agent segment.
+- **Depends on:** Tool Source Container (one or more), Provider Gateway (provider-native/mediated declarations), Shared Primitive Container.
+
+### Binding & Endpoint Resolver
+
+- **Logical Type:** Capability routing boundary
+- **Responsibility:** Resolve each capability to a binding — one execution class (provider-native, provider-mediated developer-provided, Tuvren-server, or Tuvren-client) and one concrete Endpoint (provider runtime, a Tuvren host/server/worker/sandbox, a client endpoint, or a local/remote MCP server) — based on provider, model, policy, endpoint availability, and product configuration. Allow one logical capability to have multiple possible bindings and select or admit the binding for the active context. Classify MCP bindings by who invokes or runs the server.
+- **Inputs:** Candidate capabilities and tool surfaces, active provider and model, endpoint availability, product configuration, policy outcomes.
+- **Outputs:** A resolved binding per capability (execution class + endpoint), or a typed unavailable-binding outcome.
+- **Depends on:** Capability Registry, Capability Policy Engine, Provider Gateway, Tool Execution Gateway, Client Endpoint Boundary, MCP Client Container.
+
+### Capability Policy Engine
+
+- **Logical Type:** Policy decision boundary
+- **Responsibility:** Evaluate policy at two distinct decision points: exposure-time (whether a tool surface may be exposed to the model for the active provider, model, permissions, data-residency, and endpoint-availability constraints) and invocation-time (whether a resolved capability may actually run, covering approval requirements, credential boundaries, user-presence, idempotency/retry, and risk classification). Policy outcomes gate the Capability Registry's exposed set and the Binding & Endpoint Resolver's admitted invocations.
+- **Inputs:** Candidate tool surfaces and resolved bindings; provider, model, permission, residency, and presence context; approval state.
+- **Outputs:** Exposure decisions over tool surfaces, invocation decisions over bindings, and typed policy-denied outcomes.
+- **Depends on:** Capability Registry, Binding & Endpoint Resolver, Extension Runtime, Framework Shared Services (approval state).
+
+### Client Endpoint Boundary
+
+- **Logical Type:** Leased client-execution integration boundary
+- **Responsibility:** Realize the Tuvren-client execution class. Orchestrate capability invocations whose execution happens inside an attached, leased client endpoint (browser extension, desktop app, device agent, or client-side MCP). Lease and track endpoint availability, dispatch an invocation envelope to the attached endpoint, receive the client-reported result, and handle unavailability, late completion, and stale responses. The runtime owns orchestration and policy; the client endpoint owns environmental execution, may hold authority the server does not, and provides only partial observability.
+- **Inputs:** Resolved Tuvren-client bindings, attached client-endpoint leases, client-reported results and lifecycle signals.
+- **Outputs:** Canonical capability results from client-reported outcomes, dispatch/result envelopes, and availability/staleness signals.
+- **Depends on:** Binding & Endpoint Resolver, External Client Endpoints, Extension Runtime, Shared Primitive Container.
 
 ### Orchestration Runtime
 
@@ -285,6 +325,11 @@
 - Tool Source Container <- Schema Authoring Helper: registers tool definitions whose original authoring schema has been normalized to the boundary CustomSchema contract
 - MCP Client Container <-> External MCP Servers: protocol-bound tool advertisement, invocation, and result exchange over stdio or HTTP/SSE
 - MCP Client Container -> Tool Source Container: contributes MCP-advertised tools as Tuvren tool definitions
+- Driver Runtime -> Capability Registry / Binding & Endpoint Resolver / Capability Policy Engine: request which tool surfaces are exposed and resolve which execution class and endpoint owns each capability invocation
+- Tool Source Container / Provider Gateway -> Capability Registry: contribute capabilities and tool surfaces (built-in, MCP-advertised, provider-native, provider-mediated)
+- Binding & Endpoint Resolver -> Provider Gateway / Tool Execution Gateway / Client Endpoint Boundary / MCP Client Container: route a resolved capability invocation to its execution-class endpoint
+- Capability Policy Engine <-> Capability Registry / Binding & Endpoint Resolver: exposure-time and invocation-time policy decisions
+- Client Endpoint Boundary <-> External Client Endpoints: lease, dispatch an invocation envelope, and receive a client-reported result under partial observability
 - Curated Host-Facing SDK Surface -> Framework Shared Services / Kernel Boundary / Durable State Boundary / Driver Runtime / Provider Gateway / Tool Execution Gateway / Schema Authoring Helper / MCP Client Container: assembles these containers through the Batteries-Included Composition for one runtime instance per host
 - Reference Host -> Curated Host-Facing SDK Surface: consumes the host-facing SDK exclusively, in both interactive and headless modes
 - Orchestration Runtime <-> Framework Shared Services: in-process worker launch, handoff, and resume coordination
@@ -322,6 +367,10 @@
 - Execution Bound enforcement is a Framework Shared Services responsibility, not a driver responsibility, precisely so that a misbehaving or adversarial driver cannot opt out of the runtime's safety limits; drivers still own loop-continuation policy strictly within those bounds.
 - Secret isolation is a cross-cutting boundary rule rather than a container: credentials are confined to the Provider Gateway and MCP Client Container edges, and the Kernel Boundary, Durable State Boundary, Telemetry & Observability Boundary, and transcript surfaces are credential-free zones.
 - The fault-injection seam used to verify durability and recovery is a verification-time capability at the persistence boundary, not a production control path; it exists to drive crash-recovery conformance and must not be reachable by hosts or drivers in normal operation.
+- Capability orchestration sits above the execution edges: the Capability Registry, Binding & Endpoint Resolver, and Capability Policy Engine are framework responsibilities that decide what is exposed, what is invoked, and by whom, while the Provider Gateway, Tool Execution Gateway, Client Endpoint Boundary, and MCP Client Container are the execution-class endpoints. The Tool Execution Gateway is specifically the Tuvren-server execution class; today's developer-defined runtime-executed tools resolve to it unchanged.
+- MCP is a binding mechanism, not a container-level execution class: the same MCP server may be reached as a provider-mediated, Tuvren-server, or Tuvren-client binding. The MCP Client Container is the client path Tuvren runs (server-side, or client-side when a client runs it); provider-mediated MCP is configured through the Provider Gateway.
+- The Client Endpoint Boundary is a leased, partially-observable execution edge, not an ordinary in-process tool path: client endpoints may be unavailable or return stale results, and the runtime records client-reported outcomes rather than directly observing execution.
+- Capability Observation is a cross-cutting rule, not a separate container: per execution class the runtime bounds what it can know, persist, resume, cancel, retry, and audit, and the Event Stream Adapter Layer and Telemetry & Observability Boundary distinguish provider-native invocations (provider-exposed events only) from Tuvren-owned invocations (full lifecycle).
 
 ## 3. Container Diagram (Mermaid)
 
@@ -340,7 +389,11 @@ System_Boundary(tuvren_runtime, "Tuvren Runtime") {
   Container(providerGateway, "Provider Gateway", "Integration Boundary", "Canonical <-> provider translation")
   Container(toolGateway, "Tool Execution Gateway", "Integration Boundary", "Validation, approval gating, tool execution, incremental result staging; unifies one or more tool sources")
   Container(toolSource, "Tool Source Container", "Tool Discovery Boundary", "Source of tool definitions (built-in registry, extension contributions, or MCP-advertised tools)")
-  Container(mcpClient, "MCP Client Container", "External Tool-Ecosystem Boundary", "MCP client over stdio and HTTP/SSE; translates MCP tools into Tuvren tool definitions")
+  Container(mcpClient, "MCP Client Container", "External Tool-Ecosystem Boundary", "MCP client over stdio and HTTP/SSE; translates MCP tools into Tuvren tool definitions; binding mechanism, not an execution class")
+  Container(capRegistry, "Capability Registry", "Capability Composition Boundary", "Capabilities plus model-facing tool surfaces; eligible-surface selection per agent segment")
+  Container(bindingResolver, "Binding & Endpoint Resolver", "Capability Routing Boundary", "Resolves capability -> execution class + endpoint; classifies MCP bindings")
+  Container(policyEngine, "Capability Policy Engine", "Policy Decision Boundary", "Exposure-time and invocation-time policy decisions")
+  Container(clientEndpoint, "Client Endpoint Boundary", "Leased Client-Execution Boundary", "Tuvren-client execution class: lease, dispatch, client-reported results, staleness handling")
   Container(schemaHelper, "Schema Authoring Helper", "Authoring Boundary", "Multi-schema defineTool entrypoint normalizing Zod / Standard Schema / wrapped JSON Schema into the boundary CustomSchema contract")
   Container(orchestrationRuntime, "Orchestration Runtime", "Coordination Service", "Workers, handoffs, execution inheritance, descendant attribution, pipeline-level orchestration policy")
   Container(eventAdapter, "Event Stream Adapter Layer", "Outbound Adapter", "Canonical event translation for hosts")
@@ -359,6 +412,7 @@ System_Boundary(tuvren_runtime, "Tuvren Runtime") {
 System_Ext(modelProviders, "Model Providers", "External generation systems")
 System_Ext(externalTools, "External Tools and Systems", "External side-effecting capabilities")
 System_Ext(mcpServers, "External MCP Servers", "External tool-advertising MCP processes")
+System_Ext(clientEndpoints, "External Client Endpoints", "Browser extensions, desktop apps, device agents, or client-side MCP that execute leased client-side capabilities")
 System_Ext(observabilityTooling, "External Observability Tooling", "Consumes exported operational telemetry for monitoring, postmortems, and incident response")
 
 Rel(hostUser, hostBoundary, "Starts turns, sends control inputs, issues durable-read queries")
@@ -375,6 +429,17 @@ Rel(driverRuntime, toolGateway, "Tool batches / tool results")
 Rel(toolGateway, toolSource, "Resolve tool definitions for active segment")
 Rel(toolSource, mcpClient, "MCP-advertised tools translated into Tuvren tool definitions")
 Rel(toolSource, schemaHelper, "Tool definitions authored through schema-agnostic helper")
+Rel(driverRuntime, capRegistry, "Requests eligible tool surfaces for the active segment")
+Rel(driverRuntime, bindingResolver, "Resolves capability invocations to an execution class and endpoint")
+Rel(toolSource, capRegistry, "Contributes capabilities and tool surfaces")
+Rel(providerGateway, capRegistry, "Declares provider-native and provider-mediated capabilities")
+Rel(capRegistry, policyEngine, "Exposure-time policy over candidate tool surfaces")
+Rel(bindingResolver, policyEngine, "Invocation-time policy over resolved bindings")
+Rel(bindingResolver, providerGateway, "Provider-native and provider-mediated invocations")
+Rel(bindingResolver, toolGateway, "Tuvren-server invocations")
+Rel(bindingResolver, clientEndpoint, "Tuvren-client invocations")
+Rel(bindingResolver, mcpClient, "MCP-binding invocations Tuvren runs")
+Rel(clientEndpoint, clientEndpoints, "Lease, dispatch envelope, receive client-reported result")
 Rel(mcpClient, mcpServers, "MCP session: initialize, list tools, invoke, receive results")
 Rel(orchestrationRuntime, frameworkServices, "Child execution coordination")
 Rel(frameworkServices, orchestrationRuntime, "Child launch and orchestration requests")
@@ -791,6 +856,75 @@ Framework->>Telemetry: emit bounded-execution telemetry
 Framework-->>Host: terminal result = bounded-execution stop (host-visible + agent-visible), not a crash or infinite loop
 ```
 
+### 4.14 Exposure-Time Tool-Surface Planning and Policy
+
+- **Maps to PRD capability:** CAP-P0-056, CAP-P0-059, CAP-P0-060
+
+```mermaid
+sequenceDiagram
+  participant Driver as Driver Runtime
+  participant Reg as Capability Registry
+  participant Src as Tool Source Containers
+  participant Prov as Provider Gateway
+  participant Pol as Capability Policy Engine
+  Driver->>Reg: Request eligible tool surfaces for the active segment (provider, model)
+  Src-->>Reg: Contribute capabilities + tool surfaces (built-in, MCP-advertised)
+  Prov-->>Reg: Declare provider-native and provider-mediated capabilities
+  Reg->>Pol: Candidate tool surfaces for exposure-time evaluation
+  Pol-->>Reg: Exposure decisions (provider/model compat, permissions, residency, endpoint availability)
+  Reg-->>Driver: Exposed tool surfaces (capability kept distinct from surface)
+  Note over Driver,Pol: Withheld surfaces are never rendered to the model; the model sees only policy-approved surfaces
+```
+
+### 4.15 Invocation-Time Binding, Policy, and Provider-Native Attribution
+
+- **Maps to PRD capability:** CAP-P0-057, CAP-P0-058, CAP-P0-061, CAP-P1-062
+
+```mermaid
+sequenceDiagram
+  participant Model as Model (via Provider Gateway)
+  participant Driver as Driver Runtime
+  participant Resolver as Binding & Endpoint Resolver
+  participant Pol as Capability Policy Engine
+  participant Server as Tool Execution Gateway (Tuvren-server)
+  participant Prov as Provider Gateway (provider-native/mediated)
+  participant Events as Event Stream / Telemetry
+  Model-->>Driver: Model-visible tool call against an exposed surface
+  Driver->>Resolver: Resolve capability to execution class + endpoint
+  Resolver->>Pol: Invocation-time policy (approval, credential boundary, idempotency, risk)
+  Pol-->>Resolver: Admit or deny
+  alt Tuvren-server binding
+    Resolver->>Server: Dispatch; full lifecycle owned by Tuvren
+    Server-->>Events: Tuvren-owned invocation events (full lifecycle)
+  else Provider-native or provider-mediated binding
+    Resolver->>Prov: Enable/configure; provider owns execution
+    Prov-->>Events: Provider-attributed events from provider-exposed results only
+  end
+  Note over Resolver,Events: Every model-visible call resolves to a policy-checked capability invocation against a known execution class
+```
+
+### 4.16 Tuvren-Client Capability Lease and Dispatch
+
+- **Maps to PRD capability:** CAP-P1-063, CAP-P0-061
+
+```mermaid
+sequenceDiagram
+  participant Resolver as Binding & Endpoint Resolver
+  participant Client as Client Endpoint Boundary
+  participant Endpoint as External Client Endpoint
+  participant Events as Event Stream / Telemetry
+  Resolver->>Client: Tuvren-client binding for a capability invocation
+  Client->>Client: Check lease + endpoint availability
+  alt Endpoint available
+    Client->>Endpoint: Dispatch invocation envelope (orchestration owned by Tuvren)
+    Endpoint-->>Client: Client-reported result (partial observability)
+    Client-->>Events: Tuvren-orchestrated, client-executed invocation event
+  else Endpoint unavailable
+    Client-->>Resolver: Typed unavailable-binding outcome (no block, no double-dispatch)
+  end
+  Note over Client,Endpoint: Late or stale results after lease expiry are ignored and cannot mutate the invocation
+```
+
 ## 5. Resilience & Cross-Cutting Concerns
 
 - **Security / Identity Strategy:** Host applications authenticate and authorize their own callers before exposing Tuvren Runtime controls; the Kraken engine itself treats host commands, provider responses, tool outputs, and external MCP server messages as boundary inputs that require validation and normalization. External MCP servers are out-of-process or out-of-host: tool advertisements, inputs, and outputs cross a process or network boundary and are validated by the MCP Client Container in both directions before being surfaced.
@@ -805,6 +939,9 @@ Framework-->>Host: terminal result = bounded-execution stop (host-visible + agen
 - **Execution Safety / Bounded Execution Model:** Framework Shared Services enforces hard, configurable bounds on per-turn iterations, tool calls, and resource budget above driver discretion. Reaching a bound is not a crash: the framework checkpoints a safe terminal outcome (a typed bounded-execution result) and surfaces it as both host-visible and agent-visible, so a runaway loop becomes a recoverable, observable stop. Bounds default to safe limits and are configurable per runtime instance. Drivers retain loop-continuation policy strictly within these bounds and cannot disable them. Conformance plans assert that exceeding each bound produces the typed terminal outcome rather than unbounded execution.
 - **Secret Isolation Model:** Credentials needed to reach providers and external tools are confined to the Provider Gateway and MCP Client Container edges for the duration of a request. The Kernel Boundary, Durable State Boundary, Event Stream Adapter Layer, Telemetry & Observability Boundary, and transcript surfaces are credential-free zones. Persisted lineage, canonical stream events, exported telemetry, and replayable transcripts must never carry secrets; redaction at the event, telemetry, and transcript surfaces is a backstop, but the primary rule is that secrets never reach those surfaces in the first place. Provider continuity artifacts that must persist are non-secret opaque tokens, not credentials. Conformance and review assert the absence of secret material on durable, event-stream, telemetry, and transcript surfaces.
 - **Recovery & Durability Verification Model:** The reliability guarantee (resume-from-checkpoint or fail-clean, with atomic checkpoints and concurrency-safe lineage) is verification-backed, not design-asserted. A verification-time fault-injection seam at the persistence boundary lets verification interrupt commits at controlled points (before, during, and after checkpoint persistence) and under concurrent writers; crash-recovery conformance then asserts that recovery distinguishes committed from incomplete work and never observes torn or partial lineage. This verification runs per backend capability across every supported Durable State Boundary realization. The seam is a verification-time capability only and is not part of any production control path, is not reachable through the host-facing SDK or drivers, and exists solely to drive conformance.
+- **Capability Orchestration Model:** Every model-visible tool call resolves to a policy-checked capability invocation against a known execution class. The Capability Registry separates tool surfaces from capabilities and selects the eligible surfaces; the Capability Policy Engine applies exposure-time policy before a surface is shown to the model and invocation-time policy before a capability runs; the Binding & Endpoint Resolver routes each invocation to its execution class and endpoint. The model is compositional rather than an `origin` flag or a rigid subclass taxonomy, and one capability may have multiple bindings.
+- **Execution-Class Observation Model:** What the runtime can observe, persist, resume, cancel, retry, and audit is bounded per execution class. Tuvren-server invocations have full lifecycle observability and control; provider-native invocations are recorded from provider-exposed events and results only; provider-mediated invocations are partially observed through the provider/tool protocol; Tuvren-client invocations are observed through the dispatch/result envelope plus client-reported details. The Event Stream Adapter Layer and Telemetry & Observability Boundary tag invocations as provider-native versus Tuvren-owned so neither surface overstates visibility, and no secret material appears on either surface for any class.
+- **Client-Endpoint Lease Model:** Tuvren-client capabilities are leased to attached client endpoints. The runtime tracks endpoint availability, dispatches an invocation envelope, and accepts a client-reported result only within the lease; an unavailable endpoint yields a typed unavailable-binding outcome rather than a block, and a late or stale result after lease expiry is ignored and cannot mutate the invocation. The client endpoint owns environmental execution and may hold authority the server does not.
 
 ## 6. Logical Risks & Technical Debt
 
@@ -875,3 +1012,19 @@ Framework-->>Host: terminal result = bounded-execution stop (host-visible + agen
 - **Risk:** The fault-injection seam used for recovery verification leaks into production control paths.
 - **Why it matters:** A failure-injection capability reachable by hosts or drivers in normal operation would be both a reliability hazard and an attack surface.
 - **Mitigation or follow-up:** Scope the fault-injection seam to verification-time only at the persistence boundary; it must not be reachable through the host-facing SDK, drivers, or any production path, and its realization is a TechSpec-controlled test seam rather than a runtime feature.
+
+- **Risk:** The execution-class distinction collapses into a single `origin` field or a rigid tool subclass taxonomy.
+- **Why it matters:** Either shortcut hard-codes current deployment patterns and re-hides who executes, who owns state and credentials, who can cancel or retry, and what is observable — exactly the unsafe single abstraction the capability model exists to remove.
+- **Mitigation or follow-up:** Keep the model compositional (Tool Surface × Capability × Binding × Endpoint × Policy × Observation); the Binding & Endpoint Resolver and Capability Policy Engine are first-class containers so execution class and policy are explicit per invocation.
+
+- **Risk:** The runtime models provider-owned or client-owned invocations as locally executed functions and overstates its control or observation.
+- **Why it matters:** Hosts would trust cancellation, retry, audit, or completeness guarantees the runtime cannot actually provide for provider-native, provider-mediated, or client-side work.
+- **Mitigation or follow-up:** Enforce the Execution-Class Observation Model and the provider-owned and leased-client trust boundaries; represent these classes as known capabilities with explicit observation/control limits and tag their events accordingly.
+
+- **Risk:** MCP is treated as a top-level execution class rather than a binding mechanism.
+- **Why it matters:** The same MCP server reached provider-mediated, server-side, or client-side has different observability and control; conflating them produces wrong assumptions about who can cancel, retry, or audit, and where credentials live.
+- **Mitigation or follow-up:** Classify MCP bindings by who invokes or runs the server in the Binding & Endpoint Resolver; route provider-mediated MCP through the Provider Gateway and Tuvren-run MCP through the MCP Client Container.
+
+- **Risk:** A leased client endpoint is unavailable, slow, or returns a stale result after its lease expires.
+- **Why it matters:** The runtime could block a turn, double-dispatch an invocation, or accept a stale client-reported result as authoritative, corrupting the invocation record.
+- **Mitigation or follow-up:** Apply the Client-Endpoint Lease Model: track availability, return a typed unavailable-binding outcome when absent, and ignore late completions after lease expiry so they cannot mutate the invocation.

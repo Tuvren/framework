@@ -2,9 +2,9 @@
 
 ## 0. Version History & Changelog
 
+- v0.29.0 - Specified the capability-orchestration model (PRD v0.9.0 / Architecture v0.9.0): ADR-046 the compositional model (Tool Surface vs Capability, four execution classes, Bindings, Endpoints, exposure/invocation Policy, per-class Observation, MCP-as-binding, the conceptual invariant; CAP-P0-056 through CAP-P1-063) and ADR-047 the phased, back-compatible execution-class realization (today's `defineTool` / Tool Execution Gateway path is the Tuvren-server class). Added §3.13 concept shapes, §4.21 the capability-orchestration contract, the `@tuvren/core/capabilities` subpath, §5.7 the migration plan mapping the source implementation to the active Tooling block (Epics AW–BC), and §2.1 compatibility entries. Because the Tooling block precedes it, the former Epic AW (trust-boundary security hardening) is renumbered to Epic BD in §1.2 and §5.6.
 - v0.28.1 - Maintenance alignment for current repository state: Epic AU (ADR-045 recovery-and-durability verification) is closed with the testkit-only fault-injection seam, `kernel-crash-recovery` conformance coverage, Crash Recovery Invariant note, and refreshed compatibility evidence; Epics AV and AW remain the active production-trust implementation scope. No contract or schema semantics changed.
 - v0.28.0 - Specified the production-trust block (PRD v0.8.0 / Architecture v0.8.0): ADR-042 first-class operational telemetry surface plus vendor-neutral OpenTelemetry export (CAP-P0-052 / CAP-P1-053); ADR-043 framework-enforced execution bounds with a typed `execution_bound_exceeded` terminal result (CAP-P0-054); ADR-044 secret isolation across durable, telemetry, and transcript surfaces (CAP-P0-055); ADR-045 recovery-and-durability verification via a test-only fault-injection seam plus a strengthened crash-recovery conformance plan (CAP-P0-005 / CAP-P0-006). Added §3.10–§3.12 data shapes, §4.18–§4.20 interface contracts, §5.6 migration plans, and §2.1 compatibility entries.
-- v0.27.3 - Recorded Epic AS implementation verification: `@tuvren/mcp-client` uses the SDK's non-deprecated Streamable HTTP transport behind Tuvren's public `transport: "http-sse"` compatibility name, adds `@modelcontextprotocol/server-everything@2026.1.26` as the official provider-testkit fixture for stdio/Streamable HTTP parity, and promotes the MCP translation packet into the portability inventory as the ninth expected packet.
 - ... [Older history truncated, refer to git logs]
 
 ## 1. Stack Specification (Bill of Materials)
@@ -42,7 +42,8 @@
 - **Current kernel conformance posture:** `tuvren.kernel.protocol` now references promoted kernel protocol core, kernel protocol extended, run-liveness, and restart-recovery plans. The TypeScript memory, SQLite, and PostgreSQL kernel adapters execute native `@tuvren/kernel-runtime` behavior under the shared runner, TypeScript SQLite and PostgreSQL evidence are full-pass for their advertised durable capability sets, TypeScript memory evidence is pass for its advertised capability subset without durable restart-recovery, and Rust remains capability-scoped and non-applicable where it does not advertise the relevant extension.
 - **Current semantic-evidence posture:** The boundary-owned semantic evidence posture from Epic W remains intact after Epic X and final Epic Y closure. The TypeScript testkits still act as helper and facade packages for TypeScript-local testing, but they now live under implementation-owned paths. TypeScript and Rust conformance entry points are wrappers or native adapter hosts; `tools/conformance/runner/` owns assertion evaluation, required evidence, capability selection, adapter-error isolation, trace execution, and compatibility evidence emission.
 - **Current host-proof posture:** The repository now proves the host story through the serious REPL host `@tuvren/repl-host`, with shared interactive, scripted scenario, headless JSONL, transcript record/replay, and MCP smoke wiring; named `proving-host:interop-smoke`, `proving-host:scenario-sqlite`, and `proving-host:scenario-postgres` validation targets; fresh compatibility evidence; and canonical-verification-path integration. Per ADR-041 (v0.27.0), `@tuvren/playground-host` has been retired and the REPL host internals now use `Repl*` naming. The boundary-piercing `createPlaygroundKernelInspector` has been deleted in favor of the new `TuvrenRuntime` durable-read surface (ADR-036). Headless stdin mode (`--headless`) supports output-only JSONL and streaming JSONL (`--stream-jsonl`), and transcript capture/replay is wired through `--record` / `--replay`.
-- **Current production-trust posture:** Epic AU is closed in repository reality. `@tuvren/kernel-testkit` owns the testkit-only `createFaultInjectingBackend` seam; memory, SQLite, and PostgreSQL are covered by `kernel-crash-recovery` checks in `kernel-restart-recovery.json`; the kernel protocol authority packet references that strengthened plan; `docs/KrakenKernelSpecification.md` states the Crash Recovery Invariant; and checked-in compatibility evidence reflects the crash-recovery results. The remaining active production-trust scope is Epics AV and AW: operational telemetry, execution bounds, secret isolation, and approval/input trust-boundary verification.
+- **Current production-trust posture:** Epic AU is closed in repository reality. `@tuvren/kernel-testkit` owns the testkit-only `createFaultInjectingBackend` seam; memory, SQLite, and PostgreSQL are covered by `kernel-crash-recovery` checks in `kernel-restart-recovery.json`; the kernel protocol authority packet references that strengthened plan; `docs/KrakenKernelSpecification.md` states the Crash Recovery Invariant; and checked-in compatibility evidence reflects the crash-recovery results. Epic AV (operational telemetry) is closed; the remaining active production-trust scope is Epic BD (trust-boundary security hardening; formerly Epic AW), sequenced after the Tooling block (Epics AW–BC): execution bounds, secret isolation, and approval/input trust-boundary verification.
+- **Current capability-orchestration posture:** The capability-orchestration model (ADR-046, ADR-047; §3.13, §4.21) is authored as target state but not yet implemented in repository reality. Today's tools are still the single developer-defined runtime-executed shape, which the model classifies as the Tuvren-server execution class. The full restructuring is captured as the active Tooling block (Epics AW–BC) in `Tasks.md`, sequenced ahead of the trust block (Epic BD) and the productionization roadmap; no capability-orchestration code has landed yet.
 - **Current package/publication posture:** A curated host-facing SDK surface now exists as `@tuvren/core` plus `@tuvren/runtime`, and current source-bearing host-building paths consume those surfaces rather than defining semantics in `runtime-core`, `runtime-api`, `driver-react`, `kernel-runtime`, `core-types`, or `kernel-protocol` directly. `@tuvren/core` now owns the schema-authoring helper surface, and `@tuvren/runtime` now owns the batteries-included `createTuvren({...})` factory. The five old contract handles plus `@tuvren/runtime-core` remain deprecated compatibility shims for one cycle. Final public package publication remains deferred.
 - **Current freeze-readiness posture:** `reports/compatibility/compatibility-matrix.json` still records fresh AG-gated evidence for the currently promoted supported applicable surfaces, but that evidence is now historical input to the broader TypeScript productization program rather than the governing readiness claim. The `product proof gate` runs through fresh proving-host evidence in `package.json`, `tools/scripts/verify.ts`, and `reports/compatibility/`; the `platform gate` includes PostgreSQL backend tests, PostgreSQL kernel conformance, and PostgreSQL proving-host reload proof in that same canonical path; the `portability gate` is now enforced by `tools/scripts/portability-gate.ts` (9 packets, 2 standing exceptions, 11 required authoritative sources in `constitution/support/live/epic-al-portability-inventory.json`) as the decisive portability proxy alongside the runner-observed conformance, vocabulary-check, authority-packet validation, plan validation, adapter-protocol validation, meta-conformance, and machine authority guardrail lanes. Per the KRT-AL003 re-entry reassessment at `constitution/support/live/epic-al-rust-re-entry-gate-reassessment.md`, all three staged gates currently pass under fresh evidence; Rust framework/product work remains blocked until a new epic explicitly reopens that scope, names the line, preserves the staged gates as prerequisites under fresh evidence, and adds only the line-specific evidence that goes beyond those gates.
 - **Current TypeScript provider-bridge evidence posture:** The shared provider and framework compatibility evidence now describes TypeScript guarantees with framework-mediated capability labels instead of broad native-provider labels. The active TypeScript lane advertises `providers.framework-owned-tool-execution`, `providers.framework-owned-approval-boundary`, and `providers.rejects-native-strict-structured-output`, and the promoted provider or framework plans now prove the fail-closed bridge behavior for strict structured-output requests, provider-owned tool execution or approval surfaces, approval-resume continuity, and resumed event-stream checkpoint or thread association semantics.
@@ -501,6 +502,20 @@
   2. **Strengthened crash-recovery conformance.** Extend `kernel-restart-recovery.json` with a `kernel-crash-recovery` check set that, per backend capability, drives a turn to a known checkpoint, injects each fault point, opens a fresh kernel against the same durable state, and asserts the recovery invariant: the recovered branch head is a committed TurnNode, no torn/partial TurnNode is observable, staged-but-uncommitted work is either fully recovered or fully absent, and the runtime resumes only unfinished work or fails the run cleanly with `TuvrenRecoveryError`. A concurrency check asserts that two writers racing the same branch head do not corrupt lineage (one wins; the other observes a typed lineage conflict). The memory backend, lacking durable restart, is `not_applicable` for the durable-restart subset (per ADR-031) but `applicable` for the in-process atomicity and concurrency subset.
 - **Consequences:** `@tuvren/kernel-testkit` adds `createFaultInjectingBackend` and `FaultPlan`. `boundaries/kernel/conformance/plans/kernel-restart-recovery.json` gains the `kernel-crash-recovery` check set; the kernel authority packet at `boundaries/kernel/contracts/protocol/spec/authority-packet.json` records the new check set and bumps its packet version. The SQLite and PostgreSQL backends must pass the durable crash-recovery subset; any gap discovered (e.g. a non-atomic multi-statement commit) is a bug fixed under the AU epic, not a relaxation of the plan. No production package gains a new dependency or surface; the seam is testkit-only. `docs/KrakenKernelSpecification.md` gains a normative "Crash Recovery Invariant" note (minor bump) stating the resume-or-fail-clean guarantee that the conformance plan verifies.
 
+### ADR-046 Capability Orchestration Model: Tool Surface vs Capability, Four Execution Classes, Bindings, Endpoints, Policy, and Observation
+
+- **Status:** accepted
+- **Context:** The runtime modeled every tool as one developer-defined `{ name, description, inputSchema, execute }` shape executed by the framework. Modern providers expose tools the provider executes itself (provider-native), tools the provider invokes against a developer endpoint (provider-mediated, e.g. remote MCP), tools the runtime executes server-side (today's shape), and tools a client environment executes (browser/desktop/device). These differ in execution owner, state owner, credential owner, observability, cancellation, retry, audit, and portability. PRD v0.9.0 (CAP-P0-056 through CAP-P1-063) elevates this to product scope; Architecture v0.9.0 adds the Capability Registry, Binding & Endpoint Resolver, Capability Policy Engine, and Client Endpoint Boundary containers.
+- **Decision:** Model tools compositionally as **Tool Surface × Capability × Binding × Endpoint × Policy × Observation**, not as a single `origin` field and not as a rigid subclass taxonomy (`LocalTool`/`RemoteTool`/`ClientTool`/...). A **Tool Surface** is the model-facing representation (name, description, schema, provider rendering constraints). A **Capability** is the underlying authority to act. An **Execution Class** is one of `provider-native | provider-mediated | tuvren-server | tuvren-client`. A **Binding** ties a capability to one execution class and one **Endpoint** in a context; one capability may have multiple candidate bindings. **Policy** is evaluated at two points — exposure-time (before a surface is shown to the model) and invocation-time (before a capability runs). **Observation** bounds, per class, what the runtime can know/persist/resume/cancel/retry/audit. MCP is a binding mechanism whose execution class depends on who invokes/runs the server, never a top-level execution class. The conceptual invariant: every model-visible tool call resolves to a policy-checked capability invocation against a known execution class; provider-native invocations are owned by the provider but still represented as known capabilities with explicit observation limits. The concrete shapes are in §3.13 and the contract in §4.21; the new `@tuvren/core/capabilities` subpath owns the types.
+- **Consequences:** `@tuvren/core` gains a `/capabilities` subpath (the §3.13 types plus the provider-native-vs-Tuvren-owned invocation attribution). `@tuvren/runtime` gains a Capability Registry, Binding & Endpoint Resolver, and Capability Policy Engine; the Provider Gateway gains provider-native and provider-mediated representation; `@tuvren/mcp-client` is reframed as a binding mechanism. The merged shared-core authority packet gains a `capabilities` binding section; new conformance plans cover the invariant, exposure/invocation policy, and execution-class observation. The §4.5 canonical event stream and §3.10 telemetry record gain an additive execution-class + owner attribution dimension. No existing tool, approval, secret-isolation, or telemetry guarantee is weakened. Implementation is phased per ADR-047.
+
+### ADR-047 Execution-Class Realization Is Phased and Back-Compatible
+
+- **Status:** accepted
+- **Context:** The capability-orchestration model (ADR-046) is large: four execution classes with distinct lifecycles, plus registry, binding, policy, and observation. Implementing all of it at once — especially the leased Tuvren-client endpoint protocol and advanced policy — would be a single oversized change and would risk the existing tool path, which must keep working unchanged.
+- **Decision:** Realize the model as the contiguous **Tooling block (Epics AW–BC)**, sequenced ahead of the trust block and the productionization roadmap. **Epic AW** lands the foundation: the `/capabilities` contract types and merged-packet section; the Capability Registry, Binding & Endpoint Resolver, and Capability Policy Engine (exposure-time and invocation-time decision points); reclassification of today's developer-defined runtime-executed tools as the **Tuvren-server** execution class (no host code change); reclassification of MCP as a binding; the provider-native-vs-Tuvren-owned event/telemetry attribution; and foundation conformance covering the invariant. **Epic AX** deepens the Tuvren-server class (validation, retry, cancel, trace, audit, tenant isolation, rate-limit, server-side MCP, server sandbox); **Epic AY** lands provider-native and provider-mediated representation through the Provider Gateway (config/exposure/attribution + observation limits) plus the provider continuation-state model, bounded by what the AI-SDK-bridged providers expose with one concrete proof each; **Epic AZ** lands the leased Tuvren-client endpoint protocol and attachment seam (runtime side only — concrete client endpoints remain host deliverables — including client-side MCP and availability/staleness handling); **Epic BA** lands the cross-class invocation lifecycle and observation/event model; **Epic BB** lands the exposure/invocation policy depth (data-residency, risk classification, presence, idempotency/retry, credential boundaries); **Epic BC** is the closeout (cross-class integration conformance, framework-spec section, portability inventory, verify). Back-compatibility rule: a `TuvrenToolDefinition` with an `execute` callback is exactly a capability bound to the Tuvren-server class against the in-process endpoint; existing hosts and the boundary `CustomSchema` contract are unchanged.
+- **Consequences:** Adding the capability surface is additive and semver-minor (§2.1). Existing hosts compile and run unchanged; new execution classes are opt-in. `Tasks.md` carries the Tooling block (Epics AW–BC) as the active front-of-queue implementation, with the trust block (Epic BD) and productionization roadmap (Epics BE–BI) sequenced after it. Provider-native and provider-mediated invocations are represented with explicit observation/control limits so the runtime never overstates control; Tuvren-client invocations are fully orchestrated once Epic AZ lands (runtime protocol + attachment seam; concrete client endpoints remain host deliverables).
+
 ### 2.1 Compatibility Record
 
 - **Kernel identity compatibility:** Changes to deterministic CBOR profile, SHA-256 usage, hash string representation, or durable record shapes are semver-major.
@@ -526,6 +541,7 @@
 - **Execution bounds compatibility:** Per ADR-043, adding the `ExecutionBounds` type and the `bounds` option is semver-minor, and the new `execution_bound_exceeded` code is additive. Changing a default bound value is semver-minor but must be called out in release notes because it changes observable stop behavior. Reusing the existing `failed` `ExecutionResult` discriminant keeps ADR-035's union semver-stable.
 - **Secret isolation compatibility:** Per ADR-044, the transcript-header redaction, the telemetry attribute allowlist, and sanitized telemetry error summaries are additive and semver-minor; transcripts recorded before redaction remain replayable because replay never depended on transcript-embedded secrets. Tightening the redaction or sanitization set later is semver-minor.
 - **Recovery verification compatibility:** Per ADR-045, the fault-injection seam is testkit-only and carries no public-runtime compatibility surface. Strengthening `kernel-restart-recovery.json` with the `kernel-crash-recovery` check set follows conformance-suite compatibility rules; a backend that newly fails the strengthened plan is treated as a bug, not a contract relaxation.
+- **Capability orchestration compatibility:** Per ADR-046 and ADR-047, adding the `@tuvren/core/capabilities` subpath and the capability/surface/binding/endpoint/execution-class/observation/policy types is semver-minor and additive. The existing `TuvrenToolDefinition` (`@tuvren/core/tools`) is unchanged and is defined as the Tuvren-server execution-class binding, so existing hosts and the boundary `CustomSchema` contract are unaffected. Adding the execution-class and `owner` attribution dimension to canonical tool/capability events (§4.5) and operational telemetry (§3.10) is additive (new optional fields). Adding the `capability_binding_unavailable` error code is additive. Adding a new `ExecutionClass` or `EndpointKind` value is semver-minor; removing one or changing an existing member of the closed `ExecutionClass` set is semver-major. Implementation is phased across the active Tooling block (Epics AW–BC): Epic AW lands the foundation and Epics AX–BC land the per-class and cross-class depth.
 
 ## 3. State & Data Modeling
 
@@ -1125,6 +1141,99 @@ export declare function createFaultInjectingBackend(
   inner: RuntimeBackend,
   plan: FaultPlan,
 ): RuntimeBackend;
+```
+
+### 3.13 Capability Orchestration Concept Shapes
+
+- **Purpose:** Per ADR-046, the runtime represents tools as a composition of Tool Surface, Capability, Execution Class, Binding, Endpoint, Policy, and Observation rather than a single `execute`-shaped tool. These shapes are owned by `@tuvren/core/capabilities`; they are runtime/configuration types, not new kernel record state.
+- **Storage Shape:** Not persisted as kernel records. Capability invocations are observed on the canonical event stream (§4.5) and operational telemetry (§3.10) with an execution-class attribution; durable lineage records the invocation result the way it already records tool results, with no secret material and no provider/client-owned execution internals.
+- **Constraints / Invariants:**
+  - Every model-visible tool call resolves to exactly one Capability invocation against exactly one Execution Class (the conceptual invariant); there is no unclassified tool call.
+  - Tool Surface is distinct from Capability: one Capability may back multiple Surfaces; one Surface may resolve to different Capabilities across providers/contexts.
+  - A Binding names exactly one Execution Class and one Endpoint; a Capability may carry multiple candidate Bindings, and the resolver selects/admits one per context.
+  - `ExecutionClass` is a closed set: `provider-native | provider-mediated | tuvren-server | tuvren-client`. MCP is never an execution class; it is an Endpoint/binding mechanism classified by who invokes or runs the server (`endpoint.kind === "mcp-server"`).
+  - Observation limits are per class and the runtime must not claim control it lacks: only `tuvren-server` has full lifecycle control; `provider-native`/`provider-mediated` are observed from provider-exposed events/results; `tuvren-client` is observed through the dispatch/result envelope plus client-reported details.
+  - A `TuvrenToolDefinition` with `execute` (ADR-038) is exactly a Capability with a `tuvren-server` Binding to the in-process Endpoint (back-compat; no host change).
+- **Shapes:**
+
+```ts
+export type ExecutionClass =
+  | "provider-native"
+  | "provider-mediated"
+  | "tuvren-server"
+  | "tuvren-client";
+
+export type EndpointKind =
+  | "provider-runtime"
+  | "tuvren-in-process"
+  | "tuvren-server"
+  | "tuvren-worker"
+  | "tuvren-sandbox"
+  | "client-endpoint"
+  | "mcp-server";
+
+export interface Capability {
+  id: string;                    // e.g. "web.search", "mcp.shopify.search_products"
+  title?: string;
+  riskClass?: "low" | "medium" | "high";
+}
+
+export interface ToolSurface {
+  name: string;                  // model-facing name
+  description: string;
+  inputSchema: TuvrenJsonSchema;  // provider-wire shape (CustomSchema-normalized upstream)
+  capabilityId: string;          // the Capability this surface presents
+  providerRendering?: Record<string, unknown>; // provider-specific rendering constraints
+}
+
+export interface Endpoint {
+  kind: EndpointKind;
+  id: string;                    // stable, non-secret endpoint identifier
+  // Concrete connection/transport detail (URL, command, lease handle) is owned by the
+  // execution-class endpoint container, not stored here; credentials never appear.
+}
+
+export interface Binding {
+  capabilityId: string;
+  executionClass: ExecutionClass;
+  endpoint: Endpoint;
+  // MCP appears here as endpoint.kind === "mcp-server" under provider-mediated,
+  // tuvren-server, or tuvren-client — never as its own execution class.
+}
+
+export interface CapabilityObservation {
+  executionClass: ExecutionClass;
+  canObserveIntermediate: boolean;
+  canPersistResult: boolean;
+  canResume: boolean;
+  canCancel: boolean;
+  canRetry: boolean;
+  canAudit: boolean;
+}
+
+// Two distinct policy decision points (§4.21).
+export interface ExposureDecision {
+  surfaceName: string;
+  exposed: boolean;
+  reason?: string;               // non-secret denial reason
+}
+
+export interface InvocationDecision {
+  capabilityId: string;
+  executionClass: ExecutionClass;
+  admitted: boolean;
+  requiresApproval?: boolean;
+  reason?: string;
+}
+
+// Canonical event-stream / telemetry attribution for an invocation (§4.5, §3.10).
+export type InvocationOwner = "provider" | "tuvren";
+export interface CapabilityInvocationAttribution {
+  capabilityId: string;
+  executionClass: ExecutionClass;
+  owner: InvocationOwner;        // "provider" for provider-native/mediated; "tuvren" otherwise
+  observation: CapabilityObservation;
+}
 ```
 
 ## 4. Interface Contract
@@ -2987,6 +3096,19 @@ export declare const NoopTelemetrySink: TuvrenTelemetrySink;
 - The seam is consumed only by the `kernel-crash-recovery` check set in `kernel-restart-recovery.json` and by recovery scenario tests; it must not be imported by `@tuvren/core`, `@tuvren/runtime`, any backend, the host-facing SDK, any driver, or the reference host.
 - Recovery invariant asserted by the plan: a recovered branch head is always a committed TurnNode; no torn or partial TurnNode is observable; staged-but-uncommitted work is fully recovered or fully absent; the runtime resumes only unfinished work or fails the run cleanly with `TuvrenRecoveryError`; and two writers racing one branch head never corrupt lineage (one wins; the other observes a typed lineage conflict).
 
+### 4.21 Capability Orchestration Contract
+
+- **Style:** library API plus runtime resolution and policy semantics
+- **Ownership:** `@tuvren/core/capabilities` owns the §3.13 types. `@tuvren/runtime` owns the Capability Registry, Binding & Endpoint Resolver, and Capability Policy Engine; the Tuvren-client endpoint runtime lands in Epic AZ. The Provider Gateway (`@tuvren/provider-api` + `@tuvren/provider-bridge-ai-sdk`) owns provider-native and provider-mediated representation; `@tuvren/mcp-client` is reframed as a binding mechanism.
+- **Compatibility Strategy:** §2.1 capability-orchestration compatibility. Adding the `/capabilities` subpath and the capability types is additive and semver-minor; the existing `TuvrenToolDefinition` (`@tuvren/core/tools`) is unchanged and is the Tuvren-server binding. Adding the execution-class + `owner` attribution to canonical events and telemetry is additive (new optional dimension).
+- **Error model:** Exposure denials remove a surface from the model-visible set (no error to the model). Invocation denials and unavailable bindings surface as `tool.result` with `isError: true` carrying the appropriate existing error family — `TuvrenValidationError` for local input-contract violations (`tool_input_validation_failed`), `TuvrenProviderError` for provider/mediated/MCP-advertised failures (e.g. `mcp_tool_input_invalid`), and a new `capability_binding_unavailable` `TuvrenRuntimeError` when no admissible binding exists (for example a Tuvren-client endpoint is not attached). Provider-native invocation failures are recorded from provider-exposed results.
+
+- The runtime resolves each model-visible tool call through: Capability Registry (which surfaces are eligible) → Capability Policy Engine (exposure-time) → the model sees only exposed surfaces → on a tool call, Binding & Endpoint Resolver (resolve capability → execution class + endpoint) → Capability Policy Engine (invocation-time) → dispatch to the execution-class endpoint. This preserves the conceptual invariant.
+- Exposure-time policy inputs: provider, model, user/org permissions, data-residency, endpoint availability. Invocation-time policy inputs: approval requirements, credential boundary, user-presence, idempotency/retry, risk classification. Both are framework-owned decision points above driver discretion (consistent with the §4.19 bounds guard and the §5.6.3 approval/secret rules).
+- Execution-class dispatch: `tuvren-server` → Tool Execution Gateway (full lifecycle; today's `execute` path); `provider-native` → Provider Gateway enables/configures the provider tool and records provider-exposed events/results only; `provider-mediated` → Provider Gateway configures the mediated relationship (e.g. provider-invoked remote MCP) and records what the provider/tool protocol exposes; `tuvren-client` → Client Endpoint Boundary leases an attached endpoint, dispatches an invocation envelope, and records the client-reported result (lands in Epic AZ).
+- Observation honesty: the runtime emits a canonical invocation event tagged with the execution class and `owner` (`provider` | `tuvren`) plus a `CapabilityObservation`. It must not expose a cancel/retry/audit affordance for an invocation whose class does not grant it. Secret isolation (§5.6.3) applies to every class: no provider/MCP/client credential reaches durable state, events, telemetry, or transcripts.
+- Back-compatibility: `defineTool(...)` / `TuvrenToolDefinition` continue to produce a Tuvren-server capability; existing hosts require no change. New execution classes are opt-in via capability/binding configuration.
+
 ## 5. Implementation Guidelines
 
 ### 5.1 Project Structure
@@ -3131,6 +3253,9 @@ the multi-language transition foundation:
 │   │                   │   ├── messages/
 │   │                   │   ├── tools/        # includes defineTool, FlexibleSchema, asSchema,
 │   │                   │   │                 # jsonSchema, zodSchema, standardSchema
+│   │                   │   ├── capabilities/ # ADR-046: ToolSurface, Capability, ExecutionClass,
+│   │                   │   │                 # Binding, Endpoint, CapabilityObservation, policy +
+│   │                   │   │                 # invocation-attribution shapes
 │   │                   │   ├── events/
 │   │                   │   ├── errors/
 │   │                   │   ├── execution/    # includes ExecutionHandle.awaitResult,
@@ -3140,7 +3265,7 @@ the multi-language transition foundation:
 │   │                   │   ├── provider/
 │   │                   │   ├── extensions/
 │   │                   │   └── telemetry/    # ADR-042: TuvrenTelemetrySink + telemetry record types
-│   │                   ├── tsup.config.ts    # 10 entries: index + 9 subpaths
+│   │                   ├── tsup.config.ts    # 11 entries: index + 10 subpaths
 │   │                   └── package.json      # peerDeps: zod (optional), @standard-schema/spec (optional)
 │   └── hosts/
 │       └── implementations/
@@ -3183,7 +3308,7 @@ conformance-plan JSON Schemas live under `tools/schemas/`.
 - Nx manages orchestration and target naming. Nx does not define the repo ontology and must delegate actual work to the native toolchain for the language or artifact family involved.
 - `shared/` must remain small and contain only truly cross-boundary primitives. It must not become a semantic dumping ground or a backdoor TypeScript convenience layer.
 - Contract-driven components such as backends, provider surfaces, driver contracts, tool contracts, event vocabulary, conformance suites, and interop seams must have an explicit boundary-owned home before any new implementation package is added.
-- `boundaries/shared/contracts/core/spec/authority-packet.json` is the machine authority entry for shared framework runtime contracts (replaces the former `boundaries/framework/contracts/runtime-api/spec/authority-packet.json`, which is absorbed into the merged core packet by ADR-037 / Epic AP). All nine subpath surfaces (`/messages`, `/tools`, `/events`, `/errors`, `/execution`, `/driver`, `/provider`, `/extensions`, `/telemetry`) are declared as binding sections within this single packet. Compatibility re-exports from the deprecated split packages remain valid binding projections for one release cycle.
+- `boundaries/shared/contracts/core/spec/authority-packet.json` is the machine authority entry for shared framework runtime contracts (replaces the former `boundaries/framework/contracts/runtime-api/spec/authority-packet.json`, which is absorbed into the merged core packet by ADR-037 / Epic AP). All ten subpath surfaces (`/messages`, `/tools`, `/events`, `/errors`, `/execution`, `/driver`, `/provider`, `/extensions`, `/telemetry`, `/capabilities`) are declared as binding sections within this single packet. Compatibility re-exports from the deprecated split packages remain valid binding projections for one release cycle.
 - Where a stable language-neutral structure exists, TypeScript adopts it first so later languages inherit a real system rather than a permanent TypeScript exception.
 - Per ADR-023, ADR-024, ADR-025, ADR-026, ADR-027, and ADR-028, every cross-implementation semantic surface must own one Authority Packet manifest declaring its authoritative sources, generated artifacts, conformance plans, binding projections, and forbidden authority sources. Implementation-language source trees, generic conformance runner source, and Markdown documents are forbidden authority sources for any cross-implementation semantic; they may project, validate, or describe authority but cannot become it. Generic runners must own only generic mechanics and consume product semantics from conformance plans referenced by an authority packet.
 - Per the final Epic Y conformance-engine adjustment, implementation language trees may host `conformance-adapter/` code that invokes native logic and returns neutral observations. Assertion evaluation, required-evidence enforcement, capability selection, adapter-error isolation, and compatibility evidence emission belong in the shared runner under `tools/conformance/runner/`, not in language adapter hosts.
@@ -3406,7 +3531,7 @@ Order within one epic (must follow §5.5.3 to remove the kernel inspector, §5.5
 
 ### 5.6 Migration Plans for the v0.28.0 Production-Trust Revision
 
-This section consolidates the bounded migration actions implied by ADR-042 through ADR-045. Epics AU and AV are complete and retained below as current-state closure context for ADR-045 and ADR-042. Epic AW remains the active execution scope in `Tasks.md`: AW (execution bounds + secret isolation) touches the framework/kernel runtime. The telemetry secret-screening helpers from §5.6.3 have landed because the closed telemetry sink (§5.6.2) consumes them.
+This section consolidates the bounded migration actions implied by ADR-042 through ADR-045. Epics AU and AV are complete and retained below as current-state closure context for ADR-045 and ADR-042. Epic BD (formerly Epic AW) remains active execution scope in `Tasks.md`, sequenced after the Tooling block (Epics AW–BC): BD (execution bounds + secret isolation) touches the framework/kernel runtime. The telemetry secret-screening helpers from §5.6.3 have landed because the closed telemetry sink (§5.6.2) consumes them.
 
 #### 5.6.1 Recovery and Durability Verification (ADR-045, Epic AU)
 
@@ -3428,7 +3553,7 @@ Closed outcome:
 5. Added the `framework-operational-telemetry.json` plan (check set `runtime-api-operational-telemetry`), in-memory capture support in the framework testkit, and authority-packet discovery for the plan.
 6. Re-exported `NoopTelemetrySink` plus the telemetry record types from `@tuvren/runtime`; registered the OTel projection as a standing implementation-specific portability exception in the live JSON/Markdown inventory.
 
-#### 5.6.3 Secret Isolation (ADR-044, Epic AW; allowlist consumed by AV)
+#### 5.6.3 Secret Isolation (ADR-044, Epic BD; allowlist consumed by AV)
 
 Order:
 1. Closed with Epic AV: added the telemetry attribute allowlist helper (keys declared in `telemetry/semconv/tuvren-runtime.yaml` only; reject credential-shaped keys and drop or sanitize secret-like values on otherwise allowed keys) and the telemetry-error-summary sanitizer consumed by §5.6.2 step 3. If a future operational telemetry attribute is required (for example bounded-execution `bound` / `limit` / `observed`), update that semconv source in the same change before the allowlist admits it.
@@ -3437,7 +3562,7 @@ Order:
 4. Add the `secret-isolation` check set to `providers-mcp-client.json`, `framework-operational-telemetry.json`, and `runtime-api-callables-extended.json`: configure a provider key plus MCP bearer-auth and header-auth secrets, run a turn, and use a shared runner-owned secret-absence helper to assert that neither raw nor commonly encoded variants of those secrets appear in persisted records, captured canonical stream events, captured telemetry attributes or error summaries, or a recorded transcript.
 5. Run `bun run verify`.
 
-#### 5.6.4 Framework-Enforced Execution Bounds (ADR-043, Epic AW)
+#### 5.6.4 Framework-Enforced Execution Bounds (ADR-043, Epic BD)
 
 Order:
 1. Add `ExecutionBounds` and `ExecutionBoundExceededDetails` (§3.11) to `@tuvren/core/execution`; document the `execution_bound_exceeded` code in `@tuvren/core/errors`; add `TuvrenPrompt.signal` to the provider contract authority owned by `boundaries/providers/contracts/provider-api/`; and update the shared core execution sources/generated artifacts/merged authority packet plus the provider-api sources/generated artifacts/authority packet, including the required packet-version bumps.
@@ -3446,3 +3571,26 @@ Order:
 4. Add the `runtime-api-execution-bounds` check set to `runtime-api-callables-extended.json` using a runaway aimock driver fixture; assert each hard-stop bound's breach result, observation of the `execution.bounded` telemetry event through a configured capture sink, clamping of `AgentConfig.maxIterations` by `bounds.maxIterations`, enforcement of the `maxConcurrentToolCalls` throttle, clamping of `AgentConfig.maxParallelToolCalls` and `defaultMaxParallelToolCalls` by that cap, rejection of invalid non-finite or non-positive bound configuration, and a within-bounds control case.
 5. Add a normative "Execution Bounds" section to `docs/KrakenFrameworkSpecification.md` (minor bump) so future drivers inherit the framework-owned guard.
 6. Run `bun run verify`.
+
+### 5.7 Migration Plans for the v0.29.0 Capability-Orchestration Revision
+
+This section consolidates the bounded migration actions implied by ADR-046 and ADR-047. The conceptual model and contracts are authored above (PRD v0.9.0, Architecture v0.9.0, §3.13, §4.21); the source implementation is captured in `Tasks.md` as the active **Tooling block (Epics AW–BC)**, sequenced ahead of the trust block (Epic BD) and the productionization roadmap (Epics BE–BI). No code lands from this TechSpec revision itself; it is the contract the Tooling block implements. The block is "finished" when all four execution classes are orchestrated by the runtime with honest per-class observation/control limits, MCP is classified as a binding across classes, exposure/invocation policy applies, the cross-class invariant is conformance-verified, and the framework specification states the model.
+
+#### 5.7.1 Tooling Block Foundation (ADR-046, ADR-047, Epic AW)
+
+Order:
+1. Add the `./capabilities` subpath to `@tuvren/core` with the §3.13 types; generate the capability JSON schemas; add a `capabilities` binding section to the merged shared-core authority packet and bump its version.
+2. Implement the Capability Registry, Binding & Endpoint Resolver, and Capability Policy Engine (exposure-time and invocation-time decision points) in `@tuvren/runtime`; surface invocation denials and unavailable bindings as `tool.result` `isError` per the §4.21 error model (including the new `capability_binding_unavailable` code in `@tuvren/core/errors`).
+3. Reclassify today's `TuvrenToolDefinition` path as the Tuvren-server class (no host change) and `@tuvren/mcp-client` as a binding mechanism; route both through the resolver to the existing Tool Execution Gateway.
+4. Add the execution-class + `owner` attribution to the canonical event stream (§4.5) and operational telemetry (§3.10) for tool/capability invocation events, additively.
+5. Add the `runtime-api-capability-orchestration` foundation check set (the invariant, surface-vs-capability separation, exposure/invocation policy, attribution, back-compat that `defineTool` is Tuvren-server) in the framework plans.
+
+#### 5.7.2 Per-Class and Cross-Class Build-Out (Epics AX–BC)
+
+Each epic is active scope in `Tasks.md` and builds on the foundation:
+- **Epic AX — Tuvren-Server Execution Class:** full server lifecycle (input/output validation, idempotent retry, cancellation, trace, audit, tenant isolation, rate-limit, server-side MCP binding, server sandbox endpoint) and its conformance.
+- **Epic AY — Provider-Native & Provider-Mediated Execution Classes:** provider-native enablement/attribution and provider-mediated (provider-invoked remote MCP) through the Provider Gateway / AI SDK bridge, plus the provider continuation-state model, with one concrete proof per class (bounded by what the bridged providers expose in 2026) and conformance.
+- **Epic AZ — Tuvren-Client Execution Class:** the leased client-endpoint protocol and attachment seam (runtime side only — concrete client endpoints remain host deliverables), client-side MCP, availability/staleness/partial-observability, the documented client integration contract, and conformance.
+- **Epic BA — Invocation Lifecycle & Observation Model:** the cross-class invocation lifecycle state machine, the observation/event taxonomy depth, cross-class resume/recovery semantics, lifecycle telemetry, and conformance.
+- **Epic BB — Exposure & Invocation Policy Model:** policy depth (data residency, risk classification, presence/active-endpoint, idempotency/retry, credential boundaries, composition/precedence) and conformance.
+- **Epic BC — Tooling Restructuring Closeout:** cross-class integration conformance, the normative "Capability Orchestration" section in `docs/KrakenFrameworkSpecification.md` (minor bump), the capability-surface portability inventory and authority-packet finalization, and a clean `bun run verify`.

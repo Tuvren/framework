@@ -2,9 +2,9 @@
 
 ## 0. Version History & Changelog
 
+- v0.9.0 - Reframed the product as a cross-provider capability orchestration runtime rather than a single tool executor: separated the model-facing Tool Surface from the underlying Capability, recognized four execution classes (provider-native, provider-mediated developer-provided, Tuvren-server, Tuvren-client) with distinct execution/state/credential/observability/control ownership, introduced Bindings, Endpoints, exposure-time and invocation-time Policy, and per-class Observation limits, classified MCP as a binding mechanism rather than an execution class, and recorded the conceptual invariant that every model-visible tool call resolves to a policy-checked capability invocation against a known execution class. Added the Capability Orchestration and Execution Classes epic (CAP-P0-056 through CAP-P1-063), glossary terms, scope distinctions, prohibited patterns, and boundary-analysis items; preserved every existing tool, approval, secret-isolation, and telemetry guarantee (today's developer-defined runtime-executed tool is the Tuvren-server execution class). Implementation is captured as the active Tooling block (Epics AW–BC) in Tasks.md, sequenced ahead of the trust block (Epic BD) and the productionization roadmap (Epics BE–BI).
 - v0.8.0 - Promoted production-trust commitments to first-class product scope: durability and crash-recovery guarantees that are verified under fault injection (resume-or-fail-clean with no partial or corrupt lineage), a first-class operational observability and telemetry surface with optional vendor-neutral export, and explicit execution-safety and trust-boundary controls (untrusted MCP and tool inputs, non-bypassable approval enforcement, bounded execution against runaway loops and resource exhaustion, and credential isolation from durable state, telemetry, and transcripts). Recorded the near-term strategic direction (host adoption plus first-party dogfooding, with multi-language parity preserved but deprioritized) and a named post-trust-block roadmap as deferred planning.
 - v0.7.0 - Promoted host-developer ergonomics, single-tenant durable-read surface, kernel-level thread enumeration, unified handle terminal-value surface, schema-agnostic tool authoring, MCP client integration, headless reference-host mode, transcript persistence, and consolidated curated SDK package layout to in-scope product capabilities; retired the playground host and the split contract packages.
-- v0.6.0 - Tightened the portability promise to in-scope runtime features defined by the semantic docs so explanatory material and ecosystem-only adapters do not blur the portability gate.
 - ... [Older history truncated, refer to git logs]
 
 ## 1. Executive Summary & Target Archetype
@@ -29,6 +29,9 @@
 - Host-developer ergonomics are a first-class product outcome on equal footing with semantic correctness. A curated host-facing SDK boundary, a batteries-included entrypoint, schema-agnostic tool authoring, and a first-party tool ecosystem surface are part of the product, not a courtesy facade.
 - Single-tenant durable state must be inspectable, enumerable, and replayable through the host-facing SDK rather than through private kernel access; the first-party reference host must not need any seam that downstream hosts cannot also use.
 - Production trustworthiness is a first-class product outcome on equal footing with semantic correctness and host-developer ergonomics: the durability and recovery promises must be demonstrably true under failure, the runtime must be observable enough to operate and debug in production, and untrusted edges must be governed rather than implicitly trusted.
+- Tuvren Runtime is a cross-provider capability orchestration runtime, not only a tool executor. It decides which tool surfaces are exposed to a model, which capabilities back them, where execution authority lives, which policies apply before exposure and before invocation, and what it can observe, persist, resume, cancel, retry, or audit.
+- Tuvren Runtime must distinguish the model-facing Tool Surface from the underlying Capability, and must represent the execution class that owns each capability invocation rather than treating every tool as a locally executed developer function.
+- Tuvren Runtime must never imply stronger control than the execution class actually grants; provider-owned and client-owned invocations are represented as known capabilities with explicit observation and control limits.
 
 ### 1.2 Success Criteria
 
@@ -48,6 +51,7 @@
 - A builder can trust that when a process is interrupted mid-turn, the runtime either resumes the unfinished work from the last durable checkpoint or fails cleanly, and never leaves partial or corrupt lineage; this guarantee is backed by reproducible failure-injection evidence rather than asserted by design alone.
 - An operator can observe and reconstruct what a turn did — model interactions, tool calls, checkpoints, approvals, and recovery events — through a first-class telemetry surface, and can export that telemetry to standard tooling without coupling to runtime internals.
 - A host can connect untrusted external tool sources and run sensitive tool work while trusting that inputs are validated, approval gates cannot be bypassed, runaway loops and resource exhaustion are bounded, and provider credentials never leak into durable state, telemetry, or transcripts.
+- A builder can expose the same logical capability (for example search or code execution) through different execution classes — provider-native, Tuvren-server, provider-mediated, or client-side — and trust that the runtime applies policy before exposure and before invocation, resolves each model-visible call to a known execution class, and represents honestly what it can observe, persist, resume, cancel, retry, or audit for that class.
 
 ### 1.3 Scope Distinctions That Must Remain Stable
 
@@ -60,6 +64,11 @@
 - **Single-tenant durable reads vs. cross-tenant discovery:** Listing, reading, and replaying state for the runtime instance the host owns is a host-facing SDK capability; cross-tenant search, multi-tenant access control, and full-text indexed querying are deferred to a future hosted/server projection and are not part of the embeddable SDK.
 - **SDK ergonomics vs. semantic correctness:** A curated host-facing surface, batteries-included composition, type-inferring helpers, and re-exported primitives are product responsibilities; they are not a substitute for the underlying semantic contracts, and they must not silently weaken any guarantee the boundary contracts make.
 - **Authoring style vs. boundary contract:** Tool authoring may use Zod, Standard Schema, wrapped JSON Schema, or future schema adapters; the boundary contract still accepts raw JSON Schema and a `CustomSchema` interop shape. Authoring helpers add type inference and ergonomic defaults without narrowing what is legal at the contract seam.
+- **Tool surface vs. capability:** The model-facing tool surface (what the model may see and call) is distinct from the underlying capability (the authority to perform an action); one capability may back several surfaces and one surface may resolve to different capabilities across providers and contexts.
+- **Execution class vs. tool source:** The execution class names who owns a capability invocation — provider-native, provider-mediated developer-provided, Tuvren-server, or Tuvren-client — and is not the same as the tool source or the protocol used to reach the tool.
+- **MCP as binding vs. execution class:** The Model Context Protocol is a binding/protocol mechanism that can appear under provider-mediated, Tuvren-server, or Tuvren-client execution; it is classified by who invokes or runs the MCP server, not treated as a top-level execution class.
+- **Provider-native tools vs. local functions:** Provider-native tools are configured and exposed by Tuvren and executed by the provider; they are not modeled as locally executable functions, and Tuvren records only provider-exposed events and results for them.
+- **Tuvren-client capabilities vs. server functions:** Client-side capabilities are leased endpoint capabilities executed in a client environment that may hold authority the server does not; they are not ordinary server functions and carry availability, lease, staleness, and partial-observability properties.
 
 ### 1.4 Strategic Direction (Near-Term)
 
@@ -111,6 +120,14 @@ The documented v1 runtime surface is functionally complete in the first implemen
 | Operational Telemetry | The first-class, structured, correlated record of what a turn did (model interactions, tool calls, checkpoints, approvals, recovery events, errors), keyed to runtime lineage concepts, used for operating and debugging the runtime in production and distinct from the real-time host event stream. | logs, metrics blob, the event stream |
 | Execution Bound     | A configured limit on a single turn's iterations, tool calls, or resource consumption that, when reached, makes the runtime stop safely and surface the outcome rather than looping or exhausting resources. | timeout hack, kill switch |
 | Secret Isolation    | The guarantee that sensitive credentials and provider secrets used transiently during execution never reach durable history, operational telemetry, or transcripts. | redaction afterthought, masking only |
+| Capability Orchestration | The runtime responsibility of deciding which tool surfaces are exposed to a model, which capabilities back them, which execution class and endpoint owns each invocation, which policies apply before exposure and before invocation, and what the runtime can observe or control for that invocation. | tool executor, plugin manager |
+| Tool Surface        | The model-facing representation of a capability: the name, description, schema, and provider-specific rendering constraints that determine what the model may see and call. | tool, function spec |
+| Capability          | The underlying authority to perform an action (for example web.search, code.execute, crm.contact.lookup), independent of how it is surfaced to a model or who executes it. | tool, skill |
+| Execution Class     | The execution-ownership category for a capability invocation: provider-native, provider-mediated developer-provided, Tuvren-server, or Tuvren-client. Each class has distinct execution, state, credential, observability, and control ownership. | tool type, origin flag |
+| Binding             | The relationship that ties a capability to a specific execution class and endpoint in a given context, answering where and by whom the capability is executed. | route, adapter |
+| Endpoint            | The concrete execution target for a binding: provider runtime, a Tuvren host/server/worker/sandbox, a client endpoint, or a local or remote MCP server. | server, transport |
+| Capability Policy   | The rules that decide whether a tool surface may be exposed and whether a capability may be invoked, covering provider/model compatibility, permissions, approval, data residency, endpoint availability, presence, credential boundaries, idempotency/retry, and risk classification. | guard, config flag |
+| Capability Observation | The level of visibility the runtime has into an invocation — what it can know, persist, resume, cancel, retry, or audit — which differs by execution class. | log level, trace |
 
 ## 3. Actors & Personas
 
@@ -162,6 +179,13 @@ The documented v1 runtime surface is functionally complete in the first implemen
 - **Context:** Uses the first-party reference host to exercise, demo, debug, or regression-test the runtime end to end, either at the interactive REPL or as a headless stdin-driven process inside CI, evaluation suites, or operations scripts.
 - **Goals:** Drive the runtime through every host-facing capability the SDK exposes, capture on-disk transcripts of meaningful sessions, replay those transcripts for postmortems and regressions, and trust that everything the reference host can do is achievable by any downstream host through the same SDK.
 - **Frictions:** Interactive-only tooling is hard to embed in CI; transcript-less debugging is fragile; reference hosts that pierce private seams give false confidence about what downstream products can build.
+
+### 3.8 Capability and Endpoint Integrator
+
+- **Role:** Capability and Endpoint Integrator
+- **Context:** Configures which capabilities a runtime instance may use, how they are surfaced to models, and where they execute — enabling provider-native tools, configuring provider-mediated tools, registering Tuvren-server capabilities, and attaching client endpoints.
+- **Goals:** Expose the right tool surfaces per provider and model; choose or allow the execution class and endpoint for each capability; apply exposure and invocation policy; and rely on honest per-class observation and control limits rather than assuming uniform runtime control.
+- **Frictions:** A single tool abstraction hides who executes, who owns state, who owns credentials, who can cancel or retry, and what is observable; forcing provider-native, provider-mediated, server-side, and client-side capabilities into one shape makes runtime behavior unsafe to reason about.
 
 ## 4. Functional Capabilities
 
@@ -264,6 +288,48 @@ The documented v1 runtime surface is functionally complete in the first implemen
 - **Capability ID:** CAP-P0-041
 - **Capability:** The product must integrate with the Model Context Protocol as a first-class tool source, allowing a host to connect to any MCP server over stdio or HTTP/SSE and consume its advertised tools as Tuvren tool definitions without writing a bespoke bridge.
 - **Rationale:** MCP is the emerging standard for AI tool ecosystems in 2026; a runtime claiming to rival LangChain/LangGraph cannot ignore the most active tool-ecosystem surface without forcing every host to write its own MCP adapter.
+
+### Epic: Capability Orchestration and Execution Classes
+
+- **Priority:** P0
+- **Capability ID:** CAP-P0-056
+- **Capability:** The product must separate the model-facing tool surface (what the model may see and call) from the underlying capability (the authority to perform an action), so that one capability can back multiple surfaces and one surface can resolve to different capabilities across providers and contexts.
+- **Rationale:** A single `name + description + schema + execute` shape only describes a developer-defined function executed locally; it cannot honestly represent capabilities the provider executes, capabilities a provider invokes against a developer endpoint, or capabilities a client environment executes.
+
+- **Priority:** P0
+- **Capability ID:** CAP-P0-057
+- **Capability:** The product must recognize four execution classes — provider-native, provider-mediated developer-provided, Tuvren-server, and Tuvren-client — each with distinct ownership of execution, state, credentials, observability, and control, and must not model all of them as locally executed functions.
+- **Rationale:** These classes differ in who executes, who owns state, who owns credentials, who sees intermediate steps, who can cancel, retry, or audit, who pays, where data is processed, and whether behavior is portable; collapsing them into one abstraction makes runtime behavior unsafe to reason about.
+
+- **Priority:** P0
+- **Capability ID:** CAP-P0-058
+- **Capability:** The product must resolve every model-visible tool call to a policy-checked capability invocation against a known execution class; provider-native invocations are the only case where the provider owns execution, and they must still be represented as known provider-native capabilities with explicit observation and control limits.
+- **Rationale:** This invariant keeps the runtime honest: there is no untyped, unclassified tool call, and the runtime never silently assumes control it does not have.
+
+- **Priority:** P0
+- **Capability ID:** CAP-P0-059
+- **Capability:** The product must bind a capability to a specific execution class and endpoint based on provider, model, policy, endpoint availability, and product configuration, and must allow one logical capability to have multiple possible bindings.
+- **Rationale:** The same logical capability (for example search or code execution) may be served provider-native, Tuvren-server, provider-mediated, or client-side; the runtime must select or allow the binding rather than hard-coding one execution owner.
+
+- **Priority:** P0
+- **Capability ID:** CAP-P0-060
+- **Capability:** The product must apply policy at two distinct decision points — before a tool surface is exposed to a model, and before a capability is invoked — covering at least provider/model compatibility, user and organization permissions, approval requirements, data-residency restrictions, active-endpoint requirements, user-presence requirements, credential boundaries, idempotency and retry behavior, and risk classification.
+- **Rationale:** Exposure and invocation are different trust decisions; conflating them hides whether a capability was withheld from the model or merely blocked at call time.
+
+- **Priority:** P0
+- **Capability ID:** CAP-P0-061
+- **Capability:** The product must bound and represent, per execution class, what it can observe, persist, resume, cancel, retry, and audit, and must distinguish runtime events that represent provider-native invocations from events that represent Tuvren-owned invocations.
+- **Rationale:** Observation differs by execution class; the runtime must record provider-exposed events for provider-owned work and full-lifecycle events for Tuvren-owned work without overstating visibility.
+
+- **Priority:** P1
+- **Capability ID:** CAP-P1-062
+- **Capability:** The product must treat the Model Context Protocol as a binding mechanism that can appear under provider-mediated, Tuvren-server, or Tuvren-client execution, classified by who invokes or runs the MCP server, rather than as a top-level execution class.
+- **Rationale:** MCP is a protocol, not an execution owner; the same MCP server may be invoked by a provider, by Tuvren server-side, or by a client endpoint, with different observability and control in each case.
+
+- **Priority:** P1
+- **Capability ID:** CAP-P1-063
+- **Capability:** The product must orchestrate Tuvren-client capabilities as leased endpoint capabilities, accounting for client availability, leases, stale endpoint responses, and partial observability, rather than as ordinary server functions.
+- **Rationale:** Client environments may hold authority the server does not and should not hold; the runtime owns orchestration and policy while the client endpoint owns environmental execution.
 
 ### Epic: Human-in-the-Loop Governance
 
@@ -482,6 +548,8 @@ The documented v1 runtime surface is functionally complete in the first implemen
 - This PRD does not prescribe the concrete storage engine, programming language, packaging layout, or transport stack used to implement those capabilities, except where it explicitly commits to one curated host-facing SDK boundary and to the MCP wire protocol as the supported tool-ecosystem surface.
 - Long-term portability is a boundary-preservation goal, not a rewrite mandate; future implementation lines must extend the shared semantic system rather than replace it wholesale.
 - The proving-host clarification of the right high-level SDK boundary that was previously deferred is now considered closed; the consolidated curated SDK surface and the batteries-included entrypoint are the v1 commitments and downstream artifacts may plan around them.
+- The capability-orchestration model reframes how tools are represented without removing any existing tool capability: a developer-defined tool executed by the runtime (CAP-P0-013) is the Tuvren-server execution class, validated tool inputs (CAP-P1-015) and approval gating (CAP-P0-016/CAP-P0-017) continue to apply, and the MCP client integration (CAP-P0-041) becomes an MCP binding. Provider-native, provider-mediated, and Tuvren-client classes are additive.
+- The capability-orchestration capabilities (CAP-P0-056 through CAP-P1-063) define the target model; their implementation is phased, with the core split delivered first and the deep per-class build-out (notably the Tuvren-client endpoint lifecycle and advanced policy) sequenced behind it. The PRD commits to the model; sequencing lives in the execution plan.
 
 ### 4.2 Distinction Notes
 
@@ -496,14 +564,16 @@ The documented v1 runtime surface is functionally complete in the first implemen
 - The MCP client integration is not an MCP server projection; the runtime can consume any MCP server's tools, but does not expose itself as an MCP server in v1.
 - A headless mode is not a script-file interpreter; the reference host accepts line-delimited input on stdin, exactly the same input shape as the interactive mode, with no out-of-band scripting language.
 - A curated SDK surface is not a megapackage; primitives live in one shared package with subpath exports, but backends, stream adapters, drivers, provider bridges, and the MCP client remain separate leaf packages that peer-depend on the shared primitives.
+- Tool surface, capability, binding, and execution class are four distinct concepts: the surface is model-facing, the capability is the authority to act, the binding ties a capability to an execution class and endpoint, and the execution class names who owns the invocation.
+- Exposure-time policy and invocation-time policy are distinct decisions: one decides whether the model ever sees a surface, the other decides whether a resolved capability may actually run.
 
 ## 5. Non-Functional Constraints
 
 - **Performance:** The product must remain usable for long-lived agent sessions, and routine context-management decisions should rely on compact structural state rather than repeated full-history rescans whenever practical. Durable-read operations against a single thread or branch must scale to bounded host display windows without forcing the host to load entire history into memory at once.
 - **Reliability:** The product must make committed progress durable, distinguish incomplete work from committed work, and converge safely after interruptions without ambiguous replay. An interruption at any point must resolve to one of two outcomes — the unfinished work resumes from the last durable checkpoint, or the turn fails cleanly — with no partial, torn, or corrupt lineage left behind; checkpoint commits must be atomic and lineage must remain consistent under concurrent writers. These recovery and durability guarantees must be demonstrable through reproducible fault-injection and crash-recovery evidence across every supported persistent storage substrate, plus the applicable in-process atomicity and concurrency invariants for non-persistent backends, not asserted by design alone. Headless reference-host mode and transcript replay must produce deterministic outputs for the same inputs whenever the underlying runtime is itself deterministic.
-- **Security & Privacy:** Sensitive actions must be governable through approval workflows, and approval gates must be non-bypassable: work that requires approval cannot proceed without an explicit decision. Provider-specific continuity artifacts must be preserved only as required for correct operation, and sensitive credentials or secrets must be isolated from durable state, operational telemetry, and transcripts. Runtime state and event surfaces must remain inspectable enough for supervision and audit without becoming a channel for secret leakage. External MCP servers and tool inputs must be treated as untrusted boundaries: data crossing a process or network boundary must be validated and surfaced as agent-visible results rather than implicitly trusted. Execution must be bounded so that untrusted model output or tools cannot drive unbounded loops or resource exhaustion.
+- **Security & Privacy:** Sensitive actions must be governable through approval workflows, and approval gates must be non-bypassable: work that requires approval cannot proceed without an explicit decision. Provider-specific continuity artifacts must be preserved only as required for correct operation, and sensitive credentials or secrets must be isolated from durable state, operational telemetry, and transcripts. Runtime state and event surfaces must remain inspectable enough for supervision and audit without becoming a channel for secret leakage. External MCP servers and tool inputs must be treated as untrusted boundaries: data crossing a process or network boundary must be validated and surfaced as agent-visible results rather than implicitly trusted. Execution must be bounded so that untrusted model output or tools cannot drive unbounded loops or resource exhaustion. Capabilities executed by a provider or a client environment must be represented with explicit observation and control limits; the runtime must not imply that it can cancel, retry, or audit an invocation it does not own. Credentials must remain confined to the execution edge that needs them (provider or endpoint) and must not be required by execution classes that never reach that edge.
 - **Operability:** The product must be embeddable into different host surfaces, support real-time observation, and expose explicit control points for cancellation, steering, approval, and status inspection. The host-facing SDK must allow a host to inspect, list, and replay its own durable state without reaching around the SDK boundary. Beyond the real-time event stream, the runtime must expose a first-class operational telemetry surface — structured, correlated records of turns, model and tool interactions, checkpoints, approvals, and recovery events — that supports postmortems, performance investigation, and incident response, and that can be exported to standard vendor-neutral observability tooling.
-- **Domain-specific Constraints:** The product must preserve a clear separation between low-level runtime mechanism and higher-level agent policy; the canonical runtime language must remain provider-neutral; history-preserving correction must be preferred over destructive overwrite; active-context reshaping must never imply that prior committed history ceased to exist; future implementation languages must prove parity against shared semantic assets rather than reinterpret the product independently; and the first-party reference host must consume only the same host-facing SDK boundary that downstream hosts use.
+- **Domain-specific Constraints:** The product must preserve a clear separation between low-level runtime mechanism and higher-level agent policy; the canonical runtime language must remain provider-neutral; history-preserving correction must be preferred over destructive overwrite; active-context reshaping must never imply that prior committed history ceased to exist; future implementation languages must prove parity against shared semantic assets rather than reinterpret the product independently; the first-party reference host must consume only the same host-facing SDK boundary that downstream hosts use; and the runtime must not collapse provider-native, provider-mediated, server-side, and client-side execution into one tool abstraction, keeping the model-facing tool surface distinct from the underlying capability.
 
 ### Prohibited Patterns
 
@@ -520,6 +590,10 @@ The documented v1 runtime surface is functionally complete in the first implemen
 - The product must not claim crash-safe recovery or durability guarantees that are not backed by reproducible fault-injection and crash-recovery evidence; design-time assertion alone is not sufficient proof for a first-class durability promise.
 - The product must not allow a single turn to run unbounded iterations, tool calls, or resource consumption without enforced limits and a safe, observable stop.
 - The product must not allow approval gates to be bypassed, and must not let sensitive credentials or secrets reach durable history, operational telemetry, or transcripts.
+- The product must not represent execution-class differences with a single `origin` field on a tool, nor with a rigid tool subclass taxonomy that hard-codes current deployment patterns; the model must be compositional (tool surface, capability, binding, endpoint, policy, observation).
+- The product must not model provider-native tools as locally executable functions, nor model client-side capabilities as ordinary server functions.
+- The product must not treat MCP as a top-level execution class; its execution class depends on who invokes or runs the MCP server.
+- The product must not imply stronger observation or control over an invocation than its execution class actually grants.
 
 ## 6. Boundary Analysis
 
@@ -550,6 +624,11 @@ The documented v1 runtime surface is functionally complete in the first implemen
 - A first-class operational telemetry surface covering turns, model and tool interactions, checkpoints, approvals, and recovery events, with an optional vendor-neutral export path
 - Execution-safety controls that bound iterations, tool calls, and resource usage and stop safely when a limit is reached
 - Credential and secret isolation that keeps sensitive values out of durable state, operational telemetry, and transcripts
+- A capability-orchestration model that separates the model-facing tool surface from the underlying capability and binds capabilities to execution classes and endpoints
+- Recognition of four execution classes — provider-native, provider-mediated developer-provided, Tuvren-server, and Tuvren-client — with distinct execution, state, credential, observability, and control ownership
+- Exposure-time and invocation-time policy decisions over tool surfaces and capabilities
+- Per-execution-class observation and control limits, and a runtime event distinction between provider-native and Tuvren-owned invocations
+- Classification of MCP as a binding mechanism across execution classes rather than as an execution class
 
 ### Out of Scope
 
@@ -571,6 +650,9 @@ The documented v1 runtime surface is functionally complete in the first implemen
 - Driver hot-swap or additional drivers beyond the ReAct baseline in v1
 - Per-call approval edit forms beyond the existing approve/reject/edit verbs in the reference host (UX scope, not runtime semantics)
 - A script-file interpreter or external scripting language for the headless reference-host mode
+- Shipping concrete client endpoints themselves (browser extensions, desktop clients, device agents) as product deliverables; the runtime orchestrates and leases client endpoints but does not provide them
+- Provider-exclusive parameters or behaviors of any one provider-native tool as core, portable product requirements
+- The concrete transport, schema, adapter API, MCP implementation strategy, deployment model, or package layout for the capability-orchestration model (those are implementation decisions for the execution plan, not product requirements)
 
 ## 7. Conceptual Diagrams (Mermaid)
 
@@ -588,14 +670,16 @@ System_Ext(modelProviders, "Model Providers", "Generate responses and tool-call 
 System_Ext(externalTools, "External Tools and Systems", "Operations invoked by the runtime")
 System_Ext(mcpServers, "External MCP Servers", "Advertise tools consumed by the runtime over stdio or HTTP/SSE")
 System_Ext(observability, "Observability Tooling", "Consumes exported operational telemetry for monitoring, postmortems, and incident response")
+System_Ext(clientEndpoints, "Client Endpoints", "Browser extensions, desktop apps, or device agents that execute leased client-side capabilities")
 
-Rel(builder, runtime, "Configures agents, tools, policies, and embeddings through the curated SDK")
+Rel(builder, runtime, "Configures agents, capabilities, tool surfaces, bindings, policies, and embeddings through the curated SDK")
 Rel(host, runtime, "Starts turns, awaits results, consumes events, lists threads and branches, replays history, injects steering, resolves approvals")
 Rel(approver, host, "Approves, edits, or rejects pending actions")
 Rel(operator, host, "Drives reference host interactively or headlessly; captures and replays transcripts")
-Rel(runtime, modelProviders, "Sends prompts and receives model outputs")
-Rel(runtime, externalTools, "Executes tool actions and records results")
-Rel(runtime, mcpServers, "Connects as an MCP client, consumes advertised tools as runtime tool definitions")
+Rel(runtime, modelProviders, "Sends prompts, enables and configures provider-native tools, receives model outputs and provider-tool events")
+Rel(runtime, externalTools, "Executes Tuvren-server tool actions and records results")
+Rel(runtime, mcpServers, "Connects as an MCP client; the MCP binding's execution class depends on who invokes the server")
+Rel(runtime, clientEndpoints, "Leases and dispatches client-side capability invocations; records client-reported results")
 Rel(runtime, observability, "Exports operational telemetry in a vendor-neutral format")
 ```
 
@@ -639,6 +723,21 @@ DurableReadSurface --> "*" TurnNode : reads state at
 DurableReadSurface --> "*" TuvrenMessage : reads on a branch
 ToolSource <|-- McpToolSource
 AgentConfig --> "*" ToolSource : draws tools from
+class ToolSurface
+class Capability
+class ExecutionClass
+class Binding
+class Endpoint
+class CapabilityPolicy
+class CapabilityObservation
+ToolSurface "1" --> "1" Capability : presents
+ToolSource --> "*" Capability : contributes
+Capability "1" --> "*" Binding : has possible
+Binding "1" --> "1" ExecutionClass : owned by
+Binding "1" --> "1" Endpoint : targets
+Binding "1" --> "1" CapabilityObservation : bounded by
+CapabilityPolicy --> "*" ToolSurface : gates exposure of
+CapabilityPolicy --> "*" Binding : gates invocation of
 ```
 
 ## Appendix: Operator Preferences
