@@ -537,7 +537,8 @@ function hasValidStreamEventPayload(
     case "tool.start":
       return matchesStreamEventVariant(
         value,
-        ["callId", "name", "input"],
+        // "attribution" is an additive optional field per ADR-046 AW006
+        ["callId", "name", "input", "attribution"],
         () =>
           isNonEmptyStringProperty(value, "callId") &&
           isNonEmptyStringProperty(value, "name") &&
@@ -547,7 +548,8 @@ function hasValidStreamEventPayload(
     case "tool.result":
       return matchesStreamEventVariant(
         value,
-        ["callId", "name", "output", "isError"],
+        // "attribution" is an additive optional field per ADR-046 AW006
+        ["callId", "name", "output", "isError", "attribution"],
         () =>
           isNonEmptyStringProperty(value, "callId") &&
           isNonEmptyStringProperty(value, "name") &&

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import type { CapabilityInvocationAttribution } from "./capability-shapes.js";
 import type { EpochMs, HashString } from "./kernel-records.js";
 import type { TuvrenError } from "./tuvren-error.js";
 
@@ -431,6 +432,8 @@ export interface MessageDoneEvent {
 }
 
 export interface ToolStartEvent {
+  /** Additive per ADR-046 AW006: execution-class and owner attribution. */
+  attribution?: CapabilityInvocationAttribution;
   callId: string;
   input: unknown;
   name: string;
@@ -440,6 +443,8 @@ export interface ToolStartEvent {
 }
 
 export interface ToolResultEvent {
+  /** Additive per ADR-046 AW006: execution-class and owner attribution. */
+  attribution?: CapabilityInvocationAttribution;
   callId: string;
   isError?: boolean;
   name: string;
