@@ -63,6 +63,23 @@ export interface CapabilityPolicyEngineOptions {
  *
  * Both decision points are framework-owned and above driver discretion.
  * Drivers see only the exposed surface set and cannot override denials.
+ *
+ * APPROVAL INTEGRATION (deferred to Epic AX/BB):
+ * The `InvocationDecision.requiresApproval` field allows this gate to signal
+ * "admitted, but route through approval first." The baseline (Epic AW) never
+ * sets `requiresApproval` because the existing approval gate in
+ * `tool-execution.ts` remains non-bypassable by construction — the engine is
+ * not yet wired into the tool execution path. When integration lands, callers
+ * must NOT read `admitted: true` as "no approval required"; they must
+ * additionally consult `requiresApproval` and route through the approval gate
+ * when it is set. This is intentionally deferred; the approval guarantee is
+ * preserved by the existing gate, not by this engine.
+ *
+ * CONTEXT-DRIVEN DIMENSIONS (deferred to Epic BB):
+ * `CapabilityPolicyContext` carries `providerId`, `modelId`, and `permissions`
+ * for future use. The baseline only consults explicit deny-lists; the full
+ * policy dimension set (residency, risk, presence, credential boundary,
+ * idempotency/retry, composition/precedence) lands in Epic BB.
  */
 export interface CapabilityPolicyEngine {
   /**
@@ -78,7 +95,8 @@ export interface CapabilityPolicyEngine {
   /**
    * Evaluate invocation-time policy for a resolved binding.
    * An InvocationDecision with `admitted: false` must be surfaced as a
-   * `tool.result` with `isError: true` and a non-secret reason.
+   * `tool.result` with `isError: true` and a non-secret reason. See the
+   * interface doc on approval integration for `requiresApproval` semantics.
    */
   evaluateInvocation(
     binding: Binding,

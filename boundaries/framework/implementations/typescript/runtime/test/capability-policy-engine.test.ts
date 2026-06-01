@@ -176,16 +176,21 @@ describe("CapabilityPolicyEngine — invocation-time decision point", () => {
     expect(decision.executionClass).toBe("tuvren-server");
   });
 
-  test("a binding denied at invocation-time yields requiresApproval false by default", () => {
-    const engine = createCapabilityPolicyEngine({
-      deniedCapabilityIds: new Set(["risky.op"]),
-    });
-    const binding = makeBinding("risky.op");
+  test("admitted: true for a non-denied binding does not assert approval is unnecessary", () => {
+    // The baseline engine never sets requiresApproval; that field is reserved
+    // for the approval-signal integration (AX/BB). An admitted: true decision
+    // means the policy gate did not deny — callers must still route through
+    // the existing approval gate in tool-execution.ts. This test documents
+    // the current baseline state so a future integrator can see the intent.
+    const engine = createCapabilityPolicyEngine();
+    const binding = makeBinding("safe.op");
 
     const decision = engine.evaluateInvocation(binding, defaultContext);
 
-    expect(decision.admitted).toBe(false);
-    expect(decision.requiresApproval).toBeFalsy();
+    // The baseline does not produce an approval signal; the approval guarantee
+    // is maintained by the existing tool-execution gate, not by this engine.
+    expect(decision.admitted).toBe(true);
+    expect(decision.requiresApproval).toBeUndefined();
   });
 });
 
