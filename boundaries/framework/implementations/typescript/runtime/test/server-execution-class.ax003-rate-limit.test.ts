@@ -134,12 +134,13 @@ describe("KRT-AX003 — rate limiting", () => {
     },
   };
 
-  test("within-budget invocation executes normally", async () => {
+  test("within-budget invocation executes normally and returns tool result", async () => {
     const events = await runTurnWithRateLimit(toolName, simpleTool, 5, 1);
     const results = findToolResults(events);
 
     expect(results).toHaveLength(1);
     expect(results[0]?.isError).toBeFalsy();
+    expect((results[0]?.output as Record<string, unknown>)?.ok).toBe(true);
   });
 
   test("invocation beyond budget is rejected with typed result", async () => {

@@ -760,18 +760,28 @@ export interface TuvrenExtension {
 }
 
 export interface ServerExecutionRateLimitConfig {
-  /** Maximum invocations allowed within windowMs. */
+  /**
+   * Maximum invocations allowed within windowMs.
+   * Must be a positive integer; zero immediately rejects all calls.
+   */
   maxCalls: number;
-  /** Duration of the fixed window in milliseconds. */
+  /**
+   * Fixed-window duration in milliseconds, measured within a single turn.
+   * The rate-limit budget is scoped to one executeTurn call: a new turn always
+   * starts with a fresh budget. Use maxCalls to cap per-turn invocations;
+   * windowMs controls the reset interval within that turn for long-running
+   * turns with tool calls spread over time.
+   */
   windowMs: number;
 }
 
 export interface ServerExecutionConfig {
   /**
-   * Per-tenant (per-runtime-instance) call-budget rate limit for the
-   * Tuvren-server execution class. Invocations beyond the configured budget
-   * within the window are rejected with a typed tool_invocation_rate_limited
-   * result rather than executed. (AX003)
+   * Per-turn rate limit for the Tuvren-server execution class.
+   * Invocations beyond the budget within the configured window are rejected
+   * with a typed tool_invocation_rate_limited result rather than executed.
+   * Scope: one executeTurn call — the budget resets between turns.
+   * Tenant isolation: each runtime instance has an independent budget. (AX003)
    */
   rateLimit?: ServerExecutionRateLimitConfig;
 }

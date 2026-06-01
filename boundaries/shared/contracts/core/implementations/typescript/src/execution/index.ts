@@ -29,6 +29,8 @@ export type {
   AfterIterationContext,
   AfterIterationHandler,
   AgentConfig,
+  ServerExecutionConfig,
+  ServerExecutionRateLimitConfig,
   AroundModelContext,
   AroundModelHandler,
   AroundModelResult,
