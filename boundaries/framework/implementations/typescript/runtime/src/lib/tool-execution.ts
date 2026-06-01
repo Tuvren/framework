@@ -664,93 +664,113 @@ async function executeSingleTool(
     },
   }
 ): Promise<SingleToolOutcome> {
-  try {
-    const sharedExports = buildSharedExports(
-      environment.extensions,
-      environment.manifest
-    );
-    const outcome = await runAroundToolHandlers(
-      getAroundToolHandlers(environment.extensions, toolCall.tool.name),
-      0,
-      toolCall,
-      environment,
-      sharedExports,
-      toolStartState,
-      startBarrier
-    );
+  // Idempotent retry per §4.21 / AX002. Non-idempotent tools are never
+  // retried. maxRetries defaults to 1 when idempotent is true and unset.
+  const maxAttempts =
+    toolCall.tool.idempotent === true
+      ? 1 + (toolCall.tool.maxRetries ?? 1)
+      : 1;
 
-    if (outcome.approval !== undefined) {
-      const completedResultHashes = await stageAndEmitResults(
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    // Do not retry when the environment signal is already aborted.
+    if (attempt > 0 && environment.signal?.aborted) {
+      break;
+    }
+
+    try {
+      const sharedExports = buildSharedExports(
+        environment.extensions,
+        environment.manifest
+      );
+      const outcome = await runAroundToolHandlers(
+        getAroundToolHandlers(environment.extensions, toolCall.tool.name),
+        0,
+        toolCall,
         environment,
-        outcome.approval.completedResults,
+        sharedExports,
+        toolStartState,
+        startBarrier
+      );
+
+      if (outcome.approval !== undefined) {
+        const completedResultHashes = await stageAndEmitResults(
+          environment,
+          outcome.approval.completedResults,
+          orderIndex,
+          startBarrier
+        );
+        return {
+          approval: outcome.approval,
+          completedResultHashes,
+          updates: outcome.updates,
+        };
+      }
+
+      const result = applyApprovalDecisionMetadata(
+        outcome.result,
+        toolCall.approvalDecision,
+        toolCall.approvalAudit
+      );
+      const resultHash = await stageAndEmitResult(
+        environment,
+        result,
         orderIndex,
         startBarrier
       );
+
       return {
-        approval: outcome.approval,
-        completedResultHashes,
+        resultHash,
+        result,
         updates: outcome.updates,
       };
+    } catch (error: unknown) {
+      if (error instanceof ToolPauseSignal) {
+        await settleToolStartIfNeeded(toolStartState, startBarrier);
+        const completedResultHashes = await stageAndEmitResults(
+          environment,
+          error.approval.completedResults,
+          orderIndex,
+          startBarrier
+        );
+        return {
+          approval: error.approval,
+          completedResultHashes,
+          updates: error.updates,
+        };
+      }
+
+      if (isApprovalRequestValidationError(error)) {
+        await settleToolStartIfNeeded(toolStartState, startBarrier);
+        throw error;
+      }
+
+      lastError = error;
+      // Continue to next attempt if retries remain; fall through to
+      // failure path after the loop when this was the last attempt.
     }
-
-    const result = applyApprovalDecisionMetadata(
-      outcome.result,
-      toolCall.approvalDecision,
-      toolCall.approvalAudit
-    );
-    const resultHash = await stageAndEmitResult(
-      environment,
-      result,
-      orderIndex,
-      startBarrier
-    );
-
-    return {
-      resultHash,
-      result,
-      updates: outcome.updates,
-    };
-  } catch (error: unknown) {
-    if (error instanceof ToolPauseSignal) {
-      await settleToolStartIfNeeded(toolStartState, startBarrier);
-      const completedResultHashes = await stageAndEmitResults(
-        environment,
-        error.approval.completedResults,
-        orderIndex,
-        startBarrier
-      );
-      return {
-        approval: error.approval,
-        completedResultHashes,
-        updates: error.updates,
-      };
-    }
-
-    if (isApprovalRequestValidationError(error)) {
-      await settleToolStartIfNeeded(toolStartState, startBarrier);
-      throw error;
-    }
-
-    const result = createExecutionFailureResult(
-      toolCall.toolCall,
-      error,
-      toolCall.approvalDecision,
-      toolCall.approvalAudit
-    );
-    await settleToolStartIfNeeded(toolStartState, startBarrier);
-    const resultHash = await stageAndEmitResult(
-      environment,
-      result,
-      orderIndex,
-      startBarrier
-    );
-
-    return {
-      resultHash,
-      result,
-      updates: [],
-    };
   }
+
+  const result = createExecutionFailureResult(
+    toolCall.toolCall,
+    lastError,
+    toolCall.approvalDecision,
+    toolCall.approvalAudit
+  );
+  await settleToolStartIfNeeded(toolStartState, startBarrier);
+  const resultHash = await stageAndEmitResult(
+    environment,
+    result,
+    orderIndex,
+    startBarrier
+  );
+
+  return {
+    resultHash,
+    result,
+    updates: [],
+  };
 }
 
 async function executeConcurrentToolCalls(
