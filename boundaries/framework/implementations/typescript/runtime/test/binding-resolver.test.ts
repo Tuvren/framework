@@ -16,11 +16,9 @@
 
 import { describe, expect, test } from "bun:test";
 import { TuvrenRuntimeError } from "@tuvren/core";
+import { CAPABILITY_BINDING_UNAVAILABLE } from "@tuvren/core/errors";
 import type { TuvrenToolDefinition } from "@tuvren/core/tools";
-import {
-  CAPABILITY_BINDING_UNAVAILABLE,
-  createBindingResolver,
-} from "../src/lib/binding-resolver.ts";
+import { createBindingResolver } from "../src/lib/binding-resolver.ts";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -153,6 +151,63 @@ describe("BindingResolver — conceptual invariant", () => {
 
     expect(typeof binding.endpoint.kind).toBe("string");
     expect(binding.endpoint.kind.length).toBeGreaterThan(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// registerBinding / resolveById round-trip
+// ---------------------------------------------------------------------------
+
+describe("BindingResolver — registerBinding / resolveById round-trip", () => {
+  test("a registered binding is returned by resolveById", () => {
+    const resolver = createBindingResolver();
+    const binding = {
+      capabilityId: "provider.search",
+      executionClass: "provider-native" as const,
+      endpoint: { kind: "provider-runtime" as const, id: "openai" },
+    };
+
+    resolver.registerBinding(binding);
+    const resolved = resolver.resolveById("provider.search");
+
+    expect(resolved.capabilityId).toBe("provider.search");
+    expect(resolved.executionClass).toBe("provider-native");
+    expect(resolved.endpoint.kind).toBe("provider-runtime");
+    expect(resolved.endpoint.id).toBe("openai");
+  });
+
+  test("resolveById returns a defensive copy, not the original binding object", () => {
+    const resolver = createBindingResolver();
+    const binding = {
+      capabilityId: "web.search",
+      executionClass: "tuvren-server" as const,
+      endpoint: { kind: "tuvren-in-process" as const, id: "local" },
+    };
+
+    resolver.registerBinding(binding);
+    const resolved = resolver.resolveById("web.search");
+
+    // Mutating the returned binding should not affect subsequent reads
+    (resolved as { capabilityId: string }).capabilityId = "mutated";
+    const resolved2 = resolver.resolveById("web.search");
+    expect(resolved2.capabilityId).toBe("web.search");
+  });
+
+  test("a second registerBinding for the same capabilityId overwrites the previous", () => {
+    const resolver = createBindingResolver();
+    resolver.registerBinding({
+      capabilityId: "code.execute",
+      executionClass: "tuvren-server" as const,
+      endpoint: { kind: "tuvren-in-process" as const, id: "local" },
+    });
+    resolver.registerBinding({
+      capabilityId: "code.execute",
+      executionClass: "tuvren-client" as const,
+      endpoint: { kind: "client-endpoint" as const, id: "browser-ext" },
+    });
+
+    const resolved = resolver.resolveById("code.execute");
+    expect(resolved.executionClass).toBe("tuvren-client");
   });
 });
 

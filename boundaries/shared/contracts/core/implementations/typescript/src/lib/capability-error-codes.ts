@@ -14,20 +14,12 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/performance/noBarrelFile: This package subpath is the intentional focused contract surface.
-export { CAPABILITY_BINDING_UNAVAILABLE } from "../lib/capability-error-codes.js";
-export type {
-  TuvrenErrorCode,
-  TuvrenErrorOptions,
-} from "../lib/tuvren-error.js";
-export {
-  assertTuvrenErrorCode,
-  isTuvrenErrorCode,
-  TuvrenError,
-  TuvrenLineageError,
-  TuvrenPersistenceError,
-  TuvrenProviderError,
-  TuvrenRecoveryError,
-  TuvrenRuntimeError,
-  TuvrenValidationError,
-} from "../lib/tuvren-error.js";
+/**
+ * Stable `TuvrenRuntimeError` code emitted when no admissible binding exists
+ * for a capability (e.g. the target execution-class endpoint is not yet
+ * attached or all candidate bindings are unavailable). Surfaced as a
+ * `tool.result` with `isError: true` per §4.21. Shared across the runtime,
+ * policy engine, and attribution surfaces.
+ */
+export const CAPABILITY_BINDING_UNAVAILABLE =
+  "capability_binding_unavailable" as const;

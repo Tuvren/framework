@@ -16,14 +16,8 @@
 
 import { TuvrenRuntimeError } from "@tuvren/core";
 import type { Binding } from "@tuvren/core/capabilities";
+import { CAPABILITY_BINDING_UNAVAILABLE } from "@tuvren/core/errors";
 import type { TuvrenToolDefinition } from "@tuvren/core/tools";
-
-/**
- * Stable error code (TuvrenRuntimeError) for when no admissible binding
- * exists or the target execution-class endpoint is not yet attached.
- */
-export const CAPABILITY_BINDING_UNAVAILABLE =
-  "capability_binding_unavailable" as const;
 
 /** Stable in-process endpoint id for the Tuvren server execution class. */
 const TUVREN_IN_PROCESS_ENDPOINT_ID = "tuvren.in-process";
