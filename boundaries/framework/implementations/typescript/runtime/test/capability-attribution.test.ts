@@ -18,6 +18,10 @@
 import { describe, expect, test } from "bun:test";
 import type { RuntimeDriver } from "@tuvren/core/driver";
 import type { ToolResultEvent, ToolStartEvent } from "@tuvren/core/events";
+import type {
+  TelemetrySpan,
+  TuvrenTelemetrySink,
+} from "@tuvren/core/telemetry";
 import type { TuvrenToolDefinition } from "@tuvren/core/tools";
 import {
   createDriverRegistry as createBaseDriverRegistry,
@@ -155,5 +159,49 @@ describe("Capability attribution — canonical events (AW006)", () => {
     expect(obs?.canCancel).toBe(true);
     expect(obs?.canRetry).toBe(true);
     expect(obs?.canAudit).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Attribution in telemetry (AW006 — telemetry half)
+// ---------------------------------------------------------------------------
+
+describe("Capability attribution — telemetry spans (AW006)", () => {
+  test("tool_call span carries execution_class and owner capability attributes", async () => {
+    const spans: TelemetrySpan[] = [];
+    const sink: TuvrenTelemetrySink = {
+      event: () => {
+        // Not asserting event-level telemetry in this test
+      },
+      span: (span) => {
+        spans.push(span);
+      },
+    };
+
+    const harness = createFakeKernelHarness();
+    const toolName = "attrib-tool";
+    const runtime = createTuvrenRuntime({
+      defaultDriverId: "fake",
+      driverRegistry: createBaseDriverRegistry([makeDriver(toolName)]),
+      kernel: harness.kernel,
+      telemetry: sink,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: { name: "primary", tools: [makeTool(toolName)] },
+      signal: textSignal("run"),
+      threadId: thread.threadId,
+    });
+    await collectEvents(handle.events());
+
+    const toolCallSpan = spans.find((s) => s.kind === "tool_call");
+    expect(toolCallSpan).toBeDefined();
+    expect(
+      toolCallSpan?.attributes["tuvren.runtime.capability.execution_class"]
+    ).toBe("tuvren-server");
+    expect(toolCallSpan?.attributes["tuvren.runtime.capability.owner"]).toBe(
+      "tuvren"
+    );
   });
 });
