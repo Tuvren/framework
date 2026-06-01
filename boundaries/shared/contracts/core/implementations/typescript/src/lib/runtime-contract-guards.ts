@@ -165,12 +165,40 @@ const EXECUTION_STATUS_KEYS = new Set([
 ]);
 const APPROVAL_REQUEST_KEYS = new Set(["toolCalls", "completedResults"]);
 const APPROVAL_RESPONSE_KEYS = new Set(["decisions"]);
+const CAPABILITY_EXECUTION_CLASSES = new Set([
+  "provider-native",
+  "provider-mediated",
+  "tuvren-server",
+  "tuvren-client",
+]);
+const CAPABILITY_INVOCATION_OWNERS = new Set(["provider", "tuvren"]);
 const TUVREN_MODEL_RESPONSE_KEYS = new Set([
   "finishReason",
   "parts",
   "providerMetadata",
   "usage",
 ]);
+
+function isOptionalCapabilityAttribution(
+  parent: Record<string, unknown>
+): boolean {
+  if (!("attribution" in parent) || parent.attribution === undefined) {
+    return true;
+  }
+  if (!isPlainObject(parent.attribution)) {
+    return false;
+  }
+  const attr = parent.attribution as Record<string, unknown>;
+  return (
+    typeof attr.capabilityId === "string" &&
+    attr.capabilityId.length > 0 &&
+    typeof attr.executionClass === "string" &&
+    CAPABILITY_EXECUTION_CLASSES.has(attr.executionClass) &&
+    typeof attr.owner === "string" &&
+    CAPABILITY_INVOCATION_OWNERS.has(attr.owner) &&
+    isPlainObject(attr.observation)
+  );
+}
 
 export function isTuvrenModelResponse(
   value: unknown
@@ -537,23 +565,27 @@ function hasValidStreamEventPayload(
     case "tool.start":
       return matchesStreamEventVariant(
         value,
-        ["callId", "name", "input"],
+        // "attribution" is an additive optional field per ADR-046 AW006
+        ["callId", "name", "input", "attribution"],
         () =>
           isNonEmptyStringProperty(value, "callId") &&
           isNonEmptyStringProperty(value, "name") &&
           "input" in value &&
-          isSerializableContractValue(value.input)
+          isSerializableContractValue(value.input) &&
+          isOptionalCapabilityAttribution(value)
       );
     case "tool.result":
       return matchesStreamEventVariant(
         value,
-        ["callId", "name", "output", "isError"],
+        // "attribution" is an additive optional field per ADR-046 AW006
+        ["callId", "name", "output", "isError", "attribution"],
         () =>
           isNonEmptyStringProperty(value, "callId") &&
           isNonEmptyStringProperty(value, "name") &&
           "output" in value &&
           isSerializableContractValue(value.output) &&
-          isOptionalBooleanProperty(value, "isError")
+          isOptionalBooleanProperty(value, "isError") &&
+          isOptionalCapabilityAttribution(value)
       );
     case "approval.requested":
       return matchesStreamEventVariant(value, ["request"], () =>

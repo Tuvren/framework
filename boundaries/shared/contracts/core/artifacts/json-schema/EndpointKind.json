@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/shared/core/EndpointKind.json",
+  "type": "string",
+  "enum": [
+    "provider-runtime",
+    "tuvren-in-process",
+    "tuvren-server",
+    "tuvren-worker",
+    "tuvren-sandbox",
+    "client-endpoint",
+    "mcp-server"
+  ],
+  "description": "Concrete execution target kind for a capability binding. MCP appears as 'mcp-server' under a provider-mediated, tuvren-server, or tuvren-client execution class — never as an execution class of its own."
+}

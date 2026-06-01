@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/shared/core/CapabilityInvocationAttribution.json",
+  "type": "object",
+  "description": "Attribution record for canonical tool/capability invocation events and operational telemetry. Added additively as optional fields so existing event consumers are unaffected.",
+  "required": ["capabilityId", "executionClass", "owner", "observation"],
+  "properties": {
+    "capabilityId": {
+      "type": "string"
+    },
+    "executionClass": {
+      "$ref": "ExecutionClass.json"
+    },
+    "owner": {
+      "type": "string",
+      "enum": ["provider", "tuvren"],
+      "description": "'provider' for provider-native/mediated invocations; 'tuvren' otherwise."
+    },
+    "observation": {
+      "$ref": "CapabilityObservation.json"
+    }
+  },
+  "additionalProperties": false
+}

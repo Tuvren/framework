@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/shared/core/ExecutionClass.json",
+  "type": "string",
+  "enum": [
+    "provider-native",
+    "provider-mediated",
+    "tuvren-server",
+    "tuvren-client"
+  ],
+  "description": "The execution-ownership category for a capability invocation. Closed set per ADR-046."
+}

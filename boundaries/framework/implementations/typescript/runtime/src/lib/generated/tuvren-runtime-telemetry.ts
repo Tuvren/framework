@@ -50,6 +50,20 @@ export const TUVREN_RUNTIME_TELEMETRY_ATTRIBUTES: Readonly<
     stability: "development",
     type: "string",
   },
+  "tuvren.runtime.capability.execution_class": {
+    brief:
+      "The execution class of the capability invocation per ADR-046 (tuvren-server, provider-native, provider-mediated, tuvren-client).",
+    examples: ["tuvren-server", "provider-native"],
+    stability: "development",
+    type: "string",
+  },
+  "tuvren.runtime.capability.owner": {
+    brief:
+      "The owner dimension of the capability invocation (tuvren or provider). Added additively per ADR-046 AW006.",
+    examples: ["tuvren", "provider"],
+    stability: "development",
+    type: "string",
+  },
   "tuvren.runtime.error.code": {
     brief: "The stable Tuvren runtime error code associated with a failed telemetry span.",
     examples: ["runtime_error"],
@@ -103,6 +117,8 @@ export const TUVREN_RUNTIME_TELEMETRY_ATTRIBUTES: Readonly<
 export type TuvrenRuntimeTelemetryAttributeKey =
   "tuvren.runtime.backend.id" |
   "tuvren.runtime.branch.id" |
+  "tuvren.runtime.capability.execution_class" |
+  "tuvren.runtime.capability.owner" |
   "tuvren.runtime.checkpoint.hash" |
   "tuvren.runtime.driver.id" |
   "tuvren.runtime.error.code" |
@@ -118,6 +134,8 @@ export const TUVREN_RUNTIME_TELEMETRY_ATTRIBUTE_KEYS: readonly TuvrenRuntimeTele
   Object.freeze([
     "tuvren.runtime.backend.id",
     "tuvren.runtime.branch.id",
+    "tuvren.runtime.capability.execution_class",
+    "tuvren.runtime.capability.owner",
     "tuvren.runtime.checkpoint.hash",
     "tuvren.runtime.driver.id",
     "tuvren.runtime.error.code",

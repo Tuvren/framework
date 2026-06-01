@@ -141,6 +141,12 @@ export type { RuntimeKernelOptions } from "@tuvren/kernel-runtime";
 export { createRuntimeKernel } from "@tuvren/kernel-runtime";
 export type { McpToolSource } from "@tuvren/mcp-client";
 export { createMcpToolSource } from "@tuvren/mcp-client";
+export type { BindingResolver } from "./lib/binding-resolver.js";
+export { createBindingResolver } from "./lib/binding-resolver.js";
+export type { CapabilityPolicyEngineOptions } from "./lib/capability-policy-engine.js";
+export { createCapabilityPolicyEngine } from "./lib/capability-policy-engine.js";
+export type { CapabilityRegistry } from "./lib/capability-registry.js";
+export { createCapabilityRegistry } from "./lib/capability-registry.js";
 export {
   createContextManifest,
   createEmptyContextManifest,

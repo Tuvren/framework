@@ -14,27 +14,12 @@
  * limitations under the License.
  */
 
-import { defineConfig } from "tsup";
-
-export default defineConfig({
-  clean: true,
-  dts: false,
-  entry: [
-    "src/index.ts",
-    "src/errors/index.ts",
-    "src/messages/index.ts",
-    "src/events/index.ts",
-    "src/execution/index.ts",
-    "src/tools/index.ts",
-    "src/driver/index.ts",
-    "src/provider/index.ts",
-    "src/extensions/index.ts",
-    "src/telemetry/index.ts",
-    "src/capabilities/index.ts",
-  ],
-  format: ["esm"],
-  outDir: "dist",
-  sourcemap: false,
-  tsconfig: "tsconfig.tsup.json",
-  target: "esnext",
-});
+/**
+ * Stable `TuvrenRuntimeError` code emitted when no admissible binding exists
+ * for a capability (e.g. the target execution-class endpoint is not yet
+ * attached or all candidate bindings are unavailable). Surfaced as a
+ * `tool.result` with `isError: true` per §4.21. Shared across the runtime,
+ * policy engine, and attribution surfaces.
+ */
+export const CAPABILITY_BINDING_UNAVAILABLE =
+  "capability_binding_unavailable" as const;

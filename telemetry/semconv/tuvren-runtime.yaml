@@ -85,3 +85,15 @@ groups:
         examples: ["runtime_error"]
         stability: development
         requirement_level: opt_in
+      - id: tuvren.runtime.capability.execution_class
+        type: string
+        brief: The execution class of the capability invocation per ADR-046 (tuvren-server, provider-native, provider-mediated, tuvren-client).
+        examples: ["tuvren-server", "provider-native"]
+        stability: development
+        requirement_level: opt_in
+      - id: tuvren.runtime.capability.owner
+        type: string
+        brief: The owner dimension of the capability invocation (tuvren or provider). Added additively per ADR-046 AW006.
+        examples: ["tuvren", "provider"]
+        stability: development
+        requirement_level: opt_in

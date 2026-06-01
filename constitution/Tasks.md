@@ -2,6 +2,7 @@
 
 ## 0. Version History & Changelog
 
+- v0.31.1 - Closed Epic AW Capability Orchestration Foundation: added `@tuvren/core/capabilities` subpath (§3.13 types), Capability Registry, Binding & Endpoint Resolver (back-compat `defineTool` → `tuvren-server`), Capability Policy Engine (exposure-time and invocation-time decision points, wired into tool dispatch), execution-class + owner attribution on canonical events and telemetry (semconv extended), `capability_binding_unavailable` error code, and the `runtime-api-capability-orchestration` foundation conformance check set (12 new checks including `tool.result isError` wired denial proof). Authority packet bumped to v1.2.0. 303 runtime tests, 347/347 framework conformance checks pass.
 - v0.31.0 - Restructured the capability/tool restructuring into a contiguous, fully-ticketed **Tooling block (Epics AW–BC)** placed at the front of the queue, implementing the PRD v0.9.0 / Architecture v0.9.0 / TechSpec v0.29.0 capability-orchestration model (ADR-046, ADR-047): AW Capability Orchestration Foundation, AX Tuvren-Server Execution Class, AY Provider-Native & Provider-Mediated Execution Classes, AZ Tuvren-Client Execution Class, BA Invocation Lifecycle & Observation Model, BB Exposure & Invocation Policy Model, BC Tooling Restructuring Closeout. Tuvren-client scope is runtime protocol + attachment seam only (concrete client endpoints stay host deliverables); provider-native/mediated scope is runtime support proven against the AI-SDK-bridged providers. The whole block precedes the trust block and the productionization roadmap, so the former Epic AW (Trust-Boundary Security Hardening) is renumbered to **Epic BD** and the roadmap shifts to **Epics BE–BI**.
 - v0.29.2 - Closed Epic AV operational telemetry: added `@tuvren/core/telemetry`, framework sink wiring with secret-screening, `@tuvren/telemetry-otel`, the `framework-operational-telemetry` conformance plan, curated runtime re-exports, portability-inventory updates, and verification coverage.
 - v0.29.1 - Maintenance alignment after Epic AU closure: compacted completed Epics AM-AU into the closed-work ledger, marked AU closed with `kernel-crash-recovery` evidence, and updated the active graph/DoD accordingly.
@@ -9,8 +10,8 @@
 
 ## 1. Executive Summary & Active Critical Path
 
-- **Total Active Story Points:** 253 (gross of the one already-complete ticket below; **250 remaining**) across the front-loaded Tooling block plus the trust block — the **Tooling block (Epics AW–BC, 217 points)** as the top-priority front of the queue, and **Epic BD (Trust-Boundary Security Hardening, 36 points, formerly Epic AW, with `KRT-BD001` already complete)** sequenced after it. Epics AM (32), AN (13), AO (26), AP (37), AQ (15), AR (15), AS (31), AT (34), AU (23), and AV (24) are closed and retained as a compact audit ledger below.
-- **Critical Path:** Foundation first — `KRT-AW001 → KRT-AW002 → KRT-AW003 → KRT-AW004 → KRT-AW007`. Then the execution-class epics build on the foundation (`AX`, `AY`, `AZ`), then the cross-class depth (`BA`, `BB`), then closeout: a representative longest path is `KRT-AW007 → KRT-AY001 → KRT-AY002 → KRT-AY006 → KRT-AY007 → KRT-BA001 → KRT-BA002 → KRT-BA005 → KRT-BC001 → KRT-BC002 → KRT-BC004`. Only after the Tooling block closes does Epic BD run: `KRT-BD002 → KRT-BD004` and `KRT-BD005 → KRT-BD006 → KRT-BD007 → KRT-BD008`, with `KRT-BD009` as an independent close-condition lane (`KRT-BD001` already complete).
+- **Total Active Story Points:** 209 gross (**206 remaining**) across the remainder of the Tooling block plus the trust block — the **Tooling block remainder (Epics AX–BC, 173 points)** as the top-priority front of the queue, and **Epic BD (Trust-Boundary Security Hardening, 33 remaining points, formerly Epic AW, with `KRT-BD001` already complete)** sequenced after it. Epics AM through AW are closed and retained as a compact audit ledger below.
+- **Critical Path:** Epic AW is closed. Next: the execution-class epics build on the AW foundation — `KRT-AX001 → KRT-AX002 → KRT-AX006` and `KRT-AY001 → KRT-AY002 → KRT-AY006 → KRT-AY007` and `KRT-AZ001 → KRT-AZ002 → KRT-AZ006`, then the cross-class depth (`BA`, `BB`), then closeout: a representative longest path is `KRT-AY001 → KRT-AY002 → KRT-AY006 → KRT-AY007 → KRT-BA001 → KRT-BA002 → KRT-BA005 → KRT-BC001 → KRT-BC002 → KRT-BC004`. Only after the Tooling block closes does Epic BD run: `KRT-BD002 → KRT-BD004` and `KRT-BD005 → KRT-BD006 → KRT-BD007 → KRT-BD008`, with `KRT-BD009` as an independent close-condition lane (`KRT-BD001` already complete).
 - **Planning Assumptions:** The Tooling block (Epics AW–BC) is governed by PRD v0.9.0, Architecture v0.9.0, and TechSpec v0.29.0 (ADR-046, ADR-047); the upstream contracts (`@tuvren/core/capabilities` §3.13, the §4.21 contract) are authored, so the tickets are implementation-ready. Tuvren-client scope is the runtime protocol + attachment seam only — concrete client endpoints (browser extension, desktop, device) remain host-developer deliverables per PRD §6. Provider-native and provider-mediated scope is runtime support proven against today's AI-SDK-bridged providers, with at least one concrete proof per class and additional providers additive later. Epic BD (formerly Epic AW) is governed by PRD v0.8.0 / Architecture v0.8.0 / TechSpec v0.28.x (ADR-042 through ADR-045); it remains active and runs after the Tooling block per product priority. The prior chain (PRD v0.7.0 / Architecture v0.7.0 / TechSpec v0.27.x, ADR-034 through ADR-041, Epics AM-AT) is closed. The Tooling block reframes tool representation within the existing TypeScript line and keeps today's developer-defined tool path working unchanged as the Tuvren-server execution class; it adds no Rust framework/product scope, no new host protocol, no new backend, and no new model-provider family beyond the existing AI SDK bridge. The `product proof gate`, `platform gate`, and `portability gate` from Epic AL remain the staged-gate baseline. The locked external dependency versions per TechSpec §1 still apply.
 
 ### Brownfield Continuity Note
@@ -37,8 +38,8 @@
 
 ### Current Active Scope
 
-- **Block 5 — Tooling restructuring (Epics AW–BC): ACTIVE, top priority.** The complete capability-orchestration restructuring, sequenced ahead of everything else. It separates the model-facing Tool Surface from the underlying Capability, implements all four execution classes (provider-native, provider-mediated, Tuvren-server, Tuvren-client), Bindings, Endpoints, exposure-time and invocation-time Policy, the per-class Observation/event model, and MCP-as-binding classification, and preserves the invariant that every model-visible tool call resolves to a policy-checked capability invocation against a known execution class. The block is "finished" when all four execution classes are orchestrated by the runtime with honest per-class observation/control limits, cross-class conformance passes, and the framework specification states the model.
-  - **AW — Capability Orchestration Foundation:** the contracts, Capability Registry, Binding & Endpoint Resolver, Capability Policy Engine decision points, execution-class/owner attribution, the invariant, and back-compat (`defineTool` → Tuvren-server).
+- **Block 5 — Tooling restructuring (Epics AW–BC): Epic AW closed; Epics AX–BC ACTIVE, top priority.** Epic AW delivered the foundation: `@tuvren/core/capabilities` subpath, Capability Registry, Binding & Endpoint Resolver (back-compat `defineTool` → `tuvren-server`), Capability Policy Engine (wired invocation-time policy denials as `tool.result isError`), execution-class attribution on events + telemetry, and the `runtime-api-capability-orchestration` foundation conformance check set. The remainder builds the full four-class model on top of this foundation.
+  - **AW — Capability Orchestration Foundation: CLOSED.** See Completed Work Ledger.
   - **AX — Tuvren-Server Execution Class:** full server lifecycle (input/output validation, retry, cancel, trace, audit, tenant isolation, rate-limit, server-side MCP binding, server sandbox).
   - **AY — Provider-Native & Provider-Mediated Execution Classes:** provider-native enablement/attribution and provider-mediated (provider-invoked remote MCP) through the AI SDK bridge, plus the provider continuation-state model, with one concrete proof each.
   - **AZ — Tuvren-Client Execution Class:** the leased client-endpoint protocol and attachment seam (runtime side only), client-side MCP, availability/staleness/partial-observability.
@@ -86,28 +87,16 @@ These epics are the agreed direction after the Tooling block and the trust block
 
 ```mermaid
 flowchart LR
-  closed["Blocks 1-3 + Epics AM-AV — closed"]
+  closed["Blocks 1-3 + Epics AM-AW — closed"]
 
-  subgraph tooling["Tooling block (Epics AW–BC) — ACTIVE · top priority"]
-    subgraph aw["AW — Foundation"]
-      AW1["AW001 capabilities contracts"]
-      AW2["AW002 Capability Registry"]
-      AW3["AW003 Binding & Endpoint Resolver"]
-      AW4["AW004 Policy Engine decision points"]
-      AW5["AW005 Back-compat: defineTool/MCP → Tuvren-server"]
-      AW6["AW006 Execution-class + owner attribution"]
-      AW7["AW007 Foundation conformance"]
-      AW1 --> AW2 --> AW3 --> AW4 --> AW7
-      AW3 --> AW5 --> AW7
-      AW3 --> AW6 --> AW7
-    end
-    AW7 --> AXep["AX — Tuvren-Server class"]
-    AW7 --> AYep["AY — Provider-Native & Provider-Mediated"]
-    AW7 --> AZep["AZ — Tuvren-Client class"]
+  subgraph tooling["Tooling block (Epics AX–BC) — ACTIVE · top priority"]
+    AXep["AX — Tuvren-Server class"]
+    AYep["AY — Provider-Native & Provider-Mediated"]
+    AZep["AZ — Tuvren-Client class"]
     AXep --> BAep["BA — Invocation Lifecycle & Observation"]
     AYep --> BAep
     AZep --> BAep
-    AW4 --> BBep["BB — Exposure & Invocation Policy"]
+    BBep["BB — Exposure & Invocation Policy"]
     BAep --> BCep["BC — Closeout"]
     BBep --> BCep
   end
@@ -119,7 +108,10 @@ flowchart LR
     BD9["BD009 Approval/input trust-boundary verify"]
   end
 
-  closed --> AW1
+  closed --> AXep
+  closed --> AYep
+  closed --> AZep
+  closed --> BBep
   BCep --> BD2
   BCep --> BD3
   BCep --> BD5
@@ -128,142 +120,20 @@ flowchart LR
 
 ## 4. Ticket List
 
-### Completed Work Ledger (Epics AM–AV)
+### Completed Work Ledger (Epics AT–AW)
 
-Completed ticket detail is removed from the active execution plan and retained through git history plus archived support artifacts. This ledger is the live audit summary for recently closed execution scope.
+Completed ticket detail is removed from the active execution plan and retained through git history plus archived support artifacts. This ledger is the live audit summary for the four most recently closed epics; older closure records live in git history and `constitution/archived/`.
 
 | Epic | Points | Closed Outcome | Evidence Anchor |
 | --- | ---: | --- | --- |
-| AM | 32 | Added `thread.list`, corrected the kernel operation narrative to 30 operations, and covered TypeScript/Rust/gRPC paths. | `kernel-protocol.thread.enumeration`; kernel protocol authority packet |
-| AN | 13 | Promoted `ExecutionHandle.awaitResult` to the base handle with `ExecutionResult`. | `runtime-api-handle-terminal-value` |
-| AO | 26 | Added the five-method `TuvrenRuntime` durable-read surface and removed the proving-host kernel-inspector seam. | `runtime-api-durable-reads` |
-| AP | 37 | Consolidated shared primitives into `@tuvren/core`, folded source-bearing runtime code into `@tuvren/runtime`, kept deprecated shims for one cycle. | `boundaries/shared/contracts/core/spec/authority-packet.json` |
-| AQ | 15 | Added schema-agnostic `defineTool`, `FlexibleSchema`, `asSchema`, `jsonSchema`, `zodSchema`, `standardSchema`. | `runtime-api-schema-authoring` |
-| AR | 15 | Added the `createTuvren({...})` batteries-included factory, lifecycle cleanup, and curated runtime re-exports. | `runtime-api-batteries-included` |
-| AS | 31 | Added `@tuvren/mcp-client` as a first-class tool source over stdio and Streamable HTTP-backed public `http-sse` transport. | `providers-mcp-client`; MCP authority packet |
 | AT | 34 | Consolidated the reference host on the REPL CLI; headless stdin mode, streaming JSONL, transcript capture/replay; retired `@tuvren/playground-host`. | `proving-host-headless-transcript-replay` |
 | AU | 23 | Proved durability and recovery under failure with a testkit-only fault-injection seam and the Crash Recovery Invariant. | `kernel.crash-recovery.*`; `createFaultInjectingBackend` |
 | AV | 24 | Added first-class operational telemetry with `@tuvren/core/telemetry`, framework emission and secret screening, `@tuvren/telemetry-otel`. | `framework-operational-telemetry` |
+| AW | 44 | Delivered the Capability Orchestration Foundation: `@tuvren/core/capabilities` subpath (§3.13 types + `CapabilityPolicyEngine` interface), Capability Registry, Binding & Endpoint Resolver (back-compat `defineTool` → `tuvren-server`, MCP → `tuvren-server/mcp-server`), Capability Policy Engine wired into tool dispatch (invocation denials surface as `tool.result isError:true`), execution-class + owner attribution on `tool.start`/`tool.result` events and `tool_call` telemetry spans (semconv extended), `capability_binding_unavailable` error code in `@tuvren/core/errors`, and the `runtime-api-capability-orchestration` foundation conformance check set (12 checks including wired denial proof). Authority packet bumped to v1.2.0. | `runtime-api-capability-orchestration` conformance plan; `boundaries/shared/contracts/core/spec/authority-packet.json` v1.2.0 |
 
 ### Epic AW — Capability Orchestration Foundation (KRT)
 
-**Status:** Active, top priority. Foundation for the whole Tooling block. Realizes ADR-046 / ADR-047 against the upstream contracts (`@tuvren/core/capabilities` §3.13, the §4.21 contract). Establishes the conceptual invariant: **every model-visible tool call resolves to a policy-checked capability invocation against a known execution class.** The execution-class endpoint behaviors land in Epics AX (Tuvren-server), AY (provider classes), and AZ (Tuvren-client); this epic makes the Tuvren-server class fully work via back-compat and stands up the registry, resolver, policy, and attribution seams the rest depend on.
-
-**KRT-AW001 `@tuvren/core/capabilities` Contract Types + Merged Packet Section**
-- **Type:** Feature
-- **Effort:** 5
-- **Dependencies:** None
-- **Capability / Contract Mapping:** PRD `CAP-P0-056`, `CAP-P0-057`; TechSpec ADR-046, §3.13, §4.21
-- **Description:** Add the `./capabilities` subpath to `@tuvren/core` exporting the §3.13 types (`ExecutionClass`, `EndpointKind`, `Capability`, `ToolSurface`, `Endpoint`, `Binding`, `CapabilityObservation`, `ExposureDecision`, `InvocationDecision`, `InvocationOwner`, `CapabilityInvocationAttribution`). Add the `capabilities` binding section to the merged shared-core authority packet, generate the capability JSON Schemas, bump the packet version, and add the 11th tsup entry. Contract types only — no runtime behavior.
-- **Acceptance Criteria (Gherkin):**
-```gherkin
-Given the §3.13 capability-orchestration shapes and §4.21 contract
-When the @tuvren/core/capabilities subpath is added
-Then the §3.13 types are exported from @tuvren/core/capabilities
-And ExecutionClass is the closed set provider-native, provider-mediated, tuvren-server, and tuvren-client
-And the merged shared-core authority packet gains a capabilities binding section and a bumped version
-And the generated capability JSON Schema artifacts are committed and formatter-clean
-And typecheck passes and no existing @tuvren/core export changes
-```
-
-**KRT-AW002 Capability Registry**
-- **Type:** Feature
-- **Effort:** 8
-- **Dependencies:** `KRT-AW001`
-- **Capability / Contract Mapping:** PRD `CAP-P0-056`; TechSpec ADR-046, §4.21; Architecture Capability Registry container
-- **Description:** Implement the Capability Registry in `@tuvren/runtime`: hold capabilities and the model-facing tool surfaces that present them, drawn from tool sources and (later) provider declarations; keep Tool Surface distinct from Capability so one capability can back multiple surfaces and one surface can resolve to different capabilities across providers; produce the eligible-surface candidate set for an agent segment before policy is applied.
-- **Acceptance Criteria (Gherkin):**
-```gherkin
-Given the capability contract types exist
-When the Capability Registry is implemented
-Then the registry holds capabilities and the tool surfaces that present them, keeping surface distinct from capability
-And one capability can back multiple tool surfaces and one surface can map to different capabilities by context
-And the registry produces an eligible-surface candidate set per agent segment
-And unit coverage proves the surface-versus-capability separation
-```
-
-**KRT-AW003 Binding & Endpoint Resolver**
-- **Type:** Feature
-- **Effort:** 8
-- **Dependencies:** `KRT-AW001`, `KRT-AW002`
-- **Capability / Contract Mapping:** PRD `CAP-P0-057`, `CAP-P0-058`, `CAP-P0-059`, `CAP-P1-062`; TechSpec ADR-046, §3.13, §4.21
-- **Description:** Implement the Binding & Endpoint Resolver in `@tuvren/runtime`: resolve each capability to exactly one execution class and one endpoint based on provider, model, policy, endpoint availability, and configuration; support multiple candidate bindings per capability and select/admit one per context; classify MCP bindings by who runs the server; route a resolved invocation to its execution-class endpoint seam. Add the `capability_binding_unavailable` `TuvrenRuntimeError` (in `@tuvren/core/errors`) for when no admissible binding exists or an execution-class endpoint is not yet attached. Preserve the conceptual invariant.
-- **Acceptance Criteria (Gherkin):**
-```gherkin
-Given the Capability Registry exists
-When the Binding & Endpoint Resolver is implemented
-Then every model-visible tool call resolves to exactly one execution class and one endpoint
-And a capability with multiple candidate bindings resolves to the binding admitted for the active context
-And MCP bindings are classified by who invokes or runs the server rather than as their own execution class
-And an unresolvable or unattached binding yields a capability_binding_unavailable error surfaced as a tool.result with isError true
-And the conceptual invariant holds for every routed invocation
-```
-
-**KRT-AW004 Capability Policy Engine (Exposure-Time + Invocation-Time Decision Points)**
-- **Type:** Feature
-- **Effort:** 8
-- **Dependencies:** `KRT-AW002`, `KRT-AW003`
-- **Capability / Contract Mapping:** PRD `CAP-P0-060`, `CAP-P0-016`, `CAP-P0-017`; TechSpec ADR-046, §4.21; Architecture Capability Policy Engine container
-- **Description:** Implement the Capability Policy Engine in `@tuvren/runtime` with two framework-owned decision points above driver discretion: exposure-time (gating the registry's exposed surface set so withheld surfaces are never rendered to the model) and invocation-time (gating admitted invocations). Wire the baseline dimensions (provider/model compatibility, permissions, endpoint availability for exposure; approval, credential boundary for invocation); the deeper policy dimensions land in Epic BB. Invocation denials surface as `tool.result` with `isError: true`. Keep existing approval gating non-bypassable.
-- **Acceptance Criteria (Gherkin):**
-```gherkin
-Given the registry and resolver exist
-When the Capability Policy Engine is implemented
-Then exposure-denied tool surfaces are never rendered to the model
-And invocation-denied capabilities are surfaced as tool.result with isError true rather than executed
-And both decision points are framework-owned above driver discretion
-And existing approval gating remains non-bypassable at the invocation-time decision point
-And unit coverage proves exposure withholding and invocation denial for representative baseline policies
-```
-
-**KRT-AW005 Back-Compat Reclassification: `defineTool` and MCP → Tuvren-Server**
-- **Type:** Feature
-- **Effort:** 5
-- **Dependencies:** `KRT-AW003`
-- **Capability / Contract Mapping:** PRD `CAP-P0-056`, `CAP-P1-062`; TechSpec ADR-047, §4.21
-- **Description:** Reclassify today's `TuvrenToolDefinition` (`execute`) tools as Tuvren-server capabilities bound to the in-process endpoint, and `@tuvren/mcp-client`-advertised tools as capabilities reachable through an `mcp-server` endpoint binding under the Tuvren-server class. Route both through the resolver to the existing Tool Execution Gateway so they execute exactly as today. No host code change.
-- **Acceptance Criteria (Gherkin):**
-```gherkin
-Given the registry and resolver exist
-When the back-compat reclassification is implemented
-Then a developer-defined defineTool tool is a Tuvren-server capability bound to the in-process endpoint and executes exactly as today
-And an MCP-advertised tool is a capability reachable through an mcp-server endpoint binding under the Tuvren-server class
-And existing host code that registers and runs defineTool and MCP tools compiles and runs unchanged
-And the existing tool, approval, and tool-input-validation behavior is preserved
-```
-
-**KRT-AW006 Execution-Class + Owner Attribution on Canonical Events and Telemetry**
-- **Type:** Feature
-- **Effort:** 5
-- **Dependencies:** `KRT-AW003`
-- **Capability / Contract Mapping:** PRD `CAP-P0-061`; TechSpec ADR-046, §3.10, §4.5, §4.21
-- **Description:** Add the execution-class and `owner` (`provider` | `tuvren`) attribution plus `CapabilityObservation` to canonical tool/capability invocation events (§4.5) and operational telemetry (§3.10), additively (new optional fields). The runtime must not expose a cancel/retry/audit affordance for a class that does not grant it. Secret isolation holds for every class.
-- **Acceptance Criteria (Gherkin):**
-```gherkin
-Given the resolver classifies each invocation
-When the execution-class and owner attribution is added to canonical events and telemetry
-Then tool/capability invocation events and telemetry carry execution class, owner, and the CapabilityObservation
-And the runtime exposes no cancel, retry, or audit affordance for an invocation whose class does not grant it
-And no provider, MCP, or client credential appears in any event, telemetry attribute, or durable record
-And the attribution is additive so existing event-stream and telemetry consumers are unaffected
-```
-
-**KRT-AW007 Capability-Orchestration Foundation Conformance**
-- **Type:** Feature
-- **Effort:** 5
-- **Dependencies:** `KRT-AW004`, `KRT-AW005`, `KRT-AW006`
-- **Capability / Contract Mapping:** PRD `CAP-P0-056` through `CAP-P0-061`; TechSpec §4.21, §5.7.1
-- **Description:** Add a `runtime-api-capability-orchestration` check set to `boundaries/framework/conformance/plans/runtime-api-callables-extended.json` asserting the foundation guarantees: the conceptual invariant, surface-vs-capability separation, exposure-time withholding, invocation-time denial as `tool.result` `isError`, execution-class/owner attribution, and the back-compat that a `defineTool` tool resolves to the Tuvren-server class. Picked up by `bun run conformance` automatically.
-- **Acceptance Criteria (Gherkin):**
-```gherkin
-Given the foundation registry, resolver, policy engine, attribution, and back-compat are implemented
-When the capability-orchestration foundation conformance check set is added
-Then the check set asserts every model-visible tool call resolves to a policy-checked capability invocation against a known execution class
-And the check set asserts surface is kept distinct from capability and exposure-denied surfaces are not shown to the model
-And the check set asserts invocation denial surfaces as tool.result with isError true and that events carry execution-class and owner attribution
-And the check set asserts a defineTool tool is the Tuvren-server execution class for back-compatibility
-And bun run conformance includes the new check set automatically
-```
+**Status:** **CLOSED.** See Completed Work Ledger. Ticket bodies retained in git history.
 
 ### Epic AX — Tuvren-Server Execution Class (KRT)
 

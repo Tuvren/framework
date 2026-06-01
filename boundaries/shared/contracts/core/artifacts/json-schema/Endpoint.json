@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/shared/core/Endpoint.json",
+  "type": "object",
+  "description": "Concrete execution target for a binding. Credentials and transport details are owned by the execution-class endpoint container, not stored here.",
+  "required": ["kind", "id"],
+  "properties": {
+    "kind": {
+      "$ref": "EndpointKind.json"
+    },
+    "id": {
+      "type": "string",
+      "description": "Stable, non-secret endpoint identifier."
+    }
+  },
+  "additionalProperties": false
+}

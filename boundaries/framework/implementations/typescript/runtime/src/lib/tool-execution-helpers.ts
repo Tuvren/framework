@@ -32,6 +32,7 @@ import type {
 import { assertApprovalRequest } from "@tuvren/core/tools";
 import type { ErrorObject, ValidateFunction } from "ajv";
 import Ajv from "ajv";
+import { buildToolAttribution } from "./capability-attribution.js";
 import type { ExtensionStateUpdate } from "./extension-runtime.js";
 import { cloneSnapshotPreservingFunctions } from "./runtime-core-shared.js";
 import type {
@@ -230,6 +231,7 @@ export async function emitToolStartIfNeeded(
   toolStartState.emitted = true;
   toolStartState.settled = true;
   environment.publishEvent({
+    attribution: buildToolAttribution(toolCall.tool),
     callId: toolCall.toolCall.callId,
     input: toolCall.input,
     name: toolCall.tool.name,
@@ -875,7 +877,9 @@ function emitToolResultEvent(
   environment: ToolBatchEnvironment,
   result: ToolResultPart
 ): void {
+  const tool = environment.toolRegistry.get(result.name);
   environment.publishEvent({
+    attribution: tool === undefined ? undefined : buildToolAttribution(tool),
     callId: result.callId,
     isError: result.isError,
     name: result.name,

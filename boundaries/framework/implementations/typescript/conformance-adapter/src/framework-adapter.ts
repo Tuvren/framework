@@ -34,6 +34,10 @@ import {
   type OperationOutcome,
 } from "../../../../../../tools/conformance/adapter-protocol/index.js";
 import { createFrameworkAdapterBatteriesIncluded } from "./framework-adapter-batteries-included.ts";
+import {
+  runCapabilityOrchestrationFoundation,
+  runCapabilityOrchestrationPolicyDecisions,
+} from "./framework-adapter-capability-orchestration.ts";
 import { createFrameworkAdapterDriver } from "./framework-adapter-driver.ts";
 import { createFrameworkAdapterEventStream } from "./framework-adapter-event-stream.ts";
 import { createFrameworkAdapterEventStreamSse } from "./framework-adapter-event-stream-sse.ts";
@@ -354,6 +358,19 @@ export class TypeScriptFrameworkAdapter implements ImplementationAdapter {
         return eventStreamSseScenarios.runDecodeTrace(input);
       case "event-stream-sse.report-wire-compliance":
         return eventStreamSseScenarios.runReportWireCompliance(input);
+      case "runtime.capability-orchestration.foundation":
+        return runCapabilityOrchestrationFoundation(
+          readStringProperty(
+            readOperationScenario(
+              input,
+              "runtime.capability-orchestration.foundation"
+            ),
+            "toolName",
+            "runtime.capability-orchestration.foundation.toolName"
+          )
+        );
+      case "runtime.capability-orchestration.policy-decisions":
+        return runCapabilityOrchestrationPolicyDecisions();
       default:
         throw new Error(
           `unsupported promoted framework operation ${operation}`

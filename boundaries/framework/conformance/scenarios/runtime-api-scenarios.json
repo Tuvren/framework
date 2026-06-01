@@ -1,4 +1,8 @@
 {
+  "capability-orchestration-foundation": {
+    "operation": "runtime.capability-orchestration.foundation",
+    "toolName": "conformance-tool"
+  },
   "completed-turn": {
     "operation": "runtime.execute-turn"
   },

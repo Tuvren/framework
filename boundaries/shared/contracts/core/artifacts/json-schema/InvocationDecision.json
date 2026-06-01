@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/shared/core/InvocationDecision.json",
+  "type": "object",
+  "description": "Outcome of the invocation-time decision point for one resolved capability.",
+  "required": ["capabilityId", "executionClass", "admitted"],
+  "properties": {
+    "capabilityId": {
+      "type": "string"
+    },
+    "executionClass": {
+      "$ref": "ExecutionClass.json"
+    },
+    "admitted": {
+      "type": "boolean",
+      "description": "Whether the invocation is admitted."
+    },
+    "requiresApproval": {
+      "type": "boolean",
+      "description": "True when the invocation requires an explicit approval decision first."
+    },
+    "reason": {
+      "type": "string",
+      "description": "Non-secret denial reason when admitted is false."
+    }
+  },
+  "additionalProperties": false
+}

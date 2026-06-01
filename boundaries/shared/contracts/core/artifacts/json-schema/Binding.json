@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/shared/core/Binding.json",
+  "type": "object",
+  "description": "Ties a Capability to one ExecutionClass and one Endpoint in a given context. A Capability may carry multiple candidate Bindings; the resolver selects one per context.",
+  "required": ["capabilityId", "executionClass", "endpoint"],
+  "properties": {
+    "capabilityId": {
+      "type": "string"
+    },
+    "executionClass": {
+      "$ref": "ExecutionClass.json"
+    },
+    "endpoint": {
+      "$ref": "Endpoint.json"
+    }
+  },
+  "additionalProperties": false
+}

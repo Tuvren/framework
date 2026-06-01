@@ -221,9 +221,18 @@ export function createRuntimeTelemetryEmitter(input: {
     const started = toolStarts.get(handle)?.get(event.callId);
 
     if (started !== undefined) {
+      const attributionAttributes: Record<string, string> =
+        event.attribution === undefined
+          ? {}
+          : {
+              "tuvren.runtime.capability.execution_class":
+                event.attribution.executionClass,
+              "tuvren.runtime.capability.owner": event.attribution.owner,
+            };
       emitSpan({
         attributes: {
           ...baseAttributes(handle, loopState),
+          ...attributionAttributes,
           "tuvren.runtime.tool_call.id": event.callId,
         },
         endMs: atMs,

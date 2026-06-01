@@ -53,6 +53,11 @@
       "types": "./dist/telemetry/index.d.ts",
       "import": "./dist/telemetry/index.js",
       "default": "./dist/telemetry/index.js"
+    },
+    "./capabilities": {
+      "types": "./dist/capabilities/index.d.ts",
+      "import": "./dist/capabilities/index.js",
+      "default": "./dist/capabilities/index.js"
     }
   },
   "main": "./dist/index.js",

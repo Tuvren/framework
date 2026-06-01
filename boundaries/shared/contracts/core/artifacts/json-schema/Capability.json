@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/shared/core/Capability.json",
+  "type": "object",
+  "description": "The underlying authority to perform an action, independent of how it is surfaced to a model or who executes it.",
+  "required": ["id"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Stable identifier, e.g. 'web.search' or 'mcp.shopify.search_products'."
+    },
+    "title": {
+      "type": "string"
+    },
+    "riskClass": {
+      "type": "string",
+      "enum": ["low", "medium", "high"]
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/shared/core/CapabilityObservation.json",
+  "type": "object",
+  "description": "Per-class bounds on what the runtime can know, persist, resume, cancel, retry, or audit. The runtime must not expose an affordance the class does not grant.",
+  "required": [
+    "executionClass",
+    "canObserveIntermediate",
+    "canPersistResult",
+    "canResume",
+    "canCancel",
+    "canRetry",
+    "canAudit"
+  ],
+  "properties": {
+    "executionClass": {
+      "$ref": "ExecutionClass.json"
+    },
+    "canObserveIntermediate": {
+      "type": "boolean"
+    },
+    "canPersistResult": {
+      "type": "boolean"
+    },
+    "canResume": {
+      "type": "boolean"
+    },
+    "canCancel": {
+      "type": "boolean"
+    },
+    "canRetry": {
+      "type": "boolean"
+    },
+    "canAudit": {
+      "type": "boolean"
+    }
+  },
+  "additionalProperties": false
+}

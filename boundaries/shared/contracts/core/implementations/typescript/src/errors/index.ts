@@ -15,6 +15,7 @@
  */
 
 // biome-ignore-all lint/performance/noBarrelFile: This package subpath is the intentional focused contract surface.
+export { CAPABILITY_BINDING_UNAVAILABLE } from "../lib/capability-error-codes.js";
 export type {
   TuvrenErrorCode,
   TuvrenErrorOptions,

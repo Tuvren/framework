@@ -14,27 +14,21 @@
  * limitations under the License.
  */
 
-import { defineConfig } from "tsup";
+// biome-ignore-all lint/performance/noBarrelFile: This package subpath is the intentional focused contract surface.
 
-export default defineConfig({
-  clean: true,
-  dts: false,
-  entry: [
-    "src/index.ts",
-    "src/errors/index.ts",
-    "src/messages/index.ts",
-    "src/events/index.ts",
-    "src/execution/index.ts",
-    "src/tools/index.ts",
-    "src/driver/index.ts",
-    "src/provider/index.ts",
-    "src/extensions/index.ts",
-    "src/telemetry/index.ts",
-    "src/capabilities/index.ts",
-  ],
-  format: ["esm"],
-  outDir: "dist",
-  sourcemap: false,
-  tsconfig: "tsconfig.tsup.json",
-  target: "esnext",
-});
+// Re-export from the core lib so this module owns the canonical declaration.
+export type {
+  Binding,
+  Capability,
+  CapabilityInvocationAttribution,
+  CapabilityObservation,
+  CapabilityPolicyContext,
+  CapabilityPolicyEngine,
+  Endpoint,
+  EndpointKind,
+  ExecutionClass,
+  ExposureDecision,
+  InvocationDecision,
+  InvocationOwner,
+  ToolSurface,
+} from "../lib/capability-shapes.js";

@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/shared/core/ToolSurface.json",
+  "type": "object",
+  "description": "The model-facing representation of a capability: name, description, schema, and optional provider rendering constraints. Distinct from the underlying Capability.",
+  "required": ["name", "description", "inputSchema", "capabilityId"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Model-facing name."
+    },
+    "description": {
+      "type": "string"
+    },
+    "inputSchema": {
+      "description": "Provider-wire shape (CustomSchema-normalized upstream)."
+    },
+    "capabilityId": {
+      "type": "string",
+      "description": "The Capability this surface presents."
+    },
+    "providerRendering": {
+      "type": "object",
+      "description": "Provider-specific rendering constraints (non-secret)."
+    }
+  },
+  "additionalProperties": false
+}

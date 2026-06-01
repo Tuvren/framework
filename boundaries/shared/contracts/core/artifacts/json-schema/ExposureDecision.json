@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/shared/core/ExposureDecision.json",
+  "type": "object",
+  "description": "Outcome of the exposure-time decision point for one tool surface.",
+  "required": ["surfaceName", "exposed"],
+  "properties": {
+    "surfaceName": {
+      "type": "string"
+    },
+    "exposed": {
+      "type": "boolean",
+      "description": "Whether the surface may be included in the model-visible set."
+    },
+    "reason": {
+      "type": "string",
+      "description": "Non-secret denial reason when exposed is false."
+    }
+  },
+  "additionalProperties": false
+}

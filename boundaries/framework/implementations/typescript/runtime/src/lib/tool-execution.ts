@@ -15,6 +15,7 @@
  */
 
 import type { EpochMs, HashString } from "@tuvren/core";
+import type { CapabilityPolicyEngine } from "@tuvren/core/capabilities";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type { ContextManifest } from "@tuvren/core/execution";
 import type {
@@ -30,6 +31,7 @@ import type {
   ToolRegistry,
   TuvrenToolDefinition,
 } from "@tuvren/core/tools";
+import { createBindingResolver } from "./binding-resolver.js";
 import { runWithTimeout } from "./execution-timeouts.js";
 import {
   buildSharedExports,
@@ -68,6 +70,13 @@ import { resolveToolDefinition } from "./tool-registry.js";
 export interface ToolBatchEnvironment {
   activeAgent: string;
   branchId: string;
+  /**
+   * Optional invocation-time policy engine per ADR-046 §4.21.
+   * When present, every tool invocation is checked before dispatch. A denied
+   * invocation surfaces as `tool.result` with `isError: true` rather than
+   * being executed. When absent, all invocations are admitted (default).
+   */
+  capabilityPolicyEngine?: CapabilityPolicyEngine;
   extensions: TuvrenExtension[];
   iterationCount: number;
   manifest: ContextManifest;
@@ -432,6 +441,32 @@ async function resolveExecutableToolCall(
     };
   }
 
+  // Invocation-time policy check per ADR-046 §4.21.
+  if (environment.capabilityPolicyEngine !== undefined) {
+    const resolver = createBindingResolver();
+    const binding = resolver.resolveFromToolDefinition(tool);
+    // Context dimensions (modelId, providerId, permissions) are populated in
+    // Epic BB. The baseline engine is context-insensitive; a context-sensitive
+    // engine wired before Epic BB would receive empty values here.
+    const policyContext = {
+      modelId: "",
+      permissions: [] as string[],
+      providerId: "",
+    };
+    const decision = environment.capabilityPolicyEngine.evaluateInvocation(
+      binding,
+      policyContext
+    );
+    if (!decision.admitted) {
+      return {
+        result: createErrorToolResult(
+          toolCall,
+          decision.reason ?? "invocation denied by capability policy"
+        ),
+      };
+    }
+  }
+
   const toolContext = createToolExecutionContext(
     toolCall,
     tool,
@@ -518,6 +553,12 @@ function resolveResumeDecision(
       ),
     };
   }
+
+  // Epic BB: add an evaluateInvocation check here mirroring resolveExecutableToolCall.
+  // With the baseline context-insensitive deny-list engine this is safe — a denied
+  // capability is rejected at the fresh-call stage and never enters the approval queue.
+  // A context-sensitive engine (e.g., one that checks lapsed permissions at invoke time)
+  // would bypass the gate on this resume path until the context dimensions are wired.
 
   if (decision.type === "approve") {
     return {
