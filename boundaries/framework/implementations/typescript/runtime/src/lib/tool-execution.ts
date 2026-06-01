@@ -554,6 +554,12 @@ function resolveResumeDecision(
     };
   }
 
+  // Epic BB: add an evaluateInvocation check here mirroring resolveExecutableToolCall.
+  // With the baseline context-insensitive deny-list engine this is safe — a denied
+  // capability is rejected at the fresh-call stage and never enters the approval queue.
+  // A context-sensitive engine (e.g., one that checks lapsed permissions at invoke time)
+  // would bypass the gate on this resume path until the context dimensions are wired.
+
   if (decision.type === "approve") {
     return {
       executable: {
