@@ -16,26 +16,12 @@
 
 import type {
   Binding,
+  CapabilityPolicyContext,
+  CapabilityPolicyEngine,
   ExposureDecision,
   InvocationDecision,
   ToolSurface,
 } from "@tuvren/core/capabilities";
-
-/**
- * Context provided to the Capability Policy Engine at each decision point.
- * Covers the dimensions named in §4.21 (provider/model, permissions,
- * residency, endpoint availability, approval, credential boundary, etc.).
- *
- * The baseline implementation gates on permissions and explicit deny-lists.
- * Full depth (data-residency, risk-classification, presence, credential
- * boundary, idempotency/retry) lands in Epic BB (§5.7.3).
- */
-export interface CapabilityPolicyContext {
-  modelId: string;
-  /** User/org permission tokens present for this invocation. */
-  permissions: string[];
-  providerId: string;
-}
 
 /**
  * Options for the baseline Capability Policy Engine.
@@ -52,65 +38,13 @@ export interface CapabilityPolicyEngineOptions {
   deniedSurfaceNames?: Set<string>;
 }
 
-/**
- * Two-decision-point framework-owned policy gate per ADR-046 §4.21:
- *
- * - Exposure-time: called before the model sees the tool surface set.
- *   A denied surface is never included in the model-visible set.
- * - Invocation-time: called after the model calls a tool, before dispatch.
- *   A denied invocation surfaces as `tool.result` with `isError: true`
- *   carrying a non-secret reason rather than being executed.
- *
- * Both decision points are framework-owned and above driver discretion.
- * Drivers see only the exposed surface set and cannot override denials.
- *
- * APPROVAL INTEGRATION (deferred to Epic AX/BB):
- * The `InvocationDecision.requiresApproval` field allows this gate to signal
- * "admitted, but route through approval first." The baseline (Epic AW) never
- * sets `requiresApproval` because the existing approval gate in
- * `tool-execution.ts` remains non-bypassable by construction — the engine is
- * not yet wired into the tool execution path. When integration lands, callers
- * must NOT read `admitted: true` as "no approval required"; they must
- * additionally consult `requiresApproval` and route through the approval gate
- * when it is set. This is intentionally deferred; the approval guarantee is
- * preserved by the existing gate, not by this engine.
- *
- * CONTEXT-DRIVEN DIMENSIONS (deferred to Epic BB):
- * `CapabilityPolicyContext` carries `providerId`, `modelId`, and `permissions`
- * for future use. The baseline only consults explicit deny-lists; the full
- * policy dimension set (residency, risk, presence, credential boundary,
- * idempotency/retry, composition/precedence) lands in Epic BB.
- */
-export interface CapabilityPolicyEngine {
-  /**
-   * Evaluate exposure-time policy over a candidate surface set.
-   * Returns one ExposureDecision per surface; denied surfaces must not reach
-   * the model's tool definition list.
-   */
-  evaluateExposure(
-    surfaces: ToolSurface[],
-    context: CapabilityPolicyContext
-  ): ExposureDecision[];
-
-  /**
-   * Evaluate invocation-time policy for a resolved binding.
-   * An InvocationDecision with `admitted: false` must be surfaced as a
-   * `tool.result` with `isError: true` and a non-secret reason. See the
-   * interface doc on approval integration for `requiresApproval` semantics.
-   */
-  evaluateInvocation(
-    binding: Binding,
-    context: CapabilityPolicyContext
-  ): InvocationDecision;
-}
-
 class BasicCapabilityPolicyEngine implements CapabilityPolicyEngine {
-  private readonly deniedSurfaces: ReadonlySet<string>;
   private readonly deniedCapabilities: ReadonlySet<string>;
+  private readonly deniedSurfaces: ReadonlySet<string>;
 
   constructor(options: CapabilityPolicyEngineOptions) {
-    this.deniedSurfaces = options.deniedSurfaceNames ?? new Set();
     this.deniedCapabilities = options.deniedCapabilityIds ?? new Set();
+    this.deniedSurfaces = options.deniedSurfaceNames ?? new Set();
   }
 
   evaluateExposure(

@@ -22,6 +22,8 @@ export type {
   Capability,
   CapabilityInvocationAttribution,
   CapabilityObservation,
+  CapabilityPolicyContext,
+  CapabilityPolicyEngine,
   Endpoint,
   EndpointKind,
   ExecutionClass,

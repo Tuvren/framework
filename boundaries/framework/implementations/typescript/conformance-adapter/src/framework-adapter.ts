@@ -370,7 +370,7 @@ export class TypeScriptFrameworkAdapter implements ImplementationAdapter {
           )
         );
       case "runtime.capability-orchestration.policy-decisions":
-        return Promise.resolve(runCapabilityOrchestrationPolicyDecisions());
+        return runCapabilityOrchestrationPolicyDecisions();
       default:
         throw new Error(
           `unsupported promoted framework operation ${operation}`

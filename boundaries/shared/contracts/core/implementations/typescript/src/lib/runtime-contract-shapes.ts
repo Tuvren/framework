@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-import type { CapabilityInvocationAttribution } from "./capability-shapes.js";
+import type {
+  CapabilityInvocationAttribution,
+  CapabilityPolicyEngine,
+} from "./capability-shapes.js";
 import type { EpochMs, HashString } from "./kernel-records.js";
 import type { TuvrenError } from "./tuvren-error.js";
 
@@ -747,6 +750,13 @@ export interface TuvrenExtension {
 }
 
 export interface AgentConfig {
+  /**
+   * Optional capability policy engine per ADR-046 §4.21. When set, the
+   * framework evaluates invocation-time policy before each tool call; denied
+   * invocations surface as `tool.result` with `isError: true` rather than
+   * executing. When absent, all invocations are admitted.
+   */
+  capabilityPolicyEngine?: CapabilityPolicyEngine;
   contextPolicy?: ContextPolicy;
   extensions?: TuvrenExtension[];
   loopPolicy?: LoopPolicy;

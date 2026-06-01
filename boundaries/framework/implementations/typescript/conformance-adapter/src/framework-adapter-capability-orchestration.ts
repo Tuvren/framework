@@ -156,21 +156,24 @@ export async function runCapabilityOrchestrationFoundation(
 }
 
 /**
- * Exercises the Capability Policy Engine's two decision points directly,
- * returning raw exposure and invocation decisions for the check set to assert.
+ * Exercises both Capability Policy Engine decision points:
+ * 1. Policy-unit decisions (standalone engine call) for exposure/invocation.
+ * 2. A real tool-execution turn with a denied capability to prove invocation
+ *    denial surfaces as tool.result isError:true (the wired behavior).
  *
  * Used by the runtime-api-capability-orchestration check set to assert:
- * - Exposure-time: denied surfaces have exposed: false with a non-secret reason
- * - Invocation-time: denied capabilities have admitted: false with a reason
+ * - Exposure-time: denied surfaces return exposed:false with a non-secret reason
+ * - Invocation-time standalone: denied capabilities return admitted:false
+ * - Invocation-time wired: a denied capability produces tool.result isError:true
  * - Permitted surfaces/capabilities pass through unaffected
  */
-export function runCapabilityOrchestrationPolicyDecisions(): AdapterProjection {
+export async function runCapabilityOrchestrationPolicyDecisions(): Promise<AdapterProjection> {
   const deniedSurface = "denied-surface";
-  const deniedCapabilityId = "denied.capability";
+  const deniedToolName = "denied-tool";
   const permittedSurface = "permitted-surface";
 
   const engine = createCapabilityPolicyEngine({
-    deniedCapabilityIds: new Set([deniedCapabilityId]),
+    deniedCapabilityIds: new Set([deniedToolName]),
     deniedSurfaceNames: new Set([deniedSurface]),
   });
 
@@ -180,10 +183,11 @@ export function runCapabilityOrchestrationPolicyDecisions(): AdapterProjection {
     providerId: "conformance-provider",
   };
 
+  // --- Part 1: Standalone policy-unit decisions ---
   const exposureDecisions = engine.evaluateExposure(
     [
       {
-        capabilityId: deniedCapabilityId,
+        capabilityId: deniedToolName,
         description: "Denied surface",
         inputSchema: { type: "object" },
         name: deniedSurface,
@@ -205,16 +209,16 @@ export function runCapabilityOrchestrationPolicyDecisions(): AdapterProjection {
     (d) => d.surfaceName === permittedSurface
   );
 
-  const deniedInvocation = engine.evaluateInvocation(
+  const deniedInvocationDecision = engine.evaluateInvocation(
     {
-      capabilityId: deniedCapabilityId,
+      capabilityId: deniedToolName,
       endpoint: { id: "test", kind: "tuvren-in-process" },
       executionClass: "tuvren-server",
     },
     context
   );
 
-  const permittedInvocation = engine.evaluateInvocation(
+  const permittedInvocationDecision = engine.evaluateInvocation(
     {
       capabilityId: "permitted.capability",
       endpoint: { id: "test", kind: "tuvren-in-process" },
@@ -222,6 +226,70 @@ export function runCapabilityOrchestrationPolicyDecisions(): AdapterProjection {
     },
     context
   );
+
+  // --- Part 2: Wired invocation denial → tool.result isError:true ---
+  const harness = createConformanceKernelHarness();
+  let deniedToolExecuted = false;
+
+  const driver = createStaticDriver(async (ctx) => {
+    await Promise.resolve();
+    if (!ctx.messages.some((m) => m.role === "tool")) {
+      return {
+        messages: [
+          assistantToolCalls([
+            {
+              callId: "denied-call-1",
+              input: {},
+              name: deniedToolName,
+            },
+          ]),
+        ],
+        resolution: { type: "continue_iteration" as const },
+        toolExecutionMode: "parallel",
+      };
+    }
+    return {
+      messages: [assistantText("capability policy conformance done")],
+      resolution: { reason: "done", type: "end_turn" as const },
+    };
+  });
+
+  const runtime = createTuvrenRuntimeCore({
+    createId: createConformanceIdFactory(),
+    defaultDriverId: DRIVER_ID,
+    driverRegistry: createDriverRegistry([driver]),
+    kernel: harness.kernel,
+  });
+
+  const thread = await runtime.createThread({});
+  const handle = runtime.executeTurn({
+    branchId: thread.branchId,
+    config: {
+      capabilityPolicyEngine: engine,
+      name: AGENT_NAME,
+      tools: [
+        {
+          description: "Denied capability tool",
+          execute() {
+            deniedToolExecuted = true;
+            return { ok: true };
+          },
+          inputSchema: { type: "object" },
+          name: deniedToolName,
+        },
+      ],
+    },
+    signal: textSignal("capability policy denial test"),
+    threadId: thread.threadId,
+  });
+
+  const events = await collectValues(handle.events());
+
+  const toolResultEvent = events.find(
+    (e) => (e as Record<string, unknown>).type === "tool.result"
+  );
+  const toolResultIsError =
+    (toolResultEvent as Record<string, unknown> | undefined)?.isError === true;
 
   const evidence = {
     capabilityPolicy: {
@@ -240,15 +308,17 @@ export function runCapabilityOrchestrationPolicyDecisions(): AdapterProjection {
       },
       invocation: {
         denied: {
-          admitted: deniedInvocation.admitted,
-          capabilityId: deniedInvocation.capabilityId,
+          admitted: deniedInvocationDecision.admitted,
+          capabilityId: deniedInvocationDecision.capabilityId,
+          deniedToolExecuted,
           hasReason:
-            typeof deniedInvocation.reason === "string" &&
-            (deniedInvocation.reason ?? "").length > 0,
+            typeof deniedInvocationDecision.reason === "string" &&
+            (deniedInvocationDecision.reason ?? "").length > 0,
+          toolResultIsError,
         },
         permitted: {
-          admitted: permittedInvocation.admitted,
-          capabilityId: permittedInvocation.capabilityId,
+          admitted: permittedInvocationDecision.admitted,
+          capabilityId: permittedInvocationDecision.capabilityId,
         },
       },
     },

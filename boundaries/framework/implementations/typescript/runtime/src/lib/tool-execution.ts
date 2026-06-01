@@ -15,6 +15,7 @@
  */
 
 import type { EpochMs, HashString } from "@tuvren/core";
+import type { CapabilityPolicyEngine } from "@tuvren/core/capabilities";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type { ContextManifest } from "@tuvren/core/execution";
 import type {
@@ -30,6 +31,7 @@ import type {
   ToolRegistry,
   TuvrenToolDefinition,
 } from "@tuvren/core/tools";
+import { createBindingResolver } from "./binding-resolver.js";
 import { runWithTimeout } from "./execution-timeouts.js";
 import {
   buildSharedExports,
@@ -68,6 +70,13 @@ import { resolveToolDefinition } from "./tool-registry.js";
 export interface ToolBatchEnvironment {
   activeAgent: string;
   branchId: string;
+  /**
+   * Optional invocation-time policy engine per ADR-046 §4.21.
+   * When present, every tool invocation is checked before dispatch. A denied
+   * invocation surfaces as `tool.result` with `isError: true` rather than
+   * being executed. When absent, all invocations are admitted (default).
+   */
+  capabilityPolicyEngine?: CapabilityPolicyEngine;
   extensions: TuvrenExtension[];
   iterationCount: number;
   manifest: ContextManifest;
@@ -430,6 +439,29 @@ async function resolveExecutableToolCall(
         validation.details
       ),
     };
+  }
+
+  // Invocation-time policy check per ADR-046 §4.21.
+  if (environment.capabilityPolicyEngine !== undefined) {
+    const resolver = createBindingResolver();
+    const binding = resolver.resolveFromToolDefinition(tool);
+    const policyContext = {
+      modelId: "",
+      permissions: [],
+      providerId: "",
+    };
+    const decision = environment.capabilityPolicyEngine.evaluateInvocation(
+      binding,
+      policyContext
+    );
+    if (!decision.admitted) {
+      return {
+        result: createErrorToolResult(
+          toolCall,
+          decision.reason ?? "invocation denied by capability policy"
+        ),
+      };
+    }
   }
 
   const toolContext = createToolExecutionContext(

@@ -1559,6 +1559,34 @@
       "checkId": "capability-orch.aw001.invocation-permitted-capability-admitted",
       "evidence": ["result.capabilityPolicy.invocation.permitted.admitted"],
       "operation": "runtime.capability-orchestration.policy-decisions"
+    },
+    {
+      "assertions": [
+        {
+          "equals": true,
+          "field": "$.capabilityPolicy.invocation.denied.toolResultIsError",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "capability-orch.aw001.invocation-denial-surfaces-as-tool-result-iserror",
+      "evidence": [
+        "result.capabilityPolicy.invocation.denied.toolResultIsError"
+      ],
+      "operation": "runtime.capability-orchestration.policy-decisions"
+    },
+    {
+      "assertions": [
+        {
+          "equals": false,
+          "field": "$.capabilityPolicy.invocation.denied.deniedToolExecuted",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "capability-orch.aw001.invocation-denial-prevents-tool-execution",
+      "evidence": [
+        "result.capabilityPolicy.invocation.denied.deniedToolExecuted"
+      ],
+      "operation": "runtime.capability-orchestration.policy-decisions"
     }
   ],
   "packetId": "tuvren.shared.core",

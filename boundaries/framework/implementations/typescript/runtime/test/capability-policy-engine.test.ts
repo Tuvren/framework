@@ -16,11 +16,12 @@
 
 // biome-ignore-all lint/suspicious/useAwait: test drivers intentionally match async contracts
 import { describe, expect, test } from "bun:test";
-import type { Binding, ToolSurface } from "@tuvren/core/capabilities";
-import {
-  type CapabilityPolicyContext,
-  createCapabilityPolicyEngine,
-} from "../src/lib/capability-policy-engine.ts";
+import type {
+  Binding,
+  CapabilityPolicyContext,
+  ToolSurface,
+} from "@tuvren/core/capabilities";
+import { createCapabilityPolicyEngine } from "../src/lib/capability-policy-engine.ts";
 
 // ---------------------------------------------------------------------------
 // Helpers

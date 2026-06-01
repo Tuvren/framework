@@ -168,3 +168,44 @@ export interface CapabilityInvocationAttribution {
   /** "provider" for provider-native/mediated invocations; "tuvren" otherwise. */
   owner: InvocationOwner;
 }
+
+// ---------------------------------------------------------------------------
+// Policy engine contract (interface owned here; implementation in @tuvren/runtime)
+// ---------------------------------------------------------------------------
+
+/**
+ * Context provided to the Capability Policy Engine at each decision point.
+ * Covers the dimensions named in §4.21. Full depth (data-residency, risk,
+ * presence, credential boundary, idempotency/retry) lands in Epic BB.
+ */
+export interface CapabilityPolicyContext {
+  modelId: string;
+  /** User/org permission tokens present for this invocation. */
+  permissions: string[];
+  providerId: string;
+}
+
+/**
+ * Two-decision-point framework-owned policy gate per ADR-046 §4.21.
+ * The implementation lives in @tuvren/runtime; the interface here so hosts
+ * can configure and AgentConfig can type it without a circular dependency.
+ */
+export interface CapabilityPolicyEngine {
+  /**
+   * Evaluate exposure-time policy over candidate surfaces. Denied surfaces
+   * must not reach the model's tool list.
+   */
+  evaluateExposure(
+    surfaces: ToolSurface[],
+    context: CapabilityPolicyContext
+  ): ExposureDecision[];
+
+  /**
+   * Evaluate invocation-time policy for a resolved binding. Denied
+   * invocations must surface as `tool.result` with `isError: true`.
+   */
+  evaluateInvocation(
+    binding: Binding,
+    context: CapabilityPolicyContext
+  ): InvocationDecision;
+}

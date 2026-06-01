@@ -89,6 +89,8 @@ export function createToolBatchEnvironment(
   return {
     activeAgent: loopState.activeConfig.name,
     branchId: handle.request.branchId,
+    capabilityPolicyEngine:
+      loopState.activeConfig.capabilityPolicyEngine ?? undefined,
     extensions: loopState.activeConfig.extensions ?? [],
     iterationCount,
     manifest,
