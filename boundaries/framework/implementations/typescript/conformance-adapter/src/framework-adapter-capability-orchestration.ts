@@ -289,7 +289,8 @@ export async function runCapabilityOrchestrationPolicyDecisions(): Promise<Adapt
     (e) => (e as unknown as Record<string, unknown>).type === "tool.result"
   );
   const toolResultIsError =
-    (toolResultEvent as unknown as Record<string, unknown> | undefined)?.isError === true;
+    (toolResultEvent as unknown as Record<string, unknown> | undefined)
+      ?.isError === true;
 
   const evidence = {
     capabilityPolicy: {
