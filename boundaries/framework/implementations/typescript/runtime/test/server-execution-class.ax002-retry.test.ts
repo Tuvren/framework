@@ -41,6 +41,7 @@ import {
   assistantToolCalls,
   collectEvents,
   delay,
+  extractToolMessages,
   textSignal,
   waitForAbort,
 } from "./runtime-core-test-helpers.ts";
@@ -73,10 +74,7 @@ function makeDriver(toolName: string, input: unknown = {}): RuntimeDriver {
   };
 }
 
-async function runWithTool(
-  tool: TuvrenToolDefinition,
-  abortController?: AbortController
-) {
+async function runWithTool(tool: TuvrenToolDefinition) {
   const harness = createFakeKernelHarness();
   const runtime = createTuvrenRuntime({
     defaultDriverId: "ax002-driver",
@@ -90,11 +88,6 @@ async function runWithTool(
     signal: textSignal("ax002 test"),
     threadId: thread.threadId,
   });
-
-  if (abortController !== undefined) {
-    return { events: await collectEvents(handle.events()), handle };
-  }
-
   return { events: await collectEvents(handle.events()), handle };
 }
 
@@ -271,5 +264,72 @@ describe("KRT-AX002 — cancellation", () => {
     await eventsPromise;
 
     expect(signalAbortedDuringExecution).toBe(true);
+  });
+
+  test("late completion after cancellation is not committed to durable invocation state", async () => {
+    const LATE_VALUE = "late-should-not-appear";
+    let releaseTool: (() => void) | undefined;
+    let releaseToolLatch: (() => void) | undefined;
+
+    const toolStarted = new Promise<void>((resolve) => {
+      releaseToolLatch = resolve;
+    });
+
+    const harness = createFakeKernelHarness();
+    const toolName = "ax002-late-completion";
+
+    const tool: TuvrenToolDefinition = {
+      name: toolName,
+      description: "tool that completes after cancellation",
+      inputSchema: { type: "object" },
+      async execute() {
+        releaseToolLatch?.(); // signal that execution started
+        // Wait until the test releases the tool (after cancel has been called)
+        await new Promise<void>((resolve) => {
+          releaseTool = resolve;
+        });
+        return { value: LATE_VALUE };
+      },
+    };
+
+    const driver = makeDriver(toolName);
+    const runtime = createTuvrenRuntime({
+      defaultDriverId: "ax002-driver",
+      driverRegistry: createBaseDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: { name: "primary", tools: [tool] },
+      signal: textSignal("late completion test"),
+      threadId: thread.threadId,
+    });
+
+    const eventsPromise = collectEvents(handle.events()).catch(() => undefined);
+
+    // Wait for tool to start, then cancel
+    await toolStarted;
+    handle.cancel();
+
+    // Release the tool AFTER cancellation — simulates a slow operation that
+    // completes after the run was cancelled
+    releaseTool?.();
+    await eventsPromise;
+
+    // The late completion must not appear as a committed tool.result
+    const messages = await harness.readBranchMessages(thread.branchId);
+    const toolMessages = extractToolMessages(messages);
+    const lateResult = toolMessages.find((m) =>
+      m.parts.some(
+        (p) =>
+          typeof p.output === "object" &&
+          p.output !== null &&
+          "value" in (p.output as Record<string, unknown>) &&
+          (p.output as Record<string, unknown>).value === LATE_VALUE
+      )
+    );
+
+    expect(lateResult).toBeUndefined();
   });
 });
