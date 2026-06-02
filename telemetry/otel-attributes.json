@@ -15,6 +15,20 @@
       "type": "string"
     },
     {
+      "brief": "The execution class of the capability invocation per ADR-046 (tuvren-server, provider-native, provider-mediated, tuvren-client).",
+      "examples": ["tuvren-server", "provider-native"],
+      "key": "tuvren.runtime.capability.execution_class",
+      "stability": "development",
+      "type": "string"
+    },
+    {
+      "brief": "The owner dimension of the capability invocation (tuvren or provider). Added additively per ADR-046 AW006.",
+      "examples": ["tuvren", "provider"],
+      "key": "tuvren.runtime.capability.owner",
+      "stability": "development",
+      "type": "string"
+    },
+    {
       "brief": "The current checkpoint hash observed during runtime progression.",
       "examples": [
         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"

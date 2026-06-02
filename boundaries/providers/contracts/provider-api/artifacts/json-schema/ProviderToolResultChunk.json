@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/providers/provider-api/ProviderToolResultChunk.json",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "const": "provider_tool_result"
+    },
+    "providerCallId": {
+      "$ref": "https://tuvren.dev/schemas/providers/provider-api/NonEmptyString.json"
+    },
+    "name": {
+      "$ref": "https://tuvren.dev/schemas/providers/provider-api/NonEmptyString.json"
+    },
+    "result": {},
+    "isError": {
+      "type": "boolean"
+    },
+    "providerMetadata": {
+      "$ref": "https://tuvren.dev/schemas/providers/provider-api/Metadata.json"
+    }
+  },
+  "required": ["type", "providerCallId", "name", "result"],
+  "unevaluatedProperties": {
+    "not": {}
+  }
+}

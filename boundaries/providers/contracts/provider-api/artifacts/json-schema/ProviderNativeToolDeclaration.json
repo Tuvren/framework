@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/providers/provider-api/ProviderNativeToolDeclaration.json",
+  "type": "object",
+  "properties": {
+    "id": {
+      "$ref": "https://tuvren.dev/schemas/providers/provider-api/NonEmptyString.json"
+    },
+    "name": {
+      "$ref": "https://tuvren.dev/schemas/providers/provider-api/NonEmptyString.json"
+    },
+    "args": {
+      "$ref": "https://tuvren.dev/schemas/providers/provider-api/Metadata.json"
+    },
+    "capabilityId": {
+      "type": "string"
+    }
+  },
+  "required": ["id", "name"],
+  "unevaluatedProperties": {
+    "not": {}
+  }
+}

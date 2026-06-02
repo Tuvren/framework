@@ -115,6 +115,32 @@ export interface RenderedToolDefinition {
   name: string;
 }
 
+/** Provider-native tool declaration: the provider owns execution. (AY002) */
+export interface ProviderNativeToolDeclaration {
+  /** Provider-owned tool ID: "{provider}.{tool-name}" e.g. "anthropic.code_execution_20260120" */
+  id: string;
+  /** Model-facing tool name (unique among all tools in the prompt) */
+  name: string;
+  /** Provider-specific configuration arguments (non-secret) */
+  args?: Record<string, unknown>;
+  /** Tuvren capability ID for attribution; falls back to name if absent */
+  capabilityId?: string;
+}
+
+/** Provider-mediated tool config: developer supplies the endpoint; provider invokes it. (AY004) */
+export interface ProviderMediatedToolConfig {
+  /** Model-facing tool name */
+  name: string;
+  /** Mediation type — "mcp" is the initial supported type (provider-invoked remote MCP) */
+  mediationType: "mcp";
+  /** Developer-provided endpoint URL or connector reference (non-secret connection config) */
+  endpoint: string;
+  /** Provider-specific options (e.g. headers; must not carry auth secrets inline) */
+  providerOptions?: Record<string, unknown>;
+  /** Tuvren capability ID for attribution; falls back to name if absent */
+  capabilityId?: string;
+}
+
 export interface TuvrenModelConfig {
   model?: string;
   provider?: string;
@@ -131,7 +157,14 @@ export interface TuvrenPrompt {
   config?: TuvrenModelConfig;
   messages: TuvrenMessage[];
   responseFormat?: StructuredOutputRequest;
+  /** Function-style tools that Tuvren executes (tuvren-server class) */
   tools?: RenderedToolDefinition[];
+  /** Provider-native tools: provider owns execution; Tuvren enables/configures. (AY002) */
+  providerNativeTools?: ProviderNativeToolDeclaration[];
+  /** Provider-mediated tools: provider invokes developer endpoint. (AY004) */
+  providerMediatedTools?: ProviderMediatedToolConfig[];
+  /** Opaque non-secret provider continuity artifacts for multi-turn operation. (AY005) */
+  providerContinuity?: Record<string, unknown>;
 }
 
 export interface ProviderUsage {
@@ -152,6 +185,15 @@ export type ProviderStreamChunk =
       providerCallId: string;
       name: string;
       input: unknown;
+      providerMetadata?: Record<string, unknown>;
+    }
+  | {
+      /** Provider-native/mediated tool result from a declared provider tool. (AY003) */
+      type: "provider_tool_result";
+      providerCallId: string;
+      name: string;
+      result: unknown;
+      isError?: boolean;
       providerMetadata?: Record<string, unknown>;
     }
   | {

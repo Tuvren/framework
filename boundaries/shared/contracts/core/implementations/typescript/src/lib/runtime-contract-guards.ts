@@ -74,6 +74,7 @@ const PROVIDER_STREAM_CHUNK_TYPES = new Set([
   "tool_call_start",
   "tool_call_args_delta",
   "tool_call_done",
+  "provider_tool_result",
   "finish",
   "error",
 ]);
@@ -145,6 +146,14 @@ const PROVIDER_TOOL_CALL_DONE_KEYS = new Set([
   "providerCallId",
   "name",
   "input",
+  "providerMetadata",
+]);
+const PROVIDER_TOOL_RESULT_KEYS = new Set([
+  "type",
+  "providerCallId",
+  "name",
+  "result",
+  "isError",
   "providerMetadata",
 ]);
 const PROVIDER_FINISH_KEYS = new Set([
@@ -388,6 +397,16 @@ export function isProviderStreamChunk(
           isNonEmptyStringProperty(value, "name") &&
           "input" in value &&
           isSerializableContractValue(value.input) &&
+          isOptionalSerializableRecordProperty(value, "providerMetadata")
+        );
+      case "provider_tool_result":
+        return (
+          hasOnlyAllowedKeys(value, PROVIDER_TOOL_RESULT_KEYS) &&
+          isNonEmptyStringProperty(value, "providerCallId") &&
+          isNonEmptyStringProperty(value, "name") &&
+          "result" in value &&
+          isSerializableContractValue(value.result) &&
+          (value.isError === undefined || typeof value.isError === "boolean") &&
           isOptionalSerializableRecordProperty(value, "providerMetadata")
         );
       case "finish":

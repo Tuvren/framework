@@ -18,8 +18,13 @@ import type {
   LanguageModelV3FunctionTool,
   LanguageModelV3Message,
   LanguageModelV3Prompt,
+  LanguageModelV3ProviderTool,
 } from "@ai-sdk/provider";
-import type { TuvrenPrompt } from "@tuvren/provider-api";
+import type {
+  ProviderMediatedToolConfig,
+  ProviderNativeToolDeclaration,
+  TuvrenPrompt,
+} from "@tuvren/provider-api";
 import {
   bridgeError,
   cloneFileData,
@@ -58,6 +63,73 @@ export function mapToolDefinition(
     name: tool.name,
     type: "function",
   };
+}
+
+/** Maps provider-native declarations to LanguageModelV3ProviderTool entries. (AY002) */
+export function mapProviderNativeToolDeclarations(
+  declarations: ProviderNativeToolDeclaration[]
+): LanguageModelV3ProviderTool[] {
+  return declarations.map((decl) => ({
+    args: decl.args ?? {},
+    id: decl.id as `${string}.${string}`,
+    name: decl.name,
+    type: "provider",
+  }));
+}
+
+/** Maps provider-mediated MCP configs to LanguageModelV3ProviderTool entries. (AY004) */
+export function mapProviderMediatedToolConfigs(
+  configs: ProviderMediatedToolConfig[]
+): LanguageModelV3ProviderTool[] {
+  return configs.map((config) => ({
+    args: {
+      server_url: config.endpoint,
+      ...(config.providerOptions !== undefined ? config.providerOptions : {}),
+    },
+    id: `openai.mcp` as `${string}.${string}`,
+    name: config.name,
+    type: "provider",
+  }));
+}
+
+/**
+ * Builds the declared provider tool name set for conditional acceptance of
+ * provider-owned results. Includes both native and mediated tool names. (AY002/AY004)
+ */
+export function buildDeclaredProviderToolNames(
+  providerNativeTools: ProviderNativeToolDeclaration[] | undefined,
+  providerMediatedTools: ProviderMediatedToolConfig[] | undefined
+): ReadonlySet<string> {
+  const names = new Set<string>();
+  for (const decl of providerNativeTools ?? []) {
+    names.add(decl.name);
+  }
+  for (const config of providerMediatedTools ?? []) {
+    names.add(config.name);
+  }
+  return names;
+}
+
+/**
+ * Returns the execution class for a given declared provider tool name.
+ * Used to tag provider-owned results with the correct class for attribution.
+ */
+export function resolveProviderToolExecutionClass(
+  toolName: string,
+  providerNativeTools: ProviderNativeToolDeclaration[] | undefined,
+  providerMediatedTools: ProviderMediatedToolConfig[] | undefined
+): "provider-native" | "provider-mediated" | undefined {
+  for (const decl of providerNativeTools ?? []) {
+    if (decl.name === toolName) {
+      return "provider-native";
+    }
+  }
+  for (const config of providerMediatedTools ?? []) {
+    if (config.name === toolName) {
+      return "provider-mediated";
+    }
+  }
+  return undefined;
 }
 
 function mapPromptMessage(

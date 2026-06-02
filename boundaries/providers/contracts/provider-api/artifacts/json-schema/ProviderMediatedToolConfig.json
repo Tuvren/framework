@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/providers/provider-api/ProviderMediatedToolConfig.json",
+  "type": "object",
+  "properties": {
+    "name": {
+      "$ref": "https://tuvren.dev/schemas/providers/provider-api/NonEmptyString.json"
+    },
+    "mediationType": {
+      "type": "string",
+      "const": "mcp"
+    },
+    "endpoint": {
+      "$ref": "https://tuvren.dev/schemas/providers/provider-api/NonEmptyString.json"
+    },
+    "providerOptions": {
+      "$ref": "https://tuvren.dev/schemas/providers/provider-api/Metadata.json"
+    },
+    "capabilityId": {
+      "type": "string"
+    }
+  },
+  "required": ["name", "mediationType", "endpoint"],
+  "unevaluatedProperties": {
+    "not": {}
+  }
+}

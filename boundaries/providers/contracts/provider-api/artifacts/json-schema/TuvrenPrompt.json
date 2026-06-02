@@ -15,6 +15,21 @@
         "$ref": "https://tuvren.dev/schemas/providers/provider-api/RenderedToolDefinition.json"
       }
     },
+    "providerNativeTools": {
+      "type": "array",
+      "items": {
+        "$ref": "https://tuvren.dev/schemas/providers/provider-api/ProviderNativeToolDeclaration.json"
+      }
+    },
+    "providerMediatedTools": {
+      "type": "array",
+      "items": {
+        "$ref": "https://tuvren.dev/schemas/providers/provider-api/ProviderMediatedToolConfig.json"
+      }
+    },
+    "providerContinuity": {
+      "$ref": "https://tuvren.dev/schemas/providers/provider-api/Metadata.json"
+    },
     "config": {
       "$ref": "https://tuvren.dev/schemas/providers/provider-api/TuvrenModelConfig.json"
     },

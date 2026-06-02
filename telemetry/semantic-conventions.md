@@ -9,6 +9,8 @@ Generated from `telemetry/semconv/tuvren-runtime.yaml` via `weaver`.
 | --- | --- | --- | --- | --- |
 | `tuvren.runtime.backend.id` | `string` | `development` | The backend implementation identifier selected by the runtime. | `sqlite` |
 | `tuvren.runtime.branch.id` | `string` | `development` | The Tuvren runtime branch identifier. | `branch_main` |
+| `tuvren.runtime.capability.execution_class` | `string` | `development` | The execution class of the capability invocation per ADR-046 (tuvren-server, provider-native, provider-mediated, tuvren-client). | `tuvren-server`, `provider-native` |
+| `tuvren.runtime.capability.owner` | `string` | `development` | The owner dimension of the capability invocation (tuvren or provider). Added additively per ADR-046 AW006. | `tuvren`, `provider` |
 | `tuvren.runtime.checkpoint.hash` | `string` | `development` | The current checkpoint hash observed during runtime progression. | `aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa` |
 | `tuvren.runtime.driver.id` | `string` | `development` | The active driver identifier for the runtime execution. | `react` |
 | `tuvren.runtime.error.code` | `string` | `development` | The stable Tuvren runtime error code associated with a failed telemetry span. | `runtime_error` |

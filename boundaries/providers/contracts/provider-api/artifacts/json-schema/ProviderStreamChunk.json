@@ -27,6 +27,9 @@
       "$ref": "https://tuvren.dev/schemas/providers/provider-api/ToolCallDoneChunk.json"
     },
     {
+      "$ref": "https://tuvren.dev/schemas/providers/provider-api/ProviderToolResultChunk.json"
+    },
+    {
       "$ref": "https://tuvren.dev/schemas/providers/provider-api/FinishChunk.json"
     },
     {

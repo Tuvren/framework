@@ -35,6 +35,8 @@ import {
   sanitizeMetadataValue,
   sanitizeRecord,
 } from "./ai-sdk-provider-bridge-utils.js";
+/** Lookup function that returns the execution class for a provider-owned tool name, or undefined if not declared. */
+export type ProviderToolClassLookup = (toolName: string) => "provider-native" | "provider-mediated" | undefined;
 
 export interface GenerateResultHelpers {
   mapFinishReason(
@@ -72,7 +74,8 @@ interface GenerateResultState {
 export function mapGenerateResult(
   result: LanguageModelV3GenerateResult,
   responseFormat: StructuredOutputRequest | undefined,
-  helpers: GenerateResultHelpers
+  helpers: GenerateResultHelpers,
+  providerToolClassLookup?: ProviderToolClassLookup,
 ): TuvrenModelResponse {
   const state: GenerateResultState = {
     parts: [],
@@ -83,7 +86,7 @@ export function mapGenerateResult(
   };
 
   for (const contentPart of result.content) {
-    appendGenerateContentPart(contentPart, state, result, helpers);
+    appendGenerateContentPart(contentPart, state, result, helpers, providerToolClassLookup);
   }
 
   finalizeGenerateStructuredOutput(state, result.finishReason.unified, helpers);
@@ -117,7 +120,8 @@ function appendGenerateContentPart(
   contentPart: LanguageModelV3GenerateResult["content"][number],
   state: GenerateResultState,
   result: LanguageModelV3GenerateResult,
-  _helpers: GenerateResultHelpers
+  _helpers: GenerateResultHelpers,
+  providerToolClassLookup?: ProviderToolClassLookup,
 ): void {
   switch (contentPart.type) {
     case "text":
@@ -132,7 +136,16 @@ function appendGenerateContentPart(
     case "tool-call":
       state.parts.push(mapGeneratedToolCallPart(contentPart, result));
       return;
-    case "tool-result":
+    case "tool-result": {
+      if (providerToolClassLookup !== undefined) {
+        const executionClass = providerToolClassLookup(contentPart.toolName);
+        if (executionClass !== undefined) {
+          for (const part of mapProviderNativeGenerateResult(contentPart, executionClass)) {
+            state.parts.push(part);
+          }
+          return;
+        }
+      }
       throw bridgeError(
         "provider-executed tool results are out of scope for the baseline AI SDK bridge",
         "unsupported_ai_sdk_content",
@@ -142,6 +155,7 @@ function appendGenerateContentPart(
           toolName: contentPart.toolName,
         }
       );
+    }
     case "tool-approval-request":
       throw bridgeError(
         "provider-executed tool approvals are out of scope for the baseline AI SDK bridge",
@@ -160,6 +174,47 @@ function appendGenerateContentPart(
         "unsupported_ai_sdk_content"
       );
   }
+}
+
+function mapProviderNativeGenerateResult(
+  contentPart: Extract<
+    LanguageModelV3GenerateResult["content"][number],
+    { type: "tool-result" }
+  >,
+  executionClass: "provider-native" | "provider-mediated"
+): [
+  Extract<TuvrenModelResponse["parts"][number], { type: "tool_call" }>,
+  Extract<TuvrenModelResponse["parts"][number], { type: "tool_result" }>,
+] {
+  const callId = randomUUID();
+  const providerMetadata = sanitizeRecord(contentPart.providerMetadata);
+  const attribution = {
+    executionClass,
+    owner: "provider",
+  };
+  const toolCallPart: Extract<TuvrenModelResponse["parts"][number], { type: "tool_call" }> = {
+    callId,
+    input: {},
+    name: contentPart.toolName,
+    providerMetadata: {
+      ...(providerMetadata ?? {}),
+      providerCallId: contentPart.toolCallId,
+      ...attribution,
+    },
+    type: "tool_call",
+  };
+  const toolResultPart: Extract<TuvrenModelResponse["parts"][number], { type: "tool_result" }> = {
+    callId,
+    ...(contentPart.isError === true ? { isError: true } : {}),
+    name: contentPart.toolName,
+    output: sanitizeMetadataValue(contentPart.result) ?? null,
+    providerMetadata: {
+      providerCallId: contentPart.toolCallId,
+      ...attribution,
+    },
+    type: "tool_result",
+  };
+  return [toolCallPart, toolResultPart];
 }
 
 function appendGenerateTextPart(

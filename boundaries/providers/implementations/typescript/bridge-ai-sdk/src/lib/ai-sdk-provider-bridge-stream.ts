@@ -40,11 +40,14 @@ import {
   sanitizeResponseMetadata,
   unsupportedStreamPartError,
 } from "./ai-sdk-provider-bridge-utils.js";
+import type { ProviderToolClassLookup } from "./ai-sdk-provider-bridge-generate.js";
 
 type AiSdkStreamResult = Awaited<ReturnType<LanguageModelV3["doStream"]>>;
 
 export interface StreamMappingState {
   model: LanguageModelV3;
+  /** Lookup for provider-native/mediated declared tool names; undefined = none declared. */
+  providerToolClassLookup?: ProviderToolClassLookup;
   requestBody?: unknown;
   responseFormat?: StructuredOutputRequest;
   responseHeaders?: unknown;
@@ -89,11 +92,15 @@ export interface StreamMappingHelpers {
 
 export function createStreamMappingState(input: {
   model: LanguageModelV3;
+  providerToolClassLookup?: ProviderToolClassLookup;
   responseFormat?: StructuredOutputRequest;
   streamResult: AiSdkStreamResult;
 }): StreamMappingState {
   return {
     model: input.model,
+    ...(input.providerToolClassLookup !== undefined
+      ? { providerToolClassLookup: input.providerToolClassLookup }
+      : {}),
     requestBody:
       input.streamResult.request?.body === undefined
         ? undefined
@@ -280,13 +287,42 @@ function handleToolStreamPart(
       return handleToolInputEndPart(part, state);
     case "tool-call":
       return handleToolCallStreamPart(part, state);
-    case "tool-result":
+    case "tool-result": {
+      // Accept for declared provider-native/mediated tools; reject undeclared (baseline protection).
+      if (state.providerToolClassLookup !== undefined) {
+        const executionClass = state.providerToolClassLookup(part.toolName);
+        if (executionClass !== undefined) {
+          return mapProviderToolResultStreamPart(part, executionClass);
+        }
+      }
+      throw unsupportedStreamPartError(part.type, state.model);
+    }
     case "file":
     case "tool-approval-request":
       throw unsupportedStreamPartError(part.type, state.model);
     default:
       return undefined;
   }
+}
+
+function mapProviderToolResultStreamPart(
+  part: Extract<LanguageModelV3StreamPart, { type: "tool-result" }>,
+  executionClass: "provider-native" | "provider-mediated"
+): ProviderStreamChunk[] {
+  const providerMetadata = sanitizeRecord(part.providerMetadata);
+  const chunk: Extract<ProviderStreamChunk, { type: "provider_tool_result" }> = {
+    isError: part.isError,
+    name: part.toolName,
+    providerCallId: part.toolCallId,
+    providerMetadata: {
+      ...(providerMetadata ?? {}),
+      executionClass,
+      owner: "provider",
+    },
+    result: sanitizeMetadataValue(part.result) ?? null,
+    type: "provider_tool_result",
+  };
+  return [chunk];
 }
 
 function handleToolInputStartPart(

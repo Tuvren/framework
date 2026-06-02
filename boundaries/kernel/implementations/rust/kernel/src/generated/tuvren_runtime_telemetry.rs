@@ -41,6 +41,20 @@ pub const TUVREN_RUNTIME_TELEMETRY_ATTRIBUTES: &[TuvrenRuntimeTelemetryAttribute
         r#type: "string",
     },
     TuvrenRuntimeTelemetryAttributeDefinition {
+        key: "tuvren.runtime.capability.execution_class",
+        brief: "The execution class of the capability invocation per ADR-046 (tuvren-server, provider-native, provider-mediated, tuvren-client).",
+        examples: &["tuvren-server", "provider-native"],
+        stability: "development",
+        r#type: "string",
+    },
+    TuvrenRuntimeTelemetryAttributeDefinition {
+        key: "tuvren.runtime.capability.owner",
+        brief: "The owner dimension of the capability invocation (tuvren or provider). Added additively per ADR-046 AW006.",
+        examples: &["tuvren", "provider"],
+        stability: "development",
+        r#type: "string",
+    },
+    TuvrenRuntimeTelemetryAttributeDefinition {
         key: "tuvren.runtime.checkpoint.hash",
         brief: "The current checkpoint hash observed during runtime progression.",
         examples: &["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"],
@@ -115,6 +129,8 @@ pub const TUVREN_RUNTIME_TELEMETRY_ATTRIBUTES: &[TuvrenRuntimeTelemetryAttribute
 pub const TUVREN_RUNTIME_TELEMETRY_ATTRIBUTE_KEYS: &[&str] = &[
     "tuvren.runtime.backend.id",
     "tuvren.runtime.branch.id",
+    "tuvren.runtime.capability.execution_class",
+    "tuvren.runtime.capability.owner",
     "tuvren.runtime.checkpoint.hash",
     "tuvren.runtime.driver.id",
     "tuvren.runtime.error.code",

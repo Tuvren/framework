@@ -161,6 +161,34 @@ model RenderedToolDefinition {
   inputSchema: TuvrenJsonSchema;
 }
 
+// Provider-native tool declaration: the provider owns execution; Tuvren configures
+// the surface and records provider-exposed events/results only. (AY002)
+model ProviderNativeToolDeclaration {
+  // Provider-owned tool ID: "{provider}.{tool-name}" e.g. "anthropic.code_execution_20260120"
+  id: NonEmptyString;
+  // Model-facing tool name (must be unique among all tools in the prompt)
+  name: NonEmptyString;
+  // Provider-specific configuration arguments (non-secret)
+  args?: Metadata;
+  // Optional Tuvren capability ID for attribution; if absent, name is used as capabilityId
+  capabilityId?: string;
+}
+
+// Provider-mediated tool config: developer supplies the endpoint; the provider
+// invokes it. Tuvren configures the relationship and records partial observability. (AY004)
+model ProviderMediatedToolConfig {
+  // Model-facing tool name
+  name: NonEmptyString;
+  // Mediation type — "mcp" is the initial supported type (provider-invoked remote MCP)
+  mediationType: "mcp";
+  // Developer-provided endpoint URL or connector reference (non-secret connection config)
+  endpoint: NonEmptyString;
+  // Provider-specific options (e.g. headers; must not carry auth secrets inline)
+  providerOptions?: Metadata;
+  // Optional Tuvren capability ID for attribution; if absent, name is used
+  capabilityId?: string;
+}
+
 model TuvrenModelConfig {
   // The focused provider package re-exports the provider prompt types only; it
   // does not add stricter runtime predicates for optional string fields here.
@@ -179,7 +207,14 @@ model StructuredOutputRequest {
 
 model TuvrenPrompt {
   messages: TuvrenMessage[];
+  // Function-style tools that Tuvren executes (tuvren-server class)
   tools?: RenderedToolDefinition[];
+  // Provider-native tools: provider owns execution; Tuvren enables/configures (AY002)
+  providerNativeTools?: ProviderNativeToolDeclaration[];
+  // Provider-mediated tools: provider invokes developer endpoint (AY004)
+  providerMediatedTools?: ProviderMediatedToolConfig[];
+  // Opaque non-secret provider continuity artifacts for multi-turn operation (AY005)
+  providerContinuity?: Metadata;
   config?: TuvrenModelConfig;
   responseFormat?: StructuredOutputRequest;
 }
@@ -247,6 +282,17 @@ model ToolCallDoneChunk {
   providerMetadata?: Metadata;
 }
 
+// Stream chunk emitted when a provider-native or provider-mediated tool executes
+// and the provider returns its result in the stream. (AY003)
+model ProviderToolResultChunk {
+  type: "provider_tool_result";
+  providerCallId: NonEmptyString;
+  name: NonEmptyString;
+  result: unknown;
+  isError?: boolean;
+  providerMetadata?: Metadata;
+}
+
 model FinishChunk {
   type: "finish";
   finishReason: FinishReason;
@@ -268,6 +314,7 @@ union ProviderStreamChunk {
   toolCallStart: ToolCallStartChunk,
   toolCallArgsDelta: ToolCallArgsDeltaChunk,
   toolCallDone: ToolCallDoneChunk,
+  providerToolResult: ProviderToolResultChunk,
   finish: FinishChunk,
   error: ErrorChunk,
 }

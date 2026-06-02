@@ -19,6 +19,8 @@
 // contract family. It now tracks the matching runtime-api subpath instead of
 // the broad root facade so the dependency shape stays as narrow as the surface.
 export type {
+  ProviderMediatedToolConfig,
+  ProviderNativeToolDeclaration,
   ProviderStreamChunk,
   ProviderUsage,
   StructuredOutputRequest,

@@ -29,6 +29,7 @@
             "tool_call.args_delta",
             "tool_call.done",
             "message.done",
+            "tool.audit",
             "tool.start",
             "tool.result",
             "state.checkpoint",
@@ -54,7 +55,7 @@
         },
         {
           "kind": "resultField",
-          "field": "$.events.10.payload.output.source",
+          "field": "$.events.11.payload.output.source",
           "equals": "shared event stream scenario"
         }
       ],
@@ -98,6 +99,7 @@
             "TOOL_CALL_START",
             "TOOL_CALL_ARGS",
             "TOOL_CALL_END",
+            "CUSTOM",
             "CUSTOM",
             "CUSTOM",
             "TOOL_CALL_RESULT",
@@ -196,6 +198,7 @@
             "TOOL_CALL_END",
             "CUSTOM",
             "CUSTOM",
+            "CUSTOM",
             "STATE_SNAPSHOT",
             "STEP_FINISHED",
             "CUSTOM",
@@ -206,7 +209,7 @@
         },
         {
           "kind": "resultField",
-          "field": "$.events.11.rawEvent.type",
+          "field": "$.events.12.rawEvent.type",
           "equals": "approval.requested"
         },
         {
@@ -218,6 +221,9 @@
             },
             {
               "code": "agui_message_done_custom_fallback"
+            },
+            {
+              "code": "agui_tool_execution_custom_fallback"
             },
             {
               "code": "agui_approval_custom_fallback"
