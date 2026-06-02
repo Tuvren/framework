@@ -601,7 +601,16 @@ function hasValidStreamEventPayload(
     case "tool.audit":
       return matchesStreamEventVariant(
         value,
-        ["callId", "capabilityId", "executionClass", "lifecycle", "runId", "turnId", "attempt", "validationPassed"],
+        [
+          "callId",
+          "capabilityId",
+          "executionClass",
+          "lifecycle",
+          "runId",
+          "turnId",
+          "attempt",
+          "validationPassed",
+        ],
         () =>
           isNonEmptyStringProperty(value, "callId") &&
           isNonEmptyStringProperty(value, "capabilityId") &&
@@ -611,7 +620,8 @@ function hasValidStreamEventPayload(
           isNonEmptyStringProperty(value, "runId") &&
           isNonEmptyStringProperty(value, "turnId") &&
           (value.attempt === undefined || typeof value.attempt === "number") &&
-          (value.validationPassed === undefined || typeof value.validationPassed === "boolean")
+          (value.validationPassed === undefined ||
+            typeof value.validationPassed === "boolean")
       );
     case "approval.requested":
       return matchesStreamEventVariant(value, ["request"], () =>
@@ -683,10 +693,13 @@ export function isTuvrenToolDefinition(
       typeof value.execute === "function" &&
       isKrakenToolSchema(value.inputSchema) &&
       isOptionalApprovalPolicy(value, "approval") &&
-      (value.idempotent === undefined || typeof value.idempotent === "boolean") &&
-      (value.maxRetries === undefined || typeof value.maxRetries === "number") &&
+      (value.idempotent === undefined ||
+        typeof value.idempotent === "boolean") &&
+      (value.maxRetries === undefined ||
+        typeof value.maxRetries === "number") &&
       isOptionalSerializableRecordProperty(value, "metadata") &&
-      (value.outputSchema === undefined || isKrakenToolSchema(value.outputSchema)) &&
+      (value.outputSchema === undefined ||
+        isKrakenToolSchema(value.outputSchema)) &&
       isOptionalTimeoutProperty(value, "timeout")
   );
 }

@@ -464,6 +464,8 @@ export interface ToolResultEvent {
  * that could contain secret material. (AX005)
  */
 export interface ToolAuditEvent {
+  /** Retry attempt number (1-based), present when lifecycle is retry_attempt. */
+  attempt?: number;
   /** Unique call identifier matching the tool_call / tool_result pair. */
   callId: string;
   /** Stable tool name; used as the capability id for tuvren-server bindings. */
@@ -485,11 +487,9 @@ export interface ToolAuditEvent {
   source?: EventSource;
   timestamp: EpochMs;
   turnId: string;
-  /** Retry attempt number (1-based), present when lifecycle is retry_attempt. */
-  attempt?: number;
+  type: "tool.audit";
   /** Whether the validation passed, present for input_validated / output_validated. */
   validationPassed?: boolean;
-  type: "tool.audit";
 }
 
 export interface ApprovalRequestedEvent {
@@ -873,11 +873,6 @@ export interface AgentConfig {
   name: string;
   responseFormat?: StructuredOutputRequest;
   /**
-   * Server execution class configuration for this agent. Controls per-tenant
-   * rate limiting of Tuvren-server invocations. (AX003)
-   */
-  serverExecution?: ServerExecutionConfig;
-  /**
    * Host-provided sandbox executors keyed by endpoint id. When a tool
    * declares metadata.sandbox.endpointId, the framework looks up the executor
    * here and dispatches the invocation to it instead of tool.execute. This
@@ -889,7 +884,20 @@ export interface AgentConfig {
    * Cast to TuvrenSandboxExecutor from @tuvren/core/capabilities for the typed
    * interface.
    */
-  sandboxExecutors?: Map<string, { execute(input: unknown, context: ToolExecutionContext): Promise<unknown> | unknown }>;
+  sandboxExecutors?: Map<
+    string,
+    {
+      execute(
+        input: unknown,
+        context: ToolExecutionContext
+      ): Promise<unknown> | unknown;
+    }
+  >;
+  /**
+   * Server execution class configuration for this agent. Controls per-tenant
+   * rate limiting of Tuvren-server invocations. (AX003)
+   */
+  serverExecution?: ServerExecutionConfig;
   systemPrompt?: string;
   tools?: TuvrenToolDefinition[];
 }
