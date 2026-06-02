@@ -29,17 +29,18 @@ type LanguageModelV3ProviderTool = {
 };
 ```
 
-| Provider | Tool ID | Name | Args | GA / Beta |
-|----------|---------|------|------|-----------|
-| Anthropic | `anthropic.code_execution_20260120` | `code_execution` | `{}` | GA (no beta header required); supports Opus 4.6, Sonnet 4.6, Sonnet 4.5, Opus 4.5 |
-| Anthropic | `anthropic.code_execution_20250825` | `code_execution` | `{}` | Beta (`computer-use-2025-04-...` header); Python + Bash |
-| Anthropic | `anthropic.advisor_20260301` | `advisor` | `{ model: string, maxCalls?: number }` | Beta (`advisor-tool-2026-03-01` header) |
-| xAI | `xai.web_search` | `web_search` | `{ domain_filter?: string[] }` | GA |
-| xAI | `xai.x_search` | `x_search` | `{ handle?: string, dateRange?: object }` | GA |
-| xAI | `xai.code_execution` | `code_execution` | `{}` | GA |
-| Google | `google.google_maps` | `google_maps` | `{ mapId?: string }` | GA (Gemini 2.0+) |
-| Google | `google.vertex_rag_store` | `vertex_rag_store` | `{ corpusName: string }` | GA (Gemini 2.0+) |
-| Google | `google.file_search` | `file_search` | `{ storeId: string }` | GA (Gemini 2.5+) |
+Rows marked **verified** are confirmed present in the installed provider adapters (`@ai-sdk/anthropic@3.0.66`, `@ai-sdk/openai@3.0.53`, `@ai-sdk/google` installed). Rows marked **unverified** are reported by external sources but could not be confirmed in the installed SDK; treat as aspirational until the corresponding adapter is installed and verified.
+
+| Provider | Tool ID | Name | Args | GA / Beta | Bridge Status |
+|----------|---------|------|------|-----------|---------------|
+| Anthropic | `anthropic.code_execution_20260120` | `code_execution` | `{}` | GA (no beta header); Opus 4.6, Sonnet 4.6, Sonnet 4.5, Opus 4.5 | **verified** |
+| Anthropic | `anthropic.code_execution_20250825` | `code_execution` | `{}` | Beta (`code-execution-2025-08-25` header); Python + Bash | **verified** |
+| Google | `google.google_maps` | `google_maps` | `{ mapId?: string }` | GA (Gemini 2.0+) | **verified** |
+| Google | `google.vertex_rag_store` | `vertex_rag_store` | `{ corpusName: string }` | GA (Gemini 2.0+) | **verified** |
+| Google | `google.file_search` | `file_search` | `{ storeId: string }` | GA (Gemini 2.5+) | **verified** |
+| xAI | `xai.web_search` | `web_search` | `{ domain_filter?: string[] }` | GA | **unverified** (`@ai-sdk/xai` not in bridge deps) |
+| xAI | `xai.x_search` | `x_search` | `{ handle?: string, dateRange?: object }` | GA | **unverified** |
+| xAI | `xai.code_execution` | `code_execution` | `{}` | GA | **unverified** |
 
 ### Observable Fields on Provider-Native Results
 
