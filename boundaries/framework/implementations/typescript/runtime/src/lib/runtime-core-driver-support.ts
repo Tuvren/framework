@@ -25,6 +25,7 @@ import type {
   HandoffContextPlan,
   RuntimeResolution,
 } from "@tuvren/core/execution";
+import { TUVREN_SANDBOX_ENDPOINT_ID_PREFIX } from "./binding-resolver.js";
 import type { HeadState, LoopState } from "./runtime-core-loop.js";
 import { formatToolResultTaskId } from "./runtime-core-response.js";
 import { normalizeError } from "./runtime-core-shared.js";
@@ -128,11 +129,13 @@ export function createToolBatchEnvironment(
       loopState.activeConfig.sandboxExecutors === undefined
         ? undefined
         : (endpointId: string) => {
-            // binding-resolver prefixes the id: "sandbox:<rawId>" — strip the
-            // prefix so AgentConfig.sandboxExecutors is keyed by the raw
-            // endpointId declared in metadata.sandbox.endpointId. (AX004)
-            const rawId = endpointId.startsWith("sandbox:")
-              ? endpointId.slice("sandbox:".length)
+            // binding-resolver prefixes the id with TUVREN_SANDBOX_ENDPOINT_ID_PREFIX
+            // ("sandbox:") — strip it so AgentConfig.sandboxExecutors is keyed
+            // by the raw endpointId declared in metadata.sandbox.endpointId. (AX004)
+            const rawId = endpointId.startsWith(
+              TUVREN_SANDBOX_ENDPOINT_ID_PREFIX
+            )
+              ? endpointId.slice(TUVREN_SANDBOX_ENDPOINT_ID_PREFIX.length)
               : endpointId;
             return loopState.activeConfig.sandboxExecutors?.get(rawId) as
               | import("@tuvren/core/capabilities").TuvrenSandboxExecutor

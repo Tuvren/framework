@@ -27,7 +27,7 @@ const TUVREN_IN_PROCESS_ENDPOINT_ID = "tuvren.in-process";
  * `sandbox:<endpointId>` where endpointId is the value from
  * `tool.metadata.sandbox.endpointId`. (AX004)
  */
-const TUVREN_SANDBOX_ENDPOINT_ID_PREFIX = "sandbox:";
+export const TUVREN_SANDBOX_ENDPOINT_ID_PREFIX = "sandbox:";
 
 /**
  * Resolves capabilities to their Binding (execution class + endpoint).

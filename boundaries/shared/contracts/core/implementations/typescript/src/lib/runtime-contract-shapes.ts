@@ -611,6 +611,10 @@ export interface TuvrenToolDefinition {
    * When true, the entire aroundTool extension chain re-executes on each attempt,
    * not just the terminal tool.execute call. Extension authors should account for
    * this when writing aroundTool handlers with side effects.
+   *
+   * Thrown vs returned errors: only thrown exceptions trigger the retry loop.
+   * A tool that returns { isError: true } is treated as a deliberate value and
+   * is never retried, even when idempotent is true.
    */
   idempotent?: boolean;
   inputSchema: TuvrenJsonSchema | CustomSchema;
