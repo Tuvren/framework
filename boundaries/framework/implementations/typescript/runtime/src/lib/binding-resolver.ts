@@ -23,6 +23,13 @@ import type { TuvrenToolDefinition } from "@tuvren/core/tools";
 const TUVREN_IN_PROCESS_ENDPOINT_ID = "tuvren.in-process";
 
 /**
+ * Stable sandbox-endpoint id prefix. The full id is
+ * `sandbox:<endpointId>` where endpointId is the value from
+ * `tool.metadata.sandbox.endpointId`. (AX004)
+ */
+const TUVREN_SANDBOX_ENDPOINT_ID_PREFIX = "sandbox:";
+
+/**
  * Resolves capabilities to their Binding (execution class + endpoint).
  *
  * ADR-047 back-compat rules:
@@ -70,6 +77,19 @@ class BasicBindingResolver implements BindingResolver {
       return binding;
     }
 
+    const sandboxEndpointId = extractSandboxEndpointId(tool);
+
+    if (sandboxEndpointId !== undefined) {
+      return {
+        capabilityId: tool.name,
+        endpoint: {
+          id: `${TUVREN_SANDBOX_ENDPOINT_ID_PREFIX}${sandboxEndpointId}`,
+          kind: "tuvren-sandbox",
+        },
+        executionClass: "tuvren-server",
+      };
+    }
+
     // Developer-defined execute tool → tuvren-server / tuvren-in-process
     return {
       capabilityId: tool.name,
@@ -113,5 +133,17 @@ function extractMcpServerName(tool: TuvrenToolDefinition): string | undefined {
   const serverName = meta?.mcp?.serverName;
   return typeof serverName === "string" && serverName.length > 0
     ? serverName
+    : undefined;
+}
+
+function extractSandboxEndpointId(
+  tool: TuvrenToolDefinition
+): string | undefined {
+  const meta = tool.metadata as
+    | { sandbox?: { endpointId?: string } }
+    | undefined;
+  const endpointId = meta?.sandbox?.endpointId;
+  return typeof endpointId === "string" && endpointId.length > 0
+    ? endpointId
     : undefined;
 }

@@ -813,6 +813,19 @@ export interface AgentConfig {
    * rate limiting of Tuvren-server invocations. (AX003)
    */
   serverExecution?: ServerExecutionConfig;
+  /**
+   * Host-provided sandbox executors keyed by endpoint id. When a tool
+   * declares metadata.sandbox.endpointId, the framework looks up the executor
+   * here and dispatches the invocation to it instead of tool.execute. This
+   * gives the host full control over the isolation boundary (subprocess, VM,
+   * container, etc.) while the framework owns lifecycle observation, retry,
+   * cancellation, and audit. (AX004)
+   *
+   * The executor receives `(input: unknown, context: ToolExecutionContext)`.
+   * Cast to TuvrenSandboxExecutor from @tuvren/core/capabilities for the typed
+   * interface.
+   */
+  sandboxExecutors?: Map<string, { execute(input: unknown, context: ToolExecutionContext): Promise<unknown> | unknown }>;
   systemPrompt?: string;
   tools?: TuvrenToolDefinition[];
 }

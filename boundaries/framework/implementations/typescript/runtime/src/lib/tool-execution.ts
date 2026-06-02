@@ -15,7 +15,10 @@
  */
 
 import type { EpochMs, HashString } from "@tuvren/core";
-import type { CapabilityPolicyEngine } from "@tuvren/core/capabilities";
+import type {
+  CapabilityPolicyEngine,
+  TuvrenSandboxExecutor,
+} from "@tuvren/core/capabilities";
 import {
   TOOL_INPUT_VALIDATION_FAILED,
   TOOL_INVOCATION_RATE_LIMITED,
@@ -101,6 +104,12 @@ export interface ToolBatchEnvironment {
    */
   serverExecutionRateLimiter?: ServerRateLimiter;
   signal?: AbortSignal;
+  /**
+   * Optional sandbox executor registry keyed by endpoint id. When a tool
+   * declares metadata.sandbox.endpointId, the gateway looks up the executor
+   * here and calls it instead of tool.execute. (AX004)
+   */
+  resolveSandboxExecutor?(endpointId: string): TuvrenSandboxExecutor | undefined;
   stageResult(result: ToolResultPart, orderIndex: number): Promise<HashString>;
   threadId: string;
   toolRegistry: ToolRegistry;
@@ -123,6 +132,8 @@ export interface ExecutableToolCall {
   approvalAudit?: EditedApprovalAudit;
   approvalDecision?: ApprovalDecision;
   input: unknown;
+  /** Sandbox executor resolved from metadata.sandbox.endpointId. (AX004) */
+  sandboxExecutor?: TuvrenSandboxExecutor;
   tool: TuvrenToolDefinition;
   toolCall: ToolCallPart;
 }
@@ -498,6 +509,16 @@ async function resolveExecutableToolCall(
     };
   }
 
+  // Resolve sandbox executor for tools declared with metadata.sandbox.endpointId.
+  const binding = createBindingResolver().resolveFromToolDefinition(tool);
+  let sandboxExecutor: TuvrenSandboxExecutor | undefined;
+  if (
+    binding.endpoint.kind === "tuvren-sandbox" &&
+    environment.resolveSandboxExecutor !== undefined
+  ) {
+    sandboxExecutor = environment.resolveSandboxExecutor(binding.endpoint.id);
+  }
+
   const toolContext = createToolExecutionContext(
     toolCall,
     tool,
@@ -522,6 +543,7 @@ async function resolveExecutableToolCall(
   return {
     executable: {
       input: validation.value,
+      sandboxExecutor,
       tool,
       toolCall,
     },
@@ -915,18 +937,27 @@ async function runAroundToolHandlers(
     );
     let output: unknown;
 
+    const executionContext = createToolExecutionContext(
+      toolCall.toolCall,
+      toolCall.tool,
+      environment,
+      composeAbortSignals(environment.signal, timeoutController.signal)
+    );
+    // Sandbox tools (endpoint.kind === "tuvren-sandbox") use the registered
+    // sandbox executor instead of tool.execute. (AX004)
+    const executeFunction =
+      toolCall.sandboxExecutor !== undefined
+        ? (input: unknown) =>
+            (toolCall.sandboxExecutor as TuvrenSandboxExecutor).execute(
+              input,
+              executionContext
+            )
+        : (input: unknown) =>
+            toolCall.tool.execute(input, executionContext);
+
     try {
       output = await runWithTimeout(
-        () =>
-          toolCall.tool.execute(
-            toolCall.input,
-            createToolExecutionContext(
-              toolCall.toolCall,
-              toolCall.tool,
-              environment,
-              composeAbortSignals(environment.signal, timeoutController.signal)
-            )
-          ),
+        () => executeFunction(toolCall.input),
         toolCall.tool.timeout,
         () =>
           new Error(

@@ -119,6 +119,13 @@ export function createToolBatchEnvironment(
       host.publishProjectedError(handle, error, false, loopState);
     },
     runId,
+    resolveSandboxExecutor:
+      loopState.activeConfig.sandboxExecutors !== undefined
+        ? (endpointId: string) =>
+            loopState.activeConfig.sandboxExecutors?.get(endpointId) as
+              | import("@tuvren/core/capabilities").TuvrenSandboxExecutor
+              | undefined
+        : undefined,
     serverExecutionRateLimiter: loopState.serverExecutionRateLimiter,
     signal: handle.abortSignal,
     stageResult: async (result, orderIndex) => {
