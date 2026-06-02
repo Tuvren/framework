@@ -618,7 +618,13 @@ export interface TuvrenToolDefinition {
    */
   idempotent?: boolean;
   inputSchema: TuvrenJsonSchema | CustomSchema;
-  /** Maximum retry attempts when idempotent is true. Defaults to 1. (AX002) */
+  /**
+   * Maximum retry attempts when idempotent is true. Defaults to 1. (AX002)
+   * Must be a non-negative integer. This value is trusted and not runtime-validated.
+   * A negative value causes maxAttempts (= 1 + maxRetries) to be zero, so the
+   * tool's execute is never invoked and an execution-failure result is returned.
+   * Use 0 for one attempt with no retry; omit to get the default of 1 retry.
+   */
   maxRetries?: number;
   metadata?: Record<string, unknown>;
   name: string;
