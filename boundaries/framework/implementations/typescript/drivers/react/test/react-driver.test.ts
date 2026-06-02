@@ -19,6 +19,7 @@ import { describe, expect, test } from "bun:test";
 import type { TuvrenExtension } from "@tuvren/core/extensions";
 import type { TuvrenMessage } from "@tuvren/core/messages";
 import type {
+  ProviderStreamChunk,
   TuvrenModelResponse,
   TuvrenProvider,
 } from "@tuvren/core/provider";
@@ -706,5 +707,68 @@ describe("driver-react", () => {
     expect(result.resolution.error).toMatchObject({
       code: "react_driver_execution_cancelled",
     });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Provider-native / provider-mediated stream path (AY002/AY004)
+  // ---------------------------------------------------------------------------
+
+  test("stream path: provider_tool_result chunk produces pre-staged tool message without local execution", async () => {
+    const driverFactory = createReActDriver();
+    const driver = driverFactory.create();
+    const chunks: ProviderStreamChunk[] = [
+      {
+        name: "code_execution",
+        providerCallId: "native-stream-call-1",
+        providerMetadata: { executionClass: "provider-native", owner: "provider" },
+        result: { output: "hello world" },
+        type: "provider_tool_result",
+      },
+      {
+        finishReason: "stop",
+        type: "finish",
+        usage: { inputTokens: 5, outputTokens: 2 },
+      },
+    ];
+
+    const provider: TuvrenProvider = {
+      id: "mock",
+      generate() {
+        throw new Error("should not call generate in stream mode");
+      },
+      async *stream() {
+        for (const chunk of chunks) {
+          yield chunk;
+        }
+      },
+    };
+
+    const config = {
+      model: provider,
+      name: "test-agent",
+      providerNativeTools: [
+        { id: "anthropic.code_execution_20260120", name: "code_execution" },
+      ],
+    };
+
+    const context = createDriverExecutionContext({ config });
+    const result = await driver.execute(context);
+
+    // Pure stream: no model text output, only the provider_tool_result chunk.
+    // The driver returns just the pre-staged tool message (no preceding assistant
+    // content to assemble). The framework can continue from this state.
+    expect(result.messages).toHaveLength(1);
+    const toolMessage = result.messages?.[0];
+    expect(toolMessage?.role).toBe("tool");
+    const toolMessageParts = (toolMessage as { parts?: unknown[] })?.parts;
+    const toolResultPart = toolMessageParts?.[0] as Record<string, unknown> | undefined;
+    expect(toolResultPart?.["name"]).toBe("code_execution");
+    expect(toolResultPart?.["type"]).toBe("tool_result");
+    expect(
+      (toolResultPart?.["providerMetadata"] as Record<string, unknown> | undefined)?.["owner"]
+    ).toBe("provider");
+
+    // Resolution should be end_turn (no regular tool calls dispatched)
+    expect(result.resolution.type).toBe("end_turn");
   });
 });

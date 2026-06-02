@@ -195,6 +195,7 @@ const CAPABILITY_INVOCATION_OWNERS = new Set(["provider", "tuvren"]);
 const TUVREN_MODEL_RESPONSE_KEYS = new Set([
   "finishReason",
   "parts",
+  "providerToolResults",
   "providerMetadata",
   "usage",
 ]);

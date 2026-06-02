@@ -229,6 +229,40 @@ async function executeIteration(
       };
     }
 
+    // A response with only provider-native/mediated results and no model-facing
+    // output is valid: the provider executed a tool and returned its result.
+    // Return only the pre-staged tool message so the framework can continue. (AY002/AY004)
+    if ((response.providerToolResults?.length ?? 0) > 0) {
+      const prestagedOnlyToolMessage = buildPrestagedProviderToolMessage(
+        response.providerToolResults
+      );
+      if (prestagedOnlyToolMessage !== undefined) {
+        const iterationDecisionNoTools = resolveIterationDecision(
+          context.config,
+          response,
+          context.manifest,
+          context.iterationCount,
+          false
+        );
+        const earlyStateUpdates =
+          execution.stateUpdates.length === 0
+            ? undefined
+            : execution.stateUpdates.map((update) => ({
+                extensionName: update.extensionName,
+                state: cloneValue(update.state),
+              }));
+        await flushBufferedAssistantSequences(
+          execution.assistantSequences,
+          context.runtime
+        );
+        return {
+          messages: [prestagedOnlyToolMessage],
+          resolution: iterationDecisionToResolution(iterationDecisionNoTools),
+          stateUpdates: earlyStateUpdates,
+        };
+      }
+    }
+
     throw new TuvrenRuntimeError(
       "provider responses must contain assistant output",
       {

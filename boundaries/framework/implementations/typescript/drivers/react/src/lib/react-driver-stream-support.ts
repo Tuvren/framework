@@ -19,6 +19,7 @@ import type { EpochMs } from "@tuvren/core";
 import { TuvrenProviderError, TuvrenRuntimeError } from "@tuvren/core";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type {
+  ProviderNativeInvocationRecord,
   ProviderStreamChunk,
   TuvrenModelResponse,
 } from "@tuvren/provider-api";
@@ -48,6 +49,7 @@ type AccumulatedPart =
 export class StreamAccumulator {
   private readonly parts: AccumulatedPart[] = [];
   private readonly toolCalls = new Map<string, PendingToolCall>();
+  private readonly _providerToolResults: ProviderNativeInvocationRecord[] = [];
   private finishChunk:
     | Extract<ProviderStreamChunk, { type: "finish" }>
     | undefined;
@@ -128,6 +130,20 @@ export class StreamAccumulator {
           chunk.name,
           chunk.providerMetadata
         );
+      case "provider_tool_result":
+        // Accumulate provider-native/mediated result for pre-staging (AY002/AY004).
+        this._providerToolResults.push({
+          callId: randomUUID(),
+          executionClass: (chunk.providerMetadata?.["executionClass"] as ProviderNativeInvocationRecord["executionClass"]) ?? "provider-native",
+          ...(chunk.isError === true ? { isError: true } : {}),
+          name: chunk.name,
+          providerCallId: chunk.providerCallId,
+          ...(chunk.providerMetadata !== undefined
+            ? { providerMetadata: chunk.providerMetadata }
+            : {}),
+          result: chunk.result,
+        });
+        return [];
       case "finish":
         this.finishChunk = cloneValue(chunk);
         this.assertCompletedProviderParts();
@@ -138,6 +154,10 @@ export class StreamAccumulator {
       default:
         return [];
     }
+  }
+
+  get providerToolResults(): ProviderNativeInvocationRecord[] {
+    return this._providerToolResults;
   }
 
   finalize(options?: {
@@ -174,6 +194,9 @@ export class StreamAccumulator {
           ? "tool_call"
           : "stop"),
       parts,
+      ...(this._providerToolResults.length > 0
+        ? { providerToolResults: [...this._providerToolResults] }
+        : {}),
       providerMetadata: cloneValue(this.finishChunk?.providerMetadata),
       usage: cloneValue(this.finishChunk?.usage),
     };
