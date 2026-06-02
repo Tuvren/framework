@@ -22,7 +22,13 @@ import type {
   TuvrenExtension,
 } from "@tuvren/core/extensions";
 import type { TuvrenMessage, TuvrenModelConfig } from "@tuvren/core/messages";
-import type { TuvrenModelResponse, TuvrenPrompt } from "@tuvren/core/provider";
+import type { Binding } from "@tuvren/core/capabilities";
+import type {
+  ProviderMediatedToolConfig,
+  ProviderNativeToolDeclaration,
+  TuvrenModelResponse,
+  TuvrenPrompt,
+} from "@tuvren/core/provider";
 import type { RenderedToolDefinition } from "@tuvren/core/tools";
 
 export interface PreparedPromptState {
@@ -94,6 +100,16 @@ export function preparePromptState(input: {
   ] satisfies TuvrenMessage[];
   const tools = cloneValue(input.tools);
   const config = toPromptConfig(input.config.model);
+  const admittedNativeTools = admitProviderTools(
+    input.config.providerNativeTools,
+    "provider-native",
+    input.config
+  );
+  const admittedMediatedTools = admitProviderTools(
+    input.config.providerMediatedTools,
+    "provider-mediated",
+    input.config
+  );
   const prompt: TuvrenPrompt = {
     config,
     messages: baseMessages,
@@ -102,6 +118,12 @@ export function preparePromptState(input: {
         ? undefined
         : cloneValue(input.config.responseFormat),
     tools: tools.length === 0 ? undefined : tools,
+    ...(admittedNativeTools.length > 0
+      ? { providerNativeTools: admittedNativeTools }
+      : {}),
+    ...(admittedMediatedTools.length > 0
+      ? { providerMediatedTools: admittedMediatedTools }
+      : {}),
   };
 
   return {
@@ -333,4 +355,49 @@ function resolveAroundModelSurface<T>(input: {
 
 function surfacesMatch(left: unknown, right: unknown): boolean {
   return isDeepStrictEqual(left, right);
+}
+
+// ---------------------------------------------------------------------------
+// Provider-native / provider-mediated binding registration + policy (AY002/AY004)
+// ---------------------------------------------------------------------------
+
+function admitProviderTools<T extends ProviderNativeToolDeclaration | ProviderMediatedToolConfig>(
+  tools: T[] | undefined,
+  executionClass: "provider-native" | "provider-mediated",
+  config: AgentConfig
+): T[] {
+  if (tools === undefined || tools.length === 0) {
+    return [];
+  }
+
+  const admitted: T[] = [];
+
+  for (const tool of tools) {
+    const capabilityId =
+      (tool as { capabilityId?: string }).capabilityId ?? tool.name;
+
+    // Invocation-time policy check per ADR-046 §4.21. When no engine is
+    // configured, all provider tools are admitted. Construct the binding
+    // inline — the resolver factory lives in @tuvren/runtime which would
+    // create a circular dependency here.
+    if (config.capabilityPolicyEngine !== undefined) {
+      const binding: Binding = {
+        capabilityId,
+        endpoint: { id: "provider-runtime", kind: "provider-runtime" },
+        executionClass,
+      };
+      const decision = config.capabilityPolicyEngine.evaluateInvocation(
+        binding,
+        // Context dimensions land in Epic BB; baseline engine is context-insensitive.
+        { modelId: "", permissions: [], providerId: "" }
+      );
+      if (!decision.admitted) {
+        continue;
+      }
+    }
+
+    admitted.push(tool);
+  }
+
+  return admitted;
 }

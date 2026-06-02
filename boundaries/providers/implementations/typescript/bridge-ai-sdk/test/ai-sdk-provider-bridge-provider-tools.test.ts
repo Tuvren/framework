@@ -155,14 +155,14 @@ describe("provider-bridge-ai-sdk provider-native tools", () => {
       ],
     });
 
-    // The response should contain a ToolCallPart + ToolResultPart pair with provider attribution
-    const toolCallPart = response.parts.find((p) => p.type === "tool_call");
-    const toolResultPart = response.parts.find((p) => p.type === "tool_result");
-    expect(toolCallPart).toBeDefined();
-    expect(toolResultPart).toBeDefined();
-    expect((toolCallPart as { providerMetadata?: Record<string, unknown> }).providerMetadata?.["owner"]).toBe("provider");
-    expect((toolResultPart as { providerMetadata?: Record<string, unknown> }).providerMetadata?.["owner"]).toBe("provider");
-    expect((toolCallPart as { providerMetadata?: Record<string, unknown> }).providerMetadata?.["executionClass"]).toBe("provider-native");
+    // Provider-native results appear in providerToolResults (separate from parts)
+    expect(response.providerToolResults).toBeDefined();
+    expect(response.providerToolResults).toHaveLength(1);
+    const record = response.providerToolResults?.[0];
+    expect(record?.name).toBe("code_execution");
+    expect(record?.executionClass).toBe("provider-native");
+    // Should NOT contaminate parts with tool_call/tool_result
+    expect(response.parts.some((p) => p.type === "tool_call" || p.type === "tool_result")).toBe(false);
   });
 
   test("still rejects undeclared provider-owned tool results (baseline protection)", async () => {
@@ -321,12 +321,12 @@ describe("provider-bridge-ai-sdk provider-mediated tools", () => {
       ],
     });
 
-    const toolCallPart = response.parts.find((p) => p.type === "tool_call");
-    const toolResultPart = response.parts.find((p) => p.type === "tool_result");
-    expect(toolCallPart).toBeDefined();
-    expect(toolResultPart).toBeDefined();
-    expect((toolCallPart as { providerMetadata?: Record<string, unknown> }).providerMetadata?.["owner"]).toBe("provider");
-    expect((toolCallPart as { providerMetadata?: Record<string, unknown> }).providerMetadata?.["executionClass"]).toBe("provider-mediated");
+    expect(response.providerToolResults).toBeDefined();
+    expect(response.providerToolResults).toHaveLength(1);
+    const record = response.providerToolResults?.[0];
+    expect(record?.name).toBe("mcp_tool");
+    expect(record?.executionClass).toBe("provider-mediated");
+    expect(response.parts.some((p) => p.type === "tool_call" || p.type === "tool_result")).toBe(false);
   });
 
   test("yields provider_tool_result chunk with executionClass provider-mediated for declared mediated tool in stream", async () => {

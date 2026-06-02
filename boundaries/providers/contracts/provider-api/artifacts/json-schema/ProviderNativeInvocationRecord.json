@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/providers/provider-api/ProviderNativeInvocationRecord.json",
+  "type": "object",
+  "properties": {
+    "callId": {
+      "$ref": "https://tuvren.dev/schemas/providers/provider-api/NonEmptyString.json"
+    },
+    "name": {
+      "$ref": "https://tuvren.dev/schemas/providers/provider-api/NonEmptyString.json"
+    },
+    "result": {},
+    "isError": {
+      "type": "boolean"
+    },
+    "executionClass": {
+      "anyOf": [
+        {
+          "type": "string",
+          "const": "provider-native"
+        },
+        {
+          "type": "string",
+          "const": "provider-mediated"
+        }
+      ]
+    },
+    "providerCallId": {
+      "$ref": "https://tuvren.dev/schemas/providers/provider-api/NonEmptyString.json"
+    },
+    "providerMetadata": {
+      "$ref": "https://tuvren.dev/schemas/providers/provider-api/Metadata.json"
+    }
+  },
+  "required": ["callId", "name", "result", "executionClass", "providerCallId"],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "Record of a single provider-native or provider-mediated tool invocation. (AY002/AY004)"
+}

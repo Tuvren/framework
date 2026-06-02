@@ -319,9 +319,23 @@ union ProviderStreamChunk {
   error: ErrorChunk,
 }
 
+/** Record of a single provider-native or provider-mediated tool invocation. (AY002/AY004) */
+model ProviderNativeInvocationRecord {
+  callId: NonEmptyString;
+  name: NonEmptyString;
+  result: unknown;
+  isError?: boolean;
+  executionClass: "provider-native" | "provider-mediated";
+  providerCallId: NonEmptyString;
+  providerMetadata?: Metadata;
+}
+
 model TuvrenModelResponse {
   finishReason: FinishReason;
   parts: ContentPart[];
+  // Provider-native and provider-mediated invocation records, separate from parts
+  // so they do not contaminate the model-facing content flow. (AY002/AY004)
+  providerToolResults?: ProviderNativeInvocationRecord[];
   usage?: ProviderUsage;
   providerMetadata?: Metadata;
 }

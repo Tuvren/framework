@@ -12,6 +12,12 @@
         "$ref": "https://tuvren.dev/schemas/providers/provider-api/ContentPart.json"
       }
     },
+    "providerToolResults": {
+      "type": "array",
+      "items": {
+        "$ref": "https://tuvren.dev/schemas/providers/provider-api/ProviderNativeInvocationRecord.json"
+      }
+    },
     "usage": {
       "$ref": "https://tuvren.dev/schemas/providers/provider-api/ProviderUsage.json"
     },

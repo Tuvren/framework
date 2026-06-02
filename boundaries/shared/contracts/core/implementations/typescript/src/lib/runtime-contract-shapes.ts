@@ -209,9 +209,27 @@ export type ProviderStreamChunk =
     }
   | { type: "error"; error: unknown };
 
+/** Record of a single provider-native or provider-mediated invocation result. (AY002/AY004) */
+export interface ProviderNativeInvocationRecord {
+  callId: string;
+  name: string;
+  result: unknown;
+  isError?: boolean;
+  executionClass: "provider-native" | "provider-mediated";
+  providerCallId: string;
+  providerMetadata?: Record<string, unknown>;
+}
+
 export interface TuvrenModelResponse {
   finishReason: "stop" | "tool_call" | "length" | "error" | "content_filter";
   parts: ContentPart[];
+  /**
+   * Provider-native and provider-mediated invocation records. These are
+   * separate from `parts` so they do not contaminate the model-facing content
+   * flow and the framework never routes them through the Tool Execution Gateway.
+   * The driver processes these into pre-staged tool results. (AY002/AY004)
+   */
+  providerToolResults?: ProviderNativeInvocationRecord[];
   providerMetadata?: Record<string, unknown>;
   usage?: ProviderUsage;
 }
@@ -958,6 +976,18 @@ export interface AgentConfig {
   serverExecution?: ServerExecutionConfig;
   systemPrompt?: string;
   tools?: TuvrenToolDefinition[];
+  /**
+   * Provider-native tool declarations for this agent. The provider owns
+   * execution; Tuvren enables/configures the surface and records provider-
+   * exposed events/results only. Policy is applied before the request is sent.
+   * (AY002)
+   */
+  providerNativeTools?: ProviderNativeToolDeclaration[];
+  /**
+   * Provider-mediated tool configurations for this agent. The developer
+   * supplies the endpoint; the provider invokes it. (AY004)
+   */
+  providerMediatedTools?: ProviderMediatedToolConfig[];
 }
 
 export interface ExecutionStatus {

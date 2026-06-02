@@ -20,6 +20,7 @@
 // the broad root facade so the dependency shape stays as narrow as the surface.
 export type {
   ProviderMediatedToolConfig,
+  ProviderNativeInvocationRecord,
   ProviderNativeToolDeclaration,
   ProviderStreamChunk,
   ProviderUsage,

@@ -65,6 +65,7 @@ export interface GenerateResultHelpers {
 
 interface GenerateResultState {
   parts: TuvrenModelResponse["parts"];
+  providerToolResults: NonNullable<TuvrenModelResponse["providerToolResults"]>;
   responseFormat?: StructuredOutputRequest;
   sources: unknown[];
   structuredChunks: string[];
@@ -79,6 +80,7 @@ export function mapGenerateResult(
 ): TuvrenModelResponse {
   const state: GenerateResultState = {
     parts: [],
+    providerToolResults: [],
     responseFormat,
     sources: [],
     structuredChunks: [],
@@ -103,6 +105,9 @@ export function mapGenerateResult(
       hasToolCalls: state.parts.some((part) => part.type === "tool_call"),
     }),
     parts: state.parts,
+    ...(state.providerToolResults.length > 0
+      ? { providerToolResults: state.providerToolResults }
+      : {}),
     ...(providerMetadata === undefined
       ? {}
       : {
@@ -140,9 +145,9 @@ function appendGenerateContentPart(
       if (providerToolClassLookup !== undefined) {
         const executionClass = providerToolClassLookup(contentPart.toolName);
         if (executionClass !== undefined) {
-          for (const part of mapProviderNativeGenerateResult(contentPart, executionClass)) {
-            state.parts.push(part);
-          }
+          state.providerToolResults.push(
+            mapProviderNativeGenerateResult(contentPart, executionClass)
+          );
           return;
         }
       }
@@ -182,39 +187,18 @@ function mapProviderNativeGenerateResult(
     { type: "tool-result" }
   >,
   executionClass: "provider-native" | "provider-mediated"
-): [
-  Extract<TuvrenModelResponse["parts"][number], { type: "tool_call" }>,
-  Extract<TuvrenModelResponse["parts"][number], { type: "tool_result" }>,
-] {
+): NonNullable<TuvrenModelResponse["providerToolResults"]>[number] {
   const callId = randomUUID();
   const providerMetadata = sanitizeRecord(contentPart.providerMetadata);
-  const attribution = {
+  return {
+    callId,
     executionClass,
-    owner: "provider",
-  };
-  const toolCallPart: Extract<TuvrenModelResponse["parts"][number], { type: "tool_call" }> = {
-    callId,
-    input: {},
-    name: contentPart.toolName,
-    providerMetadata: {
-      ...(providerMetadata ?? {}),
-      providerCallId: contentPart.toolCallId,
-      ...attribution,
-    },
-    type: "tool_call",
-  };
-  const toolResultPart: Extract<TuvrenModelResponse["parts"][number], { type: "tool_result" }> = {
-    callId,
     ...(contentPart.isError === true ? { isError: true } : {}),
     name: contentPart.toolName,
-    output: sanitizeMetadataValue(contentPart.result) ?? null,
-    providerMetadata: {
-      providerCallId: contentPart.toolCallId,
-      ...attribution,
-    },
-    type: "tool_result",
+    providerCallId: contentPart.toolCallId,
+    ...(providerMetadata === undefined ? {} : { providerMetadata }),
+    result: sanitizeMetadataValue(contentPart.result) ?? null,
   };
-  return [toolCallPart, toolResultPart];
 }
 
 function appendGenerateTextPart(

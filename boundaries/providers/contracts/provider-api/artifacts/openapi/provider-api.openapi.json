@@ -163,6 +163,42 @@
           "not": {}
         }
       },
+      "ProviderNativeInvocationRecord": {
+        "type": "object",
+        "required": [
+          "callId",
+          "name",
+          "result",
+          "executionClass",
+          "providerCallId"
+        ],
+        "properties": {
+          "callId": {
+            "$ref": "#/components/schemas/NonEmptyString"
+          },
+          "name": {
+            "$ref": "#/components/schemas/NonEmptyString"
+          },
+          "result": {},
+          "isError": {
+            "type": "boolean"
+          },
+          "executionClass": {
+            "type": "string",
+            "enum": ["provider-native", "provider-mediated"]
+          },
+          "providerCallId": {
+            "$ref": "#/components/schemas/NonEmptyString"
+          },
+          "providerMetadata": {
+            "$ref": "#/components/schemas/Metadata"
+          }
+        },
+        "unevaluatedProperties": {
+          "not": {}
+        },
+        "description": "Record of a single provider-native or provider-mediated tool invocation. (AY002/AY004)"
+      },
       "ProviderNativeToolDeclaration": {
         "type": "object",
         "required": ["id", "name"],
@@ -650,6 +686,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ContentPart"
+            }
+          },
+          "providerToolResults": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProviderNativeInvocationRecord"
             }
           },
           "usage": {

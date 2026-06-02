@@ -35,6 +35,7 @@ import type {
   TuvrenMessage,
 } from "@tuvren/core/messages";
 import type {
+  ProviderNativeInvocationRecord,
   TuvrenModelResponse,
   TuvrenPrompt,
   TuvrenProvider,
@@ -205,6 +206,9 @@ async function executeIteration(
     });
   }
 
+  // Provider responses must not contain tool_result parts — but provider-native
+  // invocation results arrive in the separate providerToolResults field (AY002/AY004),
+  // so this guard only checks for unexpected tool_result contamination in parts.
   if (response.parts.some((part) => part.type === "tool_result")) {
     throw new TuvrenRuntimeError(
       "provider responses must not contain tool_result parts",
@@ -248,6 +252,12 @@ async function executeIteration(
   const requestsTools = assistantMessage.parts.some(
     (part) => part.type === "tool_call"
   );
+
+  // Build a pre-staged tool message for provider-native/mediated results so the
+  // framework does not route them through the Tool Execution Gateway. (AY002/AY004)
+  const prestagedToolMessage = buildPrestagedProviderToolMessage(
+    response.providerToolResults
+  );
   const stateUpdates =
     execution.stateUpdates.length === 0
       ? undefined
@@ -255,6 +265,13 @@ async function executeIteration(
           extensionName: update.extensionName,
           state: cloneValue(update.state),
         }));
+  // Build the messages array. When provider-native results exist, include the
+  // pre-staged tool message so the framework does not dispatch those results
+  // to the Tool Execution Gateway. (AY002/AY004)
+  const driverMessages = prestagedToolMessage !== undefined
+    ? [assistantMessage, prestagedToolMessage]
+    : [assistantMessage];
+
   if (cancelled) {
     return {
       ...(execution.assistantEventReconciliation === undefined
@@ -263,7 +280,7 @@ async function executeIteration(
             assistantEventReconciliation:
               execution.assistantEventReconciliation,
           }),
-      messages: [assistantMessage],
+      messages: driverMessages,
       partial: true,
       resolution: createExecutionCancelledResolution(),
       stateUpdates,
@@ -295,7 +312,7 @@ async function executeIteration(
               assistantEventReconciliation:
                 execution.assistantEventReconciliation,
             }),
-        messages: [assistantMessage],
+        messages: driverMessages,
         resolution: iterationDecisionToResolution(iterationDecision),
         stateUpdates,
         toolExecutionMode: resolveToolExecutionMode(
@@ -311,7 +328,7 @@ async function executeIteration(
               assistantEventReconciliation:
                 execution.assistantEventReconciliation,
             }),
-        messages: [assistantMessage],
+        messages: driverMessages,
         resolution: iterationDecisionToResolution(iterationDecision),
         stateUpdates,
       };
@@ -772,4 +789,37 @@ function stripUndefinedDeep<T>(value: T): T {
   }
 
   return value;
+}
+
+// ---------------------------------------------------------------------------
+// Provider-native / provider-mediated pre-staged tool message (AY002/AY004)
+// ---------------------------------------------------------------------------
+
+function buildPrestagedProviderToolMessage(
+  providerToolResults: ProviderNativeInvocationRecord[] | undefined
+): Extract<TuvrenMessage, { role: "tool" }> | undefined {
+  if (providerToolResults === undefined || providerToolResults.length === 0) {
+    return undefined;
+  }
+
+  const parts = providerToolResults.map((record) => ({
+    callId: record.callId,
+    ...(record.isError === true ? { isError: true as const } : {}),
+    name: record.name,
+    output: record.result,
+    providerMetadata: {
+      executionClass: record.executionClass,
+      owner: "provider",
+      providerCallId: record.providerCallId,
+      ...(record.providerMetadata ?? {}),
+    },
+    type: "tool_result" as const,
+  }));
+
+  const [first, ...rest] = parts;
+
+  return {
+    parts: [first, ...rest],
+    role: "tool",
+  };
 }
