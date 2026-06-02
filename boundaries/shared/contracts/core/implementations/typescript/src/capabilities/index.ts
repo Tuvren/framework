@@ -31,4 +31,5 @@ export type {
   InvocationDecision,
   InvocationOwner,
   ToolSurface,
+  TuvrenSandboxExecutor,
 } from "../lib/capability-shapes.js";

@@ -40,6 +40,7 @@ export type {
   StructuredDoneEvent,
   TextDeltaEvent,
   TextDoneEvent,
+  ToolAuditEvent,
   ToolCallArgsDeltaEvent,
   ToolCallDoneEvent,
   ToolCallStartEvent,

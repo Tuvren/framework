@@ -186,6 +186,21 @@ export interface CapabilityPolicyContext {
 }
 
 /**
+ * Interface for a server sandbox executor — a host-provided isolated execution
+ * environment for Tuvren-server capabilities bound to the tuvren-sandbox endpoint
+ * kind. The runtime calls this interface when dispatching a sandboxed capability
+ * invocation, giving the host full control over the isolation boundary (e.g. a
+ * subprocess, VM, or container).
+ *
+ * The context parameter carries callId, name, signal, emit, and forward — the
+ * same ToolExecutionContext the host sees on regular tool.execute callbacks.
+ * (AX004)
+ */
+export interface TuvrenSandboxExecutor {
+  execute(input: unknown, context: unknown): Promise<unknown> | unknown;
+}
+
+/**
  * Two-decision-point framework-owned policy gate per ADR-046 §4.21.
  * The implementation lives in @tuvren/runtime; the interface here so hosts
  * can configure and AgentConfig can type it without a circular dependency.

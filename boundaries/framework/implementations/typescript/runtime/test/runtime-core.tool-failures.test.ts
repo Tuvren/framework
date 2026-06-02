@@ -638,6 +638,7 @@ describe("framework-runtime-core", () => {
       isError: true,
       name: "custom",
       output: {
+        code: "tool_input_validation_failed",
         details: {
           error: "validator exploded",
         },

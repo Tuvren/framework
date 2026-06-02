@@ -103,6 +103,7 @@ const STREAM_EVENT_TYPES = new Set([
   "message.done",
   "tool.start",
   "tool.result",
+  "tool.audit",
   "approval.requested",
   "approval.resolved",
   "steering.incorporated",
@@ -112,6 +113,13 @@ const STREAM_EVENT_TYPES = new Set([
   "custom",
 ]);
 const TURN_END_STATUSES = new Set(["completed", "paused", "failed"]);
+const TOOL_AUDIT_LIFECYCLES = new Set([
+  "input_validated",
+  "output_validated",
+  "retry_attempt",
+  "rate_limited",
+  "cancelled",
+]);
 const EXECUTION_PHASES = new Set(["running", "paused", "completed", "failed"]);
 const SYSTEM_MESSAGE_KEYS = new Set(["role", "content"]);
 const USER_MESSAGE_KEYS = new Set(["role", "parts"]);
@@ -150,9 +158,12 @@ const TOOL_DEFINITION_KEYS = new Set([
   "approval",
   "description",
   "execute",
+  "idempotent",
   "inputSchema",
+  "maxRetries",
   "metadata",
   "name",
+  "outputSchema",
   "timeout",
 ]);
 const EXECUTION_STATUS_KEYS = new Set([
@@ -587,6 +598,31 @@ function hasValidStreamEventPayload(
           isOptionalBooleanProperty(value, "isError") &&
           isOptionalCapabilityAttribution(value)
       );
+    case "tool.audit":
+      return matchesStreamEventVariant(
+        value,
+        [
+          "callId",
+          "capabilityId",
+          "executionClass",
+          "lifecycle",
+          "runId",
+          "turnId",
+          "attempt",
+          "validationPassed",
+        ],
+        () =>
+          isNonEmptyStringProperty(value, "callId") &&
+          isNonEmptyStringProperty(value, "capabilityId") &&
+          isNonEmptyStringProperty(value, "executionClass") &&
+          isNonEmptyStringProperty(value, "lifecycle") &&
+          TOOL_AUDIT_LIFECYCLES.has(value.lifecycle as string) &&
+          isNonEmptyStringProperty(value, "runId") &&
+          isNonEmptyStringProperty(value, "turnId") &&
+          (value.attempt === undefined || typeof value.attempt === "number") &&
+          (value.validationPassed === undefined ||
+            typeof value.validationPassed === "boolean")
+      );
     case "approval.requested":
       return matchesStreamEventVariant(value, ["request"], () =>
         isApprovalRequest(value.request)
@@ -657,7 +693,13 @@ export function isTuvrenToolDefinition(
       typeof value.execute === "function" &&
       isKrakenToolSchema(value.inputSchema) &&
       isOptionalApprovalPolicy(value, "approval") &&
+      (value.idempotent === undefined ||
+        typeof value.idempotent === "boolean") &&
+      (value.maxRetries === undefined ||
+        typeof value.maxRetries === "number") &&
       isOptionalSerializableRecordProperty(value, "metadata") &&
+      (value.outputSchema === undefined ||
+        isKrakenToolSchema(value.outputSchema)) &&
       isOptionalTimeoutProperty(value, "timeout")
   );
 }

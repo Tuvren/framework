@@ -15,7 +15,15 @@
  */
 
 import type { EpochMs, HashString } from "@tuvren/core";
-import type { CapabilityPolicyEngine } from "@tuvren/core/capabilities";
+import type {
+  CapabilityPolicyEngine,
+  TuvrenSandboxExecutor,
+} from "@tuvren/core/capabilities";
+import {
+  TOOL_INPUT_VALIDATION_FAILED,
+  TOOL_INVOCATION_RATE_LIMITED,
+  TOOL_RESULT_VALIDATION_FAILED,
+} from "@tuvren/core/errors";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type { ContextManifest } from "@tuvren/core/execution";
 import type {
@@ -37,6 +45,7 @@ import {
   buildSharedExports,
   type ExtensionStateUpdate,
 } from "./extension-runtime.js";
+import type { ServerRateLimiter } from "./server-rate-limiter.js";
 import {
   applyApprovalDecisionMetadata,
   composeAbortSignals,
@@ -48,6 +57,8 @@ import {
   createRejectedToolResult,
   createToolExecutionContext,
   createToolStartBarrier,
+  createValidationErrorToolResult,
+  emitToolAuditEvent,
   emitToolStartIfNeeded,
   evaluateApprovalPolicy,
   getAroundToolHandlers,
@@ -63,6 +74,7 @@ import {
   ToolPauseSignal,
   toExecutableToolCall,
   validateToolInput,
+  validateToolOutput,
   zipStagedToolResults,
 } from "./tool-execution-helpers.js";
 import { resolveToolDefinition } from "./tool-registry.js";
@@ -85,7 +97,21 @@ export interface ToolBatchEnvironment {
   publishCustom(event: { data: unknown; name: string }): void;
   publishEvent(event: TuvrenStreamEvent): void;
   reportSoftError(error: Error): void;
+  /**
+   * Optional sandbox executor registry keyed by endpoint id. When a tool
+   * declares metadata.sandbox.endpointId, the gateway looks up the executor
+   * here and calls it instead of tool.execute. (AX004)
+   */
+  resolveSandboxExecutor?(
+    endpointId: string
+  ): TuvrenSandboxExecutor | undefined;
   runId: string;
+  /**
+   * Optional per-tenant rate limiter for the Tuvren-server execution class.
+   * Each runtime instance creates its own limiter from AgentConfig.serverExecution,
+   * so invocations from one tenant cannot consume another tenant's budget. (AX003)
+   */
+  serverExecutionRateLimiter?: ServerRateLimiter;
   signal?: AbortSignal;
   stageResult(result: ToolResultPart, orderIndex: number): Promise<HashString>;
   threadId: string;
@@ -109,6 +135,8 @@ export interface ExecutableToolCall {
   approvalAudit?: EditedApprovalAudit;
   approvalDecision?: ApprovalDecision;
   input: unknown;
+  /** Sandbox executor resolved from metadata.sandbox.endpointId. (AX004) */
+  sandboxExecutor?: TuvrenSandboxExecutor;
   tool: TuvrenToolDefinition;
   toolCall: ToolCallPart;
 }
@@ -431,10 +459,21 @@ async function resolveExecutableToolCall(
 
   const validation = validateToolInput(tool, toolCall.input);
 
+  emitToolAuditEvent(
+    environment,
+    toolCall.callId,
+    toolCall.name,
+    "input_validated",
+    {
+      validationPassed: validation.valid,
+    }
+  );
+
   if (!validation.valid) {
     return {
-      result: createErrorToolResult(
+      result: createValidationErrorToolResult(
         toolCall,
+        TOOL_INPUT_VALIDATION_FAILED,
         "Tool input failed validation.",
         validation.details
       ),
@@ -467,6 +506,41 @@ async function resolveExecutableToolCall(
     }
   }
 
+  // Rate-limit check for Tuvren-server execution class per §4.21 / AX003.
+  // Invocations beyond the configured budget are rejected with a typed result
+  // rather than executed, preserving tenant isolation without error propagation.
+  if (
+    environment.serverExecutionRateLimiter !== undefined &&
+    !environment.serverExecutionRateLimiter.tryAcquire()
+  ) {
+    emitToolAuditEvent(
+      environment,
+      toolCall.callId,
+      toolCall.name,
+      "rate_limited"
+    );
+    return {
+      result: createValidationErrorToolResult(
+        toolCall,
+        TOOL_INVOCATION_RATE_LIMITED,
+        `Tool "${tool.name}" invocation rejected: server execution rate limit exceeded.`
+      ),
+    };
+  }
+
+  // Resolve sandbox executor for tools declared with metadata.sandbox.endpointId.
+  // The resolver produces endpoint.id = "sandbox:<endpointId>"; we strip the
+  // prefix before the lookup so AgentConfig.sandboxExecutors is keyed by the
+  // raw endpointId the host declared in metadata.sandbox.endpointId. (AX004)
+  const binding = createBindingResolver().resolveFromToolDefinition(tool);
+  let sandboxExecutor: TuvrenSandboxExecutor | undefined;
+  if (
+    binding.endpoint.kind === "tuvren-sandbox" &&
+    environment.resolveSandboxExecutor !== undefined
+  ) {
+    sandboxExecutor = environment.resolveSandboxExecutor(binding.endpoint.id);
+  }
+
   const toolContext = createToolExecutionContext(
     toolCall,
     tool,
@@ -491,6 +565,7 @@ async function resolveExecutableToolCall(
   return {
     executable: {
       input: validation.value,
+      sandboxExecutor,
       tool,
       toolCall,
     },
@@ -600,13 +675,14 @@ function resolveResumeDecision(
 
   if (!validation.valid) {
     return {
-      result: createErrorToolResult(
+      result: createValidationErrorToolResult(
         {
           callId: pendingToolCall.callId,
           input,
           name: pendingToolCall.name,
           type: "tool_call",
         },
+        TOOL_INPUT_VALIDATION_FAILED,
         "Approved tool input failed validation.",
         {
           decisionType: decision.type,
@@ -656,93 +732,122 @@ async function executeSingleTool(
     },
   }
 ): Promise<SingleToolOutcome> {
-  try {
-    const sharedExports = buildSharedExports(
-      environment.extensions,
-      environment.manifest
-    );
-    const outcome = await runAroundToolHandlers(
-      getAroundToolHandlers(environment.extensions, toolCall.tool.name),
-      0,
-      toolCall,
-      environment,
-      sharedExports,
-      toolStartState,
-      startBarrier
-    );
+  // Idempotent retry per §4.21 / AX002. Non-idempotent tools are never
+  // retried. maxRetries defaults to 1 when idempotent is true and unset.
+  const maxAttempts =
+    toolCall.tool.idempotent === true ? 1 + (toolCall.tool.maxRetries ?? 1) : 1;
 
-    if (outcome.approval !== undefined) {
-      const completedResultHashes = await stageAndEmitResults(
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    // Do not retry when the environment signal is already aborted.
+    if (attempt > 0 && environment.signal?.aborted) {
+      break;
+    }
+
+    // Emit a retry_attempt audit event for each attempt after the first. (AX005)
+    if (attempt > 0) {
+      emitToolAuditEvent(
         environment,
-        outcome.approval.completedResults,
+        toolCall.toolCall.callId,
+        toolCall.tool.name,
+        "retry_attempt",
+        { attempt }
+      );
+    }
+
+    try {
+      const sharedExports = buildSharedExports(
+        environment.extensions,
+        environment.manifest
+      );
+      const outcome = await runAroundToolHandlers(
+        getAroundToolHandlers(environment.extensions, toolCall.tool.name),
+        0,
+        toolCall,
+        environment,
+        sharedExports,
+        toolStartState,
+        startBarrier
+      );
+
+      if (outcome.approval !== undefined) {
+        const completedResultHashes = await stageAndEmitResults(
+          environment,
+          outcome.approval.completedResults,
+          orderIndex,
+          startBarrier
+        );
+        return {
+          approval: outcome.approval,
+          completedResultHashes,
+          updates: outcome.updates,
+        };
+      }
+
+      const result = applyApprovalDecisionMetadata(
+        outcome.result,
+        toolCall.approvalDecision,
+        toolCall.approvalAudit
+      );
+      const resultHash = await stageAndEmitResult(
+        environment,
+        result,
         orderIndex,
         startBarrier
       );
+
       return {
-        approval: outcome.approval,
-        completedResultHashes,
+        resultHash,
+        result,
         updates: outcome.updates,
       };
+    } catch (error: unknown) {
+      if (error instanceof ToolPauseSignal) {
+        await settleToolStartIfNeeded(toolStartState, startBarrier);
+        const completedResultHashes = await stageAndEmitResults(
+          environment,
+          error.approval.completedResults,
+          orderIndex,
+          startBarrier
+        );
+        return {
+          approval: error.approval,
+          completedResultHashes,
+          updates: error.updates,
+        };
+      }
+
+      if (isApprovalRequestValidationError(error)) {
+        await settleToolStartIfNeeded(toolStartState, startBarrier);
+        throw error;
+      }
+
+      lastError = error;
+      // Continue to next attempt if retries remain; fall through to
+      // failure path after the loop when this was the last attempt.
     }
-
-    const result = applyApprovalDecisionMetadata(
-      outcome.result,
-      toolCall.approvalDecision,
-      toolCall.approvalAudit
-    );
-    const resultHash = await stageAndEmitResult(
-      environment,
-      result,
-      orderIndex,
-      startBarrier
-    );
-
-    return {
-      resultHash,
-      result,
-      updates: outcome.updates,
-    };
-  } catch (error: unknown) {
-    if (error instanceof ToolPauseSignal) {
-      await settleToolStartIfNeeded(toolStartState, startBarrier);
-      const completedResultHashes = await stageAndEmitResults(
-        environment,
-        error.approval.completedResults,
-        orderIndex,
-        startBarrier
-      );
-      return {
-        approval: error.approval,
-        completedResultHashes,
-        updates: error.updates,
-      };
-    }
-
-    if (isApprovalRequestValidationError(error)) {
-      await settleToolStartIfNeeded(toolStartState, startBarrier);
-      throw error;
-    }
-
-    const result = createExecutionFailureResult(
-      toolCall.toolCall,
-      error,
-      toolCall.approvalDecision,
-      toolCall.approvalAudit
-    );
-    await settleToolStartIfNeeded(toolStartState, startBarrier);
-    const resultHash = await stageAndEmitResult(
-      environment,
-      result,
-      orderIndex,
-      startBarrier
-    );
-
-    return {
-      resultHash,
-      result,
-      updates: [],
-    };
   }
+
+  const result = createExecutionFailureResult(
+    toolCall.toolCall,
+    lastError,
+    toolCall.approvalDecision,
+    toolCall.approvalAudit
+  );
+  await settleToolStartIfNeeded(toolStartState, startBarrier);
+  const resultHash = await stageAndEmitResult(
+    environment,
+    result,
+    orderIndex,
+    startBarrier
+  );
+
+  return {
+    resultHash,
+    result,
+    updates: [],
+  };
 }
 
 async function executeConcurrentToolCalls(
@@ -839,6 +944,62 @@ async function executeToolCallWave(
   return successfulOutcomes;
 }
 
+type OutputValidationResult =
+  | { ok: true; resolved: unknown }
+  | { ok: false; outcome: RawSingleToolOutcome };
+
+function applyOutputValidation(
+  toolCall: ExecutableToolCall,
+  output: unknown,
+  environment: ToolBatchEnvironment
+): OutputValidationResult {
+  if (toolCall.tool.outputSchema === undefined) {
+    return { ok: true, resolved: output };
+  }
+  const isDirectResult = isDirectToolResult(output, toolCall);
+  const isErrorResult =
+    isDirectResult && (output as ToolResultPart).isError === true;
+  if (isErrorResult) {
+    return { ok: true, resolved: output };
+  }
+  const valueToValidate = isDirectResult
+    ? (output as ToolResultPart).output
+    : output;
+  const outputValidation = validateToolOutput(
+    toolCall.tool.outputSchema,
+    valueToValidate
+  );
+  emitToolAuditEvent(
+    environment,
+    toolCall.toolCall.callId,
+    toolCall.tool.name,
+    "output_validated",
+    {
+      validationPassed: outputValidation.valid,
+    }
+  );
+  if (!outputValidation.valid) {
+    return {
+      ok: false,
+      outcome: {
+        result: createValidationErrorToolResult(
+          toolCall.toolCall,
+          TOOL_RESULT_VALIDATION_FAILED,
+          "Tool output failed validation.",
+          outputValidation.details
+        ),
+        updates: [],
+      },
+    };
+  }
+  // Forward the (potentially coerced) validated value, mirroring the
+  // input path which uses validation.value at resolveExecutableToolCall.
+  const resolved = isDirectResult
+    ? { ...(output as ToolResultPart), output: outputValidation.value }
+    : outputValidation.value;
+  return { ok: true, resolved };
+}
+
 async function runAroundToolHandlers(
   handlers: Array<{
     extensionName: string;
@@ -863,18 +1024,26 @@ async function runAroundToolHandlers(
     );
     let output: unknown;
 
+    const executionContext = createToolExecutionContext(
+      toolCall.toolCall,
+      toolCall.tool,
+      environment,
+      composeAbortSignals(environment.signal, timeoutController.signal)
+    );
+    // Sandbox tools (endpoint.kind === "tuvren-sandbox") use the registered
+    // sandbox executor instead of tool.execute. (AX004)
+    const executeFunction =
+      toolCall.sandboxExecutor === undefined
+        ? (input: unknown) => toolCall.tool.execute(input, executionContext)
+        : (input: unknown) =>
+            (toolCall.sandboxExecutor as TuvrenSandboxExecutor).execute(
+              input,
+              executionContext
+            );
+
     try {
       output = await runWithTimeout(
-        () =>
-          toolCall.tool.execute(
-            toolCall.input,
-            createToolExecutionContext(
-              toolCall.toolCall,
-              toolCall.tool,
-              environment,
-              composeAbortSignals(environment.signal, timeoutController.signal)
-            )
-          ),
+        () => executeFunction(toolCall.input),
         toolCall.tool.timeout,
         () =>
           new Error(
@@ -893,9 +1062,17 @@ async function runAroundToolHandlers(
 
     await startPromise;
 
-    if (isDirectToolResult(output, toolCall)) {
+    // Output validation per §4.21 / AX001. Extracted to applyOutputValidation
+    // to keep runAroundToolHandlers below the cognitive-complexity threshold.
+    const validation = applyOutputValidation(toolCall, output, environment);
+    if (!validation.ok) {
+      return validation.outcome;
+    }
+    const resolvedOutput = validation.resolved;
+
+    if (isDirectToolResult(resolvedOutput, toolCall)) {
       return {
-        result: output,
+        result: resolvedOutput as ToolResultPart,
         updates: [],
       };
     }
@@ -904,7 +1081,7 @@ async function runAroundToolHandlers(
       result: {
         callId: toolCall.toolCall.callId,
         name: toolCall.tool.name,
-        output,
+        output: resolvedOutput,
         type: "tool_result",
       },
       updates: [],

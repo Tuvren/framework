@@ -256,6 +256,7 @@ describe("framework-runtime-core", () => {
           },
           type: "edit",
         },
+        code: "tool_input_validation_failed",
         details: {
           decisionType: "edit",
           validation: expect.anything(),

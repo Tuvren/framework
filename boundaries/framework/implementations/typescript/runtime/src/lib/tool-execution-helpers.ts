@@ -207,6 +207,9 @@ export function toExecutableToolCall(
     approvalAudit: base.approvalAudit,
     approvalDecision: nextContext.approvalDecision ?? base.approvalDecision,
     input: nextContext.input,
+    // Preserve sandbox executor so aroundTool handlers that call next(context)
+    // do not silently bypass the configured isolation boundary. (AX004)
+    sandboxExecutor: base.sandboxExecutor,
     tool: nextContext.tool,
     toolCall: nextContext.toolCall,
   };
@@ -314,6 +317,44 @@ export async function evaluateApprovalPolicy(
   context: ToolExecutionContext
 ): Promise<boolean> {
   return typeof policy === "function" ? await policy(input, context) : policy;
+}
+
+export function validateToolOutput(
+  schema: NonNullable<TuvrenToolDefinition["outputSchema"]>,
+  output: unknown
+):
+  | { details?: unknown; valid: true; value: unknown }
+  | { details?: unknown; valid: false } {
+  if (
+    schema !== null &&
+    typeof schema === "object" &&
+    "validate" in schema &&
+    typeof schema.validate === "function"
+  ) {
+    let result: ReturnType<typeof schema.validate>;
+
+    try {
+      result = schema.validate(output);
+    } catch (error: unknown) {
+      return {
+        details: { error: normalizeError(error).message },
+        valid: false,
+      };
+    }
+
+    return result.valid
+      ? { valid: true, value: result.value }
+      : { details: result.error, valid: false };
+  }
+
+  const validator = getCompiledValidator(schema);
+  const valid = validator(output);
+
+  if (valid) {
+    return { valid: true, value: output };
+  }
+
+  return { details: formatAjvErrors(validator.errors), valid: false };
 }
 
 export function validateToolInput(
@@ -447,6 +488,30 @@ export function createErrorToolResult(
     isError: true,
     name: toolCall.name,
     output: {
+      ...(details === undefined
+        ? { error: message }
+        : { details, error: message }),
+      ...(approval === undefined ? {} : { approval }),
+    },
+    type: "tool_result",
+  };
+}
+
+export function createValidationErrorToolResult(
+  toolCall: ToolCallPart,
+  code: string,
+  message: string,
+  details?: unknown,
+  decision?: ApprovalDecision,
+  audit?: EditedApprovalAudit
+): ToolResultPart {
+  const approval = createApprovalResultMetadata(decision, audit);
+  return {
+    callId: toolCall.callId,
+    isError: true,
+    name: toolCall.name,
+    output: {
+      code,
       ...(details === undefined
         ? { error: message }
         : { details, error: message }),
@@ -887,6 +952,48 @@ function emitToolResultEvent(
     timestamp: environment.now(),
     type: "tool.result",
   });
+}
+
+/**
+ * Emits a tool.audit event carrying only structural lineage keys — no input,
+ * output, or metadata values that could contain secret material. (AX005)
+ */
+export function emitToolAuditEvent(
+  environment: ToolBatchEnvironment,
+  callId: string,
+  toolName: string,
+  lifecycle: import("@tuvren/core/events").ToolAuditEvent["lifecycle"],
+  extras?: {
+    attempt?: number;
+    validationPassed?: boolean;
+  }
+): void {
+  const tool = environment.toolRegistry.get(toolName);
+  const executionClass =
+    tool === undefined
+      ? ("tuvren-server" as const)
+      : buildToolAttribution(tool).executionClass;
+
+  const event: import("@tuvren/core/events").ToolAuditEvent = {
+    callId,
+    capabilityId: toolName,
+    executionClass,
+    lifecycle,
+    runId: environment.runId,
+    timestamp: environment.now(),
+    turnId: environment.turnId,
+    type: "tool.audit",
+  };
+
+  if (extras?.attempt !== undefined) {
+    event.attempt = extras.attempt;
+  }
+
+  if (extras?.validationPassed !== undefined) {
+    event.validationPassed = extras.validationPassed;
+  }
+
+  environment.publishEvent(event);
 }
 
 function asRecord(value: unknown): Record<string, unknown> {

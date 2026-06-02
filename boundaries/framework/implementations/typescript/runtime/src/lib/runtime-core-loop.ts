@@ -54,6 +54,8 @@ export interface LoopState {
   activeToolRegistry: ToolRegistry;
   carriedStateUpdates: ExtensionStateUpdate[];
   enteredIterationLoop: boolean;
+  /** Cached rate limiter for the active agent's server execution class. (AX003) */
+  serverExecutionRateLimiter?: import("./server-rate-limiter.js").ServerRateLimiter;
 }
 
 export interface IterationPreparationResult {

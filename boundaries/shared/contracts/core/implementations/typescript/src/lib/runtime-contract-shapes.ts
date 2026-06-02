@@ -17,6 +17,7 @@
 import type {
   CapabilityInvocationAttribution,
   CapabilityPolicyEngine,
+  ExecutionClass,
 } from "./capability-shapes.js";
 import type { EpochMs, HashString } from "./kernel-records.js";
 import type { TuvrenError } from "./tuvren-error.js";
@@ -457,6 +458,40 @@ export interface ToolResultEvent {
   type: "tool.result";
 }
 
+/**
+ * Lifecycle audit event for Tuvren-server invocations. Carries only structural
+ * lineage keys and lifecycle identifiers — no input, output, or metadata values
+ * that could contain secret material. (AX005)
+ */
+export interface ToolAuditEvent {
+  /** Retry attempt number (1-based), present when lifecycle is retry_attempt. */
+  attempt?: number;
+  /** Unique call identifier matching the tool_call / tool_result pair. */
+  callId: string;
+  /** Stable tool name; used as the capability id for tuvren-server bindings. */
+  capabilityId: string;
+  executionClass: ExecutionClass;
+  /**
+   * Which lifecycle point this event records.
+   * "cancelled" is reserved for future use when cooperative cancellation
+   * emits an explicit audit signal; currently observable via handle.cancel()
+   * + the existing event stream (canCancel: true in CapabilityObservation).
+   */
+  lifecycle:
+    | "input_validated"
+    | "output_validated"
+    | "retry_attempt"
+    | "rate_limited"
+    | "cancelled";
+  runId: string;
+  source?: EventSource;
+  timestamp: EpochMs;
+  turnId: string;
+  type: "tool.audit";
+  /** Whether the validation passed, present for input_validated / output_validated. */
+  validationPassed?: boolean;
+}
+
 export interface ApprovalRequestedEvent {
   request: ApprovalRequest;
   source?: EventSource;
@@ -505,6 +540,7 @@ export type TuvrenStreamEvent =
   | MessageDoneEvent
   | ToolStartEvent
   | ToolResultEvent
+  | ToolAuditEvent
   | ApprovalRequestedEvent
   | ApprovalResolvedEvent
   | SteeringIncorporatedEvent
@@ -570,9 +606,45 @@ export interface TuvrenToolDefinition {
   approval?: ApprovalPolicy;
   description: string;
   execute: ExecuteFunction;
+  /**
+   * Whether the framework may retry this invocation on a retriable failure. (AX002)
+   * When true, the entire aroundTool extension chain re-executes on each attempt,
+   * not just the terminal tool.execute call. Extension authors should account for
+   * this when writing aroundTool handlers with side effects.
+   *
+   * Thrown vs returned errors: only thrown exceptions trigger the retry loop.
+   * A tool that returns { isError: true } is treated as a deliberate value and
+   * is never retried, even when idempotent is true.
+   */
+  idempotent?: boolean;
   inputSchema: TuvrenJsonSchema | CustomSchema;
+  /**
+   * Maximum retry attempts when idempotent is true. Defaults to 1. (AX002)
+   * Must be a non-negative integer. This value is trusted and not runtime-validated.
+   * A negative value causes maxAttempts (= 1 + maxRetries) to be zero, so the
+   * tool's execute is never invoked and an execution-failure result is returned.
+   * Use 0 for one attempt with no retry; omit to get the default of 1 retry.
+   */
+  maxRetries?: number;
   metadata?: Record<string, unknown>;
   name: string;
+  /**
+   * Declared result shape validated against the execute return value before
+   * surfacing. Violations surface as tool.result with isError true and
+   * code tool_result_validation_failed. (AX001)
+   *
+   * Note: validation applies to the terminal execute/sandbox result only.
+   * An aroundTool extension that short-circuits by returning its own result
+   * without calling next() bypasses outputSchema enforcement, since extensions
+   * are trusted host-side code and output-validation runs in the terminal branch.
+   *
+   * Retry interaction: an output-validation failure is not retried even when
+   * idempotent is true. Output-contract violations are deterministic — retrying
+   * the same execute function against the same schema cannot produce a different
+   * structural result — so the framework surfaces the validation error immediately
+   * rather than consuming the retry budget.
+   */
+  outputSchema?: TuvrenJsonSchema | CustomSchema;
   timeout?: number;
 }
 
@@ -749,6 +821,51 @@ export interface TuvrenExtension {
   tools?: TuvrenToolDefinition[];
 }
 
+export interface ServerExecutionRateLimitConfig {
+  /**
+   * Maximum invocations allowed within windowMs.
+   * Must be a non-negative integer; zero immediately rejects all calls.
+   * This value is trusted and not runtime-validated — a negative value would
+   * behave as an unbounded budget due to the callCount >= maxCalls comparison.
+   *
+   * Note: an idempotent tool retry consumes exactly one budget slot for the
+   * entire invocation regardless of how many retry attempts occur, because the
+   * rate-limit check runs once in resolveExecutableToolCall before the retry loop.
+   */
+  maxCalls: number;
+  /**
+   * Fixed-window duration in milliseconds, measured within a single turn.
+   * The rate-limit budget is scoped to one executeTurn call: a new turn always
+   * starts with a fresh budget. Use maxCalls to cap per-turn invocations;
+   * windowMs controls the reset interval within that turn for long-running
+   * turns with tool calls spread over time.
+   *
+   * Note: an approval pause/resume creates a new execution session internally;
+   * the budget does not persist across the pause boundary, so an approval-gated
+   * turn consumes a slot on the pre-pause segment and gets a fresh budget on
+   * the resumed segment.
+   */
+  windowMs: number;
+}
+
+export interface ServerExecutionConfig {
+  /**
+   * Per-turn rate limit for the Tuvren-server execution class.
+   * Invocations beyond the budget within the configured window are rejected
+   * with a typed tool_invocation_rate_limited result rather than executed.
+   * Scope: one executeTurn call — the budget resets between turns.
+   * Tenant isolation: each runtime instance has an independent budget. (AX003)
+   *
+   * Multi-agent handoff note: the rate limiter is created once per turn from
+   * the initiating agent's serverExecution config and cached for the turn's
+   * lifetime. If the active agent changes via handoff, the cached limiter is
+   * not updated — the budget follows the turn's first agent regardless of
+   * subsequent handoffs. Configure rate limits on the entry-point agent when
+   * applying per-turn caps in multi-agent flows.
+   */
+  rateLimit?: ServerExecutionRateLimitConfig;
+}
+
 export interface AgentConfig {
   /**
    * Optional capability policy engine per ADR-046 §4.21. When set, the
@@ -771,6 +888,32 @@ export interface AgentConfig {
   model?: string | TuvrenProvider;
   name: string;
   responseFormat?: StructuredOutputRequest;
+  /**
+   * Host-provided sandbox executors keyed by endpoint id. When a tool
+   * declares metadata.sandbox.endpointId, the framework looks up the executor
+   * here and dispatches the invocation to it instead of tool.execute. This
+   * gives the host full control over the isolation boundary (subprocess, VM,
+   * container, etc.) while the framework owns lifecycle observation, retry,
+   * cancellation, and audit. (AX004)
+   *
+   * The executor receives `(input: unknown, context: ToolExecutionContext)`.
+   * Cast to TuvrenSandboxExecutor from @tuvren/core/capabilities for the typed
+   * interface.
+   */
+  sandboxExecutors?: Map<
+    string,
+    {
+      execute(
+        input: unknown,
+        context: ToolExecutionContext
+      ): Promise<unknown> | unknown;
+    }
+  >;
+  /**
+   * Server execution class configuration for this agent. Controls per-tenant
+   * rate limiting of Tuvren-server invocations. (AX003)
+   */
+  serverExecution?: ServerExecutionConfig;
   systemPrompt?: string;
   tools?: TuvrenToolDefinition[];
 }

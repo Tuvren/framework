@@ -537,6 +537,14 @@ async function* toAgUiEventsSubscribed(
           "toolExecution"
         );
         break;
+      case "tool.audit":
+        yield createCustomFallbackEvent(
+          "tuvren.runtime.tool.audit",
+          event,
+          reportWarning,
+          "toolExecution"
+        );
+        break;
       default:
         throwUnreachableEvent(event);
     }

@@ -25,10 +25,12 @@ import type {
   HandoffContextPlan,
   RuntimeResolution,
 } from "@tuvren/core/execution";
+import { TUVREN_SANDBOX_ENDPOINT_ID_PREFIX } from "./binding-resolver.js";
 import type { HeadState, LoopState } from "./runtime-core-loop.js";
 import { formatToolResultTaskId } from "./runtime-core-response.js";
 import { normalizeError } from "./runtime-core-shared.js";
 import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
+import { createServerRateLimiter } from "./server-rate-limiter.js";
 import type { ToolBatchEnvironment } from "./tool-execution.js";
 
 export interface RuntimeCoreDriverSupportHost {
@@ -86,6 +88,20 @@ export function createToolBatchEnvironment(
   iterationCount: number,
   runId: string
 ): ToolBatchEnvironment {
+  // Create the rate limiter once per turn (lazily on first iteration) and
+  // cache it on loopState so the same budget applies across all iterations.
+  // Intentional scoping: the limiter is fixed to the initiating agent's config
+  // for the turn's lifetime and is not re-evaluated on agent handoff. See the
+  // ServerExecutionConfig.rateLimit doc for multi-agent handoff semantics.
+  const rateLimitConfig = loopState.activeConfig.serverExecution?.rateLimit;
+  if (
+    rateLimitConfig !== undefined &&
+    loopState.serverExecutionRateLimiter === undefined
+  ) {
+    loopState.serverExecutionRateLimiter =
+      createServerRateLimiter(rateLimitConfig);
+  }
+
   return {
     activeAgent: loopState.activeConfig.name,
     branchId: handle.request.branchId,
@@ -109,6 +125,23 @@ export function createToolBatchEnvironment(
       host.publishProjectedError(handle, error, false, loopState);
     },
     runId,
+    resolveSandboxExecutor:
+      loopState.activeConfig.sandboxExecutors === undefined
+        ? undefined
+        : (endpointId: string) => {
+            // binding-resolver prefixes the id with TUVREN_SANDBOX_ENDPOINT_ID_PREFIX
+            // ("sandbox:") — strip it so AgentConfig.sandboxExecutors is keyed
+            // by the raw endpointId declared in metadata.sandbox.endpointId. (AX004)
+            const rawId = endpointId.startsWith(
+              TUVREN_SANDBOX_ENDPOINT_ID_PREFIX
+            )
+              ? endpointId.slice(TUVREN_SANDBOX_ENDPOINT_ID_PREFIX.length)
+              : endpointId;
+            return loopState.activeConfig.sandboxExecutors?.get(rawId) as
+              | import("@tuvren/core/capabilities").TuvrenSandboxExecutor
+              | undefined;
+          },
+    serverExecutionRateLimiter: loopState.serverExecutionRateLimiter,
     signal: handle.abortSignal,
     stageResult: async (result, orderIndex) => {
       return await host.stageToolResultMessage(runId, result, orderIndex);

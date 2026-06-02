@@ -23,3 +23,27 @@
  */
 export const CAPABILITY_BINDING_UNAVAILABLE =
   "capability_binding_unavailable" as const;
+
+/**
+ * Stable `TuvrenValidationError` code emitted when a Tuvren-server invocation
+ * input fails validation against the declared contract before execution. Per
+ * §4.21, surfaced as `tool.result` with `isError: true`. (AX001)
+ */
+export const TOOL_INPUT_VALIDATION_FAILED =
+  "tool_input_validation_failed" as const;
+
+/**
+ * Stable `TuvrenValidationError` code emitted when a Tuvren-server invocation
+ * output fails validation against the declared result shape before being
+ * surfaced. Per §4.21, surfaced as `tool.result` with `isError: true`. (AX001)
+ */
+export const TOOL_RESULT_VALIDATION_FAILED =
+  "tool_result_validation_failed" as const;
+
+/**
+ * Stable `TuvrenRuntimeError` code emitted when a Tuvren-server invocation is
+ * rejected because the configured per-tenant rate budget is exhausted. Surfaced
+ * as `tool.result` with `isError: true` per §4.21. (AX003)
+ */
+export const TOOL_INVOCATION_RATE_LIMITED =
+  "tool_invocation_rate_limited" as const;

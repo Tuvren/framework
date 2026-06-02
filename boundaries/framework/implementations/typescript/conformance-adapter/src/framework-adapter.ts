@@ -49,6 +49,12 @@ import type {
 } from "./framework-adapter-runtime.ts";
 import { createFrameworkAdapterRuntimeScenarios } from "./framework-adapter-runtime-scenarios.ts";
 import { createFrameworkAdapterSchemaAuthoring } from "./framework-adapter-schema-authoring.ts";
+import {
+  runTuvrenServerBindingClassification,
+  runTuvrenServerCancellation,
+  runTuvrenServerLifecycle,
+  runTuvrenServerTenantIsolation,
+} from "./framework-adapter-tuvren-server-execution-class.ts";
 
 export type {
   AdapterCapabilities,
@@ -371,6 +377,14 @@ export class TypeScriptFrameworkAdapter implements ImplementationAdapter {
         );
       case "runtime.capability-orchestration.policy-decisions":
         return runCapabilityOrchestrationPolicyDecisions();
+      case "runtime.tuvren-server.lifecycle":
+        return runTuvrenServerLifecycle();
+      case "runtime.tuvren-server.binding-classification":
+        return runTuvrenServerBindingClassification();
+      case "runtime.tuvren-server.cancellation":
+        return runTuvrenServerCancellation();
+      case "runtime.tuvren-server.tenant-isolation":
+        return runTuvrenServerTenantIsolation();
       default:
         throw new Error(
           `unsupported promoted framework operation ${operation}`

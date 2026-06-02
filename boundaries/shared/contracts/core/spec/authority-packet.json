@@ -89,6 +89,10 @@
     {
       "path": "boundaries/framework/conformance/plans/framework-operational-telemetry.json",
       "format": "conformance-plan"
+    },
+    {
+      "path": "boundaries/framework/conformance/plans/tuvren-server-execution-class.json",
+      "format": "conformance-plan"
     }
   ],
   "generatedArtifacts": [
@@ -159,6 +163,11 @@
       "planId": "tuvren.framework.runtime-api.operational-telemetry",
       "planVersion": "0.1.0",
       "path": "boundaries/framework/conformance/plans/framework-operational-telemetry.json"
+    },
+    {
+      "planId": "tuvren.framework.tuvren-server-execution-class",
+      "planVersion": "0.1.0",
+      "path": "boundaries/framework/conformance/plans/tuvren-server-execution-class.json"
     }
   ],
   "bindingSections": {
@@ -273,6 +282,10 @@
     {
       "kind": "conformance-plan",
       "target": "boundaries/framework/conformance/plans/framework-operational-telemetry.json"
+    },
+    {
+      "kind": "conformance-plan",
+      "target": "boundaries/framework/conformance/plans/tuvren-server-execution-class.json"
     },
     {
       "kind": "freshness-check",
