@@ -915,15 +915,15 @@
         "framework.interop.reload_persistence"
       ],
       "checkSummary": {
-        "failedChecks": 9,
-        "passedChecks": 0,
+        "failedChecks": 0,
+        "passedChecks": 9,
         "totalChecks": 9
       },
       "evidencePath": "reports/compatibility/evidence/tuvren.framework.kernel-interop-smoke.typescript-framework__rust-kernel.json",
       "pairId": "typescript-framework__rust-kernel",
       "reportLabel": "TypeScript framework to Rust kernel interop",
-      "reportStatus": "unexpected_fail",
-      "status": "fail",
+      "reportStatus": "full_pass",
+      "status": "pass",
       "suiteId": "tuvren.framework.kernel-interop-smoke",
       "suiteVersion": "0.2.0"
     }

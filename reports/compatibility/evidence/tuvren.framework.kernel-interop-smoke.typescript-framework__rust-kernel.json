@@ -5,320 +5,607 @@
       "assertionResults": [
         {
           "assertionId": "completed",
-          "message": "interop runner exited without a parseable scenario report",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "canonicalObserved",
-          "message": "interop runner exited without a parseable scenario report",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "sseObserved",
-          "message": "interop runner exited without a parseable scenario report",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "aguiObserved",
-          "message": "interop runner exited without a parseable scenario report",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "metadataObserved",
-          "message": "interop runner exited without a parseable scenario report",
-          "status": "fail"
+          "status": "pass"
         }
       ],
       "checkId": "framework.interop.streaming_observability",
       "details": {
-        "expectedEvidence": [
-          "assertionResults",
-          "details.scenario",
-          "details.telemetry"
+        "missingScenarioIds": [],
+        "scenario": ["streaming"],
+        "telemetry": [
+          {
+            "observedKeys": [
+              "tuvren.runtime.backend.id",
+              "tuvren.runtime.branch.id",
+              "tuvren.runtime.checkpoint.hash",
+              "tuvren.runtime.driver.id",
+              "tuvren.runtime.parent_checkpoint.hash",
+              "tuvren.runtime.provider.id",
+              "tuvren.runtime.run.id",
+              "tuvren.runtime.thread.id",
+              "tuvren.runtime.turn.id"
+            ],
+            "scenario": "streaming",
+            "schemaUrl": "https://tuvren.dev/schemas/telemetry/0.1.0"
+          }
         ]
       },
-      "status": "fail"
+      "status": "pass"
     },
     {
       "assertionResults": [
         {
           "assertionId": "completed",
-          "message": "interop runner exited without a parseable scenario report",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "canonicalObserved",
-          "message": "interop runner exited without a parseable scenario report",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "sseObserved",
-          "message": "interop runner exited without a parseable scenario report",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "aguiObserved",
-          "message": "interop runner exited without a parseable scenario report",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "structuredObserved",
-          "message": "interop runner exited without a parseable scenario report",
-          "status": "fail"
+          "status": "pass"
         }
       ],
       "checkId": "framework.interop.structured_output",
       "details": {
-        "expectedEvidence": ["assertionResults", "details.scenario"]
+        "missingScenarioIds": [],
+        "scenario": ["structured"],
+        "telemetry": [
+          {
+            "observedKeys": [
+              "tuvren.runtime.backend.id",
+              "tuvren.runtime.branch.id",
+              "tuvren.runtime.checkpoint.hash",
+              "tuvren.runtime.driver.id",
+              "tuvren.runtime.parent_checkpoint.hash",
+              "tuvren.runtime.provider.id",
+              "tuvren.runtime.run.id",
+              "tuvren.runtime.thread.id",
+              "tuvren.runtime.turn.id"
+            ],
+            "scenario": "structured",
+            "schemaUrl": "https://tuvren.dev/schemas/telemetry/0.1.0"
+          }
+        ]
       },
-      "status": "fail"
+      "status": "pass"
     },
     {
       "assertionResults": [
         {
           "assertionId": "completed",
-          "message": "interop runner exited without a parseable scenario report",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "toolObserved",
-          "message": "interop runner exited without a parseable scenario report",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "toolHistoryPreserved",
-          "message": "interop runner exited without a parseable scenario report",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "toolTraceObserved",
-          "message": "interop runner exited without a parseable scenario report",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "metadataObserved",
-          "message": "interop runner exited without a parseable scenario report",
-          "status": "fail"
+          "status": "pass"
         }
       ],
       "checkId": "framework.interop.tool_history_and_trace",
       "details": {
-        "expectedEvidence": ["assertionResults", "details.scenario"]
+        "missingScenarioIds": [],
+        "scenario": ["tools"],
+        "telemetry": [
+          {
+            "observedKeys": [
+              "tuvren.runtime.backend.id",
+              "tuvren.runtime.branch.id",
+              "tuvren.runtime.checkpoint.hash",
+              "tuvren.runtime.driver.id",
+              "tuvren.runtime.parent_checkpoint.hash",
+              "tuvren.runtime.provider.id",
+              "tuvren.runtime.run.id",
+              "tuvren.runtime.thread.id",
+              "tuvren.runtime.tool_call.id",
+              "tuvren.runtime.turn.id"
+            ],
+            "scenario": "tools",
+            "schemaUrl": "https://tuvren.dev/schemas/telemetry/0.1.0"
+          }
+        ]
       },
-      "status": "fail"
+      "status": "pass"
     },
     {
       "assertionResults": [
         {
           "assertionId": "approvalRequested",
-          "message": "interop runner exited without a parseable scenario report",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "approvalResolved",
-          "message": "interop runner exited without a parseable scenario report",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "pausedFirst",
-          "message": "interop runner exited without a parseable scenario report",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "resumedCompleted",
-          "message": "interop runner exited without a parseable scenario report",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "toolResultAfterResume",
-          "message": "interop runner exited without a parseable scenario report",
-          "status": "fail"
+          "status": "pass"
         }
       ],
       "checkId": "framework.interop.approval_resume",
       "details": {
-        "expectedEvidence": ["assertionResults", "details.scenario"]
+        "missingScenarioIds": [],
+        "scenario": ["approval"],
+        "telemetry": [
+          {
+            "observedKeys": [
+              "tuvren.runtime.backend.id",
+              "tuvren.runtime.branch.id",
+              "tuvren.runtime.checkpoint.hash",
+              "tuvren.runtime.driver.id",
+              "tuvren.runtime.parent_checkpoint.hash",
+              "tuvren.runtime.provider.id",
+              "tuvren.runtime.resumed_from.hash",
+              "tuvren.runtime.run.id",
+              "tuvren.runtime.thread.id",
+              "tuvren.runtime.tool_call.id",
+              "tuvren.runtime.turn.id"
+            ],
+            "scenario": "approval",
+            "schemaUrl": "https://tuvren.dev/schemas/telemetry/0.1.0"
+          }
+        ]
       },
-      "status": "fail"
+      "status": "pass"
     },
     {
       "assertionResults": [
         {
           "assertionId": "cancelled",
-          "message": "interop runner exited without a parseable scenario report",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "errorObserved",
-          "message": "interop runner exited without a parseable scenario report",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "terminalFailed",
-          "message": "interop runner exited without a parseable scenario report",
-          "status": "fail"
+          "status": "pass"
         }
       ],
       "checkId": "framework.interop.cancel_flow",
       "details": {
-        "expectedEvidence": ["assertionResults", "details.scenario"]
+        "missingScenarioIds": [],
+        "scenario": ["cancel"],
+        "telemetry": [
+          {
+            "observedKeys": [
+              "tuvren.runtime.backend.id",
+              "tuvren.runtime.branch.id",
+              "tuvren.runtime.checkpoint.hash",
+              "tuvren.runtime.driver.id",
+              "tuvren.runtime.error.code",
+              "tuvren.runtime.parent_checkpoint.hash",
+              "tuvren.runtime.provider.id",
+              "tuvren.runtime.run.id",
+              "tuvren.runtime.thread.id",
+              "tuvren.runtime.turn.id"
+            ],
+            "scenario": "cancel",
+            "schemaUrl": "https://tuvren.dev/schemas/telemetry/0.1.0"
+          }
+        ]
       },
-      "status": "fail"
+      "status": "pass"
     },
     {
       "assertionResults": [
         {
           "assertionId": "completed",
-          "message": "interop runner exited without a parseable scenario report",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "metadataObserved",
-          "message": "interop runner exited without a parseable scenario report",
-          "status": "fail"
+          "status": "pass"
         }
       ],
       "checkId": "framework.interop.metadata_surface",
       "details": {
-        "expectedEvidence": [
-          "assertionResults",
-          "details.scenario",
-          "details.telemetry"
+        "missingScenarioIds": [],
+        "scenario": ["metadata"],
+        "telemetry": [
+          {
+            "observedKeys": [
+              "tuvren.runtime.backend.id",
+              "tuvren.runtime.branch.id",
+              "tuvren.runtime.checkpoint.hash",
+              "tuvren.runtime.driver.id",
+              "tuvren.runtime.parent_checkpoint.hash",
+              "tuvren.runtime.provider.id",
+              "tuvren.runtime.run.id",
+              "tuvren.runtime.thread.id",
+              "tuvren.runtime.turn.id"
+            ],
+            "scenario": "metadata",
+            "schemaUrl": "https://tuvren.dev/schemas/telemetry/0.1.0"
+          }
         ]
       },
-      "status": "fail"
+      "status": "pass"
     },
     {
       "assertionResults": [
         {
           "assertionId": "sourceCompleted",
-          "message": "interop runner exited without a parseable scenario report",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "branchCreated",
-          "message": "interop runner exited without a parseable scenario report",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "branchedFromSourceHead",
-          "message": "interop runner exited without a parseable scenario report",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "branchCompleted",
-          "message": "interop runner exited without a parseable scenario report",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "branchMessagesVisible",
-          "message": "interop runner exited without a parseable scenario report",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "branchMessagesAdvanced",
-          "message": "interop runner exited without a parseable scenario report",
-          "status": "fail"
+          "status": "pass"
         }
       ],
       "checkId": "framework.interop.branching_state",
       "details": {
-        "expectedEvidence": ["assertionResults", "details.scenario"]
+        "missingScenarioIds": [],
+        "scenario": ["branching"],
+        "telemetry": [
+          {
+            "observedKeys": [
+              "tuvren.runtime.backend.id",
+              "tuvren.runtime.branch.id",
+              "tuvren.runtime.checkpoint.hash",
+              "tuvren.runtime.driver.id",
+              "tuvren.runtime.parent_checkpoint.hash",
+              "tuvren.runtime.provider.id",
+              "tuvren.runtime.run.id",
+              "tuvren.runtime.thread.id",
+              "tuvren.runtime.turn.id"
+            ],
+            "scenario": "branching",
+            "schemaUrl": "https://tuvren.dev/schemas/telemetry/0.1.0"
+          }
+        ]
       },
-      "status": "fail"
+      "status": "pass"
     },
     {
       "assertionResults": [
         {
           "assertionId": "completed",
-          "message": "interop runner exited without a parseable scenario report",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "steeringEventObserved",
-          "message": "interop runner exited without a parseable scenario report",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "steeringMessageDurable",
-          "message": "interop runner exited without a parseable scenario report",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "steeringResponseObserved",
-          "message": "interop runner exited without a parseable scenario report",
-          "status": "fail"
+          "status": "pass"
         }
       ],
       "checkId": "framework.interop.steering_flow",
       "details": {
-        "expectedEvidence": ["assertionResults", "details.scenario"]
+        "missingScenarioIds": [],
+        "scenario": ["steering"],
+        "telemetry": [
+          {
+            "observedKeys": [
+              "tuvren.runtime.backend.id",
+              "tuvren.runtime.branch.id",
+              "tuvren.runtime.checkpoint.hash",
+              "tuvren.runtime.driver.id",
+              "tuvren.runtime.parent_checkpoint.hash",
+              "tuvren.runtime.provider.id",
+              "tuvren.runtime.run.id",
+              "tuvren.runtime.thread.id",
+              "tuvren.runtime.turn.id"
+            ],
+            "scenario": "steering",
+            "schemaUrl": "https://tuvren.dev/schemas/telemetry/0.1.0"
+          }
+        ]
       },
-      "status": "fail"
+      "status": "pass"
     },
     {
       "assertionResults": [
         {
           "assertionId": "completedBeforeReload",
-          "message": "interop runner exited without a parseable scenario report",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "durableReloadAttempted",
-          "message": "interop runner exited without a parseable scenario report",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "continuedAfterReload",
-          "message": "interop runner exited without a parseable scenario report",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "durableMessagesVisibleAfterReload",
-          "message": "interop runner exited without a parseable scenario report",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "headAdvancedAfterReload",
-          "message": "interop runner exited without a parseable scenario report",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "rootPreservedAfterReload",
-          "message": "interop runner exited without a parseable scenario report",
-          "status": "fail"
+          "status": "pass"
         },
         {
           "assertionId": "threadVisibleAfterReload",
-          "message": "interop runner exited without a parseable scenario report",
-          "status": "fail"
+          "status": "pass"
         }
       ],
       "checkId": "framework.interop.reload_persistence",
       "details": {
-        "expectedEvidence": [
-          "assertionResults",
-          "details.scenario",
-          "details.telemetry"
+        "missingScenarioIds": [],
+        "scenario": ["reload"],
+        "telemetry": [
+          {
+            "observedKeys": [
+              "tuvren.runtime.backend.id",
+              "tuvren.runtime.branch.id",
+              "tuvren.runtime.checkpoint.hash",
+              "tuvren.runtime.driver.id",
+              "tuvren.runtime.parent_checkpoint.hash",
+              "tuvren.runtime.provider.id",
+              "tuvren.runtime.run.id",
+              "tuvren.runtime.thread.id",
+              "tuvren.runtime.turn.id"
+            ],
+            "scenario": "reload",
+            "schemaUrl": "https://tuvren.dev/schemas/telemetry/0.1.0"
+          }
         ]
       },
-      "status": "fail"
+      "status": "pass"
     }
   ],
   "command": ["bun", "tools/scripts/repl-host-interop-smoke.ts"],
-  "exitCode": 1,
+  "exitCode": 0,
   "pairId": "typescript-framework__rust-kernel",
   "project": "host-repl:interop-smoke",
   "reportLabel": "TypeScript framework to Rust kernel interop",
-  "reportStatus": "unexpected_fail",
-  "status": "fail",
+  "reportStatus": "full_pass",
+  "status": "pass",
   "summary": {
-    "failedChecks": 9,
-    "passedChecks": 0,
+    "failedChecks": 0,
+    "passedChecks": 9,
     "totalChecks": 9
   },
   "suiteId": "tuvren.framework.kernel-interop-smoke",
   "suiteVersion": "0.2.0",
-  "stderr": "\u001b[0m\u001b[2m\u001b[35m$\u001b[0m \u001b[2m\u001b[1mbun ./tools/run-nx.mjs run host-repl:build --skipNxCache\u001b[0m\nWarning: command \"bunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false\" exited with non-zero status code\u001b[0m\u001b[31merror\u001b[0m\u001b[2m:\u001b[0m script \u001b[1m\"nx\"\u001b[0m exited with code 1\u001b[0m\n\u001b[0m\u001b[1m142 |\u001b[0m   \u001b[0m\u001b[35mconst\u001b[0m result = \u001b[0m\u001b[35mawait\u001b[0m runCommand(command, {\n\u001b[0m\u001b[1m143 |\u001b[0m     cwd: options?.cwd ?? REPO_ROOT,\n\u001b[0m\u001b[1m144 |\u001b[0m   })\u001b[0m\u001b[2m;\u001b[0m\n\u001b[0m\u001b[1m145 |\u001b[0m \n\u001b[0m\u001b[1m146 |\u001b[0m   \u001b[0m\u001b[35mif\u001b[0m (result.code !== \u001b[0m\u001b[33m0\u001b[0m) {\n\u001b[0m\u001b[1m147 |\u001b[0m     \u001b[0m\u001b[35mthrow\u001b[0m \u001b[0m\u001b[35mnew\u001b[0m \u001b[0m\u001b[1mError\u001b[0m(\u001b[0m\u001b[32m`command failed: \u001b[0m${command\u001b[0m\u001b[3m\u001b[1m.join\u001b[0m(\u001b[0m\u001b[32m\" \"\u001b[0m)}\u001b[0m\u001b[32m`\u001b[0m)\u001b[0m\u001b[2m;\u001b[0m\n                    \u001b[31m\u001b[1m^\u001b[0m\n\u001b[0m\u001b[31merror\u001b[0m\u001b[2m:\u001b[0m \u001b[1mcommand failed: bun run nx run host-repl:build --skipNxCache\u001b[0m\n\u001b[0m      \u001b[2mat \u001b[0m\u001b[0m\u001b[1m\u001b[3mrunRequiredCommand\u001b[0m\u001b[2m (\u001b[0m\u001b[0m\u001b[36m\u001b[2m/home/oscar/GitHub/Tuvren-runtime/\u001b[0m\u001b[36mtools/scripts/repl-host-interop-smoke.ts\u001b[0m\u001b[2m:\u001b[0m\u001b[33m147\u001b[0m\u001b[2m:\u001b[33m15\u001b[0m\u001b[2m)\u001b[0m\n\u001b[0m\n\u001b[2mBun v1.3.10 (Linux x64)\u001b[0m\n",
-  "stdout": "\n\u001b[7m\u001b[1m\u001b[36m NX \u001b[39m\u001b[22m\u001b[27m  \u001b[36mRunning target \u001b[1mbuild\u001b[22m for project host-repl and \u001b[1m20\u001b[22m tasks it depends on:\u001b[39m\n\n\u001b[2m\u001b[36m\u001b[39m\u001b[22m\n\n\u001b[2m> \u001b[22m\u001b[2mnx run\u001b[22m shared-core:build\n\n\u001b[2m> \u001b[22mbunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false\r\n\r\n\u001b[34mCLI\u001b[39m Building entry: src/index.ts, src/errors/index.ts, src/execution/index.ts, src/messages/index.ts, src/tools/index.ts, src/telemetry/index.ts, src/capabilities/index.ts, src/extensions/index.ts, src/provider/index.ts, src/events/index.ts, src/driver/index.ts\n\u001b[34mCLI\u001b[39m Using tsconfig: tsconfig.tsup.json\n\u001b[34mCLI\u001b[39m tsup v8.5.1\n\u001b[34mCLI\u001b[39m Using tsup config: /home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/tsup.config.ts\n\u001b[34mCLI\u001b[39m Target: esnext\n\u001b[34mCLI\u001b[39m Cleaning output folder\n\u001b[34mESM\u001b[39m Build start\n\u001b[32mESM\u001b[39m \u001b[1mdist/errors/index.js       \u001b[22m\u001b[32m897.00 B\u001b[39m\n\u001b[32mESM\u001b[39m \u001b[1mdist/index.js              \u001b[22m\u001b[32m703.00 B\u001b[39m\n\u001b[32mESM\u001b[39m \u001b[1mdist/driver/index.js       \u001b[22m\u001b[32m22.24 KB\u001b[39m\n\u001b[32mESM\u001b[39m \u001b[1mdist/execution/index.js    \u001b[22m\u001b[32m338.00 B\u001b[39m\n\u001b[32mESM\u001b[39m \u001b[1mdist/tools/index.js        \u001b[22m\u001b[32m4.88 KB\u001b[39m\n\u001b[32mESM\u001b[39m \u001b[1mdist/events/index.js       \u001b[22m\u001b[32m212.00 B\u001b[39m\n\u001b[32mESM\u001b[39m \u001b[1mdist/provider/index.js     \u001b[22m\u001b[32m328.00 B\u001b[39m\n\u001b[32mESM\u001b[39m \u001b[1mdist/telemetry/index.js    \u001b[22m\u001b[32m146.00 B\u001b[39m\n\u001b[32mESM\u001b[39m \u001b[1mdist/chunk-XPJGOZKW.js     \u001b[22m\u001b[32m45.41 KB\u001b[39m\n\u001b[32mESM\u001b[39m \u001b[1mdist/chunk-NCKCVBKK.js     \u001b[22m\u001b[32m4.20 KB\u001b[39m\n\u001b[32mESM\u001b[39m \u001b[1mdist/messages/index.js     \u001b[22m\u001b[32m304.00 B\u001b[39m\n\u001b[32mESM\u001b[39m \u001b[1mdist/chunk-MZZRDFVK.js     \u001b[22m\u001b[32m2.67 KB\u001b[39m\n\u001b[32mESM\u001b[39m \u001b[1mdist/capabilities/index.js \u001b[22m\u001b[32m0 B\u001b[39m\n\u001b[32mESM\u001b[39m \u001b[1mdist/extensions/index.js   \u001b[22m\u001b[32m0 B\u001b[39m\n\u001b[32mESM\u001b[39m ⚡️ Build success in 26ms\n\n\u001b[2m> \u001b[22m\u001b[2mnx run\u001b[22m shared-core-types:build\n\n\u001b[2m> \u001b[22mbunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false\r\n\r\n\u001b[34mCLI\u001b[39m Building entry: src/index.ts\n\u001b[34mCLI\u001b[39m Using tsconfig: tsconfig.tsup.json\n\u001b[34mCLI\u001b[39m tsup v8.5.1\n\u001b[34mCLI\u001b[39m Using tsup config: /home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core-types/implementations/typescript/tsup.config.ts\n\u001b[34mCLI\u001b[39m Target: esnext\n\u001b[34mCLI\u001b[39m Cleaning output folder\n\u001b[34mESM\u001b[39m Build start\n\u001b[32mESM\u001b[39m \u001b[1mdist/index.js \u001b[22m\u001b[32m822.00 B\u001b[39m\n\u001b[32mESM\u001b[39m ⚡️ Build success in 12ms\n\n\u001b[2m> \u001b[22m\u001b[2mnx run\u001b[22m kernel-contract-protocol:build\n\n\u001b[2m> \u001b[22mbunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false\r\n\r\n\u001b[34mCLI\u001b[39m Building entry: src/index.ts\n\u001b[34mCLI\u001b[39m Using tsconfig: tsconfig.tsup.json\n\u001b[34mCLI\u001b[39m tsup v8.5.1\n\u001b[34mCLI\u001b[39m Using tsup config: /home/oscar/GitHub/Tuvren-runtime/boundaries/kernel/contracts/protocol/implementations/typescript/tsup.config.ts\n\u001b[34mCLI\u001b[39m Target: esnext\n\u001b[34mCLI\u001b[39m Cleaning output folder\n\u001b[34mESM\u001b[39m Build start\n\u001b[32mESM\u001b[39m \u001b[1mdist/index.js \u001b[22m\u001b[32m93.70 KB\u001b[39m\n\u001b[32mESM\u001b[39m ⚡️ Build success in 23ms\n\n\u001b[2m> \u001b[22m\u001b[2mnx run\u001b[22m framework-runtime-api:build\n\n\u001b[2m> \u001b[22mbunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false\r\n\r\n\u001b[34mCLI\u001b[39m Building entry: src/execution.ts, src/tools.ts, src/orchestration.ts, src/index.ts, src/events.ts, src/provider.ts\n\u001b[34mCLI\u001b[39m Using tsconfig: tsconfig.tsup.json\n\u001b[34mCLI\u001b[39m tsup v8.5.1\n\u001b[34mCLI\u001b[39m Using tsup config: /home/oscar/GitHub/Tuvren-runtime/boundaries/framework/contracts/runtime-api/implementations/typescript/tsup.config.ts\n\u001b[34mCLI\u001b[39m Target: esnext\n\u001b[34mCLI\u001b[39m Cleaning output folder\n\u001b[34mESM\u001b[39m Build start\n\u001b[32mESM\u001b[39m \u001b[1mdist/events.js        \u001b[22m\u001b[32m166.00 B\u001b[39m\n\u001b[32mESM\u001b[39m \u001b[1mdist/orchestration.js \u001b[22m\u001b[32m0 B\u001b[39m\n\u001b[32mESM\u001b[39m \u001b[1mdist/provider.js      \u001b[22m\u001b[32m286.00 B\u001b[39m\n\u001b[32mESM\u001b[39m \u001b[1mdist/tools.js         \u001b[22m\u001b[32m500.00 B\u001b[39m\n\u001b[32mESM\u001b[39m \u001b[1mdist/execution.js     \u001b[22m\u001b[32m298.00 B\u001b[39m\n\u001b[32mESM\u001b[39m \u001b[1mdist/index.js         \u001b[22m\u001b[32m1.55 KB\u001b[39m\n\u001b[32mESM\u001b[39m ⚡️ Build success in 16ms\n\n\u001b[2m> \u001b[22m\u001b[2mnx run\u001b[22m kernel-testkit:build\n\n\u001b[2m> \u001b[22mbunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false\r\n\r\n\u001b[34mCLI\u001b[39m Building entry: src/index.ts\n\u001b[34mCLI\u001b[39m Using tsconfig: tsconfig.tsup.json\n\u001b[34mCLI\u001b[39m tsup v8.5.1\n\u001b[34mCLI\u001b[39m Using tsup config: /home/oscar/GitHub/Tuvren-runtime/boundaries/kernel/implementations/typescript/testkit/tsup.config.ts\n\u001b[34mCLI\u001b[39m Target: esnext\n\u001b[34mCLI\u001b[39m Cleaning output folder\n\u001b[34mESM\u001b[39m Build start\n\u001b[32mESM\u001b[39m \u001b[1mdist/index.js \u001b[22m\u001b[32m96.00 KB\u001b[39m\n\u001b[32mESM\u001b[39m ⚡️ Build success in 31ms\n\n\u001b[2m> \u001b[22m\u001b[2mnx run\u001b[22m framework-event-stream:build\n\n\u001b[2m> \u001b[22mbunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false\r\n\r\n\u001b[34mCLI\u001b[39m Building entry: src/index.ts\n\u001b[34mCLI\u001b[39m Using tsconfig: tsconfig.tsup.json\n\u001b[34mCLI\u001b[39m tsup v8.5.1\n\u001b[34mCLI\u001b[39m Using tsup config: /home/oscar/GitHub/Tuvren-runtime/boundaries/framework/contracts/event-stream/implementations/typescript/tsup.config.ts\n\u001b[34mCLI\u001b[39m Target: esnext\n\u001b[34mCLI\u001b[39m Cleaning output folder\n\u001b[34mESM\u001b[39m Build start\n\u001b[32mESM\u001b[39m \u001b[1mdist/index.js \u001b[22m\u001b[32m322.00 B\u001b[39m\n\u001b[32mESM\u001b[39m ⚡️ Build success in 12ms\n\n\u001b[2m> \u001b[22m\u001b[2mnx run\u001b[22m provider-api:build\n\n\u001b[2m> \u001b[22mbunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false\r\n\r\n\u001b[34mCLI\u001b[39m Building entry: src/index.ts\n\u001b[34mCLI\u001b[39m Using tsconfig: tsconfig.tsup.json\n\u001b[34mCLI\u001b[39m tsup v8.5.1\n\u001b[34mCLI\u001b[39m Using tsup config: /home/oscar/GitHub/Tuvren-runtime/boundaries/providers/contracts/provider-api/implementations/typescript/tsup.config.ts\n\u001b[34mCLI\u001b[39m Target: esnext\n\u001b[34mCLI\u001b[39m Cleaning output folder\n\u001b[34mESM\u001b[39m Build start\n\u001b[32mESM\u001b[39m \u001b[1mdist/index.js \u001b[22m\u001b[32m283.00 B\u001b[39m\n\u001b[32mESM\u001b[39m ⚡️ Build success in 13ms\n\n\u001b[2m> \u001b[22m\u001b[2mnx run\u001b[22m framework-testkit:build\n\n\u001b[2m> \u001b[22mbunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false\r\n\r\n\u001b[34mCLI\u001b[39m Building entry: src/index.ts\n\u001b[34mCLI\u001b[39m Using tsconfig: tsconfig.tsup.json\n\u001b[34mCLI\u001b[39m tsup v8.5.1\n\u001b[34mCLI\u001b[39m Using tsup config: /home/oscar/GitHub/Tuvren-runtime/boundaries/framework/implementations/typescript/testkit/tsup.config.ts\n\u001b[34mCLI\u001b[39m Target: esnext\n\u001b[34mCLI\u001b[39m Cleaning output folder\n\u001b[34mESM\u001b[39m Build start\n\u001b[32mESM\u001b[39m \u001b[1mdist/index.js \u001b[22m\u001b[32m5.20 KB\u001b[39m\n\u001b[32mESM\u001b[39m ⚡️ Build success in 15ms\n\n\u001b[2m> \u001b[22m\u001b[2mnx run\u001b[22m backend-memory:build\n\n\u001b[2m> \u001b[22mbunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false\r\n\r\n\u001b[34mCLI\u001b[39m Building entry: src/index.ts\n\u001b[34mCLI\u001b[39m Using tsconfig: tsconfig.tsup.json\n\u001b[34mCLI\u001b[39m tsup v8.5.1\n\u001b[34mCLI\u001b[39m Using tsup config: /home/oscar/GitHub/Tuvren-runtime/boundaries/kernel/implementations/typescript/backend-memory/tsup.config.ts\n\u001b[34mCLI\u001b[39m Target: esnext\n\u001b[34mCLI\u001b[39m Cleaning output folder\n\u001b[34mESM\u001b[39m Build start\n\u001b[32mESM\u001b[39m \u001b[1mdist/index.js \u001b[22m\u001b[32m77.99 KB\u001b[39m\n\u001b[32mESM\u001b[39m ⚡️ Build success in 25ms\n\n\u001b[2m> \u001b[22m\u001b[2mnx run\u001b[22m backend-sqlite:build\n\n\u001b[2m> \u001b[22mbunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false && mkdir -p dist/migrations && cp migrations/*.sql dist/migrations/\r\n\r\n\u001b[34mCLI\u001b[39m Building entry: src/index.ts\n\u001b[34mCLI\u001b[39m Using tsconfig: tsconfig.tsup.json\n\u001b[34mCLI\u001b[39m tsup v8.5.1\n\u001b[34mCLI\u001b[39m Using tsup config: /home/oscar/GitHub/Tuvren-runtime/boundaries/kernel/implementations/typescript/backend-sqlite/tsup.config.ts\n\u001b[34mCLI\u001b[39m Target: esnext\n\u001b[34mCLI\u001b[39m Cleaning output folder\n\u001b[34mESM\u001b[39m Build start\n\u001b[32mESM\u001b[39m \u001b[1mdist/index.js \u001b[22m\u001b[32m191.18 KB\u001b[39m\n\u001b[32mESM\u001b[39m ⚡️ Build success in 41ms\n\n\u001b[2m> \u001b[22m\u001b[2mnx run\u001b[22m framework-stream-core:build\n\n\u001b[2m> \u001b[22mbunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false\r\n\r\n\u001b[34mCLI\u001b[39m Building entry: src/index.ts\n\u001b[34mCLI\u001b[39m Using tsconfig: tsconfig.tsup.json\n\u001b[34mCLI\u001b[39m tsup v8.5.1\n\u001b[34mCLI\u001b[39m Using tsup config: /home/oscar/GitHub/Tuvren-runtime/boundaries/framework/implementations/typescript/stream-core/tsup.config.ts\n\u001b[34mCLI\u001b[39m Target: esnext\n\u001b[34mCLI\u001b[39m Cleaning output folder\n\u001b[34mESM\u001b[39m Build start\n\u001b[32mESM\u001b[39m \u001b[1mdist/index.js \u001b[22m\u001b[32m11.77 KB\u001b[39m\n\u001b[32mESM\u001b[39m ⚡️ Build success in 17ms\n\n\u001b[2m> \u001b[22m\u001b[2mnx run\u001b[22m backend-postgres:build\n\n\u001b[2m> \u001b[22mbunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false\r\n\r\n\u001b[34mCLI\u001b[39m Building entry: src/index.ts\n\u001b[34mCLI\u001b[39m Using tsconfig: tsconfig.tsup.json\n\u001b[34mCLI\u001b[39m tsup v8.5.1\n\u001b[34mCLI\u001b[39m Using tsup config: /home/oscar/GitHub/Tuvren-runtime/boundaries/kernel/implementations/typescript/backend-postgres/tsup.config.ts\n\u001b[34mCLI\u001b[39m Target: esnext\n\u001b[34mCLI\u001b[39m Cleaning output folder\n\u001b[34mESM\u001b[39m Build start\n\u001b[32mESM\u001b[39m \u001b[1mdist/index.js \u001b[22m\u001b[32m93.80 KB\u001b[39m\n\u001b[32mESM\u001b[39m ⚡️ Build success in 52ms\n\n\u001b[2m> \u001b[22m\u001b[2mnx run\u001b[22m framework-stream-sse:build\n\n\u001b[2m> \u001b[22mbunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false\r\n\r\n\u001b[34mCLI\u001b[39m Building entry: src/index.ts\n\u001b[34mCLI\u001b[39m Using tsconfig: tsconfig.tsup.json\n\u001b[34mCLI\u001b[39m tsup v8.5.1\n\u001b[34mCLI\u001b[39m Using tsup config: /home/oscar/GitHub/Tuvren-runtime/boundaries/framework/implementations/typescript/stream-sse/tsup.config.ts\n\u001b[34mCLI\u001b[39m Target: esnext\n\u001b[34mCLI\u001b[39m Cleaning output folder\n\u001b[34mESM\u001b[39m Build start\n\u001b[32mESM\u001b[39m \u001b[1mdist/index.js \u001b[22m\u001b[32m7.66 KB\u001b[39m\n\u001b[32mESM\u001b[39m ⚡️ Build success in 18ms\n\n\u001b[2m> \u001b[22m\u001b[2mnx run\u001b[22m providers-testkit:build\n\n\u001b[2m> \u001b[22mbunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false\r\n\r\n\u001b[34mCLI\u001b[39m Building entry: src/index.ts\n\u001b[34mCLI\u001b[39m Using tsconfig: tsconfig.tsup.json\n\u001b[34mCLI\u001b[39m tsup v8.5.1\n\u001b[34mCLI\u001b[39m Using tsup config: /home/oscar/GitHub/Tuvren-runtime/boundaries/providers/implementations/typescript/testkit/tsup.config.ts\n\u001b[34mCLI\u001b[39m Target: esnext\n\u001b[34mCLI\u001b[39m Cleaning output folder\n\u001b[34mESM\u001b[39m Build start\n\u001b[32mESM\u001b[39m \u001b[1mdist/index.js \u001b[22m\u001b[32m17.17 KB\u001b[39m\n\u001b[32mESM\u001b[39m ⚡️ Build success in 26ms\n\n\u001b[2m> \u001b[22m\u001b[2mnx run\u001b[22m framework-stream-agui:build\n\n\u001b[2m> \u001b[22mbunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false\r\n\r\n\u001b[34mCLI\u001b[39m Building entry: src/index.ts\n\u001b[34mCLI\u001b[39m Using tsconfig: tsconfig.tsup.json\n\u001b[34mCLI\u001b[39m tsup v8.5.1\n\u001b[34mCLI\u001b[39m Using tsup config: /home/oscar/GitHub/Tuvren-runtime/boundaries/framework/implementations/typescript/stream-agui/tsup.config.ts\n\u001b[34mCLI\u001b[39m Target: esnext\n\u001b[34mCLI\u001b[39m Cleaning output folder\n\u001b[34mESM\u001b[39m Build start\n\u001b[32mESM\u001b[39m \u001b[1mdist/index.js \u001b[22m\u001b[32m18.32 KB\u001b[39m\n\u001b[32mESM\u001b[39m ⚡️ Build success in 19ms\n\n\u001b[2m> \u001b[22m\u001b[2mnx run\u001b[22m kernel-runtime:build\n\n\u001b[2m> \u001b[22mbunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false\r\n\r\n\u001b[34mCLI\u001b[39m Building entry: src/index.ts\n\u001b[34mCLI\u001b[39m Using tsconfig: tsconfig.tsup.json\n\u001b[34mCLI\u001b[39m tsup v8.5.1\n\u001b[34mCLI\u001b[39m Using tsup config: /home/oscar/GitHub/Tuvren-runtime/boundaries/kernel/implementations/typescript/runtime-kernel/tsup.config.ts\n\u001b[34mCLI\u001b[39m Target: esnext\n\u001b[34mCLI\u001b[39m Cleaning output folder\n\u001b[34mESM\u001b[39m Build start\n\u001b[32mESM\u001b[39m \u001b[1mdist/index.js \u001b[22m\u001b[32m61.23 KB\u001b[39m\n\u001b[32mESM\u001b[39m ⚡️ Build success in 30ms\n\n\u001b[2m> \u001b[22m\u001b[2mnx run\u001b[22m framework-driver-react:build\n\n\u001b[2m> \u001b[22mbunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false && node --input-type=module -e \"await import('./dist/index.js')\"\r\n\r\n\u001b[34mCLI\u001b[39m Building entry: src/index.ts\n\u001b[34mCLI\u001b[39m Using tsconfig: tsconfig.tsup.json\n\u001b[34mCLI\u001b[39m tsup v8.5.1\n\u001b[34mCLI\u001b[39m Using tsup config: /home/oscar/GitHub/Tuvren-runtime/boundaries/framework/implementations/typescript/drivers/react/tsup.config.ts\n\u001b[34mCLI\u001b[39m Target: esnext\n\u001b[34mCLI\u001b[39m Cleaning output folder\n\u001b[34mESM\u001b[39m Build start\n\u001b[32mESM\u001b[39m \u001b[1mdist/index.js \u001b[22m\u001b[32m64.99 KB\u001b[39m\n\u001b[32mESM\u001b[39m ⚡️ Build success in 42ms\n\n\u001b[2m> \u001b[22m\u001b[2mnx run\u001b[22m providers-mcp-client:build\n\n\u001b[2m> \u001b[22mbunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false\r\n\r\n\u001b[34mCLI\u001b[39m Building entry: src/index.ts\n\u001b[34mCLI\u001b[39m Using tsconfig: tsconfig.tsup.json\n\u001b[34mCLI\u001b[39m tsup v8.5.1\n\u001b[34mCLI\u001b[39m Using tsup config: /home/oscar/GitHub/Tuvren-runtime/boundaries/providers/implementations/typescript/mcp-client/tsup.config.ts\n\u001b[34mCLI\u001b[39m Target: esnext\n\u001b[34mCLI\u001b[39m Cleaning output folder\n\u001b[34mESM\u001b[39m Build start\n\u001b[32mESM\u001b[39m \u001b[1mdist/index.js \u001b[22m\u001b[32m11.53 KB\u001b[39m\n\u001b[32mESM\u001b[39m ⚡️ Build success in 22ms\n\n\u001b[2m> \u001b[22m\u001b[2mnx run\u001b[22m framework-runtime:build\n\n\u001b[2m> \u001b[22mbunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false\r\n\r\n\u001b[34mCLI\u001b[39m Building entry: src/index.ts\n\u001b[34mCLI\u001b[39m Using tsconfig: tsconfig.tsup.json\n\u001b[34mCLI\u001b[39m tsup v8.5.1\n\u001b[34mCLI\u001b[39m Using tsup config: /home/oscar/GitHub/Tuvren-runtime/boundaries/framework/implementations/typescript/runtime/tsup.config.ts\n\u001b[34mCLI\u001b[39m Target: esnext\n\u001b[34mCLI\u001b[39m Cleaning output folder\n\u001b[34mESM\u001b[39m Build start\n\u001b[32mESM\u001b[39m \u001b[1mdist/index.js \u001b[22m\u001b[32m420.93 KB\u001b[39m\n\u001b[32mESM\u001b[39m ⚡️ Build success in 69ms\n\n\u001b[2m> \u001b[22m\u001b[2mnx run\u001b[22m providers-bridge-ai-sdk:build\n\n\u001b[2m> \u001b[22mbunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false\r\n\r\n\u001b[34mCLI\u001b[39m Building entry: src/index.ts\n\u001b[34mCLI\u001b[39m Using tsconfig: tsconfig.tsup.json\n\u001b[34mCLI\u001b[39m tsup v8.5.1\n\u001b[34mCLI\u001b[39m Using tsup config: /home/oscar/GitHub/Tuvren-runtime/boundaries/providers/implementations/typescript/bridge-ai-sdk/tsup.config.ts\n\u001b[34mCLI\u001b[39m Target: esnext\n\u001b[34mCLI\u001b[39m Cleaning output folder\n\u001b[34mESM\u001b[39m Build start\n\u001b[32mESM\u001b[39m \u001b[1mdist/index.js \u001b[22m\u001b[32m61.53 KB\u001b[39m\n\u001b[32mESM\u001b[39m ⚡️ Build success in 25ms\n\n\u001b[2m> \u001b[22m\u001b[2mnx run\u001b[22m host-repl:build\n\n\u001b[2m> \u001b[22mbunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false\r\n\r\n\u001b[34mCLI\u001b[39m Building entry: src/cli.ts, src/gemini-cli.ts, src/index.ts\n\u001b[34mCLI\u001b[39m Using tsconfig: tsconfig.tsup.json\n\u001b[34mCLI\u001b[39m tsup v8.5.1\n\u001b[34mCLI\u001b[39m Using tsup config: /home/oscar/GitHub/Tuvren-runtime/boundaries/hosts/implementations/typescript/repl/tsup.config.ts\n\u001b[34mCLI\u001b[39m Target: esnext\n\u001b[34mCLI\u001b[39m Cleaning output folder\n\u001b[34mESM\u001b[39m Build start\n\u001b[32mESM\u001b[39m \u001b[1mdist/chunk-6SMTFAQM.js \u001b[22m\u001b[32m95.83 KB\u001b[39m\n\u001b[32mESM\u001b[39m \u001b[1mdist/index.js          \u001b[22m\u001b[32m811.00 B\u001b[39m\n\u001b[32mESM\u001b[39m \u001b[1mdist/cli.js            \u001b[22m\u001b[32m40.06 KB\u001b[39m\n\u001b[32mESM\u001b[39m \u001b[1mdist/gemini-cli.js     \u001b[22m\u001b[32m575.00 B\u001b[39m\n\u001b[32mESM\u001b[39m ⚡️ Build success in 45ms\n../../../../framework/implementations/typescript/drivers/react/dist/lib/react-driver.d.ts(16,68): error TS7016: Could not find a declaration file for module '@tuvren/core/driver'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/driver/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/driver';`\n../../../../framework/implementations/typescript/drivers/react/dist/lib/react-driver.d.ts(17,34): error TS7016: Could not find a declaration file for module '@tuvren/core/execution'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/execution/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/execution';`\n../../../../framework/implementations/typescript/drivers/react/dist/lib/react-driver.d.ts(18,58): error TS7016: Could not find a declaration file for module '@tuvren/core/provider'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/provider/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/provider';`\n../../../../framework/implementations/typescript/runtime/dist/index.d.ts(16,43): error TS2307: Cannot find module '@tuvren/backend-memory' or its corresponding type declarations.\n../../../../framework/implementations/typescript/runtime/dist/index.d.ts(17,37): error TS2307: Cannot find module '@tuvren/backend-memory' or its corresponding type declarations.\n../../../../framework/implementations/typescript/runtime/dist/index.d.ts(20,43): error TS2307: Cannot find module '@tuvren/backend-sqlite' or its corresponding type declarations.\n../../../../framework/implementations/typescript/runtime/dist/index.d.ts(21,37): error TS2307: Cannot find module '@tuvren/backend-sqlite' or its corresponding type declarations.\n../../../../framework/implementations/typescript/runtime/dist/index.d.ts(22,94): error TS7016: Could not find a declaration file for module '@tuvren/core'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core';`\n../../../../framework/implementations/typescript/runtime/dist/index.d.ts(23,177): error TS7016: Could not find a declaration file for module '@tuvren/core'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core';`\n../../../../framework/implementations/typescript/runtime/dist/index.d.ts(24,235): error TS7016: Could not find a declaration file for module '@tuvren/core/events'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/events/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/events';`\n../../../../framework/implementations/typescript/runtime/dist/index.d.ts(25,41): error TS7016: Could not find a declaration file for module '@tuvren/core/events'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/events/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/events';`\n../../../../framework/implementations/typescript/runtime/dist/index.d.ts(26,188): error TS7016: Could not find a declaration file for module '@tuvren/core/execution'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/execution/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/execution';`\n../../../../framework/implementations/typescript/runtime/dist/index.d.ts(27,39): error TS7016: Could not find a declaration file for module '@tuvren/core/execution'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/execution/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/execution';`\n../../../../framework/implementations/typescript/runtime/dist/index.d.ts(28,38): error TS7016: Could not find a declaration file for module '@tuvren/core/extensions'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/extensions/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/extensions';`\n../../../../framework/implementations/typescript/runtime/dist/index.d.ts(29,168): error TS7016: Could not find a declaration file for module '@tuvren/core/messages'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/messages/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/messages';`\n../../../../framework/implementations/typescript/runtime/dist/index.d.ts(30,37): error TS7016: Could not find a declaration file for module '@tuvren/core/messages'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/messages/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/messages';`\n../../../../framework/implementations/typescript/runtime/dist/index.d.ts(31,134): error TS7016: Could not find a declaration file for module '@tuvren/core/provider'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/provider/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/provider';`\n../../../../framework/implementations/typescript/runtime/dist/index.d.ts(32,43): error TS7016: Could not find a declaration file for module '@tuvren/core/provider'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/provider/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/provider';`\n../../../../framework/implementations/typescript/runtime/dist/index.d.ts(33,131): error TS7016: Could not find a declaration file for module '@tuvren/core/telemetry'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/telemetry/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/telemetry';`\n../../../../framework/implementations/typescript/runtime/dist/index.d.ts(34,35): error TS7016: Could not find a declaration file for module '@tuvren/core/telemetry'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/telemetry/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/telemetry';`\n../../../../framework/implementations/typescript/runtime/dist/index.d.ts(35,180): error TS7016: Could not find a declaration file for module '@tuvren/core/tools'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/tools/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/tools';`\n../../../../framework/implementations/typescript/runtime/dist/index.d.ts(36,167): error TS7016: Could not find a declaration file for module '@tuvren/core/tools'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/tools/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/tools';`\n../../../../framework/implementations/typescript/runtime/dist/index.d.ts(41,43): error TS2307: Cannot find module '@tuvren/kernel-runtime' or its corresponding type declarations.\n../../../../framework/implementations/typescript/runtime/dist/index.d.ts(42,37): error TS2307: Cannot find module '@tuvren/kernel-runtime' or its corresponding type declarations.\n../../../../framework/implementations/typescript/runtime/dist/lib/binding-resolver.d.ts(16,30): error TS7016: Could not find a declaration file for module '@tuvren/core/capabilities'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/capabilities/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/capabilities';`\n../../../../framework/implementations/typescript/runtime/dist/lib/binding-resolver.d.ts(17,43): error TS7016: Could not find a declaration file for module '@tuvren/core/tools'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/tools/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/tools';`\n../../../../framework/implementations/typescript/runtime/dist/lib/capability-policy-engine.d.ts(16,45): error TS7016: Could not find a declaration file for module '@tuvren/core/capabilities'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/capabilities/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/capabilities';`\n../../../../framework/implementations/typescript/runtime/dist/lib/capability-registry.d.ts(16,46): error TS7016: Could not find a declaration file for module '@tuvren/core/capabilities'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/capabilities/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/capabilities';`\n../../../../framework/implementations/typescript/runtime/dist/lib/client-endpoint-boundary.d.ts(16,69): error TS7016: Could not find a declaration file for module '@tuvren/core/capabilities'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/capabilities/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/capabilities';`\n../../../../framework/implementations/typescript/runtime/dist/lib/context-manifest.d.ts(16,38): error TS7016: Could not find a declaration file for module '@tuvren/core/execution'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/execution/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/execution';`\n../../../../framework/implementations/typescript/runtime/dist/lib/context-manifest.d.ts(17,36): error TS7016: Could not find a declaration file for module '@tuvren/core/messages'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/messages/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/messages';`\n../../../../framework/implementations/typescript/runtime/dist/lib/create-tuvren.d.ts(16,43): error TS2307: Cannot find module '@tuvren/backend-memory' or its corresponding type declarations.\n../../../../framework/implementations/typescript/runtime/dist/lib/create-tuvren.d.ts(18,43): error TS2307: Cannot find module '@tuvren/backend-sqlite' or its corresponding type declarations.\n../../../../framework/implementations/typescript/runtime/dist/lib/create-tuvren.d.ts(19,43): error TS7016: Could not find a declaration file for module '@tuvren/core/driver'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/driver/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/driver';`\n../../../../framework/implementations/typescript/runtime/dist/lib/create-tuvren.d.ts(20,58): error TS7016: Could not find a declaration file for module '@tuvren/core/execution'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/execution/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/execution';`\n../../../../framework/implementations/typescript/runtime/dist/lib/create-tuvren.d.ts(21,38): error TS7016: Could not find a declaration file for module '@tuvren/core/extensions'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/extensions/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/extensions';`\n../../../../framework/implementations/typescript/runtime/dist/lib/create-tuvren.d.ts(22,37): error TS7016: Could not find a declaration file for module '@tuvren/core/provider'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/provider/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/provider';`\n../../../../framework/implementations/typescript/runtime/dist/lib/create-tuvren.d.ts(23,42): error TS7016: Could not find a declaration file for module '@tuvren/core/telemetry'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/telemetry/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/telemetry';`\n../../../../framework/implementations/typescript/runtime/dist/lib/create-tuvren.d.ts(24,43): error TS7016: Could not find a declaration file for module '@tuvren/core/tools'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/tools/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/tools';`\n../../../../framework/implementations/typescript/runtime/dist/lib/create-tuvren.d.ts(29,43): error TS2307: Cannot find module '@tuvren/backend-memory' or its corresponding type declarations.\n../../../../framework/implementations/typescript/runtime/dist/lib/create-tuvren.d.ts(31,43): error TS2307: Cannot find module '@tuvren/backend-sqlite' or its corresponding type declarations.\n../../../../framework/implementations/typescript/runtime/dist/lib/driver-registry.d.ts(16,123): error TS7016: Could not find a declaration file for module '@tuvren/core/driver'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/driver/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/driver';`\n../../../../framework/implementations/typescript/runtime/dist/lib/extension-runtime.d.ts(16,81): error TS7016: Could not find a declaration file for module '@tuvren/core/execution'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/execution/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/execution';`\n../../../../framework/implementations/typescript/runtime/dist/lib/extension-runtime.d.ts(17,61): error TS7016: Could not find a declaration file for module '@tuvren/core/extensions'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/extensions/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/extensions';`\n../../../../framework/implementations/typescript/runtime/dist/lib/extension-runtime.d.ts(18,36): error TS7016: Could not find a declaration file for module '@tuvren/core/messages'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/messages/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/messages';`\n../../../../framework/implementations/typescript/runtime/dist/lib/handoff-builders.d.ts(16,44): error TS7016: Could not find a declaration file for module '@tuvren/core/execution'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/execution/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/execution';`\n../../../../framework/implementations/typescript/runtime/dist/lib/orchestration-runtime.d.ts(16,30): error TS7016: Could not find a declaration file for module '@tuvren/core'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core';`\n../../../../framework/implementations/typescript/runtime/dist/lib/orchestration-runtime.d.ts(17,71): error TS7016: Could not find a declaration file for module '@tuvren/core/execution'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/execution/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/execution';`\n../../../../framework/implementations/typescript/runtime/dist/lib/runtime-core.d.ts(16,30): error TS7016: Could not find a declaration file for module '@tuvren/core'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core';`\n../../../../framework/implementations/typescript/runtime/dist/lib/runtime-core.d.ts(17,37): error TS7016: Could not find a declaration file for module '@tuvren/core/driver'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/driver/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/driver';`\n../../../../framework/implementations/typescript/runtime/dist/lib/runtime-core.d.ts(18,72): error TS7016: Could not find a declaration file for module '@tuvren/core/execution'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/execution/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/execution';`\n../../../../framework/implementations/typescript/runtime/dist/lib/runtime-core.d.ts(19,42): error TS7016: Could not find a declaration file for module '@tuvren/core/telemetry'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/telemetry/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/telemetry';`\n../../../../framework/implementations/typescript/runtime/dist/lib/runtime-execution-types.d.ts(16,33): error TS7016: Could not find a declaration file for module '@tuvren/core'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core';`\n../../../../framework/implementations/typescript/runtime/dist/lib/runtime-execution-types.d.ts(17,47): error TS7016: Could not find a declaration file for module '@tuvren/core/execution'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/execution/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/execution';`\n../../../../framework/implementations/typescript/runtime/dist/lib/runtime-execution-types.d.ts(18,37): error TS7016: Could not find a declaration file for module '@tuvren/core/messages'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/messages/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/messages';`\n../../../../framework/implementations/typescript/runtime/dist/lib/runtime-execution-types.d.ts(19,42): error TS7016: Could not find a declaration file for module '@tuvren/core/provider'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/provider/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/provider';`\n../../../../framework/implementations/typescript/runtime/dist/lib/runtime-execution-types.d.ts(20,92): error TS7016: Could not find a declaration file for module '@tuvren/core/tools'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/tools/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/tools';`\n../../../../framework/implementations/typescript/runtime/dist/lib/runtime-execution-types.d.ts(46,37): error TS7016: Could not find a declaration file for module '@tuvren/core/capabilities'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/capabilities/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/capabilities';`\n../../../../framework/implementations/typescript/runtime/dist/lib/tool-execution.d.ts(16,42): error TS7016: Could not find a declaration file for module '@tuvren/core'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core';`\n../../../../framework/implementations/typescript/runtime/dist/lib/tool-execution.d.ts(17,68): error TS7016: Could not find a declaration file for module '@tuvren/core/capabilities'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/capabilities/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/capabilities';`\n../../../../framework/implementations/typescript/runtime/dist/lib/tool-execution.d.ts(18,40): error TS7016: Could not find a declaration file for module '@tuvren/core/events'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/events/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/events';`\n../../../../framework/implementations/typescript/runtime/dist/lib/tool-execution.d.ts(19,38): error TS7016: Could not find a declaration file for module '@tuvren/core/execution'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/execution/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/execution';`\n../../../../framework/implementations/typescript/runtime/dist/lib/tool-execution.d.ts(20,38): error TS7016: Could not find a declaration file for module '@tuvren/core/extensions'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/extensions/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/extensions';`\n../../../../framework/implementations/typescript/runtime/dist/lib/tool-execution.d.ts(21,51): error TS7016: Could not find a declaration file for module '@tuvren/core/messages'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/messages/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/messages';`\n../../../../framework/implementations/typescript/runtime/dist/lib/tool-execution.d.ts(22,110): error TS7016: Could not find a declaration file for module '@tuvren/core/tools'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/tools/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/tools';`\n../../../../framework/implementations/typescript/runtime/dist/lib/tool-registry.d.ts(16,69): error TS7016: Could not find a declaration file for module '@tuvren/core/capabilities'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/capabilities/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/capabilities';`\n../../../../framework/implementations/typescript/runtime/dist/lib/tool-registry.d.ts(17,38): error TS7016: Could not find a declaration file for module '@tuvren/core/extensions'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/extensions/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/extensions';`\n../../../../framework/implementations/typescript/runtime/dist/lib/tool-registry.d.ts(18,62): error TS7016: Could not find a declaration file for module '@tuvren/core/tools'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/tools/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/tools';`\n../../../../framework/implementations/typescript/stream-agui/dist/lib/stream-agui.d.ts(17,40): error TS7016: Could not find a declaration file for module '@tuvren/core/events'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/events/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/events';`\n../../../../framework/implementations/typescript/stream-core/dist/lib/stream-core.d.ts(16,40): error TS7016: Could not find a declaration file for module '@tuvren/core/events'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/events/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/events';`\n../../../../framework/implementations/typescript/stream-sse/dist/lib/stream-sse.d.ts(16,40): error TS7016: Could not find a declaration file for module '@tuvren/core/events'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/events/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/events';`\nsrc/lib/proof-extension.ts(24,16): error TS7006: Parameter 'context' implicitly has an 'any' type.\nsrc/lib/proof-extension.ts(41,18): error TS7006: Parameter 'context' implicitly has an 'any' type.\nsrc/lib/repl-builtin-tools.ts(45,15): error TS7006: Parameter 'input' implicitly has an 'any' type.\nsrc/lib/repl-builtin-tools.ts(75,15): error TS7006: Parameter 'input' implicitly has an 'any' type.\nsrc/lib/repl-builtin-tools.ts(101,15): error TS7006: Parameter 'input' implicitly has an 'any' type.\nsrc/lib/repl-builtin-tools.ts(135,15): error TS7006: Parameter 'input' implicitly has an 'any' type.\nsrc/lib/repl-host.ts(17,37): error TS2307: Cannot find module '@tuvren/backend-memory' or its corresponding type declarations.\nsrc/lib/repl-host.ts(19,37): error TS2307: Cannot find module '@tuvren/backend-sqlite' or its corresponding type declarations.\nsrc/lib/repl-live-output.ts(210,10): error TS7006: Parameter 'toolCall' implicitly has an 'any' type.\nsrc/lib/repl-live-output.ts(226,51): error TS7006: Parameter 'decision' implicitly has an 'any' type.\nsrc/lib/repl-provider.ts(147,14): error TS7006: Parameter 'prompt' implicitly has an 'any' type.\nsrc/lib/repl-provider.ts(151,12): error TS7006: Parameter 'prompt' implicitly has an 'any' type.\nsrc/lib/repl-provider.ts(225,29): error TS7006: Parameter 'message' implicitly has an 'any' type.\nsrc/lib/repl-provider.ts(485,34): error TS7006: Parameter 'message' implicitly has an 'any' type.\nsrc/lib/repl-provider.ts(490,6): error TS7006: Parameter 'message' implicitly has an 'any' type.\nsrc/lib/repl-provider.ts(492,27): error TS7006: Parameter 'part' implicitly has an 'any' type.\nsrc/lib/repl-scenarios-support.ts(376,14): error TS7006: Parameter 'prompt' implicitly has an 'any' type.\nsrc/lib/repl-scenarios-support.ts(382,12): error TS7006: Parameter 'prompt' implicitly has an 'any' type.\nsrc/lib/repl-scenarios-support.ts(908,5): error TS18046: 'error' is of type 'unknown'.\nsrc/lib/repl-scenarios.ts(54,12): error TS7006: Parameter '_response' implicitly has an 'any' type.\nsrc/lib/repl-scenarios.ts(54,23): error TS7006: Parameter '_manifest' implicitly has an 'any' type.\nsrc/lib/repl-scenarios.ts(54,34): error TS7006: Parameter 'iterationCount' implicitly has an 'any' type.\nsrc/lib/repl-scenarios.ts(314,6): error TS7006: Parameter 'toolCall' implicitly has an 'any' type.\nsrc/lib/repl-scenarios.ts(342,40): error TS7006: Parameter 'toolCall' implicitly has an 'any' type.\nsrc/lib/repl-shell.ts(88,12): error TS7006: Parameter '_response' implicitly has an 'any' type.\nsrc/lib/repl-shell.ts(88,23): error TS7006: Parameter '_manifest' implicitly has an 'any' type.\nsrc/lib/repl-shell.ts(88,34): error TS7006: Parameter 'iterationCount' implicitly has an 'any' type.\nsrc/lib/repl-shell.ts(694,42): error TS7006: Parameter 'decision' implicitly has an 'any' type.\nsrc/lib/repl-shell.ts(1042,40): error TS7006: Parameter 'toolCall' implicitly has an 'any' type.\n../../../../kernel/contracts/protocol/implementations/typescript/dist/lib/kernel-identity.d.ts(16,33): error TS7016: Could not find a declaration file for module '@tuvren/core'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core';`\n../../../../kernel/contracts/protocol/implementations/typescript/dist/lib/kernel-record-identity.d.ts(16,47): error TS7016: Could not find a declaration file for module '@tuvren/core'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core';`\n../../../../kernel/contracts/protocol/implementations/typescript/dist/lib/kernel-types.d.ts(16,70): error TS7016: Could not find a declaration file for module '@tuvren/core'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core';`\n../../../../kernel/implementations/typescript/backend-postgres/dist/lib/postgres-backend-persistence.d.ts(16,30): error TS7016: Could not find a declaration file for module '@tuvren/core'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core';`\n../../../../providers/contracts/provider-api/implementations/typescript/dist/index.d.ts(16,225): error TS7016: Could not find a declaration file for module '@tuvren/core/provider'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/provider/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/provider';`\n../../../../providers/contracts/provider-api/implementations/typescript/dist/index.d.ts(17,117): error TS7016: Could not find a declaration file for module '@tuvren/core/provider'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/provider/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/provider';`\n../../../../providers/implementations/typescript/mcp-client/dist/lib/mcp-sdk-client.d.ts(17,37): error TS7016: Could not find a declaration file for module '@tuvren/core/errors'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/errors/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/errors';`\n../../../../providers/implementations/typescript/mcp-client/dist/lib/mcp-tool-source.d.ts(16,37): error TS7016: Could not find a declaration file for module '@tuvren/core/errors'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/errors/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/errors';`\n../../../../providers/implementations/typescript/mcp-client/dist/lib/mcp-tool-source.d.ts(17,43): error TS7016: Could not find a declaration file for module '@tuvren/core/tools'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/dist/tools/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__core` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/core/tools';`\n\n\u001b[2m\u001b[31m\u001b[39m\u001b[22m\n\n\u001b[7m\u001b[1m\u001b[31m NX \u001b[39m\u001b[22m\u001b[27m  \u001b[31mRunning target \u001b[1mbuild\u001b[22m for project host-repl and \u001b[1m20\u001b[22m tasks it depends on failed\u001b[39m\n\n\u001b[2mFailed tasks:\u001b[22m\n\n\u001b[2m-\u001b[22m host-repl:build\n\n\u001b[2mHint: run the command with\u001b[22m --verbose \u001b[2mfor more details.\u001b[22m\n\n\n\u001b[7m\u001b[1m\u001b[33m NX \u001b[39m\u001b[22m\u001b[27m  \u001b[33mNx detected a flaky task\u001b[39m\n\n  host-repl:build\n\nFlaky tasks can disrupt your CI pipeline. Automatically retry them with Nx Cloud. Learn more at https://nx.dev/ci/features/flaky-tasks\n\n"
+  "telemetry": {
+    "observedKeys": [
+      "tuvren.runtime.backend.id",
+      "tuvren.runtime.branch.id",
+      "tuvren.runtime.checkpoint.hash",
+      "tuvren.runtime.driver.id",
+      "tuvren.runtime.error.code",
+      "tuvren.runtime.parent_checkpoint.hash",
+      "tuvren.runtime.provider.id",
+      "tuvren.runtime.resumed_from.hash",
+      "tuvren.runtime.run.id",
+      "tuvren.runtime.thread.id",
+      "tuvren.runtime.tool_call.id",
+      "tuvren.runtime.turn.id"
+    ],
+    "scenarios": [
+      {
+        "observedKeys": [
+          "tuvren.runtime.backend.id",
+          "tuvren.runtime.branch.id",
+          "tuvren.runtime.checkpoint.hash",
+          "tuvren.runtime.driver.id",
+          "tuvren.runtime.parent_checkpoint.hash",
+          "tuvren.runtime.provider.id",
+          "tuvren.runtime.run.id",
+          "tuvren.runtime.thread.id",
+          "tuvren.runtime.turn.id"
+        ],
+        "scenario": "streaming"
+      },
+      {
+        "observedKeys": [
+          "tuvren.runtime.backend.id",
+          "tuvren.runtime.branch.id",
+          "tuvren.runtime.checkpoint.hash",
+          "tuvren.runtime.driver.id",
+          "tuvren.runtime.parent_checkpoint.hash",
+          "tuvren.runtime.provider.id",
+          "tuvren.runtime.run.id",
+          "tuvren.runtime.thread.id",
+          "tuvren.runtime.turn.id"
+        ],
+        "scenario": "structured"
+      },
+      {
+        "observedKeys": [
+          "tuvren.runtime.backend.id",
+          "tuvren.runtime.branch.id",
+          "tuvren.runtime.checkpoint.hash",
+          "tuvren.runtime.driver.id",
+          "tuvren.runtime.parent_checkpoint.hash",
+          "tuvren.runtime.provider.id",
+          "tuvren.runtime.run.id",
+          "tuvren.runtime.thread.id",
+          "tuvren.runtime.tool_call.id",
+          "tuvren.runtime.turn.id"
+        ],
+        "scenario": "tools"
+      },
+      {
+        "observedKeys": [
+          "tuvren.runtime.backend.id",
+          "tuvren.runtime.branch.id",
+          "tuvren.runtime.checkpoint.hash",
+          "tuvren.runtime.driver.id",
+          "tuvren.runtime.parent_checkpoint.hash",
+          "tuvren.runtime.provider.id",
+          "tuvren.runtime.resumed_from.hash",
+          "tuvren.runtime.run.id",
+          "tuvren.runtime.thread.id",
+          "tuvren.runtime.tool_call.id",
+          "tuvren.runtime.turn.id"
+        ],
+        "scenario": "approval"
+      },
+      {
+        "observedKeys": [
+          "tuvren.runtime.backend.id",
+          "tuvren.runtime.branch.id",
+          "tuvren.runtime.checkpoint.hash",
+          "tuvren.runtime.driver.id",
+          "tuvren.runtime.error.code",
+          "tuvren.runtime.parent_checkpoint.hash",
+          "tuvren.runtime.provider.id",
+          "tuvren.runtime.run.id",
+          "tuvren.runtime.thread.id",
+          "tuvren.runtime.turn.id"
+        ],
+        "scenario": "cancel"
+      },
+      {
+        "observedKeys": [
+          "tuvren.runtime.backend.id",
+          "tuvren.runtime.branch.id",
+          "tuvren.runtime.checkpoint.hash",
+          "tuvren.runtime.driver.id",
+          "tuvren.runtime.parent_checkpoint.hash",
+          "tuvren.runtime.provider.id",
+          "tuvren.runtime.run.id",
+          "tuvren.runtime.thread.id",
+          "tuvren.runtime.turn.id"
+        ],
+        "scenario": "metadata"
+      },
+      {
+        "observedKeys": [
+          "tuvren.runtime.backend.id",
+          "tuvren.runtime.branch.id",
+          "tuvren.runtime.checkpoint.hash",
+          "tuvren.runtime.driver.id",
+          "tuvren.runtime.parent_checkpoint.hash",
+          "tuvren.runtime.provider.id",
+          "tuvren.runtime.run.id",
+          "tuvren.runtime.thread.id",
+          "tuvren.runtime.turn.id"
+        ],
+        "scenario": "branching"
+      },
+      {
+        "observedKeys": [
+          "tuvren.runtime.backend.id",
+          "tuvren.runtime.branch.id",
+          "tuvren.runtime.checkpoint.hash",
+          "tuvren.runtime.driver.id",
+          "tuvren.runtime.parent_checkpoint.hash",
+          "tuvren.runtime.provider.id",
+          "tuvren.runtime.run.id",
+          "tuvren.runtime.thread.id",
+          "tuvren.runtime.turn.id"
+        ],
+        "scenario": "steering"
+      },
+      {
+        "observedKeys": [
+          "tuvren.runtime.backend.id",
+          "tuvren.runtime.branch.id",
+          "tuvren.runtime.checkpoint.hash",
+          "tuvren.runtime.driver.id",
+          "tuvren.runtime.parent_checkpoint.hash",
+          "tuvren.runtime.provider.id",
+          "tuvren.runtime.run.id",
+          "tuvren.runtime.thread.id",
+          "tuvren.runtime.turn.id"
+        ],
+        "scenario": "extension"
+      },
+      {
+        "observedKeys": [
+          "tuvren.runtime.backend.id",
+          "tuvren.runtime.branch.id",
+          "tuvren.runtime.checkpoint.hash",
+          "tuvren.runtime.driver.id",
+          "tuvren.runtime.parent_checkpoint.hash",
+          "tuvren.runtime.provider.id",
+          "tuvren.runtime.run.id",
+          "tuvren.runtime.thread.id",
+          "tuvren.runtime.turn.id"
+        ],
+        "scenario": "orchestration"
+      },
+      {
+        "observedKeys": [
+          "tuvren.runtime.backend.id",
+          "tuvren.runtime.branch.id",
+          "tuvren.runtime.checkpoint.hash",
+          "tuvren.runtime.driver.id",
+          "tuvren.runtime.parent_checkpoint.hash",
+          "tuvren.runtime.provider.id",
+          "tuvren.runtime.run.id",
+          "tuvren.runtime.thread.id",
+          "tuvren.runtime.turn.id"
+        ],
+        "scenario": "reload"
+      }
+    ],
+    "schemaUrl": "https://tuvren.dev/schemas/telemetry/0.1.0"
+  }
 }

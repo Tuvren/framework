@@ -2972,9 +2972,7 @@
       "details": {
         "adapterId": "typescript-framework",
         "planId": "tuvren.framework.react-driver.callables",
-        "traceStepIds": [
-          "checkpoint"
-        ]
+        "traceStepIds": ["checkpoint"]
       },
       "status": "pass"
     },
@@ -3223,9 +3221,7 @@
       "details": {
         "adapterId": "typescript-framework",
         "planId": "tuvren.framework.react-driver.extended",
-        "traceStepIds": [
-          "checkpoint"
-        ]
+        "traceStepIds": ["checkpoint"]
       },
       "status": "pass"
     },
@@ -5788,9 +5784,7 @@
       "details": {
         "adapterId": "typescript-framework",
         "planId": "tuvren.framework.runtime-api.lifecycle",
-        "traceStepIds": [
-          "approval"
-        ]
+        "traceStepIds": ["approval"]
       },
       "status": "pass"
     },
@@ -5841,9 +5835,7 @@
       "details": {
         "adapterId": "typescript-framework",
         "planId": "tuvren.framework.runtime-api.lifecycle",
-        "traceStepIds": [
-          "branch"
-        ]
+        "traceStepIds": ["branch"]
       },
       "status": "pass"
     },
@@ -5866,9 +5858,7 @@
       "details": {
         "adapterId": "typescript-framework",
         "planId": "tuvren.framework.runtime-api.lifecycle",
-        "traceStepIds": [
-          "cancel"
-        ]
+        "traceStepIds": ["cancel"]
       },
       "status": "pass"
     },
@@ -5903,9 +5893,7 @@
       "details": {
         "adapterId": "typescript-framework",
         "planId": "tuvren.framework.runtime-api.lifecycle",
-        "traceStepIds": [
-          "context"
-        ]
+        "traceStepIds": ["context"]
       },
       "status": "pass"
     },
@@ -5970,9 +5958,7 @@
       "details": {
         "adapterId": "typescript-framework",
         "planId": "tuvren.framework.runtime-api.lifecycle",
-        "traceStepIds": [
-          "recovery"
-        ]
+        "traceStepIds": ["recovery"]
       },
       "status": "pass"
     },
@@ -6195,9 +6181,7 @@
       "details": {
         "adapterId": "typescript-framework",
         "planId": "tuvren.framework.runtime-api.lifecycle-extended",
-        "traceStepIds": [
-          "approval"
-        ]
+        "traceStepIds": ["approval"]
       },
       "status": "pass"
     },
@@ -6216,9 +6200,7 @@
       "details": {
         "adapterId": "typescript-framework",
         "planId": "tuvren.framework.runtime-api.lifecycle-extended",
-        "traceStepIds": [
-          "approval"
-        ]
+        "traceStepIds": ["approval"]
       },
       "status": "pass"
     },

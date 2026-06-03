@@ -1,9 +1,7 @@
 {
   "adapterId": "typescript-framework-batteries-included",
   "boundary": "framework",
-  "capabilities": [
-    "framework.batteries-included"
-  ],
+  "capabilities": ["framework.batteries-included"],
   "checkResults": [
     {
       "assertionResults": [
