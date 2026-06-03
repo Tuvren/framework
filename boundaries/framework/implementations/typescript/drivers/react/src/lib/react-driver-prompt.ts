@@ -61,6 +61,9 @@ export function createAroundModelContextSnapshot(input: {
   const prompt = createPromptSnapshot({
     config,
     messages,
+    providerContinuity: cloneValue(input.prompt.providerContinuity),
+    providerMediatedTools: cloneValue(input.prompt.providerMediatedTools),
+    providerNativeTools: cloneValue(input.prompt.providerNativeTools),
     responseFormat: cloneValue(input.prompt.responseFormat),
     tools,
   });
@@ -170,6 +173,9 @@ export function normalizeNextAroundModelContext(
       ...createPromptSnapshot({
         config: resolvedConfig,
         messages: resolvedMessages,
+        providerContinuity: cloneValue(nextContext.prompt.providerContinuity),
+        providerMediatedTools: cloneValue(nextContext.prompt.providerMediatedTools),
+        providerNativeTools: cloneValue(nextContext.prompt.providerNativeTools),
         responseFormat: cloneValue(nextContext.prompt.responseFormat),
         tools: resolvedTools,
       }),
@@ -313,6 +319,9 @@ function cloneValue<T>(value: T): T {
 function createPromptSnapshot(input: {
   config: TuvrenModelConfig;
   messages: TuvrenMessage[];
+  providerContinuity?: TuvrenPrompt["providerContinuity"];
+  providerMediatedTools?: TuvrenPrompt["providerMediatedTools"];
+  providerNativeTools?: TuvrenPrompt["providerNativeTools"];
   responseFormat: TuvrenPrompt["responseFormat"];
   tools: RenderedToolDefinition[];
 }): TuvrenPrompt {
@@ -321,6 +330,15 @@ function createPromptSnapshot(input: {
     messages: input.messages,
     responseFormat: input.responseFormat,
     tools: input.tools.length === 0 ? undefined : input.tools,
+    ...(input.providerNativeTools !== undefined && input.providerNativeTools.length > 0
+      ? { providerNativeTools: input.providerNativeTools }
+      : {}),
+    ...(input.providerMediatedTools !== undefined && input.providerMediatedTools.length > 0
+      ? { providerMediatedTools: input.providerMediatedTools }
+      : {}),
+    ...(input.providerContinuity !== undefined
+      ? { providerContinuity: input.providerContinuity }
+      : {}),
   };
 }
 

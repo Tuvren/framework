@@ -251,10 +251,12 @@ async function executeIteration(
                 extensionName: update.extensionName,
                 state: cloneValue(update.state),
               }));
-        await flushBufferedAssistantSequences(
-          execution.assistantSequences,
-          context.runtime
-        );
+        // Do not flush buffered assistant sequences for a pure provider-tool
+        // response: the sequences have no content (response.parts is empty),
+        // so flushing would emit empty message.start/done events that fail
+        // the "assistant events require a durable assistant message" invariant.
+        // Any sequences with real content (from text before the provider tool
+        // result) belong to the stream path, not the generate-only path.
         return {
           messages: [prestagedOnlyToolMessage],
           resolution: iterationDecisionToResolution(iterationDecisionNoTools),
@@ -773,6 +775,17 @@ function createProviderPrompt(aroundContext: AroundModelContext) {
       aroundContext.tools.length === 0
         ? undefined
         : cloneValue(aroundContext.tools),
+    ...(aroundContext.prompt.providerNativeTools !== undefined &&
+      aroundContext.prompt.providerNativeTools.length > 0
+      ? { providerNativeTools: cloneValue(aroundContext.prompt.providerNativeTools) }
+      : {}),
+    ...(aroundContext.prompt.providerMediatedTools !== undefined &&
+      aroundContext.prompt.providerMediatedTools.length > 0
+      ? { providerMediatedTools: cloneValue(aroundContext.prompt.providerMediatedTools) }
+      : {}),
+    ...(aroundContext.prompt.providerContinuity !== undefined
+      ? { providerContinuity: cloneValue(aroundContext.prompt.providerContinuity) }
+      : {}),
   };
 }
 
