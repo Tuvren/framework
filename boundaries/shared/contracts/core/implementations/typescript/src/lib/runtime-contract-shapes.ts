@@ -948,21 +948,6 @@ export interface AgentConfig {
    */
   capabilityPolicyEngine?: CapabilityPolicyEngine;
   /**
-   * Attached client endpoints for this agent. Each endpoint advertises the
-   * capabilities it can execute (on behalf of the runtime, in a client
-   * environment such as a browser extension, desktop app, or device agent).
-   *
-   * The runtime registers each advertised capability as a tuvren-client
-   * binding and dispatches matching tool calls to the endpoint via an
-   * invocation envelope. No client credentials or environment secrets should
-   * appear in the envelope or the reported result — they stay at the client edge.
-   *
-   * Concrete client endpoints are host-developer deliverables. The runtime
-   * only needs this interface to orchestrate, lease, and observe client-side
-   * execution. (KRT-AZ001)
-   */
-  clientEndpoints?: AttachedClientEndpoint[];
-  /**
    * Optional pre-built ClientEndpointBoundary for this agent.
    *
    * When set, the runtime uses this boundary directly instead of creating one
@@ -980,6 +965,21 @@ export interface AgentConfig {
    * unavailable at invocation time).
    */
   clientEndpointBoundary?: ClientEndpointBoundary;
+  /**
+   * Attached client endpoints for this agent. Each endpoint advertises the
+   * capabilities it can execute (on behalf of the runtime, in a client
+   * environment such as a browser extension, desktop app, or device agent).
+   *
+   * The runtime registers each advertised capability as a tuvren-client
+   * binding and dispatches matching tool calls to the endpoint via an
+   * invocation envelope. No client credentials or environment secrets should
+   * appear in the envelope or the reported result — they stay at the client edge.
+   *
+   * Concrete client endpoints are host-developer deliverables. The runtime
+   * only needs this interface to orchestrate, lease, and observe client-side
+   * execution. (KRT-AZ001)
+   */
+  clientEndpoints?: AttachedClientEndpoint[];
   contextPolicy?: ContextPolicy;
   extensions?: TuvrenExtension[];
   loopPolicy?: LoopPolicy;

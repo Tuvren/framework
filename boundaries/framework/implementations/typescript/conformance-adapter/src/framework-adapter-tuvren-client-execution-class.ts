@@ -58,7 +58,9 @@ function makeSingleCallDriver(toolName: string) {
     if (!context.messages.some((m) => m.role === "tool")) {
       return {
         messages: [
-          assistantToolCalls([{ callId: "az-call-1", input: {}, name: toolName }]),
+          assistantToolCalls([
+            { callId: "az-call-1", input: {}, name: toolName },
+          ]),
         ],
         resolution: { type: "continue_iteration" as const },
         toolExecutionMode: "parallel" as const,
@@ -85,7 +87,9 @@ function makeOkEndpoint(
         inputSchema: { type: "object" },
       },
     ],
-    dispatch(envelope: ClientInvocationEnvelope): Promise<ClientReportedResult> {
+    dispatch(
+      envelope: ClientInvocationEnvelope
+    ): Promise<ClientReportedResult> {
       return Promise.resolve({
         callId: envelope.callId,
         content,
@@ -111,7 +115,9 @@ function makeClientMcpEndpoint(
         mcpServerName,
       },
     ],
-    dispatch(envelope: ClientInvocationEnvelope): Promise<ClientReportedResult> {
+    dispatch(
+      envelope: ClientInvocationEnvelope
+    ): Promise<ClientReportedResult> {
       return Promise.resolve({
         callId: envelope.callId,
         content,
@@ -134,11 +140,13 @@ function makeStaleEndpoint(
         inputSchema: { type: "object" },
       },
     ],
-    dispatch(envelope: ClientInvocationEnvelope): Promise<ClientReportedResult> {
+    dispatch(
+      envelope: ClientInvocationEnvelope
+    ): Promise<ClientReportedResult> {
       return Promise.resolve({
         callId: envelope.callId,
         content: { staleContent: true },
-        leaseToken: "stale-token-for-conformance",  // will never match the envelope token
+        leaseToken: "stale-token-for-conformance", // will never match the envelope token
       });
     },
   };
@@ -163,7 +171,9 @@ async function runTurn(
     config: {
       name: AGENT_NAME,
       clientEndpoints: endpoints,
-      ...(clientEndpointBoundary !== undefined ? { clientEndpointBoundary } : {}),
+      ...(clientEndpointBoundary === undefined
+        ? {}
+        : { clientEndpointBoundary }),
     },
     signal: textSignal("az006 conformance"),
     threadId: thread.threadId,
@@ -211,7 +221,9 @@ export async function runTuvrenClientLifecycle(): Promise<AdapterProjection> {
     UNAVAILABLE_CAP,
     { shouldNotReach: true }
   );
-  const preDetachedBoundary = createClientEndpointBoundary([unavailableEndpoint]);
+  const preDetachedBoundary = createClientEndpointBoundary([
+    unavailableEndpoint,
+  ]);
   preDetachedBoundary.detach("ep-unavailable");
   const unavailableRun = await runTurn(
     UNAVAILABLE_CAP,

@@ -294,12 +294,12 @@ export interface ClientReportedResult {
  * environmental execution and may hold authority the server does not.
  */
 export interface AttachedClientEndpoint {
-  /** Stable non-secret identifier for this endpoint. */
-  endpointId: string;
   /** Capabilities this endpoint can execute, advertised at attach time. */
   advertisedCapabilities: ClientEndpointCapabilityAdvertisement[];
   /** Dispatch a capability invocation. Must echo back the envelope's leaseToken. */
   dispatch(envelope: ClientInvocationEnvelope): Promise<ClientReportedResult>;
+  /** Stable non-secret identifier for this endpoint. */
+  endpointId: string;
 }
 
 /**
