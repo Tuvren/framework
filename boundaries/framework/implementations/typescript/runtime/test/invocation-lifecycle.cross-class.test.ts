@@ -514,11 +514,36 @@ describe("BA001 invocation lifecycle — tuvren-client", () => {
 // BA001: InvocationLifecycleState type is exported from @tuvren/core/capabilities
 // ---------------------------------------------------------------------------
 
+/**
+ * Exhaustiveness helper: the compiler enforces that every InvocationLifecycleState
+ * member is handled. If a member is added or removed from the union this switch
+ * will fail to compile (missing case or unreachable `never`), making the test
+ * below a genuine contract regression check rather than a tautology.
+ */
+function assertLifecycleExhaustive(state: InvocationLifecycleState): string {
+  switch (state) {
+    case "resolved":
+      return "resolved";
+    case "policy-admitted":
+      return "policy-admitted";
+    case "dispatched":
+      return "dispatched";
+    case "completed":
+      return "completed";
+    case "failed":
+      return "failed";
+    case "ignored":
+      return "ignored";
+    default: {
+      const _exhaustive: never = state;
+      return _exhaustive;
+    }
+  }
+}
+
 describe("BA001 InvocationLifecycleState type contract", () => {
-  test("InvocationLifecycleState values cover the uniform lifecycle phases", () => {
-    // Type smoke-check: verify the type is exported and all lifecycle phase
-    // values are present. This is a contract assertion, not runtime behavior.
-    const validStates: InvocationLifecycleState[] = [
+  test("all six lifecycle phases are exported and exhaustively enumerable", () => {
+    const phases: InvocationLifecycleState[] = [
       "resolved",
       "policy-admitted",
       "dispatched",
@@ -526,12 +551,11 @@ describe("BA001 InvocationLifecycleState type contract", () => {
       "failed",
       "ignored",
     ];
-    expect(validStates).toHaveLength(6);
-    expect(validStates).toContain("resolved");
-    expect(validStates).toContain("policy-admitted");
-    expect(validStates).toContain("dispatched");
-    expect(validStates).toContain("completed");
-    expect(validStates).toContain("failed");
-    expect(validStates).toContain("ignored");
+    // Compiler-enforced: assertLifecycleExhaustive fails to compile if any
+    // phase is added, removed, or renamed in the union.
+    for (const phase of phases) {
+      expect(assertLifecycleExhaustive(phase)).toBe(phase);
+    }
+    expect(phases).toHaveLength(6);
   });
 });

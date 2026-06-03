@@ -43,8 +43,14 @@ import type { TuvrenJsonSchema } from "./runtime-contract-shapes.js";
  *                    (observable: tool.result with isError: false or absent).
  * - failed:          terminal — execution failed or was policy-denied
  *                    (observable: tool.result with isError: true).
- * - ignored:         terminal — late completion after cancellation; result
- *                    discarded without mutation (tuvren-server only).
+ * - ignored:         terminal — a result arrived after the invocation was
+ *                    cancelled or a hard-stop bound was exceeded; the result
+ *                    is discarded without mutating durable state and no
+ *                    tool.result event is emitted. Reserved for the bounds
+ *                    guard (KRT-BD006); no observable event anchor exists
+ *                    until that guard is implemented. Not to be confused with
+ *                    the tuvren-client stale-lease path which surfaces as
+ *                    `failed` (tool.result isError:true, CAPABILITY_RESULT_STALE).
  */
 export type InvocationLifecycleState =
   | "resolved"
