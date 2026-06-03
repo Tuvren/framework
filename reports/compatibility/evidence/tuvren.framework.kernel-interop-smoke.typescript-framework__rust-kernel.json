@@ -5,607 +5,320 @@
       "assertionResults": [
         {
           "assertionId": "completed",
-          "status": "pass"
+          "message": "interop runner exited without a parseable scenario report",
+          "status": "fail"
         },
         {
           "assertionId": "canonicalObserved",
-          "status": "pass"
+          "message": "interop runner exited without a parseable scenario report",
+          "status": "fail"
         },
         {
           "assertionId": "sseObserved",
-          "status": "pass"
+          "message": "interop runner exited without a parseable scenario report",
+          "status": "fail"
         },
         {
           "assertionId": "aguiObserved",
-          "status": "pass"
+          "message": "interop runner exited without a parseable scenario report",
+          "status": "fail"
         },
         {
           "assertionId": "metadataObserved",
-          "status": "pass"
+          "message": "interop runner exited without a parseable scenario report",
+          "status": "fail"
         }
       ],
       "checkId": "framework.interop.streaming_observability",
       "details": {
-        "missingScenarioIds": [],
-        "scenario": ["streaming"],
-        "telemetry": [
-          {
-            "observedKeys": [
-              "tuvren.runtime.backend.id",
-              "tuvren.runtime.branch.id",
-              "tuvren.runtime.checkpoint.hash",
-              "tuvren.runtime.driver.id",
-              "tuvren.runtime.parent_checkpoint.hash",
-              "tuvren.runtime.provider.id",
-              "tuvren.runtime.run.id",
-              "tuvren.runtime.thread.id",
-              "tuvren.runtime.turn.id"
-            ],
-            "scenario": "streaming",
-            "schemaUrl": "https://tuvren.dev/schemas/telemetry/0.1.0"
-          }
+        "expectedEvidence": [
+          "assertionResults",
+          "details.scenario",
+          "details.telemetry"
         ]
       },
-      "status": "pass"
+      "status": "fail"
     },
     {
       "assertionResults": [
         {
           "assertionId": "completed",
-          "status": "pass"
+          "message": "interop runner exited without a parseable scenario report",
+          "status": "fail"
         },
         {
           "assertionId": "canonicalObserved",
-          "status": "pass"
+          "message": "interop runner exited without a parseable scenario report",
+          "status": "fail"
         },
         {
           "assertionId": "sseObserved",
-          "status": "pass"
+          "message": "interop runner exited without a parseable scenario report",
+          "status": "fail"
         },
         {
           "assertionId": "aguiObserved",
-          "status": "pass"
+          "message": "interop runner exited without a parseable scenario report",
+          "status": "fail"
         },
         {
           "assertionId": "structuredObserved",
-          "status": "pass"
+          "message": "interop runner exited without a parseable scenario report",
+          "status": "fail"
         }
       ],
       "checkId": "framework.interop.structured_output",
       "details": {
-        "missingScenarioIds": [],
-        "scenario": ["structured"],
-        "telemetry": [
-          {
-            "observedKeys": [
-              "tuvren.runtime.backend.id",
-              "tuvren.runtime.branch.id",
-              "tuvren.runtime.checkpoint.hash",
-              "tuvren.runtime.driver.id",
-              "tuvren.runtime.parent_checkpoint.hash",
-              "tuvren.runtime.provider.id",
-              "tuvren.runtime.run.id",
-              "tuvren.runtime.thread.id",
-              "tuvren.runtime.turn.id"
-            ],
-            "scenario": "structured",
-            "schemaUrl": "https://tuvren.dev/schemas/telemetry/0.1.0"
-          }
-        ]
+        "expectedEvidence": ["assertionResults", "details.scenario"]
       },
-      "status": "pass"
+      "status": "fail"
     },
     {
       "assertionResults": [
         {
           "assertionId": "completed",
-          "status": "pass"
+          "message": "interop runner exited without a parseable scenario report",
+          "status": "fail"
         },
         {
           "assertionId": "toolObserved",
-          "status": "pass"
+          "message": "interop runner exited without a parseable scenario report",
+          "status": "fail"
         },
         {
           "assertionId": "toolHistoryPreserved",
-          "status": "pass"
+          "message": "interop runner exited without a parseable scenario report",
+          "status": "fail"
         },
         {
           "assertionId": "toolTraceObserved",
-          "status": "pass"
+          "message": "interop runner exited without a parseable scenario report",
+          "status": "fail"
         },
         {
           "assertionId": "metadataObserved",
-          "status": "pass"
+          "message": "interop runner exited without a parseable scenario report",
+          "status": "fail"
         }
       ],
       "checkId": "framework.interop.tool_history_and_trace",
       "details": {
-        "missingScenarioIds": [],
-        "scenario": ["tools"],
-        "telemetry": [
-          {
-            "observedKeys": [
-              "tuvren.runtime.backend.id",
-              "tuvren.runtime.branch.id",
-              "tuvren.runtime.checkpoint.hash",
-              "tuvren.runtime.driver.id",
-              "tuvren.runtime.parent_checkpoint.hash",
-              "tuvren.runtime.provider.id",
-              "tuvren.runtime.run.id",
-              "tuvren.runtime.thread.id",
-              "tuvren.runtime.tool_call.id",
-              "tuvren.runtime.turn.id"
-            ],
-            "scenario": "tools",
-            "schemaUrl": "https://tuvren.dev/schemas/telemetry/0.1.0"
-          }
-        ]
+        "expectedEvidence": ["assertionResults", "details.scenario"]
       },
-      "status": "pass"
+      "status": "fail"
     },
     {
       "assertionResults": [
         {
           "assertionId": "approvalRequested",
-          "status": "pass"
+          "message": "interop runner exited without a parseable scenario report",
+          "status": "fail"
         },
         {
           "assertionId": "approvalResolved",
-          "status": "pass"
+          "message": "interop runner exited without a parseable scenario report",
+          "status": "fail"
         },
         {
           "assertionId": "pausedFirst",
-          "status": "pass"
+          "message": "interop runner exited without a parseable scenario report",
+          "status": "fail"
         },
         {
           "assertionId": "resumedCompleted",
-          "status": "pass"
+          "message": "interop runner exited without a parseable scenario report",
+          "status": "fail"
         },
         {
           "assertionId": "toolResultAfterResume",
-          "status": "pass"
+          "message": "interop runner exited without a parseable scenario report",
+          "status": "fail"
         }
       ],
       "checkId": "framework.interop.approval_resume",
       "details": {
-        "missingScenarioIds": [],
-        "scenario": ["approval"],
-        "telemetry": [
-          {
-            "observedKeys": [
-              "tuvren.runtime.backend.id",
-              "tuvren.runtime.branch.id",
-              "tuvren.runtime.checkpoint.hash",
-              "tuvren.runtime.driver.id",
-              "tuvren.runtime.parent_checkpoint.hash",
-              "tuvren.runtime.provider.id",
-              "tuvren.runtime.resumed_from.hash",
-              "tuvren.runtime.run.id",
-              "tuvren.runtime.thread.id",
-              "tuvren.runtime.tool_call.id",
-              "tuvren.runtime.turn.id"
-            ],
-            "scenario": "approval",
-            "schemaUrl": "https://tuvren.dev/schemas/telemetry/0.1.0"
-          }
-        ]
+        "expectedEvidence": ["assertionResults", "details.scenario"]
       },
-      "status": "pass"
+      "status": "fail"
     },
     {
       "assertionResults": [
         {
           "assertionId": "cancelled",
-          "status": "pass"
+          "message": "interop runner exited without a parseable scenario report",
+          "status": "fail"
         },
         {
           "assertionId": "errorObserved",
-          "status": "pass"
+          "message": "interop runner exited without a parseable scenario report",
+          "status": "fail"
         },
         {
           "assertionId": "terminalFailed",
-          "status": "pass"
+          "message": "interop runner exited without a parseable scenario report",
+          "status": "fail"
         }
       ],
       "checkId": "framework.interop.cancel_flow",
       "details": {
-        "missingScenarioIds": [],
-        "scenario": ["cancel"],
-        "telemetry": [
-          {
-            "observedKeys": [
-              "tuvren.runtime.backend.id",
-              "tuvren.runtime.branch.id",
-              "tuvren.runtime.checkpoint.hash",
-              "tuvren.runtime.driver.id",
-              "tuvren.runtime.error.code",
-              "tuvren.runtime.parent_checkpoint.hash",
-              "tuvren.runtime.provider.id",
-              "tuvren.runtime.run.id",
-              "tuvren.runtime.thread.id",
-              "tuvren.runtime.turn.id"
-            ],
-            "scenario": "cancel",
-            "schemaUrl": "https://tuvren.dev/schemas/telemetry/0.1.0"
-          }
-        ]
+        "expectedEvidence": ["assertionResults", "details.scenario"]
       },
-      "status": "pass"
+      "status": "fail"
     },
     {
       "assertionResults": [
         {
           "assertionId": "completed",
-          "status": "pass"
+          "message": "interop runner exited without a parseable scenario report",
+          "status": "fail"
         },
         {
           "assertionId": "metadataObserved",
-          "status": "pass"
+          "message": "interop runner exited without a parseable scenario report",
+          "status": "fail"
         }
       ],
       "checkId": "framework.interop.metadata_surface",
       "details": {
-        "missingScenarioIds": [],
-        "scenario": ["metadata"],
-        "telemetry": [
-          {
-            "observedKeys": [
-              "tuvren.runtime.backend.id",
-              "tuvren.runtime.branch.id",
-              "tuvren.runtime.checkpoint.hash",
-              "tuvren.runtime.driver.id",
-              "tuvren.runtime.parent_checkpoint.hash",
-              "tuvren.runtime.provider.id",
-              "tuvren.runtime.run.id",
-              "tuvren.runtime.thread.id",
-              "tuvren.runtime.turn.id"
-            ],
-            "scenario": "metadata",
-            "schemaUrl": "https://tuvren.dev/schemas/telemetry/0.1.0"
-          }
+        "expectedEvidence": [
+          "assertionResults",
+          "details.scenario",
+          "details.telemetry"
         ]
       },
-      "status": "pass"
+      "status": "fail"
     },
     {
       "assertionResults": [
         {
           "assertionId": "sourceCompleted",
-          "status": "pass"
+          "message": "interop runner exited without a parseable scenario report",
+          "status": "fail"
         },
         {
           "assertionId": "branchCreated",
-          "status": "pass"
+          "message": "interop runner exited without a parseable scenario report",
+          "status": "fail"
         },
         {
           "assertionId": "branchedFromSourceHead",
-          "status": "pass"
+          "message": "interop runner exited without a parseable scenario report",
+          "status": "fail"
         },
         {
           "assertionId": "branchCompleted",
-          "status": "pass"
+          "message": "interop runner exited without a parseable scenario report",
+          "status": "fail"
         },
         {
           "assertionId": "branchMessagesVisible",
-          "status": "pass"
+          "message": "interop runner exited without a parseable scenario report",
+          "status": "fail"
         },
         {
           "assertionId": "branchMessagesAdvanced",
-          "status": "pass"
+          "message": "interop runner exited without a parseable scenario report",
+          "status": "fail"
         }
       ],
       "checkId": "framework.interop.branching_state",
       "details": {
-        "missingScenarioIds": [],
-        "scenario": ["branching"],
-        "telemetry": [
-          {
-            "observedKeys": [
-              "tuvren.runtime.backend.id",
-              "tuvren.runtime.branch.id",
-              "tuvren.runtime.checkpoint.hash",
-              "tuvren.runtime.driver.id",
-              "tuvren.runtime.parent_checkpoint.hash",
-              "tuvren.runtime.provider.id",
-              "tuvren.runtime.run.id",
-              "tuvren.runtime.thread.id",
-              "tuvren.runtime.turn.id"
-            ],
-            "scenario": "branching",
-            "schemaUrl": "https://tuvren.dev/schemas/telemetry/0.1.0"
-          }
-        ]
+        "expectedEvidence": ["assertionResults", "details.scenario"]
       },
-      "status": "pass"
+      "status": "fail"
     },
     {
       "assertionResults": [
         {
           "assertionId": "completed",
-          "status": "pass"
+          "message": "interop runner exited without a parseable scenario report",
+          "status": "fail"
         },
         {
           "assertionId": "steeringEventObserved",
-          "status": "pass"
+          "message": "interop runner exited without a parseable scenario report",
+          "status": "fail"
         },
         {
           "assertionId": "steeringMessageDurable",
-          "status": "pass"
+          "message": "interop runner exited without a parseable scenario report",
+          "status": "fail"
         },
         {
           "assertionId": "steeringResponseObserved",
-          "status": "pass"
+          "message": "interop runner exited without a parseable scenario report",
+          "status": "fail"
         }
       ],
       "checkId": "framework.interop.steering_flow",
       "details": {
-        "missingScenarioIds": [],
-        "scenario": ["steering"],
-        "telemetry": [
-          {
-            "observedKeys": [
-              "tuvren.runtime.backend.id",
-              "tuvren.runtime.branch.id",
-              "tuvren.runtime.checkpoint.hash",
-              "tuvren.runtime.driver.id",
-              "tuvren.runtime.parent_checkpoint.hash",
-              "tuvren.runtime.provider.id",
-              "tuvren.runtime.run.id",
-              "tuvren.runtime.thread.id",
-              "tuvren.runtime.turn.id"
-            ],
-            "scenario": "steering",
-            "schemaUrl": "https://tuvren.dev/schemas/telemetry/0.1.0"
-          }
-        ]
+        "expectedEvidence": ["assertionResults", "details.scenario"]
       },
-      "status": "pass"
+      "status": "fail"
     },
     {
       "assertionResults": [
         {
           "assertionId": "completedBeforeReload",
-          "status": "pass"
+          "message": "interop runner exited without a parseable scenario report",
+          "status": "fail"
         },
         {
           "assertionId": "durableReloadAttempted",
-          "status": "pass"
+          "message": "interop runner exited without a parseable scenario report",
+          "status": "fail"
         },
         {
           "assertionId": "continuedAfterReload",
-          "status": "pass"
+          "message": "interop runner exited without a parseable scenario report",
+          "status": "fail"
         },
         {
           "assertionId": "durableMessagesVisibleAfterReload",
-          "status": "pass"
+          "message": "interop runner exited without a parseable scenario report",
+          "status": "fail"
         },
         {
           "assertionId": "headAdvancedAfterReload",
-          "status": "pass"
+          "message": "interop runner exited without a parseable scenario report",
+          "status": "fail"
         },
         {
           "assertionId": "rootPreservedAfterReload",
-          "status": "pass"
+          "message": "interop runner exited without a parseable scenario report",
+          "status": "fail"
         },
         {
           "assertionId": "threadVisibleAfterReload",
-          "status": "pass"
+          "message": "interop runner exited without a parseable scenario report",
+          "status": "fail"
         }
       ],
       "checkId": "framework.interop.reload_persistence",
       "details": {
-        "missingScenarioIds": [],
-        "scenario": ["reload"],
-        "telemetry": [
-          {
-            "observedKeys": [
-              "tuvren.runtime.backend.id",
-              "tuvren.runtime.branch.id",
-              "tuvren.runtime.checkpoint.hash",
-              "tuvren.runtime.driver.id",
-              "tuvren.runtime.parent_checkpoint.hash",
-              "tuvren.runtime.provider.id",
-              "tuvren.runtime.run.id",
-              "tuvren.runtime.thread.id",
-              "tuvren.runtime.turn.id"
-            ],
-            "scenario": "reload",
-            "schemaUrl": "https://tuvren.dev/schemas/telemetry/0.1.0"
-          }
+        "expectedEvidence": [
+          "assertionResults",
+          "details.scenario",
+          "details.telemetry"
         ]
       },
-      "status": "pass"
+      "status": "fail"
     }
   ],
   "command": ["bun", "tools/scripts/repl-host-interop-smoke.ts"],
-  "exitCode": 0,
+  "exitCode": 1,
   "pairId": "typescript-framework__rust-kernel",
   "project": "host-repl:interop-smoke",
   "reportLabel": "TypeScript framework to Rust kernel interop",
-  "reportStatus": "full_pass",
-  "status": "pass",
+  "reportStatus": "unexpected_fail",
+  "status": "fail",
   "summary": {
-    "failedChecks": 0,
-    "passedChecks": 9,
+    "failedChecks": 9,
+    "passedChecks": 0,
     "totalChecks": 9
   },
   "suiteId": "tuvren.framework.kernel-interop-smoke",
   "suiteVersion": "0.2.0",
-  "telemetry": {
-    "observedKeys": [
-      "tuvren.runtime.backend.id",
-      "tuvren.runtime.branch.id",
-      "tuvren.runtime.checkpoint.hash",
-      "tuvren.runtime.driver.id",
-      "tuvren.runtime.error.code",
-      "tuvren.runtime.parent_checkpoint.hash",
-      "tuvren.runtime.provider.id",
-      "tuvren.runtime.resumed_from.hash",
-      "tuvren.runtime.run.id",
-      "tuvren.runtime.thread.id",
-      "tuvren.runtime.tool_call.id",
-      "tuvren.runtime.turn.id"
-    ],
-    "scenarios": [
-      {
-        "observedKeys": [
-          "tuvren.runtime.backend.id",
-          "tuvren.runtime.branch.id",
-          "tuvren.runtime.checkpoint.hash",
-          "tuvren.runtime.driver.id",
-          "tuvren.runtime.parent_checkpoint.hash",
-          "tuvren.runtime.provider.id",
-          "tuvren.runtime.run.id",
-          "tuvren.runtime.thread.id",
-          "tuvren.runtime.turn.id"
-        ],
-        "scenario": "streaming"
-      },
-      {
-        "observedKeys": [
-          "tuvren.runtime.backend.id",
-          "tuvren.runtime.branch.id",
-          "tuvren.runtime.checkpoint.hash",
-          "tuvren.runtime.driver.id",
-          "tuvren.runtime.parent_checkpoint.hash",
-          "tuvren.runtime.provider.id",
-          "tuvren.runtime.run.id",
-          "tuvren.runtime.thread.id",
-          "tuvren.runtime.turn.id"
-        ],
-        "scenario": "structured"
-      },
-      {
-        "observedKeys": [
-          "tuvren.runtime.backend.id",
-          "tuvren.runtime.branch.id",
-          "tuvren.runtime.checkpoint.hash",
-          "tuvren.runtime.driver.id",
-          "tuvren.runtime.parent_checkpoint.hash",
-          "tuvren.runtime.provider.id",
-          "tuvren.runtime.run.id",
-          "tuvren.runtime.thread.id",
-          "tuvren.runtime.tool_call.id",
-          "tuvren.runtime.turn.id"
-        ],
-        "scenario": "tools"
-      },
-      {
-        "observedKeys": [
-          "tuvren.runtime.backend.id",
-          "tuvren.runtime.branch.id",
-          "tuvren.runtime.checkpoint.hash",
-          "tuvren.runtime.driver.id",
-          "tuvren.runtime.parent_checkpoint.hash",
-          "tuvren.runtime.provider.id",
-          "tuvren.runtime.resumed_from.hash",
-          "tuvren.runtime.run.id",
-          "tuvren.runtime.thread.id",
-          "tuvren.runtime.tool_call.id",
-          "tuvren.runtime.turn.id"
-        ],
-        "scenario": "approval"
-      },
-      {
-        "observedKeys": [
-          "tuvren.runtime.backend.id",
-          "tuvren.runtime.branch.id",
-          "tuvren.runtime.checkpoint.hash",
-          "tuvren.runtime.driver.id",
-          "tuvren.runtime.error.code",
-          "tuvren.runtime.parent_checkpoint.hash",
-          "tuvren.runtime.provider.id",
-          "tuvren.runtime.run.id",
-          "tuvren.runtime.thread.id",
-          "tuvren.runtime.turn.id"
-        ],
-        "scenario": "cancel"
-      },
-      {
-        "observedKeys": [
-          "tuvren.runtime.backend.id",
-          "tuvren.runtime.branch.id",
-          "tuvren.runtime.checkpoint.hash",
-          "tuvren.runtime.driver.id",
-          "tuvren.runtime.parent_checkpoint.hash",
-          "tuvren.runtime.provider.id",
-          "tuvren.runtime.run.id",
-          "tuvren.runtime.thread.id",
-          "tuvren.runtime.turn.id"
-        ],
-        "scenario": "metadata"
-      },
-      {
-        "observedKeys": [
-          "tuvren.runtime.backend.id",
-          "tuvren.runtime.branch.id",
-          "tuvren.runtime.checkpoint.hash",
-          "tuvren.runtime.driver.id",
-          "tuvren.runtime.parent_checkpoint.hash",
-          "tuvren.runtime.provider.id",
-          "tuvren.runtime.run.id",
-          "tuvren.runtime.thread.id",
-          "tuvren.runtime.turn.id"
-        ],
-        "scenario": "branching"
-      },
-      {
-        "observedKeys": [
-          "tuvren.runtime.backend.id",
-          "tuvren.runtime.branch.id",
-          "tuvren.runtime.checkpoint.hash",
-          "tuvren.runtime.driver.id",
-          "tuvren.runtime.parent_checkpoint.hash",
-          "tuvren.runtime.provider.id",
-          "tuvren.runtime.run.id",
-          "tuvren.runtime.thread.id",
-          "tuvren.runtime.turn.id"
-        ],
-        "scenario": "steering"
-      },
-      {
-        "observedKeys": [
-          "tuvren.runtime.backend.id",
-          "tuvren.runtime.branch.id",
-          "tuvren.runtime.checkpoint.hash",
-          "tuvren.runtime.driver.id",
-          "tuvren.runtime.parent_checkpoint.hash",
-          "tuvren.runtime.provider.id",
-          "tuvren.runtime.run.id",
-          "tuvren.runtime.thread.id",
-          "tuvren.runtime.turn.id"
-        ],
-        "scenario": "extension"
-      },
-      {
-        "observedKeys": [
-          "tuvren.runtime.backend.id",
-          "tuvren.runtime.branch.id",
-          "tuvren.runtime.checkpoint.hash",
-          "tuvren.runtime.driver.id",
-          "tuvren.runtime.parent_checkpoint.hash",
-          "tuvren.runtime.provider.id",
-          "tuvren.runtime.run.id",
-          "tuvren.runtime.thread.id",
-          "tuvren.runtime.turn.id"
-        ],
-        "scenario": "orchestration"
-      },
-      {
-        "observedKeys": [
-          "tuvren.runtime.backend.id",
-          "tuvren.runtime.branch.id",
-          "tuvren.runtime.checkpoint.hash",
-          "tuvren.runtime.driver.id",
-          "tuvren.runtime.parent_checkpoint.hash",
-          "tuvren.runtime.provider.id",
-          "tuvren.runtime.run.id",
-          "tuvren.runtime.thread.id",
-          "tuvren.runtime.turn.id"
-        ],
-        "scenario": "reload"
-      }
-    ],
-    "schemaUrl": "https://tuvren.dev/schemas/telemetry/0.1.0"
-  }
+  "stderr": "\u001b[0m\u001b[2m\u001b[35m$\u001b[0m \u001b[2m\u001b[1mbun ./tools/run-nx.mjs run host-repl:build --skipNxCache\u001b[0m\nWarning: command \"bunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false\" exited with non-zero status code\u001b[0m\u001b[31merror\u001b[0m\u001b[2m:\u001b[0m script \u001b[1m\"nx\"\u001b[0m exited with code 1\u001b[0m\n\u001b[0m\u001b[1m142 |\u001b[0m   \u001b[0m\u001b[35mconst\u001b[0m result = \u001b[0m\u001b[35mawait\u001b[0m runCommand(command, {\n\u001b[0m\u001b[1m143 |\u001b[0m     cwd: options?.cwd ?? REPO_ROOT,\n\u001b[0m\u001b[1m144 |\u001b[0m   })\u001b[0m\u001b[2m;\u001b[0m\n\u001b[0m\u001b[1m145 |\u001b[0m \n\u001b[0m\u001b[1m146 |\u001b[0m   \u001b[0m\u001b[35mif\u001b[0m (result.code !== \u001b[0m\u001b[33m0\u001b[0m) {\n\u001b[0m\u001b[1m147 |\u001b[0m     \u001b[0m\u001b[35mthrow\u001b[0m \u001b[0m\u001b[35mnew\u001b[0m \u001b[0m\u001b[1mError\u001b[0m(\u001b[0m\u001b[32m`command failed: \u001b[0m${command\u001b[0m\u001b[3m\u001b[1m.join\u001b[0m(\u001b[0m\u001b[32m\" \"\u001b[0m)}\u001b[0m\u001b[32m`\u001b[0m)\u001b[0m\u001b[2m;\u001b[0m\n                    \u001b[31m\u001b[1m^\u001b[0m\n\u001b[0m\u001b[31merror\u001b[0m\u001b[2m:\u001b[0m \u001b[1mcommand failed: bun run nx run host-repl:build --skipNxCache\u001b[0m\n\u001b[0m      \u001b[2mat \u001b[0m\u001b[0m\u001b[1m\u001b[3mrunRequiredCommand\u001b[0m\u001b[2m (\u001b[0m\u001b[0m\u001b[36m\u001b[2m/home/oscar/GitHub/Tuvren-runtime/\u001b[0m\u001b[36mtools/scripts/repl-host-interop-smoke.ts\u001b[0m\u001b[2m:\u001b[0m\u001b[33m147\u001b[0m\u001b[2m:\u001b[33m15\u001b[0m\u001b[2m)\u001b[0m\n\u001b[0m\n\u001b[2mBun v1.3.10 (Linux x64)\u001b[0m\n",
+  "stdout": "\n\u001b[7m\u001b[1m\u001b[36m NX \u001b[39m\u001b[22m\u001b[27m  \u001b[36mRunning target \u001b[1mbuild\u001b[22m for project host-repl and \u001b[1m20\u001b[22m tasks it depends on:\u001b[39m\n\n\u001b[2m\u001b[36m\u001b[39m\u001b[22m\n\n\u001b[2m> \u001b[22m\u001b[2mnx run\u001b[22m shared-core:build\n\n\u001b[2m> \u001b[22mbunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false\r\n\r\n\u001b[34mCLI\u001b[39m Building entry: src/index.ts, src/errors/index.ts, src/messages/index.ts, src/telemetry/index.ts, src/tools/index.ts, src/execution/index.ts, src/driver/index.ts, src/extensions/index.ts, src/events/index.ts, src/capabilities/index.ts, src/provider/index.ts\n\u001b[34mCLI\u001b[39m Using tsconfig: tsconfig.tsup.json\n\u001b[34mCLI\u001b[39m tsup v8.5.1\n\u001b[34mCLI\u001b[39m Using tsup config: /home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core/implementations/typescript/tsup.config.ts\n\u001b[34mCLI\u001b[39m Target: esnext\n\u001b[34mCLI\u001b[39m Cleaning output folder\n\u001b[34mESM\u001b[39m Build start\n\u001b[32mESM\u001b[39m \u001b[1mdist/errors/index.js       \u001b[22m\u001b[32m981.00 B\u001b[39m\n\u001b[32mESM\u001b[39m \u001b[1mdist/events/index.js       \u001b[22m\u001b[32m212.00 B\u001b[39m\n\u001b[32mESM\u001b[39m \u001b[1mdist/extensions/index.js   \u001b[22m\u001b[32m0 B\u001b[39m\n\u001b[32mESM\u001b[39m \u001b[1mdist/capabilities/index.js \u001b[22m\u001b[32m0 B\u001b[39m\n\u001b[32mESM\u001b[39m \u001b[1mdist/provider/index.js     \u001b[22m\u001b[32m328.00 B\u001b[39m\n\u001b[32mESM\u001b[39m \u001b[1mdist/index.js              \u001b[22m\u001b[32m703.00 B\u001b[39m\n\u001b[32mESM\u001b[39m \u001b[1mdist/messages/index.js     \u001b[22m\u001b[32m304.00 B\u001b[39m\n\u001b[32mESM\u001b[39m \u001b[1mdist/chunk-NCKCVBKK.js     \u001b[22m\u001b[32m4.20 KB\u001b[39m\n\u001b[32mESM\u001b[39m \u001b[1mdist/chunk-MZZRDFVK.js     \u001b[22m\u001b[32m2.67 KB\u001b[39m\n\u001b[32mESM\u001b[39m \u001b[1mdist/execution/index.js    \u001b[22m\u001b[32m338.00 B\u001b[39m\n\u001b[32mESM\u001b[39m \u001b[1mdist/tools/index.js        \u001b[22m\u001b[32m4.88 KB\u001b[39m\n\u001b[32mESM\u001b[39m \u001b[1mdist/driver/index.js       \u001b[22m\u001b[32m22.24 KB\u001b[39m\n\u001b[32mESM\u001b[39m \u001b[1mdist/telemetry/index.js    \u001b[22m\u001b[32m146.00 B\u001b[39m\n\u001b[32mESM\u001b[39m \u001b[1mdist/chunk-XPJGOZKW.js     \u001b[22m\u001b[32m45.41 KB\u001b[39m\n\u001b[32mESM\u001b[39m ⚡️ Build success in 36ms\n\n\u001b[2m> \u001b[22m\u001b[2mnx run\u001b[22m shared-core-types:build\n\n\u001b[2m> \u001b[22mbunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false\r\n\r\n\u001b[34mCLI\u001b[39m Building entry: src/index.ts\n\u001b[34mCLI\u001b[39m Using tsconfig: tsconfig.tsup.json\n\u001b[34mCLI\u001b[39m tsup v8.5.1\n\u001b[34mCLI\u001b[39m Using tsup config: /home/oscar/GitHub/Tuvren-runtime/boundaries/shared/contracts/core-types/implementations/typescript/tsup.config.ts\n\u001b[34mCLI\u001b[39m Target: esnext\n\u001b[34mCLI\u001b[39m Cleaning output folder\n\u001b[34mESM\u001b[39m Build start\n\u001b[32mESM\u001b[39m \u001b[1mdist/index.js \u001b[22m\u001b[32m822.00 B\u001b[39m\n\u001b[32mESM\u001b[39m ⚡️ Build success in 12ms\n\n\u001b[2m> \u001b[22m\u001b[2mnx run\u001b[22m kernel-contract-protocol:build\n\n\u001b[2m> \u001b[22mbunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false\r\n\r\n\u001b[34mCLI\u001b[39m Building entry: src/index.ts\n\u001b[34mCLI\u001b[39m Using tsconfig: tsconfig.tsup.json\n\u001b[34mCLI\u001b[39m tsup v8.5.1\n\u001b[34mCLI\u001b[39m Using tsup config: /home/oscar/GitHub/Tuvren-runtime/boundaries/kernel/contracts/protocol/implementations/typescript/tsup.config.ts\n\u001b[34mCLI\u001b[39m Target: esnext\n\u001b[34mCLI\u001b[39m Cleaning output folder\n\u001b[34mESM\u001b[39m Build start\n\u001b[32mESM\u001b[39m \u001b[1mdist/index.js \u001b[22m\u001b[32m93.70 KB\u001b[39m\n\u001b[32mESM\u001b[39m ⚡️ Build success in 24ms\n\n\u001b[2m> \u001b[22m\u001b[2mnx run\u001b[22m framework-runtime-api:build\n\n\u001b[2m> \u001b[22mbunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false\r\n\r\n\u001b[34mCLI\u001b[39m Building entry: src/execution.ts, src/tools.ts, src/orchestration.ts, src/index.ts, src/events.ts, src/provider.ts\n\u001b[34mCLI\u001b[39m Using tsconfig: tsconfig.tsup.json\n\u001b[34mCLI\u001b[39m tsup v8.5.1\n\u001b[34mCLI\u001b[39m Using tsup config: /home/oscar/GitHub/Tuvren-runtime/boundaries/framework/contracts/runtime-api/implementations/typescript/tsup.config.ts\n\u001b[34mCLI\u001b[39m Target: esnext\n\u001b[34mCLI\u001b[39m Cleaning output folder\n\u001b[34mESM\u001b[39m Build start\n\u001b[32mESM\u001b[39m \u001b[1mdist/provider.js      \u001b[22m\u001b[32m286.00 B\u001b[39m\n\u001b[32mESM\u001b[39m \u001b[1mdist/events.js        \u001b[22m\u001b[32m166.00 B\u001b[39m\n\u001b[32mESM\u001b[39m \u001b[1mdist/tools.js         \u001b[22m\u001b[32m500.00 B\u001b[39m\n\u001b[32mESM\u001b[39m \u001b[1mdist/orchestration.js \u001b[22m\u001b[32m0 B\u001b[39m\n\u001b[32mESM\u001b[39m \u001b[1mdist/execution.js     \u001b[22m\u001b[32m298.00 B\u001b[39m\n\u001b[32mESM\u001b[39m \u001b[1mdist/index.js         \u001b[22m\u001b[32m1.55 KB\u001b[39m\n\u001b[32mESM\u001b[39m ⚡️ Build success in 16ms\n\n\u001b[2m> \u001b[22m\u001b[2mnx run\u001b[22m kernel-testkit:build\n\n\u001b[2m> \u001b[22mbunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false\r\n\r\n\u001b[34mCLI\u001b[39m Building entry: src/index.ts\n\u001b[34mCLI\u001b[39m Using tsconfig: tsconfig.tsup.json\n\u001b[34mCLI\u001b[39m tsup v8.5.1\n\u001b[34mCLI\u001b[39m Using tsup config: /home/oscar/GitHub/Tuvren-runtime/boundaries/kernel/implementations/typescript/testkit/tsup.config.ts\n\u001b[34mCLI\u001b[39m Target: esnext\n\u001b[34mCLI\u001b[39m Cleaning output folder\n\u001b[34mESM\u001b[39m Build start\n\u001b[32mESM\u001b[39m \u001b[1mdist/index.js \u001b[22m\u001b[32m96.00 KB\u001b[39m\n\u001b[32mESM\u001b[39m ⚡️ Build success in 29ms\n\n\u001b[2m> \u001b[22m\u001b[2mnx run\u001b[22m provider-api:build\n\n\u001b[2m> \u001b[22mbunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false\r\n\r\n\u001b[34mCLI\u001b[39m Building entry: src/index.ts\n\u001b[34mCLI\u001b[39m Using tsconfig: tsconfig.tsup.json\n\u001b[34mCLI\u001b[39m tsup v8.5.1\n\u001b[34mCLI\u001b[39m Using tsup config: /home/oscar/GitHub/Tuvren-runtime/boundaries/providers/contracts/provider-api/implementations/typescript/tsup.config.ts\n\u001b[34mCLI\u001b[39m Target: esnext\n\u001b[34mCLI\u001b[39m Cleaning output folder\n\u001b[34mESM\u001b[39m Build start\n\u001b[32mESM\u001b[39m \u001b[1mdist/index.js \u001b[22m\u001b[32m283.00 B\u001b[39m\n\u001b[32mESM\u001b[39m ⚡️ Build success in 17ms\n\n\u001b[2m> \u001b[22m\u001b[2mnx run\u001b[22m framework-event-stream:build\n\n\u001b[2m> \u001b[22mbunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false\r\n\r\n\u001b[34mCLI\u001b[39m Building entry: src/index.ts\n\u001b[34mCLI\u001b[39m Using tsconfig: tsconfig.tsup.json\n\u001b[34mCLI\u001b[39m tsup v8.5.1\n\u001b[34mCLI\u001b[39m Using tsup config: /home/oscar/GitHub/Tuvren-runtime/boundaries/framework/contracts/event-stream/implementations/typescript/tsup.config.ts\n\u001b[34mCLI\u001b[39m Target: esnext\n\u001b[34mCLI\u001b[39m Cleaning output folder\n\u001b[34mESM\u001b[39m Build start\n\u001b[32mESM\u001b[39m \u001b[1mdist/index.js \u001b[22m\u001b[32m322.00 B\u001b[39m\n\u001b[32mESM\u001b[39m ⚡️ Build success in 16ms\n\n\u001b[2m> \u001b[22m\u001b[2mnx run\u001b[22m framework-testkit:build\n\n\u001b[2m> \u001b[22mbunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false\r\n\r\n\u001b[34mCLI\u001b[39m Building entry: src/index.ts\n\u001b[34mCLI\u001b[39m Using tsconfig: tsconfig.tsup.json\n\u001b[34mCLI\u001b[39m tsup v8.5.1\n\u001b[34mCLI\u001b[39m Using tsup config: /home/oscar/GitHub/Tuvren-runtime/boundaries/framework/implementations/typescript/testkit/tsup.config.ts\n\u001b[34mCLI\u001b[39m Target: esnext\n\u001b[34mCLI\u001b[39m Cleaning output folder\n\u001b[34mESM\u001b[39m Build start\n\u001b[32mESM\u001b[39m \u001b[1mdist/index.js \u001b[22m\u001b[32m5.20 KB\u001b[39m\n\u001b[32mESM\u001b[39m ⚡️ Build success in 16ms\n\n\u001b[2m> \u001b[22m\u001b[2mnx run\u001b[22m backend-memory:build\n\n\u001b[2m> \u001b[22mbunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false\r\n\r\n\u001b[34mCLI\u001b[39m Building entry: src/index.ts\n\u001b[34mCLI\u001b[39m Using tsconfig: tsconfig.tsup.json\n\u001b[34mCLI\u001b[39m tsup v8.5.1\n\u001b[34mCLI\u001b[39m Using tsup config: /home/oscar/GitHub/Tuvren-runtime/boundaries/kernel/implementations/typescript/backend-memory/tsup.config.ts\n\u001b[34mCLI\u001b[39m Target: esnext\n\u001b[34mCLI\u001b[39m Cleaning output folder\n\u001b[34mESM\u001b[39m Build start\n\u001b[32mESM\u001b[39m \u001b[1mdist/index.js \u001b[22m\u001b[32m77.99 KB\u001b[39m\n\u001b[32mESM\u001b[39m ⚡️ Build success in 28ms\n\n\u001b[2m> \u001b[22m\u001b[2mnx run\u001b[22m backend-sqlite:build\n\n\u001b[2m> \u001b[22mbunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false && mkdir -p dist/migrations && cp migrations/*.sql dist/migrations/\r\n\r\n\u001b[34mCLI\u001b[39m Building entry: src/index.ts\n\u001b[34mCLI\u001b[39m Using tsconfig: tsconfig.tsup.json\n\u001b[34mCLI\u001b[39m tsup v8.5.1\n\u001b[34mCLI\u001b[39m Using tsup config: /home/oscar/GitHub/Tuvren-runtime/boundaries/kernel/implementations/typescript/backend-sqlite/tsup.config.ts\n\u001b[34mCLI\u001b[39m Target: esnext\n\u001b[34mCLI\u001b[39m Cleaning output folder\n\u001b[34mESM\u001b[39m Build start\n\u001b[32mESM\u001b[39m \u001b[1mdist/index.js \u001b[22m\u001b[32m191.18 KB\u001b[39m\n\u001b[32mESM\u001b[39m ⚡️ Build success in 45ms\n\n\u001b[2m> \u001b[22m\u001b[2mnx run\u001b[22m framework-stream-core:build\n\n\u001b[2m> \u001b[22mbunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false\r\n\r\n\u001b[34mCLI\u001b[39m Building entry: src/index.ts\n\u001b[34mCLI\u001b[39m Using tsconfig: tsconfig.tsup.json\n\u001b[34mCLI\u001b[39m tsup v8.5.1\n\u001b[34mCLI\u001b[39m Using tsup config: /home/oscar/GitHub/Tuvren-runtime/boundaries/framework/implementations/typescript/stream-core/tsup.config.ts\n\u001b[34mCLI\u001b[39m Target: esnext\n\u001b[34mCLI\u001b[39m Cleaning output folder\n\u001b[34mESM\u001b[39m Build start\n\u001b[32mESM\u001b[39m \u001b[1mdist/index.js \u001b[22m\u001b[32m11.77 KB\u001b[39m\n\u001b[32mESM\u001b[39m ⚡️ Build success in 20ms\n\n\u001b[2m> \u001b[22m\u001b[2mnx run\u001b[22m backend-postgres:build\n\n\u001b[2m> \u001b[22mbunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false\r\n\r\n\u001b[34mCLI\u001b[39m Building entry: src/index.ts\n\u001b[34mCLI\u001b[39m Using tsconfig: tsconfig.tsup.json\n\u001b[34mCLI\u001b[39m tsup v8.5.1\n\u001b[34mCLI\u001b[39m Using tsup config: /home/oscar/GitHub/Tuvren-runtime/boundaries/kernel/implementations/typescript/backend-postgres/tsup.config.ts\n\u001b[34mCLI\u001b[39m Target: esnext\n\u001b[34mCLI\u001b[39m Cleaning output folder\n\u001b[34mESM\u001b[39m Build start\n\u001b[32mESM\u001b[39m \u001b[1mdist/index.js \u001b[22m\u001b[32m93.80 KB\u001b[39m\n\u001b[32mESM\u001b[39m ⚡️ Build success in 44ms\n\n\u001b[2m> \u001b[22m\u001b[2mnx run\u001b[22m framework-stream-sse:build\n\n\u001b[2m> \u001b[22mbunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false\r\n\r\n\u001b[34mCLI\u001b[39m Building entry: src/index.ts\n\u001b[34mCLI\u001b[39m Using tsconfig: tsconfig.tsup.json\n\u001b[34mCLI\u001b[39m tsup v8.5.1\n\u001b[34mCLI\u001b[39m Using tsup config: /home/oscar/GitHub/Tuvren-runtime/boundaries/framework/implementations/typescript/stream-sse/tsup.config.ts\n\u001b[34mCLI\u001b[39m Target: esnext\n\u001b[34mCLI\u001b[39m Cleaning output folder\n\u001b[34mESM\u001b[39m Build start\n\u001b[32mESM\u001b[39m \u001b[1mdist/index.js \u001b[22m\u001b[32m7.66 KB\u001b[39m\n\u001b[32mESM\u001b[39m ⚡️ Build success in 31ms\n\n\u001b[2m> \u001b[22m\u001b[2mnx run\u001b[22m providers-testkit:build\n\n\u001b[2m> \u001b[22mbunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false\r\n\r\n\u001b[34mCLI\u001b[39m Building entry: src/index.ts\n\u001b[34mCLI\u001b[39m Using tsconfig: tsconfig.tsup.json\n\u001b[34mCLI\u001b[39m tsup v8.5.1\n\u001b[34mCLI\u001b[39m Using tsup config: /home/oscar/GitHub/Tuvren-runtime/boundaries/providers/implementations/typescript/testkit/tsup.config.ts\n\u001b[34mCLI\u001b[39m Target: esnext\n\u001b[34mCLI\u001b[39m Cleaning output folder\n\u001b[34mESM\u001b[39m Build start\n\u001b[32mESM\u001b[39m \u001b[1mdist/index.js \u001b[22m\u001b[32m17.17 KB\u001b[39m\n\u001b[32mESM\u001b[39m ⚡️ Build success in 20ms\n\n\u001b[2m> \u001b[22m\u001b[2mnx run\u001b[22m framework-stream-agui:build\n\n\u001b[2m> \u001b[22mbunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false\r\n\r\n\u001b[34mCLI\u001b[39m Building entry: src/index.ts\n\u001b[34mCLI\u001b[39m Using tsconfig: tsconfig.tsup.json\n\u001b[34mCLI\u001b[39m tsup v8.5.1\n\u001b[34mCLI\u001b[39m Using tsup config: /home/oscar/GitHub/Tuvren-runtime/boundaries/framework/implementations/typescript/stream-agui/tsup.config.ts\n\u001b[34mCLI\u001b[39m Target: esnext\n\u001b[34mCLI\u001b[39m Cleaning output folder\n\u001b[34mESM\u001b[39m Build start\n\u001b[32mESM\u001b[39m \u001b[1mdist/index.js \u001b[22m\u001b[32m18.32 KB\u001b[39m\n\u001b[32mESM\u001b[39m ⚡️ Build success in 20ms\n\n\u001b[2m> \u001b[22m\u001b[2mnx run\u001b[22m kernel-runtime:build\n\n\u001b[2m> \u001b[22mbunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false\r\n\r\n\u001b[34mCLI\u001b[39m Building entry: src/index.ts\n\u001b[34mCLI\u001b[39m Using tsconfig: tsconfig.tsup.json\n\u001b[34mCLI\u001b[39m tsup v8.5.1\n\u001b[34mCLI\u001b[39m Using tsup config: /home/oscar/GitHub/Tuvren-runtime/boundaries/kernel/implementations/typescript/runtime-kernel/tsup.config.ts\n\u001b[34mCLI\u001b[39m Target: esnext\n\u001b[34mCLI\u001b[39m Cleaning output folder\n\u001b[34mESM\u001b[39m Build start\n\u001b[32mESM\u001b[39m \u001b[1mdist/index.js \u001b[22m\u001b[32m61.23 KB\u001b[39m\n\u001b[32mESM\u001b[39m ⚡️ Build success in 128ms\n\n\u001b[2m> \u001b[22m\u001b[2mnx run\u001b[22m framework-driver-react:build\n\n\u001b[2m> \u001b[22mbunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false && node --input-type=module -e \"await import('./dist/index.js')\"\r\n\r\n\u001b[34mCLI\u001b[39m Building entry: src/index.ts\n\u001b[34mCLI\u001b[39m Using tsconfig: tsconfig.tsup.json\n\u001b[34mCLI\u001b[39m tsup v8.5.1\n\u001b[34mCLI\u001b[39m Using tsup config: /home/oscar/GitHub/Tuvren-runtime/boundaries/framework/implementations/typescript/drivers/react/tsup.config.ts\n\u001b[34mCLI\u001b[39m Target: esnext\n\u001b[34mCLI\u001b[39m Cleaning output folder\n\u001b[34mESM\u001b[39m Build start\n\u001b[32mESM\u001b[39m \u001b[1mdist/index.js \u001b[22m\u001b[32m64.99 KB\u001b[39m\n\u001b[32mESM\u001b[39m ⚡️ Build success in 107ms\n\n\u001b[2m> \u001b[22m\u001b[2mnx run\u001b[22m providers-mcp-client:build\n\n\u001b[2m> \u001b[22mbunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false\r\n\r\n\u001b[34mCLI\u001b[39m Building entry: src/index.ts\n\u001b[34mCLI\u001b[39m Using tsconfig: tsconfig.tsup.json\n\u001b[34mCLI\u001b[39m tsup v8.5.1\n\u001b[34mCLI\u001b[39m Using tsup config: /home/oscar/GitHub/Tuvren-runtime/boundaries/providers/implementations/typescript/mcp-client/tsup.config.ts\n\u001b[34mCLI\u001b[39m Target: esnext\n\u001b[34mCLI\u001b[39m Cleaning output folder\n\u001b[34mESM\u001b[39m Build start\n\u001b[32mESM\u001b[39m \u001b[1mdist/index.js \u001b[22m\u001b[32m11.53 KB\u001b[39m\n\u001b[32mESM\u001b[39m ⚡️ Build success in 30ms\n\n\u001b[2m> \u001b[22m\u001b[2mnx run\u001b[22m framework-runtime:build\n\n\u001b[2m> \u001b[22mbunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false\r\n\r\n\u001b[34mCLI\u001b[39m Building entry: src/index.ts\n\u001b[34mCLI\u001b[39m Using tsconfig: tsconfig.tsup.json\n\u001b[34mCLI\u001b[39m tsup v8.5.1\n\u001b[34mCLI\u001b[39m Using tsup config: /home/oscar/GitHub/Tuvren-runtime/boundaries/framework/implementations/typescript/runtime/tsup.config.ts\n\u001b[34mCLI\u001b[39m Target: esnext\n\u001b[34mCLI\u001b[39m Cleaning output folder\n\u001b[34mESM\u001b[39m Build start\n\u001b[32mESM\u001b[39m \u001b[1mdist/index.js \u001b[22m\u001b[32m421.41 KB\u001b[39m\n\u001b[32mESM\u001b[39m ⚡️ Build success in 88ms\n\n\u001b[2m> \u001b[22m\u001b[2mnx run\u001b[22m providers-bridge-ai-sdk:build\n\n\u001b[2m> \u001b[22mbunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false\r\n\r\n\u001b[34mCLI\u001b[39m Building entry: src/index.ts\n\u001b[34mCLI\u001b[39m Using tsconfig: tsconfig.tsup.json\n\u001b[34mCLI\u001b[39m tsup v8.5.1\n\u001b[34mCLI\u001b[39m Using tsup config: /home/oscar/GitHub/Tuvren-runtime/boundaries/providers/implementations/typescript/bridge-ai-sdk/tsup.config.ts\n\u001b[34mCLI\u001b[39m Target: esnext\n\u001b[34mCLI\u001b[39m Cleaning output folder\n\u001b[34mESM\u001b[39m Build start\n\u001b[32mESM\u001b[39m \u001b[1mdist/index.js \u001b[22m\u001b[32m61.53 KB\u001b[39m\n\u001b[32mESM\u001b[39m ⚡️ Build success in 64ms\n\n\u001b[2m> \u001b[22m\u001b[2mnx run\u001b[22m host-repl:build\n\n\u001b[2m> \u001b[22mbunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false\r\n\r\n\u001b[34mCLI\u001b[39m Building entry: src/cli.ts, src/gemini-cli.ts, src/index.ts\n\u001b[34mCLI\u001b[39m Using tsconfig: tsconfig.tsup.json\n\u001b[34mCLI\u001b[39m tsup v8.5.1\n\u001b[34mCLI\u001b[39m Using tsup config: /home/oscar/GitHub/Tuvren-runtime/boundaries/hosts/implementations/typescript/repl/tsup.config.ts\n\u001b[34mCLI\u001b[39m Target: esnext\n\u001b[34mCLI\u001b[39m Cleaning output folder\n\u001b[34mESM\u001b[39m Build start\n\u001b[32mESM\u001b[39m \u001b[1mdist/chunk-6SMTFAQM.js \u001b[22m\u001b[32m95.83 KB\u001b[39m\n\u001b[32mESM\u001b[39m \u001b[1mdist/cli.js            \u001b[22m\u001b[32m40.06 KB\u001b[39m\n\u001b[32mESM\u001b[39m \u001b[1mdist/gemini-cli.js     \u001b[22m\u001b[32m575.00 B\u001b[39m\n\u001b[32mESM\u001b[39m \u001b[1mdist/index.js          \u001b[22m\u001b[32m811.00 B\u001b[39m\n\u001b[32mESM\u001b[39m ⚡️ Build success in 47ms\n../../../../framework/implementations/typescript/runtime/dist/index.d.ts(41,43): error TS7016: Could not find a declaration file for module '@tuvren/kernel-runtime'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/kernel/implementations/typescript/runtime-kernel/dist/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__kernel-runtime` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/kernel-runtime';`\n../../../../framework/implementations/typescript/runtime/dist/index.d.ts(42,37): error TS7016: Could not find a declaration file for module '@tuvren/kernel-runtime'. '/home/oscar/GitHub/Tuvren-runtime/boundaries/kernel/implementations/typescript/runtime-kernel/dist/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/tuvren__kernel-runtime` if it exists or add a new declaration (.d.ts) file containing `declare module '@tuvren/kernel-runtime';`\n\n\u001b[2m\u001b[31m\u001b[39m\u001b[22m\n\n\u001b[7m\u001b[1m\u001b[31m NX \u001b[39m\u001b[22m\u001b[27m  \u001b[31mRunning target \u001b[1mbuild\u001b[22m for project host-repl and \u001b[1m20\u001b[22m tasks it depends on failed\u001b[39m\n\n\u001b[2mFailed tasks:\u001b[22m\n\n\u001b[2m-\u001b[22m host-repl:build\n\n\u001b[2mHint: run the command with\u001b[22m --verbose \u001b[2mfor more details.\u001b[22m\n\n\n\u001b[7m\u001b[1m\u001b[33m NX \u001b[39m\u001b[22m\u001b[27m  \u001b[33mNx detected a flaky task\u001b[39m\n\n  host-repl:build\n\nFlaky tasks can disrupt your CI pipeline. Automatically retry them with Nx Cloud. Learn more at https://nx.dev/ci/features/flaky-tasks\n\n"
 }

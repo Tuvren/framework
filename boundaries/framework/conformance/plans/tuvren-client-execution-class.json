@@ -1,6 +1,6 @@
 {
   "planId": "tuvren.framework.tuvren-client-execution-class",
-  "planVersion": "0.1.0",
+  "planVersion": "0.2.0",
   "packetId": "tuvren.shared.core",
   "applicability": {
     "capabilities": ["framework.runtime-api"]
@@ -94,6 +94,18 @@
           "kind": "resultField",
           "field": "$.tuvrenClient.stale.toolResultIsError",
           "equals": true
+        }
+      ],
+      "operation": "runtime.tuvren-client.lifecycle"
+    },
+    {
+      "checkId": "az.az003.stale-late-completion-surfaces-stale-code",
+      "evidence": ["result.tuvrenClient.stale.toolResultOutputCode"],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.tuvrenClient.stale.toolResultOutputCode",
+          "equals": "capability_result_stale"
         }
       ],
       "operation": "runtime.tuvren-client.lifecycle"

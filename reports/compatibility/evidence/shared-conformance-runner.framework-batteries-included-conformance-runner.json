@@ -582,6 +582,7 @@
     "az.az002.client-reported-result-surfaced",
     "az.az003.stale-late-completion-does-not-reach-model",
     "az.az003.stale-late-completion-surfaces-error",
+    "az.az003.stale-late-completion-surfaces-stale-code",
     "az.az003.unavailable-endpoint-does-not-block",
     "az.az003.unavailable-endpoint-surfaces-capability-binding-unavailable",
     "az.az004.client-side-mcp-dispatch-completes",
@@ -616,9 +617,9 @@
   "summary": {
     "failedChecks": 0,
     "passedChecks": 12,
-    "totalChecks": 391,
+    "totalChecks": 392,
     "applicableChecks": 12,
-    "nonApplicableChecks": 379
+    "nonApplicableChecks": 380
   },
   "suiteId": "tuvren.framework.runtime-api.batteries-included",
   "suiteVersion": "0.1.0"

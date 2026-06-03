@@ -76,6 +76,8 @@ The runtime tracks endpoint availability through a `ClientEndpointBoundary`. A c
 
 Hosts that need dynamic lifecycle control (endpoint becomes unavailable mid-turn) should pre-create a boundary via `createClientEndpointBoundary([endpoint])` from `@tuvren/runtime`, call `detach()` as needed, and pass it as `AgentConfig.clientEndpointBoundary`.
 
+> **Note:** `clientEndpoints` and `clientEndpointBoundary` serve distinct roles. `clientEndpoints` registers the capability surface in the tool registry so the model can see and call those tools. `clientEndpointBoundary` governs dispatch availability at invocation time. Supplying only `clientEndpointBoundary` without `clientEndpoints` produces a valid boundary but zero registered tools — the model has no visibility of the capabilities. Always supply both when using the explicit lifecycle pattern (see Option B in the configuration summary below).
+
 ## Client-Side MCP Binding
 
 When an advertised capability includes `mcpServerName`, the runtime classifies it as a **client-side MCP** tool:

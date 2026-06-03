@@ -19,7 +19,10 @@ import type {
   AttachedClientEndpoint,
   ClientEndpointBoundary,
 } from "@tuvren/core/capabilities";
-import { CAPABILITY_BINDING_UNAVAILABLE } from "@tuvren/core/errors";
+import {
+  CAPABILITY_BINDING_UNAVAILABLE,
+  CAPABILITY_RESULT_STALE,
+} from "@tuvren/core/errors";
 import type { TuvrenExtension } from "@tuvren/core/extensions";
 import type { TuvrenJsonSchema } from "@tuvren/core/messages";
 import {
@@ -208,15 +211,16 @@ export function buildClientEndpointTools(
           );
 
           if (dispatched === null) {
-            // Stale late-completion: the result cannot mutate this invocation.
-            // Surface as a ToolResultPart so it's visible to the model without
-            // implying the original stale content is authoritative. (KRT-AZ003)
+            // Stale late-completion: the endpoint echoed a wrong leaseToken or
+            // callId. The result cannot mutate this invocation. Distinct from
+            // capability_binding_unavailable, which signals no endpoint attached.
+            // (KRT-AZ003)
             return {
               callId: context.callId,
               isError: true,
               name: capabilityId,
               output: {
-                code: CAPABILITY_BINDING_UNAVAILABLE,
+                code: CAPABILITY_RESULT_STALE,
                 error: `Tuvren-client capability "${capabilityId}" received a stale result and was ignored.`,
               },
               type: "tool_result",
@@ -233,6 +237,9 @@ export function buildClientEndpointTools(
             };
           }
 
+          // Return the raw client-reported content. Client tools never carry an
+          // outputSchema, so the structural asymmetry with the error branches is
+          // intentional and safe — output validation is skipped for this class.
           return dispatched.content;
         },
         inputSchema: cap.inputSchema as TuvrenJsonSchema,

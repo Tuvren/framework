@@ -360,6 +360,7 @@
             "az.az002.client-reported-result-surfaced",
             "az.az003.stale-late-completion-does-not-reach-model",
             "az.az003.stale-late-completion-surfaces-error",
+            "az.az003.stale-late-completion-surfaces-stale-code",
             "az.az003.unavailable-endpoint-does-not-block",
             "az.az003.unavailable-endpoint-surfaces-capability-binding-unavailable",
             "az.az004.client-side-mcp-dispatch-completes",
@@ -389,9 +390,9 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 379,
-            "totalChecks": 391,
-            "applicableChecks": 379,
+            "passedChecks": 380,
+            "totalChecks": 392,
+            "applicableChecks": 380,
             "nonApplicableChecks": 12
           },
           "declaredCapabilities": [
@@ -432,9 +433,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 12,
-            "totalChecks": 391,
+            "totalChecks": 392,
             "applicableChecks": 12,
-            "nonApplicableChecks": 379
+            "nonApplicableChecks": 380
           },
           "declaredCapabilities": ["framework.batteries-included"],
           "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.framework-batteries-included-conformance-runner.json",
@@ -885,9 +886,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 0,
-            "totalChecks": 391,
+            "totalChecks": 392,
             "applicableChecks": 0,
-            "nonApplicableChecks": 391
+            "nonApplicableChecks": 392
           },
           "declaredCapabilities": [],
           "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.framework-rust-conformance-runner.json",
@@ -915,15 +916,15 @@
         "framework.interop.reload_persistence"
       ],
       "checkSummary": {
-        "failedChecks": 0,
-        "passedChecks": 9,
+        "failedChecks": 9,
+        "passedChecks": 0,
         "totalChecks": 9
       },
       "evidencePath": "reports/compatibility/evidence/tuvren.framework.kernel-interop-smoke.typescript-framework__rust-kernel.json",
       "pairId": "typescript-framework__rust-kernel",
       "reportLabel": "TypeScript framework to Rust kernel interop",
-      "reportStatus": "full_pass",
-      "status": "pass",
+      "reportStatus": "unexpected_fail",
+      "status": "fail",
       "suiteId": "tuvren.framework.kernel-interop-smoke",
       "suiteVersion": "0.2.0"
     }

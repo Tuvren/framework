@@ -295,6 +295,8 @@ export async function runTuvrenClientLifecycle(): Promise<AdapterProjection> {
         },
         stale: {
           toolResultIsError: staleResultEvent?.isError === true,
+          toolResultOutputCode:
+            typeof staleOutput?.code === "string" ? staleOutput.code : null,
           staleContentInResult:
             typeof staleOutput === "object" &&
             staleOutput !== null &&

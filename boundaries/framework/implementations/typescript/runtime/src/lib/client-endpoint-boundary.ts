@@ -44,6 +44,18 @@ class BasicClientEndpointBoundary implements ClientEndpointBoundary {
   constructor(endpoints: AttachedClientEndpoint[]) {
     for (const endpoint of endpoints) {
       for (const cap of endpoint.advertisedCapabilities) {
+        if (this.capabilityIndex.has(cap.capabilityId)) {
+          // Duplicate capabilityId across endpoints would silently overwrite the
+          // boundary index while causing the tool registry to throw
+          // duplicate_tool_registration at turn time. Fail fast here instead.
+          throw new TuvrenRuntimeError(
+            `Tuvren-client capability ID "${cap.capabilityId}" is advertised by more than one endpoint. Capability IDs must be globally unique across all attached endpoints.`,
+            {
+              code: "invalid_runtime_options",
+              details: { capabilityId: cap.capabilityId },
+            }
+          );
+        }
         this.capabilityIndex.set(cap.capabilityId, {
           endpoint,
           mcpServerName: cap.mcpServerName,
@@ -121,10 +133,11 @@ class BasicClientEndpointBoundary implements ClientEndpointBoundary {
       leaseToken,
     });
 
-    // Stale-result guard: if the client echoes back the wrong token this
-    // result was produced for a previous invocation and must not mutate the
-    // current one. (KRT-AZ003)
-    if (reported.leaseToken !== leaseToken) {
+    // Stale-result guard: if the client echoes back the wrong token or callId
+    // this result was produced for a previous invocation and must not mutate
+    // the current one. leaseToken already encodes callId, but we validate both
+    // explicitly for defense in depth. (KRT-AZ003)
+    if (reported.leaseToken !== leaseToken || reported.callId !== callId) {
       return null;
     }
 

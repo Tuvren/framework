@@ -47,3 +47,13 @@ export const TOOL_RESULT_VALIDATION_FAILED =
  */
 export const TOOL_INVOCATION_RATE_LIMITED =
   "tool_invocation_rate_limited" as const;
+
+/**
+ * Stable code emitted when a `tuvren-client` invocation result is discarded
+ * because the endpoint echoed a `leaseToken` (or `callId`) that does not match
+ * the values generated for this dispatch. The result was produced for a prior
+ * invocation and cannot mutate the current one. Surfaced as `tool.result`
+ * with `isError: true`. Distinct from `capability_binding_unavailable`, which
+ * signals that no endpoint is currently attached for the capability. (KRT-AZ003)
+ */
+export const CAPABILITY_RESULT_STALE = "capability_result_stale" as const;

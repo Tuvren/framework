@@ -175,7 +175,7 @@
     },
     {
       "planId": "tuvren.framework.tuvren-client-execution-class",
-      "planVersion": "0.1.0",
+      "planVersion": "0.2.0",
       "path": "boundaries/framework/conformance/plans/tuvren-client-execution-class.json"
     }
   ],

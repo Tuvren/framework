@@ -38,7 +38,10 @@ import type {
   DriverExecutionContext,
   DriverExecutionResult,
 } from "@tuvren/core/driver";
-import { CAPABILITY_BINDING_UNAVAILABLE } from "@tuvren/core/errors";
+import {
+  CAPABILITY_BINDING_UNAVAILABLE,
+  CAPABILITY_RESULT_STALE,
+} from "@tuvren/core/errors";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import { createDriverRegistry, createTuvrenRuntime } from "../src/index.ts";
 import { createClientEndpointBoundary } from "../src/lib/client-endpoint-boundary.ts";
@@ -363,10 +366,20 @@ describe("tuvren-client: unavailability and staleness (KRT-AZ003)", () => {
     expect(result.status).toBe("completed");
     const toolResultEvents = events.filter(
       (e) => (e as TuvrenStreamEvent).type === "tool.result"
-    ) as (TuvrenStreamEvent & { type: "tool.result"; isError?: boolean })[];
-    // The result should be an error (stale result → capability_binding_unavailable code)
+    ) as (TuvrenStreamEvent & {
+      type: "tool.result";
+      isError?: boolean;
+      output?: unknown;
+    })[];
     expect(toolResultEvents).toHaveLength(1);
     expect(toolResultEvents[0]?.isError).toBe(true);
+    // Stale result surfaces with the dedicated stale code, not capability_binding_unavailable.
+    const output = toolResultEvents[0]?.output as
+      | Record<string, unknown>
+      | undefined;
+    expect(output?.code).toBe(CAPABILITY_RESULT_STALE);
+    // The stale endpoint's content must not reach the model — leak guard. (KRT-AZ003)
+    expect(output).not.toMatchObject({ stale: true });
   });
 
   test("a within-lease invocation completes normally (no error)", async () => {

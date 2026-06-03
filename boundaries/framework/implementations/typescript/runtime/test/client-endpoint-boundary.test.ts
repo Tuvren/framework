@@ -126,6 +126,15 @@ describe("ClientEndpointBoundary — attachment and availability (KRT-AZ001)", (
     expect(boundary.isAvailable("code.run")).toBe(true);
     expect(boundary.isAvailable("file.read")).toBe(true);
   });
+
+  test("throws when two endpoints advertise the same capabilityId", () => {
+    expect(() =>
+      createClientEndpointBoundary([
+        makeEndpoint("ep1", ["shared.tool"]),
+        makeEndpoint("ep2", ["shared.tool"]),
+      ])
+    ).toThrow(TuvrenRuntimeError);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -289,11 +298,27 @@ describe("ClientEndpointBoundary — dispatch and result capture (KRT-AZ002)", (
 describe("ClientEndpointBoundary — staleness handling (KRT-AZ003)", () => {
   test("dispatch returns null when the client echoes back a mismatched leaseToken", async () => {
     const boundary = createClientEndpointBoundary([
-      makeEndpoint("ep1", ["search"], async (envelope) => ({
-        callId: envelope.callId,
-        content: { staleResult: true },
-        leaseToken: "wrong-token-from-previous-invocation", // stale
-      })),
+      makeEndpoint("ep1", ["search"], (envelope) =>
+        Promise.resolve({
+          callId: envelope.callId,
+          content: { staleResult: true },
+          leaseToken: "wrong-token-from-previous-invocation", // stale
+        })
+      ),
+    ]);
+    const result = await boundary.dispatch("search", "call-fresh", {});
+    expect(result).toBeNull();
+  });
+
+  test("dispatch returns null when the client echoes back a mismatched callId", async () => {
+    const boundary = createClientEndpointBoundary([
+      makeEndpoint("ep1", ["search"], (envelope) =>
+        Promise.resolve({
+          callId: "wrong-call-id", // mismatch
+          content: { staleResult: true },
+          leaseToken: envelope.leaseToken, // token matches, but callId doesn't
+        })
+      ),
     ]);
     const result = await boundary.dispatch("search", "call-fresh", {});
     expect(result).toBeNull();

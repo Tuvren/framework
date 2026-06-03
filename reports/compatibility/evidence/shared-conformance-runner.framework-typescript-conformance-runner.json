@@ -7709,6 +7709,24 @@
     {
       "assertionResults": [
         {
+          "assertionId": "az.az003.stale-late-completion-surfaces-stale-code.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "az.az003.stale-late-completion-surfaces-stale-code.requiredEvidence.result.tuvrenClient.stale.toolResultOutputCode",
+          "status": "pass"
+        }
+      ],
+      "checkId": "az.az003.stale-late-completion-surfaces-stale-code",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.tuvren-client-execution-class"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "az.az003.unavailable-endpoint-does-not-block.1.resultField",
           "status": "pass"
         },
@@ -8315,9 +8333,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 379,
-    "totalChecks": 391,
-    "applicableChecks": 379,
+    "passedChecks": 380,
+    "totalChecks": 392,
+    "applicableChecks": 380,
     "nonApplicableChecks": 12
   },
   "suiteId": "tuvren.framework.promoted-authority",

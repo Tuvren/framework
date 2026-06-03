@@ -17,6 +17,7 @@
 // biome-ignore-all lint/performance/noBarrelFile: This package subpath is the intentional focused contract surface.
 export {
   CAPABILITY_BINDING_UNAVAILABLE,
+  CAPABILITY_RESULT_STALE,
   TOOL_INPUT_VALIDATION_FAILED,
   TOOL_INVOCATION_RATE_LIMITED,
   TOOL_RESULT_VALIDATION_FAILED,
