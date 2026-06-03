@@ -235,6 +235,26 @@ async function loadStreamResult(
   }
 }
 
+function assertProviderMediatedToolsSupported(
+  prompt: TuvrenPrompt,
+  activeProvider: string
+): void {
+  if (
+    prompt.providerMediatedTools !== undefined &&
+    prompt.providerMediatedTools.length > 0 &&
+    activeProvider !== "openai"
+  ) {
+    throw bridgeError(
+      "provider-mediated tools require an OpenAI-bound model; bind an openai provider or remove providerMediatedTools",
+      "invalid_ai_sdk_bridge_config",
+      {
+        activeProvider,
+        reason: "provider_mediated_tools_require_openai",
+      }
+    );
+  }
+}
+
 function createCallOptions(input: {
   bridgeId: string;
   defaultHeaders?: Record<string, string | undefined>;
@@ -292,6 +312,8 @@ function createCallOptions(input: {
       }
     );
   }
+
+  assertProviderMediatedToolsSupported(input.prompt, input.model.provider);
 
   const headers = mergeHeaders(input.defaultHeaders, settings.headers);
   const providerOptions = mergeProviderOptions(

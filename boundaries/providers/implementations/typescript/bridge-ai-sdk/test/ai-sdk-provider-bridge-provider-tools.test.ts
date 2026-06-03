@@ -281,6 +281,7 @@ describe("provider-bridge-ai-sdk provider-mediated tools", () => {
     let capturedTools: unknown[] | undefined;
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
+        provider: "openai",
         async doGenerate(options) {
           capturedTools = options.tools;
           return createGenerateResult();
@@ -313,6 +314,7 @@ describe("provider-bridge-ai-sdk provider-mediated tools", () => {
   test("accepts dynamic=true LanguageModelV3ToolResult for declared provider-mediated tool in generate", async () => {
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
+        provider: "openai",
         async doGenerate() {
           return createGenerateResult({
             content: [
@@ -353,9 +355,29 @@ describe("provider-bridge-ai-sdk provider-mediated tools", () => {
     ).toBe(false);
   });
 
+  test("rejects providerMediatedTools when bound model is not an OpenAI provider", async () => {
+    const bridge = createAiSdkProviderBridge({
+      model: createMockModel({ provider: "anthropic" }),
+    });
+
+    await expect(
+      bridge.generate({
+        messages: [{ parts: [{ text: "go", type: "text" }], role: "user" }],
+        providerMediatedTools: [
+          {
+            endpoint: "https://example.com/mcp",
+            mediationType: "mcp",
+            name: "mcp_tool",
+          },
+        ],
+      })
+    ).rejects.toThrow("provider-mediated tools require an OpenAI-bound model");
+  });
+
   test("yields provider_tool_result chunk with executionClass provider-mediated for declared mediated tool in stream", async () => {
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
+        provider: "openai",
         async doStream() {
           return {
             stream: streamFromParts([

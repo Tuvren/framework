@@ -69,12 +69,19 @@ export function mapToolDefinition(
 export function mapProviderNativeToolDeclarations(
   declarations: ProviderNativeToolDeclaration[]
 ): LanguageModelV3ProviderTool[] {
-  return declarations.map((decl) => ({
-    args: decl.args ?? {},
-    id: decl.id as `${string}.${string}`,
-    name: decl.name,
-    type: "provider",
-  }));
+  return declarations.map((decl) => {
+    if (!decl.id.includes(".")) {
+      throw new Error(
+        `ProviderNativeToolDeclaration.id must be in "{provider}.{tool}" format, got: ${decl.id}`
+      );
+    }
+    return {
+      args: decl.args ?? {},
+      id: decl.id as `${string}.${string}`,
+      name: decl.name,
+      type: "provider",
+    };
+  });
 }
 
 /** Maps provider-mediated MCP configs to LanguageModelV3ProviderTool entries. (AY004) */

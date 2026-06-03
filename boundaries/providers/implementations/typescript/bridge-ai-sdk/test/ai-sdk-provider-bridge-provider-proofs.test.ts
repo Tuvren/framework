@@ -356,6 +356,7 @@ describe("KRT-AY006 — provider-mediated execution class proof (generate path)"
     const harness = createFakeKernelHarness();
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
+        provider: "openai",
         async doGenerate() {
           return createGenerateResult({
             content: [
@@ -439,6 +440,7 @@ describe("KRT-AY006 — provider-mediated execution class proof (generate path)"
     const harness = createFakeKernelHarness();
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
+        provider: "openai",
         async doGenerate() {
           return createGenerateResult({
             content: [
@@ -503,6 +505,7 @@ describe("KRT-AY006 — provider-mediated execution class proof (stream path)", 
     const harness = createFakeKernelHarness();
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
+        provider: "openai",
         async doStream() {
           return {
             stream: streamFromParts([

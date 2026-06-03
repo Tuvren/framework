@@ -192,6 +192,10 @@ const CAPABILITY_EXECUTION_CLASSES = new Set([
   "tuvren-client",
 ]);
 const CAPABILITY_INVOCATION_OWNERS = new Set(["provider", "tuvren"]);
+const PROVIDER_TOOL_EXECUTION_CLASSES = new Set([
+  "provider-native",
+  "provider-mediated",
+]);
 const PROVIDER_NATIVE_INVOCATION_RECORD_KEYS = new Set([
   "callId",
   "executionClass",
@@ -237,7 +241,7 @@ function isProviderNativeInvocationRecord(value: unknown): boolean {
       hasOnlyAllowedKeys(value, PROVIDER_NATIVE_INVOCATION_RECORD_KEYS) &&
       isNonEmptyStringProperty(value, "callId") &&
       isStringProperty(value, "executionClass") &&
-      CAPABILITY_EXECUTION_CLASSES.has(value.executionClass) &&
+      PROVIDER_TOOL_EXECUTION_CLASSES.has(value.executionClass) &&
       isNonEmptyStringProperty(value, "name") &&
       isNonEmptyStringProperty(value, "providerCallId") &&
       "result" in value &&
