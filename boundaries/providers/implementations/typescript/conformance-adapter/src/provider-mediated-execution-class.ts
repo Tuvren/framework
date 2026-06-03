@@ -106,6 +106,7 @@ function filterEventsByType(
 export async function runProviderMediatedAttribution(): Promise<
   Record<string, unknown>
 > {
+  let localExecuteCalled = false;
   const kernel = createKernel();
   const bridge = createAiSdkProviderBridge({
     model: createMockMediatedModel(),
@@ -128,6 +129,17 @@ export async function runProviderMediatedAttribution(): Promise<
         {
           endpoint: "https://my-mcp-server.example.com/mcp",
           mediationType: "mcp",
+          name: "mcp_tool",
+        },
+      ],
+      tools: [
+        {
+          description: "local MCP handler (must not be invoked)",
+          execute() {
+            localExecuteCalled = true;
+            return { executed: true };
+          },
+          inputSchema: { type: "object" },
           name: "mcp_tool",
         },
       ],
@@ -190,6 +202,7 @@ export async function runProviderMediatedAttribution(): Promise<
         },
         owner: attribution.owner,
       },
+      localExecuteCalled,
       toolAuditEventCount: toolAuditEvents.length,
       toolResultEventCount: toolResultEvents.length,
       toolStartEventCount: toolStartEvents.length,
@@ -208,6 +221,7 @@ export async function runProviderMediatedAttribution(): Promise<
         },
         owner: attribution.owner,
       },
+      localExecuteCalled,
       toolAuditEventCount: toolAuditEvents.length,
       toolResultEventCount: toolResultEvents.length,
       toolStartEventCount: toolStartEvents.length,

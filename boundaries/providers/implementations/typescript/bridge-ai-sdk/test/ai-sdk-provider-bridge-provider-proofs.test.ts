@@ -436,6 +436,69 @@ describe("KRT-AY006 — provider-mediated execution class proof (generate path)"
     expect(filterEventsByType(events, "tool.audit")).toHaveLength(0);
   });
 
+  test("no local tool execute callback is invoked for provider-mediated result", async () => {
+    let localExecuteCalled = false;
+    const harness = createFakeKernelHarness();
+    const bridge = createAiSdkProviderBridge({
+      model: createMockModel({
+        provider: "openai",
+        async doGenerate() {
+          return createGenerateResult({
+            content: [
+              {
+                dynamic: true,
+                result: { data: "from mcp" },
+                toolCallId: "mcp-no-local-1",
+                toolName: "mcp_tool",
+                type: "tool-result",
+              },
+            ],
+            finishReason: { raw: "stop", unified: "stop" },
+          });
+        },
+      }),
+    });
+    const runtime = createTuvrenRuntimeCore({
+      defaultDriverId: "react",
+      driverRegistry: createDriverRegistry([
+        createReActDriver({ providerCallMode: "generate" }),
+      ]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        model: bridge,
+        name: "primary",
+        providerMediatedTools: [
+          {
+            endpoint: "https://example.com/mcp",
+            mediationType: "mcp",
+            name: "mcp_tool",
+          },
+        ],
+        // Same-named local tool must not be invoked via the Tool Execution Gateway
+        tools: [
+          {
+            description: "local MCP handler",
+            execute() {
+              localExecuteCalled = true;
+              return { executed: true };
+            },
+            inputSchema: { type: "object" },
+            name: "mcp_tool",
+          },
+        ],
+      },
+      signal: { parts: [{ text: "mcp call", type: "text" }] },
+      threadId: thread.threadId,
+    });
+
+    await collectAsyncIterable(handle.events());
+    expect(localExecuteCalled).toBe(false);
+  });
+
   test("MCP binding is classified as provider-mediated class in staged history", async () => {
     const harness = createFakeKernelHarness();
     const bridge = createAiSdkProviderBridge({

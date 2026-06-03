@@ -746,6 +746,7 @@
             "providers-ext.structured.first-chunk-is-structured-delta-or-text-delta",
             "ay.ay007.mediated-attribution-execution-class",
             "ay.ay007.mediated-attribution-owner",
+            "ay.ay007.mediated-no-local-execution",
             "ay.ay007.mediated-no-tool-audit-event",
             "ay.ay007.mediated-observation-can-audit-false",
             "ay.ay007.mediated-observation-can-cancel-false",
@@ -766,9 +767,9 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 51,
-            "totalChecks": 51,
-            "applicableChecks": 51,
+            "passedChecks": 52,
+            "totalChecks": 52,
+            "applicableChecks": 52,
             "nonApplicableChecks": 0
           },
           "declaredCapabilities": [

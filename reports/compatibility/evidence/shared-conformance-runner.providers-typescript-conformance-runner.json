@@ -975,6 +975,24 @@
     {
       "assertionResults": [
         {
+          "assertionId": "ay.ay007.mediated-no-local-execution.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ay.ay007.mediated-no-local-execution.requiredEvidence.result.localExecuteCalled",
+          "status": "pass"
+        }
+      ],
+      "checkId": "ay.ay007.mediated-no-local-execution",
+      "details": {
+        "adapterId": "typescript-providers",
+        "planId": "tuvren.providers.provider-mediated-execution-class"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "ay.ay007.mediated-no-tool-audit-event.1.resultField",
           "status": "pass"
         },
@@ -1294,9 +1312,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 51,
-    "totalChecks": 51,
-    "applicableChecks": 51,
+    "passedChecks": 52,
+    "totalChecks": 52,
+    "applicableChecks": 52,
     "nonApplicableChecks": 0
   },
   "suiteId": "tuvren.providers.provider-api",

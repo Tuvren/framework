@@ -111,6 +111,19 @@
       "capabilities": ["providers.provider-mediated-execution-class"]
     },
     {
+      "checkId": "ay.ay007.mediated-no-local-execution",
+      "evidence": ["result.localExecuteCalled"],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.localExecuteCalled",
+          "equals": false
+        }
+      ],
+      "operation": "providers.provider-mediated.attribution",
+      "capabilities": ["providers.provider-mediated-execution-class"]
+    },
+    {
       "checkId": "ay.ay007.mediated-turn-completes",
       "evidence": ["result.turnStatus"],
       "assertions": [
