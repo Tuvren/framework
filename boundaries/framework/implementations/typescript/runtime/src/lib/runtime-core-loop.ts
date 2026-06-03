@@ -56,6 +56,8 @@ export interface LoopState {
   enteredIterationLoop: boolean;
   /** Cached rate limiter for the active agent's server execution class. (AX003) */
   serverExecutionRateLimiter?: import("./server-rate-limiter.js").ServerRateLimiter;
+  /** Boundary for tuvren-client execution class dispatch. (KRT-AZ001) */
+  clientEndpointBoundary?: import("./client-endpoint-boundary.js").ClientEndpointBoundary;
 }
 
 export interface IterationPreparationResult {
@@ -378,6 +380,7 @@ async function resolveIterationOutcome(
         activeToolRegistry: loopState.activeToolRegistry,
         approval: result.resolution.approval,
         carriedStateUpdates: [...loopState.carriedStateUpdates],
+        clientEndpointBoundary: loopState.clientEndpointBoundary,
         pauseReason: result.resolution.reason,
         pausedIteration: {
           iterationCount,

@@ -668,6 +668,7 @@ export async function applyRuntimeHandoffFacade(
 ): Promise<{
   activeConfig: AgentConfig;
   activeToolRegistry: ToolRegistry;
+  clientEndpointBoundary: import("./client-endpoint-boundary.js").ClientEndpointBoundary | undefined;
 }> {
   return await applyRuntimeHandoff(
     host,

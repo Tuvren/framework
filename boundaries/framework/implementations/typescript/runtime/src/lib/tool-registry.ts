@@ -15,6 +15,8 @@
  */
 
 import { TuvrenRuntimeError } from "@tuvren/core";
+import type { AttachedClientEndpoint } from "@tuvren/core/capabilities";
+import { CAPABILITY_BINDING_UNAVAILABLE } from "@tuvren/core/errors";
 import type { TuvrenExtension } from "@tuvren/core/extensions";
 import type { TuvrenJsonSchema } from "@tuvren/core/messages";
 import {
@@ -24,6 +26,7 @@ import {
   type ToolRegistry,
   type TuvrenToolDefinition,
 } from "@tuvren/core/tools";
+import type { ClientEndpointBoundary } from "./client-endpoint-boundary.js";
 import { cloneSnapshotPreservingFunctions } from "./runtime-core-shared.js";
 
 class BasicToolRegistry implements ToolRegistry {
@@ -148,4 +151,101 @@ function toJsonSchema(
   value: TuvrenJsonSchema | CustomSchema
 ): TuvrenJsonSchema {
   return isCustomSchema(value) ? value.toJSONSchema() : value;
+}
+
+// ---------------------------------------------------------------------------
+// Tuvren-client execution class: synthetic tool definitions (KRT-AZ001)
+// ---------------------------------------------------------------------------
+
+/**
+ * Build synthetic TuvrenToolDefinition entries from attached client endpoints.
+ *
+ * Each advertised capability becomes a tool whose execute callback dispatches
+ * through the ClientEndpointBoundary. The metadata.clientEndpointId tag lets
+ * the rest of the execution pipeline (binding resolver, audit gating) detect
+ * these as tuvren-client tools.
+ *
+ * The execute callback:
+ * - Returns a direct ToolResultPart when the endpoint is unavailable (avoids
+ *   going through executeSingleTool's audit path) or the result is stale.
+ * - Otherwise surfaces the ClientReportedResult as a successful tool output.
+ */
+export function buildClientEndpointTools(
+  endpoints: AttachedClientEndpoint[],
+  boundary: ClientEndpointBoundary
+): TuvrenToolDefinition[] {
+  const tools: TuvrenToolDefinition[] = [];
+
+  for (const endpoint of endpoints) {
+    for (const cap of endpoint.advertisedCapabilities) {
+      const capabilityId = cap.capabilityId;
+      const endpointId = endpoint.endpointId;
+
+      const tool: TuvrenToolDefinition = {
+        description: cap.description,
+        execute: async (input, context) => {
+          if (!boundary.isAvailable(capabilityId)) {
+            // Surface as a direct ToolResultPart so the capability_binding_unavailable
+            // code reaches the model result. (KRT-AZ003)
+            return {
+              callId: context.callId,
+              isError: true,
+              name: capabilityId,
+              output: {
+                code: CAPABILITY_BINDING_UNAVAILABLE,
+                error: `Tuvren-client capability "${capabilityId}" has no attached endpoint.`,
+              },
+              type: "tool_result",
+            };
+          }
+
+          const dispatched = await boundary.dispatch(
+            capabilityId,
+            context.callId,
+            input
+          );
+
+          if (dispatched === null) {
+            // Stale late-completion: the result cannot mutate this invocation.
+            // Surface as a ToolResultPart so it's visible to the model without
+            // implying the original stale content is authoritative. (KRT-AZ003)
+            return {
+              callId: context.callId,
+              isError: true,
+              name: capabilityId,
+              output: {
+                code: CAPABILITY_BINDING_UNAVAILABLE,
+                error: `Tuvren-client capability "${capabilityId}" received a stale result and was ignored.`,
+              },
+              type: "tool_result",
+            };
+          }
+
+          if (dispatched.isError) {
+            return {
+              callId: context.callId,
+              isError: true,
+              name: capabilityId,
+              output: dispatched.content,
+              type: "tool_result",
+            };
+          }
+
+          return dispatched.content;
+        },
+        inputSchema: cap.inputSchema as TuvrenJsonSchema,
+        metadata: {
+          clientEndpointId: endpointId,
+          ...(cap.mcpServerName !== undefined
+            ? { mcpServerName: cap.mcpServerName }
+            : {}),
+        },
+        name: capabilityId,
+      };
+
+      tools.push(tool);
+    }
+  }
+
+  return tools;
 }

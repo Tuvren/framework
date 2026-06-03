@@ -42,6 +42,7 @@ import type { RuntimeCoreExpiredRecoveryHost } from "./runtime-core-expired-reco
 import {
   collectInitialExtensionStateUpdates,
   createActiveToolRegistry,
+  createClientEndpointBoundaryFromConfig,
   encodeKernelRecord,
 } from "./runtime-core-facade-utils.js";
 import type { RuntimeCoreFinalizationHost } from "./runtime-core-finalization.js";
@@ -320,8 +321,9 @@ export function createRuntimeCoreFacadeHosts(
       cloneAgentConfigForRequest: (config) =>
         dependencies.cloneAgentConfigForRequest(config),
       completeTrackedRun: (...args) => dependencies.completeTrackedRun(...args),
-      createActiveToolRegistry: (runtimeTools, config) =>
-        createActiveToolRegistry(runtimeTools, config),
+      createActiveToolRegistry: (runtimeTools, config, clientEndpointBoundary) =>
+        createActiveToolRegistry(runtimeTools, config, clientEndpointBoundary),
+      createClientEndpointBoundaryFromConfig,
       createContextEngineeringHelpers: (messageHashes, messages) =>
         dependencies.createContextEngineeringHelpers(messageHashes, messages),
       createId: () => dependencies.createId(),
@@ -485,6 +487,7 @@ export function createRuntimeCoreFacadeHosts(
         dependencies.commitPendingExtensionStateUpdates(...args),
       completeExecution: (...args) => dependencies.completeExecution(...args),
       createActiveToolRegistry,
+      createClientEndpointBoundaryFromConfig,
       createId: () => dependencies.createId(),
       defaultDriverId: dependencies.defaultDriverId,
       emitStateObservability: (...args) =>

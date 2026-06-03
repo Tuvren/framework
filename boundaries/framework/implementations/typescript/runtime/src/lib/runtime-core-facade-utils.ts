@@ -24,6 +24,11 @@ import type { AgentConfig, ContextManifest } from "@tuvren/core/execution";
 import type { TuvrenExtension } from "@tuvren/core/extensions";
 import type { ToolRegistry, TuvrenToolDefinition } from "@tuvren/core/tools";
 import { encodeDeterministicKernelRecord } from "@tuvren/kernel-protocol";
+import type {
+  ClientEndpointBoundary} from "./client-endpoint-boundary.js";
+import {
+  createClientEndpointBoundary,
+} from "./client-endpoint-boundary.js";
 import type { ExtensionStateUpdate } from "./extension-runtime.js";
 import type { RuntimeRunLivenessOptions } from "./runtime-core.js";
 import {
@@ -31,18 +36,48 @@ import {
   cloneValue,
   createFrozenSnapshot,
 } from "./runtime-core-shared.js";
-import { createToolRegistry } from "./tool-registry.js";
+import {
+  buildClientEndpointTools,
+  createToolRegistry,
+} from "./tool-registry.js";
 
 const readonlyDriverToolRegistryCache = new WeakMap<
   ToolRegistry,
   ToolRegistry
 >();
 
+/**
+ * Create the ClientEndpointBoundary for the given AgentConfig.
+ * Returns undefined when no client endpoints are configured. (KRT-AZ001)
+ */
+export function createClientEndpointBoundaryFromConfig(
+  config: AgentConfig
+): ClientEndpointBoundary | undefined {
+  const endpoints = config.clientEndpoints ?? [];
+  return endpoints.length > 0 ? createClientEndpointBoundary(endpoints) : undefined;
+}
+
+/**
+ * Create the active tool registry for a turn.
+ *
+ * When a clientEndpointBoundary is provided (created from AgentConfig.clientEndpoints),
+ * synthetic tuvren-client tool definitions are added to the registry for each
+ * advertised capability. The boundary must be stored on LoopState so the
+ * tool-execution path can dispatch to the correct endpoint. (KRT-AZ001)
+ */
 export function createActiveToolRegistry(
   requestTools: TuvrenToolDefinition[] | undefined,
-  config: AgentConfig
+  config: AgentConfig,
+  clientEndpointBoundary?: ClientEndpointBoundary
 ): ToolRegistry {
-  const activeTools = requestTools ?? config.tools ?? [];
+  const clientEndpointTools = clientEndpointBoundary
+    ? buildClientEndpointTools(config.clientEndpoints ?? [], clientEndpointBoundary)
+    : [];
+
+  const activeTools = [
+    ...(requestTools ?? config.tools ?? []),
+    ...clientEndpointTools,
+  ];
   return createToolRegistry(activeTools, config.extensions ?? []);
 }
 

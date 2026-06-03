@@ -229,3 +229,75 @@ export interface CapabilityPolicyEngine {
     context: CapabilityPolicyContext
   ): InvocationDecision;
 }
+
+// ---------------------------------------------------------------------------
+// Tuvren-client execution class shapes (§4.21 / KRT-AZ001)
+// ---------------------------------------------------------------------------
+
+/**
+ * A capability advertised by an attached client endpoint. Each advertisement
+ * declares the capability the client endpoint can execute and the schema of
+ * its inputs. The runtime registers these as tuvren-client bindings.
+ *
+ * When mcpServerName is set, the capability is a client-side MCP tool: the
+ * client endpoint invokes or runs the MCP server. The binding's endpoint kind
+ * becomes "mcp-server" under the tuvren-client execution class — it is never
+ * reclassified as a Tuvren-server or provider-mediated binding.
+ */
+export interface ClientEndpointCapabilityAdvertisement {
+  capabilityId: string;
+  description: string;
+  inputSchema: TuvrenJsonSchema;
+  /** When set, this capability is a client-side MCP tool under the tuvren-client class. */
+  mcpServerName?: string;
+}
+
+/**
+ * The invocation envelope the runtime dispatches to an attached client endpoint.
+ * Contains everything the client needs to execute the capability. Credentials
+ * and environment secrets are never included — they are owned by the client edge.
+ */
+export interface ClientInvocationEnvelope {
+  callId: string;
+  capabilityId: string;
+  input: unknown;
+  /** Opaque non-secret lease token. The client must echo it in ClientReportedResult. Mismatches are stale. */
+  leaseToken: string;
+}
+
+/**
+ * The result a client endpoint reports back after executing a capability.
+ * The client owns environmental execution; Tuvren records this result as a
+ * canonical capability result with partial-observability limits.
+ *
+ * The leaseToken must match the envelope's leaseToken. A mismatch signals a
+ * stale late-completion that the runtime will ignore rather than accept.
+ *
+ * No secret material (credentials, environment tokens, internal state) should
+ * appear in content — this value enters durable lineage.
+ */
+export interface ClientReportedResult {
+  callId: string;
+  content: unknown;
+  isError?: boolean;
+  /** Must echo the envelope's leaseToken. Mismatches are treated as stale. */
+  leaseToken: string;
+}
+
+/**
+ * A client endpoint that can be attached to a runtime instance. Concrete
+ * implementations are host-developer deliverables (browser extension, desktop
+ * app, device agent, client-side MCP runner). The runtime side only needs this
+ * interface to orchestrate, lease, and observe client-side execution.
+ *
+ * The runtime owns orchestration and policy; the client endpoint owns
+ * environmental execution and may hold authority the server does not.
+ */
+export interface AttachedClientEndpoint {
+  /** Stable non-secret identifier for this endpoint. */
+  endpointId: string;
+  /** Capabilities this endpoint can execute, advertised at attach time. */
+  advertisedCapabilities: ClientEndpointCapabilityAdvertisement[];
+  /** Dispatch a capability invocation. Must echo back the envelope's leaseToken. */
+  dispatch(envelope: ClientInvocationEnvelope): Promise<ClientReportedResult>;
+}

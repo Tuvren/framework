@@ -51,6 +51,8 @@ export interface PauseContext {
   activeToolRegistry: ToolRegistry;
   approval: ApprovalRequest;
   carriedStateUpdates: ExtensionStateUpdate[];
+  /** Preserved client endpoint boundary from the paused turn (KRT-AZ001). */
+  clientEndpointBoundary?: import("./client-endpoint-boundary.js").ClientEndpointBoundary;
   pausedIteration: PausedIterationState;
   pausedRunId: string;
   pausedTurnNodeHash: HashString;

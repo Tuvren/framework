@@ -63,6 +63,32 @@ class BasicBindingResolver implements BindingResolver {
   private readonly bindings = new Map<string, Binding>();
 
   resolveFromToolDefinition(tool: TuvrenToolDefinition): Binding {
+    // Tuvren-client synthetic tools are tagged with metadata.clientEndpointId.
+    // Client-side MCP additionally carries metadata.mcpServerName under the
+    // tuvren-client class. (KRT-AZ001, KRT-AZ004)
+    const clientEndpointId = extractClientEndpointId(tool);
+    if (clientEndpointId !== undefined) {
+      const clientMcpServerName = extractClientMcpServerName(tool);
+      if (clientMcpServerName !== undefined) {
+        return {
+          capabilityId: tool.name,
+          endpoint: {
+            id: `client-mcp:${clientEndpointId}:${clientMcpServerName}`,
+            kind: "mcp-server",
+          },
+          executionClass: "tuvren-client",
+        };
+      }
+      return {
+        capabilityId: tool.name,
+        endpoint: {
+          id: `client-endpoint:${clientEndpointId}`,
+          kind: "client-endpoint",
+        },
+        executionClass: "tuvren-client",
+      };
+    }
+
     const mcpServerName = extractMcpServerName(tool);
 
     if (mcpServerName !== undefined) {
@@ -146,4 +172,31 @@ function extractSandboxEndpointId(
   return typeof endpointId === "string" && endpointId.length > 0
     ? endpointId
     : undefined;
+}
+
+/** Detect synthetic tuvren-client tool definitions by their metadata tag. (KRT-AZ001) */
+function extractClientEndpointId(
+  tool: TuvrenToolDefinition
+): string | undefined {
+  const meta = tool.metadata as { clientEndpointId?: string } | undefined;
+  const id = meta?.clientEndpointId;
+  return typeof id === "string" && id.length > 0 ? id : undefined;
+}
+
+/** Extract client-side MCP server name from a tuvren-client tool. (KRT-AZ004) */
+function extractClientMcpServerName(
+  tool: TuvrenToolDefinition
+): string | undefined {
+  const meta = tool.metadata as { mcpServerName?: string } | undefined;
+  const name = meta?.mcpServerName;
+  return typeof name === "string" && name.length > 0 ? name : undefined;
+}
+
+/**
+ * Returns true when the tool definition is a synthetic tuvren-client tool
+ * (created by buildClientEndpointTools). Used to gate audit events and
+ * server-side lifecycle concerns that do not apply to the client class.
+ */
+export function isClientEndpointTool(tool: TuvrenToolDefinition): boolean {
+  return extractClientEndpointId(tool) !== undefined;
 }

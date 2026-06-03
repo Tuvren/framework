@@ -68,8 +68,12 @@ export interface RuntimeCoreStartupHost {
   ): Promise<void>;
   createActiveToolRegistry(
     runtimeTools: ExecutionSessionRequest["tools"] | undefined,
-    config: LoopState["activeConfig"]
+    config: LoopState["activeConfig"],
+    clientEndpointBoundary?: import("./client-endpoint-boundary.js").ClientEndpointBoundary
   ): ToolRegistry;
+  createClientEndpointBoundaryFromConfig(
+    config: LoopState["activeConfig"]
+  ): import("./client-endpoint-boundary.js").ClientEndpointBoundary | undefined;
   createId(): string;
   defaultDriverId(): string;
   emitStateObservability(
@@ -154,6 +158,14 @@ export function createExecutionLoopState(
     recoveredExecution
   );
 
+  // Create the client endpoint boundary from the config (if any client
+  // endpoints are configured). When resuming a paused turn, reuse the
+  // existing boundary from the pause context so the same endpoint instances
+  // are used throughout the turn's lifetime. (KRT-AZ001)
+  const clientEndpointBoundary =
+    resumedPauseContext?.clientEndpointBoundary ??
+    host.createClientEndpointBoundaryFromConfig(initialActiveConfig);
+
   return {
     activeConfig: initialActiveConfig,
     activeDriverId:
@@ -162,8 +174,9 @@ export function createExecutionLoopState(
       host.defaultDriverId(),
     activeToolRegistry:
       resumedPauseContext?.activeToolRegistry ??
-      host.createActiveToolRegistry(handle.request.tools, initialActiveConfig),
+      host.createActiveToolRegistry(handle.request.tools, initialActiveConfig, clientEndpointBoundary),
     carriedStateUpdates: [...(resumedPauseContext?.carriedStateUpdates ?? [])],
+    clientEndpointBoundary,
     enteredIterationLoop: false,
   };
 }

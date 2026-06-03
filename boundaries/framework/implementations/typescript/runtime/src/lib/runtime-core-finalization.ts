@@ -307,6 +307,7 @@ export async function finalizePausedCancellation(
     activeDriverId: pauseContext.activeDriverId,
     activeToolRegistry: pauseContext.activeToolRegistry,
     carriedStateUpdates: [...pauseContext.carriedStateUpdates],
+    clientEndpointBoundary: pauseContext.clientEndpointBoundary,
     enteredIterationLoop: true,
   };
   await host.runComplete(

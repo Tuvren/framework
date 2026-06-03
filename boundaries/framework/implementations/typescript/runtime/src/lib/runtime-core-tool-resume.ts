@@ -291,6 +291,7 @@ export async function resumePausedToolExecution(
         activeToolRegistry: loopState.activeToolRegistry,
         approval: resolution.approval,
         carriedStateUpdates: [...loopState.carriedStateUpdates],
+        clientEndpointBoundary: loopState.clientEndpointBoundary,
         pauseReason: resolution.reason,
         pausedIteration: {
           iterationCount: pausedIteration.iterationCount,

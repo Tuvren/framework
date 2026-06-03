@@ -105,6 +105,7 @@ export async function applyRuntimeCoreTerminalAgentTransitionIfNeeded(
     | {
         activeConfig: AgentConfig;
         activeToolRegistry: ToolRegistry;
+        clientEndpointBoundary: import("./client-endpoint-boundary.js").ClientEndpointBoundary | undefined;
       }
     | undefined;
 
@@ -138,6 +139,7 @@ export async function applyRuntimeCoreTerminalAgentTransitionIfNeeded(
 
   loopState.activeConfig = handoff.activeConfig;
   loopState.activeToolRegistry = handoff.activeToolRegistry;
+  loopState.clientEndpointBoundary = handoff.clientEndpointBoundary;
   loopState.carriedStateUpdates = [];
   return true;
 }

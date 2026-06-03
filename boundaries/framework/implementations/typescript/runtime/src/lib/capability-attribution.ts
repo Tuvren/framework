@@ -56,7 +56,20 @@ export function observationForClass(
         canRetry: false,
         executionClass,
       };
-    // tuvren-client and any future classes: partial observability
+    // Tuvren owns orchestration and policy; the client endpoint owns
+    // environmental execution. Results are recorded from the dispatch/result
+    // envelope plus client-reported details only — no intermediate steps,
+    // no cancel/retry/audit/resume from the runtime side. (KRT-AZ005)
+    case "tuvren-client":
+      return {
+        canAudit: false,
+        canCancel: false,
+        canObserveIntermediate: false,
+        canPersistResult: true,
+        canResume: false,
+        canRetry: false,
+        executionClass: "tuvren-client",
+      };
     default:
       return {
         canAudit: false,

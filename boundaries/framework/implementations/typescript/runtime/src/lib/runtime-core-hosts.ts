@@ -71,8 +71,12 @@ interface ContextOpsHostDependencies {
   ): Promise<{ turnNodeHash?: HashString }>;
   createActiveToolRegistry(
     runtimeTools: ExecutionSessionRequest["tools"] | undefined,
-    config: AgentConfig
+    config: AgentConfig,
+    clientEndpointBoundary?: import("./client-endpoint-boundary.js").ClientEndpointBoundary
   ): ToolRegistry;
+  createClientEndpointBoundaryFromConfig(
+    config: AgentConfig
+  ): import("./client-endpoint-boundary.js").ClientEndpointBoundary | undefined;
   createContextEngineeringHelpers(
     messageHashes: HashString[],
     messages: TuvrenMessage[]
@@ -300,8 +304,12 @@ interface StartupHostDependencies {
   ): Promise<void>;
   createActiveToolRegistry(
     runtimeTools: ExecutionSessionRequest["tools"] | undefined,
-    config: LoopState["activeConfig"]
+    config: LoopState["activeConfig"],
+    clientEndpointBoundary?: import("./client-endpoint-boundary.js").ClientEndpointBoundary
   ): ToolRegistry;
+  createClientEndpointBoundaryFromConfig(
+    config: LoopState["activeConfig"]
+  ): import("./client-endpoint-boundary.js").ClientEndpointBoundary | undefined;
   createId(): string;
   defaultDriverId: string;
   emitStateObservability(
@@ -482,8 +490,10 @@ export function buildRuntimeCoreContextOpsHost(
         treeHash
       ),
     completeTrackedRun: (...args) => dependencies.completeTrackedRun(...args),
-    createActiveToolRegistry: (runtimeTools, config) =>
-      dependencies.createActiveToolRegistry(runtimeTools, config),
+    createActiveToolRegistry: (runtimeTools, config, clientEndpointBoundary) =>
+      dependencies.createActiveToolRegistry(runtimeTools, config, clientEndpointBoundary),
+    createClientEndpointBoundaryFromConfig: (config) =>
+      dependencies.createClientEndpointBoundaryFromConfig(config),
     createContextEngineeringHelpers: (messageHashes, messages) =>
       dependencies.createContextEngineeringHelpers(messageHashes, messages),
     createId: () => dependencies.createId(),
@@ -697,8 +707,10 @@ export function buildRuntimeCoreStartupHost(
     commitPendingExtensionStateUpdates: (...args) =>
       dependencies.commitPendingExtensionStateUpdates(...args),
     completeExecution: (...args) => dependencies.completeExecution(...args),
-    createActiveToolRegistry: (runtimeTools, config) =>
-      dependencies.createActiveToolRegistry(runtimeTools, config),
+    createActiveToolRegistry: (runtimeTools, config, clientEndpointBoundary) =>
+      dependencies.createActiveToolRegistry(runtimeTools, config, clientEndpointBoundary),
+    createClientEndpointBoundaryFromConfig: (config) =>
+      dependencies.createClientEndpointBoundaryFromConfig(config),
     createId: () => dependencies.createId(),
     defaultDriverId: () => dependencies.defaultDriverId,
     emitStateObservability: (...args) =>
