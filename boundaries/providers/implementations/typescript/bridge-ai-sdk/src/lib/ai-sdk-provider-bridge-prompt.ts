@@ -88,15 +88,22 @@ export function mapProviderNativeToolDeclarations(
 export function mapProviderMediatedToolConfigs(
   configs: ProviderMediatedToolConfig[]
 ): LanguageModelV3ProviderTool[] {
-  return configs.map((config) => ({
-    args: {
-      server_url: config.endpoint,
-      ...(config.providerOptions === undefined ? {} : config.providerOptions),
-    },
-    id: "openai.mcp" as `${string}.${string}`,
-    name: config.name,
-    type: "provider",
-  }));
+  return configs.map((config) => {
+    if (config.mediationType !== "mcp") {
+      throw new Error(
+        `Unsupported mediationType "${config.mediationType}": only "mcp" is supported`
+      );
+    }
+    return {
+      args: {
+        server_url: config.endpoint,
+        ...(config.providerOptions === undefined ? {} : config.providerOptions),
+      },
+      id: "openai.mcp" as `${string}.${string}`,
+      name: config.name,
+      type: "provider",
+    };
+  });
 }
 
 /**

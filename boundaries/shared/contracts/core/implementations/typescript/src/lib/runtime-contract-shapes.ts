@@ -950,6 +950,13 @@ export interface AgentConfig {
   /**
    * Provider-mediated tool configurations for this agent. The developer
    * supplies the endpoint; the provider invokes it. (AY004)
+   *
+   * Provider tool names may overlap with `tools` entries for test-harness
+   * purposes (e.g. to prove the local executor is never called). In production
+   * usage, names should be kept distinct: a conforming provider returns a
+   * tool-result for provider tools (routed to pre-staged messages, never
+   * dispatched to the Tool Execution Gateway), but a misbehaving provider
+   * returning a tool-call for the same name would reach the local executor.
    */
   providerMediatedTools?: ProviderMediatedToolConfig[];
   /**
@@ -957,6 +964,8 @@ export interface AgentConfig {
    * execution; Tuvren enables/configures the surface and records provider-
    * exposed events/results only. Policy is applied before the request is sent.
    * (AY002)
+   *
+   * See `providerMediatedTools` for the name-collision invariant note.
    */
   providerNativeTools?: ProviderNativeToolDeclaration[];
   responseFormat?: StructuredOutputRequest;
