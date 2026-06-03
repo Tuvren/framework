@@ -19,8 +19,8 @@
 import { describe, expect, test } from "bun:test";
 import { TuvrenProviderError } from "@tuvren/core";
 import type {
-  ProviderNativeToolDeclaration,
   ProviderMediatedToolConfig,
+  ProviderNativeToolDeclaration,
 } from "@tuvren/core/provider";
 import { createAiSdkProviderBridge } from "../src/index.ts";
 import {
@@ -123,8 +123,12 @@ describe("provider-bridge-ai-sdk provider-native tools", () => {
     });
 
     expect(capturedTools).toHaveLength(2);
-    const fnTool = capturedTools?.find((t: unknown) => (t as { type: string }).type === "function");
-    const providerTool = capturedTools?.find((t: unknown) => (t as { type: string }).type === "provider");
+    const fnTool = capturedTools?.find(
+      (t: unknown) => (t as { type: string }).type === "function"
+    );
+    const providerTool = capturedTools?.find(
+      (t: unknown) => (t as { type: string }).type === "provider"
+    );
     expect(fnTool).toBeDefined();
     expect(providerTool).toBeDefined();
   });
@@ -162,7 +166,11 @@ describe("provider-bridge-ai-sdk provider-native tools", () => {
     expect(record?.name).toBe("code_execution");
     expect(record?.executionClass).toBe("provider-native");
     // Should NOT contaminate parts with tool_call/tool_result
-    expect(response.parts.some((p) => p.type === "tool_call" || p.type === "tool_result")).toBe(false);
+    expect(
+      response.parts.some(
+        (p) => p.type === "tool_call" || p.type === "tool_result"
+      )
+    ).toBe(false);
   });
 
   test("still rejects undeclared provider-owned tool results (baseline protection)", async () => {
@@ -223,10 +231,16 @@ describe("provider-bridge-ai-sdk provider-native tools", () => {
       })
     );
 
-    const providerResultChunk = chunks.find((c) => c.type === "provider_tool_result");
+    const providerResultChunk = chunks.find(
+      (c) => c.type === "provider_tool_result"
+    );
     expect(providerResultChunk).toBeDefined();
-    expect((providerResultChunk as { name: string }).name).toBe("code_execution");
-    expect((providerResultChunk as { providerCallId: string }).providerCallId).toBe("native-stream-1");
+    expect((providerResultChunk as { name: string }).name).toBe(
+      "code_execution"
+    );
+    expect(
+      (providerResultChunk as { providerCallId: string }).providerCallId
+    ).toBe("native-stream-1");
   });
 
   test("still rejects undeclared streamed provider tool results (baseline protection)", async () => {
@@ -281,7 +295,9 @@ describe("provider-bridge-ai-sdk provider-mediated tools", () => {
     };
 
     await bridge.generate({
-      messages: [{ parts: [{ text: "invoke mcp", type: "text" }], role: "user" }],
+      messages: [
+        { parts: [{ text: "invoke mcp", type: "text" }], role: "user" },
+      ],
       providerMediatedTools: [config],
     });
 
@@ -317,7 +333,11 @@ describe("provider-bridge-ai-sdk provider-mediated tools", () => {
     const response = await bridge.generate({
       messages: [{ parts: [{ text: "invoke", type: "text" }], role: "user" }],
       providerMediatedTools: [
-        { name: "mcp_tool", mediationType: "mcp", endpoint: "https://example.com/mcp" },
+        {
+          name: "mcp_tool",
+          mediationType: "mcp",
+          endpoint: "https://example.com/mcp",
+        },
       ],
     });
 
@@ -326,7 +346,11 @@ describe("provider-bridge-ai-sdk provider-mediated tools", () => {
     const record = response.providerToolResults?.[0];
     expect(record?.name).toBe("mcp_tool");
     expect(record?.executionClass).toBe("provider-mediated");
-    expect(response.parts.some((p) => p.type === "tool_call" || p.type === "tool_result")).toBe(false);
+    expect(
+      response.parts.some(
+        (p) => p.type === "tool_call" || p.type === "tool_result"
+      )
+    ).toBe(false);
   });
 
   test("yields provider_tool_result chunk with executionClass provider-mediated for declared mediated tool in stream", async () => {
@@ -357,16 +381,24 @@ describe("provider-bridge-ai-sdk provider-mediated tools", () => {
       bridge.stream({
         messages: [{ parts: [{ text: "go", type: "text" }], role: "user" }],
         providerMediatedTools: [
-          { name: "mcp_tool", mediationType: "mcp", endpoint: "https://example.com/mcp" },
+          {
+            name: "mcp_tool",
+            mediationType: "mcp",
+            endpoint: "https://example.com/mcp",
+          },
         ],
       })
     );
 
-    const providerResultChunk = chunks.find((c) => c.type === "provider_tool_result");
+    const providerResultChunk = chunks.find(
+      (c) => c.type === "provider_tool_result"
+    );
     expect(providerResultChunk).toBeDefined();
     expect((providerResultChunk as { name: string }).name).toBe("mcp_tool");
-    const meta = (providerResultChunk as { providerMetadata?: Record<string, unknown> }).providerMetadata;
-    expect(meta?.["executionClass"]).toBe("provider-mediated");
+    const meta = (
+      providerResultChunk as { providerMetadata?: Record<string, unknown> }
+    ).providerMetadata;
+    expect(meta?.executionClass).toBe("provider-mediated");
   });
 });
 
@@ -380,7 +412,9 @@ describe("provider-bridge-ai-sdk provider continuity", () => {
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
         async doGenerate(options) {
-          capturedProviderOptions = options.providerOptions as Record<string, unknown> | undefined;
+          capturedProviderOptions = options.providerOptions as
+            | Record<string, unknown>
+            | undefined;
           return createGenerateResult();
         },
       }),
@@ -394,6 +428,8 @@ describe("provider-bridge-ai-sdk provider continuity", () => {
     });
 
     expect(capturedProviderOptions).toBeDefined();
-    expect((capturedProviderOptions?.["anthropic"] as Record<string, unknown>)?.["sessionId"]).toBe("abc123");
+    expect(
+      (capturedProviderOptions?.anthropic as Record<string, unknown>)?.sessionId
+    ).toBe("abc123");
   });
 });

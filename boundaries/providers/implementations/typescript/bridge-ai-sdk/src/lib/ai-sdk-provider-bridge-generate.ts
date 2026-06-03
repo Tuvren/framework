@@ -36,7 +36,9 @@ import {
   sanitizeRecord,
 } from "./ai-sdk-provider-bridge-utils.js";
 /** Lookup function that returns the execution class for a provider-owned tool name, or undefined if not declared. */
-export type ProviderToolClassLookup = (toolName: string) => "provider-native" | "provider-mediated" | undefined;
+export type ProviderToolClassLookup = (
+  toolName: string
+) => "provider-native" | "provider-mediated" | undefined;
 
 export interface GenerateResultHelpers {
   mapFinishReason(
@@ -76,7 +78,7 @@ export function mapGenerateResult(
   result: LanguageModelV3GenerateResult,
   responseFormat: StructuredOutputRequest | undefined,
   helpers: GenerateResultHelpers,
-  providerToolClassLookup?: ProviderToolClassLookup,
+  providerToolClassLookup?: ProviderToolClassLookup
 ): TuvrenModelResponse {
   const state: GenerateResultState = {
     parts: [],
@@ -88,7 +90,13 @@ export function mapGenerateResult(
   };
 
   for (const contentPart of result.content) {
-    appendGenerateContentPart(contentPart, state, result, helpers, providerToolClassLookup);
+    appendGenerateContentPart(
+      contentPart,
+      state,
+      result,
+      helpers,
+      providerToolClassLookup
+    );
   }
 
   finalizeGenerateStructuredOutput(state, result.finishReason.unified, helpers);
@@ -126,7 +134,7 @@ function appendGenerateContentPart(
   state: GenerateResultState,
   result: LanguageModelV3GenerateResult,
   _helpers: GenerateResultHelpers,
-  providerToolClassLookup?: ProviderToolClassLookup,
+  providerToolClassLookup?: ProviderToolClassLookup
 ): void {
   switch (contentPart.type) {
     case "text":

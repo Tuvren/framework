@@ -134,13 +134,16 @@ export class StreamAccumulator {
         // Accumulate provider-native/mediated result for pre-staging (AY002/AY004).
         this._providerToolResults.push({
           callId: randomUUID(),
-          executionClass: (chunk.providerMetadata?.["executionClass"] as ProviderNativeInvocationRecord["executionClass"]) ?? "provider-native",
+          executionClass:
+            (chunk.providerMetadata
+              ?.executionClass as ProviderNativeInvocationRecord["executionClass"]) ??
+            "provider-native",
           ...(chunk.isError === true ? { isError: true } : {}),
           name: chunk.name,
           providerCallId: chunk.providerCallId,
-          ...(chunk.providerMetadata !== undefined
-            ? { providerMetadata: chunk.providerMetadata }
-            : {}),
+          ...(chunk.providerMetadata === undefined
+            ? {}
+            : { providerMetadata: chunk.providerMetadata }),
           result: chunk.result,
         });
         return [];

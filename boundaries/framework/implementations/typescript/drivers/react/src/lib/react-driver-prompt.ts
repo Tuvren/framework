@@ -15,6 +15,7 @@
  */
 
 import { isDeepStrictEqual } from "node:util";
+import type { Binding } from "@tuvren/core/capabilities";
 import type { AgentConfig, ContextManifest } from "@tuvren/core/execution";
 import type {
   AroundModelContext,
@@ -22,7 +23,6 @@ import type {
   TuvrenExtension,
 } from "@tuvren/core/extensions";
 import type { TuvrenMessage, TuvrenModelConfig } from "@tuvren/core/messages";
-import type { Binding } from "@tuvren/core/capabilities";
 import type {
   ProviderMediatedToolConfig,
   ProviderNativeToolDeclaration,
@@ -174,7 +174,9 @@ export function normalizeNextAroundModelContext(
         config: resolvedConfig,
         messages: resolvedMessages,
         providerContinuity: cloneValue(nextContext.prompt.providerContinuity),
-        providerMediatedTools: cloneValue(nextContext.prompt.providerMediatedTools),
+        providerMediatedTools: cloneValue(
+          nextContext.prompt.providerMediatedTools
+        ),
         providerNativeTools: cloneValue(nextContext.prompt.providerNativeTools),
         responseFormat: cloneValue(nextContext.prompt.responseFormat),
         tools: resolvedTools,
@@ -330,15 +332,17 @@ function createPromptSnapshot(input: {
     messages: input.messages,
     responseFormat: input.responseFormat,
     tools: input.tools.length === 0 ? undefined : input.tools,
-    ...(input.providerNativeTools !== undefined && input.providerNativeTools.length > 0
+    ...(input.providerNativeTools !== undefined &&
+    input.providerNativeTools.length > 0
       ? { providerNativeTools: input.providerNativeTools }
       : {}),
-    ...(input.providerMediatedTools !== undefined && input.providerMediatedTools.length > 0
+    ...(input.providerMediatedTools !== undefined &&
+    input.providerMediatedTools.length > 0
       ? { providerMediatedTools: input.providerMediatedTools }
       : {}),
-    ...(input.providerContinuity !== undefined
-      ? { providerContinuity: input.providerContinuity }
-      : {}),
+    ...(input.providerContinuity === undefined
+      ? {}
+      : { providerContinuity: input.providerContinuity }),
   };
 }
 
@@ -379,7 +383,9 @@ function surfacesMatch(left: unknown, right: unknown): boolean {
 // Provider-native / provider-mediated binding registration + policy (AY002/AY004)
 // ---------------------------------------------------------------------------
 
-function admitProviderTools<T extends ProviderNativeToolDeclaration | ProviderMediatedToolConfig>(
+function admitProviderTools<
+  T extends ProviderNativeToolDeclaration | ProviderMediatedToolConfig,
+>(
   tools: T[] | undefined,
   executionClass: "provider-native" | "provider-mediated",
   config: AgentConfig

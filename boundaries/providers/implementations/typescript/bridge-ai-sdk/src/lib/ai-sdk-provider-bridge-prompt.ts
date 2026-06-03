@@ -84,9 +84,9 @@ export function mapProviderMediatedToolConfigs(
   return configs.map((config) => ({
     args: {
       server_url: config.endpoint,
-      ...(config.providerOptions !== undefined ? config.providerOptions : {}),
+      ...(config.providerOptions === undefined ? {} : config.providerOptions),
     },
-    id: `openai.mcp` as `${string}.${string}`,
+    id: "openai.mcp" as `${string}.${string}`,
     name: config.name,
     type: "provider",
   }));

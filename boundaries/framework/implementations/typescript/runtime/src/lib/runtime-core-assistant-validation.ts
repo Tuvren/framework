@@ -122,6 +122,33 @@ export function serializeAssistantDeltaValue(value: unknown): string {
   return JSON.stringify(value) ?? "null";
 }
 
+function validateMissingAssistantMessage(
+  assistantEvents: TuvrenStreamEvent[],
+  messages: TuvrenMessage[],
+  resolution: RuntimeResolution
+): TuvrenRuntimeError | undefined {
+  if (resolution.type === "fail" && resolution.fatality === "hard") {
+    return validateFailedDriverAssistantEvents(assistantEvents);
+  }
+  // A pure provider-native/mediated stream emits message.start + message.done
+  // (the stream protocol requires both) but produces no model text — only
+  // pre-staged provider tool messages (AY003). Allow this: the assistant
+  // events are envelope-only with no content, and the durable record is the
+  // pre-staged tool message, not an assistant message.
+  if (
+    isProviderOnlyResponseEventSet(assistantEvents) &&
+    messages.some(isPrestagedProviderToolMessage)
+  ) {
+    return undefined;
+  }
+  return new TuvrenRuntimeError(
+    "drivers must not emit assistant content events without returning a durable assistant message",
+    {
+      code: "invalid_stream_event",
+    }
+  );
+}
+
 export function validateDriverAssistantEvents(
   messages: TuvrenMessage[],
   emittedEvents: TuvrenStreamEvent[],
@@ -152,25 +179,10 @@ export function validateDriverAssistantEvents(
   );
 
   if (assistantMessage === undefined) {
-    if (resolution.type === "fail" && resolution.fatality === "hard") {
-      return validateFailedDriverAssistantEvents(assistantEvents);
-    }
-    // A pure provider-native/mediated stream emits message.start + message.done
-    // (the stream protocol requires both) but produces no model text — only
-    // pre-staged provider tool messages (AY003). Allow this: the assistant
-    // events are envelope-only with no content, and the durable record is the
-    // pre-staged tool message, not an assistant message.
-    if (
-      isProviderOnlyResponseEventSet(assistantEvents) &&
-      messages.some(isPrestagedProviderToolMessage)
-    ) {
-      return undefined;
-    }
-    return new TuvrenRuntimeError(
-      "drivers must not emit assistant content events without returning a durable assistant message",
-      {
-        code: "invalid_stream_event",
-      }
+    return validateMissingAssistantMessage(
+      assistantEvents,
+      messages,
+      resolution
     );
   }
 
@@ -636,7 +648,9 @@ function doesSerializedDeltaMatchValue(
  * for a pure provider-native/mediated response (AY003): the stream protocol
  * requires start/done but the model produced no text.
  */
-function isProviderOnlyResponseEventSet(assistantEvents: TuvrenStreamEvent[]): boolean {
+function isProviderOnlyResponseEventSet(
+  assistantEvents: TuvrenStreamEvent[]
+): boolean {
   return assistantEvents.every(
     (e) => e.type === "message.start" || e.type === "message.done"
   );

@@ -720,7 +720,10 @@ describe("driver-react", () => {
       {
         name: "code_execution",
         providerCallId: "native-stream-call-1",
-        providerMetadata: { executionClass: "provider-native", owner: "provider" },
+        providerMetadata: {
+          executionClass: "provider-native",
+          owner: "provider",
+        },
         result: { output: "hello world" },
         type: "provider_tool_result",
       },
@@ -761,12 +764,16 @@ describe("driver-react", () => {
     const toolMessage = result.messages?.[0];
     expect(toolMessage?.role).toBe("tool");
     const toolMessageParts = (toolMessage as { parts?: unknown[] })?.parts;
-    const toolResultPart = toolMessageParts?.[0] as Record<string, unknown> | undefined;
-    expect(toolResultPart?.["name"]).toBe("code_execution");
-    expect(toolResultPart?.["type"]).toBe("tool_result");
-    const nativeMeta = toolResultPart?.["providerMetadata"] as Record<string, unknown> | undefined;
-    expect(nativeMeta?.["owner"]).toBe("provider");
-    expect(nativeMeta?.["executionClass"]).toBe("provider-native");
+    const toolResultPart = toolMessageParts?.[0] as
+      | Record<string, unknown>
+      | undefined;
+    expect(toolResultPart?.name).toBe("code_execution");
+    expect(toolResultPart?.type).toBe("tool_result");
+    const nativeMeta = toolResultPart?.providerMetadata as
+      | Record<string, unknown>
+      | undefined;
+    expect(nativeMeta?.owner).toBe("provider");
+    expect(nativeMeta?.executionClass).toBe("provider-native");
 
     // Resolution should be end_turn (no regular tool calls dispatched)
     expect(result.resolution.type).toBe("end_turn");
@@ -779,7 +786,10 @@ describe("driver-react", () => {
       {
         name: "mcp_tool",
         providerCallId: "mediated-stream-call-1",
-        providerMetadata: { executionClass: "provider-mediated", owner: "provider" },
+        providerMetadata: {
+          executionClass: "provider-mediated",
+          owner: "provider",
+        },
         result: { items: ["a", "b"] },
         type: "provider_tool_result",
       },
@@ -806,7 +816,11 @@ describe("driver-react", () => {
       model: provider,
       name: "test-agent",
       providerMediatedTools: [
-        { endpoint: "https://example.com/mcp", mediationType: "mcp" as const, name: "mcp_tool" },
+        {
+          endpoint: "https://example.com/mcp",
+          mediationType: "mcp" as const,
+          name: "mcp_tool",
+        },
       ],
     };
 
@@ -819,11 +833,13 @@ describe("driver-react", () => {
     const toolResultPart = (toolMessage as { parts?: unknown[] })?.parts?.[0] as
       | Record<string, unknown>
       | undefined;
-    expect(toolResultPart?.["name"]).toBe("mcp_tool");
+    expect(toolResultPart?.name).toBe("mcp_tool");
     // Canonical attribution fields must survive end-to-end
-    const meta = toolResultPart?.["providerMetadata"] as Record<string, unknown> | undefined;
-    expect(meta?.["owner"]).toBe("provider");
-    expect(meta?.["executionClass"]).toBe("provider-mediated");
+    const meta = toolResultPart?.providerMetadata as
+      | Record<string, unknown>
+      | undefined;
+    expect(meta?.owner).toBe("provider");
+    expect(meta?.executionClass).toBe("provider-mediated");
     expect(result.resolution.type).toBe("end_turn");
   });
 });

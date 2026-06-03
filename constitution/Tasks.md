@@ -2,6 +2,7 @@
 
 ## 0. Version History & Changelog
 
+- v0.31.3 - Closed Epic AY Provider-Native & Provider-Mediated Execution Classes: added `ProviderNativeToolDeclaration` and `ProviderMediatedToolConfig` to `TuvrenPrompt`/`AgentConfig`; wired the AI SDK bridge to accept declared provider tool results (`LanguageModelV3ToolResult`) via `providerToolClassLookup`; threaded `providerNativeTools`/`providerMediatedTools`/`providerContinuity` through `createProviderPrompt`/`createAroundModelContextSnapshot`; pre-staged provider tool messages bypass the Tool Execution Gateway; `emitProviderToolAttributionEvents` emits `tool.start`+`tool.result` with `owner:"provider"` and correct per-class observation limits (canAudit/canCancel/canRetry/canResume: false); `isProviderOnlyResponseEventSet` guard in `validateDriverAssistantEvents` handles pure provider-stream responses; `assertDriverMessages` guard extended to allow pre-staged provider tool messages; concrete proofs through the full stack (bridge → react-driver → runtime) for Anthropic `code_execution_20260120` pattern (generate path) and OpenAI `openai.mcp` pattern; `provider-native-execution-class` (10 checks) and `provider-mediated-execution-class` (9 checks) conformance check sets added to the `tuvren.providers.provider-api` authority packet; 52 bridge tests + 358 runtime tests + 78 react-driver tests pass; 51/51 provider conformance checks pass. Known gap: AY005 multi-turn providerContinuity round-trip (extraction from response → next prompt) is structurally wired but not exercised by a multi-turn test; single-turn proofs validate all other invariants.
 - v0.31.2 - Closed Epic AX Tuvren-Server Execution Class: implemented full server lifecycle (input/output validation with `tool_input_validation_failed`/`tool_result_validation_failed` error codes, `TuvrenToolDefinition.outputSchema`), idempotent retry (`idempotent`, `maxRetries` fields, framework-owned retry loop, cooperative cancellation, late-completion ignoring), tenant isolation and rate-limiting (`AgentConfig.serverExecution`, `ServerRateLimiter`, `TOOL_INVOCATION_RATE_LIMITED` per-turn per-instance), server-side MCP binding classification confirmed (`mcp-server` endpoint kind), server sandbox endpoint (`TuvrenSandboxExecutor`, `metadata.sandbox.endpointId`, `tuvren-sandbox` endpoint kind, `AgentConfig.sandboxExecutors`), full-lifecycle `ToolAuditEvent` (`tool.audit`) at input/output validation, retry, and rate-limit lifecycle points with secret isolation, and the `tuvren-server-execution-class` conformance check set (19 checks including cancellation/late-completion, tenant isolation, and output-validated audit). 349 runtime tests pass; 19/19 AX conformance checks pass; 37 pre-existing non-AX conformance failures unchanged.
 - v0.31.1 - Closed Epic AW Capability Orchestration Foundation: added `@tuvren/core/capabilities` subpath (§3.13 types), Capability Registry, Binding & Endpoint Resolver (back-compat `defineTool` → `tuvren-server`), Capability Policy Engine (exposure-time and invocation-time decision points, wired into tool dispatch), execution-class + owner attribution on canonical events and telemetry (semconv extended), `capability_binding_unavailable` error code, and the `runtime-api-capability-orchestration` foundation conformance check set (12 new checks including `tool.result isError` wired denial proof). Authority packet bumped to v1.2.0. 303 runtime tests, 347/347 framework conformance checks pass.
 - v0.31.0 - Restructured the capability/tool restructuring into a contiguous, fully-ticketed **Tooling block (Epics AW–BC)** placed at the front of the queue, implementing the PRD v0.9.0 / Architecture v0.9.0 / TechSpec v0.29.0 capability-orchestration model (ADR-046, ADR-047): AW Capability Orchestration Foundation, AX Tuvren-Server Execution Class, AY Provider-Native & Provider-Mediated Execution Classes, AZ Tuvren-Client Execution Class, BA Invocation Lifecycle & Observation Model, BB Exposure & Invocation Policy Model, BC Tooling Restructuring Closeout. Tuvren-client scope is runtime protocol + attachment seam only (concrete client endpoints stay host deliverables); provider-native/mediated scope is runtime support proven against the AI-SDK-bridged providers. The whole block precedes the trust block and the productionization roadmap, so the former Epic AW (Trust-Boundary Security Hardening) is renumbered to **Epic BD** and the roadmap shifts to **Epics BE–BI**.
@@ -11,8 +12,8 @@
 
 ## 1. Executive Summary & Active Critical Path
 
-- **Total Active Story Points:** 209 gross (**178 remaining**) across the remainder of the Tooling block plus the trust block — the **Tooling block remainder (Epics AY–BC, 145 points)** as the top-priority front of the queue, and **Epic BD (Trust-Boundary Security Hardening, 33 remaining points, formerly Epic AW, with `KRT-BD001` already complete)** sequenced after it. Epics AM through AX are closed and retained as a compact audit ledger below.
-- **Critical Path:** Epics AW and AX are closed. Next: the remaining execution-class epics build on the AX foundation — `KRT-AY001 → KRT-AY002 → KRT-AY006 → KRT-AY007` and `KRT-AZ001 → KRT-AZ002 → KRT-AZ006`, then the cross-class depth (`BA`, `BB`), then closeout: a representative longest path is `KRT-AY001 → KRT-AY002 → KRT-AY006 → KRT-AY007 → KRT-BA001 → KRT-BA002 → KRT-BA005 → KRT-BC001 → KRT-BC002 → KRT-BC004`. Only after the Tooling block closes does Epic BD run: `KRT-BD002 → KRT-BD004` and `KRT-BD005 → KRT-BD006 → KRT-BD007 → KRT-BD008`, with `KRT-BD009` as an independent close-condition lane (`KRT-BD001` already complete).
+- **Total Active Story Points:** 170 gross (**139 remaining**) across the remainder of the Tooling block plus the trust block — the **Tooling block remainder (Epics AZ–BC, 106 points)** as the top-priority front of the queue, and **Epic BD (Trust-Boundary Security Hardening, 33 remaining points, formerly Epic AW, with `KRT-BD001` already complete)** sequenced after it. Epics AM through AY are closed and retained as a compact audit ledger below.
+- **Critical Path:** Epics AW, AX, and AY are closed. Next: the remaining execution-class epics — `KRT-AZ001 → KRT-AZ002 → KRT-AZ006`, then the cross-class depth (`BA`, `BB`), then closeout: a representative longest path is `KRT-AZ001 → KRT-AZ002 → KRT-AZ006 → KRT-BA001 → KRT-BA002 → KRT-BA005 → KRT-BC001 → KRT-BC002 → KRT-BC004`. Only after the Tooling block closes does Epic BD run: `KRT-BD002 → KRT-BD004` and `KRT-BD005 → KRT-BD006 → KRT-BD007 → KRT-BD008`, with `KRT-BD009` as an independent close-condition lane (`KRT-BD001` already complete).
 - **Planning Assumptions:** The Tooling block (Epics AW–BC) is governed by PRD v0.9.0, Architecture v0.9.0, and TechSpec v0.29.0 (ADR-046, ADR-047); the upstream contracts (`@tuvren/core/capabilities` §3.13, the §4.21 contract) are authored, so the tickets are implementation-ready. Tuvren-client scope is the runtime protocol + attachment seam only — concrete client endpoints (browser extension, desktop, device) remain host-developer deliverables per PRD §6. Provider-native and provider-mediated scope is runtime support proven against today's AI-SDK-bridged providers, with at least one concrete proof per class and additional providers additive later. Epic BD (formerly Epic AW) is governed by PRD v0.8.0 / Architecture v0.8.0 / TechSpec v0.28.x (ADR-042 through ADR-045); it remains active and runs after the Tooling block per product priority. The prior chain (PRD v0.7.0 / Architecture v0.7.0 / TechSpec v0.27.x, ADR-034 through ADR-041, Epics AM-AT) is closed. The Tooling block reframes tool representation within the existing TypeScript line and keeps today's developer-defined tool path working unchanged as the Tuvren-server execution class; it adds no Rust framework/product scope, no new host protocol, no new backend, and no new model-provider family beyond the existing AI SDK bridge. The `product proof gate`, `platform gate`, and `portability gate` from Epic AL remain the staged-gate baseline. The locked external dependency versions per TechSpec §1 still apply.
 
 ### Brownfield Continuity Note
@@ -25,7 +26,7 @@
 
 - The Tooling block (Epics AW–BC) restructures how tools are represented within the existing TypeScript line. It adds no Rust scope, no new model-provider family beyond the existing AI SDK bridge, no new host protocol, and no new backend. It keeps the existing `defineTool` / Tool Execution Gateway path working unchanged as the Tuvren-server execution class.
 - The Tuvren-client execution class (Epic AZ) lands the runtime-side lease/dispatch/result protocol and the attachment seam only. Concrete client endpoints (browser extension, desktop app, device agent) are host-developer deliverables and are out of scope for the runtime per PRD §6.
-- Provider-native and provider-mediated execution (Epic AY) is bounded by what the AI-SDK-bridged providers actually expose in 2026; the runtime gains representation, configuration, attribution, and observation for those classes with one concrete proof each, and additional providers are additive scope.
+- Provider-native and provider-mediated execution (Epic AY) is closed: the runtime gained representation, configuration, attribution, and observation for those classes with one concrete proof each through mock-backed end-to-end tests. Real live-provider testing (API keys not in CI) is additive scope per the gap note in `constitution/support/live/ay001-provider-surface-matrix.md`. The AY005 multi-turn providerContinuity round-trip is structurally wired; a complete multi-turn proof is deferred to a follow-on epic.
 - No Rust framework or Rust product-line expansion is active. No first-class Tuvren model-provider packages are active beyond the AI SDK bridge; the MCP client remains a tool source / binding mechanism, not a model provider.
 - No additional host protocols beyond the canonical stream and SSE surfaces are active. Public package publication remains deferred (Epic BG in the roadmap).
 - The production-trust block (now Epic BD) hardens the existing TypeScript line only and runs after the Tooling block. Epic AU's fault-injection seam is closed and testkit-only; Epic AV's telemetry surface is closed; execution bounds and secret isolation (Epic BD) add framework-owned guards and credential-edge confinement without altering kernel semantics.
@@ -39,10 +40,10 @@
 
 ### Current Active Scope
 
-- **Block 5 — Tooling restructuring (Epics AW–BC): Epics AW and AX closed; Epics AY–BC ACTIVE, top priority.** AW delivered the capability-orchestration foundation; AX delivered the full Tuvren-server execution class (validation, retry, cancellation, rate-limiting, MCP/sandbox binding, audit signals, conformance check set). The remainder builds the remaining three execution classes and the cross-class model.
+- **Block 5 — Tooling restructuring (Epics AW–BC): Epics AW, AX, and AY closed; Epics AZ–BC ACTIVE, top priority.** AW delivered the capability-orchestration foundation; AX delivered the full Tuvren-server execution class; AY delivered provider-native and provider-mediated execution classes through the AI SDK bridge with full attribution, observation limits, concrete proofs, and conformance check sets. The remainder builds the Tuvren-client execution class and the cross-class model.
   - **AW — Capability Orchestration Foundation: CLOSED.** See Completed Work Ledger.
   - **AX — Tuvren-Server Execution Class: CLOSED.** See Completed Work Ledger.
-  - **AY — Provider-Native & Provider-Mediated Execution Classes:** provider-native enablement/attribution and provider-mediated (provider-invoked remote MCP) through the AI SDK bridge, plus the provider continuation-state model, with one concrete proof each.
+  - **AY — Provider-Native & Provider-Mediated Execution Classes: CLOSED.** See Completed Work Ledger.
   - **AZ — Tuvren-Client Execution Class:** the leased client-endpoint protocol and attachment seam (runtime side only), client-side MCP, availability/staleness/partial-observability.
   - **BA — Invocation Lifecycle & Observation Model:** the cross-class invocation lifecycle and the full observation/event taxonomy depth.
   - **BB — Exposure & Invocation Policy Model:** policy depth (data residency, risk classification, presence, idempotency/retry, credential boundaries, composition/precedence).
@@ -121,17 +122,17 @@ flowchart LR
 
 ## 4. Ticket List
 
-### Completed Work Ledger (Epics AT–AW)
+### Completed Work Ledger (Epics AU–AY)
 
-Completed ticket detail is removed from the active execution plan and retained through git history plus archived support artifacts. This ledger is the live audit summary for the four most recently closed epics; older closure records live in git history and `constitution/archived/`.
+Completed ticket detail is removed from the active execution plan and retained through git history plus archived support artifacts. This ledger is the live audit summary for the five most recently closed epics; older closure records live in git history and `constitution/archived/`.
 
 | Epic | Points | Closed Outcome | Evidence Anchor |
 | --- | ---: | --- | --- |
-| AT | 34 | Consolidated the reference host on the REPL CLI; headless stdin mode, streaming JSONL, transcript capture/replay; retired `@tuvren/playground-host`. | `proving-host-headless-transcript-replay` |
 | AU | 23 | Proved durability and recovery under failure with a testkit-only fault-injection seam and the Crash Recovery Invariant. | `kernel.crash-recovery.*`; `createFaultInjectingBackend` |
 | AV | 24 | Added first-class operational telemetry with `@tuvren/core/telemetry`, framework emission and secret screening, `@tuvren/telemetry-otel`. | `framework-operational-telemetry` |
 | AX | 28 | Delivered the Tuvren-Server Execution Class: input/output validation with typed error codes (`tool_input_validation_failed`, `tool_result_validation_failed`, `TuvrenToolDefinition.outputSchema`), idempotent retry (`idempotent`, `maxRetries`, framework-owned retry loop in `executeSingleTool`, cooperative cancellation, late-completion ignoring), tenant isolation + rate-limiting (`AgentConfig.serverExecution`, `ServerRateLimiter`, `TOOL_INVOCATION_RATE_LIMITED`, per-turn per-instance scoping), server-side MCP binding classification confirmed (`mcp-server` endpoint kind), server sandbox endpoint (`TuvrenSandboxExecutor`, `metadata.sandbox.endpointId`, `tuvren-sandbox` endpoint kind, `AgentConfig.sandboxExecutors`), full-lifecycle `ToolAuditEvent` (`tool.audit`) at five lifecycle points with secret isolation, and `tuvren-server-execution-class` conformance check set (19 checks: AX001–AX006 including cancellation/late-completion, tenant isolation, and output-validated audit). | `tuvren-server-execution-class` conformance plan (19/19 pass); `boundaries/shared/contracts/core/spec/authority-packet.json` |
 | AW | 44 | Delivered the Capability Orchestration Foundation: `@tuvren/core/capabilities` subpath (§3.13 types + `CapabilityPolicyEngine` interface), Capability Registry, Binding & Endpoint Resolver (back-compat `defineTool` → `tuvren-server`, MCP → `tuvren-server/mcp-server`), Capability Policy Engine wired into tool dispatch (invocation denials surface as `tool.result isError:true`), execution-class + owner attribution on `tool.start`/`tool.result` events and `tool_call` telemetry spans (semconv extended), `capability_binding_unavailable` error code in `@tuvren/core/errors`, and the `runtime-api-capability-orchestration` foundation conformance check set (12 checks including wired denial proof). Authority packet bumped to v1.2.0. | `runtime-api-capability-orchestration` conformance plan; `boundaries/shared/contracts/core/spec/authority-packet.json` v1.2.0 |
+| AY | 39 | Delivered Provider-Native & Provider-Mediated Execution Classes through the AI SDK bridge: `ProviderNativeToolDeclaration`/`ProviderMediatedToolConfig` in `TuvrenPrompt`/`AgentConfig`; bridge `providerToolClassLookup` accepts declared provider tool results; pre-staged provider tool messages bypass the Tool Execution Gateway; `emitProviderToolAttributionEvents` emits `tool.start`+`tool.result` with `owner:"provider"` and per-class observation limits (canAudit/canCancel/canRetry/canResume: false, canPersistResult: true); `assertDriverMessages` guard extended for pre-staged provider messages; `isProviderOnlyResponseEventSet` guard handles pure provider-stream responses; concrete generate and stream proofs for Anthropic code_execution and OpenAI MCP patterns; `provider-native-execution-class` (10 checks) and `provider-mediated-execution-class` (9 checks) in the `tuvren.providers.provider-api` authority packet; 51/51 provider conformance checks pass. Known gap: AY005 multi-turn providerContinuity extraction round-trip is structurally wired but not exercised by a multi-turn test. | `provider-native-execution-class` and `provider-mediated-execution-class` conformance plans (19 new checks, 51/51 total); `boundaries/providers/contracts/provider-api/spec/authority-packet.json`; `constitution/support/live/ay001-provider-surface-matrix.md` |
 
 ### Epic AW — Capability Orchestration Foundation (KRT)
 
@@ -143,118 +144,7 @@ Completed ticket detail is removed from the active execution plan and retained t
 
 ### Epic AY — Provider-Native & Provider-Mediated Execution Classes (KRT)
 
-**Status:** Active, after Epic AW. Lands the two provider-owned execution classes through the existing AI SDK bridge: provider-native (the provider executes the tool) and provider-mediated (the provider invokes a developer endpoint, e.g. provider-invoked remote MCP), plus the provider continuation-state model. Scope is bounded by what the bridged providers expose in 2026, with one concrete proof per class.
-
-**KRT-AY001 Spike: Provider-Native & Provider-Mediated Surface Across the AI SDK Bridge**
-- **Type:** Spike
-- **Effort:** 3
-- **Dependencies:** `KRT-AW007`
-- **Capability / Contract Mapping:** PRD `CAP-P0-057`, `CAP-P1-062`; TechSpec ADR-046
-- **Description:** Time-boxed investigation of what the AI-SDK-bridged providers actually expose in 2026 for provider-native tools (provider-hosted search, code execution, etc.) and provider-mediated tools (provider-invoked remote endpoints / remote MCP), including the events/results Tuvren can observe. Output: a concrete capability matrix that pins which concrete proofs `KRT-AY006` can deliver and which degrade to a documented representative integration. **Support artifact:** `constitution/support/live/ay001-provider-surface-matrix.md`.
-- **Acceptance Criteria (Gherkin):**
-```gherkin
-Given the AI SDK bridge and the providers it reaches today
-When the provider-native and provider-mediated surface is investigated
-Then a capability matrix records which bridged providers expose provider-native tools and what events/results are observable
-And the matrix records which bridged providers expose provider-mediated tool invocation and what is observable
-And the matrix pins the concrete proofs KRT-AY006 will deliver and any class that must degrade to a documented representative integration
-And the findings are captured as a support artifact referenced by this epic
-```
-
-**KRT-AY002 Provider-Native Representation, Enablement, and Configuration**
-- **Type:** Feature
-- **Effort:** 8
-- **Dependencies:** `KRT-AY001`
-- **Capability / Contract Mapping:** PRD `CAP-P0-057`; TechSpec ADR-046, §3.13, §4.4, §4.21
-- **Description:** Represent provider-native capabilities and enable/configure them on the model request through the Provider Gateway / AI SDK bridge. The provider owns execution; Tuvren owns exposure, configuration, and policy. Route provider-native bindings through the resolver to the Provider Gateway endpoint.
-- **Acceptance Criteria (Gherkin):**
-```gherkin
-Given the provider surface matrix from the spike
-When provider-native representation and enablement are implemented
-Then a provider-native capability can be enabled and configured on the model request through the Provider Gateway
-And the provider-native binding routes to the provider-runtime endpoint via the resolver
-And Tuvren applies exposure-time and invocation-time policy before the provider request is sent
-And the runtime does not attempt to execute a provider-native tool locally
-```
-
-**KRT-AY003 Provider-Native Event/Result Recording + Attribution**
-- **Type:** Feature
-- **Effort:** 5
-- **Dependencies:** `KRT-AY002`
-- **Capability / Contract Mapping:** PRD `CAP-P0-061`; TechSpec ADR-046, §3.10, §4.5, §4.21
-- **Description:** Record provider-native invocations from provider-exposed events and results only, tagged `owner: "provider"` with provider-native observation limits, on the canonical stream and telemetry. The runtime must not claim cancel/retry/audit it does not have for this class.
-- **Acceptance Criteria (Gherkin):**
-```gherkin
-Given provider-native capabilities are enabled
-When provider-native event and result recording is implemented
-Then provider-native invocations are recorded from provider-exposed events and results only
-And recorded events carry owner provider and the provider-native observation limits
-And the runtime exposes no cancel, retry, or audit affordance for provider-native invocations
-And no provider credential appears in any recorded event, telemetry attribute, or durable record
-```
-
-**KRT-AY004 Provider-Mediated Capability Representation (Provider-Invoked Remote Endpoints)**
-- **Type:** Feature
-- **Effort:** 8
-- **Dependencies:** `KRT-AY001`
-- **Capability / Contract Mapping:** PRD `CAP-P0-057`, `CAP-P1-062`; TechSpec ADR-046, §4.21
-- **Description:** Represent provider-mediated developer-provided capabilities where the developer supplies the endpoint but the provider invokes it (e.g. provider-invoked remote MCP). Configure the mediated relationship and exposure/invocation policy; record what the provider/tool protocol exposes (partial observability); do not assume full invocation-lifecycle control. Classify provider-mediated MCP as an MCP binding under the provider-mediated class.
-- **Acceptance Criteria (Gherkin):**
-```gherkin
-Given the provider surface matrix from the spike
-When provider-mediated representation is implemented
-Then a provider-mediated capability configures the mediated relationship between the provider and the developer endpoint
-And provider-mediated MCP is classified as an MCP binding under the provider-mediated execution class
-And the runtime records what the provider/tool protocol exposes as partial observability without assuming full lifecycle control
-And exposure-time and invocation-time policy are applied before the mediated tool is configured for the request
-```
-
-**KRT-AY005 Provider Continuation-State Model**
-- **Type:** Feature
-- **Effort:** 5
-- **Dependencies:** `KRT-AY002`
-- **Capability / Contract Mapping:** PRD `CAP-P0-057`; TechSpec ADR-046, §4.4
-- **Description:** Implement the provider continuation-state model: preserve the opaque, non-secret provider continuity artifacts required for correct multi-turn provider-owned tool operation, kept at the Provider Gateway edge and excluded from durable lineage, telemetry, and transcripts as secrets are.
-- **Acceptance Criteria (Gherkin):**
-```gherkin
-Given provider-owned invocations that span turns
-When the provider continuation-state model is implemented
-Then opaque non-secret provider continuity artifacts are preserved as required for correct multi-turn operation
-And those artifacts are held at the Provider Gateway edge and are not treated as secrets
-And no credential or secret continuity material reaches durable lineage, telemetry, or transcripts
-```
-
-**KRT-AY006 Concrete Provider-Native and Provider-Mediated Proofs**
-- **Type:** Feature
-- **Effort:** 5
-- **Dependencies:** `KRT-AY003`, `KRT-AY004`
-- **Capability / Contract Mapping:** PRD `CAP-P0-057`, `CAP-P0-058`; TechSpec §5.7
-- **Description:** Deliver at least one concrete working provider-native integration and one concrete working provider-mediated integration against a bridged provider per the spike matrix. Where the spike found no bridged provider supports a class in 2026, deliver a documented representative integration test plus a recorded gap rather than a false claim.
-- **Acceptance Criteria (Gherkin):**
-```gherkin
-Given the spike capability matrix and the implemented provider classes
-When the concrete proofs are delivered
-Then one provider-native capability works end-to-end against a bridged provider that supports it
-And one provider-mediated capability works end-to-end against a bridged provider that supports it
-And any class with no supporting bridged provider in 2026 is covered by a documented representative integration test and a recorded gap rather than a false claim
-And the conceptual invariant holds for each proven invocation
-```
-
-**KRT-AY007 Provider-Native + Provider-Mediated Conformance**
-- **Type:** Feature
-- **Effort:** 5
-- **Dependencies:** `KRT-AY006`
-- **Capability / Contract Mapping:** PRD `CAP-P0-057`, `CAP-P0-061`, `CAP-P1-062`; TechSpec §4.21, §5.7
-- **Description:** Add `provider-native-execution-class` and `provider-mediated-execution-class` check sets (to the framework and/or `providers-mcp-client.json` plans) asserting attribution (`owner: provider`), partial-observability limits, MCP-binding classification under provider-mediated, and that the runtime never claims control it lacks. Picked up by `bun run conformance`.
-- **Acceptance Criteria (Gherkin):**
-```gherkin
-Given the provider-native and provider-mediated classes are implemented and proven
-When the provider-class conformance check sets are added
-Then they assert provider-native and provider-mediated invocations carry owner provider and their observation limits
-And they assert provider-mediated MCP is classified as an MCP binding under the provider-mediated class
-And they assert the runtime exposes no control affordance it does not have for these classes
-And bun run conformance includes the new check sets automatically
-```
+**Status:** **CLOSED.** See Completed Work Ledger. Ticket bodies retained in git history.
 
 ### Epic AZ — Tuvren-Client Execution Class (KRT)
 

@@ -53,7 +53,11 @@ function createMockMediatedModel(): LanguageModelV3 {
           },
         ],
         finishReason: { raw: "stop", unified: "stop" },
-        usage: { inputTokens: { cacheRead: 0, cacheWrite: 0, noCache: 5, total: 5 }, outputTokens: { reasoning: 0, text: 2, total: 2 }, raw: {} },
+        usage: {
+          inputTokens: { cacheRead: 0, cacheWrite: 0, noCache: 5, total: 5 },
+          outputTokens: { reasoning: 0, text: 2, total: 2 },
+          raw: {},
+        },
         warnings: [],
       };
     },
@@ -103,7 +107,9 @@ export async function runProviderMediatedAttribution(): Promise<
   Record<string, unknown>
 > {
   const kernel = createKernel();
-  const bridge = createAiSdkProviderBridge({ model: createMockMediatedModel() });
+  const bridge = createAiSdkProviderBridge({
+    model: createMockMediatedModel(),
+  });
   const runtime = createTuvrenRuntime({
     defaultDriverId: "react",
     driverRegistry: createDriverRegistry([

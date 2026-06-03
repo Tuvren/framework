@@ -20,7 +20,6 @@ import {
   type ProviderToolClassLookup,
 } from "./ai-sdk-provider-bridge-generate.js";
 import {
-  buildDeclaredProviderToolNames,
   mapPromptMessages,
   mapProviderMediatedToolConfigs,
   mapProviderNativeToolDeclarations,
@@ -133,7 +132,7 @@ class AiSdkProviderBridge implements TuvrenProvider {
           mapUsage,
           parseStructuredOutput,
         },
-        providerToolClassLookup,
+        providerToolClassLookup
       );
     } catch (error: unknown) {
       throw normalizeBridgeError(error, "ai_sdk_generate_failed", {
@@ -157,9 +156,9 @@ class AiSdkProviderBridge implements TuvrenProvider {
     const providerToolClassLookup = buildProviderToolClassLookup(prompt);
     const state = createStreamMappingState({
       model: this.model,
-      ...(providerToolClassLookup !== undefined
-        ? { providerToolClassLookup }
-        : {}),
+      ...(providerToolClassLookup === undefined
+        ? {}
+        : { providerToolClassLookup }),
       responseFormat: prompt.responseFormat,
       streamResult,
     });
@@ -848,7 +847,10 @@ function readSchemaDialect(
 // Provider-native / provider-mediated tool helpers (AY002, AY004, AY005)
 // ---------------------------------------------------------------------------
 
-import type { LanguageModelV3FunctionTool, LanguageModelV3ProviderTool } from "@ai-sdk/provider";
+import type {
+  LanguageModelV3FunctionTool,
+  LanguageModelV3ProviderTool,
+} from "@ai-sdk/provider";
 
 function buildAllTools(
   prompt: TuvrenPrompt
@@ -858,11 +860,13 @@ function buildAllTools(
       ? prompt.tools.map(mapToolDefinition)
       : [];
   const nativeTools =
-    prompt.providerNativeTools !== undefined && prompt.providerNativeTools.length > 0
+    prompt.providerNativeTools !== undefined &&
+    prompt.providerNativeTools.length > 0
       ? mapProviderNativeToolDeclarations(prompt.providerNativeTools)
       : [];
   const mediatedTools =
-    prompt.providerMediatedTools !== undefined && prompt.providerMediatedTools.length > 0
+    prompt.providerMediatedTools !== undefined &&
+    prompt.providerMediatedTools.length > 0
       ? mapProviderMediatedToolConfigs(prompt.providerMediatedTools)
       : [];
   return [...functionTools, ...nativeTools, ...mediatedTools];
@@ -871,7 +875,10 @@ function buildAllTools(
 function continuityToProviderOptions(
   providerContinuity: Record<string, unknown> | undefined
 ): SharedV3ProviderOptions | undefined {
-  if (providerContinuity === undefined || Object.keys(providerContinuity).length === 0) {
+  if (
+    providerContinuity === undefined ||
+    Object.keys(providerContinuity).length === 0
+  ) {
     return undefined;
   }
   return cloneProviderOptions(providerContinuity);
@@ -882,7 +889,7 @@ function buildProviderToolClassLookup(
 ): ProviderToolClassLookup | undefined {
   const hasNative = (prompt.providerNativeTools?.length ?? 0) > 0;
   const hasMediated = (prompt.providerMediatedTools?.length ?? 0) > 0;
-  if (!hasNative && !hasMediated) {
+  if (!(hasNative || hasMediated)) {
     return undefined;
   }
   return (toolName: string) =>

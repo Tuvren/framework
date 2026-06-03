@@ -1,8 +1,6 @@
 {
   "applicability": {
-    "capabilities": [
-      "framework.event-stream"
-    ]
+    "capabilities": ["framework.event-stream"]
   },
   "checks": [
     {
@@ -19,9 +17,7 @@
       },
       "operation": "event-stream.runtime-sse-projection",
       "scenario": "event-stream-scenarios",
-      "evidence": [
-        "events"
-      ]
+      "evidence": ["events"]
     },
     {
       "assertions": [
@@ -37,9 +33,7 @@
       },
       "operation": "event-stream.runtime-sse-projection",
       "scenario": "event-stream-scenarios",
-      "evidence": [
-        "events"
-      ]
+      "evidence": ["events"]
     },
     {
       "assertions": [
@@ -55,9 +49,7 @@
       },
       "operation": "event-stream.runtime-sse-projection",
       "scenario": "event-stream-scenarios",
-      "evidence": [
-        "events"
-      ]
+      "evidence": ["events"]
     },
     {
       "assertions": [
@@ -73,9 +65,7 @@
       },
       "operation": "event-stream.runtime-sse-projection",
       "scenario": "event-stream-scenarios",
-      "evidence": [
-        "events"
-      ]
+      "evidence": ["events"]
     },
     {
       "assertions": [
@@ -121,9 +111,7 @@
       },
       "operation": "event-stream.runtime-sse-projection",
       "scenario": "event-stream-scenarios",
-      "evidence": [
-        "events"
-      ]
+      "evidence": ["events"]
     },
     {
       "assertions": [
@@ -139,9 +127,7 @@
       },
       "operation": "event-stream.runtime-sse-projection",
       "scenario": "event-stream-scenarios",
-      "evidence": [
-        "events"
-      ]
+      "evidence": ["events"]
     },
     {
       "assertions": [
@@ -157,9 +143,7 @@
       },
       "operation": "event-stream.runtime-sse-projection",
       "scenario": "event-stream-scenarios",
-      "evidence": [
-        "events"
-      ]
+      "evidence": ["events"]
     },
     {
       "assertions": [
@@ -175,9 +159,7 @@
       },
       "operation": "event-stream.runtime-sse-projection",
       "scenario": "event-stream-scenarios",
-      "evidence": [
-        "events"
-      ]
+      "evidence": ["events"]
     },
     {
       "assertions": [
@@ -193,9 +175,7 @@
       },
       "operation": "event-stream.runtime-sse-projection",
       "scenario": "event-stream-scenarios",
-      "evidence": [
-        "events"
-      ]
+      "evidence": ["events"]
     },
     {
       "assertions": [
@@ -211,9 +191,7 @@
       },
       "operation": "event-stream.runtime-sse-projection",
       "scenario": "event-stream-scenarios",
-      "evidence": [
-        "events"
-      ]
+      "evidence": ["events"]
     },
     {
       "assertions": [
@@ -229,9 +207,7 @@
       },
       "operation": "event-stream.runtime-sse-projection",
       "scenario": "event-stream-scenarios",
-      "evidence": [
-        "events"
-      ]
+      "evidence": ["events"]
     },
     {
       "assertions": [
@@ -247,9 +223,7 @@
       },
       "operation": "event-stream.runtime-sse-projection",
       "scenario": "event-stream-scenarios",
-      "evidence": [
-        "events"
-      ]
+      "evidence": ["events"]
     },
     {
       "assertions": [
@@ -265,9 +239,7 @@
       },
       "operation": "event-stream.runtime-sse-projection",
       "scenario": "event-stream-scenarios",
-      "evidence": [
-        "events"
-      ]
+      "evidence": ["events"]
     },
     {
       "assertions": [
@@ -283,9 +255,7 @@
       },
       "operation": "event-stream.runtime-sse-projection",
       "scenario": "event-stream-scenarios",
-      "evidence": [
-        "events"
-      ]
+      "evidence": ["events"]
     },
     {
       "assertions": [
@@ -359,9 +329,7 @@
       },
       "operation": "event-stream.runtime-sse-projection",
       "scenario": "event-stream-scenarios",
-      "evidence": [
-        "events"
-      ]
+      "evidence": ["events"]
     },
     {
       "assertions": [
@@ -437,9 +405,7 @@
       },
       "operation": "event-stream.runtime-agui-projection",
       "scenario": "event-stream-scenarios",
-      "evidence": [
-        "events"
-      ]
+      "evidence": ["events"]
     },
     {
       "assertions": [
@@ -455,9 +421,7 @@
       },
       "operation": "event-stream.runtime-agui-projection",
       "scenario": "event-stream-scenarios",
-      "evidence": [
-        "events"
-      ]
+      "evidence": ["events"]
     },
     {
       "assertions": [
@@ -473,9 +437,7 @@
       },
       "operation": "event-stream.runtime-agui-projection",
       "scenario": "event-stream-scenarios",
-      "evidence": [
-        "events"
-      ]
+      "evidence": ["events"]
     },
     {
       "assertions": [
@@ -491,9 +453,7 @@
       },
       "operation": "event-stream.runtime-agui-projection",
       "scenario": "event-stream-scenarios",
-      "evidence": [
-        "events"
-      ]
+      "evidence": ["events"]
     },
     {
       "assertions": [
@@ -509,9 +469,7 @@
       },
       "operation": "event-stream.runtime-agui-projection",
       "scenario": "event-stream-scenarios",
-      "evidence": [
-        "events"
-      ]
+      "evidence": ["events"]
     },
     {
       "assertions": [
@@ -527,9 +485,7 @@
       },
       "operation": "event-stream.runtime-agui-projection",
       "scenario": "event-stream-scenarios",
-      "evidence": [
-        "events"
-      ]
+      "evidence": ["events"]
     },
     {
       "assertions": [
@@ -550,9 +506,7 @@
       },
       "operation": "event-stream.runtime-agui-projection",
       "scenario": "event-stream-scenarios",
-      "evidence": [
-        "events"
-      ]
+      "evidence": ["events"]
     },
     {
       "assertions": [

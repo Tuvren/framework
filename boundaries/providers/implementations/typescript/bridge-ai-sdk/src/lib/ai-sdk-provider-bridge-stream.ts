@@ -24,6 +24,7 @@ import type {
   StructuredOutputRequest,
   TuvrenModelResponse,
 } from "@tuvren/provider-api";
+import type { ProviderToolClassLookup } from "./ai-sdk-provider-bridge-generate.js";
 import {
   bridgeError,
   buildProviderMetadata,
@@ -40,7 +41,6 @@ import {
   sanitizeResponseMetadata,
   unsupportedStreamPartError,
 } from "./ai-sdk-provider-bridge-utils.js";
-import type { ProviderToolClassLookup } from "./ai-sdk-provider-bridge-generate.js";
 
 type AiSdkStreamResult = Awaited<ReturnType<LanguageModelV3["doStream"]>>;
 
@@ -98,9 +98,9 @@ export function createStreamMappingState(input: {
 }): StreamMappingState {
   return {
     model: input.model,
-    ...(input.providerToolClassLookup !== undefined
-      ? { providerToolClassLookup: input.providerToolClassLookup }
-      : {}),
+    ...(input.providerToolClassLookup === undefined
+      ? {}
+      : { providerToolClassLookup: input.providerToolClassLookup }),
     requestBody:
       input.streamResult.request?.body === undefined
         ? undefined
@@ -310,18 +310,19 @@ function mapProviderToolResultStreamPart(
   executionClass: "provider-native" | "provider-mediated"
 ): ProviderStreamChunk[] {
   const providerMetadata = sanitizeRecord(part.providerMetadata);
-  const chunk: Extract<ProviderStreamChunk, { type: "provider_tool_result" }> = {
-    isError: part.isError,
-    name: part.toolName,
-    providerCallId: part.toolCallId,
-    providerMetadata: {
-      ...(providerMetadata ?? {}),
-      executionClass,
-      owner: "provider",
-    },
-    result: sanitizeMetadataValue(part.result) ?? null,
-    type: "provider_tool_result",
-  };
+  const chunk: Extract<ProviderStreamChunk, { type: "provider_tool_result" }> =
+    {
+      isError: part.isError,
+      name: part.toolName,
+      providerCallId: part.toolCallId,
+      providerMetadata: {
+        ...(providerMetadata ?? {}),
+        executionClass,
+        owner: "provider",
+      },
+      result: sanitizeMetadataValue(part.result) ?? null,
+      type: "provider_tool_result",
+    };
   return [chunk];
 }
 

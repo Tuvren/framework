@@ -170,6 +170,62 @@ export function createReActDriver(
   };
 }
 
+function buildEmptyPartsResult(
+  context: DriverExecutionContext,
+  response: TuvrenModelResponse,
+  execution: ModelExecutionOutcome,
+  cancelled: boolean
+): DriverExecutionResult {
+  if (cancelled) {
+    return {
+      partial: false,
+      resolution: createExecutionCancelledResolution(),
+    };
+  }
+
+  // A response with only provider-native/mediated results and no model-facing
+  // output is valid: the provider executed a tool and returned its result.
+  // Return only the pre-staged tool message so the framework can continue. (AY002/AY004)
+  if ((response.providerToolResults?.length ?? 0) > 0) {
+    const prestagedOnlyToolMessage = buildPrestagedProviderToolMessage(
+      response.providerToolResults
+    );
+    if (prestagedOnlyToolMessage !== undefined) {
+      const iterationDecisionNoTools = resolveIterationDecision(
+        context.config,
+        response,
+        context.manifest,
+        context.iterationCount,
+        false
+      );
+      const earlyStateUpdates =
+        execution.stateUpdates.length === 0
+          ? undefined
+          : execution.stateUpdates.map((update) => ({
+              extensionName: update.extensionName,
+              state: cloneValue(update.state),
+            }));
+      // Do not flush buffered assistant sequences for a pure provider-tool
+      // response: the sequences have no content (response.parts is empty),
+      // so flushing would emit empty message.start/done events that fail
+      // the "assistant events require a durable assistant message" invariant.
+      return {
+        messages: [prestagedOnlyToolMessage],
+        resolution: iterationDecisionToResolution(iterationDecisionNoTools),
+        stateUpdates: earlyStateUpdates,
+      };
+    }
+  }
+
+  throw new TuvrenRuntimeError(
+    "provider responses must contain assistant output",
+    {
+      code: "react_driver_empty_response",
+      details: { response },
+    }
+  );
+}
+
 async function executeIteration(
   context: DriverExecutionContext,
   options: ResolvedReActDriverOptions
@@ -222,58 +278,7 @@ async function executeIteration(
   }
 
   if (response.parts.length === 0) {
-    if (cancelled) {
-      return {
-        partial: false,
-        resolution: createExecutionCancelledResolution(),
-      };
-    }
-
-    // A response with only provider-native/mediated results and no model-facing
-    // output is valid: the provider executed a tool and returned its result.
-    // Return only the pre-staged tool message so the framework can continue. (AY002/AY004)
-    if ((response.providerToolResults?.length ?? 0) > 0) {
-      const prestagedOnlyToolMessage = buildPrestagedProviderToolMessage(
-        response.providerToolResults
-      );
-      if (prestagedOnlyToolMessage !== undefined) {
-        const iterationDecisionNoTools = resolveIterationDecision(
-          context.config,
-          response,
-          context.manifest,
-          context.iterationCount,
-          false
-        );
-        const earlyStateUpdates =
-          execution.stateUpdates.length === 0
-            ? undefined
-            : execution.stateUpdates.map((update) => ({
-                extensionName: update.extensionName,
-                state: cloneValue(update.state),
-              }));
-        // Do not flush buffered assistant sequences for a pure provider-tool
-        // response: the sequences have no content (response.parts is empty),
-        // so flushing would emit empty message.start/done events that fail
-        // the "assistant events require a durable assistant message" invariant.
-        // Any sequences with real content (from text before the provider tool
-        // result) belong to the stream path, not the generate-only path.
-        return {
-          messages: [prestagedOnlyToolMessage],
-          resolution: iterationDecisionToResolution(iterationDecisionNoTools),
-          stateUpdates: earlyStateUpdates,
-        };
-      }
-    }
-
-    throw new TuvrenRuntimeError(
-      "provider responses must contain assistant output",
-      {
-        code: "react_driver_empty_response",
-        details: {
-          response,
-        },
-      }
-    );
+    return buildEmptyPartsResult(context, response, execution, cancelled);
   }
 
   const assistantMessage: Extract<TuvrenMessage, { role: "assistant" }> = {
@@ -304,9 +309,10 @@ async function executeIteration(
   // Build the messages array. When provider-native results exist, include the
   // pre-staged tool message so the framework does not dispatch those results
   // to the Tool Execution Gateway. (AY002/AY004)
-  const driverMessages = prestagedToolMessage !== undefined
-    ? [assistantMessage, prestagedToolMessage]
-    : [assistantMessage];
+  const driverMessages =
+    prestagedToolMessage === undefined
+      ? [assistantMessage]
+      : [assistantMessage, prestagedToolMessage];
 
   if (cancelled) {
     return {
@@ -776,16 +782,28 @@ function createProviderPrompt(aroundContext: AroundModelContext) {
         ? undefined
         : cloneValue(aroundContext.tools),
     ...(aroundContext.prompt.providerNativeTools !== undefined &&
-      aroundContext.prompt.providerNativeTools.length > 0
-      ? { providerNativeTools: cloneValue(aroundContext.prompt.providerNativeTools) }
+    aroundContext.prompt.providerNativeTools.length > 0
+      ? {
+          providerNativeTools: cloneValue(
+            aroundContext.prompt.providerNativeTools
+          ),
+        }
       : {}),
     ...(aroundContext.prompt.providerMediatedTools !== undefined &&
-      aroundContext.prompt.providerMediatedTools.length > 0
-      ? { providerMediatedTools: cloneValue(aroundContext.prompt.providerMediatedTools) }
+    aroundContext.prompt.providerMediatedTools.length > 0
+      ? {
+          providerMediatedTools: cloneValue(
+            aroundContext.prompt.providerMediatedTools
+          ),
+        }
       : {}),
-    ...(aroundContext.prompt.providerContinuity !== undefined
-      ? { providerContinuity: cloneValue(aroundContext.prompt.providerContinuity) }
-      : {}),
+    ...(aroundContext.prompt.providerContinuity === undefined
+      ? {}
+      : {
+          providerContinuity: cloneValue(
+            aroundContext.prompt.providerContinuity
+          ),
+        }),
   };
 }
 

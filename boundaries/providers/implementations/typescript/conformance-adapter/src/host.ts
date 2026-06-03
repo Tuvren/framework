@@ -44,9 +44,9 @@ import { createAiSdkProviderBridge } from "../../bridge-ai-sdk/src/index.ts";
 import { createMcpToolSource } from "../../mcp-client/src/index.ts";
 import type { MCPClient } from "../../mcp-client/src/lib/mcp-sdk-client.ts";
 import { createMcpToolSourceInternal } from "../../mcp-client/src/lib/mcp-tool-source.ts";
+import { providerConformanceFixtures } from "./provider-conformance-fixtures.ts";
 import { runProviderMediatedAttribution } from "./provider-mediated-execution-class.ts";
 import { runProviderNativeAttribution } from "./provider-native-execution-class.ts";
-import { providerConformanceFixtures } from "./provider-conformance-fixtures.ts";
 
 class TypeScriptProviderAdapter {
   initialize(

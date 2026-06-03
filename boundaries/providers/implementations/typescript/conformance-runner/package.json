@@ -5,8 +5,11 @@
   "type": "module",
   "dependencies": {
     "@ai-sdk/provider": "3.0.8",
+    "@tuvren/backend-memory": "workspace:*",
     "@tuvren/core-types": "workspace:*",
+    "@tuvren/kernel-runtime": "workspace:*",
     "@tuvren/provider-bridge-ai-sdk": "workspace:*",
-    "@tuvren/provider-testkit": "workspace:*"
+    "@tuvren/provider-testkit": "workspace:*",
+    "@tuvren/runtime": "workspace:*"
   }
 }

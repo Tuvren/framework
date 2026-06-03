@@ -55,7 +55,11 @@ function createMockNativeModel(): LanguageModelV3 {
           },
         ],
         finishReason: { raw: "stop", unified: "stop" },
-        usage: { inputTokens: { cacheRead: 0, cacheWrite: 0, noCache: 5, total: 5 }, outputTokens: { reasoning: 0, text: 2, total: 2 }, raw: {} },
+        usage: {
+          inputTokens: { cacheRead: 0, cacheWrite: 0, noCache: 5, total: 5 },
+          outputTokens: { reasoning: 0, text: 2, total: 2 },
+          raw: {},
+        },
         warnings: [],
       };
     },

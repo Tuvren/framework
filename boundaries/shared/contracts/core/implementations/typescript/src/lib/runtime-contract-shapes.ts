@@ -117,28 +117,28 @@ export interface RenderedToolDefinition {
 
 /** Provider-native tool declaration: the provider owns execution. (AY002) */
 export interface ProviderNativeToolDeclaration {
-  /** Provider-owned tool ID: "{provider}.{tool-name}" e.g. "anthropic.code_execution_20260120" */
-  id: string;
-  /** Model-facing tool name (unique among all tools in the prompt) */
-  name: string;
   /** Provider-specific configuration arguments (non-secret) */
   args?: Record<string, unknown>;
   /** Tuvren capability ID for attribution; falls back to name if absent */
   capabilityId?: string;
+  /** Provider-owned tool ID: "{provider}.{tool-name}" e.g. "anthropic.code_execution_20260120" */
+  id: string;
+  /** Model-facing tool name (unique among all tools in the prompt) */
+  name: string;
 }
 
 /** Provider-mediated tool config: developer supplies the endpoint; provider invokes it. (AY004) */
 export interface ProviderMediatedToolConfig {
-  /** Model-facing tool name */
-  name: string;
-  /** Mediation type — "mcp" is the initial supported type (provider-invoked remote MCP) */
-  mediationType: "mcp";
-  /** Developer-provided endpoint URL or connector reference (non-secret connection config) */
-  endpoint: string;
-  /** Provider-specific options (e.g. headers; must not carry auth secrets inline) */
-  providerOptions?: Record<string, unknown>;
   /** Tuvren capability ID for attribution; falls back to name if absent */
   capabilityId?: string;
+  /** Developer-provided endpoint URL or connector reference (non-secret connection config) */
+  endpoint: string;
+  /** Mediation type — "mcp" is the initial supported type (provider-invoked remote MCP) */
+  mediationType: "mcp";
+  /** Model-facing tool name */
+  name: string;
+  /** Provider-specific options (e.g. headers; must not carry auth secrets inline) */
+  providerOptions?: Record<string, unknown>;
 }
 
 export interface TuvrenModelConfig {
@@ -156,15 +156,15 @@ export interface StructuredOutputRequest {
 export interface TuvrenPrompt {
   config?: TuvrenModelConfig;
   messages: TuvrenMessage[];
+  /** Opaque non-secret provider continuity artifacts for multi-turn operation. (AY005) */
+  providerContinuity?: Record<string, unknown>;
+  /** Provider-mediated tools: provider invokes developer endpoint. (AY004) */
+  providerMediatedTools?: ProviderMediatedToolConfig[];
+  /** Provider-native tools: provider owns execution; Tuvren enables/configures. (AY002) */
+  providerNativeTools?: ProviderNativeToolDeclaration[];
   responseFormat?: StructuredOutputRequest;
   /** Function-style tools that Tuvren executes (tuvren-server class) */
   tools?: RenderedToolDefinition[];
-  /** Provider-native tools: provider owns execution; Tuvren enables/configures. (AY002) */
-  providerNativeTools?: ProviderNativeToolDeclaration[];
-  /** Provider-mediated tools: provider invokes developer endpoint. (AY004) */
-  providerMediatedTools?: ProviderMediatedToolConfig[];
-  /** Opaque non-secret provider continuity artifacts for multi-turn operation. (AY005) */
-  providerContinuity?: Record<string, unknown>;
 }
 
 export interface ProviderUsage {
@@ -212,17 +212,18 @@ export type ProviderStreamChunk =
 /** Record of a single provider-native or provider-mediated invocation result. (AY002/AY004) */
 export interface ProviderNativeInvocationRecord {
   callId: string;
-  name: string;
-  result: unknown;
-  isError?: boolean;
   executionClass: "provider-native" | "provider-mediated";
+  isError?: boolean;
+  name: string;
   providerCallId: string;
   providerMetadata?: Record<string, unknown>;
+  result: unknown;
 }
 
 export interface TuvrenModelResponse {
   finishReason: "stop" | "tool_call" | "length" | "error" | "content_filter";
   parts: ContentPart[];
+  providerMetadata?: Record<string, unknown>;
   /**
    * Provider-native and provider-mediated invocation records. These are
    * separate from `parts` so they do not contaminate the model-facing content
@@ -230,7 +231,6 @@ export interface TuvrenModelResponse {
    * The driver processes these into pre-staged tool results. (AY002/AY004)
    */
   providerToolResults?: ProviderNativeInvocationRecord[];
-  providerMetadata?: Record<string, unknown>;
   usage?: ProviderUsage;
 }
 
@@ -947,6 +947,18 @@ export interface AgentConfig {
   maxParallelToolCalls?: number;
   model?: string | TuvrenProvider;
   name: string;
+  /**
+   * Provider-mediated tool configurations for this agent. The developer
+   * supplies the endpoint; the provider invokes it. (AY004)
+   */
+  providerMediatedTools?: ProviderMediatedToolConfig[];
+  /**
+   * Provider-native tool declarations for this agent. The provider owns
+   * execution; Tuvren enables/configures the surface and records provider-
+   * exposed events/results only. Policy is applied before the request is sent.
+   * (AY002)
+   */
+  providerNativeTools?: ProviderNativeToolDeclaration[];
   responseFormat?: StructuredOutputRequest;
   /**
    * Host-provided sandbox executors keyed by endpoint id. When a tool
@@ -976,18 +988,6 @@ export interface AgentConfig {
   serverExecution?: ServerExecutionConfig;
   systemPrompt?: string;
   tools?: TuvrenToolDefinition[];
-  /**
-   * Provider-native tool declarations for this agent. The provider owns
-   * execution; Tuvren enables/configures the surface and records provider-
-   * exposed events/results only. Policy is applied before the request is sent.
-   * (AY002)
-   */
-  providerNativeTools?: ProviderNativeToolDeclaration[];
-  /**
-   * Provider-mediated tool configurations for this agent. The developer
-   * supplies the endpoint; the provider invokes it. (AY004)
-   */
-  providerMediatedTools?: ProviderMediatedToolConfig[];
 }
 
 export interface ExecutionStatus {

@@ -36,6 +36,15 @@
       "@tuvren/core/tools": [
         "../../../../../boundaries/shared/contracts/core/implementations/typescript/src/tools/index.ts"
       ],
+      "@tuvren/backend-memory": [
+        "../../../../../boundaries/kernel/implementations/typescript/backend-memory/src/index.ts"
+      ],
+      "@tuvren/kernel-runtime": [
+        "../../../../../boundaries/kernel/implementations/typescript/runtime-kernel/src/index.ts"
+      ],
+      "@tuvren/runtime": [
+        "../../../../../boundaries/framework/implementations/typescript/runtime/src/index.ts"
+      ],
       "@tuvren/provider-api": [
         "../../../../../boundaries/providers/contracts/provider-api/implementations/typescript/src/index.ts"
       ],

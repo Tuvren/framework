@@ -75,9 +75,7 @@ describe("KRT-AY006 — provider-native execution class proof (generate path)", 
             content: [
               {
                 result: {
-                  outputs: [
-                    { text: "The answer is 42.", type: "text" },
-                  ],
+                  outputs: [{ text: "The answer is 42.", type: "text" }],
                 },
                 toolCallId: "native-proof-generate-1",
                 toolName: "code_execution",
@@ -91,7 +89,9 @@ describe("KRT-AY006 — provider-native execution class proof (generate path)", 
     });
     const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "react",
-      driverRegistry: createDriverRegistry([createReActDriver({ providerCallMode: "generate" })]),
+      driverRegistry: createDriverRegistry([
+        createReActDriver({ providerCallMode: "generate" }),
+      ]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -108,15 +108,22 @@ describe("KRT-AY006 — provider-native execution class proof (generate path)", 
       threadId: thread.threadId,
     });
 
-    const events = (await collectAsyncIterable(handle.events())) as unknown as EventRecord[];
+    const events = (await collectAsyncIterable(
+      handle.events()
+    )) as unknown as EventRecord[];
 
     // Turn must complete successfully
-    const turnEnd = filterEventsByType(events, "turn.end")[0] as EventRecord | undefined;
+    const turnEnd = filterEventsByType(events, "turn.end")[0] as
+      | EventRecord
+      | undefined;
     expect(turnEnd).toBeDefined();
     expect(turnEnd?.status).toBe("completed");
 
     // tool.result event with provider-native attribution
-    const toolResults = filterEventsByType(events, "tool.result") as EventRecord[];
+    const toolResults = filterEventsByType(
+      events,
+      "tool.result"
+    ) as EventRecord[];
     const providerResult = toolResults.find(
       (e) =>
         typeof e.attribution === "object" &&
@@ -166,7 +173,9 @@ describe("KRT-AY006 — provider-native execution class proof (generate path)", 
     });
     const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "react",
-      driverRegistry: createDriverRegistry([createReActDriver({ providerCallMode: "generate" })]),
+      driverRegistry: createDriverRegistry([
+        createReActDriver({ providerCallMode: "generate" }),
+      ]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -191,7 +200,8 @@ describe("KRT-AY006 — provider-native execution class proof (generate path)", 
       (m) => m.role === "tool"
     );
     expect(toolMessages.length).toBeGreaterThan(0);
-    const toolParts = (toolMessages[0]?.parts as EventRecord[] | undefined) ?? [];
+    const toolParts =
+      (toolMessages[0]?.parts as EventRecord[] | undefined) ?? [];
     const part = toolParts[0] as EventRecord | undefined;
     expect(part?.name).toBe("code_execution");
     expect(part?.type).toBe("tool_result");
@@ -225,7 +235,9 @@ describe("KRT-AY006 — provider-native execution class proof (generate path)", 
     });
     const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "react",
-      driverRegistry: createDriverRegistry([createReActDriver({ providerCallMode: "generate" })]),
+      driverRegistry: createDriverRegistry([
+        createReActDriver({ providerCallMode: "generate" }),
+      ]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -306,12 +318,19 @@ describe("KRT-AY006 — provider-native execution class proof (stream path)", ()
       threadId: thread.threadId,
     });
 
-    const events = (await collectAsyncIterable(handle.events())) as unknown as EventRecord[];
+    const events = (await collectAsyncIterable(
+      handle.events()
+    )) as unknown as EventRecord[];
 
-    const turnEnd = filterEventsByType(events, "turn.end")[0] as EventRecord | undefined;
+    const turnEnd = filterEventsByType(events, "turn.end")[0] as
+      | EventRecord
+      | undefined;
     expect(turnEnd?.status).toBe("completed");
 
-    const toolResults = filterEventsByType(events, "tool.result") as EventRecord[];
+    const toolResults = filterEventsByType(
+      events,
+      "tool.result"
+    ) as EventRecord[];
     const providerResult = toolResults.find(
       (e) =>
         typeof e.attribution === "object" &&
@@ -355,7 +374,9 @@ describe("KRT-AY006 — provider-mediated execution class proof (generate path)"
     });
     const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "react",
-      driverRegistry: createDriverRegistry([createReActDriver({ providerCallMode: "generate" })]),
+      driverRegistry: createDriverRegistry([
+        createReActDriver({ providerCallMode: "generate" }),
+      ]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -376,13 +397,20 @@ describe("KRT-AY006 — provider-mediated execution class proof (generate path)"
       threadId: thread.threadId,
     });
 
-    const events = (await collectAsyncIterable(handle.events())) as unknown as EventRecord[];
+    const events = (await collectAsyncIterable(
+      handle.events()
+    )) as unknown as EventRecord[];
 
-    const turnEnd = filterEventsByType(events, "turn.end")[0] as EventRecord | undefined;
+    const turnEnd = filterEventsByType(events, "turn.end")[0] as
+      | EventRecord
+      | undefined;
     expect(turnEnd).toBeDefined();
     expect(turnEnd?.status).toBe("completed");
 
-    const toolResults = filterEventsByType(events, "tool.result") as EventRecord[];
+    const toolResults = filterEventsByType(
+      events,
+      "tool.result"
+    ) as EventRecord[];
     const providerResult = toolResults.find(
       (e) =>
         typeof e.attribution === "object" &&
@@ -429,7 +457,9 @@ describe("KRT-AY006 — provider-mediated execution class proof (generate path)"
     });
     const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "react",
-      driverRegistry: createDriverRegistry([createReActDriver({ providerCallMode: "generate" })]),
+      driverRegistry: createDriverRegistry([
+        createReActDriver({ providerCallMode: "generate" }),
+      ]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -516,12 +546,19 @@ describe("KRT-AY006 — provider-mediated execution class proof (stream path)", 
       threadId: thread.threadId,
     });
 
-    const events = (await collectAsyncIterable(handle.events())) as unknown as EventRecord[];
+    const events = (await collectAsyncIterable(
+      handle.events()
+    )) as unknown as EventRecord[];
 
-    const turnEnd = filterEventsByType(events, "turn.end")[0] as EventRecord | undefined;
+    const turnEnd = filterEventsByType(events, "turn.end")[0] as
+      | EventRecord
+      | undefined;
     expect(turnEnd?.status).toBe("completed");
 
-    const toolResults = filterEventsByType(events, "tool.result") as EventRecord[];
+    const toolResults = filterEventsByType(
+      events,
+      "tool.result"
+    ) as EventRecord[];
     const providerResult = toolResults.find(
       (e) =>
         typeof e.attribution === "object" &&

@@ -15,9 +15,7 @@
  */
 
 import { type HashString, TuvrenRuntimeError } from "@tuvren/core";
-import type {
-  CapabilityInvocationAttribution,
-} from "@tuvren/core/capabilities";
+import type { CapabilityInvocationAttribution } from "@tuvren/core/capabilities";
 import type {
   DriverExecutionContext,
   DriverExecutionResult,
@@ -215,13 +213,13 @@ export interface RuntimeCoreIterationHost {
     events: TuvrenStreamEvent[]
   ): TuvrenStreamEvent[];
   materializeDriver(driverId: string): KrakenDriver;
+  now(): number;
   reconcileCheckpointedPauseResolution(
     checkpointedPause: boolean,
     runId: string,
     turnId: string,
     resolution: RuntimeResolution
   ): Promise<RuntimeResolution>;
-  now(): number;
   stageDriverMessages(
     runId: string,
     messages: TuvrenMessage[],

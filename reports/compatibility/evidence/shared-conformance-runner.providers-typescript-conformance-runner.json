@@ -7,6 +7,8 @@
     "providers.framework-owned-tool-execution",
     "providers.mcp-client",
     "providers.provider-api",
+    "providers.provider-mediated-execution-class",
+    "providers.provider-native-execution-class",
     "providers.rejects-native-strict-structured-output"
   ],
   "checkResults": [
@@ -933,6 +935,348 @@
         "planId": "tuvren.providers.provider-api.bridge-extended"
       },
       "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "ay.ay007.mediated-attribution-execution-class.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ay.ay007.mediated-attribution-execution-class.requiredEvidence.result.attribution.executionClass",
+          "status": "pass"
+        }
+      ],
+      "checkId": "ay.ay007.mediated-attribution-execution-class",
+      "details": {
+        "adapterId": "typescript-providers",
+        "planId": "tuvren.providers.provider-mediated-execution-class"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "ay.ay007.mediated-attribution-owner.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ay.ay007.mediated-attribution-owner.requiredEvidence.result.attribution.owner",
+          "status": "pass"
+        }
+      ],
+      "checkId": "ay.ay007.mediated-attribution-owner",
+      "details": {
+        "adapterId": "typescript-providers",
+        "planId": "tuvren.providers.provider-mediated-execution-class"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "ay.ay007.mediated-mcp-binding-classification.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ay.ay007.mediated-mcp-binding-classification.requiredEvidence.result.attribution.executionClass",
+          "status": "pass"
+        }
+      ],
+      "checkId": "ay.ay007.mediated-mcp-binding-classification",
+      "details": {
+        "adapterId": "typescript-providers",
+        "planId": "tuvren.providers.provider-mediated-execution-class"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "ay.ay007.mediated-no-tool-audit-event.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ay.ay007.mediated-no-tool-audit-event.requiredEvidence.result.toolAuditEventCount",
+          "status": "pass"
+        }
+      ],
+      "checkId": "ay.ay007.mediated-no-tool-audit-event",
+      "details": {
+        "adapterId": "typescript-providers",
+        "planId": "tuvren.providers.provider-mediated-execution-class"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "ay.ay007.mediated-observation-can-audit-false.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ay.ay007.mediated-observation-can-audit-false.requiredEvidence.result.attribution.observation.canAudit",
+          "status": "pass"
+        }
+      ],
+      "checkId": "ay.ay007.mediated-observation-can-audit-false",
+      "details": {
+        "adapterId": "typescript-providers",
+        "planId": "tuvren.providers.provider-mediated-execution-class"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "ay.ay007.mediated-observation-can-cancel-false.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ay.ay007.mediated-observation-can-cancel-false.requiredEvidence.result.attribution.observation.canCancel",
+          "status": "pass"
+        }
+      ],
+      "checkId": "ay.ay007.mediated-observation-can-cancel-false",
+      "details": {
+        "adapterId": "typescript-providers",
+        "planId": "tuvren.providers.provider-mediated-execution-class"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "ay.ay007.mediated-observation-can-resume-false.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ay.ay007.mediated-observation-can-resume-false.requiredEvidence.result.attribution.observation.canResume",
+          "status": "pass"
+        }
+      ],
+      "checkId": "ay.ay007.mediated-observation-can-resume-false",
+      "details": {
+        "adapterId": "typescript-providers",
+        "planId": "tuvren.providers.provider-mediated-execution-class"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "ay.ay007.mediated-observation-can-retry-false.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ay.ay007.mediated-observation-can-retry-false.requiredEvidence.result.attribution.observation.canRetry",
+          "status": "pass"
+        }
+      ],
+      "checkId": "ay.ay007.mediated-observation-can-retry-false",
+      "details": {
+        "adapterId": "typescript-providers",
+        "planId": "tuvren.providers.provider-mediated-execution-class"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "ay.ay007.mediated-turn-completes.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ay.ay007.mediated-turn-completes.requiredEvidence.result.turnStatus",
+          "status": "pass"
+        }
+      ],
+      "checkId": "ay.ay007.mediated-turn-completes",
+      "details": {
+        "adapterId": "typescript-providers",
+        "planId": "tuvren.providers.provider-mediated-execution-class"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "ay.ay007.native-attribution-execution-class.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ay.ay007.native-attribution-execution-class.requiredEvidence.result.attribution.executionClass",
+          "status": "pass"
+        }
+      ],
+      "checkId": "ay.ay007.native-attribution-execution-class",
+      "details": {
+        "adapterId": "typescript-providers",
+        "planId": "tuvren.providers.provider-native-execution-class"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "ay.ay007.native-attribution-owner.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ay.ay007.native-attribution-owner.requiredEvidence.result.attribution.owner",
+          "status": "pass"
+        }
+      ],
+      "checkId": "ay.ay007.native-attribution-owner",
+      "details": {
+        "adapterId": "typescript-providers",
+        "planId": "tuvren.providers.provider-native-execution-class"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "ay.ay007.native-no-local-execution.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ay.ay007.native-no-local-execution.requiredEvidence.result.localExecuteCalled",
+          "status": "pass"
+        }
+      ],
+      "checkId": "ay.ay007.native-no-local-execution",
+      "details": {
+        "adapterId": "typescript-providers",
+        "planId": "tuvren.providers.provider-native-execution-class"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "ay.ay007.native-no-tool-audit-event.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ay.ay007.native-no-tool-audit-event.requiredEvidence.result.toolAuditEventCount",
+          "status": "pass"
+        }
+      ],
+      "checkId": "ay.ay007.native-no-tool-audit-event",
+      "details": {
+        "adapterId": "typescript-providers",
+        "planId": "tuvren.providers.provider-native-execution-class"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "ay.ay007.native-observation-can-audit-false.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ay.ay007.native-observation-can-audit-false.requiredEvidence.result.attribution.observation.canAudit",
+          "status": "pass"
+        }
+      ],
+      "checkId": "ay.ay007.native-observation-can-audit-false",
+      "details": {
+        "adapterId": "typescript-providers",
+        "planId": "tuvren.providers.provider-native-execution-class"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "ay.ay007.native-observation-can-cancel-false.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ay.ay007.native-observation-can-cancel-false.requiredEvidence.result.attribution.observation.canCancel",
+          "status": "pass"
+        }
+      ],
+      "checkId": "ay.ay007.native-observation-can-cancel-false",
+      "details": {
+        "adapterId": "typescript-providers",
+        "planId": "tuvren.providers.provider-native-execution-class"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "ay.ay007.native-observation-can-resume-false.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ay.ay007.native-observation-can-resume-false.requiredEvidence.result.attribution.observation.canResume",
+          "status": "pass"
+        }
+      ],
+      "checkId": "ay.ay007.native-observation-can-resume-false",
+      "details": {
+        "adapterId": "typescript-providers",
+        "planId": "tuvren.providers.provider-native-execution-class"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "ay.ay007.native-observation-can-retry-false.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ay.ay007.native-observation-can-retry-false.requiredEvidence.result.attribution.observation.canRetry",
+          "status": "pass"
+        }
+      ],
+      "checkId": "ay.ay007.native-observation-can-retry-false",
+      "details": {
+        "adapterId": "typescript-providers",
+        "planId": "tuvren.providers.provider-native-execution-class"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "ay.ay007.native-tool-start-owner.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ay.ay007.native-tool-start-owner.requiredEvidence.result.toolStartOwner",
+          "status": "pass"
+        }
+      ],
+      "checkId": "ay.ay007.native-tool-start-owner",
+      "details": {
+        "adapterId": "typescript-providers",
+        "planId": "tuvren.providers.provider-native-execution-class"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "ay.ay007.native-turn-completes.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ay.ay007.native-turn-completes.requiredEvidence.result.turnStatus",
+          "status": "pass"
+        }
+      ],
+      "checkId": "ay.ay007.native-turn-completes",
+      "details": {
+        "adapterId": "typescript-providers",
+        "planId": "tuvren.providers.provider-native-execution-class"
+      },
+      "status": "pass"
     }
   ],
   "command": [
@@ -950,9 +1294,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 32,
-    "totalChecks": 32,
-    "applicableChecks": 32,
+    "passedChecks": 51,
+    "totalChecks": 51,
+    "applicableChecks": 51,
     "nonApplicableChecks": 0
   },
   "suiteId": "tuvren.providers.provider-api",
