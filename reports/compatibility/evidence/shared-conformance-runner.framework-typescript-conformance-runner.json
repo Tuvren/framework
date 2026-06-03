@@ -2972,7 +2972,9 @@
       "details": {
         "adapterId": "typescript-framework",
         "planId": "tuvren.framework.react-driver.callables",
-        "traceStepIds": ["checkpoint"]
+        "traceStepIds": [
+          "checkpoint"
+        ]
       },
       "status": "pass"
     },
@@ -3221,7 +3223,9 @@
       "details": {
         "adapterId": "typescript-framework",
         "planId": "tuvren.framework.react-driver.extended",
-        "traceStepIds": ["checkpoint"]
+        "traceStepIds": [
+          "checkpoint"
+        ]
       },
       "status": "pass"
     },
@@ -5784,7 +5788,9 @@
       "details": {
         "adapterId": "typescript-framework",
         "planId": "tuvren.framework.runtime-api.lifecycle",
-        "traceStepIds": ["approval"]
+        "traceStepIds": [
+          "approval"
+        ]
       },
       "status": "pass"
     },
@@ -5835,7 +5841,9 @@
       "details": {
         "adapterId": "typescript-framework",
         "planId": "tuvren.framework.runtime-api.lifecycle",
-        "traceStepIds": ["branch"]
+        "traceStepIds": [
+          "branch"
+        ]
       },
       "status": "pass"
     },
@@ -5858,7 +5866,9 @@
       "details": {
         "adapterId": "typescript-framework",
         "planId": "tuvren.framework.runtime-api.lifecycle",
-        "traceStepIds": ["cancel"]
+        "traceStepIds": [
+          "cancel"
+        ]
       },
       "status": "pass"
     },
@@ -5893,7 +5903,9 @@
       "details": {
         "adapterId": "typescript-framework",
         "planId": "tuvren.framework.runtime-api.lifecycle",
-        "traceStepIds": ["context"]
+        "traceStepIds": [
+          "context"
+        ]
       },
       "status": "pass"
     },
@@ -5958,7 +5970,9 @@
       "details": {
         "adapterId": "typescript-framework",
         "planId": "tuvren.framework.runtime-api.lifecycle",
-        "traceStepIds": ["recovery"]
+        "traceStepIds": [
+          "recovery"
+        ]
       },
       "status": "pass"
     },
@@ -6181,7 +6195,9 @@
       "details": {
         "adapterId": "typescript-framework",
         "planId": "tuvren.framework.runtime-api.lifecycle-extended",
-        "traceStepIds": ["approval"]
+        "traceStepIds": [
+          "approval"
+        ]
       },
       "status": "pass"
     },
@@ -6200,7 +6216,9 @@
       "details": {
         "adapterId": "typescript-framework",
         "planId": "tuvren.framework.runtime-api.lifecycle-extended",
-        "traceStepIds": ["approval"]
+        "traceStepIds": [
+          "approval"
+        ]
       },
       "status": "pass"
     },
@@ -7601,6 +7619,248 @@
     {
       "assertionResults": [
         {
+          "assertionId": "az.az001.attach-and-dispatch-completes-normally.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "az.az001.attach-and-dispatch-completes-normally.requiredEvidence.result.tuvrenClient.normal.status",
+          "status": "pass"
+        }
+      ],
+      "checkId": "az.az001.attach-and-dispatch-completes-normally",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.tuvren-client-execution-class"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "az.az001.tool-result-event-emitted.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "az.az001.tool-result-event-emitted.requiredEvidence.result.tuvrenClient.normal.toolResultCount",
+          "status": "pass"
+        }
+      ],
+      "checkId": "az.az001.tool-result-event-emitted",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.tuvren-client-execution-class"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "az.az001.tool-start-event-emitted.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "az.az001.tool-start-event-emitted.requiredEvidence.result.tuvrenClient.normal.toolStartCount",
+          "status": "pass"
+        }
+      ],
+      "checkId": "az.az001.tool-start-event-emitted",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.tuvren-client-execution-class"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "az.az002.client-reported-result-surfaced.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "az.az002.client-reported-result-surfaced.requiredEvidence.result.tuvrenClient.normal.toolResultIsError",
+          "status": "pass"
+        }
+      ],
+      "checkId": "az.az002.client-reported-result-surfaced",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.tuvren-client-execution-class"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "az.az003.stale-late-completion-does-not-reach-model.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "az.az003.stale-late-completion-does-not-reach-model.requiredEvidence.result.tuvrenClient.stale.staleContentInResult",
+          "status": "pass"
+        }
+      ],
+      "checkId": "az.az003.stale-late-completion-does-not-reach-model",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.tuvren-client-execution-class"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "az.az003.stale-late-completion-surfaces-error.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "az.az003.stale-late-completion-surfaces-error.requiredEvidence.result.tuvrenClient.stale.toolResultIsError",
+          "status": "pass"
+        }
+      ],
+      "checkId": "az.az003.stale-late-completion-surfaces-error",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.tuvren-client-execution-class"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "az.az003.unavailable-endpoint-does-not-block.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "az.az003.unavailable-endpoint-does-not-block.requiredEvidence.result.tuvrenClient.unavailable.status",
+          "status": "pass"
+        }
+      ],
+      "checkId": "az.az003.unavailable-endpoint-does-not-block",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.tuvren-client-execution-class"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "az.az003.unavailable-endpoint-surfaces-capability-binding-unavailable.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "az.az003.unavailable-endpoint-surfaces-capability-binding-unavailable.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "az.az003.unavailable-endpoint-surfaces-capability-binding-unavailable.requiredEvidence.result.tuvrenClient.unavailable.toolResultIsError",
+          "status": "pass"
+        },
+        {
+          "assertionId": "az.az003.unavailable-endpoint-surfaces-capability-binding-unavailable.requiredEvidence.result.tuvrenClient.unavailable.toolResultOutputCode",
+          "status": "pass"
+        }
+      ],
+      "checkId": "az.az003.unavailable-endpoint-surfaces-capability-binding-unavailable",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.tuvren-client-execution-class"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "az.az004.client-side-mcp-dispatch-completes.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "az.az004.client-side-mcp-dispatch-completes.requiredEvidence.result.tuvrenClient.clientMcp.status",
+          "status": "pass"
+        }
+      ],
+      "checkId": "az.az004.client-side-mcp-dispatch-completes",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.tuvren-client-execution-class"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "az.az004.client-side-mcp-resolves-mcp-server-endpoint-kind.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "az.az004.client-side-mcp-resolves-mcp-server-endpoint-kind.requiredEvidence.result.tuvrenClient.clientMcp.bindingEndpointKind",
+          "status": "pass"
+        }
+      ],
+      "checkId": "az.az004.client-side-mcp-resolves-mcp-server-endpoint-kind",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.tuvren-client-execution-class"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "az.az004.client-side-mcp-resolves-tuvren-client-class.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "az.az004.client-side-mcp-resolves-tuvren-client-class.requiredEvidence.result.tuvrenClient.clientMcp.bindingExecutionClass",
+          "status": "pass"
+        }
+      ],
+      "checkId": "az.az004.client-side-mcp-resolves-tuvren-client-class",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.tuvren-client-execution-class"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "az.az005.no-tool-audit-events-for-tuvren-client.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "az.az005.no-tool-audit-events-for-tuvren-client.requiredEvidence.result.tuvrenClient.normal.toolAuditCount",
+          "status": "pass"
+        }
+      ],
+      "checkId": "az.az005.no-tool-audit-events-for-tuvren-client",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.tuvren-client-execution-class"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "az.az005.no-tool-audit-for-client-mcp.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "az.az005.no-tool-audit-for-client-mcp.requiredEvidence.result.tuvrenClient.clientMcp.toolAuditCount",
+          "status": "pass"
+        }
+      ],
+      "checkId": "az.az005.no-tool-audit-for-client-mcp",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.tuvren-client-execution-class"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "ax.ax001.input-validated-audit-event-emitted.1.resultField",
           "status": "pass"
         },
@@ -8073,9 +8333,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 366,
-    "totalChecks": 378,
-    "applicableChecks": 366,
+    "passedChecks": 379,
+    "totalChecks": 391,
+    "applicableChecks": 379,
     "nonApplicableChecks": 12
   },
   "suiteId": "tuvren.framework.promoted-authority",

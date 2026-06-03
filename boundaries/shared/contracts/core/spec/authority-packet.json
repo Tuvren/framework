@@ -93,6 +93,10 @@
     {
       "path": "boundaries/framework/conformance/plans/tuvren-server-execution-class.json",
       "format": "conformance-plan"
+    },
+    {
+      "path": "boundaries/framework/conformance/plans/tuvren-client-execution-class.json",
+      "format": "conformance-plan"
     }
   ],
   "generatedArtifacts": [
@@ -291,6 +295,10 @@
     {
       "kind": "conformance-plan",
       "target": "boundaries/framework/conformance/plans/tuvren-server-execution-class.json"
+    },
+    {
+      "kind": "conformance-plan",
+      "target": "boundaries/framework/conformance/plans/tuvren-client-execution-class.json"
     },
     {
       "kind": "freshness-check",

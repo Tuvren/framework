@@ -1,7 +1,9 @@
 {
   "adapterId": "typescript-framework-batteries-included",
   "boundary": "framework",
-  "capabilities": ["framework.batteries-included"],
+  "capabilities": [
+    "framework.batteries-included"
+  ],
   "checkResults": [
     {
       "assertionResults": [
@@ -576,6 +578,19 @@
     "tool-contracts-af.tool-call-id-owned-by-framework",
     "tool-contracts-af.tool-failure-produces-error-result-not-run-fail",
     "tool-contracts-af.tool-parallel-wave-starts-before-results",
+    "az.az001.attach-and-dispatch-completes-normally",
+    "az.az001.tool-result-event-emitted",
+    "az.az001.tool-start-event-emitted",
+    "az.az002.client-reported-result-surfaced",
+    "az.az003.stale-late-completion-does-not-reach-model",
+    "az.az003.stale-late-completion-surfaces-error",
+    "az.az003.unavailable-endpoint-does-not-block",
+    "az.az003.unavailable-endpoint-surfaces-capability-binding-unavailable",
+    "az.az004.client-side-mcp-dispatch-completes",
+    "az.az004.client-side-mcp-resolves-mcp-server-endpoint-kind",
+    "az.az004.client-side-mcp-resolves-tuvren-client-class",
+    "az.az005.no-tool-audit-events-for-tuvren-client",
+    "az.az005.no-tool-audit-for-client-mcp",
     "ax.ax001.input-validated-audit-event-emitted",
     "ax.ax001.input-validation-failure-carries-code",
     "ax.ax001.input-validation-failure-surfaces-error",
@@ -603,9 +618,9 @@
   "summary": {
     "failedChecks": 0,
     "passedChecks": 12,
-    "totalChecks": 378,
+    "totalChecks": 391,
     "applicableChecks": 12,
-    "nonApplicableChecks": 366
+    "nonApplicableChecks": 379
   },
   "suiteId": "tuvren.framework.runtime-api.batteries-included",
   "suiteVersion": "0.1.0"
