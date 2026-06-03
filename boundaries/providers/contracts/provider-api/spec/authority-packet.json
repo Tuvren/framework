@@ -21,6 +21,14 @@
       "format": "conformance-plan"
     },
     {
+      "path": "boundaries/providers/conformance/plans/provider-native-execution-class.json",
+      "format": "conformance-plan"
+    },
+    {
+      "path": "boundaries/providers/conformance/plans/provider-mediated-execution-class.json",
+      "format": "conformance-plan"
+    },
+    {
       "path": "boundaries/providers/conformance/fixtures/provider-fixtures.json",
       "format": "fixture-set"
     }
@@ -47,6 +55,16 @@
       "planId": "tuvren.providers.provider-api.bridge-extended",
       "planVersion": "0.1.0",
       "path": "boundaries/providers/conformance/plans/provider-api-bridge-extended.json"
+    },
+    {
+      "planId": "tuvren.providers.provider-native-execution-class",
+      "planVersion": "0.1.0",
+      "path": "boundaries/providers/conformance/plans/provider-native-execution-class.json"
+    },
+    {
+      "planId": "tuvren.providers.provider-mediated-execution-class",
+      "planVersion": "0.1.0",
+      "path": "boundaries/providers/conformance/plans/provider-mediated-execution-class.json"
     }
   ],
   "bindingProjections": {
@@ -83,6 +101,14 @@
     {
       "kind": "conformance-plan",
       "target": "boundaries/providers/conformance/plans/provider-api-bridge-extended.json"
+    },
+    {
+      "kind": "conformance-plan",
+      "target": "boundaries/providers/conformance/plans/provider-native-execution-class.json"
+    },
+    {
+      "kind": "conformance-plan",
+      "target": "boundaries/providers/conformance/plans/provider-mediated-execution-class.json"
     },
     {
       "kind": "freshness-check",
