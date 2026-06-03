@@ -15,7 +15,10 @@
  */
 
 import { TuvrenRuntimeError } from "@tuvren/core";
-import type { AttachedClientEndpoint } from "@tuvren/core/capabilities";
+import type {
+  AttachedClientEndpoint,
+  ClientEndpointBoundary,
+} from "@tuvren/core/capabilities";
 import { CAPABILITY_BINDING_UNAVAILABLE } from "@tuvren/core/errors";
 import type { TuvrenExtension } from "@tuvren/core/extensions";
 import type { TuvrenJsonSchema } from "@tuvren/core/messages";
@@ -26,7 +29,6 @@ import {
   type ToolRegistry,
   type TuvrenToolDefinition,
 } from "@tuvren/core/tools";
-import type { ClientEndpointBoundary } from "./client-endpoint-boundary.js";
 import { cloneSnapshotPreservingFunctions } from "./runtime-core-shared.js";
 
 class BasicToolRegistry implements ToolRegistry {
@@ -236,9 +238,9 @@ export function buildClientEndpointTools(
         inputSchema: cap.inputSchema as TuvrenJsonSchema,
         metadata: {
           clientEndpointId: endpointId,
-          ...(cap.mcpServerName !== undefined
-            ? { mcpServerName: cap.mcpServerName }
-            : {}),
+          ...(cap.mcpServerName === undefined
+            ? {}
+            : { mcpServerName: cap.mcpServerName }),
         },
         name: capabilityId,
       };

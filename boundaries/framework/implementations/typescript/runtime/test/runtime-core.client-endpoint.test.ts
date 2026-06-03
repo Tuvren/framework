@@ -28,18 +28,20 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import type { DriverExecutionContext, DriverExecutionResult } from "@tuvren/core/driver";
 import type {
   AttachedClientEndpoint,
+  ClientEndpointBoundary,
   ClientInvocationEnvelope,
   ClientReportedResult,
 } from "@tuvren/core/capabilities";
+import type {
+  DriverExecutionContext,
+  DriverExecutionResult,
+} from "@tuvren/core/driver";
 import { CAPABILITY_BINDING_UNAVAILABLE } from "@tuvren/core/errors";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
-import {
-  createDriverRegistry,
-  createTuvrenRuntime,
-} from "../src/index.ts";
+import { createDriverRegistry, createTuvrenRuntime } from "../src/index.ts";
+import { createClientEndpointBoundary } from "../src/lib/client-endpoint-boundary.ts";
 import { createFakeKernelHarness } from "./fake-kernel.ts";
 import {
   assistantText,
@@ -67,10 +69,20 @@ function makeOkEndpoint(
   return {
     endpointId,
     advertisedCapabilities: [
-      { capabilityId, description: "test cap", inputSchema: { type: "object" } },
+      {
+        capabilityId,
+        description: "test cap",
+        inputSchema: { type: "object" },
+      },
     ],
-    async dispatch(envelope: ClientInvocationEnvelope): Promise<ClientReportedResult> {
-      return { callId: envelope.callId, content, leaseToken: envelope.leaseToken };
+    async dispatch(
+      envelope: ClientInvocationEnvelope
+    ): Promise<ClientReportedResult> {
+      return {
+        callId: envelope.callId,
+        content,
+        leaseToken: envelope.leaseToken,
+      };
     },
   };
 }
@@ -83,13 +95,19 @@ function makeStaleEndpoint(
   return {
     endpointId,
     advertisedCapabilities: [
-      { capabilityId, description: "stale cap", inputSchema: { type: "object" } },
+      {
+        capabilityId,
+        description: "stale cap",
+        inputSchema: { type: "object" },
+      },
     ],
-    async dispatch(envelope: ClientInvocationEnvelope): Promise<ClientReportedResult> {
+    async dispatch(
+      envelope: ClientInvocationEnvelope
+    ): Promise<ClientReportedResult> {
       return {
         callId: envelope.callId,
         content: { stale: true },
-        leaseToken: "stale-token-from-prior-invocation",  // does NOT match envelope token
+        leaseToken: "stale-token-from-prior-invocation", // does NOT match envelope token
       };
     },
   };
@@ -111,8 +129,14 @@ function makeClientMcpEndpoint(
         mcpServerName,
       },
     ],
-    async dispatch(envelope: ClientInvocationEnvelope): Promise<ClientReportedResult> {
-      return { callId: envelope.callId, content: { mcpResult: "ok" }, leaseToken: envelope.leaseToken };
+    async dispatch(
+      envelope: ClientInvocationEnvelope
+    ): Promise<ClientReportedResult> {
+      return {
+        callId: envelope.callId,
+        content: { mcpResult: "ok" },
+        leaseToken: envelope.leaseToken,
+      };
     },
   };
 }
@@ -177,33 +201,59 @@ async function runTurnWithClientEndpoint(
 describe("tuvren-client: attach and dispatch (KRT-AZ001, KRT-AZ002)", () => {
   test("a tool call resolves through the attached client endpoint and completes normally", async () => {
     const endpoint = makeOkEndpoint("ep1", "browser.click", { clicked: true });
-    const { result } = await runTurnWithClientEndpoint(endpoint, "browser.click");
+    const { result } = await runTurnWithClientEndpoint(
+      endpoint,
+      "browser.click"
+    );
     expect(result.status).toBe("completed");
   });
 
   test("tool.start and tool.result events are emitted for the client endpoint invocation", async () => {
-    const endpoint = makeOkEndpoint("ep1", "browser.screenshot", { url: "http://example.com" });
-    const { events } = await runTurnWithClientEndpoint(endpoint, "browser.screenshot");
-    const toolStartEvents = events.filter((e) => (e as TuvrenStreamEvent).type === "tool.start");
-    const toolResultEvents = events.filter((e) => (e as TuvrenStreamEvent).type === "tool.result");
+    const endpoint = makeOkEndpoint("ep1", "browser.screenshot", {
+      url: "http://example.com",
+    });
+    const { events } = await runTurnWithClientEndpoint(
+      endpoint,
+      "browser.screenshot"
+    );
+    const toolStartEvents = events.filter(
+      (e) => (e as TuvrenStreamEvent).type === "tool.start"
+    );
+    const toolResultEvents = events.filter(
+      (e) => (e as TuvrenStreamEvent).type === "tool.result"
+    );
     expect(toolStartEvents).toHaveLength(1);
     expect(toolResultEvents).toHaveLength(1);
   });
 
   test("no tool.audit events are emitted for tuvren-client tools (canAudit: false)", async () => {
     const endpoint = makeOkEndpoint("ep1", "browser.navigate", {});
-    const { events } = await runTurnWithClientEndpoint(endpoint, "browser.navigate");
-    const auditEvents = events.filter((e) => (e as TuvrenStreamEvent).type === "tool.audit");
+    const { events } = await runTurnWithClientEndpoint(
+      endpoint,
+      "browser.navigate"
+    );
+    const auditEvents = events.filter(
+      (e) => (e as TuvrenStreamEvent).type === "tool.audit"
+    );
     expect(auditEvents).toHaveLength(0);
   });
 
   test("the client-reported content is surfaced as the tool result output", async () => {
     const expectedContent = { browserResult: "page loaded", title: "Home" };
-    const endpoint = makeOkEndpoint("ep1", "browser.get_title", expectedContent);
-    const { events } = await runTurnWithClientEndpoint(endpoint, "browser.get_title");
+    const endpoint = makeOkEndpoint(
+      "ep1",
+      "browser.get_title",
+      expectedContent
+    );
+    const { events } = await runTurnWithClientEndpoint(
+      endpoint,
+      "browser.get_title"
+    );
     const toolResultEvent = events.find(
       (e) => (e as TuvrenStreamEvent).type === "tool.result"
-    ) as (TuvrenStreamEvent & { type: "tool.result"; isError?: boolean }) | undefined;
+    ) as
+      | (TuvrenStreamEvent & { type: "tool.result"; isError?: boolean })
+      | undefined;
     expect(toolResultEvent).toBeDefined();
     expect(toolResultEvent?.isError).toBeFalsy();
   });
@@ -215,11 +265,19 @@ describe("tuvren-client: attach and dispatch (KRT-AZ001, KRT-AZ002)", () => {
     const endpoint: AttachedClientEndpoint = {
       endpointId: "ep1",
       advertisedCapabilities: [
-        { capabilityId: "tracked.call", description: "tracked", inputSchema: { type: "object" } },
+        {
+          capabilityId: "tracked.call",
+          description: "tracked",
+          inputSchema: { type: "object" },
+        },
       ],
       async dispatch(envelope) {
         received = envelope;
-        return { callId: envelope.callId, content: { tracked: true }, leaseToken: envelope.leaseToken };
+        return {
+          callId: envelope.callId,
+          content: { tracked: true },
+          leaseToken: envelope.leaseToken,
+        };
       },
     };
     await runTurnWithClientEndpoint(endpoint, "tracked.call", { param: 42 });
@@ -234,32 +292,31 @@ describe("tuvren-client: attach and dispatch (KRT-AZ001, KRT-AZ002)", () => {
 // ---------------------------------------------------------------------------
 
 describe("tuvren-client: unavailability and staleness (KRT-AZ003)", () => {
-  test("a tool call to an unattached capability yields capability_binding_unavailable result", async () => {
+  /**
+   * Prove the typed `capability_binding_unavailable` outcome for an unavailable
+   * client endpoint. The host creates a boundary, detaches the endpoint before
+   * the turn so `isAvailable` returns false at invocation time, and passes the
+   * boundary via `AgentConfig.clientEndpointBoundary`. The model still sees the
+   * capability (it was advertised in `clientEndpoints`) but when it calls it,
+   * the `execute` closure checks `isAvailable`, finds it false, and returns the
+   * typed `capability_binding_unavailable` ToolResultPart. (KRT-AZ001, KRT-AZ003)
+   */
+  test("a detached client endpoint yields a typed capability_binding_unavailable result", async () => {
+    const endpoint = makeOkEndpoint("ep1", "detached.cap", {
+      shouldNotReach: true,
+    });
+    // Pre-create the boundary and immediately detach the endpoint — simulating
+    // an endpoint that connected and then disconnected before the turn started.
+    const boundary: ClientEndpointBoundary = createClientEndpointBoundary([
+      endpoint,
+    ]);
+    boundary.detach("ep1");
+
     const harness = createFakeKernelHarness();
     const runtime = createTuvrenRuntime({
       createId: makeId,
       defaultDriverId: "test-driver",
-      driverRegistry: createDriverRegistry([
-        {
-          id: "test-driver",
-          execute(ctx: DriverExecutionContext): Promise<DriverExecutionResult> {
-            const hasToolResult = ctx.messages.some((m) => m.role === "tool");
-            if (!hasToolResult) {
-              return Promise.resolve({
-                messages: [
-                  assistantToolCalls([{ callId: "call-unavailable", input: {}, name: "missing.tool" }]),
-                ],
-                resolution: { type: "continue_iteration" as const },
-                toolExecutionMode: "parallel" as const,
-              });
-            }
-            return Promise.resolve({
-              messages: [assistantText("done after unavailable")],
-              resolution: { reason: "done", type: "end_turn" as const },
-            });
-          },
-        },
-      ]),
+      driverRegistry: createDriverRegistry([makeOneCallDriver("detached.cap")]),
       kernel: harness.kernel,
     });
 
@@ -268,8 +325,11 @@ describe("tuvren-client: unavailability and staleness (KRT-AZ003)", () => {
       branchId: thread.branchId,
       config: {
         name: "test-agent",
-        // No clientEndpoints → "missing.tool" will not be registered → tool not found error
-        // (This is the "tool not registered" case, surfaced by resolveExecutableToolCall)
+        // clientEndpoints registers the capability surface so the model can see it
+        clientEndpoints: [endpoint],
+        // clientEndpointBoundary provides the pre-detached boundary so invocations
+        // hit the isAvailable=false branch and return capability_binding_unavailable
+        clientEndpointBoundary: boundary,
       },
       signal: textSignal("unavailable test"),
       threadId: thread.threadId,
@@ -278,18 +338,27 @@ describe("tuvren-client: unavailability and staleness (KRT-AZ003)", () => {
     const events = await collectEvents(handle.events());
     const result = await handle.awaitResult();
 
-    // The tool call should be surfaced as an error result
+    expect(result.status).toBe("completed");
     const toolResultEvents = events.filter(
       (e) => (e as TuvrenStreamEvent).type === "tool.result"
-    ) as (TuvrenStreamEvent & { type: "tool.result"; isError?: boolean })[];
+    ) as (TuvrenStreamEvent & {
+      type: "tool.result";
+      isError?: boolean;
+      output?: unknown;
+    })[];
     expect(toolResultEvents).toHaveLength(1);
     expect(toolResultEvents[0]?.isError).toBe(true);
-    expect(result.status).toBe("completed");
+    // Typed code is in the output object
+    const output = toolResultEvents[0]?.output as { code?: string } | undefined;
+    expect(output?.code).toBe(CAPABILITY_BINDING_UNAVAILABLE);
   });
 
   test("a stale client result (mismatched leaseToken) is ignored and surfaces as an error", async () => {
     const staleEndpoint = makeStaleEndpoint("ep1", "stale.cap");
-    const { events, result } = await runTurnWithClientEndpoint(staleEndpoint, "stale.cap");
+    const { events, result } = await runTurnWithClientEndpoint(
+      staleEndpoint,
+      "stale.cap"
+    );
 
     expect(result.status).toBe("completed");
     const toolResultEvents = events.filter(
@@ -313,20 +382,40 @@ describe("tuvren-client: unavailability and staleness (KRT-AZ003)", () => {
 
 describe("tuvren-client: client-side MCP binding classification (KRT-AZ004)", () => {
   test("a client-run MCP tool dispatches through the client endpoint and returns a result", async () => {
-    const endpoint = makeClientMcpEndpoint("ext1", "shopify.products", "shopify");
-    const { result, events } = await runTurnWithClientEndpoint(endpoint, "shopify.products");
+    const endpoint = makeClientMcpEndpoint(
+      "ext1",
+      "shopify.products",
+      "shopify"
+    );
+    const { result, events } = await runTurnWithClientEndpoint(
+      endpoint,
+      "shopify.products"
+    );
     expect(result.status).toBe("completed");
     // tool.start and tool.result are emitted (client-owned invocation, tuvren orchestrates)
-    const startEvents = events.filter((e) => (e as TuvrenStreamEvent).type === "tool.start");
-    const resultEvents = events.filter((e) => (e as TuvrenStreamEvent).type === "tool.result");
+    const startEvents = events.filter(
+      (e) => (e as TuvrenStreamEvent).type === "tool.start"
+    );
+    const resultEvents = events.filter(
+      (e) => (e as TuvrenStreamEvent).type === "tool.result"
+    );
     expect(startEvents).toHaveLength(1);
     expect(resultEvents).toHaveLength(1);
   });
 
   test("no tool.audit events are emitted for client-side MCP tools", async () => {
-    const endpoint = makeClientMcpEndpoint("ext1", "client.mcp.search", "search-server");
-    const { events } = await runTurnWithClientEndpoint(endpoint, "client.mcp.search");
-    const auditEvents = events.filter((e) => (e as TuvrenStreamEvent).type === "tool.audit");
+    const endpoint = makeClientMcpEndpoint(
+      "ext1",
+      "client.mcp.search",
+      "search-server"
+    );
+    const { events } = await runTurnWithClientEndpoint(
+      endpoint,
+      "client.mcp.search"
+    );
+    const auditEvents = events.filter(
+      (e) => (e as TuvrenStreamEvent).type === "tool.audit"
+    );
     expect(auditEvents).toHaveLength(0);
   });
 });
@@ -337,16 +426,25 @@ describe("tuvren-client: client-side MCP binding classification (KRT-AZ004)", ()
 
 describe("tuvren-client: partial-observability model (KRT-AZ005)", () => {
   test("tool.result event is emitted — runtime records from dispatch/result envelope", async () => {
-    const endpoint = makeOkEndpoint("ep1", "observable.cap", { measured: true });
-    const { events } = await runTurnWithClientEndpoint(endpoint, "observable.cap");
-    const toolResultEvents = events.filter((e) => (e as TuvrenStreamEvent).type === "tool.result");
+    const endpoint = makeOkEndpoint("ep1", "observable.cap", {
+      measured: true,
+    });
+    const { events } = await runTurnWithClientEndpoint(
+      endpoint,
+      "observable.cap"
+    );
+    const toolResultEvents = events.filter(
+      (e) => (e as TuvrenStreamEvent).type === "tool.result"
+    );
     expect(toolResultEvents).toHaveLength(1);
   });
 
   test("no tool.audit events (canAudit: false for tuvren-client)", async () => {
     const endpoint = makeOkEndpoint("ep1", "partial.cap", {});
     const { events } = await runTurnWithClientEndpoint(endpoint, "partial.cap");
-    const auditEvents = events.filter((e) => (e as TuvrenStreamEvent).type === "tool.audit");
+    const auditEvents = events.filter(
+      (e) => (e as TuvrenStreamEvent).type === "tool.audit"
+    );
     expect(auditEvents).toHaveLength(0);
   });
 });

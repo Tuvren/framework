@@ -69,11 +69,11 @@ export interface RuntimeCoreStartupHost {
   createActiveToolRegistry(
     runtimeTools: ExecutionSessionRequest["tools"] | undefined,
     config: LoopState["activeConfig"],
-    clientEndpointBoundary?: import("./client-endpoint-boundary.js").ClientEndpointBoundary
+    clientEndpointBoundary?: import("@tuvren/core/capabilities").ClientEndpointBoundary
   ): ToolRegistry;
   createClientEndpointBoundaryFromConfig(
     config: LoopState["activeConfig"]
-  ): import("./client-endpoint-boundary.js").ClientEndpointBoundary | undefined;
+  ): import("@tuvren/core/capabilities").ClientEndpointBoundary | undefined;
   createId(): string;
   defaultDriverId(): string;
   emitStateObservability(
@@ -174,7 +174,11 @@ export function createExecutionLoopState(
       host.defaultDriverId(),
     activeToolRegistry:
       resumedPauseContext?.activeToolRegistry ??
-      host.createActiveToolRegistry(handle.request.tools, initialActiveConfig, clientEndpointBoundary),
+      host.createActiveToolRegistry(
+        handle.request.tools,
+        initialActiveConfig,
+        clientEndpointBoundary
+      ),
     carriedStateUpdates: [...(resumedPauseContext?.carriedStateUpdates ?? [])],
     clientEndpointBoundary,
     enteredIterationLoop: false,

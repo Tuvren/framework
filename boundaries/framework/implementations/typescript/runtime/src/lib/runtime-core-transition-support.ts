@@ -105,7 +105,9 @@ export async function applyRuntimeCoreTerminalAgentTransitionIfNeeded(
     | {
         activeConfig: AgentConfig;
         activeToolRegistry: ToolRegistry;
-        clientEndpointBoundary: import("./client-endpoint-boundary.js").ClientEndpointBoundary | undefined;
+        clientEndpointBoundary:
+          | import("@tuvren/core/capabilities").ClientEndpointBoundary
+          | undefined;
       }
     | undefined;
 

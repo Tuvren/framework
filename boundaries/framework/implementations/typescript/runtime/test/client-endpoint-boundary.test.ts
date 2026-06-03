@@ -27,9 +27,7 @@ import type {
   ClientReportedResult,
 } from "@tuvren/core/capabilities";
 import { CAPABILITY_BINDING_UNAVAILABLE } from "@tuvren/core/errors";
-import {
-  createClientEndpointBoundary,
-} from "../src/lib/client-endpoint-boundary.ts";
+import { createClientEndpointBoundary } from "../src/lib/client-endpoint-boundary.ts";
 
 // ---------------------------------------------------------------------------
 // Test helpers
@@ -38,7 +36,9 @@ import {
 function makeEndpoint(
   endpointId: string,
   capabilities: string[],
-  handler?: (envelope: ClientInvocationEnvelope) => Promise<ClientReportedResult>
+  handler?: (
+    envelope: ClientInvocationEnvelope
+  ) => Promise<ClientReportedResult>
 ): AttachedClientEndpoint {
   return {
     endpointId,
@@ -47,15 +47,20 @@ function makeEndpoint(
       description: `${id} description`,
       inputSchema: { type: "object" },
     })),
-    async dispatch(envelope: ClientInvocationEnvelope): Promise<ClientReportedResult> {
+    dispatch(
+      envelope: ClientInvocationEnvelope
+    ): Promise<ClientReportedResult> {
       if (handler !== undefined) {
-        return await handler(envelope);
+        return handler(envelope);
       }
-      return {
+      return Promise.resolve({
         callId: envelope.callId,
-        content: { result: `${envelope.capabilityId}-result`, input: envelope.input },
+        content: {
+          result: `${envelope.capabilityId}-result`,
+          input: envelope.input,
+        },
         leaseToken: envelope.leaseToken,
-      };
+      });
     },
   };
 }
@@ -75,12 +80,14 @@ function makeClientMcpEndpoint(
         mcpServerName,
       },
     ],
-    async dispatch(envelope: ClientInvocationEnvelope): Promise<ClientReportedResult> {
-      return {
+    dispatch(
+      envelope: ClientInvocationEnvelope
+    ): Promise<ClientReportedResult> {
+      return Promise.resolve({
         callId: envelope.callId,
         content: { mcpResult: true },
         leaseToken: envelope.leaseToken,
-      };
+      });
     },
   };
 }
@@ -118,6 +125,50 @@ describe("ClientEndpointBoundary — attachment and availability (KRT-AZ001)", (
     expect(boundary.isAvailable("web.search")).toBe(true);
     expect(boundary.isAvailable("code.run")).toBe(true);
     expect(boundary.isAvailable("file.read")).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// KRT-AZ003: detach makes capabilities unavailable
+// ---------------------------------------------------------------------------
+
+describe("ClientEndpointBoundary — detach (KRT-AZ003)", () => {
+  test("isAvailable returns false after detach", () => {
+    const boundary = createClientEndpointBoundary([
+      makeEndpoint("ep1", ["web.search", "code.run"]),
+    ]);
+    expect(boundary.isAvailable("web.search")).toBe(true);
+    boundary.detach("ep1");
+    expect(boundary.isAvailable("web.search")).toBe(false);
+    expect(boundary.isAvailable("code.run")).toBe(false);
+  });
+
+  test("detach only removes capabilities from the specified endpoint", () => {
+    const boundary = createClientEndpointBoundary([
+      makeEndpoint("ep1", ["web.search"]),
+      makeEndpoint("ep2", ["code.run"]),
+    ]);
+    boundary.detach("ep1");
+    expect(boundary.isAvailable("web.search")).toBe(false);
+    expect(boundary.isAvailable("code.run")).toBe(true);
+  });
+
+  test("dispatch throws capability_binding_unavailable after detach", async () => {
+    const boundary = createClientEndpointBoundary([
+      makeEndpoint("ep1", ["web.search"]),
+    ]);
+    boundary.detach("ep1");
+    await expect(
+      boundary.dispatch("web.search", "call-1", {})
+    ).rejects.toMatchObject({ code: CAPABILITY_BINDING_UNAVAILABLE });
+  });
+
+  test("detach of unknown endpointId is a no-op", () => {
+    const boundary = createClientEndpointBoundary([
+      makeEndpoint("ep1", ["web.search"]),
+    ]);
+    boundary.detach("unknown-ep");
+    expect(boundary.isAvailable("web.search")).toBe(true);
   });
 });
 
@@ -166,7 +217,9 @@ describe("ClientEndpointBoundary — dispatch and result capture (KRT-AZ002)", (
         leaseToken: envelope.leaseToken,
       })),
     ]);
-    const result = await boundary.dispatch("web.search", "call-123", { query: "bun" });
+    const result = await boundary.dispatch("web.search", "call-123", {
+      query: "bun",
+    });
     expect(result).not.toBeNull();
     expect(result?.content).toEqual({ hits: ["result1", "result2"] });
     expect(result?.isError).toBe(false);
@@ -175,9 +228,13 @@ describe("ClientEndpointBoundary — dispatch and result capture (KRT-AZ002)", (
   test("dispatch sends the correct callId and input in the envelope", async () => {
     const received: ClientInvocationEnvelope[] = [];
     const boundary = createClientEndpointBoundary([
-      makeEndpoint("ep1", ["search"], async (envelope) => {
+      makeEndpoint("ep1", ["search"], (envelope) => {
         received.push(envelope);
-        return { callId: envelope.callId, content: "ok", leaseToken: envelope.leaseToken };
+        return Promise.resolve({
+          callId: envelope.callId,
+          content: "ok",
+          leaseToken: envelope.leaseToken,
+        });
       }),
     ]);
     await boundary.dispatch("search", "call-xyz", { q: "hello" });
@@ -203,7 +260,9 @@ describe("ClientEndpointBoundary — dispatch and result capture (KRT-AZ002)", (
 
   test("dispatch throws capability_binding_unavailable when no endpoint is attached", async () => {
     const boundary = createClientEndpointBoundary([]);
-    await expect(boundary.dispatch("web.search", "call-1", {})).rejects.toMatchObject({
+    await expect(
+      boundary.dispatch("web.search", "call-1", {})
+    ).rejects.toMatchObject({
       code: CAPABILITY_BINDING_UNAVAILABLE,
     });
   });
@@ -217,7 +276,9 @@ describe("ClientEndpointBoundary — dispatch and result capture (KRT-AZ002)", (
       thrown = e;
     }
     expect(thrown).toBeInstanceOf(TuvrenRuntimeError);
-    expect((thrown as TuvrenRuntimeError).code).toBe(CAPABILITY_BINDING_UNAVAILABLE);
+    expect((thrown as TuvrenRuntimeError).code).toBe(
+      CAPABILITY_BINDING_UNAVAILABLE
+    );
   });
 });
 
@@ -231,7 +292,7 @@ describe("ClientEndpointBoundary — staleness handling (KRT-AZ003)", () => {
       makeEndpoint("ep1", ["search"], async (envelope) => ({
         callId: envelope.callId,
         content: { staleResult: true },
-        leaseToken: "wrong-token-from-previous-invocation",  // stale
+        leaseToken: "wrong-token-from-previous-invocation", // stale
       })),
     ]);
     const result = await boundary.dispatch("search", "call-fresh", {});
@@ -243,7 +304,7 @@ describe("ClientEndpointBoundary — staleness handling (KRT-AZ003)", () => {
       makeEndpoint("ep1", ["search"], async (envelope) => ({
         callId: envelope.callId,
         content: { ok: true },
-        leaseToken: envelope.leaseToken,  // correct echo
+        leaseToken: envelope.leaseToken, // correct echo
       })),
     ]);
     const result = await boundary.dispatch("search", "call-normal", {});
@@ -254,9 +315,13 @@ describe("ClientEndpointBoundary — staleness handling (KRT-AZ003)", () => {
   test("each dispatch generates a unique leaseToken so stale cross-call results are detected", async () => {
     const tokens: string[] = [];
     const boundary = createClientEndpointBoundary([
-      makeEndpoint("ep1", ["search"], async (envelope) => {
+      makeEndpoint("ep1", ["search"], (envelope) => {
         tokens.push(envelope.leaseToken);
-        return { callId: envelope.callId, content: {}, leaseToken: envelope.leaseToken };
+        return Promise.resolve({
+          callId: envelope.callId,
+          content: {},
+          leaseToken: envelope.leaseToken,
+        });
       }),
     ]);
     await boundary.dispatch("search", "call-1", {});
@@ -299,9 +364,13 @@ describe("ClientEndpointBoundary — client-side MCP binding (KRT-AZ004)", () =>
           mcpServerName: "remote-mcp",
         },
       ],
-      async dispatch(envelope) {
+      dispatch(envelope) {
         dispatchedEnvelopes.push(envelope);
-        return { callId: envelope.callId, content: { mcpOk: true }, leaseToken: envelope.leaseToken };
+        return Promise.resolve({
+          callId: envelope.callId,
+          content: { mcpOk: true },
+          leaseToken: envelope.leaseToken,
+        });
       },
     };
     const boundary = createClientEndpointBoundary([endpoint]);
@@ -323,7 +392,7 @@ describe("isClientEndpointTool via binding resolver (KRT-AZ001, KRT-AZ004)", () 
       name: "my.cap",
       description: "client cap",
       inputSchema: { type: "object" },
-      execute: async () => {},
+      execute: () => Promise.resolve(undefined),
       metadata: { clientEndpointId: "ep1" },
     });
     expect(binding.executionClass).toBe("tuvren-client");
@@ -337,7 +406,7 @@ describe("isClientEndpointTool via binding resolver (KRT-AZ001, KRT-AZ004)", () 
       name: "mcp.tool",
       description: "client mcp tool",
       inputSchema: { type: "object" },
-      execute: async () => {},
+      execute: () => Promise.resolve(undefined),
       metadata: { clientEndpointId: "ep1", mcpServerName: "my-server" },
     });
     expect(binding.executionClass).toBe("tuvren-client");

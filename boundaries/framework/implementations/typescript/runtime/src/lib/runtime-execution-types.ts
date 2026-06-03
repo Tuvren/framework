@@ -52,7 +52,7 @@ export interface PauseContext {
   approval: ApprovalRequest;
   carriedStateUpdates: ExtensionStateUpdate[];
   /** Preserved client endpoint boundary from the paused turn (KRT-AZ001). */
-  clientEndpointBoundary?: import("./client-endpoint-boundary.js").ClientEndpointBoundary;
+  clientEndpointBoundary?: import("@tuvren/core/capabilities").ClientEndpointBoundary;
   pausedIteration: PausedIterationState;
   pausedRunId: string;
   pausedTurnNodeHash: HashString;

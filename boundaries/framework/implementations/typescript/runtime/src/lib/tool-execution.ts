@@ -39,7 +39,10 @@ import type {
   ToolRegistry,
   TuvrenToolDefinition,
 } from "@tuvren/core/tools";
-import { createBindingResolver, isClientEndpointTool } from "./binding-resolver.js";
+import {
+  createBindingResolver,
+  isClientEndpointTool,
+} from "./binding-resolver.js";
 import { runWithTimeout } from "./execution-timeouts.js";
 import {
   buildSharedExports,

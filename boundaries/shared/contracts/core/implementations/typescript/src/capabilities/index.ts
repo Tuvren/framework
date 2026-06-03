@@ -25,6 +25,8 @@ export type {
   CapabilityObservation,
   CapabilityPolicyContext,
   CapabilityPolicyEngine,
+  ClientDispatchResult,
+  ClientEndpointBoundary,
   ClientEndpointCapabilityAdvertisement,
   ClientInvocationEnvelope,
   ClientReportedResult,

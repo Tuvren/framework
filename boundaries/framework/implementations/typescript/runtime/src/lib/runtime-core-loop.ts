@@ -53,11 +53,11 @@ export interface LoopState {
   activeDriverId: string;
   activeToolRegistry: ToolRegistry;
   carriedStateUpdates: ExtensionStateUpdate[];
+  /** Boundary for tuvren-client execution class dispatch. (KRT-AZ001) */
+  clientEndpointBoundary?: import("@tuvren/core/capabilities").ClientEndpointBoundary;
   enteredIterationLoop: boolean;
   /** Cached rate limiter for the active agent's server execution class. (AX003) */
   serverExecutionRateLimiter?: import("./server-rate-limiter.js").ServerRateLimiter;
-  /** Boundary for tuvren-client execution class dispatch. (KRT-AZ001) */
-  clientEndpointBoundary?: import("./client-endpoint-boundary.js").ClientEndpointBoundary;
 }
 
 export interface IterationPreparationResult {

@@ -18,60 +18,10 @@ import { TuvrenRuntimeError } from "@tuvren/core";
 import type {
   AttachedClientEndpoint,
   Binding,
+  ClientDispatchResult,
+  ClientEndpointBoundary,
 } from "@tuvren/core/capabilities";
 import { CAPABILITY_BINDING_UNAVAILABLE } from "@tuvren/core/errors";
-
-/**
- * The resolved dispatch result: the client-reported content and whether the
- * client treated the invocation as an error.
- */
-export interface ClientDispatchResult {
-  content: unknown;
-  isError: boolean;
-}
-
-/**
- * Runtime boundary for the Tuvren-client execution class (KRT-AZ001 / §4.21).
- *
- * Orchestrates capability invocations against attached client endpoints:
- * - Tracks which endpoint advertises which capability.
- * - Dispatches an invocation envelope with a monotonic leaseToken.
- * - Validates the echoed leaseToken on the result to detect stale late-completions.
- * - Returns null when the result is stale (mismatched token) rather than
- *   mutating the in-flight invocation.
- *
- * No credentials or environment secrets enter this boundary. The Binding it
- * produces never carries secret material.
- */
-export interface ClientEndpointBoundary {
-  /** Whether any attached endpoint advertises the given capabilityId. */
-  isAvailable(capabilityId: string): boolean;
-
-  /**
-   * Resolve a Binding for a capabilityId.
-   * Returns undefined when no endpoint advertises the capability.
-   */
-  resolveBinding(capabilityId: string): Binding | undefined;
-
-  /**
-   * Dispatch a capability invocation to the attached endpoint.
-   *
-   * Generates a fresh leaseToken for the envelope and validates the token in
-   * the client-reported result. Returns:
-   * - A ClientDispatchResult when the result is valid (leaseToken matches and
-   *   the endpoint is still attached).
-   * - null when the result is stale (token mismatch) — the caller must NOT
-   *   surface null as a successful result.
-   *
-   * Throws TuvrenRuntimeError(capability_binding_unavailable) when no endpoint
-   * is attached for the capability at dispatch time.
-   */
-  dispatch(
-    capabilityId: string,
-    callId: string,
-    input: unknown
-  ): Promise<ClientDispatchResult | null>;
-}
 
 // ---------------------------------------------------------------------------
 // Internal capability-to-endpoint index entry
@@ -102,13 +52,23 @@ class BasicClientEndpointBoundary implements ClientEndpointBoundary {
     }
   }
 
+  detach(endpointId: string): void {
+    for (const [capabilityId, entry] of this.capabilityIndex) {
+      if (entry.endpoint.endpointId === endpointId) {
+        this.capabilityIndex.delete(capabilityId);
+      }
+    }
+  }
+
   isAvailable(capabilityId: string): boolean {
     return this.capabilityIndex.has(capabilityId);
   }
 
   resolveBinding(capabilityId: string): Binding | undefined {
     const entry = this.capabilityIndex.get(capabilityId);
-    if (entry === undefined) return undefined;
+    if (entry === undefined) {
+      return undefined;
+    }
 
     const { endpoint, mcpServerName } = entry;
 

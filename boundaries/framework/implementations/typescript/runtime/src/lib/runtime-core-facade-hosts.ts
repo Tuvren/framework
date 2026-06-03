@@ -321,7 +321,11 @@ export function createRuntimeCoreFacadeHosts(
       cloneAgentConfigForRequest: (config) =>
         dependencies.cloneAgentConfigForRequest(config),
       completeTrackedRun: (...args) => dependencies.completeTrackedRun(...args),
-      createActiveToolRegistry: (runtimeTools, config, clientEndpointBoundary) =>
+      createActiveToolRegistry: (
+        runtimeTools,
+        config,
+        clientEndpointBoundary
+      ) =>
         createActiveToolRegistry(runtimeTools, config, clientEndpointBoundary),
       createClientEndpointBoundaryFromConfig,
       createContextEngineeringHelpers: (messageHashes, messages) =>

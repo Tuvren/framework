@@ -18,6 +18,7 @@ import type {
   AttachedClientEndpoint,
   CapabilityInvocationAttribution,
   CapabilityPolicyEngine,
+  ClientEndpointBoundary,
   ExecutionClass,
 } from "./capability-shapes.js";
 import type { EpochMs, HashString } from "./kernel-records.js";
@@ -961,6 +962,24 @@ export interface AgentConfig {
    * execution. (KRT-AZ001)
    */
   clientEndpoints?: AttachedClientEndpoint[];
+  /**
+   * Optional pre-built ClientEndpointBoundary for this agent.
+   *
+   * When set, the runtime uses this boundary directly instead of creating one
+   * from `clientEndpoints`. Use this escape hatch when the host needs to
+   * manage endpoint lifecycle explicitly — for example, to call `detach()` on
+   * the boundary after it was constructed so that subsequent invocations yield
+   * `capability_binding_unavailable` rather than dispatching. Useful for
+   * conformance tests and host scenarios where endpoints become unavailable
+   * after turn start. (KRT-AZ001, KRT-AZ003)
+   *
+   * If both `clientEndpoints` and `clientEndpointBoundary` are set,
+   * `clientEndpointBoundary` takes precedence for dispatch; `clientEndpoints`
+   * is still used to register the advertised capabilities in the tool registry
+   * (so the model can still "see" the capabilities even if the endpoint is
+   * unavailable at invocation time).
+   */
+  clientEndpointBoundary?: ClientEndpointBoundary;
   contextPolicy?: ContextPolicy;
   extensions?: TuvrenExtension[];
   loopPolicy?: LoopPolicy;

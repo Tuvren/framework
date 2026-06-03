@@ -301,3 +301,46 @@ export interface AttachedClientEndpoint {
   /** Dispatch a capability invocation. Must echo back the envelope's leaseToken. */
   dispatch(envelope: ClientInvocationEnvelope): Promise<ClientReportedResult>;
 }
+
+/**
+ * Runtime boundary for the Tuvren-client execution class (§4.21 / KRT-AZ001).
+ *
+ * The interface is defined here in @tuvren/core/capabilities so AgentConfig
+ * can reference it without a circular dependency. The implementation lives in
+ * @tuvren/runtime. Hosts that need dynamic endpoint lifecycle control
+ * (e.g. to signal unavailability for conformance testing) can obtain an
+ * instance via createClientEndpointBoundary from @tuvren/runtime and pass it
+ * as AgentConfig.clientEndpointBoundary.
+ */
+export interface ClientEndpointBoundary {
+  /**
+   * Remove all capabilities backed by the given endpointId from the boundary.
+   *
+   * After detach, `isAvailable` returns false for those capabilities. The
+   * tuvren-client `execute` closures check `isAvailable` before dispatching
+   * and surface `capability_binding_unavailable` when false. This models an
+   * attached endpoint that has become unavailable mid-turn. (KRT-AZ003)
+   */
+  detach(endpointId: string): void;
+  /**
+   * Dispatch a capability invocation to the attached endpoint. Generates a
+   * fresh leaseToken, validates the echoed token on the result, and returns
+   * null when the result is stale. Throws capability_binding_unavailable when
+   * no endpoint is attached for the capability.
+   */
+  dispatch(
+    capabilityId: string,
+    callId: string,
+    input: unknown
+  ): Promise<ClientDispatchResult | null>;
+  /** Whether any attached endpoint currently advertises the given capabilityId. */
+  isAvailable(capabilityId: string): boolean;
+  /** Resolve the Binding for a capabilityId, or undefined if unavailable. */
+  resolveBinding(capabilityId: string): Binding | undefined;
+}
+
+/** Resolved dispatch result: the client-reported content and error flag. */
+export interface ClientDispatchResult {
+  content: unknown;
+  isError: boolean;
+}

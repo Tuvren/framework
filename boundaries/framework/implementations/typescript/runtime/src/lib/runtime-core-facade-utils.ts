@@ -20,15 +20,12 @@ import {
   type HashString,
   TuvrenRuntimeError,
 } from "@tuvren/core";
+import type { ClientEndpointBoundary } from "@tuvren/core/capabilities";
 import type { AgentConfig, ContextManifest } from "@tuvren/core/execution";
 import type { TuvrenExtension } from "@tuvren/core/extensions";
 import type { ToolRegistry, TuvrenToolDefinition } from "@tuvren/core/tools";
 import { encodeDeterministicKernelRecord } from "@tuvren/kernel-protocol";
-import type {
-  ClientEndpointBoundary} from "./client-endpoint-boundary.js";
-import {
-  createClientEndpointBoundary,
-} from "./client-endpoint-boundary.js";
+import { createClientEndpointBoundary } from "./client-endpoint-boundary.js";
 import type { ExtensionStateUpdate } from "./extension-runtime.js";
 import type { RuntimeRunLivenessOptions } from "./runtime-core.js";
 import {
@@ -47,14 +44,25 @@ const readonlyDriverToolRegistryCache = new WeakMap<
 >();
 
 /**
- * Create the ClientEndpointBoundary for the given AgentConfig.
- * Returns undefined when no client endpoints are configured. (KRT-AZ001)
+ * Create or resolve the ClientEndpointBoundary for the given AgentConfig.
+ *
+ * When `config.clientEndpointBoundary` is provided, that pre-built boundary
+ * is used directly — this lets hosts call `boundary.detach()` before the turn
+ * to prove the `capability_binding_unavailable` typed outcome (KRT-AZ003).
+ * When absent, a fresh boundary is created from `config.clientEndpoints`.
+ * Returns undefined when no client endpoints or boundary are configured.
+ * (KRT-AZ001)
  */
 export function createClientEndpointBoundaryFromConfig(
   config: AgentConfig
 ): ClientEndpointBoundary | undefined {
+  if (config.clientEndpointBoundary !== undefined) {
+    return config.clientEndpointBoundary;
+  }
   const endpoints = config.clientEndpoints ?? [];
-  return endpoints.length > 0 ? createClientEndpointBoundary(endpoints) : undefined;
+  return endpoints.length > 0
+    ? createClientEndpointBoundary(endpoints)
+    : undefined;
 }
 
 /**
@@ -71,7 +79,10 @@ export function createActiveToolRegistry(
   clientEndpointBoundary?: ClientEndpointBoundary
 ): ToolRegistry {
   const clientEndpointTools = clientEndpointBoundary
-    ? buildClientEndpointTools(config.clientEndpoints ?? [], clientEndpointBoundary)
+    ? buildClientEndpointTools(
+        config.clientEndpoints ?? [],
+        clientEndpointBoundary
+      )
     : [];
 
   const activeTools = [

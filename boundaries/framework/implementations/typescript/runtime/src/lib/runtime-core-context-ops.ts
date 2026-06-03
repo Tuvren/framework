@@ -55,11 +55,11 @@ export interface RuntimeCoreContextOpsHost {
   createActiveToolRegistry(
     runtimeTools: RuntimeExecutionHandle["request"]["tools"] | undefined,
     config: AgentConfig,
-    clientEndpointBoundary?: import("./client-endpoint-boundary.js").ClientEndpointBoundary
+    clientEndpointBoundary?: import("@tuvren/core/capabilities").ClientEndpointBoundary
   ): ToolRegistry;
   createClientEndpointBoundaryFromConfig(
     config: AgentConfig
-  ): import("./client-endpoint-boundary.js").ClientEndpointBoundary | undefined;
+  ): import("@tuvren/core/capabilities").ClientEndpointBoundary | undefined;
   createContextEngineeringHelpers(
     messageHashes: HashString[],
     messages: RuntimeExecutionHandle["request"]["signal"]["parts"] extends never
@@ -226,7 +226,9 @@ export async function applyHandoff(
 ): Promise<{
   activeConfig: AgentConfig;
   activeToolRegistry: ToolRegistry;
-  clientEndpointBoundary: import("./client-endpoint-boundary.js").ClientEndpointBoundary | undefined;
+  clientEndpointBoundary:
+    | import("@tuvren/core/capabilities").ClientEndpointBoundary
+    | undefined;
 }> {
   const targetConfig = host.resolveAgentConfig(plan.targetAgent);
 
@@ -378,10 +380,15 @@ export async function applyHandoff(
     }
   );
 
-  const clientEndpointBoundary = host.createClientEndpointBoundaryFromConfig(targetConfig);
+  const clientEndpointBoundary =
+    host.createClientEndpointBoundaryFromConfig(targetConfig);
   return {
     activeConfig: targetConfig,
-    activeToolRegistry: host.createActiveToolRegistry(undefined, targetConfig, clientEndpointBoundary),
+    activeToolRegistry: host.createActiveToolRegistry(
+      undefined,
+      targetConfig,
+      clientEndpointBoundary
+    ),
     clientEndpointBoundary,
   };
 }

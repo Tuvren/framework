@@ -72,11 +72,11 @@ interface ContextOpsHostDependencies {
   createActiveToolRegistry(
     runtimeTools: ExecutionSessionRequest["tools"] | undefined,
     config: AgentConfig,
-    clientEndpointBoundary?: import("./client-endpoint-boundary.js").ClientEndpointBoundary
+    clientEndpointBoundary?: import("@tuvren/core/capabilities").ClientEndpointBoundary
   ): ToolRegistry;
   createClientEndpointBoundaryFromConfig(
     config: AgentConfig
-  ): import("./client-endpoint-boundary.js").ClientEndpointBoundary | undefined;
+  ): import("@tuvren/core/capabilities").ClientEndpointBoundary | undefined;
   createContextEngineeringHelpers(
     messageHashes: HashString[],
     messages: TuvrenMessage[]
@@ -305,11 +305,11 @@ interface StartupHostDependencies {
   createActiveToolRegistry(
     runtimeTools: ExecutionSessionRequest["tools"] | undefined,
     config: LoopState["activeConfig"],
-    clientEndpointBoundary?: import("./client-endpoint-boundary.js").ClientEndpointBoundary
+    clientEndpointBoundary?: import("@tuvren/core/capabilities").ClientEndpointBoundary
   ): ToolRegistry;
   createClientEndpointBoundaryFromConfig(
     config: LoopState["activeConfig"]
-  ): import("./client-endpoint-boundary.js").ClientEndpointBoundary | undefined;
+  ): import("@tuvren/core/capabilities").ClientEndpointBoundary | undefined;
   createId(): string;
   defaultDriverId: string;
   emitStateObservability(
@@ -491,7 +491,11 @@ export function buildRuntimeCoreContextOpsHost(
       ),
     completeTrackedRun: (...args) => dependencies.completeTrackedRun(...args),
     createActiveToolRegistry: (runtimeTools, config, clientEndpointBoundary) =>
-      dependencies.createActiveToolRegistry(runtimeTools, config, clientEndpointBoundary),
+      dependencies.createActiveToolRegistry(
+        runtimeTools,
+        config,
+        clientEndpointBoundary
+      ),
     createClientEndpointBoundaryFromConfig: (config) =>
       dependencies.createClientEndpointBoundaryFromConfig(config),
     createContextEngineeringHelpers: (messageHashes, messages) =>
@@ -708,7 +712,11 @@ export function buildRuntimeCoreStartupHost(
       dependencies.commitPendingExtensionStateUpdates(...args),
     completeExecution: (...args) => dependencies.completeExecution(...args),
     createActiveToolRegistry: (runtimeTools, config, clientEndpointBoundary) =>
-      dependencies.createActiveToolRegistry(runtimeTools, config, clientEndpointBoundary),
+      dependencies.createActiveToolRegistry(
+        runtimeTools,
+        config,
+        clientEndpointBoundary
+      ),
     createClientEndpointBoundaryFromConfig: (config) =>
       dependencies.createClientEndpointBoundaryFromConfig(config),
     createId: () => dependencies.createId(),
