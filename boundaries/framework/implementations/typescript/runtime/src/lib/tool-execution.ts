@@ -769,8 +769,11 @@ async function executeSingleTool(
 ): Promise<SingleToolOutcome> {
   // Idempotent retry per §4.21 / AX002. Non-idempotent tools are never
   // retried. maxRetries defaults to 1 when idempotent is true and unset.
+  // BB004: nonRetryable overrides idempotent: true — policy governs retry.
   const maxAttempts =
-    toolCall.tool.idempotent === true ? 1 + (toolCall.tool.maxRetries ?? 1) : 1;
+    toolCall.tool.idempotent === true && toolCall.tool.nonRetryable !== true
+      ? 1 + (toolCall.tool.maxRetries ?? 1)
+      : 1;
 
   let lastError: unknown;
 

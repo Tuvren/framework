@@ -943,3 +943,282 @@ describe("CapabilityPolicyEngine — BB003 user-presence and active-endpoint", (
     expect(decision.admitted).toBe(true);
   });
 });
+
+// ---------------------------------------------------------------------------
+// BB004: Idempotency/Retry and Credential-Boundary Policy Depth
+// ---------------------------------------------------------------------------
+
+describe("CapabilityPolicyEngine — BB004 credential-boundary dimension", () => {
+  const writeCapabilityId = "storage.write";
+  const readCapabilityId = "storage.read";
+  const openCapabilityId = "compute.run";
+
+  const capabilityMetadata = new Map([
+    [writeCapabilityId, { requiredCredentialScopes: ["write"] as const }],
+    [readCapabilityId, { requiredCredentialScopes: ["read"] as const }],
+    // openCapabilityId has no credential requirement
+  ]);
+
+  test("invocation: denied when required scope is absent from context", () => {
+    const engine = createCapabilityPolicyEngine();
+    const binding = makeBinding(writeCapabilityId);
+    const decision = engine.evaluateInvocation(binding, {
+      ...defaultContext,
+      availableCredentialScopes: ["read"],
+      capabilityMetadata,
+    });
+    expect(decision.admitted).toBe(false);
+  });
+
+  test("invocation: admitted when required scope is present", () => {
+    const engine = createCapabilityPolicyEngine();
+    const binding = makeBinding(writeCapabilityId);
+    const decision = engine.evaluateInvocation(binding, {
+      ...defaultContext,
+      availableCredentialScopes: ["read", "write"],
+      capabilityMetadata,
+    });
+    expect(decision.admitted).toBe(true);
+  });
+
+  test("invocation: admitted when availableCredentialScopes absent and no requirement", () => {
+    const engine = createCapabilityPolicyEngine();
+    const binding = makeBinding(openCapabilityId);
+    const decision = engine.evaluateInvocation(binding, {
+      ...defaultContext,
+      capabilityMetadata,
+    });
+    expect(decision.admitted).toBe(true);
+  });
+
+  test("invocation: denied when availableCredentialScopes is empty and scope required", () => {
+    const engine = createCapabilityPolicyEngine();
+    const binding = makeBinding(readCapabilityId);
+    const decision = engine.evaluateInvocation(binding, {
+      ...defaultContext,
+      availableCredentialScopes: [],
+      capabilityMetadata,
+    });
+    expect(decision.admitted).toBe(false);
+  });
+
+  test("invocation: credential denial carries a non-secret reason", () => {
+    const engine = createCapabilityPolicyEngine();
+    const binding = makeBinding(writeCapabilityId);
+    const decision = engine.evaluateInvocation(binding, {
+      ...defaultContext,
+      availableCredentialScopes: [],
+      capabilityMetadata,
+    });
+    expect(decision.admitted).toBe(false);
+    expect(typeof decision.reason).toBe("string");
+    expect((decision.reason ?? "").length).toBeGreaterThan(0);
+  });
+
+  test("invocation: capability violating credential boundary is denied rather than executed", async () => {
+    const secretToolName = "secret.access";
+    let toolExecuted = false;
+
+    const harness = createFakeKernelHarness();
+    const engine = createCapabilityPolicyEngine();
+
+    const driver: RuntimeDriver = {
+      id: "credential-driver",
+      async execute(context) {
+        if (!context.messages.some((m) => m.role === "tool")) {
+          return {
+            messages: [
+              assistantToolCalls([
+                { callId: "cred-call-1", input: {}, name: secretToolName },
+              ]),
+            ],
+            resolution: { type: "continue_iteration" as const },
+            toolExecutionMode: "parallel",
+          };
+        }
+        return {
+          messages: [assistantText("done")],
+          resolution: { reason: "done", type: "end_turn" as const },
+        };
+      },
+      async resume() {
+        throw new Error("not expected");
+      },
+    };
+
+    const runtime = createTuvrenRuntime({
+      defaultDriverId: "credential-driver",
+      driverRegistry: createBaseDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        capabilityPolicyEngine: engine,
+        name: "primary",
+        policyContextInputs: {
+          availableCredentialScopes: ["read"], // write scope absent
+        },
+        tools: [
+          {
+            description: "Requires write scope",
+            execute() {
+              toolExecuted = true;
+              return { ok: true };
+            },
+            inputSchema: { type: "object" },
+            name: secretToolName,
+            requiredCredentialScopes: ["write"],
+          },
+        ],
+      },
+      signal: textSignal("credential boundary test"),
+      threadId: thread.threadId,
+    });
+
+    const events = await collectEvents(handle.events());
+
+    const toolResultEvent = events.find((e) => e.type === "tool.result");
+    expect(toolResultEvent).toBeDefined();
+    expect(
+      (toolResultEvent as Record<string, unknown> | undefined)?.isError
+    ).toBe(true);
+    expect(toolExecuted).toBe(false);
+  });
+});
+
+describe("CapabilityPolicyEngine — BB004 non-retryable policy", () => {
+  test("wired: nonRetryable: true prevents retry even when idempotent: true", async () => {
+    const toolName = "non-retryable.op";
+    let attemptCount = 0;
+
+    const harness = createFakeKernelHarness();
+
+    const driver: RuntimeDriver = {
+      id: "retry-driver",
+      async execute(context) {
+        if (!context.messages.some((m) => m.role === "tool")) {
+          return {
+            messages: [
+              assistantToolCalls([
+                { callId: "retry-call-1", input: {}, name: toolName },
+              ]),
+            ],
+            resolution: { type: "continue_iteration" as const },
+            toolExecutionMode: "parallel",
+          };
+        }
+        return {
+          messages: [assistantText("done")],
+          resolution: { reason: "done", type: "end_turn" as const },
+        };
+      },
+      async resume() {
+        throw new Error("not expected");
+      },
+    };
+
+    const runtime = createTuvrenRuntime({
+      defaultDriverId: "retry-driver",
+      driverRegistry: createBaseDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        name: "primary",
+        tools: [
+          {
+            description: "Non-retryable despite idempotent",
+            execute() {
+              attemptCount += 1;
+              throw new Error("transient failure");
+            },
+            idempotent: true,
+            inputSchema: { type: "object" },
+            maxRetries: 3, // would normally retry 3 times
+            name: toolName,
+            nonRetryable: true, // policy governs: no retry
+          },
+        ],
+      },
+      signal: textSignal("non-retryable test"),
+      threadId: thread.threadId,
+    });
+
+    await collectEvents(handle.events());
+
+    // nonRetryable suppresses all retries — exactly one attempt expected
+    expect(attemptCount).toBe(1);
+  });
+
+  test("wired: idempotent: true without nonRetryable still retries normally", async () => {
+    const toolName = "retryable.op";
+    let attemptCount = 0;
+
+    const harness = createFakeKernelHarness();
+
+    const driver: RuntimeDriver = {
+      id: "normal-retry-driver",
+      async execute(context) {
+        if (!context.messages.some((m) => m.role === "tool")) {
+          return {
+            messages: [
+              assistantToolCalls([
+                { callId: "norm-call-1", input: {}, name: toolName },
+              ]),
+            ],
+            resolution: { type: "continue_iteration" as const },
+            toolExecutionMode: "parallel",
+          };
+        }
+        return {
+          messages: [assistantText("done")],
+          resolution: { reason: "done", type: "end_turn" as const },
+        };
+      },
+      async resume() {
+        throw new Error("not expected");
+      },
+    };
+
+    const runtime = createTuvrenRuntime({
+      defaultDriverId: "normal-retry-driver",
+      driverRegistry: createBaseDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        name: "primary",
+        tools: [
+          {
+            description: "Retryable tool",
+            execute() {
+              attemptCount += 1;
+              throw new Error("transient failure");
+            },
+            idempotent: true,
+            inputSchema: { type: "object" },
+            maxRetries: 1,
+            name: toolName,
+            // nonRetryable not set — normal retry applies
+          },
+        ],
+      },
+      signal: textSignal("normal retry test"),
+      threadId: thread.threadId,
+    });
+
+    await collectEvents(handle.events());
+
+    // 1 initial + 1 retry = 2 attempts expected
+    expect(attemptCount).toBe(2);
+  });
+});
