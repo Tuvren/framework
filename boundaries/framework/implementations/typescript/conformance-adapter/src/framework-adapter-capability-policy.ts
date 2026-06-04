@@ -247,18 +247,19 @@ export async function runCapabilityPolicyComposition(): Promise<AdapterProjectio
           hasMultiDimensionReason:
             (d1[0]?.reason ?? "").includes("residency") &&
             (d1[0]?.reason ?? "").includes("risk"),
+          // renamed from nonSecretReason — this field proves a reason string exists
+          // (non-emptiness), not the absence of secret material; name matches what the
+          // runner evaluates per AGENTS.md assertion-name discipline.
+          hasReason: (d1[0]?.reason ?? "").length > 0,
           multiDenyExposed: d1[0]?.exposed,
-          nonSecretReason: (d1[0]?.reason ?? "").length > 0,
-          reasonConsistent: d1[0]?.reason === d2[0]?.reason,
         },
         invocation: {
           deterministic: inv1.admitted === inv2.admitted,
           hasMultiDimensionReason:
             (inv1.reason ?? "").includes("residency") &&
             (inv1.reason ?? "").includes("credential"),
+          hasReason: (inv1.reason ?? "").length > 0,
           multiDenyAdmitted: inv1.admitted,
-          nonSecretReason: (inv1.reason ?? "").length > 0,
-          reasonConsistent: inv1.reason === inv2.reason,
         },
       },
     },

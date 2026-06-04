@@ -251,14 +251,14 @@
       "operation": "runtime.capability-policy.composition"
     },
     {
-      "checkId": "bb.bb005.composition-exposure-non-secret-reason",
+      "checkId": "bb.bb005.composition-exposure-has-reason",
       "evidence": [
-        "result.capabilityPolicy.composition.exposure.nonSecretReason"
+        "result.capabilityPolicy.composition.exposure.hasReason"
       ],
       "assertions": [
         {
           "kind": "resultField",
-          "field": "$.capabilityPolicy.composition.exposure.nonSecretReason",
+          "field": "$.capabilityPolicy.composition.exposure.hasReason",
           "equals": true
         }
       ],
@@ -307,14 +307,14 @@
       "operation": "runtime.capability-policy.composition"
     },
     {
-      "checkId": "bb.bb005.composition-invocation-non-secret-reason",
+      "checkId": "bb.bb005.composition-invocation-has-reason",
       "evidence": [
-        "result.capabilityPolicy.composition.invocation.nonSecretReason"
+        "result.capabilityPolicy.composition.invocation.hasReason"
       ],
       "assertions": [
         {
           "kind": "resultField",
-          "field": "$.capabilityPolicy.composition.invocation.nonSecretReason",
+          "field": "$.capabilityPolicy.composition.invocation.hasReason",
           "equals": true
         }
       ],
