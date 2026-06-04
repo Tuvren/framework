@@ -305,6 +305,38 @@
         }
       ],
       "operation": "runtime.invocation-lifecycle.cross-class"
+    },
+    {
+      "checkId": "ba.ba003.no-torn-invocation-record",
+      "evidence": [
+        "result.invocationLifecycle.serverErrorFailClean.toolStartCount",
+        "result.invocationLifecycle.serverErrorFailClean.toolResultCount",
+        "result.invocationLifecycle.clientUnavailableFailClean.toolStartCount",
+        "result.invocationLifecycle.clientUnavailableFailClean.toolResultCount"
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.invocationLifecycle.serverErrorFailClean.toolStartCount",
+          "equals": 1
+        },
+        {
+          "kind": "resultField",
+          "field": "$.invocationLifecycle.serverErrorFailClean.toolResultCount",
+          "equals": 1
+        },
+        {
+          "kind": "resultField",
+          "field": "$.invocationLifecycle.clientUnavailableFailClean.toolStartCount",
+          "equals": 1
+        },
+        {
+          "kind": "resultField",
+          "field": "$.invocationLifecycle.clientUnavailableFailClean.toolResultCount",
+          "equals": 1
+        }
+      ],
+      "operation": "runtime.invocation-lifecycle.cross-class"
     }
   ]
 }

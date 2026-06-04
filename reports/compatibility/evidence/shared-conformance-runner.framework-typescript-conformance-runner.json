@@ -3162,6 +3162,48 @@
     {
       "assertionResults": [
         {
+          "assertionId": "ba.ba003.no-torn-invocation-record.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba003.no-torn-invocation-record.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba003.no-torn-invocation-record.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba003.no-torn-invocation-record.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba003.no-torn-invocation-record.requiredEvidence.result.invocationLifecycle.clientUnavailableFailClean.toolResultCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba003.no-torn-invocation-record.requiredEvidence.result.invocationLifecycle.clientUnavailableFailClean.toolStartCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba003.no-torn-invocation-record.requiredEvidence.result.invocationLifecycle.serverErrorFailClean.toolResultCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba003.no-torn-invocation-record.requiredEvidence.result.invocationLifecycle.serverErrorFailClean.toolStartCount",
+          "status": "pass"
+        }
+      ],
+      "checkId": "ba.ba003.no-torn-invocation-record",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.invocation-lifecycle-observation"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "ba.ba003.provider-mediated-lifecycle-result-emitted.1.resultField",
           "status": "pass"
         },
@@ -8745,9 +8787,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 398,
-    "totalChecks": 410,
-    "applicableChecks": 398,
+    "passedChecks": 399,
+    "totalChecks": 411,
+    "applicableChecks": 399,
     "nonApplicableChecks": 12
   },
   "suiteId": "tuvren.framework.promoted-authority",

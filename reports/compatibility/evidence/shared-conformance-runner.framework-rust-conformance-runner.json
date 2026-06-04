@@ -168,6 +168,7 @@
     "ba.ba002.tuvren-client-no-audit-affordance",
     "ba.ba002.tuvren-server-full-affordances",
     "ba.ba002.tuvren-server-owner-is-tuvren",
+    "ba.ba003.no-torn-invocation-record",
     "ba.ba003.provider-mediated-lifecycle-result-emitted",
     "ba.ba003.stale-late-completion-is-error-not-success",
     "ba.ba003.tuvren-client-lifecycle-result-emitted",
@@ -430,9 +431,9 @@
   "summary": {
     "failedChecks": 0,
     "passedChecks": 0,
-    "totalChecks": 410,
+    "totalChecks": 411,
     "applicableChecks": 0,
-    "nonApplicableChecks": 410
+    "nonApplicableChecks": 411
   },
   "suiteId": "tuvren.framework.promoted-authority",
   "suiteVersion": "0.1.0"

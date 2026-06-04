@@ -163,6 +163,7 @@
             "ba.ba002.tuvren-client-no-audit-affordance",
             "ba.ba002.tuvren-server-full-affordances",
             "ba.ba002.tuvren-server-owner-is-tuvren",
+            "ba.ba003.no-torn-invocation-record",
             "ba.ba003.provider-mediated-lifecycle-result-emitted",
             "ba.ba003.stale-late-completion-is-error-not-success",
             "ba.ba003.tuvren-client-lifecycle-result-emitted",
@@ -408,9 +409,9 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 398,
-            "totalChecks": 410,
-            "applicableChecks": 398,
+            "passedChecks": 399,
+            "totalChecks": 411,
+            "applicableChecks": 399,
             "nonApplicableChecks": 12
           },
           "declaredCapabilities": [
@@ -451,9 +452,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 12,
-            "totalChecks": 410,
+            "totalChecks": 411,
             "applicableChecks": 12,
-            "nonApplicableChecks": 398
+            "nonApplicableChecks": 399
           },
           "declaredCapabilities": ["framework.batteries-included"],
           "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.framework-batteries-included-conformance-runner.json",
@@ -904,9 +905,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 0,
-            "totalChecks": 410,
+            "totalChecks": 411,
             "applicableChecks": 0,
-            "nonApplicableChecks": 410
+            "nonApplicableChecks": 411
           },
           "declaredCapabilities": [],
           "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.framework-rust-conformance-runner.json",

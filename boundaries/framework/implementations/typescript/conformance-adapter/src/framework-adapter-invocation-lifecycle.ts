@@ -437,6 +437,7 @@ export async function runInvocationLifecycleCrossClass(): Promise<AdapterProject
     threadId: unavailThread.threadId,
   });
   const unavailEvents = await collectValues(unavailHandle.events());
+  const unavailStarts = findEvents(unavailEvents, "tool.start");
   const unavailResults = findEvents(unavailEvents, "tool.result");
   const unavailResultEvent = unavailResults[0] as
     | Record<string, unknown>
@@ -508,6 +509,8 @@ export async function runInvocationLifecycleCrossClass(): Promise<AdapterProject
           resultIsError: errorResultEvent?.isError,
         },
         clientUnavailableFailClean: {
+          toolStartCount: unavailStarts.length,
+          toolResultCount: unavailResults.length,
           toolResultIsError: unavailResultEvent?.isError,
           toolResultCode: unavailOutput?.code,
         },
