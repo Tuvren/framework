@@ -20,6 +20,7 @@ import type {
   RuntimeResolution,
 } from "@tuvren/core/execution";
 import type { TuvrenMessage } from "@tuvren/core/messages";
+import { buildCapabilityMetadataFromTools } from "./capability-policy-engine.js";
 import { updateContextManifest } from "./context-manifest.js";
 import { runAfterIterationHooks } from "./extension-runtime.js";
 import type { HeadState, LoopState } from "./runtime-core-loop.js";
@@ -433,14 +434,28 @@ function createToolBatchEnvironment(
   iterationCount: number,
   runId: string
 ): ToolBatchEnvironment {
+  // BB005: include capability policy engine and context so the resume-path
+  // invocation check in resolveResumeDecision can re-evaluate policy when
+  // context may have changed between the initial pause and the resumed approval.
+  const policyEngine = loopState.activeConfig.capabilityPolicyEngine;
+  const policyCapabilityMetadata =
+    policyEngine === undefined
+      ? undefined
+      : buildCapabilityMetadataFromTools(loopState.activeToolRegistry.list());
+  const policyContextInputs =
+    loopState.activeConfig.policyContextInputs ?? undefined;
+
   return {
     activeAgent: loopState.activeConfig.name,
     branchId: handle.request.branchId,
+    capabilityPolicyEngine: policyEngine ?? undefined,
     extensions: loopState.activeConfig.extensions ?? [],
     iterationCount,
     manifest,
     maxParallelToolCalls: host.resolveActiveMaxParallelToolCalls(loopState),
     now: () => host.now(),
+    policyCapabilityMetadata,
+    policyContextInputs,
     publishCustom: (event) => {
       host.publishCustomEvent(handle, event, loopState);
     },

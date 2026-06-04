@@ -664,11 +664,44 @@ function resolveResumeDecision(
     };
   }
 
-  // Epic BB: add an evaluateInvocation check here mirroring resolveExecutableToolCall.
-  // With the baseline context-insensitive deny-list engine this is safe — a denied
-  // capability is rejected at the fresh-call stage and never enters the approval queue.
-  // A context-sensitive engine (e.g., one that checks lapsed permissions at invoke time)
-  // would bypass the gate on this resume path until the context dimensions are wired.
+  // BB005: re-evaluate invocation-time policy on the resume path to catch
+  // context-sensitive dimension changes between the initial pause and the
+  // resumed execution (e.g. lapsed credentials, changed residency context).
+  // The risk-based approval path (requiresApproval) is intentionally not
+  // re-raised here: the host has just approved this specific invocation,
+  // so we honour that approval and only check for hard denials.
+  if (environment.capabilityPolicyEngine !== undefined) {
+    const resolver = createBindingResolver();
+    const binding = resolver.resolveFromToolDefinition(tool);
+    const inputs = environment.policyContextInputs ?? {};
+    const policyContext = {
+      allowedResidencies: inputs.allowedResidencies,
+      availableCredentialScopes: inputs.availableCredentialScopes,
+      capabilityMetadata: environment.policyCapabilityMetadata,
+      modelId: "",
+      permissions: [] as string[],
+      providerId: "",
+      userPresent: inputs.userPresent,
+    };
+    const resumeDecision =
+      environment.capabilityPolicyEngine.evaluateInvocation(
+        binding,
+        policyContext
+      );
+    if (!resumeDecision.admitted) {
+      return {
+        result: createErrorToolResult(
+          {
+            callId: pendingToolCall.callId,
+            input: pendingToolCall.input,
+            name: pendingToolCall.name,
+            type: "tool_call",
+          },
+          resumeDecision.reason ?? "invocation denied by capability policy"
+        ),
+      };
+    }
+  }
 
   if (decision.type === "approve") {
     return {

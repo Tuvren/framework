@@ -1222,3 +1222,308 @@ describe("CapabilityPolicyEngine — BB004 non-retryable policy", () => {
     expect(attemptCount).toBe(2);
   });
 });
+
+// ---------------------------------------------------------------------------
+// BB005: Policy Composition and Precedence
+// ---------------------------------------------------------------------------
+
+describe("CapabilityPolicyEngine — BB005 composition and precedence", () => {
+  // --- Exposure-time composition ---
+
+  test("exposure: deny from any dimension is honored (multiple dimensions denied)", () => {
+    const engine = createCapabilityPolicyEngine({
+      maxExposedRiskClass: "medium",
+    });
+    const capabilityId = "risky.eu-tool";
+    const surface = makeSurface(capabilityId, capabilityId);
+    // Both residency and risk-class deny
+    const decisions = engine.evaluateExposure([surface], {
+      ...defaultContext,
+      allowedResidencies: ["us"],
+      capabilityMetadata: new Map([
+        [capabilityId, { requiredResidency: "eu", riskClass: "high" as const }],
+      ]),
+    });
+    expect(decisions[0]?.exposed).toBe(false);
+  });
+
+  test("exposure: composed reason includes all denying dimension messages", () => {
+    const engine = createCapabilityPolicyEngine({ maxExposedRiskClass: "low" });
+    const capabilityId = "multi-deny";
+    const surface = makeSurface(capabilityId, capabilityId);
+    const decisions = engine.evaluateExposure([surface], {
+      ...defaultContext,
+      allowedResidencies: ["us"],
+      capabilityMetadata: new Map([
+        [capabilityId, { requiredResidency: "eu", riskClass: "high" as const }],
+      ]),
+    });
+    const reason = decisions[0]?.reason ?? "";
+    // Both dimensions should contribute to the reason
+    expect(reason.length).toBeGreaterThan(0);
+    expect(reason.toLowerCase()).toContain("residency");
+    expect(reason.toLowerCase()).toContain("risk");
+  });
+
+  test("exposure: deterministic — same inputs produce same decision", () => {
+    const engine = createCapabilityPolicyEngine({
+      maxExposedRiskClass: "medium",
+    });
+    const capabilityId = "stable.tool";
+    const surface = makeSurface(capabilityId, capabilityId);
+    const ctx = {
+      ...defaultContext,
+      allowedResidencies: ["us"] as readonly string[],
+      capabilityMetadata: new Map([
+        [capabilityId, { riskClass: "high" as const }],
+      ]),
+    };
+    const d1 = engine.evaluateExposure([surface], ctx);
+    const d2 = engine.evaluateExposure([surface], ctx);
+    expect(d1[0]?.exposed).toBe(d2[0]?.exposed);
+    expect(d1[0]?.reason).toBe(d2[0]?.reason);
+  });
+
+  // --- Invocation-time composition ---
+
+  test("invocation: deny from any dimension is honored (residency + presence)", () => {
+    const engine = createCapabilityPolicyEngine();
+    const capabilityId = "multi-deny-invoke";
+    const binding = makeBinding(capabilityId);
+    const decision = engine.evaluateInvocation(binding, {
+      ...defaultContext,
+      allowedResidencies: ["us"],
+      capabilityMetadata: new Map([
+        [
+          capabilityId,
+          {
+            requiredResidency: "eu",
+            requiresUserPresence: true,
+          },
+        ],
+      ]),
+      userPresent: false,
+    });
+    expect(decision.admitted).toBe(false);
+  });
+
+  test("invocation: composed reason includes all denying dimension messages", () => {
+    const engine = createCapabilityPolicyEngine();
+    const capabilityId = "multi-deny-reason";
+    const binding = makeBinding(capabilityId);
+    const decision = engine.evaluateInvocation(binding, {
+      ...defaultContext,
+      allowedResidencies: ["us"],
+      availableCredentialScopes: [],
+      capabilityMetadata: new Map([
+        [
+          capabilityId,
+          {
+            requiredCredentialScopes: ["write"],
+            requiredResidency: "eu",
+          },
+        ],
+      ]),
+    });
+    const reason = decision.reason ?? "";
+    expect(reason.length).toBeGreaterThan(0);
+    expect(reason.toLowerCase()).toContain("residency");
+    expect(reason.toLowerCase()).toContain("credential");
+  });
+
+  test("invocation: deterministic — same inputs produce same decision", () => {
+    const engine = createCapabilityPolicyEngine();
+    const capabilityId = "stable-invoke";
+    const binding = makeBinding(capabilityId);
+    const ctx = {
+      ...defaultContext,
+      allowedResidencies: ["us"] as readonly string[],
+      capabilityMetadata: new Map([
+        [capabilityId, { requiredResidency: "eu" }],
+      ]),
+    };
+    const d1 = engine.evaluateInvocation(binding, ctx);
+    const d2 = engine.evaluateInvocation(binding, ctx);
+    expect(d1.admitted).toBe(d2.admitted);
+    expect(d1.reason).toBe(d2.reason);
+  });
+
+  test("invocation: non-secret reason never contains simulated secret values", () => {
+    const engine = createCapabilityPolicyEngine({
+      deniedCapabilityIds: new Set(["secret.key"]),
+    });
+    const binding = makeBinding("secret.key");
+    const decision = engine.evaluateInvocation(binding, defaultContext);
+    expect(decision.admitted).toBe(false);
+    // The reason must not contain any credential-like value
+    const reason = decision.reason ?? "";
+    expect(reason).not.toContain("bearer_token_abc123");
+    expect(reason).not.toContain("api_key_xyz");
+    expect(reason.length).toBeGreaterThan(0);
+  });
+
+  // --- Extension-contributed policy composition ---
+
+  test("extension-contributed engine: deny from extension engine is honored", () => {
+    // Simulate an extension-contributed policy engine that denies a specific capability.
+    // It should compose by being set as AgentConfig.capabilityPolicyEngine.
+    // Framework dimensions (deny-list) also apply independently.
+    const frameworkEngine = createCapabilityPolicyEngine({
+      deniedCapabilityIds: new Set(["framework.denied"]),
+    });
+
+    // Framework deny is honored for framework.denied
+    const frameworkDenied = frameworkEngine.evaluateInvocation(
+      makeBinding("framework.denied"),
+      defaultContext
+    );
+    expect(frameworkDenied.admitted).toBe(false);
+
+    // Extension-contributed deny (host wraps the engine) is honored for ext.denied
+    const extDeniedCapabilityId = "ext.denied";
+    const extensionEngine: import("@tuvren/core/capabilities").CapabilityPolicyEngine =
+      {
+        evaluateExposure: (surfaces, ctx) =>
+          frameworkEngine.evaluateExposure(surfaces, ctx).map((d) => ({
+            ...d,
+            exposed:
+              d.surfaceName === extDeniedCapabilityId ? false : d.exposed,
+            reason:
+              d.surfaceName === extDeniedCapabilityId
+                ? "denied by extension policy"
+                : d.reason,
+          })),
+        evaluateInvocation: (binding, ctx) => {
+          if (binding.capabilityId === extDeniedCapabilityId) {
+            return {
+              admitted: false,
+              capabilityId: binding.capabilityId,
+              executionClass: binding.executionClass,
+              reason: "denied by extension policy",
+            };
+          }
+          return frameworkEngine.evaluateInvocation(binding, ctx);
+        },
+      };
+
+    const extDenied = extensionEngine.evaluateInvocation(
+      makeBinding(extDeniedCapabilityId),
+      defaultContext
+    );
+    expect(extDenied.admitted).toBe(false);
+    expect(extDenied.reason).toContain("extension policy");
+
+    // Framework-permitted, extension-permitted capability passes
+    const permitted = extensionEngine.evaluateInvocation(
+      makeBinding("normal.tool"),
+      defaultContext
+    );
+    expect(permitted.admitted).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// BB005: Resume-path invocation check
+// ---------------------------------------------------------------------------
+
+describe("CapabilityPolicyEngine — BB005 resume-path policy check", () => {
+  test("wired: policy denial on resume path blocks execution after approval", async () => {
+    const toolName = "resume.denied";
+    let toolExecuted = false;
+
+    const harness = createFakeKernelHarness();
+
+    // Engine starts permissive, then is replaced to be restrictive
+    // Simulate lapsed context: after pause, policy changes to deny
+    let denyOnResume = false;
+
+    const mockEngine: import("@tuvren/core/capabilities").CapabilityPolicyEngine =
+      {
+        evaluateExposure: (surfaces, _ctx) =>
+          surfaces.map((s) => ({ exposed: true, surfaceName: s.name })),
+        evaluateInvocation: (binding, _ctx) => ({
+          admitted: !denyOnResume,
+          capabilityId: binding.capabilityId,
+          executionClass: binding.executionClass,
+          reason: denyOnResume ? "context expired after pause" : undefined,
+        }),
+      };
+
+    const driver: RuntimeDriver = {
+      id: "resume-deny-driver",
+      async execute(context) {
+        if (!context.messages.some((m) => m.role === "tool")) {
+          return {
+            messages: [
+              assistantToolCalls([
+                { callId: "resume-call-1", input: {}, name: toolName },
+              ]),
+            ],
+            resolution: { type: "continue_iteration" as const },
+            toolExecutionMode: "parallel",
+          };
+        }
+        return {
+          messages: [assistantText("done")],
+          resolution: { reason: "done", type: "end_turn" as const },
+        };
+      },
+      async resume() {
+        throw new Error("not expected");
+      },
+    };
+
+    const runtime = createTuvrenRuntime({
+      defaultDriverId: "resume-deny-driver",
+      driverRegistry: createBaseDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+
+    const thread = await runtime.createThread({});
+    // First turn: tool pauses for approval (via tool.approval)
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        capabilityPolicyEngine: mockEngine,
+        name: "primary",
+        tools: [
+          {
+            approval: true, // always requires approval
+            description: "Tool that requires approval",
+            execute() {
+              toolExecuted = true;
+              return { ok: true };
+            },
+            inputSchema: { type: "object" },
+            name: toolName,
+          },
+        ],
+      },
+      signal: textSignal("resume policy test"),
+      threadId: thread.threadId,
+    });
+
+    await collectEvents(handle.events());
+    expect(handle.status().phase).toBe("paused");
+
+    // Simulate context change: policy now denies on resume
+    denyOnResume = true;
+
+    // Resume with approve
+    const resumedHandle = handle.resolveApproval({
+      decisions: [{ callId: "resume-call-1", type: "approve" }],
+    });
+    const resumeEvents = await collectEvents(resumedHandle.events());
+
+    // Tool should be denied (not executed) because policy denied on resume
+    expect(toolExecuted).toBe(false);
+    // The resumed turn should have produced an error tool result
+    const toolResultEvent = resumeEvents.find((e) => e.type === "tool.result");
+    expect(toolResultEvent).toBeDefined();
+    expect(
+      (toolResultEvent as Record<string, unknown> | undefined)?.isError
+    ).toBe(true);
+    // And the turn must not be stuck in paused state
+    expect(resumedHandle.status().phase).not.toBe("paused");
+  });
+});
