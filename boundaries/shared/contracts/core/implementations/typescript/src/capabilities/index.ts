@@ -35,6 +35,7 @@ export type {
   ExecutionClass,
   ExposureDecision,
   InvocationDecision,
+  InvocationLifecycleState,
   InvocationOwner,
   ToolSurface,
   TuvrenSandboxExecutor,

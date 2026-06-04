@@ -228,6 +228,17 @@ interface RuntimeIterationPhaseDependencies {
   ): TuvrenStreamEvent[];
   materializeDriver(driverId: string): KrakenDriver;
   now(): number;
+  /**
+   * Publish through the full runtime event + telemetry path (KRT-BA002).
+   * The iteration phase uses this for provider-tool attribution events so the
+   * telemetry emitter observes the same tool.start/tool.result events as the
+   * canonical stream.
+   */
+  publishEvent(
+    handle: RuntimeExecutionHandle,
+    event: TuvrenStreamEvent,
+    loopState: LoopState
+  ): void;
   reconcileCheckpointedPauseResolution(
     checkpointedPause: boolean,
     runId: string,
@@ -389,6 +400,7 @@ export async function executeRuntimeIterationPhaseFacade(
         dependencies.reconcileCheckpointedPauseResolution(...args),
       stageDriverMessages: (...args) =>
         dependencies.stageDriverMessages(...args),
+      publishEvent: (...args) => dependencies.publishEvent(...args),
     },
     {
       handle,

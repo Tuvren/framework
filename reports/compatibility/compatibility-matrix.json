@@ -150,6 +150,25 @@
             "event-stream-ext.sse.resumed-approval-turn-source-events-include-text-delta",
             "event-stream-ext.sse.resumed-approval-turn-source-thread-id-present",
             "event-stream-ext.sse.resumed-approval-turn-thread-id-present",
+            "ba.ba001.policy-denied-lifecycle-no-start-error-result",
+            "ba.ba001.provider-mediated-lifecycle-start-emitted",
+            "ba.ba001.provider-native-lifecycle-result-emitted",
+            "ba.ba001.provider-native-lifecycle-start-emitted",
+            "ba.ba001.tuvren-client-lifecycle-start-emitted",
+            "ba.ba001.tuvren-server-lifecycle-result-emitted",
+            "ba.ba001.tuvren-server-lifecycle-start-emitted",
+            "ba.ba002.provider-mediated-owner-is-provider",
+            "ba.ba002.provider-native-no-audit-affordance",
+            "ba.ba002.provider-native-owner-is-provider",
+            "ba.ba002.tuvren-client-no-audit-affordance",
+            "ba.ba002.tuvren-server-full-affordances",
+            "ba.ba002.tuvren-server-owner-is-tuvren",
+            "ba.ba003.no-torn-invocation-record",
+            "ba.ba003.provider-mediated-lifecycle-result-emitted",
+            "ba.ba003.stale-late-completion-is-error-not-success",
+            "ba.ba003.tuvren-client-lifecycle-result-emitted",
+            "ba.ba003.tuvren-client-unavailable-fails-clean",
+            "ba.ba003.tuvren-server-fails-clean-on-error",
             "react-driver-callable.after-iteration",
             "react-driver-callable.around-model",
             "react-driver-callable.around-tool",
@@ -390,9 +409,9 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 380,
-            "totalChecks": 392,
-            "applicableChecks": 380,
+            "passedChecks": 399,
+            "totalChecks": 411,
+            "applicableChecks": 399,
             "nonApplicableChecks": 12
           },
           "declaredCapabilities": [
@@ -433,9 +452,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 12,
-            "totalChecks": 392,
+            "totalChecks": 411,
             "applicableChecks": 12,
-            "nonApplicableChecks": 380
+            "nonApplicableChecks": 399
           },
           "declaredCapabilities": ["framework.batteries-included"],
           "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.framework-batteries-included-conformance-runner.json",
@@ -886,9 +905,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 0,
-            "totalChecks": 392,
+            "totalChecks": 411,
             "applicableChecks": 0,
-            "nonApplicableChecks": 392
+            "nonApplicableChecks": 411
           },
           "declaredCapabilities": [],
           "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.framework-rust-conformance-runner.json",

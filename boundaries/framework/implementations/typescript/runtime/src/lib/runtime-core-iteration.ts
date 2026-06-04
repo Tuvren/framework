@@ -214,6 +214,22 @@ export interface RuntimeCoreIterationHost {
   ): TuvrenStreamEvent[];
   materializeDriver(driverId: string): KrakenDriver;
   now(): number;
+  /**
+   * Publish an event through the full runtime event + telemetry path. Used by
+   * provider-tool attribution to ensure telemetry observes the same events as
+   * the canonical stream (KRT-BA002: taxonomy consistent across stream and telemetry).
+   */
+  publishEvent(
+    handle: RuntimeExecutionHandle,
+    event: TuvrenStreamEvent,
+    loopState: {
+      activeConfig: AgentConfig;
+      activeDriverId: string;
+      activeToolRegistry: ToolRegistry;
+      carriedStateUpdates: ExtensionStateUpdate[];
+      enteredIterationLoop: boolean;
+    }
+  ): void;
   reconcileCheckpointedPauseResolution(
     checkpointedPause: boolean,
     runId: string,
@@ -376,9 +392,9 @@ export function extractToolCallsFromMessages(
  * remain isolated (AY005).
  */
 function emitProviderToolAttributionEvents(
-  handle: RuntimeExecutionHandle,
   driverMessages: TuvrenMessage[],
-  now: () => number
+  now: () => number,
+  publishEvent: (event: TuvrenStreamEvent) => void
 ): void {
   for (const message of driverMessages) {
     if (message.role !== "tool") {
@@ -409,15 +425,18 @@ function emitProviderToolAttributionEvents(
         observation,
         owner: "provider",
       };
-      handle.publish({
+      publishEvent({
         attribution,
         callId: part.callId,
-        input: undefined,
+        // Provider-owned inputs are not available to the framework; null is
+        // used as the JSON-serializable sentinel for "input not observed"
+        // so it passes assertTuvrenStreamEvent's isSerializableContractValue check.
+        input: null,
         name: part.name,
         timestamp: now(),
         type: "tool.start",
       });
-      handle.publish({
+      publishEvent({
         attribution,
         callId: part.callId,
         isError: part.isError,
@@ -576,8 +595,10 @@ export async function executeIterationPhase(
     driverMessages,
     input.iterationCount
   );
-  emitProviderToolAttributionEvents(input.handle, driverMessages, () =>
-    host.now()
+  emitProviderToolAttributionEvents(
+    driverMessages,
+    () => host.now(),
+    (event) => host.publishEvent(input.handle, event, input.loopState)
   );
   const driverResponse = synthesizeResponse(
     driverMessages,

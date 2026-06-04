@@ -2872,6 +2872,460 @@
     {
       "assertionResults": [
         {
+          "assertionId": "ba.ba001.policy-denied-lifecycle-no-start-error-result.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba001.policy-denied-lifecycle-no-start-error-result.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba001.policy-denied-lifecycle-no-start-error-result.requiredEvidence.result.invocationLifecycle.policyDenied.resultIsError",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba001.policy-denied-lifecycle-no-start-error-result.requiredEvidence.result.invocationLifecycle.policyDenied.toolStartCount",
+          "status": "pass"
+        }
+      ],
+      "checkId": "ba.ba001.policy-denied-lifecycle-no-start-error-result",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.invocation-lifecycle-observation"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "ba.ba001.provider-mediated-lifecycle-start-emitted.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba001.provider-mediated-lifecycle-start-emitted.requiredEvidence.result.invocationLifecycle.providerMediated.toolStartCount",
+          "status": "pass"
+        }
+      ],
+      "checkId": "ba.ba001.provider-mediated-lifecycle-start-emitted",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.invocation-lifecycle-observation"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "ba.ba001.provider-native-lifecycle-result-emitted.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba001.provider-native-lifecycle-result-emitted.requiredEvidence.result.invocationLifecycle.providerNative.toolResultCount",
+          "status": "pass"
+        }
+      ],
+      "checkId": "ba.ba001.provider-native-lifecycle-result-emitted",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.invocation-lifecycle-observation"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "ba.ba001.provider-native-lifecycle-start-emitted.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba001.provider-native-lifecycle-start-emitted.requiredEvidence.result.invocationLifecycle.providerNative.toolStartCount",
+          "status": "pass"
+        }
+      ],
+      "checkId": "ba.ba001.provider-native-lifecycle-start-emitted",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.invocation-lifecycle-observation"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "ba.ba001.tuvren-client-lifecycle-start-emitted.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba001.tuvren-client-lifecycle-start-emitted.requiredEvidence.result.invocationLifecycle.tuvrenClient.toolStartCount",
+          "status": "pass"
+        }
+      ],
+      "checkId": "ba.ba001.tuvren-client-lifecycle-start-emitted",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.invocation-lifecycle-observation"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "ba.ba001.tuvren-server-lifecycle-result-emitted.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba001.tuvren-server-lifecycle-result-emitted.requiredEvidence.result.invocationLifecycle.tuvrenServer.toolResultCount",
+          "status": "pass"
+        }
+      ],
+      "checkId": "ba.ba001.tuvren-server-lifecycle-result-emitted",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.invocation-lifecycle-observation"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "ba.ba001.tuvren-server-lifecycle-start-emitted.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba001.tuvren-server-lifecycle-start-emitted.requiredEvidence.result.invocationLifecycle.tuvrenServer.toolStartCount",
+          "status": "pass"
+        }
+      ],
+      "checkId": "ba.ba001.tuvren-server-lifecycle-start-emitted",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.invocation-lifecycle-observation"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "ba.ba002.provider-mediated-owner-is-provider.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba002.provider-mediated-owner-is-provider.requiredEvidence.result.invocationLifecycle.providerMediated.owner",
+          "status": "pass"
+        }
+      ],
+      "checkId": "ba.ba002.provider-mediated-owner-is-provider",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.invocation-lifecycle-observation"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "ba.ba002.provider-native-no-audit-affordance.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba002.provider-native-no-audit-affordance.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba002.provider-native-no-audit-affordance.requiredEvidence.result.invocationLifecycle.providerNative.canAudit",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba002.provider-native-no-audit-affordance.requiredEvidence.result.invocationLifecycle.providerNative.toolAuditCount",
+          "status": "pass"
+        }
+      ],
+      "checkId": "ba.ba002.provider-native-no-audit-affordance",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.invocation-lifecycle-observation"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "ba.ba002.provider-native-owner-is-provider.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba002.provider-native-owner-is-provider.requiredEvidence.result.invocationLifecycle.providerNative.owner",
+          "status": "pass"
+        }
+      ],
+      "checkId": "ba.ba002.provider-native-owner-is-provider",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.invocation-lifecycle-observation"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "ba.ba002.tuvren-client-no-audit-affordance.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba002.tuvren-client-no-audit-affordance.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba002.tuvren-client-no-audit-affordance.requiredEvidence.result.invocationLifecycle.tuvrenClient.canAudit",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba002.tuvren-client-no-audit-affordance.requiredEvidence.result.invocationLifecycle.tuvrenClient.toolAuditCount",
+          "status": "pass"
+        }
+      ],
+      "checkId": "ba.ba002.tuvren-client-no-audit-affordance",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.invocation-lifecycle-observation"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "ba.ba002.tuvren-server-full-affordances.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba002.tuvren-server-full-affordances.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba002.tuvren-server-full-affordances.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba002.tuvren-server-full-affordances.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba002.tuvren-server-full-affordances.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba002.tuvren-server-full-affordances.requiredEvidence.result.invocationLifecycle.tuvrenServer.canAudit",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba002.tuvren-server-full-affordances.requiredEvidence.result.invocationLifecycle.tuvrenServer.canCancel",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba002.tuvren-server-full-affordances.requiredEvidence.result.invocationLifecycle.tuvrenServer.canResume",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba002.tuvren-server-full-affordances.requiredEvidence.result.invocationLifecycle.tuvrenServer.canRetry",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba002.tuvren-server-full-affordances.requiredEvidence.result.invocationLifecycle.tuvrenServer.toolAuditCount",
+          "status": "pass"
+        }
+      ],
+      "checkId": "ba.ba002.tuvren-server-full-affordances",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.invocation-lifecycle-observation"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "ba.ba002.tuvren-server-owner-is-tuvren.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba002.tuvren-server-owner-is-tuvren.requiredEvidence.result.invocationLifecycle.tuvrenServer.owner",
+          "status": "pass"
+        }
+      ],
+      "checkId": "ba.ba002.tuvren-server-owner-is-tuvren",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.invocation-lifecycle-observation"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "ba.ba003.no-torn-invocation-record.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba003.no-torn-invocation-record.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba003.no-torn-invocation-record.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba003.no-torn-invocation-record.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba003.no-torn-invocation-record.requiredEvidence.result.invocationLifecycle.clientUnavailableFailClean.toolResultCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba003.no-torn-invocation-record.requiredEvidence.result.invocationLifecycle.clientUnavailableFailClean.toolStartCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba003.no-torn-invocation-record.requiredEvidence.result.invocationLifecycle.serverErrorFailClean.toolResultCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba003.no-torn-invocation-record.requiredEvidence.result.invocationLifecycle.serverErrorFailClean.toolStartCount",
+          "status": "pass"
+        }
+      ],
+      "checkId": "ba.ba003.no-torn-invocation-record",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.invocation-lifecycle-observation"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "ba.ba003.provider-mediated-lifecycle-result-emitted.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba003.provider-mediated-lifecycle-result-emitted.requiredEvidence.result.invocationLifecycle.providerMediated.toolResultCount",
+          "status": "pass"
+        }
+      ],
+      "checkId": "ba.ba003.provider-mediated-lifecycle-result-emitted",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.invocation-lifecycle-observation"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "ba.ba003.stale-late-completion-is-error-not-success.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba003.stale-late-completion-is-error-not-success.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba003.stale-late-completion-is-error-not-success.requiredEvidence.result.invocationLifecycle.staleLateCompletion.toolResultCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba003.stale-late-completion-is-error-not-success.requiredEvidence.result.invocationLifecycle.staleLateCompletion.toolResultIsError",
+          "status": "pass"
+        }
+      ],
+      "checkId": "ba.ba003.stale-late-completion-is-error-not-success",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.invocation-lifecycle-observation"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "ba.ba003.tuvren-client-lifecycle-result-emitted.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba003.tuvren-client-lifecycle-result-emitted.requiredEvidence.result.invocationLifecycle.tuvrenClient.toolResultCount",
+          "status": "pass"
+        }
+      ],
+      "checkId": "ba.ba003.tuvren-client-lifecycle-result-emitted",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.invocation-lifecycle-observation"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "ba.ba003.tuvren-client-unavailable-fails-clean.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba003.tuvren-client-unavailable-fails-clean.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba003.tuvren-client-unavailable-fails-clean.requiredEvidence.result.invocationLifecycle.clientUnavailableFailClean.toolResultCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba003.tuvren-client-unavailable-fails-clean.requiredEvidence.result.invocationLifecycle.clientUnavailableFailClean.toolResultIsError",
+          "status": "pass"
+        }
+      ],
+      "checkId": "ba.ba003.tuvren-client-unavailable-fails-clean",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.invocation-lifecycle-observation"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "ba.ba003.tuvren-server-fails-clean-on-error.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba003.tuvren-server-fails-clean-on-error.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba003.tuvren-server-fails-clean-on-error.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba003.tuvren-server-fails-clean-on-error.requiredEvidence.result.invocationLifecycle.serverErrorFailClean.resultIsError",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba003.tuvren-server-fails-clean-on-error.requiredEvidence.result.invocationLifecycle.serverErrorFailClean.toolResultCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "ba.ba003.tuvren-server-fails-clean-on-error.requiredEvidence.result.invocationLifecycle.serverErrorFailClean.toolStartCount",
+          "status": "pass"
+        }
+      ],
+      "checkId": "ba.ba003.tuvren-server-fails-clean-on-error",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.invocation-lifecycle-observation"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "react-driver-callable.after-iteration.1.resultField",
           "status": "pass"
         },
@@ -8333,9 +8787,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 380,
-    "totalChecks": 392,
-    "applicableChecks": 380,
+    "passedChecks": 399,
+    "totalChecks": 411,
+    "applicableChecks": 399,
     "nonApplicableChecks": 12
   },
   "suiteId": "tuvren.framework.promoted-authority",

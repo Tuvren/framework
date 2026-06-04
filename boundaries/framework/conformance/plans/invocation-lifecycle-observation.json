@@ -1,0 +1,342 @@
+{
+  "planId": "tuvren.framework.invocation-lifecycle-observation",
+  "planVersion": "0.1.0",
+  "packetId": "tuvren.shared.core",
+  "applicability": {
+    "capabilities": ["framework.runtime-api"]
+  },
+  "checks": [
+    {
+      "checkId": "ba.ba001.tuvren-server-lifecycle-start-emitted",
+      "evidence": ["result.invocationLifecycle.tuvrenServer.toolStartCount"],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.invocationLifecycle.tuvrenServer.toolStartCount",
+          "equals": 1
+        }
+      ],
+      "operation": "runtime.invocation-lifecycle.cross-class"
+    },
+    {
+      "checkId": "ba.ba001.tuvren-server-lifecycle-result-emitted",
+      "evidence": ["result.invocationLifecycle.tuvrenServer.toolResultCount"],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.invocationLifecycle.tuvrenServer.toolResultCount",
+          "equals": 1
+        }
+      ],
+      "operation": "runtime.invocation-lifecycle.cross-class"
+    },
+    {
+      "checkId": "ba.ba001.provider-native-lifecycle-start-emitted",
+      "evidence": ["result.invocationLifecycle.providerNative.toolStartCount"],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.invocationLifecycle.providerNative.toolStartCount",
+          "equals": 1
+        }
+      ],
+      "operation": "runtime.invocation-lifecycle.cross-class"
+    },
+    {
+      "checkId": "ba.ba001.provider-native-lifecycle-result-emitted",
+      "evidence": ["result.invocationLifecycle.providerNative.toolResultCount"],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.invocationLifecycle.providerNative.toolResultCount",
+          "equals": 1
+        }
+      ],
+      "operation": "runtime.invocation-lifecycle.cross-class"
+    },
+    {
+      "checkId": "ba.ba001.provider-mediated-lifecycle-start-emitted",
+      "evidence": [
+        "result.invocationLifecycle.providerMediated.toolStartCount"
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.invocationLifecycle.providerMediated.toolStartCount",
+          "equals": 1
+        }
+      ],
+      "operation": "runtime.invocation-lifecycle.cross-class"
+    },
+    {
+      "checkId": "ba.ba001.tuvren-client-lifecycle-start-emitted",
+      "evidence": ["result.invocationLifecycle.tuvrenClient.toolStartCount"],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.invocationLifecycle.tuvrenClient.toolStartCount",
+          "equals": 1
+        }
+      ],
+      "operation": "runtime.invocation-lifecycle.cross-class"
+    },
+    {
+      "checkId": "ba.ba001.policy-denied-lifecycle-no-start-error-result",
+      "evidence": [
+        "result.invocationLifecycle.policyDenied.toolStartCount",
+        "result.invocationLifecycle.policyDenied.resultIsError"
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.invocationLifecycle.policyDenied.toolStartCount",
+          "equals": 0
+        },
+        {
+          "kind": "resultField",
+          "field": "$.invocationLifecycle.policyDenied.resultIsError",
+          "equals": true
+        }
+      ],
+      "operation": "runtime.invocation-lifecycle.cross-class"
+    },
+    {
+      "checkId": "ba.ba002.provider-native-owner-is-provider",
+      "evidence": ["result.invocationLifecycle.providerNative.owner"],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.invocationLifecycle.providerNative.owner",
+          "equals": "provider"
+        }
+      ],
+      "operation": "runtime.invocation-lifecycle.cross-class"
+    },
+    {
+      "checkId": "ba.ba002.tuvren-server-owner-is-tuvren",
+      "evidence": ["result.invocationLifecycle.tuvrenServer.owner"],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.invocationLifecycle.tuvrenServer.owner",
+          "equals": "tuvren"
+        }
+      ],
+      "operation": "runtime.invocation-lifecycle.cross-class"
+    },
+    {
+      "checkId": "ba.ba002.tuvren-server-full-affordances",
+      "evidence": [
+        "result.invocationLifecycle.tuvrenServer.canAudit",
+        "result.invocationLifecycle.tuvrenServer.canCancel",
+        "result.invocationLifecycle.tuvrenServer.canResume",
+        "result.invocationLifecycle.tuvrenServer.canRetry",
+        "result.invocationLifecycle.tuvrenServer.toolAuditCount"
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.invocationLifecycle.tuvrenServer.canAudit",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.invocationLifecycle.tuvrenServer.canCancel",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.invocationLifecycle.tuvrenServer.canResume",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.invocationLifecycle.tuvrenServer.canRetry",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.invocationLifecycle.tuvrenServer.toolAuditCount",
+          "equals": 1
+        }
+      ],
+      "operation": "runtime.invocation-lifecycle.cross-class"
+    },
+    {
+      "checkId": "ba.ba002.provider-native-no-audit-affordance",
+      "evidence": [
+        "result.invocationLifecycle.providerNative.canAudit",
+        "result.invocationLifecycle.providerNative.toolAuditCount"
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.invocationLifecycle.providerNative.canAudit",
+          "equals": false
+        },
+        {
+          "kind": "resultField",
+          "field": "$.invocationLifecycle.providerNative.toolAuditCount",
+          "equals": 0
+        }
+      ],
+      "operation": "runtime.invocation-lifecycle.cross-class"
+    },
+    {
+      "checkId": "ba.ba002.tuvren-client-no-audit-affordance",
+      "evidence": [
+        "result.invocationLifecycle.tuvrenClient.canAudit",
+        "result.invocationLifecycle.tuvrenClient.toolAuditCount"
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.invocationLifecycle.tuvrenClient.canAudit",
+          "equals": false
+        },
+        {
+          "kind": "resultField",
+          "field": "$.invocationLifecycle.tuvrenClient.toolAuditCount",
+          "equals": 0
+        }
+      ],
+      "operation": "runtime.invocation-lifecycle.cross-class"
+    },
+    {
+      "checkId": "ba.ba003.stale-late-completion-is-error-not-success",
+      "evidence": [
+        "result.invocationLifecycle.staleLateCompletion.toolResultIsError",
+        "result.invocationLifecycle.staleLateCompletion.toolResultCode"
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.invocationLifecycle.staleLateCompletion.toolResultIsError",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.invocationLifecycle.staleLateCompletion.toolResultCode",
+          "equals": "capability_result_stale"
+        }
+      ],
+      "operation": "runtime.invocation-lifecycle.cross-class"
+    },
+    {
+      "checkId": "ba.ba003.tuvren-server-fails-clean-on-error",
+      "evidence": [
+        "result.invocationLifecycle.serverErrorFailClean.toolStartCount",
+        "result.invocationLifecycle.serverErrorFailClean.toolResultCount",
+        "result.invocationLifecycle.serverErrorFailClean.resultIsError"
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.invocationLifecycle.serverErrorFailClean.toolStartCount",
+          "equals": 1
+        },
+        {
+          "kind": "resultField",
+          "field": "$.invocationLifecycle.serverErrorFailClean.toolResultCount",
+          "equals": 1
+        },
+        {
+          "kind": "resultField",
+          "field": "$.invocationLifecycle.serverErrorFailClean.resultIsError",
+          "equals": true
+        }
+      ],
+      "operation": "runtime.invocation-lifecycle.cross-class"
+    },
+    {
+      "checkId": "ba.ba003.tuvren-client-unavailable-fails-clean",
+      "evidence": [
+        "result.invocationLifecycle.clientUnavailableFailClean.toolResultIsError",
+        "result.invocationLifecycle.clientUnavailableFailClean.toolResultCode"
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.invocationLifecycle.clientUnavailableFailClean.toolResultIsError",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.invocationLifecycle.clientUnavailableFailClean.toolResultCode",
+          "equals": "capability_binding_unavailable"
+        }
+      ],
+      "operation": "runtime.invocation-lifecycle.cross-class"
+    },
+    {
+      "checkId": "ba.ba003.provider-mediated-lifecycle-result-emitted",
+      "evidence": [
+        "result.invocationLifecycle.providerMediated.toolResultCount"
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.invocationLifecycle.providerMediated.toolResultCount",
+          "equals": 1
+        }
+      ],
+      "operation": "runtime.invocation-lifecycle.cross-class"
+    },
+    {
+      "checkId": "ba.ba003.tuvren-client-lifecycle-result-emitted",
+      "evidence": ["result.invocationLifecycle.tuvrenClient.toolResultCount"],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.invocationLifecycle.tuvrenClient.toolResultCount",
+          "equals": 1
+        }
+      ],
+      "operation": "runtime.invocation-lifecycle.cross-class"
+    },
+    {
+      "checkId": "ba.ba002.provider-mediated-owner-is-provider",
+      "evidence": ["result.invocationLifecycle.providerMediated.owner"],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.invocationLifecycle.providerMediated.owner",
+          "equals": "provider"
+        }
+      ],
+      "operation": "runtime.invocation-lifecycle.cross-class"
+    },
+    {
+      "checkId": "ba.ba003.no-torn-invocation-record",
+      "evidence": [
+        "result.invocationLifecycle.serverErrorFailClean.toolStartCount",
+        "result.invocationLifecycle.serverErrorFailClean.toolResultCount",
+        "result.invocationLifecycle.clientUnavailableFailClean.toolStartCount",
+        "result.invocationLifecycle.clientUnavailableFailClean.toolResultCount"
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.invocationLifecycle.serverErrorFailClean.toolStartCount",
+          "equals": 1
+        },
+        {
+          "kind": "resultField",
+          "field": "$.invocationLifecycle.serverErrorFailClean.toolResultCount",
+          "equals": 1
+        },
+        {
+          "kind": "resultField",
+          "field": "$.invocationLifecycle.clientUnavailableFailClean.toolStartCount",
+          "equals": 1
+        },
+        {
+          "kind": "resultField",
+          "field": "$.invocationLifecycle.clientUnavailableFailClean.toolResultCount",
+          "equals": 1
+        }
+      ],
+      "operation": "runtime.invocation-lifecycle.cross-class"
+    }
+  ]
+}

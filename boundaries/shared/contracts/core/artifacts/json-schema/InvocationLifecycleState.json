@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/shared/core/InvocationLifecycleState.json",
+  "type": "string",
+  "enum": [
+    "resolved",
+    "policy-admitted",
+    "dispatched",
+    "completed",
+    "failed",
+    "ignored"
+  ],
+  "description": "Uniform cross-class invocation lifecycle state per KRT-BA001 / ADR-046 §4.21. Every model-visible tool call flows through this lifecycle regardless of execution class."
+}

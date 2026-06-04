@@ -41,6 +41,7 @@ import {
 import { createFrameworkAdapterDriver } from "./framework-adapter-driver.ts";
 import { createFrameworkAdapterEventStream } from "./framework-adapter-event-stream.ts";
 import { createFrameworkAdapterEventStreamSse } from "./framework-adapter-event-stream-sse.ts";
+import { runInvocationLifecycleCrossClass } from "./framework-adapter-invocation-lifecycle.ts";
 import { createFrameworkAdapterOrchestration } from "./framework-adapter-orchestration.ts";
 import { createFrameworkAdapterProvingHost } from "./framework-adapter-proving-host.ts";
 import type {
@@ -378,6 +379,8 @@ export class TypeScriptFrameworkAdapter implements ImplementationAdapter {
         );
       case "runtime.capability-orchestration.policy-decisions":
         return runCapabilityOrchestrationPolicyDecisions();
+      case "runtime.invocation-lifecycle.cross-class":
+        return runInvocationLifecycleCrossClass();
       case "runtime.tuvren-client.lifecycle":
         return runTuvrenClientLifecycle();
       case "runtime.tuvren-server.lifecycle":

@@ -288,7 +288,9 @@ describe("KRT-AY005 — providerContinuity not in emitted events (event-emitter 
         e.attribution !== null &&
         (e.attribution as Record<string, unknown>).owner === "provider"
     );
-    // tool.start input must be undefined — emitter does not spread providerMetadata.
-    expect(providerStart?.input).toBeUndefined();
+    // tool.start input is null — the "not observed" sentinel used so the event
+    // passes assertTuvrenStreamEvent validation (BA002). Asserting null (not
+    // undefined) locks in the exact post-BA002 contract.
+    expect(providerStart?.input).toBe(null);
   });
 });
