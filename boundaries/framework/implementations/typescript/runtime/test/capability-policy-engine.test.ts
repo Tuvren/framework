@@ -730,3 +730,80 @@ describe("CapabilityPolicyEngine — BB002 risk-classification dimension", () =>
     expect(decision.requiresApproval).toBeUndefined();
   });
 });
+
+// ---------------------------------------------------------------------------
+// BB002: Wired risk-approval gate — policy requiresApproval pauses execution
+// ---------------------------------------------------------------------------
+
+describe("CapabilityPolicyEngine — BB002 wired risk-approval gate", () => {
+  test("wired: high-risk capability with requireApprovalForRiskClass pauses the turn", async () => {
+    const highRiskToolName = "dangerous.delete";
+    let toolExecuted = false;
+
+    const harness = createFakeKernelHarness();
+    const engine = createCapabilityPolicyEngine({
+      requireApprovalForRiskClass: "high",
+    });
+
+    const driver = {
+      id: "risk-approval-driver",
+      async execute(context: Parameters<RuntimeDriver["execute"]>[0]) {
+        if (!context.messages.some((m) => m.role === "tool")) {
+          return {
+            messages: [
+              assistantToolCalls([
+                { callId: "risk-call-1", input: {}, name: highRiskToolName },
+              ]),
+            ],
+            resolution: { type: "continue_iteration" as const },
+            toolExecutionMode: "parallel",
+          };
+        }
+        return {
+          messages: [assistantText("done")],
+          resolution: { reason: "done", type: "end_turn" as const },
+        };
+      },
+      async resume() {
+        throw new Error("resume not expected in this test");
+      },
+    } satisfies RuntimeDriver;
+
+    const runtime = createTuvrenRuntime({
+      defaultDriverId: "risk-approval-driver",
+      driverRegistry: createBaseDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        capabilityPolicyEngine: engine,
+        name: "primary",
+        tools: [
+          {
+            description: "High-risk dangerous tool",
+            execute() {
+              toolExecuted = true;
+              return { deleted: true };
+            },
+            inputSchema: { type: "object" },
+            name: highRiskToolName,
+            riskClass: "high",
+          },
+        ],
+      },
+      signal: textSignal("risk approval gate test"),
+      threadId: thread.threadId,
+    });
+    await collectEvents(handle.events());
+
+    // The turn should pause awaiting approval rather than executing the tool
+    const status = handle.status();
+    expect(status.phase).toBe("paused");
+    expect(toolExecuted).toBe(false);
+    // An approval request should be present in the status
+    expect(status.approval).toBeDefined();
+  });
+});
