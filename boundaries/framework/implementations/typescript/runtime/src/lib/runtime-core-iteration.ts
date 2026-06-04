@@ -394,7 +394,7 @@ export function extractToolCallsFromMessages(
 function emitProviderToolAttributionEvents(
   driverMessages: TuvrenMessage[],
   now: () => number,
-  publishEvent: (event: import("@tuvren/core/events").TuvrenStreamEvent) => void
+  publishEvent: (event: TuvrenStreamEvent) => void
 ): void {
   for (const message of driverMessages) {
     if (message.role !== "tool") {
