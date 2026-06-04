@@ -37,6 +37,7 @@ export type {
   InvocationDecision,
   InvocationLifecycleState,
   InvocationOwner,
+  PolicyCapabilityMetadata,
   ToolSurface,
   TuvrenSandboxExecutor,
 } from "../lib/capability-shapes.js";

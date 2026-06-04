@@ -403,3 +403,190 @@ describe("CapabilityPolicyEngine — wired invocation-time denial", () => {
     expect(permittedExecuted.value).toBe(true);
   });
 });
+
+// ---------------------------------------------------------------------------
+// BB001: Data-Residency Policy Dimension
+// ---------------------------------------------------------------------------
+
+describe("CapabilityPolicyEngine — BB001 data-residency dimension", () => {
+  const residencyContext: CapabilityPolicyContext = {
+    ...defaultContext,
+    allowedResidencies: ["us"],
+  };
+
+  const euCapabilityId = "data.eu-only";
+  const usCapabilityId = "data.us-compatible";
+  const noResidencyCapabilityId = "data.no-residency";
+
+  const capabilityMetadata = new Map([
+    [euCapabilityId, { requiredResidency: "eu" }],
+    [usCapabilityId, { requiredResidency: "us" }],
+    // no entry for noResidencyCapabilityId
+  ]);
+
+  const euSurface = makeSurface(euCapabilityId, euCapabilityId);
+  const usSurface = makeSurface(usCapabilityId, usCapabilityId);
+  const noResidencySurface = makeSurface(
+    noResidencyCapabilityId,
+    noResidencyCapabilityId
+  );
+
+  test("exposure: surface bound to disallowed residency is withheld", () => {
+    const engine = createCapabilityPolicyEngine();
+    const decisions = engine.evaluateExposure(
+      [euSurface],
+      { ...residencyContext, capabilityMetadata }
+    );
+    expect(decisions[0]?.exposed).toBe(false);
+  });
+
+  test("exposure: surface bound to allowed residency is exposed", () => {
+    const engine = createCapabilityPolicyEngine();
+    const decisions = engine.evaluateExposure(
+      [usSurface],
+      { ...residencyContext, capabilityMetadata }
+    );
+    expect(decisions[0]?.exposed).toBe(true);
+  });
+
+  test("exposure: surface with no residency requirement is exposed regardless of allowedResidencies", () => {
+    const engine = createCapabilityPolicyEngine();
+    const decisions = engine.evaluateExposure(
+      [noResidencySurface],
+      { ...residencyContext, capabilityMetadata }
+    );
+    expect(decisions[0]?.exposed).toBe(true);
+  });
+
+  test("exposure: without allowedResidencies in context, all surfaces pass", () => {
+    const engine = createCapabilityPolicyEngine();
+    const decisions = engine.evaluateExposure(
+      [euSurface, usSurface],
+      { ...defaultContext, capabilityMetadata }
+    );
+    expect(decisions.every((d) => d.exposed)).toBe(true);
+  });
+
+  test("exposure: denial carries a non-secret reason", () => {
+    const engine = createCapabilityPolicyEngine();
+    const decisions = engine.evaluateExposure(
+      [euSurface],
+      { ...residencyContext, capabilityMetadata }
+    );
+    const denied = decisions.find((d) => !d.exposed);
+    expect(typeof denied?.reason).toBe("string");
+    expect((denied?.reason ?? "").length).toBeGreaterThan(0);
+  });
+
+  test("invocation: capability bound to disallowed residency is denied", () => {
+    const engine = createCapabilityPolicyEngine();
+    const binding = makeBinding(euCapabilityId);
+    const decision = engine.evaluateInvocation(binding, {
+      ...residencyContext,
+      capabilityMetadata,
+    });
+    expect(decision.admitted).toBe(false);
+  });
+
+  test("invocation: capability bound to allowed residency is admitted", () => {
+    const engine = createCapabilityPolicyEngine();
+    const binding = makeBinding(usCapabilityId);
+    const decision = engine.evaluateInvocation(binding, {
+      ...residencyContext,
+      capabilityMetadata,
+    });
+    expect(decision.admitted).toBe(true);
+  });
+
+  test("invocation: capability with no residency requirement is admitted", () => {
+    const engine = createCapabilityPolicyEngine();
+    const binding = makeBinding(noResidencyCapabilityId);
+    const decision = engine.evaluateInvocation(binding, {
+      ...residencyContext,
+      capabilityMetadata,
+    });
+    expect(decision.admitted).toBe(true);
+  });
+
+  test("invocation: denial carries a non-secret reason", () => {
+    const engine = createCapabilityPolicyEngine();
+    const binding = makeBinding(euCapabilityId);
+    const decision = engine.evaluateInvocation(binding, {
+      ...residencyContext,
+      capabilityMetadata,
+    });
+    expect(decision.admitted).toBe(false);
+    expect(typeof decision.reason).toBe("string");
+    expect((decision.reason ?? "").length).toBeGreaterThan(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// BB001: Exposure-time wiring — denied surfaces not presented to model
+// ---------------------------------------------------------------------------
+
+describe("CapabilityPolicyEngine — BB001 exposure-time wiring", () => {
+  test("exposure-denied surface is not visible to the driver tool registry", async () => {
+    const euToolName = "eu-data-tool";
+    const usToolName = "us-data-tool";
+    const seenToolNames: string[] = [];
+
+    const harness = createFakeKernelHarness();
+    const engine = createCapabilityPolicyEngine();
+
+    const driver: RuntimeDriver = {
+      id: "exposure-wiring-driver",
+      async execute(context) {
+        // Record what tools the driver sees
+        seenToolNames.push(...context.toolRegistry.list().map((t) => t.name));
+        return {
+          messages: [assistantText("done")],
+          resolution: { reason: "done", type: "end_turn" },
+        };
+      },
+      async resume() {
+        throw new Error("resume not expected");
+      },
+    };
+
+    const runtime = createTuvrenRuntime({
+      defaultDriverId: "exposure-wiring-driver",
+      driverRegistry: createBaseDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        capabilityPolicyEngine: engine,
+        name: "primary",
+        policyContextInputs: {
+          allowedResidencies: ["us"],
+        },
+        tools: [
+          {
+            description: "EU-only tool",
+            execute: () => ({ ok: true }),
+            inputSchema: { type: "object" },
+            name: euToolName,
+            requiredResidency: "eu",
+          },
+          {
+            description: "US-compatible tool",
+            execute: () => ({ ok: true }),
+            inputSchema: { type: "object" },
+            name: usToolName,
+            requiredResidency: "us",
+          },
+        ],
+      },
+      signal: textSignal("exposure wiring test"),
+      threadId: thread.threadId,
+    });
+    await collectEvents(handle.events());
+
+    expect(seenToolNames).not.toContain(euToolName);
+    expect(seenToolNames).toContain(usToolName);
+  });
+});

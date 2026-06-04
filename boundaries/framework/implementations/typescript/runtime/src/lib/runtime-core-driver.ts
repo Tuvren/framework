@@ -30,6 +30,9 @@ import type {
 } from "@tuvren/core/messages";
 import type { TuvrenModelResponse } from "@tuvren/core/provider";
 import type { ToolRegistry } from "@tuvren/core/tools";
+import {
+  buildCapabilityMetadataFromTools,
+} from "./capability-policy-engine.js";
 import { runAfterIterationHooks } from "./extension-runtime.js";
 import type { HeadState, LoopState } from "./runtime-core-loop.js";
 import type { LoopOutcome } from "./runtime-core-recovery.js";
@@ -39,12 +42,47 @@ import {
   createFrozenSnapshot,
   normalizeError,
 } from "./runtime-core-shared.js";
+import { isClientEndpointTool } from "./binding-resolver.js";
 import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
 import {
   executeToolBatch,
   type ToolBatchOutcome,
   type ToolExecutionMode,
 } from "./tool-execution.js";
+
+// ---------------------------------------------------------------------------
+// Exposure-time filtering helpers (BB001)
+// ---------------------------------------------------------------------------
+
+function buildUnavailableCapabilityIds(
+  tools: ReturnType<ToolRegistry["list"]>,
+  boundary:
+    | import("@tuvren/core/capabilities").ClientEndpointBoundary
+    | undefined
+): ReadonlySet<string> | undefined {
+  if (boundary === undefined) return undefined;
+  const unavailable = new Set<string>();
+  for (const tool of tools) {
+    if (isClientEndpointTool(tool) && !boundary.isAvailable(tool.name)) {
+      unavailable.add(tool.name);
+    }
+  }
+  return unavailable.size > 0 ? unavailable : undefined;
+}
+
+function createFilteredToolRegistry(
+  base: ToolRegistry,
+  filteredTools: ReturnType<ToolRegistry["list"]>
+): ToolRegistry {
+  const byName = new Map(filteredTools.map((t) => [t.name, t]));
+  return {
+    get: (name) => byName.get(name),
+    has: (name) => byName.has(name),
+    list: () => [...filteredTools],
+    register: (tool) => base.register(tool),
+    toDefinitions: () => base.toDefinitions().filter((d) => byName.has(d.name)),
+  };
+}
 
 export interface RuntimeCoreDriverHost {
   completeIterationRun(
@@ -141,8 +179,55 @@ export function createDriverExecutionContext(
   iterationCount: number,
   emittedDriverEvents: TuvrenStreamEvent[]
 ): DriverExecutionContext {
+  // BB001: Apply exposure-time policy filtering before building the readonly
+  // driver snapshot. When a policy engine is configured, evaluate exposure
+  // decisions over all surfaces and filter out denied tools so the driver
+  // (and the model via the provider bridge) never sees withheld capabilities.
+  let registryForDriver = loopState.activeToolRegistry;
+  const policyEngine = loopState.activeConfig.capabilityPolicyEngine;
+  if (policyEngine !== undefined) {
+    const allTools = loopState.activeToolRegistry.list();
+    const surfaces = allTools.map((tool) => ({
+      capabilityId: tool.name,
+      description: tool.description,
+      inputSchema: { type: "object" as const },
+      name: tool.name,
+    }));
+    const policyContextInputs =
+      loopState.activeConfig.policyContextInputs ?? {};
+    const capabilityMetadata = buildCapabilityMetadataFromTools(allTools);
+    const exposureContext = {
+      allowedResidencies: policyContextInputs.allowedResidencies,
+      availableCredentialScopes:
+        policyContextInputs.availableCredentialScopes,
+      capabilityMetadata,
+      modelId:
+        typeof loopState.activeConfig.model === "string"
+          ? loopState.activeConfig.model
+          : "",
+      permissions: [],
+      providerId: "",
+      unavailableCapabilityIds: buildUnavailableCapabilityIds(
+        allTools,
+        loopState.clientEndpointBoundary
+      ),
+      userPresent: policyContextInputs.userPresent,
+    };
+    const decisions = policyEngine.evaluateExposure(surfaces, exposureContext);
+    const exposedNames = new Set(
+      decisions.filter((d) => d.exposed).map((d) => d.surfaceName)
+    );
+    if (exposedNames.size < allTools.length) {
+      const filteredTools = allTools.filter((t) => exposedNames.has(t.name));
+      registryForDriver = createFilteredToolRegistry(
+        loopState.activeToolRegistry,
+        filteredTools
+      );
+    }
+  }
+
   const toolRegistrySnapshot = host.createReadonlyDriverToolRegistry(
-    loopState.activeToolRegistry
+    registryForDriver
   );
 
   return {

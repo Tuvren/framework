@@ -712,6 +712,37 @@ export interface TuvrenToolDefinition {
    * rather than consuming the retry budget.
    */
   outputSchema?: TuvrenJsonSchema | CustomSchema;
+  // ── BB001–BB004: capability policy fields ────────────────────────────────
+  /**
+   * Data residency zone that this tool's binding processes data in. The
+   * runtime enforces that invocations are only admitted when the residency is
+   * in the policy context's allowedResidencies. BB001.
+   */
+  requiredResidency?: string;
+  /**
+   * Risk classification for this capability. The runtime uses this to drive
+   * exposure and invocation policy (e.g. requiring approval for high-risk
+   * capabilities). BB002.
+   */
+  riskClass?: "low" | "medium" | "high";
+  /**
+   * Whether explicit user presence is required at invocation time. When true
+   * and the policy context's userPresent is false, the invocation is denied.
+   * BB003.
+   */
+  requiresUserPresence?: boolean;
+  /**
+   * Credential scopes required for this capability's invocation. The invocation
+   * is denied when not all listed scopes are in the policy context's
+   * availableCredentialScopes. BB004.
+   */
+  requiredCredentialScopes?: readonly string[];
+  /**
+   * When true, the framework must not retry this capability even when
+   * idempotent is true. Overrides the tool-level idempotency opt-in for the
+   * retry budget. BB004.
+   */
+  nonRetryable?: boolean;
   timeout?: number;
 }
 
@@ -933,18 +964,37 @@ export interface ServerExecutionConfig {
   rateLimit?: ServerExecutionRateLimitConfig;
 }
 
+/**
+ * Host-configurable inputs to the Capability Policy Context for the wired
+ * exposure-time and invocation-time policy checks. These session-level values
+ * are injected into the CapabilityPolicyContext that the runtime assembles
+ * before each engine call. All fields are optional; omitted fields are absent
+ * in the context (which means the corresponding policy dimension does not
+ * apply). Added in Epic BB.
+ */
+export interface CapabilityPolicyContextInputs {
+  /** Allowed data-residency zones for this agent's turns. BB001. */
+  allowedResidencies?: readonly string[];
+  /**
+   * Credential scopes available in this agent's invocation context. BB004.
+   * The runtime passes these to the engine; a capability whose
+   * requiredCredentialScopes are not all present here is denied.
+   */
+  availableCredentialScopes?: readonly string[];
+  /**
+   * Whether a user is actively present in this session. BB003.
+   * Capabilities that declare requiresUserPresence are denied at invocation
+   * when this is false or absent.
+   */
+  userPresent?: boolean;
+}
+
 export interface AgentConfig {
   /**
    * Optional capability policy engine per ADR-046 §4.21. When set, the
-   * framework evaluates invocation-time policy before each tool call; denied
-   * invocations surface as `tool.result` with `isError: true` rather than
-   * executing. When absent, all invocations are admitted.
-   *
-   * Note: the policy context passed to the engine (modelId, providerId,
-   * permissions) is not yet populated — those dimensions land in Epic BB.
-   * The baseline `createCapabilityPolicyEngine` is context-insensitive and
-   * works correctly; a context-sensitive engine wired here before Epic BB
-   * will receive empty values for those fields.
+   * framework evaluates exposure-time and invocation-time policy; denied
+   * invocations surface as `tool.result` with `isError: true`. When absent,
+   * all invocations are admitted. Exposure filtering is active in Epic BB.
    */
   capabilityPolicyEngine?: CapabilityPolicyEngine;
   /**
@@ -1030,6 +1080,14 @@ export interface AgentConfig {
       ): Promise<unknown> | unknown;
     }
   >;
+  /**
+   * Host-configurable inputs to the Capability Policy Context. The runtime
+   * uses these to populate the CapabilityPolicyContext for both the
+   * exposure-time and invocation-time engine calls. Omitting this field means
+   * the corresponding BB policy dimensions (residency, presence, credential
+   * boundary) are not evaluated for this agent's turns. BB001–BB004.
+   */
+  policyContextInputs?: CapabilityPolicyContextInputs;
   /**
    * Server execution class configuration for this agent. Controls per-tenant
    * rate limiting of Tuvren-server invocations. (AX003)

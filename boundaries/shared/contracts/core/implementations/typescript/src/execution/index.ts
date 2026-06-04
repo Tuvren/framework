@@ -29,6 +29,7 @@ export type {
   AfterIterationContext,
   AfterIterationHandler,
   AgentConfig,
+  CapabilityPolicyContextInputs,
   AroundModelContext,
   AroundModelHandler,
   AroundModelResult,

@@ -26,6 +26,7 @@ import type {
   RuntimeResolution,
 } from "@tuvren/core/execution";
 import { TUVREN_SANDBOX_ENDPOINT_ID_PREFIX } from "./binding-resolver.js";
+import { buildCapabilityMetadataFromTools } from "./capability-policy-engine.js";
 import type { HeadState, LoopState } from "./runtime-core-loop.js";
 import { formatToolResultTaskId } from "./runtime-core-response.js";
 import { normalizeError } from "./runtime-core-shared.js";
@@ -102,11 +103,22 @@ export function createToolBatchEnvironment(
       createServerRateLimiter(rateLimitConfig);
   }
 
+  // BB001–BB004: build capability metadata and expose policy context inputs
+  // for the wired invocation-time policy check in resolveExecutableToolCall.
+  const policyEngine = loopState.activeConfig.capabilityPolicyEngine;
+  const policyCapabilityMetadata =
+    policyEngine !== undefined
+      ? buildCapabilityMetadataFromTools(loopState.activeToolRegistry.list())
+      : undefined;
+  const policyContextInputs =
+    loopState.activeConfig.policyContextInputs ?? undefined;
+
   return {
     activeAgent: loopState.activeConfig.name,
     branchId: handle.request.branchId,
-    capabilityPolicyEngine:
-      loopState.activeConfig.capabilityPolicyEngine ?? undefined,
+    capabilityPolicyEngine: policyEngine ?? undefined,
+    policyCapabilityMetadata,
+    policyContextInputs,
     extensions: loopState.activeConfig.extensions ?? [],
     iterationCount,
     manifest,

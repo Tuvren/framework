@@ -92,6 +92,21 @@ export interface ToolBatchEnvironment {
    * being executed. When absent, all invocations are admitted (default).
    */
   capabilityPolicyEngine?: CapabilityPolicyEngine;
+  /**
+   * Per-capability policy metadata keyed by capabilityId. Built by the runtime
+   * from TuvrenToolDefinition policy fields for the wired invocation-time check.
+   * Populated when capabilityPolicyEngine is set. BB001–BB004.
+   */
+  policyCapabilityMetadata?: ReadonlyMap<
+    string,
+    import("@tuvren/core/capabilities").PolicyCapabilityMetadata
+  >;
+  /**
+   * Session-level policy context inputs from AgentConfig.policyContextInputs.
+   * Used to populate the CapabilityPolicyContext for the wired invocation-time
+   * check. BB001–BB004.
+   */
+  policyContextInputs?: import("@tuvren/core/execution").CapabilityPolicyContextInputs;
   extensions: TuvrenExtension[];
   iterationCount: number;
   manifest: ContextManifest;
@@ -489,17 +504,19 @@ async function resolveExecutableToolCall(
     };
   }
 
-  // Invocation-time policy check per ADR-046 §4.21.
+  // Invocation-time policy check per ADR-046 §4.21 (Epic BB: context populated).
   if (environment.capabilityPolicyEngine !== undefined) {
     const resolver = createBindingResolver();
     const binding = resolver.resolveFromToolDefinition(tool);
-    // Context dimensions (modelId, providerId, permissions) are populated in
-    // Epic BB. The baseline engine is context-insensitive; a context-sensitive
-    // engine wired before Epic BB would receive empty values here.
+    const inputs = environment.policyContextInputs ?? {};
     const policyContext = {
+      allowedResidencies: inputs.allowedResidencies,
+      availableCredentialScopes: inputs.availableCredentialScopes,
+      capabilityMetadata: environment.policyCapabilityMetadata,
       modelId: "",
       permissions: [] as string[],
       providerId: "",
+      userPresent: inputs.userPresent,
     };
     const decision = environment.capabilityPolicyEngine.evaluateInvocation(
       binding,

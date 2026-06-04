@@ -206,15 +206,75 @@ export interface CapabilityInvocationAttribution {
 // ---------------------------------------------------------------------------
 
 /**
+ * Per-capability policy metadata used by the Capability Policy Engine at each
+ * decision point. The runtime builds this from TuvrenToolDefinition policy
+ * fields for the wired path; hosts may pre-populate for standalone engine
+ * calls. All fields are optional — capabilities without a given field are not
+ * subject to that dimension's policy check. Added in Epic BB (BB001–BB004).
+ */
+export interface PolicyCapabilityMetadata {
+  /** Required credential scopes to invoke this capability. BB004. */
+  requiredCredentialScopes?: readonly string[];
+  /** Data residency zone this capability's binding processes data in. BB001. */
+  requiredResidency?: string;
+  /** Whether an active (attached) endpoint is required for exposure. BB003. */
+  requiresActiveEndpoint?: boolean;
+  /** Whether explicit user presence is required at invocation time. BB003. */
+  requiresUserPresence?: boolean;
+  /** Risk classification for capability policy checks. BB002. */
+  riskClass?: "low" | "medium" | "high";
+  /**
+   * When true, the framework must not retry this capability even if the tool
+   * definition declares idempotent: true. BB004.
+   */
+  nonRetryable?: boolean;
+}
+
+/**
  * Context provided to the Capability Policy Engine at each decision point.
- * Covers the dimensions named in §4.21. Full depth (data-residency, risk,
- * presence, credential boundary, idempotency/retry) lands in Epic BB.
+ * Covers all dimensions named in §4.21 per Epic BB.
  */
 export interface CapabilityPolicyContext {
   modelId: string;
   /** User/org permission tokens present for this invocation. */
   permissions: string[];
   providerId: string;
+  // ── BB001: data-residency ────────────────────────────────────────────────
+  /**
+   * Allowed data-residency zones for this invocation context. When set, a
+   * capability whose binding requires a residency zone not in this list is
+   * withheld at exposure time and denied at invocation time.
+   */
+  allowedResidencies?: readonly string[];
+  // ── BB003: presence/active-endpoint ─────────────────────────────────────
+  /**
+   * Whether a user is actively present in this session. Capabilities that
+   * declare requiresUserPresence are denied at invocation when this is false.
+   */
+  userPresent?: boolean;
+  /**
+   * Capability IDs whose endpoint is currently unavailable. Built by the
+   * runtime from the client endpoint boundary; hosts may also populate this
+   * for standalone engine calls. A capability in this set whose
+   * PolicyCapabilityMetadata.requiresActiveEndpoint is true is withheld at
+   * exposure time.
+   */
+  unavailableCapabilityIds?: ReadonlySet<string>;
+  // ── BB004: credential-boundary ──────────────────────────────────────────
+  /**
+   * Credential scopes available for this invocation context. Capabilities that
+   * declare requiredCredentialScopes are denied at invocation when not all
+   * required scopes are present here.
+   */
+  availableCredentialScopes?: readonly string[];
+  // ── BB001–BB004: per-capability metadata ─────────────────────────────────
+  /**
+   * Per-capability policy metadata keyed by capabilityId. The runtime builds
+   * this automatically from TuvrenToolDefinition policy fields (riskClass,
+   * requiredResidency, requiresUserPresence, requiredCredentialScopes, and
+   * nonRetryable). Hosts may pre-populate for standalone engine calls.
+   */
+  capabilityMetadata?: ReadonlyMap<string, PolicyCapabilityMetadata>;
 }
 
 /**

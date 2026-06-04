@@ -172,7 +172,12 @@ const TOOL_DEFINITION_KEYS = new Set([
   "maxRetries",
   "metadata",
   "name",
+  "nonRetryable",
   "outputSchema",
+  "requiredCredentialScopes",
+  "requiredResidency",
+  "requiresUserPresence",
+  "riskClass",
   "timeout",
 ]);
 const EXECUTION_STATUS_KEYS = new Set([
