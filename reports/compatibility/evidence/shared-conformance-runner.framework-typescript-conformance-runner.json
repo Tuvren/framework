@@ -144,6 +144,42 @@
     {
       "assertionResults": [
         {
+          "assertionId": "bb.bb002.risk-approval-gate-wired-pauses-turn.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "bb.bb002.risk-approval-gate-wired-pauses-turn.requiredEvidence.result.capabilityPolicy.wiredRiskApproval.statusPhase",
+          "status": "pass"
+        }
+      ],
+      "checkId": "bb.bb002.risk-approval-gate-wired-pauses-turn",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.capability-policy"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "bb.bb002.risk-approval-gate-wired-tool-not-executed.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "bb.bb002.risk-approval-gate-wired-tool-not-executed.requiredEvidence.result.capabilityPolicy.wiredRiskApproval.toolBodyNotExecuted",
+          "status": "pass"
+        }
+      ],
+      "checkId": "bb.bb002.risk-approval-gate-wired-tool-not-executed",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.capability-policy"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "bb.bb002.risk-class-exposure-withheld.1.resultField",
           "status": "pass"
         },
@@ -9271,9 +9307,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 425,
-    "totalChecks": 437,
-    "applicableChecks": 425,
+    "passedChecks": 427,
+    "totalChecks": 439,
+    "applicableChecks": 427,
     "nonApplicableChecks": 12
   },
   "suiteId": "tuvren.framework.promoted-authority",

@@ -14,6 +14,8 @@
             "bb.bb001.residency-exposure-withheld-has-reason",
             "bb.bb001.residency-invocation-denied",
             "bb.bb001.residency-invocation-denied-has-reason",
+            "bb.bb002.risk-approval-gate-wired-pauses-turn",
+            "bb.bb002.risk-approval-gate-wired-tool-not-executed",
             "bb.bb002.risk-class-exposure-withheld",
             "bb.bb002.risk-class-exposure-withheld-has-reason",
             "bb.bb003.active-endpoint-exposure-withheld",
@@ -435,9 +437,9 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 425,
-            "totalChecks": 437,
-            "applicableChecks": 425,
+            "passedChecks": 427,
+            "totalChecks": 439,
+            "applicableChecks": 427,
             "nonApplicableChecks": 12
           },
           "declaredCapabilities": [
@@ -478,9 +480,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 12,
-            "totalChecks": 437,
+            "totalChecks": 439,
             "applicableChecks": 12,
-            "nonApplicableChecks": 425
+            "nonApplicableChecks": 427
           },
           "declaredCapabilities": ["framework.batteries-included"],
           "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.framework-batteries-included-conformance-runner.json",
@@ -931,9 +933,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 0,
-            "totalChecks": 437,
+            "totalChecks": 439,
             "applicableChecks": 0,
-            "nonApplicableChecks": 437
+            "nonApplicableChecks": 439
           },
           "declaredCapabilities": [],
           "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.framework-rust-conformance-runner.json",

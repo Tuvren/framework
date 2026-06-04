@@ -19,6 +19,8 @@
     "bb.bb001.residency-exposure-withheld-has-reason",
     "bb.bb001.residency-invocation-denied",
     "bb.bb001.residency-invocation-denied-has-reason",
+    "bb.bb002.risk-approval-gate-wired-pauses-turn",
+    "bb.bb002.risk-approval-gate-wired-tool-not-executed",
     "bb.bb002.risk-class-exposure-withheld",
     "bb.bb002.risk-class-exposure-withheld-has-reason",
     "bb.bb003.active-endpoint-exposure-withheld",
@@ -457,9 +459,9 @@
   "summary": {
     "failedChecks": 0,
     "passedChecks": 0,
-    "totalChecks": 437,
+    "totalChecks": 439,
     "applicableChecks": 0,
-    "nonApplicableChecks": 437
+    "nonApplicableChecks": 439
   },
   "suiteId": "tuvren.framework.promoted-authority",
   "suiteVersion": "0.1.0"
