@@ -2,6 +2,7 @@
 
 ## 0. Version History & Changelog
 
+- v0.31.5 - Closed Epic BA Invocation Lifecycle & Observation Model: added `InvocationLifecycleState` union type to `@tuvren/core/capabilities` formalising the uniform cross-class lifecycle (resolved → policy-admitted → dispatched → completed/failed/ignored) per KRT-BA001; routed provider-native and provider-mediated `tool.start`/`tool.result` attribution events through `publishRuntimeEvent` so the telemetry emitter observes them alongside the canonical stream, closing the BA002 telemetry-consistency gap; `null` used as the JSON-serializable "not observed" sentinel for provider tool inputs (passes `assertTuvrenStreamEvent` validation); BA003 cross-class resume and recovery semantics proven: tuvren-server fails clean via existing durability rules, provider-native/mediated resolve from observed driver output, tuvren-client stale/unavailable paths surface typed error codes (CAPABILITY_RESULT_STALE, CAPABILITY_BINDING_UNAVAILABLE), and turn abort terminates as `execution_cancelled` without fabricated results; BA004 lifecycle telemetry depth confirmed: `tool_call` spans keyed to runtime lineage and execution class for all four classes using existing semconv attributes (no extension needed); `invocation-lifecycle-observation` conformance check set (18 checks) added to the authority packet and registered as an executable verification path with full BA001–BA003 coverage including fail-clean proofs; 424 runtime tests pass; 398/398 framework conformance checks pass; `bun run verify` exits 0.
 - v0.31.4 - Closed Epic AZ Tuvren-Client Execution Class: implemented the runtime-side leased client-endpoint protocol and attachment seam (concrete endpoints remain host-developer deliverables); `AttachedClientEndpoint`, `ClientEndpointCapabilityAdvertisement`, `ClientInvocationEnvelope`, `ClientReportedResult`, `ClientEndpointBoundary`, `ClientDispatchResult` shapes added to `@tuvren/core/capabilities`; `AgentConfig.clientEndpoints` and `AgentConfig.clientEndpointBoundary` wired; `ClientEndpointBoundary.detach()` supports dynamic endpoint lifecycle; synthetic `TuvrenToolDefinition` entries built from advertised capabilities route dispatch through the boundary with leaseToken staleness detection; `isClientEndpointTool` guard suppresses `tool.audit` events and server-side rate-limiting for the class (canAudit: false); `observationForClass("tuvren-client")` explicit with partial-observability limits; client-side MCP classified as `tuvren-client / mcp-server` endpoint kind (never reclassified); `PauseContext` and `LoopState` carry the boundary through pause/resume and handoff cycles; `tuvren-client-execution-class` conformance check set (13 checks) added to the authority packet and registered as an executable verification path; `createClientEndpointBoundary` exported from `@tuvren/runtime`; integration contract documented at `boundaries/framework/contracts/client-endpoint-integration.md`; 394 runtime tests pass; 379/379 framework conformance checks pass; kernel verify:kernel:fresh passes.
 - v0.31.3 - Closed Epic AY Provider-Native & Provider-Mediated Execution Classes: added `ProviderNativeToolDeclaration` and `ProviderMediatedToolConfig` to `TuvrenPrompt`/`AgentConfig`; wired the AI SDK bridge to accept declared provider tool results (`LanguageModelV3ToolResult`) via `providerToolClassLookup`; threaded `providerNativeTools`/`providerMediatedTools`/`providerContinuity` through `createProviderPrompt`/`createAroundModelContextSnapshot`; pre-staged provider tool messages bypass the Tool Execution Gateway; `emitProviderToolAttributionEvents` emits `tool.start`+`tool.result` with `owner:"provider"` and correct per-class observation limits (canAudit/canCancel/canRetry/canResume: false); `isProviderOnlyResponseEventSet` guard in `validateDriverAssistantEvents` handles pure provider-stream responses; `assertDriverMessages` guard extended to allow pre-staged provider tool messages; concrete proofs through the full stack (bridge → react-driver → runtime) for Anthropic `code_execution_20260120` pattern (generate path) and OpenAI `openai.mcp` pattern; `provider-native-execution-class` (10 checks) and `provider-mediated-execution-class` (10 checks) conformance check sets added to the `tuvren.providers.provider-api` authority packet; 54 bridge tests + 358 runtime tests + 78 react-driver tests pass; 52/52 provider conformance checks pass. Known gap: AY005 multi-turn providerContinuity round-trip (extraction from response → next prompt) is structurally wired but not exercised by a multi-turn test; single-turn proofs validate all other invariants.
 - v0.31.2 - Closed Epic AX Tuvren-Server Execution Class: implemented full server lifecycle (input/output validation with `tool_input_validation_failed`/`tool_result_validation_failed` error codes, `TuvrenToolDefinition.outputSchema`), idempotent retry (`idempotent`, `maxRetries` fields, framework-owned retry loop, cooperative cancellation, late-completion ignoring), tenant isolation and rate-limiting (`AgentConfig.serverExecution`, `ServerRateLimiter`, `TOOL_INVOCATION_RATE_LIMITED` per-turn per-instance), server-side MCP binding classification confirmed (`mcp-server` endpoint kind), server sandbox endpoint (`TuvrenSandboxExecutor`, `metadata.sandbox.endpointId`, `tuvren-sandbox` endpoint kind, `AgentConfig.sandboxExecutors`), full-lifecycle `ToolAuditEvent` (`tool.audit`) at input/output validation, retry, and rate-limit lifecycle points with secret isolation, and the `tuvren-server-execution-class` conformance check set (19 checks including cancellation/late-completion, tenant isolation, and output-validated audit). 349 runtime tests pass; 19/19 AX conformance checks pass; 37 pre-existing non-AX conformance failures unchanged.
@@ -13,8 +14,8 @@
 
 ## 1. Executive Summary & Active Critical Path
 
-- **Total Active Story Points:** 170 gross (**102 remaining**) across the remainder of the Tooling block plus the trust block — the **Tooling block remainder (Epics BA–BC, 69 points)** as the top-priority front of the queue, and **Epic BD (Trust-Boundary Security Hardening, 33 remaining points, formerly Epic AW, with `KRT-BD001` already complete)** sequenced after it. Epics AM through AZ are closed and retained as a compact audit ledger below.
-- **Critical Path:** Epics AW, AX, AY, and AZ are closed. Next: the cross-class depth — `KRT-BA001 → KRT-BA002 → KRT-BA005`, then closeout: a representative longest path is `KRT-BA001 → KRT-BA002 → KRT-BA005 → KRT-BC001 → KRT-BC002 → KRT-BC004`. Only after the Tooling block closes does Epic BD run: `KRT-BD002 → KRT-BD004` and `KRT-BD005 → KRT-BD006 → KRT-BD007 → KRT-BD008`, with `KRT-BD009` as an independent close-condition lane (`KRT-BD001` already complete).
+- **Total Active Story Points:** 170 gross (**76 remaining**) across the remainder of the Tooling block plus the trust block — the **Tooling block remainder (Epics BB–BC, 43 points)** as the top-priority front of the queue, and **Epic BD (Trust-Boundary Security Hardening, 33 remaining points, formerly Epic AW, with `KRT-BD001` already complete)** sequenced after it. Epics AM through BA are closed and retained as a compact audit ledger below.
+- **Critical Path:** Epics AW, AX, AY, AZ, and BA are closed. Next: the policy depth — `KRT-BB001 → KRT-BB002 → KRT-BB003 → KRT-BB004 → KRT-BB005 → KRT-BB006`, then closeout: `KRT-BC001 → KRT-BC002 → KRT-BC003 → KRT-BC004`. A representative longest path is `KRT-BB001 → KRT-BB005 → KRT-BB006 → KRT-BC001 → KRT-BC002 → KRT-BC004`. Only after the Tooling block closes does Epic BD run: `KRT-BD002 → KRT-BD004` and `KRT-BD005 → KRT-BD006 → KRT-BD007 → KRT-BD008`, with `KRT-BD009` as an independent close-condition lane (`KRT-BD001` already complete).
 - **Planning Assumptions:** The Tooling block (Epics AW–BC) is governed by PRD v0.9.0, Architecture v0.9.0, and TechSpec v0.29.0 (ADR-046, ADR-047); the upstream contracts (`@tuvren/core/capabilities` §3.13, the §4.21 contract) are authored, so the tickets are implementation-ready. Tuvren-client scope is the runtime protocol + attachment seam only — concrete client endpoints (browser extension, desktop, device) remain host-developer deliverables per PRD §6. Provider-native and provider-mediated scope is runtime support proven against today's AI-SDK-bridged providers, with at least one concrete proof per class and additional providers additive later. Epic BD (formerly Epic AW) is governed by PRD v0.8.0 / Architecture v0.8.0 / TechSpec v0.28.x (ADR-042 through ADR-045); it remains active and runs after the Tooling block per product priority. The prior chain (PRD v0.7.0 / Architecture v0.7.0 / TechSpec v0.27.x, ADR-034 through ADR-041, Epics AM-AT) is closed. The Tooling block reframes tool representation within the existing TypeScript line and keeps today's developer-defined tool path working unchanged as the Tuvren-server execution class; it adds no Rust framework/product scope, no new host protocol, no new backend, and no new model-provider family beyond the existing AI SDK bridge. The `product proof gate`, `platform gate`, and `portability gate` from Epic AL remain the staged-gate baseline. The locked external dependency versions per TechSpec §1 still apply.
 
 ### Brownfield Continuity Note
@@ -46,7 +47,7 @@
   - **AX — Tuvren-Server Execution Class: CLOSED.** See Completed Work Ledger.
   - **AY — Provider-Native & Provider-Mediated Execution Classes: CLOSED.** See Completed Work Ledger.
   - **AZ — Tuvren-Client Execution Class: CLOSED.** See Completed Work Ledger.
-  - **BA — Invocation Lifecycle & Observation Model:** the cross-class invocation lifecycle and the full observation/event taxonomy depth.
+  - **BA — Invocation Lifecycle & Observation Model: CLOSED.** See Completed Work Ledger.
   - **BB — Exposure & Invocation Policy Model:** policy depth (data residency, risk classification, presence, idempotency/retry, credential boundaries, composition/precedence).
   - **BC — Tooling Restructuring Closeout:** cross-class integration conformance, the framework-spec "Capability Orchestration" section, portability inventory, and the clean `bun run verify` that proves the tooling aspect is finished.
 - **Block 4 — Production trust remainder (Epic BD, formerly Epic AW): active, sequenced after the Tooling block.** Hardens execution bounds with a typed `execution_bound_exceeded` terminal result, secret isolation across durable/telemetry/transcript surfaces, and verification that approval gates are non-bypassable and untrusted MCP/tool inputs are validated. `KRT-BD001` (telemetry secret-screening helpers) is already complete.
@@ -96,7 +97,7 @@ flowchart LR
     AXep["AX — Tuvren-Server class — CLOSED"]
     AYep["AY — Provider-Native & Provider-Mediated — CLOSED"]
     AZep["AZ — Tuvren-Client class — CLOSED"]
-    AXep --> BAep["BA — Invocation Lifecycle & Observation"]
+    AXep --> BAep["BA — Invocation Lifecycle & Observation — CLOSED"]
     AYep --> BAep
     AZep --> BAep
     BBep["BB — Exposure & Invocation Policy"]
@@ -129,11 +130,11 @@ Completed ticket detail is removed from the active execution plan and retained t
 
 | Epic | Points | Closed Outcome | Evidence Anchor |
 | --- | ---: | --- | --- |
-| AV | 24 | Added first-class operational telemetry with `@tuvren/core/telemetry`, framework emission and secret screening, `@tuvren/telemetry-otel`. | `framework-operational-telemetry` |
 | AW | 44 | Delivered the Capability Orchestration Foundation: `@tuvren/core/capabilities` subpath (§3.13 types + `CapabilityPolicyEngine` interface), Capability Registry, Binding & Endpoint Resolver (back-compat `defineTool` → `tuvren-server`, MCP → `tuvren-server/mcp-server`), Capability Policy Engine wired into tool dispatch (invocation denials surface as `tool.result isError:true`), execution-class + owner attribution on `tool.start`/`tool.result` events and `tool_call` telemetry spans (semconv extended), `capability_binding_unavailable` error code in `@tuvren/core/errors`, and the `runtime-api-capability-orchestration` foundation conformance check set (12 checks including wired denial proof). Authority packet bumped to v1.2.0. | `runtime-api-capability-orchestration` conformance plan; `boundaries/shared/contracts/core/spec/authority-packet.json` v1.2.0 |
 | AX | 28 | Delivered the Tuvren-Server Execution Class: input/output validation with typed error codes (`tool_input_validation_failed`, `tool_result_validation_failed`, `TuvrenToolDefinition.outputSchema`), idempotent retry (`idempotent`, `maxRetries`, framework-owned retry loop in `executeSingleTool`, cooperative cancellation, late-completion ignoring), tenant isolation + rate-limiting (`AgentConfig.serverExecution`, `ServerRateLimiter`, `TOOL_INVOCATION_RATE_LIMITED`, per-turn per-instance scoping), server-side MCP binding classification confirmed (`mcp-server` endpoint kind), server sandbox endpoint (`TuvrenSandboxExecutor`, `metadata.sandbox.endpointId`, `tuvren-sandbox` endpoint kind, `AgentConfig.sandboxExecutors`), full-lifecycle `ToolAuditEvent` (`tool.audit`) at five lifecycle points with secret isolation, and `tuvren-server-execution-class` conformance check set (19 checks: AX001–AX006 including cancellation/late-completion, tenant isolation, and output-validated audit). | `tuvren-server-execution-class` conformance plan (19/19 pass); `boundaries/shared/contracts/core/spec/authority-packet.json` |
 | AY | 39 | Delivered Provider-Native & Provider-Mediated Execution Classes through the AI SDK bridge: `ProviderNativeToolDeclaration`/`ProviderMediatedToolConfig` in `TuvrenPrompt`/`AgentConfig`; bridge `providerToolClassLookup` accepts declared provider tool results; pre-staged provider tool messages bypass the Tool Execution Gateway; `emitProviderToolAttributionEvents` emits `tool.start`+`tool.result` with `owner:"provider"` and per-class observation limits (canAudit/canCancel/canRetry/canResume: false, canPersistResult: true); `assertDriverMessages` guard extended for pre-staged provider messages; `isProviderOnlyResponseEventSet` guard handles pure provider-stream responses; concrete generate and stream proofs for Anthropic code_execution and OpenAI MCP patterns; `provider-native-execution-class` (10 checks) and `provider-mediated-execution-class` (10 checks) in the `tuvren.providers.provider-api` authority packet; 52/52 provider conformance checks pass. Known gap: AY005 multi-turn providerContinuity extraction round-trip is structurally wired but not exercised by a multi-turn test. | `provider-native-execution-class` and `provider-mediated-execution-class` conformance plans (20 new checks, 52/52 total); `boundaries/providers/contracts/provider-api/spec/authority-packet.json`; `constitution/support/live/ay001-provider-surface-matrix.md` |
 | AZ | 37 | Delivered the Tuvren-Client Execution Class (runtime side only): `AttachedClientEndpoint`, `ClientEndpointCapabilityAdvertisement`, `ClientInvocationEnvelope`, `ClientReportedResult`, `ClientEndpointBoundary` (with `detach()`), `ClientDispatchResult` shapes in `@tuvren/core/capabilities`; `AgentConfig.clientEndpoints` and `AgentConfig.clientEndpointBoundary` wired; synthetic `TuvrenToolDefinition` entries from advertised capabilities route dispatch through the boundary with leaseToken staleness detection; `isClientEndpointTool` guard suppresses `tool.audit` events and server-side rate-limiting (canAudit: false); `observationForClass("tuvren-client")` explicit; client-side MCP classified as `tuvren-client / mcp-server` endpoint kind; `PauseContext` and `LoopState` carry the boundary through lifecycle; `tuvren-client-execution-class` conformance check set (13 checks) registered in authority packet; client-endpoint integration contract documented. 394 runtime tests + 379/379 framework conformance checks pass; kernel verify:kernel:fresh passes. Concrete client endpoints remain host-developer deliverables. | `tuvren-client-execution-class` conformance plan (13/13 pass); `boundaries/shared/contracts/core/spec/authority-packet.json`; `boundaries/framework/contracts/client-endpoint-integration.md` |
+| BA | 26 | Delivered Invocation Lifecycle & Observation Model: `InvocationLifecycleState` union type added to `@tuvren/core/capabilities` formalising the uniform cross-class lifecycle (resolved → policy-admitted → dispatched → completed/failed/ignored); provider-native/mediated `tool.start`/`tool.result` attribution events routed through `publishRuntimeEvent` so telemetry observes them (BA002 gap closed); `null` used as the JSON-serializable "not observed" sentinel for provider tool `tool.start` inputs; cross-class resume/recovery semantics proven: tuvren-server fails clean per durability, provider classes resolve from observed driver output, tuvren-client stale/unavailable paths surface CAPABILITY_RESULT_STALE/CAPABILITY_BINDING_UNAVAILABLE, turn abort terminates as `execution_cancelled`; lifecycle telemetry depth confirmed: `tool_call` spans keyed to runtime lineage + execution class for all four classes using existing semconv (no semconv extension needed); `invocation-lifecycle-observation` conformance check set (18 checks covering BA001–BA003) registered as an executable verification path. 424 runtime tests pass; 398/398 framework conformance checks pass; `bun run verify` exits 0. | `invocation-lifecycle-observation` conformance plan (18/18 pass); `boundaries/shared/contracts/core/spec/authority-packet.json` |
 
 ### Epic AW — Capability Orchestration Foundation (KRT)
 
@@ -154,83 +155,7 @@ Completed ticket detail is removed from the active execution plan and retained t
 
 ### Epic BA — Invocation Lifecycle & Observation Model (KRT)
 
-**Status:** Active, after the execution-class epics. Unifies the four classes at the lifecycle level and deepens the observation/event model so the runtime's resume/cancel/retry/audit story is coherent and honest across classes.
-
-**KRT-BA001 Cross-Class Invocation Lifecycle State Machine**
-- **Type:** Feature
-- **Effort:** 8
-- **Dependencies:** `KRT-AX006`, `KRT-AY007`, `KRT-AZ006`
-- **Capability / Contract Mapping:** PRD `CAP-P0-058`, `CAP-P0-061`; TechSpec ADR-046, §4.21
-- **Description:** Implement a single cross-class invocation lifecycle state machine (resolved → policy-admitted → dispatched → observed → result/failed/ignored) that all four execution classes flow through, so the runtime reasons about an invocation uniformly regardless of who executes it.
-- **Acceptance Criteria (Gherkin):**
-```gherkin
-Given all four execution classes are implemented
-When the cross-class invocation lifecycle state machine is implemented
-Then every capability invocation, regardless of class, flows through one uniform lifecycle from resolution to terminal state
-And each class maps its execution into the same lifecycle states without collapsing class-specific ownership
-And the conceptual invariant holds across all classes through the lifecycle
-```
-
-**KRT-BA002 Observation/Event Taxonomy Depth**
-- **Type:** Feature
-- **Effort:** 5
-- **Dependencies:** `KRT-BA001`
-- **Capability / Contract Mapping:** PRD `CAP-P0-061`; TechSpec ADR-046, §3.10, §4.5
-- **Description:** Deepen the observation/event taxonomy so provider-native vs Tuvren-owned events are fully distinguished, and per-class resume/cancel/retry/audit affordances are exposed only where the class grants them, across the canonical stream and telemetry.
-- **Acceptance Criteria (Gherkin):**
-```gherkin
-Given the cross-class lifecycle exists
-When the observation/event taxonomy depth is implemented
-Then runtime events fully distinguish provider-native invocations from Tuvren-owned invocations
-And resume, cancel, retry, and audit affordances are exposed only for the classes that grant them
-And the taxonomy is consistent across the canonical event stream and operational telemetry
-```
-
-**KRT-BA003 Cross-Class Resume and Recovery Semantics**
-- **Type:** Feature
-- **Effort:** 5
-- **Dependencies:** `KRT-BA001`
-- **Capability / Contract Mapping:** PRD `CAP-P0-005`, `CAP-P0-061`; TechSpec ADR-046, §4.21
-- **Description:** Define and implement what resumes versus fails clean for an in-flight capability invocation across classes when a turn is interrupted: Tuvren-server work resumes per existing durability rules; provider-owned and client-owned invocations resolve from their observed state or fail clean without fabricating a result.
-- **Acceptance Criteria (Gherkin):**
-```gherkin
-Given an interrupted turn with in-flight capability invocations
-When cross-class resume and recovery semantics are implemented
-Then a Tuvren-server invocation resumes or fails clean per the existing durability rules
-And a provider-owned or client-owned invocation resolves from its observed state or fails clean without fabricating a result
-And no torn or partial invocation record is observable after recovery
-```
-
-**KRT-BA004 Lifecycle Telemetry Depth**
-- **Type:** Feature
-- **Effort:** 3
-- **Dependencies:** `KRT-BA002`
-- **Capability / Contract Mapping:** PRD `CAP-P0-052`, `CAP-P0-061`; TechSpec §3.10
-- **Description:** Emit lifecycle spans/events for capability invocations keyed to runtime lineage and execution class, reusing the operational telemetry surface and the semconv vocabulary (extending the semconv source first if new attributes are required).
-- **Acceptance Criteria (Gherkin):**
-```gherkin
-Given the deepened observation taxonomy
-When lifecycle telemetry depth is implemented
-Then capability invocation lifecycle spans and events are emitted keyed to runtime lineage and execution class
-And any new canonical telemetry attribute is added to the semconv source before it is emitted
-And no secret material appears in the lifecycle telemetry
-```
-
-**KRT-BA005 Invocation-Lifecycle & Observation Conformance**
-- **Type:** Feature
-- **Effort:** 5
-- **Dependencies:** `KRT-BA002`, `KRT-BA003`
-- **Capability / Contract Mapping:** PRD `CAP-P0-061`; TechSpec §4.21, §5.7
-- **Description:** Add an `invocation-lifecycle-observation` check set asserting the uniform lifecycle across classes, provider-native vs Tuvren-owned event distinction, per-class affordance gating, and cross-class resume/recovery semantics. Picked up by `bun run conformance`.
-- **Acceptance Criteria (Gherkin):**
-```gherkin
-Given the cross-class lifecycle and observation model are implemented
-When the invocation-lifecycle-observation check set is added
-Then it asserts every class flows through the uniform lifecycle and the invariant holds across classes
-And it asserts provider-native vs Tuvren-owned event distinction and per-class affordance gating
-And it asserts cross-class resume and clean-failure semantics on interruption
-And bun run conformance includes the new check set automatically
-```
+**Status:** **CLOSED.** See Completed Work Ledger. Ticket bodies retained in git history.
 
 ### Epic BB — Exposure & Invocation Policy Model (KRT)
 
