@@ -44,6 +44,7 @@ import {
   runCapabilityPolicyInvocationDimensions,
   runCapabilityPolicyNonretryablePolicy,
   runCapabilityPolicyWiredInvocationDenial,
+  runCapabilityPolicyWiredRiskApproval,
 } from "./framework-adapter-capability-policy.ts";
 import { createFrameworkAdapterDriver } from "./framework-adapter-driver.ts";
 import { createFrameworkAdapterEventStream } from "./framework-adapter-event-stream.ts";
@@ -408,6 +409,8 @@ export class TypeScriptFrameworkAdapter implements ImplementationAdapter {
         return runCapabilityPolicyWiredInvocationDenial();
       case "runtime.capability-policy.nonretryable-policy":
         return runCapabilityPolicyNonretryablePolicy();
+      case "runtime.capability-policy.wired-risk-approval":
+        return runCapabilityPolicyWiredRiskApproval();
       default:
         throw new Error(
           `unsupported promoted framework operation ${operation}`

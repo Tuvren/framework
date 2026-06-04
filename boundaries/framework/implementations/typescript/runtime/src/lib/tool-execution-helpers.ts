@@ -247,13 +247,14 @@ export async function emitToolStartIfNeeded(
 
 export function createPendingToolCall(
   toolCall: { callId: string; name: string },
-  input: unknown
+  input: unknown,
+  message?: string
 ): PendingToolCall {
   return {
     callId: toolCall.callId,
     decisions: [...DEFAULT_APPROVAL_DECISIONS],
     input,
-    message: `Approve tool "${toolCall.name}"?`,
+    message: message ?? `Approve tool "${toolCall.name}"?`,
     name: toolCall.name,
   };
 }

@@ -416,3 +416,78 @@ export async function runCapabilityPolicyNonretryablePolicy(): Promise<AdapterPr
 
   return { evidence, result: evidence };
 }
+
+/**
+ * Wired proof: a high-risk capability with requireApprovalForRiskClass configured
+ * pauses the turn awaiting approval rather than executing the tool body.
+ */
+export async function runCapabilityPolicyWiredRiskApproval(): Promise<AdapterProjection> {
+  const highRiskToolName = "dangerous.delete";
+  let toolExecuted = false;
+
+  const harness = createConformanceKernelHarness();
+  const engine = createCapabilityPolicyEngine({
+    requireApprovalForRiskClass: "high",
+  });
+
+  const driver = createStaticDriver(async (ctx) => {
+    await Promise.resolve();
+    if (!ctx.messages.some((m) => m.role === "tool")) {
+      return {
+        messages: [
+          assistantToolCalls([
+            { callId: "risk-approval-1", input: {}, name: highRiskToolName },
+          ]),
+        ],
+        resolution: { type: "continue_iteration" as const },
+        toolExecutionMode: "parallel",
+      };
+    }
+    return {
+      messages: [assistantText("risk approval gate done")],
+      resolution: { reason: "done", type: "end_turn" as const },
+    };
+  });
+
+  const runtime = createTuvrenRuntime({
+    defaultDriverId: DRIVER_ID,
+    driverRegistry: createDriverRegistry([driver]),
+    kernel: harness.kernel,
+  });
+
+  const thread = await runtime.createThread({});
+  const handle = runtime.executeTurn({
+    branchId: thread.branchId,
+    config: {
+      capabilityPolicyEngine: engine,
+      name: AGENT_NAME,
+      tools: [
+        {
+          description: "High-risk tool requiring approval",
+          execute() {
+            toolExecuted = true;
+            return { deleted: true };
+          },
+          inputSchema: { type: "object" },
+          name: highRiskToolName,
+          riskClass: "high",
+        },
+      ],
+    },
+    signal: textSignal("capability policy wired risk approval conformance"),
+    threadId: thread.threadId,
+  });
+
+  await collectValues(handle.events());
+
+  const evidence = {
+    capabilityPolicy: {
+      wiredRiskApproval: {
+        statusPhase: handle.status().phase,
+        toolBodyNotExecuted: !toolExecuted,
+      },
+    },
+  };
+
+  return { evidence, result: evidence };
+}

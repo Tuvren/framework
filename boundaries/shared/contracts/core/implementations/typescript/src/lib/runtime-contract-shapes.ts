@@ -984,7 +984,8 @@ export interface CapabilityPolicyContextInputs {
   /**
    * Whether a user is actively present in this session. BB003.
    * Capabilities that declare requiresUserPresence are denied at invocation
-   * when this is false or absent.
+   * when this is explicitly false. Absent (undefined) is treated as unknown
+   * and admits the invocation.
    */
   userPresent?: boolean;
 }

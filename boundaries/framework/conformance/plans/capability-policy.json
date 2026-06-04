@@ -201,6 +201,32 @@
       "operation": "runtime.capability-policy.wired-invocation-denial"
     },
     {
+      "checkId": "bb.bb002.risk-approval-gate-wired-pauses-turn",
+      "evidence": ["result.capabilityPolicy.wiredRiskApproval.statusPhase"],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.capabilityPolicy.wiredRiskApproval.statusPhase",
+          "equals": "paused"
+        }
+      ],
+      "operation": "runtime.capability-policy.wired-risk-approval"
+    },
+    {
+      "checkId": "bb.bb002.risk-approval-gate-wired-tool-not-executed",
+      "evidence": [
+        "result.capabilityPolicy.wiredRiskApproval.toolBodyNotExecuted"
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.capabilityPolicy.wiredRiskApproval.toolBodyNotExecuted",
+          "equals": true
+        }
+      ],
+      "operation": "runtime.capability-policy.wired-risk-approval"
+    },
+    {
       "checkId": "bb.bb004.nonretryable-policy-suppresses-retry",
       "evidence": ["result.capabilityPolicy.nonRetryablePolicy.attemptCount"],
       "assertions": [

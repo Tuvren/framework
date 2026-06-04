@@ -536,7 +536,11 @@ async function resolveExecutableToolCall(
     // owns this decision above driver discretion per §4.21 / ADR-046.
     if (decision.requiresApproval === true) {
       return {
-        pendingToolCall: createPendingToolCall(toolCall, validation.value),
+        pendingToolCall: createPendingToolCall(
+          toolCall,
+          validation.value,
+          decision.reason
+        ),
       };
     }
   }

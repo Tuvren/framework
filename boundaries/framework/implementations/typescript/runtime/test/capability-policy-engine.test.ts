@@ -885,7 +885,7 @@ describe("CapabilityPolicyEngine — BB003 user-presence and active-endpoint", (
 
   // --- User-presence: invocation-time ---
 
-  test("invocation: capability requiring user presence is denied when absent", () => {
+  test("invocation: capability requiring user presence is denied when userPresent is false", () => {
     const engine = createCapabilityPolicyEngine();
     const binding = makeBinding(presenceCapabilityId);
     const decision = engine.evaluateInvocation(binding, {
