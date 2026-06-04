@@ -590,3 +590,143 @@ describe("CapabilityPolicyEngine — BB001 exposure-time wiring", () => {
     expect(seenToolNames).toContain(usToolName);
   });
 });
+
+// ---------------------------------------------------------------------------
+// BB002: Risk-Classification Policy Dimension
+// ---------------------------------------------------------------------------
+
+describe("CapabilityPolicyEngine — BB002 risk-classification dimension", () => {
+  const highRiskCapabilityId = "dangerous.delete-all";
+  const mediumRiskCapabilityId = "moderate.write";
+  const lowRiskCapabilityId = "safe.read";
+
+  const capabilityMetadata = new Map([
+    [highRiskCapabilityId, { riskClass: "high" as const }],
+    [mediumRiskCapabilityId, { riskClass: "medium" as const }],
+    [lowRiskCapabilityId, { riskClass: "low" as const }],
+  ]);
+
+  test("exposure: capability above maxExposedRiskClass is withheld", () => {
+    const engine = createCapabilityPolicyEngine({
+      maxExposedRiskClass: "medium",
+    });
+    const surface = makeSurface(highRiskCapabilityId, highRiskCapabilityId);
+    const decisions = engine.evaluateExposure([surface], {
+      ...defaultContext,
+      capabilityMetadata,
+    });
+    expect(decisions[0]?.exposed).toBe(false);
+  });
+
+  test("exposure: capability at maxExposedRiskClass threshold is exposed", () => {
+    const engine = createCapabilityPolicyEngine({
+      maxExposedRiskClass: "high",
+    });
+    const surface = makeSurface(highRiskCapabilityId, highRiskCapabilityId);
+    const decisions = engine.evaluateExposure([surface], {
+      ...defaultContext,
+      capabilityMetadata,
+    });
+    expect(decisions[0]?.exposed).toBe(true);
+  });
+
+  test("exposure: low-risk capability is exposed when maxExposedRiskClass is medium", () => {
+    const engine = createCapabilityPolicyEngine({
+      maxExposedRiskClass: "medium",
+    });
+    const surface = makeSurface(lowRiskCapabilityId, lowRiskCapabilityId);
+    const decisions = engine.evaluateExposure([surface], {
+      ...defaultContext,
+      capabilityMetadata,
+    });
+    expect(decisions[0]?.exposed).toBe(true);
+  });
+
+  test("exposure: capability with no riskClass is unaffected by maxExposedRiskClass", () => {
+    const engine = createCapabilityPolicyEngine({ maxExposedRiskClass: "low" });
+    const surface = makeSurface("no-risk.tool", "no-risk.tool");
+    const decisions = engine.evaluateExposure([surface], {
+      ...defaultContext,
+      capabilityMetadata: new Map(),
+    });
+    expect(decisions[0]?.exposed).toBe(true);
+  });
+
+  test("exposure: denial carries a non-secret reason", () => {
+    const engine = createCapabilityPolicyEngine({ maxExposedRiskClass: "low" });
+    const surface = makeSurface(highRiskCapabilityId, highRiskCapabilityId);
+    const decisions = engine.evaluateExposure([surface], {
+      ...defaultContext,
+      capabilityMetadata,
+    });
+    expect(decisions[0]?.exposed).toBe(false);
+    expect(typeof decisions[0]?.reason).toBe("string");
+    expect((decisions[0]?.reason ?? "").length).toBeGreaterThan(0);
+  });
+
+  test("invocation: high-risk capability sets requiresApproval when threshold met", () => {
+    const engine = createCapabilityPolicyEngine({
+      requireApprovalForRiskClass: "high",
+    });
+    const binding = makeBinding(highRiskCapabilityId);
+    const decision = engine.evaluateInvocation(binding, {
+      ...defaultContext,
+      capabilityMetadata,
+    });
+    expect(decision.admitted).toBe(true);
+    expect(decision.requiresApproval).toBe(true);
+  });
+
+  test("invocation: medium-risk capability does not require approval when threshold is high", () => {
+    const engine = createCapabilityPolicyEngine({
+      requireApprovalForRiskClass: "high",
+    });
+    const binding = makeBinding(mediumRiskCapabilityId);
+    const decision = engine.evaluateInvocation(binding, {
+      ...defaultContext,
+      capabilityMetadata,
+    });
+    expect(decision.admitted).toBe(true);
+    expect(decision.requiresApproval).toBeUndefined();
+  });
+
+  test("invocation: low-risk capability is admitted without approval when threshold is medium", () => {
+    const engine = createCapabilityPolicyEngine({
+      requireApprovalForRiskClass: "medium",
+    });
+    const binding = makeBinding(lowRiskCapabilityId);
+    const decision = engine.evaluateInvocation(binding, {
+      ...defaultContext,
+      capabilityMetadata,
+    });
+    expect(decision.admitted).toBe(true);
+    expect(decision.requiresApproval).toBeUndefined();
+  });
+
+  test("invocation: medium meets medium threshold → requiresApproval", () => {
+    const engine = createCapabilityPolicyEngine({
+      requireApprovalForRiskClass: "medium",
+    });
+    const binding = makeBinding(mediumRiskCapabilityId);
+    const decision = engine.evaluateInvocation(binding, {
+      ...defaultContext,
+      capabilityMetadata,
+    });
+    expect(decision.admitted).toBe(true);
+    expect(decision.requiresApproval).toBe(true);
+  });
+
+  test("risk dimension composes with deny-list: deny takes precedence over approval signal", () => {
+    const engine = createCapabilityPolicyEngine({
+      deniedCapabilityIds: new Set([highRiskCapabilityId]),
+      requireApprovalForRiskClass: "high",
+    });
+    const binding = makeBinding(highRiskCapabilityId);
+    const decision = engine.evaluateInvocation(binding, {
+      ...defaultContext,
+      capabilityMetadata,
+    });
+    expect(decision.admitted).toBe(false);
+    expect(decision.requiresApproval).toBeUndefined();
+  });
+});
