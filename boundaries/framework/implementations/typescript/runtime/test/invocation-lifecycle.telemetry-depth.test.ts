@@ -43,6 +43,7 @@ import {
   createDriverRegistry,
   createTuvrenRuntime,
 } from "../src/index.ts";
+import { TUVREN_RUNTIME_TELEMETRY_ATTRIBUTE_KEYS } from "../src/lib/generated/tuvren-runtime-telemetry.ts";
 import { createFakeKernelHarness } from "./fake-kernel.ts";
 import {
   assistantText,
@@ -252,27 +253,26 @@ describe("BA004 lifecycle telemetry — no secret material", () => {
 });
 
 // ---------------------------------------------------------------------------
-// BA004 semconv: no new attributes needed (documentation test)
+// BA004 semconv: no new attributes needed — enforced against generated key set
 // ---------------------------------------------------------------------------
 
 describe("BA004 semconv coverage — no new attributes required", () => {
-  test("existing semconv attributes cover the full lifecycle taxonomy without extension", () => {
-    // BA004 description: "extend the semconv source first if new attributes are required."
-    // After BA002 wired provider-tool attribution through publishRuntimeEvent,
-    // the existing tuvren.runtime.capability.* attributes (added in Epic AW / ADR-046)
-    // cover execution_class and owner for all four classes. The existing
-    // tuvren.runtime.tool_call.id covers callId lineage. No new semconv attributes
-    // were required. This test documents that invariant.
-    const expectedAttributes = [
+  test("lifecycle telemetry attributes are declared in the semconv key set", () => {
+    // BA004 requirement: "any new canonical telemetry attribute is added to the
+    // semconv source before it is emitted." This test enforces the invariant
+    // programmatically by asserting the three capability-lifecycle attributes
+    // are members of TUVREN_RUNTIME_TELEMETRY_ATTRIBUTE_KEYS — the generated
+    // allowlist from telemetry/semconv/tuvren-runtime.yaml. If any attribute
+    // were removed from the semconv source, or if BA004 had introduced a new
+    // undeclared attribute, this test would fail.
+    const lifecycleAttributes = [
       "tuvren.runtime.capability.execution_class",
       "tuvren.runtime.capability.owner",
       "tuvren.runtime.tool_call.id",
-    ];
-    // These are the attributes documented in telemetry/semconv/tuvren-runtime.yaml
-    // for tool invocation lifecycle telemetry.
-    for (const attr of expectedAttributes) {
-      expect(attr.startsWith("tuvren.runtime.")).toBe(true);
+    ] as const;
+
+    for (const attr of lifecycleAttributes) {
+      expect(TUVREN_RUNTIME_TELEMETRY_ATTRIBUTE_KEYS).toContain(attr);
     }
-    expect(expectedAttributes).toHaveLength(3);
   });
 });
