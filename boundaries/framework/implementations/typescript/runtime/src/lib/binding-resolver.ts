@@ -118,18 +118,23 @@ class BasicBindingResolver implements BindingResolver {
 
     // Developer-defined execute tool → tuvren-server / tuvren-in-process
     const region = extractEndpointRegion(tool);
+    const credentialScope = extractCredentialScope(tool);
     const riskClass = extractRiskClass(tool);
     const requiresUserPresence = extractRequiresUserPresence(tool);
+    const idempotencyPolicy = extractIdempotencyPolicy(tool);
     return {
       capabilityId: tool.name,
       endpoint: {
         id: TUVREN_IN_PROCESS_ENDPOINT_ID,
         kind: "tuvren-in-process",
         ...(region !== undefined ? { region } : {}),
+        ...(credentialScope !== undefined ? { credentialScope } : {}),
       },
       executionClass: "tuvren-server",
       ...(riskClass !== undefined ? { riskClass } : {}),
       ...(requiresUserPresence !== undefined ? { requiresUserPresence } : {}),
+      ...(idempotencyPolicy !== undefined ? { idempotencyPolicy } : {}),
+      ...(credentialScope !== undefined ? { credentialScope } : {}),
     };
   }
 
@@ -242,4 +247,29 @@ function extractRequiresUserPresence(
   const meta = tool.metadata as { requiresUserPresence?: boolean } | undefined;
   const v = meta?.requiresUserPresence;
   return typeof v === "boolean" ? v : undefined;
+}
+
+/**
+ * Extract the optional idempotencyPolicy from a tool definition's metadata.
+ * Used by the idempotency/retry dimension (BB004).
+ */
+function extractIdempotencyPolicy(
+  tool: TuvrenToolDefinition
+): "idempotent" | "non-idempotent" | undefined {
+  const meta = tool.metadata as { idempotencyPolicy?: string } | undefined;
+  const v = meta?.idempotencyPolicy;
+  if (v === "idempotent" || v === "non-idempotent") return v;
+  return undefined;
+}
+
+/**
+ * Extract the optional credential scope from a tool definition's metadata.
+ * Used by the credential-boundary dimension (BB004).
+ */
+function extractCredentialScope(
+  tool: TuvrenToolDefinition
+): string | undefined {
+  const meta = tool.metadata as { credentialScope?: string } | undefined;
+  const v = meta?.credentialScope;
+  return typeof v === "string" && v.length > 0 ? v : undefined;
 }

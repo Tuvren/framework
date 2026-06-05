@@ -733,3 +733,169 @@ describe("CapabilityPolicyEngine — user-presence and endpoint requirement (BB0
     expect(invocationDecision.admitted).toBe(true);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Idempotency/retry policy dimension (BB004)
+// ---------------------------------------------------------------------------
+
+describe("CapabilityPolicyEngine — idempotency/retry dimension (BB004)", () => {
+  test("binding without idempotencyPolicy leaves policyCanRetry undefined", () => {
+    const engine = createCapabilityPolicyEngine();
+    const binding = makeBinding("cap"); // no idempotencyPolicy
+
+    const decision = engine.evaluateInvocation(binding, defaultContext);
+
+    expect(decision.admitted).toBe(true);
+    expect(decision.policyCanRetry).toBeUndefined();
+  });
+
+  test("idempotent binding annotates policyCanRetry: true on admitted decision", () => {
+    const engine = createCapabilityPolicyEngine();
+    const binding = { ...makeBinding("cap"), idempotencyPolicy: "idempotent" as const };
+
+    const decision = engine.evaluateInvocation(binding, defaultContext);
+
+    expect(decision.admitted).toBe(true);
+    expect(decision.policyCanRetry).toBe(true);
+  });
+
+  test("non-idempotent binding annotates policyCanRetry: false on admitted decision", () => {
+    const engine = createCapabilityPolicyEngine();
+    const binding = { ...makeBinding("cap"), idempotencyPolicy: "non-idempotent" as const };
+
+    const decision = engine.evaluateInvocation(binding, defaultContext);
+
+    expect(decision.admitted).toBe(true);
+    expect(decision.policyCanRetry).toBe(false);
+  });
+
+  test("idempotency annotation is absent on a denied decision", () => {
+    const engine = createCapabilityPolicyEngine({
+      deniedCapabilityIds: new Set(["cap"]),
+    });
+    const binding = { ...makeBinding("cap"), idempotencyPolicy: "idempotent" as const };
+
+    const decision = engine.evaluateInvocation(binding, defaultContext);
+
+    expect(decision.admitted).toBe(false);
+    // Denied decision does not carry retry annotation
+    expect(decision.policyCanRetry).toBeUndefined();
+  });
+
+  test("idempotency dimension does not affect exposure decisions", () => {
+    const engine = createCapabilityPolicyEngine();
+    const surface = makeSurface("tool", "cap");
+
+    const decisions = engine.evaluateExposure([surface], defaultContext);
+
+    expect(decisions[0]?.exposed).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Credential-boundary policy dimension (BB004)
+// ---------------------------------------------------------------------------
+
+describe("CapabilityPolicyEngine — credential-boundary dimension (BB004)", () => {
+  const engineWithCred = createCapabilityPolicyEngine({
+    enforceCredentialBoundary: true,
+  });
+
+  test("capability without credentialScope is admitted regardless of entitled scopes", () => {
+    const binding = makeBinding("cap"); // no credentialScope
+
+    const decision = engineWithCred.evaluateInvocation(binding, {
+      ...defaultContext,
+      entitledCredentialScopes: [],
+    });
+
+    expect(decision.admitted).toBe(true);
+  });
+
+  test("entitled scope in context is admitted", () => {
+    const binding = { ...makeBinding("cap"), credentialScope: "files.read" };
+
+    const decision = engineWithCred.evaluateInvocation(binding, {
+      ...defaultContext,
+      entitledCredentialScopes: ["files.read", "files.write"],
+    });
+
+    expect(decision.admitted).toBe(true);
+  });
+
+  test("scope not in entitledCredentialScopes is denied", () => {
+    const binding = { ...makeBinding("cap"), credentialScope: "admin.access" };
+
+    const decision = engineWithCred.evaluateInvocation(binding, {
+      ...defaultContext,
+      entitledCredentialScopes: ["files.read"],
+    });
+
+    expect(decision.admitted).toBe(false);
+    expect(typeof decision.reason).toBe("string");
+    expect((decision.reason ?? "").length).toBeGreaterThan(0);
+  });
+
+  test("empty entitledCredentialScopes with scope set results in denial", () => {
+    const binding = { ...makeBinding("cap"), credentialScope: "files.read" };
+
+    const decision = engineWithCred.evaluateInvocation(binding, {
+      ...defaultContext,
+      entitledCredentialScopes: [],
+    });
+
+    expect(decision.admitted).toBe(false);
+  });
+
+  test("denial reason does not expose the scope name", () => {
+    const secretScope = "internal.secret.scope.name";
+    const binding = { ...makeBinding("cap"), credentialScope: secretScope };
+
+    const decision = engineWithCred.evaluateInvocation(binding, {
+      ...defaultContext,
+      entitledCredentialScopes: [],
+    });
+
+    expect(decision.admitted).toBe(false);
+    expect(decision.reason).not.toContain(secretScope);
+  });
+
+  test("no credential check when enforceCredentialBoundary is false (default)", () => {
+    const engineNoCred = createCapabilityPolicyEngine(); // default: no enforcement
+    const binding = { ...makeBinding("cap"), credentialScope: "super.secret" };
+
+    const decision = engineNoCred.evaluateInvocation(binding, {
+      ...defaultContext,
+      entitledCredentialScopes: [],
+    });
+
+    expect(decision.admitted).toBe(true);
+  });
+
+  test("credential denial carries admitted: false with capabilityId and executionClass", () => {
+    const binding = { ...makeBinding("web.search"), credentialScope: "search.api" };
+
+    const decision = engineWithCred.evaluateInvocation(binding, {
+      ...defaultContext,
+      entitledCredentialScopes: [],
+    });
+
+    expect(decision.admitted).toBe(false);
+    expect(decision.capabilityId).toBe("web.search");
+    expect(decision.executionClass).toBe("tuvren-server");
+  });
+
+  test("endpoint-level credentialScope is also enforced", () => {
+    const binding = {
+      ...makeBinding("cap"),
+      endpoint: { id: "secure-endpoint", kind: "tuvren-server" as const, credentialScope: "endpoint.cred" },
+    };
+
+    const decision = engineWithCred.evaluateInvocation(binding, {
+      ...defaultContext,
+      entitledCredentialScopes: [],
+    });
+
+    expect(decision.admitted).toBe(false);
+  });
+});
