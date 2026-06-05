@@ -548,3 +548,170 @@ describe("CapabilityPolicyEngine — data-residency dimension (BB001)", () => {
     expect(decision.admitted).toBe(true);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Risk-classification policy dimension (BB002)
+// ---------------------------------------------------------------------------
+
+describe("CapabilityPolicyEngine — risk-classification dimension (BB002)", () => {
+  test("low-risk surface is exposed normally with no risk config", () => {
+    const engine = createCapabilityPolicyEngine();
+    const surface = { ...makeSurface("tool", "cap"), riskClass: "low" as const };
+
+    const decisions = engine.evaluateExposure([surface], defaultContext);
+
+    expect(decisions[0]?.exposed).toBe(true);
+  });
+
+  test("high-risk surface is withheld when maxAllowedRiskClass is medium", () => {
+    const engine = createCapabilityPolicyEngine({ maxAllowedRiskClass: "medium" });
+    const surface = { ...makeSurface("risky", "cap"), riskClass: "high" as const };
+
+    const decisions = engine.evaluateExposure([surface], defaultContext);
+
+    expect(decisions[0]?.exposed).toBe(false);
+  });
+
+  test("surface without riskClass passes regardless of maxAllowedRiskClass", () => {
+    const engine = createCapabilityPolicyEngine({ maxAllowedRiskClass: "low" });
+    const surface = makeSurface("tool", "cap"); // no riskClass
+
+    const decisions = engine.evaluateExposure([surface], defaultContext);
+
+    expect(decisions[0]?.exposed).toBe(true);
+  });
+
+  test("high-risk exposure denial carries non-secret reason", () => {
+    const engine = createCapabilityPolicyEngine({ maxAllowedRiskClass: "low" });
+    const surface = { ...makeSurface("risky", "cap"), riskClass: "high" as const };
+
+    const decisions = engine.evaluateExposure([surface], defaultContext);
+
+    expect(decisions[0]?.exposed).toBe(false);
+    expect(typeof decisions[0]?.reason).toBe("string");
+    expect((decisions[0]?.reason ?? "").length).toBeGreaterThan(0);
+  });
+
+  test("context maxAllowedRiskClass further restricts beyond engine config", () => {
+    const engine = createCapabilityPolicyEngine({ maxAllowedRiskClass: "high" });
+    const contextMedium = { ...defaultContext, maxAllowedRiskClass: "low" as const };
+    const surface = { ...makeSurface("risky", "cap"), riskClass: "medium" as const };
+
+    const decisions = engine.evaluateExposure([surface], contextMedium);
+
+    expect(decisions[0]?.exposed).toBe(false);
+  });
+
+  test("high-risk binding sets requiresApproval when highRiskRequiresApproval is true", () => {
+    const engine = createCapabilityPolicyEngine({ highRiskRequiresApproval: true });
+    const binding = { ...makeBinding("cap"), riskClass: "high" as const };
+
+    const decision = engine.evaluateInvocation(binding, defaultContext);
+
+    expect(decision.admitted).toBe(false);
+    expect(decision.requiresApproval).toBe(true);
+    expect(typeof decision.reason).toBe("string");
+  });
+
+  test("low-risk binding is admitted and unaffected by highRiskRequiresApproval", () => {
+    const engine = createCapabilityPolicyEngine({ highRiskRequiresApproval: true });
+    const binding = { ...makeBinding("cap"), riskClass: "low" as const };
+
+    const decision = engine.evaluateInvocation(binding, defaultContext);
+
+    expect(decision.admitted).toBe(true);
+    expect(decision.requiresApproval).toBeUndefined();
+  });
+
+  test("medium-risk binding admitted when maxAllowedRiskClass is high", () => {
+    const engine = createCapabilityPolicyEngine({ maxAllowedRiskClass: "high" });
+    const binding = { ...makeBinding("cap"), riskClass: "medium" as const };
+
+    const decision = engine.evaluateInvocation(binding, defaultContext);
+
+    expect(decision.admitted).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// User-presence and active-endpoint requirement (BB003)
+// ---------------------------------------------------------------------------
+
+describe("CapabilityPolicyEngine — user-presence and endpoint requirement (BB003)", () => {
+  test("surface with requiresActiveEndpoint is withheld when endpointAttached is false", () => {
+    const engine = createCapabilityPolicyEngine();
+    const surface = { ...makeSurface("tool", "cap"), requiresActiveEndpoint: true };
+    const noEndpointCtx = { ...defaultContext, endpointAttached: false };
+
+    const decisions = engine.evaluateExposure([surface], noEndpointCtx);
+
+    expect(decisions[0]?.exposed).toBe(false);
+    expect(typeof decisions[0]?.reason).toBe("string");
+    expect((decisions[0]?.reason ?? "").length).toBeGreaterThan(0);
+  });
+
+  test("surface with requiresActiveEndpoint is exposed when endpointAttached is true", () => {
+    const engine = createCapabilityPolicyEngine();
+    const surface = { ...makeSurface("tool", "cap"), requiresActiveEndpoint: true };
+    const withEndpointCtx = { ...defaultContext, endpointAttached: true };
+
+    const decisions = engine.evaluateExposure([surface], withEndpointCtx);
+
+    expect(decisions[0]?.exposed).toBe(true);
+  });
+
+  test("surface without requiresActiveEndpoint is unaffected by endpointAttached: false", () => {
+    const engine = createCapabilityPolicyEngine();
+    const surface = makeSurface("tool", "cap"); // no requiresActiveEndpoint
+    const noEndpointCtx = { ...defaultContext, endpointAttached: false };
+
+    const decisions = engine.evaluateExposure([surface], noEndpointCtx);
+
+    expect(decisions[0]?.exposed).toBe(true);
+  });
+
+  test("binding with requiresUserPresence is denied when userPresent is false", () => {
+    const engine = createCapabilityPolicyEngine();
+    const binding = { ...makeBinding("cap"), requiresUserPresence: true };
+    const noUserCtx = { ...defaultContext, userPresent: false };
+
+    const decision = engine.evaluateInvocation(binding, noUserCtx);
+
+    expect(decision.admitted).toBe(false);
+    expect(typeof decision.reason).toBe("string");
+    expect((decision.reason ?? "").length).toBeGreaterThan(0);
+  });
+
+  test("binding with requiresUserPresence is admitted when userPresent is true", () => {
+    const engine = createCapabilityPolicyEngine();
+    const binding = { ...makeBinding("cap"), requiresUserPresence: true };
+    const withUserCtx = { ...defaultContext, userPresent: true };
+
+    const decision = engine.evaluateInvocation(binding, withUserCtx);
+
+    expect(decision.admitted).toBe(true);
+  });
+
+  test("binding without requiresUserPresence is unaffected by userPresent: false", () => {
+    const engine = createCapabilityPolicyEngine();
+    const binding = makeBinding("cap"); // no requiresUserPresence
+    const noUserCtx = { ...defaultContext, userPresent: false };
+
+    const decision = engine.evaluateInvocation(binding, noUserCtx);
+
+    expect(decision.admitted).toBe(true);
+  });
+
+  test("requirements-met capability passes both decision points", () => {
+    const engine = createCapabilityPolicyEngine();
+    const surface = { ...makeSurface("tool", "cap"), requiresActiveEndpoint: true };
+    const binding = { ...makeBinding("cap"), requiresUserPresence: true };
+    const fullCtx = { ...defaultContext, endpointAttached: true, userPresent: true };
+
+    const exposureDecisions = engine.evaluateExposure([surface], fullCtx);
+    const invocationDecision = engine.evaluateInvocation(binding, fullCtx);
+
+    expect(exposureDecisions[0]?.exposed).toBe(true);
+    expect(invocationDecision.admitted).toBe(true);
+  });
+});
