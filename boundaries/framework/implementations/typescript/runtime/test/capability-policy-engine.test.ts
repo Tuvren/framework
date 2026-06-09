@@ -19,9 +19,11 @@ import { describe, expect, test } from "bun:test";
 import type {
   Binding,
   CapabilityPolicyContext,
+  PolicyCapabilityMetadata,
   ToolSurface,
 } from "@tuvren/core/capabilities";
 import type { RuntimeDriver } from "@tuvren/core/driver";
+import type { PolicyDimension } from "../src/index.ts";
 import {
   createDriverRegistry as createBaseDriverRegistry,
   createCapabilityPolicyEngine,
@@ -1607,6 +1609,303 @@ describe("CapabilityPolicyEngine — BB005 resume-path policy check", () => {
       (toolResultEvent as Record<string, unknown> | undefined)?.isError
     ).toBe(true);
     // And the turn must not be stuck in paused state
+    expect(resumedHandle.status().phase).not.toBe("paused");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// BB+ — PolicyDimension extension interface
+// ---------------------------------------------------------------------------
+
+describe("CapabilityPolicyEngine — BB+ extension dimension interface", () => {
+  function makeDenyExposureDimension(reason: string): PolicyDimension {
+    return {
+      checkExposure: () => reason,
+      checkInvocation: () => null,
+    };
+  }
+
+  function makeDenyInvocationDimension(reason: string): PolicyDimension {
+    return {
+      checkExposure: () => null,
+      checkInvocation: () => reason,
+    };
+  }
+
+  function makePassDimension(): PolicyDimension {
+    return {
+      checkExposure: () => null,
+      checkInvocation: () => null,
+    };
+  }
+
+  const surface = makeSurface("ext-tool", "ext.cap");
+  const binding = makeBinding("ext.cap");
+
+  test("extension dimension exposure denial is honored", () => {
+    const engine = createCapabilityPolicyEngine({
+      dimensions: [makeDenyExposureDimension("blocked by org policy")],
+    });
+    const [decision] = engine.evaluateExposure([surface], defaultContext);
+    expect(decision.exposed).toBe(false);
+  });
+
+  test("extension dimension exposure denial reason included in output", () => {
+    const engine = createCapabilityPolicyEngine({
+      dimensions: [makeDenyExposureDimension("blocked by org policy")],
+    });
+    const [decision] = engine.evaluateExposure([surface], defaultContext);
+    expect(decision.exposed).toBe(false);
+    expect(decision.reason).toContain("blocked by org policy");
+  });
+
+  test("extension dimension invocation denial is honored", () => {
+    const engine = createCapabilityPolicyEngine({
+      dimensions: [
+        makeDenyInvocationDimension("invocation blocked by org policy"),
+      ],
+    });
+    const decision = engine.evaluateInvocation(binding, defaultContext);
+    expect(decision.admitted).toBe(false);
+  });
+
+  test("extension dimension invocation denial reason included in output", () => {
+    const engine = createCapabilityPolicyEngine({
+      dimensions: [
+        makeDenyInvocationDimension("invocation blocked by org policy"),
+      ],
+    });
+    const decision = engine.evaluateInvocation(binding, defaultContext);
+    expect(decision.admitted).toBe(false);
+    expect(decision.reason).toContain("invocation blocked by org policy");
+  });
+
+  test("passing extension dimension does not affect exposure decision", () => {
+    const engine = createCapabilityPolicyEngine({
+      dimensions: [makePassDimension()],
+    });
+    const [decision] = engine.evaluateExposure([surface], defaultContext);
+    expect(decision.exposed).toBe(true);
+  });
+
+  test("passing extension dimension does not affect invocation decision", () => {
+    const engine = createCapabilityPolicyEngine({
+      dimensions: [makePassDimension()],
+    });
+    const decision = engine.evaluateInvocation(binding, defaultContext);
+    expect(decision.admitted).toBe(true);
+  });
+
+  test("framework denial is not overridden by a passing extension dimension", () => {
+    const engine = createCapabilityPolicyEngine({
+      deniedSurfaceNames: new Set(["ext-tool"]),
+      dimensions: [makePassDimension()],
+    });
+    const [decision] = engine.evaluateExposure([surface], defaultContext);
+    expect(decision.exposed).toBe(false);
+  });
+
+  test("extension dimension denial compounds with framework denial reason", () => {
+    const engine = createCapabilityPolicyEngine({
+      deniedSurfaceNames: new Set(["ext-tool"]),
+      dimensions: [makeDenyExposureDimension("extra-org-block")],
+    });
+    const [decision] = engine.evaluateExposure([surface], defaultContext);
+    expect(decision.exposed).toBe(false);
+    expect(decision.reason).toContain("extra-org-block");
+  });
+
+  test("multiple extension dimensions both contribute denial reasons", () => {
+    const engine = createCapabilityPolicyEngine({
+      dimensions: [
+        makeDenyExposureDimension("first-block"),
+        makeDenyExposureDimension("second-block"),
+      ],
+    });
+    const [decision] = engine.evaluateExposure([surface], defaultContext);
+    expect(decision.exposed).toBe(false);
+    expect(decision.reason).toContain("first-block");
+    expect(decision.reason).toContain("second-block");
+  });
+
+  test("extension dimension receives metadata from context capabilityMetadata", () => {
+    let receivedMetadata: PolicyCapabilityMetadata | undefined;
+    const captureDimension: PolicyDimension = {
+      checkExposure: (_s, meta) => {
+        receivedMetadata = meta;
+        return null;
+      },
+      checkInvocation: () => null,
+    };
+    const engine = createCapabilityPolicyEngine({
+      dimensions: [captureDimension],
+    });
+    const contextWithMeta: CapabilityPolicyContext = {
+      ...defaultContext,
+      capabilityMetadata: new Map([["ext.cap", { riskClass: "high" }]]),
+    };
+    engine.evaluateExposure([surface], contextWithMeta);
+    expect(receivedMetadata).toBeDefined();
+    expect(
+      (receivedMetadata as PolicyCapabilityMetadata | undefined)?.riskClass
+    ).toBe("high");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// BB+ — extension dimension boundary robustness
+// ---------------------------------------------------------------------------
+
+describe("CapabilityPolicyEngine — BB+ extension dimension boundary robustness", () => {
+  const surface = makeSurface("robust-tool", "robust.cap");
+  const binding = makeBinding("robust.cap");
+
+  test("empty-string return from checkExposure is treated as pass", () => {
+    const emptyStringDimension: PolicyDimension = {
+      checkExposure: () => "",
+      checkInvocation: () => null,
+    };
+    const engine = createCapabilityPolicyEngine({
+      dimensions: [emptyStringDimension],
+    });
+    const [decision] = engine.evaluateExposure([surface], defaultContext);
+    expect(decision.exposed).toBe(true);
+  });
+
+  test("empty-string return from checkInvocation is treated as pass", () => {
+    const emptyStringDimension: PolicyDimension = {
+      checkExposure: () => null,
+      checkInvocation: () => "",
+    };
+    const engine = createCapabilityPolicyEngine({
+      dimensions: [emptyStringDimension],
+    });
+    const decision = engine.evaluateInvocation(binding, defaultContext);
+    expect(decision.admitted).toBe(true);
+  });
+
+  test("extension checkInvocation receives metadata from context capabilityMetadata", () => {
+    let receivedMetadata: PolicyCapabilityMetadata | undefined;
+    const captureDimension: PolicyDimension = {
+      checkExposure: () => null,
+      checkInvocation: (_b, meta) => {
+        receivedMetadata = meta;
+        return null;
+      },
+    };
+    const engine = createCapabilityPolicyEngine({
+      dimensions: [captureDimension],
+    });
+    const contextWithMeta: CapabilityPolicyContext = {
+      ...defaultContext,
+      capabilityMetadata: new Map([["robust.cap", { riskClass: "medium" }]]),
+    };
+    engine.evaluateInvocation(binding, contextWithMeta);
+    expect(receivedMetadata).toBeDefined();
+    expect(
+      (receivedMetadata as PolicyCapabilityMetadata | undefined)?.riskClass
+    ).toBe("medium");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// BB+ — extension dimension resume-path integration
+// ---------------------------------------------------------------------------
+
+describe("CapabilityPolicyEngine — BB+ extension dimension resume-path", () => {
+  test("wired: extension dimension denial on resume path blocks execution after approval", async () => {
+    // Use BB002 risk-approval to trigger the pause (riskClass:high +
+    // requireApprovalForRiskClass:high), then flip the extension dimension
+    // to deny before resolving approval. The resume path re-runs
+    // evaluateInvocation, so the extension denial wins.
+    const toolName = "resume.ext-denied";
+    let toolExecuted = false;
+    let denyOnResume = false;
+
+    const harness = createFakeKernelHarness();
+
+    const extensionDimension: PolicyDimension = {
+      checkExposure: () => null,
+      checkInvocation: () =>
+        denyOnResume ? "extension dimension denied after pause" : null,
+    };
+
+    const engine = createCapabilityPolicyEngine({
+      requireApprovalForRiskClass: "high",
+      dimensions: [extensionDimension],
+    });
+
+    const driver = {
+      id: "resume-ext-driver",
+      async execute(context: Parameters<RuntimeDriver["execute"]>[0]) {
+        if (!context.messages.some((m) => m.role === "tool")) {
+          return {
+            messages: [
+              assistantToolCalls([
+                { callId: "ext-resume-call", input: {}, name: toolName },
+              ]),
+            ],
+            resolution: { type: "continue_iteration" as const },
+            toolExecutionMode: "parallel",
+          };
+        }
+        return {
+          messages: [assistantText("done")],
+          resolution: { reason: "done", type: "end_turn" as const },
+        };
+      },
+      async resume() {
+        throw new Error("not expected");
+      },
+    } satisfies RuntimeDriver;
+
+    const runtime = createTuvrenRuntime({
+      defaultDriverId: "resume-ext-driver",
+      driverRegistry: createBaseDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        capabilityPolicyEngine: engine,
+        name: "primary",
+        tools: [
+          {
+            description: "high-risk tool paused by policy",
+            execute() {
+              toolExecuted = true;
+              return { ok: true };
+            },
+            inputSchema: { type: "object" },
+            name: toolName,
+            riskClass: "high",
+          },
+        ],
+      },
+      signal: textSignal("ext resume test"),
+      threadId: thread.threadId,
+    });
+
+    await collectEvents(handle.events());
+    // Confirm the turn paused for approval (via requireApprovalForRiskClass)
+    expect(handle.status().phase).toBe("paused");
+
+    // Flip extension dimension to deny before resolving approval
+    denyOnResume = true;
+
+    const resumedHandle = handle.resolveApproval({
+      decisions: [{ callId: "ext-resume-call", type: "approve" }],
+    });
+    const resumeEvents = await collectEvents(resumedHandle.events());
+
+    expect(toolExecuted).toBe(false);
+    const toolResultEvent = resumeEvents.find((e) => e.type === "tool.result");
+    expect(toolResultEvent).toBeDefined();
+    expect(
+      (toolResultEvent as Record<string, unknown> | undefined)?.isError
+    ).toBe(true);
     expect(resumedHandle.status().phase).not.toBe("paused");
   });
 });

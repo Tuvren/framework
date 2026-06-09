@@ -143,7 +143,10 @@ export type { McpToolSource } from "@tuvren/mcp-client";
 export { createMcpToolSource } from "@tuvren/mcp-client";
 export type { BindingResolver } from "./lib/binding-resolver.js";
 export { createBindingResolver } from "./lib/binding-resolver.js";
-export type { CapabilityPolicyEngineOptions } from "./lib/capability-policy-engine.js";
+export type {
+  CapabilityPolicyEngineOptions,
+  PolicyDimension,
+} from "./lib/capability-policy-engine.js";
 export { createCapabilityPolicyEngine } from "./lib/capability-policy-engine.js";
 export type { CapabilityRegistry } from "./lib/capability-registry.js";
 export { createCapabilityRegistry } from "./lib/capability-registry.js";
