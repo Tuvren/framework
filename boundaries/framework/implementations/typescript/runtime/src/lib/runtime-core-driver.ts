@@ -456,6 +456,8 @@ function applyExposureFilter(
         ? meta.requiresActiveEndpoint
         : undefined;
     return {
+      // capabilityId == tool.name by Tuvren-server convention (AW/BB):
+      // capability IDs and tool names are identical for in-process tools.
       capabilityId: tool.name,
       description: tool.description,
       ...(endpointRegion === undefined ? {} : { endpointRegion }),

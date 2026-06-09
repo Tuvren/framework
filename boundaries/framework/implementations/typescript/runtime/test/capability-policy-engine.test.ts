@@ -406,6 +406,88 @@ describe("CapabilityPolicyEngine — wired invocation-time denial", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Wired exposure-time filtering (applyExposureFilter integration)
+// ---------------------------------------------------------------------------
+
+describe("CapabilityPolicyEngine — wired exposure-time filtering", () => {
+  const filteredToolName = "filtered-surface";
+  const permittedToolName = "permitted-surface";
+
+  async function runExposureFilteredTurn(): Promise<{
+    driverToolNames: string[];
+  }> {
+    const harness = createFakeKernelHarness();
+    const capturedNames: string[] = [];
+
+    const engine = createCapabilityPolicyEngine({
+      deniedSurfaceNames: new Set([filteredToolName]),
+    });
+
+    const driver: RuntimeDriver = {
+      id: "exposure-filter-driver",
+      async execute(context) {
+        for (const t of context.toolRegistry.list()) {
+          capturedNames.push(t.name);
+        }
+        return {
+          messages: [assistantText("done")],
+          resolution: { reason: "done", type: "end_turn" },
+        };
+      },
+      async resume() {
+        throw new Error("unexpected");
+      },
+    };
+
+    const runtime = createTuvrenRuntime({
+      defaultDriverId: "exposure-filter-driver",
+      driverRegistry: createBaseDriverRegistry([driver]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        capabilityPolicyEngine: engine,
+        name: "primary",
+        tools: [
+          {
+            description: "denied surface",
+            execute() {
+              return { ok: true };
+            },
+            inputSchema: { type: "object" },
+            name: filteredToolName,
+          },
+          {
+            description: "permitted surface",
+            execute() {
+              return { ok: true };
+            },
+            inputSchema: { type: "object" },
+            name: permittedToolName,
+          },
+        ],
+      },
+      signal: textSignal("exposure filter test"),
+      threadId: thread.threadId,
+    });
+    await collectEvents(handle.events());
+    return { driverToolNames: capturedNames };
+  }
+
+  test("withheld surface is absent from driver tool registry", async () => {
+    const { driverToolNames } = await runExposureFilteredTurn();
+    expect(driverToolNames).not.toContain(filteredToolName);
+  });
+
+  test("permitted surface remains visible in driver tool registry", async () => {
+    const { driverToolNames } = await runExposureFilteredTurn();
+    expect(driverToolNames).toContain(permittedToolName);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Data-residency policy dimension (BB001)
 // ---------------------------------------------------------------------------
 
