@@ -29,7 +29,7 @@ import type {
  * appended after the built-in framework dimensions and participate in the
  * same deny-from-any composition: returning a non-empty string adds a denial
  * reason; returning null passes. Use `options.dimensions` on
- * `createCapabilityPolicyEngine` to register extension dimensions. (Epic BB+, follows BB005 composition/precedence)
+ * `createCapabilityPolicyEngine` to register extension dimensions. (Epic BB+)
  */
 export interface PolicyDimension {
   /**
@@ -379,6 +379,8 @@ class BasicCapabilityPolicyEngine implements CapabilityPolicyEngine {
 
     // Extension dimensions (BB+): appended after framework dims.
     // Same typeof+length guard as the exposure loop — see comment there.
+    // A non-empty extension denial short-circuits before the BB002
+    // risk-approval gate below, so extension hard-deny wins over soft-gate.
     for (const dim of this.extensionDimensions) {
       const extReason = dim.checkInvocation(binding, metadata, context);
       if (typeof extReason === "string" && extReason.length > 0) {
