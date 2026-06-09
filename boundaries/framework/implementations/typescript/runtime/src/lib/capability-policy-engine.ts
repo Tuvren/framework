@@ -25,6 +25,38 @@ import type {
 } from "@tuvren/core/capabilities";
 
 /**
+ * Extension interface for custom policy dimensions. Implementations are
+ * appended after the built-in framework dimensions and participate in the
+ * same deny-from-any composition: returning a non-null string adds a denial
+ * reason; returning null passes. Use `options.dimensions` on
+ * `createCapabilityPolicyEngine` to register extension dimensions. BB005.
+ */
+export interface PolicyDimension {
+  /**
+   * Evaluate exposure-time policy for a single surface.
+   * Return a non-empty reason string to withhold the surface from the model;
+   * return null to pass. The built-in framework dimensions are evaluated
+   * before this method is called.
+   */
+  checkExposure(
+    surface: ToolSurface,
+    metadata: PolicyCapabilityMetadata | undefined,
+    context: CapabilityPolicyContext
+  ): string | null;
+  /**
+   * Evaluate invocation-time policy for a single binding.
+   * Return a non-empty reason string to deny the invocation;
+   * return null to pass. The built-in framework dimensions are evaluated
+   * before this method is called.
+   */
+  checkInvocation(
+    binding: Binding,
+    metadata: PolicyCapabilityMetadata | undefined,
+    context: CapabilityPolicyContext
+  ): string | null;
+}
+
+/**
  * Options for the baseline Capability Policy Engine. Controls the static
  * policy rules applied at both decision points; per-capability metadata and
  * session-level context dimensions are supplied at call time via
@@ -35,6 +67,13 @@ export interface CapabilityPolicyEngineOptions {
   deniedCapabilityIds?: Set<string>;
   /** Surface names to deny at exposure-time regardless of other context. */
   deniedSurfaceNames?: Set<string>;
+  /**
+   * Custom policy dimensions appended after the framework built-ins.
+   * Each dimension participates in deny-from-any composition: a non-null
+   * return from checkExposure or checkInvocation adds a denial reason.
+   * Framework dimensions always run first. BB005.
+   */
+  dimensions?: PolicyDimension[];
   /**
    * Capabilities strictly above this risk class are withheld at exposure time
    * (exposed: false). "high" means only high-risk capabilities are withheld;
@@ -212,12 +251,14 @@ function checkRiskClassInvocation(
 class BasicCapabilityPolicyEngine implements CapabilityPolicyEngine {
   private readonly deniedCapabilities: ReadonlySet<string>;
   private readonly deniedSurfaces: ReadonlySet<string>;
+  private readonly extensionDimensions: readonly PolicyDimension[];
   private readonly options: CapabilityPolicyEngineOptions;
 
   constructor(options: CapabilityPolicyEngineOptions) {
     this.options = options;
     this.deniedCapabilities = options.deniedCapabilityIds ?? new Set();
     this.deniedSurfaces = options.deniedSurfaceNames ?? new Set();
+    this.extensionDimensions = options.dimensions ?? [];
   }
 
   evaluateExposure(
@@ -264,6 +305,14 @@ class BasicCapabilityPolicyEngine implements CapabilityPolicyEngine {
       );
       if (endpointReason !== null) {
         denyReasons.push(endpointReason);
+      }
+
+      // BB005: extension dimensions (appended after framework dims)
+      for (const dim of this.extensionDimensions) {
+        const extReason = dim.checkExposure(surface, metadata, context);
+        if (extReason !== null) {
+          denyReasons.push(extReason);
+        }
       }
 
       if (denyReasons.length > 0) {
@@ -323,6 +372,14 @@ class BasicCapabilityPolicyEngine implements CapabilityPolicyEngine {
     );
     if (credentialReason !== null) {
       denyReasons.push(credentialReason);
+    }
+
+    // BB005: extension dimensions (appended after framework dims)
+    for (const dim of this.extensionDimensions) {
+      const extReason = dim.checkInvocation(binding, metadata, context);
+      if (extReason !== null) {
+        denyReasons.push(extReason);
+      }
     }
 
     if (denyReasons.length > 0) {
