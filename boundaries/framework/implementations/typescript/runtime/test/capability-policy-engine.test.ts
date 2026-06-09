@@ -1751,3 +1751,59 @@ describe("CapabilityPolicyEngine — BB005 extension dimension interface", () =>
     ).toBe("high");
   });
 });
+
+// ---------------------------------------------------------------------------
+// BB+ — extension dimension boundary robustness
+// ---------------------------------------------------------------------------
+
+describe("CapabilityPolicyEngine — BB+ extension dimension boundary robustness", () => {
+  const surface = makeSurface("robust-tool", "robust.cap");
+  const binding = makeBinding("robust.cap");
+
+  test("empty-string return from checkExposure is treated as pass", () => {
+    const emptyStringDimension: PolicyDimension = {
+      checkExposure: () => "",
+      checkInvocation: () => null,
+    };
+    const engine = createCapabilityPolicyEngine({
+      dimensions: [emptyStringDimension],
+    });
+    const [decision] = engine.evaluateExposure([surface], defaultContext);
+    expect(decision.exposed).toBe(true);
+  });
+
+  test("empty-string return from checkInvocation is treated as pass", () => {
+    const emptyStringDimension: PolicyDimension = {
+      checkExposure: () => null,
+      checkInvocation: () => "",
+    };
+    const engine = createCapabilityPolicyEngine({
+      dimensions: [emptyStringDimension],
+    });
+    const decision = engine.evaluateInvocation(binding, defaultContext);
+    expect(decision.admitted).toBe(true);
+  });
+
+  test("extension checkInvocation receives metadata from context capabilityMetadata", () => {
+    let receivedMetadata: PolicyCapabilityMetadata | undefined;
+    const captureDimension: PolicyDimension = {
+      checkExposure: () => null,
+      checkInvocation: (_b, meta) => {
+        receivedMetadata = meta;
+        return null;
+      },
+    };
+    const engine = createCapabilityPolicyEngine({
+      dimensions: [captureDimension],
+    });
+    const contextWithMeta: CapabilityPolicyContext = {
+      ...defaultContext,
+      capabilityMetadata: new Map([["robust.cap", { riskClass: "medium" }]]),
+    };
+    engine.evaluateInvocation(binding, contextWithMeta);
+    expect(receivedMetadata).toBeDefined();
+    expect(
+      (receivedMetadata as PolicyCapabilityMetadata | undefined)?.riskClass
+    ).toBe("medium");
+  });
+});

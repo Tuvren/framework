@@ -29,7 +29,7 @@ import type {
  * appended after the built-in framework dimensions and participate in the
  * same deny-from-any composition: returning a non-null string adds a denial
  * reason; returning null passes. Use `options.dimensions` on
- * `createCapabilityPolicyEngine` to register extension dimensions. BB005.
+ * `createCapabilityPolicyEngine` to register extension dimensions. (Epic BB+, follows BB005 composition/precedence)
  */
 export interface PolicyDimension {
   /**
@@ -69,9 +69,9 @@ export interface CapabilityPolicyEngineOptions {
   deniedSurfaceNames?: Set<string>;
   /**
    * Custom policy dimensions appended after the framework built-ins.
-   * Each dimension participates in deny-from-any composition: a non-null
-   * return from checkExposure or checkInvocation adds a denial reason.
-   * Framework dimensions always run first. BB005.
+   * Each dimension participates in deny-from-any composition: a non-empty
+   * string return from checkExposure or checkInvocation adds a denial reason.
+   * Framework dimensions always run first. (Epic BB+)
    */
   dimensions?: PolicyDimension[];
   /**
@@ -307,10 +307,13 @@ class BasicCapabilityPolicyEngine implements CapabilityPolicyEngine {
         denyReasons.push(endpointReason);
       }
 
-      // BB005: extension dimensions (appended after framework dims)
+      // Extension dimensions (BB+): appended after framework dims.
+      // Guard is typeof+length rather than !== null so that empty-string
+      // returns (and JS undefined from an untyped host) are treated as pass,
+      // matching the "non-empty reason string" contract in the interface JSDoc.
       for (const dim of this.extensionDimensions) {
         const extReason = dim.checkExposure(surface, metadata, context);
-        if (extReason !== null) {
+        if (typeof extReason === "string" && extReason.length > 0) {
           denyReasons.push(extReason);
         }
       }
@@ -374,10 +377,11 @@ class BasicCapabilityPolicyEngine implements CapabilityPolicyEngine {
       denyReasons.push(credentialReason);
     }
 
-    // BB005: extension dimensions (appended after framework dims)
+    // Extension dimensions (BB+): appended after framework dims.
+    // Same typeof+length guard as the exposure loop — see comment there.
     for (const dim of this.extensionDimensions) {
       const extReason = dim.checkInvocation(binding, metadata, context);
-      if (extReason !== null) {
+      if (typeof extReason === "string" && extReason.length > 0) {
         denyReasons.push(extReason);
       }
     }
