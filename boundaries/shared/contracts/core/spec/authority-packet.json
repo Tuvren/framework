@@ -7,9 +7,9 @@
   "humanAuthorityRefs": [
     "docs/KrakenKernelSpecification.md",
     "docs/KrakenFrameworkSpecification.md",
-    "constitution/TechSpec.md#adr-037",
-    "constitution/TechSpec.md#adr-046",
-    "constitution/TechSpec.md#section-3-13"
+    ".constitution/tech-spec/adrs/ADR-037-consolidate-shared-primitives-into-tuvren-core-with-sub.md",
+    ".constitution/tech-spec/adrs/ADR-046-capability-orchestration-model-tool-surface-vs-capabili.md",
+    ".constitution/tech-spec/data-models/README.md#313-capability-orchestration-concept-shapes"
   ],
   "authoritativeSources": [
     {
@@ -255,7 +255,7 @@
     "boundaries/framework/implementations/rust/conformance-runner",
     "boundaries/framework/implementations/rust/conformance-adapter",
     "docs",
-    "constitution"
+    ".constitution"
   ],
   "verificationPaths": [
     {

@@ -31,7 +31,7 @@
  *
  * The gate reads its expected topology, standing exceptions, and required
  * authoritative sources from the machine-readable inventory companion at
- * `constitution/support/live/epic-al-portability-inventory.json`. That JSON
+ * `.constitution/reports/epic-al-portability-inventory.json`. That JSON
  * is the canonical machine projection of the human inventory MD, so the gate
  * fails when either the JSON or the on-disk packet topology drifts from the
  * other. Hardcoded constants are deliberately not maintained in this file:
@@ -105,11 +105,11 @@ const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const BOUNDARIES_ROOT = resolve(REPO_ROOT, "boundaries");
 const INVENTORY_PATH = resolve(
   REPO_ROOT,
-  "constitution/support/live/epic-al-portable-surface-conformance-gap-inventory.md"
+  ".constitution/reports/epic-al-portable-surface-conformance-gap-inventory.md"
 );
 const INVENTORY_MANIFEST_PATH = resolve(
   REPO_ROOT,
-  "constitution/support/live/epic-al-portability-inventory.json"
+  ".constitution/reports/epic-al-portability-inventory.json"
 );
 const INVENTORY_MANIFEST_ID = "epic-al.portability-inventory";
 const ALLOWED_CLASSIFICATIONS: ReadonlySet<string> = new Set([

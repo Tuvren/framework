@@ -8,7 +8,7 @@ Read this after the kernel specification. This document defines the human semant
 
 Kraken is the execution engine inside Tuvren Runtime. This specification defines the engine-layer framework and driver semantics, not the public product namespace.
 
-Epic AD freezes the portability reading of this Markdown. Portable cross-implementation meaning is freeze-covered when the docs-to-authority matrix maps the claim to boundary-owned authority packets, generated artifacts where applicable, conformance plans, fixtures, adapter capabilities, and compatibility evidence. Claims classified as missing-conformance-follow-up, implementation-local-evidence, implementation-defined, explicitly deferred, or stale-corrected in `constitution/support/live/epic-ad-docs-to-authority-coverage-matrix.json` are not portable machine authority until a later packet and conformance change promotes them.
+Epic AD freezes the portability reading of this Markdown. Portable cross-implementation meaning is freeze-covered when the docs-to-authority matrix maps the claim to boundary-owned authority packets, generated artifacts where applicable, conformance plans, fixtures, adapter capabilities, and compatibility evidence. Claims classified as missing-conformance-follow-up, implementation-local-evidence, implementation-defined, explicitly deferred, or stale-corrected in `.constitution/reports/epic-ad-docs-to-authority-coverage-matrix.json` are not portable machine authority until a later packet and conformance change promotes them.
 
 This document describes the shared framework semantic model plus the initial ReAct Driver execution semantics. It does not claim that ReAct is the only possible Kraken driver. Future drivers may reuse the shared framework types and kernel primitives defined here while specifying different control-flow behavior after a later plan activates them. The companion rationale document is explanatory only.
 
@@ -2239,4 +2239,4 @@ This specification does not define:
 
 ---
 
-_v0.17. This is the human semantic framework specification. Epic AD classifies portability and freeze coverage through `constitution/support/live/epic-ad-docs-to-authority-coverage-matrix.json`. Companion rationale is explanatory and non-contract._
+_v0.17. This is the human semantic framework specification. Epic AD classifies portability and freeze coverage through `.constitution/reports/epic-ad-docs-to-authority-coverage-matrix.json`. Companion rationale is explanatory and non-contract._

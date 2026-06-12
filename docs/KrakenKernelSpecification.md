@@ -7,7 +7,7 @@ Read this before the framework specification. This document freezes the human se
 
 Kraken is the execution engine inside Tuvren Runtime. This specification is therefore an engine-layer document, not the public product definition.
 
-Epic AD freezes the portability reading of this Markdown. Portable cross-implementation meaning is freeze-covered when the docs-to-authority matrix maps the claim to the kernel protocol authority packet, CDDL or fixture assets where applicable, conformance plans, advertised adapter capabilities, and compatibility evidence. Claims classified as implementation-local-evidence, implementation-defined, missing-conformance-follow-up, explicitly deferred, or stale-corrected in `constitution/support/live/epic-ad-docs-to-authority-coverage-matrix.json` are not portable machine authority until a later packet and conformance change promotes them.
+Epic AD freezes the portability reading of this Markdown. Portable cross-implementation meaning is freeze-covered when the docs-to-authority matrix maps the claim to the kernel protocol authority packet, CDDL or fixture assets where applicable, conformance plans, advertised adapter capabilities, and compatibility evidence. Claims classified as implementation-local-evidence, implementation-defined, missing-conformance-follow-up, explicitly deferred, or stale-corrected in `.constitution/reports/epic-ad-docs-to-authority-coverage-matrix.json` are not portable machine authority until a later packet and conformance change promotes them.
 
 ---
 

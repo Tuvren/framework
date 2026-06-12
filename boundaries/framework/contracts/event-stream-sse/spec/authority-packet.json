@@ -5,7 +5,7 @@
   "surface": "event-stream-sse",
   "humanAuthorityRefs": [
     "https://html.spec.whatwg.org/multipage/server-sent-events.html",
-    "docs/KrakenFrameworkSpecification.md#3-streaming-contract"
+    "docs/KrakenFrameworkSpecification.md#6-streaming"
   ],
   "authoritativeSources": [
     {
@@ -51,7 +51,7 @@
     "boundaries/framework/implementations/rust/conformance-runner",
     "boundaries/framework/implementations/rust/conformance-adapter",
     "docs",
-    "constitution"
+    ".constitution"
   ],
   "verificationPaths": [
     {

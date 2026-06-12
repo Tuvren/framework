@@ -4,9 +4,9 @@
   "boundary": "providers",
   "surface": "mcp-client",
   "humanAuthorityRefs": [
-    "constitution/TechSpec.md#415-mcp-client-container",
-    "constitution/TechSpec.md#adr-039-mcp-client-container-unified-mcpclient-over-stdio--httpsse",
-    "constitution/Architecture.md#mcp-client-container"
+    ".constitution/tech-spec/contracts/README.md#415-mcp-client-container",
+    ".constitution/tech-spec/adrs/ADR-039-mcp-client-container-unified-mcpclient-over-stdio-http.md",
+    ".constitution/architecture/containers.md#mcp-client-container"
   ],
   "authoritativeSources": [
     {
@@ -31,7 +31,7 @@
     "boundaries/providers/implementations/typescript/conformance-runner",
     "boundaries/providers/implementations/typescript/conformance-adapter",
     "docs",
-    "constitution"
+    ".constitution"
   ],
   "verificationPaths": [
     {

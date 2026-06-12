@@ -1,0 +1,162 @@
+{
+  "manifestVersion": "0.3.0",
+  "manifestId": "epic-al.portability-inventory",
+  "humanInventoryRef": ".constitution/reports/epic-al-portable-surface-conformance-gap-inventory.md",
+  "description": "Machine-readable companion to the Epic AL portable-surface conformance gap inventory. v0.3.0 reflects Epic AS promoting the MCP Client Container translation contract as the ninth expected packet: tuvren.providers.mcp. The portability gate at `tools/scripts/portability-gate.ts` consumes this file to enforce that the on-disk packet topology, standing exceptions, and required authoritative sources have not drifted from the inventory's recorded closure state. Editing either the human inventory MD or this JSON without the matching counterpart change must be treated as drift and rejected during review. The gate fails closed if this file is missing, malformed, or names paths that do not exist on disk.",
+  "expectedPackets": [
+    {
+      "packetId": "tuvren.shared.core",
+      "packetPath": "boundaries/shared/contracts/core/spec/authority-packet.json",
+      "classification": "portable",
+      "inventorySection": "§3 / §9b (ADR-037 consolidated)"
+    },
+    {
+      "packetId": "tuvren.kernel.protocol",
+      "packetPath": "boundaries/kernel/contracts/protocol/spec/authority-packet.json",
+      "classification": "portable",
+      "inventorySection": "§3 / §6.G2 / §9b"
+    },
+    {
+      "packetId": "tuvren.framework.event-stream-sse",
+      "packetPath": "boundaries/framework/contracts/event-stream-sse/spec/authority-packet.json",
+      "classification": "portable",
+      "inventorySection": "§6.G3 / §9b"
+    },
+    {
+      "packetId": "tuvren.framework.react-driver",
+      "packetPath": "boundaries/framework/contracts/react-driver/spec/authority-packet.json",
+      "classification": "portable",
+      "inventorySection": "§3 / §9b"
+    },
+    {
+      "packetId": "tuvren.providers.provider-api",
+      "packetPath": "boundaries/providers/contracts/provider-api/spec/authority-packet.json",
+      "classification": "portable",
+      "inventorySection": "§3 / §9b"
+    },
+    {
+      "packetId": "tuvren.providers.mcp",
+      "packetPath": "boundaries/providers/contracts/mcp/spec/authority-packet.json",
+      "classification": "portable",
+      "inventorySection": "§3 / Epic AS"
+    },
+    {
+      "packetId": "tuvren.kernel.interop-grpc",
+      "packetPath": "boundaries/kernel/interop/grpc/spec/authority-packet.json",
+      "classification": "interop",
+      "inventorySection": "§6.G4 / §9b"
+    },
+    {
+      "packetId": "tuvren.framework.interop-rust-kernel",
+      "packetPath": "boundaries/framework/interop/rust-kernel/spec/authority-packet.json",
+      "classification": "interop",
+      "inventorySection": "§6.G5 / §9b"
+    },
+    {
+      "packetId": "tuvren.telemetry.semconv",
+      "packetPath": "boundaries/telemetry/semconv/spec/authority-packet.json",
+      "classification": "telemetry",
+      "inventorySection": "§6.G6 / §9b"
+    }
+  ],
+  "standingExceptions": [
+    {
+      "label": "AG-UI projection (@tuvren/stream-agui)",
+      "forbiddenSurfaceNames": ["ag-ui", "stream-agui", "event-stream-agui"],
+      "inventorySection": "§4.1"
+    },
+    {
+      "label": "TypeScript AI SDK bridge (@tuvren/provider-bridge-ai-sdk)",
+      "forbiddenSurfaceNames": [
+        "ai-sdk-bridge",
+        "provider-bridge-ai-sdk",
+        "provider-ai-sdk"
+      ],
+      "inventorySection": "§4.2"
+    },
+    {
+      "label": "OpenTelemetry projection (@tuvren/telemetry-otel)",
+      "forbiddenSurfaceNames": ["telemetry-otel", "otel", "opentelemetry"],
+      "inventorySection": "§4.3"
+    }
+  ],
+  "requiredAuthoritativeSources": [
+    {
+      "packetId": "tuvren.kernel.protocol",
+      "sourcePath": "boundaries/kernel/contracts/protocol/spec/cddl/kernel-records.cddl",
+      "sourceFormat": "cddl",
+      "rationale": "KRT-AL002 G2: kernel CDDL grammar must remain registered authority",
+      "inventorySection": "§6.G2 / §9b"
+    },
+    {
+      "packetId": "tuvren.shared.core",
+      "sourcePath": "boundaries/shared/contracts/core/spec/typespec/main.tsp",
+      "sourceFormat": "typespec",
+      "rationale": "KRT-AL002 G1 (absorbed): consolidated core TypeSpec at boundaries/shared/contracts/core/spec/typespec/main.tsp is the canonical authority source for tuvren.shared.core (Epic AP)",
+      "inventorySection": "§6.G1 / §9b"
+    },
+    {
+      "packetId": "tuvren.framework.event-stream-sse",
+      "sourcePath": "boundaries/framework/contracts/event-stream-sse/spec/typespec/main.tsp",
+      "sourceFormat": "typespec",
+      "rationale": "KRT-AL002 G3: SSE projection TypeSpec source",
+      "inventorySection": "§6.G3 / §9b"
+    },
+    {
+      "packetId": "tuvren.framework.event-stream-sse",
+      "sourcePath": "boundaries/framework/conformance/fixtures/event-stream-sse-traces.json",
+      "sourceFormat": "fixture-set",
+      "rationale": "KRT-AL002 G3: WHATWG-normative SSE byte-trace fixtures",
+      "inventorySection": "§6.G3 / §9b"
+    },
+    {
+      "packetId": "tuvren.framework.event-stream-sse",
+      "sourcePath": "boundaries/framework/conformance/plans/event-stream-sse.json",
+      "sourceFormat": "conformance-plan",
+      "rationale": "KRT-AL002 G3: SSE conformance plan",
+      "inventorySection": "§6.G3 / §9b"
+    },
+    {
+      "packetId": "tuvren.kernel.interop-grpc",
+      "sourcePath": "boundaries/kernel/interop/grpc/proto/tuvren/kernel/interop/v1/kernel_services.proto",
+      "sourceFormat": "proto",
+      "rationale": "KRT-AL002 G4: kernel gRPC services proto",
+      "inventorySection": "§6.G4 / §9b"
+    },
+    {
+      "packetId": "tuvren.providers.mcp",
+      "sourcePath": "boundaries/providers/conformance/plans/providers-mcp-client.json",
+      "sourceFormat": "conformance-plan",
+      "rationale": "KRT-AS008: MCP Client Container translation, validation, auth, and transport parity conformance plan",
+      "inventorySection": "§3 / Epic AS"
+    },
+    {
+      "packetId": "tuvren.kernel.interop-grpc",
+      "sourcePath": "boundaries/kernel/interop/grpc/proto/tuvren/kernel/interop/v1/kernel_types.proto",
+      "sourceFormat": "proto",
+      "rationale": "KRT-AL002 G4: kernel gRPC types proto",
+      "inventorySection": "§6.G4 / §9b"
+    },
+    {
+      "packetId": "tuvren.framework.interop-rust-kernel",
+      "sourcePath": "boundaries/framework/interop/rust-kernel/scenarios/suite-manifest.json",
+      "sourceFormat": "fixture-set",
+      "rationale": "KRT-AL002 G5: rust-kernel interop suite manifest",
+      "inventorySection": "§6.G5 / §9b"
+    },
+    {
+      "packetId": "tuvren.framework.interop-rust-kernel",
+      "sourcePath": "boundaries/framework/interop/rust-kernel/schemas/suite-manifest.schema.json",
+      "sourceFormat": "json-schema",
+      "rationale": "KRT-AL002 G5: rust-kernel interop suite manifest JSON Schema (authoritative source for the manifest shape)",
+      "inventorySection": "§6.G5 / §9b"
+    },
+    {
+      "packetId": "tuvren.telemetry.semconv",
+      "sourcePath": "telemetry/semconv/tuvren-runtime.yaml",
+      "sourceFormat": "semconv-yaml",
+      "rationale": "KRT-AL002 G6: telemetry semconv YAML",
+      "inventorySection": "§6.G6 / §9b"
+    }
+  ]
+}

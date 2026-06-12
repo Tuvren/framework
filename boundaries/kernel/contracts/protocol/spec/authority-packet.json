@@ -68,7 +68,7 @@
     "boundaries/kernel/implementations/rust/conformance-runner",
     "boundaries/kernel/implementations/rust/conformance-adapter",
     "docs",
-    "constitution"
+    ".constitution"
   ],
   "verificationPaths": [
     {

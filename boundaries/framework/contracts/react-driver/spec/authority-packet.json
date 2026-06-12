@@ -4,8 +4,8 @@
   "boundary": "framework",
   "surface": "react-driver",
   "humanAuthorityRefs": [
-    "docs/KrakenFrameworkSpecification.md#driver-contract",
-    "constitution/TechSpec.md#4.6-runtime-driver-contract"
+    "docs/KrakenFrameworkSpecification.md#56-driver-contract",
+    ".constitution/tech-spec/contracts/README.md#46-driver-runtime-contract"
   ],
   "authoritativeSources": [
     {
@@ -39,7 +39,7 @@
     "boundaries/framework/implementations/rust/conformance-runner",
     "boundaries/framework/implementations/rust/conformance-adapter",
     "docs",
-    "constitution"
+    ".constitution"
   ],
   "verificationPaths": [
     {

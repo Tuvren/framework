@@ -1,0 +1,7 @@
+### ADR-021 Semantic Ecosystem Maturity Precedes New Implementation Lines
+
+- **Status:** accepted
+- **Context:** Epic R established the rule "one semantic ecosystem, then multiple implementations." Epics S-V created the artifact homes, initial conformance runners, Rust kernel baseline, and TS-framework-to-Rust-kernel interop proof, but current repo reality still leaves many normative framework, driver, provider, stream, backend, and error semantics asserted primarily by TypeScript implementation tests. Starting a Rust framework from that posture would risk turning `runtime-core` behavior into the hidden oracle.
+- **Decision:** Epic W is the Semantic Ecosystem Maturity line. It must inventory the semantic coverage gap, promote high-value TypeScript-local semantics into boundary-owned conformance suites, add assertion-bearing suite manifests and evidence, and update compatibility reporting so implementations are judged against named semantic checks. Epic W does not authorize a Rust framework, another language implementation, a new driver, new official backend, or new host protocol.
+- **Consequences:** New implementation work waits behind a stronger semantic gate. The TypeScript implementation remains the first producer of mature conformance evidence, but it does not retain special semantic authority. Future implementation-line activation must cite Epic W evidence instead of relying on broad Epic R/S/V labels.
+

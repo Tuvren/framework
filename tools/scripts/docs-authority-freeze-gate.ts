@@ -30,7 +30,7 @@ const DOC_SOURCES = [
   },
 ] as const;
 
-const OUTPUT_DIR = "constitution/support/live";
+const OUTPUT_DIR = ".constitution/reports";
 const INVENTORY_PATH = `${OUTPUT_DIR}/epic-ad-normative-docs-claim-inventory.json`;
 const MATRIX_PATH = `${OUTPUT_DIR}/epic-ad-docs-to-authority-coverage-matrix.json`;
 const SUMMARY_PATH = `${OUTPUT_DIR}/epic-ad-docs-to-authority-freeze-gate-summary.md`;
@@ -1858,7 +1858,7 @@ function renderClosureInventory(entries: readonly CoverageEntry[]): string {
     "",
     "## Delivered Scope",
     "",
-    "- The active freeze-readiness scope was already activated in `constitution/Tasks.md` and `constitution/TechSpec.md` before this closure pass.",
+    "- The active freeze-readiness scope was already activated in `.constitution/tasks/` and `.constitution/tech-spec/` before this closure pass.",
     `- The normative docs claim inventory covers ${entries.length} matrix rows and ${independentEntries.length} independent claims from ` +
       "`docs/KrakenFrameworkSpecification.md` and `docs/KrakenKernelSpecification.md`.",
     "- The docs-to-authority coverage matrix assigns exactly one primary classification to every row and links duplicate rows through `duplicateOf` instead of treating them as separate independent requirements.",
@@ -1874,7 +1874,7 @@ function renderClosureInventory(entries: readonly CoverageEntry[]): string {
     `- Framework deferred decisions: \`${FRAMEWORK_DECISIONS_PATH}\``,
     `- Kernel/backend/provider decisions: \`${LOCAL_DECISIONS_PATH}\``,
     `- Freeze gate report: \`${REPORT_PATH}\``,
-    "- Docs cleanup: `docs/KrakenFrameworkSpecification.md`; `docs/KrakenKernelSpecification.md`; `constitution/TechSpec.md`",
+    "- Docs cleanup: `docs/KrakenFrameworkSpecification.md`; `docs/KrakenKernelSpecification.md`; `.constitution/tech-spec/`",
     "",
     "## Closure Notes",
     "",

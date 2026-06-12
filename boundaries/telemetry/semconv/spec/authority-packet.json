@@ -45,7 +45,7 @@
     "boundaries/kernel/implementations/rust/kernel",
     "telemetry/semantic-conventions.md",
     "docs",
-    "constitution"
+    ".constitution"
   ],
   "verificationPaths": [
     {
