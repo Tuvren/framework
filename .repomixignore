@@ -1,0 +1,60 @@
+# Generated evidence / reports (~200k tokens)
+reports/
+
+# Constitution directory (~2.5MB of authority/review artifacts)
+.constitution/
+
+# Lockfiles
+bun.lock
+Cargo.lock
+
+# Test files (~600k+ tokens)
+**/*.test.ts
+**/*.bench.ts
+**/test/
+**/tests/
+
+# Large generated/utility scripts (~100k+ tokens)
+tools/scripts/conformance/
+tools/scripts/compatibility-report.ts
+tools/scripts/docs-authority-freeze-gate.ts
+tools/scripts/authority-guardrails/
+tools/scripts/epic-af-conformance-gap-plan.ts
+tools/scripts/portability-gate.ts
+
+# Spec docs (large markdown, can be referenced separately)
+docs/KrakenFrameworkSpecification.md
+docs/KrakenKernelSpecification.md
+
+# Devenv / nix lock
+devenv.lock
+
+# Nx cache
+.nx/
+
+# Build outputs
+dist/
+**/dist/
+**/.tmp-tests/
+
+# Generated protobuf files
+**/*_pb.ts
+
+# Generated conformance plans (large JSON)
+boundaries/framework/conformance/plans/
+
+# Large conformance adapter source
+boundaries/framework/implementations/typescript/conformance-adapter/src/
+
+# Kernel backend-sqlite source (very large)
+boundaries/kernel/implementations/typescript/backend-sqlite/src/
+
+# Test helpers and fixtures (in test/ dirs, non-test files)
+**/test/*-helpers.ts
+**/test/*-fixtures.ts
+**/test/fake-*.ts
+**/test/runtime-core-test-helpers.ts
+**/test/orchestration-runtime-driver-helpers.ts
+
+# Git
+.git/
