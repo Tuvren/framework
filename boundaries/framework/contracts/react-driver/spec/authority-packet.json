@@ -4,7 +4,7 @@
   "boundary": "framework",
   "surface": "react-driver",
   "humanAuthorityRefs": [
-    "docs/KrakenFrameworkSpecification.md#driver-contract",
+    "docs/KrakenFrameworkSpecification.md#56-driver-contract",
     ".constitution/tech-spec/contracts/README.md#46-driver-runtime-contract"
   ],
   "authoritativeSources": [

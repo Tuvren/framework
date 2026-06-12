@@ -46,6 +46,7 @@ interface AuthorityPacketManifest {
     generator?: string;
     path: string;
   }>;
+  humanAuthorityRefs?: string[];
   packetId: string;
   verificationPaths: Array<{
     kind: string;
@@ -64,6 +65,8 @@ interface ValidationFailure {
   manifestPath: string;
   message: string;
 }
+
+const MARKDOWN_HEADING_RE = /^#{1,6}\s+(.+)/;
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const BOUNDARIES_ROOT = resolve(REPO_ROOT, "boundaries");
@@ -133,6 +136,7 @@ export async function validateAuthorityPackets(): Promise<ValidationFailure[]> {
     validateGeneratedArtifacts(manifestPath, manifest, failures);
     await validateConformancePlanLinks(manifestPath, manifest, failures);
     validateVerificationPaths(manifestPath, manifest, failures);
+    await validateHumanAuthorityRefs(manifestPath, manifest, failures);
   }
 
   return failures;
@@ -368,6 +372,65 @@ function validateVerificationPaths(
       });
     }
   }
+}
+
+async function validateHumanAuthorityRefs(
+  manifestPath: string,
+  manifest: AuthorityPacketManifest,
+  failures: ValidationFailure[]
+): Promise<void> {
+  for (const ref of manifest.humanAuthorityRefs ?? []) {
+    if (ref.startsWith("http://") || ref.startsWith("https://")) {
+      continue;
+    }
+
+    const hashIndex = ref.indexOf("#");
+    const filePath = hashIndex === -1 ? ref : ref.slice(0, hashIndex);
+    const anchor = hashIndex === -1 ? undefined : ref.slice(hashIndex + 1);
+
+    if (!filePath) {
+      continue;
+    }
+
+    const absolutePath = resolve(REPO_ROOT, filePath);
+
+    if (!existsSync(absolutePath)) {
+      failures.push({
+        manifestPath,
+        message: `humanAuthorityRef file does not exist: ${filePath}`,
+      });
+      continue;
+    }
+
+    if (anchor !== undefined) {
+      const content = await readFile(absolutePath, "utf8");
+      if (!markdownAnchorExists(content, anchor)) {
+        failures.push({
+          manifestPath,
+          message: `humanAuthorityRef anchor #${anchor} not found in ${filePath}`,
+        });
+      }
+    }
+  }
+}
+
+function markdownAnchorExists(content: string, anchor: string): boolean {
+  for (const line of content.split("\n")) {
+    const match = MARKDOWN_HEADING_RE.exec(line);
+    if (match !== null && toMarkdownSlug(match[1]) === anchor) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function toMarkdownSlug(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .trim();
 }
 
 function requireExistingPath(
