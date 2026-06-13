@@ -2262,7 +2262,7 @@ Every resolved capability invocation belongs to exactly one execution class:
 | `tuvren-server` | Tuvren runtime dispatches to a server-side executor | Full framework lifecycle ownership |
 | `tuvren-client` | Tuvren runtime forwards to an attached client endpoint | Client controls execution; runtime brokers via leased token |
 
-Back-compat rule: `defineTool` resolves to the `tuvren-server` class. `@tuvren/mcp-client` is a binding mechanism classified by the execution class of its host (see §7.3), not a class of its own.
+Back-compat rule: `defineTool` resolves to the `tuvren-server` class. `@tuvren/mcp-client` is a binding mechanism classified by the execution class of its host (see §11.3), not a class of its own.
 
 ### 11.3 Bindings and Endpoints
 
@@ -2305,15 +2305,16 @@ Each execution class declares its `CapabilityObservation`, a set of boolean capa
 
 | Field | `tuvren-server` | `tuvren-client` | `provider-native` | `provider-mediated` |
 |---|---|---|---|---|
+| `canObserveIntermediate` | true | false | false | false |
 | `canAudit` | true | false | false | false |
 | `canCancel` | true | false | false | false |
 | `canRetry` | true | false | false | false |
 | `canResume` | true | false | false | false |
 | `canPersistResult` | true | false | false | false |
 
-The `tuvren-server` class has full observation. For the `tuvren-client` class, the client endpoint controls execution and the framework cannot audit, cancel, retry, or resume on its behalf. Provider classes are fully opaque: the provider owns execution and the framework observes results only through the event stream attribution.
+The `tuvren-server` class has full observation: it may observe intermediate invocation state, audit lifecycle events, cancel in-flight invocations, retry after failure, resume across turn boundaries, and persist results. For the `tuvren-client` class, the client endpoint controls execution and the framework cannot observe intermediate state, audit, cancel, retry, or resume on its behalf. Provider classes are fully opaque: the provider owns execution and the framework observes results only through the event stream attribution.
 
-These limits are normative: a runtime that attempts an audit, cancel, retry, or resume for a class whose limit is `false` is out of conformance.
+These limits are normative: a runtime that exercises `canObserveIntermediate`, audit, cancel, retry, or resume for a class whose limit is `false` is out of conformance.
 
 ### 11.6 Conceptual Invariant
 
