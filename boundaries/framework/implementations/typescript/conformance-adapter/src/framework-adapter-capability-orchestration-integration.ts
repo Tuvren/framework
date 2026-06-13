@@ -380,7 +380,7 @@ export async function runCapabilityOrchestrationIntegration(): Promise<AdapterPr
           // false when exposure-time policy correctly withholds the surface
           withheldToolReachedModel: withheldDecision?.exposed ?? true,
           // true when invocation-time denial produces isError on tool.result
-          deniedToolResultIsError: deniedResultEvent?.isError,
+          deniedToolResultIsError: deniedResultEvent?.isError === true,
         },
       },
     },
