@@ -15,113 +15,141 @@
       "assertionResults": [
         {
           "assertionId": "kernel.lineage.cross_thread_rejection.1.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.lineage.cross_thread_rejection.requiredEvidence.errorCode",
-          "status": "pass"
+          "message": "missing required evidence errorCode",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.lineage.cross_thread_rejection.requiredEvidence.result.errorCode",
-          "status": "pass"
+          "message": "missing required evidence result.errorCode",
+          "status": "fail"
         }
       ],
       "checkId": "kernel.lineage.cross_thread_rejection",
       "details": {
+        "adapterError": {
+          "code": "adapter_operation_failed",
+          "message": "connect ENOENT /run/user/1000/devenv-bd133f4/postgres/.s.PGSQL.5432"
+        },
         "adapterId": "typescript-kernel-postgres",
         "planId": "tuvren.kernel.protocol.core"
       },
-      "status": "pass"
+      "status": "fail"
     },
     {
       "assertionResults": [
         {
           "assertionId": "kernel.logical.branch_list.1.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.logical.branch_list.requiredEvidence.branchEntries",
-          "status": "pass"
+          "message": "missing required evidence branchEntries",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.logical.branch_list.requiredEvidence.result.branchEntries.0.0",
-          "status": "pass"
+          "message": "missing required evidence result.branchEntries.0.0",
+          "status": "fail"
         }
       ],
       "checkId": "kernel.logical.branch_list",
       "details": {
+        "adapterError": {
+          "code": "adapter_operation_failed",
+          "message": "connect ENOENT /run/user/1000/devenv-bd133f4/postgres/.s.PGSQL.5432"
+        },
         "adapterId": "typescript-kernel-postgres",
         "planId": "tuvren.kernel.protocol.core"
       },
-      "status": "pass"
+      "status": "fail"
     },
     {
       "assertionResults": [
         {
           "assertionId": "kernel.logical.diff_paths.1.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.logical.diff_paths.requiredEvidence.diffPaths",
-          "status": "pass"
+          "message": "missing required evidence diffPaths",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.logical.diff_paths.requiredEvidence.result.diffPaths",
-          "status": "pass"
+          "message": "missing required evidence result.diffPaths",
+          "status": "fail"
         }
       ],
       "checkId": "kernel.logical.diff_paths",
       "details": {
+        "adapterError": {
+          "code": "adapter_operation_failed",
+          "message": "connect ENOENT /run/user/1000/devenv-bd133f4/postgres/.s.PGSQL.5432"
+        },
         "adapterId": "typescript-kernel-postgres",
         "planId": "tuvren.kernel.protocol.core"
       },
-      "status": "pass"
+      "status": "fail"
     },
     {
       "assertionResults": [
         {
           "assertionId": "kernel.logical.recovery_state.1.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.logical.recovery_state.2.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.logical.recovery_state.3.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.logical.recovery_state.requiredEvidence.recovery.consumedStagedResults",
-          "status": "pass"
+          "message": "missing required evidence recovery.consumedStagedResults",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.logical.recovery_state.requiredEvidence.recovery.lastCompletedStepId",
-          "status": "pass"
+          "message": "missing required evidence recovery.lastCompletedStepId",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.logical.recovery_state.requiredEvidence.recovery.uncommittedStagedResults",
-          "status": "pass"
+          "message": "missing required evidence recovery.uncommittedStagedResults",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.logical.recovery_state.requiredEvidence.result.recovery.consumedStagedResults",
-          "status": "pass"
+          "message": "missing required evidence result.recovery.consumedStagedResults",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.logical.recovery_state.requiredEvidence.result.recovery.lastCompletedStepId",
-          "status": "pass"
+          "message": "missing required evidence result.recovery.lastCompletedStepId",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.logical.recovery_state.requiredEvidence.result.recovery.uncommittedStagedResults",
-          "status": "pass"
+          "message": "missing required evidence result.recovery.uncommittedStagedResults",
+          "status": "fail"
         }
       ],
       "checkId": "kernel.logical.recovery_state",
       "details": {
+        "adapterError": {
+          "code": "adapter_operation_failed",
+          "message": "connect ENOENT /run/user/1000/devenv-bd133f4/postgres/.s.PGSQL.5432"
+        },
         "adapterId": "typescript-kernel-postgres",
         "planId": "tuvren.kernel.protocol.core"
       },
-      "status": "pass"
+      "status": "fail"
     },
     {
       "assertionResults": [
@@ -173,35 +201,43 @@
       "assertionResults": [
         {
           "assertionId": "kernel.protocol.modify_composition.1.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.protocol.modify_composition.2.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.protocol.modify_composition.requiredEvidence.result.verdict.kind",
-          "status": "pass"
+          "message": "missing required evidence result.verdict.kind",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.protocol.modify_composition.requiredEvidence.result.verdict.transform",
-          "status": "pass"
+          "message": "missing required evidence result.verdict.transform",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.protocol.modify_composition.requiredEvidence.verdict.kind",
-          "status": "pass"
+          "message": "missing required evidence verdict.kind",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.protocol.modify_composition.requiredEvidence.verdict.transform",
-          "status": "pass"
+          "message": "missing required evidence verdict.transform",
+          "status": "fail"
         }
       ],
       "checkId": "kernel.protocol.modify_composition",
       "details": {
+        "adapterError": {
+          "code": "adapter_operation_failed",
+          "message": "connect ENOENT /run/user/1000/devenv-bd133f4/postgres/.s.PGSQL.5432"
+        },
         "adapterId": "typescript-kernel-postgres",
         "planId": "tuvren.kernel.protocol.core"
       },
-      "status": "pass"
+      "status": "fail"
     },
     {
       "assertionResults": [
@@ -241,213 +277,267 @@
       "assertionResults": [
         {
           "assertionId": "kernel-protocol-af.branch-set-head-rejects-lateral-lineage.1.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel-protocol-af.branch-set-head-rejects-lateral-lineage.requiredEvidence.protocolEdgeValidation.branch.lateralHeadCode",
-          "status": "pass"
+          "message": "missing required evidence protocolEdgeValidation.branch.lateralHeadCode",
+          "status": "fail"
         },
         {
           "assertionId": "kernel-protocol-af.branch-set-head-rejects-lateral-lineage.requiredEvidence.result.protocolEdgeValidation.branch.lateralHeadCode",
-          "status": "pass"
+          "message": "missing required evidence result.protocolEdgeValidation.branch.lateralHeadCode",
+          "status": "fail"
         }
       ],
       "checkId": "kernel-protocol-af.branch-set-head-rejects-lateral-lineage",
       "details": {
+        "adapterError": {
+          "code": "adapter_operation_failed",
+          "message": "connect ENOENT /run/user/1000/devenv-bd133f4/postgres/.s.PGSQL.5432"
+        },
         "adapterId": "typescript-kernel-postgres",
         "planId": "tuvren.kernel.protocol.extended"
       },
-      "status": "pass"
+      "status": "fail"
     },
     {
       "assertionResults": [
         {
           "assertionId": "kernel-protocol-af.run-begin-step-rejects-out-of-order-step.1.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel-protocol-af.run-begin-step-rejects-out-of-order-step.requiredEvidence.protocolEdgeValidation.run.outOfOrderStepCode",
-          "status": "pass"
+          "message": "missing required evidence protocolEdgeValidation.run.outOfOrderStepCode",
+          "status": "fail"
         },
         {
           "assertionId": "kernel-protocol-af.run-begin-step-rejects-out-of-order-step.requiredEvidence.result.protocolEdgeValidation.run.outOfOrderStepCode",
-          "status": "pass"
+          "message": "missing required evidence result.protocolEdgeValidation.run.outOfOrderStepCode",
+          "status": "fail"
         }
       ],
       "checkId": "kernel-protocol-af.run-begin-step-rejects-out-of-order-step",
       "details": {
+        "adapterError": {
+          "code": "adapter_operation_failed",
+          "message": "connect ENOENT /run/user/1000/devenv-bd133f4/postgres/.s.PGSQL.5432"
+        },
         "adapterId": "typescript-kernel-postgres",
         "planId": "tuvren.kernel.protocol.extended"
       },
-      "status": "pass"
+      "status": "fail"
     },
     {
       "assertionResults": [
         {
           "assertionId": "kernel-protocol-af.run-complete-rejects-missing-event-object.1.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel-protocol-af.run-complete-rejects-missing-event-object.requiredEvidence.protocolEdgeValidation.run.missingEventObjectCode",
-          "status": "pass"
+          "message": "missing required evidence protocolEdgeValidation.run.missingEventObjectCode",
+          "status": "fail"
         },
         {
           "assertionId": "kernel-protocol-af.run-complete-rejects-missing-event-object.requiredEvidence.result.protocolEdgeValidation.run.missingEventObjectCode",
-          "status": "pass"
+          "message": "missing required evidence result.protocolEdgeValidation.run.missingEventObjectCode",
+          "status": "fail"
         }
       ],
       "checkId": "kernel-protocol-af.run-complete-rejects-missing-event-object",
       "details": {
+        "adapterError": {
+          "code": "adapter_operation_failed",
+          "message": "connect ENOENT /run/user/1000/devenv-bd133f4/postgres/.s.PGSQL.5432"
+        },
         "adapterId": "typescript-kernel-postgres",
         "planId": "tuvren.kernel.protocol.extended"
       },
-      "status": "pass"
+      "status": "fail"
     },
     {
       "assertionResults": [
         {
           "assertionId": "kernel-protocol-af.run-create-rejects-busy-branch.1.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel-protocol-af.run-create-rejects-busy-branch.requiredEvidence.protocolEdgeValidation.run.busyBranchCode",
-          "status": "pass"
+          "message": "missing required evidence protocolEdgeValidation.run.busyBranchCode",
+          "status": "fail"
         },
         {
           "assertionId": "kernel-protocol-af.run-create-rejects-busy-branch.requiredEvidence.result.protocolEdgeValidation.run.busyBranchCode",
-          "status": "pass"
+          "message": "missing required evidence result.protocolEdgeValidation.run.busyBranchCode",
+          "status": "fail"
         }
       ],
       "checkId": "kernel-protocol-af.run-create-rejects-busy-branch",
       "details": {
+        "adapterError": {
+          "code": "adapter_operation_failed",
+          "message": "connect ENOENT /run/user/1000/devenv-bd133f4/postgres/.s.PGSQL.5432"
+        },
         "adapterId": "typescript-kernel-postgres",
         "planId": "tuvren.kernel.protocol.extended"
       },
-      "status": "pass"
+      "status": "fail"
     },
     {
       "assertionResults": [
         {
           "assertionId": "kernel-protocol-af.schema-register-rejects-duplicate-path.1.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel-protocol-af.schema-register-rejects-duplicate-path.requiredEvidence.protocolEdgeValidation.schema.duplicatePathCode",
-          "status": "pass"
+          "message": "missing required evidence protocolEdgeValidation.schema.duplicatePathCode",
+          "status": "fail"
         },
         {
           "assertionId": "kernel-protocol-af.schema-register-rejects-duplicate-path.requiredEvidence.result.protocolEdgeValidation.schema.duplicatePathCode",
-          "status": "pass"
+          "message": "missing required evidence result.protocolEdgeValidation.schema.duplicatePathCode",
+          "status": "fail"
         }
       ],
       "checkId": "kernel-protocol-af.schema-register-rejects-duplicate-path",
       "details": {
+        "adapterError": {
+          "code": "adapter_operation_failed",
+          "message": "connect ENOENT /run/user/1000/devenv-bd133f4/postgres/.s.PGSQL.5432"
+        },
         "adapterId": "typescript-kernel-postgres",
         "planId": "tuvren.kernel.protocol.extended"
       },
-      "status": "pass"
+      "status": "fail"
     },
     {
       "assertionResults": [
         {
           "assertionId": "kernel-protocol-af.tree-create-rejects-missing-required-path.1.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel-protocol-af.tree-create-rejects-missing-required-path.requiredEvidence.protocolEdgeValidation.tree.missingRequiredPathCode",
-          "status": "pass"
+          "message": "missing required evidence protocolEdgeValidation.tree.missingRequiredPathCode",
+          "status": "fail"
         },
         {
           "assertionId": "kernel-protocol-af.tree-create-rejects-missing-required-path.requiredEvidence.result.protocolEdgeValidation.tree.missingRequiredPathCode",
-          "status": "pass"
+          "message": "missing required evidence result.protocolEdgeValidation.tree.missingRequiredPathCode",
+          "status": "fail"
         }
       ],
       "checkId": "kernel-protocol-af.tree-create-rejects-missing-required-path",
       "details": {
+        "adapterError": {
+          "code": "adapter_operation_failed",
+          "message": "connect ENOENT /run/user/1000/devenv-bd133f4/postgres/.s.PGSQL.5432"
+        },
         "adapterId": "typescript-kernel-postgres",
         "planId": "tuvren.kernel.protocol.extended"
       },
-      "status": "pass"
+      "status": "fail"
     },
     {
       "assertionResults": [
         {
           "assertionId": "kernel-protocol-af.tree-diff-rejects-schema-mismatch.1.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel-protocol-af.tree-diff-rejects-schema-mismatch.requiredEvidence.protocolEdgeValidation.tree.schemaMismatchCode",
-          "status": "pass"
+          "message": "missing required evidence protocolEdgeValidation.tree.schemaMismatchCode",
+          "status": "fail"
         },
         {
           "assertionId": "kernel-protocol-af.tree-diff-rejects-schema-mismatch.requiredEvidence.result.protocolEdgeValidation.tree.schemaMismatchCode",
-          "status": "pass"
+          "message": "missing required evidence result.protocolEdgeValidation.tree.schemaMismatchCode",
+          "status": "fail"
         }
       ],
       "checkId": "kernel-protocol-af.tree-diff-rejects-schema-mismatch",
       "details": {
+        "adapterError": {
+          "code": "adapter_operation_failed",
+          "message": "connect ENOENT /run/user/1000/devenv-bd133f4/postgres/.s.PGSQL.5432"
+        },
         "adapterId": "typescript-kernel-postgres",
         "planId": "tuvren.kernel.protocol.extended"
       },
-      "status": "pass"
+      "status": "fail"
     },
     {
       "assertionResults": [
         {
           "assertionId": "kernel.logical.thread_list.1.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.logical.thread_list.2.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.logical.thread_list.3.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.logical.thread_list.4.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.logical.thread_list.requiredEvidence.result.threadEnumeration.count",
-          "status": "pass"
+          "message": "missing required evidence result.threadEnumeration.count",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.logical.thread_list.requiredEvidence.result.threadEnumeration.firstThreadId",
-          "status": "pass"
+          "message": "missing required evidence result.threadEnumeration.firstThreadId",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.logical.thread_list.requiredEvidence.result.threadEnumeration.hasCursor",
-          "status": "pass"
+          "message": "missing required evidence result.threadEnumeration.hasCursor",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.logical.thread_list.requiredEvidence.result.threadEnumeration.pagedCount",
-          "status": "pass"
+          "message": "missing required evidence result.threadEnumeration.pagedCount",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.logical.thread_list.requiredEvidence.threadEnumeration.count",
-          "status": "pass"
+          "message": "missing required evidence threadEnumeration.count",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.logical.thread_list.requiredEvidence.threadEnumeration.firstThreadId",
-          "status": "pass"
+          "message": "missing required evidence threadEnumeration.firstThreadId",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.logical.thread_list.requiredEvidence.threadEnumeration.hasCursor",
-          "status": "pass"
+          "message": "missing required evidence threadEnumeration.hasCursor",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.logical.thread_list.requiredEvidence.threadEnumeration.pagedCount",
-          "status": "pass"
+          "message": "missing required evidence threadEnumeration.pagedCount",
+          "status": "fail"
         }
       ],
       "checkId": "kernel.logical.thread_list",
       "details": {
+        "adapterError": {
+          "code": "adapter_operation_failed",
+          "message": "connect ENOENT /run/user/1000/devenv-bd133f4/postgres/.s.PGSQL.5432"
+        },
         "adapterId": "typescript-kernel-postgres",
         "planId": "tuvren.kernel.protocol.extended"
       },
-      "status": "pass"
+      "status": "fail"
     },
     {
       "assertionResults": [
@@ -1813,937 +1903,1118 @@
       "assertionResults": [
         {
           "assertionId": "kernel-restart-af.invalid-staged-result-reexecutes.1.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel-restart-af.invalid-staged-result-reexecutes.2.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel-restart-af.invalid-staged-result-reexecutes.3.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel-restart-af.invalid-staged-result-reexecutes.requiredEvidence.restartRecovery.recoveredLastCompletedStepId",
-          "status": "pass"
+          "message": "missing required evidence restartRecovery.recoveredLastCompletedStepId",
+          "status": "fail"
         },
         {
           "assertionId": "kernel-restart-af.invalid-staged-result-reexecutes.requiredEvidence.restartRecovery.recoveredUncommittedCount",
-          "status": "pass"
+          "message": "missing required evidence restartRecovery.recoveredUncommittedCount",
+          "status": "fail"
         },
         {
           "assertionId": "kernel-restart-af.invalid-staged-result-reexecutes.requiredEvidence.restartRecovery.uncommittedNotPromoted",
-          "status": "pass"
+          "message": "missing required evidence restartRecovery.uncommittedNotPromoted",
+          "status": "fail"
         },
         {
           "assertionId": "kernel-restart-af.invalid-staged-result-reexecutes.requiredEvidence.result.restartRecovery.recoveredLastCompletedStepId",
-          "status": "pass"
+          "message": "missing required evidence result.restartRecovery.recoveredLastCompletedStepId",
+          "status": "fail"
         },
         {
           "assertionId": "kernel-restart-af.invalid-staged-result-reexecutes.requiredEvidence.result.restartRecovery.recoveredUncommittedCount",
-          "status": "pass"
+          "message": "missing required evidence result.restartRecovery.recoveredUncommittedCount",
+          "status": "fail"
         },
         {
           "assertionId": "kernel-restart-af.invalid-staged-result-reexecutes.requiredEvidence.result.restartRecovery.uncommittedNotPromoted",
-          "status": "pass"
+          "message": "missing required evidence result.restartRecovery.uncommittedNotPromoted",
+          "status": "fail"
         }
       ],
       "checkId": "kernel-restart-af.invalid-staged-result-reexecutes",
       "details": {
+        "adapterError": {
+          "code": "adapter_operation_failed",
+          "message": "connect ENOENT /run/user/1000/devenv-bd133f4/postgres/.s.PGSQL.5432"
+        },
         "adapterId": "typescript-kernel-postgres",
         "planId": "tuvren.kernel.restart-recovery"
       },
-      "status": "pass"
+      "status": "fail"
     },
     {
       "assertionResults": [
         {
           "assertionId": "kernel.crash-recovery.concurrent_writer.1.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.concurrent_writer.2.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.concurrent_writer.3.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.concurrent_writer.4.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.concurrent_writer.5.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.concurrent_writer.6.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.concurrent_writer.7.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.crashRecoveryConcurrency.finalHeadIsCommittedSibling",
-          "status": "pass"
+          "message": "missing required evidence crashRecoveryConcurrency.finalHeadIsCommittedSibling",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.crashRecoveryConcurrency.finalHeadMatchesWinner",
-          "status": "pass"
+          "message": "missing required evidence crashRecoveryConcurrency.finalHeadMatchesWinner",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.crashRecoveryConcurrency.losingErrorCode",
-          "status": "pass"
+          "message": "missing required evidence crashRecoveryConcurrency.losingErrorCode",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.crashRecoveryConcurrency.retryAfterLossErrorCode",
-          "status": "pass"
+          "message": "missing required evidence crashRecoveryConcurrency.retryAfterLossErrorCode",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.crashRecoveryConcurrency.singleWriterRejected",
-          "status": "pass"
+          "message": "missing required evidence crashRecoveryConcurrency.singleWriterRejected",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.crashRecoveryConcurrency.typedLateralConflictObserved",
-          "status": "pass"
+          "message": "missing required evidence crashRecoveryConcurrency.typedLateralConflictObserved",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.faultPlanConcurrentWriter.injectedErrorCode",
-          "status": "pass"
+          "message": "missing required evidence faultPlanConcurrentWriter.injectedErrorCode",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.faultPlanConcurrentWriter.writerAdvancedHead",
-          "status": "pass"
+          "message": "missing required evidence faultPlanConcurrentWriter.writerAdvancedHead",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.faultPlanConcurrentWriter.writerProducedSiblingHead",
-          "status": "pass"
+          "message": "missing required evidence faultPlanConcurrentWriter.writerProducedSiblingHead",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.result.crashRecoveryConcurrency.finalHeadIsCommittedSibling",
-          "status": "pass"
+          "message": "missing required evidence result.crashRecoveryConcurrency.finalHeadIsCommittedSibling",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.result.crashRecoveryConcurrency.finalHeadMatchesWinner",
-          "status": "pass"
+          "message": "missing required evidence result.crashRecoveryConcurrency.finalHeadMatchesWinner",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.result.crashRecoveryConcurrency.singleWriterRejected",
-          "status": "pass"
+          "message": "missing required evidence result.crashRecoveryConcurrency.singleWriterRejected",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.result.crashRecoveryConcurrency.typedLateralConflictObserved",
-          "status": "pass"
+          "message": "missing required evidence result.crashRecoveryConcurrency.typedLateralConflictObserved",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.result.faultPlanConcurrentWriter.injectedErrorCode",
-          "status": "pass"
+          "message": "missing required evidence result.faultPlanConcurrentWriter.injectedErrorCode",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.result.faultPlanConcurrentWriter.writerAdvancedHead",
-          "status": "pass"
+          "message": "missing required evidence result.faultPlanConcurrentWriter.writerAdvancedHead",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.result.faultPlanConcurrentWriter.writerProducedSiblingHead",
-          "status": "pass"
+          "message": "missing required evidence result.faultPlanConcurrentWriter.writerProducedSiblingHead",
+          "status": "fail"
         }
       ],
       "checkId": "kernel.crash-recovery.concurrent_writer",
       "details": {
+        "adapterError": {
+          "code": "adapter_operation_failed",
+          "message": "connect ENOENT /run/user/1000/devenv-bd133f4/postgres/.s.PGSQL.5432"
+        },
         "adapterId": "typescript-kernel-postgres",
         "planId": "tuvren.kernel.restart-recovery"
       },
-      "status": "pass"
+      "status": "fail"
     },
     {
       "assertionResults": [
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.1.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.2.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.3.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.4.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.5.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.6.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.7.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.8.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.9.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.10.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.11.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.12.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.13.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.14.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.15.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.16.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.17.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.18.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.afterCommitBeforeAck.headMatchesExpectedCheckpoint",
-          "status": "pass"
+          "message": "missing required evidence crashRecovery.afterCommitBeforeAck.headMatchesExpectedCheckpoint",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.afterCommitBeforeAck.injectedErrorCode",
-          "status": "pass"
+          "message": "missing required evidence crashRecovery.afterCommitBeforeAck.injectedErrorCode",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.afterCommitBeforeAck.lineageConsistent",
-          "status": "pass"
+          "message": "missing required evidence crashRecovery.afterCommitBeforeAck.lineageConsistent",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.afterCommitBeforeAck.pendingMessageCommitted",
-          "status": "pass"
+          "message": "missing required evidence crashRecovery.afterCommitBeforeAck.pendingMessageCommitted",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.afterCommitBeforeAck.recoveryStateConsistent",
-          "status": "pass"
+          "message": "missing required evidence crashRecovery.afterCommitBeforeAck.recoveryStateConsistent",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.afterCommitBeforeAck.visibleCommittedMessageCount",
-          "status": "pass"
+          "message": "missing required evidence crashRecovery.afterCommitBeforeAck.visibleCommittedMessageCount",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.beforeCommit.headMatchesExpectedCheckpoint",
-          "status": "pass"
+          "message": "missing required evidence crashRecovery.beforeCommit.headMatchesExpectedCheckpoint",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.beforeCommit.injectedErrorCode",
-          "status": "pass"
+          "message": "missing required evidence crashRecovery.beforeCommit.injectedErrorCode",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.beforeCommit.lineageConsistent",
-          "status": "pass"
+          "message": "missing required evidence crashRecovery.beforeCommit.lineageConsistent",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.beforeCommit.pendingMessageCommitted",
-          "status": "pass"
+          "message": "missing required evidence crashRecovery.beforeCommit.pendingMessageCommitted",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.beforeCommit.recoveryStateConsistent",
-          "status": "pass"
+          "message": "missing required evidence crashRecovery.beforeCommit.recoveryStateConsistent",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.beforeCommit.visibleCommittedMessageCount",
-          "status": "pass"
+          "message": "missing required evidence crashRecovery.beforeCommit.visibleCommittedMessageCount",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.midCommit.headMatchesExpectedCheckpoint",
-          "status": "pass"
+          "message": "missing required evidence crashRecovery.midCommit.headMatchesExpectedCheckpoint",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.midCommit.injectedErrorCode",
-          "status": "pass"
+          "message": "missing required evidence crashRecovery.midCommit.injectedErrorCode",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.midCommit.lineageConsistent",
-          "status": "pass"
+          "message": "missing required evidence crashRecovery.midCommit.lineageConsistent",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.midCommit.pendingMessageCommitted",
-          "status": "pass"
+          "message": "missing required evidence crashRecovery.midCommit.pendingMessageCommitted",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.midCommit.recoveryStateConsistent",
-          "status": "pass"
+          "message": "missing required evidence crashRecovery.midCommit.recoveryStateConsistent",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.crashRecovery.midCommit.visibleCommittedMessageCount",
-          "status": "pass"
+          "message": "missing required evidence crashRecovery.midCommit.visibleCommittedMessageCount",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.afterCommitBeforeAck.headMatchesExpectedCheckpoint",
-          "status": "pass"
+          "message": "missing required evidence result.crashRecovery.afterCommitBeforeAck.headMatchesExpectedCheckpoint",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.afterCommitBeforeAck.injectedErrorCode",
-          "status": "pass"
+          "message": "missing required evidence result.crashRecovery.afterCommitBeforeAck.injectedErrorCode",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.afterCommitBeforeAck.lineageConsistent",
-          "status": "pass"
+          "message": "missing required evidence result.crashRecovery.afterCommitBeforeAck.lineageConsistent",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.afterCommitBeforeAck.pendingMessageCommitted",
-          "status": "pass"
+          "message": "missing required evidence result.crashRecovery.afterCommitBeforeAck.pendingMessageCommitted",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.afterCommitBeforeAck.recoveryStateConsistent",
-          "status": "pass"
+          "message": "missing required evidence result.crashRecovery.afterCommitBeforeAck.recoveryStateConsistent",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.afterCommitBeforeAck.visibleCommittedMessageCount",
-          "status": "pass"
+          "message": "missing required evidence result.crashRecovery.afterCommitBeforeAck.visibleCommittedMessageCount",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.beforeCommit.headMatchesExpectedCheckpoint",
-          "status": "pass"
+          "message": "missing required evidence result.crashRecovery.beforeCommit.headMatchesExpectedCheckpoint",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.beforeCommit.injectedErrorCode",
-          "status": "pass"
+          "message": "missing required evidence result.crashRecovery.beforeCommit.injectedErrorCode",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.beforeCommit.lineageConsistent",
-          "status": "pass"
+          "message": "missing required evidence result.crashRecovery.beforeCommit.lineageConsistent",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.beforeCommit.pendingMessageCommitted",
-          "status": "pass"
+          "message": "missing required evidence result.crashRecovery.beforeCommit.pendingMessageCommitted",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.beforeCommit.recoveryStateConsistent",
-          "status": "pass"
+          "message": "missing required evidence result.crashRecovery.beforeCommit.recoveryStateConsistent",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.beforeCommit.visibleCommittedMessageCount",
-          "status": "pass"
+          "message": "missing required evidence result.crashRecovery.beforeCommit.visibleCommittedMessageCount",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.midCommit.headMatchesExpectedCheckpoint",
-          "status": "pass"
+          "message": "missing required evidence result.crashRecovery.midCommit.headMatchesExpectedCheckpoint",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.midCommit.injectedErrorCode",
-          "status": "pass"
+          "message": "missing required evidence result.crashRecovery.midCommit.injectedErrorCode",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.midCommit.lineageConsistent",
-          "status": "pass"
+          "message": "missing required evidence result.crashRecovery.midCommit.lineageConsistent",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.midCommit.pendingMessageCommitted",
-          "status": "pass"
+          "message": "missing required evidence result.crashRecovery.midCommit.pendingMessageCommitted",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.midCommit.recoveryStateConsistent",
-          "status": "pass"
+          "message": "missing required evidence result.crashRecovery.midCommit.recoveryStateConsistent",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.durable_fault_points.requiredEvidence.result.crashRecovery.midCommit.visibleCommittedMessageCount",
-          "status": "pass"
+          "message": "missing required evidence result.crashRecovery.midCommit.visibleCommittedMessageCount",
+          "status": "fail"
         }
       ],
       "checkId": "kernel.crash-recovery.durable_fault_points",
       "details": {
+        "adapterError": {
+          "code": "adapter_operation_failed",
+          "message": "connect ENOENT /run/user/1000/devenv-bd133f4/postgres/.s.PGSQL.5432"
+        },
         "adapterId": "typescript-kernel-postgres",
         "planId": "tuvren.kernel.restart-recovery"
       },
-      "status": "pass"
+      "status": "fail"
     },
     {
       "assertionResults": [
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.1.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.2.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.3.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.4.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.5.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.6.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.7.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.8.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.9.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.10.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.11.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.12.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.13.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.14.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.15.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.16.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.17.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.18.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.afterCommitBeforeAck.headMatchesExpectedCheckpoint",
-          "status": "pass"
+          "message": "missing required evidence crashRecovery.afterCommitBeforeAck.headMatchesExpectedCheckpoint",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.afterCommitBeforeAck.injectedErrorCode",
-          "status": "pass"
+          "message": "missing required evidence crashRecovery.afterCommitBeforeAck.injectedErrorCode",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.afterCommitBeforeAck.lineageConsistent",
-          "status": "pass"
+          "message": "missing required evidence crashRecovery.afterCommitBeforeAck.lineageConsistent",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.afterCommitBeforeAck.pendingMessageCommitted",
-          "status": "pass"
+          "message": "missing required evidence crashRecovery.afterCommitBeforeAck.pendingMessageCommitted",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.afterCommitBeforeAck.recoveryStateConsistent",
-          "status": "pass"
+          "message": "missing required evidence crashRecovery.afterCommitBeforeAck.recoveryStateConsistent",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.afterCommitBeforeAck.visibleCommittedMessageCount",
-          "status": "pass"
+          "message": "missing required evidence crashRecovery.afterCommitBeforeAck.visibleCommittedMessageCount",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.beforeCommit.headMatchesExpectedCheckpoint",
-          "status": "pass"
+          "message": "missing required evidence crashRecovery.beforeCommit.headMatchesExpectedCheckpoint",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.beforeCommit.injectedErrorCode",
-          "status": "pass"
+          "message": "missing required evidence crashRecovery.beforeCommit.injectedErrorCode",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.beforeCommit.lineageConsistent",
-          "status": "pass"
+          "message": "missing required evidence crashRecovery.beforeCommit.lineageConsistent",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.beforeCommit.pendingMessageCommitted",
-          "status": "pass"
+          "message": "missing required evidence crashRecovery.beforeCommit.pendingMessageCommitted",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.beforeCommit.recoveryStateConsistent",
-          "status": "pass"
+          "message": "missing required evidence crashRecovery.beforeCommit.recoveryStateConsistent",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.beforeCommit.visibleCommittedMessageCount",
-          "status": "pass"
+          "message": "missing required evidence crashRecovery.beforeCommit.visibleCommittedMessageCount",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.midCommit.headMatchesExpectedCheckpoint",
-          "status": "pass"
+          "message": "missing required evidence crashRecovery.midCommit.headMatchesExpectedCheckpoint",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.midCommit.injectedErrorCode",
-          "status": "pass"
+          "message": "missing required evidence crashRecovery.midCommit.injectedErrorCode",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.midCommit.lineageConsistent",
-          "status": "pass"
+          "message": "missing required evidence crashRecovery.midCommit.lineageConsistent",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.midCommit.pendingMessageCommitted",
-          "status": "pass"
+          "message": "missing required evidence crashRecovery.midCommit.pendingMessageCommitted",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.midCommit.recoveryStateConsistent",
-          "status": "pass"
+          "message": "missing required evidence crashRecovery.midCommit.recoveryStateConsistent",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.midCommit.visibleCommittedMessageCount",
-          "status": "pass"
+          "message": "missing required evidence crashRecovery.midCommit.visibleCommittedMessageCount",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.afterCommitBeforeAck.headMatchesExpectedCheckpoint",
-          "status": "pass"
+          "message": "missing required evidence result.crashRecovery.afterCommitBeforeAck.headMatchesExpectedCheckpoint",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.afterCommitBeforeAck.injectedErrorCode",
-          "status": "pass"
+          "message": "missing required evidence result.crashRecovery.afterCommitBeforeAck.injectedErrorCode",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.afterCommitBeforeAck.lineageConsistent",
-          "status": "pass"
+          "message": "missing required evidence result.crashRecovery.afterCommitBeforeAck.lineageConsistent",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.afterCommitBeforeAck.pendingMessageCommitted",
-          "status": "pass"
+          "message": "missing required evidence result.crashRecovery.afterCommitBeforeAck.pendingMessageCommitted",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.afterCommitBeforeAck.recoveryStateConsistent",
-          "status": "pass"
+          "message": "missing required evidence result.crashRecovery.afterCommitBeforeAck.recoveryStateConsistent",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.afterCommitBeforeAck.visibleCommittedMessageCount",
-          "status": "pass"
+          "message": "missing required evidence result.crashRecovery.afterCommitBeforeAck.visibleCommittedMessageCount",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.beforeCommit.headMatchesExpectedCheckpoint",
-          "status": "pass"
+          "message": "missing required evidence result.crashRecovery.beforeCommit.headMatchesExpectedCheckpoint",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.beforeCommit.injectedErrorCode",
-          "status": "pass"
+          "message": "missing required evidence result.crashRecovery.beforeCommit.injectedErrorCode",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.beforeCommit.lineageConsistent",
-          "status": "pass"
+          "message": "missing required evidence result.crashRecovery.beforeCommit.lineageConsistent",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.beforeCommit.pendingMessageCommitted",
-          "status": "pass"
+          "message": "missing required evidence result.crashRecovery.beforeCommit.pendingMessageCommitted",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.beforeCommit.recoveryStateConsistent",
-          "status": "pass"
+          "message": "missing required evidence result.crashRecovery.beforeCommit.recoveryStateConsistent",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.beforeCommit.visibleCommittedMessageCount",
-          "status": "pass"
+          "message": "missing required evidence result.crashRecovery.beforeCommit.visibleCommittedMessageCount",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.midCommit.headMatchesExpectedCheckpoint",
-          "status": "pass"
+          "message": "missing required evidence result.crashRecovery.midCommit.headMatchesExpectedCheckpoint",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.midCommit.injectedErrorCode",
-          "status": "pass"
+          "message": "missing required evidence result.crashRecovery.midCommit.injectedErrorCode",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.midCommit.lineageConsistent",
-          "status": "pass"
+          "message": "missing required evidence result.crashRecovery.midCommit.lineageConsistent",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.midCommit.pendingMessageCommitted",
-          "status": "pass"
+          "message": "missing required evidence result.crashRecovery.midCommit.pendingMessageCommitted",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.midCommit.recoveryStateConsistent",
-          "status": "pass"
+          "message": "missing required evidence result.crashRecovery.midCommit.recoveryStateConsistent",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.midCommit.visibleCommittedMessageCount",
-          "status": "pass"
+          "message": "missing required evidence result.crashRecovery.midCommit.visibleCommittedMessageCount",
+          "status": "fail"
         }
       ],
       "checkId": "kernel.crash-recovery.in_process_fault_points",
       "details": {
+        "adapterError": {
+          "code": "adapter_operation_failed",
+          "message": "connect ENOENT /run/user/1000/devenv-bd133f4/postgres/.s.PGSQL.5432"
+        },
         "adapterId": "typescript-kernel-postgres",
         "planId": "tuvren.kernel.restart-recovery"
       },
-      "status": "pass"
+      "status": "fail"
     },
     {
       "assertionResults": [
         {
           "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.1.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.2.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.3.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.4.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.5.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.6.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.requiredEvidence.restartRecovery.checkpointLineageSurvivesRestart",
-          "status": "pass"
+          "message": "missing required evidence restartRecovery.checkpointLineageSurvivesRestart",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.requiredEvidence.restartRecovery.committedMessageCount",
-          "status": "pass"
+          "message": "missing required evidence restartRecovery.committedMessageCount",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.requiredEvidence.restartRecovery.committedStateVisible",
-          "status": "pass"
+          "message": "missing required evidence restartRecovery.committedStateVisible",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.requiredEvidence.restartRecovery.recoveredLastCompletedStepId",
-          "status": "pass"
+          "message": "missing required evidence restartRecovery.recoveredLastCompletedStepId",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.requiredEvidence.restartRecovery.recoveredUncommittedCount",
-          "status": "pass"
+          "message": "missing required evidence restartRecovery.recoveredUncommittedCount",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.requiredEvidence.restartRecovery.recoveryHeadMatchesCommittedCheckpoint",
-          "status": "pass"
+          "message": "missing required evidence restartRecovery.recoveryHeadMatchesCommittedCheckpoint",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.requiredEvidence.restartRecovery.uncommittedNotPromoted",
-          "status": "pass"
+          "message": "missing required evidence restartRecovery.uncommittedNotPromoted",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.requiredEvidence.result.restartRecovery.checkpointLineageSurvivesRestart",
-          "status": "pass"
+          "message": "missing required evidence result.restartRecovery.checkpointLineageSurvivesRestart",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.requiredEvidence.result.restartRecovery.committedStateVisible",
-          "status": "pass"
+          "message": "missing required evidence result.restartRecovery.committedStateVisible",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.requiredEvidence.result.restartRecovery.recoveredLastCompletedStepId",
-          "status": "pass"
+          "message": "missing required evidence result.restartRecovery.recoveredLastCompletedStepId",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.requiredEvidence.result.restartRecovery.recoveredUncommittedCount",
-          "status": "pass"
+          "message": "missing required evidence result.restartRecovery.recoveredUncommittedCount",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.requiredEvidence.result.restartRecovery.recoveryHeadMatchesCommittedCheckpoint",
-          "status": "pass"
+          "message": "missing required evidence result.restartRecovery.recoveryHeadMatchesCommittedCheckpoint",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.restart-recovery.close_reopen_checkpoint.requiredEvidence.result.restartRecovery.uncommittedNotPromoted",
-          "status": "pass"
+          "message": "missing required evidence result.restartRecovery.uncommittedNotPromoted",
+          "status": "fail"
         }
       ],
       "checkId": "kernel.restart-recovery.close_reopen_checkpoint",
       "details": {
+        "adapterError": {
+          "code": "adapter_operation_failed",
+          "message": "connect ENOENT /run/user/1000/devenv-bd133f4/postgres/.s.PGSQL.5432"
+        },
         "adapterId": "typescript-kernel-postgres",
         "planId": "tuvren.kernel.restart-recovery"
       },
-      "status": "pass"
+      "status": "fail"
     },
     {
       "assertionResults": [
         {
           "assertionId": "kernel-restart-af.expired-running-requires-preemption.1.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel-restart-af.expired-running-requires-preemption.2.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel-restart-af.expired-running-requires-preemption.3.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel-restart-af.expired-running-requires-preemption.requiredEvidence.preemption.leaseCleared",
-          "status": "pass"
+          "message": "missing required evidence preemption.leaseCleared",
+          "status": "fail"
         },
         {
           "assertionId": "kernel-restart-af.expired-running-requires-preemption.requiredEvidence.preemption.preemptionReason",
-          "status": "pass"
+          "message": "missing required evidence preemption.preemptionReason",
+          "status": "fail"
         },
         {
           "assertionId": "kernel-restart-af.expired-running-requires-preemption.requiredEvidence.preemption.runStatus",
-          "status": "pass"
+          "message": "missing required evidence preemption.runStatus",
+          "status": "fail"
         },
         {
           "assertionId": "kernel-restart-af.expired-running-requires-preemption.requiredEvidence.result.preemption.leaseCleared",
-          "status": "pass"
+          "message": "missing required evidence result.preemption.leaseCleared",
+          "status": "fail"
         },
         {
           "assertionId": "kernel-restart-af.expired-running-requires-preemption.requiredEvidence.result.preemption.preemptionReason",
-          "status": "pass"
+          "message": "missing required evidence result.preemption.preemptionReason",
+          "status": "fail"
         },
         {
           "assertionId": "kernel-restart-af.expired-running-requires-preemption.requiredEvidence.result.preemption.runStatus",
-          "status": "pass"
+          "message": "missing required evidence result.preemption.runStatus",
+          "status": "fail"
         }
       ],
       "checkId": "kernel-restart-af.expired-running-requires-preemption",
       "details": {
+        "adapterError": {
+          "code": "adapter_operation_failed",
+          "message": "connect ENOENT /run/user/1000/devenv-bd133f4/postgres/.s.PGSQL.5432"
+        },
         "adapterId": "typescript-kernel-postgres",
         "planId": "tuvren.kernel.run-liveness"
       },
-      "status": "pass"
+      "status": "fail"
     },
     {
       "assertionResults": [
         {
           "assertionId": "kernel-restart-af.paused-run-excluded-from-stale-preemption.1.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel-restart-af.paused-run-excluded-from-stale-preemption.2.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel-restart-af.paused-run-excluded-from-stale-preemption.requiredEvidence.listing.pausedRunListed",
-          "status": "pass"
+          "message": "missing required evidence listing.pausedRunListed",
+          "status": "fail"
         },
         {
           "assertionId": "kernel-restart-af.paused-run-excluded-from-stale-preemption.requiredEvidence.listing.pausedRunStatus",
-          "status": "pass"
+          "message": "missing required evidence listing.pausedRunStatus",
+          "status": "fail"
         },
         {
           "assertionId": "kernel-restart-af.paused-run-excluded-from-stale-preemption.requiredEvidence.result.listing.pausedRunListed",
-          "status": "pass"
+          "message": "missing required evidence result.listing.pausedRunListed",
+          "status": "fail"
         },
         {
           "assertionId": "kernel-restart-af.paused-run-excluded-from-stale-preemption.requiredEvidence.result.listing.pausedRunStatus",
-          "status": "pass"
+          "message": "missing required evidence result.listing.pausedRunStatus",
+          "status": "fail"
         }
       ],
       "checkId": "kernel-restart-af.paused-run-excluded-from-stale-preemption",
       "details": {
+        "adapterError": {
+          "code": "adapter_operation_failed",
+          "message": "connect ENOENT /run/user/1000/devenv-bd133f4/postgres/.s.PGSQL.5432"
+        },
         "adapterId": "typescript-kernel-postgres",
         "planId": "tuvren.kernel.run-liveness"
       },
-      "status": "pass"
+      "status": "fail"
     },
     {
       "assertionResults": [
         {
           "assertionId": "kernel.run-liveness.expired_listing.1.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.run-liveness.expired_listing.2.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.run-liveness.expired_listing.3.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.run-liveness.expired_listing.requiredEvidence.listing.expiredRunIds",
-          "status": "pass"
+          "message": "missing required evidence listing.expiredRunIds",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.run-liveness.expired_listing.requiredEvidence.listing.pausedRunListed",
-          "status": "pass"
+          "message": "missing required evidence listing.pausedRunListed",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.run-liveness.expired_listing.requiredEvidence.listing.pausedRunStatus",
-          "status": "pass"
+          "message": "missing required evidence listing.pausedRunStatus",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.run-liveness.expired_listing.requiredEvidence.result.listing.expiredRunIds",
-          "status": "pass"
+          "message": "missing required evidence result.listing.expiredRunIds",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.run-liveness.expired_listing.requiredEvidence.result.listing.pausedRunListed",
-          "status": "pass"
+          "message": "missing required evidence result.listing.pausedRunListed",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.run-liveness.expired_listing.requiredEvidence.result.listing.pausedRunStatus",
-          "status": "pass"
+          "message": "missing required evidence result.listing.pausedRunStatus",
+          "status": "fail"
         }
       ],
       "checkId": "kernel.run-liveness.expired_listing",
       "details": {
+        "adapterError": {
+          "code": "adapter_operation_failed",
+          "message": "connect ENOENT /run/user/1000/devenv-bd133f4/postgres/.s.PGSQL.5432"
+        },
         "adapterId": "typescript-kernel-postgres",
         "planId": "tuvren.kernel.run-liveness"
       },
-      "status": "pass"
+      "status": "fail"
     },
     {
       "assertionResults": [
         {
           "assertionId": "kernel.run-liveness.lease_renewal.1.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.run-liveness.lease_renewal.2.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.run-liveness.lease_renewal.3.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.run-liveness.lease_renewal.requiredEvidence.renewal.ownerMismatchCode",
-          "status": "pass"
+          "message": "missing required evidence renewal.ownerMismatchCode",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.run-liveness.lease_renewal.requiredEvidence.renewal.renewedLeaseExpiresAtMs",
-          "status": "pass"
+          "message": "missing required evidence renewal.renewedLeaseExpiresAtMs",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.run-liveness.lease_renewal.requiredEvidence.renewal.staleTokenCode",
-          "status": "pass"
+          "message": "missing required evidence renewal.staleTokenCode",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.run-liveness.lease_renewal.requiredEvidence.result.renewal.ownerMismatchCode",
-          "status": "pass"
+          "message": "missing required evidence result.renewal.ownerMismatchCode",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.run-liveness.lease_renewal.requiredEvidence.result.renewal.renewedLeaseExpiresAtMs",
-          "status": "pass"
+          "message": "missing required evidence result.renewal.renewedLeaseExpiresAtMs",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.run-liveness.lease_renewal.requiredEvidence.result.renewal.staleTokenCode",
-          "status": "pass"
+          "message": "missing required evidence result.renewal.staleTokenCode",
+          "status": "fail"
         }
       ],
       "checkId": "kernel.run-liveness.lease_renewal",
       "details": {
+        "adapterError": {
+          "code": "adapter_operation_failed",
+          "message": "connect ENOENT /run/user/1000/devenv-bd133f4/postgres/.s.PGSQL.5432"
+        },
         "adapterId": "typescript-kernel-postgres",
         "planId": "tuvren.kernel.run-liveness"
       },
-      "status": "pass"
+      "status": "fail"
     },
     {
       "assertionResults": [
         {
           "assertionId": "kernel.run-liveness.stale_preemption.1.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.run-liveness.stale_preemption.2.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.run-liveness.stale_preemption.3.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.run-liveness.stale_preemption.4.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.run-liveness.stale_preemption.5.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.preemption.branchHeadTurnNodeHash",
-          "status": "pass"
+          "message": "missing required evidence preemption.branchHeadTurnNodeHash",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.preemption.leaseCleared",
-          "status": "pass"
+          "message": "missing required evidence preemption.leaseCleared",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.preemption.preemptionReason",
-          "status": "pass"
+          "message": "missing required evidence preemption.preemptionReason",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.preemption.recoveryHeadMatchesBranchHead",
-          "status": "pass"
+          "message": "missing required evidence preemption.recoveryHeadMatchesBranchHead",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.preemption.recoveryLastTurnNodeHash",
-          "status": "pass"
+          "message": "missing required evidence preemption.recoveryLastTurnNodeHash",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.preemption.runStatus",
-          "status": "pass"
+          "message": "missing required evidence preemption.runStatus",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.preemption.uncommittedStagedResults",
-          "status": "pass"
+          "message": "missing required evidence preemption.uncommittedStagedResults",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.result.preemption.leaseCleared",
-          "status": "pass"
+          "message": "missing required evidence result.preemption.leaseCleared",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.result.preemption.preemptionReason",
-          "status": "pass"
+          "message": "missing required evidence result.preemption.preemptionReason",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.result.preemption.recoveryHeadMatchesBranchHead",
-          "status": "pass"
+          "message": "missing required evidence result.preemption.recoveryHeadMatchesBranchHead",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.result.preemption.runStatus",
-          "status": "pass"
+          "message": "missing required evidence result.preemption.runStatus",
+          "status": "fail"
         },
         {
           "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.result.preemption.uncommittedStagedResults",
-          "status": "pass"
+          "message": "missing required evidence result.preemption.uncommittedStagedResults",
+          "status": "fail"
         }
       ],
       "checkId": "kernel.run-liveness.stale_preemption",
       "details": {
+        "adapterError": {
+          "code": "adapter_operation_failed",
+          "message": "connect ENOENT /run/user/1000/devenv-bd133f4/postgres/.s.PGSQL.5432"
+        },
         "adapterId": "typescript-kernel-postgres",
         "planId": "tuvren.kernel.run-liveness"
       },
-      "status": "pass"
+      "status": "fail"
     }
   ],
   "command": [
@@ -2754,16 +3025,16 @@
     "--concurrency",
     "4"
   ],
-  "exitCode": 0,
+  "exitCode": 1,
   "implementationId": "typescript-kernel-postgres",
   "nonApplicableCheckIds": [],
   "project": "kernel-typescript-postgres-conformance-runner",
   "reportLabel": "TypeScript PostgreSQL durable kernel",
-  "reportStatus": "full_pass",
-  "status": "pass",
+  "reportStatus": "unexpected_fail",
+  "status": "fail",
   "summary": {
-    "failedChecks": 0,
-    "passedChecks": 59,
+    "failedChecks": 23,
+    "passedChecks": 36,
     "totalChecks": 59,
     "applicableChecks": 59,
     "nonApplicableChecks": 0

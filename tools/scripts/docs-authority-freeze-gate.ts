@@ -315,6 +315,23 @@ const EVIDENCE = {
     generatedArtifact:
       "N/A - restart recovery is conformance-plan authority without generated schema artifacts",
   },
+  // KRT-BC001/BC002: capability-orchestration model (ADR-046) — four
+  // execution classes, MCP-as-binding, exposure/invocation policy, and
+  // per-class observation limits. All §11 normative claims are backed by
+  // the cross-class integration conformance plan plus the per-class plans
+  // promoted by Epics AW–BB.
+  capabilityOrchestration: {
+    adapterCapability: "framework.runtime-api",
+    authorityPacket:
+      "boundaries/shared/contracts/core/spec/authority-packet.json",
+    compatibilityEvidence:
+      "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
+    conformancePlan:
+      "boundaries/framework/conformance/plans/capability-orchestration-integration.json; boundaries/framework/conformance/plans/tuvren-server-execution-class.json; boundaries/framework/conformance/plans/tuvren-client-execution-class.json; boundaries/framework/conformance/plans/invocation-lifecycle-observation.json; boundaries/framework/conformance/plans/capability-policy.json",
+    fixture:
+      "boundaries/framework/conformance/scenarios/runtime-api-scenarios.json",
+    generatedArtifact: "boundaries/shared/contracts/core/artifacts/json-schema",
+  },
 } as const satisfies Record<string, EvidenceTemplate>;
 
 const EMPTY_EVIDENCE: EvidenceTemplate = {
@@ -1272,6 +1289,13 @@ function classifyFrameworkRuntimeSection(
     return authorityDecision(
       "runtime orchestration",
       EVIDENCE.runtimeOrchestration
+    );
+  }
+
+  if (isSectionMajor(section, "11")) {
+    return authorityDecision(
+      "capability orchestration",
+      EVIDENCE.capabilityOrchestration
     );
   }
 

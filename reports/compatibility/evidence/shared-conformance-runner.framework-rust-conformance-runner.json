@@ -12,6 +12,25 @@
   "exitCode": 0,
   "implementationId": "rust-framework",
   "nonApplicableCheckIds": [
+    "bc.bc001.exposure-policy-withheld-tool-hidden",
+    "bc.bc001.invariant-provider-mediated-execution-class",
+    "bc.bc001.invariant-provider-native-execution-class",
+    "bc.bc001.invariant-tuvren-client-execution-class",
+    "bc.bc001.invariant-tuvren-server-execution-class",
+    "bc.bc001.invocation-policy-denied-is-error",
+    "bc.bc001.mcp-binding-endpoint-kind",
+    "bc.bc001.observation-provider-mediated-no-audit",
+    "bc.bc001.observation-provider-native-no-audit",
+    "bc.bc001.observation-tuvren-client-no-audit",
+    "bc.bc001.observation-tuvren-server-can-audit",
+    "bc.bc001.provider-mediated-result-emitted",
+    "bc.bc001.provider-mediated-start-emitted",
+    "bc.bc001.provider-native-result-emitted",
+    "bc.bc001.provider-native-start-emitted",
+    "bc.bc001.tuvren-client-result-emitted",
+    "bc.bc001.tuvren-client-start-emitted",
+    "bc.bc001.tuvren-server-result-emitted",
+    "bc.bc001.tuvren-server-start-emitted",
     "bb.bb000.permitted-capability-invocation-admitted",
     "bb.bb000.permitted-capability-passes-all-policy",
     "bb.bb001.residency-allowed-exposure-passes",
@@ -459,9 +478,9 @@
   "summary": {
     "failedChecks": 0,
     "passedChecks": 0,
-    "totalChecks": 439,
+    "totalChecks": 458,
     "applicableChecks": 0,
-    "nonApplicableChecks": 439
+    "nonApplicableChecks": 458
   },
   "suiteId": "tuvren.framework.promoted-authority",
   "suiteVersion": "0.1.0"

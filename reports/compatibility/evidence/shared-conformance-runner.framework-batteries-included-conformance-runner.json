@@ -79,73 +79,93 @@
       "assertionResults": [
         {
           "assertionId": "batteries-included.lifecycle.postgres.constructed.1.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "batteries-included.lifecycle.postgres.constructed.requiredEvidence.result.batteriesIncluded.lifecycle.constructed",
-          "status": "pass"
+          "message": "missing required evidence result.batteriesIncluded.lifecycle.constructed",
+          "status": "fail"
         }
       ],
       "checkId": "batteries-included.lifecycle.postgres.constructed",
       "details": {
+        "adapterError": {
+          "code": "adapter_operation_failed",
+          "message": "connect ENOENT /run/user/1000/devenv-bd133f4/postgres/.s.PGSQL.5432"
+        },
         "adapterId": "typescript-framework-batteries-included",
         "planId": "tuvren.framework.runtime-api.batteries-included"
       },
-      "status": "pass"
+      "status": "fail"
     },
     {
       "assertionResults": [
         {
           "assertionId": "batteries-included.lifecycle.postgres.disposed.1.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "batteries-included.lifecycle.postgres.disposed.requiredEvidence.result.batteriesIncluded.lifecycle.disposed",
-          "status": "pass"
+          "message": "missing required evidence result.batteriesIncluded.lifecycle.disposed",
+          "status": "fail"
         }
       ],
       "checkId": "batteries-included.lifecycle.postgres.disposed",
       "details": {
+        "adapterError": {
+          "code": "adapter_operation_failed",
+          "message": "connect ENOENT /run/user/1000/devenv-bd133f4/postgres/.s.PGSQL.5432"
+        },
         "adapterId": "typescript-framework-batteries-included",
         "planId": "tuvren.framework.runtime-api.batteries-included"
       },
-      "status": "pass"
+      "status": "fail"
     },
     {
       "assertionResults": [
         {
           "assertionId": "batteries-included.lifecycle.postgres.messages-read.1.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "batteries-included.lifecycle.postgres.messages-read.requiredEvidence.result.batteriesIncluded.lifecycle.messagesRead",
-          "status": "pass"
+          "message": "missing required evidence result.batteriesIncluded.lifecycle.messagesRead",
+          "status": "fail"
         }
       ],
       "checkId": "batteries-included.lifecycle.postgres.messages-read",
       "details": {
+        "adapterError": {
+          "code": "adapter_operation_failed",
+          "message": "connect ENOENT /run/user/1000/devenv-bd133f4/postgres/.s.PGSQL.5432"
+        },
         "adapterId": "typescript-framework-batteries-included",
         "planId": "tuvren.framework.runtime-api.batteries-included"
       },
-      "status": "pass"
+      "status": "fail"
     },
     {
       "assertionResults": [
         {
           "assertionId": "batteries-included.lifecycle.postgres.turn-completed.1.resultField",
-          "status": "pass"
+          "status": "fail"
         },
         {
           "assertionId": "batteries-included.lifecycle.postgres.turn-completed.requiredEvidence.result.batteriesIncluded.lifecycle.turnCompleted",
-          "status": "pass"
+          "message": "missing required evidence result.batteriesIncluded.lifecycle.turnCompleted",
+          "status": "fail"
         }
       ],
       "checkId": "batteries-included.lifecycle.postgres.turn-completed",
       "details": {
+        "adapterError": {
+          "code": "adapter_operation_failed",
+          "message": "connect ENOENT /run/user/1000/devenv-bd133f4/postgres/.s.PGSQL.5432"
+        },
         "adapterId": "typescript-framework-batteries-included",
         "planId": "tuvren.framework.runtime-api.batteries-included"
       },
-      "status": "pass"
+      "status": "fail"
     },
     {
       "assertionResults": [
@@ -226,9 +246,28 @@
     "--adapter",
     "[adapter-manifest]"
   ],
-  "exitCode": 0,
+  "exitCode": 1,
   "implementationId": "typescript-framework",
   "nonApplicableCheckIds": [
+    "bc.bc001.exposure-policy-withheld-tool-hidden",
+    "bc.bc001.invariant-provider-mediated-execution-class",
+    "bc.bc001.invariant-provider-native-execution-class",
+    "bc.bc001.invariant-tuvren-client-execution-class",
+    "bc.bc001.invariant-tuvren-server-execution-class",
+    "bc.bc001.invocation-policy-denied-is-error",
+    "bc.bc001.mcp-binding-endpoint-kind",
+    "bc.bc001.observation-provider-mediated-no-audit",
+    "bc.bc001.observation-provider-native-no-audit",
+    "bc.bc001.observation-tuvren-client-no-audit",
+    "bc.bc001.observation-tuvren-server-can-audit",
+    "bc.bc001.provider-mediated-result-emitted",
+    "bc.bc001.provider-mediated-start-emitted",
+    "bc.bc001.provider-native-result-emitted",
+    "bc.bc001.provider-native-start-emitted",
+    "bc.bc001.tuvren-client-result-emitted",
+    "bc.bc001.tuvren-client-start-emitted",
+    "bc.bc001.tuvren-server-result-emitted",
+    "bc.bc001.tuvren-server-start-emitted",
     "bb.bb000.permitted-capability-invocation-admitted",
     "bb.bb000.permitted-capability-passes-all-policy",
     "bb.bb001.residency-allowed-exposure-passes",
@@ -659,14 +698,14 @@
   ],
   "project": "framework-batteries-included-conformance-runner",
   "reportLabel": "TypeScript framework batteries-included runtime",
-  "reportStatus": "capability_subset_pass",
-  "status": "pass",
+  "reportStatus": "unexpected_fail",
+  "status": "fail",
   "summary": {
-    "failedChecks": 0,
-    "passedChecks": 12,
-    "totalChecks": 439,
+    "failedChecks": 4,
+    "passedChecks": 8,
+    "totalChecks": 458,
     "applicableChecks": 12,
-    "nonApplicableChecks": 427
+    "nonApplicableChecks": 446
   },
   "suiteId": "tuvren.framework.runtime-api.batteries-included",
   "suiteVersion": "0.1.0"

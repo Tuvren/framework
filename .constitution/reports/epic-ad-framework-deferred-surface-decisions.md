@@ -9,6 +9,7 @@ Framework deferred-surface decisions are recorded from the docs-to-authority mat
 | approval and cancellation control | 27 | authority-backed-conformance-covered | KRT-AF004 | No, if kept local/deferred |
 | approval resume semantics | 1 | authority-backed-conformance-covered | KRT-AF004 | No, if kept local/deferred |
 | aroundModel live/durable reconciliation | 2 | authority-backed-conformance-covered | KRT-AF003 | No, if kept local/deferred |
+| capability orchestration | 9 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
 | driver contract | 14 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
 | extension contracts | 5 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
 | extension state and prompt contracts | 4 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |

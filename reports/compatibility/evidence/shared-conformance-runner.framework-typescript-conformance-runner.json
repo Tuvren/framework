@@ -18,6 +18,348 @@
     {
       "assertionResults": [
         {
+          "assertionId": "bc.bc001.exposure-policy-withheld-tool-hidden.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "bc.bc001.exposure-policy-withheld-tool-hidden.requiredEvidence.result.integration.policy.withheldToolReachedModel",
+          "status": "pass"
+        }
+      ],
+      "checkId": "bc.bc001.exposure-policy-withheld-tool-hidden",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.capability-orchestration-integration"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "bc.bc001.invariant-provider-mediated-execution-class.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "bc.bc001.invariant-provider-mediated-execution-class.requiredEvidence.result.integration.providerMediated.executionClass",
+          "status": "pass"
+        }
+      ],
+      "checkId": "bc.bc001.invariant-provider-mediated-execution-class",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.capability-orchestration-integration"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "bc.bc001.invariant-provider-native-execution-class.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "bc.bc001.invariant-provider-native-execution-class.requiredEvidence.result.integration.providerNative.executionClass",
+          "status": "pass"
+        }
+      ],
+      "checkId": "bc.bc001.invariant-provider-native-execution-class",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.capability-orchestration-integration"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "bc.bc001.invariant-tuvren-client-execution-class.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "bc.bc001.invariant-tuvren-client-execution-class.requiredEvidence.result.integration.tuvrenClient.executionClass",
+          "status": "pass"
+        }
+      ],
+      "checkId": "bc.bc001.invariant-tuvren-client-execution-class",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.capability-orchestration-integration"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "bc.bc001.invariant-tuvren-server-execution-class.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "bc.bc001.invariant-tuvren-server-execution-class.requiredEvidence.result.integration.tuvrenServer.executionClass",
+          "status": "pass"
+        }
+      ],
+      "checkId": "bc.bc001.invariant-tuvren-server-execution-class",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.capability-orchestration-integration"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "bc.bc001.invocation-policy-denied-is-error.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "bc.bc001.invocation-policy-denied-is-error.requiredEvidence.result.integration.policy.deniedToolResultIsError",
+          "status": "pass"
+        }
+      ],
+      "checkId": "bc.bc001.invocation-policy-denied-is-error",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.capability-orchestration-integration"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "bc.bc001.mcp-binding-endpoint-kind.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "bc.bc001.mcp-binding-endpoint-kind.requiredEvidence.result.integration.tuvrenServer.mcpEndpointKind",
+          "status": "pass"
+        }
+      ],
+      "checkId": "bc.bc001.mcp-binding-endpoint-kind",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.capability-orchestration-integration"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "bc.bc001.observation-provider-mediated-no-audit.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "bc.bc001.observation-provider-mediated-no-audit.requiredEvidence.result.integration.providerMediated.observation.canAudit",
+          "status": "pass"
+        }
+      ],
+      "checkId": "bc.bc001.observation-provider-mediated-no-audit",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.capability-orchestration-integration"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "bc.bc001.observation-provider-native-no-audit.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "bc.bc001.observation-provider-native-no-audit.requiredEvidence.result.integration.providerNative.observation.canAudit",
+          "status": "pass"
+        }
+      ],
+      "checkId": "bc.bc001.observation-provider-native-no-audit",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.capability-orchestration-integration"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "bc.bc001.observation-tuvren-client-no-audit.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "bc.bc001.observation-tuvren-client-no-audit.requiredEvidence.result.integration.tuvrenClient.observation.canAudit",
+          "status": "pass"
+        }
+      ],
+      "checkId": "bc.bc001.observation-tuvren-client-no-audit",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.capability-orchestration-integration"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "bc.bc001.observation-tuvren-server-can-audit.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "bc.bc001.observation-tuvren-server-can-audit.requiredEvidence.result.integration.tuvrenServer.observation.canAudit",
+          "status": "pass"
+        }
+      ],
+      "checkId": "bc.bc001.observation-tuvren-server-can-audit",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.capability-orchestration-integration"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "bc.bc001.provider-mediated-result-emitted.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "bc.bc001.provider-mediated-result-emitted.requiredEvidence.result.integration.providerMediated.toolResultCount",
+          "status": "pass"
+        }
+      ],
+      "checkId": "bc.bc001.provider-mediated-result-emitted",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.capability-orchestration-integration"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "bc.bc001.provider-mediated-start-emitted.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "bc.bc001.provider-mediated-start-emitted.requiredEvidence.result.integration.providerMediated.toolStartCount",
+          "status": "pass"
+        }
+      ],
+      "checkId": "bc.bc001.provider-mediated-start-emitted",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.capability-orchestration-integration"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "bc.bc001.provider-native-result-emitted.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "bc.bc001.provider-native-result-emitted.requiredEvidence.result.integration.providerNative.toolResultCount",
+          "status": "pass"
+        }
+      ],
+      "checkId": "bc.bc001.provider-native-result-emitted",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.capability-orchestration-integration"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "bc.bc001.provider-native-start-emitted.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "bc.bc001.provider-native-start-emitted.requiredEvidence.result.integration.providerNative.toolStartCount",
+          "status": "pass"
+        }
+      ],
+      "checkId": "bc.bc001.provider-native-start-emitted",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.capability-orchestration-integration"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "bc.bc001.tuvren-client-result-emitted.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "bc.bc001.tuvren-client-result-emitted.requiredEvidence.result.integration.tuvrenClient.toolResultCount",
+          "status": "pass"
+        }
+      ],
+      "checkId": "bc.bc001.tuvren-client-result-emitted",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.capability-orchestration-integration"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "bc.bc001.tuvren-client-start-emitted.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "bc.bc001.tuvren-client-start-emitted.requiredEvidence.result.integration.tuvrenClient.toolStartCount",
+          "status": "pass"
+        }
+      ],
+      "checkId": "bc.bc001.tuvren-client-start-emitted",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.capability-orchestration-integration"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "bc.bc001.tuvren-server-result-emitted.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "bc.bc001.tuvren-server-result-emitted.requiredEvidence.result.integration.tuvrenServer.toolResultCount",
+          "status": "pass"
+        }
+      ],
+      "checkId": "bc.bc001.tuvren-server-result-emitted",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.capability-orchestration-integration"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "bc.bc001.tuvren-server-start-emitted.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "bc.bc001.tuvren-server-start-emitted.requiredEvidence.result.integration.tuvrenServer.toolStartCount",
+          "status": "pass"
+        }
+      ],
+      "checkId": "bc.bc001.tuvren-server-start-emitted",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.capability-orchestration-integration"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "bb.bb000.permitted-capability-invocation-admitted.1.resultField",
           "status": "pass"
         },
@@ -94,7 +436,7 @@
           "status": "pass"
         },
         {
-          "assertionId": "bb.bb001.residency-exposure-withheld-has-reason.requiredEvidence.result.capabilityPolicy.exposure.residencyDenied.hasReason",
+          "assertionId": "bb.bb001.residency-exposure-withheld-has-reason.requiredEvidence.result.capabilityPolicy.exposure.residencyDenied.reason",
           "status": "pass"
         }
       ],
@@ -130,7 +472,7 @@
           "status": "pass"
         },
         {
-          "assertionId": "bb.bb001.residency-invocation-denied-has-reason.requiredEvidence.result.capabilityPolicy.invocation.residencyDenied.hasReason",
+          "assertionId": "bb.bb001.residency-invocation-denied-has-reason.requiredEvidence.result.capabilityPolicy.invocation.residencyDenied.reason",
           "status": "pass"
         }
       ],
@@ -202,7 +544,7 @@
           "status": "pass"
         },
         {
-          "assertionId": "bb.bb002.risk-class-exposure-withheld-has-reason.requiredEvidence.result.capabilityPolicy.exposure.riskDenied.hasReason",
+          "assertionId": "bb.bb002.risk-class-exposure-withheld-has-reason.requiredEvidence.result.capabilityPolicy.exposure.riskDenied.reason",
           "status": "pass"
         }
       ],
@@ -238,7 +580,7 @@
           "status": "pass"
         },
         {
-          "assertionId": "bb.bb003.active-endpoint-exposure-withheld-has-reason.requiredEvidence.result.capabilityPolicy.exposure.endpointDenied.hasReason",
+          "assertionId": "bb.bb003.active-endpoint-exposure-withheld-has-reason.requiredEvidence.result.capabilityPolicy.exposure.endpointDenied.reason",
           "status": "pass"
         }
       ],
@@ -274,7 +616,7 @@
           "status": "pass"
         },
         {
-          "assertionId": "bb.bb003.user-presence-invocation-denied-has-reason.requiredEvidence.result.capabilityPolicy.invocation.presenceDenied.hasReason",
+          "assertionId": "bb.bb003.user-presence-invocation-denied-has-reason.requiredEvidence.result.capabilityPolicy.invocation.presenceDenied.reason",
           "status": "pass"
         }
       ],
@@ -310,7 +652,7 @@
           "status": "pass"
         },
         {
-          "assertionId": "bb.bb004.credential-boundary-invocation-denied-has-reason.requiredEvidence.result.capabilityPolicy.invocation.credentialDenied.hasReason",
+          "assertionId": "bb.bb004.credential-boundary-invocation-denied-has-reason.requiredEvidence.result.capabilityPolicy.invocation.credentialDenied.reason",
           "status": "pass"
         }
       ],
@@ -9307,9 +9649,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 427,
-    "totalChecks": 439,
-    "applicableChecks": 427,
+    "passedChecks": 446,
+    "totalChecks": 458,
+    "applicableChecks": 446,
     "nonApplicableChecks": 12
   },
   "suiteId": "tuvren.framework.promoted-authority",

@@ -7,6 +7,25 @@
       "results": [
         {
           "checkIds": [
+            "bc.bc001.exposure-policy-withheld-tool-hidden",
+            "bc.bc001.invariant-provider-mediated-execution-class",
+            "bc.bc001.invariant-provider-native-execution-class",
+            "bc.bc001.invariant-tuvren-client-execution-class",
+            "bc.bc001.invariant-tuvren-server-execution-class",
+            "bc.bc001.invocation-policy-denied-is-error",
+            "bc.bc001.mcp-binding-endpoint-kind",
+            "bc.bc001.observation-provider-mediated-no-audit",
+            "bc.bc001.observation-provider-native-no-audit",
+            "bc.bc001.observation-tuvren-client-no-audit",
+            "bc.bc001.observation-tuvren-server-can-audit",
+            "bc.bc001.provider-mediated-result-emitted",
+            "bc.bc001.provider-mediated-start-emitted",
+            "bc.bc001.provider-native-result-emitted",
+            "bc.bc001.provider-native-start-emitted",
+            "bc.bc001.tuvren-client-result-emitted",
+            "bc.bc001.tuvren-client-start-emitted",
+            "bc.bc001.tuvren-server-result-emitted",
+            "bc.bc001.tuvren-server-start-emitted",
             "bb.bb000.permitted-capability-invocation-admitted",
             "bb.bb000.permitted-capability-passes-all-policy",
             "bb.bb001.residency-allowed-exposure-passes",
@@ -437,9 +456,9 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 427,
-            "totalChecks": 439,
-            "applicableChecks": 427,
+            "passedChecks": 446,
+            "totalChecks": 458,
+            "applicableChecks": 446,
             "nonApplicableChecks": 12
           },
           "declaredCapabilities": [
@@ -478,17 +497,17 @@
             "batteries-included.lifecycle.sqlite.turn-completed"
           ],
           "checkSummary": {
-            "failedChecks": 0,
-            "passedChecks": 12,
-            "totalChecks": 439,
+            "failedChecks": 4,
+            "passedChecks": 8,
+            "totalChecks": 458,
             "applicableChecks": 12,
-            "nonApplicableChecks": 427
+            "nonApplicableChecks": 446
           },
           "declaredCapabilities": ["framework.batteries-included"],
           "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.framework-batteries-included-conformance-runner.json",
           "reportLabel": "TypeScript framework batteries-included runtime",
-          "reportStatus": "capability_subset_pass",
-          "status": "pass",
+          "reportStatus": "unexpected_fail",
+          "status": "fail",
           "suiteId": "tuvren.framework.runtime-api.batteries-included",
           "suiteVersion": "0.1.0"
         }
@@ -742,8 +761,8 @@
             "kernel.run-liveness.stale_preemption"
           ],
           "checkSummary": {
-            "failedChecks": 0,
-            "passedChecks": 59,
+            "failedChecks": 23,
+            "passedChecks": 36,
             "totalChecks": 59,
             "applicableChecks": 59,
             "nonApplicableChecks": 0
@@ -759,8 +778,8 @@
           ],
           "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-postgres-conformance-runner.json",
           "reportLabel": "TypeScript PostgreSQL durable kernel",
-          "reportStatus": "full_pass",
-          "status": "pass",
+          "reportStatus": "unexpected_fail",
+          "status": "fail",
           "suiteId": "tuvren.kernel.protocol",
           "suiteVersion": "0.1.0"
         }
@@ -933,9 +952,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 0,
-            "totalChecks": 439,
+            "totalChecks": 458,
             "applicableChecks": 0,
-            "nonApplicableChecks": 439
+            "nonApplicableChecks": 458
           },
           "declaredCapabilities": [],
           "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.framework-rust-conformance-runner.json",
@@ -963,15 +982,15 @@
         "framework.interop.reload_persistence"
       ],
       "checkSummary": {
-        "failedChecks": 0,
-        "passedChecks": 9,
+        "failedChecks": 9,
+        "passedChecks": 0,
         "totalChecks": 9
       },
       "evidencePath": "reports/compatibility/evidence/tuvren.framework.kernel-interop-smoke.typescript-framework__rust-kernel.json",
       "pairId": "typescript-framework__rust-kernel",
       "reportLabel": "TypeScript framework to Rust kernel interop",
-      "reportStatus": "full_pass",
-      "status": "pass",
+      "reportStatus": "unexpected_fail",
+      "status": "fail",
       "suiteId": "tuvren.framework.kernel-interop-smoke",
       "suiteVersion": "0.2.0"
     }

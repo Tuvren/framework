@@ -123,7 +123,11 @@ function makeProviderDriver(
     if (!ctx.messages.some((m) => m.role === "tool")) {
       return {
         messages: [
-          buildProviderMsg(`bc001-call-${executionClass}`, toolName, executionClass),
+          buildProviderMsg(
+            `bc001-call-${executionClass}`,
+            toolName,
+            executionClass
+          ),
         ],
         resolution: { type: "continue_iteration" as const },
       };
@@ -232,7 +236,9 @@ export async function runCapabilityOrchestrationIntegration(): Promise<AdapterPr
         inputSchema: { type: "object" },
       },
     ],
-    dispatch(envelope: ClientInvocationEnvelope): Promise<ClientReportedResult> {
+    dispatch(
+      envelope: ClientInvocationEnvelope
+    ): Promise<ClientReportedResult> {
       return Promise.resolve({
         callId: envelope.callId,
         content: { ok: true },
