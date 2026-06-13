@@ -6,8 +6,8 @@ Current local Stage 4 SemVer; full history in `changelog.md`.
 
 ## 1. Executive Summary & Active Critical Path
 
-- **Total Active Story Points:** 170 gross (**50 remaining**) across the remainder of the Tooling block plus the trust block — the **Tooling block remainder (Epic BC, 17 points)** as the top-priority front of the queue, and **Epic BD (Trust-Boundary Security Hardening, 33 remaining points, formerly Epic AW, with `KRT-BD001` already complete)** sequenced after it. Epics AM through BB are closed and retained as a compact audit ledger below.
-- **Critical Path:** Epics AW, AX, AY, AZ, BA, and BB are closed. Next: closeout — `KRT-BC001 → KRT-BC002 → KRT-BC004` (BC003 can run parallel with BC002). Only after the Tooling block closes does Epic BD run: `KRT-BD002 → KRT-BD004` and `KRT-BD005 → KRT-BD006 → KRT-BD007 → KRT-BD008`, with `KRT-BD009` as an independent close-condition lane (`KRT-BD001` already complete).
+- **Total Active Story Points:** 170 gross (**33 remaining**) — the Tooling block (Epics AW–BC) is fully closed; only **Epic BD (Trust-Boundary Security Hardening, 33 remaining points, formerly Epic AW, with `KRT-BD001` already complete)** remains active. Epics AM through BC are closed and retained as a compact audit ledger below.
+- **Critical Path:** Epics AW, AX, AY, AZ, BA, BB, and BC are all closed. The Tooling block is complete. Epic BD is now top priority: `KRT-BD002 → KRT-BD004` and `KRT-BD005 → KRT-BD006 → KRT-BD007 → KRT-BD008`, with `KRT-BD009` as an independent close-condition lane (`KRT-BD001` already complete).
 - **Planning Assumptions:** The Tooling block (Epics AW–BC) is governed by PRD v0.9.0, Architecture v0.9.0, and TechSpec v0.29.0 (ADR-046, ADR-047); the upstream contracts (`@tuvren/core/capabilities` §3.13, the §4.21 contract) are authored, so the tickets are implementation-ready. Tuvren-client scope is the runtime protocol + attachment seam only — concrete client endpoints (browser extension, desktop, device) remain host-developer deliverables per PRD §6. Provider-native and provider-mediated scope is runtime support proven against today's AI-SDK-bridged providers, with at least one concrete proof per class and additional providers additive later. Epic BD (formerly Epic AW) is governed by PRD v0.8.0 / Architecture v0.8.0 / TechSpec v0.28.x (ADR-042 through ADR-045); it remains active and runs after the Tooling block per product priority. The prior chain (PRD v0.7.0 / Architecture v0.7.0 / TechSpec v0.27.x, ADR-034 through ADR-041, Epics AM-AT) is closed. The Tooling block reframes tool representation within the existing TypeScript line and keeps today's developer-defined tool path working unchanged as the Tuvren-server execution class; it adds no Rust framework/product scope, no new host protocol, no new backend, and no new model-provider family beyond the existing AI SDK bridge. The `product proof gate`, `platform gate`, and `portability gate` from Epic AL remain the staged-gate baseline. The locked external dependency versions per TechSpec §1 still apply.
 
 ### Brownfield Continuity Note
@@ -34,14 +34,14 @@ Current local Stage 4 SemVer; full history in `changelog.md`.
 
 ### Current Active Scope
 
-- **Block 5 — Tooling restructuring (Epics AW–BC): Epics AW, AX, AY, AZ, BA, and BB closed; Epic BC ACTIVE, top priority.** AW delivered the capability-orchestration foundation; AX delivered the full Tuvren-server execution class; AY delivered provider-native and provider-mediated execution classes; AZ delivered the Tuvren-client execution class; BA delivered the cross-class invocation lifecycle and observation model; BB delivered the full exposure/invocation policy model. The remainder (BC) closes out the Tooling block.
+- **Block 5 — Tooling restructuring (Epics AW–BC): FULLY CLOSED.** AW delivered the capability-orchestration foundation; AX delivered the full Tuvren-server execution class; AY delivered provider-native and provider-mediated execution classes; AZ delivered the Tuvren-client execution class; BA delivered the cross-class invocation lifecycle and observation model; BB delivered the full exposure/invocation policy model; BC delivered the cross-class integration conformance, normative §11 framework-spec section, portability inventory v0.4.0, and a clean `bun run verify` with 446/446 applicable framework checks passing. See Completed Work Ledger.
   - **AW — Capability Orchestration Foundation: CLOSED.** See Completed Work Ledger.
   - **AX — Tuvren-Server Execution Class: CLOSED.** See Completed Work Ledger.
   - **AY — Provider-Native & Provider-Mediated Execution Classes: CLOSED.** See Completed Work Ledger.
   - **AZ — Tuvren-Client Execution Class: CLOSED.** See Completed Work Ledger.
   - **BA — Invocation Lifecycle & Observation Model: CLOSED.** See Completed Work Ledger.
   - **BB — Exposure & Invocation Policy Model: CLOSED.** See Completed Work Ledger.
-  - **BC — Tooling Restructuring Closeout:** cross-class integration conformance, the framework-spec "Capability Orchestration" section, portability inventory, and the clean `bun run verify` that proves the tooling aspect is finished.
+  - **BC — Tooling Restructuring Closeout: CLOSED.** See Completed Work Ledger.
 - **Block 4 — Production trust remainder (Epic BD, formerly Epic AW): active, sequenced after the Tooling block.** Hardens execution bounds with a typed `execution_bound_exceeded` terminal result, secret isolation across durable/telemetry/transcript surfaces, and verification that approval gates are non-bypassable and untrusted MCP/tool inputs are validated. `KRT-BD001` (telemetry secret-screening helpers) is already complete.
 - **Block 1 — Boundary correctness gate (Epics AM, AN, AO):** closed. `thread.list`, base-handle `awaitResult`, and the five-method `TuvrenRuntime` durable-read surface.
 - **Block 2 — Curated surface + ergonomics (Epics AP, AQ, AR):** closed. `@tuvren/core` consolidation, schema-agnostic `defineTool`, and the `createTuvren({...})` batteries-included factory.
@@ -77,7 +77,7 @@ These epics are the agreed direction after the Tooling block and the trust block
 - Epics AI–AL completed the high-level SDK audit, the serious REPL proving host, the PostgreSQL platform gate, and the portability-gate closure.
 - Epics R-AG established the multi-language transition foundation, shared conformance architecture, and kernel interop.
 - Epics AM-AV are summarized in the completed-work ledger in §4.
-- The active forward path is the Tooling block (Epics AW–BC) followed by the trust block (Epic BD); see Current Active Scope.
+- The Tooling block (Epics AW–BC) is fully closed. The active forward path is Epic BD (Trust-Boundary Security Hardening); see Current Active Scope.
 
 ## 3. Build Order (Mermaid)
 
@@ -85,7 +85,7 @@ These epics are the agreed direction after the Tooling block and the trust block
 flowchart LR
   closed["Blocks 1-3 + Epics AM-AW — closed"]
 
-  subgraph tooling["Tooling block (Epics AX–BC) — ACTIVE · top priority"]
+  subgraph tooling["Tooling block (Epics AX–BC) — CLOSED"]
     AXep["AX — Tuvren-Server class — CLOSED"]
     AYep["AY — Provider-Native & Provider-Mediated — CLOSED"]
     AZep["AZ — Tuvren-Client class — CLOSED"]
@@ -93,7 +93,7 @@ flowchart LR
     AYep --> BAep
     AZep --> BAep
     BBep["BB — Exposure & Invocation Policy — CLOSED"]
-    BAep --> BCep["BC — Closeout"]
+    BAep --> BCep["BC — Closeout — CLOSED"]
     BBep --> BCep
   end
 

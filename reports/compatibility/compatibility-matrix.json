@@ -497,8 +497,8 @@
             "batteries-included.lifecycle.sqlite.turn-completed"
           ],
           "checkSummary": {
-            "failedChecks": 4,
-            "passedChecks": 8,
+            "failedChecks": 0,
+            "passedChecks": 12,
             "totalChecks": 458,
             "applicableChecks": 12,
             "nonApplicableChecks": 446
@@ -506,8 +506,8 @@
           "declaredCapabilities": ["framework.batteries-included"],
           "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.framework-batteries-included-conformance-runner.json",
           "reportLabel": "TypeScript framework batteries-included runtime",
-          "reportStatus": "unexpected_fail",
-          "status": "fail",
+          "reportStatus": "capability_subset_pass",
+          "status": "pass",
           "suiteId": "tuvren.framework.runtime-api.batteries-included",
           "suiteVersion": "0.1.0"
         }
@@ -761,8 +761,8 @@
             "kernel.run-liveness.stale_preemption"
           ],
           "checkSummary": {
-            "failedChecks": 23,
-            "passedChecks": 36,
+            "failedChecks": 0,
+            "passedChecks": 59,
             "totalChecks": 59,
             "applicableChecks": 59,
             "nonApplicableChecks": 0
@@ -778,8 +778,8 @@
           ],
           "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-postgres-conformance-runner.json",
           "reportLabel": "TypeScript PostgreSQL durable kernel",
-          "reportStatus": "unexpected_fail",
-          "status": "fail",
+          "reportStatus": "full_pass",
+          "status": "pass",
           "suiteId": "tuvren.kernel.protocol",
           "suiteVersion": "0.1.0"
         }
@@ -982,15 +982,15 @@
         "framework.interop.reload_persistence"
       ],
       "checkSummary": {
-        "failedChecks": 9,
-        "passedChecks": 0,
+        "failedChecks": 0,
+        "passedChecks": 9,
         "totalChecks": 9
       },
       "evidencePath": "reports/compatibility/evidence/tuvren.framework.kernel-interop-smoke.typescript-framework__rust-kernel.json",
       "pairId": "typescript-framework__rust-kernel",
       "reportLabel": "TypeScript framework to Rust kernel interop",
-      "reportStatus": "unexpected_fail",
-      "status": "fail",
+      "reportStatus": "full_pass",
+      "status": "pass",
       "suiteId": "tuvren.framework.kernel-interop-smoke",
       "suiteVersion": "0.2.0"
     }
