@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/shared/core-types/ExecutionBoundKind.json",
+  "anyOf": [
+    {
+      "type": "string",
+      "const": "maxIterations"
+    },
+    {
+      "type": "string",
+      "const": "maxToolCalls"
+    },
+    {
+      "type": "string",
+      "const": "maxWallClockMs"
+    }
+  ],
+  "description": "Hard-stop execution bound whose breach finalizes a turn as failed. maxConcurrentToolCalls is excluded because it is a concurrency throttle, not a terminal bound. (ADR-043 §3.11)"
+}

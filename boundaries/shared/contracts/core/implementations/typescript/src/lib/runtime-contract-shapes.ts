@@ -170,6 +170,16 @@ export interface TuvrenPrompt {
   /** Provider-native tools: provider owns execution; Tuvren enables/configures. (AY002) */
   providerNativeTools?: ProviderNativeToolDeclaration[];
   responseFormat?: StructuredOutputRequest;
+  /**
+   * Cooperative cancellation signal threaded into the provider call so the
+   * framework-enforced execution bounds guard (ADR-043) can abort an in-flight
+   * model request when `maxWallClockMs` is reached. Non-secret and
+   * non-serializable: it is carried out-of-band by the TypeScript binding and
+   * never appears in the JSON payload. Owned bridges must forward it to the
+   * underlying provider call; a provider that ignores it may keep running, but
+   * any late completion is discarded by the runtime.
+   */
+  signal?: AbortSignal;
   /** Function-style tools that Tuvren executes (tuvren-server class) */
   tools?: RenderedToolDefinition[];
 }
@@ -1097,6 +1107,49 @@ export interface AgentConfig {
   serverExecution?: ServerExecutionConfig;
   systemPrompt?: string;
   tools?: TuvrenToolDefinition[];
+}
+
+/**
+ * The hard-stop execution bounds whose breach finalizes a turn as `failed`.
+ * `maxConcurrentToolCalls` is intentionally excluded: it is a concurrency
+ * throttle, not a terminal bound. (ADR-043 §3.11)
+ */
+export type ExecutionBoundKind =
+  | "maxIterations"
+  | "maxToolCalls"
+  | "maxWallClockMs";
+
+/**
+ * Framework-enforced per-turn execution bounds (ADR-043 §3.11), applied above
+ * the driver's own loop policy so a misbehaving or adversarial driver cannot
+ * run a turn unbounded. Configured per runtime instance via
+ * `createTuvren({ bounds })` / `RuntimeCoreOptions.bounds`. Unset fields take
+ * the documented safe defaults; every configured bound must be a finite
+ * positive integer. A driver cannot raise or disable a bound.
+ */
+export interface ExecutionBounds {
+  /** Maximum concurrent tool calls (throttle, not a terminal bound). Default 16. */
+  maxConcurrentToolCalls?: number;
+  /** Maximum ReAct iterations per turn. Default 64. */
+  maxIterations?: number;
+  /** Maximum cumulative tool calls per turn. Default 256. */
+  maxToolCalls?: number;
+  /** End-to-end wall-clock deadline in milliseconds. Default 600_000. */
+  maxWallClockMs?: number;
+}
+
+/**
+ * Details carried by the `execution_bound_exceeded` `TuvrenRuntimeError`, the
+ * fatal canonical `error` event, and the bounded-execution telemetry event when
+ * a hard-stop bound is breached. (ADR-043)
+ */
+export interface ExecutionBoundExceededDetails {
+  /** Which hard-stop bound was breached. */
+  bound: ExecutionBoundKind;
+  /** The configured limit for the breached bound. */
+  limit: number;
+  /** The observed value at breach time. */
+  observed: number;
 }
 
 export interface ExecutionStatus {

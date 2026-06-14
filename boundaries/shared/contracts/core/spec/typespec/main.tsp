@@ -208,3 +208,48 @@ model TelemetryEvent {
   atMs: EpochMs;
   attributes: Record<TelemetryAttributeValue>;
 }
+
+@doc("Hard-stop execution bound whose breach finalizes a turn as failed. maxConcurrentToolCalls is excluded because it is a concurrency throttle, not a terminal bound. (ADR-043 §3.11)")
+union ExecutionBoundKind {
+  maxIterations: "maxIterations",
+  maxToolCalls: "maxToolCalls",
+  maxWallClockMs: "maxWallClockMs",
+}
+
+@doc("Framework-enforced per-turn execution bounds (ADR-043 §3.11), applied above the driver's loop policy. Unset fields take the documented safe defaults; every configured bound must be a finite positive integer. A driver cannot raise or disable a bound.")
+model ExecutionBounds {
+  @doc("Maximum ReAct iterations per turn. Default 64.")
+  @minValue(1)
+  @maxValue(9007199254740991)
+  maxIterations?: safeint;
+
+  @doc("Maximum cumulative tool calls per turn. Default 256.")
+  @minValue(1)
+  @maxValue(9007199254740991)
+  maxToolCalls?: safeint;
+
+  @doc("End-to-end wall-clock deadline in milliseconds. Default 600000.")
+  @minValue(1)
+  @maxValue(9007199254740991)
+  maxWallClockMs?: safeint;
+
+  @doc("Maximum concurrent tool calls (throttle, not a terminal bound). Default 16.")
+  @minValue(1)
+  @maxValue(9007199254740991)
+  maxConcurrentToolCalls?: safeint;
+}
+
+@doc("Details carried by the execution_bound_exceeded error, the fatal canonical error event, and the bounded-execution telemetry event when a hard-stop bound is breached. (ADR-043)")
+model ExecutionBoundExceededDetails {
+  bound: ExecutionBoundKind;
+
+  @doc("The configured limit for the breached bound.")
+  @minValue(1)
+  @maxValue(9007199254740991)
+  limit: safeint;
+
+  @doc("The observed value at breach time.")
+  @minValue(0)
+  @maxValue(9007199254740991)
+  observed: safeint;
+}
