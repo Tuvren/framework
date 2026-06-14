@@ -7,6 +7,9 @@ Generated from `telemetry/semconv/tuvren-runtime.yaml` via `weaver`.
 
 | Attribute | Type | Stability | Brief | Examples |
 | --- | --- | --- | --- | --- |
+| `tuvren.runtime.bound` | `string` | `development` | The hard-stop execution bound that was breached (maxIterations, maxToolCalls, or maxWallClockMs). | `maxIterations`, `maxWallClockMs` |
+| `tuvren.runtime.bound.limit` | `string` | `development` | The configured limit for the breached bound, emitted as a decimal string. The authoritative integer value lives on the canonical error-event details and the failed ExecutionResult. | `64`, `256` |
+| `tuvren.runtime.bound.observed` | `string` | `development` | The observed value at breach time, emitted as a decimal string. The authoritative integer value lives on the canonical error-event details and the failed ExecutionResult. | `65`, `257` |
 | `tuvren.runtime.backend.id` | `string` | `development` | The backend implementation identifier selected by the runtime. | `sqlite` |
 | `tuvren.runtime.branch.id` | `string` | `development` | The Tuvren runtime branch identifier. | `branch_main` |
 | `tuvren.runtime.capability.execution_class` | `string` | `development` | The execution class of the capability invocation per ADR-046 (tuvren-server, provider-native, provider-mediated, tuvren-client). | `tuvren-server`, `provider-native` |

@@ -17,6 +17,7 @@
 import type { RuntimeResolution } from "@tuvren/core/execution";
 import type { ApprovalResponse } from "@tuvren/core/tools";
 import { runAfterTurnHooks } from "./extension-runtime.js";
+import { isBoundExceededError } from "./runtime-core-bounds.js";
 import type { HeadState, LoopState } from "./runtime-core-loop.js";
 import type { LoopOutcome } from "./runtime-core-recovery.js";
 import { resolutionToPhase } from "./runtime-core-response.js";
@@ -150,9 +151,17 @@ export async function handleExecutionFailure(
   const runtimeError = normalizeError(error);
   const rootError =
     finalizationFailure?.rootCause ?? finalizationFailure?.finalizationError;
+  // A wall-clock bound abort is authoritative over whatever the interrupted
+  // in-flight model/tool work threw, so the fatal error event, telemetry, and
+  // result all carry execution_bound_exceeded with its details. (BD006)
+  const abortReason = handle.abortSignal.reason;
+  const boundsError = isBoundExceededError(abortReason)
+    ? abortReason
+    : undefined;
+  const effectiveError = boundsError ?? rootError ?? runtimeError;
   const failureActiveConfig = host.resolveFailureActiveConfig(handle);
 
-  handle.rememberError(projectError(rootError ?? runtimeError));
+  handle.rememberError(projectError(effectiveError));
   const loopState: LoopState = {
     activeConfig: failureActiveConfig,
     activeDriverId: handle.request.driverId ?? host.defaultDriverId(),
@@ -161,7 +170,7 @@ export async function handleExecutionFailure(
     enteredIterationLoop: false,
   };
   const failureResolution: RuntimeResolution = {
-    error: rootError ?? runtimeError,
+    error: effectiveError,
     fatality: "hard",
     type: "fail",
   };
@@ -204,7 +213,7 @@ export async function handleExecutionFailure(
     }
   }
 
-  host.publishProjectedError(handle, runtimeError, true, loopState);
+  host.publishProjectedError(handle, effectiveError, true, loopState);
   handle.replaceStatus({
     activeAgent: loopState.activeConfig.name,
     iterationCount: handle.status().iterationCount,

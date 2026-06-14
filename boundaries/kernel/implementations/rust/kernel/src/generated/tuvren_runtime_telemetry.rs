@@ -27,6 +27,27 @@ pub const TUVREN_RUNTIME_TELEMETRY_SCHEMA_URL: &str = "https://tuvren.dev/schema
 
 pub const TUVREN_RUNTIME_TELEMETRY_ATTRIBUTES: &[TuvrenRuntimeTelemetryAttributeDefinition] = &[
     TuvrenRuntimeTelemetryAttributeDefinition {
+        key: "tuvren.runtime.bound",
+        brief: "The hard-stop execution bound that was breached (maxIterations, maxToolCalls, or maxWallClockMs).",
+        examples: &["maxIterations", "maxWallClockMs"],
+        stability: "development",
+        r#type: "string",
+    },
+    TuvrenRuntimeTelemetryAttributeDefinition {
+        key: "tuvren.runtime.bound.limit",
+        brief: "The configured limit for the breached bound, emitted as a decimal string. The authoritative integer value lives on the canonical error-event details and the failed ExecutionResult.",
+        examples: &["64", "256"],
+        stability: "development",
+        r#type: "string",
+    },
+    TuvrenRuntimeTelemetryAttributeDefinition {
+        key: "tuvren.runtime.bound.observed",
+        brief: "The observed value at breach time, emitted as a decimal string. The authoritative integer value lives on the canonical error-event details and the failed ExecutionResult.",
+        examples: &["65", "257"],
+        stability: "development",
+        r#type: "string",
+    },
+    TuvrenRuntimeTelemetryAttributeDefinition {
         key: "tuvren.runtime.backend.id",
         brief: "The backend implementation identifier selected by the runtime.",
         examples: &["sqlite"],
@@ -127,6 +148,9 @@ pub const TUVREN_RUNTIME_TELEMETRY_ATTRIBUTES: &[TuvrenRuntimeTelemetryAttribute
 ];
 
 pub const TUVREN_RUNTIME_TELEMETRY_ATTRIBUTE_KEYS: &[&str] = &[
+    "tuvren.runtime.bound",
+    "tuvren.runtime.bound.limit",
+    "tuvren.runtime.bound.observed",
     "tuvren.runtime.backend.id",
     "tuvren.runtime.branch.id",
     "tuvren.runtime.capability.execution_class",

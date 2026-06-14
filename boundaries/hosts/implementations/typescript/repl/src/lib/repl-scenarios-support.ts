@@ -255,9 +255,12 @@ function createTelemetryEvidence(input: {
   return {
     attributes,
     observedKeys: TUVREN_RUNTIME_TELEMETRY_ATTRIBUTE_KEYS.filter((key) => {
-      const value = attributes[key];
+      // The repl host records per-turn identity telemetry; allowlist keys it does
+      // not populate (e.g. the execution.bounded bound attributes) are absent.
+      const value = (attributes as Record<string, unknown>)[key];
       return (
         value !== null &&
+        value !== undefined &&
         (!Array.isArray(value) || value.length > 0) &&
         value !== ""
       );

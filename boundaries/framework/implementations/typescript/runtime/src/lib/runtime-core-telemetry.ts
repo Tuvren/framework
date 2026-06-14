@@ -16,6 +16,7 @@
 
 import type { EpochMs, HashString } from "@tuvren/core";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
+import type { ExecutionBoundExceededDetails } from "@tuvren/core/execution";
 import {
   NoopTelemetrySink,
   type TelemetryAttributeValue,
@@ -41,6 +42,17 @@ interface TimedSpanStart {
 }
 
 export interface RuntimeTelemetryEmitter {
+  /**
+   * Emit the bounded-execution telemetry event when a hard-stop execution bound
+   * is breached (ADR-043, KRT-BD006). The authoritative integer limit/observed
+   * values also live on the failed `ExecutionResult` and the canonical `error`
+   * event details; the telemetry attributes carry decimal-string encodings.
+   */
+  bounded(input: {
+    details: ExecutionBoundExceededDetails;
+    handle: RuntimeExecutionHandle;
+    loopState: LoopState;
+  }): void;
   eventFromStream(
     handle: RuntimeExecutionHandle,
     event: TuvrenStreamEvent,
@@ -307,6 +319,15 @@ export function createRuntimeTelemetryEmitter(input: {
   };
 
   return {
+    bounded: (boundedInput) => {
+      const atMs = input.now();
+      emitEvent("execution.bounded", boundedInput.handle, atMs, {
+        ...baseAttributes(boundedInput.handle, boundedInput.loopState),
+        "tuvren.runtime.bound": boundedInput.details.bound,
+        "tuvren.runtime.bound.limit": String(boundedInput.details.limit),
+        "tuvren.runtime.bound.observed": String(boundedInput.details.observed),
+      });
+    },
     eventFromStream: (handle, event, loopState) => {
       const atMs = event.timestamp as EpochMs;
 

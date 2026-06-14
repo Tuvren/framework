@@ -97,3 +97,26 @@ groups:
         examples: ["tuvren", "provider"]
         stability: development
         requirement_level: opt_in
+  - id: tuvren.runtime.bounds
+    type: attribute_group
+    brief: Framework-enforced execution-bounds attributes carried by the execution.bounded telemetry event (ADR-043, KRT-BD006).
+    stability: development
+    attributes:
+      - id: tuvren.runtime.bound
+        type: string
+        brief: The hard-stop execution bound that was breached (maxIterations, maxToolCalls, or maxWallClockMs).
+        examples: ["maxIterations", "maxWallClockMs"]
+        stability: development
+        requirement_level: opt_in
+      - id: tuvren.runtime.bound.limit
+        type: string
+        brief: The configured limit for the breached bound, emitted as a decimal string. The authoritative integer value lives on the canonical error-event details and the failed ExecutionResult.
+        examples: ["64", "256"]
+        stability: development
+        requirement_level: opt_in
+      - id: tuvren.runtime.bound.observed
+        type: string
+        brief: The observed value at breach time, emitted as a decimal string. The authoritative integer value lives on the canonical error-event details and the failed ExecutionResult.
+        examples: ["65", "257"]
+        stability: development
+        requirement_level: opt_in

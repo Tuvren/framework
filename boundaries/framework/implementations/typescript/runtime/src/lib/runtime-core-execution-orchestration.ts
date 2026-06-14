@@ -42,6 +42,7 @@ import type {
 import type { TuvrenModelResponse } from "@tuvren/core/provider";
 import type { ToolRegistry } from "@tuvren/core/tools";
 import type { ExtensionStateUpdate } from "./extension-runtime.js";
+import type { ResolvedExecutionBounds } from "./runtime-core-bounds.js";
 import {
   applyContextEngineeringPlan as applyRuntimeContextEngineeringPlan,
   applyHandoff as applyRuntimeHandoff,
@@ -99,6 +100,8 @@ interface RuntimeExecutionLoopDependencies {
     loopState: LoopState,
     stableHeadTurnNodeHash?: HashString
   ): Promise<boolean>;
+  /** Absolute wall-clock deadline (epoch ms) for the active turn. (BD006) */
+  boundsDeadlineMs(handle: RuntimeExecutionHandle): number;
   commitPendingExtensionStateUpdates(
     handle: RuntimeExecutionHandle,
     schemaId: string,
@@ -114,6 +117,8 @@ interface RuntimeExecutionLoopDependencies {
     headState: HeadState | undefined,
     iterationCount: number
   ): Promise<IterationPhaseResult>;
+  /** Framework-enforced execution bounds for this runtime instance. (BD006) */
+  executionBounds(): ResolvedExecutionBounds;
   incorporateQueuedSteeringIfNeeded(
     handle: RuntimeExecutionHandle,
     schemaId: string,
@@ -137,6 +142,8 @@ interface RuntimeExecutionLoopDependencies {
     fatal: boolean,
     loopState: LoopState
   ): void;
+  /** Record `count` more tool calls and return the new per-turn cumulative. (BD006) */
+  recordBoundsToolCalls(handle: RuntimeExecutionHandle, count: number): number;
 }
 
 interface RuntimeIterationPhaseDependencies {
@@ -276,11 +283,16 @@ export async function runRuntimeExecutionLoopFacade(
         ),
       applyTerminalAgentTransitionIfNeeded: (...args) =>
         dependencies.applyTerminalAgentTransitionIfNeeded(...args),
+      boundsDeadlineMs: (boundsHandle) =>
+        dependencies.boundsDeadlineMs(boundsHandle),
       commitPendingExtensionStateUpdates: (...args) =>
         dependencies.commitPendingExtensionStateUpdates(...args),
       createId: () => dependencies.createId(),
+      executionBounds: () => dependencies.executionBounds(),
       executeIterationPhase: (...args) =>
         dependencies.executeIterationPhase(...args),
+      recordBoundsToolCalls: (boundsHandle, count) =>
+        dependencies.recordBoundsToolCalls(boundsHandle, count),
       incorporateQueuedSteeringIfNeeded: (...args) =>
         dependencies.incorporateQueuedSteeringIfNeeded(...args),
       loadHeadState: (branchId) => dependencies.loadHeadState(branchId),
