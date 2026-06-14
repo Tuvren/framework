@@ -103,6 +103,8 @@ class TypeScriptProviderAdapter {
           return result(await mcpClientTransportErrorNormalization());
         case "providers.mcp-client.secret-isolation":
           return result(await mcpClientSecretIsolation(input));
+        case "providers.mcp-client.trust-boundary":
+          return result(await mcpClientTrustBoundary());
         case "providers.provider-native.attribution":
           return result(await runProviderNativeAttribution());
         case "providers.provider-mediated.attribution":
@@ -687,6 +689,87 @@ function readToolInputJsonSchema(schema: unknown): unknown {
   }
 
   return isRecord(schema) ? schema : null;
+}
+
+// ---------------------------------------------------------------------------
+// Operation: providers.mcp-client.trust-boundary
+//
+// An MCP-advertised tool input that violates its declared schema (KRT-BD009,
+// ADR-039/ADR-044) must be rejected BEFORE transport invocation and surfaced as
+// a tool result with `isError: true` carrying `mcp_tool_input_invalid`. The
+// transport-counting client records how many times `invokeTool` was actually
+// called; a count of zero proves the rejection happened pre-transport rather
+// than being normalized from a server response.
+// ---------------------------------------------------------------------------
+
+async function mcpClientTrustBoundary(): Promise<Record<string, unknown>> {
+  const transport = { invokeToolCalls: 0 };
+  const source = await createMcpToolSourceInternal({
+    client: createTransportCountingMcpClient(transport),
+    command: "unused",
+    name: "trustboundary",
+    transport: "stdio",
+  });
+
+  try {
+    const strictEcho = requireMcpTool(
+      source.tools,
+      "trustboundary.strict-echo"
+    );
+    const inputError = asToolResultPart(
+      // `message` must be a string; a number violates the advertised schema.
+      await strictEcho.execute(
+        { message: 123 },
+        createToolContext("mcp-trust-input", "trustboundary.strict-echo")
+      )
+    );
+
+    return createProjection({
+      mcpTrustBoundary: {
+        untrustedInput: {
+          errorCode: readToolErrorCode(inputError),
+          isError: inputError.isError === true,
+          transportInvocationCount: transport.invokeToolCalls,
+        },
+      },
+    });
+  } finally {
+    await source.close();
+  }
+}
+
+function createTransportCountingMcpClient(transport: {
+  invokeToolCalls: number;
+}): MCPClient {
+  return {
+    close() {
+      return Promise.resolve();
+    },
+    initialize() {
+      return Promise.resolve({ serverName: "trust-boundary" });
+    },
+    invokeTool() {
+      transport.invokeToolCalls += 1;
+      return Promise.resolve({
+        content: [{ text: "transport should not be reached", type: "text" }],
+      });
+    },
+    listTools() {
+      return Promise.resolve([
+        {
+          description: "Strict-input echo for trust-boundary verification.",
+          inputSchema: {
+            properties: {
+              message: { type: "string" },
+            },
+            required: ["message"],
+            type: "object",
+          },
+          name: "strict-echo",
+        },
+      ]);
+    },
+  };
 }
 
 async function mcpClientValidationErrors(): Promise<Record<string, unknown>> {

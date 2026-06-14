@@ -60,10 +60,6 @@ import {
   runExecutionBoundsWithinBounds,
 } from "./framework-adapter-execution-bounds.ts";
 import { runInvocationLifecycleCrossClass } from "./framework-adapter-invocation-lifecycle.ts";
-import {
-  runSecretIsolationRuntimeApi,
-  runSecretIsolationTelemetry,
-} from "./framework-adapter-secret-isolation.ts";
 import { createFrameworkAdapterOrchestration } from "./framework-adapter-orchestration.ts";
 import { createFrameworkAdapterProvingHost } from "./framework-adapter-proving-host.ts";
 import type {
@@ -72,6 +68,14 @@ import type {
 } from "./framework-adapter-runtime.ts";
 import { createFrameworkAdapterRuntimeScenarios } from "./framework-adapter-runtime-scenarios.ts";
 import { createFrameworkAdapterSchemaAuthoring } from "./framework-adapter-schema-authoring.ts";
+import {
+  runSecretIsolationRuntimeApi,
+  runSecretIsolationTelemetry,
+} from "./framework-adapter-secret-isolation.ts";
+import {
+  runTrustBoundaryApprovalNonBypassable,
+  runTrustBoundaryLocalToolInput,
+} from "./framework-adapter-trust-boundary.ts";
 import { runTuvrenClientLifecycle } from "./framework-adapter-tuvren-client-execution-class.ts";
 import {
   runTuvrenServerBindingClassification,
@@ -423,6 +427,10 @@ export class TypeScriptFrameworkAdapter implements ImplementationAdapter {
         return runSecretIsolationRuntimeApi(input);
       case "runtime.secret-isolation.telemetry":
         return runSecretIsolationTelemetry(input);
+      case "runtime.trust-boundary.approval-gate":
+        return runTrustBoundaryApprovalNonBypassable(input);
+      case "runtime.trust-boundary.local-tool-input":
+        return runTrustBoundaryLocalToolInput(input);
       case "runtime.tuvren-client.lifecycle":
         return runTuvrenClientLifecycle();
       case "runtime.tuvren-server.lifecycle":

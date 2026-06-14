@@ -1855,6 +1855,64 @@
       ],
       "fixture": "secret-isolation",
       "operation": "runtime.secret-isolation.surfaces"
+    },
+    {
+      "assertions": [
+        {
+          "equals": "paused",
+          "field": "$.trustBoundary.approval.pausedPhase",
+          "kind": "resultField"
+        },
+        {
+          "equals": true,
+          "field": "$.trustBoundary.approval.approvalRequested",
+          "kind": "resultField"
+        },
+        {
+          "equals": false,
+          "field": "$.trustBoundary.approval.gatedToolExecutedWithoutDecision",
+          "kind": "resultField"
+        },
+        {
+          "equals": [],
+          "field": "$.trustBoundary.approval.executedToolNames",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "trust-boundary.approval-non-bypassable",
+      "evidence": [
+        "result.trustBoundary.approval.pausedPhase",
+        "result.trustBoundary.approval.approvalRequested",
+        "result.trustBoundary.approval.gatedToolExecutedWithoutDecision",
+        "result.trustBoundary.approval.executedToolNames"
+      ],
+      "operation": "runtime.trust-boundary.approval-gate"
+    },
+    {
+      "assertions": [
+        {
+          "equals": false,
+          "field": "$.trustBoundary.localToolInput.toolExecuted",
+          "kind": "resultField"
+        },
+        {
+          "equals": true,
+          "field": "$.trustBoundary.localToolInput.toolResults.0.isError",
+          "kind": "resultField"
+        },
+        {
+          "equals": "tool_input_validation_failed",
+          "field": "$.trustBoundary.localToolInput.toolResults.0.errorCode",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "trust-boundary.local-tool-input-invalid",
+      "evidence": [
+        "result.trustBoundary.localToolInput.toolExecuted",
+        "result.trustBoundary.localToolInput.toolResults.0.isError",
+        "result.trustBoundary.localToolInput.toolResults.0.errorCode"
+      ],
+      "operation": "runtime.trust-boundary.local-tool-input"
     }
   ],
   "fixtures": {
@@ -1862,7 +1920,7 @@
   },
   "packetId": "tuvren.shared.core",
   "planId": "tuvren.framework.runtime-api.callables-extended",
-  "planVersion": "0.6.0",
+  "planVersion": "0.7.0",
   "scenarios": {
     "runtime-api-scenarios": "../scenarios/runtime-api-scenarios.json"
   }

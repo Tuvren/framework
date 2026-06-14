@@ -1,6 +1,6 @@
 {
   "packetId": "tuvren.providers.mcp",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "boundary": "providers",
   "surface": "mcp-client",
   "humanAuthorityRefs": [
@@ -17,7 +17,7 @@
   "conformancePlans": [
     {
       "planId": "tuvren.providers.mcp-client",
-      "planVersion": "0.2.0",
+      "planVersion": "0.3.0",
       "path": "boundaries/providers/conformance/plans/providers-mcp-client.json"
     }
   ],
