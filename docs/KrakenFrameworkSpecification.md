@@ -2284,8 +2284,9 @@ Legal `EndpointKind` values:
 
 - Server-side MCP (runtime owns the MCP client): `tuvren-server` class + `mcp-server` endpoint kind.
 - Client-side MCP (developer client owns the MCP client): `tuvren-client` class + `mcp-server` endpoint kind.
+- Provider-mediated MCP (provider proxies a developer MCP endpoint): `provider-mediated` class + `mcp-server` endpoint kind.
 
-A binding with `endpoint.kind = "mcp-server"` is never reclassified to a provider class.
+`mcp-server` is never an execution class of its own; it is always an endpoint kind within one of the above execution classes.
 
 ### 11.4 Exposure-Time and Invocation-Time Policy
 
