@@ -749,10 +749,16 @@ function createTransportCountingMcpClient(transport: {
       return Promise.resolve({ serverName: "trust-boundary" });
     },
     invokeTool() {
+      // The transport must never be reached: input validation rejects the
+      // invalid call pre-transport. Count the breach AND reject loudly so an
+      // accidental transport reach fails conspicuously (a different error code
+      // plus a non-zero count) rather than passing through a fake success.
       transport.invokeToolCalls += 1;
-      return Promise.resolve({
-        content: [{ text: "transport should not be reached", type: "text" }],
-      });
+      return Promise.reject(
+        new Error(
+          "trust-boundary transport reached: invalid input must be rejected before transport invocation"
+        )
+      );
     },
     listTools() {
       return Promise.resolve([
