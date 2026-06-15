@@ -28,6 +28,7 @@ import type {
   TuvrenTelemetrySink,
 } from "@tuvren/core/telemetry";
 import {
+  createCapabilityPolicyEngine,
   createDriverRegistry,
   createTuvrenRuntime,
   type RuntimeCoreOptions,
@@ -305,6 +306,97 @@ describe("framework execution bounds (KRT-BD006)", () => {
     // ignored: the turn is the bounds failure, not a completed turn.
     expect(lateCompletion).toBe(true);
     expect(result.status).toBe("failed");
+  });
+
+  test("a resumed turn carries the wall-clock deadline forward across an approval pause", async () => {
+    // Execution bounds are per logical turn: a resumed handle continues the same
+    // turn, so the end-to-end wall-clock deadline is carried forward rather than
+    // reset (runtime-core.ts resumeApprovedExecution / getBoundsTurnState).
+    // Otherwise a driver could reset the hard-stop budget on every approval
+    // pause. We pin that here — the deadline is captured on the first run, the
+    // turn pauses for human approval, the controllable clock then advances past
+    // the original deadline, and the resume MUST fail with maxWallClockMs at the
+    // carried deadline (limit 1000). If the deadline were reset on resume it
+    // would become now()+1000 = 6000 and the turn would proceed instead.
+    let clockValue = 0;
+    const now = (): EpochMs => clockValue as EpochMs;
+
+    const highRiskTool = "dangerous.delete";
+    let toolExecutedAtPause = false;
+
+    const engine = createCapabilityPolicyEngine({
+      requireApprovalForRiskClass: "high",
+    });
+    const approvalDriver = {
+      async execute(context) {
+        if (!context.messages.some((m) => m.role === "tool")) {
+          return {
+            messages: [
+              assistantToolCalls([
+                { callId: "risk-1", input: {}, name: highRiskTool },
+              ]),
+            ],
+            resolution: { type: "continue_iteration" as const },
+            toolExecutionMode: "parallel" as const,
+          };
+        }
+        return {
+          messages: [assistantText("done")],
+          resolution: { reason: "done", type: "end_turn" as const },
+        };
+      },
+      id: "bounds-approval",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies KrakenDriver;
+
+    const { runtime } = createBoundsRuntime({
+      bounds: { maxWallClockMs: 1000, maxIterations: 100 },
+      driver: approvalDriver,
+      now,
+    });
+
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        capabilityPolicyEngine: engine,
+        name: AGENT,
+        tools: [
+          {
+            description: "High-risk dangerous tool",
+            execute() {
+              toolExecutedAtPause = true;
+              return { deleted: true };
+            },
+            inputSchema: { type: "object" },
+            name: highRiskTool,
+            riskClass: "high",
+          },
+        ],
+      },
+      signal: textSignal("approval bounds carry"),
+      threadId: thread.threadId,
+    });
+    await collectEvents(handle.events());
+
+    // The turn paused awaiting approval, well before the 1000ms deadline.
+    expect(handle.status().phase).toBe("paused");
+    expect(toolExecutedAtPause).toBe(false);
+
+    // Human deliberation elapses past the original deadline.
+    clockValue = 5000;
+
+    const resumedHandle = handle.resolveApproval({
+      decisions: [{ callId: "risk-1", type: "approve" }],
+    });
+    await collectEvents(resumedHandle.events());
+    const result = await resumedHandle.awaitResult();
+
+    // The carried (not reset) deadline trips on resume.
+    const details = expectBoundsFailure(result, "maxWallClockMs");
+    expect(details.limit).toBe(1000);
   });
 
   test("emits an execution.bounded telemetry event on a hard-stop breach", async () => {

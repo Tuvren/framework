@@ -228,7 +228,11 @@ export async function runExecutionLoop(
     }
 
     // Cumulative tool-call hard-stop bound, checked at the tool-batch boundary
-    // above driver discretion. (ADR-043, BD006)
+    // above driver discretion. Per ADR-043/§4.12 this caps the cumulative calls
+    // *executed* across the Turn and is evaluated AFTER each batch completes: a
+    // single over-cap batch runs to completion (parallelism-bounded by
+    // maxConcurrentToolCalls) and the cap then stops the next batch. The
+    // per-instant resource ceiling is maxConcurrentToolCalls, not this. (ADR-043, BD006)
     const cumulativeToolCalls = host.recordBoundsToolCalls(
       handle,
       phaseResult.result.requestedToolCalls.length
