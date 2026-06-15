@@ -1089,7 +1089,7 @@ Breaching any hard-stop bound MUST stop the loop, durably checkpoint a safe term
 
 ```
 ExecutionBoundExceededDetails
-├─ bound: "maxIterations" | "maxToolCalls" | "maxWallClockMs" | "maxConcurrentToolCalls"
+├─ bound: "maxIterations" | "maxToolCalls" | "maxWallClockMs"
 ├─ limit: the enforced bound value
 └─ observed: the value that breached the bound
 ```
