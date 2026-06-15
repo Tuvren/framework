@@ -29,7 +29,8 @@ export type AssertionKind =
   | "stateField"
   | "evidenceField"
   | "ordering"
-  | "noEvent";
+  | "noEvent"
+  | "secretAbsence";
 
 export interface ConformancePlanAssertion {
   contains?: unknown;
@@ -42,6 +43,12 @@ export interface ConformancePlanAssertion {
   matches?: string;
   path?: string;
   schema?: string;
+  /**
+   * For `secretAbsence`: JSONPath (from the assertion context root) to the list
+   * of configured secret values to scan for, e.g. `$.fixture.secretValues`. The
+   * observation surface is read from the result via `field`. (KRT-BD004)
+   */
+  secretsPath?: string;
 }
 
 export interface ConformancePlanCheck {

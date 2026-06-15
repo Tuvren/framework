@@ -1587,11 +1587,340 @@
         "result.capabilityPolicy.invocation.denied.deniedToolExecuted"
       ],
       "operation": "runtime.capability-orchestration.policy-decisions"
+    },
+    {
+      "assertions": [
+        { "equals": "failed", "field": "$.status", "kind": "resultField" },
+        {
+          "equals": "execution_bound_exceeded",
+          "field": "$.errorCode",
+          "kind": "resultField"
+        },
+        {
+          "equals": "maxIterations",
+          "field": "$.errorDetails.bound",
+          "kind": "resultField"
+        },
+        { "equals": 3, "field": "$.errorDetails.limit", "kind": "resultField" },
+        {
+          "equals": 3,
+          "field": "$.errorDetails.observed",
+          "kind": "resultField"
+        },
+        {
+          "equals": "execution_bound_exceeded",
+          "field": "$.fatalErrorEventCode",
+          "kind": "resultField"
+        },
+        {
+          "equals": "failed",
+          "field": "$.terminalTurnEndStatus",
+          "kind": "resultField"
+        },
+        { "contains": ["error", "turn.end"], "kind": "ordering" },
+        {
+          "equals": 1,
+          "field": "$.boundedTelemetry.count",
+          "kind": "resultField"
+        },
+        {
+          "equals": "maxIterations",
+          "field": "$.boundedTelemetry.bound",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "runtime-api-execution-bounds.max-iterations-clamps-and-fails",
+      "evidence": [
+        "result.status",
+        "result.errorCode",
+        "result.errorDetails.bound",
+        "result.errorDetails.limit",
+        "result.errorDetails.observed",
+        "result.fatalErrorEventCode",
+        "result.terminalTurnEndStatus",
+        "result.boundedTelemetry.count"
+      ],
+      "operation": "runtime.execution-bounds.max-iterations"
+    },
+    {
+      "assertions": [
+        { "equals": "failed", "field": "$.status", "kind": "resultField" },
+        {
+          "equals": "execution_bound_exceeded",
+          "field": "$.errorCode",
+          "kind": "resultField"
+        },
+        {
+          "equals": "maxToolCalls",
+          "field": "$.errorDetails.bound",
+          "kind": "resultField"
+        },
+        { "equals": 2, "field": "$.errorDetails.limit", "kind": "resultField" },
+        {
+          "equals": 3,
+          "field": "$.errorDetails.observed",
+          "kind": "resultField"
+        },
+        {
+          "equals": "execution_bound_exceeded",
+          "field": "$.fatalErrorEventCode",
+          "kind": "resultField"
+        },
+        { "contains": ["error", "turn.end"], "kind": "ordering" },
+        {
+          "equals": 1,
+          "field": "$.boundedTelemetry.count",
+          "kind": "resultField"
+        },
+        {
+          "equals": "maxToolCalls",
+          "field": "$.boundedTelemetry.bound",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "runtime-api-execution-bounds.max-tool-calls-fails",
+      "evidence": [
+        "result.status",
+        "result.errorCode",
+        "result.errorDetails.bound",
+        "result.errorDetails.observed",
+        "result.boundedTelemetry.count"
+      ],
+      "operation": "runtime.execution-bounds.max-tool-calls"
+    },
+    {
+      "assertions": [
+        { "equals": "failed", "field": "$.status", "kind": "resultField" },
+        {
+          "equals": "execution_bound_exceeded",
+          "field": "$.errorCode",
+          "kind": "resultField"
+        },
+        {
+          "equals": "maxWallClockMs",
+          "field": "$.errorDetails.bound",
+          "kind": "resultField"
+        },
+        {
+          "equals": "execution_bound_exceeded",
+          "field": "$.fatalErrorEventCode",
+          "kind": "resultField"
+        },
+        { "contains": ["error", "turn.end"], "kind": "ordering" },
+        {
+          "equals": "maxWallClockMs",
+          "field": "$.boundedTelemetry.bound",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "runtime-api-execution-bounds.max-wall-clock-fails",
+      "evidence": [
+        "result.status",
+        "result.errorCode",
+        "result.errorDetails.bound",
+        "result.fatalErrorEventCode",
+        "result.boundedTelemetry.bound"
+      ],
+      "operation": "runtime.execution-bounds.max-wall-clock"
+    },
+    {
+      "assertions": [
+        { "equals": "failed", "field": "$.status", "kind": "resultField" },
+        {
+          "equals": "execution_bound_exceeded",
+          "field": "$.errorCode",
+          "kind": "resultField"
+        },
+        {
+          "equals": "maxWallClockMs",
+          "field": "$.errorDetails.bound",
+          "kind": "resultField"
+        },
+        {
+          "equals": true,
+          "field": "$.toolObservedAbort",
+          "kind": "resultField"
+        },
+        {
+          "equals": true,
+          "field": "$.toolCompletedAfterAbort",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "runtime-api-execution-bounds.wall-clock-signal-delivery-ignores-late",
+      "evidence": [
+        "result.status",
+        "result.errorCode",
+        "result.errorDetails.bound",
+        "result.toolObservedAbort",
+        "result.toolCompletedAfterAbort"
+      ],
+      "operation": "runtime.execution-bounds.wall-clock-signal-delivery"
+    },
+    {
+      "assertions": [
+        { "equals": "completed", "field": "$.status", "kind": "resultField" },
+        {
+          "equals": 1,
+          "field": "$.maxObservedConcurrency",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "runtime-api-execution-bounds.max-concurrent-tool-calls-throttle",
+      "evidence": ["result.status", "result.maxObservedConcurrency"],
+      "operation": "runtime.execution-bounds.concurrency-throttle"
+    },
+    {
+      "assertions": [
+        {
+          "equals": true,
+          "field": "$.rejections.0.rejected",
+          "kind": "resultField"
+        },
+        {
+          "equals": true,
+          "field": "$.rejections.1.rejected",
+          "kind": "resultField"
+        },
+        {
+          "equals": true,
+          "field": "$.rejections.2.rejected",
+          "kind": "resultField"
+        },
+        {
+          "equals": true,
+          "field": "$.rejections.3.rejected",
+          "kind": "resultField"
+        },
+        {
+          "equals": true,
+          "field": "$.rejections.4.rejected",
+          "kind": "resultField"
+        },
+        {
+          "equals": "invalid_runtime_options",
+          "field": "$.rejections.0.code",
+          "kind": "resultField"
+        },
+        {
+          "equals": "invalid_runtime_options",
+          "field": "$.rejections.2.code",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "runtime-api-execution-bounds.invalid-config-rejected",
+      "evidence": [
+        "result.rejections.0.rejected",
+        "result.rejections.0.code",
+        "result.rejections.4.rejected"
+      ],
+      "operation": "runtime.execution-bounds.invalid-config"
+    },
+    {
+      "assertions": [
+        { "equals": "completed", "field": "$.status", "kind": "resultField" },
+        {
+          "equals": "completed",
+          "field": "$.terminalTurnEndStatus",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "runtime-api-execution-bounds.within-bounds-completes",
+      "evidence": ["result.status", "result.terminalTurnEndStatus"],
+      "operation": "runtime.execution-bounds.within-bounds"
+    },
+    {
+      "assertions": [
+        {
+          "field": "$.persistedRecords",
+          "kind": "secretAbsence",
+          "secretsPath": "$.fixture.secretValues"
+        },
+        {
+          "field": "$.streamEvents",
+          "kind": "secretAbsence",
+          "secretsPath": "$.fixture.secretValues"
+        },
+        {
+          "field": "$.transcript",
+          "kind": "secretAbsence",
+          "secretsPath": "$.fixture.secretValues"
+        }
+      ],
+      "checkId": "secret-isolation.runtime-api-surfaces",
+      "evidence": [
+        "result.persistedRecords",
+        "result.streamEvents",
+        "result.transcript"
+      ],
+      "fixture": "secret-isolation",
+      "operation": "runtime.secret-isolation.surfaces"
+    },
+    {
+      "assertions": [
+        {
+          "equals": "paused",
+          "field": "$.trustBoundary.approval.pausedPhase",
+          "kind": "resultField"
+        },
+        {
+          "equals": true,
+          "field": "$.trustBoundary.approval.approvalRequested",
+          "kind": "resultField"
+        },
+        {
+          "equals": false,
+          "field": "$.trustBoundary.approval.gatedToolExecutedWithoutDecision",
+          "kind": "resultField"
+        },
+        {
+          "equals": [],
+          "field": "$.trustBoundary.approval.executedToolNames",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "trust-boundary.approval-non-bypassable",
+      "evidence": [
+        "result.trustBoundary.approval.pausedPhase",
+        "result.trustBoundary.approval.approvalRequested",
+        "result.trustBoundary.approval.gatedToolExecutedWithoutDecision",
+        "result.trustBoundary.approval.executedToolNames"
+      ],
+      "operation": "runtime.trust-boundary.approval-gate"
+    },
+    {
+      "assertions": [
+        {
+          "equals": false,
+          "field": "$.trustBoundary.localToolInput.toolExecuted",
+          "kind": "resultField"
+        },
+        {
+          "equals": true,
+          "field": "$.trustBoundary.localToolInput.toolResults.0.isError",
+          "kind": "resultField"
+        },
+        {
+          "equals": "tool_input_validation_failed",
+          "field": "$.trustBoundary.localToolInput.toolResults.0.errorCode",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "trust-boundary.local-tool-input-invalid",
+      "evidence": [
+        "result.trustBoundary.localToolInput.toolExecuted",
+        "result.trustBoundary.localToolInput.toolResults.0.isError",
+        "result.trustBoundary.localToolInput.toolResults.0.errorCode"
+      ],
+      "operation": "runtime.trust-boundary.local-tool-input"
     }
   ],
+  "fixtures": {
+    "secret-isolation": "../../../providers/conformance/fixtures/secret-isolation-fixtures.json"
+  },
   "packetId": "tuvren.shared.core",
   "planId": "tuvren.framework.runtime-api.callables-extended",
-  "planVersion": "0.4.0",
+  "planVersion": "0.7.0",
   "scenarios": {
     "runtime-api-scenarios": "../scenarios/runtime-api-scenarios.json"
   }

@@ -1,6 +1,6 @@
 {
   "packetId": "tuvren.shared.core",
-  "version": "1.2.0",
+  "version": "1.6.0",
   "boundary": "framework",
   "surface": "core",
   "description": "Merged shared-primitive authority packet for @tuvren/core. Absorbs tuvren.shared.core-types, tuvren.framework.runtime-api, tuvren.framework.event-stream, tuvren.framework.tool-contracts, and tuvren.framework.driver-api into a single packet with 10 binding sections per ADR-037 (Epic AP), ADR-042 (Epic AV), and ADR-046 (Epic AW: capabilities binding section added, capability JSON schemas authored in artifacts/json-schema/).",
@@ -132,7 +132,7 @@
     },
     {
       "planId": "tuvren.framework.runtime-api.callables-extended",
-      "planVersion": "0.4.0",
+      "planVersion": "0.7.0",
       "path": "boundaries/framework/conformance/plans/runtime-api-callables-extended.json"
     },
     {
@@ -177,7 +177,7 @@
     },
     {
       "planId": "tuvren.framework.runtime-api.operational-telemetry",
-      "planVersion": "0.1.0",
+      "planVersion": "0.2.0",
       "path": "boundaries/framework/conformance/plans/framework-operational-telemetry.json"
     },
     {
@@ -220,7 +220,7 @@
       "description": "TuvrenStreamEvent discriminated union and all event types"
     },
     "execution": {
-      "description": "ExecutionHandle, TuvrenRuntime, OrchestrationHandle, context/policy types, durable-read cursors"
+      "description": "ExecutionHandle, TuvrenRuntime, OrchestrationHandle, context/policy types, durable-read cursors, ExecutionBounds/ExecutionBoundExceededDetails/ExecutionBoundKind (ADR-043 framework execution bounds, KRT-BD005)"
     },
     "tools": {
       "description": "TuvrenToolDefinition, approval types, tool execution contracts"

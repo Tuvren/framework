@@ -383,7 +383,12 @@ describe("repl host scenarios aimock openai", () => {
         aguiTypes: ["RUN_STARTED", "RUN_ERROR"],
         canonicalTypes: ["iteration.start", "error", "turn.end"],
       });
-      expect(requests.length).toBe(2);
+      // The turn reaches the second iteration before cancellation. With BD006
+      // cooperative-cancellation forwarding, the in-flight second request's fetch
+      // is aborted, so the mock may register one or two requests depending on
+      // whether the abort beats the request send.
+      expect(requests.length).toBeGreaterThanOrEqual(1);
+      expect(requests.length).toBeLessThanOrEqual(2);
     } finally {
       await mock.stop();
     }

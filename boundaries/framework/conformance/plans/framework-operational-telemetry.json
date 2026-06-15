@@ -1,9 +1,12 @@
 {
   "planId": "tuvren.framework.runtime-api.operational-telemetry",
-  "planVersion": "0.1.0",
+  "planVersion": "0.2.0",
   "packetId": "tuvren.shared.core",
   "applicability": {
     "capabilities": ["framework.runtime-api"]
+  },
+  "fixtures": {
+    "secret-isolation": "../../../providers/conformance/fixtures/secret-isolation-fixtures.json"
   },
   "scenarios": {
     "operational-telemetry-scenarios": "../scenarios/operational-telemetry-scenarios.json"
@@ -148,6 +151,19 @@
         }
       ],
       "evidence": ["result.telemetry.eventKinds", "result.telemetry.spanKinds"]
+    },
+    {
+      "checkId": "secret-isolation.telemetry-attributes-and-error-summaries",
+      "operation": "runtime.secret-isolation.telemetry",
+      "fixture": "secret-isolation",
+      "assertions": [
+        {
+          "kind": "secretAbsence",
+          "field": "$.telemetry",
+          "secretsPath": "$.fixture.secretValues"
+        }
+      ],
+      "evidence": ["result.telemetry"]
     }
   ]
 }

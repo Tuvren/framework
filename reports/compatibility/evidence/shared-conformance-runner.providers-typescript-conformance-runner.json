@@ -247,6 +247,82 @@
     {
       "assertionResults": [
         {
+          "assertionId": "secret-isolation.mcp-translated-tool-surface.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "secret-isolation.mcp-translated-tool-surface.2.secretAbsence",
+          "status": "pass"
+        },
+        {
+          "assertionId": "secret-isolation.mcp-translated-tool-surface.requiredEvidence.mcpToolSurface.sessionEstablished",
+          "status": "pass"
+        },
+        {
+          "assertionId": "secret-isolation.mcp-translated-tool-surface.requiredEvidence.result.mcpToolSurface",
+          "status": "pass"
+        },
+        {
+          "assertionId": "secret-isolation.mcp-translated-tool-surface.requiredEvidence.result.mcpToolSurface.sessionEstablished",
+          "status": "pass"
+        }
+      ],
+      "checkId": "secret-isolation.mcp-translated-tool-surface",
+      "details": {
+        "adapterId": "typescript-providers",
+        "planId": "tuvren.providers.mcp-client"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "trust-boundary.mcp-untrusted-input-invalid.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "trust-boundary.mcp-untrusted-input-invalid.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "trust-boundary.mcp-untrusted-input-invalid.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "trust-boundary.mcp-untrusted-input-invalid.requiredEvidence.mcpTrustBoundary.untrustedInput.errorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "trust-boundary.mcp-untrusted-input-invalid.requiredEvidence.mcpTrustBoundary.untrustedInput.isError",
+          "status": "pass"
+        },
+        {
+          "assertionId": "trust-boundary.mcp-untrusted-input-invalid.requiredEvidence.mcpTrustBoundary.untrustedInput.transportInvocationCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "trust-boundary.mcp-untrusted-input-invalid.requiredEvidence.result.mcpTrustBoundary.untrustedInput.errorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "trust-boundary.mcp-untrusted-input-invalid.requiredEvidence.result.mcpTrustBoundary.untrustedInput.isError",
+          "status": "pass"
+        },
+        {
+          "assertionId": "trust-boundary.mcp-untrusted-input-invalid.requiredEvidence.result.mcpTrustBoundary.untrustedInput.transportInvocationCount",
+          "status": "pass"
+        }
+      ],
+      "checkId": "trust-boundary.mcp-untrusted-input-invalid",
+      "details": {
+        "adapterId": "typescript-providers",
+        "planId": "tuvren.providers.mcp-client"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "providers-ext.approval.error-code-stable.1.resultField",
           "status": "pass"
         },
@@ -1312,9 +1388,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 52,
-    "totalChecks": 52,
-    "applicableChecks": 52,
+    "passedChecks": 54,
+    "totalChecks": 54,
+    "applicableChecks": 54,
     "nonApplicableChecks": 0
   },
   "suiteId": "tuvren.providers.provider-api",

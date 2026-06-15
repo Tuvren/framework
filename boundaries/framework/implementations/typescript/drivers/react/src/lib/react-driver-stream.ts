@@ -45,6 +45,24 @@ export interface BufferedAssistantSequence {
   response: TuvrenModelResponse;
 }
 
+/**
+ * Clone the prompt for the provider call and attach the cooperative
+ * cancellation signal out-of-band (ADR-043, KRT-BD006). The signal is attached
+ * after `cloneValue` because an `AbortSignal` is not structured-cloneable;
+ * owned bridges forward it to the underlying provider request for full resource
+ * containment when the framework stops awaiting at a bound.
+ */
+function cloneProviderPrompt(
+  prompt: TuvrenPrompt,
+  signal: AbortSignal | undefined
+): TuvrenPrompt {
+  const cloned = cloneValue(prompt);
+  if (signal !== undefined) {
+    cloned.signal = signal;
+  }
+  return cloned;
+}
+
 export async function executeGenerateCall(input: {
   now: () => EpochMs;
   prompt: TuvrenPrompt;
@@ -53,7 +71,7 @@ export async function executeGenerateCall(input: {
 }): Promise<BufferedAssistantSequence> {
   throwIfAborted(input.signal);
   const response = await waitForAbortable(
-    input.provider.generate(cloneValue(input.prompt)),
+    input.provider.generate(cloneProviderPrompt(input.prompt, input.signal)),
     input.signal
   );
   throwIfAborted(input.signal);
@@ -84,7 +102,7 @@ export async function executeStreamCall(input: {
   );
 
   const iterator = input.provider
-    .stream(cloneValue(input.prompt))
+    .stream(cloneProviderPrompt(input.prompt, input.signal))
     [Symbol.asyncIterator]();
 
   try {

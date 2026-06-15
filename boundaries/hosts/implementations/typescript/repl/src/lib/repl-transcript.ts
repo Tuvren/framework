@@ -104,6 +104,70 @@ const TRANSCRIPT_DURABLE_READ_OPERATIONS = new Set([
   "readBranchMessages",
 ]);
 
+// §3.9 transcript-format constraint (ADR-044, KRT-BD002): the transcript header's
+// config.backend.options is a credential-free zone. Backend options are masked
+// to a non-secret backend identity descriptor (kind plus replay-topology fields
+// such as database / schemaName / databasePath) sufficient for replay but not
+// for authentication; replay supplies credentials from the environment.
+const TRANSCRIPT_REDACTION_PLACEHOLDER = "***";
+const CREDENTIAL_OPTION_KEY_PATTERN =
+  /(?:access[-_]?key|api[-_]?key|authorization|bearer|client[-_]?secret|connection[-_]?string|credential|passphrase|passwd|password|private[-_]?key|pwd|secret|token)/iu;
+// A string carrying embedded URL credentials (e.g. postgres://user:pass@host/db)
+// is masked even when it appears under an unexpected option key.
+const URL_CREDENTIAL_VALUE_PATTERN = /\/\/[^/\s:@]+:[^/\s@]+@/u;
+
+/**
+ * Recursively mask credential-shaped backend option keys and embedded-credential
+ * string values, leaving non-secret topology fields intact.
+ */
+export function redactReplTranscriptBackendOptions(options: unknown): unknown {
+  if (Array.isArray(options)) {
+    return options.map((entry) => redactReplTranscriptBackendOptions(entry));
+  }
+
+  if (!isRecord(options)) {
+    return typeof options === "string" &&
+      URL_CREDENTIAL_VALUE_PATTERN.test(options)
+      ? TRANSCRIPT_REDACTION_PLACEHOLDER
+      : options;
+  }
+
+  const redacted: Record<string, unknown> = {};
+
+  for (const [key, value] of Object.entries(options)) {
+    redacted[key] = CREDENTIAL_OPTION_KEY_PATTERN.test(key)
+      ? TRANSCRIPT_REDACTION_PLACEHOLDER
+      : redactReplTranscriptBackendOptions(value);
+  }
+
+  return redacted;
+}
+
+/** Mask credential-shaped backend options while preserving the backend kind. */
+export function redactReplTranscriptBackendConfig(
+  backend: ReplTranscriptBackendConfig
+): ReplTranscriptBackendConfig {
+  return {
+    kind: backend.kind,
+    ...(backend.options === undefined
+      ? {}
+      : { options: redactReplTranscriptBackendOptions(backend.options) }),
+  };
+}
+
+/** Return a copy of the header with its backend options redacted (§3.9). */
+export function redactReplTranscriptHeader(
+  header: ReplTranscriptHeader
+): ReplTranscriptHeader {
+  return {
+    ...header,
+    config: {
+      ...header.config,
+      backend: redactReplTranscriptBackendConfig(header.config.backend),
+    },
+  };
+}
+
 export function serializeReplTranscriptRecord(
   record: ReplTranscriptRecord
 ): string {
@@ -128,8 +192,11 @@ export async function createReplTranscriptWriter(input: {
   header: ReplTranscriptHeader;
   write: (line: string) => void | Promise<void>;
 }): Promise<ReplTranscriptWriter> {
-  validateTranscriptHeader(input.header);
-  await input.write(`${serializeReplTranscriptRecord(input.header)}\n`);
+  // Mask credential-shaped backend options at the write seam so no transcript
+  // header ever persists a secret, regardless of caller. (§3.9, KRT-BD002)
+  const header = redactReplTranscriptHeader(input.header);
+  validateTranscriptHeader(header);
+  await input.write(`${serializeReplTranscriptRecord(header)}\n`);
 
   return {
     async close(): Promise<void> {

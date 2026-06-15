@@ -329,6 +329,14 @@ function createCallOptions(input: {
   const allTools = buildAllTools(input.prompt);
 
   return {
+    // Forward the framework's cooperative cancellation signal so the underlying
+    // provider request is actually aborted (full resource containment) when the
+    // execution-bounds guard stops awaiting at a bound. (ADR-043, KRT-BD006)
+    ...(input.prompt.signal === undefined
+      ? {}
+      : {
+          abortSignal: input.prompt.signal,
+        }),
     ...(typeof settings.frequencyPenalty === "number"
       ? {
           frequencyPenalty: settings.frequencyPenalty,

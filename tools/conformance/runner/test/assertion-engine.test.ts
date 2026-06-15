@@ -153,3 +153,72 @@ describe("resultField assertions", () => {
     ).toBe("pass");
   });
 });
+
+describe("secretAbsence assertion (KRT-BD004)", () => {
+  const SECRET = "tuvren-secretiso-mcp-bearer-3a1c5e7b9d2f4a6c";
+
+  test("passes when the result surface is free of the configured secrets", () => {
+    const [evaluation] = evaluateAssertions(
+      buildCheck([
+        {
+          field: "$.surface",
+          kind: "secretAbsence",
+          secretsPath: "$.fixture.secretValues",
+        },
+      ]),
+      {
+        fixture: { secretValues: [SECRET] },
+        result: { surface: { events: [{ type: "tool.start" }] } },
+      }
+    );
+    expect(evaluation?.status).toBe("pass");
+  });
+
+  test("fails when a configured secret leaks into the surface", () => {
+    const [evaluation] = evaluateAssertions(
+      buildCheck([
+        {
+          field: "$.surface",
+          kind: "secretAbsence",
+          secretsPath: "$.fixture.secretValues",
+        },
+      ]),
+      {
+        fixture: { secretValues: [SECRET] },
+        result: { surface: { records: [{ auth: `Bearer ${SECRET}` }] } },
+      }
+    );
+    expect(evaluation?.status).toBe("fail");
+  });
+
+  test("fails when the declared surface is missing from the result", () => {
+    const [evaluation] = evaluateAssertions(
+      buildCheck([
+        {
+          field: "$.missing",
+          kind: "secretAbsence",
+          secretsPath: "$.fixture.secretValues",
+        },
+      ]),
+      { fixture: { secretValues: [SECRET] }, result: {} }
+    );
+    expect(evaluation?.status).toBe("fail");
+  });
+
+  test("fails loud when the declared surface is explicitly null", () => {
+    // A null surface must not pass vacuously: absence cannot be proven on a
+    // surface that was never scanned, so an explicit null fails like a missing
+    // surface rather than silently reporting "secret-free".
+    const [evaluation] = evaluateAssertions(
+      buildCheck([
+        {
+          field: "$.surface",
+          kind: "secretAbsence",
+          secretsPath: "$.fixture.secretValues",
+        },
+      ]),
+      { fixture: { secretValues: [SECRET] }, result: { surface: null } }
+    );
+    expect(evaluation?.status).toBe("fail");
+  });
+});

@@ -179,6 +179,16 @@ describe("createTuvren", () => {
       ).toThrow(TuvrenValidationError);
     });
 
+    test("rejects supplying both top-level and runtimeOptions bounds (KRT-BD006)", () => {
+      expect(() =>
+        createTuvren({
+          backend: "memory",
+          bounds: { maxIterations: 8 },
+          runtimeOptions: { bounds: { maxIterations: 16 } },
+        })
+      ).toThrow(TuvrenValidationError);
+    });
+
     test("pre-built kernel is used — threads created via the runtime appear in the kernel", async () => {
       const backend = createMemoryBackend();
       const kernel = createRuntimeKernel({ backend });

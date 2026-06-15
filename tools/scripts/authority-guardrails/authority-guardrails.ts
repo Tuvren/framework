@@ -728,7 +728,12 @@ function isDecisiveAssertion(assertion: Record<string, unknown>): boolean {
     kind === "terminalEvent" ||
     kind === "ordering" ||
     kind === "noEvent" ||
-    kind === "errorEnvelope"
+    kind === "errorEnvelope" ||
+    // `secretAbsence` reads a concrete implementation surface from `$.result`
+    // and fails the check when any configured secret (or a derived variant)
+    // leaks into it. A leak is a real conformance failure, so the assertion is
+    // decisive — not evidence-only bookkeeping.
+    kind === "secretAbsence"
   ) {
     return true;
   }

@@ -332,6 +332,23 @@ const EVIDENCE = {
       "boundaries/framework/conformance/scenarios/runtime-api-scenarios.json",
     generatedArtifact: "boundaries/shared/contracts/core/artifacts/json-schema",
   },
+  // KRT-BD008: §4.12 Execution Bounds (ADR-043) — the framework-owned hard-stop
+  // guard above driver LoopPolicy. All §4.12 normative claims are backed by the
+  // runtime-api execution-bounds checks promoted into
+  // `runtime-api-callables-extended.json` (KRT-BD007) and the ExecutionBounds /
+  // ExecutionBoundExceededDetails shapes generated from the shared-core packet.
+  executionBounds: {
+    adapterCapability: "framework.runtime-api",
+    authorityPacket:
+      "boundaries/shared/contracts/core/spec/authority-packet.json",
+    compatibilityEvidence:
+      "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
+    conformancePlan:
+      "boundaries/framework/conformance/plans/runtime-api-callables-extended.json",
+    fixture:
+      "boundaries/framework/conformance/scenarios/runtime-api-scenarios.json",
+    generatedArtifact: "boundaries/shared/contracts/core/artifacts/json-schema",
+  },
 } as const satisfies Record<string, EvidenceTemplate>;
 
 const EMPTY_EVIDENCE: EvidenceTemplate = {
@@ -909,6 +926,17 @@ function toInventoryEntry(entry: CoverageEntry): ClaimInventoryEntry {
 function classifyFrameworkClaim(claim: NormativeClaim): ClassificationDecision {
   const section = claim.sectionKey;
   const text = claim.text.toLowerCase();
+
+  // KRT-BD008: §4.12 Execution Bounds is the framework-owned guard above
+  // LoopPolicy (ADR-043). Route every §4.12 claim deterministically to the
+  // execution-bounds authority so incidental keywords (e.g. "tool", "cancel")
+  // cannot misroute it through the control-surface or runtime classifiers.
+  if (isSection(section, "4.12")) {
+    return authorityDecision(
+      "framework execution bounds",
+      EVIDENCE.executionBounds
+    );
+  }
 
   if (
     text.includes("single authoritative") ||

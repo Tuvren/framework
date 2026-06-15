@@ -21,6 +21,7 @@ import type {
   ConformancePlanAssertion,
   ConformancePlanCheck,
 } from "../../plan-compiler/index.js";
+import { findSecretLeaks } from "../secret-absence/index.js";
 
 export interface AssertionContext {
   events?: readonly unknown[];
@@ -133,6 +134,8 @@ function evaluateAssertion(
       return assertOrdering(assertion, context);
     case "noEvent":
       return assertNoEvent(assertion, context);
+    case "secretAbsence":
+      return assertSecretAbsence(assertion, context);
     default:
       return assertNever(assertion.kind);
   }
@@ -234,6 +237,53 @@ function assertOrdering(
   const firstIndex = eventTypes.indexOf(first);
   const secondIndex = eventTypes.indexOf(second);
   return firstIndex >= 0 && secondIndex >= 0 && firstIndex < secondIndex;
+}
+
+function assertSecretAbsence(
+  assertion: ConformancePlanAssertion,
+  context: AssertionContext
+): boolean {
+  if (assertion.field === undefined) {
+    throw new Error("secretAbsence assertion requires field");
+  }
+  if (assertion.secretsPath === undefined) {
+    throw new Error("secretAbsence assertion requires secretsPath");
+  }
+
+  const surface = readPath(context.result, assertion.field);
+  // A secret-absence check must fail loud on a missing surface: absence cannot
+  // be proven on something that was never scanned. `null` is treated the same
+  // as `undefined` so a surface that resolves to an explicit null fails rather
+  // than passing vacuously (which would silently report "secret-free").
+  if (surface === undefined || surface === null) {
+    throw new Error(
+      `secretAbsence surface ${assertion.field} is missing from the result`
+    );
+  }
+
+  const secretsValue = readPath(context, assertion.secretsPath);
+  if (!Array.isArray(secretsValue)) {
+    throw new Error(
+      `secretAbsence secretsPath ${assertion.secretsPath} must resolve to an array`
+    );
+  }
+  const secrets = secretsValue.filter(
+    (value): value is string => typeof value === "string" && value.length > 0
+  );
+  if (secrets.length === 0) {
+    throw new Error("secretAbsence requires at least one configured secret");
+  }
+
+  const findings = findSecretLeaks(surface, secrets);
+  if (findings.length > 0) {
+    throw new Error(
+      `secret leak detected in ${assertion.field}: ${findings
+        .map((finding) => finding.variant)
+        .join(", ")}`
+    );
+  }
+
+  return true;
 }
 
 function assertNoEvent(

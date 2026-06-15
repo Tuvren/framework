@@ -31,6 +31,7 @@ import type {
   BranchMessagesCursor,
   BranchSummary,
   ContextManifest,
+  ExecutionBounds,
   ExecutionHandle,
   HandoffContextBuilder,
   ListThreadsCursor,
@@ -60,6 +61,13 @@ import {
   listThreads,
   readBranchMessages,
 } from "./durable-reads.js";
+import {
+  createBoundExceededError,
+  getBoundExceededDetails,
+  isBoundExceededError,
+  normalizeExecutionBounds,
+  type ResolvedExecutionBounds,
+} from "./runtime-core-bounds.js";
 import {
   executeRuntimeIterationPhaseFacade,
   runRuntimeExecutionLoopFacade,
@@ -209,6 +217,12 @@ export const DEFAULT_AGENT_SCHEMA: TurnTreeSchema = {
 };
 
 export interface RuntimeCoreOptions {
+  /**
+   * Framework-enforced per-turn execution bounds (ADR-043, KRT-BD006). Applied
+   * above the driver's loop policy; unset fields take the §3.11 safe defaults
+   * and every configured bound must be a finite positive integer.
+   */
+  bounds?: ExecutionBounds;
   createId?: () => string;
   defaultDriverId: string;
   defaultMaxParallelToolCalls?: number;
@@ -229,6 +243,7 @@ export interface RuntimeCoreOptions {
 }
 
 interface ResolvedRuntimeCoreOptions {
+  bounds: ResolvedExecutionBounds;
   createId: () => string;
   defaultDriverId: string;
   defaultMaxParallelToolCalls: number;
@@ -287,10 +302,21 @@ type IterationPhaseResult =
       outcome: LoopOutcome;
     };
 
+interface BoundsTurnState {
+  boundedTelemetryEmitted: boolean;
+  deadlineMs: number;
+  toolCallCount: number;
+  wallClockTimer?: ReturnType<typeof setTimeout>;
+}
+
 class RuntimeCore implements TuvrenRuntime {
   private readonly activeRunLeaseControllers = new WeakMap<
     RuntimeExecutionHandle,
     ActiveRunLease
+  >();
+  private readonly boundsTurnStates = new WeakMap<
+    RuntimeExecutionHandle,
+    BoundsTurnState
   >();
   private readonly manifestExtensionStateWarningKeys = new WeakMap<
     RuntimeExecutionHandle,
@@ -302,6 +328,7 @@ class RuntimeCore implements TuvrenRuntime {
 
   constructor(options: RuntimeCoreOptions) {
     this.options = {
+      bounds: normalizeExecutionBounds(options.bounds),
       createId: options.createId ?? randomUUID,
       defaultDriverId: options.defaultDriverId,
       defaultMaxParallelToolCalls: normalizeMaxParallelToolCalls(
@@ -466,9 +493,14 @@ class RuntimeCore implements TuvrenRuntime {
         loopState,
         defaultMaxParallelToolCalls
       ) =>
-        resolveActiveMaxParallelToolCalls(
-          loopState.activeConfig,
-          defaultMaxParallelToolCalls
+        // Clamp the driver/agent/default parallelism to the framework bound so
+        // parallel tool execution never exceeds maxConcurrentToolCalls. (BD006)
+        Math.min(
+          resolveActiveMaxParallelToolCalls(
+            loopState.activeConfig,
+            defaultMaxParallelToolCalls
+          ),
+          this.options.bounds.maxConcurrentToolCalls
         ),
       resolveAgentConfig: this.options.resolveAgentConfig,
       resolveCheckpointedPausedRun: (...args) =>
@@ -685,12 +717,26 @@ class RuntimeCore implements TuvrenRuntime {
     pauseContext: PauseContext,
     response: ApprovalResponse
   ): RuntimeExecutionHandle {
-    return createRuntimeResumedExecutionHandle(
+    const resumedHandle = createRuntimeResumedExecutionHandle(
       this,
       previousHandle,
       pauseContext,
       response
     );
+    // Execution bounds are per logical turn. A resumed handle continues the same
+    // turn, so carry the cumulative tool-call count and the end-to-end wall-clock
+    // deadline forward; otherwise a driver could reset two hard-stop budgets on
+    // every approval pause. The per-loop-run abort timer is re-armed against the
+    // carried deadline when the resumed loop enters. (ADR-043, BD006)
+    const previousBounds = this.boundsTurnStates.get(previousHandle);
+    if (previousBounds !== undefined) {
+      this.boundsTurnStates.set(resumedHandle, {
+        boundedTelemetryEmitted: previousBounds.boundedTelemetryEmitted,
+        deadlineMs: previousBounds.deadlineMs,
+        toolCallCount: previousBounds.toolCallCount,
+      });
+    }
+    return resumedHandle;
   }
 
   cancelPausedExecution(handle: RuntimeExecutionHandle): void {
@@ -826,6 +872,21 @@ class RuntimeCore implements TuvrenRuntime {
     schemaId: string,
     loopState: LoopState
   ): Promise<LoopOutcome> {
+    // Arm the end-to-end wall-clock deadline for the duration of this loop run
+    // (resume re-enters with the remaining budget against the same deadline).
+    this.armWallClockBound(handle);
+    try {
+      return await this.runExecutionLoopFacade(handle, schemaId, loopState);
+    } finally {
+      this.disarmWallClockBound(handle);
+    }
+  }
+
+  private async runExecutionLoopFacade(
+    handle: RuntimeExecutionHandle,
+    schemaId: string,
+    loopState: LoopState
+  ): Promise<LoopOutcome> {
     return await runRuntimeExecutionLoopFacade(
       {
         applyContextEngineeringPlan: (...args) =>
@@ -838,9 +899,12 @@ class RuntimeCore implements TuvrenRuntime {
             },
             ...args
           ),
+        boundsDeadlineMs: (boundsHandle) =>
+          this.getBoundsTurnState(boundsHandle).deadlineMs,
         commitPendingExtensionStateUpdates: (...args) =>
           commitRuntimeCorePendingExtensionStateUpdates(this.hosts, ...args),
         createId: () => this.createId(),
+        executionBounds: () => this.options.bounds,
         executeIterationPhase: (...args) => this.executeIterationPhase(...args),
         incorporateQueuedSteeringIfNeeded: (...args) =>
           this.incorporateQueuedSteeringIfNeeded(...args),
@@ -858,6 +922,8 @@ class RuntimeCore implements TuvrenRuntime {
           this.publishRuntimeEvent(handle, event, loopState),
         publishProjectedError: (handle, error, fatal, loopState) =>
           this.publishRuntimeProjectedError(handle, error, fatal, loopState),
+        recordBoundsToolCalls: (boundsHandle, count) =>
+          this.recordBoundsToolCalls(boundsHandle, count),
       },
       handle,
       schemaId,
@@ -1010,6 +1076,85 @@ class RuntimeCore implements TuvrenRuntime {
     return this.options.now();
   }
 
+  // ── Execution Bounds (ADR-043, KRT-BD006) ───────────────────────────────
+
+  private getBoundsTurnState(handle: RuntimeExecutionHandle): BoundsTurnState {
+    let state = this.boundsTurnStates.get(handle);
+    if (state === undefined) {
+      state = {
+        boundedTelemetryEmitted: false,
+        deadlineMs: this.now() + this.options.bounds.maxWallClockMs,
+        toolCallCount: 0,
+      };
+      this.boundsTurnStates.set(handle, state);
+    }
+    return state;
+  }
+
+  /**
+   * Arm the end-to-end wall-clock deadline as a real timer so the framework
+   * stops awaiting in-flight model/tool work at `maxWallClockMs` by aborting
+   * the handle with the bounds terminal error. The abort propagates through
+   * `TuvrenPrompt.signal` and `ToolExecutionContext.signal`. The timer is
+   * unref'd so it never keeps the process alive.
+   */
+  private armWallClockBound(handle: RuntimeExecutionHandle): void {
+    const state = this.getBoundsTurnState(handle);
+    if (state.wallClockTimer !== undefined) {
+      return;
+    }
+    const limit = this.options.bounds.maxWallClockMs;
+    const remaining = Math.max(0, state.deadlineMs - this.now());
+    const timer = setTimeout(() => {
+      handle.abortWithError(
+        createBoundExceededError("maxWallClockMs", limit, limit)
+      );
+    }, remaining);
+    if (typeof timer.unref === "function") {
+      timer.unref();
+    }
+    state.wallClockTimer = timer;
+  }
+
+  private disarmWallClockBound(handle: RuntimeExecutionHandle): void {
+    const state = this.boundsTurnStates.get(handle);
+    if (state?.wallClockTimer !== undefined) {
+      clearTimeout(state.wallClockTimer);
+      state.wallClockTimer = undefined;
+    }
+  }
+
+  private recordBoundsToolCalls(
+    handle: RuntimeExecutionHandle,
+    count: number
+  ): number {
+    const state = this.getBoundsTurnState(handle);
+    state.toolCallCount += count;
+    return state.toolCallCount;
+  }
+
+  /**
+   * Emit the bounded-execution telemetry event exactly once per handle when a
+   * fatal terminal error is the bounds error. Wired into the projected-error
+   * path so it fires for both the loop-boundary and in-flight-abort routes.
+   */
+  private emitBoundedTelemetryIfNeeded(
+    handle: RuntimeExecutionHandle,
+    error: Error,
+    loopState: LoopState
+  ): void {
+    const details = getBoundExceededDetails(error);
+    if (details === undefined) {
+      return;
+    }
+    const state = this.getBoundsTurnState(handle);
+    if (state.boundedTelemetryEmitted) {
+      return;
+    }
+    state.boundedTelemetryEmitted = true;
+    this.telemetry.bounded({ details, handle, loopState });
+  }
+
   private publishRuntimeEvent(
     handle: RuntimeExecutionHandle,
     event: TuvrenStreamEvent,
@@ -1042,6 +1187,12 @@ class RuntimeCore implements TuvrenRuntime {
       },
       loopState
     );
+    // A fatal bounds error anchors the terminal bounded-execution path: emit the
+    // execution.bounded telemetry event alongside the fatal error event (before
+    // the failed turn.end), exactly once per handle. (ADR-043, BD006)
+    if (fatal && isBoundExceededError(error)) {
+      this.emitBoundedTelemetryIfNeeded(handle, error, loopState);
+    }
   }
 
   private emitRuntimeStateObservability(

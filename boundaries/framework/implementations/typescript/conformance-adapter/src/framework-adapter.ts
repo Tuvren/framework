@@ -50,6 +50,15 @@ import {
 import { createFrameworkAdapterDriver } from "./framework-adapter-driver.ts";
 import { createFrameworkAdapterEventStream } from "./framework-adapter-event-stream.ts";
 import { createFrameworkAdapterEventStreamSse } from "./framework-adapter-event-stream-sse.ts";
+import {
+  runExecutionBoundsConcurrencyThrottle,
+  runExecutionBoundsInvalidConfig,
+  runExecutionBoundsMaxIterations,
+  runExecutionBoundsMaxToolCalls,
+  runExecutionBoundsMaxWallClock,
+  runExecutionBoundsWallClockSignalDelivery,
+  runExecutionBoundsWithinBounds,
+} from "./framework-adapter-execution-bounds.ts";
 import { runInvocationLifecycleCrossClass } from "./framework-adapter-invocation-lifecycle.ts";
 import { createFrameworkAdapterOrchestration } from "./framework-adapter-orchestration.ts";
 import { createFrameworkAdapterProvingHost } from "./framework-adapter-proving-host.ts";
@@ -59,6 +68,14 @@ import type {
 } from "./framework-adapter-runtime.ts";
 import { createFrameworkAdapterRuntimeScenarios } from "./framework-adapter-runtime-scenarios.ts";
 import { createFrameworkAdapterSchemaAuthoring } from "./framework-adapter-schema-authoring.ts";
+import {
+  runSecretIsolationRuntimeApi,
+  runSecretIsolationTelemetry,
+} from "./framework-adapter-secret-isolation.ts";
+import {
+  runTrustBoundaryApprovalNonBypassable,
+  runTrustBoundaryLocalToolInput,
+} from "./framework-adapter-trust-boundary.ts";
 import { runTuvrenClientLifecycle } from "./framework-adapter-tuvren-client-execution-class.ts";
 import {
   runTuvrenServerBindingClassification,
@@ -392,6 +409,28 @@ export class TypeScriptFrameworkAdapter implements ImplementationAdapter {
         return runCapabilityOrchestrationIntegration();
       case "runtime.invocation-lifecycle.cross-class":
         return runInvocationLifecycleCrossClass();
+      case "runtime.execution-bounds.max-iterations":
+        return runExecutionBoundsMaxIterations();
+      case "runtime.execution-bounds.max-tool-calls":
+        return runExecutionBoundsMaxToolCalls();
+      case "runtime.execution-bounds.max-wall-clock":
+        return runExecutionBoundsMaxWallClock();
+      case "runtime.execution-bounds.wall-clock-signal-delivery":
+        return runExecutionBoundsWallClockSignalDelivery();
+      case "runtime.execution-bounds.concurrency-throttle":
+        return runExecutionBoundsConcurrencyThrottle();
+      case "runtime.execution-bounds.invalid-config":
+        return runExecutionBoundsInvalidConfig();
+      case "runtime.execution-bounds.within-bounds":
+        return runExecutionBoundsWithinBounds();
+      case "runtime.secret-isolation.surfaces":
+        return runSecretIsolationRuntimeApi(input);
+      case "runtime.secret-isolation.telemetry":
+        return runSecretIsolationTelemetry(input);
+      case "runtime.trust-boundary.approval-gate":
+        return runTrustBoundaryApprovalNonBypassable(input);
+      case "runtime.trust-boundary.local-tool-input":
+        return runTrustBoundaryLocalToolInput(input);
       case "runtime.tuvren-client.lifecycle":
         return runTuvrenClientLifecycle();
       case "runtime.tuvren-server.lifecycle":

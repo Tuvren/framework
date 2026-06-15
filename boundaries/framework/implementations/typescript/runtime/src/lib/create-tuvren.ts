@@ -24,6 +24,7 @@ import { TuvrenValidationError } from "@tuvren/core";
 import type { RuntimeDriverFactory } from "@tuvren/core/driver";
 import type {
   AgentConfig,
+  ExecutionBounds,
   OrchestrationRuntime,
   TuvrenRuntime,
 } from "@tuvren/core/execution";
@@ -74,6 +75,12 @@ export interface CreateTuvrenOptions {
     | { kind: "memory"; options?: MemoryBackendOptions }
     | { kind: "sqlite"; options: SqliteBackendOptions }
     | { kind: "postgres"; options?: PostgresBackendOptions };
+  /**
+   * Framework-enforced per-turn execution bounds (ADR-043, KRT-BD006). Supply
+   * at the top level or via `runtimeOptions.bounds`, but not both. Unset fields
+   * take the §3.11 safe defaults; a driver cannot raise or disable a bound.
+   */
+  bounds?: ExecutionBounds;
   driver?:
     | DriverKind
     | RuntimeDriverFactory
@@ -113,6 +120,16 @@ export function createTuvren(
     );
   }
 
+  if (
+    options.bounds !== undefined &&
+    options.runtimeOptions?.bounds !== undefined
+  ) {
+    throw new TuvrenValidationError(
+      "createTuvren: bounds must be supplied either at top level or runtimeOptions, not both",
+      { code: "invalid_createtuvren_options" }
+    );
+  }
+
   // When a pre-built kernel is supplied, skip backend construction entirely.
   // The kernel already owns its backend; constructing a second one would open
   // an idle connection pool / file handle that is immediately discarded.
@@ -135,6 +152,7 @@ export function createTuvren(
 
   const runtime = createTuvrenRuntime({
     ...options.runtimeOptions,
+    bounds: options.bounds ?? options.runtimeOptions?.bounds,
     defaultDriverId: driver.id,
     driverRegistry,
     kernel,

@@ -15,6 +15,7 @@ Framework deferred-surface decisions are recorded from the docs-to-authority mat
 | extension state and prompt contracts | 4 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
 | framework driver framing | 2 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
 | framework event stream | 7 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
+| framework execution bounds | 7 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
 | framework state schema | 3 | authority-backed-conformance-covered | KRT-AF001 if portability is selected | No, if kept local/deferred |
 | future framework drivers | 1 | explicitly-deferred | Future TechSpec/Tasks revision after TypeScript freeze closure | No, if kept local/deferred |
 | handoff and context engineering | 6 | authority-backed-conformance-covered | KRT-AF005 | No, if kept local/deferred |

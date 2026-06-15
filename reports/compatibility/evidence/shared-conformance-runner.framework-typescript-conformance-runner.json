@@ -5442,6 +5442,392 @@
     {
       "assertionResults": [
         {
+          "assertionId": "runtime-api-execution-bounds.invalid-config-rejected.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.invalid-config-rejected.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.invalid-config-rejected.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.invalid-config-rejected.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.invalid-config-rejected.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.invalid-config-rejected.6.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.invalid-config-rejected.7.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.invalid-config-rejected.requiredEvidence.result.rejections.0.code",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.invalid-config-rejected.requiredEvidence.result.rejections.0.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.invalid-config-rejected.requiredEvidence.result.rejections.1.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.invalid-config-rejected.requiredEvidence.result.rejections.2.code",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.invalid-config-rejected.requiredEvidence.result.rejections.2.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.invalid-config-rejected.requiredEvidence.result.rejections.3.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.invalid-config-rejected.requiredEvidence.result.rejections.4.rejected",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-api-execution-bounds.invalid-config-rejected",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-api-execution-bounds.max-concurrent-tool-calls-throttle.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.max-concurrent-tool-calls-throttle.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.max-concurrent-tool-calls-throttle.requiredEvidence.result.maxObservedConcurrency",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.max-concurrent-tool-calls-throttle.requiredEvidence.result.status",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-api-execution-bounds.max-concurrent-tool-calls-throttle",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-api-execution-bounds.max-iterations-clamps-and-fails.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.max-iterations-clamps-and-fails.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.max-iterations-clamps-and-fails.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.max-iterations-clamps-and-fails.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.max-iterations-clamps-and-fails.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.max-iterations-clamps-and-fails.6.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.max-iterations-clamps-and-fails.7.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.max-iterations-clamps-and-fails.8.ordering",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.max-iterations-clamps-and-fails.9.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.max-iterations-clamps-and-fails.10.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.max-iterations-clamps-and-fails.requiredEvidence.result.boundedTelemetry.bound",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.max-iterations-clamps-and-fails.requiredEvidence.result.boundedTelemetry.count",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.max-iterations-clamps-and-fails.requiredEvidence.result.errorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.max-iterations-clamps-and-fails.requiredEvidence.result.errorDetails.bound",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.max-iterations-clamps-and-fails.requiredEvidence.result.errorDetails.limit",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.max-iterations-clamps-and-fails.requiredEvidence.result.errorDetails.observed",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.max-iterations-clamps-and-fails.requiredEvidence.result.fatalErrorEventCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.max-iterations-clamps-and-fails.requiredEvidence.result.status",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.max-iterations-clamps-and-fails.requiredEvidence.result.terminalTurnEndStatus",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-api-execution-bounds.max-iterations-clamps-and-fails",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-api-execution-bounds.max-tool-calls-fails.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.max-tool-calls-fails.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.max-tool-calls-fails.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.max-tool-calls-fails.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.max-tool-calls-fails.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.max-tool-calls-fails.6.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.max-tool-calls-fails.7.ordering",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.max-tool-calls-fails.8.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.max-tool-calls-fails.9.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.max-tool-calls-fails.requiredEvidence.result.boundedTelemetry.bound",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.max-tool-calls-fails.requiredEvidence.result.boundedTelemetry.count",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.max-tool-calls-fails.requiredEvidence.result.errorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.max-tool-calls-fails.requiredEvidence.result.errorDetails.bound",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.max-tool-calls-fails.requiredEvidence.result.errorDetails.limit",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.max-tool-calls-fails.requiredEvidence.result.errorDetails.observed",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.max-tool-calls-fails.requiredEvidence.result.fatalErrorEventCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.max-tool-calls-fails.requiredEvidence.result.status",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-api-execution-bounds.max-tool-calls-fails",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-api-execution-bounds.max-wall-clock-fails.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.max-wall-clock-fails.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.max-wall-clock-fails.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.max-wall-clock-fails.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.max-wall-clock-fails.5.ordering",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.max-wall-clock-fails.6.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.max-wall-clock-fails.requiredEvidence.result.boundedTelemetry.bound",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.max-wall-clock-fails.requiredEvidence.result.errorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.max-wall-clock-fails.requiredEvidence.result.errorDetails.bound",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.max-wall-clock-fails.requiredEvidence.result.fatalErrorEventCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.max-wall-clock-fails.requiredEvidence.result.status",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-api-execution-bounds.max-wall-clock-fails",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-api-execution-bounds.wall-clock-signal-delivery-ignores-late.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.wall-clock-signal-delivery-ignores-late.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.wall-clock-signal-delivery-ignores-late.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.wall-clock-signal-delivery-ignores-late.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.wall-clock-signal-delivery-ignores-late.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.wall-clock-signal-delivery-ignores-late.requiredEvidence.result.errorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.wall-clock-signal-delivery-ignores-late.requiredEvidence.result.errorDetails.bound",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.wall-clock-signal-delivery-ignores-late.requiredEvidence.result.status",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.wall-clock-signal-delivery-ignores-late.requiredEvidence.result.toolCompletedAfterAbort",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.wall-clock-signal-delivery-ignores-late.requiredEvidence.result.toolObservedAbort",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-api-execution-bounds.wall-clock-signal-delivery-ignores-late",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-api-execution-bounds.within-bounds-completes.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.within-bounds-completes.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.within-bounds-completes.requiredEvidence.result.status",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-execution-bounds.within-bounds-completes.requiredEvidence.result.terminalTurnEndStatus",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-api-execution-bounds.within-bounds-completes",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "runtime-callable-af.approval-reject-stages-tool-result.1.resultField",
           "status": "pass"
         },
@@ -7152,6 +7538,116 @@
     {
       "assertionResults": [
         {
+          "assertionId": "secret-isolation.runtime-api-surfaces.1.secretAbsence",
+          "status": "pass"
+        },
+        {
+          "assertionId": "secret-isolation.runtime-api-surfaces.2.secretAbsence",
+          "status": "pass"
+        },
+        {
+          "assertionId": "secret-isolation.runtime-api-surfaces.3.secretAbsence",
+          "status": "pass"
+        },
+        {
+          "assertionId": "secret-isolation.runtime-api-surfaces.requiredEvidence.result.persistedRecords",
+          "status": "pass"
+        },
+        {
+          "assertionId": "secret-isolation.runtime-api-surfaces.requiredEvidence.result.streamEvents",
+          "status": "pass"
+        },
+        {
+          "assertionId": "secret-isolation.runtime-api-surfaces.requiredEvidence.result.transcript",
+          "status": "pass"
+        }
+      ],
+      "checkId": "secret-isolation.runtime-api-surfaces",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "trust-boundary.approval-non-bypassable.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "trust-boundary.approval-non-bypassable.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "trust-boundary.approval-non-bypassable.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "trust-boundary.approval-non-bypassable.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "trust-boundary.approval-non-bypassable.requiredEvidence.result.trustBoundary.approval.approvalRequested",
+          "status": "pass"
+        },
+        {
+          "assertionId": "trust-boundary.approval-non-bypassable.requiredEvidence.result.trustBoundary.approval.executedToolNames",
+          "status": "pass"
+        },
+        {
+          "assertionId": "trust-boundary.approval-non-bypassable.requiredEvidence.result.trustBoundary.approval.gatedToolExecutedWithoutDecision",
+          "status": "pass"
+        },
+        {
+          "assertionId": "trust-boundary.approval-non-bypassable.requiredEvidence.result.trustBoundary.approval.pausedPhase",
+          "status": "pass"
+        }
+      ],
+      "checkId": "trust-boundary.approval-non-bypassable",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "trust-boundary.local-tool-input-invalid.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "trust-boundary.local-tool-input-invalid.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "trust-boundary.local-tool-input-invalid.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "trust-boundary.local-tool-input-invalid.requiredEvidence.result.trustBoundary.localToolInput.toolExecuted",
+          "status": "pass"
+        },
+        {
+          "assertionId": "trust-boundary.local-tool-input-invalid.requiredEvidence.result.trustBoundary.localToolInput.toolResults.0.errorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "trust-boundary.local-tool-input-invalid.requiredEvidence.result.trustBoundary.localToolInput.toolResults.0.isError",
+          "status": "pass"
+        }
+      ],
+      "checkId": "trust-boundary.local-tool-input-invalid",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "runtime-api.approval-resolve.paused-resume.1.stateField",
           "status": "pass"
         },
@@ -8184,6 +8680,24 @@
         }
       ],
       "checkId": "runtime-api-operational-telemetry.tool-spans",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.operational-telemetry"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "secret-isolation.telemetry-attributes-and-error-summaries.1.secretAbsence",
+          "status": "pass"
+        },
+        {
+          "assertionId": "secret-isolation.telemetry-attributes-and-error-summaries.requiredEvidence.result.telemetry",
+          "status": "pass"
+        }
+      ],
+      "checkId": "secret-isolation.telemetry-attributes-and-error-summaries",
       "details": {
         "adapterId": "typescript-framework",
         "planId": "tuvren.framework.runtime-api.operational-telemetry"
@@ -9721,9 +10235,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 450,
-    "totalChecks": 462,
-    "applicableChecks": 450,
+    "passedChecks": 461,
+    "totalChecks": 473,
+    "applicableChecks": 461,
     "nonApplicableChecks": 12
   },
   "suiteId": "tuvren.framework.promoted-authority",

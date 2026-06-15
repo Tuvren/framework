@@ -75,7 +75,8 @@
                     "stateField",
                     "evidenceField",
                     "ordering",
-                    "noEvent"
+                    "noEvent",
+                    "secretAbsence"
                   ]
                 },
                 "path": { "type": "string", "minLength": 1 },
@@ -86,6 +87,7 @@
                 "contains": {},
                 "containsPath": { "type": "string", "minLength": 1 },
                 "field": { "type": "string", "minLength": 1 },
+                "secretsPath": { "type": "string", "minLength": 1 },
                 "eventType": { "type": "string", "minLength": 1 }
               },
               "allOf": [
@@ -111,6 +113,17 @@
                     "not": {
                       "required": ["field"]
                     }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "kind": { "const": "secretAbsence" }
+                    },
+                    "required": ["kind"]
+                  },
+                  "then": {
+                    "required": ["field", "secretsPath"]
                   }
                 }
               ]
@@ -154,7 +167,8 @@
                           "stateField",
                           "evidenceField",
                           "ordering",
-                          "noEvent"
+                          "noEvent",
+                          "secretAbsence"
                         ]
                       },
                       "path": { "type": "string", "minLength": 1 },
@@ -165,6 +179,7 @@
                       "contains": {},
                       "containsPath": { "type": "string", "minLength": 1 },
                       "field": { "type": "string", "minLength": 1 },
+                      "secretsPath": { "type": "string", "minLength": 1 },
                       "eventType": { "type": "string", "minLength": 1 }
                     },
                     "allOf": [
@@ -190,6 +205,17 @@
                           "not": {
                             "required": ["field"]
                           }
+                        }
+                      },
+                      {
+                        "if": {
+                          "properties": {
+                            "kind": { "const": "secretAbsence" }
+                          },
+                          "required": ["kind"]
+                        },
+                        "then": {
+                          "required": ["field", "secretsPath"]
                         }
                       }
                     ]

@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/shared/core-types/ExecutionBounds.json",
+  "type": "object",
+  "properties": {
+    "maxIterations": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991,
+      "description": "Maximum ReAct iterations per turn. Default 64."
+    },
+    "maxToolCalls": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991,
+      "description": "Maximum cumulative tool calls per turn. Default 256."
+    },
+    "maxWallClockMs": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991,
+      "description": "End-to-end wall-clock deadline in milliseconds. Default 600000."
+    },
+    "maxConcurrentToolCalls": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991,
+      "description": "Maximum concurrent tool calls (throttle, not a terminal bound). Default 16."
+    }
+  },
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "Framework-enforced per-turn execution bounds (ADR-043 §3.11), applied above the driver's loop policy. Unset fields take the documented safe defaults; every configured bound must be a finite positive integer. A driver cannot raise or disable a bound."
+}

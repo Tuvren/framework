@@ -39,6 +39,17 @@ export {
   runReplInput,
 } from "./lib/repl-shell.js";
 export type {
+  ReplTranscriptBackendConfig,
+  ReplTranscriptHeader,
+} from "./lib/repl-transcript.js";
+export {
+  createReplTranscriptWriter,
+  redactReplTranscriptBackendConfig,
+  redactReplTranscriptBackendOptions,
+  redactReplTranscriptHeader,
+  serializeReplTranscriptRecord,
+} from "./lib/repl-transcript.js";
+export type {
   ReplBackendMode,
   ReplConfig,
   ReplHost,

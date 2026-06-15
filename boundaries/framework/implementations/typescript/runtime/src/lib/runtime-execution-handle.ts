@@ -29,6 +29,7 @@ import type {
 import type { ContentPart, TuvrenMessage } from "@tuvren/core/messages";
 import type { ApprovalResponse } from "@tuvren/core/tools";
 import { assertApprovalResponseForRequest } from "@tuvren/core/tools";
+import { isBoundExceededError } from "./runtime-core-bounds.js";
 import {
   AsyncEventQueue,
   cloneExecutionStatus,
@@ -288,6 +289,10 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
   }
 
   private settleResult(turnEndStatus: "completed" | "paused" | "failed"): void {
+    // Terminal late-completion guard: once the result is settled, a model/tool
+    // completion that lost the race to a bounded (or cancelled) abort is ignored
+    // — its invocation reaches the "ignored" InvocationLifecycleState and cannot
+    // reopen or mutate the turn. (ADR-043, KRT-BD006)
     if (turnEndStatus === "paused" || this.resultSettled) {
       return;
     }
@@ -299,6 +304,16 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
       reason instanceof TuvrenRuntimeError &&
       reason.code === "runtime_execution_cancelled";
 
+    const executionStatus = cloneExecutionStatus(this.statusSnapshot);
+
+    // A wall-clock bound abort is authoritative: the failed result carries the
+    // execution_bound_exceeded error and its details regardless of whatever was
+    // thrown by the interrupted in-flight model/tool work. (ADR-043, BD006)
+    if (turnEndStatus === "failed" && isBoundExceededError(reason)) {
+      this.resultResolve({ error: reason, executionStatus, status: "failed" });
+      return;
+    }
+
     if (turnEndStatus === "failed" && cancelledByUser) {
       this.resultReject(
         new TuvrenRuntimeError("Execution was cancelled", {
@@ -307,8 +322,6 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
       );
       return;
     }
-
-    const executionStatus = cloneExecutionStatus(this.statusSnapshot);
 
     if (turnEndStatus === "completed") {
       this.resultResolve({
@@ -320,7 +333,12 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
       const projection = this.lastErrorProjection;
       const error = new TuvrenRuntimeError(
         projection?.message ?? "Execution failed",
-        { code: projection?.code ?? "execution_failed" }
+        {
+          code: projection?.code ?? "execution_failed",
+          ...(projection?.details === undefined
+            ? {}
+            : { details: projection.details }),
+        }
       );
       this.resultResolve({ error, executionStatus, status: "failed" });
     }
