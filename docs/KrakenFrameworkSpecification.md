@@ -1,6 +1,6 @@
 # Kraken Framework Specification
 
-**Version**: v0.19
+**Version**: v0.20
 **Status**: Human semantic authority; machine portability classified by Epic AD
 **Basis**: Kernel Specification v0.9 (frozen)
 
@@ -1061,6 +1061,40 @@ function finalizeTurnStatus(turnId, branchId, schemaId, resolution):
 ```
 
 This finalization step is independent of terminal hook outputs. `afterTurn` remains non-durable on terminal paths. The finalization checkpoint MUST commit and the Turn head MUST advance before `turn.end` is emitted. Any non-paused terminal Turn resolution — including `beforeTurn` short-circuits — MUST durably finalize `runtime.status` through this step before `turn.end` is emitted.
+
+### 4.12 Execution Bounds
+
+The framework enforces hard-stop **execution bounds** on every Turn. These bounds are framework-owned and sit *above* driver `LoopPolicy` discretion (§5.3): a driver cannot widen, disable, or opt out of them. Their purpose is to guarantee that a misbehaving or adversarial driver cannot run a Turn unbounded.
+
+`ExecutionBounds` has four fields, each a finite positive integer, applied with these defaults when unset:
+
+```
+ExecutionBounds
+├─ maxIterations: number          (default 64)
+├─ maxToolCalls: number           (default 256, cumulative per Turn)
+├─ maxWallClockMs: number         (default 600000)
+└─ maxConcurrentToolCalls: number (default 16)
+```
+
+Bounds MAY be supplied at runtime construction. A supplied bound MUST be a finite positive integer; a non-integer, non-finite, or non-positive value MUST be rejected at construction. Supplying bounds through more than one construction channel MUST be rejected.
+
+The guard is enforced at iteration and tool-batch boundaries, above the driver's loop decisions:
+
+- `maxIterations` caps the number of agent iterations in a Turn. `AgentConfig.maxIterations` MUST be clamped down to `maxIterations` and can never exceed it.
+- `maxToolCalls` caps the cumulative number of tool calls executed across the whole Turn.
+- `maxWallClockMs` is an end-to-end Turn deadline. When the deadline elapses, the framework propagates a cancellation signal into in-flight tool execution and into the model call so work stops cooperatively; tool completions that arrive after the deadline MUST be ignored.
+- `maxConcurrentToolCalls` caps tool parallelism. `AgentConfig.maxParallelToolCalls` and the default parallelism MUST be clamped down to `maxConcurrentToolCalls`.
+
+Breaching any hard-stop bound MUST stop the loop, durably checkpoint a safe terminal outcome, and finalize a `failed` `ExecutionResult` carrying the stable error code `execution_bound_exceeded`. The failure detail MUST identify which bound was exceeded:
+
+```
+ExecutionBoundExceededDetails
+├─ bound: "maxIterations" | "maxToolCalls" | "maxWallClockMs" | "maxConcurrentToolCalls"
+├─ limit: the enforced bound value
+└─ observed: the value that breached the bound
+```
+
+A fatal canonical `error` event MUST be emitted before the `failed` `turn.end`. Bound metadata lives on the `ExecutionResult` details and, when a telemetry sink is configured, on a dedicated execution-bounded telemetry event — it MUST NOT be attached to `turn.end`. The bounds-exceeded terminal path resolves the invocation lifecycle to its terminal `ignored` state for any tool work that was abandoned at the breach.
 
 ---
 

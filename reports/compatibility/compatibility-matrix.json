@@ -262,6 +262,13 @@
             "capability-orch.aw001.tuvren-server-full-lifecycle-observation",
             "capability-orch.aw001.tuvren-server-owner-is-tuvren",
             "proving-host-headless-transcript-replay.deterministic-memory-pass",
+            "runtime-api-execution-bounds.invalid-config-rejected",
+            "runtime-api-execution-bounds.max-concurrent-tool-calls-throttle",
+            "runtime-api-execution-bounds.max-iterations-clamps-and-fails",
+            "runtime-api-execution-bounds.max-tool-calls-fails",
+            "runtime-api-execution-bounds.max-wall-clock-fails",
+            "runtime-api-execution-bounds.wall-clock-signal-delivery-ignores-late",
+            "runtime-api-execution-bounds.within-bounds-completes",
             "runtime-callable-af.approval-reject-stages-tool-result",
             "runtime-callable-af.approval-resume-new-handle-only",
             "runtime-callable-af.approval-resume-reruns-unfinished-tools-only",
@@ -349,6 +356,9 @@
             "schema-authoring.define-tool.json-schema-type",
             "schema-authoring.define-tool.name-preserved",
             "schema-authoring.define-tool.validate-passthrough-success",
+            "secret-isolation.runtime-api-surfaces",
+            "trust-boundary.approval-non-bypassable",
+            "trust-boundary.local-tool-input-invalid",
             "runtime-api.approval-resolve.paused-resume",
             "runtime-api.branch-create.recovery",
             "runtime-api.cancel-execution.failure",
@@ -386,6 +396,7 @@
             "runtime-api-operational-telemetry.error-path",
             "runtime-api-operational-telemetry.recovery-records",
             "runtime-api-operational-telemetry.tool-spans",
+            "secret-isolation.telemetry-attributes-and-error-summaries",
             "runtime-orchestration-af.handoff-last-output-only-builder",
             "runtime-orchestration-af.handoff-rejects-multiple-intents",
             "runtime-orchestration-af.handoff-resolution-not-history-entry",
@@ -460,9 +471,9 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 450,
-            "totalChecks": 462,
-            "applicableChecks": 450,
+            "passedChecks": 461,
+            "totalChecks": 473,
+            "applicableChecks": 461,
             "nonApplicableChecks": 12
           },
           "declaredCapabilities": [
@@ -503,9 +514,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 12,
-            "totalChecks": 462,
+            "totalChecks": 473,
             "applicableChecks": 12,
-            "nonApplicableChecks": 450
+            "nonApplicableChecks": 461
           },
           "declaredCapabilities": ["framework.batteries-included"],
           "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.framework-batteries-included-conformance-runner.json",
@@ -800,6 +811,8 @@
             "providers.mcp.translation-rules-and-transport-parity",
             "providers.mcp.transport-error-normalization",
             "providers.mcp.validation-errors",
+            "secret-isolation.mcp-translated-tool-surface",
+            "trust-boundary.mcp-untrusted-input-invalid",
             "providers-ext.approval.error-code-stable",
             "providers-ext.approval.error-reason-stable",
             "providers-ext.strict.error-code-stable",
@@ -851,9 +864,9 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 52,
-            "totalChecks": 52,
-            "applicableChecks": 52,
+            "passedChecks": 54,
+            "totalChecks": 54,
+            "applicableChecks": 54,
             "nonApplicableChecks": 0
           },
           "declaredCapabilities": [
@@ -956,9 +969,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 0,
-            "totalChecks": 462,
+            "totalChecks": 473,
             "applicableChecks": 0,
-            "nonApplicableChecks": 462
+            "nonApplicableChecks": 473
           },
           "declaredCapabilities": [],
           "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.framework-rust-conformance-runner.json",

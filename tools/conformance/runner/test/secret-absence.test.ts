@@ -36,14 +36,16 @@ describe("secret-absence scanner (KRT-BD004)", () => {
   });
 
   test("detects each covered derived leak form", () => {
-    const cases: Array<[string, unknown]> = [
+    // The leading label documents the derived leak form each surface exercises;
+    // the scan only needs the surface, so the label is not bound in the loop.
+    const cases: [string, unknown][] = [
       ["header-normalized", { v: SECRET.toUpperCase() }],
       ["bearer-prefixed", { authorization: `Bearer ${SECRET}` }],
       ["base64", { v: Buffer.from(SECRET, "utf8").toString("base64") }],
       ["base64url", { v: Buffer.from(SECRET, "utf8").toString("base64url") }],
       ["partial-token", { v: `prefix-${SECRET.slice(0, 24)}` }],
     ];
-    for (const [variant, surface] of cases) {
+    for (const [, surface] of cases) {
       const findings = findSecretLeaks(surface, [SECRET]);
       expect(findings.length).toBeGreaterThan(0);
     }
