@@ -17,7 +17,7 @@ The kernel is the structural persistence engine of the Kraken execution engine i
 
 The kernel provides mechanism without policy: immutable content storage, structured state snapshots, a history DAG, durable write-ahead tracking, and stepwise execution with declarative checkpointing. It does not know what a "model call" is, what a "tool" is, or what "context assembly" means.
 
-The framework — specified in `KrakenFrameworkSpecification.md` — provides agent-specific behavior built on the kernel's 31 operations across 10 groups. The kernel is language-agnostic and implementable in a native language with the framework as an SDK in any language on top.
+The framework — specified in `KrakenFrameworkSpecification.md` — provides agent-specific behavior built on the kernel's 30 operations across 10 groups. The kernel is language-agnostic and implementable in a native language with the framework as an SDK in any language on top.
 
 ---
 
@@ -673,9 +673,9 @@ Pure algebra. The framework manages hook registration, execution, and timeout. T
 
 ## 7. Syscall Surface
 
-31 operations across 10 groups. Every operation carries explicit identity for all scoped entities.
+30 operations across 10 groups. Every operation carries explicit identity for all scoped entities.
 
-`branch.list` (structural enumeration, v0.9+) and `thread.list` (structural enumeration, v0.10+) together account for the corrected count. Earlier revisions cited "28 operations" while `branch.list` had already been added. `thread.list` is added in v0.10 alongside the count correction. `maintenance.reclamation` (capability-gated reachability reclamation, §9.4) is the 31st operation, added in v0.12; its portable machine authority is deferred until the SaaS-readiness epics promote it.
+`branch.list` (structural enumeration, v0.9+) and `thread.list` (structural enumeration, v0.10+) together account for the corrected count. Earlier revisions cited "28 operations" while `branch.list` had already been added. `thread.list` is added in v0.10 alongside the count correction.
 
 ```
 // ─── Object Store (3) ────────────────────────────────────────────
@@ -969,4 +969,4 @@ Reclamation operates within a Scope (§2.3), so under isolation-by-construction 
 
 ---
 
-_v0.12. Kernel has 31 operations across 10 groups, 18 invariants. The capability-gated reachability reclamation primitive (`maintenance.reclamation`, §9.4) is the latest addition, joining the capability-gated `thread.list`; v0.12 also adds scope-resolved object identity (§2.3) and the backend-authoritative lease clock (§5.2) as SaaS-readiness target semantics whose portable machine authority is deferred until the SaaS-readiness epics promote them. Companion rationale is explanatory only and non-contract._
+_v0.12. The current syscall surface is 30 operations across 10 groups, 18 invariants. v0.12 specifies the capability-gated reachability reclamation primitive (`maintenance.reclamation`, §9.4) — the forthcoming 31st operation, intentionally outside the §7 enumeration during the deferral window — alongside scope-resolved object identity (§2.3) and the backend-authoritative lease clock (§5.2) as SaaS-readiness target semantics whose portable machine authority is deferred until the SaaS-readiness epics promote them. Companion rationale is explanatory only and non-contract._

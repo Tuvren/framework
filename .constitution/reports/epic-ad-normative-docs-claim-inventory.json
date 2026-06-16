@@ -1189,7 +1189,7 @@
     },
     {
       "affectedBoundary": "kernel",
-      "nonNormativeLineCount": 45,
+      "nonNormativeLineCount": 46,
       "sectionAnchor": "#7-syscall-surface",
       "sectionHeading": "7. Syscall Surface",
       "sectionKey": "7",
@@ -1328,8 +1328,8 @@
     "docs/KrakenFrameworkSpecification.md",
     "docs/KrakenKernelSpecification.md"
   ],
-  "totalIndependentClaims": 262,
-  "totalNormativeClaims": 265,
+  "totalIndependentClaims": 261,
+  "totalNormativeClaims": 264,
   "claims": [
     {
       "affectedBoundary": "framework",
@@ -4694,21 +4694,6 @@
     {
       "affectedBoundary": "kernel",
       "adapterCapability": "kernel.protocol; kernel.logical",
-      "claimFingerprint": "1d1279d754d4e5504feb2a8b6f6f87cef360968b241789df6a6d0902f1870d50",
-      "claimId": "KER-1D1279D754D4",
-      "duplicateOf": null,
-      "line": 678,
-      "rationaleContext": "normative",
-      "sectionAnchor": "#7-syscall-surface",
-      "sectionHeading": "7. Syscall Surface",
-      "sectionKey": "7",
-      "sourceFile": "docs/KrakenKernelSpecification.md",
-      "surface": "kernel verdict and syscall edge states",
-      "text": "`branch.list` (structural enumeration, v0.9+) and `thread.list` (structural enumeration, v0.10+) together account for the corrected count. Earlier revisions cited \"28 operations\" while `branch.list` had already been added. `thread.list` is added in v0.10 alongside the count correction. `maintenance.reclamation` (capability-gated reachability reclamation, §9.4) is the 31st operation, added in v0.12; its portable machine authority is deferred until the SaaS-readiness epics promote it."
-    },
-    {
-      "affectedBoundary": "kernel",
-      "adapterCapability": "kernel.protocol; kernel.logical",
       "claimFingerprint": "10c1e931d2650c5d25c7aed176c178051ead1133dbd515eaa8c40bc246e62e89",
       "claimId": "KER-10C1E931D265",
       "duplicateOf": null,
@@ -5294,8 +5279,8 @@
     {
       "affectedBoundary": "kernel",
       "adapterCapability": "N/A",
-      "claimFingerprint": "22e07680f0d39020f9960d0e1c707d4b150c8aba98587fb9d7ff882fbd1422be",
-      "claimId": "KER-22E07680F0D3",
+      "claimFingerprint": "5817fc3343c34c98199acb75f33436c9898e0b74d655d66db9deb1f358bed6a7",
+      "claimId": "KER-5817FC3343C3",
       "duplicateOf": null,
       "line": 972,
       "rationaleContext": "normative",
@@ -5304,7 +5289,7 @@
       "sectionKey": "appendix",
       "sourceFile": "docs/KrakenKernelSpecification.md",
       "surface": "saas-readiness target authority status",
-      "text": "_v0.12. Kernel has 31 operations across 10 groups, 18 invariants. The capability-gated reachability reclamation primitive (`maintenance.reclamation`, §9.4) is the latest addition, joining the capability-gated `thread.list`; v0.12 also adds scope-resolved object identity (§2.3) and the backend-authoritative lease clock (§5.2) as SaaS-readiness target semantics whose portable machine authority is deferred until the SaaS-readiness epics promote them. Companion rationale is explanatory only and non-contract._"
+      "text": "_v0.12. The current syscall surface is 30 operations across 10 groups, 18 invariants. v0.12 specifies the capability-gated reachability reclamation primitive (`maintenance.reclamation`, §9.4) — the forthcoming 31st operation, intentionally outside the §7 enumeration during the deferral window — alongside scope-resolved object identity (§2.3) and the backend-authoritative lease clock (§5.2) as SaaS-readiness target semantics whose portable machine authority is deferred until the SaaS-readiness epics promote them. Companion rationale is explanatory only and non-contract._"
     }
   ]
 }
