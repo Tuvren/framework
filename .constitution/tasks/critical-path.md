@@ -6,8 +6,9 @@ Current local Stage 4 SemVer; full history in `changelog.md`.
 
 ## 1. Executive Summary & Active Critical Path
 
-- **Total Active Story Points:** 170 gross (**0 remaining**) — the Tooling block (Epics AW–BC) and the trust block (**Epic BD, Trust-Boundary Security Hardening**) are both fully closed; the active execution plan is empty. Epics AM through BD are closed and retained as a compact audit ledger below. The named-but-not-yet-ticketed productionization roadmap (Epics BE–BI) is the next planning input.
-- **Critical Path:** Empty. Epics AW, AX, AY, AZ, BA, BB, and BC (the Tooling block) and Epic BD (Trust-Boundary Security Hardening) are all closed. Epic BD delivered along `KRT-BD002 → KRT-BD004` and `KRT-BD005 → KRT-BD006 → KRT-BD007 → KRT-BD008`, with `KRT-BD009` as an independent close-condition lane (`KRT-BD001` was already complete with Epic AV). No ticketed work remains on the active critical path; the next planning input is the Epics BE–BI roadmap.
+- **Total Active Story Points:** 133 (**133 remaining**) — the **SaaS-Readiness block (Epics BE–BI)** is the active execution plan, recasting the previously named-but-unticketed productionization roadmap into ticketed work that lets any host embed Tuvren as a multi-tenant SaaS substrate without forking the runtime. Per-epic: BE 34, BF 39, BG 23, BH 16, BI 21. Everything through Epic BD (the Tooling block AW–BC and the trust block BD) remains closed and is retained as a compact audit ledger below.
+- **Critical Path:** `KRT-BE001 → KRT-BE002 → KRT-BE003 → KRT-BE004 → KRT-BE005 → KRT-BE006 → KRT-BE007 → KRT-BE008 → KRT-BF001 → KRT-BF002 → KRT-BF003 → KRT-BF004 → KRT-BF005 → KRT-BF006 → KRT-BF007 → KRT-BG001 → KRT-BG002 → KRT-BG003 → KRT-BG004 → KRT-BG005 → KRT-BH001 → KRT-BH002 → KRT-BH003 → KRT-BH004 → KRT-BH005 → KRT-BI001 → KRT-BI002 → KRT-BI003 → KRT-BI004 → KRT-BI005`. The keystone is Epic BE (tenancy scope + isolation): it gates the data-lifecycle epic (BF) and, with BF, gates the SDK freeze epic (BI) per ADR-054 (freeze-after-tenancy+GC). BG (lease clock + side-effect-once) and BH (conversation-state ownership) branch off BE/BF respectively and rejoin before BI. Within BE, `KRT-BE004` and `KRT-BE005` may run in parallel; within BG, `KRT-BG002` and `KRT-BG003` may run in parallel.
+- **Planning Note — this is a planning branch:** The SaaS-readiness specs (`docs/KrakenKernelSpecification.md` v0.12, `docs/KrakenFrameworkSpecification.md` v0.21) carry the target semantics, but no implementation source, schema, generated artifact, conformance plan, or authority packet has been changed yet. The docs-to-authority freeze gate and `bun run verify` are therefore expected **red** until the epics land. Each epic's first ticket (`KRT-BE001`, `KRT-BF001`, `KRT-BG001`, `KRT-BH001`) performs the docs-to-authority / coverage-matrix / authority-packet / conformance-plan alignment for the spec sections that epic implements, which is how the gate returns to green incrementally.
 - **Planning Assumptions:** The Tooling block (Epics AW–BC) is governed by PRD v0.9.0, Architecture v0.9.0, and TechSpec v0.29.0 (ADR-046, ADR-047); the upstream contracts (`@tuvren/core/capabilities` §3.13, the §4.21 contract) are authored, so the tickets are implementation-ready. Tuvren-client scope is the runtime protocol + attachment seam only — concrete client endpoints (browser extension, desktop, device) remain host-developer deliverables per PRD §6. Provider-native and provider-mediated scope is runtime support proven against today's AI-SDK-bridged providers, with at least one concrete proof per class and additional providers additive later. Epic BD (formerly Epic AW) is governed by PRD v0.8.0 / Architecture v0.8.0 / TechSpec v0.28.x (ADR-042 through ADR-045); it is now closed, having run after the Tooling block per product priority. The prior chain (PRD v0.7.0 / Architecture v0.7.0 / TechSpec v0.27.x, ADR-034 through ADR-041, Epics AM-AT) is closed. The Tooling block reframes tool representation within the existing TypeScript line and keeps today's developer-defined tool path working unchanged as the Tuvren-server execution class; it adds no Rust framework/product scope, no new host protocol, no new backend, and no new model-provider family beyond the existing AI SDK bridge. The `product proof gate`, `platform gate`, and `portability gate` from Epic AL remain the staged-gate baseline. The locked external dependency versions per TechSpec §1 still apply.
 
 ### Brownfield Continuity Note
@@ -22,18 +23,25 @@ Current local Stage 4 SemVer; full history in `changelog.md`.
 - The Tuvren-client execution class (Epic AZ) is **closed**: the runtime gained the leased client-endpoint dispatch/result protocol and attachment seam, client-side MCP classification, availability/staleness handling, and partial-observability model. Concrete client endpoints (browser extension, desktop app, device agent) remain host-developer deliverables per PRD §6.
 - Provider-native and provider-mediated execution (Epic AY) is closed: the runtime gained representation, configuration, attribution, and observation for those classes with one concrete proof each through mock-backed end-to-end tests. Real live-provider testing (API keys not in CI) is additive scope per the gap note in `.constitution/reports/ay001-provider-surface-matrix.md`. The AY005 multi-turn providerContinuity round-trip is structurally wired; a complete multi-turn proof is deferred to a follow-on epic.
 - No Rust framework or Rust product-line expansion is active. No first-class Tuvren model-provider packages are active beyond the AI SDK bridge; the MCP client remains a tool source / binding mechanism, not a model provider.
-- No additional host protocols beyond the canonical stream and SSE surfaces are active. Public package publication remains deferred (Epic BG in the roadmap).
+- No additional host protocols beyond the canonical stream and SSE surfaces are active. Public package publication is now **active** scope in Epic BI (SDK Stabilization + npm Publication), gated to run after the tenancy (BE) and data-lifecycle (BF) epics.
 - The production-trust block (now Epic BD) hardened the existing TypeScript line only and ran after the Tooling block; it is now closed. Epic AU's fault-injection seam is closed and testkit-only; Epic AV's telemetry surface is closed; execution bounds and secret isolation (Epic BD) added framework-owned guards and credential-edge confinement without altering kernel semantics.
 
 ### Planning Heuristic
 
 - Prefer ticket slices that fit focused solo-dev execution while preserving strict gates around product proof, backend rigor, and conformance truthfulness.
 - Treat “green because a private harness succeeds” as insufficient evidence once a proving-host or conformance ticket exists on the critical path.
+- Size each epic to roughly **3k–8k LoC** of implementation. In the SaaS-Readiness block, BE and BF sit toward the upper end (multi-backend scope work; the kernel reclamation primitive plus the multi-edge crypto-shredding envelope), while BG, BH, and BI sit toward the lower end (lease-clock refinement, conversation-state hardening, and freeze/publish tooling).
 
 ## 2. Project Phasing & Iteration Strategy
 
 ### Current Active Scope
 
+- **Block 6 — SaaS-Readiness (Epics BE–BI): ACTIVE.** The runtime is functionally complete and production-trust-hardened; this block makes it safe and stable to embed as a multi-tenant SaaS substrate without forking, governed by PRD v0.10.0 (CAP-P0-064 through CAP-P0-070), Architecture v0.10.0, and TechSpec v0.30.0 (ADR-048 through ADR-055). Tuvren stays tenancy-agnostic: it provides the mechanism (scope seam, isolation, reclamation, erasure, side-effect-once, conversation-state ownership, a published stable SDK), and the host owns tenancy/retention policy and keys.
+  - **BE — Tenancy Scope Seam + Isolation-by-Construction: ACTIVE.** Scope bound at backend construction across memory/SQLite/PostgreSQL; scope-resolved content addressing; durable-read scope safety; scope-tagged telemetry; cross-scope isolation conformance. The keystone; the kernel syscall surface stays scope-free (ADR-048).
+  - **BF — Data Lifecycle: Reclamation + Crypto-Shredding Erasure: ACTIVE.** Kernel `maintenance.reclamation` reachability primitive (capability-advertised, grace-windowed); host-key-encrypted untrusted-edge payload envelope at the provider/tool/MCP/client edges; per-scope reclaim and the tenant-offboarding flow; data-lifecycle conformance.
+  - **BG — Backend-Authoritative Lease Clock + Side-Effect-Once: ACTIVE.** PostgreSQL backend-time lease stamping/comparison and the shared-lease-clock capability bit; the `(runId, callId, fencingToken)` idempotency envelope on server and client dispatch; no-retry of in-flight `nonRetryable` on lease loss; client-result-as-proposal; preemption-under-clock-skew conformance.
+  - **BH — Conversation-State Ownership Hardening: ACTIVE.** Reconstruct-from-DAG proof; continuity artifacts as shreddable references; the AY005 multi-turn round-trip close; correctness-neutral caching proof; the AI SDK bridge `providerExecuted`/`dynamic` fidelity audit.
+  - **BI — SDK Stabilization + npm Publication: ACTIVE (gated after BE + BF).** Stable-core API audit; experimental `@tuvren/core/capabilities` marking; semver freeze + API-stability gate; registry publication; adopter onboarding.
 - **Block 5 — Tooling restructuring (Epics AW–BC): FULLY CLOSED.** AW delivered the capability-orchestration foundation; AX delivered the full Tuvren-server execution class; AY delivered provider-native and provider-mediated execution classes; AZ delivered the Tuvren-client execution class; BA delivered the cross-class invocation lifecycle and observation model; BB delivered the full exposure/invocation policy model; BC delivered the cross-class integration conformance, normative §11 framework-spec section, portability inventory v0.4.0, and a clean `bun run verify` with 446/446 applicable framework checks passing. See Completed Work Ledger.
   - **AW — Capability Orchestration Foundation: CLOSED.** See Completed Work Ledger.
   - **AX — Tuvren-Server Execution Class: CLOSED.** See Completed Work Ledger.
@@ -50,7 +58,7 @@ Current local Stage 4 SemVer; full history in `changelog.md`.
 ### Future / Deferred Scope
 
 - Rust framework and Rust product-line work — still blocked.
-- First-class Tuvren-owned model-provider packages beyond the TypeScript AI SDK bridge.
+- Native first-class Tuvren-owned model-provider clients (Anthropic/OpenAI/Gemini) beyond the TypeScript AI SDK bridge — deferred behind the named ADR-055 trigger (provider statefulness that cannot round-trip through the baseline `LanguageModelV3` contract, or context-manifest-driven optimizations the bridge cannot express). Recast as Epic BJ below.
 - Cross-tenant thread search, multi-tenant ACLs, full-text indexed querying through the embeddable SDK (deferred to a future hosted/server projection).
 - Server or REST projection of the durable-read surface (same future projection).
 - Model Context Protocol server-side projection — Tuvren as an MCP server. Only the client side and the MCP-as-binding classification are in scope.
@@ -58,17 +66,14 @@ Current local Stage 4 SemVer; full history in `changelog.md`.
 - Schema adapters beyond Zod, Standard Schema, and wrapped JSON Schema in the core surface.
 - Driver hot-swap or additional drivers beyond the ReAct baseline.
 - Additional host protocols beyond the canonical stream and SSE surfaces; additional official backends beyond memory, SQLite, and PostgreSQL.
-- Public package publication and final long-lived package curation (Epic BG in the roadmap below).
+#### Post-SaaS-Readiness Roadmap (Epics BJ–BM) — Named, Not Yet Ticketed
 
-#### Post-Tooling / Post-Trust Roadmap (Epics BE–BI) — Named, Not Yet Ticketed
+The productionization roadmap previously sketched under Epics BE–BI has been **recast**: BE–BI are now the ticketed SaaS-Readiness block above (tenancy, data-lifecycle, lease-clock/side-effect-once, conversation-state ownership, and SDK freeze+publication, which absorbs the former "API surface freeze" and "publication & release engineering" epics). The remaining adoption/dogfooding themes are renumbered and stay named-but-not-yet-ticketed, recorded with enough scope to anchor a future planning session:
 
-These epics are the agreed direction after the Tooling block and the trust block, toward host adoption plus first-party dogfooding (PRD §1.4). They are recorded with enough scope to anchor a future planning session; they are intentionally NOT decomposed into tickets yet.
-
-- **Epic BE — Performance Characterization & Regression Budgets.** Benchmark the hot paths, publish documented performance budgets, and wire a `bench` regression gate into the canonical verification path. Prerequisite: the durability guarantees from Epic AU are proven first.
-- **Epic BF — Public API Surface Freeze & Semver Discipline.** Define the stable public API of `@tuvren/core` (including the new `/capabilities` surface) + `@tuvren/runtime`. Run after the reference application (BI) so the surface is frozen against real usage friction. BF and BI form an iteration ordering, not a hard dependency cycle: BI builds on the still-unfrozen surface, and BF performs the freeze after absorbing BI's friction feedback.
-- **Epic BG — Publication & Release Engineering.** npm publication of the curated packages, changesets / versioning, CI release pipeline, and provenance. Gated on BF's surface freeze.
-- **Epic BH — Documentation & Onboarding.** Docs site, getting-started, cookbook, and API reference.
-- **Epic BI — Reference Application (Dogfood Target).** A real, non-trivial application built end-to-end on Tuvren that exercises the capability-orchestration model and surfaces API friction feeding back into BF.
+- **Epic BJ — Native Provider Clients.** First-class Anthropic/OpenAI/Gemini clients implementing the existing Tuvren provider contract, additive to (never replacing) the AI SDK bridge. Deferred behind the named ADR-055 trigger; the standing business case is the full-input-token cost of conversation-state ownership (ADR-053) that manifest-driven caching in a native client would cut.
+- **Epic BK — Performance Characterization & Regression Budgets.** Benchmark the hot paths (including the scope, reclamation, and lease-clock additions), publish documented performance budgets, and wire a `bench` regression gate into the canonical verification path.
+- **Epic BL — Documentation & Onboarding.** Docs site, getting-started, cookbook, and API reference for the now-published stable core (extends the onboarding seed in `KRT-BI005`).
+- **Epic BM — Reference Application (Dogfood Target).** A real, non-trivial multi-tenant application built end-to-end on the published SaaS-ready SDK that exercises the capability-orchestration model and surfaces API friction.
 
 ### Archived or Already Completed Scope
 
@@ -77,47 +82,77 @@ These epics are the agreed direction after the Tooling block and the trust block
 - Epics AI–AL completed the high-level SDK audit, the serious REPL proving host, the PostgreSQL platform gate, and the portability-gate closure.
 - Epics R-AG established the multi-language transition foundation, shared conformance architecture, and kernel interop.
 - Epics AM-AV are summarized in the completed-work ledger in §4.
-- The Tooling block (Epics AW–BC) and the trust block (Epic BD, Trust-Boundary Security Hardening) are fully closed; the active execution plan is empty. The next planning input is the named-but-not-yet-ticketed Epics BE–BI roadmap; see Current Active Scope and the Post-Tooling / Post-Trust Roadmap.
+- The Tooling block (Epics AW–BC) and the trust block (Epic BD, Trust-Boundary Security Hardening) are fully closed. The active execution plan is now the SaaS-Readiness block (Epics BE–BI), which recasts the previously named-but-unticketed productionization roadmap into ticketed work; see Current Active Scope and the Post-SaaS-Readiness Roadmap (Epics BJ–BM).
 
 ## 3. Build Order (Mermaid)
 
+Active SaaS-Readiness block only (Epics AM–BD are closed; Epics BJ–BM are deferred and excluded).
+
 ```mermaid
 flowchart LR
-  closed["Blocks 1-3 + Epics AM-AW — closed"]
+  priorClosed["Epics AM–BD — CLOSED"]
 
-  subgraph tooling["Tooling block (Epics AX–BC) — CLOSED"]
-    AXep["AX — Tuvren-Server class — CLOSED"]
-    AYep["AY — Provider-Native & Provider-Mediated — CLOSED"]
-    AZep["AZ — Tuvren-Client class — CLOSED"]
-    AXep --> BAep["BA — Invocation Lifecycle & Observation — CLOSED"]
-    AYep --> BAep
-    AZep --> BAep
-    BBep["BB — Exposure & Invocation Policy — CLOSED"]
-    BAep --> BCep["BC — Closeout — CLOSED"]
-    BBep --> BCep
+  subgraph BE["BE — Tenancy Scope + Isolation"]
+    BE1["BE001 authority"] --> BE2["BE002 spike"] --> BE3["BE003 scope bind + memory"]
+    BE3 --> BE4["BE004 sqlite"]
+    BE3 --> BE5["BE005 postgres"]
+    BE4 --> BE6["BE006 scoped identity + durable-read"]
+    BE5 --> BE6
+    BE6 --> BE7["BE007 isolation conformance"]
+    BE6 --> BE8["BE008 scope-tagged telemetry"]
   end
 
-  subgraph trust["Epic BD — Trust-Boundary Security Hardening — CLOSED"]
-    BD2["BD002 Transcript redactor — CLOSED"] --> BD4["BD004 secret-isolation checks — CLOSED"]
-    BD3["BD003 Edge-confinement docs/fixtures — CLOSED"] --> BD4
-    BD5["BD005 ExecutionBounds types — CLOSED"] --> BD6["BD006 Bounds guard — CLOSED"] --> BD7["BD007 bounds plan — CLOSED"] --> BD8["BD008 Framework-spec + verify — CLOSED"]
-    BD9["BD009 Approval/input trust-boundary verify — CLOSED"]
+  subgraph BF["BF — Reclamation + Erasure"]
+    BF1["BF001 authority"] --> BF2["BF002 spike"]
+    BF1 --> BF3["BF003 reclamation memory"]
+    BF3 --> BF4["BF004 reclamation sqlite/pg"]
+    BF2 --> BF5["BF005 crypto-shred envelope"]
+    BF4 --> BF6["BF006 maintenance + offboarding"]
+    BF5 --> BF6
+    BF6 --> BF7["BF007 data-lifecycle conformance"]
   end
 
-  closed --> AXep
-  closed --> AYep
-  closed --> AZep
-  closed --> BBep
-  BCep --> BD2
-  BCep --> BD3
-  BCep --> BD5
-  BCep --> BD9
+  subgraph BG["BG — Lease Clock + Side-Effect-Once"]
+    BG1["BG001 authority"] --> BG2["BG002 pg backend clock"]
+    BG1 --> BG3["BG003 idempotency envelope"]
+    BG2 --> BG4["BG004 no-retry + proposal"]
+    BG3 --> BG4
+    BG4 --> BG5["BG005 skew conformance"]
+  end
+
+  subgraph BH["BH — Conversation-State Ownership"]
+    BH1["BH001 authority"] --> BH2["BH002 reconstruct-from-DAG"]
+    BH2 --> BH3["BH003 AY005 round-trip"]
+    BH2 --> BH4["BH004 cache-neutral"]
+    BH1 --> BH5["BH005 bridge fidelity audit"]
+  end
+
+  subgraph BI["BI — SDK Freeze + Publish (after BE+BF)"]
+    BI1["BI001 API audit"] --> BI2["BI002 experimental mark"] --> BI3["BI003 freeze + gate"] --> BI4["BI004 publish"] --> BI5["BI005 onboarding"]
+  end
+
+  priorClosed --> BE1
+  BE1 --> BF1
+  BE6 --> BF3
+  BE1 --> BG1
+  BF5 --> BH2
+  BE6 --> BI1
+  BF6 --> BI1
 ```
 
 
 ## 5. Issue-Level Definition of Done
 
 The active chain is not closed until every applicable statement below is true in the repository and in the live constitution.
+
+### SaaS-Readiness block (Epics BE–BI) — "Tuvren is embeddable as a multi-tenant SaaS substrate"
+
+- A host binds a Scope at backend/connection construction and gets isolation-by-construction: across memory, SQLite, and PostgreSQL, no read, enumeration, or existence check crosses a Scope, identical content in two Scopes is two independent durable objects, and the kernel syscall surface and gRPC interop remain scope-free (no scope argument). Cross-scope isolation conformance passes per backend; telemetry and transcripts are scope-correlated and carry no other Scope's data.
+- The kernel exposes a capability-gated `maintenance.reclamation` reachability primitive that releases only state unreachable from live roots, is grace-windowed against active leases, and is per-Scope; backends advertise support honestly and non-supporting backends reject with `kernel_capability_unsupported`. Sensitive untrusted-edge payloads (provider/tool/MCP/client results and carried continuity artifacts) are stored as host-key-encrypted references so erasure is crypto-shredding (host destroys the key) that renders the payload unrecoverable while the lineage hash structure stays intact; the tenant-offboarding flow (drop Scope + destroy keys) works. Data-lifecycle conformance proves no reachable state is released and erasure preserves lineage structure.
+- For shared multi-worker backends the lease-expiry clock is backend-authoritative (PostgreSQL server time), the `BackendCapability` advertises shared-lease-clock support, single-writer embedded backends keep the in-process clock, and recovery of a stale execution never re-runs an in-flight `nonRetryable` side effect: side-effecting invocations carry the `(runId, callId, fencingToken)` idempotency identity, and a stale or late client-reported result is a proposal that cannot mutate committed history. Preemption-under-clock-skew conformance proves at-most-once side effects and no stale-client commit.
+- The durable lineage is the unconditional source of truth for provider requests: a request is reconstructable from lineage alone, carried continuity artifacts are shreddable references, provider-side caching is proven correctness-neutral, the AY005 multi-turn `providerContinuity` round-trip is closed, and the AI SDK bridge `providerExecuted`/`dynamic` fidelity audit confirms provider-native attribution without spurious validation errors.
+- After Epics BE and BF land, the curated host-facing SDK is frozen under semantic versioning with an API-stability gate in the verification path, the `@tuvren/core/capabilities` advanced classes are marked experimental and excluded from the guarantee, no `Kraken*` internal type leaks on the public surface, the curated packages are published to the registry with peer-dependency version-skew safety and provenance, and an adopter can install and issue a first Turn from the published packages.
+- Each epic's first ticket (`KRT-BE001`, `KRT-BF001`, `KRT-BG001`, `KRT-BH001`) has aligned the docs-to-authority coverage matrix, authority packets, and conformance plans for the kernel v0.12 / framework v0.21 spec sections it implements, so `bun run verify` exits zero from a clean checkout once the block is complete (it is expected red on the planning branch before the block executes).
 
 ### Tooling block (Epics AW–BC) — "the tooling aspect is finished"
 

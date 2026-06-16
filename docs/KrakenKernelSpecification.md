@@ -1,7 +1,7 @@
 # Kraken Kernel Specification
 
-**Version**: v0.11
-**Status**: Frozen human semantic authority; machine portability classified by Epic AD
+**Version**: v0.12
+**Status**: Frozen human semantic authority; machine portability classified by Epic AD. v0.12 adds the SaaS-readiness target semantics (within-scope object identity §2.3, backend-authoritative lease clock §5.2, and the capability-gated reachability reclamation primitive §9.4); their portable machine authority is classified as deferred until the SaaS-readiness epics promote them through the authority packet, conformance, and evidence cascade.
 
 Read this before the framework specification. This document freezes the human semantic model for the kernel primitives only.
 
@@ -77,6 +77,8 @@ The raw byte representation of an Object's content. Content is semantic (framewo
 ### 2.3 Hash
 
 The content address for a stored Object. Computed from the canonical representation of the Blob. Identical Blobs produce identical Hashes. The kernel owns the hashing algorithm — it is the identity mechanism for the entire system.
+
+**Scope-resolved identity (v0.12).** The kernel computes the hash exactly as above; resolution of that hash to durable storage is confined to the Scope the durable substrate was constructed against. A Scope is a host-bound partition identity supplied at backend/connection construction, not a kernel syscall argument, so the kernel protocol surface is unchanged. The consequence is that identical content stored under two different Scopes occupies two independent durable objects and `store.has` / `store.get` can never observe content outside the constructing Scope. There is no cross-Scope deduplication; this isolation-by-construction is what keeps a content-address existence check from becoming a cross-tenant oracle. Realizing the Scope partition is a backend concern (a store per Scope, a Scope discriminator, or a row-level-isolated connection); the kernel's hashing and canonical-blob identity are untouched.
 
 ### 2.4 Object Store Operations
 
@@ -399,6 +401,8 @@ A leased `running` Run has:
 - renewal semantics that keep the Run `running` only while the current owner can prove possession of the latest token
 
 Lease renewal succeeds only for the current owner/token pair and only while the Run remains `running`. Renewal never applies to `paused`, `completed`, or `failed` Runs.
+
+**Backend-authoritative lease clock (v0.12).** When a backend is the shared rendezvous for more than one execution owner, the authority for whether a lease has expired is that backend's own clock, not any single owner's wall clock. Lease expiry stamping and expiry comparison are evaluated in backend time within the same transaction as the lease write or preemption check, and the renewal margin is measured in backend time on both sides so an owner relinquishes execution authority before the backend deems its lease preemptable. The `BackendCapability` descriptor (§9.1) advertises whether a backend can serve as an authoritative shared lease clock; single-writer embedded backends advertise non-support and use the in-process clock, which is correct because no cross-owner contention exists. This eliminates split-brain expiry under owner clock skew. It does not by itself prevent a non-idempotent external side effect already in flight at the instant authority is lost; that residue is a framework concern (side-effect-once under preemption), not a kernel one.
 
 #### Stale Running Preemption
 
@@ -932,6 +936,15 @@ All first-party backends (`backend-memory`, `backend-sqlite`, `backend-postgres`
 
 The `cursor` parameter to `thread.list` is **opaque to callers** at the kernel API level. Internally, the cursor encodes a `(lastCreatedAtMs: EpochMs, lastThreadId: string)` pair that identifies the last thread seen in the previous page. The backend resumes enumeration strictly after that pair, preserving stable pagination even when new threads are inserted concurrently.
 
+### 9.4 `maintenance.reclamation` Capability (v0.12)
+
+Controls whether the kernel's reachability-based reclamation primitive is available on a given backend. Reclamation is a **mechanism, not a retention policy**: the kernel decides structural reachability; the host decides which threads, branches, or Scopes are still wanted and calls reclamation through the framework maintenance surface.
+
+- **`true`**: Backend implements the reclamation backing operation. The kernel marks durable state reachable from live roots — non-archived Branch Heads, Thread roots, and active-Run staged work — within the constructing Scope, then sweeps only the unreachable remainder. Cross-branch structural sharing is honored because a shared Object stays marked via any live root. The sweep is **grace-windowed**: it must not release any durable state newer than the oldest active execution lease / in-flight write horizon, so reclamation can never race recovery or a live checkpoint.
+- **`false`**: Backend does not implement reclamation; any reclamation invocation is rejected with `TuvrenPersistenceError` code `kernel_capability_unsupported`. Object-store-style substrates may reclaim out of band and advertise non-support.
+
+Reclamation operates within a Scope (§2.3), so under isolation-by-construction it is naturally per-Scope; full tenant offboarding is dropping the Scope partition plus host destruction of the relevant payload-encryption keys (crypto-shredding — a substrate/edge concern outside the kernel, since the kernel stores only opaque blobs). Reclamation never edits committed lineage and never alters a reachable Object; it only releases unreachable storage. Adding the `maintenance.reclamation` capability bit is a semver-minor change (§9.1).
+
 ---
 
 ## Appendix C: Primitive Summary
@@ -950,8 +963,10 @@ The `cursor` parameter to `thread.list` is **opaque to callers** at the kernel A
 
 **Containment proofs**: Lineage walk to Thread root for membership, direction detection, and cross-thread rejection.
 
-**Deferred**: Merge rules for branches. Garbage collection of unreferenced Objects and archive Branches.
+**Maintenance**: Reachability reclamation (capability-gated §9.4, grace-windowed, Scope-confined) releases unreferenced Objects and archive Branches; mechanism only, host owns retention policy.
+
+**Deferred**: Merge rules for branches.
 
 ---
 
-_v0.11. Kernel has 30 operations across 10 groups, 18 invariants. `thread.list` remains the latest syscall addition (capability-gated, §9); v0.11 adds the normative Crash Recovery Invariant note for the AU durability proof without changing the syscall count. Companion rationale is explanatory only and non-contract._
+_v0.12. Kernel has 31 operations across 10 groups, 18 invariants. The capability-gated reachability reclamation primitive (`maintenance.reclamation`, §9.4) is the latest addition, joining the capability-gated `thread.list`; v0.12 also adds scope-resolved object identity (§2.3) and the backend-authoritative lease clock (§5.2) as SaaS-readiness target semantics whose portable machine authority is deferred until the SaaS-readiness epics promote them. Companion rationale is explanatory only and non-contract._
