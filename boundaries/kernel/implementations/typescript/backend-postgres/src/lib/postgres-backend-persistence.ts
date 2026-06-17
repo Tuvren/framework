@@ -157,6 +157,14 @@ export async function ensurePostgresSchemaInitialized(
   const initialSnapshotBytes = encodeSnapshot(createEmptyState());
 
   await sql.begin(async (tx) => {
+    // Serialize concurrent initializers of the same schema. Multiple backends
+    // bound to different scopes routinely share one schema (the row-level
+    // isolation model), so a host reconstructing per-request scoped backends can
+    // first-touch the same schema concurrently. A transaction-scoped advisory
+    // lock keyed on the schema name makes the idempotent `CREATE SCHEMA`/
+    // `CREATE TABLE` and the one-time scope-partition migration race-free; it is
+    // released automatically when this transaction commits or rolls back.
+    await tx.unsafe("SELECT pg_advisory_xact_lock(hashtext($1))", [schemaName]);
     await tx.unsafe(
       `CREATE SCHEMA IF NOT EXISTS ${quoteIdentifier(schemaName)}`
     );
@@ -181,6 +189,10 @@ export async function ensurePostgresSchemaInitialized(
     // isolation). The pre-existing row becomes the default scope's snapshot, so
     // existing single-scope databases keep working unchanged.
     await migrateSnapshotsToScopePartition(tx, schemaName, snapshotsTable);
+    // Record the ledger at the current schema level. A brand-new schema is
+    // created directly in the 0002 (scope-partitioned) shape, so both names are
+    // recorded even though no `ALTER` literally ran — the ledger encodes "this
+    // schema is at the 0002 shape", not which statements executed.
     await tx.unsafe(
       `INSERT INTO ${migrationsTable} (name, applied_at_ms)
        VALUES ($1, $2), ($3, $4)

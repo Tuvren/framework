@@ -205,6 +205,39 @@ describe("@tuvren/backend-postgres scope isolation (KRT-BE005)", () => {
     await closeBackend(second);
   });
 
+  test("two scopes initializing the same fresh schema concurrently both succeed and stay isolated", async () => {
+    const baseOptions = createPostgresTestBackendOptions();
+    const scopeA = createPostgresBackend({ ...baseOptions, scope: "tenant-a" });
+    const scopeB = createPostgresBackend({ ...baseOptions, scope: "tenant-b" });
+
+    const recordA = await createStoredObjectRecord(new Uint8Array([10]), 1);
+    const recordB = await createStoredObjectRecord(new Uint8Array([20]), 2);
+
+    // Force concurrent first-touch initialization of the shared schema: the two
+    // scoped backends race `ensureInitialized`, which the schema-keyed advisory
+    // lock serializes so neither init collides on the idempotent DDL.
+    await Promise.all([
+      scopeA.transact(async (tx) => {
+        await tx.objects.put(recordA);
+      }),
+      scopeB.transact(async (tx) => {
+        await tx.objects.put(recordB);
+      }),
+    ]);
+
+    await scopeA.transact(async (tx) => {
+      expect(await tx.objects.has(recordA.hash)).toBe(true);
+      expect(await tx.objects.has(recordB.hash)).toBe(false);
+    });
+    await scopeB.transact(async (tx) => {
+      expect(await tx.objects.has(recordB.hash)).toBe(true);
+      expect(await tx.objects.has(recordA.hash)).toBe(false);
+    });
+
+    await closeBackend(scopeA);
+    await closeBackend(scopeB);
+  });
+
   test("the default scope is just another row: it is isolated from a named scope sharing the schema", async () => {
     const baseOptions = createPostgresTestBackendOptions();
     const defaultRecord = await createStoredObjectRecord(
