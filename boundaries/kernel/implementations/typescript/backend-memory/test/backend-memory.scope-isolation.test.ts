@@ -26,6 +26,7 @@ import {
   createStoredSchemaRecord,
   createStoredTurnNodeRecord,
   createStoredTurnTreeRecord,
+  delay,
 } from "@tuvren/kernel-testkit";
 import { createCanonicalTurnTreePaths } from "./backend-memory-test-helpers.js";
 
@@ -154,6 +155,56 @@ describe("@tuvren/backend-memory scope isolation (KRT-BE003)", () => {
     await second.transact(async (tx) => {
       expect(await tx.objects.has(record.hash)).toBe(true);
     });
+  });
+
+  test("serializes transactions across separate backend instances sharing a scope and store", async () => {
+    const store = createMemoryScopeStore();
+    const first = createMemoryBackend({ scope: "tenant-x", store });
+    const second = createMemoryBackend({ scope: "tenant-x", store });
+    const order: string[] = [];
+
+    const firstTransaction = first.transact(async () => {
+      order.push("first:start");
+      await delay(20);
+      order.push("first:end");
+    });
+    const secondTransaction = second.transact(() => {
+      order.push("second:start");
+      order.push("second:end");
+      return Promise.resolve();
+    });
+
+    await Promise.all([firstTransaction, secondTransaction]);
+    // The store's per-Scope lock serializes the two instances: the second
+    // transaction never interleaves with the first, even across instances.
+    expect(order).toEqual([
+      "first:start",
+      "first:end",
+      "second:start",
+      "second:end",
+    ]);
+  });
+
+  test("transactions for distinct scopes sharing a store run concurrently (no cross-scope lock contention)", async () => {
+    const store = createMemoryScopeStore();
+    const scopeA = createMemoryBackend({ scope: "tenant-a", store });
+    const scopeB = createMemoryBackend({ scope: "tenant-b", store });
+    const order: string[] = [];
+
+    const aTransaction = scopeA.transact(async () => {
+      order.push("a:start");
+      await delay(20);
+      order.push("a:end");
+    });
+    const bTransaction = scopeB.transact(() => {
+      order.push("b:start");
+      order.push("b:end");
+      return Promise.resolve();
+    });
+
+    await Promise.all([aTransaction, bTransaction]);
+    // Distinct scopes do not contend, so scope B completes while scope A waits.
+    expect(order).toEqual(["a:start", "b:start", "b:end", "a:end"]);
   });
 
   test("default unscoped backends each own a private isolated substrate", async () => {

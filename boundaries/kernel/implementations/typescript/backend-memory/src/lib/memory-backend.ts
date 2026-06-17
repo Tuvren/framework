@@ -15,7 +15,12 @@
  */
 
 import { AsyncLocalStorage } from "node:async_hooks";
-import { assertScope, DEFAULT_SCOPE, type EpochMs, type Scope } from "@tuvren/core";
+import {
+  assertScope,
+  DEFAULT_SCOPE,
+  type EpochMs,
+  type Scope,
+} from "@tuvren/core";
 import {
   assertStoredBranch,
   assertStoredObject,
