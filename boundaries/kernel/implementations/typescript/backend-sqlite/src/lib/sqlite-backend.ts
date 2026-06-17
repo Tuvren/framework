@@ -673,6 +673,10 @@ function resolveScopedDatabasePath(
  * component for an opaque host Scope by hashing it. Reopening the same Scope
  * resolves to the same file, so a scoped database persists across the
  * per-request backends a host reconstructs for a tenant.
+ *
+ * The 32-hex-char (128-bit) truncation is a deliberate collision budget: it is
+ * far beyond any realistic number of distinct scopes per host while keeping the
+ * derived filename short. Do not shorten it without reassessing that budget.
  */
 function scopeFileSlug(scope: Scope): string {
   return createHash("sha256").update(scope, "utf8").digest("hex").slice(0, 32);

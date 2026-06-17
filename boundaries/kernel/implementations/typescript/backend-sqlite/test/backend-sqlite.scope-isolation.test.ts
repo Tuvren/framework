@@ -15,6 +15,8 @@
  */
 
 import { deepStrictEqual, ok, strictEqual, throws } from "node:assert/strict";
+import { readdirSync } from "node:fs";
+import { basename, dirname } from "node:path";
 import { describe, test } from "node:test";
 import type { RuntimeBackend, StoredThread } from "@tuvren/kernel-protocol";
 import {
@@ -27,6 +29,10 @@ import {
 } from "@tuvren/kernel-testkit";
 import { createSqliteBackend } from "../src/index.js";
 import { createTempDatabasePath } from "./backend-sqlite-test-helpers.js";
+
+// Strips the trailing filename extension so a derived scope sibling can be
+// matched against the verbatim database file stem.
+const TRAILING_EXTENSION = /\.[^.]*$/u;
 
 // Seeds a minimal thread (schema + genesis turn tree/node + thread) so
 // enumeration isolation can be asserted via threads.list.
@@ -207,6 +213,16 @@ describe("@tuvren/backend-sqlite scope isolation (KRT-BE004)", () => {
       strictEqual(await tx.objects.has(defaultRecord.hash), true);
       strictEqual(await tx.objects.has(scopedRecord.hash), false);
     });
+
+    // Pin the file-per-scope mechanism itself (SPK-BE002 Option A): the default
+    // scope keeps the verbatim file and the non-default scope produced a derived
+    // sibling, so isolation rests on two physical databases, not one shared file.
+    const verbatimName = basename(databasePath);
+    const verbatimStem = verbatimName.replace(TRAILING_EXTENSION, "");
+    const siblingPattern = new RegExp(`^${verbatimStem}\\.scope-[0-9a-f]+`);
+    const directoryEntries = readdirSync(dirname(databasePath));
+    ok(directoryEntries.includes(verbatimName));
+    ok(directoryEntries.some((name) => siblingPattern.test(name)));
 
     await defaultBackend.close();
     await scopedBackend.close();
