@@ -923,9 +923,96 @@ function toInventoryEntry(entry: CoverageEntry): ClaimInventoryEntry {
   };
 }
 
+// Kernel v0.12 / framework v0.21 SaaS-readiness *target* semantics are frozen
+// human authority whose PORTABLE machine authority is deliberately deferred
+// until the SaaS-readiness epics (BE/BF/BG/BH) promote it through the
+// authority-packet + conformance + evidence cascade. Without explicit routing
+// each claim would inherit its enclosing section's
+// `authority-backed-conformance-covered` label by section-key prefix and falsely
+// report coverage that does not exist yet, directly contradicting the
+// "classified as deferred until the SaaS-readiness epics promote them" status
+// lines in both specs. Route the version-status headers to explicitly-deferred
+// and each behavioral target claim to its owning epic's alignment ticket.
+function classifySaaSReadinessTargetClaim(
+  section: string,
+  text: string
+): ClassificationDecision | null {
+  if (
+    text.includes("saas-readiness target semantics") &&
+    text.includes("deferred until the saas-readiness epics")
+  ) {
+    return deferredDecision(
+      "saas-readiness target authority status",
+      "The v0.12/v0.21 status header lists SaaS-readiness target semantics whose portable machine authority is deferred until the SaaS-readiness epics (BE/BF/BG/BH) promote them."
+    );
+  }
+
+  if (text.includes("scope-resolved identity (v0.12)")) {
+    return missingConformanceDecision(
+      "kernel scope-resolved identity",
+      EVIDENCE.kernelProtocol,
+      "KRT-BE001",
+      "Scope-confined object resolution and isolation-by-construction are SaaS-readiness target semantics; portable conformance lands when EPIC-BE promotes kernel spec §2.3."
+    );
+  }
+
+  if (
+    text.includes("backend-authoritative lease clock (v0.12)") ||
+    text.includes("backend-authoritative lease clock (v0.21)")
+  ) {
+    return missingConformanceDecision(
+      "backend-authoritative lease clock",
+      EVIDENCE.runLiveness,
+      "KRT-BG001",
+      "Backend-time lease stamping and expiry comparison are SaaS-readiness target semantics; portable conformance lands when EPIC-BG promotes kernel spec §5.2 and the framework Running Lease Ownership note."
+    );
+  }
+
+  if (text.includes("side-effect-once under preemption (v0.21)")) {
+    return missingConformanceDecision(
+      "side-effect-once under preemption",
+      EVIDENCE.runLiveness,
+      "KRT-BG001",
+      "The (runId, callId, fencingToken) idempotency envelope, no-retry of in-flight nonRetryable, and client-result-as-proposal invariant are SaaS-readiness target semantics promoted by EPIC-BG."
+    );
+  }
+
+  if (text.includes("conversation-state ownership (v0.21)")) {
+    return missingConformanceDecision(
+      "conversation-state ownership",
+      EVIDENCE.runtimeApi,
+      "KRT-BH001",
+      "Reconstruct-from-lineage as the unconditional source of truth is a SaaS-readiness target semantic; portable conformance lands when EPIC-BH promotes the framework conversation-state note."
+    );
+  }
+
+  // §9.4 carries the new reclamation primitive directly; the appendix capability
+  // index also summarizes "Reachability reclamation". Both are the same deferred
+  // target surface, so neither may inherit conformance coverage.
+  if (
+    (isSection(section, "9.4") ||
+      (section === "appendix" && text.includes("reachab"))) &&
+    text.includes("reclamation")
+  ) {
+    return missingConformanceDecision(
+      "kernel reachability reclamation",
+      EVIDENCE.kernelProtocol,
+      "KRT-BF001",
+      "The capability-gated, grace-windowed reachability reclamation primitive (kernel spec §9.4) is a SaaS-readiness target semantic; portable conformance lands when EPIC-BF promotes the maintenance.reclamation surface."
+    );
+  }
+
+  return null;
+}
+
 function classifyFrameworkClaim(claim: NormativeClaim): ClassificationDecision {
   const section = claim.sectionKey;
   const text = claim.text.toLowerCase();
+
+  const saasTargetDecision = classifySaaSReadinessTargetClaim(section, text);
+  if (saasTargetDecision != null) {
+    return saasTargetDecision;
+  }
 
   // KRT-BD008: §4.12 Execution Bounds is the framework-owned guard above
   // LoopPolicy (ADR-043). Route every §4.12 claim deterministically to the
@@ -1333,6 +1420,10 @@ function classifyFrameworkRuntimeSection(
 function classifyKernelClaim(claim: NormativeClaim): ClassificationDecision {
   const section = claim.sectionKey;
   const text = claim.text.toLowerCase();
+  const saasTargetDecision = classifySaaSReadinessTargetClaim(section, text);
+  if (saasTargetDecision != null) {
+    return saasTargetDecision;
+  }
   const portabilityNoteDecision = classifyKernelPortabilityNoteText(text);
   if (portabilityNoteDecision != null) {
     return portabilityNoteDecision;

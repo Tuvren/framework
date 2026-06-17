@@ -83,3 +83,23 @@
 - **Risk:** A leased client endpoint is unavailable, slow, or returns a stale result after its lease expires.
 - **Why it matters:** The runtime could block a turn, double-dispatch an invocation, or accept a stale client-reported result as authoritative, corrupting the invocation record.
 - **Mitigation or follow-up:** Apply the Client-Endpoint Lease Model: track availability, return a typed unavailable-binding outcome when absent, and ignore late completions after lease expiry so they cannot mutate the invocation.
+
+- **Risk:** Durable identity or enumeration spans scopes, so one scope can read, list, or probe the existence of another scope's content.
+- **Why it matters:** A shared content-address space turns `store.has(hash)` into a cross-tenant existence oracle, and an unscoped enumeration leaks one tenant's threads to another — a direct isolation breach for any host building a multi-tenant product.
+- **Mitigation or follow-up:** Apply the Tenancy & Scope Isolation Model: bind Scope at Durable State Boundary construction, resolve durable identity within the Scope (isolation-by-construction), and keep the kernel syscall surface scope-free so the isolation lives at the substrate. Conformance asserts that no read, enumeration, or existence check crosses a Scope.
+
+- **Risk:** Immutable content-addressed lineage grows without a reclamation mechanism, or sensitive payloads are inlined so a subject's data cannot be erased without rewriting committed history.
+- **Why it matters:** A host operating the runtime in production cannot satisfy storage retention limits or legal right-to-erasure / tenant-offboarding obligations, and the immutability that makes the runtime trustworthy becomes the reason it is non-compliant.
+- **Mitigation or follow-up:** Apply the Data Lifecycle, Reclamation & Erasure Model: a kernel reachability-based reclamation mechanism (grace-windowed against active leases) for unreferenced state, and host-key-encrypted references for sensitive untrusted-edge payloads so erasure is crypto-shredding (destroy the key) rather than history rewriting. The host owns retention policy and keys; the runtime owns the mechanism.
+
+- **Risk:** In a shared-backend, multi-worker deployment, lease expiry is judged against divergent worker wall clocks rather than the backend clock.
+- **Why it matters:** A garbage-collection-paused or partitioned worker keeps executing while a second worker preempts its lease; durable writes stay fenced, but an in-flight external side effect (a charge, a send, a remote write) can occur twice — exactly the failure a single-process runtime never had to consider.
+- **Mitigation or follow-up:** Apply the Backend-Authoritative Lease Clock Model (stamp and compare expiry in backend time when the backend is the shared rendezvous; relinquish authority before the backend deems the lease preemptable) plus the Side-Effect-Once Under Preemption Model (idempotency identity in the dispatch envelope, no retry of in-flight non-idempotent invocations, client-result-as-proposal). Conformance asserts no duplicated non-idempotent effect on stale-execution recovery.
+
+- **Risk:** The runtime comes to depend on a provider's server-side conversation state or stateful API for correctness.
+- **Why it matters:** Durability, recovery, and provider neutrality would couple to that provider's retention window and availability, undermining the single-source-of-execution-truth principle precisely as providers move from stateless to stateful execution.
+- **Mitigation or follow-up:** Apply the Conversation-State Ownership Model: the durable lineage is always authoritative and a provider request is always reconstructable from it; provider server-side state and continuity artifacts are reconstructable optimizations only, and provider-side caching stays correctness-neutral.
+
+- **Risk:** The public SDK surface is frozen and published before the scope seam and erasure model land.
+- **Why it matters:** The stable, semver-guaranteed contract would then have to break to admit a Scope or erasure parameter, breaking the very adopters the freeze was meant to serve.
+- **Mitigation or follow-up:** Apply the SDK Stability & Distribution Sequencing Model: land the tenancy and data-lifecycle work first, then freeze and publish, and keep in-flux surfaces behind an explicitly experimental boundary excluded from the stability guarantee. The execution plan must order the freeze epic after the tenancy and data-lifecycle epics.

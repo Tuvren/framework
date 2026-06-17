@@ -2,7 +2,7 @@
 
 ## 0. Version
 
-v0.9.0 — current local Stage 1 SemVer; full history in `changelog.md`.
+v0.10.0 — current local Stage 1 SemVer; full history in `changelog.md`.
 
 ## 1. Executive Summary & Target Archetype
 
@@ -49,6 +49,11 @@ v0.9.0 — current local Stage 1 SemVer; full history in `changelog.md`.
 - An operator can observe and reconstruct what a turn did — model interactions, tool calls, checkpoints, approvals, and recovery events — through a first-class telemetry surface, and can export that telemetry to standard tooling without coupling to runtime internals.
 - A host can connect untrusted external tool sources and run sensitive tool work while trusting that inputs are validated, approval gates cannot be bypassed, runaway loops and resource exhaustion are bounded, and provider credentials never leak into durable state, telemetry, or transcripts.
 - A builder can expose the same logical capability (for example search or code execution) through different execution classes — provider-native, Tuvren-server, provider-mediated, or client-side — and trust that the runtime applies policy before exposure and before invocation, resolves each model-visible call to a known execution class, and represents honestly what it can observe, persist, resume, cancel, retry, or audit for that class.
+- A host developer can build a multi-tenant product in the topology of their choice (shared store with row-level isolation, store-per-tenant, central-metadata-plus-per-tenant-store, or fully decentralized) by binding a scope at construction, and can trust that one scope can never read, enumerate, or probe the existence of another scope's durable state.
+- A host operator can satisfy retention limits and right-to-erasure — including full tenant offboarding — by reclaiming unreferenced durable state and crypto-shredding sensitive payloads under host-held keys, without breaking lineage integrity or losing the audit structure of what remains.
+- A host running the runtime across more than one worker can trust that recovering a stale execution never re-runs a non-idempotent side effect and that a stale or late client-reported result can never mutate committed history.
+- A builder can trust that the runtime remains the source of truth for conversation state — a provider request is always reconstructable from durable lineage — even when the chosen provider offers stateful, server-side conversation APIs.
+- A host developer can install a versioned, published SDK from the standard package registry, pin the stable core, and tell at a glance which surfaces are still experimental and excluded from the stability guarantee.
 
 ### 1.3 Scope Distinctions That Must Remain Stable
 
@@ -69,12 +74,12 @@ v0.9.0 — current local Stage 1 SemVer; full history in `changelog.md`.
 
 ### 1.4 Strategic Direction (Near-Term)
 
-The documented v1 runtime surface is functionally complete in the first implementation line. The near-term product goal is therefore not new runtime surface area but **trustworthiness and adoption**: making Tuvren Runtime something both its own maintainers and external host developers will build real products on.
+The documented v1 runtime surface and the production-trust block are functionally complete in the first implementation line. The near-term product goal is therefore not new runtime surface area but **SaaS-readiness and adoption**: making Tuvren Runtime safe and stable enough for an external host to build a serious multi-tenant product on it without forking the runtime, and publishable enough that first-party and external hosts can depend on it as a released package.
 
-- **Primary goal:** external host adoption combined with first-party dogfooding. Both audiences need the same thing first — a runtime whose durability, recovery, observability, and trust-boundary promises are demonstrably true.
-- **Deprioritized (not abandoned):** multi-language implementation parity as an architectural showcase. The language-neutral semantic posture and authority discipline remain non-negotiable, but a second full implementation line is explicitly below adoption and dogfooding in priority.
-- **Active scope:** the production-trust capabilities and constraints introduced in this revision (durability-under-failure verification, operational observability, and execution-safety / trust-boundary controls).
-- **Deferred post-trust roadmap themes (to be planned in a later session, recorded in `Tasks.md` deferred scope):** performance characterization with regression budgets; public SDK API-stability guarantees and package publication; documentation and onboarding for external adopters; and a first-party reference application that dogfoods the SDK end to end. These themes are captured so a future planning session inherits clear focus; they are intentionally not decomposed into tickets yet.
+- **Primary goal — the SaaS-Readiness program:** the capabilities introduced in this revision (CAP-P0-064 through CAP-P0-070) that let any host embed Tuvren as a multi-tenant SaaS substrate while the product stays an embeddable runtime rather than a hosted service: a tenancy-agnostic scope seam with isolation-by-construction, a data-lifecycle reclamation mechanism with crypto-shredding erasure, side-effect-once execution under preemption, conversation-state ownership independent of provider-stateful APIs, and a versioned, registry-published stable SDK contract.
+- **Sequencing keystone:** the scope/isolation decision (CAP-P0-064/065) and the data-lifecycle decision (CAP-P0-066/067) land before the SDK is frozen and published (CAP-P0-070), so the stable public surface already accounts for scope and erasure rather than breaking on them afterward.
+- **Deprioritized (not abandoned):** multi-language implementation parity as an architectural showcase. The language-neutral semantic posture and authority discipline remain non-negotiable, but a second full implementation line stays below SaaS-readiness and adoption in priority.
+- **Deferred roadmap themes (named, intentionally not yet decomposed):** native first-party provider clients for Anthropic, OpenAI, and Gemini — held behind a named trigger (provider statefulness that cannot round-trip through the baseline bridge contract, or context-manifest-driven optimizations the bridge cannot express); performance characterization with regression budgets; documentation and onboarding for external adopters; and a first-party reference application that dogfoods the SDK end to end.
 
 
 ## Appendix: Operator Preferences

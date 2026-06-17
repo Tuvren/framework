@@ -351,6 +351,51 @@
 - **Capability:** The product must isolate sensitive credentials and provider secrets from durable state, operational telemetry, and transcripts, so that persisted history, exported observability data, and replayable transcripts never carry secrets that were only needed transiently to reach a provider or tool.
 - **Rationale:** The runtime's durability, observability, and replay surfaces all persist or emit execution data; without explicit isolation, the very features that make Tuvren trustworthy would become the channel through which credentials leak.
 
+### Epic: Tenancy-Agnostic Scope and Isolation
+
+- **Priority:** P0
+- **Capability ID:** CAP-P0-064
+- **Capability:** The product must expose a scope seam — a host-bound partition identity established when a runtime or backend is constructed — so a host can give each tenant an isolated slice of durable state, while the product itself never defines, authenticates, routes, or discovers tenants.
+- **Rationale:** Hosts must be able to build multi-tenant products in any topology they choose (shared store with row-level isolation, store-per-tenant, central-metadata-plus-per-tenant-store, or fully decentralized) on one SDK. Tenancy is a host policy concern, but the product must supply the isolation mechanism the host binds against, or every host re-implements it unsafely.
+
+- **Priority:** P0
+- **Capability ID:** CAP-P0-065
+- **Capability:** The product must guarantee isolation-by-construction: durable identity (content addressing) is resolved within a scope, so identical content in two scopes is stored independently and no scope can observe the existence of another scope's content.
+- **Rationale:** Global content addressing across scopes turns an existence check into a cross-tenant oracle. Scoping durable identity closes that leak and makes reclamation and erasure naturally per-scope.
+
+### Epic: Data Lifecycle and Erasure
+
+- **Priority:** P0
+- **Capability ID:** CAP-P0-066
+- **Capability:** The product must provide a reclamation mechanism that identifies durable state no longer reachable from live lineage and releases it safely — never deleting state still referenced by any live branch and never racing active execution.
+- **Rationale:** Long-lived, immutable, content-addressed history grows without bound; a host operating the runtime in production needs a structural way to reclaim unreferenced state. Reclamation is a mechanism the product owns; which data to retain is a host policy.
+
+- **Priority:** P0
+- **Capability ID:** CAP-P0-067
+- **Capability:** The product must support erasure of sensitive payloads — provider, client, MCP, and tool results, plus any carried provider continuity artifacts — such that the payload becomes unrecoverable while the lineage hash structure stays intact, with the erasure authority (keys) held by the host rather than the runtime.
+- **Rationale:** Immutable Merkle lineage cannot be edited to remove a subject's data without breaking history. Storing untrusted-edge payloads as host-key-encrypted references lets the runtime satisfy retention limits and right-to-erasure (for example tenant offboarding) without sacrificing lineage integrity or taking on key-management responsibility.
+
+### Epic: Execution Sovereignty Under Preemption
+
+- **Priority:** P0
+- **Capability ID:** CAP-P0-068
+- **Capability:** The product must ensure that recovering a stale execution can never cause a non-idempotent side effect to occur twice: an in-flight side-effecting invocation under a lost execution lease must not be retried, a client-reported result must be treated as a proposal that becomes durable state only under valid execution authority, and side-effecting invocations must be able to carry an idempotency identity so an external system can deduplicate a retried effect.
+- **Rationale:** When a worker is preempted (process pause, partition) and its work is recovered elsewhere, durable state is already protected by the runtime's ownership checks, but external side effects are not. Without explicit side-effect-once handling, a recovered turn can double-charge, double-send, or double-write to systems the runtime does not own.
+
+### Epic: Conversation-State Ownership
+
+- **Priority:** P0
+- **Capability ID:** CAP-P0-069
+- **Capability:** The product must remain the unconditional source of truth for conversation state: a provider request must always be reconstructable from the product's own durable lineage, provider-managed server-side state and continuity artifacts must be treated as reconstructable optimizations that are never required for correctness, and provider-side caching must remain correctness-neutral.
+- **Rationale:** Delegating conversation state to a provider's stateful API couples durability, portability, and recovery to that provider's retention and availability. Keeping the lineage authoritative preserves the product's core durability promise and provider neutrality even as providers move from stateless to stateful execution. This strengthens CAP-P1-031.
+
+### Epic: SDK Stability and Distribution
+
+- **Priority:** P0
+- **Capability ID:** CAP-P0-070
+- **Capability:** The product must offer a versioned, stable public host-facing SDK contract distributed through the standard package registry, with any not-yet-stable surface explicitly separated and marked experimental so adopters can depend on the stable core without absorbing churn from evolving surfaces.
+- **Rationale:** A host cannot build a production product on an unpublished, unversioned SDK. Promoting API stability and publication to active scope is the precondition for external adoption and for first-party hosts to depend on the runtime as a released dependency.
+
 ### 4.1 Scope Notes
 
 - The PRD intentionally treats persistence, streaming, tool dispatch, approvals, context engineering, orchestration, host-developer ergonomics, single-tenant durable reads, and the curated SDK surface as product capabilities because they materially define the user-facing value of Tuvren Runtime as a runtime.
@@ -361,6 +406,7 @@
 - The proving-host clarification of the right high-level SDK boundary that was previously deferred is now considered closed; the consolidated curated SDK surface and the batteries-included entrypoint are the v1 commitments and downstream artifacts may plan around them.
 - The capability-orchestration model reframes how tools are represented without removing any existing tool capability: a developer-defined tool executed by the runtime (CAP-P0-013) is the Tuvren-server execution class, validated tool inputs (CAP-P1-015) and approval gating (CAP-P0-016/CAP-P0-017) continue to apply, and the MCP client integration (CAP-P0-041) becomes an MCP binding. Provider-native, provider-mediated, and Tuvren-client classes are additive.
 - The capability-orchestration capabilities (CAP-P0-056 through CAP-P1-063) define the target model; their implementation is phased, with the core split delivered first and the deep per-class build-out (notably the Tuvren-client endpoint lifecycle and advanced policy) sequenced behind it. The PRD commits to the model; sequencing lives in the execution plan.
+- The SaaS-readiness capabilities (CAP-P0-064 through CAP-P0-070) make the runtime embeddable as a multi-tenant SaaS substrate without the product itself becoming a hosted service. They are mechanism commitments — a scope seam, scoped identity, reclamation, erasure, side-effect-once recovery, conversation-state ownership, and a published stable SDK — that hosts compose into their own tenancy, retention, and deployment policy. The product still does not ship a hosted control plane or define tenant policy.
 
 ### 4.2 Distinction Notes
 
@@ -377,6 +423,13 @@
 - A curated SDK surface is not a megapackage; primitives live in one shared package with subpath exports, but backends, stream adapters, drivers, provider bridges, and the MCP client remain separate leaf packages that peer-depend on the shared primitives.
 - Tool surface, capability, binding, and execution class are four distinct concepts: the surface is model-facing, the capability is the authority to act, the binding ties a capability to an execution class and endpoint, and the execution class names who owns the invocation.
 - Exposure-time policy and invocation-time policy are distinct decisions: one decides whether the model ever sees a surface, the other decides whether a resolved capability may actually run.
+- Tenancy mechanism vs. tenancy policy: the product owns the scope seam and isolation-by-construction (mechanism); the host owns what a tenant is, how tenants authenticate, how scopes map to stores, and cross-tenant discovery (policy).
+- Scoped vs. global content addressing: durable identity is resolved within a scope, so the same content in two scopes is two durable objects and existence is never observable across scopes; this is deliberate, not a deduplication regression.
+- Reclamation mechanism vs. retention policy: the runtime can identify and release unreferenced durable state; the host decides which threads, branches, or scopes are still wanted and when.
+- Erasure vs. deletion: erasure makes a sensitive payload unrecoverable by destroying its host-held key while preserving the lineage hash structure; it is not destructive editing of committed history.
+- Provider state as cache vs. source of truth: provider server-side state and continuity artifacts are reconstructable optimizations the runtime may carry but never depends on; the durable lineage is always authoritative.
+- Stable SDK core vs. experimental surface: the published, versioned host-facing contract is the stable core; surfaces still in flux are explicitly marked experimental and excluded from the stability guarantee.
+- Client-reported result as proposal vs. committed state: a client-executed capability returns a proposal that becomes durable state only through a runtime commit under valid execution authority; a stale or late client report can never mutate committed history.
 
 
 ## 6. Boundary Analysis
@@ -413,4 +466,9 @@
 - Exposure-time and invocation-time policy decisions over tool surfaces and capabilities
 - Per-execution-class observation and control limits, and a runtime event distinction between provider-native and Tuvren-owned invocations
 - Classification of MCP as a binding mechanism across execution classes rather than as an execution class
+- A tenancy-agnostic scope seam bound at host or backend construction, with isolation-by-construction (scope-resolved content addressing) so a host can build any multi-tenant topology on one SDK
+- A reachability-based reclamation mechanism for unreferenced durable state and crypto-shredding erasure of sensitive untrusted-edge payloads under host-held keys, supporting retention limits and right-to-erasure
+- Side-effect-once execution under stale-execution recovery, including idempotency identity on side-effecting invocations and proposal-then-commit semantics for client-reported results
+- Conversation-state ownership independent of provider-stateful APIs, with provider server-side state and continuity artifacts treated as reconstructable optimizations
+- A versioned, registry-published stable host-facing SDK contract with an explicitly separated experimental surface
 

@@ -1,8 +1,8 @@
 # Kraken Framework Specification
 
-**Version**: v0.20
-**Status**: Human semantic authority; machine portability classified by Epic AD
-**Basis**: Kernel Specification v0.9 (frozen)
+**Version**: v0.21
+**Status**: Human semantic authority; machine portability classified by Epic AD. v0.21 adds the SaaS-readiness target semantics (conversation-state ownership, backend-authoritative lease clock at the framework liveness layer, and side-effect-once under preemption with the client-result-as-proposal invariant); their portable machine authority is classified as deferred until the SaaS-readiness epics promote them.
+**Basis**: Kernel Specification v0.12 (frozen)
 
 Read this after the kernel specification. This document defines the human semantic model for the initial Kraken framework driver behavior built on the frozen kernel.
 
@@ -83,6 +83,8 @@ ContentPart = TextPart | ReasoningPart | ToolCallPart | ToolResultPart | FilePar
 ```
 
 Design principles: one type per part (no bag-of-optional-fields). Tool call input is always parsed. Structured output data is always parsed. `callId` is framework-owned (provider-native IDs in `providerMetadata`). `providerMetadata` is structural — carries opaque tokens needed for multi-turn continuity (Anthropic’s `signature`, OpenAI’s `encrypted_content`, Google’s `thoughtSignature`). No provider-specific content types in the canonical model. Streaming is not in the content model — these types represent complete, durable content.
+
+**Conversation-state ownership (v0.21).** The durable lineage is the unconditional source of truth for a provider request: the Provider Gateway MUST always be able to reconstruct the next request from durable history alone. Provider-managed server-side conversation state and the `providerMetadata` continuity tokens above are reconstructable optimizations — carried when useful, never required for correctness — and provider-side caching (implicit, or explicit cache breakpoints) is correctness-neutral: a cache miss changes cost, never outcome. The runtime MUST NOT delegate conversation-state correctness to a provider's stateful API. Carried continuity tokens are sensitive untrusted-edge payloads subject to the Secret Isolation and erasure rules (stored as host-key-encrypted references), so they remain erasable without rewriting committed lineage.
 
 Structured output is assistant-authored structured data — a distinct content kind from freeform text and from tool use. It is not a tool call, does not require a tool result, and does not imply executable side effects. Tool calls remain for delegated actions and side effects. Structured output is model-generated data conforming to a requested schema.
 
@@ -991,6 +993,10 @@ At the kernel layer, closing a paused Run still uses the kernel's `paused -> fai
 Framework implementations that claim durable recovery of `running` Runs MUST configure an execution owner identity and lease policy before creating leased Runs. The owner identity is a host/framework runtime identity, not a model/provider identity.
 
 While a Turn is running, shared core is responsible for renewing the active Run lease before expiry. If renewal fails because the fencing token is stale, the active `ExecutionHandle` is invalidated: it MUST stop producing ordinary progress, surface a fatal runtime error, and must not attempt to persist further work under the stale owner token.
+
+**Backend-authoritative lease clock (v0.21).** When the durable backend is the shared rendezvous for more than one execution owner (the multi-worker SaaS deployment), shared core MUST defer to the backend's authoritative lease clock (kernel §5.2) for stamping and comparing lease expiry rather than comparing local wall-clock time, and MUST measure the renewal margin in backend time so it relinquishes execution authority before the backend deems the lease preemptable. Single-writer embedded backends keep the in-process clock because no cross-owner contention exists.
+
+**Side-effect-once under preemption (v0.21).** Backend-authoritative clocking and fencing protect *durable writes*; they do not by themselves prevent a non-idempotent *external* side effect already in flight when execution authority is lost. Shared core MUST therefore: (1) carry an idempotency identity derived from `(runId, callId, fencingToken)` on side-effecting invocation envelopes (Tuvren-server tool dispatch and the Client Endpoint Boundary dispatch envelope) so an external system or client environment can deduplicate a retried effect; (2) on loss of execution authority, NOT retry an in-flight invocation marked `nonRetryable` (`nonRetryable: true` continues to override `idempotent: true` in the retry budget), recovering only durably-staged completed results by `callId` as in §4.9; and (3) treat a client-reported result as a **proposal** that becomes durable state only through a runtime commit performed under a valid run fencing token, so a stale or late client report can never mutate committed history. The run execution lease (write authority) and the client-endpoint lease (availability/staleness) compose without being conflated.
 
 Lease ownership applies only to `running` Runs. Approval pause/resume uses the approval control surface below and MUST NOT be represented as execution-heartbeat renewal.
 

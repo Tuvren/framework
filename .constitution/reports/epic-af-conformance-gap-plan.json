@@ -1,7 +1,7 @@
 {
   "generatedBy": "bun tools/scripts/epic-af-conformance-gap-plan.ts",
   "matrixPath": ".constitution/reports/epic-ad-docs-to-authority-coverage-matrix.json",
-  "promoteNowClaims": 104,
+  "promoteNowClaims": 103,
   "surfaces": [
     {
       "adapterOperation": "runtime.approval-resolve; runtime.cancel-execution",
@@ -223,7 +223,6 @@
       "authorityPacket": "boundaries/kernel/contracts/protocol/spec/authority-packet.json",
       "claimIds": [
         "KER-1C9229916315",
-        "KER-31DD1923EEFB",
         "KER-36BDA9C8EAD8",
         "KER-3B60173B3983",
         "KER-41407CFFA30B",

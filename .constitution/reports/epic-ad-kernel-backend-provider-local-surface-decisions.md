@@ -6,7 +6,8 @@ Kernel, backend, provider, and tool surfaces are separated from cross-language a
 
 | Surface | Independent Claims | Classifications | Follow-up | Blocks future implementation line? |
 | --- | ---: | --- | --- | --- |
-| kernel appendix validation matrix | 21 | authority-backed-conformance-covered | KRT-AF006 | No, if kept local/deferred |
+| backend-authoritative lease clock | 1 | missing-conformance-follow-up | KRT-BG001 | Yes, until AF/docs evidence resolves it |
+| kernel appendix validation matrix | 20 | authority-backed-conformance-covered | KRT-AF006 | No, if kept local/deferred |
 | kernel backend acceleration indexes | 2 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
 | kernel backend physical storage | 2 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
 | kernel boundary framing | 2 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
@@ -16,10 +17,13 @@ Kernel, backend, provider, and tool surfaces are separated from cross-language a
 | kernel invariants | 9 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
 | kernel logical operations | 14 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
 | kernel protocol records | 11 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
+| kernel reachability reclamation | 4 | missing-conformance-follow-up | KRT-BF001 | Yes, until AF/docs evidence resolves it |
 | kernel recovery edge states | 7 | authority-backed-conformance-covered | KRT-AF006 | No, if kept local/deferred |
 | kernel run liveness | 10 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
+| kernel scope-resolved identity | 1 | missing-conformance-follow-up | KRT-BE001 | Yes, until AF/docs evidence resolves it |
 | kernel storage structural sharing | 1 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
 | provider API bridge | 2 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
+| saas-readiness target authority status | 2 | explicitly-deferred | Future TechSpec/Tasks revision after TypeScript freeze closure | No, if kept local/deferred |
 | tool and approval contracts | 7 | authority-backed-conformance-covered | KRT-AF004 | No, if kept local/deferred |
 | tool parallelism and event ordering | 2 | authority-backed-conformance-covered | KRT-AF004 | No, if kept local/deferred |
 
