@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type { EpochMs } from "@tuvren/core";
+import { DEFAULT_SCOPE, type EpochMs, type Scope } from "@tuvren/core";
 import {
   assertStoredBranch,
   assertStoredObject,
@@ -69,6 +69,8 @@ import type { BackendState } from "./memory-backend-types.js";
 
 const CURRENT_SNAPSHOT_VERSION = 1;
 const INITIAL_MIGRATION_NAME = "0001_initial_schema.sql";
+const SCOPE_PARTITION_MIGRATION_NAME = "0002_scope_partition.sql";
+const SNAPSHOTS_PRIMARY_KEY_NAME = "backend_postgres_snapshots_pkey";
 const SNAPSHOT_ROW_ID = 1;
 const VALID_SCHEMA_NAME_PATTERN = /^[a-z][a-z0-9_-]*$/;
 
@@ -80,6 +82,19 @@ export interface PostgresBackendPersistenceOptions {
   password?: string;
   port?: number;
   schemaName?: string;
+  /**
+   * Host-supplied partition identity bound at construction (ADR-048).
+   *
+   * Isolation is realized as row-level isolation under the single-blob snapshot
+   * model (ADR-049): each Scope owns its own snapshot row in the shared
+   * `backend_postgres_snapshots` table, keyed by the composite primary key
+   * `(snapshot_id, scope)`. Two backends sharing a schema (the same database)
+   * but bound to different Scopes therefore read and write independent snapshot
+   * rows and can never observe each other's state, with no cross-scope dedup.
+   * When omitted, the backend binds the default Scope, so existing single-scope
+   * databases keep working unchanged. Must be a non-empty string.
+   */
+  scope?: Scope;
   username?: string;
 }
 
@@ -128,7 +143,8 @@ export function normalizeSchemaName(schemaName: string | undefined): string {
 export async function ensurePostgresSchemaInitialized(
   sql: Sql,
   schemaName: string,
-  now: () => EpochMs
+  now: () => EpochMs,
+  scope: Scope
 ): Promise<void> {
   const migrationsTable = qualifyIdentifier(
     schemaName,
@@ -152,34 +168,93 @@ export async function ensurePostgresSchemaInitialized(
     );
     await tx.unsafe(
       `CREATE TABLE IF NOT EXISTS ${snapshotsTable} (
-        snapshot_id SMALLINT PRIMARY KEY,
+        snapshot_id SMALLINT NOT NULL,
+        scope TEXT NOT NULL,
         schema_version INTEGER NOT NULL,
         snapshot_cbor BYTEA NOT NULL,
-        updated_at_ms BIGINT NOT NULL
+        updated_at_ms BIGINT NOT NULL,
+        CONSTRAINT ${SNAPSHOTS_PRIMARY_KEY_NAME} PRIMARY KEY (snapshot_id, scope)
       )`
     );
+    // Migrate a pre-scope snapshot table (single `snapshot_id` primary key, one
+    // implicit scope) to the scope-partitioned shape (ADR-049 row-level
+    // isolation). The pre-existing row becomes the default scope's snapshot, so
+    // existing single-scope databases keep working unchanged.
+    await migrateSnapshotsToScopePartition(tx, schemaName, snapshotsTable);
     await tx.unsafe(
       `INSERT INTO ${migrationsTable} (name, applied_at_ms)
-       VALUES ($1, $2)
+       VALUES ($1, $2), ($3, $4)
        ON CONFLICT (name) DO NOTHING`,
-      [INITIAL_MIGRATION_NAME, now()]
+      [INITIAL_MIGRATION_NAME, now(), SCOPE_PARTITION_MIGRATION_NAME, now()]
     );
+    // Lazily create the constructing scope's snapshot row. A first-seen scope
+    // starts from the canonical empty state; a returning scope keeps its row.
     await tx.unsafe(
       `INSERT INTO ${snapshotsTable} (
          snapshot_id,
+         scope,
          schema_version,
          snapshot_cbor,
          updated_at_ms
-       ) VALUES ($1, $2, $3, $4)
-       ON CONFLICT (snapshot_id) DO NOTHING`,
-      [SNAPSHOT_ROW_ID, CURRENT_SNAPSHOT_VERSION, initialSnapshotBytes, now()]
+       ) VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (snapshot_id, scope) DO NOTHING`,
+      [
+        SNAPSHOT_ROW_ID,
+        scope,
+        CURRENT_SNAPSHOT_VERSION,
+        initialSnapshotBytes,
+        now(),
+      ]
     );
   });
 }
 
+/**
+ * Rewrites a legacy `backend_postgres_snapshots` table (primary key on
+ * `snapshot_id` alone, with one implicit-scope row) into the scope-partitioned
+ * shape used by ADR-049 row-level isolation: a `scope` column and a composite
+ * primary key `(snapshot_id, scope)`. The single legacy row is assigned the
+ * default scope. The migration is gated on the absence of the `scope` column so
+ * it is idempotent and a no-op for tables already created in the scoped shape.
+ */
+async function migrateSnapshotsToScopePartition(
+  tx: TransactionSql<Record<string, never>>,
+  schemaName: string,
+  snapshotsTable: string
+): Promise<void> {
+  const scopeColumns = await tx.unsafe<Array<{ column_name: string }>>(
+    `SELECT column_name
+       FROM information_schema.columns
+      WHERE table_schema = $1
+        AND table_name = 'backend_postgres_snapshots'
+        AND column_name = 'scope'`,
+    [schemaName]
+  );
+
+  if (scopeColumns.length > 0) {
+    return;
+  }
+
+  await tx.unsafe(`ALTER TABLE ${snapshotsTable} ADD COLUMN scope TEXT`);
+  await tx.unsafe(
+    `UPDATE ${snapshotsTable} SET scope = $1 WHERE scope IS NULL`,
+    [DEFAULT_SCOPE]
+  );
+  await tx.unsafe(
+    `ALTER TABLE ${snapshotsTable} ALTER COLUMN scope SET NOT NULL`
+  );
+  await tx.unsafe(
+    `ALTER TABLE ${snapshotsTable} DROP CONSTRAINT IF EXISTS ${SNAPSHOTS_PRIMARY_KEY_NAME}`
+  );
+  await tx.unsafe(
+    `ALTER TABLE ${snapshotsTable} ADD CONSTRAINT ${SNAPSHOTS_PRIMARY_KEY_NAME} PRIMARY KEY (snapshot_id, scope)`
+  );
+}
+
 export async function loadPersistedStateForUpdate(
   sql: Sql | TransactionSql<Record<string, never>>,
-  schemaName: string
+  schemaName: string,
+  scope: Scope
 ): Promise<BackendState> {
   const snapshotsTable = qualifyIdentifier(
     schemaName,
@@ -188,16 +263,17 @@ export async function loadPersistedStateForUpdate(
   const rows = await sql.unsafe<PersistedSnapshotRow[]>(
     `SELECT schema_version, snapshot_cbor
        FROM ${snapshotsTable}
-      WHERE snapshot_id = $1
+      WHERE snapshot_id = $1 AND scope = $2
       FOR UPDATE`,
-    [SNAPSHOT_ROW_ID]
+    [SNAPSHOT_ROW_ID, scope]
   );
   const row = rows[0];
 
   if (row === undefined) {
     throw persistenceError(
       "postgres backend snapshot row is missing",
-      "postgres_backend_missing_snapshot_row"
+      "postgres_backend_missing_snapshot_row",
+      { scope }
     );
   }
 
@@ -218,6 +294,7 @@ export async function loadPersistedStateForUpdate(
 export async function persistStateSnapshot(
   sql: Sql | TransactionSql<Record<string, never>>,
   schemaName: string,
+  scope: Scope,
   state: BackendState,
   updatedAtMs: EpochMs
 ): Promise<void> {
@@ -232,8 +309,14 @@ export async function persistStateSnapshot(
         SET schema_version = $1,
             snapshot_cbor = $2,
             updated_at_ms = $3
-      WHERE snapshot_id = $4`,
-    [CURRENT_SNAPSHOT_VERSION, snapshotBytes, updatedAtMs, SNAPSHOT_ROW_ID]
+      WHERE snapshot_id = $4 AND scope = $5`,
+    [
+      CURRENT_SNAPSHOT_VERSION,
+      snapshotBytes,
+      updatedAtMs,
+      SNAPSHOT_ROW_ID,
+      scope,
+    ]
   );
 }
 
