@@ -15,7 +15,7 @@
  */
 
 import { AsyncLocalStorage } from "node:async_hooks";
-import type { EpochMs } from "@tuvren/core";
+import { assertScope, DEFAULT_SCOPE, type EpochMs, type Scope } from "@tuvren/core";
 import {
   assertStoredBranch,
   assertStoredObject,
@@ -95,9 +95,10 @@ import {
   assertRunUpdateIsLegal,
 } from "./memory-backend-run-logic.js";
 import {
-  createEmptyState,
-  validateCommittedState,
-} from "./memory-backend-state.js";
+  createMemoryScopeStore,
+  type MemoryScopeStore,
+} from "./memory-backend-scope-store.js";
+import { validateCommittedState } from "./memory-backend-state.js";
 import {
   cloneState,
   getSchemaForSchemaId,
@@ -124,6 +125,20 @@ interface BackendFaultInjectionControl {
 
 export interface MemoryBackendOptions {
   now?: () => EpochMs;
+  /**
+   * Host-bound partition identity for this backend (ADR-048). All of this
+   * backend's stores resolve within this Scope, so content stored here is never
+   * observable through a backend bound to a different Scope. Defaults to
+   * `DEFAULT_SCOPE` (single-tenant behavior).
+   */
+  scope?: Scope;
+  /**
+   * Shared scope-keyed substrate (ADR-049). Pass the same store to multiple
+   * `createMemoryBackend` calls to isolate distinct Scopes by construction while
+   * letting backends bound to the same Scope share that Scope's durable state.
+   * Defaults to a private store owned solely by this backend.
+   */
+  store?: MemoryScopeStore;
 }
 
 const MEMORY_BACKEND_CAPABILITIES: BackendCapability = {
@@ -148,12 +163,19 @@ class MemoryBackend implements KrakenBackend {
     hooks: null,
   };
   private readonly transactionContext = new AsyncLocalStorage<boolean>();
-  private transactionQueue: Promise<void> = Promise.resolve();
-  private state: BackendState = createEmptyState();
+  private readonly store: MemoryScopeStore;
+  private readonly scope: Scope;
   private readonly now: () => number;
 
   constructor(options?: MemoryBackendOptions) {
     this.now = options?.now ?? Date.now;
+
+    if (options?.scope !== undefined) {
+      assertScope(options.scope, "options.scope");
+    }
+
+    this.scope = options?.scope ?? DEFAULT_SCOPE;
+    this.store = options?.store ?? createMemoryScopeStore();
   }
 
   capabilities(): BackendCapability {
@@ -164,7 +186,7 @@ class MemoryBackend implements KrakenBackend {
     return Promise.resolve({ ok: true });
   }
 
-  async transact<T>(work: (tx: KrakenBackendTx) => Promise<T>): Promise<T> {
+  transact<T>(work: (tx: KrakenBackendTx) => Promise<T>): Promise<T> {
     if (this.transactionContext.getStore() === true) {
       throw persistenceError(
         "memory backend transactions must not be nested",
@@ -172,17 +194,12 @@ class MemoryBackend implements KrakenBackend {
       );
     }
 
-    const priorTransaction = this.transactionQueue;
-    let releaseQueue: (() => void) | undefined;
-
-    this.transactionQueue = new Promise<void>((resolve) => {
-      releaseQueue = resolve;
-    });
-
-    await priorTransaction;
-
-    try {
-      const draftState = cloneState(this.state);
+    // Per-Scope serialization lives in the store, so every transaction for this
+    // Scope is serialized across all backend instances sharing the store while
+    // distinct Scopes never contend (ADR-049 scope-keyed substrate).
+    return this.store.runExclusive(this.scope, async () => {
+      const baseState = this.store.getState(this.scope);
+      const draftState = cloneState(baseState);
       let active = true;
       const repositories = createRepositories(
         draftState,
@@ -199,7 +216,7 @@ class MemoryBackend implements KrakenBackend {
         active = false;
       }
 
-      validateCommittedState(draftState, this.state);
+      validateCommittedState(draftState, baseState);
       await this.faultState.hooks?.beforeCommit?.();
 
       let committed = false;
@@ -208,7 +225,7 @@ class MemoryBackend implements KrakenBackend {
           throw new Error("memory backend commit hook attempted double commit");
         }
 
-        this.state = draftState;
+        this.store.setState(this.scope, draftState);
         committed = true;
         return Promise.resolve();
       };
@@ -227,9 +244,7 @@ class MemoryBackend implements KrakenBackend {
 
       await this.faultState.hooks?.afterCommitBeforeAck?.();
       return result;
-    } finally {
-      releaseQueue?.();
-    }
+    });
   }
 }
 

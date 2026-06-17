@@ -15,8 +15,14 @@
  */
 
 // biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional curated host-facing SDK surface.
-export type { MemoryBackendOptions } from "@tuvren/backend-memory";
-export { createMemoryBackend } from "@tuvren/backend-memory";
+export type {
+  MemoryBackendOptions,
+  MemoryScopeStore,
+} from "@tuvren/backend-memory";
+export {
+  createMemoryBackend,
+  createMemoryScopeStore,
+} from "@tuvren/backend-memory";
 export type { PostgresBackendOptions } from "@tuvren/backend-postgres";
 export {
   createPostgresBackend,
@@ -28,11 +34,15 @@ export type {
   EpochMs,
   HashString,
   KernelRecord,
+  Scope,
   TuvrenErrorCode,
   TuvrenErrorOptions,
 } from "@tuvren/core";
 export {
   assertHashString,
+  assertScope,
+  DEFAULT_SCOPE,
+  isScope,
   TuvrenError,
   TuvrenLineageError,
   TuvrenPersistenceError,

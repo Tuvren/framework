@@ -32,6 +32,10 @@ export {
   isHashString,
   isKernelRecord,
 } from "./lib/kernel-records.js";
+// Tenancy scope seam (ADR-048/049): a host-bound partition identity bound at
+// backend construction. The kernel syscall surface stays scope-free.
+export type { Scope } from "./lib/scope.js";
+export { assertScope, DEFAULT_SCOPE, isScope } from "./lib/scope.js";
 // Re-export error family at root for convenience per ADR-037.
 export type {
   TuvrenErrorCode,
