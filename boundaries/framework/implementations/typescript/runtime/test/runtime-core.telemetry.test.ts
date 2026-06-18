@@ -171,6 +171,9 @@ describe("runtime operational telemetry", () => {
 
     await collectEvents(handle.events());
 
+    // Guard against a vacuous pass: `every` is true on an empty array, so the
+    // default-scope claim is only meaningful once spans were actually emitted.
+    expect(capture.spans.length).toBeGreaterThan(0);
     expect(
       capture.spans.every(
         (span) => span.lineage.scope === "tuvren.scope.default"
