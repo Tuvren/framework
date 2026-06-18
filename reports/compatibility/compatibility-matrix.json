@@ -590,13 +590,16 @@
             "kernel-restart-af.paused-run-excluded-from-stale-preemption",
             "kernel.run-liveness.expired_listing",
             "kernel.run-liveness.lease_renewal",
-            "kernel.run-liveness.stale_preemption"
+            "kernel.run-liveness.stale_preemption",
+            "kernel.scope-isolation.enumeration_is_scope_confined",
+            "kernel.scope-isolation.store_get_is_scope_confined",
+            "kernel.scope-isolation.store_has_is_scope_confined"
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 56,
-            "totalChecks": 59,
-            "applicableChecks": 56,
+            "passedChecks": 59,
+            "totalChecks": 62,
+            "applicableChecks": 59,
             "nonApplicableChecks": 3
           },
           "declaredCapabilities": [
@@ -605,7 +608,8 @@
             "kernel.logical",
             "kernel.protocol",
             "kernel.restart-recovery",
-            "kernel.run-liveness"
+            "kernel.run-liveness",
+            "kernel.scope-isolation"
           ],
           "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-conformance-runner.json",
           "reportLabel": "TypeScript process-local kernel baseline",
@@ -681,13 +685,16 @@
             "kernel-restart-af.paused-run-excluded-from-stale-preemption",
             "kernel.run-liveness.expired_listing",
             "kernel.run-liveness.lease_renewal",
-            "kernel.run-liveness.stale_preemption"
+            "kernel.run-liveness.stale_preemption",
+            "kernel.scope-isolation.enumeration_is_scope_confined",
+            "kernel.scope-isolation.store_get_is_scope_confined",
+            "kernel.scope-isolation.store_has_is_scope_confined"
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 59,
-            "totalChecks": 59,
-            "applicableChecks": 59,
+            "passedChecks": 62,
+            "totalChecks": 62,
+            "applicableChecks": 62,
             "nonApplicableChecks": 0
           },
           "declaredCapabilities": [
@@ -697,7 +704,8 @@
             "kernel.persistence.durable",
             "kernel.protocol",
             "kernel.restart-recovery",
-            "kernel.run-liveness"
+            "kernel.run-liveness",
+            "kernel.scope-isolation"
           ],
           "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-sqlite-conformance-runner.json",
           "reportLabel": "TypeScript SQLite durable kernel",
@@ -773,13 +781,16 @@
             "kernel-restart-af.paused-run-excluded-from-stale-preemption",
             "kernel.run-liveness.expired_listing",
             "kernel.run-liveness.lease_renewal",
-            "kernel.run-liveness.stale_preemption"
+            "kernel.run-liveness.stale_preemption",
+            "kernel.scope-isolation.enumeration_is_scope_confined",
+            "kernel.scope-isolation.store_get_is_scope_confined",
+            "kernel.scope-isolation.store_has_is_scope_confined"
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 59,
-            "totalChecks": 59,
-            "applicableChecks": 59,
+            "passedChecks": 62,
+            "totalChecks": 62,
+            "applicableChecks": 62,
             "nonApplicableChecks": 0
           },
           "declaredCapabilities": [
@@ -789,7 +800,8 @@
             "kernel.persistence.durable",
             "kernel.protocol",
             "kernel.restart-recovery",
-            "kernel.run-liveness"
+            "kernel.run-liveness",
+            "kernel.scope-isolation"
           ],
           "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-postgres-conformance-runner.json",
           "reportLabel": "TypeScript PostgreSQL durable kernel",
@@ -941,9 +953,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 42,
-            "totalChecks": 59,
+            "totalChecks": 62,
             "applicableChecks": 42,
-            "nonApplicableChecks": 17
+            "nonApplicableChecks": 20
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",

@@ -8,13 +8,13 @@ Rust framework product work remains blocked until a later TechSpec/Tasks revisio
 
 ## Authority-Backed and Conformance-Covered Claims
 
-- Independent claims currently classified as authority-backed and conformance-covered: 216
+- Independent claims currently classified as authority-backed and conformance-covered: 217
 - Duplicate matrix rows linked by `duplicateOf`: 3
 - Evidence anchors: framework, provider, and kernel authority packets; shared conformance plans; boundary fixtures/scenarios; adapter capabilities; and compatibility evidence under `reports/compatibility/evidence/`.
 
 ## Remaining Surfaces
 
-- Potentially blocking because still implementation-local or stale-docs-corrected: 12
+- Potentially blocking because still implementation-local or stale-docs-corrected: 11
 - Non-blocking because they are explicitly implementation-defined or deferred: 33
 
 ## Remaining Surface Detail
@@ -35,7 +35,6 @@ Every remaining non-authority surface is listed below with its current posture. 
 | kernel deferred maintenance surfaces | 1 | explicitly-deferred | Future TechSpec/Tasks revision after TypeScript freeze closure | No, if kept local/deferred |
 | kernel docs-to-authority framing | 1 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
 | kernel reachability reclamation | 4 | missing-conformance-follow-up | KRT-BF001 | Yes, until AF/docs evidence resolves it |
-| kernel scope-resolved identity | 1 | missing-conformance-follow-up | KRT-BE007 | Yes, until AF/docs evidence resolves it |
 | kernel storage structural sharing | 1 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
 | orchestration optional worker modes | 1 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
 | orchestration out-of-core boundaries | 8 | explicitly-deferred | Future TechSpec/Tasks revision after TypeScript freeze closure | No, if kept local/deferred |

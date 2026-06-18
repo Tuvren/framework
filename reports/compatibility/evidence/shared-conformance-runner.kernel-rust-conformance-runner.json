@@ -1677,7 +1677,10 @@
     "kernel-restart-af.paused-run-excluded-from-stale-preemption",
     "kernel.run-liveness.expired_listing",
     "kernel.run-liveness.lease_renewal",
-    "kernel.run-liveness.stale_preemption"
+    "kernel.run-liveness.stale_preemption",
+    "kernel.scope-isolation.enumeration_is_scope_confined",
+    "kernel.scope-isolation.store_get_is_scope_confined",
+    "kernel.scope-isolation.store_has_is_scope_confined"
   ],
   "project": "kernel-rust-conformance-runner",
   "reportLabel": "Rust process-local kernel baseline",
@@ -1686,9 +1689,9 @@
   "summary": {
     "failedChecks": 0,
     "passedChecks": 42,
-    "totalChecks": 59,
+    "totalChecks": 62,
     "applicableChecks": 42,
-    "nonApplicableChecks": 17
+    "nonApplicableChecks": 20
   },
   "suiteId": "tuvren.kernel.protocol",
   "suiteVersion": "0.1.0"

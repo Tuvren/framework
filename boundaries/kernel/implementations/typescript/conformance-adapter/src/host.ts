@@ -64,6 +64,7 @@ import {
   stageFixtureResult,
   withConfiguredBackend,
   withConformanceKernel,
+  withScopedBackendPair,
 } from "./host-support.js";
 
 interface KernelAdapterConfig {
@@ -142,6 +143,8 @@ class TypeScriptKernelAdapter {
           return result(await runInProcessCrashRecovery());
         case "kernel.restart-recovery.concurrent-writer":
           return result(await runConcurrentWriterConflict());
+        case "kernel.scope-isolation.cross-scope-probe":
+          return result(await runCrossScopeProbe());
         default:
           return {
             error: {
@@ -219,6 +222,7 @@ function defaultCapabilities(
       "kernel.run-liveness",
       "kernel.persistence.durable",
       "kernel.restart-recovery",
+      "kernel.scope-isolation",
       "kernel-protocol.thread.enumeration",
     ];
   }
@@ -229,6 +233,7 @@ function defaultCapabilities(
     "kernel.logical",
     "kernel.run-liveness",
     "kernel.restart-recovery",
+    "kernel.scope-isolation",
     "kernel-protocol.thread.enumeration",
   ];
 }
@@ -400,6 +405,58 @@ async function runThreadList(): Promise<Record<string, unknown>> {
       },
     });
   });
+}
+
+// KRT-BE007 cross-scope isolation probe. Constructs two kernels over two
+// Scopes bound to one shared substrate, seeds content and an enumerable thread
+// under scope A, then reports — as raw observations, never graded here — what
+// each Scope can see. The plan's assertions decide pass/fail; this host only
+// measures store.has / store.get / enumeration across the scope boundary.
+async function runCrossScopeProbe(): Promise<Record<string, unknown>> {
+  const schema = await loadCanonicalSchema();
+
+  return await withScopedBackendPair(
+    ADAPTER_CONFIG,
+    async ({ backendA, backendB }) => {
+      const kernelA = createRuntimeKernel({ backend: backendA });
+      const kernelB = createRuntimeKernel({ backend: backendB });
+      await kernelA.schema.register(schema);
+
+      const objectHash = await kernelA.store.put(
+        new TextEncoder().encode("scope-a cross-scope probe content")
+      );
+      const threadId = "scope_probe_thread";
+      await kernelA.thread.create(
+        threadId,
+        schema.schemaId,
+        "scope_probe_branch"
+      );
+
+      const sameScopeStoreGet = await kernelA.store.get(objectHash);
+      const crossScopeStoreGet = await kernelB.store.get(objectHash);
+      const sameScopeThreads = await kernelA.thread.list();
+      const crossScopeThreads = await kernelB.thread.list();
+
+      return createProjection({
+        enumeration: {
+          crossScopeThreadVisible: crossScopeThreads.threads.some(
+            (thread) => thread.threadId === threadId
+          ),
+          sameScopeThreadVisible: sameScopeThreads.threads.some(
+            (thread) => thread.threadId === threadId
+          ),
+        },
+        storeGet: {
+          crossScopeReturnsNull: crossScopeStoreGet === null,
+          sameScopeReturnsObject: sameScopeStoreGet !== null,
+        },
+        storeHas: {
+          crossScopeObservesOtherContent: await kernelB.store.has(objectHash),
+          sameScopeObservesOwnContent: await kernelA.store.has(objectHash),
+        },
+      });
+    }
+  );
 }
 
 async function runRecoveryState(

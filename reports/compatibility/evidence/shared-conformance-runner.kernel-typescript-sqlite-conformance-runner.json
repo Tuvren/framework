@@ -8,7 +8,8 @@
     "kernel.persistence.durable",
     "kernel.protocol",
     "kernel.restart-recovery",
-    "kernel.run-liveness"
+    "kernel.run-liveness",
+    "kernel.scope-isolation"
   ],
   "checkResults": [
     {
@@ -2744,6 +2745,108 @@
         "planId": "tuvren.kernel.run-liveness"
       },
       "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.scope-isolation.enumeration_is_scope_confined.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.scope-isolation.enumeration_is_scope_confined.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.scope-isolation.enumeration_is_scope_confined.requiredEvidence.enumeration.crossScopeThreadVisible",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.scope-isolation.enumeration_is_scope_confined.requiredEvidence.enumeration.sameScopeThreadVisible",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.scope-isolation.enumeration_is_scope_confined.requiredEvidence.result.enumeration.crossScopeThreadVisible",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.scope-isolation.enumeration_is_scope_confined.requiredEvidence.result.enumeration.sameScopeThreadVisible",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.scope-isolation.enumeration_is_scope_confined",
+      "details": {
+        "adapterId": "typescript-kernel-sqlite",
+        "planId": "tuvren.kernel.scope-isolation"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.scope-isolation.store_get_is_scope_confined.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.scope-isolation.store_get_is_scope_confined.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.scope-isolation.store_get_is_scope_confined.requiredEvidence.result.storeGet.crossScopeReturnsNull",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.scope-isolation.store_get_is_scope_confined.requiredEvidence.result.storeGet.sameScopeReturnsObject",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.scope-isolation.store_get_is_scope_confined.requiredEvidence.storeGet.crossScopeReturnsNull",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.scope-isolation.store_get_is_scope_confined.requiredEvidence.storeGet.sameScopeReturnsObject",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.scope-isolation.store_get_is_scope_confined",
+      "details": {
+        "adapterId": "typescript-kernel-sqlite",
+        "planId": "tuvren.kernel.scope-isolation"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.scope-isolation.store_has_is_scope_confined.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.scope-isolation.store_has_is_scope_confined.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.scope-isolation.store_has_is_scope_confined.requiredEvidence.result.storeHas.crossScopeObservesOtherContent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.scope-isolation.store_has_is_scope_confined.requiredEvidence.result.storeHas.sameScopeObservesOwnContent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.scope-isolation.store_has_is_scope_confined.requiredEvidence.storeHas.crossScopeObservesOtherContent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.scope-isolation.store_has_is_scope_confined.requiredEvidence.storeHas.sameScopeObservesOwnContent",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.scope-isolation.store_has_is_scope_confined",
+      "details": {
+        "adapterId": "typescript-kernel-sqlite",
+        "planId": "tuvren.kernel.scope-isolation"
+      },
+      "status": "pass"
     }
   ],
   "command": [
@@ -2763,9 +2866,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 59,
-    "totalChecks": 59,
-    "applicableChecks": 59,
+    "passedChecks": 62,
+    "totalChecks": 62,
+    "applicableChecks": 62,
     "nonApplicableChecks": 0
   },
   "suiteId": "tuvren.kernel.protocol",
