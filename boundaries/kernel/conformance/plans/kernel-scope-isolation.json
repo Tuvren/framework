@@ -49,6 +49,7 @@
     {
       "checkId": "kernel.scope-isolation.enumeration_is_scope_confined",
       "operation": "kernel.scope-isolation.cross-scope-probe",
+      "capabilities": ["kernel-protocol.thread.enumeration"],
       "assertions": [
         {
           "kind": "resultField",
