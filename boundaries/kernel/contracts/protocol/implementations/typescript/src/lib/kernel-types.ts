@@ -485,6 +485,19 @@ export interface BackendCapability {
    * Required for hosts that consume TuvrenRuntime.listThreads.
    */
   readonly "thread.enumeration": boolean;
+  /**
+   * Backend supports the capability-gated reachability reclamation primitive
+   * (KrakenKernelSpecification §9.4). When `true`, the backend implements the
+   * reclamation backing operation the kernel drives to mark durable state
+   * reachable from live roots — non-archived branch heads, thread roots, and
+   * active-run staged work — within the constructing Scope and sweep only the
+   * unreachable remainder, grace-windowed against the oldest active execution
+   * lease. When `false` or absent, the kernel rejects reclamation with
+   * `TuvrenPersistenceError` code `kernel_capability_unsupported`. Object-store
+   * substrates that reclaim out of band advertise non-support. Adding this bit
+   * is a semver-minor change (§9.1).
+   */
+  readonly "maintenance.reclamation"?: boolean;
   /** Reserved for future capability bits. */
   readonly [extraCapability: string]: boolean | undefined;
 }

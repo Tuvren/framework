@@ -1,11 +1,12 @@
 {
   "packetId": "tuvren.kernel.protocol",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "boundary": "kernel",
   "surface": "protocol",
   "humanAuthorityRefs": [
     "docs/KrakenKernelSpecification.md",
-    "docs/KrakenKernelSpecification.md#23-hash"
+    "docs/KrakenKernelSpecification.md#23-hash",
+    "docs/KrakenKernelSpecification.md#94-maintenancereclamation-capability-v012"
   ],
   "authoritativeSources": [
     {
@@ -75,6 +76,9 @@
   "bindingSections": {
     "scope-isolation": {
       "description": "Scope-resolved object identity (kernel spec §2.3, docs/KrakenKernelSpecification.md#23-hash). A Scope is a host-bound partition identity supplied at backend/connection construction; the kernel syscall surface stays scope-free. Hash resolution to durable storage is confined to the constructing Scope, so identical content under two Scopes is two independent durable objects and store.has / store.get / enumeration can never observe content outside the constructing Scope. The cross-scope isolation conformance contract for this surface lives at boundaries/kernel/conformance/plans/kernel-scope-isolation.json (capability kernel.scope-isolation, registered above). KRT-BE001 declared the surface and the conformance-plan reference; KRT-BE007 promoted the plan to runnable, registered, evidence-backed conformance: the kernel memory, SQLite, and PostgreSQL adapters advertise kernel.scope-isolation and answer the kernel.scope-isolation.cross-scope-probe operation, and per-backend compatibility evidence records that store.has / store.get / enumeration stay scope-confined across all three backends (KRT-BE003 through KRT-BE006 realize the scope binding the probe exercises)."
+    },
+    "reclamation": {
+      "description": "Capability-gated reachability reclamation primitive (kernel spec §9.4, docs/KrakenKernelSpecification.md#94-maintenancereclamation-capability-v012; ADR-051). A backend advertises maintenance.reclamation through the BackendCapability descriptor (§9.1); when supported, the kernel marks durable state reachable from live roots — non-archived branch heads, thread roots, and active-run staged work — within the constructing Scope, then sweeps only the unreachable remainder. The sweep is grace-windowed against the oldest active execution lease so it can never race recovery, and a shared object stays marked via any live root. A backend advertising non-support rejects reclamation with TuvrenPersistenceError code kernel_capability_unsupported. Reclamation never edits committed lineage; it only releases unreachable storage. The reclamation conformance contract for this surface lives at boundaries/kernel/conformance/plans/kernel-reclamation.json (capability kernel.reclamation). KRT-BF001 declares the surface and the conformance-plan reference (the plan is not yet registered in conformancePlans/verificationPaths because the portability gate plan-applicability-has-adapter forbids registering a runnable plan before an adapter advertises its capability); KRT-BF003/BF004 realize the primitive across memory, SQLite, and PostgreSQL; KRT-BF007 promotes the plan to runnable, registered, evidence-backed conformance."
     }
   },
   "forbiddenAuthoritySources": [

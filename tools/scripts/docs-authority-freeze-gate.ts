@@ -1023,8 +1023,8 @@ function classifySaaSReadinessTargetClaim(
     return missingConformanceDecision(
       "kernel reachability reclamation",
       EVIDENCE.kernelProtocol,
-      "KRT-BF001",
-      "The capability-gated, grace-windowed reachability reclamation primitive (kernel spec §9.4) is a SaaS-readiness target semantic; portable conformance lands when EPIC-BF promotes the maintenance.reclamation surface."
+      "KRT-BF007",
+      "The capability-gated, grace-windowed reachability reclamation primitive (kernel spec §9.4) is a SaaS-readiness target semantic. KRT-BF001 declared the maintenance.reclamation surface and its conformance-plan reference (boundaries/kernel/conformance/plans/kernel-reclamation.json) in the kernel-protocol authority packet bindingSections.reclamation; KRT-BF003/BF004 realize the primitive; portable conformance lands when KRT-BF007 promotes the plan to runnable, registered, evidence-backed coverage."
     );
   }
 

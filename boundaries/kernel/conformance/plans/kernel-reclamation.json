@@ -1,0 +1,62 @@
+{
+  "planId": "tuvren.kernel.reclamation",
+  "planVersion": "0.1.0",
+  "packetId": "tuvren.kernel.protocol",
+  "applicability": {
+    "capabilities": ["kernel.reclamation"]
+  },
+  "checks": [
+    {
+      "checkId": "kernel.reclamation.unreachable_past_grace_is_released",
+      "operation": "kernel.reclamation.reclaim-probe",
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.reclaim.unreachablePastGraceReleased",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.reclaim.archivedBranchReleased",
+          "equals": true
+        }
+      ],
+      "evidence": [
+        "reclaim.unreachablePastGraceReleased",
+        "reclaim.archivedBranchReleased"
+      ]
+    },
+    {
+      "checkId": "kernel.reclamation.reachable_from_live_root_is_retained",
+      "operation": "kernel.reclamation.reclaim-probe",
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.reclaim.reachableFromLiveRootRetained",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.reclaim.sharedObjectRetainedViaLiveRoot",
+          "equals": true
+        }
+      ],
+      "evidence": [
+        "reclaim.reachableFromLiveRootRetained",
+        "reclaim.sharedObjectRetainedViaLiveRoot"
+      ]
+    },
+    {
+      "checkId": "kernel.reclamation.grace_window_holds_under_active_lease",
+      "operation": "kernel.reclamation.reclaim-probe",
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.reclaim.graceWindowHeldUnderActiveLease",
+          "equals": true
+        }
+      ],
+      "evidence": ["reclaim.graceWindowHeldUnderActiveLease"]
+    }
+  ]
+}

@@ -34,7 +34,7 @@ Every remaining non-authority surface is listed below with its current posture. 
 | kernel capability-gated syscalls | 3 | missing-conformance-follow-up | KRT-AM010 | Yes, until AF/docs evidence resolves it |
 | kernel deferred maintenance surfaces | 1 | explicitly-deferred | Future TechSpec/Tasks revision after TypeScript freeze closure | No, if kept local/deferred |
 | kernel docs-to-authority framing | 1 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
-| kernel reachability reclamation | 4 | missing-conformance-follow-up | KRT-BF001 | Yes, until AF/docs evidence resolves it |
+| kernel reachability reclamation | 4 | missing-conformance-follow-up | KRT-BF007 | Yes, until AF/docs evidence resolves it |
 | kernel storage structural sharing | 1 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
 | orchestration optional worker modes | 1 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
 | orchestration out-of-core boundaries | 8 | explicitly-deferred | Future TechSpec/Tasks revision after TypeScript freeze closure | No, if kept local/deferred |

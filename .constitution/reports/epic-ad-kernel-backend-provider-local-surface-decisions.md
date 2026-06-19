@@ -17,7 +17,7 @@ Kernel, backend, provider, and tool surfaces are separated from cross-language a
 | kernel invariants | 9 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
 | kernel logical operations | 14 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
 | kernel protocol records | 11 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
-| kernel reachability reclamation | 4 | missing-conformance-follow-up | KRT-BF001 | Yes, until AF/docs evidence resolves it |
+| kernel reachability reclamation | 4 | missing-conformance-follow-up | KRT-BF007 | Yes, until AF/docs evidence resolves it |
 | kernel recovery edge states | 7 | authority-backed-conformance-covered | KRT-AF006 | No, if kept local/deferred |
 | kernel run liveness | 10 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
 | kernel scope-resolved identity | 1 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
