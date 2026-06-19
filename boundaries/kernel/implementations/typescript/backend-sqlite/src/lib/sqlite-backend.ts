@@ -36,6 +36,7 @@ import {
   hashKernelRecord,
   type RuntimeBackend as KrakenBackend,
   type RuntimeBackendTx as KrakenBackendTx,
+  type ReclamationSummary,
   type StoredOrderedPathChunk,
   type StoredTurnTreePath,
 } from "@tuvren/kernel-protocol";
@@ -85,6 +86,7 @@ import {
   selectTurnTreePath,
   selectTurnTreePathsByTurnTree,
 } from "./sqlite-lookups.js";
+import { reclaimBackendState } from "./sqlite-reclamation.js";
 import {
   type BackendState,
   decodeHashStringArray,
@@ -205,8 +207,11 @@ export interface SqliteBackendOptions {
 }
 
 const SQLITE_BACKEND_CAPABILITIES: BackendCapability = {
+  "maintenance.reclamation": true,
   "thread.enumeration": true,
 };
+
+const RECLAMATION_DELETE_BATCH_SIZE = 500;
 
 class SqliteBackend implements KrakenBackend {
   readonly [FAULT_INJECTION_CONTROL]: BackendFaultInjectionControl = {
@@ -346,6 +351,42 @@ class SqliteBackend implements KrakenBackend {
         }
       } catch (error: unknown) {
         active = false;
+        if (this.db.inTransaction) {
+          this.db.exec("ROLLBACK");
+        }
+        throw normalizeBackendError(error);
+      }
+    });
+  }
+
+  reclaim(): Promise<ReclamationSummary> {
+    if (this.transactionContext.getStore() === true) {
+      throw persistenceError(
+        "sqlite backend reclamation must not run inside a transaction",
+        "sqlite_backend_nested_transaction"
+      );
+    }
+
+    return this.queueConnectionWork(async () => {
+      try {
+        this.db.exec("BEGIN IMMEDIATE");
+        // Defer foreign-key enforcement to COMMIT so the unreachable closure can
+        // be deleted in any table order; the post-delete `loadValidatedState`
+        // re-asserts referential integrity before the deferred checks run.
+        this.db.pragma("defer_foreign_keys = ON");
+
+        const state = await loadValidatedState(this.db);
+        const survivorKeysBefore = captureReclamationKeys(state);
+        // Reachability and the grace window are derived from the loaded state's
+        // own active runs (§9.4); reclaimBackendState mutates the in-memory
+        // projection so the surviving key sets reveal exactly what to delete.
+        const summary = reclaimBackendState(state);
+        applyReclamationDeletions(this.db, survivorKeysBefore, state);
+
+        await loadValidatedState(this.db);
+        this.db.exec("COMMIT");
+        return summary;
+      } catch (error: unknown) {
         if (this.db.inTransaction) {
           this.db.exec("ROLLBACK");
         }
@@ -741,6 +782,117 @@ async function loadValidatedState(
     validateHashString,
   });
   return state;
+}
+
+interface ReclamationSurvivorKeys {
+  branches: Set<string>;
+  objects: Set<string>;
+  orderedPathChunks: Set<string>;
+  runs: Set<string>;
+  turnNodes: Set<string>;
+  turns: Set<string>;
+  turnTrees: Set<string>;
+}
+
+function captureReclamationKeys(state: BackendState): ReclamationSurvivorKeys {
+  return {
+    branches: new Set(state.branches.keys()),
+    objects: new Set(state.objects.keys()),
+    orderedPathChunks: new Set(state.orderedPathChunks.keys()),
+    runs: new Set(state.runs.keys()),
+    turnNodes: new Set(state.turnNodes.keys()),
+    turns: new Set(state.turns.keys()),
+    turnTrees: new Set(state.turnTrees.keys()),
+  };
+}
+
+/** Keys present before the sweep but absent from the swept draft. */
+function reclaimedKeys(
+  before: Set<string>,
+  survivors: Map<string, unknown>
+): string[] {
+  const removed: string[] = [];
+  for (const key of before) {
+    if (!survivors.has(key)) {
+      removed.push(key);
+    }
+  }
+  return removed;
+}
+
+/**
+ * Deletes the rows the in-memory sweep removed. Child tables (including the
+ * derived `turn_node_lineage_roots` index and run-scoped staging/annotations)
+ * are deleted alongside their parents; with deferred foreign keys the order is
+ * not load-bearing, but children are still listed first for clarity.
+ */
+function applyReclamationDeletions(
+  db: Database.Database,
+  before: ReclamationSurvivorKeys,
+  survivors: BackendState
+): void {
+  const deletedRunIds = reclaimedKeys(before.runs, survivors.runs);
+  const deletedTurnIds = reclaimedKeys(before.turns, survivors.turns);
+  const deletedBranchIds = reclaimedKeys(before.branches, survivors.branches);
+  const deletedTurnTreeHashes = reclaimedKeys(
+    before.turnTrees,
+    survivors.turnTrees
+  );
+  const deletedTurnNodeHashes = reclaimedKeys(
+    before.turnNodes,
+    survivors.turnNodes
+  );
+  const deletedChunkHashes = reclaimedKeys(
+    before.orderedPathChunks,
+    survivors.orderedPathChunks
+  );
+  const deletedObjectHashes = reclaimedKeys(before.objects, survivors.objects);
+
+  deleteByColumn(db, "staged_results", "run_id", deletedRunIds);
+  deleteByColumn(db, "observe_annotations", "run_id", deletedRunIds);
+  deleteByColumn(db, "runs", "run_id", deletedRunIds);
+  deleteByColumn(db, "turns", "turn_id", deletedTurnIds);
+  deleteByColumn(db, "branches", "branch_id", deletedBranchIds);
+  deleteByColumn(
+    db,
+    "turn_tree_paths",
+    "turn_tree_hash",
+    deletedTurnTreeHashes
+  );
+  deleteByColumn(db, "turn_trees", "hash", deletedTurnTreeHashes);
+  deleteByColumn(
+    db,
+    "turn_node_lineage_roots",
+    "turn_node_hash",
+    deletedTurnNodeHashes
+  );
+  deleteByColumn(db, "turn_nodes", "hash", deletedTurnNodeHashes);
+  deleteByColumn(db, "ordered_path_chunks", "chunk_hash", deletedChunkHashes);
+  deleteByColumn(db, "objects", "hash", deletedObjectHashes);
+}
+
+/**
+ * Deletes rows whose primary-key column matches one of `keys`, batched under the
+ * SQLite bound-parameter ceiling. `table` and `column` are fixed internal
+ * identifiers supplied by `applyReclamationDeletions`, never caller input.
+ */
+function deleteByColumn(
+  db: Database.Database,
+  table: string,
+  column: string,
+  keys: string[]
+): void {
+  for (
+    let index = 0;
+    index < keys.length;
+    index += RECLAMATION_DELETE_BATCH_SIZE
+  ) {
+    const batch = keys.slice(index, index + RECLAMATION_DELETE_BATCH_SIZE);
+    const placeholders = batch.map(() => "?").join(", ");
+    db.prepare(`DELETE FROM ${table} WHERE ${column} IN (${placeholders})`).run(
+      ...batch
+    );
+  }
 }
 
 async function normalizeStoredTurnTreePathInDatabase(

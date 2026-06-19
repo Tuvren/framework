@@ -610,7 +610,7 @@ export function validateTurnTreePathInvariants(
   validateTurnTreePathCardinalityMetadata(state, helpers);
 
   for (const turnTree of state.turnTrees.values()) {
-    assertTurnTreeManifestMatchesStoredPaths(state, turnTree, helpers);
+    assertTurnTreeManifestMatchesStoredPaths(state, turnTree);
   }
 }
 
@@ -843,8 +843,7 @@ function assertTurnNodeDescendsFrom(
 
 function assertTurnTreeManifestMatchesStoredPaths(
   state: BackendState,
-  turnTree: StoredTurnTree,
-  helpers: ValidationHelpers
+  turnTree: StoredTurnTree
 ): void {
   const schema = getSchemaForTurnTree(state, turnTree);
   const manifestValue = decodeDeterministicKernelRecord(turnTree.manifestCbor);
@@ -898,11 +897,7 @@ function assertTurnTreeManifestMatchesStoredPaths(
     }
 
     const manifestPathValue = Reflect.get(manifestValue, pathDefinition.path);
-    const storedPathValue = resolveStoredTurnTreePathValue(
-      state,
-      storedPath,
-      helpers
-    );
+    const storedPathValue = resolveStoredTurnTreePathValue(state, storedPath);
 
     if (!areManifestPathValuesEqual(manifestPathValue, storedPathValue)) {
       throw persistenceError(
@@ -917,10 +912,9 @@ function assertTurnTreeManifestMatchesStoredPaths(
   }
 }
 
-function resolveStoredTurnTreePathValue(
+export function resolveStoredTurnTreePathValue(
   state: BackendState,
-  storedPath: StoredTurnTreePath,
-  _helpers: ValidationHelpers
+  storedPath: StoredTurnTreePath
 ): string[] | string | null {
   if (storedPath.collectionKind === "single") {
     return storedPath.singleHash;

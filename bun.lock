@@ -245,6 +245,7 @@
         "postgres": "3.4.9",
       },
       "devDependencies": {
+        "@tuvren/kernel-runtime": "workspace:*",
         "@tuvren/kernel-testkit": "workspace:*",
       },
       "peerDependencies": {
@@ -259,6 +260,7 @@
         "better-sqlite3": "12.8.0",
       },
       "devDependencies": {
+        "@tuvren/kernel-runtime": "workspace:*",
         "@tuvren/kernel-testkit": "workspace:*",
         "@types/better-sqlite3": "7.6.13",
       },
