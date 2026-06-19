@@ -80,6 +80,7 @@ export interface RuntimeTelemetryEmitter {
 
 export function createRuntimeTelemetryEmitter(input: {
   now(): EpochMs;
+  scope: string;
   sink?: TuvrenTelemetrySink;
 }): RuntimeTelemetryEmitter {
   const sink = input.sink ?? NoopTelemetrySink;
@@ -127,7 +128,7 @@ export function createRuntimeTelemetryEmitter(input: {
       atMs,
       attributes: filterTelemetryAttributes(attributes),
       kind,
-      lineage: createLineage(handle, turnNodeHash),
+      lineage: createLineage(input.scope, handle, turnNodeHash),
     });
   };
 
@@ -137,7 +138,7 @@ export function createRuntimeTelemetryEmitter(input: {
     loopState: LoopState,
     resumedFrom?: HashString
   ) => {
-    const lineage = createLineage(handle);
+    const lineage = createLineage(input.scope, handle);
     const attributes = {
       ...baseAttributes(handle, loopState),
       ...(resumedFrom === undefined
@@ -220,7 +221,7 @@ export function createRuntimeTelemetryEmitter(input: {
 
     starts.set(callId, {
       atMs,
-      lineage: createLineage(handle),
+      lineage: createLineage(input.scope, handle),
     });
   };
 
@@ -275,7 +276,7 @@ export function createRuntimeTelemetryEmitter(input: {
       attributes,
       endMs: atMs,
       kind: "checkpoint",
-      lineage: createLineage(handle, turnNodeHash),
+      lineage: createLineage(input.scope, handle, turnNodeHash),
       name: "tuvren.runtime.checkpoint",
       startMs: atMs,
       status: "ok",
@@ -297,7 +298,7 @@ export function createRuntimeTelemetryEmitter(input: {
         message: error.message,
       },
       kind: "run",
-      lineage: createLineage(handle),
+      lineage: createLineage(input.scope, handle),
       name: "tuvren.runtime.error",
       startMs: atMs,
       status: "error",
@@ -341,7 +342,7 @@ export function createRuntimeTelemetryEmitter(input: {
         case "iteration.start": {
           iterationStarts.set(handle, {
             atMs,
-            lineage: createLineage(handle),
+            lineage: createLineage(input.scope, handle),
           });
           return;
         }
@@ -400,7 +401,7 @@ export function createRuntimeTelemetryEmitter(input: {
         endMs: atMs,
         error,
         kind: "recovery",
-        lineage: createLineage(recoveryInput.handle),
+        lineage: createLineage(input.scope, recoveryInput.handle),
         name: "tuvren.runtime.recovery",
         startMs: atMs,
         status: recoveryInput.status,
@@ -415,6 +416,7 @@ export function createRuntimeTelemetryEmitter(input: {
         error: createSpanError(spanInput.error),
         kind: spanInput.kind,
         lineage: createLineage(
+          input.scope,
           spanInput.handle,
           spanInput.turnNodeHash,
           spanInput.runId ?? spanInput.handle.getActiveRunId()
@@ -428,6 +430,7 @@ export function createRuntimeTelemetryEmitter(input: {
 }
 
 function createLineage(
+  scope: string,
   handle: RuntimeExecutionHandle,
   turnNodeHash?: HashString,
   runId = handle.getActiveRunId()
@@ -435,6 +438,7 @@ function createLineage(
   return {
     branchId: handle.request.branchId,
     ...(runId === undefined ? {} : { runId }),
+    scope,
     threadId: handle.request.threadId,
     turnId: handle.turnId,
     ...(turnNodeHash === undefined ? {} : { turnNodeHash }),

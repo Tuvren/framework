@@ -68,6 +68,7 @@ describe("@tuvren/backend-sqlite startup", () => {
       { name: "0003_pending_signals_and_annotations.sql" },
       { name: "0004_observe_annotations.sql" },
       { name: "0005_run_liveness.sql" },
+      { name: "0006_thread_enumeration_index.sql" },
     ]);
     deepStrictEqual(objectsTable, { name: "objects" });
 
@@ -157,6 +158,7 @@ describe("@tuvren/backend-sqlite startup", () => {
       { name: "0003_pending_signals_and_annotations.sql" },
       { name: "0004_observe_annotations.sql" },
       { name: "0005_run_liveness.sql" },
+      { name: "0006_thread_enumeration_index.sql" },
     ]);
   });
 

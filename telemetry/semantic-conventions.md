@@ -21,6 +21,7 @@ Generated from `telemetry/semconv/tuvren-runtime.yaml` via `weaver`.
 | `tuvren.runtime.provider.id` | `string` | `development` | The provider bridge or provider identifier used for model work. | `ai-sdk-openai` |
 | `tuvren.runtime.resumed_from.hash` | `string` | `development` | The checkpoint hash that a resumed execution continued from. | `cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc` |
 | `tuvren.runtime.run.id` | `string` | `development` | The Tuvren runtime run identifier. | `run_main` |
+| `tuvren.runtime.scope.id` | `string` | `development` | The host-bound Scope (tenancy partition identity, ADR-048) the runtime is constructed against. Correlation context only; the kernel syscall surface stays scope-free and the Scope is never a syscall argument. | `tuvren.scope.default`, `tenant-a` |
 | `tuvren.runtime.thread.id` | `string` | `development` | The Tuvren runtime thread identifier. | `thread_main` |
 | `tuvren.runtime.tool_call.id` | `string` | `development` | The current tool call identifier when the execution is inside tool work. | `tool_call_1` |
 | `tuvren.runtime.turn.id` | `string` | `development` | The Tuvren runtime turn identifier. | `turn_main` |

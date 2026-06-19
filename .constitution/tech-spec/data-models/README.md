@@ -267,29 +267,31 @@ erDiagram
 #### PostgreSQL Backend Schema
 
 - **Purpose:** Specify the service-backed PostgreSQL backend concretely enough to implement, verify, and operate without weakening the shared kernel contract.
-- **Storage Shape:** PostgreSQL schema-local storage using Postgres.js, one backend-owned schema per backend instance, a forward-only migration ledger, and a single canonical snapshot row containing deterministic-CBOR-encoded backend state.
+- **Storage Shape:** PostgreSQL schema-local storage using Postgres.js, one backend-owned schema per backend instance, a forward-only migration ledger, and one canonical snapshot row per Scope containing deterministic-CBOR-encoded backend state. The host-supplied Scope is bound at construction (ADR-048) and realized as row-level isolation (ADR-049): each Scope owns its own snapshot row in the shared `backend_postgres_snapshots` table.
 - **Constraints / Invariants:**
   - Development and CI standardize on `devenv`-managed `services.postgres`; the backend itself accepts normal PostgreSQL connection settings such as `PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD`, and `PGDATABASE`.
-  - Kernel writes run inside PostgreSQL transactions and take a `FOR UPDATE` lock on the canonical snapshot row before mutating state.
-  - The first PostgreSQL backend implementation uses one in-memory state clone per transaction, validates the committed draft against the shared kernel-visible invariants, and then atomically rewrites the canonical snapshot row.
+  - Kernel writes run inside PostgreSQL transactions and take a `FOR UPDATE` lock on the constructing Scope's snapshot row (`WHERE snapshot_id = 1 AND scope = $scope`) before mutating state.
+  - The first PostgreSQL backend implementation uses one in-memory state clone per transaction, validates the committed draft against the shared kernel-visible invariants, and then atomically rewrites the constructing Scope's snapshot row.
+  - Scope isolation is row-level: two backends sharing a schema but bound to different Scopes read and write independent snapshot rows and never observe each other's state, with no cross-scope dedup. A first-seen Scope's snapshot row is created lazily from the canonical empty state at initialization. The kernel syscall surface carries no scope argument; the discriminator is supplied at construction only.
   - Nested backend transactions are forbidden.
   - Backend-owned PostgreSQL schema names are validated and may be disposable per proving-host or conformance run.
   - PostgreSQL persistence remains backend-local: the kernel contract still exposes no backend capability negotiation or backend-specific semantic branches.
   - PostgreSQL is an official persistent backend, not the canonical physical model for all future service-backed backends.
 - **Indexes / Access Paths:**
   - `backend_postgres_migrations(name)` primary key for forward-only backend migration tracking
-  - `backend_postgres_snapshots(snapshot_id)` primary key for the single canonical persisted state row
-- **Migration Notes:** `@tuvren/backend-postgres` owns schema initialization, forward-only migration names, and snapshot payload versioning.
+  - `backend_postgres_snapshots(snapshot_id, scope)` composite primary key for the per-Scope persisted state rows
+- **Migration Notes:** `@tuvren/backend-postgres` owns schema initialization, forward-only migration names, and snapshot payload versioning. `0002_scope_partition.sql` adds the `scope` column and rekeys `backend_postgres_snapshots` to the composite primary key `(snapshot_id, scope)`, assigning any pre-scope row the default Scope so existing single-scope databases keep working unchanged. The migration is idempotent (gated on the absence of the `scope` column).
 
 ##### PostgreSQL Tables
 
 - `backend_postgres_migrations`
   - columns: `name TEXT PRIMARY KEY`, `applied_at_ms BIGINT NOT NULL`
   - indexes: primary key on `name`
+  - notes: records `0001_initial_schema.sql` and `0002_scope_partition.sql`
 - `backend_postgres_snapshots`
-  - columns: `snapshot_id SMALLINT PRIMARY KEY`, `schema_version INTEGER NOT NULL`, `snapshot_cbor BYTEA NOT NULL`, `updated_at_ms BIGINT NOT NULL`
-  - indexes: primary key on `snapshot_id`
-  - notes: the first implementation persists exactly one row with `snapshot_id = 1`; `snapshot_cbor` stores the deterministic-CBOR-encoded canonical backend state and is row-locked during kernel writes
+  - columns: `snapshot_id SMALLINT NOT NULL`, `scope TEXT NOT NULL`, `schema_version INTEGER NOT NULL`, `snapshot_cbor BYTEA NOT NULL`, `updated_at_ms BIGINT NOT NULL`
+  - indexes: composite primary key on `(snapshot_id, scope)`
+  - notes: persists exactly one row per Scope with `snapshot_id = 1`; `snapshot_cbor` stores the deterministic-CBOR-encoded canonical backend state for that Scope and is row-locked during kernel writes
 
 ### 3.6 Boundary-Owned Contract, Conformance, and Compatibility Assets
 

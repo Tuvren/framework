@@ -105,6 +105,13 @@
       "type": "string"
     },
     {
+      "brief": "The host-bound Scope (tenancy partition identity, ADR-048) the runtime is constructed against. Correlation context only; the kernel syscall surface stays scope-free and the Scope is never a syscall argument.",
+      "examples": ["tuvren.scope.default", "tenant-a"],
+      "key": "tuvren.runtime.scope.id",
+      "stability": "development",
+      "type": "string"
+    },
+    {
       "brief": "The Tuvren runtime thread identifier.",
       "examples": ["thread_main"],
       "key": "tuvren.runtime.thread.id",

@@ -110,6 +110,12 @@ export const TUVREN_RUNTIME_TELEMETRY_ATTRIBUTES: Readonly<
     stability: "development",
     type: "string",
   },
+  "tuvren.runtime.scope.id": {
+    brief: "The host-bound Scope (tenancy partition identity, ADR-048) the runtime is constructed against. Correlation context only; the kernel syscall surface stays scope-free and the Scope is never a syscall argument.",
+    examples: ["tuvren.scope.default","tenant-a"],
+    stability: "development",
+    type: "string",
+  },
   "tuvren.runtime.thread.id": {
     brief: "The Tuvren runtime thread identifier.",
     examples: ["thread_main"],
@@ -145,6 +151,7 @@ export type TuvrenRuntimeTelemetryAttributeKey =
   "tuvren.runtime.provider.id" |
   "tuvren.runtime.resumed_from.hash" |
   "tuvren.runtime.run.id" |
+  "tuvren.runtime.scope.id" |
   "tuvren.runtime.thread.id" |
   "tuvren.runtime.tool_call.id" |
   "tuvren.runtime.turn.id";
@@ -165,6 +172,7 @@ export const TUVREN_RUNTIME_TELEMETRY_ATTRIBUTE_KEYS: readonly TuvrenRuntimeTele
     "tuvren.runtime.provider.id",
     "tuvren.runtime.resumed_from.hash",
     "tuvren.runtime.run.id",
+    "tuvren.runtime.scope.id",
     "tuvren.runtime.thread.id",
     "tuvren.runtime.tool_call.id",
     "tuvren.runtime.turn.id",

@@ -420,6 +420,9 @@ function createReplayConfig(header: ReplTranscriptHeader): ReplConfig {
     modelId: header.config.modelId,
     providerMode: readProviderMode(header.config.providerMode),
     scenario: readScenarioName(header.config.scenario),
+    // Re-bind the recorded Scope so replay reconstructs the same scope-bound
+    // backend and telemetry correlation the original session used (KRT-BE008).
+    scope: header.config.scope,
     sqlitePath: readSqlitePath(backend.options),
     systemPrompt: header.config.systemPrompt,
     ...readPostgresOptions(backend.options),

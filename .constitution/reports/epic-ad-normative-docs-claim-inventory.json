@@ -4033,7 +4033,7 @@
     },
     {
       "affectedBoundary": "kernel",
-      "adapterCapability": "kernel.protocol; kernel.logical",
+      "adapterCapability": "kernel.scope-isolation",
       "claimFingerprint": "261fb6925fa32bdeaddda37dc17984943533c1e4f955820d66684390b22324ec",
       "claimId": "KER-261FB6925FA3",
       "duplicateOf": null,

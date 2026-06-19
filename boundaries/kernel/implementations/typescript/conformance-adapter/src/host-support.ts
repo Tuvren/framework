@@ -91,6 +91,31 @@ export async function withConfiguredBackend<T>(
   }
 }
 
+// Two distinct, non-default Scopes bound to one shared substrate so the
+// cross-scope isolation probe (KRT-BE007) can prove a co-tenant scope observes
+// none of the constructing scope's content. The host supplies the Scope at
+// construction (ADR-048); the kernel syscall surface never sees it.
+const CONFORMANCE_SCOPE_A = "tuvren.scope.conformance-a";
+const CONFORMANCE_SCOPE_B = "tuvren.scope.conformance-b";
+
+export interface ScopedBackendPair {
+  backendA: RuntimeBackend;
+  backendB: RuntimeBackend;
+}
+
+export async function withScopedBackendPair<T>(
+  config: { adapterId: string; backend: "memory" | "postgres" | "sqlite" },
+  execute: (pair: ScopedBackendPair) => Promise<T>
+): Promise<T> {
+  const handle = await createScopedBackendPair(config);
+
+  try {
+    return await execute(handle.pair);
+  } finally {
+    await handle.cleanup();
+  }
+}
+
 export async function runRestartRecoveryPhase(
   phase: "read" | "write",
   databasePath: string,
@@ -353,6 +378,96 @@ async function createConfiguredBackend(config: {
     backend: createMemoryBackend(),
     cleanup: async () => {
       // Memory backends have no external resources to release.
+    },
+  };
+}
+
+interface ClosableBackend {
+  close?(): Promise<void>;
+}
+
+async function createScopedBackendPair(config: {
+  adapterId: string;
+  backend: "memory" | "postgres" | "sqlite";
+}): Promise<{ cleanup(): Promise<void>; pair: ScopedBackendPair }> {
+  if (config.backend === "postgres") {
+    const postgresBackendModuleUrl = new URL(
+      "../../backend-postgres/dist/index.js",
+      import.meta.url
+    );
+    const { createPostgresBackend } = await import(
+      postgresBackendModuleUrl.href
+    );
+    const schemaName = `${config.adapterId.replaceAll("-", "_")}_${randomUUID().replaceAll("-", "_")}`;
+    const baseOptions = {
+      database: process.env.PGDATABASE ?? "tuvren_runtime",
+      schemaName,
+    };
+    const backendA = createPostgresBackend({
+      ...baseOptions,
+      scope: CONFORMANCE_SCOPE_A,
+    }) as RuntimeBackend & DisposablePostgresBackend;
+    const backendB = createPostgresBackend({
+      ...baseOptions,
+      scope: CONFORMANCE_SCOPE_B,
+    }) as RuntimeBackend & DisposablePostgresBackend;
+
+    return {
+      cleanup: async () => {
+        // Close the co-tenant pool first, then drop the shared schema through
+        // the surviving backend's destroy hook.
+        await backendB.destroy();
+        await backendA.destroy({ dropSchema: true });
+      },
+      pair: { backendA, backendB },
+    };
+  }
+
+  if (config.backend === "sqlite") {
+    const sqliteBackendModuleUrl = new URL(
+      "../../backend-sqlite/dist/index.js",
+      import.meta.url
+    );
+    const { createSqliteBackend } = await import(sqliteBackendModuleUrl.href);
+    const tempDirectory = await mkdtemp(
+      join(tmpdir(), `${config.adapterId}-${process.pid}-scope-`)
+    );
+    const databasePath = join(tempDirectory, `${randomUUID()}.sqlite`);
+    const backendA = createSqliteBackend({
+      databasePath,
+      scope: CONFORMANCE_SCOPE_A,
+    }) as RuntimeBackend & ClosableBackend;
+    const backendB = createSqliteBackend({
+      databasePath,
+      scope: CONFORMANCE_SCOPE_B,
+    }) as RuntimeBackend & ClosableBackend;
+
+    return {
+      cleanup: async () => {
+        await backendA.close?.();
+        await backendB.close?.();
+        await rm(tempDirectory, { force: true, recursive: true });
+      },
+      pair: { backendA, backendB },
+    };
+  }
+
+  const memoryBackendModuleUrl = new URL(
+    "../../backend-memory/dist/index.js",
+    import.meta.url
+  );
+  const { createMemoryBackend, createMemoryScopeStore } = await import(
+    memoryBackendModuleUrl.href
+  );
+  const store = createMemoryScopeStore();
+
+  return {
+    cleanup: async () => {
+      // Memory backends have no external resources to release.
+    },
+    pair: {
+      backendA: createMemoryBackend({ scope: CONFORMANCE_SCOPE_A, store }),
+      backendB: createMemoryBackend({ scope: CONFORMANCE_SCOPE_B, store }),
     },
   };
 }

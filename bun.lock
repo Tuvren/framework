@@ -112,6 +112,7 @@
       },
       "devDependencies": {
         "@ag-ui/core": "0.0.52",
+        "@tuvren/kernel-testkit": "workspace:*",
       },
       "peerDependencies": {
         "@tuvren/core": "workspace:*",

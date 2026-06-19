@@ -57,6 +57,10 @@ export function createReplHost(config: ReplConfig): ReplHost {
       }),
     ]),
     kernel,
+    // Correlate operational telemetry to the host-bound Scope (ADR-048,
+    // KRT-BE008). The Scope never crosses the kernel transport seam; it only
+    // tags telemetry and (via the transcript header) the recorded session.
+    ...(config.scope === undefined ? {} : { scope: config.scope }),
   });
 
   return createReplHostFromParts(config, runtime, provider);
@@ -84,6 +88,11 @@ export async function createReplHostUsingCreateTuvren(
       },
     },
     provider,
+    // Bind operational telemetry to the host's Scope (ADR-048, KRT-BE008); the
+    // durable backend is bound to the same Scope via createTuvrenBackendConfig.
+    ...(config.scope === undefined
+      ? {}
+      : { runtimeOptions: { scope: config.scope } }),
   });
 
   return createReplHostFromParts(
@@ -207,14 +216,20 @@ function createKernel(config: ReplConfig) {
 }
 
 function createBackend(config: ReplConfig): RuntimeBackend {
+  // The host binds every durable backend to its Scope (ADR-048/049, KRT-BE008),
+  // so a `--scope` REPL session isolates durable state by construction; an
+  // unset Scope falls through to the single-tenant default each backend applies.
+  const scopeOption = config.scope === undefined ? {} : { scope: config.scope };
+
   if (config.backend === "memory") {
-    return createMemoryBackend();
+    return createMemoryBackend(scopeOption);
   }
 
   if (config.backend === "postgres") {
     return createPostgresBackend({
       database: config.postgresDatabase,
       schemaName: config.postgresSchemaName,
+      ...scopeOption,
     });
   }
 
@@ -229,14 +244,19 @@ function createBackend(config: ReplConfig): RuntimeBackend {
 
   return createSqliteBackend({
     databasePath: config.sqlitePath,
+    ...scopeOption,
   });
 }
 
 function createTuvrenBackendConfig(
   config: ReplConfig
 ): Parameters<typeof createTuvren>[0]["backend"] {
+  // Carry the host Scope into the backend spec so `createTuvren` constructs the
+  // durable backend scope-bound (ADR-048/049, KRT-BE008); unset means default.
+  const scopeOption = config.scope === undefined ? {} : { scope: config.scope };
+
   if (config.backend === "memory") {
-    return "memory";
+    return { kind: "memory", options: scopeOption };
   }
 
   if (config.backend === "postgres") {
@@ -245,6 +265,7 @@ function createTuvrenBackendConfig(
       options: {
         database: config.postgresDatabase,
         schemaName: config.postgresSchemaName,
+        ...scopeOption,
       },
     };
   }
@@ -262,6 +283,7 @@ function createTuvrenBackendConfig(
     kind: "sqlite",
     options: {
       databasePath: config.sqlitePath,
+      ...scopeOption,
     },
   };
 }

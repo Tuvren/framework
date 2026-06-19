@@ -1,0 +1,71 @@
+{
+  "planId": "tuvren.kernel.scope-isolation",
+  "planVersion": "0.1.0",
+  "packetId": "tuvren.kernel.protocol",
+  "applicability": {
+    "capabilities": ["kernel.scope-isolation"]
+  },
+  "checks": [
+    {
+      "checkId": "kernel.scope-isolation.store_has_is_scope_confined",
+      "operation": "kernel.scope-isolation.cross-scope-probe",
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.storeHas.sameScopeObservesOwnContent",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.storeHas.crossScopeObservesOtherContent",
+          "equals": false
+        }
+      ],
+      "evidence": [
+        "storeHas.sameScopeObservesOwnContent",
+        "storeHas.crossScopeObservesOtherContent"
+      ]
+    },
+    {
+      "checkId": "kernel.scope-isolation.store_get_is_scope_confined",
+      "operation": "kernel.scope-isolation.cross-scope-probe",
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.storeGet.sameScopeReturnsObject",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.storeGet.crossScopeReturnsNull",
+          "equals": true
+        }
+      ],
+      "evidence": [
+        "storeGet.sameScopeReturnsObject",
+        "storeGet.crossScopeReturnsNull"
+      ]
+    },
+    {
+      "checkId": "kernel.scope-isolation.enumeration_is_scope_confined",
+      "operation": "kernel.scope-isolation.cross-scope-probe",
+      "capabilities": ["kernel-protocol.thread.enumeration"],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.enumeration.sameScopeThreadVisible",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.enumeration.crossScopeThreadVisible",
+          "equals": false
+        }
+      ],
+      "evidence": [
+        "enumeration.sameScopeThreadVisible",
+        "enumeration.crossScopeThreadVisible"
+      ]
+    }
+  ]
+}

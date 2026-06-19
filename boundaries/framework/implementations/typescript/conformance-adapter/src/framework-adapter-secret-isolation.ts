@@ -243,3 +243,165 @@ export async function runSecretIsolationTelemetry(
     },
   };
 }
+
+// ---------------------------------------------------------------------------
+// Operation: runtime.scope-isolation.surfaces
+//
+// Constructs two runtimes bound to distinct Scopes (ADR-048, KRT-BE008), drives
+// a turn under each, and records a transcript per Scope. Returns the RAW
+// telemetry and transcript surfaces for both Scopes plus the distinct Scope
+// identifiers observed on each surface. The plan owns the verdict: each Scope's
+// surfaces must carry only that Scope and none of the other Scope's identifier.
+// Nothing here grades; the cross-Scope comparison lives entirely in the plan's
+// resultField and secretAbsence assertions.
+// ---------------------------------------------------------------------------
+
+interface ScopeSurfaceObservation {
+  observedTelemetryScopes: string[];
+  observedTranscriptScope: string | undefined;
+  telemetry: { events: TelemetryEvent[]; spans: TelemetrySpan[] };
+  transcript: unknown[];
+}
+
+function readScopePair(input: unknown): { scopeA: string; scopeB: string } {
+  // Defaults diverge within the secret-absence partial-token prefix window so a
+  // legitimately different Scope never trips the scanner's prefix heuristic.
+  // The runner wraps the plan's `input` in a `{ checkInput }` envelope, so honor
+  // the plan's declared Scopes by reading through `checkInput` rather than the
+  // top level — otherwise the handler silently ignores the plan and the
+  // resultField/secretAbsence assertions only agree with the defaults by chance.
+  const envelope = isRecord(input) ? input : {};
+  const record = isRecord(envelope.checkInput) ? envelope.checkInput : {};
+  return {
+    scopeA: readString(record.scopeA, "tuvren.scope.alpha"),
+    scopeB: readString(record.scopeB, "tuvren.scope.bravo"),
+  };
+}
+
+function distinctTelemetryScopes(
+  events: readonly TelemetryEvent[],
+  spans: readonly TelemetrySpan[]
+): string[] {
+  const scopes = new Set<string>();
+  for (const event of events) {
+    scopes.add(event.lineage.scope);
+  }
+  for (const span of spans) {
+    scopes.add(span.lineage.scope);
+  }
+  return [...scopes].sort();
+}
+
+function readTranscriptScope(
+  transcript: readonly unknown[]
+): string | undefined {
+  for (const record of transcript) {
+    if (
+      isRecord(record) &&
+      record.recordKind === "header" &&
+      isRecord(record.config) &&
+      typeof record.config.scope === "string"
+    ) {
+      return record.config.scope;
+    }
+  }
+  return undefined;
+}
+
+async function captureScopeSurfaces(
+  scope: string
+): Promise<ScopeSurfaceObservation> {
+  const capture = createTelemetryCapture();
+  const harness = createConformanceKernelHarness();
+  const driver = createStaticDriver(async () => {
+    await Promise.resolve();
+    return {
+      messages: [assistantText("scope-isolation surfaces turn")],
+      resolution: { reason: "done", type: "end_turn" as const },
+    };
+  });
+  const runtime = createTuvrenRuntimeCore({
+    createId: createConformanceIdFactory(),
+    defaultDriverId: DRIVER_ID,
+    driverRegistry: createDriverRegistry([driver]),
+    kernel: harness.kernel,
+    scope,
+    telemetry: capture.sink,
+  });
+  const thread = await runtime.createThread({});
+  const handle = runtime.executeTurn({
+    branchId: thread.branchId,
+    config: { name: AGENT_NAME },
+    signal: textSignal("run"),
+    threadId: thread.threadId,
+  });
+  await collectValues(handle.events());
+  await handle.awaitResult();
+
+  // Record a transcript whose header is correlated to the bound Scope. The
+  // input/output entries widen the scanned surface so a cross-Scope leak into
+  // any persisted transcript record — not just the header — would be caught.
+  const header: ReplTranscriptHeader = {
+    config: {
+      backend: { kind: "memory" },
+      providerMode: "aimock-openai",
+      scope,
+    },
+    recordedAtMs: 1,
+    recordKind: "header",
+    runtimeVersion: "conformance",
+    v: 1,
+  };
+  const transcriptLines: string[] = [];
+  const writer = await createReplTranscriptWriter({
+    header,
+    write(line) {
+      transcriptLines.push(line);
+    },
+  });
+  await writer.writeEntry({
+    input: "run",
+    ordinal: 0,
+    recordKind: "input",
+    recordedAtMs: 2,
+    v: 1,
+  });
+  await writer.writeEntry({
+    ordinal: 0,
+    output: "scope-isolation surfaces turn",
+    recordKind: "output",
+    recordedAtMs: 3,
+    v: 1,
+  });
+  await writer.close();
+  const transcript = transcriptLines
+    .filter((line) => line.trim().length > 0)
+    .map((line) => JSON.parse(line) as unknown);
+
+  return {
+    observedTelemetryScopes: distinctTelemetryScopes(
+      capture.events,
+      capture.spans
+    ),
+    observedTranscriptScope: readTranscriptScope(transcript),
+    telemetry: { events: capture.events, spans: capture.spans },
+    transcript,
+  };
+}
+
+export async function runScopeIsolationSurfaces(
+  input: unknown
+): Promise<AdapterProjection> {
+  const { scopeA, scopeB } = readScopePair(input);
+  const [scopeASurfaces, scopeBSurfaces] = await Promise.all([
+    captureScopeSurfaces(scopeA),
+    captureScopeSurfaces(scopeB),
+  ]);
+
+  return {
+    result: {
+      scopeA: scopeASurfaces,
+      scopeB: scopeBSurfaces,
+    },
+  };
+}

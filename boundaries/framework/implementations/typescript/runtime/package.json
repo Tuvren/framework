@@ -13,7 +13,8 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "devDependencies": {
-    "@ag-ui/core": "0.0.52"
+    "@ag-ui/core": "0.0.52",
+    "@tuvren/kernel-testkit": "workspace:*"
   },
   "dependencies": {
     "@bufbuild/protobuf": "2.11.0",

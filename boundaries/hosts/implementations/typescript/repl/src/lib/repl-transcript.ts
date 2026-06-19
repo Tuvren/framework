@@ -31,6 +31,13 @@ export interface ReplTranscriptHeader {
     modelId?: string;
     providerMode: string;
     scenario?: string;
+    /**
+     * Host-bound tenancy partition identity the session ran under (ADR-048,
+     * KRT-BE008). Recorded as correlation context only — never a credential and
+     * never a kernel argument. Optional so transcripts authored before scope
+     * correlation existed remain readable and replayable.
+     */
+    scope?: string;
     systemPrompt?: string;
   };
   recordedAtMs: number;
@@ -379,6 +386,7 @@ function validateTranscriptHeader(
   requireString(value.config.providerMode, "header.config.providerMode");
   requireOptionalString(value.config.modelId, "header.config.modelId");
   requireOptionalString(value.config.scenario, "header.config.scenario");
+  requireOptionalString(value.config.scope, "header.config.scope");
   requireOptionalString(
     value.config.systemPrompt,
     "header.config.systemPrompt"

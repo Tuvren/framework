@@ -16,7 +16,7 @@
 
 import process from "node:process";
 import { createInterface } from "node:readline/promises";
-import type { TuvrenStreamEvent } from "@tuvren/runtime";
+import { DEFAULT_SCOPE, type TuvrenStreamEvent } from "@tuvren/runtime";
 import {
   createReplShell,
   haveAllChecksPassed,
@@ -466,6 +466,10 @@ function createTranscriptHeader(config: ReplConfig): ReplTranscriptHeader {
       modelId: config.modelId,
       providerMode: config.providerMode,
       scenario: config.scenario,
+      // Record the resolved Scope the runtime actually bound (ADR-048,
+      // KRT-BE008) so the transcript is honestly correlated even when the host
+      // left the Scope unset and fell back to the single-tenant default.
+      scope: config.scope ?? DEFAULT_SCOPE,
       systemPrompt: config.systemPrompt,
     },
     recordedAtMs: Date.now(),

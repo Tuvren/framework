@@ -46,6 +46,7 @@ const OPTION_KEY_MAP = {
   "postgres-schema": "postgresSchemaName",
   provider: "provider",
   scenario: "scenario",
+  scope: "scope",
   "sqlite-path": "sqlitePath",
 } as const;
 
@@ -102,6 +103,7 @@ export function loadReplConfig(
     scenario: parseScenario(
       normalizeScenarioValue(options.scenario ?? readReplEnv(env, "SCENARIO"))
     ),
+    scope: normalizeScope(options.scope ?? readReplEnv(env, "SCOPE")),
     sqlitePath: normalizeSqlitePath(
       options.sqlitePath ?? readReplEnv(env, "SQLITE_PATH")
     ),
@@ -210,6 +212,19 @@ function normalizeSystemPrompt(value: string | undefined): string | undefined {
   return normalized.length === 0 ? undefined : normalized;
 }
 
+// An empty or whitespace-only Scope is treated as "unbound" so the runtime and
+// backends fall back to the single-tenant default Scope rather than failing
+// `assertScope`. A meaningful Scope is trimmed and preserved verbatim.
+function normalizeScope(value: string | undefined): string | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  const normalized = value.trim();
+
+  return normalized.length === 0 ? undefined : normalized;
+}
+
 export function resolveGoogleApiKey(
   env: Record<string, string | undefined>
 ): string | undefined {
@@ -242,6 +257,7 @@ export function readReplEnv(
     | "POSTGRES_SCHEMA"
     | "PROVIDER_MODE"
     | "SCENARIO"
+    | "SCOPE"
     | "SQLITE_PATH"
     | "SYSTEM_INSTRUCTIONS"
     | "SYSTEM_PROMPT"

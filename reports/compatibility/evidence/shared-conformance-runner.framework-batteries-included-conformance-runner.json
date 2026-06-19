@@ -618,6 +618,7 @@
     "runtime-api-operational-telemetry.error-path",
     "runtime-api-operational-telemetry.recovery-records",
     "runtime-api-operational-telemetry.tool-spans",
+    "scope-isolation.telemetry-and-transcript-correlation",
     "secret-isolation.telemetry-attributes-and-error-summaries",
     "runtime-orchestration-af.handoff-last-output-only-builder",
     "runtime-orchestration-af.handoff-rejects-multiple-intents",
@@ -698,9 +699,9 @@
   "summary": {
     "failedChecks": 0,
     "passedChecks": 12,
-    "totalChecks": 473,
+    "totalChecks": 474,
     "applicableChecks": 12,
-    "nonApplicableChecks": 461
+    "nonApplicableChecks": 462
   },
   "suiteId": "tuvren.framework.runtime-api.batteries-included",
   "suiteVersion": "0.1.0"

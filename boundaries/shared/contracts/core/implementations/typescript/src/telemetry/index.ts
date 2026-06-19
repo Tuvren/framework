@@ -19,6 +19,12 @@ import type { EpochMs, HashString, TuvrenErrorCode } from "../index.js";
 export interface TelemetryLineage {
   branchId: string;
   runId?: string;
+  /**
+   * The host-bound Scope (tenancy partition identity, ADR-048) the runtime is
+   * constructed against. Correlation context only; it is never a kernel syscall
+   * argument. Single-tenant hosts carry the default Scope.
+   */
+  scope: string;
   threadId: string;
   turnId: string;
   turnNodeHash?: HashString;

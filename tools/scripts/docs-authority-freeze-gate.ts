@@ -220,6 +220,28 @@ const EVIDENCE = {
     generatedArtifact:
       "N/A - kernel protocol behavior is fixture/conformance-backed; grammar source is boundaries/kernel/contracts/protocol/spec/cddl/kernel-records.cddl",
   },
+  // Scope-resolved object identity (kernel spec §2.3, ADR-048/049). KRT-BE001
+  // declared the surface and its conformance-plan reference in the
+  // kernel-protocol authority packet (bindingSections.scope-isolation), with the
+  // cross-scope isolation conformance contract at kernel-scope-isolation.json.
+  // KRT-BE007 promoted the plan to runnable, registered, evidence-backed
+  // conformance: the plan is registered in the packet, the memory/SQLite/
+  // PostgreSQL adapters advertise kernel.scope-isolation, and the
+  // compatibility evidence below records the cross-scope-probe results, so the
+  // claim is now authority-backed-conformance-covered.
+  scopeIsolation: {
+    adapterCapability: "kernel.scope-isolation",
+    authorityPacket:
+      "boundaries/kernel/contracts/protocol/spec/authority-packet.json",
+    compatibilityEvidence:
+      "reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-conformance-runner.json; reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-sqlite-conformance-runner.json; reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-postgres-conformance-runner.json",
+    conformancePlan:
+      "boundaries/kernel/conformance/plans/kernel-scope-isolation.json",
+    fixture:
+      "boundaries/kernel/conformance/fixtures/kernel-protocol-logical.json",
+    generatedArtifact:
+      "N/A - scope isolation is conformance-plan authority without generated schema artifacts",
+  },
   providerApi: {
     adapterCapability: "providers.provider-api; providers.ai-sdk-bridge",
     authorityPacket:
@@ -948,11 +970,15 @@ function classifySaaSReadinessTargetClaim(
   }
 
   if (text.includes("scope-resolved identity (v0.12)")) {
-    return missingConformanceDecision(
+    // KRT-BE007 promoted the §2.3 scope-resolved identity surface to runnable,
+    // registered, evidence-backed conformance: the kernel-scope-isolation plan
+    // is registered in the kernel-protocol authority packet, the memory, SQLite,
+    // and PostgreSQL adapters advertise kernel.scope-isolation and answer the
+    // cross-scope-probe operation, and per-backend compatibility evidence
+    // records store.has / store.get / enumeration staying scope-confined.
+    return authorityDecision(
       "kernel scope-resolved identity",
-      EVIDENCE.kernelProtocol,
-      "KRT-BE001",
-      "Scope-confined object resolution and isolation-by-construction are SaaS-readiness target semantics; portable conformance lands when EPIC-BE promotes kernel spec §2.3."
+      EVIDENCE.scopeIsolation
     );
   }
 

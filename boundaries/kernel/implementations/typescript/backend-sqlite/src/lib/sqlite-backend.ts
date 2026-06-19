@@ -15,10 +15,16 @@
  */
 
 import { AsyncLocalStorage } from "node:async_hooks";
+import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync } from "node:fs";
-import { dirname } from "node:path";
+import { dirname, format, parse } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { EpochMs } from "@tuvren/core";
+import {
+  assertScope,
+  DEFAULT_SCOPE,
+  type EpochMs,
+  type Scope,
+} from "@tuvren/core";
 import {
   assertStoredObjectIdentity,
   assertStoredOrderedPathChunkIdentity,
@@ -184,6 +190,18 @@ export interface SqliteBackendOptions {
    * When omitted, the backend uses `Date.now`.
    */
   now?: () => EpochMs;
+  /**
+   * Host-supplied partition identity bound at construction (ADR-048).
+   *
+   * Isolation is realized as file-per-scope (ADR-049): the default Scope maps to
+   * `databasePath` verbatim — so existing single-scope databases keep working
+   * unchanged — while any other Scope derives a deterministic sibling file from
+   * the same base path. Two backends sharing a `databasePath` but bound to
+   * different Scopes therefore address independent `(scope, hash)` spaces and can
+   * never observe each other's objects, lineage, or enumerations. When omitted,
+   * the backend binds the default Scope. Must be a non-empty string.
+   */
+  scope?: Scope;
 }
 
 const SQLITE_BACKEND_CAPABILITIES: BackendCapability = {
@@ -211,7 +229,9 @@ class SqliteBackend implements KrakenBackend {
 
   constructor(options: SqliteBackendOptions) {
     this.now = options.now ?? Date.now;
-    this.db = openConfiguredDatabase(options.databasePath);
+    const scope = options.scope ?? DEFAULT_SCOPE;
+    assertScope(scope);
+    this.db = openConfiguredDatabase(options.databasePath, scope);
     runMigrations(this.db, this.now);
   }
 
@@ -601,12 +621,19 @@ function configureDatabase(db: Database.Database): void {
   }
 }
 
-function openConfiguredDatabase(databasePath: string): Database.Database {
+function openConfiguredDatabase(
+  databasePath: string,
+  scope: Scope
+): Database.Database {
   const normalizedDatabasePath = normalizePersistentDatabasePath(databasePath);
+  const scopedDatabasePath = resolveScopedDatabasePath(
+    normalizedDatabasePath,
+    scope
+  );
 
   try {
-    ensureDatabaseDirectory(normalizedDatabasePath);
-    const db = new Database(normalizedDatabasePath, {
+    ensureDatabaseDirectory(scopedDatabasePath);
+    const db = new Database(scopedDatabasePath, {
       timeout: SQLITE_BUSY_TIMEOUT_MS,
     });
     configureDatabase(db);
@@ -614,6 +641,45 @@ function openConfiguredDatabase(databasePath: string): Database.Database {
   } catch (error: unknown) {
     throw normalizeBackendError(error);
   }
+}
+
+/**
+ * Derives the concrete per-Scope database file from the host-supplied base path
+ * (ADR-048 construction-bound Scope; ADR-049 scope-per-file isolation). The
+ * default Scope maps to the base path verbatim so existing single-scope
+ * databases keep working unchanged; any other Scope derives a deterministic
+ * sibling file, so two backends sharing a base path but bound to different
+ * Scopes address independent `(scope, hash)` spaces on separate connections and
+ * never observe each other's rows.
+ */
+function resolveScopedDatabasePath(
+  normalizedDatabasePath: string,
+  scope: Scope
+): string {
+  if (scope === DEFAULT_SCOPE) {
+    return normalizedDatabasePath;
+  }
+
+  const parsed = parse(normalizedDatabasePath);
+  return format({
+    dir: parsed.dir,
+    ext: parsed.ext,
+    name: `${parsed.name}.scope-${scopeFileSlug(scope)}`,
+  });
+}
+
+/**
+ * Produces a filesystem-safe, deterministic, collision-resistant filename
+ * component for an opaque host Scope by hashing it. Reopening the same Scope
+ * resolves to the same file, so a scoped database persists across the
+ * per-request backends a host reconstructs for a tenant.
+ *
+ * The 32-hex-char (128-bit) truncation is a deliberate collision budget: it is
+ * far beyond any realistic number of distinct scopes per host while keeping the
+ * derived filename short. Do not shorten it without reassessing that budget.
+ */
+function scopeFileSlug(scope: Scope): string {
+  return createHash("sha256").update(scope, "utf8").digest("hex").slice(0, 32);
 }
 
 function runMigrations(db: Database.Database, now: () => number): void {

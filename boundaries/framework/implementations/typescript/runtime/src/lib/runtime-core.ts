@@ -16,9 +16,12 @@
 
 import { randomUUID } from "node:crypto";
 import {
+  assertScope,
+  DEFAULT_SCOPE,
   type EpochMs,
   type HashString,
   type KernelRecord,
+  type Scope,
   TuvrenRuntimeError,
 } from "@tuvren/core";
 import type {
@@ -239,6 +242,13 @@ export interface RuntimeCoreOptions {
     branchId: string
   ) => Promise<string | null> | string | null;
   runLiveness?: RuntimeRunLivenessOptions;
+  /**
+   * The host-bound Scope this runtime is constructed against (ADR-048). It is
+   * correlation context for operational telemetry and transcripts only — never
+   * a kernel syscall argument — and should match the Scope the host bound to
+   * the durable backend. Defaults to the single-tenant default Scope.
+   */
+  scope?: Scope;
   telemetry?: TuvrenTelemetrySink;
 }
 
@@ -260,6 +270,7 @@ interface ResolvedRuntimeCoreOptions {
     branchId: string
   ) => Promise<string | null> | string | null;
   runLiveness?: ResolvedRuntimeRunLivenessOptions;
+  scope: Scope;
   telemetry?: TuvrenTelemetrySink;
 }
 
@@ -353,10 +364,12 @@ class RuntimeCore implements TuvrenRuntime {
         options.runLiveness === undefined
           ? undefined
           : normalizeRunLivenessOptions(options.runLiveness),
+      scope: resolveRuntimeScope(options.scope),
       telemetry: options.telemetry,
     };
     this.telemetry = createRuntimeTelemetryEmitter({
       now: () => this.now(),
+      scope: this.options.scope,
       sink: this.options.telemetry,
     });
 
@@ -1221,6 +1234,16 @@ class RuntimeCore implements TuvrenRuntime {
       loopState
     );
   }
+}
+
+// Resolves the host-supplied correlation Scope, defaulting single-tenant hosts
+// to the default Scope and rejecting an empty binding the same way the durable
+// backends do (assertScope), so telemetry and transcripts always carry a valid
+// Scope identifier.
+function resolveRuntimeScope(scope: Scope | undefined): Scope {
+  const resolved = scope ?? DEFAULT_SCOPE;
+  assertScope(resolved);
+  return resolved;
 }
 
 export function createTuvrenRuntime(

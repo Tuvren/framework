@@ -39,6 +39,7 @@ describe("createOtelTelemetrySink", () => {
       lineage: {
         branchId: "branch-main",
         runId: "run-main",
+        scope: "tenant-a",
         threadId: "thread-main",
         turnId: "turn-main",
       },
@@ -55,6 +56,7 @@ describe("createOtelTelemetrySink", () => {
       "thread-main"
     );
     expect(spans[0]?.attributes["tuvren.runtime.turn.id"]).toBe("turn-main");
+    expect(spans[0]?.attributes["tuvren.runtime.scope.id"]).toBe("tenant-a");
   });
 
   test("projects standalone telemetry events into short OpenTelemetry spans", () => {
@@ -72,6 +74,7 @@ describe("createOtelTelemetrySink", () => {
       kind: "turn.start",
       lineage: {
         branchId: "branch-main",
+        scope: "tenant-a",
         threadId: "thread-main",
         turnId: "turn-main",
       },
@@ -84,6 +87,7 @@ describe("createOtelTelemetrySink", () => {
     expect(spans[0]?.attributes["tuvren.runtime.thread.id"]).toBe(
       "thread-main"
     );
+    expect(spans[0]?.attributes["tuvren.runtime.scope.id"]).toBe("tenant-a");
   });
 
   test("projects telemetry errors through authored semconv attributes", () => {
@@ -105,6 +109,7 @@ describe("createOtelTelemetrySink", () => {
       kind: "run",
       lineage: {
         branchId: "branch-main",
+        scope: "tenant-a",
         threadId: "thread-main",
         turnId: "turn-main",
       },

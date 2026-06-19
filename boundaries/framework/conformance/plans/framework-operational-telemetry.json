@@ -1,6 +1,6 @@
 {
   "planId": "tuvren.framework.runtime-api.operational-telemetry",
-  "planVersion": "0.2.0",
+  "planVersion": "0.3.0",
   "packetId": "tuvren.shared.core",
   "applicability": {
     "capabilities": ["framework.runtime-api"]
@@ -164,6 +164,68 @@
         }
       ],
       "evidence": ["result.telemetry"]
+    },
+    {
+      "checkId": "scope-isolation.telemetry-and-transcript-correlation",
+      "operation": "runtime.scope-isolation.surfaces",
+      "input": {
+        "scopeA": "tuvren.scope.alpha",
+        "scopeB": "tuvren.scope.bravo",
+        "scopeAValues": ["tuvren.scope.alpha"],
+        "scopeBValues": ["tuvren.scope.bravo"]
+      },
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.scopeA.observedTelemetryScopes",
+          "equalsPath": "$.input.scopeAValues"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.scopeA.observedTranscriptScope",
+          "equalsPath": "$.input.scopeA"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.scopeB.observedTelemetryScopes",
+          "equalsPath": "$.input.scopeBValues"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.scopeB.observedTranscriptScope",
+          "equalsPath": "$.input.scopeB"
+        },
+        {
+          "kind": "secretAbsence",
+          "field": "$.scopeA.telemetry",
+          "secretsPath": "$.input.scopeBValues"
+        },
+        {
+          "kind": "secretAbsence",
+          "field": "$.scopeA.transcript",
+          "secretsPath": "$.input.scopeBValues"
+        },
+        {
+          "kind": "secretAbsence",
+          "field": "$.scopeB.telemetry",
+          "secretsPath": "$.input.scopeAValues"
+        },
+        {
+          "kind": "secretAbsence",
+          "field": "$.scopeB.transcript",
+          "secretsPath": "$.input.scopeAValues"
+        }
+      ],
+      "evidence": [
+        "result.scopeA.observedTelemetryScopes",
+        "result.scopeA.observedTranscriptScope",
+        "result.scopeA.telemetry",
+        "result.scopeA.transcript",
+        "result.scopeB.observedTelemetryScopes",
+        "result.scopeB.observedTranscriptScope",
+        "result.scopeB.telemetry",
+        "result.scopeB.transcript"
+      ]
     }
   ]
 }

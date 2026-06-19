@@ -28,6 +28,12 @@ groups:
         examples: ["thread_main"]
         stability: development
         requirement_level: recommended
+      - id: tuvren.runtime.scope.id
+        type: string
+        brief: The host-bound Scope (tenancy partition identity, ADR-048) the runtime is constructed against. Correlation context only; the kernel syscall surface stays scope-free and the Scope is never a syscall argument.
+        examples: ["tuvren.scope.default", "tenant-a"]
+        stability: development
+        requirement_level: recommended
       - id: tuvren.runtime.driver.id
         type: string
         brief: The active driver identifier for the runtime execution.

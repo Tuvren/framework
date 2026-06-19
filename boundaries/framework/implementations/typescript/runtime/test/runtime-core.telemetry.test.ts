@@ -91,6 +91,111 @@ describe("runtime operational telemetry", () => {
     ).toBe(true);
   });
 
+  test("tags every telemetry record with the constructing scope and never leaks another scope (KRT-BE008)", async () => {
+    const capture = createTelemetryCapture();
+    const harness = createFakeKernelHarness();
+    const driver = {
+      execute() {
+        return Promise.resolve({
+          messages: [assistantText("done")],
+          resolution: { reason: "done", type: "end_turn" },
+        });
+      },
+      id: "fake",
+      resume() {
+        return Promise.reject(new Error("resume was not expected"));
+      },
+    } satisfies KrakenDriver;
+    const runtime = createTuvrenRuntime({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+      scope: "tenant-a",
+      telemetry: capture.sink,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: { name: "primary" },
+      signal: textSignal("hello"),
+      threadId: thread.threadId,
+    });
+
+    await collectEvents(handle.events());
+
+    // Every event and span emitted under scope A is correlated to scope A and
+    // carries no other scope's identity.
+    expect(capture.events.length).toBeGreaterThan(0);
+    expect(capture.spans.length).toBeGreaterThan(0);
+    expect(
+      capture.events.every((event) => event.lineage.scope === "tenant-a")
+    ).toBe(true);
+    expect(
+      capture.spans.every((span) => span.lineage.scope === "tenant-a")
+    ).toBe(true);
+    // Load-bearing leak guard: had the runtime ignored the "tenant-a" binding,
+    // its surfaces would carry the default scope, so asserting that the default
+    // scope is absent proves the bound scope actually displaced the fallback
+    // rather than a never-bound literal that could never appear regardless.
+    const serialized = JSON.stringify({
+      events: capture.events,
+      spans: capture.spans,
+    });
+    expect(serialized).not.toContain("tuvren.scope.default");
+  });
+
+  test("defaults telemetry correlation to the default scope when the host binds none", async () => {
+    const capture = createTelemetryCapture();
+    const harness = createFakeKernelHarness();
+    const driver = {
+      execute() {
+        return Promise.resolve({
+          messages: [assistantText("done")],
+          resolution: { reason: "done", type: "end_turn" },
+        });
+      },
+      id: "fake",
+      resume() {
+        return Promise.reject(new Error("resume was not expected"));
+      },
+    } satisfies KrakenDriver;
+    const runtime = createTuvrenRuntime({
+      defaultDriverId: "fake",
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: harness.kernel,
+      telemetry: capture.sink,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: { name: "primary" },
+      signal: textSignal("hello"),
+      threadId: thread.threadId,
+    });
+
+    await collectEvents(handle.events());
+
+    // Guard against a vacuous pass: `every` is true on an empty array, so the
+    // default-scope claim is only meaningful once spans were actually emitted.
+    expect(capture.spans.length).toBeGreaterThan(0);
+    expect(
+      capture.spans.every(
+        (span) => span.lineage.scope === "tuvren.scope.default"
+      )
+    ).toBe(true);
+  });
+
+  test("rejects an empty scope binding at runtime construction (KRT-BE008)", () => {
+    const harness = createFakeKernelHarness();
+    expect(() =>
+      createTuvrenRuntime({
+        defaultDriverId: "fake",
+        kernel: harness.kernel,
+        scope: "",
+      })
+    ).toThrow(TypeError);
+  });
+
   test("isolates throwing telemetry sinks from runtime execution", async () => {
     const harness = createFakeKernelHarness();
     const driver = {

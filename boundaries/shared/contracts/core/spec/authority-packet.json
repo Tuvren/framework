@@ -177,7 +177,7 @@
     },
     {
       "planId": "tuvren.framework.runtime-api.operational-telemetry",
-      "planVersion": "0.2.0",
+      "planVersion": "0.3.0",
       "path": "boundaries/framework/conformance/plans/framework-operational-telemetry.json"
     },
     {

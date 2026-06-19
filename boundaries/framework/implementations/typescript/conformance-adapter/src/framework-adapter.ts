@@ -69,6 +69,7 @@ import type {
 import { createFrameworkAdapterRuntimeScenarios } from "./framework-adapter-runtime-scenarios.ts";
 import { createFrameworkAdapterSchemaAuthoring } from "./framework-adapter-schema-authoring.ts";
 import {
+  runScopeIsolationSurfaces,
   runSecretIsolationRuntimeApi,
   runSecretIsolationTelemetry,
 } from "./framework-adapter-secret-isolation.ts";
@@ -427,6 +428,8 @@ export class TypeScriptFrameworkAdapter implements ImplementationAdapter {
         return runSecretIsolationRuntimeApi(input);
       case "runtime.secret-isolation.telemetry":
         return runSecretIsolationTelemetry(input);
+      case "runtime.scope-isolation.surfaces":
+        return runScopeIsolationSurfaces(input);
       case "runtime.trust-boundary.approval-gate":
         return runTrustBoundaryApprovalNonBypassable(input);
       case "runtime.trust-boundary.local-tool-input":

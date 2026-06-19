@@ -15,6 +15,7 @@
  */
 
 import { AsyncLocalStorage } from "node:async_hooks";
+import { assertScope, DEFAULT_SCOPE, type Scope } from "@tuvren/core";
 import {
   assertStoredBranch,
   assertStoredObject,
@@ -159,6 +160,7 @@ class PostgresBackend implements KrakenBackend {
   };
   private initializationPromise: Promise<void> | undefined;
   private readonly schemaName: string;
+  private readonly scope: Scope;
   private readonly sql: Sql;
   private readonly transactionContext = new AsyncLocalStorage<boolean>();
   private transactionQueue: Promise<void> = Promise.resolve();
@@ -169,6 +171,8 @@ class PostgresBackend implements KrakenBackend {
 
     this.connectionOptions = { ...resolvedOptions };
     this.schemaName = normalizeSchemaName(resolvedOptions.schemaName);
+    this.scope = resolvedOptions.scope ?? DEFAULT_SCOPE;
+    assertScope(this.scope);
     this.sql = createPostgresClient(resolvedOptions);
     this.now = resolvedOptions.now ?? Date.now;
   }
@@ -181,7 +185,11 @@ class PostgresBackend implements KrakenBackend {
     try {
       await this.ensureInitialized();
       await this.sql.begin(async (tx): Promise<void> => {
-        const state = await loadPersistedStateForUpdate(tx, this.schemaName);
+        const state = await loadPersistedStateForUpdate(
+          tx,
+          this.schemaName,
+          this.scope
+        );
         validateCommittedState(state, state);
       });
       return { ok: true };
@@ -248,7 +256,8 @@ class PostgresBackend implements KrakenBackend {
 
         const baseState = await loadPersistedStateForUpdate(
           reserved,
-          this.schemaName
+          this.schemaName,
+          this.scope
         );
         const draftState = cloneState(baseState);
         let active = true;
@@ -281,6 +290,7 @@ class PostgresBackend implements KrakenBackend {
           await persistStateSnapshot(
             reserved,
             this.schemaName,
+            this.scope,
             draftState,
             this.now()
           );
@@ -329,7 +339,8 @@ class PostgresBackend implements KrakenBackend {
       const initialization = ensurePostgresSchemaInitialized(
         this.sql,
         this.schemaName,
-        this.now
+        this.now,
+        this.scope
       );
       const retryableInitialization = initialization.catch((error: unknown) => {
         if (this.initializationPromise === retryableInitialization) {

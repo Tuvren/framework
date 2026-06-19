@@ -8689,6 +8689,80 @@
     {
       "assertionResults": [
         {
+          "assertionId": "scope-isolation.telemetry-and-transcript-correlation.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "scope-isolation.telemetry-and-transcript-correlation.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "scope-isolation.telemetry-and-transcript-correlation.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "scope-isolation.telemetry-and-transcript-correlation.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "scope-isolation.telemetry-and-transcript-correlation.5.secretAbsence",
+          "status": "pass"
+        },
+        {
+          "assertionId": "scope-isolation.telemetry-and-transcript-correlation.6.secretAbsence",
+          "status": "pass"
+        },
+        {
+          "assertionId": "scope-isolation.telemetry-and-transcript-correlation.7.secretAbsence",
+          "status": "pass"
+        },
+        {
+          "assertionId": "scope-isolation.telemetry-and-transcript-correlation.8.secretAbsence",
+          "status": "pass"
+        },
+        {
+          "assertionId": "scope-isolation.telemetry-and-transcript-correlation.requiredEvidence.result.scopeA.observedTelemetryScopes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "scope-isolation.telemetry-and-transcript-correlation.requiredEvidence.result.scopeA.observedTranscriptScope",
+          "status": "pass"
+        },
+        {
+          "assertionId": "scope-isolation.telemetry-and-transcript-correlation.requiredEvidence.result.scopeA.telemetry",
+          "status": "pass"
+        },
+        {
+          "assertionId": "scope-isolation.telemetry-and-transcript-correlation.requiredEvidence.result.scopeA.transcript",
+          "status": "pass"
+        },
+        {
+          "assertionId": "scope-isolation.telemetry-and-transcript-correlation.requiredEvidence.result.scopeB.observedTelemetryScopes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "scope-isolation.telemetry-and-transcript-correlation.requiredEvidence.result.scopeB.observedTranscriptScope",
+          "status": "pass"
+        },
+        {
+          "assertionId": "scope-isolation.telemetry-and-transcript-correlation.requiredEvidence.result.scopeB.telemetry",
+          "status": "pass"
+        },
+        {
+          "assertionId": "scope-isolation.telemetry-and-transcript-correlation.requiredEvidence.result.scopeB.transcript",
+          "status": "pass"
+        }
+      ],
+      "checkId": "scope-isolation.telemetry-and-transcript-correlation",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.operational-telemetry"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "secret-isolation.telemetry-attributes-and-error-summaries.1.secretAbsence",
           "status": "pass"
         },
@@ -10235,9 +10309,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 461,
-    "totalChecks": 473,
-    "applicableChecks": 461,
+    "passedChecks": 462,
+    "totalChecks": 474,
+    "applicableChecks": 462,
     "nonApplicableChecks": 12
   },
   "suiteId": "tuvren.framework.promoted-authority",
