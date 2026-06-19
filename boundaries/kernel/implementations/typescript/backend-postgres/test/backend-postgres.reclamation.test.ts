@@ -133,4 +133,35 @@ describe("createPostgresBackend maintenance.reclamation", () => {
       await (backend as ClosablePostgresBackend).destroy();
     }
   });
+
+  test("is a safe no-op when nothing is unreachable", async () => {
+    const now = createMonotonicClock();
+    const backend = createPostgresBackend(
+      createPostgresTestBackendOptions({ now })
+    );
+
+    try {
+      const kernel = createRuntimeKernel({ backend, now });
+      const schemaId = await kernel.schema.register(TEST_SCHEMA);
+      const thread = await kernel.thread.create(
+        "thread_reclaim",
+        schemaId,
+        "branch_reclaim"
+      );
+
+      const summary = await kernel.maintenance.reclaim();
+
+      // The snapshot rewrite must not churn or invalidate an unchanged scope:
+      // nothing is released and the scope still reads back across a fresh load.
+      expect(summary.releasedObjectCount).toBe(0);
+      expect(summary.releasedArchivedBranchCount).toBe(0);
+      expect(summary.releasedTurnNodeCount).toBe(0);
+      const reloaded = await kernel.thread.get(thread.threadId);
+      expect(reloaded?.rootTurnNodeHash).toBe(thread.rootTurnNodeHash);
+      const health = await backend.health();
+      expect(health.ok).toBe(true);
+    } finally {
+      await (backend as ClosablePostgresBackend).destroy();
+    }
+  });
 });
