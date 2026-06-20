@@ -428,7 +428,9 @@ class PostgresBackend implements KrakenBackend {
       // Full tenant offboarding (§9.4): under the row-level isolation model the
       // Scope owns exactly one snapshot row, so dropping the partition is
       // deleting that row. Every other Scope's row in the shared table is
-      // untouched, so offboarding one tenant is invisible to the rest.
+      // untouched, so offboarding one tenant is invisible to the rest. This
+      // instance is unusable afterward (callers discard it per the purgeScope
+      // contract), exactly like the SQLite backend after it removes its file.
       await deletePersistedStateSnapshot(this.sql, this.schemaName, this.scope);
     } finally {
       releaseQueue?.();
