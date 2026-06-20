@@ -233,12 +233,26 @@ function serializeEnvelope(parts: {
   return out;
 }
 
+// version(1) + algId(1) + keyRefLen(2) — the fixed header that follows the magic.
+const ENVELOPE_FIXED_HEADER_BYTES = 4;
+
 function parseEnvelope(bytes: Uint8Array): ParsedEnvelope {
   if (!isPayloadEnvelope(bytes)) {
     throw new TypeError("payload envelope magic mismatch");
   }
+  // `subarray` silently *clamps* an out-of-range slice instead of throwing, so a
+  // truncated or over-claimed length field would yield a garbage `keyRef`/`iv`
+  // rather than an error. On read that garbage keyRef fails to resolve and the
+  // decrypt path would return `{ status: "erased" }` — making storage
+  // corruption indistinguishable from a legitimate crypto-shredding event on a
+  // compliance-critical surface. Bounds-check every length-prefixed field and
+  // throw (a structural integrity error, never an erased read) so corruption can
+  // never masquerade as erasure.
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   let offset = ENVELOPE_MAGIC.length;
+  if (bytes.length < offset + ENVELOPE_FIXED_HEADER_BYTES) {
+    throw new TypeError("malformed payload envelope: truncated header");
+  }
   const version = bytes[offset++];
   if (version !== ENVELOPE_VERSION) {
     throw new TypeError(`unsupported payload envelope version ${version}`);
@@ -246,24 +260,58 @@ function parseEnvelope(bytes: Uint8Array): ParsedEnvelope {
   const algId = bytes[offset++];
   const keyRefLen = view.getUint16(offset, true);
   offset += 2;
+  if (offset + keyRefLen > bytes.length) {
+    throw new TypeError(
+      "malformed payload envelope: keyRef length out of range"
+    );
+  }
   const keyRef = new TextDecoder().decode(
     bytes.subarray(offset, offset + keyRefLen)
   );
   offset += keyRefLen;
+  if (offset + 1 > bytes.length) {
+    throw new TypeError("malformed payload envelope: missing iv length");
+  }
   const ivLen = bytes[offset++];
+  if (offset + ivLen > bytes.length) {
+    throw new TypeError("malformed payload envelope: iv length out of range");
+  }
   const iv = bytes.subarray(offset, offset + ivLen);
   offset += ivLen;
   const ciphertext = bytes.subarray(offset);
   return { algId, ciphertext, iv, keyRef };
 }
 
+const AAD_DOMAIN_PREFIX = new TextEncoder().encode("tuvren.payload.v1");
+
 function buildAad(context: PayloadCodecContext): Uint8Array {
-  // Bind the Scope and the payload-class (edge) tag into AAD. Reconstructed from
-  // the read context, never read from the envelope, so cross-Scope / cross-class
-  // replay is rejected by AEAD verification.
-  return new TextEncoder().encode(
-    `tuvren.payload.v1\u001f${context.scope}\u001f${context.edge}`
+  // Bind the Scope and the payload-class (edge) tag into AAD, length-prefixed so
+  // the encoding is an *injective* function of (scope, edge). A delimiter-joined
+  // string is ambiguous: a host-supplied Scope is only validated as a non-empty
+  // string, so a Scope containing the delimiter could forge the AAD of a
+  // *different* (scope, edge) pair once more than one edge tag exists, silently
+  // defeating cross-Scope replay protection on a security primitive.
+  // Length-prefixing removes that ambiguity for free. AAD is reconstructed from
+  // the read context, never read from the envelope, so a ciphertext moved to a
+  // different Scope/edge fails the GCM tag check.
+  const encoder = new TextEncoder();
+  const scopeBytes = encoder.encode(context.scope);
+  const edgeBytes = encoder.encode(context.edge);
+  const out = new Uint8Array(
+    AAD_DOMAIN_PREFIX.length + 4 + scopeBytes.length + 4 + edgeBytes.length
   );
+  const view = new DataView(out.buffer);
+  let offset = 0;
+  out.set(AAD_DOMAIN_PREFIX, offset);
+  offset += AAD_DOMAIN_PREFIX.length;
+  view.setUint32(offset, scopeBytes.length, true);
+  offset += 4;
+  out.set(scopeBytes, offset);
+  offset += scopeBytes.length;
+  view.setUint32(offset, edgeBytes.length, true);
+  offset += 4;
+  out.set(edgeBytes, offset);
+  return out;
 }
 
 // Web Crypto's BufferSource parameters require a concrete ArrayBuffer-backed
@@ -331,6 +379,14 @@ export function createAesGcmPayloadCodec(
       if (envelope.algId !== ALG_AES_256_GCM) {
         throw new TypeError(
           `unsupported payload envelope algorithm ${envelope.algId}`
+        );
+      }
+      if (envelope.iv.length !== GCM_IV_BYTES) {
+        // A structurally well-formed envelope can still carry a wrong-size IV
+        // under corruption; reject it as an integrity error (never an erased
+        // read) instead of leaning on Web Crypto's generic rejection.
+        throw new TypeError(
+          `malformed payload envelope: iv must be ${GCM_IV_BYTES} bytes, received ${envelope.iv.length}`
         );
       }
       const key = await keyring.resolve(envelope.keyRef);
