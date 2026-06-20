@@ -550,6 +550,10 @@ export interface RuntimeBackend {
    * maintenance surface invokes it directly against the durable backend.
    * Crypto-shredding erasure remains a separate host action (destroying the
    * Scope's payload keys); this drops the residual ciphertext partition.
+   * After it resolves the backend instance MAY be unusable and callers MUST NOT
+   * reuse it: a backend is free to release its substrate handle (the SQLite
+   * backend closes its connection and removes the file) rather than re-create an
+   * empty partition. Offboarding hosts discard the backend after the drop.
    * Backends that cannot drop a partition omit it.
    */
   purgeScope?(): Promise<void>;
