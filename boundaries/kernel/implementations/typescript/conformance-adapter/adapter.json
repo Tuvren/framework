@@ -28,6 +28,8 @@
     "--capability",
     "kernel.scope-isolation",
     "--capability",
+    "kernel.reclamation",
+    "--capability",
     "kernel-protocol.thread.enumeration"
   ],
   "capabilities": [
@@ -37,6 +39,7 @@
     "kernel.run-liveness",
     "kernel.restart-recovery",
     "kernel.scope-isolation",
+    "kernel.reclamation",
     "kernel-protocol.thread.enumeration"
   ],
   "authorityPackets": [

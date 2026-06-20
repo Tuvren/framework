@@ -154,6 +154,15 @@ export function createFakeKernelHarness(): FakeKernelHarness {
         };
       },
     },
+    maintenance: {
+      reclaim() {
+        // The fake kernel does not model reachability reclamation; framework
+        // tests exercise the runtime against a real backend when they need it.
+        return Promise.reject(
+          new Error("fake kernel does not implement maintenance.reclaim")
+        );
+      },
+    },
     node: {
       async get(hash) {
         const turnNode = state.turnNodes.get(hash);

@@ -42,6 +42,7 @@ import {
   type RuntimeBackend as KrakenBackend,
   type RuntimeBackendTx as KrakenBackendTx,
   type ListThreadsCursorPayload,
+  type ReclamationSummary,
   type StoredBranch,
   type StoredRun,
   type StoredStagedResult,
@@ -55,6 +56,7 @@ import {
   assertTurnNodeDescendsFrom,
   decodeTurnNodeConsumedStagedResultObjectHashes,
 } from "./memory-backend-lineage.js";
+import { reclaimBackendState } from "./memory-backend-reclamation.js";
 import {
   areStoredObjectsEqual,
   areStoredOrderedPathChunksEqual,
@@ -147,6 +149,7 @@ export interface MemoryBackendOptions {
 }
 
 const MEMORY_BACKEND_CAPABILITIES: BackendCapability = {
+  "maintenance.reclamation": true,
   "thread.enumeration": true,
 };
 const FAULT_INJECTION_CONTROL = Symbol(
@@ -189,6 +192,31 @@ class MemoryBackend implements KrakenBackend {
 
   health(): Promise<{ ok: true }> {
     return Promise.resolve({ ok: true });
+  }
+
+  reclaim(): Promise<ReclamationSummary> {
+    // Reclamation serializes against this Scope exactly like a transaction:
+    // clone the committed state, sweep the unreachable remainder, validate the
+    // referential invariants of the result, then swap it in atomically.
+    return this.store.runExclusive(this.scope, () => {
+      const baseState = this.store.getState(this.scope);
+      const draftState = cloneState(baseState);
+      const summary = reclaimBackendState(draftState);
+      validateCommittedState(draftState, baseState);
+      this.store.setState(this.scope, draftState);
+      return Promise.resolve(summary);
+    });
+  }
+
+  purgeScope(): Promise<void> {
+    // Full tenant offboarding (§9.4): drop the bound Scope's entire partition.
+    // Serialize against this Scope exactly like a transaction so the drop never
+    // races an in-flight commit; distinct Scopes sharing this store are left
+    // untouched, so offboarding one tenant is invisible to every other.
+    return this.store.runExclusive(this.scope, () => {
+      this.store.dropScope(this.scope);
+      return Promise.resolve();
+    });
   }
 
   transact<T>(work: (tx: KrakenBackendTx) => Promise<T>): Promise<T> {

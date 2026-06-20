@@ -16,12 +16,13 @@
 
 import { beforeEach, describe, expect, test } from "bun:test";
 import { createMemoryBackend } from "@tuvren/backend-memory";
-import { TuvrenLineageError } from "@tuvren/core";
+import { DEFAULT_SCOPE, TuvrenLineageError } from "@tuvren/core";
 import type {
   BranchMessagesCursor,
   ListThreadsCursor,
   TurnHistoryCursor,
 } from "@tuvren/core/execution";
+import { IDENTITY_PAYLOAD_CODEC } from "@tuvren/core/lifecycle";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
 import {
   getTurnHistory,
@@ -30,6 +31,7 @@ import {
   listThreads,
   readBranchMessages,
 } from "../src/lib/durable-reads.js";
+import type { PayloadCodecBinding } from "../src/lib/payload-codec-seam.js";
 import type { RuntimeCoreOptions } from "../src/lib/runtime-core.js";
 import {
   createTuvrenRuntime,
@@ -37,6 +39,11 @@ import {
 } from "../src/lib/runtime-core.js";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+
+const PLAINTEXT_BINDING: PayloadCodecBinding = {
+  codec: IDENTITY_PAYLOAD_CODEC,
+  scope: DEFAULT_SCOPE,
+};
 
 function makeKernel() {
   return createRuntimeKernel({ backend: createMemoryBackend() });
@@ -169,7 +176,7 @@ describe("KRT-AO002 cursor encode/decode", () => {
     ).toString("base64url");
 
     await expect(
-      readBranchMessages(kernel, {
+      readBranchMessages(kernel, PLAINTEXT_BINDING, {
         branchId: thread.branchId,
         after: staleCursor as BranchMessagesCursor,
       })
@@ -341,7 +348,7 @@ describe("KRT-AO005 readBranchMessages", () => {
       "b1"
     );
 
-    const result = await readBranchMessages(kernel, {
+    const result = await readBranchMessages(kernel, PLAINTEXT_BINDING, {
       branchId: thread.branchId,
     });
     expect(result.messages).toHaveLength(0);
@@ -357,7 +364,7 @@ describe("KRT-AO005 readBranchMessages", () => {
     });
     const thread = await kernel.thread.create("t1", "schema_no_messages", "b1");
 
-    const result = await readBranchMessages(kernel, {
+    const result = await readBranchMessages(kernel, PLAINTEXT_BINDING, {
       branchId: thread.branchId,
     });
     expect(result.messages).toHaveLength(0);
@@ -385,7 +392,7 @@ describe("KRT-AO005 readBranchMessages", () => {
     ).toString("base64url");
 
     await expect(
-      readBranchMessages(kernel, {
+      readBranchMessages(kernel, PLAINTEXT_BINDING, {
         branchId: thread.branchId,
         after: staleCursor as BranchMessagesCursor,
       })
@@ -395,7 +402,7 @@ describe("KRT-AO005 readBranchMessages", () => {
   test("throws TuvrenLineageError for an unknown branchId", async () => {
     const kernel = makeKernel();
     await expect(
-      readBranchMessages(kernel, { branchId: "nonexistent" })
+      readBranchMessages(kernel, PLAINTEXT_BINDING, { branchId: "nonexistent" })
     ).rejects.toBeInstanceOf(TuvrenLineageError);
   });
 });

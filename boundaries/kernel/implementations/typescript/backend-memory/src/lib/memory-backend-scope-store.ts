@@ -57,6 +57,20 @@ export class MemoryScopeStore {
   }
 
   /**
+   * Drops a Scope's entire partition from the substrate (full tenant
+   * offboarding; kernel spec §9.4). Removes the committed state so a later
+   * `getState` re-creates an empty partition, and forgets the per-Scope
+   * serialization queue. Distinct Scopes sharing this store are untouched, so
+   * isolation-by-construction makes offboarding one tenant invisible to every
+   * other. Callers must hold the per-Scope lock (`runExclusive`) so the drop
+   * does not race a concurrent transaction on the same Scope.
+   */
+  dropScope(scope: Scope): void {
+    this.states.delete(scope);
+    this.scopeQueues.delete(scope);
+  }
+
+  /**
    * Runs `work` with exclusive access to a Scope, serializing all transactions
    * for that Scope across every backend instance sharing this store. Distinct
    * Scopes never contend with one another.

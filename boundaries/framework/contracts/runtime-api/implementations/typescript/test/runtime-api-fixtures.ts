@@ -330,6 +330,14 @@ export const frameworkContractFixtures = {
     readBranchMessages() {
       return Promise.resolve({ messages: [] });
     },
+    maintenance: {
+      reclaim() {
+        throw new Error("reclaim was not expected");
+      },
+      purgeScope() {
+        throw new Error("purgeScope was not expected");
+      },
+    },
   } satisfies TuvrenRuntime,
   streamEvent: {
     messageId: "message_1",

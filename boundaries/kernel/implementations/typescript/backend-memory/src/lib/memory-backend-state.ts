@@ -67,6 +67,7 @@ export function validateCommittedState(
   validateTurnInvariants(state);
   validateRunInvariants(state);
   validateTurnTreePathInvariants(state);
+  validateObserveAnnotationInvariants(state);
 }
 
 function validateThreadInvariants(state: BackendState): void {
@@ -467,5 +468,29 @@ function validateTurnTreePathInvariants(state: BackendState): void {
 
   for (const turnTree of state.turnTrees.values()) {
     assertTurnTreeManifestMatchesStoredPaths(state, turnTree);
+  }
+}
+
+/**
+ * Every stored observe annotation must reference an existing run and, when set,
+ * an existing turn node. This makes the reclamation sweep's safety for
+ * observeAnnotations.turnNodeHash an enforced committed-state invariant rather
+ * than a property argued from sweepRuns deleting a run's annotations alongside
+ * the run: any committed state where an annotation outlived its run or its
+ * referenced turn node is rejected here, so a kept annotation can never dangle.
+ */
+function validateObserveAnnotationInvariants(state: BackendState): void {
+  for (const [runId, annotations] of state.observeAnnotations.entries()) {
+    ensureRunExists(state, runId, "observeAnnotation.runId");
+
+    for (const annotation of annotations) {
+      if (annotation.turnNodeHash !== null) {
+        ensureTurnNodeExists(
+          state,
+          annotation.turnNodeHash,
+          "observeAnnotation.turnNodeHash"
+        );
+      }
+    }
   }
 }

@@ -33,6 +33,7 @@ import type {
   RunCompletionStatus,
 } from "@tuvren/kernel-protocol";
 import type { ExtensionStateUpdate } from "./extension-runtime.js";
+import type { PayloadCodecBinding } from "./payload-codec-seam.js";
 import type { HelperBundle } from "./runtime-core-context.js";
 import type { RuntimeCoreContextOpsHost } from "./runtime-core-context-ops.js";
 import type { RuntimeCoreDriverHost } from "./runtime-core-driver.js";
@@ -220,6 +221,7 @@ interface RuntimeCoreFacadeHostDependencies {
     helpers: ContextEngineeringHelpers
   ): TuvrenMessage[];
   now(): EpochMs;
+  payloadCodecBinding: PayloadCodecBinding;
   publishCustomEvent(
     handle: RuntimeExecutionHandle,
     event: { data: unknown; name: string },
@@ -481,6 +483,7 @@ export function createRuntimeCoreFacadeHosts(
       getOrCreateManifestExtensionStateWarningKeys: (handle) =>
         dependencies.getOrCreateManifestExtensionStateWarningKeys(handle),
       kernel: dependencies.kernel,
+      payloadCodecBinding: dependencies.payloadCodecBinding,
     }),
     startup: buildRuntimeCoreStartupHost({
       applyTerminalAgentTransitionIfNeeded: (...args) =>

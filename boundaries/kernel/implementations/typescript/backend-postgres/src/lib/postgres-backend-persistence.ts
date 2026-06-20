@@ -332,6 +332,32 @@ export async function persistStateSnapshot(
   );
 }
 
+/**
+ * Drops a Scope's entire partition for full tenant offboarding (kernel spec
+ * §9.4). Under the row-level isolation model each Scope owns one snapshot row in
+ * the shared table, so deleting that row removes all of the Scope's durable
+ * state while leaving every other Scope's row untouched. Per the
+ * `RuntimeBackend.purgeScope` contract the offboarding instance is then
+ * discarded (it caches its initialization, so reusing it after the row is gone
+ * raises `postgres_backend_missing_snapshot_row`); only a *fresh* backend
+ * re-creates an empty partition for the Scope on its next load.
+ */
+export async function deletePersistedStateSnapshot(
+  sql: Sql | TransactionSql<Record<string, never>>,
+  schemaName: string,
+  scope: Scope
+): Promise<void> {
+  const snapshotsTable = qualifyIdentifier(
+    schemaName,
+    "backend_postgres_snapshots"
+  );
+  await sql.unsafe(
+    `DELETE FROM ${snapshotsTable}
+      WHERE snapshot_id = $1 AND scope = $2`,
+    [SNAPSHOT_ROW_ID, scope]
+  );
+}
+
 function encodeSnapshot(state: BackendState): Uint8Array {
   const snapshot = {
     branches: Array.from(state.branches.values(), cloneStoredBranch).sort(

@@ -75,11 +75,29 @@ export type {
   LoopPolicy,
   OrchestrationHandle,
   OrchestrationRuntime,
+  ReclamationSummary,
+  RuntimeMaintenance,
   RuntimeResolution,
   TuvrenRuntime,
 } from "@tuvren/core/execution";
 export { assertExecutionStatus } from "@tuvren/core/execution";
 export type { TuvrenExtension } from "@tuvren/core/extensions";
+// Data-lifecycle crypto-shredding payload codec (ADR-051, KRT-BF005).
+export type {
+  AesGcmPayloadCodecOptions,
+  ErasedPayload,
+  PayloadCodec,
+  PayloadCodecContext,
+  PayloadDecryptResult,
+  PayloadKeyring,
+} from "@tuvren/core/lifecycle";
+export {
+  createAesGcmPayloadCodec,
+  createIdentityPayloadCodec,
+  IDENTITY_PAYLOAD_CODEC,
+  isErasedPayload,
+  isPayloadEnvelope,
+} from "@tuvren/core/lifecycle";
 export type {
   ContentPart,
   FilePart,

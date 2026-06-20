@@ -76,6 +76,8 @@ export function createFaultInjectingBackend(
   plan: FaultPlan
 ): RuntimeBackend {
   const control = readFaultInjectionControl(inner);
+  const innerReclaim = inner.reclaim?.bind(inner);
+  const innerPurgeScope = inner.purgeScope?.bind(inner);
   let consumed = false;
 
   const decorated: RuntimeBackend & {
@@ -88,6 +90,12 @@ export function createFaultInjectingBackend(
     health() {
       return inner.health();
     },
+    // Forward the optional maintenance operations so a wrapped backend that
+    // advertises maintenance.reclamation (reclaim) or supports tenant
+    // offboarding (purgeScope) stays faithful through the decorator; fault
+    // injection targets transactions, not maintenance sweeps or partition drops.
+    ...(innerReclaim === undefined ? {} : { reclaim: innerReclaim }),
+    ...(innerPurgeScope === undefined ? {} : { purgeScope: innerPurgeScope }),
     async transact<T>(work: (tx: RuntimeBackendTx) => Promise<T>): Promise<T> {
       const concurrentWriterSnapshot =
         plan.concurrentWriter === undefined

@@ -481,6 +481,19 @@ export interface RuntimeBackendTx {
  */
 export interface BackendCapability {
   /**
+   * Backend supports the capability-gated reachability reclamation primitive
+   * (KrakenKernelSpecification §9.4). When `true`, the backend implements the
+   * reclamation backing operation the kernel drives to mark durable state
+   * reachable from live roots — non-archived branch heads, thread roots, and
+   * active-run staged work — within the constructing Scope and sweep only the
+   * unreachable remainder, grace-windowed against the oldest active execution
+   * lease. When `false` or absent, the kernel rejects reclamation with
+   * `TuvrenPersistenceError` code `kernel_capability_unsupported`. Object-store
+   * substrates that reclaim out of band advertise non-support. Adding this bit
+   * is a semver-minor change (§9.1).
+   */
+  readonly "maintenance.reclamation"?: boolean;
+  /**
    * Backend supports efficient thread enumeration via ThreadRepository.list.
    * Required for hosts that consume TuvrenRuntime.listThreads.
    */
@@ -489,9 +502,71 @@ export interface BackendCapability {
   readonly [extraCapability: string]: boolean | undefined;
 }
 
+/**
+ * Options for the capability-gated reachability reclamation primitive (§9.4).
+ */
+export interface ReclamationOptions {
+  /**
+   * Optional clock reference (epoch ms) a backend MAY consult while evaluating
+   * the grace window. The kernel supplies its own `now()` so any wall-clock
+   * comparison stays consistent with the rest of the syscall surface. The grace
+   * horizon itself is derived structurally from the constructing Scope's own
+   * active runs (the oldest active execution lease / in-flight write horizon):
+   * the reference memory backend retains everything at or after that horizon and
+   * therefore does not consult `nowMs`. The field is reserved for backends that
+   * additionally impose a wall-clock floor on releasable state.
+   */
+  nowMs?: EpochMs;
+}
+
+/**
+ * Result of a reclamation sweep (§9.4). Counts the durable state released and
+ * retained within the constructing Scope. Released state is unreachable from
+ * live roots (non-archived branch heads, thread roots, active-run staged work)
+ * and older than the grace horizon; everything reachable or within the grace
+ * window is retained.
+ */
+export interface ReclamationSummary {
+  releasedArchivedBranchCount: number;
+  releasedObjectCount: number;
+  releasedOrderedPathChunkCount: number;
+  releasedRunCount: number;
+  releasedTurnCount: number;
+  releasedTurnNodeCount: number;
+  releasedTurnTreeCount: number;
+  retainedObjectCount: number;
+}
+
 export interface RuntimeBackend {
   capabilities(): BackendCapability;
   health(): Promise<{ ok: true } | { ok: false; reason: string }>;
+  /**
+   * Optional substrate partition drop for full tenant offboarding (§9.4: "full
+   * tenant offboarding is dropping the Scope partition ... a substrate/edge
+   * concern outside the kernel"). Removes the constructing Scope's entire
+   * durable partition — not only the unreachable remainder a reclamation sweep
+   * releases. This is deliberately NOT a kernel syscall and has no
+   * `RuntimeKernel` projection or operation-count contribution; the framework
+   * maintenance surface invokes it directly against the durable backend.
+   * Crypto-shredding erasure remains a separate host action (destroying the
+   * Scope's payload keys); this drops the residual ciphertext partition.
+   * After it resolves the backend instance MAY be unusable and callers MUST NOT
+   * reuse it: a backend is free to release its substrate handle (the SQLite
+   * backend closes its connection and removes the file) rather than re-create an
+   * empty partition. Offboarding hosts discard the backend after the drop.
+   * Backends that cannot drop a partition omit it.
+   */
+  purgeScope?(): Promise<void>;
+  /**
+   * Optional reachability reclamation backing operation (§9.4). Implemented
+   * only by backends advertising `maintenance.reclamation: true`; backends that
+   * advertise non-support must not implement it (§9.1). Marks durable state
+   * reachable from live roots within the constructing Scope and atomically
+   * sweeps only the unreachable remainder, grace-windowed against the oldest
+   * active execution lease so reclamation can never race recovery. Never edits
+   * committed lineage or alters a reachable Object.
+   */
+  reclaim?(options?: ReclamationOptions): Promise<ReclamationSummary>;
   transact<T>(work: (tx: RuntimeBackendTx) => Promise<T>): Promise<T>;
 }
 
@@ -512,6 +587,18 @@ export interface RuntimeKernel {
     get(branchId: string): Promise<BranchRecord | null>;
     setHead(branchId: string, turnNodeHash: HashString): Promise<SetHeadResult>;
     list(threadId: string): Promise<BranchHeadListEntry[]>;
+  };
+  maintenance: {
+    /**
+     * §9.4: capability-gated reachability reclamation. Rejects with
+     * TuvrenPersistenceError code "kernel_capability_unsupported" when the
+     * backend does not advertise maintenance.reclamation. Releases durable
+     * state unreachable from live roots (non-archived branch heads, thread
+     * roots, active-run staged work) within the constructing Scope, sweeping
+     * only the unreachable remainder and never releasing state newer than the
+     * oldest active execution lease.
+     */
+    reclaim(options?: ReclamationOptions): Promise<ReclamationSummary>;
   };
   node: {
     get(hash: HashString): Promise<TurnNode | null>;

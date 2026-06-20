@@ -7,6 +7,7 @@
     "kernel.logical",
     "kernel.persistence.durable",
     "kernel.protocol",
+    "kernel.reclamation",
     "kernel.restart-recovery",
     "kernel.run-liveness",
     "kernel.scope-isolation"
@@ -1813,6 +1814,152 @@
     {
       "assertionResults": [
         {
+          "assertionId": "kernel.reclamation.erasure_payload_unrecoverable_after_key_destruction.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.reclamation.erasure_payload_unrecoverable_after_key_destruction.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.reclamation.erasure_payload_unrecoverable_after_key_destruction.requiredEvidence.erasure.recoverableBeforeErasure",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.reclamation.erasure_payload_unrecoverable_after_key_destruction.requiredEvidence.erasure.unrecoverableAfterErasure",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.reclamation.erasure_payload_unrecoverable_after_key_destruction.requiredEvidence.result.erasure.recoverableBeforeErasure",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.reclamation.erasure_payload_unrecoverable_after_key_destruction.requiredEvidence.result.erasure.unrecoverableAfterErasure",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.reclamation.erasure_payload_unrecoverable_after_key_destruction",
+      "details": {
+        "adapterId": "typescript-kernel-sqlite",
+        "planId": "tuvren.kernel.reclamation"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.reclamation.erasure_preserves_referencing_lineage.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.reclamation.erasure_preserves_referencing_lineage.requiredEvidence.erasure.lineageStructurallyIntactAfterErasure",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.reclamation.erasure_preserves_referencing_lineage.requiredEvidence.result.erasure.lineageStructurallyIntactAfterErasure",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.reclamation.erasure_preserves_referencing_lineage",
+      "details": {
+        "adapterId": "typescript-kernel-sqlite",
+        "planId": "tuvren.kernel.reclamation"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.reclamation.grace_window_holds_under_active_lease.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.reclamation.grace_window_holds_under_active_lease.requiredEvidence.reclaim.graceWindowHeldUnderActiveLease",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.reclamation.grace_window_holds_under_active_lease.requiredEvidence.result.reclaim.graceWindowHeldUnderActiveLease",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.reclamation.grace_window_holds_under_active_lease",
+      "details": {
+        "adapterId": "typescript-kernel-sqlite",
+        "planId": "tuvren.kernel.reclamation"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.reclamation.reachable_from_live_root_is_retained.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.reclamation.reachable_from_live_root_is_retained.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.reclamation.reachable_from_live_root_is_retained.requiredEvidence.reclaim.reachableFromLiveRootRetained",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.reclamation.reachable_from_live_root_is_retained.requiredEvidence.reclaim.sharedObjectRetainedViaLiveRoot",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.reclamation.reachable_from_live_root_is_retained.requiredEvidence.result.reclaim.reachableFromLiveRootRetained",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.reclamation.reachable_from_live_root_is_retained.requiredEvidence.result.reclaim.sharedObjectRetainedViaLiveRoot",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.reclamation.reachable_from_live_root_is_retained",
+      "details": {
+        "adapterId": "typescript-kernel-sqlite",
+        "planId": "tuvren.kernel.reclamation"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.reclamation.unreachable_past_grace_is_released.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.reclamation.unreachable_past_grace_is_released.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.reclamation.unreachable_past_grace_is_released.requiredEvidence.reclaim.archivedBranchReleased",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.reclamation.unreachable_past_grace_is_released.requiredEvidence.reclaim.unreachablePastGraceReleased",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.reclamation.unreachable_past_grace_is_released.requiredEvidence.result.reclaim.archivedBranchReleased",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.reclamation.unreachable_past_grace_is_released.requiredEvidence.result.reclaim.unreachablePastGraceReleased",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.reclamation.unreachable_past_grace_is_released",
+      "details": {
+        "adapterId": "typescript-kernel-sqlite",
+        "planId": "tuvren.kernel.reclamation"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "kernel-restart-af.invalid-staged-result-reexecutes.1.resultField",
           "status": "pass"
         },
@@ -2866,9 +3013,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 62,
-    "totalChecks": 62,
-    "applicableChecks": 62,
+    "passedChecks": 67,
+    "totalChecks": 67,
+    "applicableChecks": 67,
     "nonApplicableChecks": 0
   },
   "suiteId": "tuvren.kernel.protocol",

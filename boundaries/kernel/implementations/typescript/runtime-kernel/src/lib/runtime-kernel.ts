@@ -27,6 +27,8 @@ import {
   type BranchHeadListEntry,
   type KernelThreadListCursor,
   type ListThreadsCursorPayload,
+  type ReclamationOptions,
+  type ReclamationSummary,
   type RuntimeBackend,
   type RuntimeKernel,
   type RuntimeKernelRunLiveness,
@@ -274,6 +276,24 @@ export function createRuntimeKernel(
             branch: toBranchRecord(updated),
           } satisfies SetHeadResult;
         });
+      },
+    },
+
+    maintenance: {
+      async reclaim(options?: ReclamationOptions): Promise<ReclamationSummary> {
+        if (!backend.capabilities()["maintenance.reclamation"]) {
+          throw new TuvrenPersistenceError(
+            "maintenance.reclamation is not supported by this backend",
+            { code: "kernel_capability_unsupported" }
+          );
+        }
+        if (backend.reclaim === undefined) {
+          throw new TuvrenPersistenceError(
+            "backend advertises maintenance.reclamation but does not implement reclaim",
+            { code: "kernel_capability_unsupported" }
+          );
+        }
+        return await backend.reclaim({ nowMs: options?.nowMs ?? now() });
       },
     },
 

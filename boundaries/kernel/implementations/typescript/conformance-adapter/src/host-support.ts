@@ -80,15 +80,26 @@ export async function withConformanceKernel<T>(
 
 export async function withConfiguredBackend<T>(
   config: { adapterId: string; backend: "memory" | "postgres" | "sqlite" },
-  execute: (backend: RuntimeBackend) => Promise<T>
+  execute: (backend: RuntimeBackend) => Promise<T>,
+  options?: BackendClockOptions
 ): Promise<T> {
-  const configuredBackend = await createConfiguredBackend(config);
+  const configuredBackend = await createConfiguredBackend(config, options);
 
   try {
     return await execute(configuredBackend.backend);
   } finally {
     await configuredBackend.cleanup();
   }
+}
+
+/**
+ * Optional deterministic clock injected into a configured backend so a probe can
+ * order durable writes against an active execution lease without relying on
+ * wall-clock millisecond separation (which would make grace-window observations
+ * flaky). When omitted, each backend uses its own default clock.
+ */
+export interface BackendClockOptions {
+  now?: () => number;
 }
 
 // Two distinct, non-default Scopes bound to one shared substrate so the
@@ -325,10 +336,15 @@ async function createConformanceKernel(
   };
 }
 
-async function createConfiguredBackend(config: {
-  adapterId: string;
-  backend: "memory" | "postgres" | "sqlite";
-}): Promise<ConfiguredBackendHandle> {
+async function createConfiguredBackend(
+  config: {
+    adapterId: string;
+    backend: "memory" | "postgres" | "sqlite";
+  },
+  options?: BackendClockOptions
+): Promise<ConfiguredBackendHandle> {
+  const clock = options?.now === undefined ? {} : { now: options.now };
+
   if (config.backend === "postgres") {
     const postgresBackendModuleUrl = new URL(
       "../../backend-postgres/dist/index.js",
@@ -341,6 +357,7 @@ async function createConfiguredBackend(config: {
     const backend = createPostgresBackend({
       database: process.env.PGDATABASE ?? "tuvren_runtime",
       schemaName,
+      ...clock,
     }) as ReturnType<typeof createPostgresBackend> & DisposablePostgresBackend;
 
     return {
@@ -362,7 +379,7 @@ async function createConfiguredBackend(config: {
     );
     const databasePath = join(tempDirectory, `${randomUUID()}.sqlite`);
     return {
-      backend: createSqliteBackend({ databasePath }),
+      backend: createSqliteBackend({ databasePath, ...clock }),
       cleanup: async () => {
         await rm(tempDirectory, { force: true, recursive: true });
       },
@@ -375,7 +392,7 @@ async function createConfiguredBackend(config: {
   );
   const { createMemoryBackend } = await import(memoryBackendModuleUrl.href);
   return {
-    backend: createMemoryBackend(),
+    backend: createMemoryBackend({ ...clock }),
     cleanup: async () => {
       // Memory backends have no external resources to release.
     },

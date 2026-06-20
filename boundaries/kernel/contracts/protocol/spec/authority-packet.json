@@ -1,11 +1,12 @@
 {
   "packetId": "tuvren.kernel.protocol",
-  "version": "0.6.0",
+  "version": "0.8.0",
   "boundary": "kernel",
   "surface": "protocol",
   "humanAuthorityRefs": [
     "docs/KrakenKernelSpecification.md",
-    "docs/KrakenKernelSpecification.md#23-hash"
+    "docs/KrakenKernelSpecification.md#23-hash",
+    "docs/KrakenKernelSpecification.md#94-maintenancereclamation-capability-v012"
   ],
   "authoritativeSources": [
     {
@@ -30,6 +31,10 @@
     },
     {
       "path": "boundaries/kernel/conformance/plans/kernel-scope-isolation.json",
+      "format": "conformance-plan"
+    },
+    {
+      "path": "boundaries/kernel/conformance/plans/kernel-reclamation.json",
       "format": "conformance-plan"
     },
     {
@@ -66,6 +71,11 @@
       "planId": "tuvren.kernel.scope-isolation",
       "planVersion": "0.1.0",
       "path": "boundaries/kernel/conformance/plans/kernel-scope-isolation.json"
+    },
+    {
+      "planId": "tuvren.kernel.reclamation",
+      "planVersion": "0.2.0",
+      "path": "boundaries/kernel/conformance/plans/kernel-reclamation.json"
     }
   ],
   "bindingProjections": {
@@ -75,6 +85,9 @@
   "bindingSections": {
     "scope-isolation": {
       "description": "Scope-resolved object identity (kernel spec §2.3, docs/KrakenKernelSpecification.md#23-hash). A Scope is a host-bound partition identity supplied at backend/connection construction; the kernel syscall surface stays scope-free. Hash resolution to durable storage is confined to the constructing Scope, so identical content under two Scopes is two independent durable objects and store.has / store.get / enumeration can never observe content outside the constructing Scope. The cross-scope isolation conformance contract for this surface lives at boundaries/kernel/conformance/plans/kernel-scope-isolation.json (capability kernel.scope-isolation, registered above). KRT-BE001 declared the surface and the conformance-plan reference; KRT-BE007 promoted the plan to runnable, registered, evidence-backed conformance: the kernel memory, SQLite, and PostgreSQL adapters advertise kernel.scope-isolation and answer the kernel.scope-isolation.cross-scope-probe operation, and per-backend compatibility evidence records that store.has / store.get / enumeration stay scope-confined across all three backends (KRT-BE003 through KRT-BE006 realize the scope binding the probe exercises)."
+    },
+    "reclamation": {
+      "description": "Capability-gated reachability reclamation primitive plus host-owned crypto-shredding erasure (kernel spec §9.4, docs/KrakenKernelSpecification.md#94-maintenancereclamation-capability-v012; ADR-051). A backend advertises maintenance.reclamation through the BackendCapability descriptor (§9.1); when supported, the kernel marks durable state reachable from live roots — non-archived branch heads, thread roots, and active-run staged work — within the constructing Scope, then sweeps only the unreachable remainder. The sweep is grace-windowed against the oldest active execution lease so it can never race recovery, and a structurally shared object stays marked via any live root (the keep closure is a set-union over live roots, not exclusive-lineage release). A backend advertising non-support rejects reclamation with TuvrenPersistenceError code kernel_capability_unsupported. Reclamation never edits committed lineage; it only releases unreachable storage. Erasure is crypto-shredding: §9.4 keeps it a substrate/edge concern outside the kernel, which stores only opaque ciphertext envelopes, so destroying the host-held key renders a payload unrecoverable while every referencing kernel hash (object, turn node, turn tree, branch head) stays byte-identical. The data-lifecycle conformance contract for this surface lives at boundaries/kernel/conformance/plans/kernel-reclamation.json (capability kernel.reclamation, registered above). KRT-BF001 declared the surface and the conformance-plan reference; KRT-BF003/BF004 realize the primitive across memory, SQLite, and PostgreSQL; KRT-BF007 promoted the plan to runnable, registered, evidence-backed conformance: the kernel memory, SQLite, and PostgreSQL adapters advertise kernel.reclamation and answer the kernel.reclamation.reclaim-probe operation (no reachable state released, archived branch and its exclusive lineage released, shared object retained via a live root, grace window held under an active lease) and the kernel.reclamation.erasure-probe operation (a host-side codec encrypts at the edge, the kernel stores only the ciphertext envelope, and after the host destroys the key the payload is unrecoverable while the referencing lineage stays structurally intact), and per-backend compatibility evidence records both across all three backends."
     }
   },
   "forbiddenAuthoritySources": [
@@ -107,6 +120,10 @@
     {
       "kind": "conformance-plan",
       "target": "boundaries/kernel/conformance/plans/kernel-scope-isolation.json"
+    },
+    {
+      "kind": "conformance-plan",
+      "target": "boundaries/kernel/conformance/plans/kernel-reclamation.json"
     }
   ]
 }

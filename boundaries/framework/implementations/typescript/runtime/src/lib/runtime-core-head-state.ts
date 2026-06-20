@@ -14,7 +14,11 @@
  * limitations under the License.
  */
 
-import { type HashString, TuvrenLineageError } from "@tuvren/core";
+import {
+  type HashString,
+  TuvrenLineageError,
+  TuvrenPersistenceError,
+} from "@tuvren/core";
 import {
   assertContextManifest,
   type ContextManifest,
@@ -25,6 +29,10 @@ import {
   type RuntimeKernel as KrakenKernel,
 } from "@tuvren/kernel-protocol";
 import { createEmptyContextManifest } from "./context-manifest.js";
+import {
+  decryptStoredMessage,
+  type PayloadCodecBinding,
+} from "./payload-codec-seam.js";
 import type { HeadState } from "./runtime-core-loop.js";
 import type { DurableRuntimeStatus } from "./runtime-core-recovery.js";
 import { decodeKrakenMessageRecord } from "./runtime-core-recovery.js";
@@ -38,6 +46,7 @@ import type { ExecutionSessionRequest } from "./runtime-execution-types.js";
 
 export async function loadHeadState(
   kernel: KrakenKernel,
+  payloadCodecBinding: PayloadCodecBinding,
   branchId: string
 ): Promise<HeadState> {
   const branch = await kernel.branch.get(branchId);
@@ -74,7 +83,7 @@ export async function loadHeadState(
     branchHeadHash: branch.headTurnNodeHash,
     manifest,
     messageHashes,
-    messages: await readMessages(kernel, messageHashes),
+    messages: await readMessages(kernel, payloadCodecBinding, messageHashes),
     turnNode,
   };
 }
@@ -250,12 +259,13 @@ async function readManifest(
 
 async function readMessages(
   kernel: KrakenKernel,
+  payloadCodecBinding: PayloadCodecBinding,
   hashes: HashString[]
 ): Promise<TuvrenMessage[]> {
   const messages: TuvrenMessage[] = [];
 
   for (const hash of hashes) {
-    messages.push(await readMessage(kernel, hash));
+    messages.push(await readMessage(kernel, payloadCodecBinding, hash));
   }
 
   return messages;
@@ -263,6 +273,7 @@ async function readMessages(
 
 async function readMessage(
   kernel: KrakenKernel,
+  payloadCodecBinding: PayloadCodecBinding,
   hash: HashString
 ): Promise<TuvrenMessage> {
   const payload = await kernel.store.get(hash);
@@ -276,7 +287,21 @@ async function readMessage(
     });
   }
 
-  return decodeKrakenMessageRecord(payload, `message "${hash}"`);
+  // Crypto-shredding seam (KRT-BF005): decrypt before decoding. An erased
+  // payload on the execution path is a controlled, typed failure — a shredded
+  // conversation cannot be reconstructed to feed the model — not a raw crash.
+  const decrypted = await decryptStoredMessage(payloadCodecBinding, payload);
+  if (decrypted.status === "erased") {
+    throw new TuvrenPersistenceError(
+      `message "${hash}" payload was erased (key "${decrypted.keyRef}" destroyed) and cannot be reconstructed for execution`,
+      {
+        code: "kernel_payload_erased",
+        details: { hash, keyRef: decrypted.keyRef },
+      }
+    );
+  }
+
+  return decodeKrakenMessageRecord(decrypted.plaintext, `message "${hash}"`);
 }
 
 async function readBranchHeadState(

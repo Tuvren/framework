@@ -64,6 +64,8 @@ export type {
   OrchestrationHandle,
   OrchestrationResult,
   OrchestrationRuntime,
+  ReclamationSummary,
+  RuntimeMaintenance,
   RuntimeResolution,
   ServerExecutionConfig,
   ServerExecutionRateLimitConfig,

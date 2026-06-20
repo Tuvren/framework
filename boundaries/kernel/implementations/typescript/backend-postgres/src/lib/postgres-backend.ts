@@ -37,6 +37,7 @@ import {
   type RuntimeBackend as KrakenBackend,
   type RuntimeBackendTx as KrakenBackendTx,
   type ListThreadsCursorPayload,
+  type ReclamationSummary,
   type StoredBranch,
   type StoredRun,
   type StoredStagedResult,
@@ -51,6 +52,7 @@ import {
   assertTurnNodeDescendsFrom,
   decodeTurnNodeConsumedStagedResultObjectHashes,
 } from "./memory-backend-lineage.js";
+import { reclaimBackendState } from "./memory-backend-reclamation.js";
 import {
   areStoredObjectsEqual,
   areStoredOrderedPathChunksEqual,
@@ -106,6 +108,7 @@ import {
 import type { BackendState } from "./memory-backend-types.js";
 import {
   createPostgresClient,
+  deletePersistedStateSnapshot,
   ensurePostgresSchemaInitialized,
   loadPersistedStateForUpdate,
   normalizeSchemaName,
@@ -136,6 +139,7 @@ export interface PostgresBackendOptions
   extends PostgresBackendPersistenceOptions {}
 
 const POSTGRES_BACKEND_CAPABILITIES: BackendCapability = {
+  "maintenance.reclamation": true,
   "thread.enumeration": true,
 };
 const FAULT_INJECTION_CONTROL = Symbol(
@@ -329,6 +333,105 @@ class PostgresBackend implements KrakenBackend {
       } finally {
         await reserved.release();
       }
+    } finally {
+      releaseQueue?.();
+    }
+  }
+
+  async reclaim(): Promise<ReclamationSummary> {
+    if (this.transactionContext.getStore() === true) {
+      throw persistenceError(
+        "postgres backend reclamation must not run inside a transaction",
+        "postgres_backend_nested_transaction"
+      );
+    }
+
+    await this.ensureInitialized();
+
+    const priorTransaction = this.transactionQueue;
+    let releaseQueue: (() => void) | undefined;
+
+    this.transactionQueue = new Promise<void>((resolve) => {
+      releaseQueue = resolve;
+    });
+
+    await priorTransaction;
+
+    try {
+      const reserved = (await this.sql.reserve()) as Sql & {
+        release(): Promise<void>;
+      };
+      let inTransaction = false;
+
+      try {
+        await reserved.unsafe("BEGIN");
+        inTransaction = true;
+
+        const baseState = await loadPersistedStateForUpdate(
+          reserved,
+          this.schemaName,
+          this.scope
+        );
+        const draftState = cloneState(baseState);
+        // The snapshot backend reclaims by rewriting the scope snapshot row:
+        // sweep the in-memory draft, validate the referentially-closed result,
+        // and re-persist it. Reachability and the grace window are derived from
+        // the draft's own active runs (§9.4), so no clock argument is required.
+        const summary = reclaimBackendState(draftState);
+        validateCommittedState(draftState, baseState);
+
+        await persistStateSnapshot(
+          reserved,
+          this.schemaName,
+          this.scope,
+          draftState,
+          this.now()
+        );
+        await reserved.unsafe("COMMIT");
+        inTransaction = false;
+
+        return summary;
+      } catch (error: unknown) {
+        if (inTransaction) {
+          await reserved.unsafe("ROLLBACK");
+        }
+
+        throw error;
+      } finally {
+        await reserved.release();
+      }
+    } finally {
+      releaseQueue?.();
+    }
+  }
+
+  async purgeScope(): Promise<void> {
+    if (this.transactionContext.getStore() === true) {
+      throw persistenceError(
+        "postgres backend scope purge must not run inside a transaction",
+        "postgres_backend_nested_transaction"
+      );
+    }
+
+    await this.ensureInitialized();
+
+    const priorTransaction = this.transactionQueue;
+    let releaseQueue: (() => void) | undefined;
+
+    this.transactionQueue = new Promise<void>((resolve) => {
+      releaseQueue = resolve;
+    });
+
+    await priorTransaction;
+
+    try {
+      // Full tenant offboarding (§9.4): under the row-level isolation model the
+      // Scope owns exactly one snapshot row, so dropping the partition is
+      // deleting that row. Every other Scope's row in the shared table is
+      // untouched, so offboarding one tenant is invisible to the rest. This
+      // instance is unusable afterward (callers discard it per the purgeScope
+      // contract), exactly like the SQLite backend after it removes its file.
+      await deletePersistedStateSnapshot(this.sql, this.schemaName, this.scope);
     } finally {
       releaseQueue?.();
     }

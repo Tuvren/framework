@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-import { randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { createAesGcmPayloadCodec } from "@tuvren/core/lifecycle";
 import type {
   RuntimeBackend,
   StoredBranch,
@@ -145,6 +146,10 @@ class TypeScriptKernelAdapter {
           return result(await runConcurrentWriterConflict());
         case "kernel.scope-isolation.cross-scope-probe":
           return result(await runCrossScopeProbe());
+        case "kernel.reclamation.reclaim-probe":
+          return result(await runReclamationProbe());
+        case "kernel.reclamation.erasure-probe":
+          return result(await runErasureProbe());
         default:
           return {
             error: {
@@ -223,6 +228,7 @@ function defaultCapabilities(
       "kernel.persistence.durable",
       "kernel.restart-recovery",
       "kernel.scope-isolation",
+      "kernel.reclamation",
       "kernel-protocol.thread.enumeration",
     ];
   }
@@ -234,6 +240,7 @@ function defaultCapabilities(
     "kernel.run-liveness",
     "kernel.restart-recovery",
     "kernel.scope-isolation",
+    "kernel.reclamation",
     "kernel-protocol.thread.enumeration",
   ];
 }
@@ -457,6 +464,355 @@ async function runCrossScopeProbe(): Promise<Record<string, unknown>> {
       });
     }
   );
+}
+
+// KRT-BF007 reachability reclamation probe. Constructs decisive scenarios over a
+// reclamation-capable backend and reports — as raw observations, never graded
+// here — what the §9.4 mark-and-sweep released and retained. The plan's
+// assertions decide pass/fail. Two phases: (1) an archive rollback over a shared
+// non-root ancestor proves the keep closure is a set-union over live roots (a
+// structurally shared object survives via the live branch while the
+// archive-exclusive payload is released); (2) a deterministic clock orders writes
+// around an active execution lease to prove the grace window is the lease horizon.
+async function runReclamationProbe(): Promise<Record<string, unknown>> {
+  const schema = await loadCanonicalSchema();
+
+  const reachabilityObservations = await withConformanceKernel(
+    schema,
+    ADAPTER_CONFIG,
+    async (kernel) => {
+      const thread = await kernel.thread.create(
+        "thread_reclamation",
+        schema.schemaId,
+        "branch_reclamation"
+      );
+      // The shared object is a message staged at the (kept) live ancestor
+      // checkpoint; the schema incorporates it into that turn tree's messages.
+      const shared = await checkpointMessageIntoHead(kernel, {
+        branchId: thread.branchId,
+        messageBytes: new TextEncoder().encode(
+          "shared-across-live-and-archived"
+        ),
+        parentTurnId: null,
+        runId: "run_shared",
+        schemaId: schema.schemaId,
+        startTurnNodeHash: thread.rootTurnNodeHash,
+        taskId: "msg_shared",
+        threadId: thread.threadId,
+        turnId: "turn_shared",
+      });
+      const sharedObjectHash = shared.objectHash;
+      // The archive-exclusive object is staged at the forward checkpoint the
+      // rollback abandons. Its turn tree inherits the shared message and adds the
+      // archive-exclusive one, so the shared object is referenced by both the
+      // kept and the swept node.
+      const archived = await checkpointMessageIntoHead(kernel, {
+        branchId: thread.branchId,
+        messageBytes: new TextEncoder().encode("archived-exclusive-payload"),
+        parentTurnId: shared.turnId,
+        runId: "run_archived",
+        schemaId: schema.schemaId,
+        startTurnNodeHash: shared.turnNodeHash,
+        taskId: "msg_archived",
+        threadId: thread.threadId,
+        turnId: "turn_archived",
+      });
+      const archivedOnlyObjectHash = archived.objectHash;
+
+      // Confirm the soon-to-be-archived node genuinely references the shared
+      // object, so retaining it after the sweep proves the set-union keep, not
+      // mere exclusive-lineage release.
+      const archivedNode = await kernel.node.get(archived.turnNodeHash);
+      if (archivedNode === null) {
+        throw new Error("expected archived node before rollback");
+      }
+      const archivedManifest = await kernel.tree.manifest(
+        archivedNode.turnTreeHash
+      );
+      const sharedObjectReferencedByArchivedNode =
+        Array.isArray(archivedManifest.messages) &&
+        archivedManifest.messages.includes(sharedObjectHash);
+
+      // Roll the live head back to the shared ancestor: the forward segment is
+      // archived into an archive branch and becomes unreferenced state.
+      const rollback = await kernel.branch.setHead(
+        thread.branchId,
+        shared.turnNodeHash
+      );
+      const archivedIntoBranch =
+        rollback.archiveBranch?.headTurnNodeHash === archived.turnNodeHash;
+
+      // An orphan unreachable from any live root, with no active lease in play
+      // (grace horizon is unbounded), so it is releasable.
+      const orphanObjectHash = await kernel.store.put(
+        new TextEncoder().encode("unreachable-orphan")
+      );
+
+      const summary = await kernel.maintenance.reclaim();
+
+      const branchesAfter = await kernel.branch.list(thread.threadId);
+      const threadAfter = await kernel.thread.get(thread.threadId);
+
+      return {
+        archivedBranchReleased:
+          archivedIntoBranch &&
+          !(await kernel.store.has(archivedOnlyObjectHash)) &&
+          (await kernel.node.get(archived.turnNodeHash)) === null &&
+          !branchesAfter.some(([branchId]) => branchId.includes("archive")) &&
+          summary.releasedArchivedBranchCount >= 1,
+        reachableFromLiveRootRetained:
+          (await kernel.store.has(sharedObjectHash)) &&
+          (await kernel.node.get(shared.turnNodeHash)) !== null &&
+          threadAfter?.rootTurnNodeHash === thread.rootTurnNodeHash,
+        sharedObjectRetainedViaLiveRoot:
+          sharedObjectReferencedByArchivedNode &&
+          (await kernel.store.has(sharedObjectHash)) &&
+          !(await kernel.store.has(archivedOnlyObjectHash)) &&
+          (await kernel.node.get(archived.turnNodeHash)) === null,
+        unreachablePastGraceReleased:
+          !(await kernel.store.has(orphanObjectHash)) &&
+          summary.releasedObjectCount >= 1,
+      };
+    }
+  );
+
+  let clock = 0;
+  const graceObservations = await withConfiguredBackend(
+    ADAPTER_CONFIG,
+    async (backend) => {
+      const kernel = createRuntimeKernel({ backend, now: () => clock });
+      await kernel.schema.register(schema);
+
+      clock = 10;
+      const orphanBeforeLease = await kernel.store.put(new Uint8Array([1]));
+
+      clock = 20;
+      const thread = await kernel.thread.create(
+        "thread_grace",
+        schema.schemaId,
+        "branch_grace"
+      );
+      const turn = await kernel.turn.create(
+        "turn_grace",
+        thread.threadId,
+        thread.branchId,
+        null,
+        thread.rootTurnNodeHash
+      );
+      // An active (running) run holds the oldest execution lease at t=20.
+      await kernel.run.create(
+        "run_grace",
+        turn.turnId,
+        thread.branchId,
+        schema.schemaId,
+        thread.rootTurnNodeHash,
+        [{ deterministic: true, id: "work", sideEffects: false }]
+      );
+
+      clock = 30;
+      const orphanAfterLease = await kernel.store.put(new Uint8Array([2]));
+
+      clock = 40;
+      await kernel.maintenance.reclaim();
+
+      // The older orphan (before the lease horizon) is released; the newer orphan
+      // (after the horizon) is retained even though it too is unreachable.
+      return {
+        graceWindowHeldUnderActiveLease:
+          !(await kernel.store.has(orphanBeforeLease)) &&
+          (await kernel.store.has(orphanAfterLease)),
+      };
+    },
+    { now: () => clock }
+  );
+
+  return createProjection({
+    reclaim: {
+      ...reachabilityObservations,
+      ...graceObservations,
+    },
+  });
+}
+
+// KRT-BF007 crypto-shredding erasure probe. The adapter plays the §4.17 host
+// role: it owns a payload codec and the key, encrypts at the edge, and hands the
+// kernel only the opaque ciphertext envelope. "Erasure" is the host destroying
+// the key (removing it from the keyring). The probe reports — as raw
+// observations — that the payload is recoverable before and unrecoverable after
+// key destruction, while the referencing kernel lineage stays byte/hash-identical
+// (the kernel never held the key, so nothing structural changes).
+async function runErasureProbe(): Promise<Record<string, unknown>> {
+  const schema = await loadCanonicalSchema();
+
+  return await withConformanceKernel(schema, ADAPTER_CONFIG, async (kernel) => {
+    const keyRef = "tuvren.scope.conformance-erasure";
+    const keyring = new Map<string, Uint8Array>([
+      [keyRef, new Uint8Array(randomBytes(32))],
+    ]);
+    const codec = createAesGcmPayloadCodec({
+      keyring: { resolve: (ref) => keyring.get(ref) },
+    });
+    const context = { edge: "message", scope: keyRef };
+    const plaintext = new TextEncoder().encode(
+      "sensitive-untrusted-edge-payload"
+    );
+
+    // Encrypt at the host edge, then stage only the ciphertext envelope as a
+    // message so the kernel incorporates it into the branch-head turn tree.
+    const envelope = await codec.encrypt(plaintext, context);
+    const thread = await kernel.thread.create(
+      "thread_erasure",
+      schema.schemaId,
+      "branch_erasure"
+    );
+    const checkpoint = await checkpointMessageIntoHead(kernel, {
+      branchId: thread.branchId,
+      messageBytes: envelope,
+      parentTurnId: null,
+      runId: "run_erasure",
+      schemaId: schema.schemaId,
+      startTurnNodeHash: thread.rootTurnNodeHash,
+      taskId: "msg_erasure",
+      threadId: thread.threadId,
+      turnId: "turn_erasure",
+    });
+    const envelopeHash = checkpoint.objectHash;
+
+    const branchBefore = await kernel.branch.get(thread.branchId);
+    const nodeBefore = await kernel.node.get(checkpoint.turnNodeHash);
+    if (branchBefore === null || nodeBefore === null) {
+      throw new Error("expected branch and node before erasure");
+    }
+
+    // Before erasure the host can still decrypt the stored envelope.
+    const storedBefore = await kernel.store.get(envelopeHash);
+    const recoverableBeforeErasure = await isRecoverable(
+      codec,
+      storedBefore,
+      context,
+      plaintext
+    );
+
+    // ── Crypto-shredding erasure: the host destroys the key. ──
+    keyring.delete(keyRef);
+
+    const storedAfter = await kernel.store.get(envelopeHash);
+    const decryptAfter =
+      storedAfter === null ? null : await codec.decrypt(storedAfter, context);
+    const unrecoverableAfterErasure = decryptAfter?.status === "erased";
+
+    // The referencing lineage is byte/hash-identical after erasure.
+    const branchAfter = await kernel.branch.get(thread.branchId);
+    const nodeAfter = await kernel.node.get(checkpoint.turnNodeHash);
+    const manifestAfter =
+      nodeAfter === null
+        ? null
+        : await kernel.tree.manifest(nodeAfter.turnTreeHash);
+    const manifestReferencesEnvelope =
+      manifestAfter !== null &&
+      Array.isArray(manifestAfter.messages) &&
+      manifestAfter.messages.includes(envelopeHash);
+    const lineageStructurallyIntactAfterErasure =
+      branchAfter !== null &&
+      branchAfter.headTurnNodeHash === branchBefore.headTurnNodeHash &&
+      nodeAfter !== null &&
+      nodeAfter.turnTreeHash === nodeBefore.turnTreeHash &&
+      manifestReferencesEnvelope &&
+      storedAfter !== null &&
+      bytesEqual(storedAfter, envelope);
+
+    return createProjection({
+      erasure: {
+        lineageStructurallyIntactAfterErasure,
+        recoverableBeforeErasure,
+        unrecoverableAfterErasure,
+      },
+    });
+  });
+}
+
+/**
+ * Runs one non-deterministic checkpoint step that stages `messageBytes` as a
+ * `message`, so the schema incorporates it into the branch-head turn tree's
+ * `messages` path (and a checkpoint chained on top inherits it). Returns the
+ * checkpoint turn node, its owning turn id, and the stored message object hash so
+ * a caller can chain a second checkpoint and reason about the shared object.
+ */
+async function checkpointMessageIntoHead(
+  kernel: ReturnType<typeof createRuntimeKernel>,
+  input: {
+    branchId: string;
+    messageBytes: Uint8Array;
+    parentTurnId: string | null;
+    runId: string;
+    schemaId: string;
+    startTurnNodeHash: string;
+    taskId: string;
+    threadId: string;
+    turnId: string;
+  }
+): Promise<{ objectHash: string; turnId: string; turnNodeHash: string }> {
+  const turn = await kernel.turn.create(
+    input.turnId,
+    input.threadId,
+    input.branchId,
+    input.parentTurnId,
+    input.startTurnNodeHash
+  );
+  await kernel.run.create(
+    input.runId,
+    turn.turnId,
+    input.branchId,
+    input.schemaId,
+    input.startTurnNodeHash,
+    [{ deterministic: false, id: "checkpoint", sideEffects: false }]
+  );
+  await kernel.run.beginStep(input.runId, "checkpoint");
+  const staged = await kernel.staging.stage(
+    input.runId,
+    input.messageBytes,
+    input.taskId,
+    "message",
+    "completed"
+  );
+  const completed = await kernel.run.completeStep(input.runId, "checkpoint");
+  if (completed.turnNodeHash === undefined) {
+    throw new Error("expected checkpoint turn node hash");
+  }
+  await kernel.run.complete(input.runId, "completed");
+  return {
+    objectHash: staged.objectHash,
+    turnId: turn.turnId,
+    turnNodeHash: completed.turnNodeHash,
+  };
+}
+
+async function isRecoverable(
+  codec: ReturnType<typeof createAesGcmPayloadCodec>,
+  stored: Uint8Array | null,
+  context: { edge: string; scope: string },
+  expectedPlaintext: Uint8Array
+): Promise<boolean> {
+  if (stored === null) {
+    return false;
+  }
+  const decrypted = await codec.decrypt(stored, context);
+  return (
+    decrypted.status === "available" &&
+    bytesEqual(decrypted.plaintext, expectedPlaintext)
+  );
+}
+
+function bytesEqual(left: Uint8Array, right: Uint8Array): boolean {
+  if (left.length !== right.length) {
+    return false;
+  }
+  for (let index = 0; index < left.length; index += 1) {
+    if (left[index] !== right[index]) {
+      return false;
+    }
+  }
+  return true;
 }
 
 async function runRecoveryState(

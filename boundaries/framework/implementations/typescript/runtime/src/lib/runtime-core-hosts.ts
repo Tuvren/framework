@@ -35,6 +35,10 @@ import type {
   RunCompletionStatus,
 } from "@tuvren/kernel-protocol";
 import type { ExtensionStateUpdate } from "./extension-runtime.js";
+import {
+  encryptMessageRecord,
+  type PayloadCodecBinding,
+} from "./payload-codec-seam.js";
 import type { HelperBundle } from "./runtime-core-context.js";
 import type { RuntimeCoreContextOpsHost } from "./runtime-core-context-ops.js";
 import type { RuntimeCoreDriverSupportHost } from "./runtime-core-driver-support.js";
@@ -155,6 +159,7 @@ interface PersistenceHostDependencies {
     handle: RuntimeExecutionHandle
   ): Set<string>;
   kernel: KrakenKernel;
+  payloadCodecBinding: PayloadCodecBinding;
 }
 
 interface LivenessHostDependencies {
@@ -546,6 +551,8 @@ export function buildRuntimeCorePersistenceHost(
     emitWarning: (warning) => dependencies.emitWarning(warning),
     encodeKernelRecord: (value, label) =>
       dependencies.encodeKernelRecord(value, label),
+    encryptMessageRecord: (record) =>
+      encryptMessageRecord(dependencies.payloadCodecBinding, record),
     getManifestExtensionStateWarningBudgetBytes: () =>
       dependencies.getManifestExtensionStateWarningBudgetBytes(),
     getOrCreateManifestExtensionStateWarningKeys: (handle) =>

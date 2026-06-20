@@ -58,6 +58,11 @@
       "types": "./dist/capabilities/index.d.ts",
       "import": "./dist/capabilities/index.js",
       "default": "./dist/capabilities/index.js"
+    },
+    "./lifecycle": {
+      "types": "./dist/lifecycle/index.d.ts",
+      "import": "./dist/lifecycle/index.js",
+      "default": "./dist/lifecycle/index.js"
     }
   },
   "main": "./dist/index.js",

@@ -28,11 +28,16 @@ import {
   type TurnHistoryCursor,
   type TurnSnapshot,
 } from "@tuvren/core/execution";
+import type { ErasedPayload } from "@tuvren/core/lifecycle";
 import { assertTuvrenMessage, type TuvrenMessage } from "@tuvren/core/messages";
 import {
   decodeDeterministicKernelRecord,
   type RuntimeKernel as KrakenKernel,
 } from "@tuvren/kernel-protocol";
+import {
+  decryptStoredMessage,
+  type PayloadCodecBinding,
+} from "./payload-codec-seam.js";
 
 // ── Internal cursor payload shapes (TechSpec §3.8) ──────────────────────────
 
@@ -482,12 +487,16 @@ async function resolveCursorStartIndex(
 
 export async function readBranchMessages(
   kernel: KrakenKernel,
+  payloadCodecBinding: PayloadCodecBinding,
   input: {
     branchId: string;
     limit?: number;
     after?: BranchMessagesCursor;
   }
-): Promise<{ messages: TuvrenMessage[]; nextCursor?: BranchMessagesCursor }> {
+): Promise<{
+  messages: (ErasedPayload | TuvrenMessage)[];
+  nextCursor?: BranchMessagesCursor;
+}> {
   const cursorPayload =
     input.after === undefined
       ? undefined
@@ -540,7 +549,7 @@ export async function readBranchMessages(
       : Math.min(startIndex + limit, messageHashes.length);
 
   const slicedHashes = messageHashes.slice(startIndex, endIndex);
-  const messages: TuvrenMessage[] = [];
+  const messages: (ErasedPayload | TuvrenMessage)[] = [];
 
   for (const hash of slicedHashes) {
     const bytes = await kernel.store.get(hash);
@@ -550,7 +559,19 @@ export async function readBranchMessages(
         { code: "kernel_store_object_missing" }
       );
     }
-    const decoded = decodeDeterministicKernelRecord(bytes);
+    // Crypto-shredding seam (KRT-BF005): decrypt before decoding. A shredded
+    // payload surfaces as a typed erased marker so the durable read is total
+    // rather than a crash; its lineage hash is unchanged and still listed.
+    const decrypted = await decryptStoredMessage(payloadCodecBinding, bytes);
+    if (decrypted.status === "erased") {
+      messages.push({
+        keyRef: decrypted.keyRef,
+        kind: "erased",
+        reason: decrypted.reason,
+      });
+      continue;
+    }
+    const decoded = decodeDeterministicKernelRecord(decrypted.plaintext);
     assertTuvrenMessage(decoded, `message at "${hash}"`);
     messages.push(decoded);
   }

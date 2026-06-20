@@ -242,6 +242,28 @@ const EVIDENCE = {
     generatedArtifact:
       "N/A - scope isolation is conformance-plan authority without generated schema artifacts",
   },
+  // Data-lifecycle reclamation + crypto-shredding erasure (kernel spec §9.4,
+  // ADR-051). KRT-BF001 declared the maintenance.reclamation surface and its
+  // conformance-plan reference; KRT-BF003/BF004 realize the primitive across the
+  // memory, SQLite, and PostgreSQL backends. KRT-BF007 promoted the plan to
+  // runnable, registered, evidence-backed conformance: the plan is registered in
+  // the kernel-protocol packet, the three adapters advertise kernel.reclamation
+  // and answer the reclaim-probe and erasure-probe operations, and the
+  // compatibility evidence below records both across all three backends, so the
+  // §9.4 claim is now authority-backed-conformance-covered.
+  reclamation: {
+    adapterCapability: "kernel.reclamation",
+    authorityPacket:
+      "boundaries/kernel/contracts/protocol/spec/authority-packet.json",
+    compatibilityEvidence:
+      "reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-conformance-runner.json; reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-sqlite-conformance-runner.json; reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-postgres-conformance-runner.json",
+    conformancePlan:
+      "boundaries/kernel/conformance/plans/kernel-reclamation.json",
+    fixture:
+      "boundaries/kernel/conformance/fixtures/kernel-protocol-logical.json",
+    generatedArtifact:
+      "N/A - data-lifecycle reclamation and crypto-shredding erasure are conformance-plan authority without generated schema artifacts",
+  },
   providerApi: {
     adapterCapability: "providers.provider-api; providers.ai-sdk-bridge",
     authorityPacket:
@@ -1012,19 +1034,34 @@ function classifySaaSReadinessTargetClaim(
     );
   }
 
-  // §9.4 carries the new reclamation primitive directly; the appendix capability
-  // index also summarizes "Reachability reclamation". Both are the same deferred
-  // target surface, so neither may inherit conformance coverage.
+  // §9.4 carries the reclamation primitive directly; the appendix capability
+  // index also summarizes "Reachability reclamation". Both are the same surface.
+  // KRT-BF007 promoted the data-lifecycle conformance plan to runnable,
+  // registered, evidence-backed coverage (reclaim-probe + erasure-probe across
+  // the memory, SQLite, and PostgreSQL adapters), so the reclamation *mechanism*
+  // is authority-backed-conformance-covered.
+  //
+  // The promoted plan's applicability is `kernel.reclamation`, so it only ever
+  // runs against capability-bearing backends; it does NOT exercise the §9.4
+  // `false` non-support row (a backend advertising maintenance.reclamation=false
+  // rejecting with the `kernel_capability_unsupported` typed error). That row is
+  // governed by the capability-gate contract (ADR-034), not the reclamation
+  // mechanism, so it is deliberately excluded here and left to the canonical
+  // capability-gating classifier (classifyKernelCoreSection, §9 → KRT-AM010).
+  // Letting the single ADR-034 rule own that decision keeps this branch from
+  // re-asserting coverage the capable-path evidence never produced. The
+  // discriminator is the `kernel_capability_unsupported` typed-error code — a
+  // stable contract token (kernel-types.ts / the kernel-protocol authority
+  // packet), not incidental prose.
   if (
     (isSection(section, "9.4") ||
       (section === "appendix" && text.includes("reachab"))) &&
-    text.includes("reclamation")
+    text.includes("reclamation") &&
+    !text.includes("kernel_capability_unsupported")
   ) {
-    return missingConformanceDecision(
+    return authorityDecision(
       "kernel reachability reclamation",
-      EVIDENCE.kernelProtocol,
-      "KRT-BF001",
-      "The capability-gated, grace-windowed reachability reclamation primitive (kernel spec §9.4) is a SaaS-readiness target semantic; portable conformance lands when EPIC-BF promotes the maintenance.reclamation surface."
+      EVIDENCE.reclamation
     );
   }
 

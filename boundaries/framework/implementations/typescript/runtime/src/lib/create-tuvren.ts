@@ -29,6 +29,7 @@ import type {
   TuvrenRuntime,
 } from "@tuvren/core/execution";
 import type { TuvrenExtension } from "@tuvren/core/extensions";
+import type { PayloadCodec } from "@tuvren/core/lifecycle";
 import type { TuvrenProvider } from "@tuvren/core/provider";
 import type { TuvrenTelemetrySink } from "@tuvren/core/telemetry";
 import type { TuvrenToolDefinition } from "@tuvren/core/tools";
@@ -88,6 +89,15 @@ export interface CreateTuvrenOptions {
   extensions?: TuvrenExtension[];
   /** Pre-built kernel — when supplied the factory skips kernel construction. */
   kernel?: RuntimeKernel;
+  /**
+   * Opt-in crypto-shredding codec (ADR-051, KRT-BF005). Supply at the top level
+   * or via `runtimeOptions.payloadCodec`, but not both. Unset defaults to a
+   * plaintext identity codec, leaving existing hosts unchanged. Use
+   * `createAesGcmPayloadCodec({ keyring })` from `@tuvren/runtime` for the
+   * batteries-included AES-256-GCM codec, or implement `PayloadCodec` over a
+   * KMS/HSM.
+   */
+  payloadCodec?: PayloadCodec;
   provider?: TuvrenProvider;
   runtimeOptions?: Omit<
     RuntimeCoreOptions,
@@ -130,10 +140,21 @@ export function createTuvren(
     );
   }
 
+  if (
+    options.payloadCodec !== undefined &&
+    options.runtimeOptions?.payloadCodec !== undefined
+  ) {
+    throw new TuvrenValidationError(
+      "createTuvren: payloadCodec must be supplied either at top level or runtimeOptions, not both",
+      { code: "invalid_createtuvren_options" }
+    );
+  }
+
   // When a pre-built kernel is supplied, skip backend construction entirely.
   // The kernel already owns its backend; constructing a second one would open
   // an idle connection pool / file handle that is immediately discarded.
-  const { kernel, disposeBackend } = resolveKernelAndDispose(options);
+  const { kernel, disposeBackend, purgeScope } =
+    resolveKernelAndDispose(options);
 
   const driver = buildDriver(options.driver);
   const driverRegistry = createDriverRegistry([driver]);
@@ -156,6 +177,8 @@ export function createTuvren(
     defaultDriverId: driver.id,
     driverRegistry,
     kernel,
+    payloadCodec: options.payloadCodec ?? options.runtimeOptions?.payloadCodec,
+    ...(purgeScope === undefined ? {} : { purgeScope }),
     telemetry: options.telemetry ?? options.runtimeOptions?.telemetry,
   });
 
@@ -201,12 +224,28 @@ export function createTuvren(
 function resolveKernelAndDispose(options: CreateTuvrenOptions): {
   kernel: RuntimeKernel;
   disposeBackend: () => Promise<void>;
+  purgeScope?: () => Promise<void>;
 } {
   if (options.kernel !== undefined) {
+    // An externally-supplied kernel owns its substrate; `createTuvren` has no
+    // backend handle to drive a partition drop, so `maintenance.purgeScope`
+    // stays unavailable on the resulting runtime.
     return { kernel: options.kernel, disposeBackend: () => Promise.resolve() };
   }
   const { backend, disposeBackend } = buildBackend(options.backend);
-  return { kernel: createRuntimeKernel({ backend }), disposeBackend };
+  return {
+    kernel: createRuntimeKernel({ backend }),
+    disposeBackend,
+    // Surface the substrate partition-drop (ADR-051, §4.17) only when the owned
+    // backend implements it; otherwise the runtime maintenance surface reports
+    // it as unsupported.
+    ...(typeof backend.purgeScope === "function"
+      ? {
+          purgeScope: (): Promise<void> =>
+            backend.purgeScope?.() ?? Promise.resolve(),
+        }
+      : {}),
+  };
 }
 
 function buildBackend(spec: CreateTuvrenOptions["backend"]): {

@@ -22,6 +22,7 @@ import {
   encodeDeterministicKernelRecord,
   type RuntimeBackendTx as KrakenBackendTx,
   type StoredBranch,
+  type StoredObserveAnnotation,
   type StoredRun,
   type StoredStagedResult,
   type StoredThread,
@@ -43,6 +44,11 @@ import {
   registerBackendInvariantSuite,
   registerBackendRecoverySuite,
 } from "@tuvren/kernel-testkit";
+import {
+  createEmptyState,
+  validateCommittedState,
+} from "../src/lib/memory-backend-state.js";
+import type { BackendState } from "../src/lib/memory-backend-types.js";
 import { createCanonicalTurnTreePaths } from "./backend-memory-test-helpers.js";
 
 registerBackendConformanceSuite({
@@ -486,5 +492,135 @@ describe("@tuvren/backend-memory", () => {
         )
       ).toEqual(["task_a", "task_b"]);
     });
+  });
+});
+
+// The reclamation sweep deletes a run's observe annotations alongside the run
+// (sweepRuns). That stays referentially closed only if every committed
+// annotation references an existing run and turn node — `validateCommittedState`
+// enforces this as a commit-time invariant (the write-path set() check is
+// point-in-time; this guards the final committed state), so a kept annotation
+// can never dangle after a sweep. These tests call the validator directly with a
+// crafted state because the public write path forbids constructing the
+// inconsistency in the first place.
+describe("@tuvren/backend-memory validateCommittedState observe-annotation invariant", () => {
+  async function buildCommittedStateWithRun(): Promise<{
+    runId: string;
+    state: BackendState;
+  }> {
+    const schema = createSchema();
+    const turnTree = await createStoredTurnTree(
+      schema,
+      { "context.manifest": null, messages: [] },
+      11
+    );
+    const paths = createCanonicalTurnTreePaths(turnTree, []);
+    const rootNode = await createStoredTurnNode({
+      consumedStagedResults: [],
+      createdAtMs: 12,
+      eventHash: null,
+      previousTurnNodeHash: null,
+      schemaId: schema.schemaId,
+      turnTreeHash: turnTree.hash,
+    });
+    const thread: StoredThread = {
+      createdAtMs: 13,
+      rootTurnNodeHash: rootNode.hash,
+      schemaId: schema.schemaId,
+      threadId: "thread_obs",
+    };
+    const branch: StoredBranch = {
+      branchId: "branch_obs",
+      createdAtMs: 14,
+      headTurnNodeHash: rootNode.hash,
+      threadId: thread.threadId,
+      updatedAtMs: 14,
+    };
+    const turn: StoredTurn = {
+      branchId: branch.branchId,
+      createdAtMs: 15,
+      headTurnNodeHash: rootNode.hash,
+      parentTurnId: null,
+      startTurnNodeHash: rootNode.hash,
+      threadId: thread.threadId,
+      turnId: "turn_obs",
+      updatedAtMs: 15,
+    };
+    const run: StoredRun = {
+      branchId: branch.branchId,
+      createdAtMs: 16,
+      createdTurnNodesCbor: encodeDeterministicKernelRecord([]),
+      currentStepIndex: 1,
+      runId: "run_obs",
+      schemaId: schema.schemaId,
+      startTurnNodeHash: rootNode.hash,
+      status: "completed",
+      stepSequenceCbor: encodeDeterministicKernelRecord([
+        { deterministic: false, id: "step", sideEffects: false },
+      ]),
+      turnId: turn.turnId,
+      updatedAtMs: 16,
+    };
+
+    const state = createEmptyState();
+    state.schemas.set(schema.schemaId, createStoredSchema(schema, 10));
+    state.turnTrees.set(turnTree.hash, turnTree);
+    state.turnTreePaths.set(
+      turnTree.hash,
+      new Map(paths.map((path) => [path.path, path]))
+    );
+    state.turnNodes.set(rootNode.hash, rootNode);
+    state.threads.set(thread.threadId, thread);
+    state.branches.set(branch.branchId, branch);
+    state.turns.set(turn.turnId, turn);
+    state.runs.set(run.runId, run);
+    return { runId: run.runId, state };
+  }
+
+  function makeAnnotation(
+    runId: string,
+    turnNodeHash: string | null
+  ): StoredObserveAnnotation {
+    return {
+      annotationCbor: new Uint8Array([1]),
+      annotationHash: createHashFromIndex(20),
+      createdAtMs: 20,
+      runId,
+      turnNodeHash,
+    };
+  }
+
+  test("accepts a committed annotation whose run and turn node both exist", async () => {
+    const { runId, state } = await buildCommittedStateWithRun();
+    const rootNodeHash = state.threads.get("thread_obs")?.rootTurnNodeHash;
+    state.observeAnnotations.set(runId, [
+      makeAnnotation(runId, rootNodeHash ?? null),
+    ]);
+
+    expect(() =>
+      validateCommittedState(state, createEmptyState())
+    ).not.toThrow();
+  });
+
+  test("rejects a committed annotation whose run does not exist", async () => {
+    const { state } = await buildCommittedStateWithRun();
+    state.observeAnnotations.set("ghost_run", [
+      makeAnnotation("ghost_run", null),
+    ]);
+
+    expect(() => validateCommittedState(state, createEmptyState())).toThrow(
+      "must reference an existing run"
+    );
+  });
+
+  test("rejects a committed annotation whose turn node does not exist", async () => {
+    const { runId, state } = await buildCommittedStateWithRun();
+    state.observeAnnotations.set(runId, [
+      makeAnnotation(runId, createHashFromIndex(999)),
+    ]);
+
+    expect(() => validateCommittedState(state, createEmptyState())).toThrow(
+      "must reference an existing turn node"
+    );
   });
 });

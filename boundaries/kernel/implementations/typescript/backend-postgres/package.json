@@ -17,6 +17,7 @@
     "postgres": "3.4.9"
   },
   "devDependencies": {
+    "@tuvren/kernel-runtime": "workspace:*",
     "@tuvren/kernel-testkit": "workspace:*"
   },
   "peerDependencies": {

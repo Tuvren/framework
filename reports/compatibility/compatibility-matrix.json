@@ -585,6 +585,11 @@
             "kernel.protocol.schema_roundtrip.f-with-event-hash",
             "kernel.protocol.schema_roundtrip.f-with-prev-turn",
             "kernel.protocol.schema_roundtrip.f-zero-turn-tree-hash",
+            "kernel.reclamation.erasure_payload_unrecoverable_after_key_destruction",
+            "kernel.reclamation.erasure_preserves_referencing_lineage",
+            "kernel.reclamation.grace_window_holds_under_active_lease",
+            "kernel.reclamation.reachable_from_live_root_is_retained",
+            "kernel.reclamation.unreachable_past_grace_is_released",
             "kernel.crash-recovery.concurrent_writer",
             "kernel.crash-recovery.in_process_fault_points",
             "kernel-restart-af.expired-running-requires-preemption",
@@ -598,9 +603,9 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 59,
-            "totalChecks": 62,
-            "applicableChecks": 59,
+            "passedChecks": 64,
+            "totalChecks": 67,
+            "applicableChecks": 64,
             "nonApplicableChecks": 3
           },
           "declaredCapabilities": [
@@ -608,6 +613,7 @@
             "kernel.edge-validation",
             "kernel.logical",
             "kernel.protocol",
+            "kernel.reclamation",
             "kernel.restart-recovery",
             "kernel.run-liveness",
             "kernel.scope-isolation"
@@ -677,6 +683,11 @@
             "kernel.protocol.schema_roundtrip.f-with-event-hash",
             "kernel.protocol.schema_roundtrip.f-with-prev-turn",
             "kernel.protocol.schema_roundtrip.f-zero-turn-tree-hash",
+            "kernel.reclamation.erasure_payload_unrecoverable_after_key_destruction",
+            "kernel.reclamation.erasure_preserves_referencing_lineage",
+            "kernel.reclamation.grace_window_holds_under_active_lease",
+            "kernel.reclamation.reachable_from_live_root_is_retained",
+            "kernel.reclamation.unreachable_past_grace_is_released",
             "kernel-restart-af.invalid-staged-result-reexecutes",
             "kernel.crash-recovery.concurrent_writer",
             "kernel.crash-recovery.durable_fault_points",
@@ -693,9 +704,9 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 62,
-            "totalChecks": 62,
-            "applicableChecks": 62,
+            "passedChecks": 67,
+            "totalChecks": 67,
+            "applicableChecks": 67,
             "nonApplicableChecks": 0
           },
           "declaredCapabilities": [
@@ -704,6 +715,7 @@
             "kernel.logical",
             "kernel.persistence.durable",
             "kernel.protocol",
+            "kernel.reclamation",
             "kernel.restart-recovery",
             "kernel.run-liveness",
             "kernel.scope-isolation"
@@ -773,6 +785,11 @@
             "kernel.protocol.schema_roundtrip.f-with-event-hash",
             "kernel.protocol.schema_roundtrip.f-with-prev-turn",
             "kernel.protocol.schema_roundtrip.f-zero-turn-tree-hash",
+            "kernel.reclamation.erasure_payload_unrecoverable_after_key_destruction",
+            "kernel.reclamation.erasure_preserves_referencing_lineage",
+            "kernel.reclamation.grace_window_holds_under_active_lease",
+            "kernel.reclamation.reachable_from_live_root_is_retained",
+            "kernel.reclamation.unreachable_past_grace_is_released",
             "kernel-restart-af.invalid-staged-result-reexecutes",
             "kernel.crash-recovery.concurrent_writer",
             "kernel.crash-recovery.durable_fault_points",
@@ -789,9 +806,9 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 62,
-            "totalChecks": 62,
-            "applicableChecks": 62,
+            "passedChecks": 67,
+            "totalChecks": 67,
+            "applicableChecks": 67,
             "nonApplicableChecks": 0
           },
           "declaredCapabilities": [
@@ -800,6 +817,7 @@
             "kernel.logical",
             "kernel.persistence.durable",
             "kernel.protocol",
+            "kernel.reclamation",
             "kernel.restart-recovery",
             "kernel.run-liveness",
             "kernel.scope-isolation"
@@ -954,9 +972,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 42,
-            "totalChecks": 62,
+            "totalChecks": 67,
             "applicableChecks": 42,
-            "nonApplicableChecks": 20
+            "nonApplicableChecks": 25
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",

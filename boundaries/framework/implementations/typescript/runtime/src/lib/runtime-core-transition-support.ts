@@ -28,6 +28,10 @@ import {
   createPreserveTraceHandoffContextBuilder,
 } from "./handoff-builders.js";
 import {
+  encryptMessageRecord,
+  type PayloadCodecBinding,
+} from "./payload-codec-seam.js";
+import {
   createContextEngineeringHelpers as createRuntimeContextEngineeringHelpers,
   type HelperBundle,
 } from "./runtime-core-context.js";
@@ -69,6 +73,7 @@ export function resolveRuntimeCoreDefaultHandoffContextBuilder(
 
 export function createRuntimeCoreContextHelperBundle(
   kernel: KrakenKernel,
+  payloadCodecBinding: PayloadCodecBinding,
   messageHashes: HashString[],
   messages: TuvrenMessage[]
 ): HelperBundle {
@@ -79,7 +84,14 @@ export function createRuntimeCoreContextHelperBundle(
       createFrozenAgentConfig: (config) => createFrozenSnapshot(config),
       createPendingKernelHash: (value) => createPendingKernelHash(value),
       encodeMessageRecord: (message) => encodeKernelRecord(message, "message"),
-      putKernelRecord: async (record) => await kernel.store.put(record),
+      // Crypto-shredding seam (KRT-BF005): encrypt context-engineering message
+      // rewrites before storage, symmetric with staged messages. The provisional
+      // hash is remapped to the canonical post-store hash, so a non-deterministic
+      // ciphertext hash is absorbed by the helper's resolveHashes step.
+      putKernelRecord: async (record) =>
+        await kernel.store.put(
+          await encryptMessageRecord(payloadCodecBinding, record)
+        ),
     },
     messageHashes,
     messages
@@ -90,6 +102,7 @@ export async function applyRuntimeCoreTerminalAgentTransitionIfNeeded(
   dependencies: {
     contextOps: RuntimeCoreContextOpsHost;
     kernel: KrakenKernel;
+    payloadCodecBinding: PayloadCodecBinding;
   },
   handle: RuntimeExecutionHandle,
   schemaId: string,
@@ -128,6 +141,7 @@ export async function applyRuntimeCoreTerminalAgentTransitionIfNeeded(
       );
       const restoredHeadState = await loadHeadStateFacade(
         dependencies.kernel,
+        dependencies.payloadCodecBinding,
         handle.request.branchId
       );
       handle.updateStatus({

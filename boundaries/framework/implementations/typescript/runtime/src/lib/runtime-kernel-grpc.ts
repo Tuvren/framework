@@ -20,7 +20,11 @@ import {
   type Interceptor,
 } from "@connectrpc/connect";
 import { createGrpcTransport } from "@connectrpc/connect-node";
-import { isTuvrenErrorCode, TuvrenRuntimeError } from "@tuvren/core";
+import {
+  isTuvrenErrorCode,
+  TuvrenPersistenceError,
+  TuvrenRuntimeError,
+} from "@tuvren/core";
 import type { RuntimeKernel } from "@tuvren/kernel-protocol";
 import {
   BranchCreateResponseSchema,
@@ -158,6 +162,20 @@ export function createGrpcRuntimeKernel(
         } catch (error: unknown) {
           throw toTransportError(error, "branch.setHead");
         }
+      },
+    },
+    maintenance: {
+      reclaim() {
+        // Reclamation (§9.4) is an in-process kernel primitive; it is not yet
+        // projected across the gRPC interop boundary (the proto carries no
+        // maintenance service), so the bridged kernel honestly reports it as
+        // unsupported rather than silently no-op'ing.
+        return Promise.reject(
+          new TuvrenPersistenceError(
+            "maintenance.reclamation is not available across the gRPC kernel interop boundary",
+            { code: "kernel_capability_unsupported" }
+          )
+        );
       },
     },
     node: {

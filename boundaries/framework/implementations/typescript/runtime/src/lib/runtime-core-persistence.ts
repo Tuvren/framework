@@ -36,6 +36,12 @@ interface ManifestExtensionStateWarning {
 export interface RuntimeCorePersistenceHost {
   emitWarning(warning: ManifestExtensionStateWarning): void;
   encodeKernelRecord(value: unknown, label: string): Uint8Array;
+  /**
+   * Crypto-shredding seam (KRT-BF005): encrypt an encoded message record under
+   * the host payload codec before it is staged. The default identity codec
+   * returns the bytes unchanged, so no-codec hosts stage plaintext as before.
+   */
+  encryptMessageRecord(record: Uint8Array): Promise<Uint8Array>;
   getManifestExtensionStateWarningBudgetBytes(): false | number;
   getOrCreateManifestExtensionStateWarningKeys(
     handle: RuntimeExecutionHandle
@@ -84,7 +90,9 @@ export async function stageMessage(
 ): Promise<HashString> {
   return await host.stageRecord(
     runId,
-    host.encodeKernelRecord(message, "message"),
+    await host.encryptMessageRecord(
+      host.encodeKernelRecord(message, "message")
+    ),
     taskId,
     "message"
   );

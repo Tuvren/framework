@@ -314,6 +314,14 @@ describe("orchestration-runtime child lifecycle", () => {
       async readBranchMessages() {
         return { messages: [] };
       },
+      maintenance: {
+        reclaim() {
+          throw new Error("reclaim was not expected");
+        },
+        purgeScope() {
+          throw new Error("purgeScope was not expected");
+        },
+      },
     } satisfies TuvrenRuntime;
     const orchestration = createOrchestrationRuntime({
       agents: {

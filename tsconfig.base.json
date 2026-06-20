@@ -37,6 +37,9 @@
       "@tuvren/core/capabilities": [
         "./boundaries/shared/contracts/core/implementations/typescript/src/capabilities/index.ts"
       ],
+      "@tuvren/core/lifecycle": [
+        "./boundaries/shared/contracts/core/implementations/typescript/src/lifecycle/index.ts"
+      ],
       "@tuvren/core-types": [
         "./boundaries/shared/contracts/core-types/implementations/typescript/src/index.ts"
       ],

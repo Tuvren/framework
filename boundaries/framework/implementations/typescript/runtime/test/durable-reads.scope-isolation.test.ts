@@ -36,7 +36,12 @@ import {
   createMemoryBackend,
   createMemoryScopeStore,
 } from "@tuvren/backend-memory";
-import { TuvrenLineageError, TuvrenRuntimeError } from "@tuvren/core";
+import {
+  DEFAULT_SCOPE,
+  TuvrenLineageError,
+  TuvrenRuntimeError,
+} from "@tuvren/core";
+import { IDENTITY_PAYLOAD_CODEC } from "@tuvren/core/lifecycle";
 import type { TuvrenMessage } from "@tuvren/core/messages";
 import {
   encodeDeterministicKernelRecord,
@@ -62,6 +67,12 @@ import {
   listThreads,
   readBranchMessages,
 } from "../src/lib/durable-reads.js";
+import type { PayloadCodecBinding } from "../src/lib/payload-codec-seam.js";
+
+const PLAINTEXT_BINDING: PayloadCodecBinding = {
+  codec: IDENTITY_PAYLOAD_CODEC,
+  scope: DEFAULT_SCOPE,
+};
 
 // ── Seeding ──────────────────────────────────────────────────────────────────
 
@@ -181,7 +192,7 @@ async function assertSurfaceRevealed(
   }
   expect(history).toEqual([seeded.headTurnNodeHash]);
 
-  const messages = await readBranchMessages(kernel, {
+  const messages = await readBranchMessages(kernel, PLAINTEXT_BINDING, {
     branchId: seeded.branchId,
   });
   expect(messages.messages).toEqual([
@@ -223,7 +234,7 @@ async function assertSurfaceHidden(
   await expect(history.next()).rejects.toBeInstanceOf(TuvrenLineageError);
 
   await expect(
-    readBranchMessages(kernel, { branchId: seeded.branchId })
+    readBranchMessages(kernel, PLAINTEXT_BINDING, { branchId: seeded.branchId })
   ).rejects.toBeInstanceOf(TuvrenLineageError);
 
   expect(await kernel.store.has(seeded.messageHash)).toBe(false);
@@ -308,10 +319,10 @@ describe("durable-read scope isolation (KRT-BE006)", () => {
       threadId: "shared_thread",
     });
 
-    const messagesA = await readBranchMessages(kernelA, {
+    const messagesA = await readBranchMessages(kernelA, PLAINTEXT_BINDING, {
       branchId: "shared_branch",
     });
-    const messagesB = await readBranchMessages(kernelB, {
+    const messagesB = await readBranchMessages(kernelB, PLAINTEXT_BINDING, {
       branchId: "shared_branch",
     });
     expect(messagesA.messages).toEqual([

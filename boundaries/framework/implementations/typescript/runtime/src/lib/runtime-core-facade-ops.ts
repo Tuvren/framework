@@ -31,6 +31,7 @@ import type {
 } from "@tuvren/core/execution";
 import type { RuntimeKernel as KrakenKernel } from "@tuvren/kernel-protocol";
 import { materializeDriver } from "./driver-registry.js";
+import type { PayloadCodecBinding } from "./payload-codec-seam.js";
 import {
   DEFAULT_AGENT_SCHEMA,
   DEFAULT_AGENT_SCHEMA_ID,
@@ -120,9 +121,10 @@ export function materializeContextMessagesFacade(
 
 export async function loadHeadStateFacade(
   kernel: KrakenKernel,
+  payloadCodecBinding: PayloadCodecBinding,
   branchId: string
 ): Promise<HeadState> {
-  return await loadRuntimeHeadState(kernel, branchId);
+  return await loadRuntimeHeadState(kernel, payloadCodecBinding, branchId);
 }
 
 export async function readRecoveredActiveAgentNameFacade(

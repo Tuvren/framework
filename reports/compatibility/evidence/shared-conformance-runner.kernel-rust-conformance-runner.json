@@ -1668,6 +1668,11 @@
     "kernel-protocol-af.schema-register-rejects-duplicate-path",
     "kernel-protocol-af.tree-create-rejects-missing-required-path",
     "kernel-protocol-af.tree-diff-rejects-schema-mismatch",
+    "kernel.reclamation.erasure_payload_unrecoverable_after_key_destruction",
+    "kernel.reclamation.erasure_preserves_referencing_lineage",
+    "kernel.reclamation.grace_window_holds_under_active_lease",
+    "kernel.reclamation.reachable_from_live_root_is_retained",
+    "kernel.reclamation.unreachable_past_grace_is_released",
     "kernel-restart-af.invalid-staged-result-reexecutes",
     "kernel.crash-recovery.concurrent_writer",
     "kernel.crash-recovery.durable_fault_points",
@@ -1689,9 +1694,9 @@
   "summary": {
     "failedChecks": 0,
     "passedChecks": 42,
-    "totalChecks": 62,
+    "totalChecks": 67,
     "applicableChecks": 42,
-    "nonApplicableChecks": 20
+    "nonApplicableChecks": 25
   },
   "suiteId": "tuvren.kernel.protocol",
   "suiteVersion": "0.1.0"

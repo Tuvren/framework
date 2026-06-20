@@ -47,6 +47,8 @@ export type {
   PathValue,
   PauseVerdict,
   ProceedVerdict,
+  ReclamationOptions,
+  ReclamationSummary,
   RecoveryState,
   RetryVerdict,
   RunCompletionStatus,
