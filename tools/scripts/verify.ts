@@ -16,6 +16,7 @@
 
 import { spawn } from "node:child_process";
 import process from "node:process";
+import { runCommand } from "./lib/command-runner.js";
 import {
   assertWorktreeUnchanged,
   readWorktreeSnapshot,
@@ -32,18 +33,22 @@ export interface VerificationResult {
   id: string;
 }
 
-export const RUST_NX_BUILD_PROJECTS: readonly string[] = [
-  "framework-rust-conformance-runner",
-  "kernel-rust-kernel",
-  "kernel-rust-grpc-service",
-  "kernel-rust-conformance-runner",
-];
+// A phase is a group of steps that may run concurrently. The worktree-purity
+// guard is applied once per phase (snapshot before, assert after), so any step
+// that mutates checked-in files is still caught — we trade per-step attribution
+// for parallelism. Steps with real ordering or shared-resource constraints
+// (Rust builds, codegen-before-typecheck, services) live in serial phases.
+export interface VerificationPhase {
+  /** Max steps to run at once. Defaults to the phase size (capped). 1 = serial. */
+  concurrency?: number;
+  id: string;
+  steps: readonly VerificationStep[];
+}
 
-export const RUST_NX_TEST_PROJECTS: readonly string[] = [
-  "framework-rust-conformance-runner",
-  "kernel-rust-kernel",
-  "kernel-rust-grpc-service",
-];
+// Cap parallel fan-out so a phase with many cheap steps does not oversubscribe a
+// small machine. Set VERIFY_SERIAL=1 to force every phase fully serial, which is
+// useful when bisecting which step mutated the worktree.
+const DEFAULT_MAX_CONCURRENCY = 8;
 
 export const WORKSPACE_TEST_PROJECTS: readonly string[] = [
   "provider-api",
@@ -115,246 +120,266 @@ export const WORKSPACE_EXPORT_SMOKE_PROJECTS: readonly string[] = [
   "host-repl",
 ];
 
-export const DEFAULT_VERIFICATION_STEPS: readonly VerificationStep[] = [
+export const DEFAULT_VERIFICATION_PHASES: readonly VerificationPhase[] = [
   {
-    command: ["bun", "run", "lint"],
-    id: "workspace lint",
-  },
-  {
-    command: ["cargo", "fmt", "--all", "--", "--check"],
-    id: "Rust workspace formatting",
-  },
-  {
-    command: [
-      "cargo",
-      "clippy",
-      "--workspace",
-      "--all-targets",
-      "--",
-      "-D",
-      "warnings",
+    // Read-only static analysis + the constitutional authority/conformance
+    // validators. All independent, so run them concurrently.
+    id: "static analysis and authority gates",
+    steps: [
+      { command: ["bun", "run", "lint"], id: "workspace lint" },
+      {
+        command: ["cargo", "fmt", "--all", "--", "--check"],
+        id: "Rust workspace formatting",
+      },
+      {
+        command: ["bun", "run", "docs:authority-freeze:check"],
+        id: "docs-to-authority freeze gate",
+      },
+      {
+        command: ["bun", "run", "portability:check"],
+        id: "Epic AL portability gate",
+      },
+      {
+        command: ["bun", "run", "docs:af-gap-plan:check"],
+        id: "Epic AF conformance gap plan freshness",
+      },
+      {
+        command: [
+          "bun",
+          "tools/scripts/authority-packet/validate-authority-packets.ts",
+        ],
+        id: "authority packet validation",
+      },
+      {
+        command: ["bun", "tools/conformance/plan-compiler/validate-plans.ts"],
+        id: "conformance plan validation",
+      },
+      {
+        command: [
+          "bun",
+          "tools/conformance/adapter-protocol/validate-adapter-protocol.ts",
+        ],
+        id: "adapter protocol validation",
+      },
+      {
+        command: ["bun", "tools/conformance/meta-conformance/run.ts"],
+        id: "shared conformance runner meta-conformance",
+      },
+      {
+        command: ["bun", "tools/conformance/vocabulary/validate-vocabulary.ts"],
+        id: "vocabulary-check verification",
+      },
+      {
+        command: [
+          "bun",
+          "tools/scripts/authority-guardrails/authority-guardrails.ts",
+        ],
+        id: "machine authority guardrails",
+      },
     ],
-    id: "Rust workspace lint",
   },
   {
-    command: ["cargo", "test", "--workspace"],
-    id: "Rust workspace tests",
-  },
-  {
-    command: [
-      "bun",
-      "run",
-      "nx",
-      "run",
-      "kernel-rust-conformance-runner:conformance",
-      "--skipNxCache",
+    // The Rust Nx wrappers shell out to Cargo-native commands, so keep this
+    // phase serial to avoid interleaving large Rust builds. `cargo clippy
+    // --all-targets` and `cargo test --workspace` already compile and test
+    // every workspace crate, which is why the previous redundant
+    // `nx run-many build/test` Rust steps were dropped — they re-ran a subset
+    // of what these two commands already cover.
+    concurrency: 1,
+    id: "Rust workspace build, lint, test, and conformance",
+    steps: [
+      {
+        command: [
+          "cargo",
+          "clippy",
+          "--workspace",
+          "--all-targets",
+          "--",
+          "-D",
+          "warnings",
+        ],
+        id: "Rust workspace lint",
+      },
+      { command: ["cargo", "test", "--workspace"], id: "Rust workspace tests" },
+      {
+        command: [
+          "bun",
+          "run",
+          "nx",
+          "run",
+          "kernel-rust-conformance-runner:conformance",
+          "--skipNxCache",
+        ],
+        id: "Rust kernel conformance runner",
+      },
+      {
+        command: [
+          "bun",
+          "run",
+          "nx",
+          "run",
+          "kernel-rust-grpc-service:interop-smoke",
+          "--skipNxCache",
+        ],
+        id: "Rust kernel gRPC interop smoke",
+      },
     ],
-    id: "Rust kernel conformance runner",
   },
   {
-    command: [
-      "bun",
-      "run",
-      "nx",
-      "run",
-      "kernel-rust-grpc-service:interop-smoke",
-      "--skipNxCache",
+    // Evidence-freshness codegen must run before typecheck because telemetry
+    // codegen writes a checked-in TypeScript consumer that the transition line
+    // imports. `--skipNxCache` is intentional: these are freshness checks that
+    // must inspect the current checkout, not replay a cache from another state.
+    concurrency: 1,
+    id: "codegen freshness and typecheck",
+    steps: [
+      {
+        command: [
+          "bun",
+          "run",
+          "nx",
+          "run-many",
+          "-t",
+          "codegen",
+          "-p",
+          "shared-core-types,framework-runtime-api,framework-event-stream,framework-event-stream-sse,framework-driver-api,framework-tool-contracts,provider-api,telemetry-semconv,compatibility-reporting,kernel-interop-grpc",
+          "--skipNxCache",
+        ],
+        id: "telemetry, compatibility, and interop code generation",
+      },
+      {
+        command: [
+          "bun",
+          "run",
+          "nx",
+          "run",
+          "kernel-interop-grpc:interop-smoke",
+          "--skipNxCache",
+        ],
+        id: "kernel interop governance smoke",
+      },
+      { command: ["bun", "run", "typecheck"], id: "workspace typecheck" },
     ],
-    id: "Rust kernel gRPC interop smoke",
   },
   {
-    command: [
-      "bun",
-      "run",
-      "nx",
-      "run-many",
-      "-t",
-      "build",
-      "-p",
-      RUST_NX_BUILD_PROJECTS.join(","),
-      // The Rust Nx wrappers shell out to Cargo-native commands, so keep these
-      // serialized to avoid interleaving large Rust builds in the repo-global
-      // verify lane.
-      "--parallel=1",
+    // Build before test before conformance; each Nx run-many already
+    // parallelizes within itself.
+    concurrency: 1,
+    id: "transition-line builds, tests, and conformance",
+    steps: [
+      {
+        command: [
+          "bun",
+          "run",
+          "nx",
+          "run-many",
+          "-t",
+          "build",
+          "-p",
+          WORKSPACE_BUILD_PROJECTS.join(","),
+        ],
+        id: "transition-line targeted builds",
+      },
+      {
+        command: [
+          "bun",
+          "run",
+          "nx",
+          "run-many",
+          "-t",
+          "test",
+          "-p",
+          WORKSPACE_TEST_PROJECTS.join(","),
+        ],
+        id: "transition-line targeted tests",
+      },
+      {
+        command: ["bun", "run", "conformance"],
+        id: "boundary-owned conformance suites",
+      },
     ],
-    id: "Rust Nx target builds",
   },
   {
-    command: [
-      "bun",
-      "run",
-      "nx",
-      "run-many",
-      "-t",
-      "test",
-      "-p",
-      RUST_NX_TEST_PROJECTS.join(","),
-      // These targets exercise Cargo-backed Rust packages, so run them one at
-      // a time for the same reason as the Rust build target smoke above.
-      "--parallel=1",
+    // Proving-host scenarios drive real services (PostgreSQL, SQLite, the REPL),
+    // so keep this phase serial to avoid contending on shared state and ports.
+    concurrency: 1,
+    id: "proving-host scenarios and package smokes",
+    steps: [
+      {
+        command: ["bun", "run", "proving-host:interop-smoke"],
+        id: "cross-language proving-host interactive/headless interop smoke",
+      },
+      {
+        command: [
+          "bun",
+          "run",
+          "nx",
+          "run-many",
+          "-t",
+          "exports-smoke",
+          "-p",
+          WORKSPACE_EXPORT_SMOKE_PROJECTS.join(","),
+          // The prior build step is the release gate for dist output; export
+          // smoke should only validate those artifacts, not rebuild the graph.
+          "--excludeTaskDependencies",
+        ],
+        id: "package export smoke tests",
+      },
+      {
+        command: ["bun", "tools/scripts/portability-check.ts"],
+        id: "Bun and Node portability import checks",
+      },
+      {
+        command: ["bun", "run", "proving-host:scenario-sqlite"],
+        id: "Node-backed proving-host SQLite interactive/headless scenario",
+      },
+      {
+        command: ["bun", "run", "proving-host:scenario-postgres"],
+        id: "PostgreSQL-backed proving-host interactive/headless scenario",
+      },
     ],
-    id: "Rust Nx target tests",
-  },
-  {
-    command: ["bun", "run", "docs:authority-freeze:check"],
-    id: "docs-to-authority freeze gate",
-  },
-  {
-    command: ["bun", "run", "portability:check"],
-    id: "Epic AL portability gate",
-  },
-  {
-    command: ["bun", "run", "docs:af-gap-plan:check"],
-    id: "Epic AF conformance gap plan freshness",
-  },
-  {
-    command: [
-      "bun",
-      "tools/scripts/authority-packet/validate-authority-packets.ts",
-    ],
-    id: "authority packet validation",
-  },
-  {
-    command: ["bun", "tools/conformance/plan-compiler/validate-plans.ts"],
-    id: "conformance plan validation",
-  },
-  {
-    command: [
-      "bun",
-      "tools/conformance/adapter-protocol/validate-adapter-protocol.ts",
-    ],
-    id: "adapter protocol validation",
-  },
-  {
-    command: ["bun", "tools/conformance/meta-conformance/run.ts"],
-    id: "shared conformance runner meta-conformance",
-  },
-  {
-    command: ["bun", "tools/conformance/vocabulary/validate-vocabulary.ts"],
-    id: "vocabulary-check verification",
-  },
-  {
-    command: [
-      "bun",
-      "tools/scripts/authority-guardrails/authority-guardrails.ts",
-    ],
-    id: "machine authority guardrails",
-  },
-  {
-    command: [
-      "bun",
-      "run",
-      "nx",
-      "run-many",
-      "-t",
-      "codegen",
-      "-p",
-      "shared-core-types,framework-runtime-api,framework-event-stream,framework-event-stream-sse,framework-driver-api,framework-tool-contracts,provider-api,telemetry-semconv,compatibility-reporting,kernel-interop-grpc",
-      // Compatibility codegen is now a read-only evidence freshness check, so
-      // verify forces it to inspect the current checkout rather than reusing a
-      // cached result from another workspace state.
-      "--skipNxCache",
-    ],
-    id: "telemetry, compatibility, and interop code generation",
-  },
-  {
-    command: [
-      "bun",
-      "run",
-      "nx",
-      "run",
-      "kernel-interop-grpc:interop-smoke",
-      "--skipNxCache",
-    ],
-    id: "kernel interop governance smoke",
-  },
-  {
-    // Telemetry codegen writes a checked-in TypeScript consumer, so verify
-    // compiles and exercises the transition line after regeneration rather than
-    // trusting the pre-codegen build/test outputs.
-    command: ["bun", "run", "typecheck"],
-    id: "workspace typecheck",
-  },
-  {
-    command: [
-      "bun",
-      "run",
-      "nx",
-      "run-many",
-      "-t",
-      "build",
-      "-p",
-      WORKSPACE_BUILD_PROJECTS.join(","),
-    ],
-    id: "transition-line targeted builds",
-  },
-  {
-    command: [
-      "bun",
-      "run",
-      "nx",
-      "run-many",
-      "-t",
-      "test",
-      "-p",
-      WORKSPACE_TEST_PROJECTS.join(","),
-    ],
-    id: "transition-line targeted tests",
-  },
-  {
-    command: ["bun", "run", "conformance"],
-    id: "boundary-owned conformance suites",
-  },
-  {
-    command: ["bun", "run", "proving-host:interop-smoke"],
-    id: "cross-language proving-host interactive/headless interop smoke",
-  },
-  {
-    command: [
-      "bun",
-      "run",
-      "nx",
-      "run-many",
-      "-t",
-      "exports-smoke",
-      "-p",
-      WORKSPACE_EXPORT_SMOKE_PROJECTS.join(","),
-      // The prior build step is the release gate for dist output; export smoke
-      // should only validate those artifacts, not rebuild the graph again.
-      "--excludeTaskDependencies",
-    ],
-    id: "package export smoke tests",
-  },
-  {
-    command: ["bun", "tools/scripts/portability-check.ts"],
-    id: "Bun and Node portability import checks",
-  },
-  {
-    command: ["bun", "run", "proving-host:scenario-sqlite"],
-    id: "Node-backed proving-host SQLite interactive/headless scenario",
-  },
-  {
-    command: ["bun", "run", "proving-host:scenario-postgres"],
-    id: "PostgreSQL-backed proving-host interactive/headless scenario",
   },
 ];
 
-export async function runVerification(
-  steps: readonly VerificationStep[] = DEFAULT_VERIFICATION_STEPS
+/**
+ * Runs the verification pipeline.
+ *
+ * - Called with no arguments (release-check, the `verify` entry point) it runs
+ *   the full phased pipeline with intra-phase parallelism.
+ * - Called with an explicit step list (verify-kernel, check) it runs each step
+ *   as its own serial phase, preserving the original per-step worktree guard.
+ */
+export function runVerification(
+  steps?: readonly VerificationStep[]
+): Promise<VerificationResult[]> {
+  const phases =
+    steps === undefined
+      ? DEFAULT_VERIFICATION_PHASES
+      : steps.map((step) => ({
+          concurrency: 1,
+          id: step.id,
+          steps: [step],
+        }));
+
+  return runVerificationPhases(phases);
+}
+
+export async function runVerificationPhases(
+  phases: readonly VerificationPhase[]
 ): Promise<VerificationResult[]> {
   const results: VerificationResult[] = [];
 
-  for (const step of steps) {
+  for (const phase of phases) {
     const before = await readWorktreeSnapshot(process.cwd());
-    const result = await runVerificationStep(step);
-    results.push(result);
+    const phaseResults = await runPhase(phase);
+    results.push(...phaseResults);
 
     await assertWorktreeUnchanged(before, {
       cwd: process.cwd(),
-      label: `verification step "${step.id}"`,
+      label: `verification phase "${phase.id}"`,
     });
 
-    if (result.code !== 0) {
+    if (phaseResults.some((result) => result.code !== 0)) {
       return results;
     }
   }
@@ -380,9 +405,59 @@ export function printVerificationSummary(
   }
 }
 
+interface StepRun extends VerificationResult {
+  output: string | null;
+}
+
+async function runPhase(
+  phase: VerificationPhase
+): Promise<VerificationResult[]> {
+  const forceSerial = process.env.VERIFY_SERIAL === "1";
+  const limit = forceSerial
+    ? 1
+    : (phase.concurrency ??
+      Math.min(phase.steps.length, DEFAULT_MAX_CONCURRENCY));
+
+  if (limit <= 1) {
+    return runPhaseSerially(phase.steps);
+  }
+
+  // Capture each step's output so concurrent logs do not interleave; flush them
+  // in phase order once the phase completes.
+  const runs = await mapWithConcurrency(phase.steps, limit, (step) =>
+    runVerificationStep(step, true)
+  );
+
+  for (const run of runs) {
+    if (run.output !== null) {
+      process.stdout.write(run.output);
+    }
+  }
+
+  return runs.map(toResult);
+}
+
+async function runPhaseSerially(
+  steps: readonly VerificationStep[]
+): Promise<VerificationResult[]> {
+  const results: VerificationResult[] = [];
+
+  for (const step of steps) {
+    const run = await runVerificationStep(step, false);
+    results.push(toResult(run));
+
+    if (run.code !== 0) {
+      break;
+    }
+  }
+
+  return results;
+}
+
 async function runVerificationStep(
-  step: VerificationStep
-): Promise<VerificationResult> {
+  step: VerificationStep,
+  capture: boolean
+): Promise<StepRun> {
   const [executable, ...args] = step.command;
 
   if (executable === undefined) {
@@ -390,18 +465,59 @@ async function runVerificationStep(
   }
 
   const startedAt = Date.now();
+  const header = `\n==> ${step.id}\n$ ${step.command.join(" ")}\n`;
 
-  console.log("");
-  console.log(`==> ${step.id}`);
-  console.log(`$ ${step.command.join(" ")}`);
+  if (!capture) {
+    process.stdout.write(header);
+    const code = await spawnCommand(executable, args);
 
-  const code = await spawnCommand(executable, args);
+    return {
+      code,
+      durationMs: Date.now() - startedAt,
+      id: step.id,
+      output: null,
+    };
+  }
+
+  const result = await runCommand(step.command, { captureOutput: true });
 
   return {
-    code,
+    code: result.code,
     durationMs: Date.now() - startedAt,
     id: step.id,
+    output: header + result.stdout + result.stderr,
   };
+}
+
+function toResult(run: StepRun): VerificationResult {
+  return { code: run.code, durationMs: run.durationMs, id: run.id };
+}
+
+async function mapWithConcurrency<T, R>(
+  items: readonly T[],
+  limit: number,
+  fn: (item: T) => Promise<R>
+): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let nextIndex = 0;
+
+  async function worker(): Promise<void> {
+    while (true) {
+      const index = nextIndex;
+      nextIndex += 1;
+
+      if (index >= items.length) {
+        return;
+      }
+
+      results[index] = await fn(items[index] as T);
+    }
+  }
+
+  const workers = Array.from({ length: Math.min(limit, items.length) }, worker);
+  await Promise.all(workers);
+
+  return results;
 }
 
 function spawnCommand(
