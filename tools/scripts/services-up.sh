@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+#
+# Copyright 2026 Oscar Yáñez Cisterna (@SkrOYC)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Idempotent session bootstrap for devenv-managed services (PostgreSQL, ...).
+#
+# `devenv up -d` is NOT idempotent: a second invocation exits non-zero with
+# "Processes already running". That makes the documented "run once at session
+# start" step a footgun when a developer re-runs it. This wrapper swallows the
+# already-running case so the command is safe to call repeatedly.
+#
+# This is a manual, top-level convenience only. Do NOT embed it inside Nx
+# targets, conformance runners, or the verify lanes — those still assume the
+# caller has already started services once, per the repository guidelines.
+
+set -euo pipefail
+
+if ! command -v devenv >/dev/null 2>&1; then
+  echo "services:up: 'devenv' not found on PATH. Load the repo environment first (direnv/.envrc)." >&2
+  exit 1
+fi
+
+if output="$(devenv up -d 2>&1)"; then
+  [ -n "${output}" ] && echo "${output}"
+  echo "services:up: devenv-managed services started."
+  exit 0
+fi
+
+if echo "${output}" | grep -qiE "already running"; then
+  echo "services:up: devenv-managed services already running (no-op)."
+  exit 0
+fi
+
+echo "${output}" >&2
+echo "services:up: 'devenv up -d' failed (see output above)." >&2
+echo "services:up: if a stale daemon is blocking startup, run 'bun run services:down' and retry." >&2
+exit 1

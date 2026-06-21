@@ -39,9 +39,12 @@ Use native tools as ecosystem truth and Nx as a wrapper.
 - When an Nx lane feels slow, inspect the task graph and cache hits before changing semantics: compare repeated runs, check whether generated files are poisoning inputs, and keep shared command logic in scripts rather than duplicating long shell snippets across `project.json` files.
 
 ## Commands
+- Iterate with the lane ladder, narrowest first: `bun run check` (fast inner loop) → `bun run verify:kernel` (kernel boundary) → `bun run verify` (full release gate).
+- Run `bun run check` as the inner-loop lane: it always runs the cheap authority gate (freeze, portability, authority-packet, conformance-plan validation) and then `nx affected -t typecheck,test,lint` against the working tree, plus a workspace `cargo` gate only when Rust sources changed. Pass `--base=<ref>` to change the affected base (defaults to `master`).
 - Run `bun run lint`, `format`, `typecheck`, `codegen`, `interop-smoke`, and `verify` for repo checks.
 - Run `bun run conformance` for active conformance lanes.
 - Run `bun run compatibility:evidence` only to refresh checked-in compatibility evidence, including intentional red lanes.
+- `verify` runs in phases with intra-phase parallelism and a per-phase worktree-purity guard; set `VERIFY_SERIAL=1` to force fully-serial execution when bisecting a drift failure.
 - Run `bun run verify:kernel` for the cached fast kernel lane before broader verification when working on kernel-owned behavior.
 - Run `bun run verify:kernel:fresh` when you need the same kernel lane forced through uncached Nx targets.
 - `verify:kernel` includes PostgreSQL conformance; on a clean session, make sure direnv has loaded the repo environment and run `devenv up -d` once before either kernel verify lane.
@@ -52,10 +55,10 @@ Use native tools as ecosystem truth and Nx as a wrapper.
 Load the toolchain through direnv, and manage long-lived devenv services only when a command actually needs them.
 
 - Let `.envrc` / direnv provide the repository environment before running Bun, Cargo, Buf, TypeSpec, Weaver, Nx, or validation commands.
-- Run `devenv up -d` once at the start of a session only when postgres or another devenv-managed service is required. Do not embed `devenv up` inside scripts, Nx targets, or runner commands that may be invoked multiple times.
-- `devenv up` is **not idempotent** — it exits with "Processes already running" if the devenv daemon is already active. Calling it a second time from a conformance runner or test harness will fail the entire run.
-- Commands that need postgres assume direnv has already loaded the environment and that the caller has started the service with `devenv up -d`; they must run the underlying `bun`, `cargo`, or native command directly.
-- Run `devenv processes down` to stop all devenv-managed services cleanly at the end of a session or to recover from a stale daemon that is blocking a new `devenv up`.
+- Run `bun run services:up` once at the start of a session when postgres or another devenv-managed service is required. It wraps `devenv up -d` idempotently (a second call is a no-op instead of a hard failure), so it is safe to re-run. This is a manual session helper only — do not embed it inside scripts, Nx targets, or runner commands.
+- `devenv up` itself is **not idempotent** — raw `devenv up -d` exits with "Processes already running" if the devenv daemon is already active. Calling it a second time from a conformance runner or test harness will fail the entire run, which is why runners must never call it; use `bun run services:up` at session start instead.
+- Commands that need postgres assume direnv has already loaded the environment and that the caller has started the service with `bun run services:up`; they must run the underlying `bun`, `cargo`, or native command directly.
+- Run `bun run services:down` (or `devenv processes down`) to stop all devenv-managed services cleanly at the end of a session or to recover from a stale daemon that is blocking a new start.
 
 ## Code
 Keep public naming and boundaries clean.
