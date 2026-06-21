@@ -97,10 +97,17 @@ describe("createToolExecutionContext idempotency identity (KRT-BG003)", () => {
     );
   });
 
-  test("the same logical call re-dispatched after recovery presents the same identity", () => {
-    // A recovery that re-presents the same (runId, callId, fencingToken) — the
-    // identifiers durably bound to the logical call — must reproduce the same
-    // identity so the external system deduplicates the effect.
+  test("re-presenting the same triple reproduces the same identity (cross-recovery dedup precondition)", () => {
+    // Determinism over a *re-presented* triple is the precondition for
+    // cross-recovery deduplication: if the same (runId, callId, fencingToken)
+    // is presented again, the identity is identical, so an external system can
+    // collapse the duplicate effect. This proves only that precondition — it is
+    // NOT a recovery scenario. In real preemption recovery the runtime mints a
+    // fresh runId (randomUUID per run) and rotates the fencingToken, so the live
+    // triple is not stable across recovery; reconciling that rotation against
+    // ADR-052's (runId, callId, fencingToken) triple, and the end-to-end
+    // "side effect occurs at most once after recovery" proof, are owned by the
+    // KRT-BG005 two-worker clock-skew conformance.
     const firstDispatch = createToolExecutionContext(
       makeToolCall("call-beta"),
       TOOL,
