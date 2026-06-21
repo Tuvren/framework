@@ -214,6 +214,10 @@ export interface SqliteBackendOptions {
 
 const SQLITE_BACKEND_CAPABILITIES: BackendCapability = {
   "maintenance.reclamation": true,
+  // Single-file embedded backend: a single writer with no cross-owner
+  // contention, so it keeps the in-process clock and advertises non-support for
+  // the shared lease clock (ADR-050, kernel spec §5.2).
+  "shared-lease-clock": false,
   "thread.enumeration": true,
 };
 

@@ -278,11 +278,17 @@ async function runLeaseLoop(
   }
 
   while (!input.signal.aborted) {
+    // Backend-authoritative lease clock (ADR-050): schedule renewal by the
+    // elapsed local lease window (leaseDurationMs - renewBeforeMs) rather than by
+    // comparing a backend-time lease expiry against this worker's wall clock.
+    // The window is a clock-agnostic duration, so the owner relinquishes
+    // execution authority before the backend deems the lease preemptable
+    // regardless of owner/backend clock skew. For single-writer backends this is
+    // equivalent to the previous wall-clock margin, because the lease was stamped
+    // from this same clock.
     const delayMs = Math.max(
       0,
-      input.activeLease.leaseExpiresAtMs -
-        host.getNow() -
-        livenessOptions.renewBeforeMs
+      livenessOptions.leaseDurationMs - livenessOptions.renewBeforeMs
     );
     await waitForDelay(delayMs, input.signal);
 
