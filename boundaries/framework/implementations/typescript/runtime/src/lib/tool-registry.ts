@@ -266,7 +266,11 @@ export function buildClientEndpointTools(
           // per-dispatch leaseToken staleness guard (the `dispatched === null`
           // branch below), which only checks that the client echoed the token
           // minted for THIS dispatch, not whether the run still owns write
-          // authority. (KRT-BG004)
+          // authority. Both reject with code CAPABILITY_RESULT_STALE, so the
+          // run-authority rejection carries reason "run_authority_lost" to keep
+          // the two conditions programmatically distinguishable (a preemption
+          // vs. an echoed-back stale token); the per-dispatch guard omits the
+          // reason field. (KRT-BG004)
           if (context.signal?.aborted) {
             return {
               callId: context.callId,
@@ -275,6 +279,7 @@ export function buildClientEndpointTools(
               output: {
                 code: CAPABILITY_RESULT_STALE,
                 error: `Tuvren-client capability "${capabilityId}" result arrived after the run lost execution authority and was rejected as a stale proposal.`,
+                reason: "run_authority_lost",
               },
               type: "tool_result",
             };

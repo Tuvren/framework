@@ -32,6 +32,10 @@
  * covered by the run-authority gate on the synthetic Tuvren-client tool: a
  * client-reported result returning after the run lost write authority is
  * rejected as a stale proposal rather than surfaced as a committed success.
+ * A companion integration test drives a real client dispatch through a leased
+ * runtime whose lease is lost mid-dispatch and asserts the rejected proposal
+ * never mutates committed history (the commit-under-valid-authority staging
+ * gate refuses to stage a result produced after authority loss).
  *
  * The end-to-end two-worker clock-skew proof (a peer recovers and the side
  * effect still occurs at most once via the idempotency identity) is owned by
@@ -160,6 +164,94 @@ function committedToolOutputValue(
 type FakeReadBranchMessages = ReturnType<
   typeof createFakeKernelHarness
 >["readBranchMessages"];
+
+/** True when any committed tool message carries a client success ({committed:true}). */
+function committedClientSuccess(
+  messages: Awaited<ReturnType<FakeReadBranchMessages>>
+): boolean {
+  return extractToolMessages(messages).some((m) =>
+    m.parts.some(
+      (p) =>
+        typeof p.output === "object" &&
+        p.output !== null &&
+        (p.output as Record<string, unknown>).committed === true
+    )
+  );
+}
+
+/**
+ * Drive a real client-endpoint dispatch through a leased runtime whose lease is
+ * lost while the dispatch is in flight. The endpoint holds its reported result
+ * open until the lease loop aborts the run handle (released on the next
+ * macrotask after the abort), so the result returns into an already-dead-owner
+ * context and exercises the full tool-execution + staging path — not just the
+ * gate in isolation.
+ */
+async function runClientDispatchWithLeaseLoss(
+  capabilityId: string,
+  onDispatch: () => void
+) {
+  const harness = createFakeKernelHarness();
+  let releaseDispatch: (() => void) | undefined;
+  const dispatchHeld = new Promise<void>((resolve) => {
+    releaseDispatch = resolve;
+  });
+
+  const endpoint: AttachedClientEndpoint = {
+    advertisedCapabilities: [
+      {
+        capabilityId,
+        description: "side-effecting client capability",
+        inputSchema: { type: "object" },
+      },
+    ],
+    endpointId: "bg004-endpoint",
+    async dispatch(
+      envelope: ClientInvocationEnvelope
+    ): Promise<ClientReportedResult> {
+      onDispatch();
+      // Hold the in-flight dispatch open until the run loses its lease, so the
+      // reported result returns into an already-aborted (dead-owner) context.
+      await dispatchHeld;
+      return {
+        callId: envelope.callId,
+        content: { committed: true },
+        leaseToken: envelope.leaseToken,
+      };
+    },
+  };
+
+  const livenessHarness = createFakeRunLivenessKernelHarness(harness, {
+    onRenewLease: async () => {
+      // Release the held dispatch on the next macrotask — after the lease loop's
+      // catch has aborted the run handle — so the dispatch resolves into an
+      // aborted context and the run-authority gate fires.
+      setTimeout(() => releaseDispatch?.(), 0);
+      throw new Error("lease preempted by a peer worker");
+    },
+  });
+  const runtime = createTuvrenRuntime({
+    defaultDriverId: "bg004-driver",
+    driverRegistry: createBaseDriverRegistry([makeDriver(capabilityId)]),
+    kernel: livenessHarness.kernel,
+    runLiveness: {
+      executionOwnerId: "worker-1",
+      leaseDurationMs: 40,
+      renewBeforeMs: 20,
+    },
+  });
+  const thread = await runtime.createThread({});
+  const handle = runtime.executeTurn({
+    branchId: thread.branchId,
+    config: { clientEndpoints: [endpoint], name: "primary" },
+    signal: textSignal("bg004 client lease-loss"),
+    threadId: thread.threadId,
+  });
+
+  await collectEvents(handle.events()).catch(() => undefined);
+
+  return { branchId: thread.branchId, harness };
+}
 
 // ---------------------------------------------------------------------------
 // No retry / no commit under the dead owner
@@ -290,6 +382,29 @@ describe("KRT-BG004 — client-result-as-proposal", () => {
     expect((result.output as Record<string, unknown>).code).toBe(
       CAPABILITY_RESULT_STALE
     );
+    // The run-authority rejection is distinguishable from a per-dispatch token
+    // mismatch (which shares CAPABILITY_RESULT_STALE) by the reason field.
+    expect((result.output as Record<string, unknown>).reason).toBe(
+      "run_authority_lost"
+    );
+  });
+
+  test("a client-reported result returning after lease loss does not mutate committed history", async () => {
+    let dispatchCount = 0;
+    const { branchId, harness } = await runClientDispatchWithLeaseLoss(
+      capabilityId,
+      () => {
+        dispatchCount += 1;
+      }
+    );
+
+    // The client dispatch fired its side effect exactly once...
+    expect(dispatchCount).toBe(1);
+    // ...but the reported result is a proposal: under the dead owner it is never
+    // committed to durable history, so nothing in the branch carries the
+    // client's {committed:true} success.
+    const messages = await harness.readBranchMessages(branchId);
+    expect(committedClientSuccess(messages)).toBe(false);
   });
 
   test("a client result under valid run write authority is surfaced as a committed success", async () => {
