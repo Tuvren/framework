@@ -286,6 +286,15 @@ async function runLeaseLoop(
     // regardless of owner/backend clock skew. For single-writer backends this is
     // equivalent to the previous wall-clock margin, because the lease was stamped
     // from this same clock.
+    //
+    // The renewBeforeMs margin is the safety budget that, in backend time, must
+    // absorb both the renewal-commit latency (a fresh leaseDurationMs only begins
+    // once renewLease commits, not when this window elapses) and any owner-clock-
+    // slow drift relative to the backend clock. The default renewBeforeMs =
+    // leaseDurationMs/2 keeps this comfortably positive; a deployment that tightens
+    // it must keep renewBeforeMs above the expected renewal latency plus the
+    // tolerated owner-clock-slow drift, or the backend-time lease could lapse
+    // mid-renewal.
     const delayMs = Math.max(
       0,
       livenessOptions.leaseDurationMs - livenessOptions.renewBeforeMs
