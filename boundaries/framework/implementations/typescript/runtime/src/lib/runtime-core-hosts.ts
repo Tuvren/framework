@@ -445,6 +445,7 @@ interface DriverSupportHostDependencies {
   ): { helpers: ContextEngineeringHelpers };
   createFrozenSnapshot<T>(value: T): T;
   defaultMaxParallelToolCalls: number;
+  getActiveFencingToken(handle: RuntimeExecutionHandle): string | undefined;
   now(): EpochMs;
   publishCustomEvent(
     handle: RuntimeExecutionHandle,
@@ -851,6 +852,8 @@ export function buildRuntimeCoreDriverSupportHost(
     createFrozenSnapshot: <T>(value: T) =>
       dependencies.createFrozenSnapshot(value),
     defaultMaxParallelToolCalls: () => dependencies.defaultMaxParallelToolCalls,
+    getActiveFencingToken: (handle) =>
+      dependencies.getActiveFencingToken(handle),
     now: () => dependencies.now(),
     publishCustomEvent: (...args) => dependencies.publishCustomEvent(...args),
     publishEvent: (handle, event, loopState) =>

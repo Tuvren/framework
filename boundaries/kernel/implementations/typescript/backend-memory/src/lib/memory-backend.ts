@@ -150,6 +150,10 @@ export interface MemoryBackendOptions {
 
 const MEMORY_BACKEND_CAPABILITIES: BackendCapability = {
   "maintenance.reclamation": true,
+  // Single-writer in-process reference backend: no cross-owner contention, so it
+  // keeps the in-process clock and advertises non-support for the shared lease
+  // clock (ADR-050, kernel spec §5.2).
+  "shared-lease-clock": false,
   "thread.enumeration": true,
 };
 const FAULT_INJECTION_CONTROL = Symbol(

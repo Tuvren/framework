@@ -352,6 +352,17 @@ export interface ClientEndpointCapabilityAdvertisement {
 export interface ClientInvocationEnvelope {
   callId: string;
   capabilityId: string;
+  /**
+   * Side-effect-once idempotency identity for this invocation (ADR-052).
+   *
+   * A deterministic identity derived from the run id, call id, and active run
+   * fencing token. The client environment can present it to the external system
+   * it drives so a dispatch retried or re-issued after a preemption recovery is
+   * deduplicated. Distinct from `leaseToken`: the lease token guards staleness
+   * of *this* dispatch (and is echoed back), while the idempotency key dedupes
+   * the *external effect* and is not echoed.
+   */
+  idempotencyKey?: string;
   input: unknown;
   /** Opaque non-secret lease token. The client must echo it in ClientReportedResult. Mismatches are stale. */
   leaseToken: string;
@@ -419,11 +430,16 @@ export interface ClientEndpointBoundary {
    * fresh leaseToken, validates the echoed token on the result, and returns
    * null when the result is stale. Throws capability_binding_unavailable when
    * no endpoint is attached for the capability.
+   *
+   * `idempotencyKey` is the optional side-effect-once identity (ADR-052) placed
+   * on the dispatch envelope so the client environment can deduplicate a
+   * retried external effect.
    */
   dispatch(
     capabilityId: string,
     callId: string,
-    input: unknown
+    input: unknown,
+    idempotencyKey?: string
   ): Promise<ClientDispatchResult | null>;
   /** Whether any attached endpoint currently advertises the given capabilityId. */
   isAvailable(capabilityId: string): boolean;

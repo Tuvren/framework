@@ -61,6 +61,7 @@ interface ToolResumeHostDependencies {
     runId: string,
     stableHeadTurnNodeHash: HashString
   ): Promise<void>;
+  getActiveFencingToken: RuntimeCoreToolResumeHost["getActiveFencingToken"];
   loadHeadState(branchId: string): Promise<HeadState>;
   now(): EpochMs;
   publishCustomEvent: RuntimeCoreToolResumeHost["publishCustomEvent"];
@@ -165,6 +166,8 @@ export function buildRuntimeCoreToolResumeHost(
     createTrackedRun: (...args) => dependencies.createTrackedRun(...args),
     failTrackedRunWithoutBranchAdvance: (...args) =>
       dependencies.failTrackedRunWithoutBranchAdvance(...args),
+    getActiveFencingToken: (handle) =>
+      dependencies.getActiveFencingToken(handle),
     loadHeadState: (branchId) => dependencies.loadHeadState(branchId),
     now: () => dependencies.now(),
     publishCustomEvent: (...args) => dependencies.publishCustomEvent(...args),

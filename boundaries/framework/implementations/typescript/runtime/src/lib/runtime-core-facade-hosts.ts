@@ -383,6 +383,8 @@ export function createRuntimeCoreFacadeHosts(
         dependencies.createContextEngineeringHelpers(messageHashes, messages),
       createFrozenSnapshot,
       defaultMaxParallelToolCalls: dependencies.defaultMaxParallelToolCalls,
+      getActiveFencingToken: (handle) =>
+        dependencies.activeRunLeaseControllers.get(handle)?.fencingToken,
       now: () => dependencies.now(),
       publishCustomEvent: (...args) => dependencies.publishCustomEvent(...args),
       publishEvent: (handle, event, loopState) =>
@@ -592,6 +594,8 @@ export function createRuntimeCoreFacadeHosts(
       createTrackedRun: (...args) => dependencies.createTrackedRun(...args),
       failTrackedRunWithoutBranchAdvance: (...args) =>
         dependencies.failTrackedRunWithoutBranchAdvance(...args),
+      getActiveFencingToken: (handle) =>
+        dependencies.activeRunLeaseControllers.get(handle)?.fencingToken,
       loadHeadState: (branchId) => dependencies.loadHeadState(branchId),
       now: () => dependencies.now(),
       publishCustomEvent: (...args) => dependencies.publishCustomEvent(...args),

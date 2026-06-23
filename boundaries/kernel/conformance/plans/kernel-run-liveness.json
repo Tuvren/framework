@@ -1,6 +1,6 @@
 {
   "planId": "tuvren.kernel.run-liveness",
-  "planVersion": "0.1.0",
+  "planVersion": "0.2.0",
   "packetId": "tuvren.kernel.protocol",
   "applicability": {
     "capabilities": ["kernel.run-liveness"]
@@ -140,6 +140,75 @@
         }
       ],
       "evidence": ["listing.pausedRunStatus", "listing.pausedRunListed"]
+    },
+    {
+      "checkId": "kernel.run-liveness.clock_skew_preemption",
+      "operation": "kernel.run-liveness.clock-skew-preemption",
+      "capabilities": ["kernel.shared-lease-clock"],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.clockSkew.splitBrainPreemptionBlocked",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.clockSkew.workerClockWouldExpire",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.clockSkew.backendClockExpiredCountBeforeExpiry",
+          "equals": 0
+        },
+        {
+          "kind": "resultField",
+          "field": "$.clockSkew.preemptedAfterBackendExpiry",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.clockSkew.runStatus",
+          "equals": "failed"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.clockSkew.preemptionReason",
+          "equals": "stale_running_recovery"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.clockSkew.leaseCleared",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.clockSkew.recoveredStagedResultTaskIds",
+          "equals": ["call_side_effect"]
+        },
+        {
+          "kind": "resultField",
+          "field": "$.clockSkew.uncommittedStagedResultCount",
+          "equals": 0
+        },
+        {
+          "kind": "resultField",
+          "field": "$.clockSkew.recoveryHeadMatchesBranchHead",
+          "equals": true
+        }
+      ],
+      "evidence": [
+        "clockSkew.splitBrainPreemptionBlocked",
+        "clockSkew.workerClockWouldExpire",
+        "clockSkew.backendClockExpiredCountBeforeExpiry",
+        "clockSkew.preemptedAfterBackendExpiry",
+        "clockSkew.runStatus",
+        "clockSkew.preemptionReason",
+        "clockSkew.leaseCleared",
+        "clockSkew.recoveredStagedResultTaskIds",
+        "clockSkew.uncommittedStagedResultCount",
+        "clockSkew.recoveryHeadMatchesBranchHead"
+      ]
     }
   ]
 }

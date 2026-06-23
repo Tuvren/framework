@@ -69,6 +69,17 @@ registerBackendRecoverySuite({
   testApi: { describe, test },
 });
 
+describe("@tuvren/backend-memory capabilities", () => {
+  test("advertises non-support for the shared lease clock (single-writer)", () => {
+    // The in-process reference backend has no cross-owner contention, so it keeps
+    // the in-process clock rather than serving as an authoritative shared lease
+    // clock (ADR-050, kernel spec §5.2).
+    expect(createMemoryBackend().capabilities()["shared-lease-clock"]).toBe(
+      false
+    );
+  });
+});
+
 describe("@tuvren/backend-memory", () => {
   test("rolls back failed transactions and clones stored bytes defensively", async () => {
     const backend = createMemoryBackend();

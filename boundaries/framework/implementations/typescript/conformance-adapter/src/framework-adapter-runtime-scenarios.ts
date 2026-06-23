@@ -157,6 +157,7 @@ export function createFrameworkAdapterRuntimeScenarios(
   runHandleTerminalValue(input: unknown): Promise<AdapterProjection>;
   runProviderGenerate(input: unknown): Promise<AdapterProjection>;
   runProviderStream(input: unknown): Promise<AdapterProjection>;
+  runClientResultAsProposal(input: unknown): Promise<AdapterProjection>;
   runRecoverResult(input: unknown): Promise<AdapterProjection>;
   runRecoverStaleRun(input: unknown): Promise<AdapterProjection>;
   runOperationalTelemetry(input: unknown): Promise<AdapterProjection>;
@@ -1423,6 +1424,7 @@ export function createFrameworkAdapterRuntimeScenarios(
     runHandleTerminalValue,
     runProviderGenerate: providerScenarios.runProviderGenerate,
     runProviderStream: providerScenarios.runProviderStream,
+    runClientResultAsProposal: recoveryScenarios.runClientResultAsProposal,
     runRecoverResult: recoveryScenarios.runRecoverResult,
     runRecoverStaleRun: recoveryScenarios.runRecoverStaleRun,
     runOperationalTelemetry,

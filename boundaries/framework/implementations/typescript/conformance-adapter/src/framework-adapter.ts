@@ -355,6 +355,8 @@ export class TypeScriptFrameworkAdapter implements ImplementationAdapter {
         return runtimeScenarios.runRecoverResult(input);
       case "runtime.recover-stale-run":
         return runtimeScenarios.runRecoverStaleRun(input);
+      case "runtime.client-result-as-proposal":
+        return runtimeScenarios.runClientResultAsProposal(input);
       case "runtime.orchestration.launch-preconditions":
         return orchestrationScenarios.runOrchestrationLaunchPreconditions(
           input

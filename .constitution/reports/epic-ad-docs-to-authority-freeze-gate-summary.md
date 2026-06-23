@@ -29,10 +29,10 @@ Epic AD generated the normative claim inventory, coverage matrix, deferred-surfa
 
 | Classification | Count |
 | --- | ---: |
-| authority-backed-conformance-covered | 220 |
+| authority-backed-conformance-covered | 223 |
 | explicitly-deferred | 13 |
 | implementation-defined | 20 |
-| missing-conformance-follow-up | 8 |
+| missing-conformance-follow-up | 5 |
 
 ## Generated Artifacts
 

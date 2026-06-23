@@ -385,6 +385,7 @@
     "runtime-callable-af.input-signal-empty-parts-rejected",
     "runtime-lifecycle-af.cancel-running-idempotent-fails-once",
     "runtime-lifecycle-af.cancel-running-stages-partial-status",
+    "runtime-lifecycle-af.client-result-as-proposal-authority-lost",
     "runtime-lifecycle-af.context-transform-creates-new-tree-heads",
     "runtime-lifecycle-af.context-transform-driver-sees-rewritten-context",
     "runtime-lifecycle-af.context-transform-preserves-source-checkpoint",
@@ -494,9 +495,9 @@
   "summary": {
     "failedChecks": 0,
     "passedChecks": 0,
-    "totalChecks": 474,
+    "totalChecks": 475,
     "applicableChecks": 0,
-    "nonApplicableChecks": 474
+    "nonApplicableChecks": 475
   },
   "suiteId": "tuvren.framework.promoted-authority",
   "suiteVersion": "0.1.0"

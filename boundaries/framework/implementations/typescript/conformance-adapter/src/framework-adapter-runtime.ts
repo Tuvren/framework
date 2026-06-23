@@ -173,7 +173,15 @@ export function createConformanceKernelHarness(options?: {
 }
 
 export function createConformanceRunLivenessKernelHarness(
-  harness: ConformanceKernelHarness
+  harness: ConformanceKernelHarness,
+  options?: {
+    onRenewLease?: (
+      runId: string,
+      executionOwnerId: string,
+      fencingToken: string,
+      nextLeaseExpiresAtMs: number
+    ) => Promise<{ fencingToken: string; leaseExpiresAtMs: number }>;
+  }
 ): ConformanceRunLivenessKernelHarness {
   const leasedRuns = new Map<string, RunRecord>();
   let preemptCalls = 0;
@@ -226,6 +234,17 @@ export function createConformanceRunLivenessKernelHarness(
           nextLeaseExpiresAtMs
         ) {
           renewLeaseCalls += 1;
+          if (options?.onRenewLease !== undefined) {
+            // A scenario can drive loss of execution authority (peer preemption
+            // by another worker) by throwing here; the lease loop then aborts the
+            // run handle, exercising the side-effect-once authority gates.
+            return await options.onRenewLease(
+              runId,
+              executionOwnerId,
+              fencingToken,
+              nextLeaseExpiresAtMs
+            );
+          }
           const renewal = await baseKernel.runLiveness.renewLease(
             runId,
             executionOwnerId,

@@ -571,11 +571,36 @@
         "result.recovery.branchRuntimePhase",
         "result.recovery.staleRunStatus"
       ]
+    },
+    {
+      "assertions": [
+        {
+          "equals": 1,
+          "field": "$.proposal.clientDispatchCount",
+          "kind": "resultField"
+        },
+        {
+          "equals": false,
+          "field": "$.proposal.clientSuccessCommitted",
+          "kind": "resultField"
+        }
+      ],
+      "capabilities": ["framework.run-liveness"],
+      "checkId": "runtime-lifecycle-af.client-result-as-proposal-authority-lost",
+      "input": {
+        "scenarioPath": "$.client-result-as-proposal-authority-lost"
+      },
+      "operation": "runtime.client-result-as-proposal",
+      "scenario": "runtime-api-scenarios",
+      "evidence": [
+        "result.proposal.clientDispatchCount",
+        "result.proposal.clientSuccessCommitted"
+      ]
     }
   ],
   "packetId": "tuvren.shared.core",
   "planId": "tuvren.framework.runtime-api.lifecycle-extended",
-  "planVersion": "0.1.0",
+  "planVersion": "0.2.0",
   "scenarios": {
     "runtime-api-scenarios": "../scenarios/runtime-api-scenarios.json"
   }

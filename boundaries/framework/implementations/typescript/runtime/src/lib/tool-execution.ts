@@ -93,6 +93,12 @@ export interface ToolBatchEnvironment {
    */
   capabilityPolicyEngine?: CapabilityPolicyEngine;
   extensions: TuvrenExtension[];
+  /**
+   * Active run lease fencing token, when this batch runs under a run-liveness
+   * lease. Feeds the per-invocation side-effect-once idempotency identity
+   * (ADR-052); absent for runtimes without run-liveness leases.
+   */
+  fencingToken?: string;
   iterationCount: number;
   manifest: ContextManifest;
   maxParallelToolCalls: number;
@@ -827,6 +833,11 @@ async function executeSingleTool(
   // Idempotent retry per §4.21 / AX002. Non-idempotent tools are never
   // retried. maxRetries defaults to 1 when idempotent is true and unset.
   // BB004: nonRetryable overrides idempotent: true — policy governs retry.
+  // KRT-BG004 (ADR-052): on loss of execution authority an in-flight invocation
+  // marked nonRetryable is never re-run under the dead owner — its budget is
+  // structurally one attempt, and a recovering owner picks up only durably
+  // staged completed results by callId (§4.9). The abort-break below additionally
+  // abandons retries of retryable tools the instant authority is lost.
   const maxAttempts =
     toolCall.tool.idempotent === true && toolCall.tool.nonRetryable !== true
       ? 1 + (toolCall.tool.maxRetries ?? 1)
@@ -835,7 +846,10 @@ async function executeSingleTool(
   let lastError: unknown;
 
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-    // Do not retry when the environment signal is already aborted.
+    // Do not retry when the environment signal is already aborted. Loss of
+    // execution authority (run lease lost via createRunLeaseLostError), turn
+    // cancellation, and the wall-clock deadline all abort this signal, so no
+    // further attempt runs under a dead owner. (KRT-BG004 / ADR-052; §4.9)
     if (attempt > 0 && environment.signal?.aborted) {
       break;
     }

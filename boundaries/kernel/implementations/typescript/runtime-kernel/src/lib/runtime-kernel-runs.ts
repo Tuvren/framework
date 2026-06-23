@@ -18,6 +18,7 @@ import { type EpochMs, TuvrenRuntimeError } from "@tuvren/core";
 import type {
   RecoveryState,
   RuntimeBackend,
+  RuntimeBackendTx,
   RuntimeKernel,
   RuntimeKernelRunLiveness,
   StoredRun,
@@ -65,10 +66,55 @@ interface RuntimeKernelRunsDependencies {
   now(): EpochMs;
 }
 
+/**
+ * Resolves the clock the kernel uses for durable timestamp and lease-expiry
+ * writes within a transaction. For a backend that advertises `shared-lease-clock`
+ * (ADR-050, kernel spec §5.2) this is the backend's own per-transaction clock
+ * (`tx.now`), so stamping and expiry comparison happen in backend time and stay
+ * monotonic across execution owners. Every other backend keeps the kernel's
+ * injected clock, preserving single-writer behavior exactly.
+ */
+function resolveTransactionClock(
+  sharedLeaseClock: boolean,
+  fallback: () => EpochMs,
+  tx: RuntimeBackendTx
+): () => EpochMs {
+  const backendNow = tx.now;
+
+  if (sharedLeaseClock && typeof backendNow === "function") {
+    return () => backendNow.call(tx);
+  }
+
+  return fallback;
+}
+
+/**
+ * Re-bases an owner-supplied absolute lease expiry into the backend clock for a
+ * shared-lease-clock backend by preserving the owner's intended lease duration
+ * (`suppliedExpiry - ownerNow`) and adding it to the backend clock (ADR-050).
+ * When the owner clock and backend clock agree (single process, or no skew) this
+ * is exactly `suppliedExpiry`, so existing behavior and conformance are
+ * unchanged; under skew it translates the expiry into the authoritative clock.
+ */
+function rebaseLeaseExpiry(
+  sharedLeaseClock: boolean,
+  backendNow: () => EpochMs,
+  ownerNow: () => EpochMs,
+  suppliedExpiry: EpochMs
+): EpochMs {
+  if (!sharedLeaseClock) {
+    return suppliedExpiry;
+  }
+
+  return (backendNow() + (suppliedExpiry - ownerNow())) as EpochMs;
+}
+
 export function createRuntimeKernelRunApi(
   dependencies: RuntimeKernelRunsDependencies
 ): RuntimeKernel["run"] {
   const { backend, now } = dependencies;
+  const sharedLeaseClock =
+    backend.capabilities()["shared-lease-clock"] === true;
 
   return {
     async beginStep(runId, stepId) {
@@ -119,10 +165,11 @@ export function createRuntimeKernelRunApi(
 
         await assertEventHashInStore(tx, eventHash);
 
+        const clock = resolveTransactionClock(sharedLeaseClock, now, tx);
         const stagedResults = await listStagedResults(tx, runId);
         const turnNodeHash = await maybeCheckpoint(tx, run, stagedResults, {
           eventHash: eventHash ?? null,
-          now,
+          now: clock,
           treeHash: undefined,
         });
 
@@ -141,7 +188,7 @@ export function createRuntimeKernelRunApi(
               ? run.stepSequence.length
               : storedRun.currentStepIndex,
           status,
-          updatedAtMs: now(),
+          updatedAtMs: clock(),
         });
 
         return turnNodeHash === undefined ? {} : { turnNodeHash };
@@ -160,6 +207,7 @@ export function createRuntimeKernelRunApi(
         await assertTreeHashForRun(tx, treeHash, run.schemaId);
         validateObserveResults(observeResults);
 
+        const clock = resolveTransactionClock(sharedLeaseClock, now, tx);
         const nextPendingSignalsCbor =
           encodeSignalsCborFromObserveResults(observeResults);
 
@@ -173,12 +221,12 @@ export function createRuntimeKernelRunApi(
         const turnNodeHash = shouldCheckpoint
           ? await checkpointAndClear(tx, run, stagedResults, {
               eventHash: eventHash ?? null,
-              now,
+              now: clock,
               treeHash,
             })
           : undefined;
         const annotationRecords = await createObserveAnnotationRecords({
-          now,
+          now: clock,
           observeResults,
           runId,
           turnNodeHash: turnNodeHash ?? null,
@@ -202,7 +250,7 @@ export function createRuntimeKernelRunApi(
             run.currentStepIndex + 1,
             run.stepSequence.length
           ),
-          updatedAtMs: now(),
+          updatedAtMs: clock(),
           ...(nextPendingSignalsCbor === undefined
             ? {}
             : { pendingSignalsCbor: nextPendingSignalsCbor }),
@@ -246,9 +294,10 @@ export function createRuntimeKernelRunApi(
         assertUniqueStepIds(steps);
         await assertNoActiveRunOnBranch(tx, branchId);
 
+        const clock = resolveTransactionClock(sharedLeaseClock, now, tx);
         const record: StoredRun = {
           branchId,
-          createdAtMs: now(),
+          createdAtMs: clock(),
           createdTurnNodesCbor: encodeRecord([]),
           currentStepIndex: 0,
           runId,
@@ -257,7 +306,7 @@ export function createRuntimeKernelRunApi(
           status: "running",
           stepSequenceCbor: encodeRecord(steps),
           turnId,
-          updatedAtMs: now(),
+          updatedAtMs: clock(),
         };
         await tx.runs.set(record);
         return decodeStoredRun(record);
@@ -290,6 +339,8 @@ export function createRuntimeKernelRunLivenessApi(
   dependencies: RuntimeKernelRunsDependencies
 ): RuntimeKernelRunLiveness["runLiveness"] {
   const { backend, createFencingToken, now } = dependencies;
+  const sharedLeaseClock =
+    backend.capabilities()["shared-lease-clock"] === true;
 
   return {
     async createLeasedRun(input) {
@@ -320,21 +371,27 @@ export function createRuntimeKernelRunLivenessApi(
         assertUniqueStepIds(input.steps);
         await assertNoActiveRunOnBranch(tx, input.branchId);
 
+        const clock = resolveTransactionClock(sharedLeaseClock, now, tx);
         const record: StoredRun = {
           branchId: input.branchId,
-          createdAtMs: now(),
+          createdAtMs: clock(),
           createdTurnNodesCbor: encodeRecord([]),
           currentStepIndex: 0,
           executionOwnerId: input.executionOwnerId,
           fencingToken: createFencingToken(),
-          leaseExpiresAtMs: input.leaseExpiresAtMs,
+          leaseExpiresAtMs: rebaseLeaseExpiry(
+            sharedLeaseClock,
+            clock,
+            now,
+            input.leaseExpiresAtMs
+          ),
           runId: input.runId,
           schemaId: input.schemaId,
           startTurnNodeHash: input.startTurnNodeHash,
           status: "running",
           stepSequenceCbor: encodeRecord(input.steps),
           turnId: input.turnId,
-          updatedAtMs: now(),
+          updatedAtMs: clock(),
         };
         await tx.runs.set(record);
         return decodeStoredRun(record);
@@ -343,7 +400,9 @@ export function createRuntimeKernelRunLivenessApi(
 
     async listExpired(nowMs) {
       return await backend.transact(async (tx) => {
-        return (await tx.runs.listExpired(nowMs)).map(decodeStoredRun);
+        const clock = resolveTransactionClock(sharedLeaseClock, now, tx);
+        const effectiveNowMs = sharedLeaseClock ? clock() : nowMs;
+        return (await tx.runs.listExpired(effectiveNowMs)).map(decodeStoredRun);
       });
     },
 
@@ -362,7 +421,10 @@ export function createRuntimeKernelRunLivenessApi(
           );
         }
 
-        if (!isLeaseExpired(lease.leaseExpiresAtMs, nowMs)) {
+        const clock = resolveTransactionClock(sharedLeaseClock, now, tx);
+        const effectiveNowMs = sharedLeaseClock ? clock() : nowMs;
+
+        if (!isLeaseExpired(lease.leaseExpiresAtMs, effectiveNowMs)) {
           throw new TuvrenRuntimeError(`run "${runId}" lease has not expired`, {
             code: "kernel_runtime_run_lease_not_expired",
           });
@@ -376,12 +438,12 @@ export function createRuntimeKernelRunLivenessApi(
             runId,
             type: "stale_running_preempted",
           }),
-          now
+          clock
         );
         const stagedResults = await listStagedResults(tx, runId);
         const turnNodeHash = await maybeCheckpoint(tx, run, stagedResults, {
           eventHash,
-          now,
+          now: clock,
           treeHash: undefined,
         });
         const nextCreatedTurnNodes =
@@ -394,7 +456,7 @@ export function createRuntimeKernelRunLivenessApi(
           createdTurnNodesCbor: encodeRecord(nextCreatedTurnNodes),
           preemptionReason: reason,
           status: "failed",
-          updatedAtMs: now(),
+          updatedAtMs: clock(),
         });
 
         const lastTurnNodeHash =
@@ -435,7 +497,9 @@ export function createRuntimeKernelRunLivenessApi(
           );
         }
 
-        if (isLeaseExpired(lease.leaseExpiresAtMs, now())) {
+        const clock = resolveTransactionClock(sharedLeaseClock, now, tx);
+
+        if (isLeaseExpired(lease.leaseExpiresAtMs, clock())) {
           throw new TuvrenRuntimeError(`run "${runId}" lease has expired`, {
             code: "kernel_runtime_run_lease_expired",
           });
@@ -456,15 +520,21 @@ export function createRuntimeKernelRunLivenessApi(
         }
 
         const nextFencingToken = createFencingToken();
+        const stampedLeaseExpiresAtMs = rebaseLeaseExpiry(
+          sharedLeaseClock,
+          clock,
+          now,
+          nextLeaseExpiresAtMs
+        );
         await tx.runs.set({
           ...storedRun,
           fencingToken: nextFencingToken,
-          leaseExpiresAtMs: nextLeaseExpiresAtMs,
-          updatedAtMs: now(),
+          leaseExpiresAtMs: stampedLeaseExpiresAtMs,
+          updatedAtMs: clock(),
         });
         return {
           fencingToken: nextFencingToken,
-          leaseExpiresAtMs: nextLeaseExpiresAtMs,
+          leaseExpiresAtMs: stampedLeaseExpiresAtMs,
         };
       });
     },

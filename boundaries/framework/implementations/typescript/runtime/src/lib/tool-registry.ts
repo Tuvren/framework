@@ -188,10 +188,11 @@ async function dispatchToClientEndpoint(
   boundary: ClientEndpointBoundary,
   capabilityId: string,
   callId: string,
-  input: unknown
+  input: unknown,
+  idempotencyKey?: string
 ): Promise<ClientDispatchResult | null | "unavailable"> {
   try {
-    return await boundary.dispatch(capabilityId, callId, input);
+    return await boundary.dispatch(capabilityId, callId, input, idempotencyKey);
   } catch (err) {
     if (
       err instanceof TuvrenRuntimeError &&
@@ -240,13 +241,48 @@ export function buildClientEndpointTools(
             boundary,
             capabilityId,
             context.callId,
-            input
+            input,
+            context.idempotencyKey
           );
 
           if (dispatched === "unavailable") {
             // TOCTOU: detach() ran between the isAvailable check and dispatch.
             // Surface the same typed result as the !isAvailable branch above.
             return makeUnavailableResult(context.callId, capabilityId);
+          }
+
+          // Client-result-as-proposal (ADR-052; framework spec "Running Lease
+          // Ownership"): a client-reported result becomes committed history only
+          // through a runtime commit performed under a valid run fencing token.
+          // If the run lost execution authority while the client was producing
+          // the result, the reported result is a stale proposal and MUST NOT be
+          // surfaced as a committed outcome under the dead owner. Loss of
+          // authority aborts context.signal — lease loss aborts it via
+          // createRunLeaseLostError, as do turn cancellation and the wall-clock
+          // deadline (a completion after the deadline is likewise ignored). The
+          // side effect may already have fired on the client; the idempotency
+          // identity on the dispatch envelope lets the client environment
+          // deduplicate it. This run-authority gate is distinct from the
+          // per-dispatch leaseToken staleness guard (the `dispatched === null`
+          // branch below), which only checks that the client echoed the token
+          // minted for THIS dispatch, not whether the run still owns write
+          // authority. Both reject with code CAPABILITY_RESULT_STALE, so the
+          // run-authority rejection carries reason "run_authority_lost" to keep
+          // the two conditions programmatically distinguishable (a preemption
+          // vs. an echoed-back stale token); the per-dispatch guard omits the
+          // reason field. (KRT-BG004)
+          if (context.signal?.aborted) {
+            return {
+              callId: context.callId,
+              isError: true,
+              name: capabilityId,
+              output: {
+                code: CAPABILITY_RESULT_STALE,
+                error: `Tuvren-client capability "${capabilityId}" result arrived after the run lost execution authority and was rejected as a stale proposal.`,
+                reason: "run_authority_lost",
+              },
+              type: "tool_result",
+            };
           }
 
           if (dispatched === null) {

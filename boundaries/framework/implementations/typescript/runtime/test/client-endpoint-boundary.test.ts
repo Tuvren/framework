@@ -23,11 +23,15 @@ import { describe, expect, test } from "bun:test";
 import { TuvrenRuntimeError } from "@tuvren/core";
 import type {
   AttachedClientEndpoint,
+  ClientDispatchResult,
+  ClientEndpointBoundary,
   ClientInvocationEnvelope,
   ClientReportedResult,
 } from "@tuvren/core/capabilities";
 import { CAPABILITY_BINDING_UNAVAILABLE } from "@tuvren/core/errors";
+import type { ToolExecutionContext } from "@tuvren/core/tools";
 import { createClientEndpointBoundary } from "../src/lib/client-endpoint-boundary.ts";
+import { buildClientEndpointTools } from "../src/lib/tool-registry.ts";
 
 // ---------------------------------------------------------------------------
 // Test helpers
@@ -365,6 +369,85 @@ describe("ClientEndpointBoundary — staleness handling (KRT-AZ003)", () => {
     await boundary.dispatch("search", "call-1", {});
     await boundary.dispatch("search", "call-2", {});
     expect(tokens[0]).not.toBe(tokens[1]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// KRT-BG003: Side-effect-once idempotency envelope (ADR-052)
+// ---------------------------------------------------------------------------
+
+describe("ClientEndpointBoundary — idempotency envelope (KRT-BG003)", () => {
+  test("dispatch carries the supplied idempotency identity on the envelope", async () => {
+    const received: ClientInvocationEnvelope[] = [];
+    const boundary = createClientEndpointBoundary([
+      makeEndpoint("ep1", ["charge.card"], (envelope) => {
+        received.push(envelope);
+        return Promise.resolve({
+          callId: envelope.callId,
+          content: { ok: true },
+          leaseToken: envelope.leaseToken,
+        });
+      }),
+    ]);
+
+    await boundary.dispatch("charge.card", "call-1", { amount: 10 }, "idem-1");
+
+    expect(received).toHaveLength(1);
+    expect(received[0]?.idempotencyKey).toBe("idem-1");
+    // The lease token (staleness) and the idempotency key (external dedup) are
+    // distinct concerns and both ride the envelope.
+    expect(typeof received[0]?.leaseToken).toBe("string");
+  });
+
+  test("omits the idempotency key from the envelope when none is supplied", async () => {
+    const received: ClientInvocationEnvelope[] = [];
+    const boundary = createClientEndpointBoundary([
+      makeEndpoint("ep1", ["search"], (envelope) => {
+        received.push(envelope);
+        return Promise.resolve({
+          callId: envelope.callId,
+          content: {},
+          leaseToken: envelope.leaseToken,
+        });
+      }),
+    ]);
+
+    await boundary.dispatch("search", "call-1", {});
+
+    expect(received).toHaveLength(1);
+    expect(received[0]?.idempotencyKey).toBeUndefined();
+  });
+
+  test("the synthetic client tool forwards context.idempotencyKey to the boundary", async () => {
+    const dispatchedKeys: Array<string | undefined> = [];
+    const recordingBoundary: ClientEndpointBoundary = {
+      detach: () => undefined,
+      dispatch: (
+        _capabilityId: string,
+        _callId: string,
+        _input: unknown,
+        idempotencyKey?: string
+      ): Promise<ClientDispatchResult | null> => {
+        dispatchedKeys.push(idempotencyKey);
+        return Promise.resolve({ content: { ok: true }, isError: false });
+      },
+      isAvailable: () => true,
+      resolveBinding: () => undefined,
+    };
+
+    const [tool] = buildClientEndpointTools(
+      [makeEndpoint("ep1", ["charge.card"])],
+      recordingBoundary
+    );
+    const context = {
+      callId: "call-1",
+      idempotencyKey: "idem-from-context",
+      name: "charge.card",
+    } as ToolExecutionContext;
+
+    await tool.execute({ amount: 10 }, context);
+
+    expect(dispatchedKeys).toEqual(["idem-from-context"]);
   });
 });
 

@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 
+import type {
+  AttachedClientEndpoint,
+  ClientInvocationEnvelope,
+  ClientReportedResult,
+} from "@tuvren/core/capabilities";
 import type { RuntimeDriver } from "@tuvren/core/driver";
 import { encodeDeterministicKernelRecord } from "@tuvren/kernel-protocol";
 import {
@@ -24,6 +29,7 @@ import {
 import {
   type AdapterProjection,
   assistantText,
+  assistantToolCalls,
   collectValues,
   createConformanceIdFactory,
   createConformanceKernelHarness,
@@ -60,6 +66,7 @@ export interface FrameworkAdapterRecoveryScenarioDependencies {
 export function createFrameworkAdapterRecoveryScenarios(
   dependencies: FrameworkAdapterRecoveryScenarioDependencies
 ): {
+  runClientResultAsProposal(input: unknown): Promise<AdapterProjection>;
   runRecoverResult(input: unknown): Promise<AdapterProjection>;
   runRecoverStaleRun(input: unknown): Promise<AdapterProjection>;
 } {
@@ -365,7 +372,163 @@ export function createFrameworkAdapterRecoveryScenarios(
     };
   }
 
+  /**
+   * Client-result-as-proposal under loss of execution authority (KRT-BG005;
+   * ADR-052 decision 3). A side-effecting client-endpoint dispatch is in flight
+   * when the worker loses its run lease (renewal is preempted by a peer). The
+   * client still performs the effect and reports a result, but because the run
+   * lost write authority the reported result is a stale proposal: it must never
+   * become committed history under the dead owner. The scenario projects that
+   * the client dispatch fired (the external effect happened) yet no committed
+   * message carries the client's success — proving no stale client report is
+   * committed.
+   */
+  async function runClientResultAsProposal(
+    input: unknown
+  ): Promise<AdapterProjection> {
+    const scenario = dependencies.readOperationScenario(
+      input,
+      "runtime.client-result-as-proposal"
+    );
+    const capabilityId = dependencies.readStringProperty(
+      scenario,
+      "capabilityId",
+      "runtime.client-result-as-proposal.capabilityId"
+    );
+    const prompt = dependencies.readStringProperty(
+      scenario,
+      "prompt",
+      "runtime.client-result-as-proposal.prompt"
+    );
+
+    const harness = createConformanceKernelHarness();
+    let releaseDispatch: (() => void) | undefined;
+    const dispatchHeld = new Promise<void>((resolve) => {
+      releaseDispatch = resolve;
+    });
+    const livenessHarness = createConformanceRunLivenessKernelHarness(harness, {
+      onRenewLease() {
+        // Release the held dispatch on a macrotask so the reported result returns
+        // into an already-aborted (dead-owner) context and the
+        // client-result-as-proposal gate fires. This is ordered, not raced: the
+        // event loop drains the whole microtask queue before any macrotask, and
+        // this rejection propagates synchronously through the lease loop's catch
+        // into handle.abortWithError (a microtask chain), so the abort always
+        // lands before this setTimeout. If that abort is ever deferred behind its
+        // own macrotask/await boundary, replace this with an explicit
+        // await-on-abort handshake.
+        setTimeout(() => releaseDispatch?.(), 0);
+        return Promise.reject(new Error("lease preempted by a peer worker"));
+      },
+    });
+
+    let clientDispatchCount = 0;
+    const endpoint: AttachedClientEndpoint = {
+      advertisedCapabilities: [
+        {
+          capabilityId,
+          description: "side-effecting client capability",
+          inputSchema: { type: "object" },
+        },
+      ],
+      endpointId: "conformance-client-endpoint",
+      async dispatch(
+        envelope: ClientInvocationEnvelope
+      ): Promise<ClientReportedResult> {
+        clientDispatchCount += 1;
+        // Hold the dispatch open until the run loses its lease.
+        await dispatchHeld;
+        return {
+          callId: envelope.callId,
+          content: { committed: true },
+          leaseToken: envelope.leaseToken,
+        };
+      },
+    };
+
+    const driver: RuntimeDriver = {
+      execute(context) {
+        if (!context.messages.some((message) => message.role === "tool")) {
+          return Promise.resolve({
+            messages: [
+              assistantToolCalls([
+                { callId: "call-proposal", input: {}, name: capabilityId },
+              ]),
+            ],
+            resolution: { type: "continue_iteration" },
+            toolExecutionMode: "parallel",
+          });
+        }
+        return Promise.resolve({
+          messages: [assistantText("done")],
+          resolution: { reason: "done", type: "end_turn" },
+        });
+      },
+      id: DRIVER_ID,
+    };
+
+    const runtime = createTuvrenRuntimeCore({
+      createId: createConformanceIdFactory(),
+      defaultDriverId: DRIVER_ID,
+      driverRegistry: createDriverRegistry([driver]),
+      kernel: livenessHarness.kernel,
+      resolveAgentConfig(agentName) {
+        return agentName === "primary" ? { name: agentName } : undefined;
+      },
+      runLiveness: {
+        executionOwnerId: "worker-1",
+        leaseDurationMs: 40,
+        renewBeforeMs: 20,
+      },
+    });
+
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: { clientEndpoints: [endpoint], name: "primary" },
+      signal: textSignal(prompt),
+      threadId: thread.threadId,
+    });
+    // Loss of authority surfaces as a rejected event stream; swallow it so the
+    // assertions can inspect durable state.
+    await collectValues(handle.events()).catch(() => undefined);
+
+    const branchMessages = await harness.readBranchMessages(thread.branchId);
+    const clientSuccessCommitted = branchMessages.some((message) =>
+      isClientSuccessMessage(message)
+    );
+
+    const proposal = {
+      // The client performed the side effect exactly once...
+      clientDispatchCount,
+      // ...but its reported result never became committed history.
+      clientSuccessCommitted,
+    };
+    return {
+      evidence: { proposal },
+      result: { proposal },
+    };
+  }
+
+  function isClientSuccessMessage(message: unknown): boolean {
+    if (
+      !dependencies.isRecord(message) ||
+      message.role !== "tool" ||
+      !Array.isArray(message.parts)
+    ) {
+      return false;
+    }
+    return message.parts.some((part) => {
+      return (
+        dependencies.isRecord(part) &&
+        dependencies.isRecord(part.output) &&
+        part.output.committed === true
+      );
+    });
+  }
+
   return {
+    runClientResultAsProposal,
     runRecoverResult,
     runRecoverStaleRun,
   };

@@ -671,6 +671,17 @@ export interface ToolExecutionContext {
   callId: string;
   emit?: (event: { name: string; data: unknown }) => void;
   forward?: (event: TuvrenStreamEvent, source: EventSource) => void;
+  /**
+   * Side-effect-once idempotency identity for this invocation (ADR-052).
+   *
+   * A deterministic identity derived from the run id, this call id, and the
+   * active run fencing token. A tool that performs a non-idempotent external
+   * side effect should thread this value into its external call so the external
+   * system can deduplicate a dispatch that is retried or re-issued after a
+   * preemption recovery. Present whenever the runtime builds an execution
+   * context; tools that do not perform external effects may ignore it.
+   */
+  idempotencyKey?: string;
   metadata?: Record<string, unknown>;
   name: string;
   signal?: AbortSignal;

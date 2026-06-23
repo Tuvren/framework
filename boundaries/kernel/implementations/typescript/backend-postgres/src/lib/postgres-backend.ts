@@ -140,6 +140,10 @@ export interface PostgresBackendOptions
 
 const POSTGRES_BACKEND_CAPABILITIES: BackendCapability = {
   "maintenance.reclamation": true,
+  // Shared rendezvous for more than one execution owner: the kernel defers to
+  // this backend's own per-transaction clock for run-lease stamping and expiry
+  // comparison (ADR-050, kernel spec §5.2), exposed via RuntimeBackendTx.now.
+  "shared-lease-clock": true,
   "thread.enumeration": true,
 };
 const FAULT_INJECTION_CONTROL = Symbol(
@@ -169,6 +173,7 @@ class PostgresBackend implements KrakenBackend {
   private readonly transactionContext = new AsyncLocalStorage<boolean>();
   private transactionQueue: Promise<void> = Promise.resolve();
   private readonly now: () => number;
+  private readonly injectedNow: (() => number) | undefined;
 
   constructor(options?: PostgresBackendOptions) {
     const resolvedOptions = options ?? {};
@@ -179,6 +184,10 @@ class PostgresBackend implements KrakenBackend {
     assertScope(this.scope);
     this.sql = createPostgresClient(resolvedOptions);
     this.now = resolvedOptions.now ?? Date.now;
+    // Track whether a clock was explicitly injected so the per-transaction
+    // authoritative lease clock can fall back to the PostgreSQL server clock in
+    // production while staying deterministic under an injected clock (ADR-050).
+    this.injectedNow = resolvedOptions.now;
   }
 
   capabilities(): BackendCapability {
@@ -258,6 +267,13 @@ class PostgresBackend implements KrakenBackend {
         await reserved.unsafe("BEGIN");
         inTransaction = true;
 
+        // Backend-authoritative lease clock (ADR-050): capture one authoritative
+        // timestamp per transaction — the injected clock when supplied
+        // (tests/conformance), else the PostgreSQL server clock — and use it for
+        // every clock read in this transaction (repository `now`, the exposed
+        // `tx.now` the kernel consults for lease stamping/expiry, and the
+        // snapshot stamp).
+        const txNow = await this.resolveTransactionNow(reserved);
         const baseState = await loadPersistedStateForUpdate(
           reserved,
           this.schemaName,
@@ -267,7 +283,7 @@ class PostgresBackend implements KrakenBackend {
         let active = true;
         const repositories = createRepositories(
           draftState,
-          this.now,
+          () => txNow,
           () => active && this.transactionContext.getStore() === true
         );
 
@@ -296,7 +312,7 @@ class PostgresBackend implements KrakenBackend {
             this.schemaName,
             this.scope,
             draftState,
-            this.now()
+            txNow
           );
           await reserved.unsafe("COMMIT");
           inTransaction = false;
@@ -435,6 +451,18 @@ class PostgresBackend implements KrakenBackend {
     } finally {
       releaseQueue?.();
     }
+  }
+
+  private async resolveTransactionNow(reserved: Sql): Promise<number> {
+    // An explicitly injected clock is treated as the authoritative backend clock
+    // so tests/conformance can deterministically align or skew it against an
+    // execution owner's clock. With no injection the PostgreSQL server is the
+    // shared rendezvous clock for the multi-worker deployment (ADR-050).
+    if (this.injectedNow !== undefined) {
+      return this.injectedNow();
+    }
+
+    return await readBackendClockMs(reserved);
   }
 
   private async ensureInitialized(): Promise<void> {
@@ -1227,6 +1255,36 @@ function createRepositories(
       },
     },
   };
+}
+
+async function readBackendClockMs(reserved: Sql): Promise<number> {
+  // clock_timestamp() is the actual wall-clock time at call, captured once per
+  // transaction so the whole transaction shares a single authoritative instant.
+  const rows = await reserved.unsafe<Array<{ now_ms: string }>>(
+    "SELECT (extract(epoch from clock_timestamp()) * 1000)::bigint AS now_ms"
+  );
+  const rawNowMs = rows[0]?.now_ms;
+
+  if (rawNowMs === undefined) {
+    throw persistenceError(
+      "postgres backend could not read the server clock",
+      "postgres_backend_clock_unavailable"
+    );
+  }
+
+  // ::bigint is serialized as a string by postgres.js; epoch milliseconds stay
+  // well within the safe-integer range for any realistic deployment date.
+  const nowMs = Number(rawNowMs);
+
+  if (!Number.isSafeInteger(nowMs)) {
+    throw persistenceError(
+      "postgres backend server clock is out of safe-integer range",
+      "postgres_backend_clock_unsafe_integer",
+      { rawNowMs: String(rawNowMs) }
+    );
+  }
+
+  return nowMs;
 }
 
 function readErrorMessage(error: unknown): string {

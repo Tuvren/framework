@@ -377,6 +377,11 @@
     "prompt": "Finalize this shared recovered turn",
     "finalText": "driver should not run"
   },
+  "client-result-as-proposal-authority-lost": {
+    "operation": "runtime.client-result-as-proposal",
+    "capabilityId": "cap.side-effect",
+    "prompt": "Invoke the side-effecting client capability"
+  },
   "orchestration-launch-preconditions": {
     "operation": "runtime.orchestration.launch-preconditions",
     "childText": "Worker complete.",

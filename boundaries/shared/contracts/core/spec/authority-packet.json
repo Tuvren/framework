@@ -1,6 +1,6 @@
 {
   "packetId": "tuvren.shared.core",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "boundary": "framework",
   "surface": "core",
   "description": "Merged shared-primitive authority packet for @tuvren/core. Absorbs tuvren.shared.core-types, tuvren.framework.runtime-api, tuvren.framework.event-stream, tuvren.framework.tool-contracts, and tuvren.framework.driver-api into a single packet with 10 binding sections per ADR-037 (Epic AP), ADR-042 (Epic AV), and ADR-046 (Epic AW: capabilities binding section added, capability JSON schemas authored in artifacts/json-schema/).",
@@ -137,7 +137,7 @@
     },
     {
       "planId": "tuvren.framework.runtime-api.lifecycle-extended",
-      "planVersion": "0.1.0",
+      "planVersion": "0.2.0",
       "path": "boundaries/framework/conformance/plans/runtime-api-lifecycle-extended.json"
     },
     {

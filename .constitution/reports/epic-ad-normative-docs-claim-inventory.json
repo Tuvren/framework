@@ -2098,7 +2098,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "kernel.run-liveness; framework.run-liveness",
+      "adapterCapability": "kernel.run-liveness; kernel.shared-lease-clock; framework.run-liveness",
       "claimFingerprint": "421dcb7431f672aba7664ae2ef5cf159c0ccd34987e2843c34b5605eebc0f7d5",
       "claimId": "FWK-421DCB7431F6",
       "duplicateOf": null,
@@ -2113,7 +2113,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "kernel.run-liveness; framework.run-liveness",
+      "adapterCapability": "kernel.run-liveness; kernel.shared-lease-clock; framework.run-liveness",
       "claimFingerprint": "6d6d07de0a90389b66142992c4825b5820d87defc5aaa2e764aab0a0bb536d31",
       "claimId": "FWK-6D6D07DE0A90",
       "duplicateOf": null,
@@ -2128,7 +2128,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "kernel.run-liveness; framework.run-liveness",
+      "adapterCapability": "kernel.run-liveness; kernel.shared-lease-clock; framework.run-liveness",
       "claimFingerprint": "249e905c5dad0c07e63f1179c7d2c67c414e0905facf48a5f18fde2f2c45feb2",
       "claimId": "FWK-249E905C5DAD",
       "duplicateOf": null,
@@ -2143,7 +2143,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "kernel.run-liveness; framework.run-liveness",
+      "adapterCapability": "kernel.run-liveness; kernel.shared-lease-clock; framework.run-liveness",
       "claimFingerprint": "102846662c0f48f1a8e627e3d34d6cea9868bc62f7f267ae602781d64cb7d9c9",
       "claimId": "FWK-102846662C0F",
       "duplicateOf": null,
@@ -2173,7 +2173,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "kernel.run-liveness; framework.run-liveness",
+      "adapterCapability": "kernel.run-liveness; kernel.shared-lease-clock; framework.run-liveness",
       "claimFingerprint": "bfd4076fd38f6ea5be91d589f810ce73225f88c5a0babfe102a3e397f721bcbd",
       "claimId": "FWK-BFD4076FD38F",
       "duplicateOf": null,
@@ -2203,7 +2203,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "kernel.run-liveness; framework.run-liveness",
+      "adapterCapability": "kernel.run-liveness; kernel.shared-lease-clock; framework.run-liveness",
       "claimFingerprint": "ba30a46fda59e8ad8550ef0d0777a5007b13a882a891aa4e56c66bc0e95d7138",
       "claimId": "FWK-BA30A46FDA59",
       "duplicateOf": null,
@@ -2218,7 +2218,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "kernel.run-liveness; framework.run-liveness",
+      "adapterCapability": "kernel.run-liveness; kernel.shared-lease-clock; framework.run-liveness",
       "claimFingerprint": "9243d948835dd893daa8c431a98332d0a14b4a02bddfc8597230952229b38ac1",
       "claimId": "FWK-9243D948835D",
       "duplicateOf": null,
@@ -4363,7 +4363,7 @@
     },
     {
       "affectedBoundary": "kernel",
-      "adapterCapability": "kernel.run-liveness; framework.run-liveness",
+      "adapterCapability": "kernel.run-liveness; kernel.shared-lease-clock; framework.run-liveness",
       "claimFingerprint": "4e6b1978e5618d265517995033a180b415dc47620655166d672a6c905feb9faf",
       "claimId": "KER-4E6B1978E561",
       "duplicateOf": null,
@@ -4378,7 +4378,7 @@
     },
     {
       "affectedBoundary": "kernel",
-      "adapterCapability": "kernel.run-liveness; framework.run-liveness",
+      "adapterCapability": "kernel.run-liveness; kernel.shared-lease-clock; framework.run-liveness",
       "claimFingerprint": "b85dbe97689fa3eae506788062f16b7433514b80e626fa57d155edeee68ec24a",
       "claimId": "KER-B85DBE97689F",
       "duplicateOf": null,
@@ -4393,7 +4393,7 @@
     },
     {
       "affectedBoundary": "kernel",
-      "adapterCapability": "kernel.run-liveness; framework.run-liveness",
+      "adapterCapability": "kernel.run-liveness; kernel.shared-lease-clock; framework.run-liveness",
       "claimFingerprint": "2da96db2a61a2c2dc1e512793e99751f1956239016600dd0b8d8758be487d3ec",
       "claimId": "KER-2DA96DB2A61A",
       "duplicateOf": null,
@@ -4408,7 +4408,7 @@
     },
     {
       "affectedBoundary": "kernel",
-      "adapterCapability": "kernel.run-liveness; framework.run-liveness",
+      "adapterCapability": "kernel.run-liveness; kernel.shared-lease-clock; framework.run-liveness",
       "claimFingerprint": "4dd317f1a5c4ac09707777502fa4ef291b15fa50a969f998b2f2444ce0871fc7",
       "claimId": "KER-4DD317F1A5C4",
       "duplicateOf": null,
@@ -4423,7 +4423,7 @@
     },
     {
       "affectedBoundary": "kernel",
-      "adapterCapability": "kernel.run-liveness; framework.run-liveness",
+      "adapterCapability": "kernel.run-liveness; kernel.shared-lease-clock; framework.run-liveness",
       "claimFingerprint": "166ea9c00a687b6a5b041ee97b1cbd4af6a722eab66e6603588d3bfa8612eb47",
       "claimId": "KER-166EA9C00A68",
       "duplicateOf": null,
@@ -4438,7 +4438,7 @@
     },
     {
       "affectedBoundary": "kernel",
-      "adapterCapability": "kernel.run-liveness; framework.run-liveness",
+      "adapterCapability": "kernel.run-liveness; kernel.shared-lease-clock; framework.run-liveness",
       "claimFingerprint": "f5e605a3b6ccdabbd8f90f3712bd0ce030416d78dbf6d162dd526a748a911ccd",
       "claimId": "KER-F5E605A3B6CC",
       "duplicateOf": null,
@@ -4453,7 +4453,7 @@
     },
     {
       "affectedBoundary": "kernel",
-      "adapterCapability": "kernel.run-liveness; framework.run-liveness",
+      "adapterCapability": "kernel.run-liveness; kernel.shared-lease-clock; framework.run-liveness",
       "claimFingerprint": "2c01dfd64f5e5b9d714d3413f1dcd14915b444a0bf7ef4d4a92db04165176894",
       "claimId": "KER-2C01DFD64F5E",
       "duplicateOf": null,
@@ -4468,7 +4468,7 @@
     },
     {
       "affectedBoundary": "kernel",
-      "adapterCapability": "kernel.run-liveness; framework.run-liveness",
+      "adapterCapability": "kernel.run-liveness; kernel.shared-lease-clock; framework.run-liveness",
       "claimFingerprint": "232f4a80e2b836d6d31750262b1bf79bd7e9ba90cb025c55965ab7da0971837f",
       "claimId": "KER-232F4A80E2B8",
       "duplicateOf": null,
@@ -4483,7 +4483,7 @@
     },
     {
       "affectedBoundary": "kernel",
-      "adapterCapability": "kernel.run-liveness; framework.run-liveness",
+      "adapterCapability": "kernel.run-liveness; kernel.shared-lease-clock; framework.run-liveness",
       "claimFingerprint": "eb7621f2ffa4e745f4643c3a232f69720dc9528d02d8e87c40ffe5259cca1b23",
       "claimId": "KER-EB7621F2FFA4",
       "duplicateOf": null,
@@ -4498,7 +4498,7 @@
     },
     {
       "affectedBoundary": "kernel",
-      "adapterCapability": "kernel.run-liveness; framework.run-liveness",
+      "adapterCapability": "kernel.run-liveness; kernel.shared-lease-clock; framework.run-liveness",
       "claimFingerprint": "b2f6a715d3c3a4514cc191fa202dbd0feb78b4a3c37541339cbc18fc8499afe9",
       "claimId": "KER-B2F6A715D3C3",
       "duplicateOf": null,
@@ -4513,7 +4513,7 @@
     },
     {
       "affectedBoundary": "kernel",
-      "adapterCapability": "kernel.run-liveness; framework.run-liveness",
+      "adapterCapability": "kernel.run-liveness; kernel.shared-lease-clock; framework.run-liveness",
       "claimFingerprint": "c66eb63ef84d0d7f40a53521b604f12dc123fd7cd1c4f0cbf1992424d1241ad5",
       "claimId": "KER-C66EB63EF84D",
       "duplicateOf": null,

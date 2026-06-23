@@ -7963,6 +7963,32 @@
     {
       "assertionResults": [
         {
+          "assertionId": "runtime-lifecycle-af.client-result-as-proposal-authority-lost.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-af.client-result-as-proposal-authority-lost.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-af.client-result-as-proposal-authority-lost.requiredEvidence.result.proposal.clientDispatchCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-af.client-result-as-proposal-authority-lost.requiredEvidence.result.proposal.clientSuccessCommitted",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-lifecycle-af.client-result-as-proposal-authority-lost",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.lifecycle-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "runtime-lifecycle-af.context-transform-creates-new-tree-heads.1.resultField",
           "status": "pass"
         },
@@ -10309,9 +10335,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 462,
-    "totalChecks": 474,
-    "applicableChecks": 462,
+    "passedChecks": 463,
+    "totalChecks": 475,
+    "applicableChecks": 463,
     "nonApplicableChecks": 12
   },
   "suiteId": "tuvren.framework.promoted-authority",

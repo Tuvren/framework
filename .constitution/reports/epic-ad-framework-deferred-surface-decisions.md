@@ -9,7 +9,7 @@ Framework deferred-surface decisions are recorded from the docs-to-authority mat
 | approval and cancellation control | 27 | authority-backed-conformance-covered | KRT-AF004 | No, if kept local/deferred |
 | approval resume semantics | 1 | authority-backed-conformance-covered | KRT-AF004 | No, if kept local/deferred |
 | aroundModel live/durable reconciliation | 2 | authority-backed-conformance-covered | KRT-AF003 | No, if kept local/deferred |
-| backend-authoritative lease clock | 1 | missing-conformance-follow-up | KRT-BG001 | Yes, until AF/docs evidence resolves it |
+| backend-authoritative lease clock | 1 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
 | capability orchestration | 9 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
 | conversation-state ownership | 1 | missing-conformance-follow-up | KRT-BH001 | Yes, until AF/docs evidence resolves it |
 | driver contract | 14 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
@@ -34,7 +34,7 @@ Framework deferred-surface decisions are recorded from the docs-to-authority mat
 | runtime resolution and errors | 2 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
 | saas-readiness target authority status | 1 | explicitly-deferred | Future TechSpec/Tasks revision after TypeScript freeze closure | No, if kept local/deferred |
 | shared framework type shapes | 8 | authority-backed-conformance-covered | KRT-AF001 | No, if kept local/deferred |
-| side-effect-once under preemption | 1 | missing-conformance-follow-up | KRT-BG001 | Yes, until AF/docs evidence resolves it |
+| side-effect-once under preemption | 1 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
 | stream adapter package topology | 1 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
 | structured output contract | 7 | authority-backed-conformance-covered | KRT-AF004 | No, if kept local/deferred |
 | tool and approval contracts | 7 | authority-backed-conformance-covered | KRT-AF004 | No, if kept local/deferred |

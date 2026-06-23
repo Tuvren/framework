@@ -460,6 +460,15 @@ export interface StagedResultRepository {
 
 export interface RuntimeBackendTx {
   branches: BranchRepository;
+  /**
+   * Per-transaction authoritative clock (epoch ms). Backends that advertise the
+   * `shared-lease-clock` BackendCapability expose the backend's own clock here so
+   * the kernel can stamp and compare run-lease expiry in backend time within the
+   * transaction (ADR-050, kernel spec §5.2). Backends that do not advertise
+   * shared-lease-clock MAY omit it; the kernel falls back to its injected clock
+   * for those backends.
+   */
+  now?(): EpochMs;
   objects: ObjectRepository;
   observeAnnotations: ObserveAnnotationRepository;
   orderedPathChunks: OrderedPathChunkRepository;
@@ -493,6 +502,17 @@ export interface BackendCapability {
    * is a semver-minor change (§9.1).
    */
   readonly "maintenance.reclamation"?: boolean;
+  /**
+   * Backend can serve as the authoritative shared lease clock for a deployment
+   * with more than one execution owner (ADR-050, KrakenKernelSpecification
+   * §5.2). When `true`, the kernel stamps and compares run-lease expiry against
+   * the backend's own per-transaction clock (exposed via `RuntimeBackendTx.now`)
+   * instead of an execution owner's wall clock, eliminating split-brain
+   * preemption under owner clock skew. Single-writer embedded backends advertise
+   * `false` (or omit it) and keep the in-process clock because no cross-owner
+   * contention exists. Adding this bit is a semver-minor change (§9.1).
+   */
+  readonly "shared-lease-clock"?: boolean;
   /**
    * Backend supports efficient thread enumeration via ThreadRepository.list.
    * Required for hosts that consume TuvrenRuntime.listThreads.

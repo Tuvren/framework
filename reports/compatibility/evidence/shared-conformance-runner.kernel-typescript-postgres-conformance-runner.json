@@ -10,7 +10,8 @@
     "kernel.reclamation",
     "kernel.restart-recovery",
     "kernel.run-liveness",
-    "kernel.scope-isolation"
+    "kernel.scope-isolation",
+    "kernel.shared-lease-clock"
   ],
   "checkResults": [
     {
@@ -2726,6 +2727,136 @@
     {
       "assertionResults": [
         {
+          "assertionId": "kernel.run-liveness.clock_skew_preemption.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.clock_skew_preemption.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.clock_skew_preemption.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.clock_skew_preemption.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.clock_skew_preemption.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.clock_skew_preemption.6.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.clock_skew_preemption.7.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.clock_skew_preemption.8.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.clock_skew_preemption.9.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.clock_skew_preemption.10.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.clock_skew_preemption.requiredEvidence.clockSkew.backendClockExpiredCountBeforeExpiry",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.clock_skew_preemption.requiredEvidence.clockSkew.leaseCleared",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.clock_skew_preemption.requiredEvidence.clockSkew.preemptedAfterBackendExpiry",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.clock_skew_preemption.requiredEvidence.clockSkew.preemptionReason",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.clock_skew_preemption.requiredEvidence.clockSkew.recoveredStagedResultTaskIds",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.clock_skew_preemption.requiredEvidence.clockSkew.recoveryHeadMatchesBranchHead",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.clock_skew_preemption.requiredEvidence.clockSkew.runStatus",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.clock_skew_preemption.requiredEvidence.clockSkew.splitBrainPreemptionBlocked",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.clock_skew_preemption.requiredEvidence.clockSkew.uncommittedStagedResultCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.clock_skew_preemption.requiredEvidence.clockSkew.workerClockWouldExpire",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.clock_skew_preemption.requiredEvidence.result.clockSkew.backendClockExpiredCountBeforeExpiry",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.clock_skew_preemption.requiredEvidence.result.clockSkew.leaseCleared",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.clock_skew_preemption.requiredEvidence.result.clockSkew.preemptedAfterBackendExpiry",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.clock_skew_preemption.requiredEvidence.result.clockSkew.preemptionReason",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.clock_skew_preemption.requiredEvidence.result.clockSkew.recoveredStagedResultTaskIds",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.clock_skew_preemption.requiredEvidence.result.clockSkew.recoveryHeadMatchesBranchHead",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.clock_skew_preemption.requiredEvidence.result.clockSkew.runStatus",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.clock_skew_preemption.requiredEvidence.result.clockSkew.splitBrainPreemptionBlocked",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.clock_skew_preemption.requiredEvidence.result.clockSkew.uncommittedStagedResultCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.clock_skew_preemption.requiredEvidence.result.clockSkew.workerClockWouldExpire",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.run-liveness.clock_skew_preemption",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.run-liveness"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "kernel.run-liveness.expired_listing.1.resultField",
           "status": "pass"
         },
@@ -3013,9 +3144,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 67,
-    "totalChecks": 67,
-    "applicableChecks": 67,
+    "passedChecks": 68,
+    "totalChecks": 68,
+    "applicableChecks": 68,
     "nonApplicableChecks": 0
   },
   "suiteId": "tuvren.kernel.protocol",

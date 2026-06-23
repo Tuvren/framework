@@ -333,14 +333,30 @@ const EVIDENCE = {
     generatedArtifact:
       "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
   },
+  // Backend-authoritative execution-lease clock (kernel spec §5.2, ADR-050)
+  // composed with side-effect-once under preemption (framework spec "Running
+  // Lease Ownership", ADR-052). KRT-BG001 declared the surface and its
+  // conformance-plan reference; KRT-BG002/BG003/BG004 realized the backend-time
+  // lease clock, the idempotency envelope, the no-retry-on-authority-loss
+  // guarantee, and the client-result-as-proposal invariant. KRT-BG005 promoted
+  // the plan to runnable, registered, evidence-backed conformance: the
+  // PostgreSQL kernel adapter advertises kernel.shared-lease-clock and answers
+  // the clock-skew-preemption operation (a peer's skewed-ahead wall clock cannot
+  // preempt a lease the backend clock still considers live; after genuine
+  // backend-clock expiry the completed side-effecting call is incorporated by
+  // callId so the effect is driven at most once), and the framework adapter
+  // answers the client-result-as-proposal operation (a client result returning
+  // after authority loss is never committed). The compatibility evidence below
+  // records both, so the claim is now authority-backed-conformance-covered.
   runLiveness: {
-    adapterCapability: "kernel.run-liveness; framework.run-liveness",
+    adapterCapability:
+      "kernel.run-liveness; kernel.shared-lease-clock; framework.run-liveness",
     authorityPacket:
       "boundaries/kernel/contracts/protocol/spec/authority-packet.json",
     compatibilityEvidence:
-      "reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-sqlite-conformance-runner.json; reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
+      "reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-postgres-conformance-runner.json; reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-sqlite-conformance-runner.json; reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
     conformancePlan:
-      "boundaries/kernel/conformance/plans/kernel-run-liveness.json",
+      "boundaries/kernel/conformance/plans/kernel-run-liveness.json; boundaries/framework/conformance/plans/runtime-api-lifecycle-extended.json",
     fixture:
       "boundaries/kernel/conformance/fixtures/kernel-protocol-logical.json",
     generatedArtifact:
@@ -1008,20 +1024,32 @@ function classifySaaSReadinessTargetClaim(
     text.includes("backend-authoritative lease clock (v0.12)") ||
     text.includes("backend-authoritative lease clock (v0.21)")
   ) {
-    return missingConformanceDecision(
+    // KRT-BG002 realized backend-time lease stamping and expiry comparison;
+    // KRT-BG005 promoted the kernel-run-liveness plan to runnable, registered,
+    // evidence-backed conformance via the PostgreSQL clock-skew-preemption check
+    // (a peer's skewed-ahead clock cannot preempt a lease the backend clock still
+    // considers live), so the claim is authority-backed-conformance-covered.
+    return authorityDecision(
       "backend-authoritative lease clock",
-      EVIDENCE.runLiveness,
-      "KRT-BG001",
-      "Backend-time lease stamping and expiry comparison are SaaS-readiness target semantics; portable conformance lands when EPIC-BG promotes kernel spec §5.2 and the framework Running Lease Ownership note."
+      EVIDENCE.runLiveness
     );
   }
 
   if (text.includes("side-effect-once under preemption (v0.21)")) {
-    return missingConformanceDecision(
+    // KRT-BG003/BG004 realized the (runId, callId, fencingToken) idempotency
+    // envelope, the no-retry of in-flight nonRetryable on authority loss, and the
+    // client-result-as-proposal invariant; KRT-BG005 promoted the conformance to
+    // evidence-backed coverage. The PostgreSQL clock-skew-preemption check proves
+    // the completed side-effecting call is incorporated by callId so the effect
+    // is driven at most once, and the framework client-result-as-proposal check
+    // proves a client result returning after authority loss is never committed,
+    // so the claim is authority-backed-conformance-covered. (The idempotency
+    // identity is a per-attempt envelope key; cross-recovery side-effect-once is
+    // achieved by the composition of backend-clock no-split-brain, no-retry, and
+    // recovery-skip-by-callId — see ADR-052 realization note in the tech spec.)
+    return authorityDecision(
       "side-effect-once under preemption",
-      EVIDENCE.runLiveness,
-      "KRT-BG001",
-      "The (runId, callId, fencingToken) idempotency envelope, no-retry of in-flight nonRetryable, and client-result-as-proposal invariant are SaaS-readiness target semantics promoted by EPIC-BG."
+      EVIDENCE.runLiveness
     );
   }
 

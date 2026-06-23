@@ -368,6 +368,7 @@
             "runtime-callable-af.input-signal-empty-parts-rejected",
             "runtime-lifecycle-af.cancel-running-idempotent-fails-once",
             "runtime-lifecycle-af.cancel-running-stages-partial-status",
+            "runtime-lifecycle-af.client-result-as-proposal-authority-lost",
             "runtime-lifecycle-af.context-transform-creates-new-tree-heads",
             "runtime-lifecycle-af.context-transform-driver-sees-rewritten-context",
             "runtime-lifecycle-af.context-transform-preserves-source-checkpoint",
@@ -472,9 +473,9 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 462,
-            "totalChecks": 474,
-            "applicableChecks": 462,
+            "passedChecks": 463,
+            "totalChecks": 475,
+            "applicableChecks": 463,
             "nonApplicableChecks": 12
           },
           "declaredCapabilities": [
@@ -515,9 +516,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 12,
-            "totalChecks": 474,
+            "totalChecks": 475,
             "applicableChecks": 12,
-            "nonApplicableChecks": 462
+            "nonApplicableChecks": 463
           },
           "declaredCapabilities": ["framework.batteries-included"],
           "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.framework-batteries-included-conformance-runner.json",
@@ -604,9 +605,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 64,
-            "totalChecks": 67,
+            "totalChecks": 68,
             "applicableChecks": 64,
-            "nonApplicableChecks": 3
+            "nonApplicableChecks": 4
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",
@@ -705,9 +706,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 67,
-            "totalChecks": 67,
+            "totalChecks": 68,
             "applicableChecks": 67,
-            "nonApplicableChecks": 0
+            "nonApplicableChecks": 1
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",
@@ -722,7 +723,7 @@
           ],
           "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-sqlite-conformance-runner.json",
           "reportLabel": "TypeScript SQLite durable kernel",
-          "reportStatus": "full_pass",
+          "reportStatus": "capability_subset_pass",
           "status": "pass",
           "suiteId": "tuvren.kernel.protocol",
           "suiteVersion": "0.1.0"
@@ -797,6 +798,7 @@
             "kernel.restart-recovery.close_reopen_checkpoint",
             "kernel-restart-af.expired-running-requires-preemption",
             "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.run-liveness.clock_skew_preemption",
             "kernel.run-liveness.expired_listing",
             "kernel.run-liveness.lease_renewal",
             "kernel.run-liveness.stale_preemption",
@@ -806,9 +808,9 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 67,
-            "totalChecks": 67,
-            "applicableChecks": 67,
+            "passedChecks": 68,
+            "totalChecks": 68,
+            "applicableChecks": 68,
             "nonApplicableChecks": 0
           },
           "declaredCapabilities": [
@@ -820,7 +822,8 @@
             "kernel.reclamation",
             "kernel.restart-recovery",
             "kernel.run-liveness",
-            "kernel.scope-isolation"
+            "kernel.scope-isolation",
+            "kernel.shared-lease-clock"
           ],
           "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-postgres-conformance-runner.json",
           "reportLabel": "TypeScript PostgreSQL durable kernel",
@@ -972,9 +975,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 42,
-            "totalChecks": 67,
+            "totalChecks": 68,
             "applicableChecks": 42,
-            "nonApplicableChecks": 25
+            "nonApplicableChecks": 26
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",
@@ -1000,9 +1003,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 0,
-            "totalChecks": 474,
+            "totalChecks": 475,
             "applicableChecks": 0,
-            "nonApplicableChecks": 474
+            "nonApplicableChecks": 475
           },
           "declaredCapabilities": [],
           "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.framework-rust-conformance-runner.json",

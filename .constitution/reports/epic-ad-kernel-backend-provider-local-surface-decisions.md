@@ -6,7 +6,7 @@ Kernel, backend, provider, and tool surfaces are separated from cross-language a
 
 | Surface | Independent Claims | Classifications | Follow-up | Blocks future implementation line? |
 | --- | ---: | --- | --- | --- |
-| backend-authoritative lease clock | 1 | missing-conformance-follow-up | KRT-BG001 | Yes, until AF/docs evidence resolves it |
+| backend-authoritative lease clock | 1 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
 | kernel appendix validation matrix | 20 | authority-backed-conformance-covered | KRT-AF006 | No, if kept local/deferred |
 | kernel backend acceleration indexes | 2 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
 | kernel backend physical storage | 2 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |

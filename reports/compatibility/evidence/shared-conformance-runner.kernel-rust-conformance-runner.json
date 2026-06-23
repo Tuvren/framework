@@ -1680,6 +1680,7 @@
     "kernel.restart-recovery.close_reopen_checkpoint",
     "kernel-restart-af.expired-running-requires-preemption",
     "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+    "kernel.run-liveness.clock_skew_preemption",
     "kernel.run-liveness.expired_listing",
     "kernel.run-liveness.lease_renewal",
     "kernel.run-liveness.stale_preemption",
@@ -1694,9 +1695,9 @@
   "summary": {
     "failedChecks": 0,
     "passedChecks": 42,
-    "totalChecks": 67,
+    "totalChecks": 68,
     "applicableChecks": 42,
-    "nonApplicableChecks": 25
+    "nonApplicableChecks": 26
   },
   "suiteId": "tuvren.kernel.protocol",
   "suiteVersion": "0.1.0"

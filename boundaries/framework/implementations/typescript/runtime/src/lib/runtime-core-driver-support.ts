@@ -46,6 +46,12 @@ export interface RuntimeCoreDriverSupportHost {
   };
   createFrozenSnapshot<T>(value: T): T;
   defaultMaxParallelToolCalls(): number;
+  /**
+   * Active run lease fencing token for this handle, or undefined when no
+   * run-liveness lease is held. Feeds the side-effect-once idempotency identity
+   * placed on the tool batch environment (ADR-052).
+   */
+  getActiveFencingToken(handle: RuntimeExecutionHandle): string | undefined;
   now(): number;
   publishCustomEvent(
     handle: RuntimeExecutionHandle,
@@ -120,6 +126,7 @@ export function createToolBatchEnvironment(
     policyCapabilityMetadata,
     policyContextInputs,
     extensions: loopState.activeConfig.extensions ?? [],
+    fencingToken: host.getActiveFencingToken(handle),
     iterationCount,
     manifest,
     maxParallelToolCalls: host.resolveActiveMaxParallelToolCalls(

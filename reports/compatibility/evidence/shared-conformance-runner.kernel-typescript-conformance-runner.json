@@ -2650,7 +2650,8 @@
   "nonApplicableCheckIds": [
     "kernel-restart-af.invalid-staged-result-reexecutes",
     "kernel.crash-recovery.durable_fault_points",
-    "kernel.restart-recovery.close_reopen_checkpoint"
+    "kernel.restart-recovery.close_reopen_checkpoint",
+    "kernel.run-liveness.clock_skew_preemption"
   ],
   "project": "kernel-typescript-conformance-runner",
   "reportLabel": "TypeScript process-local kernel baseline",
@@ -2659,9 +2660,9 @@
   "summary": {
     "failedChecks": 0,
     "passedChecks": 64,
-    "totalChecks": 67,
+    "totalChecks": 68,
     "applicableChecks": 64,
-    "nonApplicableChecks": 3
+    "nonApplicableChecks": 4
   },
   "suiteId": "tuvren.kernel.protocol",
   "suiteVersion": "0.1.0"
