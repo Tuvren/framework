@@ -84,6 +84,8 @@ class TypeScriptProviderAdapter {
           return result(await streamMetadataContinuity());
         case "providers.conversation-state.continuity-carriage":
           return result(await conversationStateContinuityCarriage());
+        case "providers.conversation-state.continuity-replay":
+          return result(await conversationStateContinuityReplay());
         case "providers.bridge.structured-output-stream":
           return result(await structuredOutputStream());
         case "providers.bridge.provider-failure-normalization":
@@ -273,6 +275,76 @@ async function conversationStateContinuityCarriage(): Promise<
     continuityNamespacePresent: anthropicOptions !== undefined,
     responseFinishReason: response.finishReason,
   });
+}
+
+// KRT-BH002: a carried continuity artifact persisted on a prior assistant
+// message is reconstructed from durable history and replayed into the next
+// provider request's providerOptions — the bridge-level expression of ADR-053's
+// "the next provider request is rebuilt from durable lineage, not provider-held
+// state". The continuity rides only on the supplied prompt; the bridge consults
+// no out-of-band provider session.
+async function conversationStateContinuityReplay(): Promise<
+  Record<string, unknown>
+> {
+  let capturedPrompt: LanguageModelV3CallOptions["prompt"] | undefined;
+  const bridge = createAiSdkProviderBridge({
+    model: createMockModel({
+      doGenerate(options) {
+        capturedPrompt = options.prompt;
+        return Promise.resolve(createGenerateResult());
+      },
+      provider: "google",
+    }),
+  });
+
+  await bridge.generate({
+    messages: [
+      {
+        parts: [
+          {
+            providerMetadata: {
+              google: { thoughtSignature: "bh002-continuity" },
+            },
+            redacted: false,
+            text: "prior reasoning",
+            type: "reasoning",
+          },
+        ],
+        role: "assistant",
+      },
+      { parts: [{ text: "continue", type: "text" }], role: "user" },
+    ],
+  });
+
+  return createProjection({
+    continuityReplayedFromHistory:
+      extractReplayedThoughtSignature(capturedPrompt) === "bh002-continuity",
+  });
+}
+
+function extractReplayedThoughtSignature(prompt: unknown): string | undefined {
+  if (!Array.isArray(prompt)) {
+    return undefined;
+  }
+  for (const message of prompt) {
+    if (!isRecord(message) || message.role !== "assistant") {
+      continue;
+    }
+    const content = message.content;
+    if (!Array.isArray(content)) {
+      continue;
+    }
+    for (const part of content) {
+      if (!isRecord(part) || !isRecord(part.providerOptions)) {
+        continue;
+      }
+      const google = part.providerOptions.google;
+      if (isRecord(google) && typeof google.thoughtSignature === "string") {
+        return google.thoughtSignature;
+      }
+    }
+  }
+  return undefined;
 }
 
 async function structuredOutputStream(): Promise<Record<string, unknown>> {

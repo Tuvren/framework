@@ -877,6 +877,7 @@
             "providers-ext.structured.first-chunk-is-structured-delta-or-text-delta",
             "bh.bh001.continuity-carried-as-optimization",
             "bh.bh001.continuity-non-blocking-response",
+            "bh.bh002.continuity-replayed-from-history",
             "ay.ay007.mediated-attribution-execution-class",
             "ay.ay007.mediated-attribution-owner",
             "ay.ay007.mediated-no-local-execution",
@@ -900,9 +901,9 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 56,
-            "totalChecks": 56,
-            "applicableChecks": 56,
+            "passedChecks": 57,
+            "totalChecks": 57,
+            "applicableChecks": 57,
             "nonApplicableChecks": 0
           },
           "declaredCapabilities": [

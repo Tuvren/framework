@@ -39,6 +39,19 @@
       ],
       "operation": "providers.conversation-state.continuity-carriage",
       "capabilities": ["providers.conversation-state-ownership"]
+    },
+    {
+      "checkId": "bh.bh002.continuity-replayed-from-history",
+      "evidence": ["result.continuityReplayedFromHistory"],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.continuityReplayedFromHistory",
+          "equals": true
+        }
+      ],
+      "operation": "providers.conversation-state.continuity-replay",
+      "capabilities": ["providers.conversation-state-ownership"]
     }
   ]
 }

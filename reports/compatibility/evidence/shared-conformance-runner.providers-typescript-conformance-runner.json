@@ -1060,6 +1060,24 @@
     {
       "assertionResults": [
         {
+          "assertionId": "bh.bh002.continuity-replayed-from-history.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "bh.bh002.continuity-replayed-from-history.requiredEvidence.result.continuityReplayedFromHistory",
+          "status": "pass"
+        }
+      ],
+      "checkId": "bh.bh002.continuity-replayed-from-history",
+      "details": {
+        "adapterId": "typescript-providers",
+        "planId": "tuvren.providers.provider-api.conversation-state"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "ay.ay007.mediated-attribution-execution-class.1.resultField",
           "status": "pass"
         },
@@ -1433,9 +1451,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 56,
-    "totalChecks": 56,
-    "applicableChecks": 56,
+    "passedChecks": 57,
+    "totalChecks": 57,
+    "applicableChecks": 57,
     "nonApplicableChecks": 0
   },
   "suiteId": "tuvren.providers.provider-api",
