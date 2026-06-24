@@ -341,7 +341,7 @@ function extractReplayedThoughtSignature(prompt: unknown): string | undefined {
       continue;
     }
     for (const part of content) {
-      if (!isRecord(part) || !isRecord(part.providerOptions)) {
+      if (!(isRecord(part) && isRecord(part.providerOptions))) {
         continue;
       }
       const google = part.providerOptions.google;
@@ -499,11 +499,11 @@ async function conversationStateCacheCorrectnessNeutral(): Promise<
 }
 
 function extractBridgeCacheRead(metadata: unknown): unknown {
-  if (!isRecord(metadata) || !isRecord(metadata.aiSdkBridge)) {
+  if (!(isRecord(metadata) && isRecord(metadata.aiSdkBridge))) {
     return undefined;
   }
   const rawUsage = metadata.aiSdkBridge.rawUsage;
-  if (!isRecord(rawUsage) || !isRecord(rawUsage.inputTokens)) {
+  if (!(isRecord(rawUsage) && isRecord(rawUsage.inputTokens))) {
     return undefined;
   }
   return rawUsage.inputTokens.cacheRead;
@@ -619,14 +619,15 @@ async function conversationStateProviderExecutedFidelity(): Promise<
     ),
     // The provider-executed call does not contaminate the client-facing parts /
     // chunks with a function tool_call the runtime would attempt to execute.
-    providerExecutedCallNotSurfacedAsClientToolCall:
-      !generateResponse.parts.some(
+    providerExecutedCallNotSurfacedAsClientToolCall: !(
+      generateResponse.parts.some(
         (part) => part.type === "tool_call" || part.type === "tool_result"
-      ) &&
-      !streamChunks.some(
+      ) ||
+      streamChunks.some(
         (chunk) =>
           chunk.type === "tool_call_start" || chunk.type === "tool_call_done"
-      ),
+      )
+    ),
     // Generate and stream both attribute the provider-executed result to the
     // provider-native execution class.
     providerExecutedAttributedNative:
