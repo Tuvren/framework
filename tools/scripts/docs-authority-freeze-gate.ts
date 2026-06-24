@@ -276,6 +276,33 @@ const EVIDENCE = {
     generatedArtifact:
       "boundaries/providers/contracts/provider-api/artifacts/json-schema; boundaries/providers/contracts/provider-api/artifacts/openapi",
   },
+  // Conversation-state ownership (framework spec §1.1 v0.21 note, ADR-053,
+  // PRD CAP-P0-069). The durable lineage is the unconditional source of truth
+  // for a provider request; provider server-side state, carried continuity
+  // artifacts, and provider-side caching are reconstructable optimizations,
+  // never a correctness dependency. KRT-BH001 declared the conversation-state
+  // conformance plan and registered it in the provider-api authority packet;
+  // KRT-BH002–BH005 realized and proved the surface — reconstruct-from-DAG
+  // request equality with no provider-held state, shreddable continuity (typed
+  // erased read + byte-identical lineage hashes), the AY005 multi-turn
+  // providerContinuity round-trip, correctness-neutral caching (identical
+  // produced canonical result on miss vs hit), and the providerExecuted/dynamic
+  // bridge-fidelity audit against vercel/ai #10888. The providers adapter
+  // advertises providers.conversation-state-ownership and answers the plan's
+  // operations, so the plan is runnable, registered, and evidence-backed: the
+  // claim is now authority-backed-conformance-covered.
+  conversationStateOwnership: {
+    adapterCapability: "providers.conversation-state-ownership",
+    authorityPacket:
+      "boundaries/providers/contracts/provider-api/spec/authority-packet.json",
+    compatibilityEvidence:
+      "reports/compatibility/evidence/shared-conformance-runner.providers-typescript-conformance-runner.json",
+    conformancePlan:
+      "boundaries/providers/conformance/plans/provider-api-conversation-state.json",
+    fixture: "boundaries/providers/conformance/fixtures/provider-fixtures.json",
+    generatedArtifact:
+      "N/A - conversation-state ownership is conformance-plan authority without generated schema artifacts",
+  },
   reactDriver: {
     adapterCapability: "framework.react-driver",
     authorityPacket:
@@ -1054,11 +1081,18 @@ function classifySaaSReadinessTargetClaim(
   }
 
   if (text.includes("conversation-state ownership (v0.21)")) {
-    return missingConformanceDecision(
+    // KRT-BH001 declared the conversation-state conformance plan and registered
+    // it in the provider-api authority packet; KRT-BH002–BH005 realized the
+    // surface (reconstruct-from-DAG request equality with no provider-held
+    // state, shreddable continuity, the AY005 multi-turn providerContinuity
+    // round-trip, correctness-neutral caching, and the providerExecuted/dynamic
+    // bridge-fidelity audit), and the providers adapter now advertises
+    // providers.conversation-state-ownership and answers the plan's operations
+    // under compatibility evidence, so the claim is now
+    // authority-backed-conformance-covered (EPIC-BH closeout promotion).
+    return authorityDecision(
       "conversation-state ownership",
-      EVIDENCE.runtimeApi,
-      "KRT-BH001",
-      "Reconstruct-from-lineage as the unconditional source of truth is a SaaS-readiness target semantic; portable conformance lands when EPIC-BH promotes the framework conversation-state note."
+      EVIDENCE.conversationStateOwnership
     );
   }
 

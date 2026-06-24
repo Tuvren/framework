@@ -11,7 +11,7 @@ Framework deferred-surface decisions are recorded from the docs-to-authority mat
 | aroundModel live/durable reconciliation | 2 | authority-backed-conformance-covered | KRT-AF003 | No, if kept local/deferred |
 | backend-authoritative lease clock | 1 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
 | capability orchestration | 9 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
-| conversation-state ownership | 1 | missing-conformance-follow-up | KRT-BH001 | Yes, until AF/docs evidence resolves it |
+| conversation-state ownership | 1 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
 | driver contract | 14 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
 | extension contracts | 5 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
 | extension state and prompt contracts | 4 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |

@@ -1453,7 +1453,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "framework.runtime-api",
+      "adapterCapability": "providers.conversation-state-ownership",
       "claimFingerprint": "cdeca43122788c743a8e24838e5026cb639bffd66e2dbed1eb35cbc3f6ec21bb",
       "claimId": "FWK-CDECA4312278",
       "duplicateOf": null,
