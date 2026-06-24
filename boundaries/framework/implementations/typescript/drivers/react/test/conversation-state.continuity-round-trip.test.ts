@@ -29,10 +29,21 @@
 //
 // This is the end-to-end runtime/durability proof of that round-trip: it drives
 // two real turns through the runtime against a deliberately stateless provider
-// and asserts the continuity survives the durable round-trip. (The provider-
-// boundary replay mapping is covered separately by the conversation-state
-// conformance plan; the reconstruct-from-DAG proof covers structural head-state
-// reconstruction.)
+// and asserts the continuity survives the durable round-trip.
+//
+// Layering note — what this test does and does NOT prove. It exercises the
+// *framework carriage* seam: the runtime hands the reconstructed prompt to a raw
+// `TuvrenProvider`, one layer above the AI SDK bridge. It proves the framework
+// durably carries assistant continuity metadata across a DAG-reconstructed turn
+// boundary with no provider-held state. It does NOT by itself prove that any
+// specific token reaches the actual provider request: the AI SDK bridge
+// re-injects only allowlisted *part-level* continuity keys (e.g.
+// `google.thoughtSignature`) and never message-level metadata, so the bridge
+// would drop the message-level blob used here. That provider-boundary replay is
+// the separate, complementary proof owned by the conversation-state conformance
+// op (which uses an allowlisted part-level signature); the reconstruct-from-DAG
+// proof covers structural head-state reconstruction. The Gherkin round-trip is
+// satisfied by these artifacts together, each proving a distinct dimension.
 
 import { describe, expect, test } from "bun:test";
 import type { TuvrenMessage } from "@tuvren/core/messages";
@@ -47,8 +58,14 @@ import { createFakeKernelHarness } from "../../../runtime/test/fake-kernel.ts";
 import { createReActDriver, REACT_DRIVER_ID } from "../src/index.ts";
 import { textSignal } from "./react-driver-test-helpers.ts";
 
-// A turn-level, provider-namespaced continuity token (e.g. an OpenAI response
-// continuation id) carried back on turn 1's response as message-level metadata.
+// A provider-namespaced continuity token carried back on turn 1's response as
+// message-level metadata — modelled on an OpenAI Responses continuation id, the
+// kind of server-side-state handle ADR-053 keeps reconstructable rather than
+// authoritative. From the framework's view it is an opaque blob: this test only
+// asserts the runtime durably carries it into the next turn's reconstructed
+// prompt. See the layering note above — this exact token would NOT be re-injected
+// by the AI SDK bridge (which replays only allowlisted part-level keys), so do
+// not read this as proof that `previousResponseId` reaches the provider request.
 const CONTINUITY = { openai: { previousResponseId: "resp-turn-1-9f3a" } };
 
 /**
