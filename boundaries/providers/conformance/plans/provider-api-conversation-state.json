@@ -65,6 +65,33 @@
       ],
       "operation": "providers.conversation-state.continuity-roundtrip",
       "capabilities": ["providers.conversation-state-ownership"]
+    },
+    {
+      "checkId": "bh.bh004.caching-correctness-neutral",
+      "evidence": [
+        "result.cacheNeutralResultIdentical",
+        "result.cacheNeutralRequestIdentical",
+        "result.cacheCostDiffered"
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.cacheNeutralResultIdentical",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.cacheNeutralRequestIdentical",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.cacheCostDiffered",
+          "equals": true
+        }
+      ],
+      "operation": "providers.conversation-state.cache-correctness-neutral",
+      "capabilities": ["providers.conversation-state-ownership"]
     }
   ]
 }

@@ -88,6 +88,8 @@ class TypeScriptProviderAdapter {
           return result(await conversationStateContinuityReplay());
         case "providers.conversation-state.continuity-roundtrip":
           return result(await conversationStateContinuityRoundTrip());
+        case "providers.conversation-state.cache-correctness-neutral":
+          return result(await conversationStateCacheCorrectnessNeutral());
         case "providers.bridge.structured-output-stream":
           return result(await structuredOutputStream());
         case "providers.bridge.provider-failure-normalization":
@@ -415,6 +417,87 @@ async function conversationStateContinuityRoundTrip(): Promise<
     continuityRoundTrippedAcrossTurns:
       extractReplayedThoughtSignature(capturedPrompt) === signature,
   });
+}
+
+// Operation: providers.conversation-state.cache-correctness-neutral
+//
+// ADR-053 (provider-side caching is correctness-neutral): a provider cache miss
+// and a cache hit for the same request must produce an identical model-facing
+// result; only the reported cost may differ. This drives two real bridge calls
+// with an identical request — identical messages and an identical opaque cache
+// hint threaded through providerOptions — against two mock models that return
+// byte-identical produced content but report different input-token cost: a cold
+// miss (nothing read from cache) versus a warm hit (most of the prompt served
+// from cache). It then projects that the produced result and the reconstructed
+// provider request are identical across the two calls, while the cost (the
+// bridge's `cacheRead` usage breakdown) genuinely differs.
+async function conversationStateCacheCorrectnessNeutral(): Promise<
+  Record<string, unknown>
+> {
+  // Drive one bridge call with a fixed cache-read cost. The request and the
+  // produced content are byte-identical across calls; only `cacheRead` varies.
+  const runWithCacheRead = async (cacheReadTokens: number) => {
+    let capturedPrompt: LanguageModelV3CallOptions["prompt"] | undefined;
+    const bridge = createAiSdkProviderBridge({
+      model: createMockModel({
+        doGenerate(options) {
+          capturedPrompt = options.prompt;
+          return Promise.resolve(
+            createGenerateResult({
+              content: [{ text: "the cached answer", type: "text" }],
+              usage: {
+                inputTokens: {
+                  cacheRead: cacheReadTokens,
+                  cacheWrite: 0,
+                  noCache: 1024 - cacheReadTokens,
+                  total: 1024,
+                },
+                outputTokens: { reasoning: 0, text: 40, total: 40 },
+                raw: { provider: "anthropic" },
+              },
+            })
+          );
+        },
+        provider: "anthropic",
+      }),
+    });
+    const response = await bridge.generate({
+      messages: [
+        { parts: [{ text: "summarize the doc", type: "text" }], role: "user" },
+      ],
+      providerContinuity: {
+        anthropic: { cacheControl: { type: "ephemeral" } },
+      },
+    });
+    return { capturedPrompt, response };
+  };
+
+  const miss = await runWithCacheRead(0); // cold cache: nothing read from cache
+  const hit = await runWithCacheRead(960); // warm cache: most input from cache
+
+  const canonicalResult = (response: { finishReason: string; parts: unknown }) =>
+    JSON.stringify({ finishReason: response.finishReason, parts: response.parts });
+
+  return createProjection({
+    cacheCostDiffered:
+      extractBridgeCacheRead(miss.response.providerMetadata) !==
+      extractBridgeCacheRead(hit.response.providerMetadata),
+    cacheNeutralRequestIdentical:
+      JSON.stringify(miss.capturedPrompt) === JSON.stringify(hit.capturedPrompt),
+    cacheNeutralResultIdentical:
+      canonicalResult(miss.response) === canonicalResult(hit.response),
+  });
+}
+
+function extractBridgeCacheRead(metadata: unknown): unknown {
+  if (!isRecord(metadata) || !isRecord(metadata.aiSdkBridge)) {
+    return undefined;
+  }
+  const rawUsage = metadata.aiSdkBridge.rawUsage;
+  if (!isRecord(rawUsage) || !isRecord(rawUsage.inputTokens)) {
+    return undefined;
+  }
+  return rawUsage.inputTokens.cacheRead;
 }
 
 async function structuredOutputStream(): Promise<Record<string, unknown>> {

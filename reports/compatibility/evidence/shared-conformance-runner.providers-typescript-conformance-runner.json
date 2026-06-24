@@ -1096,6 +1096,40 @@
     {
       "assertionResults": [
         {
+          "assertionId": "bh.bh004.caching-correctness-neutral.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "bh.bh004.caching-correctness-neutral.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "bh.bh004.caching-correctness-neutral.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "bh.bh004.caching-correctness-neutral.requiredEvidence.result.cacheCostDiffered",
+          "status": "pass"
+        },
+        {
+          "assertionId": "bh.bh004.caching-correctness-neutral.requiredEvidence.result.cacheNeutralRequestIdentical",
+          "status": "pass"
+        },
+        {
+          "assertionId": "bh.bh004.caching-correctness-neutral.requiredEvidence.result.cacheNeutralResultIdentical",
+          "status": "pass"
+        }
+      ],
+      "checkId": "bh.bh004.caching-correctness-neutral",
+      "details": {
+        "adapterId": "typescript-providers",
+        "planId": "tuvren.providers.provider-api.conversation-state"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "ay.ay007.mediated-attribution-execution-class.1.resultField",
           "status": "pass"
         },
@@ -1469,9 +1503,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 58,
-    "totalChecks": 58,
-    "applicableChecks": 58,
+    "passedChecks": 59,
+    "totalChecks": 59,
+    "applicableChecks": 59,
     "nonApplicableChecks": 0
   },
   "suiteId": "tuvren.providers.provider-api",
