@@ -19,29 +19,34 @@
 // KRT-BH004 — provider-side caching is correctness-neutral (ADR-053).
 //
 // ADR-053: provider-side caching is a cost/latency optimization, never a
-// correctness dependency. A provider cache miss and a cache hit for the same
-// turn must yield the same outcome; only the reported cost may differ.
+// correctness dependency. A provider cache miss and a cache hit for the same turn
+// must yield the same OUTCOME; only the reported cost may differ.
 //
-// This is the durable-lineage proof. It runs the same turn twice against a
-// provider that returns byte-identical produced content but reports materially
-// different usage — a cold cache miss (every input token billed) versus a warm
-// hit (most input served from cache, far cheaper). It then shows that:
-//   1. the reconstructed request handed to the provider is identical;
-//   2. the kernel content-addresses both runs' durable assistant message to the
-//      SAME canonical hash (the deterministic-CBOR message hash in the turn-tree
-//      manifest), so the durable lineage is invariant to the provider's cache
-//      state; while
-//   3. the runtime still surfaces the genuinely different cost on message.done.
+// "Outcome" here is the model-facing produced content — the assistant message
+// parts that drive the next turn. That is what cache-neutrality protects, and it
+// is what these tests assert is byte-identical across a miss and a hit. Cost is a
+// separate, non-correctness-bearing concern, carried on two channels:
+//   * the canonical usage total rides on the message.done event and
+//     TuvrenModelResponse.usage, segregated from the durable message record; and
+//   * the production AI SDK bridge additionally folds a per-turn cost breakdown
+//     (providerMetadata.aiSdkBridge.rawUsage, whose `cacheRead` reflects the cache
+//     state) onto the assistant message, which the driver persists verbatim.
 //
-// Cost is segregated from the model-facing content by contract: ProviderUsage
-// rides on the message.done event and the TuvrenModelResponse.usage field, never
-// on the durable message record (which is only `{ role, parts, providerMetadata? }`).
-// That separation is exactly what makes caching correctness-neutral here.
+// So the durable record's content-addressed hash is cache-neutral only to the
+// extent cost stays off the message: it IS invariant when cost rides solely on
+// the usage channel (test 1), and it legitimately VARIES when the bridge folds
+// cost onto providerMetadata (test 2) — while in both cases the produced content
+// is identical. This milestone's correctness-neutrality claim is therefore scoped
+// to the produced content (the outcome), not to the whole durable record. Cost
+// bookkeeping persisted on providerMetadata is cost-bearing, not correctness-
+// bearing. (Whether the bridge's aiSdkBridge bookkeeping ought to be persisted
+// into the content-addressed record at all is a pre-existing coupling, out of
+// scope here; recorded as a follow-up observation in the TechSpec changelog.)
 //
 // (The provider-boundary expression — that the AI SDK bridge maps identical
-// content while carrying a differing `cacheRead` usage breakdown under its
-// aiSdkBridge bookkeeping — is covered separately by the conversation-state
-// conformance plan, which observes the cost difference at that seam.)
+// content while carrying a differing `cacheRead` breakdown — is covered separately
+// by the conversation-state conformance plan, which observes that cost difference
+// at the bridge seam.)
 
 import { describe, expect, test } from "bun:test";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
@@ -59,8 +64,8 @@ import { createReActDriver, REACT_DRIVER_ID } from "../src/index.ts";
 import { collectEvents, textSignal } from "./react-driver-test-helpers.ts";
 
 // The produced content — the "outcome" that must be cache-neutral. Both runs
-// return structurally identical parts, so any durable difference could only
-// come from cost.
+// return structurally identical parts, so any durable difference can only come
+// from cost.
 const ANSWER_TEXT = "the cached answer";
 
 // Two cost profiles for the SAME produced content. A cold cache miss bills every
@@ -69,11 +74,35 @@ const ANSWER_TEXT = "the cached answer";
 const USAGE_CACHE_MISS: ProviderUsage = { inputTokens: 1024, outputTokens: 40 };
 const USAGE_CACHE_HIT: ProviderUsage = { inputTokens: 64, outputTokens: 40 };
 
+// Models the per-turn cost bookkeeping the production AI SDK bridge stamps onto
+// the assistant message's providerMetadata (aiSdkBridge.rawUsage) and which the
+// driver persists verbatim. `cacheRead` reflects the cache state; the rest is the
+// fixed prompt/output accounting.
+function bridgeCostMetadata(cacheReadTokens: number): Record<string, unknown> {
+  return {
+    aiSdkBridge: {
+      rawUsage: {
+        inputTokens: {
+          cacheRead: cacheReadTokens,
+          cacheWrite: 0,
+          noCache: 1024 - cacheReadTokens,
+          total: 1024,
+        },
+        outputTokens: { reasoning: 0, text: 40, total: 40 },
+      },
+    },
+  };
+}
+
 /**
  * A stateless provider that returns fixed produced content with a fixed usage
- * profile, recording every prompt it is handed. It holds no cross-turn state.
+ * profile and optional message-level providerMetadata, recording every prompt it
+ * is handed. It holds no cross-turn state.
  */
-function createCachingProvider(usage: ProviderUsage): {
+function createCachingProvider(options: {
+  providerMetadata?: Record<string, unknown>;
+  usage: ProviderUsage;
+}): {
   capturedPrompts: TuvrenMessage[][];
   provider: TuvrenProvider;
 } {
@@ -84,7 +113,10 @@ function createCachingProvider(usage: ProviderUsage): {
       return {
         finishReason: "stop",
         parts: [{ text: ANSWER_TEXT, type: "text" }],
-        usage,
+        ...(options.providerMetadata === undefined
+          ? {}
+          : { providerMetadata: structuredClone(options.providerMetadata) }),
+        usage: options.usage,
       } satisfies TuvrenModelResponse;
     },
     id: "caching-provider",
@@ -108,7 +140,7 @@ function buildRuntime() {
 }
 
 /**
- * Runs a single turn to completion and returns the branch ids plus the cost the
+ * Runs a single turn to completion and returns the branch id plus the cost the
  * runtime surfaced on the terminal message.done event.
  */
 async function runTurn(
@@ -132,10 +164,24 @@ async function runTurn(
   return { branchId: thread.branchId, usage: done?.usage };
 }
 
+function lastAssistantMessage(
+  messages: unknown[]
+): Extract<TuvrenMessage, { role: "assistant" }> {
+  const assistant = [...(messages as TuvrenMessage[])]
+    .reverse()
+    .find((message) => message.role === "assistant");
+  if (assistant === undefined || assistant.role !== "assistant") {
+    throw new Error("expected a durable assistant message");
+  }
+  return assistant;
+}
+
 describe("KRT-BH004 correctness-neutral provider-side caching", () => {
-  test("a provider cache miss vs hit yields a byte-identical durable canonical result; only cost differs", async () => {
-    const miss = createCachingProvider(USAGE_CACHE_MISS);
-    const hit = createCachingProvider(USAGE_CACHE_HIT);
+  test("with cost on the usage channel, the durable record is byte-identical across a cache miss and hit; only cost differs", async () => {
+    // Cost stays where the contract puts it (the usage channel), so nothing
+    // cache-varying reaches the durable message.
+    const miss = createCachingProvider({ usage: USAGE_CACHE_MISS });
+    const hit = createCachingProvider({ usage: USAGE_CACHE_HIT });
     const runtimeMiss = buildRuntime();
     const runtimeHit = buildRuntime();
 
@@ -150,16 +196,17 @@ describe("KRT-BH004 correctness-neutral provider-side caching", () => {
       "summarize the doc"
     );
 
-    // (1) Reconstructable request identical: each provider was handed the same
-    // prompt; the cache state is the provider's concern, not the request's.
+    // (1) Reconstructable request identical: the cache state is the provider's
+    // concern, not the request's.
     expect(miss.capturedPrompts).toHaveLength(1);
     expect(hit.capturedPrompts).toHaveLength(1);
     expect(hit.capturedPrompts[0]).toEqual(miss.capturedPrompts[0]);
 
-    // (2) Same canonical CBOR/result hash: the kernel content-addresses each
-    // durable message via deterministic-CBOR hashing; the manifest message
-    // hashes are byte-identical across the miss and the hit, so the durable
-    // lineage identity does not depend on the provider's cache state.
+    // (2) Durable record byte-identical: the kernel content-addresses each
+    // message via deterministic-CBOR hashing. `manifest.messages` is the message
+    // lineage (the other manifest paths — context manifest, runtime status, turn
+    // lineage — carry no provider cost), and it is identical across the miss and
+    // the hit, so lineage identity does not depend on the provider's cache state.
     const manifestMiss = await runtimeMiss.harness.readBranchManifest(
       resultMiss.branchId
     );
@@ -167,21 +214,82 @@ describe("KRT-BH004 correctness-neutral provider-side caching", () => {
       resultHit.branchId
     );
     expect(manifestHit.messages).toEqual(manifestMiss.messages);
-
-    // ...and the decoded durable content is identical too.
-    const durableMiss = await runtimeMiss.harness.readBranchMessages(
-      resultMiss.branchId
+    expect(
+      await runtimeHit.harness.readBranchMessages(resultHit.branchId)
+    ).toEqual(
+      await runtimeMiss.harness.readBranchMessages(resultMiss.branchId)
     );
-    const durableHit = await runtimeHit.harness.readBranchMessages(
-      resultHit.branchId
-    );
-    expect(durableHit).toEqual(durableMiss);
 
     // (3) Only cost differs: the runtime surfaced materially different provider
-    // usage for the two runs (the whole point of caching), even though every
-    // durable artifact above is identical.
+    // usage on message.done, even though every durable artifact above is
+    // identical.
     expect(resultMiss.usage).toEqual(USAGE_CACHE_MISS);
     expect(resultHit.usage).toEqual(USAGE_CACHE_HIT);
+    expect(resultHit.usage?.inputTokens).not.toBe(
+      resultMiss.usage?.inputTokens
+    );
+  });
+
+  test("the produced content stays cache-neutral even when the bridge folds cache-varying cost onto the assistant message", async () => {
+    // Model the production bridge: identical produced content, but the per-turn
+    // cost breakdown the bridge stamps onto providerMetadata (aiSdkBridge.rawUsage)
+    // carries the cache state, and the driver persists it verbatim. The cold miss
+    // reads nothing from cache; the warm hit reads most of the prompt from cache.
+    const miss = createCachingProvider({
+      providerMetadata: bridgeCostMetadata(0),
+      usage: USAGE_CACHE_MISS,
+    });
+    const hit = createCachingProvider({
+      providerMetadata: bridgeCostMetadata(960),
+      usage: USAGE_CACHE_HIT,
+    });
+    const runtimeMiss = buildRuntime();
+    const runtimeHit = buildRuntime();
+
+    const resultMiss = await runTurn(
+      runtimeMiss,
+      miss.provider,
+      "summarize the doc"
+    );
+    const resultHit = await runTurn(
+      runtimeHit,
+      hit.provider,
+      "summarize the doc"
+    );
+
+    const assistantMiss = lastAssistantMessage(
+      await runtimeMiss.harness.readBranchMessages(resultMiss.branchId)
+    );
+    const assistantHit = lastAssistantMessage(
+      await runtimeHit.harness.readBranchMessages(resultHit.branchId)
+    );
+
+    // (1) Reconstructable request identical.
+    expect(hit.capturedPrompts[0]).toEqual(miss.capturedPrompts[0]);
+
+    // (2) The produced canonical result is cache-neutral: the model-facing content
+    // (the assistant message parts — the outcome that drives the next turn) is
+    // byte-identical across the miss and the hit.
+    expect(assistantHit.parts).toEqual(assistantMiss.parts);
+
+    // (3) Cost telemetry is segregated from the produced content and is NOT part
+    // of the cache-neutral result. The bridge's cost bookkeeping persisted on
+    // providerMetadata genuinely varies with cache state, so the full content-
+    // addressed durable record legitimately differs across the miss and the hit —
+    // even though the produced content above does not. Cache-neutrality is a
+    // property of the outcome, not of cost-bearing metadata.
+    expect(assistantHit.providerMetadata).not.toEqual(
+      assistantMiss.providerMetadata
+    );
+    const manifestMiss = await runtimeMiss.harness.readBranchManifest(
+      resultMiss.branchId
+    );
+    const manifestHit = await runtimeHit.harness.readBranchManifest(
+      resultHit.branchId
+    );
+    expect(manifestHit.messages).not.toEqual(manifestMiss.messages);
+
+    // (4) ...and the cost difference is also surfaced on message.done.
     expect(resultHit.usage?.inputTokens).not.toBe(
       resultMiss.usage?.inputTokens
     );
