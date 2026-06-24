@@ -52,6 +52,19 @@
       ],
       "operation": "providers.conversation-state.continuity-replay",
       "capabilities": ["providers.conversation-state-ownership"]
+    },
+    {
+      "checkId": "bh.bh003.continuity-roundtrip-across-turns",
+      "evidence": ["result.continuityRoundTrippedAcrossTurns"],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.continuityRoundTrippedAcrossTurns",
+          "equals": true
+        }
+      ],
+      "operation": "providers.conversation-state.continuity-roundtrip",
+      "capabilities": ["providers.conversation-state-ownership"]
     }
   ]
 }

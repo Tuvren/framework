@@ -1078,6 +1078,24 @@
     {
       "assertionResults": [
         {
+          "assertionId": "bh.bh003.continuity-roundtrip-across-turns.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "bh.bh003.continuity-roundtrip-across-turns.requiredEvidence.result.continuityRoundTrippedAcrossTurns",
+          "status": "pass"
+        }
+      ],
+      "checkId": "bh.bh003.continuity-roundtrip-across-turns",
+      "details": {
+        "adapterId": "typescript-providers",
+        "planId": "tuvren.providers.provider-api.conversation-state"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "ay.ay007.mediated-attribution-execution-class.1.resultField",
           "status": "pass"
         },
@@ -1451,9 +1469,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 57,
-    "totalChecks": 57,
-    "applicableChecks": 57,
+    "passedChecks": 58,
+    "totalChecks": 58,
+    "applicableChecks": 58,
     "nonApplicableChecks": 0
   },
   "suiteId": "tuvren.providers.provider-api",

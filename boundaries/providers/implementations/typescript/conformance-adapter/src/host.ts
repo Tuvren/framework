@@ -86,6 +86,8 @@ class TypeScriptProviderAdapter {
           return result(await conversationStateContinuityCarriage());
         case "providers.conversation-state.continuity-replay":
           return result(await conversationStateContinuityReplay());
+        case "providers.conversation-state.continuity-roundtrip":
+          return result(await conversationStateContinuityRoundTrip());
         case "providers.bridge.structured-output-stream":
           return result(await structuredOutputStream());
         case "providers.bridge.provider-failure-normalization":
@@ -345,6 +347,74 @@ function extractReplayedThoughtSignature(prompt: unknown): string | undefined {
     }
   }
   return undefined;
+}
+
+// Operation: providers.conversation-state.continuity-roundtrip
+//
+// The provider-boundary expression of the AY005 multi-turn round-trip
+// (KRT-BH003): turn 1's response *produces* a continuity artifact, and turn 2's
+// request must carry it forward — reconstructed only from the prior turn's
+// assistant output in history, never from a provider-held session. This drives
+// two real bridge calls: turn 1's model issues a continuity artifact on its
+// reasoning output; that assistant output becomes part of turn 2's history; and
+// the bridge replays it into turn 2's request providerOptions. The continuity
+// rides only through the reconstructed history (ADR-053 source of truth).
+async function conversationStateContinuityRoundTrip(): Promise<
+  Record<string, unknown>
+> {
+  const signature = "bh003-roundtrip-thought";
+
+  // Turn 1 — the model emits a continuity artifact on its reasoning output.
+  const turnOneBridge = createAiSdkProviderBridge({
+    model: createMockModel({
+      doGenerate() {
+        return Promise.resolve(
+          createGenerateResult({
+            content: [
+              {
+                providerMetadata: { google: { thoughtSignature: signature } },
+                text: "prior reasoning",
+                type: "reasoning",
+              },
+            ],
+          })
+        );
+      },
+      provider: "google",
+    }),
+  });
+  const turnOneResponse = await turnOneBridge.generate({
+    messages: [{ parts: [{ text: "start", type: "text" }], role: "user" }],
+  });
+  const [firstPart, ...restParts] = turnOneResponse.parts;
+  if (firstPart === undefined) {
+    throw new Error("expected turn 1 to produce assistant output");
+  }
+
+  // Turn 2 — the prior turn's assistant output is the only carrier of the
+  // continuity; the bridge replays it into the next request from history alone.
+  let capturedPrompt: LanguageModelV3CallOptions["prompt"] | undefined;
+  const turnTwoBridge = createAiSdkProviderBridge({
+    model: createMockModel({
+      doGenerate(options) {
+        capturedPrompt = options.prompt;
+        return Promise.resolve(createGenerateResult());
+      },
+      provider: "google",
+    }),
+  });
+  await turnTwoBridge.generate({
+    messages: [
+      { parts: [{ text: "start", type: "text" }], role: "user" },
+      { parts: [firstPart, ...restParts], role: "assistant" },
+      { parts: [{ text: "continue", type: "text" }], role: "user" },
+    ],
+  });
+
+  return createProjection({
+    continuityRoundTrippedAcrossTurns:
+      extractReplayedThoughtSignature(capturedPrompt) === signature,
+  });
 }
 
 async function structuredOutputStream(): Promise<Record<string, unknown>> {

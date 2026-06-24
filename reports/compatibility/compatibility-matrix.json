@@ -878,6 +878,7 @@
             "bh.bh001.continuity-carried-as-optimization",
             "bh.bh001.continuity-non-blocking-response",
             "bh.bh002.continuity-replayed-from-history",
+            "bh.bh003.continuity-roundtrip-across-turns",
             "ay.ay007.mediated-attribution-execution-class",
             "ay.ay007.mediated-attribution-owner",
             "ay.ay007.mediated-no-local-execution",
@@ -901,9 +902,9 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 57,
-            "totalChecks": 57,
-            "applicableChecks": 57,
+            "passedChecks": 58,
+            "totalChecks": 58,
+            "applicableChecks": 58,
             "nonApplicableChecks": 0
           },
           "declaredCapabilities": [
