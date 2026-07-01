@@ -15,6 +15,7 @@
   };
 
   packages = [
+    (pkgs.writeShellScriptBin "bazel" ''exec ${pkgs.bazelisk}/bin/bazelisk "$@"'')
     pkgs.bun
     pkgs.buf
     pkgs.nodejs_24
