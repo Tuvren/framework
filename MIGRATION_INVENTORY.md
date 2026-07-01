@@ -189,3 +189,40 @@ The `conformance` script in `package.json` lists exactly 8 project IDs; there ar
 ## Naming-map addenda
 
 None. Every path discovered during this inventory pass matches an existing pattern in issue §15's naming map; no proposed additions to §15 are required as of this baseline.
+
+## Baseline (M0.2)
+
+Captured on branch `feat/epic-87-sovereign-polyglot-framework` at commit `c910a0dfb20083e881211285ffd3f06296a1ab23`, 2026-07-01T07:26:55Z, after `bun run services:up` (devenv-managed Postgres) followed by `bun run verify` (the full phased release gate defined in `tools/scripts/verify.ts`).
+
+**Result: green. Exit code 0.** All 24 phases passed:
+
+| Phase | Result |
+|---|---|
+| workspace lint | pass (1.8s) |
+| Rust workspace formatting | pass (0.8s) |
+| docs-to-authority freeze gate | pass (0.2s) |
+| Epic AL portability gate | pass (0.2s) |
+| Epic AF conformance gap plan freshness | pass (0.1s) |
+| authority packet validation | pass (0.4s) |
+| conformance plan validation | pass (2.1s) |
+| adapter protocol validation | pass (0.4s) |
+| shared conformance runner meta-conformance | pass (0.7s) |
+| vocabulary-check verification | pass (0.4s) |
+| machine authority guardrails | pass (6.3s) |
+| Rust workspace lint | pass (2.9s) |
+| Rust workspace tests | pass (3.4s) |
+| Rust kernel conformance runner | pass (2.1s) |
+| Rust kernel gRPC interop smoke | pass (3.8s) |
+| telemetry, compatibility, and interop code generation | pass (4.6s) |
+| kernel interop governance smoke | pass (3.8s) |
+| workspace typecheck | pass (0.7s) |
+| transition-line targeted builds | pass (0.9s) |
+| transition-line targeted tests | pass (0.8s) |
+| boundary-owned conformance suites (all 8 `conformance` project IDs) | pass (2.1s) |
+| cross-language proving-host interactive/headless interop smoke | pass (76.6s) |
+| package export smoke tests | pass (1.3s) |
+| Bun and Node portability import checks | pass (3.8s) |
+| Node-backed proving-host SQLite interactive/headless scenario | pass (2.3s) |
+| PostgreSQL-backed proving-host interactive/headless scenario | pass (17.3s) |
+
+This is the equivalence baseline every subsequent milestone's re-certification is measured against: any milestone that leaves the tree unable to reproduce this same all-green result (modulo the physical paths it deliberately moved) is not done.
