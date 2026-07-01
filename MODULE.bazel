@@ -6,6 +6,14 @@ rust-toolchain.toml and resolve external crates from the existing root
 Cargo.lock/Cargo.toml. No files move in this milestone; BUILD.bazel targets
 are added at packages' current physical paths so the seam is proven before
 any git mv happens.
+
+M1.6 postgres-hermeticity decision: the PostgreSQL kernel backend and its
+conformance runner (typescript/kernel/backends/postgres,
+typescript/kernel/conformance-runner-postgres) intentionally carry no
+BUILD.bazel target and stay Nx-driven, per invariant §10.5's sanctioned
+exception (devenv-managed Postgres is not idempotent, so it cannot join a
+hermetic Bazel graph as-is). See MIGRATION_INVENTORY.md's Multi-home §B for
+the full rationale.
 """
 
 module(
