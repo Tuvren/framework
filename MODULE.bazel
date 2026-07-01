@@ -14,6 +14,7 @@ module(
 )
 
 bazel_dep(name = "rules_rust", version = "0.71.2")
+bazel_dep(name = "bazel_skylib", version = "1.8.2")
 
 rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
 rust.toolchain(

@@ -6,3 +6,11 @@
 # because `bash` isn't resolvable inside the sandboxed PATH.
 build --action_env=PATH
 test --test_env=PATH
+run --action_env=PATH
+
+# Bazel's own run/build machinery (genrule, `bazel run`'s launcher script,
+# etc.) hardcodes /bin/bash by default, which doesn't exist as a literal
+# path on this Nix system (only /bin/sh, symlinked to the real Nix bash,
+# does). Point Bazel at that stable symlink instead of a /nix/store/<hash>
+# path that would break on garbage collection or a nixpkgs bump.
+common --shell_executable=/bin/sh
