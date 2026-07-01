@@ -37,4 +37,4 @@ Neutral controls are still the schema-owned `cancel`, `cancel_after_event`, and
 the source of operation inputs and expectations.
 
 Reference scaffold:
-`boundaries/kernel/implementations/rust/conformance-adapter/src/main.rs`.
+`rust/kernel-conformance-adapter/src/main.rs`.

@@ -2,10 +2,10 @@
 members = [
   "boundaries/framework/implementations/rust/conformance-adapter",
   "boundaries/framework/implementations/rust/conformance-runner",
-  "boundaries/kernel/implementations/rust/conformance-adapter",
-  "boundaries/kernel/implementations/rust/conformance-runner",
-  "boundaries/kernel/implementations/rust/grpc-service",
-  "boundaries/kernel/implementations/rust/kernel",
+  "rust/kernel",
+  "rust/kernel-conformance-adapter",
+  "rust/kernel-conformance-runner",
+  "rust/kernel-grpc-service",
 ]
 resolver = "3"
 
@@ -28,5 +28,5 @@ tokio-stream = { version = "0.1.17", features = ["net"] }
 tonic = "0.14.5"
 tonic-prost = "0.14.5"
 tonic-prost-build = "0.14.5"
-tuvren-kernel-rust = { path = "boundaries/kernel/implementations/rust/kernel" }
-tuvren-kernel-rust-grpc-service = { path = "boundaries/kernel/implementations/rust/grpc-service" }
+tuvren-kernel-rust = { path = "rust/kernel" }
+tuvren-kernel-rust-grpc-service = { path = "rust/kernel-grpc-service" }

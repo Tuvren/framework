@@ -26,12 +26,12 @@
   ],
   "bindingProjections": {
     "typescript": "boundaries/framework/implementations/typescript/runtime-core",
-    "rust": "boundaries/kernel/implementations/rust/grpc-service"
+    "rust": "rust/kernel-grpc-service"
   },
   "forbiddenAuthoritySources": [
     "boundaries/framework/implementations/typescript/runtime-core",
     "boundaries/framework/implementations/typescript/runtime-core/src/lib/generated/kernel-interop",
-    "boundaries/kernel/implementations/rust/grpc-service",
+    "rust/kernel-grpc-service",
     "boundaries/kernel/interop/grpc/proto/README.md",
     "docs",
     ".constitution"

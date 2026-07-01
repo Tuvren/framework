@@ -31,18 +31,18 @@
       "generator": "weaver"
     },
     {
-      "path": "boundaries/kernel/implementations/rust/kernel/src/generated/tuvren_runtime_telemetry.rs",
+      "path": "rust/kernel/src/generated/tuvren_runtime_telemetry.rs",
       "generatedFrom": "telemetry/semconv/tuvren-runtime.yaml",
       "generator": "weaver"
     }
   ],
   "bindingProjections": {
     "typescript": "boundaries/framework/implementations/typescript/runtime",
-    "rust": "boundaries/kernel/implementations/rust/kernel"
+    "rust": "rust/kernel"
   },
   "forbiddenAuthoritySources": [
     "boundaries/framework/implementations/typescript/runtime",
-    "boundaries/kernel/implementations/rust/kernel",
+    "rust/kernel",
     "telemetry/semantic-conventions.md",
     "docs",
     ".constitution"
@@ -68,7 +68,7 @@
     },
     {
       "kind": "freshness-check",
-      "target": "boundaries/kernel/implementations/rust/kernel/src/generated/tuvren_runtime_telemetry.rs"
+      "target": "rust/kernel/src/generated/tuvren_runtime_telemetry.rs"
     }
   ],
   "freshnessChecks": [
@@ -85,7 +85,7 @@
       "regenerateCommand": "bun run nx run telemetry-semconv:codegen"
     },
     {
-      "artifact": "boundaries/kernel/implementations/rust/kernel/src/generated/tuvren_runtime_telemetry.rs",
+      "artifact": "rust/kernel/src/generated/tuvren_runtime_telemetry.rs",
       "regenerateCommand": "bun run nx run telemetry-semconv:codegen"
     }
   ]

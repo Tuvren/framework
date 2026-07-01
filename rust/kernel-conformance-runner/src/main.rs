@@ -14,7 +14,7 @@
 
 fn main() {
     eprintln!(
-        "kernel Rust conformance is executed by tools/conformance/runner/run.ts through boundaries/kernel/implementations/rust/conformance-adapter/adapter.json"
+        "kernel Rust conformance is executed by tools/conformance/runner/run.ts through rust/kernel-conformance-adapter/adapter.json"
     );
     std::process::exit(1);
 }

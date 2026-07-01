@@ -1,7 +1,7 @@
 {
   "name": "kernel-rust-grpc-service",
-  "$schema": "../../../../../node_modules/nx/schemas/project-schema.json",
-  "root": "boundaries/kernel/implementations/rust/grpc-service",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "root": "rust/kernel-grpc-service",
   "projectType": "library",
   "tags": ["boundary:kernel", "language:rust", "layer:interop"],
   "targets": {

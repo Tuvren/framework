@@ -358,13 +358,12 @@ const CONFORMANCE_RUNNERS: readonly ConformanceRunner[] = [
     reportLabel: "TypeScript AI SDK provider bridge",
   },
   {
-    adapterManifestPath:
-      "boundaries/kernel/implementations/rust/conformance-adapter/adapter.json",
+    adapterManifestPath: "rust/kernel-conformance-adapter/adapter.json",
     command: [
       "bun",
       "tools/conformance/runner/run.ts",
       "--adapter",
-      "boundaries/kernel/implementations/rust/conformance-adapter/adapter.json",
+      "rust/kernel-conformance-adapter/adapter.json",
     ],
     implementationId: "rust-kernel",
     language: "rust",

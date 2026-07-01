@@ -26,7 +26,7 @@ use tuvren_kernel_rust::{
 #[test]
 fn deterministic_identity_matches_shared_fixture_vectors() {
     let fixture: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../../../../spec/conformance/kernel/fixtures/kernel-protocol-deterministic.json"
+        "../../../spec/conformance/kernel/fixtures/kernel-protocol-deterministic.json"
     ))
     .expect("fixture parses");
     let raw_bytes = fixture["rawOpaqueBytes"]

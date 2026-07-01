@@ -5,7 +5,7 @@
   },
   "rust": {
     "enabled": true,
-    "outputPath": "boundaries/kernel/implementations/rust/kernel/src/generated/tuvren_runtime_telemetry.rs",
+    "outputPath": "rust/kernel/src/generated/tuvren_runtime_telemetry.rs",
     "templatePath": "tools/generators/telemetry/templates/rust-helper.rs.tpl"
   }
 }

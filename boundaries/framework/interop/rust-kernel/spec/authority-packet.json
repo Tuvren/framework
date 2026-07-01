@@ -24,8 +24,8 @@
   "forbiddenAuthoritySources": [
     "boundaries/hosts/implementations/typescript/repl",
     "boundaries/framework/implementations/typescript/runtime",
-    "boundaries/kernel/implementations/rust/grpc-service",
-    "boundaries/kernel/implementations/rust/kernel",
+    "rust/kernel-grpc-service",
+    "rust/kernel",
     "docs",
     ".constitution"
   ],

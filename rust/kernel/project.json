@@ -1,7 +1,7 @@
 {
   "name": "kernel-rust-kernel",
-  "$schema": "../../../../../node_modules/nx/schemas/project-schema.json",
-  "root": "boundaries/kernel/implementations/rust/kernel",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "root": "rust/kernel",
   "projectType": "library",
   "tags": ["boundary:kernel", "language:rust", "layer:implementation"],
   "targets": {

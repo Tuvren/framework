@@ -17,7 +17,7 @@
         "{workspaceRoot}/telemetry/semantic-conventions.md",
         "{workspaceRoot}/telemetry/otel-attributes.json",
         "{workspaceRoot}/boundaries/framework/implementations/typescript/runtime-core/src/lib/generated/tuvren-runtime-telemetry.ts",
-        "{workspaceRoot}/boundaries/kernel/implementations/rust/kernel/src/generated/tuvren_runtime_telemetry.rs"
+        "{workspaceRoot}/rust/kernel/src/generated/tuvren_runtime_telemetry.rs"
       ],
       "options": {
         "cwd": ".",

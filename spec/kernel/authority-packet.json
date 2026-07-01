@@ -81,7 +81,7 @@
   ],
   "bindingProjections": {
     "typescript": "boundaries/kernel/contracts/protocol/implementations/typescript",
-    "rust": "boundaries/kernel/implementations/rust/kernel"
+    "rust": "rust/kernel"
   },
   "bindingSections": {
     "scope-isolation": {
@@ -98,9 +98,9 @@
     "boundaries/kernel/contracts/protocol/implementations/typescript",
     "boundaries/kernel/implementations/typescript/conformance-runner",
     "boundaries/kernel/implementations/typescript/conformance-adapter",
-    "boundaries/kernel/implementations/rust/kernel",
-    "boundaries/kernel/implementations/rust/conformance-runner",
-    "boundaries/kernel/implementations/rust/conformance-adapter",
+    "rust/kernel",
+    "rust/kernel-conformance-runner",
+    "rust/kernel-conformance-adapter",
     "docs",
     ".constitution"
   ],
