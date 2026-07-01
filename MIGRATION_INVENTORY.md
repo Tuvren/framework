@@ -20,6 +20,7 @@ All hashes below were captured at the M0 baseline commit on branch `feat/epic-87
 
 | old_path | new_path | status | content_hash | notes |
 |---|---|---|---|---|
+| `boundaries/kernel/contracts/protocol` (whole port dir, superset — catches `README.md` + `artifacts/README.md`, 17 lines total, not covered by the two subpath rows below) | `spec/kernel/` + `typescript/kernel/...` | pending | `928e71f14ddffae716216aeb7dfba4a21690f7a4` | superset row added after review found the loose READMEs uncovered |
 | `boundaries/kernel/contracts/protocol/spec` | `spec/kernel/` | pending | `54c93bf1a6ba68707d10ad8fa9907837037ef18f` | authority-packet.json + CDDL grammar |
 | `boundaries/kernel/conformance` | `spec/conformance/kernel/` | pending | `f2f68e8d61b732322e25eea65305038f7b302b97` | fixtures/plans/scenarios/schemas |
 | `boundaries/kernel/interop/grpc` | `spec/interop/` | pending | `d4d157701ab00e70308f8cb6a6e368526c5942bc` | IPC transport contract (proto/grammar only); see Multi-home §A for the generated-bindings drift this move must reconcile first |
@@ -46,7 +47,8 @@ All hashes below were captured at the M0 baseline commit on branch `feat/epic-87
 | `boundaries/shared/contracts/core/implementations/typescript/src/messages` | `spec/core/` (contracts) | pending | `c2c96565913caa0381cc2aa46feb5cc064453241` | |
 | `boundaries/shared/contracts/core/implementations/typescript/src/events` | `spec/core/` (contracts) | pending | `d17119b90bf18bf6200db2240c443814c576e5f5` | |
 | `boundaries/shared/contracts/core/implementations/typescript/src/execution` | `spec/core/` (contracts) | pending | `a43354c5b61c99956cd412b7bff7c410f8883d4e` | |
-| `boundaries/shared/contracts/core/implementations/typescript/src/tools` | `spec/core/` or `spec/tools/` (split TBD at M5 — see Multi-home §D) | pending | `9219414da2ca938c97465a36f33745974b0b7ce5` | `defineTool` schema-authoring is executable → libc/SDK tier, not `spec/core` |
+| `boundaries/shared/contracts/core/implementations/typescript/src/tools` | `spec/tools/` (M5, pure type-surface only) | pending | `9219414da2ca938c97465a36f33745974b0b7ce5` | re-exports `defineTool` from `src/lib/schema-authoring.ts` — see the `src/lib` row below and Multi-home §D for where the executable helper actually lives |
+| `boundaries/shared/contracts/core/implementations/typescript/src/lib` (15 files: `schema-authoring.ts`, `payload-codec.ts`, `tuvren-error.ts`, `scope.ts`, `kernel-records.ts`, driver/runtime contract guards/predicates/shapes, `capability-error-codes.ts`, `capability-shapes.ts`) | split between `spec/core/` (pure predicates/shapes/guards) and TypeScript libc/SDK tier (`schema-authoring.ts`'s `defineTool`, `payload-codec.ts`) | pending | `92e552689bd4674bf58b77f0d69a81e542125c3c` | this is where M2's "sort, don't split" executable-vs-contract decision actually has to happen file-by-file — see Multi-home §D (corrected: the executable helpers live here, not in `src/tools`) |
 | `boundaries/shared/contracts/core/implementations/typescript/src/driver` | `spec/runners/` (M6 rename target) | pending | `742ebd2aa77fa05a32d679b901754ad629294d5c` | "driver" here means execution-model per M6's inversion, not resource adapter |
 | `boundaries/shared/contracts/core/implementations/typescript/src/provider` | `spec/providers/` (M4) | pending | `7797c38b224b019cd9bc2b2d5a4a63aa748cff31` | |
 | `boundaries/shared/contracts/core/implementations/typescript/src/extensions` | `spec/extensions/` (M7) | pending | `bfa11ded81c200febb00a3dd163421c9ac4e024e` | |
@@ -56,11 +58,29 @@ All hashes below were captured at the M0 baseline commit on branch `feat/epic-87
 | `boundaries/shared/contracts/core/implementations/typescript/src/index.ts` (root export) | `spec/core/` + libc/SDK re-export | pending | `6d24e8e9d3d171955b7e1a12a6a75001d99beab2` | |
 | `boundaries/shared/contracts/core` (whole port dir: artifacts/spec/README, not just `src/`) | `spec/core/` | pending | `87129aea2a17660eef2b6a5851f68abc1f8c0b3a` | superset of the `src/` subpath rows above |
 | `boundaries/shared/contracts/core-types` (`@tuvren/core-types`) | `spec/core/` (sibling package, per §12) | pending | `74cc79ea321f488a45a7af49148ed70bc33f0b09` | named explicitly in §12 as a multi-home case |
+| `boundaries/framework/contracts` (whole port-group dir, superset — catches `client-endpoint-integration.md` as a loose sibling file not covered by any per-port row below) | split across `spec/<port>/` per the per-port rows | pending | `3e2341e41b51cd0f983728824b8ac44cfa38edbf` | superset row added after review found the loose contract doc uncovered |
+| `boundaries/framework/contracts/client-endpoint-integration.md` (174-line `AttachedClientEndpoint` host-integration contract; imports from `@tuvren/core/capabilities`) | `spec/host/` (M9, TBD exact home given its `capabilities` dependency — may also need a `spec/tools/` cross-reference) | pending | `fe68f71f670608bed8f2a047c951e573ea56be35` | loose sibling of the six per-port contract dirs; not a `tool-contracts` file itself despite the capabilities import |
 | `boundaries/framework/contracts/driver-api` (`@tuvren/driver-api`, deprecated shim) | `spec/runners/` (M6) | pending | `a572ed22b6bc1517244113b2bd27e0c40ff1e4d1` | named explicitly in §12; consolidates with `react-driver` at M6 |
 | `boundaries/framework/contracts/event-stream` (`@tuvren/event-stream`, deprecated shim) | `spec/streaming/` (M8) | pending | `d612b813a2cef253d31980d5b003e367456ce6f2` | named explicitly in §12 |
 | `boundaries/framework/contracts/runtime-api` (`@tuvren/runtime-api`, deprecated shim) | `spec/host/` or engine seam (M3/M9, TBD) | pending | `3fbb820f296bcb222a9b014d8517901b7bed3079` | named explicitly in §12 |
 | `boundaries/framework/contracts/tool-contracts` (`@tuvren/tool-contracts`, deprecated shim) | `spec/tools/` (M5) | pending | `3975de9363276f47ddd33f0d76add7e5e32870b3` | named explicitly in §12 |
 | `boundaries/framework/implementations/typescript/runtime-core` (`@tuvren/runtime-core`, deprecated shim, `index.ts`-only) | retired, no successor (M3) | pending | `ce06734ccfc533f725319c9b002c97fb39221f72` | named explicitly in §12; retired per M3 DoD — retirement is not a bare deletion because `runtime/` is the proven successor already carrying the real generated content (see Multi-home §A) |
+
+## Framework-wide conformance (cross-port) — split across M2/M5/M6/M8
+
+`boundaries/framework/conformance` (whole tree, 27 git-tracked files: `fixtures/{event-stream-sse-traces,stream-events}.json`; 20 files under `plans/`; `scenarios/{driver-api,event-stream,operational-telemetry,runtime-api}-scenarios.json`; `schemas/fixture-set.schema.json`) — content_hash `d1a5c7141199c0e354d6bbe7bb70e138d966b48d`. This entire tree was omitted from the first draft of this ledger; added after independent review found it unaccounted for. Unlike the kernel/providers conformance trees (each a single directory-level row because they map to one port apiece), framework's conformance spans several future ports and must be broken out by filename prefix so each future milestone knows which plans it owns:
+
+| Plan/fixture/scenario prefix | Destination | Milestone |
+|---|---|---|
+| `driver-api-*`, `react-driver-*` | `spec/conformance/runners/` | M6 |
+| `event-stream-*` (excl. `-sse`), `event-stream-sse*`, `event-stream-sse-traces.json`, `stream-events.json` | `spec/conformance/streaming/` | M8 |
+| `runtime-api-*` (batteries-included, callables, callables-extended, lifecycle, lifecycle-extended, orchestration, scenarios) | `spec/conformance/` engine seam | M3 |
+| `tool-contracts-extended.json`, `capability-orchestration-integration.json`, `capability-policy.json` | `spec/conformance/tools/` | M5 |
+| `framework-operational-telemetry.json`, `invocation-lifecycle-observation.json`, `operational-telemetry-scenarios.json` | `spec/conformance/telemetry/` | M8 |
+| `tuvren-client-execution-class.json`, `tuvren-server-execution-class.json` | `spec/conformance/tools/` (execution class is a tools/MCP-boundary concept per M5) | M5 |
+| `schemas/fixture-set.schema.json` | `spec/conformance/` (shared schema, no single port owner) | shared |
+
+status: pending for the whole tree; will flip to `migrated` piecemeal as each owning milestone lands, cross-referenced back to this table.
 
 ## Engine (Kraken) + libc/SDK — M3
 
@@ -160,11 +180,11 @@ Verified directly (not assumed from the issue text):
 
 ### §C — Two independent "eights"
 
-The `conformance` script in `package.json` lists exactly 8 project IDs; there are exactly 8 `conformance-runner`-family directories tabled above (kernel ×3 incl. sqlite/postgres, framework ×3 incl. batteries-included, providers ×1, kernel-rust + framework-rust ×2). These are **independent sets that currently happen to both total 8** — per issue §14, they need not stay equal, and the M6 "runner"→"certification harness" rename must not assume a 1:1 mapping between them.
+The `conformance` script in `package.json` lists exactly 8 project IDs; there are exactly 8 `conformance-runner`-family directories tabled above (kernel-TS ×3 incl. sqlite/postgres, kernel-rust ×1, framework-TS ×2 incl. batteries-included, framework-rust ×1, providers-TS ×1). These are **independent sets that currently happen to both total 8** — per issue §14, they need not stay equal, and the M6 "runner"→"certification harness" rename must not assume a 1:1 mapping between them.
 
 ### §D — `tools`/`capabilities` split (core → spec vs. libc)
 
-`core/src/tools` mixes pure type surface with the executable `defineTool` schema-authoring helper. The pure-type portion targets `spec/core/` (or `spec/tools/` once M5 exists); the executable portion targets the TypeScript libc/SDK tier per M2's DoD ("executable helpers... never `spec/core`"). The exact file-level split is an M2 implementation decision, not resolved here — flagged so M2 doesn't treat the whole directory as one indivisible unit.
+`core/src/tools` (the port's public export surface) mixes pure type surface with a re-export of the executable `defineTool` schema-authoring helper — but the helper's actual implementation, along with `payload-codec.ts` and 13 other files, lives one level down in `core/src/lib` (see the dedicated row in the Core/ABI section above, corrected after review — the first draft of this ledger mistakenly attached this note to `src/tools` instead of `src/lib`). The pure-type portion targets `spec/core/` (or `spec/tools/` once M5 exists); the executable portion (`schema-authoring.ts`, `payload-codec.ts`) targets the TypeScript libc/SDK tier per M2's DoD ("executable helpers... never `spec/core`"). The exact file-level split of `src/lib`'s 15 files (some, like `driver-contract-guards.ts`/`runtime-contract-guards.ts`, look like they could also be executable predicate logic rather than pure types) is an M2 implementation decision, not resolved here — flagged so M2 doesn't treat the whole directory as one indivisible unit.
 
 ## Naming-map addenda
 
