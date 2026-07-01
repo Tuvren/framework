@@ -194,7 +194,7 @@ None. Every path discovered during this inventory pass matches an existing patte
 
 Captured on branch `feat/epic-87-sovereign-polyglot-framework` at commit `c910a0dfb20083e881211285ffd3f06296a1ab23`, 2026-07-01T07:26:55Z, after `bun run services:up` (devenv-managed Postgres) followed by `bun run verify` (the full phased release gate defined in `tools/scripts/verify.ts`).
 
-**Result: green. Exit code 0.** All 24 phases passed:
+**Result: green. Exit code 0.** All 26 phases passed:
 
 | Phase | Result |
 |---|---|
