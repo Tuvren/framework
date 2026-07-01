@@ -220,7 +220,7 @@
         "protocolEdgeValidation.tree.schemaMismatchCode"
       ],
       "adapterCapability": "kernel.protocol; kernel.logical",
-      "authorityPacket": "boundaries/kernel/contracts/protocol/spec/authority-packet.json",
+      "authorityPacket": "spec/kernel/authority-packet.json",
       "claimIds": [
         "KER-1C9229916315",
         "KER-36BDA9C8EAD8",
@@ -245,9 +245,9 @@
       ],
       "classifications": ["authority-backed-conformance-covered"],
       "compatibilityEvidence": "reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-sqlite-conformance-runner.json; reports/compatibility/evidence/shared-conformance-runner.kernel-rust-conformance-runner.json",
-      "conformancePlan": "boundaries/kernel/conformance/plans/kernel-protocol-core.json; boundaries/kernel/conformance/plans/kernel-protocol-extended.json",
-      "fixture": "boundaries/kernel/conformance/fixtures/kernel-protocol-logical.json; boundaries/kernel/conformance/fixtures/kernel-protocol-deterministic.json",
-      "generatedArtifact": "N/A - kernel protocol behavior is fixture/conformance-backed; grammar source is boundaries/kernel/contracts/protocol/spec/cddl/kernel-records.cddl",
+      "conformancePlan": "spec/conformance/kernel/plans/kernel-protocol-core.json; spec/conformance/kernel/plans/kernel-protocol-extended.json",
+      "fixture": "spec/conformance/kernel/fixtures/kernel-protocol-logical.json; spec/conformance/kernel/fixtures/kernel-protocol-deterministic.json",
+      "generatedArtifact": "N/A - kernel protocol behavior is fixture/conformance-backed; grammar source is spec/kernel/cddl/kernel-records.cddl",
       "matrixFollowUpTickets": ["KRT-AF006"],
       "surface": "kernel appendix validation matrix"
     },
@@ -259,7 +259,7 @@
         "kernel-restart-af.expired-running-requires-preemption",
         "kernel-restart-af.paused-run-excluded-from-stale-preemption"
       ],
-      "conformancePlan": "boundaries/kernel/conformance/plans/kernel-restart-recovery.json; boundaries/kernel/conformance/plans/kernel-run-liveness.json",
+      "conformancePlan": "spec/conformance/kernel/plans/kernel-restart-recovery.json; spec/conformance/kernel/plans/kernel-run-liveness.json",
       "deliveryTicket": "KRT-AF006",
       "disposition": "promote",
       "evidenceUpdate": "Refresh SQLite restart-recovery evidence and report memory/Rust support according to advertised capabilities.",
@@ -275,7 +275,7 @@
         "restartRecovery.uncommittedNotPromoted"
       ],
       "adapterCapability": "kernel.restart-recovery",
-      "authorityPacket": "boundaries/kernel/contracts/protocol/spec/authority-packet.json",
+      "authorityPacket": "spec/kernel/authority-packet.json",
       "claimIds": [
         "KER-007A3ECFB49F",
         "KER-22511C79A15E",
@@ -287,7 +287,7 @@
       ],
       "classifications": ["authority-backed-conformance-covered"],
       "compatibilityEvidence": "reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-sqlite-conformance-runner.json",
-      "fixture": "boundaries/kernel/conformance/fixtures/kernel-protocol-logical.json",
+      "fixture": "spec/conformance/kernel/fixtures/kernel-protocol-logical.json",
       "generatedArtifact": "N/A - restart recovery is conformance-plan authority without generated schema artifacts",
       "matrixFollowUpTickets": ["KRT-AF006"],
       "surface": "kernel recovery edge states"

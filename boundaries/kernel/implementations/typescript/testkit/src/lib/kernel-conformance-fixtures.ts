@@ -60,7 +60,9 @@ interface KernelConformanceFixtureIndex {
 }
 
 const MANIFEST_PATH_SEGMENTS = [
+  "spec",
   "conformance",
+  "kernel",
   "scenarios",
   "suite-manifest.json",
 ];

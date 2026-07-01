@@ -38,7 +38,7 @@ authoritative behavioral specs are not authority for any cross-language semantic
   - `.constitution/reports/epic-ad-docs-to-authority-coverage-matrix.json`
 - Current authority packets (the 9 promoted surfaces after Epic AP package consolidation plus Epic AS):
   - `boundaries/shared/contracts/core/spec/authority-packet.json`
-  - `boundaries/kernel/contracts/protocol/spec/authority-packet.json`
+  - `spec/kernel/authority-packet.json`
   - `boundaries/framework/contracts/event-stream-sse/spec/authority-packet.json`
   - `boundaries/framework/contracts/react-driver/spec/authority-packet.json`
   - `boundaries/providers/contracts/provider-api/spec/authority-packet.json`
@@ -81,7 +81,7 @@ the surface's current decisive-assertion coverage.
 | Surface | Packet | Plans | Decisive coverage | Notes |
 | --- | --- | --- | --- | --- |
 | Shared core primitives + capability-orchestration surface | `tuvren.shared.core` (`boundaries/shared/contracts/core/spec/authority-packet.json`) | `runtime-api-lifecycle{,-extended}`, `runtime-api-callables{,-extended}`, `runtime-api-orchestration`, `runtime-api-batteries-included`, `event-stream-core`, `event-stream-extended`, `driver-api-core`, `driver-api-extended`, `tool-contracts-extended`, `framework-operational-telemetry`, `tuvren-server-execution-class`, `tuvren-client-execution-class`, `invocation-lifecycle-observation`, `capability-policy`, `capability-orchestration-integration` | `resultField`, `stateField`, `eventSequence`, `terminalEvent`, `noEvent`, `errorEnvelope` per plan inspection | Epic AP absorbed the former `core-types`, `runtime-api`, `event-stream`, `driver-api`, and `tool-contracts` packets into one consolidated core packet with binding sections for the eight `@tuvren/core/*` subpaths. Epics AW–BC (Tooling block) added the capability-orchestration surface: four execution classes, MCP-as-binding, exposure/invocation policy, per-class observation limits, and the cross-class integration check set (`capability-orchestration-integration.json`, KRT-BC001). The integration plan is now a required authoritative source for `tuvren.shared.core` in the portability inventory (v0.4.0). |
-| Kernel protocol semantics | `tuvren.kernel.protocol` (`boundaries/kernel/contracts/protocol/spec/authority-packet.json`) | `kernel-protocol-core`, `kernel-protocol-extended`, `kernel-run-liveness`, `kernel-restart-recovery` | `resultField`, `stateField`, `eventSequence` per plan inspection | Records appendix matrix and recovery edges promoted by AF KRT-AF006 are runner-observed. KRT-AL002 registered `spec/cddl/kernel-records.cddl` as a CDDL authoritative source on the packet. |
+| Kernel protocol semantics | `tuvren.kernel.protocol` (`spec/kernel/authority-packet.json`) | `kernel-protocol-core`, `kernel-protocol-extended`, `kernel-run-liveness`, `kernel-restart-recovery` | `resultField`, `stateField`, `eventSequence` per plan inspection | Records appendix matrix and recovery edges promoted by AF KRT-AF006 are runner-observed. KRT-AL002 registered `spec/cddl/kernel-records.cddl` as a CDDL authoritative source on the packet. |
 | Framework SSE projection | `tuvren.framework.event-stream-sse` (`boundaries/framework/contracts/event-stream-sse/spec/authority-packet.json`) | `event-stream-sse` | `eventSequence`, `resultField`, `ordering`, `errorEnvelope` per plan inspection | KRT-AL002/AL003 promoted the EventSource-compatible wire projection through TypeSpec, byte-trace fixtures, and WHATWG-conformant adapter decoding. |
 | Framework ReAct driver behavior | `tuvren.framework.react-driver` (`boundaries/framework/contracts/react-driver/spec/authority-packet.json`) | `react-driver-callables`, `react-driver-extended` | `eventSequence`, `stateField`, `noEvent` per plan inspection | No TypeSpec; data-owned per ADR-025. AF promoted hook ordering, around-hook nesting, after-iteration terminality, and live/durable aroundModel reconciliation. |
 | Provider bridge contract | `tuvren.providers.provider-api` (`boundaries/providers/contracts/provider-api/spec/authority-packet.json`) | `provider-api-bridge`, `provider-api-bridge-extended` | `resultField`, `eventSequence`, `errorEnvelope` per plan inspection | The provider-neutral contract is portable. The `bridge-ai-sdk` projection (TS implementation that adapts the AI SDK to this contract) is a standing exception — see §4. |
@@ -179,7 +179,7 @@ artifacts landed.
 
 ### G2. Kernel record CDDL grammar is unregistered authority
 
-- **Current state**: `boundaries/kernel/contracts/protocol/spec/cddl/kernel-records.cddl`
+- **Current state**: `spec/kernel/cddl/kernel-records.cddl`
   exists and is exercised by `kernel-protocol/implementations/typescript/test/kernel-cddl.test.ts`,
   but the `tuvren.kernel.protocol` authority packet does not list it under
   `authoritativeSources`. The packet currently declares only conformance plans and
@@ -192,7 +192,7 @@ artifacts landed.
   verificationPath that points at the CDDL grammar and an associated freshness check
   if a generator is added later. At minimum, register the source.
 - **Hand-off to AL002**: edit `kernel-protocol/spec/authority-packet.json` to add
-  `{ "path": "boundaries/kernel/contracts/protocol/spec/cddl/kernel-records.cddl", "format": "cddl" }`
+  `{ "path": "spec/kernel/cddl/kernel-records.cddl", "format": "cddl" }`
   to `authoritativeSources`, version-bump per `§2.1` compatibility-rules (minor —
   adding a declared authoritative source is minor).
 
@@ -468,7 +468,7 @@ or names paths that disagree with the on-disk packet set.
 | Gap | Status | Landing artifact |
 | --- | --- | --- |
 | G1 tool-contracts | closed | `tool-contracts-extended.json` plan plus tool-contract binding section in the consolidated `tuvren.shared.core` packet; AF tool checks relocated under `tool-contracts-af.*` prefix |
-| G2 kernel CDDL registration | closed | `boundaries/kernel/contracts/protocol/spec/cddl/kernel-records.cddl` registered as `cddl` authoritative source on the kernel-protocol packet (version 0.2.0) |
+| G2 kernel CDDL registration | closed | `spec/kernel/cddl/kernel-records.cddl` registered as `cddl` authoritative source on the kernel-protocol packet (version 0.2.0) |
 | G3 SSE projection | closed | `tuvren.framework.event-stream-sse` packet, TypeSpec source, eighteen WHATWG-normative byte-trace fixtures (including the empty-`id:` reset and the unterminated-final-frame edge added under AL003 review followup), and `event-stream-sse.core` conformance plan with nineteen decisive checks |
 | G4 kernel gRPC interop packet | closed | `tuvren.kernel.interop-grpc` packet referencing the existing `.proto` files and interop-smoke target |
 | G5 framework rust-kernel interop packet | closed | `tuvren.framework.interop-rust-kernel` packet referencing the suite manifest and host-repl interop-smoke target |
@@ -535,7 +535,7 @@ pre-closure recommendations when package consolidation changed the landing shape
    tool-execution scenarios and record the tool-contract binding section in the
    consolidated core packet. The streamed-argument completeness assertion from E6
    remains future work, as recorded in §9b.
-2. **G2** — Edit `boundaries/kernel/contracts/protocol/spec/authority-packet.json`
+2. **G2** — Edit `spec/kernel/authority-packet.json`
    to add the existing CDDL grammar as an authoritative source
    (`format: "cddl"`). Minor packet version bump per §2.1.
 3. **G3** — Add the `tuvren.framework.event-stream-sse` packet and

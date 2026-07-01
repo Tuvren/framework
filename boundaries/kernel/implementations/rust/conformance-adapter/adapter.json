@@ -14,9 +14,7 @@
     "kernel.logical",
     "kernel-protocol.thread.enumeration"
   ],
-  "authorityPackets": [
-    "boundaries/kernel/contracts/protocol/spec/authority-packet.json"
-  ],
+  "authorityPackets": ["spec/kernel/authority-packet.json"],
   "suiteId": "tuvren.kernel.protocol",
   "suiteVersion": "0.1.0"
 }

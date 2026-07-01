@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import { existsSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
 import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -106,6 +107,7 @@ export interface CompiledConformancePlan {
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const BOUNDARIES_ROOT = resolve(REPO_ROOT, "boundaries");
+const SPEC_ROOT = resolve(REPO_ROOT, "spec");
 const PLAN_SCHEMA_PATH = resolve(
   REPO_ROOT,
   "tools/schemas/conformance-plan.schema.json"
@@ -168,7 +170,12 @@ export async function loadConformancePlan(
 }
 
 export async function findConformancePlans(): Promise<string[]> {
-  const paths = await findPlanFiles(BOUNDARIES_ROOT);
+  const roots = [BOUNDARIES_ROOT, SPEC_ROOT].filter((root) =>
+    existsSync(root)
+  );
+  const paths = (
+    await Promise.all(roots.map((root) => findPlanFiles(root)))
+  ).flat();
   return paths.map((path) => relative(REPO_ROOT, path)).sort();
 }
 
@@ -179,6 +186,19 @@ async function createPlanValidator(): Promise<ValidateFunction<unknown>> {
   );
   const ajv = new Ajv2020({ allErrors: true, strict: false });
   return ajv.compile(schema);
+}
+
+// Tolerates a port segment between "conformance" and "plans" (e.g.
+// spec/conformance/kernel/plans/x.json) as well as the flat legacy shape
+// (boundaries/kernel/conformance/plans/x.json) — only the immediate parent
+// directory name and a "conformance" ancestor segment are required.
+function isConformancePlansPath(entryPath: string): boolean {
+  const segments = entryPath.split("/");
+  const plansIndex = segments.lastIndexOf("plans");
+  return (
+    plansIndex === segments.length - 2 &&
+    segments.slice(0, plansIndex).includes("conformance")
+  );
 }
 
 async function findPlanFiles(directory: string): Promise<string[]> {
@@ -196,7 +216,7 @@ async function findPlanFiles(directory: string): Promise<string[]> {
     if (
       entry.isFile() &&
       PLAN_FILE_PATTERN.test(entry.name) &&
-      entryPath.includes("/conformance/plans/")
+      isConformancePlansPath(entryPath)
     ) {
       plans.push(entryPath);
     }

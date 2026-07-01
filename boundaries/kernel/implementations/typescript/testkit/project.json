@@ -19,7 +19,7 @@
       "inputs": [
         "default",
         "^production",
-        "{workspaceRoot}/boundaries/kernel/conformance/**/*"
+        "{workspaceRoot}/spec/conformance/kernel/**/*"
       ],
       "options": {
         "cwd": "boundaries/kernel/implementations/typescript/testkit",
@@ -38,7 +38,7 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": ".",
-        "command": "bunx --bun @biomejs/biome check boundaries/kernel/implementations/typescript/testkit boundaries/kernel/conformance"
+        "command": "bunx --bun @biomejs/biome check boundaries/kernel/implementations/typescript/testkit spec/conformance/kernel"
       }
     },
     "test": {

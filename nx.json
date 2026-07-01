@@ -82,7 +82,7 @@
         "{workspaceRoot}/rust-toolchain.toml",
         "{workspaceRoot}/devenv.nix",
         "{workspaceRoot}/devenv.lock",
-        "{workspaceRoot}/boundaries/kernel/conformance/**/*",
+        "{workspaceRoot}/spec/conformance/kernel/**/*",
         "{workspaceRoot}/boundaries/kernel/interop/**/*"
       ]
     },

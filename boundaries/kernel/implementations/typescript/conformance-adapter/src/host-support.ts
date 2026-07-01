@@ -34,7 +34,7 @@ import { createRuntimeKernel } from "@tuvren/kernel-runtime";
 import type { OperationOutcome } from "../../../../../../tools/conformance/adapter-protocol/index.js";
 
 const CANONICAL_SCHEMA_URL = new URL(
-  "../../../../conformance/fixtures/canonical-turn-tree-schema.json",
+  "../../../../../../spec/conformance/kernel/fixtures/canonical-turn-tree-schema.json",
   import.meta.url
 );
 

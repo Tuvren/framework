@@ -70,6 +70,7 @@ const MARKDOWN_HEADING_RE = /^#{1,6}\s+(.+)/;
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const BOUNDARIES_ROOT = resolve(REPO_ROOT, "boundaries");
+const SPEC_ROOT = resolve(REPO_ROOT, "spec");
 const SCHEMA_PATH = resolve(
   REPO_ROOT,
   "tools/schemas/authority-packet.schema.json"
@@ -95,7 +96,14 @@ async function main(): Promise<void> {
 }
 
 export async function validateAuthorityPackets(): Promise<ValidationFailure[]> {
-  const manifestPaths = await findAuthorityPacketManifests(BOUNDARIES_ROOT);
+  const manifestRoots = [BOUNDARIES_ROOT, SPEC_ROOT].filter((root) =>
+    existsSync(root)
+  );
+  const manifestPaths = (
+    await Promise.all(
+      manifestRoots.map((root) => findAuthorityPacketManifests(root))
+    )
+  ).flat().sort();
   const schema = readJsonSchema(
     JSON.parse(await readFile(SCHEMA_PATH, "utf8")) as unknown,
     SCHEMA_PATH

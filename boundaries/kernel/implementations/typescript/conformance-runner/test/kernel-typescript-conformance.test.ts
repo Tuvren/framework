@@ -38,11 +38,11 @@ import {
 
 const LOWERCASE_SHA256_HEX_PATTERN = /^[0-9a-f]{64}$/u;
 const KERNEL_SUITE_MANIFEST = new URL(
-  "../../../../conformance/scenarios/suite-manifest.json",
+  "../../../../../../spec/conformance/kernel/scenarios/suite-manifest.json",
   import.meta.url
 );
 const KERNEL_SUITE_MANIFEST_SCHEMA = new URL(
-  "../../../../conformance/schemas/suite-manifest.schema.json",
+  "../../../../../../spec/conformance/kernel/schemas/suite-manifest.schema.json",
   import.meta.url
 );
 

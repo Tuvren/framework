@@ -26,7 +26,7 @@ use tuvren_kernel_rust::{
 };
 
 const CANONICAL_SCHEMA_PATH: &str =
-    "boundaries/kernel/conformance/fixtures/canonical-turn-tree-schema.json";
+    "spec/conformance/kernel/fixtures/canonical-turn-tree-schema.json";
 
 #[derive(Deserialize)]
 struct JsonRpcRequest {

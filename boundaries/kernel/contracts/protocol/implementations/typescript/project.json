@@ -37,8 +37,8 @@
       "inputs": [
         "default",
         "^production",
-        "{workspaceRoot}/boundaries/kernel/contracts/protocol/spec/**/*",
-        "{workspaceRoot}/boundaries/kernel/conformance/fixtures/**/*"
+        "{workspaceRoot}/spec/kernel/**/*",
+        "{workspaceRoot}/spec/conformance/kernel/fixtures/**/*"
       ]
     },
     "typecheck": {

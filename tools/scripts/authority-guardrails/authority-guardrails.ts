@@ -53,6 +53,7 @@ interface FileSnapshot {
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const BOUNDARIES_ROOT = resolve(REPO_ROOT, "boundaries");
+const SPEC_ROOT = resolve(REPO_ROOT, "spec");
 const COMPATIBILITY_EVIDENCE_ROOT = resolve(
   REPO_ROOT,
   "reports/compatibility/evidence"
@@ -138,10 +139,14 @@ async function main(): Promise<void> {
 }
 
 async function loadAuthorityPackets(): Promise<AuthorityPacketManifest[]> {
-  const manifestPaths = await findFiles(
-    BOUNDARIES_ROOT,
-    "authority-packet.json"
+  const manifestRoots = [BOUNDARIES_ROOT, SPEC_ROOT].filter((root) =>
+    existsSync(root)
   );
+  const manifestPaths = (
+    await Promise.all(
+      manifestRoots.map((root) => findFiles(root, "authority-packet.json"))
+    )
+  ).flat();
   const manifests: AuthorityPacketManifest[] = [];
 
   for (const manifestPath of manifestPaths) {

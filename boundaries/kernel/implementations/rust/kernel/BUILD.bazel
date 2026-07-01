@@ -21,7 +21,7 @@ rust_test(
     name = "kernel_baseline_test",
     srcs = ["tests/kernel_baseline.rs"],
     compile_data = [
-        "//boundaries/kernel/conformance/fixtures:kernel-protocol-deterministic.json",
+        "//spec/conformance/kernel/fixtures:kernel-protocol-deterministic.json",
     ],
     edition = "2024",
     deps = [

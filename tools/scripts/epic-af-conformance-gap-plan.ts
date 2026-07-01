@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import { existsSync } from "node:fs";
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import process from "node:process";
@@ -24,6 +25,7 @@ const PLAN_JSON_PATH =
   ".constitution/reports/epic-af-conformance-gap-plan.json";
 const PLAN_MD_PATH = ".constitution/reports/epic-af-conformance-gap-plan.md";
 const BOUNDARIES_ROOT = "boundaries";
+const SPEC_ROOT = "spec";
 
 type MatrixClassification =
   | "authority-backed-conformance-covered"
@@ -273,7 +275,7 @@ const SURFACE_PLANS: Readonly<Record<string, SurfacePlan>> = {
       "kernel-restart-af.paused-run-excluded-from-stale-preemption",
     ],
     conformancePlan:
-      "boundaries/kernel/conformance/plans/kernel-restart-recovery.json; boundaries/kernel/conformance/plans/kernel-run-liveness.json",
+      "spec/conformance/kernel/plans/kernel-restart-recovery.json; spec/conformance/kernel/plans/kernel-run-liveness.json",
     deliveryTicket: "KRT-AF006",
     disposition: "promote",
     evidenceUpdate:
@@ -593,7 +595,14 @@ async function readImplementedCheckEvidence(): Promise<
 > {
   const checks = new Map<string, Set<string>>();
 
-  for (const planPath of await findConformancePlanPaths(BOUNDARIES_ROOT)) {
+  const planRoots = [BOUNDARIES_ROOT, SPEC_ROOT].filter((root) =>
+    existsSync(root)
+  );
+  const planPaths = (
+    await Promise.all(planRoots.map((root) => findConformancePlanPaths(root)))
+  ).flat();
+
+  for (const planPath of planPaths) {
     const plan = JSON.parse(await readFile(planPath, "utf8")) as unknown;
 
     if (!(isRecord(plan) && Array.isArray(plan.checks))) {
@@ -637,13 +646,25 @@ async function findConformancePlanPaths(directory: string): Promise<string[]> {
     if (
       entry.isFile() &&
       entry.name.endsWith(".json") &&
-      entryPath.includes("/conformance/plans/")
+      isConformancePlansPath(entryPath)
     ) {
       paths.push(entryPath);
     }
   }
 
   return paths.sort();
+}
+
+// Tolerates a port segment between "conformance" and "plans" (e.g.
+// spec/conformance/kernel/plans/x.json) as well as the flat legacy shape
+// (boundaries/kernel/conformance/plans/x.json).
+function isConformancePlansPath(entryPath: string): boolean {
+  const segments = entryPath.split("/");
+  const plansIndex = segments.lastIndexOf("plans");
+  return (
+    plansIndex === segments.length - 2 &&
+    segments.slice(0, plansIndex).includes("conformance")
+  );
 }
 
 function createPlannedSurfaces(

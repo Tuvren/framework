@@ -270,10 +270,14 @@ function readKernelCddlGrammar(): {
   assignments: CddlAssignment[];
   source: string;
 } {
-  // The authored CDDL remains a contract-root asset on purpose; Epic X only
-  // relocated the TypeScript package implementation, not the neutral grammar.
+  // The authored CDDL is language-neutral authority (GH issue #87 M1.3
+  // relocated it to root spec/kernel/); this package implementation has not
+  // moved out of boundaries/ yet (that is M1.4).
   const cddlPath = fileURLToPath(
-    new URL("../../../spec/cddl/kernel-records.cddl", import.meta.url)
+    new URL(
+      "../../../../../../../spec/kernel/cddl/kernel-records.cddl",
+      import.meta.url
+    )
   );
   const assignments = parse(cddlPath);
   assertCddlAssignments(assignments);

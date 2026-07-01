@@ -56,7 +56,7 @@ const SECTION_UNSAFE_CHAR_PATTERN = /[^a-z0-9]+/g;
 const TABLE_ROW_PATTERN = /^\s*\|/;
 const WHITESPACE_PATTERN = /\s+/g;
 const EVIDENCE_PATH_PATTERN =
-  /\b(?:boundaries|reports|tools|constitution)\/[^\s;,)`]+/g;
+  /\b(?:boundaries|spec|reports|tools|constitution)\/[^\s;,)`]+/g;
 const CLAIM_ID_HASH_LENGTH = 12;
 const REQUIRED_AUTHORITY_ANCHOR_FIELDS = [
   "authorityPacket",
@@ -210,15 +210,15 @@ const EVIDENCE = {
   kernelProtocol: {
     adapterCapability: "kernel.protocol; kernel.logical",
     authorityPacket:
-      "boundaries/kernel/contracts/protocol/spec/authority-packet.json",
+      "spec/kernel/authority-packet.json",
     compatibilityEvidence:
       "reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-sqlite-conformance-runner.json; reports/compatibility/evidence/shared-conformance-runner.kernel-rust-conformance-runner.json",
     conformancePlan:
-      "boundaries/kernel/conformance/plans/kernel-protocol-core.json; boundaries/kernel/conformance/plans/kernel-protocol-extended.json",
+      "spec/conformance/kernel/plans/kernel-protocol-core.json; spec/conformance/kernel/plans/kernel-protocol-extended.json",
     fixture:
-      "boundaries/kernel/conformance/fixtures/kernel-protocol-logical.json; boundaries/kernel/conformance/fixtures/kernel-protocol-deterministic.json",
+      "spec/conformance/kernel/fixtures/kernel-protocol-logical.json; spec/conformance/kernel/fixtures/kernel-protocol-deterministic.json",
     generatedArtifact:
-      "N/A - kernel protocol behavior is fixture/conformance-backed; grammar source is boundaries/kernel/contracts/protocol/spec/cddl/kernel-records.cddl",
+      "N/A - kernel protocol behavior is fixture/conformance-backed; grammar source is spec/kernel/cddl/kernel-records.cddl",
   },
   // Scope-resolved object identity (kernel spec §2.3, ADR-048/049). KRT-BE001
   // declared the surface and its conformance-plan reference in the
@@ -232,13 +232,13 @@ const EVIDENCE = {
   scopeIsolation: {
     adapterCapability: "kernel.scope-isolation",
     authorityPacket:
-      "boundaries/kernel/contracts/protocol/spec/authority-packet.json",
+      "spec/kernel/authority-packet.json",
     compatibilityEvidence:
       "reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-conformance-runner.json; reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-sqlite-conformance-runner.json; reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-postgres-conformance-runner.json",
     conformancePlan:
-      "boundaries/kernel/conformance/plans/kernel-scope-isolation.json",
+      "spec/conformance/kernel/plans/kernel-scope-isolation.json",
     fixture:
-      "boundaries/kernel/conformance/fixtures/kernel-protocol-logical.json",
+      "spec/conformance/kernel/fixtures/kernel-protocol-logical.json",
     generatedArtifact:
       "N/A - scope isolation is conformance-plan authority without generated schema artifacts",
   },
@@ -254,13 +254,13 @@ const EVIDENCE = {
   reclamation: {
     adapterCapability: "kernel.reclamation",
     authorityPacket:
-      "boundaries/kernel/contracts/protocol/spec/authority-packet.json",
+      "spec/kernel/authority-packet.json",
     compatibilityEvidence:
       "reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-conformance-runner.json; reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-sqlite-conformance-runner.json; reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-postgres-conformance-runner.json",
     conformancePlan:
-      "boundaries/kernel/conformance/plans/kernel-reclamation.json",
+      "spec/conformance/kernel/plans/kernel-reclamation.json",
     fixture:
-      "boundaries/kernel/conformance/fixtures/kernel-protocol-logical.json",
+      "spec/conformance/kernel/fixtures/kernel-protocol-logical.json",
     generatedArtifact:
       "N/A - data-lifecycle reclamation and crypto-shredding erasure are conformance-plan authority without generated schema artifacts",
   },
@@ -379,26 +379,26 @@ const EVIDENCE = {
     adapterCapability:
       "kernel.run-liveness; kernel.shared-lease-clock; framework.run-liveness",
     authorityPacket:
-      "boundaries/kernel/contracts/protocol/spec/authority-packet.json",
+      "spec/kernel/authority-packet.json",
     compatibilityEvidence:
       "reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-postgres-conformance-runner.json; reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-sqlite-conformance-runner.json; reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
     conformancePlan:
-      "boundaries/kernel/conformance/plans/kernel-run-liveness.json; boundaries/framework/conformance/plans/runtime-api-lifecycle-extended.json",
+      "spec/conformance/kernel/plans/kernel-run-liveness.json; boundaries/framework/conformance/plans/runtime-api-lifecycle-extended.json",
     fixture:
-      "boundaries/kernel/conformance/fixtures/kernel-protocol-logical.json",
+      "spec/conformance/kernel/fixtures/kernel-protocol-logical.json",
     generatedArtifact:
       "N/A - run-liveness is conformance-plan authority without generated schema artifacts",
   },
   restartRecovery: {
     adapterCapability: "kernel.restart-recovery",
     authorityPacket:
-      "boundaries/kernel/contracts/protocol/spec/authority-packet.json",
+      "spec/kernel/authority-packet.json",
     compatibilityEvidence:
       "reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-sqlite-conformance-runner.json",
     conformancePlan:
-      "boundaries/kernel/conformance/plans/kernel-restart-recovery.json",
+      "spec/conformance/kernel/plans/kernel-restart-recovery.json",
     fixture:
-      "boundaries/kernel/conformance/fixtures/kernel-protocol-logical.json",
+      "spec/conformance/kernel/fixtures/kernel-protocol-logical.json",
     generatedArtifact:
       "N/A - restart recovery is conformance-plan authority without generated schema artifacts",
   },

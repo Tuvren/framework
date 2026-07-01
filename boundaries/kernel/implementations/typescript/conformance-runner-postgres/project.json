@@ -15,7 +15,7 @@
         "default",
         "^production",
         "conformanceEngine",
-        "{workspaceRoot}/boundaries/kernel/conformance/**/*",
+        "{workspaceRoot}/spec/conformance/kernel/**/*",
         "{workspaceRoot}/boundaries/kernel/implementations/*/conformance-adapter/**/*"
       ],
       "dependsOn": [

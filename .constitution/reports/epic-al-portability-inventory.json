@@ -1,8 +1,8 @@
 {
-  "manifestVersion": "0.4.0",
+  "manifestVersion": "0.4.1",
   "manifestId": "epic-al.portability-inventory",
   "humanInventoryRef": ".constitution/reports/epic-al-portable-surface-conformance-gap-inventory.md",
-  "description": "Machine-readable companion to the Epic AL portable-surface conformance gap inventory. v0.3.0 reflected Epic AS promoting the MCP Client Container translation contract as the ninth expected packet: tuvren.providers.mcp. v0.4.0 reflects Epic BC closing the Tooling block and promoting the capability-orchestration-integration conformance plan as a required authoritative source for tuvren.shared.core; the capability-orchestration surface (four execution classes, MCP-as-binding, exposure/invocation policy, per-class observation limits, conceptual invariant) is now fully tracked under tuvren.shared.core. The portability gate at `tools/scripts/portability-gate.ts` consumes this file to enforce that the on-disk packet topology, standing exceptions, and required authoritative sources have not drifted from the inventory's recorded closure state. Editing either the human inventory MD or this JSON without the matching counterpart change must be treated as drift and rejected during review. The gate fails closed if this file is missing, malformed, or names paths that do not exist on disk.",
+  "description": "Machine-readable companion to the Epic AL portable-surface conformance gap inventory. v0.3.0 reflected Epic AS promoting the MCP Client Container translation contract as the ninth expected packet: tuvren.providers.mcp. v0.4.0 reflects Epic BC closing the Tooling block and promoting the capability-orchestration-integration conformance plan as a required authoritative source for tuvren.shared.core; the capability-orchestration surface (four execution classes, MCP-as-binding, exposure/invocation policy, per-class observation limits, conceptual invariant) is now fully tracked under tuvren.shared.core. v0.4.1 is a path-only update: GH issue #87 (Sovereign Polyglot Framework Restructure) M1.3 relocated the kernel authority packet and CDDL grammar from `boundaries/kernel/contracts/protocol/spec/` to root `spec/kernel/`; no portability scope, classification, or closure state changed. The portability gate at `tools/scripts/portability-gate.ts` consumes this file to enforce that the on-disk packet topology, standing exceptions, and required authoritative sources have not drifted from the inventory's recorded closure state. Editing either the human inventory MD or this JSON without the matching counterpart change must be treated as drift and rejected during review. The gate fails closed if this file is missing, malformed, or names paths that do not exist on disk.",
   "expectedPackets": [
     {
       "packetId": "tuvren.shared.core",
@@ -12,7 +12,7 @@
     },
     {
       "packetId": "tuvren.kernel.protocol",
-      "packetPath": "boundaries/kernel/contracts/protocol/spec/authority-packet.json",
+      "packetPath": "spec/kernel/authority-packet.json",
       "classification": "portable",
       "inventorySection": "§3 / §6.G2 / §9b"
     },
@@ -83,7 +83,7 @@
   "requiredAuthoritativeSources": [
     {
       "packetId": "tuvren.kernel.protocol",
-      "sourcePath": "boundaries/kernel/contracts/protocol/spec/cddl/kernel-records.cddl",
+      "sourcePath": "spec/kernel/cddl/kernel-records.cddl",
       "sourceFormat": "cddl",
       "rationale": "KRT-AL002 G2: kernel CDDL grammar must remain registered authority",
       "inventorySection": "§6.G2 / §9b"

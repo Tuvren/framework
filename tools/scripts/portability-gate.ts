@@ -103,6 +103,7 @@ interface PortabilityInventoryManifest {
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const BOUNDARIES_ROOT = resolve(REPO_ROOT, "boundaries");
+const SPEC_ROOT = resolve(REPO_ROOT, "spec");
 const INVENTORY_PATH = resolve(
   REPO_ROOT,
   ".constitution/reports/epic-al-portable-surface-conformance-gap-inventory.md"
@@ -614,7 +615,10 @@ async function loadAllManifests(): Promise<
   Map<string, AuthorityPacketManifest>
 > {
   const manifests = new Map<string, AuthorityPacketManifest>();
-  const paths = await findFilesByName(BOUNDARIES_ROOT, MANIFEST_FILE_NAME);
+  const paths = [
+    ...(await findFilesByName(BOUNDARIES_ROOT, MANIFEST_FILE_NAME)),
+    ...(await findFilesByName(SPEC_ROOT, MANIFEST_FILE_NAME)),
+  ];
 
   for (const manifestPath of paths) {
     const manifest = JSON.parse(

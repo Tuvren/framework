@@ -19,7 +19,7 @@
         "default",
         "^production",
         "conformanceEngine",
-        "{workspaceRoot}/boundaries/kernel/conformance/**/*",
+        "{workspaceRoot}/spec/conformance/kernel/**/*",
         "{workspaceRoot}/boundaries/kernel/implementations/rust/**/*",
         "{workspaceRoot}/Cargo.toml",
         "{workspaceRoot}/Cargo.lock",
