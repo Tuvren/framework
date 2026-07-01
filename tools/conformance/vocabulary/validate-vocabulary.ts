@@ -82,7 +82,9 @@ async function validateVocabularies(): Promise<ValidationFailure[]> {
     await Promise.all(
       manifestRoots.map((root) => findAuthorityPacketManifests(root))
     )
-  ).flat().sort();
+  )
+    .flat()
+    .sort();
   const failures: ValidationFailure[] = [];
 
   for (const manifestPath of manifestPaths) {

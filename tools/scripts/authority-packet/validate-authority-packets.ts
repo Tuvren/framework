@@ -103,7 +103,9 @@ export async function validateAuthorityPackets(): Promise<ValidationFailure[]> {
     await Promise.all(
       manifestRoots.map((root) => findAuthorityPacketManifests(root))
     )
-  ).flat().sort();
+  )
+    .flat()
+    .sort();
   const schema = readJsonSchema(
     JSON.parse(await readFile(SCHEMA_PATH, "utf8")) as unknown,
     SCHEMA_PATH

@@ -170,9 +170,7 @@ export async function loadConformancePlan(
 }
 
 export async function findConformancePlans(): Promise<string[]> {
-  const roots = [BOUNDARIES_ROOT, SPEC_ROOT].filter((root) =>
-    existsSync(root)
-  );
+  const roots = [BOUNDARIES_ROOT, SPEC_ROOT].filter((root) => existsSync(root));
   const paths = (
     await Promise.all(roots.map((root) => findPlanFiles(root)))
   ).flat();

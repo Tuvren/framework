@@ -209,8 +209,7 @@ const EVIDENCE = {
   },
   kernelProtocol: {
     adapterCapability: "kernel.protocol; kernel.logical",
-    authorityPacket:
-      "spec/kernel/authority-packet.json",
+    authorityPacket: "spec/kernel/authority-packet.json",
     compatibilityEvidence:
       "reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-sqlite-conformance-runner.json; reports/compatibility/evidence/shared-conformance-runner.kernel-rust-conformance-runner.json",
     conformancePlan:
@@ -231,14 +230,12 @@ const EVIDENCE = {
   // claim is now authority-backed-conformance-covered.
   scopeIsolation: {
     adapterCapability: "kernel.scope-isolation",
-    authorityPacket:
-      "spec/kernel/authority-packet.json",
+    authorityPacket: "spec/kernel/authority-packet.json",
     compatibilityEvidence:
       "reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-conformance-runner.json; reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-sqlite-conformance-runner.json; reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-postgres-conformance-runner.json",
     conformancePlan:
       "spec/conformance/kernel/plans/kernel-scope-isolation.json",
-    fixture:
-      "spec/conformance/kernel/fixtures/kernel-protocol-logical.json",
+    fixture: "spec/conformance/kernel/fixtures/kernel-protocol-logical.json",
     generatedArtifact:
       "N/A - scope isolation is conformance-plan authority without generated schema artifacts",
   },
@@ -253,14 +250,11 @@ const EVIDENCE = {
   // §9.4 claim is now authority-backed-conformance-covered.
   reclamation: {
     adapterCapability: "kernel.reclamation",
-    authorityPacket:
-      "spec/kernel/authority-packet.json",
+    authorityPacket: "spec/kernel/authority-packet.json",
     compatibilityEvidence:
       "reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-conformance-runner.json; reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-sqlite-conformance-runner.json; reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-postgres-conformance-runner.json",
-    conformancePlan:
-      "spec/conformance/kernel/plans/kernel-reclamation.json",
-    fixture:
-      "spec/conformance/kernel/fixtures/kernel-protocol-logical.json",
+    conformancePlan: "spec/conformance/kernel/plans/kernel-reclamation.json",
+    fixture: "spec/conformance/kernel/fixtures/kernel-protocol-logical.json",
     generatedArtifact:
       "N/A - data-lifecycle reclamation and crypto-shredding erasure are conformance-plan authority without generated schema artifacts",
   },
@@ -378,27 +372,23 @@ const EVIDENCE = {
   runLiveness: {
     adapterCapability:
       "kernel.run-liveness; kernel.shared-lease-clock; framework.run-liveness",
-    authorityPacket:
-      "spec/kernel/authority-packet.json",
+    authorityPacket: "spec/kernel/authority-packet.json",
     compatibilityEvidence:
       "reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-postgres-conformance-runner.json; reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-sqlite-conformance-runner.json; reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
     conformancePlan:
       "spec/conformance/kernel/plans/kernel-run-liveness.json; boundaries/framework/conformance/plans/runtime-api-lifecycle-extended.json",
-    fixture:
-      "spec/conformance/kernel/fixtures/kernel-protocol-logical.json",
+    fixture: "spec/conformance/kernel/fixtures/kernel-protocol-logical.json",
     generatedArtifact:
       "N/A - run-liveness is conformance-plan authority without generated schema artifacts",
   },
   restartRecovery: {
     adapterCapability: "kernel.restart-recovery",
-    authorityPacket:
-      "spec/kernel/authority-packet.json",
+    authorityPacket: "spec/kernel/authority-packet.json",
     compatibilityEvidence:
       "reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-sqlite-conformance-runner.json",
     conformancePlan:
       "spec/conformance/kernel/plans/kernel-restart-recovery.json",
-    fixture:
-      "spec/conformance/kernel/fixtures/kernel-protocol-logical.json",
+    fixture: "spec/conformance/kernel/fixtures/kernel-protocol-logical.json",
     generatedArtifact:
       "N/A - restart recovery is conformance-plan authority without generated schema artifacts",
   },
