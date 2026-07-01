@@ -6,13 +6,13 @@
     "allowImportingTsExtensions": true,
     "paths": {
       "@tuvren/backend-memory": [
-        "../../../../kernel/implementations/typescript/backend-memory/src/index.ts"
+        "../../../../../typescript/kernel/backends/memory/src/index.ts"
       ],
       "@tuvren/backend-postgres": [
-        "../../../../kernel/implementations/typescript/backend-postgres/src/index.ts"
+        "../../../../../typescript/kernel/backends/postgres/src/index.ts"
       ],
       "@tuvren/backend-sqlite": [
-        "../../../../kernel/implementations/typescript/backend-sqlite/src/index.ts"
+        "../../../../../typescript/kernel/backends/sqlite/src/index.ts"
       ],
       "@tuvren/core": [
         "../../../../shared/contracts/core/implementations/typescript/src/index.ts"
@@ -67,9 +67,9 @@
     "src/**/*.ts",
     "test/**/*.ts",
     "smoke/**/*.ts",
-    "../../../../kernel/implementations/typescript/backend-memory/src/**/*.ts",
-    "../../../../kernel/implementations/typescript/backend-postgres/src/**/*.ts",
-    "../../../../kernel/implementations/typescript/backend-sqlite/src/**/*.ts",
+    "../../../../../typescript/kernel/backends/memory/src/**/*.ts",
+    "../../../../../typescript/kernel/backends/postgres/src/**/*.ts",
+    "../../../../../typescript/kernel/backends/sqlite/src/**/*.ts",
     "../../../../framework/implementations/typescript/drivers/react/src/**/*.ts",
     "../../../../framework/implementations/typescript/runtime/src/**/*.ts",
     "../../../../framework/implementations/typescript/stream-core/src/**/*.ts",

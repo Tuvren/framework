@@ -14,22 +14,22 @@
       "path": "../../../contracts/runtime-api/implementations/typescript/tsconfig.lib.json"
     },
     {
-      "path": "../../../../kernel/implementations/typescript/runtime-kernel/tsconfig.lib.json"
+      "path": "../../../../../typescript/kernel/runtime/tsconfig.lib.json"
     },
     {
-      "path": "../../../../kernel/contracts/protocol/implementations/typescript/tsconfig.lib.json"
+      "path": "../../../../../typescript/kernel/protocol/tsconfig.lib.json"
     },
     {
       "path": "../../../../shared/contracts/core-types/implementations/typescript/tsconfig.lib.json"
     },
     {
-      "path": "../../../../kernel/implementations/typescript/backend-memory/tsconfig.lib.json"
+      "path": "../../../../../typescript/kernel/backends/memory/tsconfig.lib.json"
     },
     {
-      "path": "../../../../kernel/implementations/typescript/backend-sqlite/tsconfig.lib.json"
+      "path": "../../../../../typescript/kernel/backends/sqlite/tsconfig.lib.json"
     },
     {
-      "path": "../../../../kernel/implementations/typescript/backend-postgres/tsconfig.lib.json"
+      "path": "../../../../../typescript/kernel/backends/postgres/tsconfig.lib.json"
     },
     {
       "path": "../../../../providers/implementations/typescript/mcp-client/tsconfig.lib.json"

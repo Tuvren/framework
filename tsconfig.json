@@ -6,13 +6,13 @@
       "path": "./boundaries/shared/contracts/core-types/implementations/typescript"
     },
     {
-      "path": "./boundaries/kernel/contracts/protocol/implementations/typescript"
+      "path": "./typescript/kernel/protocol"
     },
     {
-      "path": "./boundaries/kernel/implementations/typescript/backend-memory"
+      "path": "./typescript/kernel/backends/memory"
     },
     {
-      "path": "./boundaries/kernel/implementations/typescript/testkit"
+      "path": "./typescript/kernel/testkit"
     },
     {
       "path": "./boundaries/framework/implementations/typescript/drivers/react"
@@ -33,7 +33,7 @@
       "path": "./boundaries/framework/contracts/driver-api/implementations/typescript"
     },
     {
-      "path": "./boundaries/kernel/implementations/typescript/backend-postgres"
+      "path": "./typescript/kernel/backends/postgres"
     },
     {
       "path": "./boundaries/providers/implementations/typescript/bridge-ai-sdk"
@@ -42,7 +42,7 @@
       "path": "./boundaries/framework/implementations/typescript/runtime-core"
     },
     {
-      "path": "./boundaries/kernel/implementations/typescript/backend-sqlite"
+      "path": "./typescript/kernel/backends/sqlite"
     },
     {
       "path": "./boundaries/framework/implementations/typescript/stream-agui"
@@ -51,7 +51,7 @@
       "path": "./boundaries/framework/implementations/typescript/stream-core"
     },
     {
-      "path": "./boundaries/kernel/implementations/typescript/runtime-kernel"
+      "path": "./typescript/kernel/runtime"
     },
     {
       "path": "./boundaries/shared/contracts/core/implementations/typescript"

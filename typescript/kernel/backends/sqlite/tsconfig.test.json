@@ -1,0 +1,24 @@
+{
+  "extends": "./tsconfig.lib.json",
+  "compilerOptions": {
+    "composite": false,
+    "outDir": "./.tmp-tests",
+    "rootDir": "../../../../",
+    "paths": {
+      "@tuvren/core-types": [
+        "../../../../boundaries/shared/contracts/core-types/implementations/typescript/src/index.ts"
+      ],
+      "@tuvren/kernel-protocol": ["../../protocol/src/index.ts"],
+      "@tuvren/kernel-testkit": ["../../testkit/src/index.ts"],
+      "@tuvren/backend-sqlite": ["./src/index.ts"]
+    },
+    "types": ["node"]
+  },
+  "include": [
+    "src/**/*.ts",
+    "test/**/*.ts",
+    "../../protocol/src/**/*.ts",
+    "../../testkit/src/**/*.ts",
+    "../../../../boundaries/shared/contracts/core-types/implementations/typescript/src/**/*.ts"
+  ]
+}

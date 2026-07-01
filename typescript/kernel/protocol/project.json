@@ -1,0 +1,52 @@
+{
+  "name": "kernel-contract-protocol",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "root": "typescript/kernel/protocol",
+  "sourceRoot": "typescript/kernel/protocol/src",
+  "projectType": "library",
+  "tags": ["boundary:kernel", "layer:contract"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["^build"],
+      "options": {
+        "cwd": "typescript/kernel/protocol",
+        "command": "bunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false"
+      }
+    },
+    "bench": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "typescript/kernel/protocol",
+        "command": "bun bench/kernel-identity.bench.ts"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bunx --bun @biomejs/biome check typescript/kernel/protocol"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "typescript/kernel/protocol",
+        "command": "bun test"
+      },
+      "inputs": [
+        "default",
+        "^production",
+        "{workspaceRoot}/spec/kernel/**/*",
+        "{workspaceRoot}/spec/conformance/kernel/fixtures/**/*"
+      ]
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bun tools/scripts/typecheck-project.ts typescript/kernel/protocol"
+      }
+    }
+  }
+}

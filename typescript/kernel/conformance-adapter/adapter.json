@@ -1,0 +1,48 @@
+{
+  "adapterId": "typescript-kernel-memory",
+  "implementationId": "typescript-kernel-memory",
+  "language": "typescript",
+  "boundary": "kernel",
+  "protocol": {
+    "name": "tuvren.conformance-adapter",
+    "version": "0.1.0",
+    "transport": "json-rpc-2.0-stdio"
+  },
+  "command": [
+    "bun",
+    "typescript/kernel/conformance-adapter/src/host.ts",
+    "--adapter-id",
+    "typescript-kernel-memory",
+    "--backend",
+    "memory",
+    "--capability",
+    "kernel.protocol",
+    "--capability",
+    "kernel.edge-validation",
+    "--capability",
+    "kernel.logical",
+    "--capability",
+    "kernel.run-liveness",
+    "--capability",
+    "kernel.restart-recovery",
+    "--capability",
+    "kernel.scope-isolation",
+    "--capability",
+    "kernel.reclamation",
+    "--capability",
+    "kernel-protocol.thread.enumeration"
+  ],
+  "capabilities": [
+    "kernel.protocol",
+    "kernel.edge-validation",
+    "kernel.logical",
+    "kernel.run-liveness",
+    "kernel.restart-recovery",
+    "kernel.scope-isolation",
+    "kernel.reclamation",
+    "kernel-protocol.thread.enumeration"
+  ],
+  "authorityPackets": ["spec/kernel/authority-packet.json"],
+  "suiteId": "tuvren.kernel.protocol",
+  "suiteVersion": "0.1.0"
+}

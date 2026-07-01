@@ -8,10 +8,10 @@
     "outDir": "./dist",
     "paths": {
       "@tuvren/backend-memory": [
-        "../../../../kernel/implementations/typescript/backend-memory/dist/index.d.ts"
+        "../../../../../typescript/kernel/backends/memory/dist/index.d.ts"
       ],
       "@tuvren/backend-sqlite": [
-        "../../../../kernel/implementations/typescript/backend-sqlite/dist/index.d.ts"
+        "../../../../../typescript/kernel/backends/sqlite/dist/index.d.ts"
       ],
       "@tuvren/provider-bridge-ai-sdk": [
         "../../../../providers/implementations/typescript/bridge-ai-sdk/dist/index.d.ts"

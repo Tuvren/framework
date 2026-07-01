@@ -25,7 +25,7 @@ const configDir = dirname(fileURLToPath(import.meta.url));
 // finds ./migrations next to batteries-included-node-host.mjs.
 const MIGRATIONS_SRC = join(
   configDir,
-  "../../../../kernel/implementations/typescript/backend-sqlite/migrations"
+  "../../../../../typescript/kernel/backends/sqlite/migrations"
 );
 const MIGRATIONS_DEST = join(configDir, "dist/migrations");
 

@@ -43,13 +43,12 @@ const PORTABLE_PACKAGE_SURFACES: readonly PortablePackageSurface[] = [
   {
     classification: "Bun-and-Node validated",
     packageName: "@tuvren/kernel-protocol",
-    packageRoot:
-      "boundaries/kernel/contracts/protocol/implementations/typescript",
+    packageRoot: "typescript/kernel/protocol",
   },
   {
     classification: "Bun-and-Node validated",
     packageName: "@tuvren/kernel-testkit",
-    packageRoot: "boundaries/kernel/implementations/typescript/testkit",
+    packageRoot: "typescript/kernel/testkit",
   },
   {
     classification: "Bun-and-Node validated",
@@ -137,7 +136,7 @@ const PORTABLE_PACKAGE_SURFACES: readonly PortablePackageSurface[] = [
   {
     classification: "Bun-and-Node validated",
     packageName: "@tuvren/backend-memory",
-    packageRoot: "boundaries/kernel/implementations/typescript/backend-memory",
+    packageRoot: "typescript/kernel/backends/memory",
   },
 ];
 

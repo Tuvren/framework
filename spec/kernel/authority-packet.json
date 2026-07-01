@@ -80,7 +80,7 @@
     }
   ],
   "bindingProjections": {
-    "typescript": "boundaries/kernel/contracts/protocol/implementations/typescript",
+    "typescript": "typescript/kernel/protocol",
     "rust": "rust/kernel"
   },
   "bindingSections": {
@@ -95,9 +95,9 @@
     }
   },
   "forbiddenAuthoritySources": [
-    "boundaries/kernel/contracts/protocol/implementations/typescript",
-    "boundaries/kernel/implementations/typescript/conformance-runner",
-    "boundaries/kernel/implementations/typescript/conformance-adapter",
+    "typescript/kernel/protocol",
+    "typescript/kernel/conformance-runner",
+    "typescript/kernel/conformance-adapter",
     "rust/kernel",
     "rust/kernel-conformance-runner",
     "rust/kernel-conformance-adapter",

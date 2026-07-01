@@ -1,0 +1,24 @@
+# M1 tracer bullet: thin shim proving the Bazel <-> TypeScript seam by
+# invoking the existing Nx targets (see tools/bazel/nx-run.sh) rather than
+# adopting a full JS Bazel ruleset now. Run with `bazel run`, e.g.:
+#   bazel run //typescript/kernel/protocol:test
+#
+# Uses bazel_skylib's native_binary (not sh_binary): sh_binary's generated
+# launcher hardcodes a /bin/bash path that doesn't exist on this Nix system
+# (bash lives under /nix/store/<hash>/bin); native_binary execs the wrapped
+# script directly, so its own `#!/usr/bin/env bash` shebang resolves bash
+# through PATH instead.
+
+load("@bazel_skylib//rules:native_binary.bzl", "native_binary")
+
+native_binary(
+    name = "build",
+    src = "//tools/bazel:nx-run.sh",
+    env = {"NX_TARGET": "kernel-contract-protocol:build"},
+)
+
+native_binary(
+    name = "test",
+    src = "//tools/bazel:nx-run.sh",
+    env = {"NX_TARGET": "kernel-contract-protocol:test"},
+)

@@ -6,7 +6,7 @@
     "allowImportingTsExtensions": true,
     "paths": {
       "@tuvren/backend-memory": [
-        "../../../../kernel/implementations/typescript/backend-memory/src/index.ts"
+        "../../../../../typescript/kernel/backends/memory/src/index.ts"
       ],
       "@tuvren/core": [
         "../../../../shared/contracts/core/implementations/typescript/src/index.ts"
@@ -43,10 +43,10 @@
       ],
       "@tuvren/framework-testkit": ["../testkit/src/index.ts"],
       "@tuvren/kernel-protocol": [
-        "../../../../kernel/contracts/protocol/implementations/typescript/src/index.ts"
+        "../../../../../typescript/kernel/protocol/src/index.ts"
       ],
       "@tuvren/kernel-runtime": [
-        "../../../../kernel/implementations/typescript/runtime-kernel/src/index.ts"
+        "../../../../../typescript/kernel/runtime/src/index.ts"
       ],
       "@tuvren/runtime-api": [
         "../../../contracts/runtime-api/implementations/typescript/src/index.ts"
@@ -73,8 +73,8 @@
   },
   "include": [
     "src/**/*.ts",
-    "../../../../kernel/contracts/protocol/implementations/typescript/src/**/*.ts",
-    "../../../../kernel/implementations/typescript/runtime-kernel/src/**/*.ts",
+    "../../../../../typescript/kernel/protocol/src/**/*.ts",
+    "../../../../../typescript/kernel/runtime/src/**/*.ts",
     "../../../../shared/contracts/core-types/implementations/typescript/src/**/*.ts"
   ]
 }

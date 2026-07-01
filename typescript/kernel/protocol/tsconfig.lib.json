@@ -1,0 +1,16 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist"
+  },
+  "include": ["src/**/*.ts"],
+  "references": [
+    {
+      "path": "../../../boundaries/shared/contracts/core-types/implementations/typescript/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../boundaries/shared/contracts/core/implementations/typescript/tsconfig.lib.json"
+    }
+  ]
+}

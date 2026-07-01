@@ -37,7 +37,7 @@
       ],
       "@tuvren/driver-api": ["./src/index.ts"],
       "@tuvren/kernel-protocol": [
-        "../../../../../kernel/contracts/protocol/implementations/typescript/src/index.ts"
+        "../../../../../../typescript/kernel/protocol/src/index.ts"
       ],
       "@tuvren/runtime-api": [
         "../../../runtime-api/implementations/typescript/src/index.ts"
@@ -60,7 +60,7 @@
   "include": [
     "src/**/*.ts",
     "test/**/*.ts",
-    "../../../../../kernel/contracts/protocol/implementations/typescript/src/**/*.ts",
+    "../../../../../../typescript/kernel/protocol/src/**/*.ts",
     "../../../runtime-api/implementations/typescript/src/**/*.ts",
     "../../../../../shared/contracts/core-types/implementations/typescript/src/**/*.ts"
   ]

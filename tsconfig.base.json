@@ -43,9 +43,7 @@
       "@tuvren/core-types": [
         "./boundaries/shared/contracts/core-types/implementations/typescript/src/index.ts"
       ],
-      "@tuvren/kernel-protocol": [
-        "./boundaries/kernel/contracts/protocol/implementations/typescript/src/index.ts"
-      ],
+      "@tuvren/kernel-protocol": ["./typescript/kernel/protocol/src/index.ts"],
       "@tuvren/runtime-api": [
         "./boundaries/framework/contracts/runtime-api/implementations/typescript/src/index.ts"
       ],
@@ -98,17 +96,13 @@
         "./boundaries/framework/implementations/typescript/telemetry-otel/src/index.ts"
       ],
       "@tuvren/backend-memory": [
-        "./boundaries/kernel/implementations/typescript/backend-memory/src/index.ts"
+        "./typescript/kernel/backends/memory/src/index.ts"
       ],
-      "@tuvren/kernel-runtime": [
-        "./boundaries/kernel/implementations/typescript/runtime-kernel/src/index.ts"
-      ],
+      "@tuvren/kernel-runtime": ["./typescript/kernel/runtime/src/index.ts"],
       "@tuvren/backend-sqlite": [
-        "./boundaries/kernel/implementations/typescript/backend-sqlite/src/index.ts"
+        "./typescript/kernel/backends/sqlite/src/index.ts"
       ],
-      "@tuvren/kernel-testkit": [
-        "./boundaries/kernel/implementations/typescript/testkit/src/index.ts"
-      ],
+      "@tuvren/kernel-testkit": ["./typescript/kernel/testkit/src/index.ts"],
       "@tuvren/framework-testkit": [
         "./boundaries/framework/implementations/typescript/testkit/src/index.ts"
       ],

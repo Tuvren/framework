@@ -214,95 +214,6 @@
         "@copilotkit/aimock": "1.15.1",
       },
     },
-    "boundaries/kernel/contracts/protocol/implementations/typescript": {
-      "name": "@tuvren/kernel-protocol",
-      "version": "0.0.0",
-      "dependencies": {
-        "cbor-x": "1.6.4",
-      },
-      "peerDependencies": {
-        "@tuvren/core": "workspace:*",
-      },
-    },
-    "boundaries/kernel/implementations/typescript/backend-memory": {
-      "name": "@tuvren/backend-memory",
-      "version": "0.0.0",
-      "dependencies": {
-        "@tuvren/kernel-protocol": "workspace:*",
-      },
-      "devDependencies": {
-        "@tuvren/kernel-testkit": "workspace:*",
-      },
-      "peerDependencies": {
-        "@tuvren/core": "workspace:*",
-      },
-    },
-    "boundaries/kernel/implementations/typescript/backend-postgres": {
-      "name": "@tuvren/backend-postgres",
-      "version": "0.0.0",
-      "dependencies": {
-        "@tuvren/kernel-protocol": "workspace:*",
-        "postgres": "3.4.9",
-      },
-      "devDependencies": {
-        "@tuvren/kernel-runtime": "workspace:*",
-        "@tuvren/kernel-testkit": "workspace:*",
-      },
-      "peerDependencies": {
-        "@tuvren/core": "workspace:*",
-      },
-    },
-    "boundaries/kernel/implementations/typescript/backend-sqlite": {
-      "name": "@tuvren/backend-sqlite",
-      "version": "0.0.0",
-      "dependencies": {
-        "@tuvren/kernel-protocol": "workspace:*",
-        "better-sqlite3": "12.8.0",
-      },
-      "devDependencies": {
-        "@tuvren/kernel-runtime": "workspace:*",
-        "@tuvren/kernel-testkit": "workspace:*",
-        "@types/better-sqlite3": "7.6.13",
-      },
-      "peerDependencies": {
-        "@tuvren/core": "workspace:*",
-      },
-    },
-    "boundaries/kernel/implementations/typescript/conformance-runner": {
-      "name": "@tuvren/kernel-typescript-conformance-runner",
-      "version": "0.0.0",
-      "dependencies": {
-        "@tuvren/backend-memory": "workspace:*",
-        "@tuvren/backend-sqlite": "workspace:*",
-        "@tuvren/core-types": "workspace:*",
-        "@tuvren/kernel-protocol": "workspace:*",
-        "@tuvren/kernel-runtime": "workspace:*",
-        "@tuvren/kernel-testkit": "workspace:*",
-      },
-    },
-    "boundaries/kernel/implementations/typescript/runtime-kernel": {
-      "name": "@tuvren/kernel-runtime",
-      "version": "0.0.0",
-      "dependencies": {
-        "@tuvren/kernel-protocol": "workspace:*",
-      },
-      "devDependencies": {
-        "@tuvren/backend-memory": "workspace:*",
-      },
-      "peerDependencies": {
-        "@tuvren/core": "workspace:*",
-      },
-    },
-    "boundaries/kernel/implementations/typescript/testkit": {
-      "name": "@tuvren/kernel-testkit",
-      "version": "0.0.0",
-      "dependencies": {
-        "@tuvren/core": "workspace:*",
-        "@tuvren/core-types": "workspace:*",
-        "@tuvren/kernel-protocol": "workspace:*",
-        "ajv": "8.18.0",
-      },
-    },
     "boundaries/providers/contracts/provider-api/implementations/typescript": {
       "name": "@tuvren/provider-api",
       "version": "0.0.0",
@@ -385,6 +296,95 @@
         "@standard-schema/spec",
         "zod",
       ],
+    },
+    "typescript/kernel/backends/memory": {
+      "name": "@tuvren/backend-memory",
+      "version": "0.0.0",
+      "dependencies": {
+        "@tuvren/kernel-protocol": "workspace:*",
+      },
+      "devDependencies": {
+        "@tuvren/kernel-testkit": "workspace:*",
+      },
+      "peerDependencies": {
+        "@tuvren/core": "workspace:*",
+      },
+    },
+    "typescript/kernel/backends/postgres": {
+      "name": "@tuvren/backend-postgres",
+      "version": "0.0.0",
+      "dependencies": {
+        "@tuvren/kernel-protocol": "workspace:*",
+        "postgres": "3.4.9",
+      },
+      "devDependencies": {
+        "@tuvren/kernel-runtime": "workspace:*",
+        "@tuvren/kernel-testkit": "workspace:*",
+      },
+      "peerDependencies": {
+        "@tuvren/core": "workspace:*",
+      },
+    },
+    "typescript/kernel/backends/sqlite": {
+      "name": "@tuvren/backend-sqlite",
+      "version": "0.0.0",
+      "dependencies": {
+        "@tuvren/kernel-protocol": "workspace:*",
+        "better-sqlite3": "12.8.0",
+      },
+      "devDependencies": {
+        "@tuvren/kernel-runtime": "workspace:*",
+        "@tuvren/kernel-testkit": "workspace:*",
+        "@types/better-sqlite3": "7.6.13",
+      },
+      "peerDependencies": {
+        "@tuvren/core": "workspace:*",
+      },
+    },
+    "typescript/kernel/conformance-runner": {
+      "name": "@tuvren/kernel-typescript-conformance-runner",
+      "version": "0.0.0",
+      "dependencies": {
+        "@tuvren/backend-memory": "workspace:*",
+        "@tuvren/backend-sqlite": "workspace:*",
+        "@tuvren/core-types": "workspace:*",
+        "@tuvren/kernel-protocol": "workspace:*",
+        "@tuvren/kernel-runtime": "workspace:*",
+        "@tuvren/kernel-testkit": "workspace:*",
+      },
+    },
+    "typescript/kernel/protocol": {
+      "name": "@tuvren/kernel-protocol",
+      "version": "0.0.0",
+      "dependencies": {
+        "cbor-x": "1.6.4",
+      },
+      "peerDependencies": {
+        "@tuvren/core": "workspace:*",
+      },
+    },
+    "typescript/kernel/runtime": {
+      "name": "@tuvren/kernel-runtime",
+      "version": "0.0.0",
+      "dependencies": {
+        "@tuvren/kernel-protocol": "workspace:*",
+      },
+      "devDependencies": {
+        "@tuvren/backend-memory": "workspace:*",
+      },
+      "peerDependencies": {
+        "@tuvren/core": "workspace:*",
+      },
+    },
+    "typescript/kernel/testkit": {
+      "name": "@tuvren/kernel-testkit",
+      "version": "0.0.0",
+      "dependencies": {
+        "@tuvren/core": "workspace:*",
+        "@tuvren/core-types": "workspace:*",
+        "@tuvren/kernel-protocol": "workspace:*",
+        "ajv": "8.18.0",
+      },
     },
   },
   "trustedDependencies": [
@@ -945,11 +945,11 @@
 
     "@swc/types": ["@swc/types@0.1.26", "", { "dependencies": { "@swc/counter": "^0.1.3" } }, "sha512-lyMwd7WGgG79RS7EERZV3T8wMdmPq3xwyg+1nmAM64kIhx5yl+juO2PYIHb7vTiPgPCj8LYjsNV2T5wiQHUEaw=="],
 
-    "@tuvren/backend-memory": ["@tuvren/backend-memory@workspace:boundaries/kernel/implementations/typescript/backend-memory"],
+    "@tuvren/backend-memory": ["@tuvren/backend-memory@workspace:typescript/kernel/backends/memory"],
 
-    "@tuvren/backend-postgres": ["@tuvren/backend-postgres@workspace:boundaries/kernel/implementations/typescript/backend-postgres"],
+    "@tuvren/backend-postgres": ["@tuvren/backend-postgres@workspace:typescript/kernel/backends/postgres"],
 
-    "@tuvren/backend-sqlite": ["@tuvren/backend-sqlite@workspace:boundaries/kernel/implementations/typescript/backend-sqlite"],
+    "@tuvren/backend-sqlite": ["@tuvren/backend-sqlite@workspace:typescript/kernel/backends/sqlite"],
 
     "@tuvren/core": ["@tuvren/core@workspace:boundaries/shared/contracts/core/implementations/typescript"],
 
@@ -965,13 +965,13 @@
 
     "@tuvren/framework-typescript-conformance-runner": ["@tuvren/framework-typescript-conformance-runner@workspace:boundaries/framework/implementations/typescript/conformance-runner"],
 
-    "@tuvren/kernel-protocol": ["@tuvren/kernel-protocol@workspace:boundaries/kernel/contracts/protocol/implementations/typescript"],
+    "@tuvren/kernel-protocol": ["@tuvren/kernel-protocol@workspace:typescript/kernel/protocol"],
 
-    "@tuvren/kernel-runtime": ["@tuvren/kernel-runtime@workspace:boundaries/kernel/implementations/typescript/runtime-kernel"],
+    "@tuvren/kernel-runtime": ["@tuvren/kernel-runtime@workspace:typescript/kernel/runtime"],
 
-    "@tuvren/kernel-testkit": ["@tuvren/kernel-testkit@workspace:boundaries/kernel/implementations/typescript/testkit"],
+    "@tuvren/kernel-testkit": ["@tuvren/kernel-testkit@workspace:typescript/kernel/testkit"],
 
-    "@tuvren/kernel-typescript-conformance-runner": ["@tuvren/kernel-typescript-conformance-runner@workspace:boundaries/kernel/implementations/typescript/conformance-runner"],
+    "@tuvren/kernel-typescript-conformance-runner": ["@tuvren/kernel-typescript-conformance-runner@workspace:typescript/kernel/conformance-runner"],
 
     "@tuvren/mcp-client": ["@tuvren/mcp-client@workspace:boundaries/providers/implementations/typescript/mcp-client"],
 

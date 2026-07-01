@@ -39,7 +39,7 @@
         "../../../../contracts/driver-api/implementations/typescript/src/index.ts"
       ],
       "@tuvren/backend-memory": [
-        "../../../../../kernel/implementations/typescript/backend-memory/src/index.ts"
+        "../../../../../../typescript/kernel/backends/memory/src/index.ts"
       ],
       "@ag-ui/core": [
         "../../stream-agui/node_modules/@ag-ui/core/dist/index.d.ts"
@@ -47,7 +47,7 @@
       "@tuvren/driver-react": ["./src/index.ts"],
       "@tuvren/framework-testkit": ["../../testkit/src/index.ts"],
       "@tuvren/kernel-runtime": [
-        "../../../../../kernel/implementations/typescript/runtime-kernel/src/index.ts"
+        "../../../../../../typescript/kernel/runtime/src/index.ts"
       ],
       "@tuvren/provider-api": [
         "../../../../../providers/contracts/provider-api/implementations/typescript/src/index.ts"

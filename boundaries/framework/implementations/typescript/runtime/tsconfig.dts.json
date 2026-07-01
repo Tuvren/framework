@@ -42,10 +42,10 @@
       ],
       "@tuvren/driver-react": ["../drivers/react/dist/index.d.ts"],
       "@tuvren/kernel-protocol": [
-        "../../../../kernel/contracts/protocol/implementations/typescript/dist/index.d.ts"
+        "../../../../../typescript/kernel/protocol/dist/index.d.ts"
       ],
       "@tuvren/kernel-runtime": [
-        "../../../../kernel/implementations/typescript/runtime-kernel/dist/index.d.ts"
+        "../../../../../typescript/kernel/runtime/dist/index.d.ts"
       ],
       "@tuvren/runtime-api": [
         "../../../contracts/runtime-api/implementations/typescript/dist/index.d.ts"

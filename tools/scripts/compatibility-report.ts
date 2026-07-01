@@ -181,10 +181,10 @@ const COMPATIBILITY_SCHEMA_PATH = resolve(
 );
 const EVIDENCE_DIRECTORY = resolve(REPO_ROOT, "reports/compatibility/evidence");
 const HERMETIC_BUILD_OUTPUT_DIRECTORIES = [
-  "boundaries/kernel/implementations/typescript/conformance-adapter/dist",
-  "boundaries/kernel/implementations/typescript/backend-memory/dist",
-  "boundaries/kernel/implementations/typescript/backend-sqlite/dist",
-  "boundaries/kernel/implementations/typescript/runtime-kernel/dist",
+  "typescript/kernel/conformance-adapter/dist",
+  "typescript/kernel/backends/memory/dist",
+  "typescript/kernel/backends/sqlite/dist",
+  "typescript/kernel/runtime/dist",
 ] as const;
 const ajv = new Ajv2020({ allErrors: true, strict: false });
 const TRANSITION_IMPLEMENTATION_VERSION = "unreleased-workspace";
@@ -249,13 +249,12 @@ const CONFORMANCE_RUNNERS: readonly ConformanceRunner[] = [
     reportLabel: "TypeScript framework batteries-included runtime",
   },
   {
-    adapterManifestPath:
-      "boundaries/kernel/implementations/typescript/conformance-adapter/adapter.json",
+    adapterManifestPath: "typescript/kernel/conformance-adapter/adapter.json",
     command: [
       "bun",
       "tools/conformance/runner/run.ts",
       "--adapter",
-      "boundaries/kernel/implementations/typescript/conformance-adapter/adapter.json",
+      "typescript/kernel/conformance-adapter/adapter.json",
       "--concurrency",
       "4",
     ],
@@ -279,12 +278,12 @@ const CONFORMANCE_RUNNERS: readonly ConformanceRunner[] = [
   },
   {
     adapterManifestPath:
-      "boundaries/kernel/implementations/typescript/conformance-adapter/adapter-sqlite.json",
+      "typescript/kernel/conformance-adapter/adapter-sqlite.json",
     command: [
       "bun",
       "tools/conformance/runner/run.ts",
       "--adapter",
-      "boundaries/kernel/implementations/typescript/conformance-adapter/adapter-sqlite.json",
+      "typescript/kernel/conformance-adapter/adapter-sqlite.json",
       "--concurrency",
       "4",
     ],
@@ -316,12 +315,12 @@ const CONFORMANCE_RUNNERS: readonly ConformanceRunner[] = [
     // target. The caller is responsible for starting the direnv-provisioned
     // Postgres service before refreshing measured evidence.
     adapterManifestPath:
-      "boundaries/kernel/implementations/typescript/conformance-adapter/adapter-postgres.json",
+      "typescript/kernel/conformance-adapter/adapter-postgres.json",
     command: [
       "bun",
       "tools/conformance/runner/run.ts",
       "--adapter",
-      "boundaries/kernel/implementations/typescript/conformance-adapter/adapter-postgres.json",
+      "typescript/kernel/conformance-adapter/adapter-postgres.json",
       "--concurrency",
       "4",
     ],

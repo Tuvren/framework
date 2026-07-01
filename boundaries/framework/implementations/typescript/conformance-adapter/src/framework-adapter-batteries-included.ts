@@ -23,8 +23,8 @@ import type {
   TuvrenModelResponse,
   TuvrenProvider,
 } from "@tuvren/core/provider";
-import type { PostgresBackendOptions } from "../../../../../kernel/implementations/typescript/backend-postgres/src/index.ts";
-import { destroyPostgresBackend } from "../../../../../kernel/implementations/typescript/backend-postgres/src/index.ts";
+import type { PostgresBackendOptions } from "../../../../../../typescript/kernel/backends/postgres/src/index.ts";
+import { destroyPostgresBackend } from "../../../../../../typescript/kernel/backends/postgres/src/index.ts";
 import type { CreateTuvrenOptions } from "../../runtime/src/lib/create-tuvren.ts";
 import { createTuvren } from "../../runtime/src/lib/create-tuvren.ts";
 

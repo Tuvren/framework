@@ -56,7 +56,7 @@
         "../../../contracts/driver-api/implementations/typescript/dist/index.d.ts"
       ],
       "@tuvren/kernel-protocol": [
-        "../../../../kernel/contracts/protocol/implementations/typescript/dist/index.d.ts"
+        "../../../../../typescript/kernel/protocol/dist/index.d.ts"
       ],
       "@tuvren/runtime-core": ["./src/index.ts"]
     },
