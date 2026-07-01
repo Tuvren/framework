@@ -1,6 +1,6 @@
 version: v2
 modules:
-  - path: boundaries/kernel/interop/grpc/proto
+  - path: spec/interop/proto
 lint:
   use:
     - STANDARD

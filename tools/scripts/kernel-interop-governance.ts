@@ -21,7 +21,7 @@ import { fileURLToPath } from "node:url";
 import { runCommand } from "./lib/command-runner.js";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
-const PROTO_ROOT = "boundaries/kernel/interop/grpc/proto";
+const PROTO_ROOT = "spec/interop/proto";
 const GENERATED_ROOT =
   "boundaries/framework/implementations/typescript/runtime/src/lib/generated/kernel-interop";
 const GENERATED_TSCONFIG =

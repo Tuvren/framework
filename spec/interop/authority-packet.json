@@ -1,0 +1,55 @@
+{
+  "packetId": "tuvren.kernel.interop-grpc",
+  "version": "0.1.0",
+  "boundary": "kernel",
+  "surface": "interop-grpc",
+  "humanAuthorityRefs": [
+    "docs/KrakenKernelSpecification.md",
+    ".constitution/tech-spec/stack.md#21-compatibility-record"
+  ],
+  "authoritativeSources": [
+    {
+      "path": "spec/interop/proto/tuvren/kernel/interop/v1/kernel_services.proto",
+      "format": "proto"
+    },
+    {
+      "path": "spec/interop/proto/tuvren/kernel/interop/v1/kernel_types.proto",
+      "format": "proto"
+    }
+  ],
+  "generatedArtifacts": [
+    {
+      "path": "boundaries/framework/implementations/typescript/runtime/src/lib/generated/kernel-interop",
+      "generatedFrom": "spec/interop/proto",
+      "generator": "protoc-gen-es"
+    }
+  ],
+  "bindingProjections": {
+    "typescript": "boundaries/framework/implementations/typescript/runtime",
+    "rust": "rust/kernel-grpc-service"
+  },
+  "forbiddenAuthoritySources": [
+    "boundaries/framework/implementations/typescript/runtime",
+    "boundaries/framework/implementations/typescript/runtime/src/lib/generated/kernel-interop",
+    "rust/kernel-grpc-service",
+    "spec/interop/proto/README.md",
+    "docs",
+    ".constitution"
+  ],
+  "verificationPaths": [
+    {
+      "kind": "interop-smoke",
+      "target": "spec/interop/proto"
+    },
+    {
+      "kind": "freshness-check",
+      "target": "boundaries/framework/implementations/typescript/runtime/src/lib/generated/kernel-interop"
+    }
+  ],
+  "freshnessChecks": [
+    {
+      "artifact": "boundaries/framework/implementations/typescript/runtime/src/lib/generated/kernel-interop",
+      "regenerateCommand": "bun run nx run kernel-interop-grpc:codegen"
+    }
+  ]
+}

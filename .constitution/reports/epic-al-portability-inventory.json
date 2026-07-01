@@ -42,7 +42,7 @@
     },
     {
       "packetId": "tuvren.kernel.interop-grpc",
-      "packetPath": "boundaries/kernel/interop/grpc/spec/authority-packet.json",
+      "packetPath": "spec/interop/authority-packet.json",
       "classification": "interop",
       "inventorySection": "§6.G4 / §9b"
     },
@@ -118,7 +118,7 @@
     },
     {
       "packetId": "tuvren.kernel.interop-grpc",
-      "sourcePath": "boundaries/kernel/interop/grpc/proto/tuvren/kernel/interop/v1/kernel_services.proto",
+      "sourcePath": "spec/interop/proto/tuvren/kernel/interop/v1/kernel_services.proto",
       "sourceFormat": "proto",
       "rationale": "KRT-AL002 G4: kernel gRPC services proto",
       "inventorySection": "§6.G4 / §9b"
@@ -132,7 +132,7 @@
     },
     {
       "packetId": "tuvren.kernel.interop-grpc",
-      "sourcePath": "boundaries/kernel/interop/grpc/proto/tuvren/kernel/interop/v1/kernel_types.proto",
+      "sourcePath": "spec/interop/proto/tuvren/kernel/interop/v1/kernel_types.proto",
       "sourceFormat": "proto",
       "rationale": "KRT-AL002 G4: kernel gRPC types proto",
       "inventorySection": "§6.G4 / §9b"

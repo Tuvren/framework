@@ -1,7 +1,7 @@
 {
   "name": "kernel-interop-grpc",
-  "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
-  "root": "boundaries/kernel/interop/grpc",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "root": "spec/interop",
   "projectType": "library",
   "tags": ["boundary:kernel", "layer:interop"],
   "targets": {
@@ -14,14 +14,14 @@
         "{workspaceRoot}/tools/scripts/lib/command-runner.ts",
         "{workspaceRoot}/buf.yaml",
         "{workspaceRoot}/buf.gen.yaml",
-        "{workspaceRoot}/boundaries/framework/implementations/typescript/runtime-core/package.json",
-        "{workspaceRoot}/boundaries/framework/implementations/typescript/runtime-core/tsconfig.kernel-interop.generated.json",
+        "{workspaceRoot}/boundaries/framework/implementations/typescript/runtime/package.json",
+        "{workspaceRoot}/boundaries/framework/implementations/typescript/runtime/tsconfig.kernel-interop.generated.json",
         "{workspaceRoot}/bun.lock",
         "{workspaceRoot}/devenv.nix",
         "{workspaceRoot}/devenv.lock"
       ],
       "outputs": [
-        "{workspaceRoot}/boundaries/framework/implementations/typescript/runtime-core/src/lib/generated/kernel-interop"
+        "{workspaceRoot}/boundaries/framework/implementations/typescript/runtime/src/lib/generated/kernel-interop"
       ],
       "options": {
         "cwd": ".",
@@ -54,7 +54,7 @@
       ],
       "options": {
         "cwd": ".",
-        "command": "bun tools/scripts/kernel-interop-governance.ts lint && bunx --bun @biomejs/biome check boundaries/kernel/interop/grpc tools/scripts/kernel-interop-governance.ts"
+        "command": "bun tools/scripts/kernel-interop-governance.ts lint && bunx --bun @biomejs/biome check spec/interop tools/scripts/kernel-interop-governance.ts"
       }
     }
   }
