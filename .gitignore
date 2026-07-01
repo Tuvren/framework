@@ -2,6 +2,7 @@ node_modules
 dist
 coverage
 target
+/bazel-*
 *.tsbuildinfo
 .nx/cache
 .nx/workspace-data

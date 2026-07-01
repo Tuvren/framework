@@ -1,0 +1,33 @@
+"""Epic #87 M1 tracer bullet: prove the Bazel <-> Rust seam on the kernel crate.
+
+Bzlmod only (no WORKSPACE file), per issue #87 SS7: "born Bazel-native."
+Scope is intentionally narrow (M1.1): register a Rust toolchain matching
+rust-toolchain.toml and resolve external crates from the existing root
+Cargo.lock/Cargo.toml. No files move in this milestone; BUILD.bazel targets
+are added at packages' current physical paths so the seam is proven before
+any git mv happens.
+"""
+
+module(
+    name = "tuvren_runtime",
+    version = "0.1.0",
+)
+
+bazel_dep(name = "rules_rust", version = "0.71.2")
+
+rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
+rust.toolchain(
+    edition = "2024",
+    versions = ["1.95.0"],
+)
+use_repo(rust, "rust_toolchains")
+
+register_toolchains("@rust_toolchains//:all")
+
+crate = use_extension("@rules_rust//crate_universe:extensions.bzl", "crate")
+crate.from_cargo(
+    name = "crates",
+    cargo_lockfile = "//:Cargo.lock",
+    manifests = ["//:Cargo.toml"],
+)
+use_repo(crate, "crates")

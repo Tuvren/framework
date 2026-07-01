@@ -1,0 +1,8 @@
+# Nix/devenv-provided tools (bash, coreutils, rustc, etc.) live under
+# /nix/store/<hash>-<pkg>/bin, not the FHS paths (/bin, /usr/bin) Bazel's
+# default hermetic sandbox PATH assumes. Without this, Bazel's own test
+# infrastructure (external/bazel_tools/tools/test/generate-xml.sh, which
+# shebangs `#!/usr/bin/env bash`) fails with "Exit 127: command not found"
+# because `bash` isn't resolvable inside the sandboxed PATH.
+build --action_env=PATH
+test --test_env=PATH
