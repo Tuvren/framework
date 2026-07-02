@@ -24,7 +24,7 @@
     "providers.conversation-state-ownership"
   ],
   "authorityPackets": [
-    "boundaries/providers/contracts/provider-api/spec/authority-packet.json",
+    "spec/providers/authority-packet.json",
     "boundaries/providers/contracts/mcp/spec/authority-packet.json"
   ],
   "suiteId": "tuvren.providers.provider-api",

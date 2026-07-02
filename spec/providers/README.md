@@ -1,20 +1,25 @@
-# Providers port — engine-seam stub (87-M3)
+# Providers port — authority
 
-This directory is the future home of the full provider port contract.
-The full authority lifts at **M4** (issue #87 §13); this stub only
-declares the engine↔providers seam that the engine compiles against
-today, per the M3 gate ("only the engine↔port interface seams … as
-minimal stubs").
+The provider port contract is authoritative here as of 87-M4.1 (lifted
+from `boundaries/providers/contracts/provider-api/`, merging that
+contract root's README and its spec README into this file):
 
-Engine-facing seam surface (measured at 87-M3.4):
+- `typespec/` — the reviewed TypeSpec source (`main.tsp`), the
+  machine-readable contract projection for this surface.
+- `authority-packet.json` — the packet for `tuvren.providers.provider-api`.
+- `bindings/` — language-binding appendices (TypeScript today).
+- `artifacts/` — the reviewed JSON Schema and OpenAPI outputs generated
+  from the TypeSpec source.
 
-- `@tuvren/core/provider` vocabulary — neutral authority:
-  `spec/core/authority-packet.json` + `spec/core/typespec/main.tsp`.
+Certification assets live at `spec/conformance/providers/` (plans,
+fixtures, scenarios, schemas — moved in the same commit).
 
-Interim full authority until M4:
+The engine-facing seam vocabulary remains `@tuvren/core/provider`
+(authority `spec/core`). The `@tuvren/provider-api` TypeScript binding
+package still lives at
+`boundaries/providers/contracts/provider-api/implementations/typescript`
+until 87-M4.2 moves the provider implementation packages to
+`typescript/providers/`.
 
-- `boundaries/providers/contracts/provider-api/spec/authority-packet.json`
-
-This stub is a pointer, not an oracle: cross-language semantic truth
-lives in the referenced authority packets, generated artifacts, and
-conformance plans — never in this file.
+MCP is deliberately **not** part of this port: it is re-categorized as a
+tool bus-driver and migrates to `spec/tools/` at M5 (issue #87 §13).

@@ -1916,7 +1916,7 @@
     }
   ],
   "fixtures": {
-    "secret-isolation": "../../../../boundaries/providers/conformance/fixtures/secret-isolation-fixtures.json"
+    "secret-isolation": "../../providers/fixtures/secret-isolation-fixtures.json"
   },
   "packetId": "tuvren.shared.core",
   "planId": "tuvren.framework.runtime-api.callables-extended",

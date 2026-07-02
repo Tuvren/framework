@@ -95,12 +95,15 @@ describe("provider-api", () => {
     // Epic X keeps TypeSpec artifacts and boundary conformance fixtures at the
     // contract and boundary roots; only the TypeScript package root moved.
     const ajv = loadJsonSchemas(
-      new URL("../../../artifacts/json-schema/", import.meta.url)
+      new URL(
+        "../../../../../../../spec/providers/artifacts/json-schema/",
+        import.meta.url
+      )
     );
     const fixture = JSON.parse(
       readFileSync(
         new URL(
-          "../../../../../conformance/fixtures/provider-fixtures.json",
+          "../../../../../../../spec/conformance/providers/fixtures/provider-fixtures.json",
           import.meta.url
         ),
         "utf8"
@@ -206,7 +209,7 @@ describe("provider-api", () => {
   test("emits the reviewed OpenAPI component catalog for provider payloads", () => {
     const document = readJsonObject(
       new URL(
-        "../../../artifacts/openapi/provider-api.openapi.json",
+        "../../../../../../../spec/providers/artifacts/openapi/provider-api.openapi.json",
         import.meta.url
       )
     );

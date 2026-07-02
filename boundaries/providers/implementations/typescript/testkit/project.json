@@ -19,7 +19,7 @@
       "inputs": [
         "default",
         "^production",
-        "{workspaceRoot}/boundaries/providers/conformance/**/*"
+        "{workspaceRoot}/spec/conformance/providers/**/*"
       ],
       "options": {
         "cwd": "boundaries/providers/implementations/typescript/testkit",
@@ -38,7 +38,7 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": ".",
-        "command": "bunx --bun @biomejs/biome check boundaries/providers/implementations/typescript/testkit boundaries/providers/conformance"
+        "command": "bunx --bun @biomejs/biome check boundaries/providers/implementations/typescript/testkit spec/conformance/providers"
       }
     },
     "test": {

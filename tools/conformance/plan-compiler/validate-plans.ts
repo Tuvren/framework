@@ -51,10 +51,10 @@ const OPERATION_SOURCE_BY_PACKET = new Map<string, readonly string[]>([
   [
     "tuvren.providers.provider-api",
     [
-      "boundaries/providers/conformance/plans/provider-api-bridge.json",
-      "boundaries/providers/conformance/plans/provider-native-execution-class.json",
-      "boundaries/providers/conformance/plans/provider-mediated-execution-class.json",
-      "boundaries/providers/conformance/plans/provider-api-conversation-state.json",
+      "spec/conformance/providers/plans/provider-api-bridge.json",
+      "spec/conformance/providers/plans/provider-native-execution-class.json",
+      "spec/conformance/providers/plans/provider-mediated-execution-class.json",
+      "spec/conformance/providers/plans/provider-api-conversation-state.json",
     ],
   ],
 ]);

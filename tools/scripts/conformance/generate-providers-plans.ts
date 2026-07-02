@@ -14,6 +14,12 @@
  * limitations under the License.
  */
 
+// ⚠️ STALE SCAFFOLD — DO NOT RUN TO "REGENERATE" AUTHORITY (measured 87-M4.1,
+// same class as generate-framework-plans.ts). The committed plan JSON is
+// authority; running this script regresses 6 assertion `kind` fields of
+// provider-api-bridge-extended.json from the committed "resultField" to
+// "evidenceField". Back-port the committed content or retire the script —
+// that decision belongs to the providers plan-family owner (M4-carry).
 import { writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -38,7 +44,7 @@ interface Plan {
 }
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
-const PLANS_DIR = resolve(REPO_ROOT, "boundaries/providers/conformance/plans");
+const PLANS_DIR = resolve(REPO_ROOT, "spec/conformance/providers/plans");
 
 await main();
 

@@ -6,7 +6,7 @@
     "capabilities": ["framework.runtime-api"]
   },
   "fixtures": {
-    "secret-isolation": "../../../providers/conformance/fixtures/secret-isolation-fixtures.json"
+    "secret-isolation": "../../../../spec/conformance/providers/fixtures/secret-isolation-fixtures.json"
   },
   "scenarios": {
     "operational-telemetry-scenarios": "../scenarios/operational-telemetry-scenarios.json"

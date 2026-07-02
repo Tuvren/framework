@@ -30,7 +30,7 @@
     },
     {
       "packetId": "tuvren.providers.provider-api",
-      "packetPath": "boundaries/providers/contracts/provider-api/spec/authority-packet.json",
+      "packetPath": "spec/providers/authority-packet.json",
       "classification": "portable",
       "inventorySection": "§3 / §9b"
     },
@@ -125,7 +125,7 @@
     },
     {
       "packetId": "tuvren.providers.mcp",
-      "sourcePath": "boundaries/providers/conformance/plans/providers-mcp-client.json",
+      "sourcePath": "spec/conformance/providers/plans/providers-mcp-client.json",
       "sourceFormat": "conformance-plan",
       "rationale": "KRT-AS008: MCP Client Container translation, validation, auth, and transport parity conformance plan",
       "inventorySection": "§3 / Epic AS"

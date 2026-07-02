@@ -32,8 +32,13 @@ export interface ProviderConformanceFixtureSet {
   toolPrompt: TuvrenPrompt;
 }
 
+// Walk-up probe segments are repo-root-anchored since 87-M4.1 moved the
+// providers conformance tree to spec/conformance/providers/ (same pattern as
+// the kernel testkit's walker since M1.3).
 const MANIFEST_PATH_SEGMENTS = [
+  "spec",
   "conformance",
+  "providers",
   "scenarios",
   "suite-manifest.json",
 ];

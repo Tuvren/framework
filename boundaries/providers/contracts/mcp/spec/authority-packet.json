@@ -10,7 +10,7 @@
   ],
   "authoritativeSources": [
     {
-      "path": "boundaries/providers/conformance/plans/providers-mcp-client.json",
+      "path": "spec/conformance/providers/plans/providers-mcp-client.json",
       "format": "conformance-plan"
     }
   ],
@@ -18,7 +18,7 @@
     {
       "planId": "tuvren.providers.mcp-client",
       "planVersion": "0.3.0",
-      "path": "boundaries/providers/conformance/plans/providers-mcp-client.json"
+      "path": "spec/conformance/providers/plans/providers-mcp-client.json"
     }
   ],
   "bindingProjections": {
@@ -36,7 +36,7 @@
   "verificationPaths": [
     {
       "kind": "conformance-plan",
-      "target": "boundaries/providers/conformance/plans/providers-mcp-client.json"
+      "target": "spec/conformance/providers/plans/providers-mcp-client.json"
     }
   ]
 }

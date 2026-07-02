@@ -29,8 +29,14 @@ export interface ProviderTestkitFixtureSet {
   toolPrompt: TuvrenPrompt;
 }
 
+// Walk-up probe segments are repo-root-anchored since 87-M4.1 moved the
+// providers conformance tree to spec/conformance/providers/ — the ancestor
+// walk now terminates at the repository root regardless of where this
+// package lives in the language tree.
 const MANIFEST_PATH_SEGMENTS = [
+  "spec",
   "conformance",
+  "providers",
   "scenarios",
   "suite-manifest.json",
 ];

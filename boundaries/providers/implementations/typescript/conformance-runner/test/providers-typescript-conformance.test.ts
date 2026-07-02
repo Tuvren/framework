@@ -26,11 +26,11 @@ import {
 } from "../../testkit/src/index.ts";
 
 const PROVIDER_SUITE_MANIFEST = new URL(
-  "../../../../conformance/scenarios/suite-manifest.json",
+  "../../../../../../spec/conformance/providers/scenarios/suite-manifest.json",
   import.meta.url
 );
 const PROVIDER_SUITE_MANIFEST_SCHEMA = new URL(
-  "../../../../conformance/schemas/suite-manifest.schema.json",
+  "../../../../../../spec/conformance/providers/schemas/suite-manifest.schema.json",
   import.meta.url
 );
 

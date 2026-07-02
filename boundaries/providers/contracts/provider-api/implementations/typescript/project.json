@@ -17,8 +17,8 @@
     "codegen": {
       "executor": "nx:run-commands",
       "outputs": [
-        "{workspaceRoot}/boundaries/providers/contracts/provider-api/artifacts/json-schema",
-        "{workspaceRoot}/boundaries/providers/contracts/provider-api/artifacts/openapi"
+        "{workspaceRoot}/spec/providers/artifacts/json-schema",
+        "{workspaceRoot}/spec/providers/artifacts/openapi"
       ],
       "options": {
         "cwd": "boundaries/providers/contracts/provider-api",
@@ -27,8 +27,8 @@
       "inputs": [
         "default",
         "^production",
-        "{workspaceRoot}/boundaries/providers/contracts/provider-api/spec/**/*",
-        "{workspaceRoot}/boundaries/providers/contracts/provider-api/artifacts/**/*"
+        "{workspaceRoot}/spec/providers/**/*",
+        "{workspaceRoot}/spec/providers/artifacts/**/*"
       ]
     },
     "test": {
@@ -40,7 +40,7 @@
       "inputs": [
         "default",
         "^production",
-        "{workspaceRoot}/boundaries/providers/contracts/provider-api/artifacts/**/*"
+        "{workspaceRoot}/spec/providers/artifacts/**/*"
       ]
     },
     "exports-smoke": {

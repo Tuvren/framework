@@ -15,7 +15,7 @@
         "default",
         "^production",
         "conformanceEngine",
-        "{workspaceRoot}/boundaries/providers/conformance/**/*",
+        "{workspaceRoot}/spec/conformance/providers/**/*",
         "{workspaceRoot}/boundaries/providers/implementations/*/conformance-adapter/**/*"
       ],
       "options": {
