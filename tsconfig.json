@@ -66,7 +66,7 @@
       "path": "./typescript/runtime"
     },
     {
-      "path": "./boundaries/framework/implementations/typescript/testkit"
+      "path": "./typescript/testkit"
     },
     {
       "path": "./boundaries/providers/implementations/typescript/testkit"

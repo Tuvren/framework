@@ -56,11 +56,11 @@ const FRAMEWORK_TESTKIT_ROOT = dirname(fileURLToPath(import.meta.url));
 const STREAM_FIXTURE_PATHS = [
   resolve(
     FRAMEWORK_TESTKIT_ROOT,
-    "../../../../../conformance/fixtures/stream-events.json"
+    "../../../../boundaries/framework/conformance/fixtures/stream-events.json"
   ),
   resolve(
     FRAMEWORK_TESTKIT_ROOT,
-    "../../../../conformance/fixtures/stream-events.json"
+    "../../../boundaries/framework/conformance/fixtures/stream-events.json"
   ),
 ];
 

@@ -158,15 +158,6 @@
         "@tuvren/core": "workspace:*",
       },
     },
-    "boundaries/framework/implementations/typescript/testkit": {
-      "name": "@tuvren/framework-testkit",
-      "version": "0.0.0",
-      "dependencies": {
-        "@tuvren/core": "workspace:*",
-        "@tuvren/event-stream": "workspace:*",
-        "ajv": "8.18.0",
-      },
-    },
     "boundaries/hosts/implementations/typescript/repl": {
       "name": "@tuvren/repl-host",
       "version": "0.0.0",
@@ -392,6 +383,15 @@
         "@standard-schema/spec",
         "zod",
       ],
+    },
+    "typescript/testkit": {
+      "name": "@tuvren/framework-testkit",
+      "version": "0.0.0",
+      "dependencies": {
+        "@tuvren/core": "workspace:*",
+        "@tuvren/event-stream": "workspace:*",
+        "ajv": "8.18.0",
+      },
     },
   },
   "trustedDependencies": [
@@ -968,7 +968,7 @@
 
     "@tuvren/event-stream": ["@tuvren/event-stream@workspace:boundaries/framework/contracts/event-stream/implementations/typescript"],
 
-    "@tuvren/framework-testkit": ["@tuvren/framework-testkit@workspace:boundaries/framework/implementations/typescript/testkit"],
+    "@tuvren/framework-testkit": ["@tuvren/framework-testkit@workspace:typescript/testkit"],
 
     "@tuvren/framework-typescript-conformance-runner": ["@tuvren/framework-typescript-conformance-runner@workspace:boundaries/framework/implementations/typescript/conformance-runner"],
 

@@ -73,7 +73,7 @@
         "../../../../framework/implementations/typescript/stream-agui/node_modules/@ag-ui/core/dist/index.d.ts"
       ],
       "@tuvren/framework-testkit": [
-        "../../../../framework/implementations/typescript/testkit/src/index.ts"
+        "../../../../../typescript/testkit/src/index.ts"
       ],
       "@tuvren/runtime-core": [
         "../../../../framework/implementations/typescript/runtime-core/src/index.ts"
@@ -100,7 +100,7 @@
     "../../../../framework/implementations/typescript/drivers/react/src/**/*.ts",
     "../../../../../typescript/runtime/src/**/*.ts",
     "../../../../../typescript/runtime/test/**/*.ts",
-    "../../../../framework/implementations/typescript/testkit/src/**/*.ts",
+    "../../../../../typescript/testkit/src/**/*.ts",
     "../../../../framework/implementations/typescript/stream-agui/src/**/*.ts",
     "../../../../framework/implementations/typescript/stream-core/src/**/*.ts",
     "../../../../framework/implementations/typescript/stream-sse/src/**/*.ts",

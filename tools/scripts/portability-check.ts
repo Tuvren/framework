@@ -87,7 +87,7 @@ const PORTABLE_PACKAGE_SURFACES: readonly PortablePackageSurface[] = [
   {
     classification: "Bun-and-Node validated",
     packageName: "@tuvren/framework-testkit",
-    packageRoot: "boundaries/framework/implementations/typescript/testkit",
+    packageRoot: "typescript/testkit",
   },
   {
     classification: "Bun-and-Node validated",

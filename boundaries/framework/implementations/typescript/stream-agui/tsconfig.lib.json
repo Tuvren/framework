@@ -20,7 +20,7 @@
       "path": "../../../../../typescript/core-types/tsconfig.lib.json"
     },
     {
-      "path": "../testkit/tsconfig.lib.json"
+      "path": "../../../../../typescript/testkit/tsconfig.lib.json"
     }
   ]
 }

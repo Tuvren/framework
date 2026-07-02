@@ -1,8 +1,8 @@
 {
   "name": "framework-testkit",
-  "$schema": "../../../../../node_modules/nx/schemas/project-schema.json",
-  "root": "boundaries/framework/implementations/typescript/testkit",
-  "sourceRoot": "boundaries/framework/implementations/typescript/testkit/src",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "root": "typescript/testkit",
+  "sourceRoot": "typescript/testkit/src",
   "projectType": "library",
   "tags": ["boundary:framework", "layer:testkit"],
   "targets": {
@@ -10,7 +10,7 @@
       "executor": "nx:run-commands",
       "dependsOn": ["^build"],
       "options": {
-        "cwd": "boundaries/framework/implementations/typescript/testkit",
+        "cwd": "typescript/testkit",
         "command": "bunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false"
       }
     },
@@ -18,7 +18,7 @@
       "executor": "nx:run-commands",
       "dependsOn": ["build"],
       "options": {
-        "cwd": "boundaries/framework/implementations/typescript/testkit",
+        "cwd": "typescript/testkit",
         "command": "bun test ./smoke/package-exports.ts"
       }
     },
@@ -26,13 +26,13 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": ".",
-        "command": "bunx --bun @biomejs/biome check boundaries/framework/implementations/typescript/testkit boundaries/framework/conformance"
+        "command": "bunx --bun @biomejs/biome check typescript/testkit boundaries/framework/conformance"
       }
     },
     "test": {
       "executor": "nx:run-commands",
       "options": {
-        "cwd": "boundaries/framework/implementations/typescript/testkit",
+        "cwd": "typescript/testkit",
         "command": "bun test"
       }
     },
@@ -40,7 +40,7 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": ".",
-        "command": "bun tools/scripts/typecheck-project.ts boundaries/framework/implementations/typescript/testkit"
+        "command": "bun tools/scripts/typecheck-project.ts typescript/testkit"
       }
     }
   }

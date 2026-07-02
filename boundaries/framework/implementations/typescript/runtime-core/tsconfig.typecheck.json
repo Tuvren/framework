@@ -40,7 +40,9 @@
       "@tuvren/driver-api": [
         "../../../contracts/driver-api/implementations/typescript/src/index.ts"
       ],
-      "@tuvren/framework-testkit": ["../testkit/src/index.ts"],
+      "@tuvren/framework-testkit": [
+        "../../../../../typescript/testkit/src/index.ts"
+      ],
       "@tuvren/kernel-protocol": [
         "../../../../../typescript/kernel/protocol/src/index.ts"
       ],

@@ -26,9 +26,7 @@
       "@tuvren/driver-api": [
         "../../boundaries/framework/contracts/driver-api/implementations/typescript/src/index.ts"
       ],
-      "@tuvren/framework-testkit": [
-        "../../boundaries/framework/implementations/typescript/testkit/src/index.ts"
-      ],
+      "@tuvren/framework-testkit": ["../testkit/src/index.ts"],
       "@tuvren/kernel-protocol": ["../kernel/protocol/src/index.ts"],
       "@tuvren/kernel-runtime": ["../kernel/runtime/src/index.ts"],
       "@tuvren/mcp-client": [
@@ -70,7 +68,7 @@
     "src/**/*.ts",
     "smoke/**/*.ts",
     "test/**/*.ts",
-    "../../boundaries/framework/implementations/typescript/testkit/src/**/*.ts",
+    "../testkit/src/**/*.ts",
     "../../boundaries/framework/contracts/runtime-api/implementations/typescript/src/**/*.ts",
     "../../boundaries/framework/contracts/driver-api/implementations/typescript/src/**/*.ts",
     "../kernel/protocol/src/**/*.ts",
