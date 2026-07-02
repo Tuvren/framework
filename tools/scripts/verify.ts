@@ -256,7 +256,7 @@ export const DEFAULT_VERIFICATION_PHASES: readonly VerificationPhase[] = [
           "-t",
           "codegen",
           "-p",
-          "shared-core-types,framework-runtime-api,framework-event-stream,framework-event-stream-sse,framework-driver-api,framework-tool-contracts,provider-api,telemetry-semconv,compatibility-reporting,kernel-interop-grpc",
+          "core-spec,framework-runtime-api,framework-event-stream,framework-event-stream-sse,framework-driver-api,framework-tool-contracts,provider-api,telemetry-semconv,compatibility-reporting,kernel-interop-grpc",
           "--skipNxCache",
         ],
         id: "telemetry, compatibility, and interop code generation",
