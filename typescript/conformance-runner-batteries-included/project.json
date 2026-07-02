@@ -1,7 +1,7 @@
 {
   "name": "framework-batteries-included-conformance-runner",
-  "$schema": "../../../../../node_modules/nx/schemas/project-schema.json",
-  "root": "boundaries/framework/implementations/typescript/conformance-runner-batteries-included",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "root": "typescript/conformance-runner-batteries-included",
   "projectType": "library",
   "tags": [
     "boundary:framework",
@@ -17,6 +17,7 @@
         "^production",
         "conformanceEngine",
         "{workspaceRoot}/boundaries/framework/conformance/**/*",
+        "{workspaceRoot}/typescript/conformance-adapter/**/*",
         "{workspaceRoot}/boundaries/framework/implementations/*/conformance-adapter/**/*"
       ],
       "dependsOn": [
@@ -28,7 +29,7 @@
       ],
       "options": {
         "cwd": ".",
-        "command": "bun tools/conformance/runner/run.ts --adapter boundaries/framework/implementations/typescript/conformance-adapter/adapter-batteries-included.json --summary-only"
+        "command": "bun tools/conformance/runner/run.ts --adapter typescript/conformance-adapter/adapter-batteries-included.json --summary-only"
       }
     }
   }

@@ -32,7 +32,7 @@ part of the cross-language contract.
 The shared conformance runner dispatches `event-stream-sse.decode-trace` and
 `event-stream-sse.report-wire-compliance` operations against any adapter that
 declares the `framework.event-stream-sse` capability. The TypeScript framework
-adapter at `boundaries/framework/implementations/typescript/conformance-adapter/`
+adapter at `typescript/conformance-adapter/`
 declares that capability and routes both operations through
 `framework-adapter-event-stream-sse.ts`, which delegates to `decodeSseStream`
 and `reportSseWireCompliance` from `@tuvren/stream-sse`. Every check in

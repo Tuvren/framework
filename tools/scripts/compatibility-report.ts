@@ -200,13 +200,12 @@ const CHECK_FLAG = "--check";
 
 const CONFORMANCE_RUNNERS: readonly ConformanceRunner[] = [
   {
-    adapterManifestPath:
-      "boundaries/framework/implementations/typescript/conformance-adapter/adapter.json",
+    adapterManifestPath: "typescript/conformance-adapter/adapter.json",
     command: [
       "bun",
       "tools/conformance/runner/run.ts",
       "--adapter",
-      "boundaries/framework/implementations/typescript/conformance-adapter/adapter.json",
+      "typescript/conformance-adapter/adapter.json",
     ],
     implementationId: "typescript-framework",
     language: "typescript",
@@ -226,12 +225,12 @@ const CONFORMANCE_RUNNERS: readonly ConformanceRunner[] = [
   },
   {
     adapterManifestPath:
-      "boundaries/framework/implementations/typescript/conformance-adapter/adapter-batteries-included.json",
+      "typescript/conformance-adapter/adapter-batteries-included.json",
     command: [
       "bun",
       "tools/conformance/runner/run.ts",
       "--adapter",
-      "boundaries/framework/implementations/typescript/conformance-adapter/adapter-batteries-included.json",
+      "typescript/conformance-adapter/adapter-batteries-included.json",
     ],
     implementationId: "typescript-framework",
     language: "typescript",

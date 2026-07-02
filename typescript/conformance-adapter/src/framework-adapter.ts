@@ -32,7 +32,7 @@ import {
   type AdapterControls,
   createAdapterErrorEnvelope,
   type OperationOutcome,
-} from "../../../../../../tools/conformance/adapter-protocol/index.js";
+} from "../../../tools/conformance/adapter-protocol/index.js";
 import { createFrameworkAdapterBatteriesIncluded } from "./framework-adapter-batteries-included.ts";
 import {
   runCapabilityOrchestrationFoundation,
@@ -89,7 +89,7 @@ export type {
   AdapterCapabilities,
   AdapterControls,
   OperationOutcome,
-} from "../../../../../../tools/conformance/adapter-protocol/index.js";
+} from "../../../tools/conformance/adapter-protocol/index.js";
 
 export interface ImplementationAdapter {
   dispatch(

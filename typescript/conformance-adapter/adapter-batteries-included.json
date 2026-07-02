@@ -10,7 +10,7 @@
   },
   "command": [
     "node",
-    "boundaries/framework/implementations/typescript/conformance-adapter/dist/batteries-included-node-host.mjs"
+    "typescript/conformance-adapter/dist/batteries-included-node-host.mjs"
   ],
   "capabilities": ["framework.batteries-included"],
   "authorityPackets": [

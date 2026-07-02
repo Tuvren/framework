@@ -16,8 +16,8 @@
 
 // Entry point compiled and run with node to support backends that require
 // native Node.js addons (e.g. better-sqlite3 for the SQLite backend).
-import type { AdapterCapabilities } from "../../../../../../tools/conformance/adapter-protocol/index.js";
-import { serveStdioAdapter } from "../../../../../../tools/conformance/adapter-protocol/stdio-host.js";
+import type { AdapterCapabilities } from "../../../tools/conformance/adapter-protocol/index.js";
+import { serveStdioAdapter } from "../../../tools/conformance/adapter-protocol/stdio-host.js";
 import { TypeScriptFrameworkAdapter } from "./framework-adapter.ts";
 
 class BatteriesIncludedAdapter extends TypeScriptFrameworkAdapter {

@@ -1,7 +1,7 @@
 {
   "name": "framework-typescript-conformance-adapter",
-  "$schema": "../../../../../../node_modules/nx/schemas/project-schema.json",
-  "root": "boundaries/framework/implementations/typescript/conformance-adapter",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "root": "typescript/conformance-adapter",
   "projectType": "library",
   "tags": [
     "boundary:framework",
@@ -21,7 +21,7 @@
       ],
       "outputs": ["{projectRoot}/dist"],
       "options": {
-        "cwd": "boundaries/framework/implementations/typescript/conformance-adapter",
+        "cwd": "typescript/conformance-adapter",
         "command": "bunx --bun tsup --config tsup.config.batteries-included.ts"
       }
     },
@@ -29,7 +29,7 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": ".",
-        "command": "bunx --bun @biomejs/biome check boundaries/framework/implementations/typescript/conformance-adapter"
+        "command": "bunx --bun @biomejs/biome check typescript/conformance-adapter"
       }
     }
   }

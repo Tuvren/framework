@@ -67,17 +67,6 @@
         "@tuvren/runtime-api": "workspace:*",
       },
     },
-    "boundaries/framework/implementations/typescript/conformance-runner": {
-      "name": "@tuvren/framework-typescript-conformance-runner",
-      "version": "0.0.0",
-      "dependencies": {
-        "@ag-ui/core": "0.0.52",
-        "@tuvren/event-stream": "workspace:*",
-        "@tuvren/stream-agui": "workspace:*",
-        "@tuvren/stream-core": "workspace:*",
-        "@tuvren/stream-sse": "workspace:*",
-      },
-    },
     "boundaries/framework/implementations/typescript/drivers/react": {
       "name": "@tuvren/driver-react",
       "version": "0.0.0",
@@ -230,6 +219,17 @@
         "@tuvren/provider-api": "workspace:*",
         "ajv": "8.18.0",
         "zod": "4.4.3",
+      },
+    },
+    "typescript/conformance-runner": {
+      "name": "@tuvren/framework-typescript-conformance-runner",
+      "version": "0.0.0",
+      "dependencies": {
+        "@ag-ui/core": "0.0.52",
+        "@tuvren/event-stream": "workspace:*",
+        "@tuvren/stream-agui": "workspace:*",
+        "@tuvren/stream-core": "workspace:*",
+        "@tuvren/stream-sse": "workspace:*",
       },
     },
     "typescript/core": {
@@ -956,7 +956,7 @@
 
     "@tuvren/framework-testkit": ["@tuvren/framework-testkit@workspace:typescript/testkit"],
 
-    "@tuvren/framework-typescript-conformance-runner": ["@tuvren/framework-typescript-conformance-runner@workspace:boundaries/framework/implementations/typescript/conformance-runner"],
+    "@tuvren/framework-typescript-conformance-runner": ["@tuvren/framework-typescript-conformance-runner@workspace:typescript/conformance-runner"],
 
     "@tuvren/kernel-protocol": ["@tuvren/kernel-protocol@workspace:typescript/kernel/protocol"],
 

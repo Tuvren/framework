@@ -30,11 +30,11 @@ import {
   createDriverRegistry,
   createTuvrenRuntime as createTuvrenRuntimeCore,
 } from "@tuvren/runtime";
-import { createReActDriver } from "../../drivers/react/src/index.ts";
+import { createReActDriver } from "../../../boundaries/framework/implementations/typescript/drivers/react/src/index.ts";
 import {
   executeGenerateCall,
   executeStreamCall,
-} from "../../drivers/react/src/lib/react-driver-stream.ts";
+} from "../../../boundaries/framework/implementations/typescript/drivers/react/src/lib/react-driver-stream.ts";
 import {
   type AdapterProjection,
   AGENT_NAME,

@@ -20,9 +20,9 @@ import { resolve } from "node:path";
 import {
   type CompiledConformancePlan,
   loadConformancePlan,
-} from "../../../../../../tools/conformance/plan-compiler/index.js";
+} from "../../../tools/conformance/plan-compiler/index.js";
 
-const REPO_ROOT = resolve(import.meta.dir, "../../../../../..");
+const REPO_ROOT = resolve(import.meta.dir, "../../..");
 const FRAMEWORK_PACKET_PATHS: readonly string[] = [
   "spec/core/authority-packet.json",
   "boundaries/framework/contracts/event-stream-sse/spec/authority-packet.json",

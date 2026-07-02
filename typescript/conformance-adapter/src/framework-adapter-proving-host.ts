@@ -21,9 +21,7 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { AdapterProjection } from "./framework-adapter-runtime.ts";
 
-const REPO_ROOT = resolve(
-  fileURLToPath(new URL("../../../../../..", import.meta.url))
-);
+const REPO_ROOT = resolve(fileURLToPath(new URL("../../..", import.meta.url)));
 const REPL_CLI_PATH = resolve(
   REPO_ROOT,
   "boundaries/hosts/implementations/typescript/repl/dist/cli.js"

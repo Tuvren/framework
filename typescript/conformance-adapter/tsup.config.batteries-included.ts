@@ -23,10 +23,7 @@ const configDir = dirname(fileURLToPath(import.meta.url));
 // Absolute path to SQLite migrations — copied alongside the bundle so that
 // import.meta.url-relative resolution inside bundled @tuvren/backend-sqlite
 // finds ./migrations next to batteries-included-node-host.mjs.
-const MIGRATIONS_SRC = join(
-  configDir,
-  "../../../../../typescript/kernel/backends/sqlite/migrations"
-);
+const MIGRATIONS_SRC = join(configDir, "../kernel/backends/sqlite/migrations");
 const MIGRATIONS_DEST = join(configDir, "dist/migrations");
 
 export default defineConfig({

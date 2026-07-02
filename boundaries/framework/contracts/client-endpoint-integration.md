@@ -118,7 +118,7 @@ These values enter durable lineage. The runtime never injects provider credentia
 
 The conformance mock endpoint used in the `tuvren-client-execution-class` conformance check set serves as a minimal reference implementation:
 
-- Source: `boundaries/framework/implementations/typescript/conformance-adapter/src/framework-adapter-tuvren-client-execution-class.ts`
+- Source: `typescript/conformance-adapter/src/framework-adapter-tuvren-client-execution-class.ts`
 - Functions: `makeOkEndpoint`, `makeClientMcpEndpoint`, `makeStaleEndpoint`
 
 These helpers show the minimal `dispatch` implementation that the runtime expects from a conforming client endpoint.

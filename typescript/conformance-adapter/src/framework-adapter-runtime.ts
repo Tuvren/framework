@@ -39,8 +39,8 @@ import {
   createDriverRegistry,
   createTuvrenRuntime as createTuvrenRuntimeCore,
 } from "@tuvren/runtime";
-import { decodeStoredRun } from "../../../../../../typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts";
-import { createReActDriver } from "../../drivers/react/src/index.ts";
+import { createReActDriver } from "../../../boundaries/framework/implementations/typescript/drivers/react/src/index.ts";
+import { decodeStoredRun } from "../../kernel/runtime/src/lib/runtime-kernel-storage.ts";
 
 export interface AdapterProjection {
   events?: readonly unknown[];

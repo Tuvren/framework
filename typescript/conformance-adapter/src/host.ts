@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { serveStdioAdapter } from "../../../../../../tools/conformance/adapter-protocol/stdio-host.js";
+import { serveStdioAdapter } from "../../../tools/conformance/adapter-protocol/stdio-host.js";
 import { TypeScriptFrameworkAdapter } from "./framework-adapter.ts";
 
 await serveStdioAdapter(new TypeScriptFrameworkAdapter());

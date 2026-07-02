@@ -44,7 +44,7 @@ dist/
 boundaries/framework/conformance/plans/
 
 # Large conformance adapter source
-boundaries/framework/implementations/typescript/conformance-adapter/src/
+typescript/conformance-adapter/src/
 
 # Kernel backend-sqlite source (very large)
 boundaries/kernel/implementations/typescript/backend-sqlite/src/

@@ -8,10 +8,7 @@
     "version": "0.1.0",
     "transport": "json-rpc-2.0-stdio"
   },
-  "command": [
-    "bun",
-    "boundaries/framework/implementations/typescript/conformance-adapter/src/host.ts"
-  ],
+  "command": ["bun", "typescript/conformance-adapter/src/host.ts"],
   "capabilities": [
     "framework.driver-api",
     "framework.event-stream",
