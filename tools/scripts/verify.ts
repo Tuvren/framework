@@ -51,6 +51,18 @@ export interface VerificationPhase {
 const DEFAULT_MAX_CONCURRENCY = 8;
 
 export const WORKSPACE_TEST_PROJECTS: readonly string[] = [
+  // M3.1: full test-target coverage — every Nx project declaring a `test`
+  // target belongs here or in validate-workspace-test-coverage.ts's
+  // documented exclusions (currently only the cargo-covered Rust projects).
+  // That gate enforces exact parity in both directions.
+  "shared-core",
+  "shared-core-types",
+  "sdk",
+  "kernel-contract-protocol",
+  "kernel-runtime",
+  "backend-memory",
+  "backend-sqlite",
+  "providers-mcp-client",
   "provider-api",
   "framework-event-stream",
   "framework-runtime-api",
@@ -70,7 +82,9 @@ export const WORKSPACE_TEST_PROJECTS: readonly string[] = [
   "framework-stream-sse",
   "framework-stream-agui",
   "framework-telemetry-otel",
-  "framework-runtime-core",
+  // framework-runtime-core deliberately absent: it declares no test target
+  // (build/exports-smoke/lint/typecheck only) — its old entry here was dead
+  // weight nx run-many silently skipped, caught by the M3.1 coverage gate.
   "framework-runtime",
   "framework-driver-react",
   "host-repl",
@@ -163,6 +177,10 @@ export const AUTHORITY_GATE_STEPS: readonly VerificationStep[] = [
       "tools/conformance/certification/validate-certification-discovery.ts",
     ],
     id: "certification discovery parity",
+  },
+  {
+    command: ["bun", "tools/scripts/validate-workspace-test-coverage.ts"],
+    id: "workspace test-lane coverage",
   },
   {
     command: ["bun", "tools/conformance/meta-conformance/run.ts"],

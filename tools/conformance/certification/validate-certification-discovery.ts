@@ -32,15 +32,17 @@
  *  - a new runner wired to the shared engine but never registered;
  *  - a `conformance` target added without declaring whether it certifies.
  *
- * Discovery reads `project.json` files directly (filesystem walk, no Nx
- * daemon) so the gate stays sub-second and sees unstaged working-tree state.
- * Projects declared without a `project.json` would be invisible to it; this
- * repo defines every Nx project through `project.json`, and the manifest
- * cross-check catches a runner disappearing from discovery for any reason.
+ * Discovery reads `project.json` files directly (filesystem walk via the
+ * shared tools/scripts/lib/nx-projects.ts index, no Nx daemon) so the gate
+ * stays sub-second and sees unstaged working-tree state. Projects declared
+ * without a `project.json` would be invisible to it; this repo defines every
+ * Nx project through `project.json`, and the manifest cross-check catches a
+ * runner disappearing from discovery for any reason.
  */
 
-import { readdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join, relative } from "node:path";
+import { loadNxProjectFiles } from "../../scripts/lib/nx-projects.js";
 
 const ROOT = process.cwd();
 const MANIFEST_PATH = join(
@@ -59,52 +61,17 @@ interface ProjectRecord {
   tags: readonly string[];
 }
 
-const SKIP_DIR_NAMES = new Set(["node_modules", "dist", ".git"]);
-
-function findProjectFiles(dir: string, out: string[]): void {
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    // Plain directories only: symlinked dirs (e.g. the root bazel-* links)
-    // report isDirectory() === false on the Dirent and are skipped.
-    if (entry.isDirectory()) {
-      if (SKIP_DIR_NAMES.has(entry.name) || entry.name.startsWith(".")) {
-        continue;
-      }
-      findProjectFiles(join(dir, entry.name), out);
-    } else if (entry.isFile() && entry.name === "project.json") {
-      out.push(join(dir, entry.name));
-    }
-  }
-}
-
 function loadProjects(): ProjectRecord[] {
-  const files: string[] = [];
-  findProjectFiles(ROOT, files);
-  const records: ProjectRecord[] = [];
-  for (const absolute of files) {
-    const match = relative(ROOT, absolute);
-    let parsed: {
-      name?: string;
-      tags?: string[];
-      targets?: Record<string, { options?: { command?: string } }>;
-    };
-    try {
-      parsed = JSON.parse(readFileSync(absolute, "utf8"));
-    } catch (error) {
-      throw new Error(`unparseable project.json at ${match}: ${error}`);
-    }
-    if (typeof parsed.name !== "string") {
-      continue;
-    }
-    const conformance = parsed.targets?.conformance;
-    records.push({
+  return loadNxProjectFiles(ROOT).map((file) => {
+    const conformance = file.project.targets?.conformance;
+    return {
       conformanceCommand: conformance?.options?.command,
       hasConformanceTarget: conformance !== undefined,
-      name: parsed.name,
-      path: relative(ROOT, absolute),
-      tags: parsed.tags ?? [],
-    });
-  }
-  return records;
+      name: file.name,
+      path: file.path,
+      tags: file.project.tags ?? [],
+    };
+  });
 }
 
 function fail(problems: string[]): never {
