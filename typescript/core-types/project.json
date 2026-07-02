@@ -32,7 +32,7 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": ".",
-        "command": "bun tools/scripts/typecheck-project.ts typescript/core-types tsconfig.lib.json"
+        "command": "bun tools/scripts/typecheck-project.ts typescript/core-types"
       }
     }
   }

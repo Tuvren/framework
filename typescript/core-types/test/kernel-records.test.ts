@@ -142,7 +142,7 @@ describe("KernelRecord", () => {
     });
 
     const symbolArray = [1];
-    symbolArray[Symbol("meta")] = 2;
+    (symbolArray as unknown as Record<symbol, number>)[Symbol("meta")] = 2;
 
     expect(isKernelRecord(hiddenPropertyArray)).toBe(false);
     expect(isKernelRecord(accessorArray)).toBe(false);
@@ -278,7 +278,7 @@ describe("KernelRecord", () => {
     });
 
     const symbolBytes = new Uint8Array([1, 2]);
-    symbolBytes[Symbol("meta")] = 3;
+    (symbolBytes as unknown as Record<symbol, number>)[Symbol("meta")] = 3;
 
     expect(isKernelRecord(hiddenPropertyBytes)).toBe(false);
     expect(isKernelRecord(accessorBytes)).toBe(false);

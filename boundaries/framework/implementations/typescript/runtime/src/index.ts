@@ -152,7 +152,8 @@ export type { RuntimeKernelOptions } from "@tuvren/kernel-runtime";
 export { createRuntimeKernel } from "@tuvren/kernel-runtime";
 export type { McpToolSource } from "@tuvren/mcp-client";
 export { createMcpToolSource } from "@tuvren/mcp-client";
-// Schema-authoring helpers (defineTool et al.) are SDK-tier executables.
+// SDK-tier executables re-exported for surface compatibility: schema-authoring
+// helpers (defineTool et al.) and the batteries-included payload codecs.
 export type {
   AesGcmPayloadCodecOptions,
   FlexibleSchema,
