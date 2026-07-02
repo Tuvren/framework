@@ -22,20 +22,19 @@
 // tools/conformance/certification/certified-projects.json, whose parity with
 // tag-based discovery the gate has just enforced.
 
+import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const ROOT = process.cwd();
 
-const gate = Bun.spawnSync(
-  [
-    "bun",
-    "tools/conformance/certification/validate-certification-discovery.ts",
-  ],
-  { cwd: ROOT, stderr: "inherit", stdout: "inherit" }
+const gate = spawnSync(
+  "bun",
+  ["tools/conformance/certification/validate-certification-discovery.ts"],
+  { cwd: ROOT, stdio: "inherit" }
 );
-if (gate.exitCode !== 0) {
-  process.exit(gate.exitCode ?? 1);
+if (gate.status !== 0) {
+  process.exit(gate.status ?? 1);
 }
 
 const manifest: { projects: string[] } = JSON.parse(
@@ -45,16 +44,17 @@ const manifest: { projects: string[] } = JSON.parse(
   )
 );
 
-const run = Bun.spawnSync(
+const run = spawnSync(
+  "bun",
   [
-    "bun",
     "./tools/run-nx.mjs",
     "run-many",
     "-t",
     "conformance",
     "-p",
     manifest.projects.join(","),
+    ...process.argv.slice(2),
   ],
-  { cwd: ROOT, stderr: "inherit", stdout: "inherit" }
+  { cwd: ROOT, stdio: "inherit" }
 );
-process.exit(run.exitCode ?? 1);
+process.exit(run.status ?? 1);

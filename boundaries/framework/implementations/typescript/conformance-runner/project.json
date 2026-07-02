@@ -32,8 +32,8 @@
         }
       ],
       "options": {
-        "cwd": "boundaries/framework/implementations/typescript/conformance-runner",
-        "command": "bun ./src/framework-typescript-conformance.ts"
+        "cwd": ".",
+        "command": "bun tools/conformance/runner/run.ts --adapter boundaries/framework/implementations/typescript/conformance-adapter/adapter.json --summary-only"
       }
     },
     "lint": {

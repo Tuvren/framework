@@ -39,7 +39,7 @@
  * cross-check catches a runner disappearing from discovery for any reason.
  */
 
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 
 const ROOT = process.cwd();
@@ -59,14 +59,29 @@ interface ProjectRecord {
   tags: readonly string[];
 }
 
-function loadProjects(): ProjectRecord[] {
-  const glob = new Bun.Glob("**/project.json");
-  const records: ProjectRecord[] = [];
-  for (const match of glob.scanSync({ cwd: ROOT, dot: false })) {
-    if (match.includes("node_modules/") || match.includes("dist/")) {
-      continue;
+const SKIP_DIR_NAMES = new Set(["node_modules", "dist", ".git"]);
+
+function findProjectFiles(dir: string, out: string[]): void {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    // Plain directories only: symlinked dirs (e.g. the root bazel-* links)
+    // report isDirectory() === false on the Dirent and are skipped.
+    if (entry.isDirectory()) {
+      if (SKIP_DIR_NAMES.has(entry.name) || entry.name.startsWith(".")) {
+        continue;
+      }
+      findProjectFiles(join(dir, entry.name), out);
+    } else if (entry.isFile() && entry.name === "project.json") {
+      out.push(join(dir, entry.name));
     }
-    const absolute = join(ROOT, match);
+  }
+}
+
+function loadProjects(): ProjectRecord[] {
+  const files: string[] = [];
+  findProjectFiles(ROOT, files);
+  const records: ProjectRecord[] = [];
+  for (const absolute of files) {
+    const match = relative(ROOT, absolute);
     let parsed: {
       name?: string;
       tags?: string[];
@@ -112,9 +127,13 @@ const projects = loadProjects();
 const byName = new Map(projects.map((p) => [p.name, p]));
 if (byName.size !== projects.length) {
   const seen = new Set<string>();
-  const dupes = projects
-    .filter((p) => (seen.has(p.name) ? true : (seen.add(p.name), false)))
-    .map((p) => `${p.name} (${p.path})`);
+  const dupes: string[] = [];
+  for (const p of projects) {
+    if (seen.has(p.name)) {
+      dupes.push(`${p.name} (${p.path})`);
+    }
+    seen.add(p.name);
+  }
   fail([`duplicate Nx project names in the tree: ${dupes.join(", ")}`]);
 }
 

@@ -19,8 +19,8 @@
         "{workspaceRoot}/boundaries/providers/implementations/*/conformance-adapter/**/*"
       ],
       "options": {
-        "cwd": "boundaries/providers/implementations/typescript/conformance-runner",
-        "command": "bun ./src/providers-typescript-conformance.ts"
+        "cwd": ".",
+        "command": "bun tools/conformance/runner/run.ts --adapter boundaries/providers/implementations/typescript/conformance-adapter/adapter.json --summary-only"
       }
     },
     "lint": {
