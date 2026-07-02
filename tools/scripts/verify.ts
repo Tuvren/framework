@@ -158,6 +158,13 @@ export const AUTHORITY_GATE_STEPS: readonly VerificationStep[] = [
     id: "adapter protocol validation",
   },
   {
+    command: [
+      "bun",
+      "tools/conformance/certification/validate-certification-discovery.ts",
+    ],
+    id: "certification discovery parity",
+  },
+  {
     command: ["bun", "tools/conformance/meta-conformance/run.ts"],
     id: "shared conformance runner meta-conformance",
   },
