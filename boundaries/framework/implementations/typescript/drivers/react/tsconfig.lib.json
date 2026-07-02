@@ -26,9 +26,6 @@
       "path": "../../stream-agui/tsconfig.lib.json"
     },
     {
-      "path": "../../runtime-core/tsconfig.lib.json"
-    },
-    {
       "path": "../../../../../providers/contracts/provider-api/implementations/typescript/tsconfig.lib.json"
     },
     {
