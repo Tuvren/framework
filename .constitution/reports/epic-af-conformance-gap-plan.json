@@ -31,7 +31,7 @@
         "tool.execution.executedNamesAfterCancel"
       ],
       "adapterCapability": "framework.runtime-api",
-      "authorityPacket": "boundaries/shared/contracts/core/spec/authority-packet.json",
+      "authorityPacket": "spec/core/authority-packet.json",
       "claimIds": [
         "FWK-077DA00DEE7C",
         "FWK-0A405F74632B",
@@ -86,7 +86,7 @@
         "tool.execution.executedNamesAfterResume"
       ],
       "adapterCapability": "framework.runtime-api",
-      "authorityPacket": "boundaries/shared/contracts/core/spec/authority-packet.json",
+      "authorityPacket": "spec/core/authority-packet.json",
       "claimIds": ["FWK-3EB6BD2E44C6"],
       "classifications": ["authority-backed-conformance-covered"],
       "compatibilityEvidence": "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
@@ -126,7 +126,7 @@
     },
     {
       "adapterOperation": "runtime.context-transform; runtime.cancel-execution",
-      "authorityPacket": "boundaries/shared/contracts/core/spec/authority-packet.json",
+      "authorityPacket": "spec/core/authority-packet.json",
       "capabilityRequirement": "framework.runtime-api",
       "checkIds": [
         "runtime-lifecycle-af.cancel-running-idempotent-fails-once",
@@ -177,7 +177,7 @@
         "orchestration.surfaces.handoffLastOutputOnlyText"
       ],
       "adapterCapability": "framework.orchestration",
-      "authorityPacket": "boundaries/shared/contracts/core/spec/authority-packet.json",
+      "authorityPacket": "spec/core/authority-packet.json",
       "claimIds": [
         "FWK-26F5B55D9B57",
         "FWK-676A729CE7F4",
@@ -343,7 +343,7 @@
       "rationale": "Invalid tool-call loop-policy combinations are shared driver-seam behavior.",
       "requiredEvidence": ["driver.resolutionType", "result.error.code"],
       "adapterCapability": "framework.driver-api",
-      "authorityPacket": "boundaries/shared/contracts/core/spec/authority-packet.json",
+      "authorityPacket": "spec/core/authority-packet.json",
       "claimIds": ["FWK-7321FBA0BDB5"],
       "classifications": ["authority-backed-conformance-covered"],
       "compatibilityEvidence": "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
@@ -374,7 +374,7 @@
         "validation.dialect"
       ],
       "adapterCapability": "framework.runtime-api",
-      "authorityPacket": "boundaries/shared/contracts/core/spec/authority-packet.json",
+      "authorityPacket": "spec/core/authority-packet.json",
       "claimIds": [
         "FWK-4B0A4D61DDBF",
         "FWK-550E41A79A79",
@@ -433,7 +433,7 @@
         "validation.resolutionType"
       ],
       "adapterCapability": "framework.runtime-api",
-      "authorityPacket": "boundaries/shared/contracts/core/spec/authority-packet.json",
+      "authorityPacket": "spec/core/authority-packet.json",
       "claimIds": [
         "FWK-176C448DD30E",
         "FWK-24BAD806542F",
@@ -453,7 +453,7 @@
     },
     {
       "adapterOperation": "runtime.tool-execute; runtime.approval-resolve",
-      "authorityPacket": "boundaries/shared/contracts/core/spec/authority-packet.json",
+      "authorityPacket": "spec/core/authority-packet.json",
       "capabilityRequirement": "framework.runtime-api; providers.framework-owned-tool-execution",
       "checkIds": [
         "tool-contracts-af.tool-call-id-owned-by-framework",
@@ -492,7 +492,7 @@
     },
     {
       "adapterOperation": "runtime.tool-execute",
-      "authorityPacket": "boundaries/shared/contracts/core/spec/authority-packet.json",
+      "authorityPacket": "spec/core/authority-packet.json",
       "capabilityRequirement": "framework.runtime-api",
       "checkIds": [
         "tool-contracts-af.tool-parallel-wave-starts-before-results",
@@ -532,7 +532,7 @@
         "orchestration.nested.rootGrandchildSource.workerId"
       ],
       "adapterCapability": "framework.orchestration",
-      "authorityPacket": "boundaries/shared/contracts/core/spec/authority-packet.json",
+      "authorityPacket": "spec/core/authority-packet.json",
       "claimIds": ["FWK-C6917E7E9D81"],
       "classifications": ["authority-backed-conformance-covered"],
       "compatibilityEvidence": "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",

@@ -13,14 +13,9 @@
   ],
   "authoritativeSources": [
     {
-      "path": "boundaries/shared/contracts/core/spec/typespec/main.tsp",
+      "path": "spec/core/typespec/main.tsp",
       "format": "typespec",
       "bindingSection": "errors,messages,events,execution,tools,provider,extensions,driver,telemetry"
-    },
-    {
-      "path": "boundaries/shared/contracts/core-types/spec/typespec/main.tsp",
-      "format": "typespec",
-      "bindingSection": "errors"
     },
     {
       "path": "boundaries/framework/contracts/runtime-api/spec/typespec/main.tsp",
@@ -113,10 +108,10 @@
   ],
   "generatedArtifacts": [
     {
-      "path": "boundaries/shared/contracts/core/artifacts/json-schema",
-      "generatedFrom": "boundaries/shared/contracts/core/spec/typespec",
+      "path": "spec/core/artifacts/json-schema",
+      "generatedFrom": "spec/core/typespec",
       "generator": "@typespec/json-schema",
-      "note": "Generated from the consolidated core TypeSpec at boundaries/shared/contracts/core/spec/typespec/main.tsp (Epic AP). Capability JSON schemas (Capability.json, ToolSurface.json, Binding.json, Endpoint.json, ExecutionClass.json, EndpointKind.json, CapabilityObservation.json, ExposureDecision.json, InvocationDecision.json, CapabilityInvocationAttribution.json) are authored directly per ADR-046 §3.13 and maintained alongside the TypeScript source until TypeSpec coverage is promoted."
+      "note": "Generated from the consolidated core TypeSpec at spec/core/typespec/main.tsp (Epic AP). Capability JSON schemas (Capability.json, ToolSurface.json, Binding.json, Endpoint.json, ExecutionClass.json, EndpointKind.json, CapabilityObservation.json, ExposureDecision.json, InvocationDecision.json, CapabilityInvocationAttribution.json) are authored directly per ADR-046 §3.13 and maintained alongside the TypeScript source until TypeSpec coverage is promoted."
     }
   ],
   "conformancePlans": [
@@ -248,7 +243,7 @@
   "bindingAppendices": [
     {
       "language": "typescript",
-      "path": "boundaries/shared/contracts/core/spec/bindings/typescript.md"
+      "path": "spec/core/bindings/typescript.md"
     }
   ],
   "forbiddenAuthoritySources": [
@@ -269,7 +264,7 @@
   "verificationPaths": [
     {
       "kind": "schema-validation",
-      "target": "boundaries/shared/contracts/core/artifacts/json-schema"
+      "target": "spec/core/artifacts/json-schema"
     },
     {
       "kind": "conformance-plan",
@@ -341,13 +336,13 @@
     },
     {
       "kind": "freshness-check",
-      "target": "boundaries/shared/contracts/core/artifacts/json-schema"
+      "target": "spec/core/artifacts/json-schema"
     }
   ],
   "freshnessChecks": [
     {
-      "artifact": "boundaries/shared/contracts/core/artifacts/json-schema",
-      "regenerateCommand": "bun run nx run shared-core:codegen"
+      "artifact": "spec/core/artifacts/json-schema",
+      "regenerateCommand": "bun run nx run core-spec:codegen"
     }
   ]
 }

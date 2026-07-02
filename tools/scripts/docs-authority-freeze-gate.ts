@@ -185,7 +185,7 @@ const EVIDENCE = {
   driverApi: {
     adapterCapability: "framework.driver-api",
     authorityPacket:
-      "boundaries/shared/contracts/core/spec/authority-packet.json",
+      "spec/core/authority-packet.json",
     compatibilityEvidence:
       "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
     conformancePlan:
@@ -198,7 +198,7 @@ const EVIDENCE = {
   eventStream: {
     adapterCapability: "framework.event-stream",
     authorityPacket:
-      "boundaries/shared/contracts/core/spec/authority-packet.json",
+      "spec/core/authority-packet.json",
     compatibilityEvidence:
       "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
     conformancePlan:
@@ -313,7 +313,7 @@ const EVIDENCE = {
   runtimeApi: {
     adapterCapability: "framework.runtime-api",
     authorityPacket:
-      "boundaries/shared/contracts/core/spec/authority-packet.json",
+      "spec/core/authority-packet.json",
     compatibilityEvidence:
       "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
     conformancePlan:
@@ -331,7 +331,7 @@ const EVIDENCE = {
   toolContracts: {
     adapterCapability: "framework.runtime-api",
     authorityPacket:
-      "boundaries/shared/contracts/core/spec/authority-packet.json",
+      "spec/core/authority-packet.json",
     compatibilityEvidence:
       "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
     conformancePlan:
@@ -344,7 +344,7 @@ const EVIDENCE = {
   runtimeOrchestration: {
     adapterCapability: "framework.orchestration",
     authorityPacket:
-      "boundaries/shared/contracts/core/spec/authority-packet.json",
+      "spec/core/authority-packet.json",
     compatibilityEvidence:
       "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
     conformancePlan:
@@ -400,14 +400,14 @@ const EVIDENCE = {
   capabilityOrchestration: {
     adapterCapability: "framework.runtime-api",
     authorityPacket:
-      "boundaries/shared/contracts/core/spec/authority-packet.json",
+      "spec/core/authority-packet.json",
     compatibilityEvidence:
       "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
     conformancePlan:
       "boundaries/framework/conformance/plans/capability-orchestration-integration.json; boundaries/framework/conformance/plans/tuvren-server-execution-class.json; boundaries/framework/conformance/plans/tuvren-client-execution-class.json; boundaries/framework/conformance/plans/invocation-lifecycle-observation.json; boundaries/framework/conformance/plans/capability-policy.json",
     fixture:
       "boundaries/framework/conformance/scenarios/runtime-api-scenarios.json",
-    generatedArtifact: "boundaries/shared/contracts/core/artifacts/json-schema",
+    generatedArtifact: "spec/core/artifacts/json-schema",
   },
   // KRT-BD008: §4.12 Execution Bounds (ADR-043) — the framework-owned hard-stop
   // guard above driver LoopPolicy. All §4.12 normative claims are backed by the
@@ -417,14 +417,14 @@ const EVIDENCE = {
   executionBounds: {
     adapterCapability: "framework.runtime-api",
     authorityPacket:
-      "boundaries/shared/contracts/core/spec/authority-packet.json",
+      "spec/core/authority-packet.json",
     compatibilityEvidence:
       "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
     conformancePlan:
       "boundaries/framework/conformance/plans/runtime-api-callables-extended.json",
     fixture:
       "boundaries/framework/conformance/scenarios/runtime-api-scenarios.json",
-    generatedArtifact: "boundaries/shared/contracts/core/artifacts/json-schema",
+    generatedArtifact: "spec/core/artifacts/json-schema",
   },
 } as const satisfies Record<string, EvidenceTemplate>;
 

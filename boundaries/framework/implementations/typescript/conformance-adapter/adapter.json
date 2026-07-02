@@ -26,7 +26,7 @@
     "providers.rejects-native-strict-structured-output"
   ],
   "authorityPackets": [
-    "boundaries/shared/contracts/core/spec/authority-packet.json",
+    "spec/core/authority-packet.json",
     "boundaries/framework/contracts/event-stream-sse/spec/authority-packet.json",
     "boundaries/framework/contracts/react-driver/spec/authority-packet.json"
   ],

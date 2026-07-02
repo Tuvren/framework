@@ -6,7 +6,7 @@
   "expectedPackets": [
     {
       "packetId": "tuvren.shared.core",
-      "packetPath": "boundaries/shared/contracts/core/spec/authority-packet.json",
+      "packetPath": "spec/core/authority-packet.json",
       "classification": "portable",
       "inventorySection": "§3 / §9b (ADR-037 consolidated)"
     },
@@ -90,9 +90,9 @@
     },
     {
       "packetId": "tuvren.shared.core",
-      "sourcePath": "boundaries/shared/contracts/core/spec/typespec/main.tsp",
+      "sourcePath": "spec/core/typespec/main.tsp",
       "sourceFormat": "typespec",
-      "rationale": "KRT-AL002 G1 (absorbed): consolidated core TypeSpec at boundaries/shared/contracts/core/spec/typespec/main.tsp is the canonical authority source for tuvren.shared.core (Epic AP)",
+      "rationale": "KRT-AL002 G1 (absorbed): consolidated core TypeSpec at spec/core/typespec/main.tsp (relocated from boundaries/shared/contracts/core/spec/ by GH issue #87 M2.2) is the canonical authority source for tuvren.shared.core (Epic AP)",
       "inventorySection": "§6.G1 / §9b"
     },
     {

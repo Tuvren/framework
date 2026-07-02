@@ -187,7 +187,7 @@ const SURFACE_PLANS: Readonly<Record<string, SurfacePlan>> = {
   "framework state schema": {
     adapterOperation: "runtime.context-transform; runtime.cancel-execution",
     authorityPacket:
-      "boundaries/shared/contracts/core/spec/authority-packet.json",
+      "spec/core/authority-packet.json",
     capabilityRequirement: "framework.runtime-api",
     checkIds: [
       "runtime-lifecycle-af.cancel-running-idempotent-fails-once",
@@ -368,7 +368,7 @@ const SURFACE_PLANS: Readonly<Record<string, SurfacePlan>> = {
   "tool and approval contracts": {
     adapterOperation: "runtime.tool-execute; runtime.approval-resolve",
     authorityPacket:
-      "boundaries/shared/contracts/core/spec/authority-packet.json",
+      "spec/core/authority-packet.json",
     capabilityRequirement:
       "framework.runtime-api; providers.framework-owned-tool-execution",
     checkIds: [
@@ -396,7 +396,7 @@ const SURFACE_PLANS: Readonly<Record<string, SurfacePlan>> = {
   "tool parallelism and event ordering": {
     adapterOperation: "runtime.tool-execute",
     authorityPacket:
-      "boundaries/shared/contracts/core/spec/authority-packet.json",
+      "spec/core/authority-packet.json",
     capabilityRequirement: "framework.runtime-api",
     checkIds: [
       "tool-contracts-af.tool-parallel-wave-starts-before-results",
