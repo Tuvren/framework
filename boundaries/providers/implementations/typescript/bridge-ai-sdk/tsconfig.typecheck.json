@@ -75,9 +75,6 @@
       "@tuvren/framework-testkit": [
         "../../../../../typescript/testkit/src/index.ts"
       ],
-      "@tuvren/runtime-core": [
-        "../../../../framework/implementations/typescript/runtime-core/src/index.ts"
-      ],
       "@tuvren/stream-agui": [
         "../../../../framework/implementations/typescript/stream-agui/src/index.ts"
       ],

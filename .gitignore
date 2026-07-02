@@ -13,7 +13,6 @@ target
 .tmp-tests
 .tmp-bench
 typescript/runtime/src/lib/generated/kernel-interop/
-boundaries/framework/implementations/typescript/runtime-core/src/lib/generated/kernel-interop/
 .claude/
 .env
 .env.*

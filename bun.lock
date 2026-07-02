@@ -94,20 +94,6 @@
         "@tuvren/core": "workspace:*",
       },
     },
-    "boundaries/framework/implementations/typescript/runtime-core": {
-      "name": "@tuvren/runtime-core",
-      "version": "0.0.0",
-      "dependencies": {
-        "@tuvren/runtime": "workspace:*",
-      },
-      "devDependencies": {
-        "@ag-ui/core": "0.0.52",
-        "@tuvren/framework-testkit": "workspace:*",
-        "@tuvren/stream-agui": "workspace:*",
-        "@tuvren/stream-core": "workspace:*",
-        "@tuvren/stream-sse": "workspace:*",
-      },
-    },
     "boundaries/framework/implementations/typescript/stream-agui": {
       "name": "@tuvren/stream-agui",
       "version": "0.0.0",
@@ -995,8 +981,6 @@
     "@tuvren/runtime": ["@tuvren/runtime@workspace:typescript/runtime"],
 
     "@tuvren/runtime-api": ["@tuvren/runtime-api@workspace:boundaries/framework/contracts/runtime-api/implementations/typescript"],
-
-    "@tuvren/runtime-core": ["@tuvren/runtime-core@workspace:boundaries/framework/implementations/typescript/runtime-core"],
 
     "@tuvren/sdk": ["@tuvren/sdk@workspace:typescript/sdk"],
 

@@ -1,6 +1,7 @@
 # TypeScript Binding Appendix
 
-`@tuvren/runtime-api` and `@tuvren/runtime-core` are TypeScript binding
+`@tuvren/runtime-api` and the engine package `@tuvren/runtime` (which absorbed
+the retired `@tuvren/runtime-core` shim) are TypeScript binding
 projections for `tuvren.framework.runtime-api`. TypeScript function signatures,
 `Promise`, `AsyncIterable`, `AbortSignal`, `Uint8Array`, and language-native
 errors are binding conveniences only.

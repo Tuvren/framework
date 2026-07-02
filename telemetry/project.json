@@ -16,7 +16,7 @@
       "outputs": [
         "{workspaceRoot}/telemetry/semantic-conventions.md",
         "{workspaceRoot}/telemetry/otel-attributes.json",
-        "{workspaceRoot}/boundaries/framework/implementations/typescript/runtime-core/src/lib/generated/tuvren-runtime-telemetry.ts",
+        "{workspaceRoot}/typescript/runtime/src/lib/generated/tuvren-runtime-telemetry.ts",
         "{workspaceRoot}/rust/kernel/src/generated/tuvren_runtime_telemetry.rs"
       ],
       "options": {

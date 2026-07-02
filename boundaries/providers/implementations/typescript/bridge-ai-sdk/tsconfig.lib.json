@@ -20,9 +20,6 @@
       "path": "../../../../../typescript/core-types/tsconfig.lib.json"
     },
     {
-      "path": "../../../../framework/implementations/typescript/runtime-core/tsconfig.lib.json"
-    },
-    {
       "path": "../testkit/tsconfig.lib.json"
     },
     {

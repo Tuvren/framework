@@ -57,9 +57,6 @@
       "@tuvren/mcp-client": [
         "./boundaries/providers/implementations/typescript/mcp-client/src/index.ts"
       ],
-      "@tuvren/runtime-core": [
-        "./boundaries/framework/implementations/typescript/runtime-core/src/index.ts"
-      ],
       "@tuvren/stream-core": [
         "./boundaries/framework/implementations/typescript/stream-core/src/index.ts"
       ],

@@ -91,11 +91,6 @@ const PORTABLE_PACKAGE_SURFACES: readonly PortablePackageSurface[] = [
   },
   {
     classification: "Bun-and-Node validated",
-    packageName: "@tuvren/runtime-core",
-    packageRoot: "boundaries/framework/implementations/typescript/runtime-core",
-  },
-  {
-    classification: "Bun-and-Node validated",
     packageName: "@tuvren/runtime",
     packageRoot: "typescript/runtime",
   },

@@ -92,7 +92,7 @@ async function main(): Promise<void> {
 async function ensureInteropArtifacts(): Promise<void> {
   // Defer to Nx for the workspace build graph: `host-repl:build` pulls in
   // `^build` and the explicit `kernel-interop-grpc:codegen` dependency from
-  // `runtime-core`'s project.json, so this single invocation produces a fresh
+  // the engine's (`typescript/runtime`) project.json, so this single invocation produces a fresh
   // `host-repl/dist/index.js` (the module imported below) plus every upstream
   // workspace dist the smoke transitively needs. Earlier revisions hand-rolled
   // 16 sequential `bunx --bun tsup` invocations here, which collapsed under

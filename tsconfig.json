@@ -42,9 +42,6 @@
       "path": "./boundaries/providers/implementations/typescript/bridge-ai-sdk"
     },
     {
-      "path": "./boundaries/framework/implementations/typescript/runtime-core"
-    },
-    {
       "path": "./typescript/kernel/backends/sqlite"
     },
     {
