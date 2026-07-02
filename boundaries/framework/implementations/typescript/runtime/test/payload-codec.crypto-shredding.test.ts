@@ -28,13 +28,13 @@
 import { describe, expect, test } from "bun:test";
 import { randomBytes } from "node:crypto";
 import { createMemoryBackend } from "@tuvren/backend-memory";
+import { isErasedPayload } from "@tuvren/core/lifecycle";
+import { createRuntimeKernel } from "@tuvren/kernel-runtime";
 import {
   createAesGcmPayloadCodec,
-  isErasedPayload,
   isPayloadEnvelope,
   type PayloadKeyring,
-} from "@tuvren/core/lifecycle";
-import { createRuntimeKernel } from "@tuvren/kernel-runtime";
+} from "@tuvren/sdk";
 import { createTuvrenRuntime } from "../src/index.ts";
 import {
   createDriverRegistry,

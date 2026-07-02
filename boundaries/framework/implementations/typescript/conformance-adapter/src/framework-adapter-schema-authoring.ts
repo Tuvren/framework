@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
+import type { CustomSchema } from "@tuvren/core/tools";
 import {
   asSchema,
-  type CustomSchema,
   defineTool,
   type FlexibleSchema,
   jsonSchema,
   schemaSymbol,
-} from "@tuvren/core/tools";
+} from "@tuvren/sdk";
 import type { AdapterProjection } from "./framework-adapter-runtime.ts";
 
 export function createFrameworkAdapterSchemaAuthoring() {

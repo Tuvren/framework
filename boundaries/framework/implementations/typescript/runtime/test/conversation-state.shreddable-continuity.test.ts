@@ -34,14 +34,14 @@
 import { describe, expect, test } from "bun:test";
 import { randomBytes } from "node:crypto";
 import { createMemoryBackend } from "@tuvren/backend-memory";
-import {
-  createAesGcmPayloadCodec,
-  isErasedPayload,
-  isPayloadEnvelope,
-  type PayloadKeyring,
-} from "@tuvren/core/lifecycle";
+import { isErasedPayload } from "@tuvren/core/lifecycle";
 import type { TuvrenMessage } from "@tuvren/core/messages";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
+import {
+  createAesGcmPayloadCodec,
+  isPayloadEnvelope,
+  type PayloadKeyring,
+} from "@tuvren/sdk";
 import { createTuvrenRuntime } from "../src/index.ts";
 import {
   createDriverRegistry,

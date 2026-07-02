@@ -1,5 +1,5 @@
 {
-  "name": "@tuvren/mcp-client",
+  "name": "@tuvren/sdk",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -16,17 +16,16 @@
     "@tuvren/core": {
       "optional": false
     },
-    "@tuvren/sdk": {
-      "optional": false
+    "zod": {
+      "optional": true
+    },
+    "@standard-schema/spec": {
+      "optional": true
     }
-  },
-  "dependencies": {
-    "@modelcontextprotocol/sdk": "1.29.0",
-    "ajv": "8.18.0",
-    "zod": "4.4.3"
   },
   "peerDependencies": {
     "@tuvren/core": "workspace:*",
-    "@tuvren/sdk": "workspace:*"
+    "zod": "^4.4.3",
+    "@standard-schema/spec": "^1.1.0"
   }
 }

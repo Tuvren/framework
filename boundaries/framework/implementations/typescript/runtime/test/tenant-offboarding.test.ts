@@ -35,13 +35,9 @@ import {
   type MemoryScopeStore,
 } from "@tuvren/backend-memory";
 import { TuvrenRuntimeError } from "@tuvren/core";
-import {
-  createAesGcmPayloadCodec,
-  isErasedPayload,
-  type PayloadCodec,
-  type PayloadKeyring,
-} from "@tuvren/core/lifecycle";
+import { isErasedPayload, type PayloadCodec } from "@tuvren/core/lifecycle";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
+import { createAesGcmPayloadCodec, type PayloadKeyring } from "@tuvren/sdk";
 import { createTuvren, createTuvrenRuntime } from "../src/index.ts";
 import {
   createDriverRegistry,

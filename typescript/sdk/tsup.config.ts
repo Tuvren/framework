@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/performance/noBarrelFile: This package subpath is the intentional focused contract surface.
-// Data-lifecycle: crypto-shredding payload codec contract (ADR-051, SPK-BF002 /
-// KRT-BF005). The batteries-included identity and AES-256-GCM codec
-// implementations live in @tuvren/sdk.
-export {
-  type ErasedPayload,
-  isErasedPayload,
-  type PayloadCodec,
-  type PayloadCodecContext,
-  type PayloadDecryptResult,
-} from "../lib/payload-codec.js";
+import { defineConfig } from "tsup";
+
+export default defineConfig({
+  clean: true,
+  dts: false,
+  entry: ["src/index.ts"],
+  format: ["esm"],
+  outDir: "dist",
+  sourcemap: false,
+  tsconfig: "tsconfig.tsup.json",
+  target: "esnext",
+});

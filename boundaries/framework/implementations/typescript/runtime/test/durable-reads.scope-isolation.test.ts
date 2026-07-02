@@ -41,7 +41,6 @@ import {
   TuvrenLineageError,
   TuvrenRuntimeError,
 } from "@tuvren/core";
-import { IDENTITY_PAYLOAD_CODEC } from "@tuvren/core/lifecycle";
 import type { TuvrenMessage } from "@tuvren/core/messages";
 import {
   encodeDeterministicKernelRecord,
@@ -60,6 +59,7 @@ import {
   createStoredTurnNodeRecord,
   createStoredTurnTreeRecord,
 } from "@tuvren/kernel-testkit";
+import { IDENTITY_PAYLOAD_CODEC } from "@tuvren/sdk";
 import {
   getTurnHistory,
   getTurnState,

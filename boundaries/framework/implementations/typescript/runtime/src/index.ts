@@ -82,22 +82,16 @@ export type {
 } from "@tuvren/core/execution";
 export { assertExecutionStatus } from "@tuvren/core/execution";
 export type { TuvrenExtension } from "@tuvren/core/extensions";
-// Data-lifecycle crypto-shredding payload codec (ADR-051, KRT-BF005).
+// Data-lifecycle crypto-shredding payload codec (ADR-051, KRT-BF005): the
+// contract lives in @tuvren/core/lifecycle; the batteries-included codec
+// implementations live in @tuvren/sdk.
 export type {
-  AesGcmPayloadCodecOptions,
   ErasedPayload,
   PayloadCodec,
   PayloadCodecContext,
   PayloadDecryptResult,
-  PayloadKeyring,
 } from "@tuvren/core/lifecycle";
-export {
-  createAesGcmPayloadCodec,
-  createIdentityPayloadCodec,
-  IDENTITY_PAYLOAD_CODEC,
-  isErasedPayload,
-  isPayloadEnvelope,
-} from "@tuvren/core/lifecycle";
+export { isErasedPayload } from "@tuvren/core/lifecycle";
 export type {
   ContentPart,
   FilePart,
@@ -132,25 +126,14 @@ export { NoopTelemetrySink } from "@tuvren/core/telemetry";
 export type {
   ApprovalRequest,
   ApprovalResponse,
-  FlexibleSchema,
-  LazySchema,
   PendingToolCall,
-  Schema,
-  StandardSchema,
   ToolExecutionResult,
   TuvrenToolDefinition,
-  ZodSchema,
 } from "@tuvren/core/tools";
 export {
-  asSchema,
   assertApprovalRequest,
   assertApprovalResponse,
   assertTuvrenToolDefinition,
-  defineTool,
-  jsonSchema,
-  schemaSymbol,
-  standardSchema,
-  zodSchema,
 } from "@tuvren/core/tools";
 export type { ReActDriverOptions } from "@tuvren/driver-react";
 export { createReActDriver, REACT_DRIVER_ID } from "@tuvren/driver-react";
@@ -169,6 +152,28 @@ export type { RuntimeKernelOptions } from "@tuvren/kernel-runtime";
 export { createRuntimeKernel } from "@tuvren/kernel-runtime";
 export type { McpToolSource } from "@tuvren/mcp-client";
 export { createMcpToolSource } from "@tuvren/mcp-client";
+// Schema-authoring helpers (defineTool et al.) are SDK-tier executables.
+export type {
+  AesGcmPayloadCodecOptions,
+  FlexibleSchema,
+  LazySchema,
+  PayloadKeyring,
+  Schema,
+  StandardSchema,
+  ZodSchema,
+} from "@tuvren/sdk";
+export {
+  asSchema,
+  createAesGcmPayloadCodec,
+  createIdentityPayloadCodec,
+  defineTool,
+  IDENTITY_PAYLOAD_CODEC,
+  isPayloadEnvelope,
+  jsonSchema,
+  schemaSymbol,
+  standardSchema,
+  zodSchema,
+} from "@tuvren/sdk";
 export type { BindingResolver } from "./lib/binding-resolver.js";
 export { createBindingResolver } from "./lib/binding-resolver.js";
 export type {

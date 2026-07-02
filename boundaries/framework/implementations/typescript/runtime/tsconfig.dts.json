@@ -38,6 +38,7 @@
       "@tuvren/core/telemetry": [
         "../../../../../typescript/core/dist/telemetry/index.d.ts"
       ],
+      "@tuvren/sdk": ["../../../../../typescript/sdk/dist/index.d.ts"],
       "@tuvren/driver-react": ["../drivers/react/dist/index.d.ts"],
       "@tuvren/kernel-protocol": [
         "../../../../../typescript/kernel/protocol/dist/index.d.ts"

@@ -116,6 +116,7 @@
       },
       "peerDependencies": {
         "@tuvren/core": "workspace:*",
+        "@tuvren/sdk": "workspace:*",
       },
     },
     "boundaries/framework/implementations/typescript/runtime-core": {
@@ -264,6 +265,7 @@
       },
       "peerDependencies": {
         "@tuvren/core": "workspace:*",
+        "@tuvren/sdk": "workspace:*",
       },
     },
     "boundaries/providers/implementations/typescript/testkit": {
@@ -281,14 +283,6 @@
     "typescript/core": {
       "name": "@tuvren/core",
       "version": "0.0.0",
-      "peerDependencies": {
-        "@standard-schema/spec": "^1.1.0",
-        "zod": "^4.4.3",
-      },
-      "optionalPeers": [
-        "@standard-schema/spec",
-        "zod",
-      ],
     },
     "typescript/core-types": {
       "name": "@tuvren/core-types",
@@ -385,6 +379,19 @@
         "@tuvren/kernel-protocol": "workspace:*",
         "ajv": "8.18.0",
       },
+    },
+    "typescript/sdk": {
+      "name": "@tuvren/sdk",
+      "version": "0.0.0",
+      "peerDependencies": {
+        "@standard-schema/spec": "^1.1.0",
+        "@tuvren/core": "workspace:*",
+        "zod": "^4.4.3",
+      },
+      "optionalPeers": [
+        "@standard-schema/spec",
+        "zod",
+      ],
     },
   },
   "trustedDependencies": [
@@ -990,6 +997,8 @@
     "@tuvren/runtime-api": ["@tuvren/runtime-api@workspace:boundaries/framework/contracts/runtime-api/implementations/typescript"],
 
     "@tuvren/runtime-core": ["@tuvren/runtime-core@workspace:boundaries/framework/implementations/typescript/runtime-core"],
+
+    "@tuvren/sdk": ["@tuvren/sdk@workspace:typescript/sdk"],
 
     "@tuvren/stream-agui": ["@tuvren/stream-agui@workspace:boundaries/framework/implementations/typescript/stream-agui"],
 

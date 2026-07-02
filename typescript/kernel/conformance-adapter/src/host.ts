@@ -18,7 +18,6 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createAesGcmPayloadCodec } from "@tuvren/core/lifecycle";
 import type {
   RuntimeBackend,
   StoredBranch,
@@ -44,6 +43,7 @@ import {
   createStoredTurnTreeRecord,
   type FaultPoint,
 } from "@tuvren/kernel-testkit";
+import { createAesGcmPayloadCodec } from "@tuvren/sdk";
 import type {
   AdapterCapabilities,
   AdapterControls,

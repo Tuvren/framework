@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "declaration": true,
+    "declarationMap": false,
+    "emitDeclarationOnly": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "target": "esnext",
+    "verbatimModuleSyntax": true,
+    "paths": {
+      "@tuvren/core": ["../core/dist/index.d.ts"],
+      "@tuvren/core/errors": ["../core/dist/errors/index.d.ts"],
+      "@tuvren/core/tools": ["../core/dist/tools/index.d.ts"],
+      "@tuvren/core/lifecycle": ["../core/dist/lifecycle/index.d.ts"]
+    }
+  },
+  "include": ["src/**/*.ts"]
+}

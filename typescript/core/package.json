@@ -66,17 +66,5 @@
     }
   },
   "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "peerDependencies": {
-    "zod": "^4.4.3",
-    "@standard-schema/spec": "^1.1.0"
-  },
-  "peerDependenciesMeta": {
-    "zod": {
-      "optional": true
-    },
-    "@standard-schema/spec": {
-      "optional": true
-    }
-  }
+  "types": "./dist/index.d.ts"
 }

@@ -1,0 +1,21 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "paths": {
+      "@tuvren/core": ["../core/dist/index.d.ts"],
+      "@tuvren/core/errors": ["../core/dist/errors/index.d.ts"],
+      "@tuvren/core/tools": ["../core/dist/tools/index.d.ts"],
+      "@tuvren/core/lifecycle": ["../core/dist/lifecycle/index.d.ts"],
+      "~": ["./src/index.ts"],
+      "~/*": ["./src/*"]
+    }
+  },
+  "include": ["src/**/*.ts"],
+  "references": [
+    {
+      "path": "../core/tsconfig.lib.json"
+    }
+  ]
+}

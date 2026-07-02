@@ -46,11 +46,7 @@ import type {
   TurnSnapshot,
   TuvrenRuntime,
 } from "@tuvren/core/execution";
-import {
-  type ErasedPayload,
-  IDENTITY_PAYLOAD_CODEC,
-  type PayloadCodec,
-} from "@tuvren/core/lifecycle";
+import type { ErasedPayload, PayloadCodec } from "@tuvren/core/lifecycle";
 import type {
   ToolCallPart,
   ToolResultPart,
@@ -63,6 +59,7 @@ import type {
   RuntimeKernel as KrakenKernel,
   TurnTreeSchema,
 } from "@tuvren/kernel-protocol";
+import { IDENTITY_PAYLOAD_CODEC } from "@tuvren/sdk";
 import { createDriverRegistry } from "./driver-registry.js";
 import {
   getTurnHistory,

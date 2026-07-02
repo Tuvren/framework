@@ -36,6 +36,7 @@
       "@tuvren/core/tools": [
         "../../../../../typescript/core/src/tools/index.ts"
       ],
+      "@tuvren/sdk": ["../../../../../typescript/sdk/src/index.ts"],
       "@tuvren/driver-api": [
         "../../../contracts/driver-api/implementations/typescript/src/index.ts"
       ],

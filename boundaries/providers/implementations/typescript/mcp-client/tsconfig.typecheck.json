@@ -12,6 +12,7 @@
       "@tuvren/core/tools": [
         "../../../../../typescript/core/src/tools/index.ts"
       ],
+      "@tuvren/sdk": ["../../../../../typescript/sdk/src/index.ts"],
       "@tuvren/mcp-client": ["./src/index.ts"],
       "@tuvren/provider-testkit": ["../testkit/src/index.ts"]
     },
@@ -22,6 +23,7 @@
     "test/**/*.ts",
     "smoke/**/*.ts",
     "../testkit/src/**/*.ts",
-    "../../../../../typescript/core/src/**/*.ts"
+    "../../../../../typescript/core/src/**/*.ts",
+    "../../../../../typescript/sdk/src/**/*.ts"
   ]
 }

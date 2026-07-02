@@ -18,6 +18,7 @@
         "./typescript/core/src/capabilities/index.ts"
       ],
       "@tuvren/core/lifecycle": ["./typescript/core/src/lifecycle/index.ts"],
+      "@tuvren/sdk": ["./typescript/sdk/src/index.ts"],
       "@tuvren/core-types": ["./typescript/core-types/src/index.ts"],
       "@tuvren/kernel-protocol": ["./typescript/kernel/protocol/src/index.ts"],
       "@tuvren/runtime-api": [

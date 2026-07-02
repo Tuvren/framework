@@ -15,6 +15,7 @@
  */
 
 import type { StandardSchemaV1 } from "@standard-schema/spec";
+import { TuvrenValidationError } from "@tuvren/core/errors";
 import type {
   ApprovalPolicy,
   CustomSchema,
@@ -22,8 +23,7 @@ import type {
   TuvrenJsonSchema,
   TuvrenToolDefinition,
   ValidationResult,
-} from "./runtime-contract-shapes.js";
-import { TuvrenValidationError } from "./tuvren-error.js";
+} from "@tuvren/core/tools";
 
 // ── Branded symbol ─────────────────────────────────────────────────────────
 

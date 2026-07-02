@@ -9,6 +9,9 @@
   "references": [
     {
       "path": "../../../../../typescript/core/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../../../typescript/sdk/tsconfig.lib.json"
     }
   ]
 }

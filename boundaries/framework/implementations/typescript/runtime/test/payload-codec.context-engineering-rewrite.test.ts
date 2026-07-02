@@ -30,11 +30,8 @@
 import { describe, expect, test } from "bun:test";
 import { randomBytes } from "node:crypto";
 import { createMemoryBackend } from "@tuvren/backend-memory";
-import {
-  createAesGcmPayloadCodec,
-  isPayloadEnvelope,
-} from "@tuvren/core/lifecycle";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
+import { createAesGcmPayloadCodec, isPayloadEnvelope } from "@tuvren/sdk";
 import { createTuvrenRuntime } from "../src/index.ts";
 import {
   createDriverRegistry,

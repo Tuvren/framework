@@ -11,6 +11,9 @@
       "path": "../../../../../typescript/core/tsconfig.lib.json"
     },
     {
+      "path": "../../../../../typescript/sdk/tsconfig.lib.json"
+    },
+    {
       "path": "../../../contracts/runtime-api/implementations/typescript/tsconfig.lib.json"
     },
     {

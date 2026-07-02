@@ -18,14 +18,13 @@ import {
   TuvrenProviderError,
   TuvrenValidationError,
 } from "@tuvren/core/errors";
-import {
-  defineTool,
-  jsonSchema,
-  type ToolExecutionContext,
-  type ToolResultPart,
-  type TuvrenJsonSchema,
-  type TuvrenToolDefinition,
+import type {
+  ToolExecutionContext,
+  ToolResultPart,
+  TuvrenJsonSchema,
+  TuvrenToolDefinition,
 } from "@tuvren/core/tools";
+import { defineTool, jsonSchema } from "@tuvren/sdk";
 import type { ErrorObject, ValidateFunction } from "ajv";
 import Ajv from "ajv";
 import {
