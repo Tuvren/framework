@@ -37,8 +37,7 @@ const PORTABLE_PACKAGE_SURFACES: readonly PortablePackageSurface[] = [
   {
     classification: "Bun-and-Node validated",
     packageName: "@tuvren/core-types",
-    packageRoot:
-      "boundaries/shared/contracts/core-types/implementations/typescript",
+    packageRoot: "typescript/core-types",
   },
   {
     classification: "Bun-and-Node validated",

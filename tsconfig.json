@@ -3,7 +3,7 @@
   "files": [],
   "references": [
     {
-      "path": "./boundaries/shared/contracts/core-types/implementations/typescript"
+      "path": "./typescript/core-types"
     },
     {
       "path": "./typescript/kernel/protocol"
@@ -54,7 +54,7 @@
       "path": "./typescript/kernel/runtime"
     },
     {
-      "path": "./boundaries/shared/contracts/core/implementations/typescript"
+      "path": "./typescript/core"
     },
     {
       "path": "./boundaries/framework/implementations/typescript/stream-sse"

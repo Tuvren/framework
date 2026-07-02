@@ -5,35 +5,33 @@
     "rootDir": "../../../../../",
     "allowImportingTsExtensions": true,
     "paths": {
-      "@tuvren/core": [
-        "../../../../shared/contracts/core/implementations/typescript/src/index.ts"
-      ],
+      "@tuvren/core": ["../../../../../typescript/core/src/index.ts"],
       "@tuvren/core-types": [
-        "../../../../shared/contracts/core-types/implementations/typescript/src/index.ts"
+        "../../../../../typescript/core-types/src/index.ts"
       ],
       "@tuvren/core/driver": [
-        "../../../../shared/contracts/core/implementations/typescript/src/driver/index.ts"
+        "../../../../../typescript/core/src/driver/index.ts"
       ],
       "@tuvren/core/errors": [
-        "../../../../shared/contracts/core/implementations/typescript/src/errors/index.ts"
+        "../../../../../typescript/core/src/errors/index.ts"
       ],
       "@tuvren/core/events": [
-        "../../../../shared/contracts/core/implementations/typescript/src/events/index.ts"
+        "../../../../../typescript/core/src/events/index.ts"
       ],
       "@tuvren/core/execution": [
-        "../../../../shared/contracts/core/implementations/typescript/src/execution/index.ts"
+        "../../../../../typescript/core/src/execution/index.ts"
       ],
       "@tuvren/core/extensions": [
-        "../../../../shared/contracts/core/implementations/typescript/src/extensions/index.ts"
+        "../../../../../typescript/core/src/extensions/index.ts"
       ],
       "@tuvren/core/messages": [
-        "../../../../shared/contracts/core/implementations/typescript/src/messages/index.ts"
+        "../../../../../typescript/core/src/messages/index.ts"
       ],
       "@tuvren/core/provider": [
-        "../../../../shared/contracts/core/implementations/typescript/src/provider/index.ts"
+        "../../../../../typescript/core/src/provider/index.ts"
       ],
       "@tuvren/core/tools": [
-        "../../../../shared/contracts/core/implementations/typescript/src/tools/index.ts"
+        "../../../../../typescript/core/src/tools/index.ts"
       ],
       "@tuvren/event-stream": [
         "../../../contracts/event-stream/implementations/typescript/src/index.ts"
@@ -56,6 +54,6 @@
     "../testkit/src/**/*.ts",
     "../../../contracts/event-stream/implementations/typescript/src/**/*.ts",
     "../../../contracts/runtime-api/implementations/typescript/src/**/*.ts",
-    "../../../../shared/contracts/core-types/implementations/typescript/src/**/*.ts"
+    "../../../../../typescript/core-types/src/**/*.ts"
   ]
 }

@@ -4,45 +4,21 @@
     "module": "esnext",
     "moduleResolution": "bundler",
     "paths": {
-      "@tuvren/core": [
-        "./boundaries/shared/contracts/core/implementations/typescript/src/index.ts"
-      ],
-      "@tuvren/core/errors": [
-        "./boundaries/shared/contracts/core/implementations/typescript/src/errors/index.ts"
-      ],
-      "@tuvren/core/messages": [
-        "./boundaries/shared/contracts/core/implementations/typescript/src/messages/index.ts"
-      ],
-      "@tuvren/core/events": [
-        "./boundaries/shared/contracts/core/implementations/typescript/src/events/index.ts"
-      ],
-      "@tuvren/core/execution": [
-        "./boundaries/shared/contracts/core/implementations/typescript/src/execution/index.ts"
-      ],
-      "@tuvren/core/tools": [
-        "./boundaries/shared/contracts/core/implementations/typescript/src/tools/index.ts"
-      ],
-      "@tuvren/core/driver": [
-        "./boundaries/shared/contracts/core/implementations/typescript/src/driver/index.ts"
-      ],
-      "@tuvren/core/provider": [
-        "./boundaries/shared/contracts/core/implementations/typescript/src/provider/index.ts"
-      ],
-      "@tuvren/core/extensions": [
-        "./boundaries/shared/contracts/core/implementations/typescript/src/extensions/index.ts"
-      ],
-      "@tuvren/core/telemetry": [
-        "./boundaries/shared/contracts/core/implementations/typescript/src/telemetry/index.ts"
-      ],
+      "@tuvren/core": ["./typescript/core/src/index.ts"],
+      "@tuvren/core/errors": ["./typescript/core/src/errors/index.ts"],
+      "@tuvren/core/messages": ["./typescript/core/src/messages/index.ts"],
+      "@tuvren/core/events": ["./typescript/core/src/events/index.ts"],
+      "@tuvren/core/execution": ["./typescript/core/src/execution/index.ts"],
+      "@tuvren/core/tools": ["./typescript/core/src/tools/index.ts"],
+      "@tuvren/core/driver": ["./typescript/core/src/driver/index.ts"],
+      "@tuvren/core/provider": ["./typescript/core/src/provider/index.ts"],
+      "@tuvren/core/extensions": ["./typescript/core/src/extensions/index.ts"],
+      "@tuvren/core/telemetry": ["./typescript/core/src/telemetry/index.ts"],
       "@tuvren/core/capabilities": [
-        "./boundaries/shared/contracts/core/implementations/typescript/src/capabilities/index.ts"
+        "./typescript/core/src/capabilities/index.ts"
       ],
-      "@tuvren/core/lifecycle": [
-        "./boundaries/shared/contracts/core/implementations/typescript/src/lifecycle/index.ts"
-      ],
-      "@tuvren/core-types": [
-        "./boundaries/shared/contracts/core-types/implementations/typescript/src/index.ts"
-      ],
+      "@tuvren/core/lifecycle": ["./typescript/core/src/lifecycle/index.ts"],
+      "@tuvren/core-types": ["./typescript/core-types/src/index.ts"],
       "@tuvren/kernel-protocol": ["./typescript/kernel/protocol/src/index.ts"],
       "@tuvren/runtime-api": [
         "./boundaries/framework/contracts/runtime-api/implementations/typescript/src/index.ts"

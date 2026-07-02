@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "declaration": true,
+    "declarationMap": false,
+    "emitDeclarationOnly": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "target": "esnext",
+    "verbatimModuleSyntax": true,
+    "paths": {
+      "@tuvren/core": ["../core/dist/index.d.ts"],
+      "@tuvren/core/errors": ["../core/dist/errors/index.d.ts"],
+      "@tuvren/core/messages": ["../core/dist/messages/index.d.ts"],
+      "@tuvren/core/events": ["../core/dist/events/index.d.ts"],
+      "@tuvren/core/execution": ["../core/dist/execution/index.d.ts"],
+      "@tuvren/core/tools": ["../core/dist/tools/index.d.ts"],
+      "@tuvren/core/driver": ["../core/dist/driver/index.d.ts"],
+      "@tuvren/core/provider": ["../core/dist/provider/index.d.ts"],
+      "@tuvren/core/extensions": ["../core/dist/extensions/index.d.ts"]
+    }
+  },
+  "include": ["src/**/*.ts"]
+}

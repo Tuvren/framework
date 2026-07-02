@@ -5,9 +5,7 @@
     "outDir": "./.tmp-tests",
     "rootDir": "../../../../",
     "paths": {
-      "@tuvren/core-types": [
-        "../../../../boundaries/shared/contracts/core-types/implementations/typescript/src/index.ts"
-      ],
+      "@tuvren/core-types": ["../../../core-types/src/index.ts"],
       "@tuvren/kernel-protocol": ["../../protocol/src/index.ts"],
       "@tuvren/kernel-testkit": ["../../testkit/src/index.ts"],
       "@tuvren/backend-sqlite": ["./src/index.ts"]
@@ -19,6 +17,6 @@
     "test/**/*.ts",
     "../../protocol/src/**/*.ts",
     "../../testkit/src/**/*.ts",
-    "../../../../boundaries/shared/contracts/core-types/implementations/typescript/src/**/*.ts"
+    "../../../core-types/src/**/*.ts"
   ]
 }

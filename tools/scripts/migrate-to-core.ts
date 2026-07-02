@@ -31,8 +31,8 @@ const EXCLUDE_DIR_NAMES = new Set([
 // Source directories whose contents will be replaced wholesale by KRT-AP007.
 // Also includes the new @tuvren/core src (already uses relative imports).
 const EXCLUDE_SRC_PREFIXES = [
-  "boundaries/shared/contracts/core/implementations/typescript/src",
-  "boundaries/shared/contracts/core-types/implementations/typescript/src",
+  "typescript/core/src",
+  "typescript/core-types/src",
   "boundaries/framework/contracts/runtime-api/implementations/typescript/src",
   "boundaries/framework/contracts/event-stream/implementations/typescript/src",
   "boundaries/framework/contracts/tool-contracts/implementations/typescript/src",

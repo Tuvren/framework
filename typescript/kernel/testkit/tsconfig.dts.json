@@ -7,9 +7,7 @@
     "moduleResolution": "bundler",
     "outDir": "./dist",
     "paths": {
-      "@tuvren/core-types": [
-        "../../../boundaries/shared/contracts/core-types/implementations/typescript/dist/index.d.ts"
-      ],
+      "@tuvren/core-types": ["../../core-types/dist/index.d.ts"],
       "@tuvren/kernel-protocol": ["../protocol/dist/index.d.ts"]
     },
     "rootDir": "./src",

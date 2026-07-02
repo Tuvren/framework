@@ -184,8 +184,7 @@ interface EvidenceTemplate {
 const EVIDENCE = {
   driverApi: {
     adapterCapability: "framework.driver-api",
-    authorityPacket:
-      "spec/core/authority-packet.json",
+    authorityPacket: "spec/core/authority-packet.json",
     compatibilityEvidence:
       "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
     conformancePlan:
@@ -197,8 +196,7 @@ const EVIDENCE = {
   },
   eventStream: {
     adapterCapability: "framework.event-stream",
-    authorityPacket:
-      "spec/core/authority-packet.json",
+    authorityPacket: "spec/core/authority-packet.json",
     compatibilityEvidence:
       "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
     conformancePlan:
@@ -312,8 +310,7 @@ const EVIDENCE = {
   },
   runtimeApi: {
     adapterCapability: "framework.runtime-api",
-    authorityPacket:
-      "spec/core/authority-packet.json",
+    authorityPacket: "spec/core/authority-packet.json",
     compatibilityEvidence:
       "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
     conformancePlan:
@@ -330,8 +327,7 @@ const EVIDENCE = {
   // blessing stale `runtime-api` anchors for those promoted claims.
   toolContracts: {
     adapterCapability: "framework.runtime-api",
-    authorityPacket:
-      "spec/core/authority-packet.json",
+    authorityPacket: "spec/core/authority-packet.json",
     compatibilityEvidence:
       "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
     conformancePlan:
@@ -343,8 +339,7 @@ const EVIDENCE = {
   },
   runtimeOrchestration: {
     adapterCapability: "framework.orchestration",
-    authorityPacket:
-      "spec/core/authority-packet.json",
+    authorityPacket: "spec/core/authority-packet.json",
     compatibilityEvidence:
       "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
     conformancePlan:
@@ -399,8 +394,7 @@ const EVIDENCE = {
   // promoted by Epics AW–BB.
   capabilityOrchestration: {
     adapterCapability: "framework.runtime-api",
-    authorityPacket:
-      "spec/core/authority-packet.json",
+    authorityPacket: "spec/core/authority-packet.json",
     compatibilityEvidence:
       "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
     conformancePlan:
@@ -416,8 +410,7 @@ const EVIDENCE = {
   // ExecutionBoundExceededDetails shapes generated from the shared-core packet.
   executionBounds: {
     adapterCapability: "framework.runtime-api",
-    authorityPacket:
-      "spec/core/authority-packet.json",
+    authorityPacket: "spec/core/authority-packet.json",
     compatibilityEvidence:
       "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
     conformancePlan:

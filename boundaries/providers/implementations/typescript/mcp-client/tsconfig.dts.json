@@ -7,14 +7,12 @@
     "moduleResolution": "bundler",
     "outDir": "./dist",
     "paths": {
-      "@tuvren/core": [
-        "../../../../shared/contracts/core/implementations/typescript/dist/index.d.ts"
-      ],
+      "@tuvren/core": ["../../../../../typescript/core/dist/index.d.ts"],
       "@tuvren/core/errors": [
-        "../../../../shared/contracts/core/implementations/typescript/dist/errors/index.d.ts"
+        "../../../../../typescript/core/dist/errors/index.d.ts"
       ],
       "@tuvren/core/tools": [
-        "../../../../shared/contracts/core/implementations/typescript/dist/tools/index.d.ts"
+        "../../../../../typescript/core/dist/tools/index.d.ts"
       ]
     },
     "rootDir": "./src",

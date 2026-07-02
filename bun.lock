@@ -278,14 +278,7 @@
         "zod": "4.4.3",
       },
     },
-    "boundaries/shared/contracts/core-types/implementations/typescript": {
-      "name": "@tuvren/core-types",
-      "version": "0.0.0",
-      "dependencies": {
-        "@tuvren/core": "workspace:*",
-      },
-    },
-    "boundaries/shared/contracts/core/implementations/typescript": {
+    "typescript/core": {
       "name": "@tuvren/core",
       "version": "0.0.0",
       "peerDependencies": {
@@ -296,6 +289,13 @@
         "@standard-schema/spec",
         "zod",
       ],
+    },
+    "typescript/core-types": {
+      "name": "@tuvren/core-types",
+      "version": "0.0.0",
+      "dependencies": {
+        "@tuvren/core": "workspace:*",
+      },
     },
     "typescript/kernel/backends/memory": {
       "name": "@tuvren/backend-memory",
@@ -951,9 +951,9 @@
 
     "@tuvren/backend-sqlite": ["@tuvren/backend-sqlite@workspace:typescript/kernel/backends/sqlite"],
 
-    "@tuvren/core": ["@tuvren/core@workspace:boundaries/shared/contracts/core/implementations/typescript"],
+    "@tuvren/core": ["@tuvren/core@workspace:typescript/core"],
 
-    "@tuvren/core-types": ["@tuvren/core-types@workspace:boundaries/shared/contracts/core-types/implementations/typescript"],
+    "@tuvren/core-types": ["@tuvren/core-types@workspace:typescript/core-types"],
 
     "@tuvren/driver-api": ["@tuvren/driver-api@workspace:boundaries/framework/contracts/driver-api/implementations/typescript"],
 

@@ -237,7 +237,7 @@
     }
   },
   "bindingProjections": {
-    "typescript": "boundaries/shared/contracts/core/implementations/typescript",
+    "typescript": "typescript/core",
     "typescript-runtime": "boundaries/framework/implementations/typescript/runtime"
   },
   "bindingAppendices": [
@@ -247,8 +247,8 @@
     }
   ],
   "forbiddenAuthoritySources": [
-    "boundaries/shared/contracts/core/implementations/typescript",
-    "boundaries/shared/contracts/core-types/implementations/typescript",
+    "typescript/core",
+    "typescript/core-types",
     "boundaries/framework/contracts/runtime-api/implementations/typescript",
     "boundaries/framework/contracts/event-stream/implementations/typescript",
     "boundaries/framework/contracts/tool-contracts/implementations/typescript",

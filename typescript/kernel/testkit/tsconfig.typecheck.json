@@ -5,36 +5,16 @@
     "rootDir": "../../../",
     "allowImportingTsExtensions": true,
     "paths": {
-      "@tuvren/core": [
-        "../../../boundaries/shared/contracts/core/implementations/typescript/src/index.ts"
-      ],
-      "@tuvren/core-types": [
-        "../../../boundaries/shared/contracts/core-types/implementations/typescript/src/index.ts"
-      ],
-      "@tuvren/core/driver": [
-        "../../../boundaries/shared/contracts/core/implementations/typescript/src/driver/index.ts"
-      ],
-      "@tuvren/core/errors": [
-        "../../../boundaries/shared/contracts/core/implementations/typescript/src/errors/index.ts"
-      ],
-      "@tuvren/core/events": [
-        "../../../boundaries/shared/contracts/core/implementations/typescript/src/events/index.ts"
-      ],
-      "@tuvren/core/execution": [
-        "../../../boundaries/shared/contracts/core/implementations/typescript/src/execution/index.ts"
-      ],
-      "@tuvren/core/extensions": [
-        "../../../boundaries/shared/contracts/core/implementations/typescript/src/extensions/index.ts"
-      ],
-      "@tuvren/core/messages": [
-        "../../../boundaries/shared/contracts/core/implementations/typescript/src/messages/index.ts"
-      ],
-      "@tuvren/core/provider": [
-        "../../../boundaries/shared/contracts/core/implementations/typescript/src/provider/index.ts"
-      ],
-      "@tuvren/core/tools": [
-        "../../../boundaries/shared/contracts/core/implementations/typescript/src/tools/index.ts"
-      ],
+      "@tuvren/core": ["../../core/src/index.ts"],
+      "@tuvren/core-types": ["../../core-types/src/index.ts"],
+      "@tuvren/core/driver": ["../../core/src/driver/index.ts"],
+      "@tuvren/core/errors": ["../../core/src/errors/index.ts"],
+      "@tuvren/core/events": ["../../core/src/events/index.ts"],
+      "@tuvren/core/execution": ["../../core/src/execution/index.ts"],
+      "@tuvren/core/extensions": ["../../core/src/extensions/index.ts"],
+      "@tuvren/core/messages": ["../../core/src/messages/index.ts"],
+      "@tuvren/core/provider": ["../../core/src/provider/index.ts"],
+      "@tuvren/core/tools": ["../../core/src/tools/index.ts"],
       "@tuvren/kernel-protocol": ["../protocol/src/index.ts"]
     },
     "types": ["bun", "node"]
@@ -43,6 +23,6 @@
     "src/**/*.ts",
     "test/**/*.ts",
     "../protocol/src/**/*.ts",
-    "../../../boundaries/shared/contracts/core-types/implementations/typescript/src/**/*.ts"
+    "../../core-types/src/**/*.ts"
   ]
 }

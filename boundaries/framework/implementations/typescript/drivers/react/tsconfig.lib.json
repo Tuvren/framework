@@ -14,7 +14,7 @@
       "path": "../../../../contracts/driver-api/implementations/typescript/tsconfig.lib.json"
     },
     {
-      "path": "../../../../../shared/contracts/core-types/implementations/typescript/tsconfig.lib.json"
+      "path": "../../../../../../typescript/core-types/tsconfig.lib.json"
     },
     {
       "path": "../../stream-sse/tsconfig.lib.json"
@@ -32,7 +32,7 @@
       "path": "../../../../../providers/contracts/provider-api/implementations/typescript/tsconfig.lib.json"
     },
     {
-      "path": "../../../../../shared/contracts/core/implementations/typescript/tsconfig.lib.json"
+      "path": "../../../../../../typescript/core/tsconfig.lib.json"
     }
   ]
 }

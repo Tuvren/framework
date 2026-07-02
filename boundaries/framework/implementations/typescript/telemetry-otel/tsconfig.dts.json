@@ -7,11 +7,9 @@
     "moduleResolution": "bundler",
     "outDir": "./dist",
     "paths": {
-      "@tuvren/core": [
-        "../../../../shared/contracts/core/implementations/typescript/dist/index.d.ts"
-      ],
+      "@tuvren/core": ["../../../../../typescript/core/dist/index.d.ts"],
       "@tuvren/core/telemetry": [
-        "../../../../shared/contracts/core/implementations/typescript/dist/telemetry/index.d.ts"
+        "../../../../../typescript/core/dist/telemetry/index.d.ts"
       ]
     },
     "rootDir": "./src",

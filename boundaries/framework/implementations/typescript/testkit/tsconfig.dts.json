@@ -7,35 +7,33 @@
     "moduleResolution": "bundler",
     "outDir": "./dist",
     "paths": {
-      "@tuvren/core": [
-        "../../../../shared/contracts/core/implementations/typescript/dist/index.d.ts"
-      ],
+      "@tuvren/core": ["../../../../../typescript/core/dist/index.d.ts"],
       "@tuvren/core/errors": [
-        "../../../../shared/contracts/core/implementations/typescript/dist/errors/index.d.ts"
+        "../../../../../typescript/core/dist/errors/index.d.ts"
       ],
       "@tuvren/core/messages": [
-        "../../../../shared/contracts/core/implementations/typescript/dist/messages/index.d.ts"
+        "../../../../../typescript/core/dist/messages/index.d.ts"
       ],
       "@tuvren/core/events": [
-        "../../../../shared/contracts/core/implementations/typescript/dist/events/index.d.ts"
+        "../../../../../typescript/core/dist/events/index.d.ts"
       ],
       "@tuvren/core/execution": [
-        "../../../../shared/contracts/core/implementations/typescript/dist/execution/index.d.ts"
+        "../../../../../typescript/core/dist/execution/index.d.ts"
       ],
       "@tuvren/core/tools": [
-        "../../../../shared/contracts/core/implementations/typescript/dist/tools/index.d.ts"
+        "../../../../../typescript/core/dist/tools/index.d.ts"
       ],
       "@tuvren/core/driver": [
-        "../../../../shared/contracts/core/implementations/typescript/dist/driver/index.d.ts"
+        "../../../../../typescript/core/dist/driver/index.d.ts"
       ],
       "@tuvren/core/provider": [
-        "../../../../shared/contracts/core/implementations/typescript/dist/provider/index.d.ts"
+        "../../../../../typescript/core/dist/provider/index.d.ts"
       ],
       "@tuvren/core/extensions": [
-        "../../../../shared/contracts/core/implementations/typescript/dist/extensions/index.d.ts"
+        "../../../../../typescript/core/dist/extensions/index.d.ts"
       ],
       "@tuvren/core/telemetry": [
-        "../../../../shared/contracts/core/implementations/typescript/dist/telemetry/index.d.ts"
+        "../../../../../typescript/core/dist/telemetry/index.d.ts"
       ],
       "@tuvren/event-stream": [
         "../../../contracts/event-stream/implementations/typescript/dist/index.d.ts"

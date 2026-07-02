@@ -5,11 +5,9 @@
     "rootDir": "../../../../../",
     "allowImportingTsExtensions": true,
     "paths": {
-      "@tuvren/core": [
-        "../../../../shared/contracts/core/implementations/typescript/src/index.ts"
-      ],
+      "@tuvren/core": ["../../../../../typescript/core/src/index.ts"],
       "@tuvren/core/telemetry": [
-        "../../../../shared/contracts/core/implementations/typescript/src/telemetry/index.ts"
+        "../../../../../typescript/core/src/telemetry/index.ts"
       ],
       "@tuvren/telemetry-otel": ["./src/index.ts"]
     },
