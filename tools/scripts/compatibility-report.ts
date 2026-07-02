@@ -369,13 +369,12 @@ const CONFORMANCE_RUNNERS: readonly ConformanceRunner[] = [
     reportLabel: "Rust process-local kernel baseline",
   },
   {
-    adapterManifestPath:
-      "boundaries/framework/implementations/rust/conformance-adapter/adapter.json",
+    adapterManifestPath: "rust/conformance-adapter/adapter.json",
     command: [
       "bun",
       "tools/conformance/runner/run.ts",
       "--adapter",
-      "boundaries/framework/implementations/rust/conformance-adapter/adapter.json",
+      "rust/conformance-adapter/adapter.json",
     ],
     implementationId: "rust-framework",
     language: "rust",

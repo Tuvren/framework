@@ -256,8 +256,8 @@
     "typescript/runtime",
     "typescript/conformance-runner",
     "typescript/conformance-adapter",
-    "boundaries/framework/implementations/rust/conformance-runner",
-    "boundaries/framework/implementations/rust/conformance-adapter",
+    "rust/conformance-runner",
+    "rust/conformance-adapter",
     "docs",
     ".constitution"
   ],

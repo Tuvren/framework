@@ -14,7 +14,7 @@
 
 fn main() {
     eprintln!(
-        "framework Rust conformance is executed by tools/conformance/runner/run.ts through boundaries/framework/implementations/rust/conformance-adapter/adapter.json"
+        "framework Rust conformance is executed by tools/conformance/runner/run.ts through rust/conformance-adapter/adapter.json"
     );
     std::process::exit(1);
 }

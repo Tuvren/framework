@@ -1,7 +1,7 @@
 {
   "name": "framework-rust-conformance-runner",
-  "$schema": "../../../../../node_modules/nx/schemas/project-schema.json",
-  "root": "boundaries/framework/implementations/rust/conformance-runner",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "root": "rust/conformance-runner",
   "projectType": "library",
   "tags": ["boundary:framework", "language:rust", "layer:conformance-runner"],
   "targets": {
@@ -20,14 +20,15 @@
         "^production",
         "conformanceEngine",
         "{workspaceRoot}/boundaries/framework/conformance/**/*",
-        "{workspaceRoot}/boundaries/framework/implementations/rust/**/*",
+        "{workspaceRoot}/rust/conformance-adapter/**/*",
+        "{workspaceRoot}/rust/conformance-runner/**/*",
         "{workspaceRoot}/Cargo.toml",
         "{workspaceRoot}/Cargo.lock",
         "{workspaceRoot}/rust-toolchain.toml"
       ],
       "options": {
         "cwd": ".",
-        "command": "bun tools/conformance/runner/run.ts --adapter boundaries/framework/implementations/rust/conformance-adapter/adapter.json --summary-only"
+        "command": "bun tools/conformance/runner/run.ts --adapter rust/conformance-adapter/adapter.json --summary-only"
       }
     },
     "lint": {
