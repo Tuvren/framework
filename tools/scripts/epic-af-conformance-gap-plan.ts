@@ -196,13 +196,12 @@ const SURFACE_PLANS: Readonly<Record<string, SurfacePlan>> = {
       "runtime-lifecycle-af.context-transform-driver-sees-rewritten-context",
     ],
     conformancePlan:
-      "boundaries/framework/conformance/plans/runtime-api-lifecycle-extended.json",
+      "spec/conformance/engine/plans/runtime-api-lifecycle-extended.json",
     deliveryTicket: "KRT-AF001",
     disposition: "promote",
     evidenceUpdate:
       "Refresh framework compatibility evidence with runtime.status.partial and context-engineering tree-head observations; Rust framework remains non-applicable.",
-    fixture:
-      "boundaries/framework/conformance/scenarios/runtime-api-scenarios.json",
+    fixture: "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
     rationale:
       "The full TypeScript state layout stays implementation-local, but runtime.status.partial and context-engineering new-tree/source-checkpoint observations are portable runtime-api behavior.",
     requiredEvidence: [

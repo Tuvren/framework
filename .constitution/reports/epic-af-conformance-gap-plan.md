@@ -16,7 +16,7 @@ This plan is generated from the Epic AD docs-to-authority coverage matrix. It is
 - Claim IDs: `FWK-077DA00DEE7C`, `FWK-0A405F74632B`, `FWK-10F71F510BDB`, `FWK-28AAFC4F1DC8`, `FWK-31EE39CB3972`, `FWK-33F5DEAFC66A`, `FWK-476F0CA23F55`, `FWK-4C1B5C7C29AB`, `FWK-51B9484B4ACD`, `FWK-57513B429B0F`, `FWK-57AEE9ECE718`, `FWK-5E22B4D78C82`, `FWK-6E09A676D520`, `FWK-722E8933104E`, `FWK-738E2E1EEC12`, `FWK-7AAC5E04465D`, `FWK-7D9B813A79CD`, `FWK-8E25784CC248`, `FWK-9436BD753283`, `FWK-AEA220D0DA52`, `FWK-B18ECC3DDCF3`, `FWK-C3619F4E0DD7`, `FWK-D0C7DFFDB7A6`, `FWK-D32084F687AE`, `FWK-DE249477068F`, `FWK-EB75F78718DA`, `FWK-F1DF0F90609A`
 - Authority packet: `spec/core/authority-packet.json`
 - Conformance plan: `boundaries/framework/conformance/plans/tool-contracts-extended.json`
-- Fixture or scenario: `boundaries/framework/conformance/scenarios/runtime-api-scenarios.json`
+- Fixture or scenario: `spec/conformance/engine/scenarios/runtime-api-scenarios.json`
 - Adapter operation: `runtime.approval-resolve; runtime.cancel-execution`
 - Capability requirement: `framework.runtime-api; providers.framework-owned-approval-boundary`
 - Required evidence: `cancellation.cancelInvocations`, `approval.cancelledPhase`, `approval.cancelledToolResults.1.isError`, `approval.handleOwnership.cancelErrorCode`, `approval.handleOwnership.resolveApprovalErrorCode`, `approval.resumedPhase`, `approval.resumedTextAbsent`, `approval.toolResults.1.isError`, `approval.toolResults.1.output.decisionType`, `cancellation.errorEventCount`, `runtime.phase`, `tool.execution.executedNamesAfterCancel`
@@ -32,7 +32,7 @@ This plan is generated from the Epic AD docs-to-authority coverage matrix. It is
 - Claim IDs: `FWK-3EB6BD2E44C6`
 - Authority packet: `spec/core/authority-packet.json`
 - Conformance plan: `boundaries/framework/conformance/plans/tool-contracts-extended.json`
-- Fixture or scenario: `boundaries/framework/conformance/scenarios/runtime-api-scenarios.json`
+- Fixture or scenario: `spec/conformance/engine/scenarios/runtime-api-scenarios.json`
 - Adapter operation: `runtime.approval-resolve`
 - Capability requirement: `framework.runtime-api`
 - Required evidence: `approval.sameTurn`, `tool.execution.executedNamesBeforeResume`, `tool.execution.executedNamesAfterResume`
@@ -63,8 +63,8 @@ This plan is generated from the Epic AD docs-to-authority coverage matrix. It is
 - Matrix follow-up tickets: `KRT-AF001 if portability is selected`
 - Claim IDs: `FWK-0A368D92CB9D`, `FWK-A346B29D8195`, `FWK-A9611C7D2C6F`
 - Authority packet: `spec/core/authority-packet.json`
-- Conformance plan: `boundaries/framework/conformance/plans/runtime-api-lifecycle-extended.json`
-- Fixture or scenario: `boundaries/framework/conformance/scenarios/runtime-api-scenarios.json`
+- Conformance plan: `spec/conformance/engine/plans/runtime-api-lifecycle-extended.json`
+- Fixture or scenario: `spec/conformance/engine/scenarios/runtime-api-scenarios.json`
 - Adapter operation: `runtime.context-transform; runtime.cancel-execution`
 - Capability requirement: `framework.runtime-api`
 - Required evidence: `cancellation.runtimeStatusPartial`, `cancellation.partialAssistantText`, `context.sourceMessageCount`, `context.rewrittenMessageCount`, `context.createdNewHead`, `context.snapshotMessageCounts`, `context.driverObservedMessageCount`
@@ -79,8 +79,8 @@ This plan is generated from the Epic AD docs-to-authority coverage matrix. It is
 - Matrix follow-up tickets: `KRT-AF005`
 - Claim IDs: `FWK-26F5B55D9B57`, `FWK-676A729CE7F4`, `FWK-A94F389D6ACA`, `FWK-B354FA47EBE1`, `FWK-D7F58DBE7F22`, `FWK-E64892FC65DA`
 - Authority packet: `spec/core/authority-packet.json`
-- Conformance plan: `boundaries/framework/conformance/plans/runtime-api-orchestration.json`
-- Fixture or scenario: `boundaries/framework/conformance/scenarios/runtime-api-scenarios.json`
+- Conformance plan: `spec/conformance/engine/plans/runtime-api-orchestration.json`
+- Fixture or scenario: `spec/conformance/engine/scenarios/runtime-api-scenarios.json`
 - Adapter operation: `runtime.orchestration.execution-inheritance`
 - Capability requirement: `framework.orchestration`
 - Required evidence: `orchestration.surfaces.handoffHistoryControlEntryAbsent`, `orchestration.surfaces.handoffInvalidCompositionError.code`, `orchestration.surfaces.handoffLastOutputOnlyNoSourceSignal`, `orchestration.surfaces.handoffLastOutputOnlyText`
@@ -159,8 +159,8 @@ This plan is generated from the Epic AD docs-to-authority coverage matrix. It is
 - Matrix follow-up tickets: `KRT-AF001`
 - Claim IDs: `FWK-4B0A4D61DDBF`, `FWK-550E41A79A79`, `FWK-5ED37780C4CA`, `FWK-8E41AD74D58F`, `FWK-A694947F2BE6`, `FWK-AB9BE971F3F8`, `FWK-D1C028C77A54`, `FWK-F840209551A0`
 - Authority packet: `spec/core/authority-packet.json`
-- Conformance plan: `boundaries/framework/conformance/plans/runtime-api-lifecycle.json; boundaries/framework/conformance/plans/runtime-api-lifecycle-extended.json; boundaries/framework/conformance/plans/runtime-api-callables.json; boundaries/framework/conformance/plans/runtime-api-callables-extended.json`
-- Fixture or scenario: `boundaries/framework/conformance/scenarios/runtime-api-scenarios.json`
+- Conformance plan: `spec/conformance/engine/plans/runtime-api-lifecycle.json; spec/conformance/engine/plans/runtime-api-lifecycle-extended.json; spec/conformance/engine/plans/runtime-api-callables.json; spec/conformance/engine/plans/runtime-api-callables-extended.json`
+- Fixture or scenario: `spec/conformance/engine/scenarios/runtime-api-scenarios.json`
 - Adapter operation: `runtime.provider-generate; runtime.validate-structured-output`
 - Capability requirement: `framework.runtime-api`
 - Required evidence: `provider.generate.response.parts.0.input.query`, `provider.generate.response.parts.0.data.answer`, `inputSignal.error.code`, `inputSignal.accepted`, `validation.dialect`
@@ -191,8 +191,8 @@ This plan is generated from the Epic AD docs-to-authority coverage matrix. It is
 - Matrix follow-up tickets: `KRT-AF004`
 - Claim IDs: `FWK-176C448DD30E`, `FWK-24BAD806542F`, `FWK-2855D4D9A4B5`, `FWK-78A3D571633B`, `FWK-7AC0F63C88BD`, `FWK-87974E517D0C`, `FWK-CFBF4A38F861`
 - Authority packet: `spec/core/authority-packet.json`
-- Conformance plan: `boundaries/framework/conformance/plans/runtime-api-lifecycle.json; boundaries/framework/conformance/plans/runtime-api-lifecycle-extended.json; boundaries/framework/conformance/plans/runtime-api-callables.json; boundaries/framework/conformance/plans/runtime-api-callables-extended.json`
-- Fixture or scenario: `boundaries/framework/conformance/scenarios/runtime-api-scenarios.json`
+- Conformance plan: `spec/conformance/engine/plans/runtime-api-lifecycle.json; spec/conformance/engine/plans/runtime-api-lifecycle-extended.json; spec/conformance/engine/plans/runtime-api-callables.json; spec/conformance/engine/plans/runtime-api-callables-extended.json`
+- Fixture or scenario: `spec/conformance/engine/scenarios/runtime-api-scenarios.json`
 - Adapter operation: `runtime.provider-stream; runtime.validate-structured-output`
 - Capability requirement: `framework.runtime-api; providers.rejects-native-strict-structured-output`
 - Required evidence: `provider.generate.partKeys.0`, `provider.stream.structuredDeltaIndex`, `provider.stream.structuredDoneIndex`, `validation.error.code`, `validation.resolutionType`
@@ -208,7 +208,7 @@ This plan is generated from the Epic AD docs-to-authority coverage matrix. It is
 - Claim IDs: `FWK-097D5A1C6AA2`, `FWK-86DBC9E570C8`, `FWK-8EB24EEFC45C`, `FWK-9F20F73A9745`, `FWK-AEFDB52BDBF9`, `FWK-B9434E23AB69`, `FWK-C9356EE09017`
 - Authority packet: `spec/core/authority-packet.json`
 - Conformance plan: `boundaries/framework/conformance/plans/tool-contracts-extended.json`
-- Fixture or scenario: `boundaries/framework/conformance/scenarios/runtime-api-scenarios.json`
+- Fixture or scenario: `spec/conformance/engine/scenarios/runtime-api-scenarios.json`
 - Adapter operation: `runtime.tool-execute; runtime.approval-resolve`
 - Capability requirement: `framework.runtime-api; providers.framework-owned-tool-execution`
 - Required evidence: `provider.stream.response.parts.0.providerMetadata.providerCallId`, `provider.stream.toolCallIdOwnedByFramework`, `tool.execution.toolResults.0.isError`, `tool.execution.toolResults.0.output.error`, `toolExecution.status.phase`, `approval.messageAttachment`
@@ -224,7 +224,7 @@ This plan is generated from the Epic AD docs-to-authority coverage matrix. It is
 - Claim IDs: `FWK-4193D2A613E0`, `FWK-BC7142393BAA`
 - Authority packet: `spec/core/authority-packet.json`
 - Conformance plan: `boundaries/framework/conformance/plans/tool-contracts-extended.json`
-- Fixture or scenario: `boundaries/framework/conformance/scenarios/runtime-api-scenarios.json`
+- Fixture or scenario: `spec/conformance/engine/scenarios/runtime-api-scenarios.json`
 - Adapter operation: `runtime.tool-execute`
 - Capability requirement: `framework.runtime-api`
 - Required evidence: `tool.execution.eventTypes`, `tool.execution.parallelWaveStartedBeforeResults`, `approval.resumedEventTypes`, `approval.gatedToolStartAfterResume`
@@ -239,8 +239,8 @@ This plan is generated from the Epic AD docs-to-authority coverage matrix. It is
 - Matrix follow-up tickets: `KRT-AF005`
 - Claim IDs: `FWK-C6917E7E9D81`
 - Authority packet: `spec/core/authority-packet.json`
-- Conformance plan: `boundaries/framework/conformance/plans/runtime-api-orchestration.json`
-- Fixture or scenario: `boundaries/framework/conformance/scenarios/runtime-api-scenarios.json`
+- Conformance plan: `spec/conformance/engine/plans/runtime-api-orchestration.json`
+- Fixture or scenario: `spec/conformance/engine/scenarios/runtime-api-scenarios.json`
 - Adapter operation: `runtime.orchestration.nested-attribution`
 - Capability requirement: `framework.orchestration`
 - Required evidence: `orchestration.nested.rootGrandchildSource.agent`, `orchestration.nested.rootGrandchildSource.threadId`, `orchestration.nested.rootGrandchildSource.workerId`

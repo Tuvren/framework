@@ -38,23 +38,23 @@
       "bindingSection": "driver"
     },
     {
-      "path": "boundaries/framework/conformance/plans/runtime-api-lifecycle.json",
+      "path": "spec/conformance/engine/plans/runtime-api-lifecycle.json",
       "format": "conformance-plan"
     },
     {
-      "path": "boundaries/framework/conformance/plans/runtime-api-callables.json",
+      "path": "spec/conformance/engine/plans/runtime-api-callables.json",
       "format": "conformance-plan"
     },
     {
-      "path": "boundaries/framework/conformance/plans/runtime-api-callables-extended.json",
+      "path": "spec/conformance/engine/plans/runtime-api-callables-extended.json",
       "format": "conformance-plan"
     },
     {
-      "path": "boundaries/framework/conformance/plans/runtime-api-lifecycle-extended.json",
+      "path": "spec/conformance/engine/plans/runtime-api-lifecycle-extended.json",
       "format": "conformance-plan"
     },
     {
-      "path": "boundaries/framework/conformance/plans/runtime-api-orchestration.json",
+      "path": "spec/conformance/engine/plans/runtime-api-orchestration.json",
       "format": "conformance-plan"
     },
     {
@@ -78,7 +78,7 @@
       "format": "conformance-plan"
     },
     {
-      "path": "boundaries/framework/conformance/plans/runtime-api-batteries-included.json",
+      "path": "spec/conformance/engine/plans/runtime-api-batteries-included.json",
       "format": "conformance-plan"
     },
     {
@@ -118,27 +118,27 @@
     {
       "planId": "tuvren.framework.runtime-api.lifecycle",
       "planVersion": "0.1.0",
-      "path": "boundaries/framework/conformance/plans/runtime-api-lifecycle.json"
+      "path": "spec/conformance/engine/plans/runtime-api-lifecycle.json"
     },
     {
       "planId": "tuvren.framework.runtime-api.callables",
       "planVersion": "0.2.0",
-      "path": "boundaries/framework/conformance/plans/runtime-api-callables.json"
+      "path": "spec/conformance/engine/plans/runtime-api-callables.json"
     },
     {
       "planId": "tuvren.framework.runtime-api.callables-extended",
       "planVersion": "0.7.0",
-      "path": "boundaries/framework/conformance/plans/runtime-api-callables-extended.json"
+      "path": "spec/conformance/engine/plans/runtime-api-callables-extended.json"
     },
     {
       "planId": "tuvren.framework.runtime-api.lifecycle-extended",
       "planVersion": "0.2.0",
-      "path": "boundaries/framework/conformance/plans/runtime-api-lifecycle-extended.json"
+      "path": "spec/conformance/engine/plans/runtime-api-lifecycle-extended.json"
     },
     {
       "planId": "tuvren.framework.runtime-api.orchestration",
       "planVersion": "0.3.0",
-      "path": "boundaries/framework/conformance/plans/runtime-api-orchestration.json"
+      "path": "spec/conformance/engine/plans/runtime-api-orchestration.json"
     },
     {
       "planId": "tuvren.framework.event-stream.core",
@@ -168,7 +168,7 @@
     {
       "planId": "tuvren.framework.runtime-api.batteries-included",
       "planVersion": "0.1.0",
-      "path": "boundaries/framework/conformance/plans/runtime-api-batteries-included.json"
+      "path": "spec/conformance/engine/plans/runtime-api-batteries-included.json"
     },
     {
       "planId": "tuvren.framework.runtime-api.operational-telemetry",
@@ -268,23 +268,23 @@
     },
     {
       "kind": "conformance-plan",
-      "target": "boundaries/framework/conformance/plans/runtime-api-lifecycle.json"
+      "target": "spec/conformance/engine/plans/runtime-api-lifecycle.json"
     },
     {
       "kind": "conformance-plan",
-      "target": "boundaries/framework/conformance/plans/runtime-api-callables.json"
+      "target": "spec/conformance/engine/plans/runtime-api-callables.json"
     },
     {
       "kind": "conformance-plan",
-      "target": "boundaries/framework/conformance/plans/runtime-api-callables-extended.json"
+      "target": "spec/conformance/engine/plans/runtime-api-callables-extended.json"
     },
     {
       "kind": "conformance-plan",
-      "target": "boundaries/framework/conformance/plans/runtime-api-lifecycle-extended.json"
+      "target": "spec/conformance/engine/plans/runtime-api-lifecycle-extended.json"
     },
     {
       "kind": "conformance-plan",
-      "target": "boundaries/framework/conformance/plans/runtime-api-orchestration.json"
+      "target": "spec/conformance/engine/plans/runtime-api-orchestration.json"
     },
     {
       "kind": "conformance-plan",
@@ -308,7 +308,7 @@
     },
     {
       "kind": "conformance-plan",
-      "target": "boundaries/framework/conformance/plans/runtime-api-batteries-included.json"
+      "target": "spec/conformance/engine/plans/runtime-api-batteries-included.json"
     },
     {
       "kind": "conformance-plan",

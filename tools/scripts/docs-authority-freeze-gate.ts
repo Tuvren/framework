@@ -314,9 +314,8 @@ const EVIDENCE = {
     compatibilityEvidence:
       "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
     conformancePlan:
-      "boundaries/framework/conformance/plans/runtime-api-lifecycle.json; boundaries/framework/conformance/plans/runtime-api-lifecycle-extended.json; boundaries/framework/conformance/plans/runtime-api-callables.json; boundaries/framework/conformance/plans/runtime-api-callables-extended.json",
-    fixture:
-      "boundaries/framework/conformance/scenarios/runtime-api-scenarios.json",
+      "spec/conformance/engine/plans/runtime-api-lifecycle.json; spec/conformance/engine/plans/runtime-api-lifecycle-extended.json; spec/conformance/engine/plans/runtime-api-callables.json; spec/conformance/engine/plans/runtime-api-callables-extended.json",
+    fixture: "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
     generatedArtifact:
       "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
   },
@@ -332,8 +331,7 @@ const EVIDENCE = {
       "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
     conformancePlan:
       "boundaries/framework/conformance/plans/tool-contracts-extended.json",
-    fixture:
-      "boundaries/framework/conformance/scenarios/runtime-api-scenarios.json",
+    fixture: "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
     generatedArtifact:
       "boundaries/framework/contracts/tool-contracts/artifacts/json-schema; boundaries/framework/contracts/tool-contracts/artifacts/openapi/tool-contracts.openapi.json",
   },
@@ -343,9 +341,8 @@ const EVIDENCE = {
     compatibilityEvidence:
       "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
     conformancePlan:
-      "boundaries/framework/conformance/plans/runtime-api-orchestration.json",
-    fixture:
-      "boundaries/framework/conformance/scenarios/runtime-api-scenarios.json",
+      "spec/conformance/engine/plans/runtime-api-orchestration.json",
+    fixture: "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
     generatedArtifact:
       "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
   },
@@ -371,7 +368,7 @@ const EVIDENCE = {
     compatibilityEvidence:
       "reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-postgres-conformance-runner.json; reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-sqlite-conformance-runner.json; reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
     conformancePlan:
-      "spec/conformance/kernel/plans/kernel-run-liveness.json; boundaries/framework/conformance/plans/runtime-api-lifecycle-extended.json",
+      "spec/conformance/kernel/plans/kernel-run-liveness.json; spec/conformance/engine/plans/runtime-api-lifecycle-extended.json",
     fixture: "spec/conformance/kernel/fixtures/kernel-protocol-logical.json",
     generatedArtifact:
       "N/A - run-liveness is conformance-plan authority without generated schema artifacts",
@@ -399,8 +396,7 @@ const EVIDENCE = {
       "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
     conformancePlan:
       "boundaries/framework/conformance/plans/capability-orchestration-integration.json; boundaries/framework/conformance/plans/tuvren-server-execution-class.json; boundaries/framework/conformance/plans/tuvren-client-execution-class.json; boundaries/framework/conformance/plans/invocation-lifecycle-observation.json; boundaries/framework/conformance/plans/capability-policy.json",
-    fixture:
-      "boundaries/framework/conformance/scenarios/runtime-api-scenarios.json",
+    fixture: "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
     generatedArtifact: "spec/core/artifacts/json-schema",
   },
   // KRT-BD008: §4.12 Execution Bounds (ADR-043) — the framework-owned hard-stop
@@ -414,9 +410,8 @@ const EVIDENCE = {
     compatibilityEvidence:
       "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
     conformancePlan:
-      "boundaries/framework/conformance/plans/runtime-api-callables-extended.json",
-    fixture:
-      "boundaries/framework/conformance/scenarios/runtime-api-scenarios.json",
+      "spec/conformance/engine/plans/runtime-api-callables-extended.json",
+    fixture: "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
     generatedArtifact: "spec/core/artifacts/json-schema",
   },
 } as const satisfies Record<string, EvidenceTemplate>;

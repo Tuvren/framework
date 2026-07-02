@@ -20,6 +20,7 @@
         "^production",
         "conformanceEngine",
         "{workspaceRoot}/boundaries/framework/conformance/**/*",
+        "{workspaceRoot}/spec/conformance/engine/**/*",
         "{workspaceRoot}/rust/conformance-adapter/**/*",
         "{workspaceRoot}/rust/conformance-runner/**/*",
         "{workspaceRoot}/Cargo.toml",

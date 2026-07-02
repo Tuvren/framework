@@ -14,6 +14,17 @@
  * limitations under the License.
  */
 
+// ⚠️ STALE SCAFFOLD — DO NOT RUN TO "REGENERATE" AUTHORITY (measured 87-M3.4).
+// The committed plan JSON is authority; this script has drifted behind it:
+// running it deletes ~941 lines of committed checks (runtime-api-callables-
+// extended alone loses ~870 lines incl. the 0.3.0 durable-read family;
+// event-stream-extended 74; runtime-api-lifecycle-extended 29) and regresses
+// packetId fields to their pre-M2 values (committed plans consolidated onto
+// "tuvren.shared.core" / kept post-M2 ownership; this script still emits the
+// old per-contract packet IDs). The plans were amended directly after this
+// scaffold last ran, without back-porting. Either back-port the committed
+// content here or retire the script — that decision belongs to the plan-family
+// owners (engine seam M3-carry, tools M5, runners M6, streaming M8).
 import { writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -41,6 +52,9 @@ interface Plan {
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const PLANS_DIR = resolve(REPO_ROOT, "boundaries/framework/conformance/plans");
+// Engine-seam plans moved at 87-M3.4; the remaining port plans follow at
+// their owning milestones (M5/M6/M8), each repointing its own entries here.
+const ENGINE_PLANS_DIR = resolve(REPO_ROOT, "spec/conformance/engine/plans");
 
 await main();
 
@@ -48,47 +62,54 @@ async function main(): Promise<void> {
   // Forward-looking probes against operations not declared by the framework
   // operation source were removed: validate-plans rejects them. Bringing
   // those operations under authority (TypeSpec) is a separate spec amendment.
-  const plans: Array<{ fileName: string; plan: Plan }> = [
+  const plans: Array<{ dir: string; fileName: string; plan: Plan }> = [
     {
+      dir: ENGINE_PLANS_DIR,
       fileName: "runtime-api-callables-extended.json",
       plan: buildRuntimeApiCallablesExtended(),
     },
     {
+      dir: PLANS_DIR,
       fileName: "tool-contracts-extended.json",
       plan: buildToolContractsExtended(),
     },
     {
+      dir: ENGINE_PLANS_DIR,
       fileName: "runtime-api-lifecycle-extended.json",
       plan: buildRuntimeApiLifecycleExtended(),
     },
     {
+      dir: ENGINE_PLANS_DIR,
       fileName: "runtime-api-orchestration.json",
       plan: buildRuntimeApiOrchestration(),
     },
     {
+      dir: PLANS_DIR,
       fileName: "event-stream-extended.json",
       plan: buildEventStreamExtended(),
     },
     {
+      dir: PLANS_DIR,
       fileName: "driver-api-extended.json",
       plan: buildDriverApiExtended(),
     },
     {
+      dir: PLANS_DIR,
       fileName: "react-driver-extended.json",
       plan: buildReactDriverExtended(),
     },
   ];
 
-  for (const { fileName, plan } of plans) {
+  for (const { dir, fileName, plan } of plans) {
     await writeFile(
-      resolve(PLANS_DIR, fileName),
+      resolve(dir, fileName),
       `${JSON.stringify(plan, null, 2)}\n`
     );
     process.stdout.write(`wrote ${fileName} (${plan.checks.length} checks)\n`);
   }
 
   await formatGeneratedJson(
-    plans.map(({ fileName }) => resolve(PLANS_DIR, fileName))
+    plans.map(({ dir, fileName }) => resolve(dir, fileName))
   );
 }
 
@@ -741,7 +762,11 @@ function buildToolContractsExtended(): Plan {
     planId: "tuvren.framework.tool-contracts.extended",
     planVersion: "0.2.0",
     scenarios: {
-      "runtime-api-scenarios": "../scenarios/runtime-api-scenarios.json",
+      // Plan-file-relative: this plan stays at boundaries/framework/
+      // conformance/plans/ until M5 while the scenario moved to the
+      // engine-seam home at 87-M3.4.
+      "runtime-api-scenarios":
+        "../../../../spec/conformance/engine/scenarios/runtime-api-scenarios.json",
     },
   };
 }

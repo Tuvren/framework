@@ -64,7 +64,7 @@
       "classifications": ["authority-backed-conformance-covered"],
       "compatibilityEvidence": "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
       "conformancePlan": "boundaries/framework/conformance/plans/tool-contracts-extended.json",
-      "fixture": "boundaries/framework/conformance/scenarios/runtime-api-scenarios.json",
+      "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "generatedArtifact": "boundaries/framework/contracts/tool-contracts/artifacts/json-schema; boundaries/framework/contracts/tool-contracts/artifacts/openapi/tool-contracts.openapi.json",
       "matrixFollowUpTickets": ["KRT-AF004"],
       "surface": "approval and cancellation control"
@@ -91,7 +91,7 @@
       "classifications": ["authority-backed-conformance-covered"],
       "compatibilityEvidence": "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
       "conformancePlan": "boundaries/framework/conformance/plans/tool-contracts-extended.json",
-      "fixture": "boundaries/framework/conformance/scenarios/runtime-api-scenarios.json",
+      "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "generatedArtifact": "boundaries/framework/contracts/tool-contracts/artifacts/json-schema; boundaries/framework/contracts/tool-contracts/artifacts/openapi/tool-contracts.openapi.json",
       "matrixFollowUpTickets": ["KRT-AF004"],
       "surface": "approval resume semantics"
@@ -135,11 +135,11 @@
         "runtime-lifecycle-af.context-transform-creates-new-tree-heads",
         "runtime-lifecycle-af.context-transform-driver-sees-rewritten-context"
       ],
-      "conformancePlan": "boundaries/framework/conformance/plans/runtime-api-lifecycle-extended.json",
+      "conformancePlan": "spec/conformance/engine/plans/runtime-api-lifecycle-extended.json",
       "deliveryTicket": "KRT-AF001",
       "disposition": "promote",
       "evidenceUpdate": "Refresh framework compatibility evidence with runtime.status.partial and context-engineering tree-head observations; Rust framework remains non-applicable.",
-      "fixture": "boundaries/framework/conformance/scenarios/runtime-api-scenarios.json",
+      "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "rationale": "The full TypeScript state layout stays implementation-local, but runtime.status.partial and context-engineering new-tree/source-checkpoint observations are portable runtime-api behavior.",
       "requiredEvidence": [
         "cancellation.runtimeStatusPartial",
@@ -188,8 +188,8 @@
       ],
       "classifications": ["authority-backed-conformance-covered"],
       "compatibilityEvidence": "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
-      "conformancePlan": "boundaries/framework/conformance/plans/runtime-api-orchestration.json",
-      "fixture": "boundaries/framework/conformance/scenarios/runtime-api-scenarios.json",
+      "conformancePlan": "spec/conformance/engine/plans/runtime-api-orchestration.json",
+      "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
       "matrixFollowUpTickets": ["KRT-AF005"],
       "surface": "handoff and context engineering"
@@ -387,8 +387,8 @@
       ],
       "classifications": ["authority-backed-conformance-covered"],
       "compatibilityEvidence": "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
-      "conformancePlan": "boundaries/framework/conformance/plans/runtime-api-lifecycle.json; boundaries/framework/conformance/plans/runtime-api-lifecycle-extended.json; boundaries/framework/conformance/plans/runtime-api-callables.json; boundaries/framework/conformance/plans/runtime-api-callables-extended.json",
-      "fixture": "boundaries/framework/conformance/scenarios/runtime-api-scenarios.json",
+      "conformancePlan": "spec/conformance/engine/plans/runtime-api-lifecycle.json; spec/conformance/engine/plans/runtime-api-lifecycle-extended.json; spec/conformance/engine/plans/runtime-api-callables.json; spec/conformance/engine/plans/runtime-api-callables-extended.json",
+      "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
       "matrixFollowUpTickets": ["KRT-AF001"],
       "surface": "shared framework type shapes"
@@ -445,8 +445,8 @@
       ],
       "classifications": ["authority-backed-conformance-covered"],
       "compatibilityEvidence": "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
-      "conformancePlan": "boundaries/framework/conformance/plans/runtime-api-lifecycle.json; boundaries/framework/conformance/plans/runtime-api-lifecycle-extended.json; boundaries/framework/conformance/plans/runtime-api-callables.json; boundaries/framework/conformance/plans/runtime-api-callables-extended.json",
-      "fixture": "boundaries/framework/conformance/scenarios/runtime-api-scenarios.json",
+      "conformancePlan": "spec/conformance/engine/plans/runtime-api-lifecycle.json; spec/conformance/engine/plans/runtime-api-lifecycle-extended.json; spec/conformance/engine/plans/runtime-api-callables.json; spec/conformance/engine/plans/runtime-api-callables-extended.json",
+      "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
       "matrixFollowUpTickets": ["KRT-AF004"],
       "surface": "structured output contract"
@@ -485,7 +485,7 @@
       ],
       "classifications": ["authority-backed-conformance-covered"],
       "compatibilityEvidence": "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
-      "fixture": "boundaries/framework/conformance/scenarios/runtime-api-scenarios.json",
+      "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "generatedArtifact": "boundaries/framework/contracts/tool-contracts/artifacts/json-schema; boundaries/framework/contracts/tool-contracts/artifacts/openapi/tool-contracts.openapi.json",
       "matrixFollowUpTickets": ["KRT-AF004"],
       "surface": "tool and approval contracts"
@@ -513,7 +513,7 @@
       "claimIds": ["FWK-4193D2A613E0", "FWK-BC7142393BAA"],
       "classifications": ["authority-backed-conformance-covered"],
       "compatibilityEvidence": "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
-      "fixture": "boundaries/framework/conformance/scenarios/runtime-api-scenarios.json",
+      "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "generatedArtifact": "boundaries/framework/contracts/tool-contracts/artifacts/json-schema; boundaries/framework/contracts/tool-contracts/artifacts/openapi/tool-contracts.openapi.json",
       "matrixFollowUpTickets": ["KRT-AF004"],
       "surface": "tool parallelism and event ordering"
@@ -536,8 +536,8 @@
       "claimIds": ["FWK-C6917E7E9D81"],
       "classifications": ["authority-backed-conformance-covered"],
       "compatibilityEvidence": "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
-      "conformancePlan": "boundaries/framework/conformance/plans/runtime-api-orchestration.json",
-      "fixture": "boundaries/framework/conformance/scenarios/runtime-api-scenarios.json",
+      "conformancePlan": "spec/conformance/engine/plans/runtime-api-orchestration.json",
+      "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
       "matrixFollowUpTickets": ["KRT-AF005"],
       "surface": "worker subtree event forwarding"
