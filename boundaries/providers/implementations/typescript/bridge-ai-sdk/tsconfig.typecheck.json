@@ -68,9 +68,7 @@
       "@tuvren/runtime-api/tools": [
         "../../../../framework/contracts/runtime-api/implementations/typescript/src/tools.ts"
       ],
-      "@tuvren/runtime": [
-        "../../../../framework/implementations/typescript/runtime/src/index.ts"
-      ],
+      "@tuvren/runtime": ["../../../../../typescript/runtime/src/index.ts"],
       "@ag-ui/core": [
         "../../../../framework/implementations/typescript/stream-agui/node_modules/@ag-ui/core/dist/index.d.ts"
       ],
@@ -100,8 +98,8 @@
     "../../../../framework/contracts/driver-api/implementations/typescript/src/**/*.ts",
     "../../../../framework/contracts/runtime-api/implementations/typescript/src/**/*.ts",
     "../../../../framework/implementations/typescript/drivers/react/src/**/*.ts",
-    "../../../../framework/implementations/typescript/runtime/src/**/*.ts",
-    "../../../../framework/implementations/typescript/runtime/test/**/*.ts",
+    "../../../../../typescript/runtime/src/**/*.ts",
+    "../../../../../typescript/runtime/test/**/*.ts",
     "../../../../framework/implementations/typescript/testkit/src/**/*.ts",
     "../../../../framework/implementations/typescript/stream-agui/src/**/*.ts",
     "../../../../framework/implementations/typescript/stream-core/src/**/*.ts",

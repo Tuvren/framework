@@ -1,8 +1,8 @@
 {
   "name": "framework-runtime",
-  "$schema": "../../../../../node_modules/nx/schemas/project-schema.json",
-  "root": "boundaries/framework/implementations/typescript/runtime",
-  "sourceRoot": "boundaries/framework/implementations/typescript/runtime/src",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "root": "typescript/runtime",
+  "sourceRoot": "typescript/runtime/src",
   "projectType": "library",
   "tags": ["boundary:framework", "layer:implementation"],
   "targets": {
@@ -10,7 +10,7 @@
       "executor": "nx:run-commands",
       "dependsOn": ["^build"],
       "options": {
-        "cwd": "boundaries/framework/implementations/typescript/runtime",
+        "cwd": "typescript/runtime",
         "command": "bunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false"
       }
     },
@@ -18,7 +18,7 @@
       "executor": "nx:run-commands",
       "dependsOn": ["build"],
       "options": {
-        "cwd": "boundaries/framework/implementations/typescript/runtime",
+        "cwd": "typescript/runtime",
         "command": "bun test ./smoke/package-exports.ts"
       }
     },
@@ -26,13 +26,13 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": ".",
-        "command": "bunx --bun @biomejs/biome check boundaries/framework/implementations/typescript/runtime"
+        "command": "bunx --bun @biomejs/biome check typescript/runtime"
       }
     },
     "bench": {
       "executor": "nx:run-commands",
       "options": {
-        "cwd": "boundaries/framework/implementations/typescript/runtime",
+        "cwd": "typescript/runtime",
         "command": "bun bench/runtime-boundary.bench.ts"
       }
     },
@@ -46,7 +46,7 @@
         }
       ],
       "options": {
-        "cwd": "boundaries/framework/implementations/typescript/runtime",
+        "cwd": "typescript/runtime",
         "command": "bun test"
       }
     },
@@ -61,7 +61,7 @@
       ],
       "options": {
         "cwd": ".",
-        "command": "bun tools/scripts/typecheck-project.ts boundaries/framework/implementations/typescript/runtime"
+        "command": "bun tools/scripts/typecheck-project.ts typescript/runtime"
       }
     }
   }

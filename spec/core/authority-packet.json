@@ -238,7 +238,7 @@
   },
   "bindingProjections": {
     "typescript": "typescript/core",
-    "typescript-runtime": "boundaries/framework/implementations/typescript/runtime"
+    "typescript-runtime": "typescript/runtime"
   },
   "bindingAppendices": [
     {
@@ -253,7 +253,7 @@
     "boundaries/framework/contracts/event-stream/implementations/typescript",
     "boundaries/framework/contracts/tool-contracts/implementations/typescript",
     "boundaries/framework/contracts/driver-api/implementations/typescript",
-    "boundaries/framework/implementations/typescript/runtime",
+    "typescript/runtime",
     "boundaries/framework/implementations/typescript/conformance-runner",
     "boundaries/framework/implementations/typescript/conformance-adapter",
     "boundaries/framework/implementations/rust/conformance-runner",

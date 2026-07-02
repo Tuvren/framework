@@ -25,8 +25,8 @@ import type {
 } from "@tuvren/core/provider";
 import type { PostgresBackendOptions } from "../../../../../../typescript/kernel/backends/postgres/src/index.ts";
 import { destroyPostgresBackend } from "../../../../../../typescript/kernel/backends/postgres/src/index.ts";
-import type { CreateTuvrenOptions } from "../../runtime/src/lib/create-tuvren.ts";
-import { createTuvren } from "../../runtime/src/lib/create-tuvren.ts";
+import type { CreateTuvrenOptions } from "../../../../../../typescript/runtime/src/lib/create-tuvren.ts";
+import { createTuvren } from "../../../../../../typescript/runtime/src/lib/create-tuvren.ts";
 
 interface AdapterProjection {
   events?: readonly unknown[];

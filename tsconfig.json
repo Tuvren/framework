@@ -63,7 +63,7 @@
       "path": "./boundaries/framework/implementations/typescript/stream-sse"
     },
     {
-      "path": "./boundaries/framework/implementations/typescript/runtime"
+      "path": "./typescript/runtime"
     },
     {
       "path": "./boundaries/framework/implementations/typescript/testkit"

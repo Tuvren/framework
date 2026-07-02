@@ -47,9 +47,7 @@
         "../../../../providers/implementations/typescript/bridge-ai-sdk/src/index.ts"
       ],
       "@tuvren/repl-host": ["./src/index.ts"],
-      "@tuvren/runtime": [
-        "../../../../framework/implementations/typescript/runtime/src/index.ts"
-      ],
+      "@tuvren/runtime": ["../../../../../typescript/runtime/src/index.ts"],
       "@tuvren/stream-agui": [
         "../../../../framework/implementations/typescript/stream-agui/src/index.ts"
       ],
@@ -70,7 +68,7 @@
     "../../../../../typescript/kernel/backends/postgres/src/**/*.ts",
     "../../../../../typescript/kernel/backends/sqlite/src/**/*.ts",
     "../../../../framework/implementations/typescript/drivers/react/src/**/*.ts",
-    "../../../../framework/implementations/typescript/runtime/src/**/*.ts",
+    "../../../../../typescript/runtime/src/**/*.ts",
     "../../../../framework/implementations/typescript/stream-core/src/**/*.ts",
     "../../../../framework/implementations/typescript/stream-sse/src/**/*.ts",
     "../../../../framework/implementations/typescript/stream-agui/src/**/*.ts",

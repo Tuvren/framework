@@ -16,9 +16,7 @@
       "@tuvren/provider-bridge-ai-sdk": [
         "../../../../providers/implementations/typescript/bridge-ai-sdk/dist/index.d.ts"
       ],
-      "@tuvren/runtime": [
-        "../../../../framework/implementations/typescript/runtime/dist/index.d.ts"
-      ],
+      "@tuvren/runtime": ["../../../../../typescript/runtime/dist/index.d.ts"],
       "@tuvren/stream-agui": [
         "../../../../framework/implementations/typescript/stream-agui/dist/index.d.ts"
       ],

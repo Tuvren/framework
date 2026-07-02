@@ -38,7 +38,7 @@ import {
   createDriverRegistry,
   createTuvrenRuntime as createTuvrenRuntimeCore,
 } from "@tuvren/runtime";
-import { createFakeKernelHarness } from "../../../../../framework/implementations/typescript/runtime/test/fake-kernel.ts";
+import { createFakeKernelHarness } from "../../../../../../typescript/runtime/test/fake-kernel.ts";
 import { createAiSdkProviderBridge } from "../src/index.ts";
 import {
   collectAsyncIterable,

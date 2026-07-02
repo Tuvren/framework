@@ -41,9 +41,7 @@
       "@tuvren/kernel-runtime": [
         "../../../../../typescript/kernel/runtime/src/index.ts"
       ],
-      "@tuvren/runtime": [
-        "../../../../../boundaries/framework/implementations/typescript/runtime/src/index.ts"
-      ],
+      "@tuvren/runtime": ["../../../../../typescript/runtime/src/index.ts"],
       "@tuvren/provider-api": [
         "../../../../../boundaries/providers/contracts/provider-api/implementations/typescript/src/index.ts"
       ],

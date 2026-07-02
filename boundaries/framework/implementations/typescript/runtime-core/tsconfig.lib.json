@@ -8,7 +8,7 @@
   "include": ["src/**/*.ts"],
   "references": [
     {
-      "path": "../runtime/tsconfig.lib.json"
+      "path": "../../../../../typescript/runtime/tsconfig.lib.json"
     }
   ]
 }

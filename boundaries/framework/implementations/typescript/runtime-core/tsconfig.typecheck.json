@@ -62,7 +62,7 @@
       "@tuvren/runtime-api/tools": [
         "../../../contracts/runtime-api/implementations/typescript/src/tools.ts"
       ],
-      "@tuvren/runtime": ["../runtime/src/index.ts"],
+      "@tuvren/runtime": ["../../../../../typescript/runtime/src/index.ts"],
       "@tuvren/runtime-core": ["./src/index.ts"],
       "@tuvren/stream-agui": ["../stream-agui/src/index.ts"],
       "@tuvren/stream-core": ["../stream-core/src/index.ts"],

@@ -11,7 +11,7 @@
       "path": "../../../../framework/implementations/typescript/drivers/react/tsconfig.lib.json"
     },
     {
-      "path": "../../../../framework/implementations/typescript/runtime/tsconfig.lib.json"
+      "path": "../../../../../typescript/runtime/tsconfig.lib.json"
     },
     {
       "path": "../../../../framework/implementations/typescript/stream-core/tsconfig.lib.json"

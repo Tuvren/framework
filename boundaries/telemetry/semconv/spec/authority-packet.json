@@ -26,7 +26,7 @@
       "generator": "weaver"
     },
     {
-      "path": "boundaries/framework/implementations/typescript/runtime/src/lib/generated/tuvren-runtime-telemetry.ts",
+      "path": "typescript/runtime/src/lib/generated/tuvren-runtime-telemetry.ts",
       "generatedFrom": "telemetry/semconv/tuvren-runtime.yaml",
       "generator": "weaver"
     },
@@ -37,11 +37,11 @@
     }
   ],
   "bindingProjections": {
-    "typescript": "boundaries/framework/implementations/typescript/runtime",
+    "typescript": "typescript/runtime",
     "rust": "rust/kernel"
   },
   "forbiddenAuthoritySources": [
-    "boundaries/framework/implementations/typescript/runtime",
+    "typescript/runtime",
     "rust/kernel",
     "telemetry/semantic-conventions.md",
     "docs",
@@ -64,7 +64,7 @@
     },
     {
       "kind": "freshness-check",
-      "target": "boundaries/framework/implementations/typescript/runtime/src/lib/generated/tuvren-runtime-telemetry.ts"
+      "target": "typescript/runtime/src/lib/generated/tuvren-runtime-telemetry.ts"
     },
     {
       "kind": "freshness-check",
@@ -81,7 +81,7 @@
       "regenerateCommand": "bun run nx run telemetry-semconv:codegen"
     },
     {
-      "artifact": "boundaries/framework/implementations/typescript/runtime/src/lib/generated/tuvren-runtime-telemetry.ts",
+      "artifact": "typescript/runtime/src/lib/generated/tuvren-runtime-telemetry.ts",
       "regenerateCommand": "bun run nx run telemetry-semconv:codegen"
     },
     {

@@ -469,7 +469,7 @@ interface DriverSupportHostDependencies {
   ): number;
   resolveDefaultHandoffContextBuilder(
     mode: string
-  ): import("@tuvren/runtime-api").HandoffContextBuilder;
+  ): import("@tuvren/core/execution").HandoffContextBuilder;
   resolveTargetAgent(targetAgent: string): AgentConfig;
   stageMessage(
     runId: string,

@@ -1,0 +1,88 @@
+{
+  "extends": "./tsconfig.lib.json",
+  "compilerOptions": {
+    "composite": false,
+    "rootDir": "../..",
+    "allowImportingTsExtensions": true,
+    "paths": {
+      "@tuvren/backend-memory": ["../kernel/backends/memory/src/index.ts"],
+      "@tuvren/backend-sqlite": ["../kernel/backends/sqlite/src/index.ts"],
+      "@tuvren/backend-postgres": ["../kernel/backends/postgres/src/index.ts"],
+      "@tuvren/driver-react": [
+        "../../boundaries/framework/implementations/typescript/drivers/react/src/index.ts"
+      ],
+      "@tuvren/core": ["../core/src/index.ts"],
+      "@tuvren/core-types": ["../core-types/src/index.ts"],
+      "@tuvren/core/driver": ["../core/src/driver/index.ts"],
+      "@tuvren/core/errors": ["../core/src/errors/index.ts"],
+      "@tuvren/core/events": ["../core/src/events/index.ts"],
+      "@tuvren/core/execution": ["../core/src/execution/index.ts"],
+      "@tuvren/core/extensions": ["../core/src/extensions/index.ts"],
+      "@tuvren/core/telemetry": ["../core/src/telemetry/index.ts"],
+      "@tuvren/core/messages": ["../core/src/messages/index.ts"],
+      "@tuvren/core/provider": ["../core/src/provider/index.ts"],
+      "@tuvren/core/tools": ["../core/src/tools/index.ts"],
+      "@tuvren/sdk": ["../sdk/src/index.ts"],
+      "@tuvren/driver-api": [
+        "../../boundaries/framework/contracts/driver-api/implementations/typescript/src/index.ts"
+      ],
+      "@tuvren/framework-testkit": [
+        "../../boundaries/framework/implementations/typescript/testkit/src/index.ts"
+      ],
+      "@tuvren/kernel-protocol": ["../kernel/protocol/src/index.ts"],
+      "@tuvren/kernel-runtime": ["../kernel/runtime/src/index.ts"],
+      "@tuvren/mcp-client": [
+        "../../boundaries/providers/implementations/typescript/mcp-client/src/index.ts"
+      ],
+      "@tuvren/runtime": ["./src/index.ts"],
+      "@tuvren/runtime-api": [
+        "../../boundaries/framework/contracts/runtime-api/implementations/typescript/src/index.ts"
+      ],
+      "@tuvren/runtime-api/events": [
+        "../../boundaries/framework/contracts/runtime-api/implementations/typescript/src/events.ts"
+      ],
+      "@tuvren/runtime-api/execution": [
+        "../../boundaries/framework/contracts/runtime-api/implementations/typescript/src/execution.ts"
+      ],
+      "@tuvren/runtime-api/provider": [
+        "../../boundaries/framework/contracts/runtime-api/implementations/typescript/src/provider.ts"
+      ],
+      "@tuvren/runtime-api/tools": [
+        "../../boundaries/framework/contracts/runtime-api/implementations/typescript/src/tools.ts"
+      ],
+      "@ag-ui/core": [
+        "../../boundaries/framework/implementations/typescript/stream-agui/node_modules/@ag-ui/core/dist/index.d.ts"
+      ],
+      "@tuvren/stream-agui": [
+        "../../boundaries/framework/implementations/typescript/stream-agui/src/index.ts"
+      ],
+      "@tuvren/stream-core": [
+        "../../boundaries/framework/implementations/typescript/stream-core/src/index.ts"
+      ],
+      "@tuvren/stream-sse": [
+        "../../boundaries/framework/implementations/typescript/stream-sse/src/index.ts"
+      ]
+    },
+    "types": ["bun"]
+  },
+  "include": [
+    "bench/**/*.ts",
+    "src/**/*.ts",
+    "smoke/**/*.ts",
+    "test/**/*.ts",
+    "../../boundaries/framework/implementations/typescript/testkit/src/**/*.ts",
+    "../../boundaries/framework/contracts/runtime-api/implementations/typescript/src/**/*.ts",
+    "../../boundaries/framework/contracts/driver-api/implementations/typescript/src/**/*.ts",
+    "../kernel/protocol/src/**/*.ts",
+    "../kernel/backends/memory/src/**/*.ts",
+    "../kernel/backends/sqlite/src/**/*.ts",
+    "../kernel/backends/postgres/src/**/*.ts",
+    "../../boundaries/framework/implementations/typescript/drivers/react/src/**/*.ts",
+    "../kernel/runtime/src/**/*.ts",
+    "../../boundaries/providers/implementations/typescript/mcp-client/src/**/*.ts",
+    "../core-types/src/**/*.ts",
+    "../../boundaries/framework/implementations/typescript/stream-core/src/**/*.ts",
+    "../../boundaries/framework/implementations/typescript/stream-sse/src/**/*.ts",
+    "../../boundaries/framework/implementations/typescript/stream-agui/src/**/*.ts"
+  ]
+}

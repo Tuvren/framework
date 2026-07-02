@@ -153,7 +153,7 @@ export function flushRuntimeBufferedEvents(
 
 export function flushRuntimeBufferedEventsIfResolutionAllows(
   handle: RuntimeExecutionHandle,
-  resolution: import("@tuvren/runtime-api").RuntimeResolution,
+  resolution: import("@tuvren/core/execution").RuntimeResolution,
   events: TuvrenStreamEvent[]
 ): TuvrenStreamEvent[] {
   return flushRuntimeBufferedDriverEventsIfNeeded(handle, resolution, events);

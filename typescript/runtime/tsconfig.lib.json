@@ -1,0 +1,44 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "rootDir": "./src",
+    "outDir": "./dist"
+  },
+  "include": ["src/**/*.ts"],
+  "references": [
+    {
+      "path": "../core/tsconfig.lib.json"
+    },
+    {
+      "path": "../sdk/tsconfig.lib.json"
+    },
+    {
+      "path": "../../boundaries/framework/contracts/runtime-api/implementations/typescript/tsconfig.lib.json"
+    },
+    {
+      "path": "../kernel/runtime/tsconfig.lib.json"
+    },
+    {
+      "path": "../kernel/protocol/tsconfig.lib.json"
+    },
+    {
+      "path": "../core-types/tsconfig.lib.json"
+    },
+    {
+      "path": "../kernel/backends/memory/tsconfig.lib.json"
+    },
+    {
+      "path": "../kernel/backends/sqlite/tsconfig.lib.json"
+    },
+    {
+      "path": "../kernel/backends/postgres/tsconfig.lib.json"
+    },
+    {
+      "path": "../../boundaries/providers/implementations/typescript/mcp-client/tsconfig.lib.json"
+    },
+    {
+      "path": "../../boundaries/framework/implementations/typescript/drivers/react/tsconfig.lib.json"
+    }
+  ]
+}

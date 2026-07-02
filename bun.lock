@@ -94,31 +94,6 @@
         "@tuvren/core": "workspace:*",
       },
     },
-    "boundaries/framework/implementations/typescript/runtime": {
-      "name": "@tuvren/runtime",
-      "version": "0.0.0",
-      "dependencies": {
-        "@bufbuild/protobuf": "2.11.0",
-        "@connectrpc/connect": "2.1.1",
-        "@connectrpc/connect-node": "2.1.1",
-        "@tuvren/backend-memory": "workspace:*",
-        "@tuvren/backend-postgres": "workspace:*",
-        "@tuvren/backend-sqlite": "workspace:*",
-        "@tuvren/driver-react": "workspace:*",
-        "@tuvren/kernel-protocol": "workspace:*",
-        "@tuvren/kernel-runtime": "workspace:*",
-        "@tuvren/mcp-client": "workspace:*",
-        "ajv": "8.18.0",
-      },
-      "devDependencies": {
-        "@ag-ui/core": "0.0.52",
-        "@tuvren/kernel-testkit": "workspace:*",
-      },
-      "peerDependencies": {
-        "@tuvren/core": "workspace:*",
-        "@tuvren/sdk": "workspace:*",
-      },
-    },
     "boundaries/framework/implementations/typescript/runtime-core": {
       "name": "@tuvren/runtime-core",
       "version": "0.0.0",
@@ -378,6 +353,31 @@
         "@tuvren/core-types": "workspace:*",
         "@tuvren/kernel-protocol": "workspace:*",
         "ajv": "8.18.0",
+      },
+    },
+    "typescript/runtime": {
+      "name": "@tuvren/runtime",
+      "version": "0.0.0",
+      "dependencies": {
+        "@bufbuild/protobuf": "2.11.0",
+        "@connectrpc/connect": "2.1.1",
+        "@connectrpc/connect-node": "2.1.1",
+        "@tuvren/backend-memory": "workspace:*",
+        "@tuvren/backend-postgres": "workspace:*",
+        "@tuvren/backend-sqlite": "workspace:*",
+        "@tuvren/driver-react": "workspace:*",
+        "@tuvren/kernel-protocol": "workspace:*",
+        "@tuvren/kernel-runtime": "workspace:*",
+        "@tuvren/mcp-client": "workspace:*",
+        "ajv": "8.18.0",
+      },
+      "devDependencies": {
+        "@ag-ui/core": "0.0.52",
+        "@tuvren/kernel-testkit": "workspace:*",
+      },
+      "peerDependencies": {
+        "@tuvren/core": "workspace:*",
+        "@tuvren/sdk": "workspace:*",
       },
     },
     "typescript/sdk": {
@@ -992,7 +992,7 @@
 
     "@tuvren/repl-host": ["@tuvren/repl-host@workspace:boundaries/hosts/implementations/typescript/repl"],
 
-    "@tuvren/runtime": ["@tuvren/runtime@workspace:boundaries/framework/implementations/typescript/runtime"],
+    "@tuvren/runtime": ["@tuvren/runtime@workspace:typescript/runtime"],
 
     "@tuvren/runtime-api": ["@tuvren/runtime-api@workspace:boundaries/framework/contracts/runtime-api/implementations/typescript"],
 
