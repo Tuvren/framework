@@ -18,8 +18,10 @@ the full rationale.
 M3.0 TypeScript-hermeticity decision (2026-07-02): real aspect_rules_js /
 rules_ts adoption was researched and REVERTED by user decision. rules_js
 consumes only pnpm lockfiles (no bun.lock path; a mirrored pnpm lockfile
-shows measured resolution divergence), and every TS test suite uses bun:test,
-which has no upstream Bazel runtime (aspect-build/rules_js#1258 open). The
+shows measured resolution divergence), and the TS suites are bun:test-based
+(all 16 test files across the 5 Bazel-shimmed packages import bun:test; the
+lone node --test suite, backend-sqlite, is Nx-only per M1.6), a runtime with
+no upstream Bazel support (aspect-build/rules_js#1258 open). The
 M1.2 native_binary -> tools/bazel/nx-run.sh shim pattern is therefore the
 epic-long strategy for all TypeScript BUILD.bazel targets; real ruleset
 adoption is a post-epic follow-up gated on upstream bun support. Rust targets
