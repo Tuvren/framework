@@ -9,7 +9,7 @@ process-boundary transport.
 - Generated language bindings belong under the consuming implementation tree
   and are not authored authority.
 - Framework-owned execution controls, provider semantics, host stream adapters,
-  and driver-loop behavior stay outside this kernel transport.
+  and runner-loop behavior stay outside this kernel transport.
 - The Nx targets invoke the native Buf-backed scripts directly. `buf` and
   `protoc-gen-es` are expected to come from the already-activated repo
   environment rather than from nested shell wrappers inside Nx commands.

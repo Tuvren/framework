@@ -1132,10 +1132,10 @@ function classifyFrameworkClaim(claim: NormativeClaim): ClassificationDecision {
     );
   }
 
-  if (text.includes("future drivers")) {
+  if (text.includes("future runners")) {
     return deferredDecision(
-      "future framework drivers",
-      "Future framework drivers remain deferred until a later TechSpec and Tasks revision activates a concrete driver line."
+      "future framework runners",
+      "Future framework runners remain deferred until a later TechSpec and Tasks revision activates a concrete runner line."
     );
   }
 
@@ -1153,8 +1153,8 @@ function classifyFrameworkClaim(claim: NormativeClaim): ClassificationDecision {
     section === "kraken-framework-specification"
   ) {
     return implementationDefinedDecision(
-      "framework driver framing",
-      "Driver framing explains the current semantic layering; portable claim status is determined by the matrix rows for the referenced concrete surfaces."
+      "framework runner framing",
+      "Runner framing explains the current semantic layering; portable claim status is determined by the matrix rows for the referenced concrete surfaces."
     );
   }
 

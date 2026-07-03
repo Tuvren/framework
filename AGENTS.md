@@ -81,7 +81,7 @@ Keep semantic decisions in shared plans and shared runner code.
 - Do not let adapters receive `checkId`, call `emitEvidence`, decide pass/fail, replay fixtures as implementation proof, or map adapter/protocol failures into `$.result.error`.
 - Select promoted checks by capability or surface requirement, not by language, adapter ID, implementation ID, or runner name.
 - Treat every conformance plan `evidence` entry as required evidence.
-- Keep ReAct-specific behavior in ReAct authority packets and plans, not neutral driver plans.
+- Keep ReAct-specific behavior in ReAct authority packets and plans, not neutral runner plans.
 - Keep authority fixture validation separate from implementation conformance.
 - Use implementation-emitted events for event-stream conformance.
 - Make assertion names match the data source the runner actually evaluates; do not claim evidence coverage from an assertion that reads events, state, result, or fixture data instead.

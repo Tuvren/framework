@@ -1,5 +1,6 @@
 # Rust Binding Appendix
 
-Rust driver bindings are not implemented in Epic Y. Future Rust framework or
-driver work must project from `tuvren.framework.driver-api` through this
+Rust runner bindings are not implemented in Epic Y. Future Rust framework or
+runner work must project from the `runner` binding section of
+`tuvren.shared.core` (`spec/core/authority-packet.json`) through this
 appendix rather than from TypeScript source.

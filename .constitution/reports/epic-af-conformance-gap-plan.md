@@ -13,7 +13,7 @@ This plan is generated from the Epic AD docs-to-authority coverage matrix. It is
 - Disposition: `promote`
 - Delivery ticket: `KRT-AF002/KRT-AF004`
 - Matrix follow-up tickets: `KRT-AF004`
-- Claim IDs: `FWK-077DA00DEE7C`, `FWK-0A405F74632B`, `FWK-10F71F510BDB`, `FWK-28AAFC4F1DC8`, `FWK-31EE39CB3972`, `FWK-33F5DEAFC66A`, `FWK-476F0CA23F55`, `FWK-4C1B5C7C29AB`, `FWK-51B9484B4ACD`, `FWK-57513B429B0F`, `FWK-57AEE9ECE718`, `FWK-5E22B4D78C82`, `FWK-6E09A676D520`, `FWK-722E8933104E`, `FWK-738E2E1EEC12`, `FWK-7AAC5E04465D`, `FWK-7D9B813A79CD`, `FWK-8E25784CC248`, `FWK-9436BD753283`, `FWK-AEA220D0DA52`, `FWK-B18ECC3DDCF3`, `FWK-C3619F4E0DD7`, `FWK-D0C7DFFDB7A6`, `FWK-D32084F687AE`, `FWK-DE249477068F`, `FWK-EB75F78718DA`, `FWK-F1DF0F90609A`
+- Claim IDs: `FWK-077DA00DEE7C`, `FWK-0A405F74632B`, `FWK-28AAFC4F1DC8`, `FWK-31EE39CB3972`, `FWK-33F5DEAFC66A`, `FWK-476F0CA23F55`, `FWK-4C1B5C7C29AB`, `FWK-51B9484B4ACD`, `FWK-57513B429B0F`, `FWK-57AEE9ECE718`, `FWK-5E22B4D78C82`, `FWK-60201EC9F6F0`, `FWK-6E09A676D520`, `FWK-722E8933104E`, `FWK-738E2E1EEC12`, `FWK-7AAC5E04465D`, `FWK-7D9B813A79CD`, `FWK-8BD09E8F1CA1`, `FWK-8E25784CC248`, `FWK-A111E7D748C0`, `FWK-AEA220D0DA52`, `FWK-B18ECC3DDCF3`, `FWK-C3619F4E0DD7`, `FWK-D0C7DFFDB7A6`, `FWK-D32084F687AE`, `FWK-DE249477068F`, `FWK-EB75F78718DA`
 - Authority packet: `spec/core/authority-packet.json`
 - Conformance plan: `spec/conformance/tools/plans/tool-contracts-extended.json`
 - Fixture or scenario: `spec/conformance/engine/scenarios/runtime-api-scenarios.json`
@@ -77,7 +77,7 @@ This plan is generated from the Epic AD docs-to-authority coverage matrix. It is
 - Disposition: `promote`
 - Delivery ticket: `KRT-AF005`
 - Matrix follow-up tickets: `KRT-AF005`
-- Claim IDs: `FWK-26F5B55D9B57`, `FWK-676A729CE7F4`, `FWK-A94F389D6ACA`, `FWK-B354FA47EBE1`, `FWK-D7F58DBE7F22`, `FWK-E64892FC65DA`
+- Claim IDs: `FWK-26F5B55D9B57`, `FWK-676A729CE7F4`, `FWK-7310BB1EA7F5`, `FWK-A94F389D6ACA`, `FWK-B354FA47EBE1`, `FWK-E64892FC65DA`
 - Authority packet: `spec/core/authority-packet.json`
 - Conformance plan: `spec/conformance/engine/plans/runtime-api-orchestration.json`
 - Fixture or scenario: `spec/conformance/engine/scenarios/runtime-api-scenarios.json`
@@ -141,7 +141,7 @@ This plan is generated from the Epic AD docs-to-authority coverage matrix. It is
 - Disposition: `promote`
 - Delivery ticket: `KRT-AF003`
 - Matrix follow-up tickets: `KRT-AF003`
-- Claim IDs: `FWK-7321FBA0BDB5`
+- Claim IDs: `FWK-93B0C6756D05`
 - Authority packet: `spec/core/authority-packet.json`
 - Conformance plan: `spec/conformance/runners/plans/runner-api-core.json; spec/conformance/runners/plans/runner-api-extended.json`
 - Fixture or scenario: `spec/conformance/runners/scenarios/runner-api-scenarios.json`
@@ -157,7 +157,7 @@ This plan is generated from the Epic AD docs-to-authority coverage matrix. It is
 - Disposition: `promote`
 - Delivery ticket: `KRT-AF004`
 - Matrix follow-up tickets: `KRT-AF001`
-- Claim IDs: `FWK-4B0A4D61DDBF`, `FWK-550E41A79A79`, `FWK-5ED37780C4CA`, `FWK-8E41AD74D58F`, `FWK-A694947F2BE6`, `FWK-AB9BE971F3F8`, `FWK-D1C028C77A54`, `FWK-F840209551A0`
+- Claim IDs: `FWK-4B0A4D61DDBF`, `FWK-550E41A79A79`, `FWK-5ED37780C4CA`, `FWK-7715165A3F79`, `FWK-8E41AD74D58F`, `FWK-A694947F2BE6`, `FWK-AB9BE971F3F8`, `FWK-D1C028C77A54`
 - Authority packet: `spec/core/authority-packet.json`
 - Conformance plan: `spec/conformance/engine/plans/runtime-api-lifecycle.json; spec/conformance/engine/plans/runtime-api-lifecycle-extended.json; spec/conformance/engine/plans/runtime-api-callables.json; spec/conformance/engine/plans/runtime-api-callables-extended.json`
 - Fixture or scenario: `spec/conformance/engine/scenarios/runtime-api-scenarios.json`
@@ -189,7 +189,7 @@ This plan is generated from the Epic AD docs-to-authority coverage matrix. It is
 - Disposition: `promote`
 - Delivery ticket: `KRT-AF004`
 - Matrix follow-up tickets: `KRT-AF004`
-- Claim IDs: `FWK-176C448DD30E`, `FWK-24BAD806542F`, `FWK-2855D4D9A4B5`, `FWK-78A3D571633B`, `FWK-7AC0F63C88BD`, `FWK-87974E517D0C`, `FWK-CFBF4A38F861`
+- Claim IDs: `FWK-24BAD806542F`, `FWK-2855D4D9A4B5`, `FWK-78A3D571633B`, `FWK-7AC0F63C88BD`, `FWK-87974E517D0C`, `FWK-8AF01C9A9D6D`, `FWK-C77E86BB462D`
 - Authority packet: `spec/core/authority-packet.json`
 - Conformance plan: `spec/conformance/engine/plans/runtime-api-lifecycle.json; spec/conformance/engine/plans/runtime-api-lifecycle-extended.json; spec/conformance/engine/plans/runtime-api-callables.json; spec/conformance/engine/plans/runtime-api-callables-extended.json`
 - Fixture or scenario: `spec/conformance/engine/scenarios/runtime-api-scenarios.json`
@@ -205,7 +205,7 @@ This plan is generated from the Epic AD docs-to-authority coverage matrix. It is
 - Disposition: `promote`
 - Delivery ticket: `KRT-AF004`
 - Matrix follow-up tickets: `KRT-AF004`
-- Claim IDs: `FWK-097D5A1C6AA2`, `FWK-86DBC9E570C8`, `FWK-8EB24EEFC45C`, `FWK-9F20F73A9745`, `FWK-AEFDB52BDBF9`, `FWK-B9434E23AB69`, `FWK-C9356EE09017`
+- Claim IDs: `FWK-097D5A1C6AA2`, `FWK-7E65E17C067F`, `FWK-86DBC9E570C8`, `FWK-8EB24EEFC45C`, `FWK-9F20F73A9745`, `FWK-C9356EE09017`, `FWK-CB9E0EEF04BA`
 - Authority packet: `spec/core/authority-packet.json`
 - Conformance plan: `spec/conformance/tools/plans/tool-contracts-extended.json`
 - Fixture or scenario: `spec/conformance/engine/scenarios/runtime-api-scenarios.json`
