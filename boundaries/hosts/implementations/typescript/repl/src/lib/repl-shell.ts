@@ -50,11 +50,13 @@ import type {
 } from "./repl-types.js";
 
 const COMMAND_SPLIT_PATTERN = /\s+/u;
+// Walk-up probe segments are repo-root-anchored to the provider testkit's
+// 87-M4.2 home (typescript/providers/testkit) — the ancestor walk terminates
+// at the repository root regardless of where this package lives, same
+// pattern as the kernel/providers fixture walkers since M1.3/M4.1.
 const MOCK_MCP_STDIO_SERVER_PATH_SEGMENTS = [
-  "boundaries",
-  "providers",
-  "implementations",
   "typescript",
+  "providers",
   "testkit",
   "src",
   "bin",

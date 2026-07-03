@@ -15,12 +15,31 @@
  */
 
 import { spawn } from "node:child_process";
+import { readFileSync } from "node:fs";
 import process from "node:process";
 import { runCommand } from "./lib/command-runner.js";
 import {
   assertWorktreeUnchanged,
   readWorktreeSnapshot,
 } from "./lib/worktree-guard.js";
+
+// The codegen freshness phase must regenerate exactly the projects the root
+// `codegen` script regenerates. That list was previously duplicated inline
+// here and drifted at 87-M4.2c (the dead `provider-api` entry made Nx
+// silently regenerate nothing for the providers port — run-many exits 0 for
+// projects without the target). Derive it from package.json instead, and
+// fail loudly if the script shape ever stops being parseable.
+const rootCodegenScript: string =
+  JSON.parse(readFileSync("package.json", "utf8")).scripts?.codegen ?? "";
+const codegenProjectsMatch = /run-many -t codegen -p (\S+)/.exec(
+  rootCodegenScript
+);
+if (!codegenProjectsMatch) {
+  throw new Error(
+    "verify: could not extract the codegen project list from package.json's codegen script; refusing to run a possibly-stale inline copy"
+  );
+}
+const CODEGEN_PROJECTS = codegenProjectsMatch[1];
 
 export interface VerificationStep {
   command: readonly string[];
@@ -279,7 +298,7 @@ export const DEFAULT_VERIFICATION_PHASES: readonly VerificationPhase[] = [
           "-t",
           "codegen",
           "-p",
-          "core-spec,framework-runtime-api,framework-event-stream,framework-event-stream-sse,framework-driver-api,framework-tool-contracts,provider-api,telemetry-semconv,compatibility-reporting,kernel-interop-grpc",
+          CODEGEN_PROJECTS,
           "--skipNxCache",
         ],
         id: "telemetry, compatibility, and interop code generation",
