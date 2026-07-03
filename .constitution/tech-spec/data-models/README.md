@@ -1,6 +1,6 @@
 # Data Models
 
-> **Authority note:** This file is descriptive documentation migrated verbatim from `TechSpec.md §3`. The authoritative durable-state schemas are boundary-owned (kernel CBOR record profile, the official SQLite/PostgreSQL backend schemas, and the capability concept JSON schemas under `boundaries/shared/contracts/core/artifacts/json-schema/`). Per ADR-023/024/025 and the authority-packet `forbiddenAuthoritySources`, the constitution is never the cross-implementation schema oracle — it points to boundary authority rather than duplicating raw schema files.
+> **Authority note:** This file is descriptive documentation migrated verbatim from `TechSpec.md §3`. The authoritative durable-state schemas are boundary-owned (kernel CBOR record profile, the official SQLite/PostgreSQL backend schemas, and the capability concept JSON schemas under `spec/core/artifacts/json-schema/`). Per ADR-023/024/025 and the authority-packet `forbiddenAuthoritySources`, the constitution is never the cross-implementation schema oracle — it points to boundary authority rather than duplicating raw schema files.
 
 ## 3. State & Data Modeling
 
@@ -314,11 +314,11 @@ erDiagram
   - `reports/compatibility/compatibility-matrix.json` is generated from actual suite and interop results, is never hand-authored as a semantic claim, and should be suitable for near-public readiness scrutiny once the measured evidence exists.
   - `telemetry/semconv/tuvren-runtime.yaml` is the authored observability source for current and future implementation lines; reviewed summaries and generated language helpers are downstream outputs of that source.
 - **Indexes / Access Paths:**
-  - by boundary ownership: `boundaries/<area>/contracts/...`, `boundaries/<area>/conformance/...`, `boundaries/<area>/interop/...`
+  - by boundary ownership: `spec/<port>/` (language-neutral authority), `spec/conformance/<port>/...`, `spec/interop/...` or `spec/conformance/interop/<channel>/...`
   - by repo-global generated outputs: `reports/compatibility/...`
-  - by repo-global observability conventions: `telemetry/...`
-- **Migration Notes:** Existing TypeScript testkit packages remain implementation-local helper/facade packages under `boundaries/<area>/implementations/typescript/testkit/`. Promoted compatibility evidence now flows through the shared semantic runner and implementation adapter hosts, not implementation-specific semantic runners. Epics AD through AG are archived historical context only; the live readiness baseline is the current staged-gate model plus fresh build-sequence evidence. Historical closure inventories may inform future maintenance, but current readiness claims must be generated from live checks or removed.
-- **Authority packet membership (Epic Y):** Per ADR-026, every cross-implementation semantic surface owns exactly one Authority Packet manifest at the surface's `spec/authority-packet.json`. The manifest names which boundary-owned contract sources, conformance plans, transport projections, and binding projections together carry that surface and which sources are forbidden authority for it. A cross-implementation semantic claim that is not declared in such a manifest is not authoritative. Existing surfaces without a manifest (`runtime-api`, `driver-api`, `event-stream`, `core-types`, callable seams) are promoted through Epic Y; until promoted, their TypeScript implementations remain valid binding projections but cannot be cited as cross-language authority.
+  - by repo-global observability conventions: `spec/telemetry/semconv/...` and `typescript/telemetry/...`
+- **Migration Notes:** Existing TypeScript testkit packages remain implementation-local helper/facade packages under `typescript/<area>/testkit/` (there is also a shared top-level `typescript/testkit/` for the framework-wide testkit). Promoted compatibility evidence now flows through the shared semantic runner and implementation adapter hosts, not implementation-specific semantic runners. Epics AD through AG are archived historical context only; the live readiness baseline is the current staged-gate model plus fresh build-sequence evidence. Historical closure inventories may inform future maintenance, but current readiness claims must be generated from live checks or removed.
+- **Authority packet membership (Epic Y):** Per ADR-026, every cross-implementation semantic surface owns exactly one Authority Packet manifest at the surface's `spec/<port>/authority-packet.json`. The manifest names which boundary-owned contract sources, conformance plans, transport projections, and binding projections together carry that surface and which sources are forbidden authority for it. A cross-implementation semantic claim that is not declared in such a manifest is not authoritative. Epic Y has completed: every cross-implementation semantic surface now owns an authority packet, including the surfaces formerly tracked as `runtime-api`, `event-stream`, and callable seams (absorbed into `@tuvren/core`'s authority packet at `spec/core/authority-packet.json`) and the runner surface formerly named `driver-api` (now `@tuvren/core/runner`, also carried by `spec/core/authority-packet.json`). `core-types` remains a deprecated re-export shim covered by the same packet pending removal.
 
 ### 3.7 BackendCapability Descriptor
 
@@ -498,7 +498,7 @@ type TranscriptFile = [TranscriptHeader, ...TranscriptEntry[]];
 - **Purpose:** Per ADR-042, the operational telemetry surface emits structured, lineage-correlated records an operator can use to reconstruct what a turn did. The vocabulary is the authored OpenTelemetry semantic convention at `telemetry/semconv/tuvren-runtime.yaml`; this section defines the TypeScript record shape the sink receives.
 - **Storage Shape:** Not persisted by the runtime; handed to the configured `TuvrenTelemetrySink` (§4.18) for the sink to export, buffer, or drop. Records are plain serializable objects keyed by runtime lineage.
 - **Constraints / Invariants:**
-  - Every record carries the lineage correlation keys it can know: `threadId`, `branchId`, `turnId`, `runId`, and where relevant `turnNodeHash`. Attribute keys come from the semconv source (run id, turn id, branch id, driver id, tool call id, checkpoint hash, parent checkpoint hash, resumed-from hash, backend id, provider id).
+  - Every record carries the lineage correlation keys it can know: `threadId`, `branchId`, `turnId`, `runId`, and where relevant `turnNodeHash`. Attribute keys come from the semconv source (run id, turn id, branch id, runner id, tool call id, checkpoint hash, parent checkpoint hash, resumed-from hash, backend id, provider id).
   - Records carry no secret material (ADR-044); attributes pass through the allowlist before reaching the sink, and any telemetry error summary is sanitized before emission.
   - Timestamps are `EpochMs`; durations are integer milliseconds.
   - A telemetry record is informative, never authoritative: dropping all telemetry must not change durable execution outcomes.
@@ -545,13 +545,13 @@ export interface TelemetryEvent {
 
 ### 3.11 Execution Bounds and Bounded-Execution Result
 
-- **Purpose:** Per ADR-043, the framework enforces hard per-turn bounds above driver discretion and surfaces a typed terminal outcome when a bound is reached.
+- **Purpose:** Per ADR-043, the framework enforces hard per-turn bounds above runner discretion and surfaces a typed terminal outcome when a bound is reached.
 - **Storage Shape:** `ExecutionBounds` is runtime configuration (not persisted as kernel record state); the bounded-execution outcome is surfaced as a `failed` `ExecutionResult` (ADR-035), as a fatal canonical `error` event followed by a failed `turn.end` event on the canonical stream, and as a bounded-execution telemetry event. The bound metadata itself lives on the `ExecutionResult`, the canonical `error` event details, and the telemetry record, not on the canonical `turn.end` event shape.
 - **Host-visible result rule:** The framework reuses ADR-035's normal terminal-result channel for bounded stops: `ExecutionHandle.awaitResult()` (and `OrchestrationHandle.awaitResult()` for orchestration) resolves to that failed `ExecutionResult`, while live stream consumers observe the fatal `error` event plus the failed `turn.end`; there is no separate bounded-only result variant.
 - **Constraints / Invariants:**
   - Unset bound fields take the documented safe defaults; the guard is always active and there is no "disable all bounds" mode.
   - Each configured bound must be a finite positive integer; `Infinity`, `NaN`, zero, and negative values are invalid configuration.
-  - `maxIterations` and `maxToolCalls` are evaluated by the framework at iteration and tool-batch boundaries, never delegated to the driver. When `AgentConfig.maxIterations` is present, the effective iteration limit is `min(AgentConfig.maxIterations, bounds.maxIterations)`.
+  - `maxIterations` and `maxToolCalls` are evaluated by the framework at iteration and tool-batch boundaries, never delegated to the runner. When `AgentConfig.maxIterations` is present, the effective iteration limit is `min(AgentConfig.maxIterations, bounds.maxIterations)`.
   - `maxWallClockMs` is enforced as an end-to-end deadline over the whole turn by propagating an abort signal through `TuvrenPrompt.signal` and `ToolExecutionContext.signal`; official bridges and owned tools must honor that signal for full containment, while late completions from non-cooperative integrations are discarded.
   - `maxConcurrentToolCalls` is enforced by throttling parallel tool execution to the configured cap.
   - Reaching a hard-stop bound produces a `failed` result with code `execution_bound_exceeded`; it is not a crash and not a silent stop.
@@ -578,7 +578,7 @@ export interface ExecutionBoundExceededDetails {
 - **Purpose:** Per ADR-045, a test-only seam interrupts persistence at controlled points so crash-recovery and concurrency invariants can be verified. This shape lives in `@tuvren/kernel-testkit` and is never reachable from production packages.
 - **Storage Shape:** In-memory test configuration consumed by `createFaultInjectingBackend`; never persisted.
 - **Constraints / Invariants:**
-  - The seam is testkit-only: no production package, backend, runtime, host, or driver may import or expose it.
+  - The seam is testkit-only: no production package, backend, runtime, host, or runner may import or expose it.
   - Injection points are defined relative to the durable commit so atomicity can be probed on both atomic and non-atomic substrates.
   - `mid-commit` injection requires backend-specific test-only commit-phase hooks; it must not be inferred from the generic `RuntimeBackend.transact` wrapper alone.
   - A fault is reproducible: the same `FaultPlan` against the same scenario produces the same interruption.

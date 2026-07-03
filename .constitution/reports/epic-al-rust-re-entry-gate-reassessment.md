@@ -1,5 +1,7 @@
 # Epic AL Rust Re-entry Gate Reassessment
 
+> **Path/terminology note (2026-07, epic #87, M10.3b):** This is a historical diagnostic report; its body is preserved verbatim below and is not rewritten. At the time of this reassessment, `@tuvren/stream-agui` lived at `boundaries/framework/implementations/typescript/stream-agui/` (now `typescript/streaming/agui/`) and `@tuvren/provider-bridge-ai-sdk` lived at `boundaries/providers/implementations/typescript/bridge-ai-sdk/` (now `typescript/providers/bridge-ai-sdk/`); this record's "driver"/"driver families" language predates epic #87's driver→runner rename (e.g. "Rust driver" below means a hypothetical Rust-implemented execution runner, and "additional driver families" means additional runner families). None of these terminology/location shifts change the gate posture or findings recorded below.
+
 This record is the KRT-AL003 output. It restates the staged-gate posture from
 ADR-033 and TechSpec §5.4 against fresh evidence produced by the canonical
 verification path on the AL closure branch, names the exact evidence each gate
