@@ -32,7 +32,7 @@
  * tuvren.runtime.capability.execution_class and
  * tuvren.runtime.capability.owner attributes (added in Epic AW / ADR-046
  * and now wired for all four classes after BA002) fully cover the lifecycle
- * taxonomy. No extension to telemetry/semconv/tuvren-runtime.yaml was needed.
+ * taxonomy. No extension to spec/telemetry/semconv/tuvren-runtime.yaml was needed.
  */
 
 import { describe, expect, test } from "bun:test";
@@ -337,7 +337,7 @@ describe("BA004 semconv coverage — no new attributes required", () => {
     // semconv source before it is emitted." This test enforces the invariant
     // programmatically by asserting the three capability-lifecycle attributes
     // are members of TUVREN_RUNTIME_TELEMETRY_ATTRIBUTE_KEYS — the generated
-    // allowlist from telemetry/semconv/tuvren-runtime.yaml. If any attribute
+    // allowlist from spec/telemetry/semconv/tuvren-runtime.yaml. If any attribute
     // were removed from the semconv source, or if BA004 had introduced a new
     // undeclared attribute, this test would fail.
     const lifecycleAttributes = [

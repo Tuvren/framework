@@ -45,7 +45,7 @@ authoritative behavioral specs are not authority for any cross-language semantic
   - `spec/tools/mcp/authority-packet.json`
   - `spec/interop/authority-packet.json`
   - `boundaries/framework/interop/rust-kernel/spec/authority-packet.json`
-  - `boundaries/telemetry/semconv/spec/authority-packet.json`
+  - `spec/telemetry/authority-packet.json`
 - Current conformance plans (21):
   - kernel: `kernel-protocol-core`, `kernel-protocol-extended`, `kernel-restart-recovery`, `kernel-run-liveness`
   - framework: `runtime-api-lifecycle`, `runtime-api-lifecycle-extended`, `runtime-api-callables`, `runtime-api-callables-extended`, `runtime-api-orchestration`, `runtime-api-batteries-included`, `event-stream-core`, `event-stream-extended`, `event-stream-sse`, `runner-api-core`, `runner-api-extended`, `react-runner-callables`, `react-runner-extended`, `tool-contracts-extended`
@@ -249,7 +249,7 @@ artifacts landed.
 
 ### G6. Telemetry semantic conventions are not packet-owned
 
-- **Current state**: `telemetry/semconv/tuvren-runtime.yaml` defines runtime
+- **Current state**: `spec/telemetry/semconv/tuvren-runtime.yaml` defines runtime
   identity, run/turn/branch, driver, checkpoint, and resumed-from attributes as an
   OpenTelemetry semconv-shaped vocabulary. `telemetry-codegen` produces an
   `otel-attributes.json` consumer and a TypeScript projection. The `§4.11` format
@@ -553,9 +553,9 @@ pre-closure recommendations when package consolidation changed the landing shape
    referencing the suite manifest and its schema.
 6. **G6** — Pick the telemetry packet boundary (recommend `shared`), add
    `tuvren.shared.telemetry-semconv` (or `tuvren.telemetry.semconv` if the
-   boundary enum is extended), reference `telemetry/semconv/tuvren-runtime.yaml`
+   boundary enum is extended), reference `spec/telemetry/semconv/tuvren-runtime.yaml`
    as `format: "semconv-yaml"`, declare a `vocabulary-check` verification path
-   over `telemetry/otel-attributes.json`, and freshness-check the consumer
+   over `spec/telemetry/artifacts/otel-attributes.json`, and freshness-check the consumer
    projection. Document the boundary-enum decision in the same TechSpec edit.
 7. **G7** — Edit TechSpec §4.11's embedded JSON Schema to add `openapi-validation`
    to the documented `verificationPaths.kind` enum, matching the schema file.

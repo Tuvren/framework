@@ -388,7 +388,7 @@ const EVIDENCE = {
     compatibilityEvidence:
       "reports/compatibility/evidence/certification-harness.framework-typescript-certification.json",
     conformancePlan:
-      "spec/conformance/tools/plans/capability-orchestration-integration.json; spec/conformance/tools/plans/tuvren-server-execution-class.json; spec/conformance/tools/plans/tuvren-client-execution-class.json; boundaries/framework/conformance/plans/invocation-lifecycle-observation.json; spec/conformance/tools/plans/capability-policy.json",
+      "spec/conformance/tools/plans/capability-orchestration-integration.json; spec/conformance/tools/plans/tuvren-server-execution-class.json; spec/conformance/tools/plans/tuvren-client-execution-class.json; spec/conformance/telemetry/plans/invocation-lifecycle-observation.json; spec/conformance/tools/plans/capability-policy.json",
     fixture: "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
     generatedArtifact: "spec/core/artifacts/json-schema",
   },

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-// Generated from telemetry/semconv/tuvren-runtime.yaml via weaver.
+// Generated from spec/telemetry/semconv/tuvren-runtime.yaml via weaver.
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct TuvrenRuntimeTelemetryAttributeDefinition {

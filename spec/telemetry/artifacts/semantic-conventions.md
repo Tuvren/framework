@@ -1,9 +1,9 @@
 # Tuvren Runtime Semantic Conventions
 
-Generated from `telemetry/semconv/tuvren-runtime.yaml` via `weaver`.
+Generated from `spec/telemetry/semconv/tuvren-runtime.yaml` via `weaver`.
 
 - Schema URL: `https://tuvren.dev/schemas/telemetry/0.1.0`
-- Resolved registry: `telemetry/semconv`
+- Resolved registry: `spec/telemetry/semconv`
 
 | Attribute | Type | Stability | Brief | Examples |
 | --- | --- | --- | --- | --- |

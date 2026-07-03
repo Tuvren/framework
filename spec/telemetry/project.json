@@ -1,7 +1,7 @@
 {
-  "name": "telemetry-semconv",
-  "$schema": "../node_modules/nx/schemas/project-schema.json",
-  "root": "telemetry",
+  "name": "telemetry-spec",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "root": "spec/telemetry",
   "projectType": "library",
   "tags": ["boundary:telemetry", "layer:tooling"],
   "targets": {
@@ -14,8 +14,8 @@
         "{workspaceRoot}/tools/generators/telemetry/**/*"
       ],
       "outputs": [
-        "{workspaceRoot}/telemetry/semantic-conventions.md",
-        "{workspaceRoot}/telemetry/otel-attributes.json",
+        "{workspaceRoot}/spec/telemetry/artifacts/semantic-conventions.md",
+        "{workspaceRoot}/spec/telemetry/artifacts/otel-attributes.json",
         "{workspaceRoot}/typescript/runtime/src/lib/generated/tuvren-runtime-telemetry.ts",
         "{workspaceRoot}/rust/kernel/src/generated/tuvren_runtime_telemetry.rs"
       ],
@@ -28,7 +28,7 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": ".",
-        "command": "bunx --bun @biomejs/biome check telemetry tools/generators/telemetry tools/scripts/telemetry-codegen.ts tools/scripts/lib"
+        "command": "bunx --bun @biomejs/biome check spec/telemetry tools/generators/telemetry tools/scripts/telemetry-codegen.ts tools/scripts/lib"
       }
     }
   }

@@ -23,6 +23,7 @@
         "{workspaceRoot}/spec/conformance/engine/**/*",
         "{workspaceRoot}/spec/conformance/runners/**/*",
         "{workspaceRoot}/spec/conformance/streaming/**/*",
+        "{workspaceRoot}/spec/conformance/telemetry/**/*",
         "{workspaceRoot}/rust/conformance-adapter/**/*",
         "{workspaceRoot}/rust/certification/**/*",
         "{workspaceRoot}/Cargo.toml",

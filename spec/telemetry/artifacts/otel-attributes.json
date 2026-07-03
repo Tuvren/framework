@@ -133,6 +133,6 @@
       "type": "string"
     }
   ],
-  "registryUrl": "telemetry/semconv",
+  "registryUrl": "spec/telemetry/semconv",
   "schemaUrl": "https://tuvren.dev/schemas/telemetry/0.1.0"
 }

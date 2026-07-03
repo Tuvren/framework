@@ -2,7 +2,7 @@
 
 This directory documents the Epic R telemetry generation posture.
 
-- Authored semantic-convention source lives in `telemetry/semconv/`.
+- Authored semantic-convention source lives in `spec/telemetry/semconv/`.
 - `generator-plan.json` records the current TypeScript output plus the deferred
   Rust output path.
 - `templates/` keeps the repo-owned helper template paths checked in even
