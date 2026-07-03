@@ -154,7 +154,7 @@
       "claimIds": ["FWK-0A368D92CB9D", "FWK-A346B29D8195", "FWK-A9611C7D2C6F"],
       "classifications": ["authority-backed-conformance-covered"],
       "compatibilityEvidence": "reports/compatibility/evidence/certification-harness.framework-typescript-certification.json",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "matrixFollowUpTickets": ["KRT-AF001 if portability is selected"],
       "surface": "framework state schema"
     },
@@ -190,7 +190,7 @@
       "compatibilityEvidence": "reports/compatibility/evidence/certification-harness.framework-typescript-certification.json",
       "conformancePlan": "spec/conformance/engine/plans/runtime-api-orchestration.json",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "matrixFollowUpTickets": ["KRT-AF005"],
       "surface": "handoff and context engineering"
     },
@@ -389,7 +389,7 @@
       "compatibilityEvidence": "reports/compatibility/evidence/certification-harness.framework-typescript-certification.json",
       "conformancePlan": "spec/conformance/engine/plans/runtime-api-lifecycle.json; spec/conformance/engine/plans/runtime-api-lifecycle-extended.json; spec/conformance/engine/plans/runtime-api-callables.json; spec/conformance/engine/plans/runtime-api-callables-extended.json",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "matrixFollowUpTickets": ["KRT-AF001"],
       "surface": "shared framework type shapes"
     },
@@ -447,7 +447,7 @@
       "compatibilityEvidence": "reports/compatibility/evidence/certification-harness.framework-typescript-certification.json",
       "conformancePlan": "spec/conformance/engine/plans/runtime-api-lifecycle.json; spec/conformance/engine/plans/runtime-api-lifecycle-extended.json; spec/conformance/engine/plans/runtime-api-callables.json; spec/conformance/engine/plans/runtime-api-callables-extended.json",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "matrixFollowUpTickets": ["KRT-AF004"],
       "surface": "structured output contract"
     },
@@ -538,7 +538,7 @@
       "compatibilityEvidence": "reports/compatibility/evidence/certification-harness.framework-typescript-certification.json",
       "conformancePlan": "spec/conformance/engine/plans/runtime-api-orchestration.json",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "matrixFollowUpTickets": ["KRT-AF005"],
       "surface": "worker subtree event forwarding"
     }

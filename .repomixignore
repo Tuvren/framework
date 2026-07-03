@@ -41,7 +41,7 @@ dist/
 **/*_pb.ts
 
 # Generated conformance plans (large JSON)
-boundaries/framework/conformance/plans/
+spec/conformance/engine/plans/
 
 # Large conformance adapter source
 typescript/conformance-adapter/src/

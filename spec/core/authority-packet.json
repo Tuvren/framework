@@ -18,7 +18,7 @@
       "bindingSection": "errors,messages,events,execution,tools,provider,extensions,runner,telemetry"
     },
     {
-      "path": "boundaries/framework/contracts/runtime-api/spec/typespec/main.tsp",
+      "path": "spec/host/typespec/main.tsp",
       "format": "typespec",
       "bindingSection": "messages,events,execution,tools,provider,extensions"
     },

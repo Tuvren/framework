@@ -21,10 +21,6 @@ import { findConformancePlans, loadConformancePlan } from "./index.js";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const OPERATION_SOURCE_BY_PACKET = new Map<string, readonly string[]>([
-  [
-    "tuvren.framework.runtime-api",
-    ["boundaries/framework/contracts/runtime-api/spec/typespec/main.tsp"],
-  ],
   ["tuvren.framework.react-runner", ["spec/runners/typespec/main.tsp"]],
   [
     "tuvren.kernel.protocol",

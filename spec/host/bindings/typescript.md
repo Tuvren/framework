@@ -2,7 +2,10 @@
 
 `@tuvren/runtime-api` and the engine package `@tuvren/runtime` (which absorbed
 the retired `@tuvren/runtime-core` shim) are TypeScript binding
-projections for `tuvren.framework.runtime-api`. TypeScript function signatures,
+projections for the neutral host contract (the `messages`, `events`,
+`execution`, `tools`, `provider`, and `extensions` binding sections of
+`tuvren.shared.core` per ADR-037 — `runtime-api` has no standalone
+authority packet). TypeScript function signatures,
 `Promise`, `AsyncIterable`, `AbortSignal`, `Uint8Array`, and language-native
 errors are binding conveniences only.
 
@@ -62,8 +65,8 @@ child whose `awaitResult()` rejection is caught during aggregation is recorded
 as `{ status: "failed", error: TuvrenRuntimeError(execution_cancelled), ... }`.
 
 The portable semantics for orchestration bindings are not defined by TypeScript
-source. They are defined by the runtime-api authority packet plus the shared
-orchestration conformance plan:
+source. They are defined by the `tuvren.shared.core` authority packet plus the
+shared orchestration conformance plan:
 
 - launch preconditions for `spawn()` and `awaitResult()`
 - run-local pause, resume, and cancel behavior across parent and child handles

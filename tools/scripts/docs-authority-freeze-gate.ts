@@ -309,8 +309,7 @@ const EVIDENCE = {
     conformancePlan:
       "spec/conformance/engine/plans/runtime-api-lifecycle.json; spec/conformance/engine/plans/runtime-api-lifecycle-extended.json; spec/conformance/engine/plans/runtime-api-callables.json; spec/conformance/engine/plans/runtime-api-callables-extended.json",
     fixture: "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
-    generatedArtifact:
-      "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+    generatedArtifact: "spec/host/artifacts/json-schema",
   },
   // KRT-AL002 G1 split tool and approval-result authority out of
   // `runtime-api` into a dedicated `tuvren.framework.tool-contracts`
@@ -336,8 +335,7 @@ const EVIDENCE = {
     conformancePlan:
       "spec/conformance/engine/plans/runtime-api-orchestration.json",
     fixture: "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
-    generatedArtifact:
-      "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+    generatedArtifact: "spec/host/artifacts/json-schema",
   },
   // Backend-authoritative execution-lease clock (kernel spec §5.2, ADR-050)
   // composed with side-effect-once under preemption (framework spec "Running

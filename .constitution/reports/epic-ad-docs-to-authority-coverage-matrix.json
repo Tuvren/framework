@@ -152,7 +152,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF001",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "Shared certification-harness evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "shared framework type shapes"
     },
@@ -177,7 +177,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF001",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "Shared certification-harness evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "shared framework type shapes"
     },
@@ -202,7 +202,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF001",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "Shared certification-harness evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "shared framework type shapes"
     },
@@ -252,7 +252,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF001",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "Shared certification-harness evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "shared framework type shapes"
     },
@@ -277,7 +277,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF001",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "Shared certification-harness evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "shared framework type shapes"
     },
@@ -302,7 +302,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF001",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "Shared certification-harness evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "shared framework type shapes"
     },
@@ -327,7 +327,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF001",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "Shared certification-harness evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "shared framework type shapes"
     },
@@ -377,7 +377,7 @@
       "docsCorrection": "N/A",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "N/A",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "N/A - measured through shared conformance evidence",
       "surface": "runtime resolution and errors"
     },
@@ -402,7 +402,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF001",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "Shared certification-harness evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "shared framework type shapes"
     },
@@ -602,7 +602,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF001 if portability is selected",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "Shared certification-harness evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "framework state schema"
     },
@@ -627,7 +627,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF001 if portability is selected",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "Shared certification-harness evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "framework state schema"
     },
@@ -652,7 +652,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF001 if portability is selected",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "Shared certification-harness evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "framework state schema"
     },
@@ -727,7 +727,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF004",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "Shared certification-harness evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "structured output contract"
     },
@@ -752,7 +752,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF004",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "Shared certification-harness evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "structured output contract"
     },
@@ -777,7 +777,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF004",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "Shared certification-harness evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "structured output contract"
     },
@@ -802,7 +802,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF004",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "Shared certification-harness evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "structured output contract"
     },
@@ -827,7 +827,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF004",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "Shared certification-harness evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "structured output contract"
     },
@@ -852,7 +852,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF004",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "Shared certification-harness evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "structured output contract"
     },
@@ -877,7 +877,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF004",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "Shared certification-harness evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "structured output contract"
     },
@@ -902,7 +902,7 @@
       "docsCorrection": "N/A",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "N/A",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "N/A - measured through shared conformance evidence",
       "surface": "runtime and ReAct execution"
     },
@@ -927,7 +927,7 @@
       "docsCorrection": "N/A",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "N/A",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "N/A - measured through shared conformance evidence",
       "surface": "runtime and ReAct execution"
     },
@@ -952,7 +952,7 @@
       "docsCorrection": "N/A",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "N/A",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "N/A - measured through shared conformance evidence",
       "surface": "runtime and ReAct execution"
     },
@@ -1027,7 +1027,7 @@
       "docsCorrection": "N/A",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "N/A",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "N/A - measured through shared conformance evidence",
       "surface": "runtime and ReAct execution"
     },
@@ -1052,7 +1052,7 @@
       "docsCorrection": "N/A",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "N/A",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "N/A - measured through shared conformance evidence",
       "surface": "runtime and ReAct execution"
     },
@@ -1077,7 +1077,7 @@
       "docsCorrection": "N/A",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "N/A",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "N/A - measured through shared conformance evidence",
       "surface": "runtime and ReAct execution"
     },
@@ -1102,7 +1102,7 @@
       "docsCorrection": "N/A",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "N/A",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "N/A - measured through shared conformance evidence",
       "surface": "runtime and ReAct execution"
     },
@@ -1552,7 +1552,7 @@
       "docsCorrection": "N/A",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "N/A",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "N/A - measured through shared conformance evidence",
       "surface": "runtime resolution and errors"
     },
@@ -1577,7 +1577,7 @@
       "docsCorrection": "N/A",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "N/A",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "N/A - measured through shared conformance evidence",
       "surface": "runtime and ReAct execution"
     },
@@ -2427,7 +2427,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF005",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "Shared certification-harness evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "worker subtree event forwarding"
     },
@@ -2552,7 +2552,7 @@
       "docsCorrection": "N/A",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "N/A",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "N/A - measured through shared conformance evidence",
       "surface": "host execution handle"
     },
@@ -2577,7 +2577,7 @@
       "docsCorrection": "N/A",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "N/A",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "N/A - measured through shared conformance evidence",
       "surface": "host execution handle"
     },
@@ -3352,7 +3352,7 @@
       "docsCorrection": "N/A",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "N/A",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "N/A - measured through shared conformance evidence",
       "surface": "runtime orchestration"
     },
@@ -3377,7 +3377,7 @@
       "docsCorrection": "N/A",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "N/A",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "N/A - measured through shared conformance evidence",
       "surface": "runtime orchestration"
     },
@@ -3402,7 +3402,7 @@
       "docsCorrection": "N/A",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "N/A",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "N/A - measured through shared conformance evidence",
       "surface": "runtime orchestration"
     },
@@ -3427,7 +3427,7 @@
       "docsCorrection": "N/A",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "N/A",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "N/A - measured through shared conformance evidence",
       "surface": "runtime orchestration"
     },
@@ -3477,7 +3477,7 @@
       "docsCorrection": "N/A",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "N/A",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "N/A - measured through shared conformance evidence",
       "surface": "runtime orchestration"
     },
@@ -3502,7 +3502,7 @@
       "docsCorrection": "N/A",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "N/A",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "N/A - measured through shared conformance evidence",
       "surface": "runtime orchestration"
     },
@@ -3527,7 +3527,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF005",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "Shared certification-harness evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "handoff and context engineering"
     },
@@ -3552,7 +3552,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF005",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "Shared certification-harness evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "handoff and context engineering"
     },
@@ -3577,7 +3577,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF005",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "Shared certification-harness evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "handoff and context engineering"
     },
@@ -3602,7 +3602,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF005",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "Shared certification-harness evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "handoff and context engineering"
     },
@@ -3627,7 +3627,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF005",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "Shared certification-harness evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "handoff and context engineering"
     },
@@ -3652,7 +3652,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF005",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "Shared certification-harness evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "handoff and context engineering"
     },
@@ -3702,7 +3702,7 @@
       "docsCorrection": "N/A",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "N/A",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "N/A - measured through shared conformance evidence",
       "surface": "runtime orchestration"
     },
@@ -3727,7 +3727,7 @@
       "docsCorrection": "N/A",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "N/A",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "N/A - measured through shared conformance evidence",
       "surface": "runtime orchestration"
     },
@@ -3752,7 +3752,7 @@
       "docsCorrection": "N/A",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "N/A",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "N/A - measured through shared conformance evidence",
       "surface": "runtime orchestration"
     },
@@ -3777,7 +3777,7 @@
       "docsCorrection": "N/A",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "N/A",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "N/A - measured through shared conformance evidence",
       "surface": "runtime orchestration"
     },
@@ -3802,7 +3802,7 @@
       "docsCorrection": "N/A",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "N/A",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "N/A - measured through shared conformance evidence",
       "surface": "runtime orchestration"
     },
@@ -3827,7 +3827,7 @@
       "docsCorrection": "N/A",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "N/A",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "N/A - measured through shared conformance evidence",
       "surface": "runtime orchestration"
     },
@@ -3877,7 +3877,7 @@
       "docsCorrection": "N/A",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "N/A",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "N/A - measured through shared conformance evidence",
       "surface": "runtime orchestration"
     },
@@ -3902,7 +3902,7 @@
       "docsCorrection": "N/A",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "N/A",
-      "generatedArtifact": "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "generatedArtifact": "spec/host/artifacts/json-schema",
       "implementationEvidence": "N/A - measured through shared conformance evidence",
       "surface": "runtime orchestration"
     },
