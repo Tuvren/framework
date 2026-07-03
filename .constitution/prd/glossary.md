@@ -2,11 +2,11 @@
 
 | Term                | Definition                                                                                                                                   | Do Not Use                             |
 | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
-| Tuvren Runtime      | The overall product surface that enables durable, stateful agent execution and orchestration.                                                | engine, bot framework, wrapper         |
+| Tuvren              | The company brand and product name for the overall product surface that enables durable, stateful agent execution and orchestration; re-centered away from the prior "Tuvren Runtime" naming per issue #87 §14 (M10.3a). | Tuvren Runtime, engine, bot framework, wrapper |
 | Kernel              | The mechanism-focused layer that owns durable storage, structural state, lineage, and recovery primitives.                                   | framework core, agent brain            |
-| Framework           | The shared runtime layer built on the kernel that provides common contracts, services, and integration surfaces used by one or more drivers. | kernel, single agent loop              |
-| Driver              | A concrete execution model built on the shared framework and kernel primitives.                                                              | workflow preset, implementation detail |
-| ReAct Driver        | The initial Kraken driver centered on iterative model reasoning, tool use, and runtime feedback within one ongoing turn.                     | the whole framework, generic agent     |
+| Framework           | The shared runtime layer built on the kernel that provides common contracts, services, and integration surfaces used by one or more runners. | kernel, single agent loop              |
+| Runner              | A concrete execution model built on the shared framework and kernel primitives.                                                              | workflow preset, implementation detail |
+| ReAct Runner        | The initial Kraken runner centered on iterative model reasoning, tool use, and runtime feedback within one ongoing turn.                     | the whole framework, generic agent     |
 | Thread              | The long-lived container for one continuing line of work or conversation.                                                                    | session log, chat room                 |
 | Branch              | A named continuation within a thread representing one active path through history.                                                           | forked chat, duplicate thread          |
 | Turn                | One user-visible interaction span within a thread.                                                                                           | step, request packet                   |
@@ -25,7 +25,7 @@
 | Worker              | A subordinate agent execution used to perform delegated work and return results.                                                             | handoff, branch clone                  |
 | ExecutionHandle     | The host-facing control surface for consuming events, awaiting a terminal value, and issuing runtime controls.                               | adapter, transport                     |
 | Execution Result    | The terminal-value surface a host receives when an execution reaches a completed or failed phase.                                            | last event, raw status                 |
-| Batteries-Included Entrypoint | The single curated factory that assembles kernel, backend, driver registry, and runtime so a host can issue a Turn without composing lower-level primitives by hand.            | helper, scaffold              |
+| Batteries-Included Entrypoint | The single curated factory that assembles kernel, backend, runner registry, and runtime so a host can issue a Turn without composing lower-level primitives by hand.            | helper, scaffold              |
 | Durable-Read Surface | The host-facing SDK capability set that lists threads, lists branches, reads state at a TurnNode, walks turn history, and reads durable messages on a branch.                  | inspector, internal API       |
 | Schema Adapter      | A normalization wrapper that lets the tool-authoring helper accept Zod, Standard Schema, wrapped JSON Schema, or future schema kinds while preserving type inference and provider-wire JSON Schema. | validator, schema lib                |
 | MCP Tool Source     | A first-class tool source that connects to an external Model Context Protocol server and exposes its tools as Tuvren tool definitions.        | bridge, proxy                          |

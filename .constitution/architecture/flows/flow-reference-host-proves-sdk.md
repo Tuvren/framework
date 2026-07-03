@@ -8,7 +8,7 @@ participant Operator as Reference Host Operator
 participant Host as Reference Host
 participant SDK as Curated Host-Facing SDK Surface
 participant Framework as Framework Shared Services
-participant Driver as Driver Runtime
+participant Runner as Runner Runtime
 participant Tooling as Tool Execution Gateway
 participant Orch as Orchestration Runtime
 participant Kernel as Kernel Boundary
@@ -19,9 +19,9 @@ Operator->>Host: start or resume thread, issue command, inspect status, request 
 Host->>SDK: construct runtime via Batteries-Included Composition (one factory)
 SDK->>Framework: assemble and start a runtime instance
 Host->>Framework: executeTurn / awaitResult / steer / resolveApproval / cancel / listThreads / readBranchMessages via host-facing SDK
-Framework->>Driver: run active turn over durable state
-Driver->>Tooling: execute or pause tool batches
-Driver->>Orch: spawn workers or hand off control when requested
+Framework->>Runner: run active turn over durable state
+Runner->>Tooling: execute or pause tool batches
+Runner->>Orch: spawn workers or hand off control when requested
 Framework->>Kernel: checkpoint progress; perform structural enumeration and reads for durable-read queries
 Kernel->>State: durably commit thread, branch, and turn state; serve enumeration within advertised capability
 Framework->>SSE: publish canonical stream and SSE projection

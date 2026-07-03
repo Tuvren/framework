@@ -164,7 +164,7 @@
 - **Priority:** P0
 - **Capability ID:** CAP-P0-019
 - **Capability:** The product must expose a host control surface that can start execution, stream runtime events, cancel work, inject steering, and resolve approvals.
-- **Rationale:** Tuvren Runtime is meant to be embedded into host systems, so the host contract is part of the product, not a side detail.
+- **Rationale:** Tuvren is meant to be embedded into host systems, so the host contract is part of the product, not a side detail.
 
 - **Priority:** P0
 - **Capability ID:** CAP-P0-020
@@ -230,17 +230,17 @@
 - **Capability:** The product must support pluggable policies for context shaping, prompt rendering, loop continuation, and tool execution.
 - **Rationale:** Different agent products need different execution policies without redefining the runtime’s core ontology.
 
-### Epic: Driver Modularity
+### Epic: Runner Modularity
 
 - **Priority:** P0
 - **Capability ID:** CAP-P0-033
-- **Capability:** The product must support a shared runtime foundation that can host multiple execution drivers over time rather than hard-coding one execution model as the whole framework.
-- **Rationale:** Durable state, host control, provider neutrality, and orchestration primitives should be reusable across ReAct-style agents and future workflow-oriented drivers.
+- **Capability:** The product must support a shared runtime foundation that can host multiple execution runners over time rather than hard-coding one execution model as the whole framework.
+- **Rationale:** Durable state, host control, provider neutrality, and orchestration primitives should be reusable across ReAct-style agents and future workflow-oriented runners.
 
 - **Priority:** P1
 - **Capability ID:** CAP-P1-034
-- **Capability:** The product must ship with one primary driver-first baseline, centered initially on a ReAct-style execution model, while keeping room for future workflow, routing, evaluator, or orchestration-focused drivers.
-- **Rationale:** Tuvren Runtime needs one strong default execution path now without letting that first choice become an accidental product monopoly.
+- **Capability:** The product must ship with one primary runner-first baseline, centered initially on a ReAct-style execution model, while keeping room for future workflow, routing, evaluator, or orchestration-focused runners.
+- **Rationale:** Tuvren needs one strong default execution path now without letting that first choice become an accidental product monopoly.
 
 ### Epic: Multi-Agent Orchestration
 
@@ -269,7 +269,7 @@
 - **Priority:** P0
 - **Capability ID:** CAP-P0-030
 - **Capability:** The product must provide a provider-neutral internal model so that agent behavior does not depend on any one provider’s wire format or naming conventions.
-- **Rationale:** Tuvren Runtime’s product value depends on stable internal semantics even as model ecosystems change.
+- **Rationale:** Tuvren’s product value depends on stable internal semantics even as model ecosystems change.
 
 - **Priority:** P1
 - **Capability ID:** CAP-P1-031
@@ -300,12 +300,12 @@
 
 - **Priority:** P0
 - **Capability ID:** CAP-P0-048
-- **Capability:** The product must expose a single batteries-included entrypoint that assembles a working runtime (kernel, backend, driver registry, framework runtime) from one curated factory call so a host developer can issue a first Turn without composing five lower-level factories, while retaining the ability to substitute any of those substrates when the host's needs require it.
+- **Capability:** The product must expose a single batteries-included entrypoint that assembles a working runtime (kernel, backend, runner registry, framework runtime) from one curated factory call so a host developer can issue a first Turn without composing five lower-level factories, while retaining the ability to substitute any of those substrates when the host's needs require it.
 - **Rationale:** First-Turn time-to-value is a measurable adoption lever; every serious agent SDK in 2026 has a one-call composition story, and the absence of one is the strongest single contributor to perceived complexity in the current host-facing surface.
 
 - **Priority:** P0
 - **Capability ID:** CAP-P0-049
-- **Capability:** The product must expose one curated host-facing SDK boundary composed of a single shared-primitive package with named subpath exports and a slim convenience package that bundles the batteries-included entrypoint and the curated primitive re-exports, with all leaf packages (backends, stream adapters, drivers, provider bridges, MCP client) peer-depending on the shared-primitive package so that consumers experience a coherent SDK surface and never carry mismatched primitive versions.
+- **Capability:** The product must expose one curated host-facing SDK boundary composed of a single shared-primitive package with named subpath exports and a slim convenience package that bundles the batteries-included entrypoint and the curated primitive re-exports, with all leaf packages (backends, stream adapters, runners, provider bridges, MCP client) peer-depending on the shared-primitive package so that consumers experience a coherent SDK surface and never carry mismatched primitive versions.
 - **Rationale:** The current split into multiple separately-versioned contract packages forces every consumer to depend on the right combination of five primitive packages and risks version skew between primitive packages; one shared-primitive package with subpath exports is the convergent pattern in comparable ecosystems and is the only way to ship a coherent SDK without bundle-size penalties or unsafe duplicated primitive instances.
 
 ### Epic: Reference Host Operational Ergonomics
@@ -398,8 +398,8 @@
 
 ### 4.1 Scope Notes
 
-- The PRD intentionally treats persistence, streaming, tool dispatch, approvals, context engineering, orchestration, host-developer ergonomics, single-tenant durable reads, and the curated SDK surface as product capabilities because they materially define the user-facing value of Tuvren Runtime as a runtime.
-- The initial active product line is the shared runtime foundation plus the ReAct Driver, not a commitment to implement every possible driver pattern in the first release line.
+- The PRD intentionally treats persistence, streaming, tool dispatch, approvals, context engineering, orchestration, host-developer ergonomics, single-tenant durable reads, and the curated SDK surface as product capabilities because they materially define the user-facing value of Tuvren as a runtime.
+- The initial active product line is the shared runtime foundation plus the ReAct Runner, not a commitment to implement every possible runner pattern in the first release line.
 - The first product-depth implementation line is expected to prove nearly the whole documented runtime surface through a serious reference host rather than carrying large core features as indefinite “later” promises.
 - This PRD does not prescribe the concrete storage engine, programming language, packaging layout, or transport stack used to implement those capabilities, except where it explicitly commits to one curated host-facing SDK boundary and to the MCP wire protocol as the supported tool-ecosystem surface.
 - Long-term portability is a boundary-preservation goal, not a rewrite mandate; future implementation lines must extend the shared semantic system rather than replace it wholesale.
@@ -420,7 +420,7 @@
 - A schema-authoring helper is not a boundary contract; the helper accepts richer schema shapes for type inference and ergonomics, but the boundary contract still accepts raw JSON Schema and the existing `CustomSchema` interop shape, so portability and conformance are unaffected.
 - The MCP client integration is not an MCP server projection; the runtime can consume any MCP server's tools, but does not expose itself as an MCP server in v1.
 - A headless mode is not a script-file interpreter; the reference host accepts line-delimited input on stdin, exactly the same input shape as the interactive mode, with no out-of-band scripting language.
-- A curated SDK surface is not a megapackage; primitives live in one shared package with subpath exports, but backends, stream adapters, drivers, provider bridges, and the MCP client remain separate leaf packages that peer-depend on the shared primitives.
+- A curated SDK surface is not a megapackage; primitives live in one shared package with subpath exports, but backends, stream adapters, runners, provider bridges, and the MCP client remain separate leaf packages that peer-depend on the shared primitives.
 - Tool surface, capability, binding, and execution class are four distinct concepts: the surface is model-facing, the capability is the authority to act, the binding ties a capability to an execution class and endpoint, and the execution class names who owns the invocation.
 - Exposure-time policy and invocation-time policy are distinct decisions: one decides whether the model ever sees a surface, the other decides whether a resolved capability may actually run.
 - Tenancy mechanism vs. tenancy policy: the product owns the scope seam and isolation-by-construction (mechanism); the host owns what a tenant is, how tenants authenticate, how scopes map to stores, and cross-tenant discovery (policy).
@@ -451,7 +451,7 @@
 - Extension and policy composition at defined lifecycle points
 - Provider-neutral model integration with canonical streaming and non-streaming behavior
 - Multi-agent orchestration patterns including workers, handoffs, and sequences
-- A batteries-included host-facing SDK entrypoint that assembles kernel, backend, driver registry, and framework runtime from one curated factory call
+- A batteries-included host-facing SDK entrypoint that assembles kernel, backend, runner registry, and framework runtime from one curated factory call
 - A consolidated curated SDK surface composed of one shared-primitive package with subpath exports and a slim convenience entrypoint, with leaf packages peer-depending on the shared primitives
 - A schema-agnostic tool-authoring helper supporting Zod, Standard Schema, and wrapped JSON Schema with strict type inference while preserving raw JSON Schema and the existing `CustomSchema` interop shape at the boundary contract
 - A first-class Model Context Protocol client integration that consumes external MCP servers over stdio and HTTP/SSE as tool sources

@@ -10,7 +10,7 @@
 ### 3.2 Host Application Developer
 
 - **Role:** Host Application Developer
-- **Context:** Exposes Tuvren Runtime through an API, UI, CLI, editor integration, or protocol bridge. Builds an operator-facing product (for example an IDE coding agent, a CLI assistant, an ambient agent runner, or a web console) on top of the host-facing SDK and expects to reach a working first Turn within minutes, list and inspect threads owned by the runtime, replay past sessions, and connect external Model Context Protocol servers without writing bespoke adapters.
+- **Context:** Exposes Tuvren through an API, UI, CLI, editor integration, or protocol bridge. Builds an operator-facing product (for example an IDE coding agent, a CLI assistant, an ambient agent runner, or a web console) on top of the host-facing SDK and expects to reach a working first Turn within minutes, list and inspect threads owned by the runtime, replay past sessions, and connect external Model Context Protocol servers without writing bespoke adapters.
 - **Goals:** Start turns, consume streamed events, await terminal values, inject steering, route approvals, surface execution status, list threads and branches the host owns, read state at any TurnNode, replay past sessions, and connect external tool servers without owning the runtime semantics.
 - **Frictions:** Needs one batteries-included entrypoint instead of composing five low-level factories; needs a uniform terminal-value surface instead of hand-rolling completion detection from event streams; needs first-party durable reads instead of reaching around the SDK into kernel internals; needs to keep schema-authoring choices open (Zod, Standard Schema, raw JSON Schema) rather than being forced into one validator; needs first-class MCP support to access the existing tool ecosystem.
 
@@ -38,7 +38,7 @@
 ### 3.6 Runtime Implementation Maintainer
 
 - **Role:** Runtime Implementation Maintainer
-- **Context:** Must extend or maintain Tuvren Runtime in a new language, runtime, or process boundary without weakening the kernel/framework semantics already promised to hosts and builders.
+- **Context:** Must extend or maintain Tuvren in a new language, runtime, or process boundary without weakening the kernel/framework semantics already promised to hosts and builders.
 - **Goals:** Consume stable contracts, prove behavior against shared fixtures, preserve observability and compatibility signals, and add new implementation lines without creating a shadow specification.
 - **Frictions:** Ports often drift into rewrites, language-specific toolchains often leak into semantic boundaries, and shared behavior usually becomes folklore unless parity is enforced mechanically.
 
