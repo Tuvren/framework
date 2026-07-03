@@ -33,9 +33,6 @@ import {
   startMockMcpHttpServer,
   startOfficialMcpEverythingStreamableHttpServer,
 } from "@tuvren/provider-testkit";
-import { createMcpToolSource } from "../../../tools/mcp-client/src/index.ts";
-import type { MCPClient } from "../../../tools/mcp-client/src/lib/mcp-sdk-client.ts";
-import { createMcpToolSourceInternal } from "../../../tools/mcp-client/src/lib/mcp-tool-source.ts";
 import type {
   AdapterCapabilities,
   AdapterControls,
@@ -43,6 +40,9 @@ import type {
 } from "../../../../tools/conformance/adapter-protocol/index.js";
 import { createAdapterErrorEnvelope } from "../../../../tools/conformance/adapter-protocol/index.js";
 import { serveStdioAdapter } from "../../../../tools/conformance/adapter-protocol/stdio-host.js";
+import { createMcpToolSource } from "../../../tools/mcp-client/src/index.ts";
+import type { MCPClient } from "../../../tools/mcp-client/src/lib/mcp-sdk-client.ts";
+import { createMcpToolSourceInternal } from "../../../tools/mcp-client/src/lib/mcp-tool-source.ts";
 import { createAiSdkProviderBridge } from "../../bridge-ai-sdk/src/index.ts";
 import { providerConformanceFixtures } from "./provider-conformance-fixtures.ts";
 import { runProviderMediatedAttribution } from "./provider-mediated-execution-class.ts";
