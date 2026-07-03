@@ -1,4 +1,4 @@
-# CI for Tuvren-runtime (epic #87 M10.2 — greenfield; no prior .github/ existed).
+# CI for Tuvren/framework (epic #87 M10.2 — greenfield; no prior .github/ existed).
 #
 # ── Governing scope (read before editing) ──────────────────────────────────
 # Issue #87's original DoD said "Bazel is the canonical CI path; Nx demoted
@@ -10,7 +10,10 @@
 # open). The 17 TypeScript BUILD.bazel targets are therefore M1.2-pattern
 # shims (`native_binary` -> tools/bazel/nx-run.sh, which shells back out to
 # `bun run nx run <target>`), not hermetic builds/tests. Only the Rust
-# targets under //rust/... are genuinely hermetic under rules_rust.
+# targets under //rust/kernel — the one Rust crate in the Bazel graph —
+# are genuinely hermetic under rules_rust; the other workspace crates
+# (kernel-grpc-service, adapters, certifications) are covered by the
+# cargo lanes inside "verify".
 #
 # Consequently:
 #   - "verify" (Nx/`bun run verify`) is the PRIMARY semantic gate. It is NOT
@@ -139,7 +142,7 @@ jobs:
           '
 
   bazel:
-    name: bazel (standing hermetic gate — Rust build+test, TS shim build only)
+    name: bazel (standing hermetic gate — rust/kernel build+test, TS shim build only)
     runs-on: ubuntu-latest
     # bazel build //... + bazel test //... measured locally (epic #87 M10.2)
     # at well under 5 minutes on a warm Bazel cache; a cold CI cache plus
@@ -159,5 +162,5 @@ jobs:
       - name: bazel build //... (all targets, incl. TS shim launchers)
         run: devenv shell -- bazel build //...
 
-      - name: bazel test //... (rust hermetic tests; TS shims are native_binary, not native_test — not selected by `bazel test`)
+      - name: bazel test //... (rust/kernel hermetic tests; TS shims are native_binary, not native_test — not selected by `bazel test`)
         run: devenv shell -- bazel test //...

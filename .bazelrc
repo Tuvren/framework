@@ -13,4 +13,11 @@ run --action_env=PATH
 # path on this Nix system (only /bin/sh, symlinked to the real Nix bash,
 # does). Point Bazel at that stable symlink instead of a /nix/store/<hash>
 # path that would break on garbage collection or a nixpkgs bump.
+# On non-Nix systems /bin/sh is often dash, not bash. Measured (epic #87 PR
+# review, 2026-07-03): `bazel run <ts-shim>` with --shell_executable pointed
+# at a real dash binary works end-to-end — the generated run wrapper is
+# POSIX-compatible here, and tools/bazel/nx-run.sh resolves bash via its own
+# `#!/usr/bin/env bash` shebang, independent of this flag. `bazel build` and
+# `bazel test //...` are additionally proven on ubuntu-latest (dash /bin/sh)
+# by the CI bazel job on every run.
 common --shell_executable=/bin/sh

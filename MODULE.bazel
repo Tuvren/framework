@@ -1,6 +1,7 @@
 """Bzlmod root module for the Tuvren runtime (bzlmod only, no WORKSPACE).
 
-Governing rulings (full milestone history: issue #87, MIGRATION_INVENTORY.md):
+Governing rulings (full milestone history: issue #87; the epic-time
+MIGRATION_INVENTORY.md ledger was deleted at cutover — git history only):
 - Postgres exception (M1.6): the PostgreSQL kernel backend and its
   certification project stay Nx-driven with no BUILD.bazel target —
   devenv-managed Postgres is not idempotent, so it cannot join a hermetic

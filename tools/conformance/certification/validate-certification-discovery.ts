@@ -42,7 +42,10 @@
 
 import { readFileSync } from "node:fs";
 import { join, relative } from "node:path";
-import { loadNxProjectFiles } from "../../scripts/lib/nx-projects.js";
+import {
+  loadNxProjectFiles,
+  type NxProjectTarget,
+} from "../../scripts/lib/nx-projects.js";
 
 const ROOT = process.cwd();
 const MANIFEST_PATH = join(
@@ -54,18 +57,42 @@ const NON_CERTIFICATION_TAG = "layer:testkit";
 const SHARED_ENGINE_PATH = "tools/conformance/harness/run.ts";
 
 interface ProjectRecord {
-  conformanceCommand: string | undefined;
+  conformanceCommands: readonly string[];
   hasConformanceTarget: boolean;
   name: string;
   path: string;
   tags: readonly string[];
 }
 
+/**
+ * Every command string a conformance target can execute: nx:run-commands
+ * accepts a single `options.command` string OR an `options.commands` array
+ * of strings / `{ command }` objects. The engine back-check below must see
+ * all of them, or an array-form target could invoke the shared engine
+ * without joining the certified fleet.
+ */
+function commandStrings(options: NxProjectTarget["options"]): string[] {
+  const out: string[] = [];
+  if (typeof options?.command === "string") {
+    out.push(options.command);
+  }
+  for (const entry of options?.commands ?? []) {
+    if (typeof entry === "string") {
+      out.push(entry);
+    } else if (typeof entry?.command === "string") {
+      out.push(entry.command);
+    }
+  }
+  return out;
+}
+
 function loadProjects(): ProjectRecord[] {
   return loadNxProjectFiles(ROOT).map((file) => {
     const conformance = file.project.targets?.conformance;
     return {
-      conformanceCommand: conformance?.options?.command,
+      conformanceCommands: conformance
+        ? commandStrings(conformance.options)
+        : [],
       hasConformanceTarget: conformance !== undefined,
       name: file.name,
       path: file.path,
@@ -135,8 +162,9 @@ for (const project of projects) {
   if (!project.hasConformanceTarget) {
     continue;
   }
-  const invokesEngine =
-    project.conformanceCommand?.includes(SHARED_ENGINE_PATH) === true;
+  const invokesEngine = project.conformanceCommands.some((command) =>
+    command.includes(SHARED_ENGINE_PATH)
+  );
   if (invokesEngine && !discoveredNames.has(project.name)) {
     problems.push(
       `${project.name} (${project.path}) invokes the shared engine (${SHARED_ENGINE_PATH}) but is not tagged ${CERTIFICATION_TAG}`

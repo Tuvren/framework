@@ -27,7 +27,13 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 
 export interface NxProjectTarget {
-  options?: { command?: string };
+  options?: {
+    command?: string;
+    // nx:run-commands also accepts a `commands` array whose entries are
+    // strings or `{ command: string, ... }` objects; gates that inspect
+    // command text must scan both shapes.
+    commands?: (string | { command?: string })[];
+  };
 }
 
 export interface NxProjectJson {
