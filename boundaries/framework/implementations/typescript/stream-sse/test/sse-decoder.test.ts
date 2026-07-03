@@ -38,7 +38,7 @@ interface SseTraceFixture {
 }
 
 const FIXTURE_PATH =
-  "../../../../conformance/fixtures/event-stream-sse-traces.json";
+  "../../../../../../spec/conformance/streaming/fixtures/event-stream-sse-traces.json";
 const fixture = JSON.parse(
   await readFile(new URL(FIXTURE_PATH, import.meta.url), "utf8")
 ) as SseTraceFixture;

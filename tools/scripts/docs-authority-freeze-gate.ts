@@ -198,10 +198,9 @@ const EVIDENCE = {
     compatibilityEvidence:
       "reports/compatibility/evidence/certification-harness.framework-typescript-certification.json",
     conformancePlan:
-      "boundaries/framework/conformance/plans/event-stream-core.json; boundaries/framework/conformance/plans/event-stream-extended.json",
-    fixture: "boundaries/framework/conformance/fixtures/stream-events.json",
-    generatedArtifact:
-      "boundaries/framework/contracts/event-stream/artifacts/json-schema",
+      "spec/conformance/streaming/plans/event-stream-core.json; spec/conformance/streaming/plans/event-stream-extended.json",
+    fixture: "spec/conformance/streaming/fixtures/stream-events.json",
+    generatedArtifact: "spec/streaming/artifacts/json-schema",
   },
   kernelProtocol: {
     adapterCapability: "kernel.protocol; kernel.logical",

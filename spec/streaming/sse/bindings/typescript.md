@@ -18,7 +18,7 @@ part of the cross-language contract.
   the canonical shape. The TypeScript package re-exports the equivalent type
   via its own `index.ts`; the re-export must remain structurally compatible
   with the generated schema.
-- Byte traces in `boundaries/framework/conformance/fixtures/event-stream-sse-traces.json`
+- Byte traces in `spec/conformance/streaming/fixtures/event-stream-sse-traces.json`
   use native JSON string escapes for non-printable characters (`\r`, `\n`,
   `﻿`). The TypeScript SSE decoder consumes these traces as UTF-8 bytes
   without additional processing.

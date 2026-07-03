@@ -23,7 +23,7 @@
       "bindingSection": "messages,events,execution,tools,provider,extensions"
     },
     {
-      "path": "boundaries/framework/contracts/event-stream/spec/typespec/main.tsp",
+      "path": "spec/streaming/typespec/main.tsp",
       "format": "typespec",
       "bindingSection": "events"
     },
@@ -58,11 +58,11 @@
       "format": "conformance-plan"
     },
     {
-      "path": "boundaries/framework/conformance/plans/event-stream-core.json",
+      "path": "spec/conformance/streaming/plans/event-stream-core.json",
       "format": "conformance-plan"
     },
     {
-      "path": "boundaries/framework/conformance/plans/event-stream-extended.json",
+      "path": "spec/conformance/streaming/plans/event-stream-extended.json",
       "format": "conformance-plan"
     },
     {
@@ -143,12 +143,12 @@
     {
       "planId": "tuvren.framework.event-stream.core",
       "planVersion": "0.1.0",
-      "path": "boundaries/framework/conformance/plans/event-stream-core.json"
+      "path": "spec/conformance/streaming/plans/event-stream-core.json"
     },
     {
       "planId": "tuvren.framework.event-stream.extended",
       "planVersion": "0.1.0",
-      "path": "boundaries/framework/conformance/plans/event-stream-extended.json"
+      "path": "spec/conformance/streaming/plans/event-stream-extended.json"
     },
     {
       "planId": "tuvren.framework.tool-contracts.extended",
@@ -286,11 +286,11 @@
     },
     {
       "kind": "conformance-plan",
-      "target": "boundaries/framework/conformance/plans/event-stream-core.json"
+      "target": "spec/conformance/streaming/plans/event-stream-core.json"
     },
     {
       "kind": "conformance-plan",
-      "target": "boundaries/framework/conformance/plans/event-stream-extended.json"
+      "target": "spec/conformance/streaming/plans/event-stream-extended.json"
     },
     {
       "kind": "conformance-plan",

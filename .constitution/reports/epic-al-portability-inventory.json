@@ -1,8 +1,8 @@
 {
-  "manifestVersion": "0.5.0",
+  "manifestVersion": "0.6.0",
   "manifestId": "epic-al.portability-inventory",
   "humanInventoryRef": ".constitution/reports/epic-al-portable-surface-conformance-gap-inventory.md",
-  "description": "Machine-readable companion to the Epic AL portable-surface conformance gap inventory. v0.3.0 reflected Epic AS promoting the MCP Client Container translation contract as the ninth expected packet: tuvren.providers.mcp. v0.4.0 reflects Epic BC closing the Tooling block and promoting the capability-orchestration-integration conformance plan as a required authoritative source for tuvren.shared.core; the capability-orchestration surface (four execution classes, MCP-as-binding, exposure/invocation policy, per-class observation limits, conceptual invariant) is now fully tracked under tuvren.shared.core. v0.4.1 is a path-only update: GH issue #87 (Sovereign Polyglot Framework Restructure) M1.3 relocated the kernel authority packet and CDDL grammar from `boundaries/kernel/contracts/protocol/spec/` to root `spec/kernel/`; no portability scope, classification, or closure state changed. v0.4.2 is likewise path-only: 87-M5.1c moved the MCP authority packet cross-port to `spec/tools/mcp/authority-packet.json` and consolidated the tools-owned conformance plans (tool-contracts-extended, capability-policy, capability-orchestration-integration, both execution-class plans, providers-mcp-client) under `spec/conformance/tools/plans/`; no portability scope, classification, or closure state changed. v0.4.3 is likewise path-only: 87-M6.1b lifted the react-driver authority packet and the driver-api/react-driver runner-plan and typespec sources to `spec/runners/` (packet, typespec, bindings, artifacts) and `spec/conformance/runners/` (plans, scenarios); packet, plan, and check identities are unchanged. v0.5.0 reflects 87-M6.4b, the semantic-identity rename mandated by the epic: the react packet, plan, and check identities themselves change from driver-vocabulary to runner-vocabulary (`tuvren.framework.react-driver` becomes `tuvren.framework.react-runner`, `driver-api-*`/`react-driver-*` plan and check families become `runner-api-*`/`react-runner-*`), unlike the prior path-only moves; this is the one issue-mandated identity churn and no packet topology or closure state otherwise changed. The portability gate at `tools/scripts/portability-gate.ts` consumes this file to enforce that the on-disk packet topology, standing exceptions, and required authoritative sources have not drifted from the inventory's recorded closure state. Editing either the human inventory MD or this JSON without the matching counterpart change must be treated as drift and rejected during review. The gate fails closed if this file is missing, malformed, or names paths that do not exist on disk.",
+  "description": "Machine-readable companion to the Epic AL portable-surface conformance gap inventory. v0.3.0 reflected Epic AS promoting the MCP Client Container translation contract as the ninth expected packet: tuvren.providers.mcp. v0.4.0 reflects Epic BC closing the Tooling block and promoting the capability-orchestration-integration conformance plan as a required authoritative source for tuvren.shared.core; the capability-orchestration surface (four execution classes, MCP-as-binding, exposure/invocation policy, per-class observation limits, conceptual invariant) is now fully tracked under tuvren.shared.core. v0.4.1 is a path-only update: GH issue #87 (Sovereign Polyglot Framework Restructure) M1.3 relocated the kernel authority packet and CDDL grammar from `boundaries/kernel/contracts/protocol/spec/` to root `spec/kernel/`; no portability scope, classification, or closure state changed. v0.4.2 is likewise path-only: 87-M5.1c moved the MCP authority packet cross-port to `spec/tools/mcp/authority-packet.json` and consolidated the tools-owned conformance plans (tool-contracts-extended, capability-policy, capability-orchestration-integration, both execution-class plans, providers-mcp-client) under `spec/conformance/tools/plans/`; no portability scope, classification, or closure state changed. v0.4.3 is likewise path-only: 87-M6.1b lifted the react-driver authority packet and the driver-api/react-driver runner-plan and typespec sources to `spec/runners/` (packet, typespec, bindings, artifacts) and `spec/conformance/runners/` (plans, scenarios); packet, plan, and check identities are unchanged. v0.5.0 reflects 87-M6.4b, the semantic-identity rename mandated by the epic: the react packet, plan, and check identities themselves change from driver-vocabulary to runner-vocabulary (`tuvren.framework.react-driver` becomes `tuvren.framework.react-runner`, `driver-api-*`/`react-driver-*` plan and check families become `runner-api-*`/`react-runner-*`), unlike the prior path-only moves; this is the one issue-mandated identity churn and no packet topology or closure state otherwise changed. v0.6.0 is likewise path-only: 87-M8.1a lifted the event-stream-sse authority packet and its typespec/fixture/plan sources to `spec/streaming/sse/` and `spec/conformance/streaming/`; packet, plan, and check identities are unchanged. The portability gate at `tools/scripts/portability-gate.ts` consumes this file to enforce that the on-disk packet topology, standing exceptions, and required authoritative sources have not drifted from the inventory's recorded closure state. Editing either the human inventory MD or this JSON without the matching counterpart change must be treated as drift and rejected during review. The gate fails closed if this file is missing, malformed, or names paths that do not exist on disk.",
   "expectedPackets": [
     {
       "packetId": "tuvren.shared.core",
@@ -18,7 +18,7 @@
     },
     {
       "packetId": "tuvren.framework.event-stream-sse",
-      "packetPath": "boundaries/framework/contracts/event-stream-sse/spec/authority-packet.json",
+      "packetPath": "spec/streaming/sse/authority-packet.json",
       "classification": "portable",
       "inventorySection": "§6.G3 / §9b"
     },
@@ -97,21 +97,21 @@
     },
     {
       "packetId": "tuvren.framework.event-stream-sse",
-      "sourcePath": "boundaries/framework/contracts/event-stream-sse/spec/typespec/main.tsp",
+      "sourcePath": "spec/streaming/sse/typespec/main.tsp",
       "sourceFormat": "typespec",
       "rationale": "KRT-AL002 G3: SSE projection TypeSpec source",
       "inventorySection": "§6.G3 / §9b"
     },
     {
       "packetId": "tuvren.framework.event-stream-sse",
-      "sourcePath": "boundaries/framework/conformance/fixtures/event-stream-sse-traces.json",
+      "sourcePath": "spec/conformance/streaming/fixtures/event-stream-sse-traces.json",
       "sourceFormat": "fixture-set",
       "rationale": "KRT-AL002 G3: WHATWG-normative SSE byte-trace fixtures",
       "inventorySection": "§6.G3 / §9b"
     },
     {
       "packetId": "tuvren.framework.event-stream-sse",
-      "sourcePath": "boundaries/framework/conformance/plans/event-stream-sse.json",
+      "sourcePath": "spec/conformance/streaming/plans/event-stream-sse.json",
       "sourceFormat": "conformance-plan",
       "rationale": "KRT-AL002 G3: SSE conformance plan",
       "inventorySection": "§6.G3 / §9b"

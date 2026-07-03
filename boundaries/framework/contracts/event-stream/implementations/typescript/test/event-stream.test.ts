@@ -96,7 +96,10 @@ describe("event-stream contracts", () => {
 
   test("emits JSON Schema artifacts that match richer event payload variants", () => {
     const ajv = loadJsonSchemas(
-      new URL("../../../artifacts/json-schema/", import.meta.url)
+      new URL(
+        "../../../../../../../spec/streaming/artifacts/json-schema",
+        import.meta.url
+      )
     );
     const approvalResolvedEvent = {
       response: {

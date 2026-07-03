@@ -9,22 +9,22 @@
   ],
   "authoritativeSources": [
     {
-      "path": "boundaries/framework/contracts/event-stream-sse/spec/typespec/main.tsp",
+      "path": "spec/streaming/sse/typespec/main.tsp",
       "format": "typespec"
     },
     {
-      "path": "boundaries/framework/conformance/fixtures/event-stream-sse-traces.json",
+      "path": "spec/conformance/streaming/fixtures/event-stream-sse-traces.json",
       "format": "fixture-set"
     },
     {
-      "path": "boundaries/framework/conformance/plans/event-stream-sse.json",
+      "path": "spec/conformance/streaming/plans/event-stream-sse.json",
       "format": "conformance-plan"
     }
   ],
   "generatedArtifacts": [
     {
-      "path": "boundaries/framework/contracts/event-stream-sse/artifacts/json-schema",
-      "generatedFrom": "boundaries/framework/contracts/event-stream-sse/spec/typespec",
+      "path": "spec/streaming/sse/artifacts/json-schema",
+      "generatedFrom": "spec/streaming/sse/typespec",
       "generator": "@typespec/json-schema"
     }
   ],
@@ -32,7 +32,7 @@
     {
       "planId": "tuvren.framework.event-stream-sse.core",
       "planVersion": "0.2.0",
-      "path": "boundaries/framework/conformance/plans/event-stream-sse.json"
+      "path": "spec/conformance/streaming/plans/event-stream-sse.json"
     }
   ],
   "bindingProjections": {
@@ -41,7 +41,7 @@
   "bindingAppendices": [
     {
       "language": "typescript",
-      "path": "boundaries/framework/contracts/event-stream-sse/spec/bindings/typescript.md"
+      "path": "spec/streaming/sse/bindings/typescript.md"
     }
   ],
   "forbiddenAuthoritySources": [
@@ -56,21 +56,21 @@
   "verificationPaths": [
     {
       "kind": "schema-validation",
-      "target": "boundaries/framework/contracts/event-stream-sse/artifacts/json-schema"
+      "target": "spec/streaming/sse/artifacts/json-schema"
     },
     {
       "kind": "conformance-plan",
-      "target": "boundaries/framework/conformance/plans/event-stream-sse.json"
+      "target": "spec/conformance/streaming/plans/event-stream-sse.json"
     },
     {
       "kind": "freshness-check",
-      "target": "boundaries/framework/contracts/event-stream-sse/artifacts/json-schema"
+      "target": "spec/streaming/sse/artifacts/json-schema"
     }
   ],
   "freshnessChecks": [
     {
-      "artifact": "boundaries/framework/contracts/event-stream-sse/artifacts/json-schema",
-      "regenerateCommand": "bun run nx run framework-event-stream-sse:codegen"
+      "artifact": "spec/streaming/sse/artifacts/json-schema",
+      "regenerateCommand": "bun run nx run streaming-spec:codegen"
     }
   ]
 }

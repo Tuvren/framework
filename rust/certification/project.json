@@ -22,6 +22,7 @@
         "{workspaceRoot}/boundaries/framework/conformance/**/*",
         "{workspaceRoot}/spec/conformance/engine/**/*",
         "{workspaceRoot}/spec/conformance/runners/**/*",
+        "{workspaceRoot}/spec/conformance/streaming/**/*",
         "{workspaceRoot}/rust/conformance-adapter/**/*",
         "{workspaceRoot}/rust/certification/**/*",
         "{workspaceRoot}/Cargo.toml",

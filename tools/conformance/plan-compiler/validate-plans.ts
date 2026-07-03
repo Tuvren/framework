@@ -27,7 +27,7 @@ const OPERATION_SOURCE_BY_PACKET = new Map<string, readonly string[]>([
   ],
   [
     "tuvren.framework.event-stream",
-    ["boundaries/framework/conformance/plans/event-stream-core.json"],
+    ["spec/conformance/streaming/plans/event-stream-core.json"],
   ],
   ["tuvren.framework.react-runner", ["spec/runners/typespec/main.tsp"]],
   [

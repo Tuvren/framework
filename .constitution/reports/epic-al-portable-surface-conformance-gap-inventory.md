@@ -39,7 +39,7 @@ authoritative behavioral specs are not authority for any cross-language semantic
 - Current authority packets (the 9 promoted surfaces after Epic AP package consolidation plus Epic AS):
   - `spec/core/authority-packet.json`
   - `spec/kernel/authority-packet.json`
-  - `boundaries/framework/contracts/event-stream-sse/spec/authority-packet.json`
+  - `spec/streaming/sse/authority-packet.json`
   - `spec/runners/react/authority-packet.json`
   - `spec/providers/authority-packet.json`
   - `spec/tools/mcp/authority-packet.json`
@@ -82,7 +82,7 @@ the surface's current decisive-assertion coverage.
 | --- | --- | --- | --- | --- |
 | Shared core primitives + capability-orchestration surface | `tuvren.shared.core` (`spec/core/authority-packet.json`) | `runtime-api-lifecycle{,-extended}`, `runtime-api-callables{,-extended}`, `runtime-api-orchestration`, `runtime-api-batteries-included`, `event-stream-core`, `event-stream-extended`, `runner-api-core`, `runner-api-extended`, `tool-contracts-extended`, `framework-operational-telemetry`, `tuvren-server-execution-class`, `tuvren-client-execution-class`, `invocation-lifecycle-observation`, `capability-policy`, `capability-orchestration-integration` | `resultField`, `stateField`, `eventSequence`, `terminalEvent`, `noEvent`, `errorEnvelope` per plan inspection | Epic AP absorbed the former `core-types`, `runtime-api`, `event-stream`, `driver-api`, and `tool-contracts` packets into one consolidated core packet with binding sections for the eight `@tuvren/core/*` subpaths. Epics AW–BC (Tooling block) added the capability-orchestration surface: four execution classes, MCP-as-binding, exposure/invocation policy, per-class observation limits, and the cross-class integration check set (`capability-orchestration-integration.json`, KRT-BC001). The integration plan is now a required authoritative source for `tuvren.shared.core` in the portability inventory (v0.4.0). |
 | Kernel protocol semantics | `tuvren.kernel.protocol` (`spec/kernel/authority-packet.json`) | `kernel-protocol-core`, `kernel-protocol-extended`, `kernel-run-liveness`, `kernel-restart-recovery` | `resultField`, `stateField`, `eventSequence` per plan inspection | Records appendix matrix and recovery edges promoted by AF KRT-AF006 are runner-observed. KRT-AL002 registered `spec/cddl/kernel-records.cddl` as a CDDL authoritative source on the packet. |
-| Framework SSE projection | `tuvren.framework.event-stream-sse` (`boundaries/framework/contracts/event-stream-sse/spec/authority-packet.json`) | `event-stream-sse` | `eventSequence`, `resultField`, `ordering`, `errorEnvelope` per plan inspection | KRT-AL002/AL003 promoted the EventSource-compatible wire projection through TypeSpec, byte-trace fixtures, and WHATWG-conformant adapter decoding. |
+| Framework SSE projection | `tuvren.framework.event-stream-sse` (`spec/streaming/sse/authority-packet.json`) | `event-stream-sse` | `eventSequence`, `resultField`, `ordering`, `errorEnvelope` per plan inspection | KRT-AL002/AL003 promoted the EventSource-compatible wire projection through TypeSpec, byte-trace fixtures, and WHATWG-conformant adapter decoding. |
 | Framework ReAct runner behavior | `tuvren.framework.react-runner` (`spec/runners/react/authority-packet.json`) | `react-runner-callables`, `react-runner-extended` | `eventSequence`, `stateField`, `noEvent` per plan inspection | No TypeSpec; data-owned per ADR-025. AF promoted hook ordering, around-hook nesting, after-iteration terminality, and live/durable aroundModel reconciliation. |
 | Provider bridge contract | `tuvren.providers.provider-api` (`spec/providers/authority-packet.json`) | `provider-api-bridge`, `provider-api-bridge-extended` | `resultField`, `eventSequence`, `errorEnvelope` per plan inspection | The provider-neutral contract is portable. The `bridge-ai-sdk` projection (TS implementation that adapts the AI SDK to this contract) is a standing exception — see §4. |
 | MCP Client Container translation contract | `tuvren.providers.mcp` (`spec/tools/mcp/authority-packet.json`) | `providers-mcp-client` | `resultField` per plan inspection | Epic AS promotes the Tuvren-owned translation, validation, auth-header, and transport-parity rules for `@tuvren/mcp-client`. The upstream MCP wire protocol remains owned by the official `@modelcontextprotocol/sdk`; Tuvren's authority packet covers the tool-source projection only. |
@@ -202,7 +202,7 @@ artifacts landed.
   was a TypeScript implementation with build/test/exports-smoke targets, but had no
   SSE-specific authority packet, conformance plan, or fixtures.
 - **Closure state after AL002 + AL003 follow-up**: `tuvren.framework.event-stream-sse`
-  now owns `boundaries/framework/contracts/event-stream-sse/spec/authority-packet.json`,
+  now owns `spec/streaming/sse/authority-packet.json`,
   a TypeSpec source, WHATWG-normative byte-trace fixtures, generated JSON Schema
   artifacts, and the `event-stream-sse.json` conformance plan.
 - **Decisive assertion kinds landed / still relevant**: `eventSequence` over decoded SSE frames,
@@ -488,7 +488,7 @@ candidates for future tickets:
   in `event-stream-sse.json` runs as applicable evidence on the TypeScript
   framework lane. The plan's bumped `planVersion` is `0.2.0`; the TypeScript
   binding appendix at
-  `boundaries/framework/contracts/event-stream-sse/spec/bindings/typescript.md`
+  `spec/streaming/sse/bindings/typescript.md`
   documents the wired adapter behavior.
 - §8.E6 tool argument streaming completeness assertion was not added in
   AL002; it requires either canonical `$.events` exposure or an adapter
