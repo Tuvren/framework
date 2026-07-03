@@ -1,32 +1,17 @@
-"""Epic #87 M1 tracer bullet: prove the Bazel <-> Rust seam on the kernel crate.
+"""Bzlmod root module for the Tuvren runtime (bzlmod only, no WORKSPACE).
 
-Bzlmod only (no WORKSPACE file), per issue #87 SS7: "born Bazel-native."
-Scope is intentionally narrow (M1.1): register a Rust toolchain matching
-rust-toolchain.toml and resolve external crates from the existing root
-Cargo.lock/Cargo.toml. No files move in this milestone; BUILD.bazel targets
-are added at packages' current physical paths so the seam is proven before
-any git mv happens.
-
-M1.6 postgres-hermeticity decision: the PostgreSQL kernel backend and its
-certification project (typescript/kernel/backends/postgres,
-typescript/kernel/certification-postgres) intentionally carry no
-BUILD.bazel target and stay Nx-driven, per invariant §10.5's sanctioned
-exception (devenv-managed Postgres is not idempotent, so it cannot join a
-hermetic Bazel graph as-is). See MIGRATION_INVENTORY.md's Multi-home §B for
-the full rationale.
-
-M3.0 TypeScript-hermeticity decision (2026-07-02): real aspect_rules_js /
-rules_ts adoption was researched and REVERTED by user decision. rules_js
-consumes only pnpm lockfiles (no bun.lock path; a mirrored pnpm lockfile
-shows measured resolution divergence), and the TS suites are bun:test-based
-(all 16 test files across the 5 packages Bazel-shimmed as of M3.0 import
-bun:test — the engine at typescript/runtime joined the shim set at M3.2a, and the providers bridge and provider-api binding (typescript/providers/{bridge-ai-sdk,provider-api}) joined at M4.2, and the MCP bus-driver (typescript/tools/mcp-client) joined at M5.2, and the ReAct runner (typescript/runners/react) joined at M6.2, and the three stream packages (typescript/streaming/{core,sse,agui}) joined at M8.1b, and the two telemetry packages (typescript/telemetry/{otel,semconv}) joined at M8.2b, and the reference host shell (typescript/host/repl) joined at M9.3;
-the lone node --test suite, backend-sqlite, is Nx-only per M1.6), a runtime
-with no upstream Bazel support (aspect-build/rules_js#1258 open). The
-M1.2 native_binary -> tools/bazel/nx-run.sh shim pattern is therefore the
-epic-long strategy for all TypeScript BUILD.bazel targets; real ruleset
-adoption is a post-epic follow-up gated on upstream bun support. Rust targets
-remain genuinely hermetic under rules_rust.
+Governing rulings (full milestone history: issue #87, MIGRATION_INVENTORY.md):
+- Postgres exception (M1.6): the PostgreSQL kernel backend and its
+  certification project stay Nx-driven with no BUILD.bazel target —
+  devenv-managed Postgres is not idempotent, so it cannot join a hermetic
+  Bazel graph as-is (invariant §10.5).
+- TypeScript-hermeticity reversal (M3.0): real aspect_rules_js/rules_ts
+  adoption was researched and reverted — rules_js has no bun.lock path and
+  every TS suite here is bun:test-based with no upstream Bazel support
+  (aspect-build/rules_js#1258). All TypeScript BUILD.bazel targets are
+  M1.2-pattern native_binary -> tools/bazel/nx-run.sh shims; real ruleset
+  adoption is a post-epic follow-up. Rust targets remain genuinely hermetic
+  under rules_rust.
 """
 
 module(

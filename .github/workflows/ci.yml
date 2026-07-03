@@ -1,0 +1,150 @@
+# CI for Tuvren-runtime (epic #87 M10.2 — greenfield; no prior .github/ existed).
+#
+# ── Governing scope (read before editing) ──────────────────────────────────
+# Issue #87's original DoD said "Bazel is the canonical CI path; Nx demoted
+# to optional inner-loop convenience." That was RE-SCOPED by the recorded
+# M3.0 reversal (see MODULE.bazel's header): real aspect_rules_js/rules_ts
+# adoption was researched and reverted — rules_js only consumes pnpm
+# lockfiles (no bun.lock path) and every TS suite in this repo is
+# bun:test-based with no upstream Bazel support (aspect-build/rules_js#1258
+# open). The 17 TypeScript BUILD.bazel targets are therefore M1.2-pattern
+# shims (`native_binary` -> tools/bazel/nx-run.sh, which shells back out to
+# `bun run nx run <target>`), not hermetic builds/tests. Only the Rust
+# targets under //rust/... are genuinely hermetic under rules_rust.
+#
+# Consequently:
+#   - "verify" (Nx/`bun run verify`) is the PRIMARY semantic gate. It is NOT
+#     demoted by this workflow.
+#   - "bazel" is a standing hermetic-build + Rust-test gate, run at the scope
+#     locally proven green for epic #87 M10.2:
+#       * `bazel build //...`  — builds every target in the graph, including
+#         the TS shims (cheap: it only builds the launcher binaries, it does
+#         not execute the underlying Nx targets — that only happens via
+#         `bazel run`, which requires BUILD_WORKSPACE_DIRECTORY and is out of
+#         scope for a wildcard CI gate).
+#       * `bazel test //...`   — genuinely executes only the one real Bazel
+#         test target in the graph, //rust/kernel:kernel_baseline_test. The
+#         TS shims' `:test` targets are `native_binary` (runnable, not
+#         `native_test`/`sh_test`), so `kind(test, //...)` does not select
+#         them and `bazel test //...` correctly does not attempt to run
+#         them here — their actual test execution is covered by "verify"
+#         through Nx/bun:test, not by this job.
+#   - Real rules_js/rules_ts adoption remains a recorded POST-EPIC follow-up,
+#     gated on upstream bun:test support landing in rules_js.
+#
+# ── Postgres exception (M1.6) ───────────────────────────────────────────────
+# The PostgreSQL kernel backend and its certification project intentionally
+# carry no BUILD.bazel target and stay Nx-driven (invariant §10.5's
+# sanctioned exception: devenv-managed Postgres is not idempotent, so it
+# cannot join a hermetic Bazel graph as-is). `bun run verify:kernel`
+# includes PostgreSQL conformance, so the "verify" job below provisions
+# Postgres via `devenv processes` (through `bun run services:up`) before
+# running `bun run verify`.
+#
+# ── Toolchain provisioning ───────────────────────────────────────────────—
+# This repo's tools (bun, cargo/rustc, bazel via bazelisk, buf, protoc,
+# weaver, postgres) are declared once in devenv.nix/rust-toolchain.toml and
+# provisioned through Nix + devenv, not through per-tool GitHub Actions
+# setup steps — this keeps CI's toolchain identical to local dev by
+# construction instead of drifting from a second, hand-maintained
+# declaration. Two third-party pieces are needed to get there:
+#   1. DeterminateSystems/nix-installer-action installs Nix itself.
+#   2. `nix profile install nixpkgs#devenv` installs the devenv CLI once Nix
+#      is present, avoiding a second marketplace Action just for devenv.
+# The nix-installer-action version is pinned by major only; this authoring
+# session has no network access to confirm the current marketplace release
+# tag, so treat the pin as a best-effort placeholder to be confirmed on the
+# first live run (see the "could not verify locally" list this task's
+# report calls out, and MIGRATION_INVENTORY.md's M10.2 addendum).
+#
+# ── .bazelignore ─────────────────────────────────────────────────────────—
+# `.bazelignore` (repo root) excludes `.devenv`. Measured while authoring
+# this lane: devenv's local profile/gc-root tree is a symlink farm into the
+# Nix store that Bazel's default package-discovery walk descends into and
+# chokes on (a vendored upb source tree pulled in by a Nix package's debug
+# symbols breaks `bazel query/build/test //...` outright). Without this
+# file, every wildcard Bazel command in the "bazel" job below fails, in CI
+# exactly as it does in local dev once `devenv shell`/`direnv allow` has
+# run at least once. Keep this file whenever `.devenv` is materialized
+# before a wildcard Bazel invocation.
+
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+      # TEMP(87-M10.2): epic branch included so this greenfield workflow gets
+      # its first live validation before the PR opens. REMOVE this branch
+      # entry in the PR-preparation commit (AGENTS.md: no branch-specific
+      # config survives merge).
+      - feat/epic-87-sovereign-polyglot-framework
+  pull_request:
+  # Manual re-runs while iterating on CI itself.
+  workflow_dispatch:
+
+# Cancel superseded runs on the same ref (new push to a PR, or a re-push to
+# master) so we don't burn CI minutes on stale commits.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: verify (primary semantic gate — bun run verify)
+    runs-on: ubuntu-latest
+    # Generous ceiling: `bun run verify` runs the full release gate (lint,
+    # typecheck, test, codegen freshness, conformance, compatibility
+    # evidence, Rust workspace checks, PostgreSQL conformance) across every
+    # affected project. Local runs of the narrower `bun run check` alone
+    # take low single-digit minutes; `verify` is materially larger.
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install Nix
+        # Pinned by major version; v22 confirmed current via the GitHub
+        # releases API at authoring time (87-M10.2).
+        # see the "could not verify locally" list in this PR's description
+        # and MIGRATION_INVENTORY.md's M10.2 addendum.
+        uses: DeterminateSystems/nix-installer-action@v22
+
+      - name: Install devenv
+        run: nix profile install nixpkgs#devenv
+
+      # No direnv daemon in CI, so we enter the devenv shell directly rather
+      # than relying on .envrc's `use devenv` hook (that hook is a local
+      # dev/direnv convenience only).
+      - name: bun install, start services, run verify
+        run: |
+          devenv shell -- bash -c '
+            set -euo pipefail
+            bun install --frozen-lockfile
+            bun run services:up
+            bun run verify
+          '
+
+  bazel:
+    name: bazel (standing hermetic gate — Rust build+test, TS shim build only)
+    runs-on: ubuntu-latest
+    # bazel build //... + bazel test //... measured locally (epic #87 M10.2)
+    # at well under 5 minutes on a warm Bazel cache; a cold CI cache plus
+    # crate_universe resolution for rules_rust's crate.from_cargo extension
+    # is slower, so this leaves real headroom.
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v22
+
+      - name: Install devenv
+        run: nix profile install nixpkgs#devenv
+
+      - name: bazel build //... (all targets, incl. TS shim launchers)
+        run: devenv shell -- bazel build //...
+
+      - name: bazel test //... (rust hermetic tests; TS shims are native_binary, not native_test — not selected by `bazel test`)
+        run: devenv shell -- bazel test //...

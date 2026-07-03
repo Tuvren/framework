@@ -1,0 +1,10 @@
+# devenv's local profile/gc-root tree is a symlink farm into the Nix store
+# (created by `devenv shell` / `direnv allow`, gitignored, not part of the
+# workspace). Bazel's default package-discovery walk descends into it and
+# chokes on foreign BUILD-like files it contains (e.g. a vendored upb
+# source tree pulled in by a Nix package's debug symbols), which fails
+# `bazel query //...` / `bazel build //...` / `bazel test //...` outright.
+# Measured while authoring the CI lane (epic #87 M10.2): without this file,
+# none of the wildcard bazel commands complete, in local dev or in CI once
+# `devenv shell` has been entered at least once.
+.devenv
