@@ -1,14 +1,15 @@
 # Repository Guidelines
 
 ## Structure
-Keep this architecture-first, multi-language runtime monorepo organized by boundary.
+Keep this architecture-first, multi-language runtime monorepo organized by port, not by language.
 
-- Put runtime code and semantic assets under `boundaries/`.
-- Use `boundaries/framework/`, `kernel/`, `providers/`, `hosts/`, and `shared/` for their named runtime areas only.
-- Keep language-neutral assets at boundary, contract, conformance, and interop roots.
-- Put language-specific packages only under `implementations/<lang>/`.
-- Put boundary testkits only under `boundaries/<area>/implementations/<lang>/testkit/`.
-- Do not put `package.json`, `Cargo.toml`, `src/`, `dist/`, `test/`, `bench/`, `smoke/`, `tsconfig*.json`, generated bindings, or language tooling output at boundary or contract roots.
+- Put language-neutral runtime authority under `spec/<port>/` (`core`, `extensions`, `host`, `interop`, `kernel`, `providers`, `runners`, `streaming`, `telemetry`, `tools`) and shared conformance authority under `spec/conformance/<port>/`.
+- Put language-specific packages only under `typescript/<area>/` and `rust/<area>/`.
+- Use `typescript/core`, `typescript/sdk`, `typescript/runtime`, `typescript/kernel`, `typescript/providers`, `typescript/streaming`, `typescript/telemetry`, `typescript/runners`, `typescript/tools`, and `typescript/host` for their named runtime areas only; use `rust/kernel-grpc-service` and sibling `rust/<area>` packages for the Rust equivalents.
+- Put implementation testkits only under `typescript/<area>/testkit/` (for example `typescript/kernel/testkit`, `typescript/providers/testkit`).
+- Put conformance adapter hosts under `<lang>/conformance-adapter/` or `<lang>/<area>/conformance-adapter/` (for example `typescript/conformance-adapter`, `typescript/kernel/conformance-adapter`, `typescript/providers/conformance-adapter`, `rust/conformance-adapter`, `rust/kernel-conformance-adapter`).
+- Put implementation `certification` wrapper projects under `<lang>/certification*/` or `<lang>/<area>/certification*/` (for example `typescript/certification`, `typescript/kernel/certification`, `typescript/providers/certification`, `rust/certification`, `rust/kernel-certification`).
+- Do not put `package.json`, `Cargo.toml`, `src/`, `dist/`, `test/`, `bench/`, `smoke/`, `tsconfig*.json`, generated bindings, or language tooling output under `spec/` roots.
 
 ## Authority
 Treat machine-readable authority as the source of cross-language truth.
@@ -75,7 +76,7 @@ Keep public naming and boundaries clean.
 Keep semantic decisions in shared plans and shared runner code.
 
 - Use `tools/conformance/harness/run.ts` as the shared semantic conformance engine.
-- Put adapter hosts under `boundaries/<area>/implementations/<lang>/conformance-adapter/`.
+- Put adapter hosts under `<lang>/conformance-adapter/` or `<lang>/<area>/conformance-adapter/` (for example `typescript/conformance-adapter`, `typescript/kernel/conformance-adapter`, `typescript/providers/conformance-adapter`, `rust/conformance-adapter`, `rust/kernel-conformance-adapter`).
 - Keep implementation `certification/` projects as wrappers only.
 - Do not add assertions, pass/fail grading, required-evidence grading, compatibility evidence writing, check IDs, or check-scoped evidence to adapters or implementation runners.
 - Do not let adapters receive `checkId`, call `emitEvidence`, decide pass/fail, replay fixtures as implementation proof, or map adapter/protocol failures into `$.result.error`.
@@ -86,7 +87,7 @@ Keep semantic decisions in shared plans and shared runner code.
 - Use implementation-emitted events for event-stream conformance.
 - Make assertion names match the data source the runner actually evaluates; do not claim evidence coverage from an assertion that reads events, state, result, or fixture data instead.
 - Fail normal `conformance`, `codegen`, and `verify` gates when structured evidence has `status: "fail"`.
-- Compute canonical encodings (CBOR bytes, hash digests, schema signatures) with the TypeScript reference implementation and commit the result under `boundaries/<area>/conformance/fixtures/`. The committed JSON is authority; the generator is tooling. Cross-validate against another language's reference encoder before promotion once a second implementation exists, and prefer agreement between implementations over single-language computation.
+- Compute canonical encodings (CBOR bytes, hash digests, schema signatures) with the TypeScript reference implementation and commit the result under `spec/conformance/<area>/fixtures/`. The committed JSON is authority; the generator is tooling. Cross-validate against another language's reference encoder before promotion once a second implementation exists, and prefer agreement between implementations over single-language computation.
 
 ## Tests And PRs
 Validate the narrowest relevant target first, then broaden.
