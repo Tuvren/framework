@@ -74,12 +74,6 @@ export const TUVREN_RUNTIME_TELEMETRY_ATTRIBUTES: Readonly<
     stability: "development",
     type: "string",
   },
-  "tuvren.runtime.driver.id": {
-    brief: "The active driver identifier for the runtime execution.",
-    examples: ["react"],
-    stability: "development",
-    type: "string",
-  },
   "tuvren.runtime.error.code": {
     brief: "The stable Tuvren runtime error code associated with a failed telemetry span.",
     examples: ["runtime_error"],
@@ -107,6 +101,12 @@ export const TUVREN_RUNTIME_TELEMETRY_ATTRIBUTES: Readonly<
   "tuvren.runtime.run.id": {
     brief: "The Tuvren runtime run identifier.",
     examples: ["run_main"],
+    stability: "development",
+    type: "string",
+  },
+  "tuvren.runtime.runner.id": {
+    brief: "The active runner identifier for the runtime execution.",
+    examples: ["react"],
     stability: "development",
     type: "string",
   },
@@ -145,12 +145,12 @@ export type TuvrenRuntimeTelemetryAttributeKey =
   "tuvren.runtime.capability.execution_class" |
   "tuvren.runtime.capability.owner" |
   "tuvren.runtime.checkpoint.hash" |
-  "tuvren.runtime.driver.id" |
   "tuvren.runtime.error.code" |
   "tuvren.runtime.parent_checkpoint.hash" |
   "tuvren.runtime.provider.id" |
   "tuvren.runtime.resumed_from.hash" |
   "tuvren.runtime.run.id" |
+  "tuvren.runtime.runner.id" |
   "tuvren.runtime.scope.id" |
   "tuvren.runtime.thread.id" |
   "tuvren.runtime.tool_call.id" |
@@ -166,12 +166,12 @@ export const TUVREN_RUNTIME_TELEMETRY_ATTRIBUTE_KEYS: readonly TuvrenRuntimeTele
     "tuvren.runtime.capability.execution_class",
     "tuvren.runtime.capability.owner",
     "tuvren.runtime.checkpoint.hash",
-    "tuvren.runtime.driver.id",
     "tuvren.runtime.error.code",
     "tuvren.runtime.parent_checkpoint.hash",
     "tuvren.runtime.provider.id",
     "tuvren.runtime.resumed_from.hash",
     "tuvren.runtime.run.id",
+    "tuvren.runtime.runner.id",
     "tuvren.runtime.scope.id",
     "tuvren.runtime.thread.id",
     "tuvren.runtime.tool_call.id",

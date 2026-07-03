@@ -104,7 +104,7 @@ fn dispatch_request(request: JsonRpcRequest) -> Result<Value, AdapterErrorEnvelo
             Ok(json!(OperationOutcome::Error {
                 error: AdapterErrorEnvelope {
                     code: "rust_framework_operation_not_implemented".to_string(),
-                    message: "Rust framework, Runtime API, Event Stream, and ReAct Driver implementation path is not implemented yet".to_string(),
+                    message: "Rust framework, Runtime API, Event Stream, and ReAct Runner implementation path is not implemented yet".to_string(),
                     details: Some(json!({ "operation": operation })),
                 },
             }))

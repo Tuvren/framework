@@ -34,9 +34,9 @@ groups:
         examples: ["tuvren.scope.default", "tenant-a"]
         stability: development
         requirement_level: recommended
-      - id: tuvren.runtime.driver.id
+      - id: tuvren.runtime.runner.id
         type: string
-        brief: The active driver identifier for the runtime execution.
+        brief: The active runner identifier for the runtime execution.
         examples: ["react"]
         stability: development
         requirement_level: recommended

@@ -221,7 +221,7 @@ function createTelemetryEvidence(input: {
     "tuvren.runtime.checkpoint.hash": collapseTelemetryValues(
       checkpoints.map((event) => event.turnNodeHash)
     ),
-    "tuvren.runtime.driver.id": runnerId,
+    "tuvren.runtime.runner.id": runnerId,
     "tuvren.runtime.error.code": collapseTelemetryValues(
       errors.flatMap((event) => {
         const { error } = event;

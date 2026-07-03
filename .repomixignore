@@ -54,7 +54,7 @@ boundaries/kernel/implementations/typescript/backend-sqlite/src/
 **/test/*-fixtures.ts
 **/test/fake-*.ts
 **/test/runtime-core-test-helpers.ts
-**/test/orchestration-runtime-driver-helpers.ts
+**/test/orchestration-runtime-runner-helpers.ts
 
 # Git
 .git/

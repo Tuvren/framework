@@ -15,12 +15,12 @@ Generated from `telemetry/semconv/tuvren-runtime.yaml` via `weaver`.
 | `tuvren.runtime.capability.execution_class` | `string` | `development` | The execution class of the capability invocation per ADR-046 (tuvren-server, provider-native, provider-mediated, tuvren-client). | `tuvren-server`, `provider-native` |
 | `tuvren.runtime.capability.owner` | `string` | `development` | The owner dimension of the capability invocation (tuvren or provider). Added additively per ADR-046 AW006. | `tuvren`, `provider` |
 | `tuvren.runtime.checkpoint.hash` | `string` | `development` | The current checkpoint hash observed during runtime progression. | `aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa` |
-| `tuvren.runtime.driver.id` | `string` | `development` | The active driver identifier for the runtime execution. | `react` |
 | `tuvren.runtime.error.code` | `string` | `development` | The stable Tuvren runtime error code associated with a failed telemetry span. | `runtime_error` |
 | `tuvren.runtime.parent_checkpoint.hash` | `string` | `development` | The parent checkpoint hash that the current checkpoint extends from. | `bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb` |
 | `tuvren.runtime.provider.id` | `string` | `development` | The provider bridge or provider identifier used for model work. | `ai-sdk-openai` |
 | `tuvren.runtime.resumed_from.hash` | `string` | `development` | The checkpoint hash that a resumed execution continued from. | `cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc` |
 | `tuvren.runtime.run.id` | `string` | `development` | The Tuvren runtime run identifier. | `run_main` |
+| `tuvren.runtime.runner.id` | `string` | `development` | The active runner identifier for the runtime execution. | `react` |
 | `tuvren.runtime.scope.id` | `string` | `development` | The host-bound Scope (tenancy partition identity, ADR-048) the runtime is constructed against. Correlation context only; the kernel syscall surface stays scope-free and the Scope is never a syscall argument. | `tuvren.scope.default`, `tenant-a` |
 | `tuvren.runtime.thread.id` | `string` | `development` | The Tuvren runtime thread identifier. | `thread_main` |
 | `tuvren.runtime.tool_call.id` | `string` | `development` | The current tool call identifier when the execution is inside tool work. | `tool_call_1` |

@@ -375,7 +375,7 @@
     "recoveryCase": "finalize_turn_status",
     "staleStepId": "finalize_turn_status",
     "prompt": "Finalize this shared recovered turn",
-    "finalText": "driver should not run"
+    "finalText": "runner should not run"
   },
   "client-result-as-proposal-authority-lost": {
     "operation": "runtime.client-result-as-proposal",

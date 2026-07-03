@@ -59,13 +59,6 @@
       "type": "string"
     },
     {
-      "brief": "The active driver identifier for the runtime execution.",
-      "examples": ["react"],
-      "key": "tuvren.runtime.driver.id",
-      "stability": "development",
-      "type": "string"
-    },
-    {
       "brief": "The stable Tuvren runtime error code associated with a failed telemetry span.",
       "examples": ["runtime_error"],
       "key": "tuvren.runtime.error.code",
@@ -101,6 +94,13 @@
       "brief": "The Tuvren runtime run identifier.",
       "examples": ["run_main"],
       "key": "tuvren.runtime.run.id",
+      "stability": "development",
+      "type": "string"
+    },
+    {
+      "brief": "The active runner identifier for the runtime execution.",
+      "examples": ["react"],
+      "key": "tuvren.runtime.runner.id",
       "stability": "development",
       "type": "string"
     },

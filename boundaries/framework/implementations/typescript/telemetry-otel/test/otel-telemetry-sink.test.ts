@@ -33,7 +33,7 @@ describe("createOtelTelemetrySink", () => {
     });
 
     sink.span({
-      attributes: { "tuvren.runtime.driver.id": "react" },
+      attributes: { "tuvren.runtime.runner.id": "react" },
       endMs: 2000,
       kind: "model_call",
       lineage: {
@@ -51,7 +51,7 @@ describe("createOtelTelemetrySink", () => {
     const spans = exporter.getFinishedSpans();
     expect(spans).toHaveLength(1);
     expect(spans[0]?.name).toBe("tuvren.runtime.model_call");
-    expect(spans[0]?.attributes["tuvren.runtime.driver.id"]).toBe("react");
+    expect(spans[0]?.attributes["tuvren.runtime.runner.id"]).toBe("react");
     expect(spans[0]?.attributes["tuvren.runtime.thread.id"]).toBe(
       "thread-main"
     );
@@ -70,7 +70,7 @@ describe("createOtelTelemetrySink", () => {
 
     sink.event({
       atMs: 3000,
-      attributes: { "tuvren.runtime.driver.id": "react" },
+      attributes: { "tuvren.runtime.runner.id": "react" },
       kind: "turn.start",
       lineage: {
         branchId: "branch-main",
