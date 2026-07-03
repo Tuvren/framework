@@ -9,11 +9,11 @@
   ],
   "authoritativeSources": [
     {
-      "path": "boundaries/framework/interop/rust-kernel/schemas/suite-manifest.schema.json",
+      "path": "spec/conformance/interop/rust-kernel/schemas/suite-manifest.schema.json",
       "format": "json-schema"
     },
     {
-      "path": "boundaries/framework/interop/rust-kernel/scenarios/suite-manifest.json",
+      "path": "spec/conformance/interop/rust-kernel/scenarios/suite-manifest.json",
       "format": "fixture-set"
     }
   ],
@@ -32,11 +32,11 @@
   "verificationPaths": [
     {
       "kind": "interop-smoke",
-      "target": "boundaries/framework/interop/rust-kernel/scenarios/suite-manifest.json"
+      "target": "spec/conformance/interop/rust-kernel/scenarios/suite-manifest.json"
     },
     {
       "kind": "schema-validation",
-      "target": "boundaries/framework/interop/rust-kernel/scenarios/suite-manifest.json"
+      "target": "spec/conformance/interop/rust-kernel/scenarios/suite-manifest.json"
     }
   ]
 }

@@ -44,7 +44,7 @@ authoritative behavioral specs are not authority for any cross-language semantic
   - `spec/providers/authority-packet.json`
   - `spec/tools/mcp/authority-packet.json`
   - `spec/interop/authority-packet.json`
-  - `boundaries/framework/interop/rust-kernel/spec/authority-packet.json`
+  - `spec/conformance/interop/rust-kernel/spec/authority-packet.json`
   - `spec/telemetry/authority-packet.json`
 - Current conformance plans (21):
   - kernel: `kernel-protocol-core`, `kernel-protocol-extended`, `kernel-restart-recovery`, `kernel-run-liveness`
@@ -235,14 +235,14 @@ artifacts landed.
 
 ### G5. Framework / Rust-kernel interop has no authority packet
 
-- **Current state**: `boundaries/framework/interop/rust-kernel/scenarios/suite-manifest.json`
+- **Current state**: `spec/conformance/interop/rust-kernel/scenarios/suite-manifest.json`
   and its accompanying JSON Schema exist; the framework drives an in-tree
   Rust-kernel interop suite. There is no
-  `boundaries/framework/interop/rust-kernel/spec/authority-packet.json`.
+  `spec/conformance/interop/rust-kernel/spec/authority-packet.json`.
 - **What is missing**: a packet `tuvren.framework.interop.rust-kernel` declaring the
   suite manifest and its schema as authoritative sources, declaring the rust-kernel
   binding projection, and naming the interop-smoke verification path.
-- **Proposed packet home**: `boundaries/framework/interop/rust-kernel/spec/authority-packet.json`
+- **Proposed packet home**: `spec/conformance/interop/rust-kernel/spec/authority-packet.json`
 - **Hand-off to AL002**: create the packet. Existing suite-manifest + schema become
   authoritative sources; the smoke target (whichever Nx target drives it) becomes
   the interop-smoke verification path.
@@ -549,7 +549,7 @@ pre-closure recommendations when package consolidation changed the landing shape
    existing `kernel-interop-grpc:interop-smoke` Nx target as the `interop-smoke`
    verification path.
 5. **G5** — Add `tuvren.framework.interop.rust-kernel` packet at
-   `boundaries/framework/interop/rust-kernel/spec/authority-packet.json`
+   `spec/conformance/interop/rust-kernel/spec/authority-packet.json`
    referencing the suite manifest and its schema.
 6. **G6** — Pick the telemetry packet boundary (recommend `shared`), add
    `tuvren.shared.telemetry-semconv` (or `tuvren.telemetry.semconv` if the

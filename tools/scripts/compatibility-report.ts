@@ -387,7 +387,7 @@ const INTEROP_RUNNERS: readonly InteropRunner[] = [
   {
     command: ["bun", "tools/scripts/repl-host-interop-smoke.ts"],
     manifestPath:
-      "boundaries/framework/interop/rust-kernel/scenarios/suite-manifest.json",
+      "spec/conformance/interop/rust-kernel/scenarios/suite-manifest.json",
     pairId: "typescript-framework__rust-kernel",
     project: "host-repl:interop-smoke",
     reportLabel: "TypeScript framework to Rust kernel interop",
