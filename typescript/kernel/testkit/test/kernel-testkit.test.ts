@@ -200,7 +200,6 @@ describe("@tuvren/kernel-testkit fixtures", () => {
       [
         "-n",
         "@tuvren/kernel-testkit|createFaultInjectingBackend|FaultPlan",
-        "boundaries",
         "typescript",
         "-g",
         "!**/dist/**",

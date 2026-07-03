@@ -102,7 +102,6 @@ interface PortabilityInventoryManifest {
 }
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
-const BOUNDARIES_ROOT = resolve(REPO_ROOT, "boundaries");
 const SPEC_ROOT = resolve(REPO_ROOT, "spec");
 const TYPESCRIPT_ROOT = resolve(REPO_ROOT, "typescript");
 const RUST_ROOT = resolve(REPO_ROOT, "rust");
@@ -617,10 +616,7 @@ async function loadAllManifests(): Promise<
   Map<string, AuthorityPacketManifest>
 > {
   const manifests = new Map<string, AuthorityPacketManifest>();
-  const paths = [
-    ...(await findFilesByName(BOUNDARIES_ROOT, MANIFEST_FILE_NAME)),
-    ...(await findFilesByName(SPEC_ROOT, MANIFEST_FILE_NAME)),
-  ];
+  const paths = await findFilesByName(SPEC_ROOT, MANIFEST_FILE_NAME);
 
   for (const manifestPath of paths) {
     const manifest = JSON.parse(
@@ -636,8 +632,8 @@ async function loadAllAdapterManifests(): Promise<
   Map<string, AdapterManifest>
 > {
   const manifests = new Map<string, AdapterManifest>();
-  const adapterRoots = [BOUNDARIES_ROOT, TYPESCRIPT_ROOT, RUST_ROOT].filter(
-    (root) => existsSync(root)
+  const adapterRoots = [TYPESCRIPT_ROOT, RUST_ROOT].filter((root) =>
+    existsSync(root)
   );
   const paths = (
     await Promise.all(

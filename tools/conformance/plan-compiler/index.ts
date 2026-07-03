@@ -106,7 +106,6 @@ export interface CompiledConformancePlan {
 }
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
-const BOUNDARIES_ROOT = resolve(REPO_ROOT, "boundaries");
 const SPEC_ROOT = resolve(REPO_ROOT, "spec");
 const PLAN_SCHEMA_PATH = resolve(
   REPO_ROOT,
@@ -170,10 +169,7 @@ export async function loadConformancePlan(
 }
 
 export async function findConformancePlans(): Promise<string[]> {
-  const roots = [BOUNDARIES_ROOT, SPEC_ROOT].filter((root) => existsSync(root));
-  const paths = (
-    await Promise.all(roots.map((root) => findPlanFiles(root)))
-  ).flat();
+  const paths = existsSync(SPEC_ROOT) ? await findPlanFiles(SPEC_ROOT) : [];
   return paths.map((path) => relative(REPO_ROOT, path)).sort();
 }
 
@@ -187,8 +183,7 @@ async function createPlanValidator(): Promise<ValidateFunction<unknown>> {
 }
 
 // Tolerates a port segment between "conformance" and "plans" (e.g.
-// spec/conformance/kernel/plans/x.json) as well as the flat legacy shape
-// (boundaries/kernel/conformance/plans/x.json) — only the immediate parent
+// spec/conformance/kernel/plans/x.json) — only the immediate parent
 // directory name and a "conformance" ancestor segment are required.
 function isConformancePlansPath(entryPath: string): boolean {
   const segments = entryPath.split("/");

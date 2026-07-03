@@ -46,9 +46,6 @@ spec/conformance/engine/plans/
 # Large conformance adapter source
 typescript/conformance-adapter/src/
 
-# Kernel backend-sqlite source (very large)
-boundaries/kernel/implementations/typescript/backend-sqlite/src/
-
 # Test helpers and fixtures (in test/ dirs, non-test files)
 **/test/*-helpers.ts
 **/test/*-fixtures.ts

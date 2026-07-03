@@ -69,7 +69,6 @@ interface ValidationFailure {
 const MARKDOWN_HEADING_RE = /^#{1,6}\s+(.+)/;
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
-const BOUNDARIES_ROOT = resolve(REPO_ROOT, "boundaries");
 const SPEC_ROOT = resolve(REPO_ROOT, "spec");
 const SCHEMA_PATH = resolve(
   REPO_ROOT,
@@ -96,16 +95,9 @@ async function main(): Promise<void> {
 }
 
 export async function validateAuthorityPackets(): Promise<ValidationFailure[]> {
-  const manifestRoots = [BOUNDARIES_ROOT, SPEC_ROOT].filter((root) =>
-    existsSync(root)
-  );
-  const manifestPaths = (
-    await Promise.all(
-      manifestRoots.map((root) => findAuthorityPacketManifests(root))
-    )
-  )
-    .flat()
-    .sort();
+  const manifestPaths = existsSync(SPEC_ROOT)
+    ? (await findAuthorityPacketManifests(SPEC_ROOT)).sort()
+    : [];
   const schema = readJsonSchema(
     JSON.parse(await readFile(SCHEMA_PATH, "utf8")) as unknown,
     SCHEMA_PATH

@@ -51,7 +51,6 @@ interface ExtractedSemconvVocabulary {
 }
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
-const BOUNDARIES_ROOT = resolve(REPO_ROOT, "boundaries");
 const SPEC_ROOT = resolve(REPO_ROOT, "spec");
 const MANIFEST_FILE_NAME = "authority-packet.json";
 const SEMCONV_YAML_FORMAT = "semconv-yaml";
@@ -75,16 +74,9 @@ async function main(): Promise<void> {
 }
 
 async function validateVocabularies(): Promise<ValidationFailure[]> {
-  const manifestRoots = [BOUNDARIES_ROOT, SPEC_ROOT].filter((root) =>
-    existsSync(root)
-  );
-  const manifestPaths = (
-    await Promise.all(
-      manifestRoots.map((root) => findAuthorityPacketManifests(root))
-    )
-  )
-    .flat()
-    .sort();
+  const manifestPaths = existsSync(SPEC_ROOT)
+    ? (await findAuthorityPacketManifests(SPEC_ROOT)).sort()
+    : [];
   const failures: ValidationFailure[] = [];
 
   for (const manifestPath of manifestPaths) {

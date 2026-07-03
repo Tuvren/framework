@@ -3,7 +3,7 @@
     {
       "checkId": "fixture.check",
       "details": {
-        "authority": "boundaries/framework/contracts/runtime-api/implementations/typescript"
+        "authority": "typescript/certification"
       }
     }
   ]

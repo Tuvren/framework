@@ -87,17 +87,23 @@ const manifestSchema = readProtocolSchema(
 );
 const validateManifest = ajv.compile(manifestSchema);
 
-for (const manifestPath of await findAdapterManifests(
-  resolve(REPO_ROOT, "boundaries")
-)) {
-  const manifest = JSON.parse(await readFile(manifestPath, "utf8")) as unknown;
+const ADAPTER_MANIFEST_ROOTS = ["typescript", "rust"].map((root) =>
+  resolve(REPO_ROOT, root)
+);
 
-  if (!validateManifest(manifest)) {
-    throw new Error(
-      `${manifestPath} failed adapter manifest validation: ${ajv.errorsText(
-        validateManifest.errors
-      )}`
-    );
+for (const manifestRoot of ADAPTER_MANIFEST_ROOTS) {
+  for (const manifestPath of await findAdapterManifests(manifestRoot)) {
+    const manifest = JSON.parse(
+      await readFile(manifestPath, "utf8")
+    ) as unknown;
+
+    if (!validateManifest(manifest)) {
+      throw new Error(
+        `${manifestPath} failed adapter manifest validation: ${ajv.errorsText(
+          validateManifest.errors
+        )}`
+      );
+    }
   }
 }
 

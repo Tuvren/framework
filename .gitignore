@@ -16,7 +16,6 @@ typescript/runtime/src/lib/generated/kernel-interop/
 .claude/
 .env
 .env.*
-!boundaries/hosts/implementations/typescript/playground/.env.example
 .codex
 .DS_Store
 .idea

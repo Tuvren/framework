@@ -13,8 +13,12 @@
         "^production",
         "{workspaceRoot}/tools/scripts/**/*",
         "{workspaceRoot}/tools/conformance/**/*",
-        "{workspaceRoot}/boundaries/*/conformance/**/*",
-        "{workspaceRoot}/boundaries/*/implementations/*/conformance-adapter/**/*"
+        "{workspaceRoot}/spec/conformance/**/*",
+        "{workspaceRoot}/typescript/conformance-adapter/**/*",
+        "{workspaceRoot}/typescript/kernel/conformance-adapter/**/*",
+        "{workspaceRoot}/typescript/providers/conformance-adapter/**/*",
+        "{workspaceRoot}/rust/conformance-adapter/**/*",
+        "{workspaceRoot}/rust/kernel-conformance-adapter/**/*"
       ],
       "options": {
         "cwd": ".",
@@ -28,8 +32,12 @@
         "^production",
         "{workspaceRoot}/tools/scripts/**/*",
         "{workspaceRoot}/tools/conformance/**/*",
-        "{workspaceRoot}/boundaries/*/conformance/**/*",
-        "{workspaceRoot}/boundaries/*/implementations/*/conformance-adapter/**/*"
+        "{workspaceRoot}/spec/conformance/**/*",
+        "{workspaceRoot}/typescript/conformance-adapter/**/*",
+        "{workspaceRoot}/typescript/kernel/conformance-adapter/**/*",
+        "{workspaceRoot}/typescript/providers/conformance-adapter/**/*",
+        "{workspaceRoot}/rust/conformance-adapter/**/*",
+        "{workspaceRoot}/rust/kernel-conformance-adapter/**/*"
       ],
       "options": {
         "cwd": ".",
@@ -43,8 +51,12 @@
         "^production",
         "{workspaceRoot}/tools/scripts/**/*",
         "{workspaceRoot}/tools/conformance/**/*",
-        "{workspaceRoot}/boundaries/*/conformance/**/*",
-        "{workspaceRoot}/boundaries/*/implementations/*/conformance-adapter/**/*"
+        "{workspaceRoot}/spec/conformance/**/*",
+        "{workspaceRoot}/typescript/conformance-adapter/**/*",
+        "{workspaceRoot}/typescript/kernel/conformance-adapter/**/*",
+        "{workspaceRoot}/typescript/providers/conformance-adapter/**/*",
+        "{workspaceRoot}/rust/conformance-adapter/**/*",
+        "{workspaceRoot}/rust/kernel-conformance-adapter/**/*"
       ],
       "outputs": [
         "{workspaceRoot}/reports/compatibility/compatibility-matrix.json",

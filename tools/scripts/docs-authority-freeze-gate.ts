@@ -56,7 +56,7 @@ const SECTION_UNSAFE_CHAR_PATTERN = /[^a-z0-9]+/g;
 const TABLE_ROW_PATTERN = /^\s*\|/;
 const WHITESPACE_PATTERN = /\s+/g;
 const EVIDENCE_PATH_PATTERN =
-  /\b(?:boundaries|spec|reports|tools|constitution)\/[^\s;,)`]+/g;
+  /\b(?:typescript|rust|spec|reports|tools|constitution)\/[^\s;,)`]+/g;
 const CLAIM_ID_HASH_LENGTH = 12;
 const REQUIRED_AUTHORITY_ANCHOR_FIELDS = [
   "authorityPacket",
@@ -1934,8 +1934,8 @@ function renderSummary(entries: readonly CoverageEntry[]): string {
     "",
     "- `docs/KrakenFrameworkSpecification.md`",
     "- `docs/KrakenKernelSpecification.md`",
-    "- `boundaries/*/contracts/*/spec/authority-packet.json`",
-    "- `boundaries/*/conformance/plans/*.json`",
+    "- `spec/*/authority-packet.json`",
+    "- `spec/conformance/*/plans/*.json`",
     "- `reports/compatibility/compatibility-matrix.json` and `reports/compatibility/evidence/*.json`",
     "",
     "## Claim Counts",

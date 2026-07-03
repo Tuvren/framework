@@ -24,7 +24,6 @@ const MATRIX_PATH =
 const PLAN_JSON_PATH =
   ".constitution/reports/epic-af-conformance-gap-plan.json";
 const PLAN_MD_PATH = ".constitution/reports/epic-af-conformance-gap-plan.md";
-const BOUNDARIES_ROOT = "boundaries";
 const SPEC_ROOT = "spec";
 
 type MatrixClassification =
@@ -591,12 +590,9 @@ async function readImplementedCheckEvidence(): Promise<
 > {
   const checks = new Map<string, Set<string>>();
 
-  const planRoots = [BOUNDARIES_ROOT, SPEC_ROOT].filter((root) =>
-    existsSync(root)
-  );
-  const planPaths = (
-    await Promise.all(planRoots.map((root) => findConformancePlanPaths(root)))
-  ).flat();
+  const planPaths = existsSync(SPEC_ROOT)
+    ? await findConformancePlanPaths(SPEC_ROOT)
+    : [];
 
   for (const planPath of planPaths) {
     const plan = JSON.parse(await readFile(planPath, "utf8")) as unknown;
@@ -652,8 +648,8 @@ async function findConformancePlanPaths(directory: string): Promise<string[]> {
 }
 
 // Tolerates a port segment between "conformance" and "plans" (e.g.
-// spec/conformance/kernel/plans/x.json) as well as the flat legacy shape
-// (boundaries/kernel/conformance/plans/x.json).
+// spec/conformance/kernel/plans/x.json) — only the immediate parent
+// directory name and a "conformance" ancestor segment are required.
 function isConformancePlansPath(entryPath: string): boolean {
   const segments = entryPath.split("/");
   const plansIndex = segments.lastIndexOf("plans");
