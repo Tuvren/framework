@@ -15,7 +15,7 @@ This plan is generated from the Epic AD docs-to-authority coverage matrix. It is
 - Matrix follow-up tickets: `KRT-AF004`
 - Claim IDs: `FWK-077DA00DEE7C`, `FWK-0A405F74632B`, `FWK-10F71F510BDB`, `FWK-28AAFC4F1DC8`, `FWK-31EE39CB3972`, `FWK-33F5DEAFC66A`, `FWK-476F0CA23F55`, `FWK-4C1B5C7C29AB`, `FWK-51B9484B4ACD`, `FWK-57513B429B0F`, `FWK-57AEE9ECE718`, `FWK-5E22B4D78C82`, `FWK-6E09A676D520`, `FWK-722E8933104E`, `FWK-738E2E1EEC12`, `FWK-7AAC5E04465D`, `FWK-7D9B813A79CD`, `FWK-8E25784CC248`, `FWK-9436BD753283`, `FWK-AEA220D0DA52`, `FWK-B18ECC3DDCF3`, `FWK-C3619F4E0DD7`, `FWK-D0C7DFFDB7A6`, `FWK-D32084F687AE`, `FWK-DE249477068F`, `FWK-EB75F78718DA`, `FWK-F1DF0F90609A`
 - Authority packet: `spec/core/authority-packet.json`
-- Conformance plan: `boundaries/framework/conformance/plans/tool-contracts-extended.json`
+- Conformance plan: `spec/conformance/tools/plans/tool-contracts-extended.json`
 - Fixture or scenario: `spec/conformance/engine/scenarios/runtime-api-scenarios.json`
 - Adapter operation: `runtime.approval-resolve; runtime.cancel-execution`
 - Capability requirement: `framework.runtime-api; providers.framework-owned-approval-boundary`
@@ -31,7 +31,7 @@ This plan is generated from the Epic AD docs-to-authority coverage matrix. It is
 - Matrix follow-up tickets: `KRT-AF004`
 - Claim IDs: `FWK-3EB6BD2E44C6`
 - Authority packet: `spec/core/authority-packet.json`
-- Conformance plan: `boundaries/framework/conformance/plans/tool-contracts-extended.json`
+- Conformance plan: `spec/conformance/tools/plans/tool-contracts-extended.json`
 - Fixture or scenario: `spec/conformance/engine/scenarios/runtime-api-scenarios.json`
 - Adapter operation: `runtime.approval-resolve`
 - Capability requirement: `framework.runtime-api`
@@ -207,7 +207,7 @@ This plan is generated from the Epic AD docs-to-authority coverage matrix. It is
 - Matrix follow-up tickets: `KRT-AF004`
 - Claim IDs: `FWK-097D5A1C6AA2`, `FWK-86DBC9E570C8`, `FWK-8EB24EEFC45C`, `FWK-9F20F73A9745`, `FWK-AEFDB52BDBF9`, `FWK-B9434E23AB69`, `FWK-C9356EE09017`
 - Authority packet: `spec/core/authority-packet.json`
-- Conformance plan: `boundaries/framework/conformance/plans/tool-contracts-extended.json`
+- Conformance plan: `spec/conformance/tools/plans/tool-contracts-extended.json`
 - Fixture or scenario: `spec/conformance/engine/scenarios/runtime-api-scenarios.json`
 - Adapter operation: `runtime.tool-execute; runtime.approval-resolve`
 - Capability requirement: `framework.runtime-api; providers.framework-owned-tool-execution`
@@ -223,7 +223,7 @@ This plan is generated from the Epic AD docs-to-authority coverage matrix. It is
 - Matrix follow-up tickets: `KRT-AF004`
 - Claim IDs: `FWK-4193D2A613E0`, `FWK-BC7142393BAA`
 - Authority packet: `spec/core/authority-packet.json`
-- Conformance plan: `boundaries/framework/conformance/plans/tool-contracts-extended.json`
+- Conformance plan: `spec/conformance/tools/plans/tool-contracts-extended.json`
 - Fixture or scenario: `spec/conformance/engine/scenarios/runtime-api-scenarios.json`
 - Adapter operation: `runtime.tool-execute`
 - Capability requirement: `framework.runtime-api`

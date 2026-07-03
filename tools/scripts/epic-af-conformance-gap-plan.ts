@@ -374,7 +374,7 @@ const SURFACE_PLANS: Readonly<Record<string, SurfacePlan>> = {
       "tool-contracts-af.approval-message-attaches-to-tool-result",
     ],
     conformancePlan:
-      "boundaries/framework/conformance/plans/tool-contracts-extended.json",
+      "spec/conformance/tools/plans/tool-contracts-extended.json",
     deliveryTicket: "KRT-AF004",
     disposition: "promote",
     evidenceUpdate:
@@ -399,7 +399,7 @@ const SURFACE_PLANS: Readonly<Record<string, SurfacePlan>> = {
       "tool-contracts-af.mixed-approval-gated-tool-start-after-resume",
     ],
     conformancePlan:
-      "boundaries/framework/conformance/plans/tool-contracts-extended.json",
+      "spec/conformance/tools/plans/tool-contracts-extended.json",
     deliveryTicket: "KRT-AF004",
     disposition: "promote",
     evidenceUpdate:

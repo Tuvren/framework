@@ -52,9 +52,11 @@ interface Plan {
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const PLANS_DIR = resolve(REPO_ROOT, "boundaries/framework/conformance/plans");
-// Engine-seam plans moved at 87-M3.4; the remaining port plans follow at
-// their owning milestones (M5/M6/M8), each repointing its own entries here.
+// Engine-seam plans moved at 87-M3.4 and the tools plan (tool-contracts-
+// extended) moved at 87-M5.1c; the remaining port plans follow at their
+// owning milestones (M6/M8), each repointing its own entries here.
 const ENGINE_PLANS_DIR = resolve(REPO_ROOT, "spec/conformance/engine/plans");
+const TOOLS_PLANS_DIR = resolve(REPO_ROOT, "spec/conformance/tools/plans");
 
 await main();
 
@@ -69,7 +71,7 @@ async function main(): Promise<void> {
       plan: buildRuntimeApiCallablesExtended(),
     },
     {
-      dir: PLANS_DIR,
+      dir: TOOLS_PLANS_DIR,
       fileName: "tool-contracts-extended.json",
       plan: buildToolContractsExtended(),
     },

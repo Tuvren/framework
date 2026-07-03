@@ -42,7 +42,7 @@ authoritative behavioral specs are not authority for any cross-language semantic
   - `boundaries/framework/contracts/event-stream-sse/spec/authority-packet.json`
   - `boundaries/framework/contracts/react-driver/spec/authority-packet.json`
   - `spec/providers/authority-packet.json`
-  - `boundaries/providers/contracts/mcp/spec/authority-packet.json`
+  - `spec/tools/mcp/authority-packet.json`
   - `spec/interop/authority-packet.json`
   - `boundaries/framework/interop/rust-kernel/spec/authority-packet.json`
   - `boundaries/telemetry/semconv/spec/authority-packet.json`
@@ -85,7 +85,7 @@ the surface's current decisive-assertion coverage.
 | Framework SSE projection | `tuvren.framework.event-stream-sse` (`boundaries/framework/contracts/event-stream-sse/spec/authority-packet.json`) | `event-stream-sse` | `eventSequence`, `resultField`, `ordering`, `errorEnvelope` per plan inspection | KRT-AL002/AL003 promoted the EventSource-compatible wire projection through TypeSpec, byte-trace fixtures, and WHATWG-conformant adapter decoding. |
 | Framework ReAct driver behavior | `tuvren.framework.react-driver` (`boundaries/framework/contracts/react-driver/spec/authority-packet.json`) | `react-driver-callables`, `react-driver-extended` | `eventSequence`, `stateField`, `noEvent` per plan inspection | No TypeSpec; data-owned per ADR-025. AF promoted hook ordering, around-hook nesting, after-iteration terminality, and live/durable aroundModel reconciliation. |
 | Provider bridge contract | `tuvren.providers.provider-api` (`spec/providers/authority-packet.json`) | `provider-api-bridge`, `provider-api-bridge-extended` | `resultField`, `eventSequence`, `errorEnvelope` per plan inspection | The provider-neutral contract is portable. The `bridge-ai-sdk` projection (TS implementation that adapts the AI SDK to this contract) is a standing exception — see §4. |
-| MCP Client Container translation contract | `tuvren.providers.mcp` (`boundaries/providers/contracts/mcp/spec/authority-packet.json`) | `providers-mcp-client` | `resultField` per plan inspection | Epic AS promotes the Tuvren-owned translation, validation, auth-header, and transport-parity rules for `@tuvren/mcp-client`. The upstream MCP wire protocol remains owned by the official `@modelcontextprotocol/sdk`; Tuvren's authority packet covers the tool-source projection only. |
+| MCP Client Container translation contract | `tuvren.providers.mcp` (`spec/tools/mcp/authority-packet.json`) | `providers-mcp-client` | `resultField` per plan inspection | Epic AS promotes the Tuvren-owned translation, validation, auth-header, and transport-parity rules for `@tuvren/mcp-client`. The upstream MCP wire protocol remains owned by the official `@modelcontextprotocol/sdk`; Tuvren's authority packet covers the tool-source projection only. |
 
 ## 4. Standing implementation-specific exceptions
 

@@ -116,6 +116,6 @@
   "planId": "tuvren.framework.tool-contracts.extended",
   "planVersion": "0.2.0",
   "scenarios": {
-    "runtime-api-scenarios": "../../../../spec/conformance/engine/scenarios/runtime-api-scenarios.json"
+    "runtime-api-scenarios": "../../engine/scenarios/runtime-api-scenarios.json"
   }
 }

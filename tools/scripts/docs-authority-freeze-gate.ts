@@ -328,7 +328,7 @@ const EVIDENCE = {
     compatibilityEvidence:
       "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
     conformancePlan:
-      "boundaries/framework/conformance/plans/tool-contracts-extended.json",
+      "spec/conformance/tools/plans/tool-contracts-extended.json",
     fixture: "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
     generatedArtifact:
       "spec/tools/artifacts/json-schema; spec/tools/artifacts/openapi/tool-contracts.openapi.json",
@@ -393,7 +393,7 @@ const EVIDENCE = {
     compatibilityEvidence:
       "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
     conformancePlan:
-      "boundaries/framework/conformance/plans/capability-orchestration-integration.json; boundaries/framework/conformance/plans/tuvren-server-execution-class.json; boundaries/framework/conformance/plans/tuvren-client-execution-class.json; boundaries/framework/conformance/plans/invocation-lifecycle-observation.json; boundaries/framework/conformance/plans/capability-policy.json",
+      "spec/conformance/tools/plans/capability-orchestration-integration.json; spec/conformance/tools/plans/tuvren-server-execution-class.json; spec/conformance/tools/plans/tuvren-client-execution-class.json; boundaries/framework/conformance/plans/invocation-lifecycle-observation.json; spec/conformance/tools/plans/capability-policy.json",
     fixture: "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
     generatedArtifact: "spec/core/artifacts/json-schema",
   },

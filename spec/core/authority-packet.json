@@ -66,7 +66,7 @@
       "format": "conformance-plan"
     },
     {
-      "path": "boundaries/framework/conformance/plans/tool-contracts-extended.json",
+      "path": "spec/conformance/tools/plans/tool-contracts-extended.json",
       "format": "conformance-plan"
     },
     {
@@ -86,11 +86,11 @@
       "format": "conformance-plan"
     },
     {
-      "path": "boundaries/framework/conformance/plans/tuvren-server-execution-class.json",
+      "path": "spec/conformance/tools/plans/tuvren-server-execution-class.json",
       "format": "conformance-plan"
     },
     {
-      "path": "boundaries/framework/conformance/plans/tuvren-client-execution-class.json",
+      "path": "spec/conformance/tools/plans/tuvren-client-execution-class.json",
       "format": "conformance-plan"
     },
     {
@@ -98,11 +98,11 @@
       "format": "conformance-plan"
     },
     {
-      "path": "boundaries/framework/conformance/plans/capability-policy.json",
+      "path": "spec/conformance/tools/plans/capability-policy.json",
       "format": "conformance-plan"
     },
     {
-      "path": "boundaries/framework/conformance/plans/capability-orchestration-integration.json",
+      "path": "spec/conformance/tools/plans/capability-orchestration-integration.json",
       "format": "conformance-plan"
     }
   ],
@@ -153,7 +153,7 @@
     {
       "planId": "tuvren.framework.tool-contracts.extended",
       "planVersion": "0.2.0",
-      "path": "boundaries/framework/conformance/plans/tool-contracts-extended.json"
+      "path": "spec/conformance/tools/plans/tool-contracts-extended.json"
     },
     {
       "planId": "tuvren.framework.driver-api.core",
@@ -178,12 +178,12 @@
     {
       "planId": "tuvren.framework.tuvren-server-execution-class",
       "planVersion": "0.1.0",
-      "path": "boundaries/framework/conformance/plans/tuvren-server-execution-class.json"
+      "path": "spec/conformance/tools/plans/tuvren-server-execution-class.json"
     },
     {
       "planId": "tuvren.framework.tuvren-client-execution-class",
       "planVersion": "0.2.0",
-      "path": "boundaries/framework/conformance/plans/tuvren-client-execution-class.json"
+      "path": "spec/conformance/tools/plans/tuvren-client-execution-class.json"
     },
     {
       "planId": "tuvren.framework.invocation-lifecycle-observation",
@@ -193,12 +193,12 @@
     {
       "planId": "tuvren.framework.capability-policy",
       "planVersion": "0.1.0",
-      "path": "boundaries/framework/conformance/plans/capability-policy.json"
+      "path": "spec/conformance/tools/plans/capability-policy.json"
     },
     {
       "planId": "tuvren.framework.capability-orchestration-integration",
       "planVersion": "0.2.0",
-      "path": "boundaries/framework/conformance/plans/capability-orchestration-integration.json"
+      "path": "spec/conformance/tools/plans/capability-orchestration-integration.json"
     }
   ],
   "bindingSections": {
@@ -251,7 +251,6 @@
     "typescript/core-types",
     "boundaries/framework/contracts/runtime-api/implementations/typescript",
     "boundaries/framework/contracts/event-stream/implementations/typescript",
-    "boundaries/framework/contracts/tool-contracts/implementations/typescript",
     "boundaries/framework/contracts/driver-api/implementations/typescript",
     "typescript/runtime",
     "typescript/conformance-runner",
@@ -296,7 +295,7 @@
     },
     {
       "kind": "conformance-plan",
-      "target": "boundaries/framework/conformance/plans/tool-contracts-extended.json"
+      "target": "spec/conformance/tools/plans/tool-contracts-extended.json"
     },
     {
       "kind": "conformance-plan",
@@ -316,11 +315,11 @@
     },
     {
       "kind": "conformance-plan",
-      "target": "boundaries/framework/conformance/plans/tuvren-server-execution-class.json"
+      "target": "spec/conformance/tools/plans/tuvren-server-execution-class.json"
     },
     {
       "kind": "conformance-plan",
-      "target": "boundaries/framework/conformance/plans/tuvren-client-execution-class.json"
+      "target": "spec/conformance/tools/plans/tuvren-client-execution-class.json"
     },
     {
       "kind": "conformance-plan",
@@ -328,11 +327,11 @@
     },
     {
       "kind": "conformance-plan",
-      "target": "boundaries/framework/conformance/plans/capability-policy.json"
+      "target": "spec/conformance/tools/plans/capability-policy.json"
     },
     {
       "kind": "conformance-plan",
-      "target": "boundaries/framework/conformance/plans/capability-orchestration-integration.json"
+      "target": "spec/conformance/tools/plans/capability-orchestration-integration.json"
     },
     {
       "kind": "freshness-check",

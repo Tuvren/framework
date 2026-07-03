@@ -6,7 +6,7 @@
     "capabilities": ["framework.runtime-api"]
   },
   "scenarios": {
-    "runtime-api-scenarios": "../../../../spec/conformance/engine/scenarios/runtime-api-scenarios.json"
+    "runtime-api-scenarios": "../../engine/scenarios/runtime-api-scenarios.json"
   },
   "checks": [
     {

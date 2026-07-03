@@ -1,8 +1,8 @@
 {
-  "manifestVersion": "0.4.1",
+  "manifestVersion": "0.4.2",
   "manifestId": "epic-al.portability-inventory",
   "humanInventoryRef": ".constitution/reports/epic-al-portable-surface-conformance-gap-inventory.md",
-  "description": "Machine-readable companion to the Epic AL portable-surface conformance gap inventory. v0.3.0 reflected Epic AS promoting the MCP Client Container translation contract as the ninth expected packet: tuvren.providers.mcp. v0.4.0 reflects Epic BC closing the Tooling block and promoting the capability-orchestration-integration conformance plan as a required authoritative source for tuvren.shared.core; the capability-orchestration surface (four execution classes, MCP-as-binding, exposure/invocation policy, per-class observation limits, conceptual invariant) is now fully tracked under tuvren.shared.core. v0.4.1 is a path-only update: GH issue #87 (Sovereign Polyglot Framework Restructure) M1.3 relocated the kernel authority packet and CDDL grammar from `boundaries/kernel/contracts/protocol/spec/` to root `spec/kernel/`; no portability scope, classification, or closure state changed. The portability gate at `tools/scripts/portability-gate.ts` consumes this file to enforce that the on-disk packet topology, standing exceptions, and required authoritative sources have not drifted from the inventory's recorded closure state. Editing either the human inventory MD or this JSON without the matching counterpart change must be treated as drift and rejected during review. The gate fails closed if this file is missing, malformed, or names paths that do not exist on disk.",
+  "description": "Machine-readable companion to the Epic AL portable-surface conformance gap inventory. v0.3.0 reflected Epic AS promoting the MCP Client Container translation contract as the ninth expected packet: tuvren.providers.mcp. v0.4.0 reflects Epic BC closing the Tooling block and promoting the capability-orchestration-integration conformance plan as a required authoritative source for tuvren.shared.core; the capability-orchestration surface (four execution classes, MCP-as-binding, exposure/invocation policy, per-class observation limits, conceptual invariant) is now fully tracked under tuvren.shared.core. v0.4.1 is a path-only update: GH issue #87 (Sovereign Polyglot Framework Restructure) M1.3 relocated the kernel authority packet and CDDL grammar from `boundaries/kernel/contracts/protocol/spec/` to root `spec/kernel/`; no portability scope, classification, or closure state changed. v0.4.2 is likewise path-only: 87-M5.1c moved the MCP authority packet cross-port to `spec/tools/mcp/authority-packet.json` and consolidated the tools-owned conformance plans (tool-contracts-extended, capability-policy, capability-orchestration-integration, both execution-class plans, providers-mcp-client) under `spec/conformance/tools/plans/`; no portability scope, classification, or closure state changed. The portability gate at `tools/scripts/portability-gate.ts` consumes this file to enforce that the on-disk packet topology, standing exceptions, and required authoritative sources have not drifted from the inventory's recorded closure state. Editing either the human inventory MD or this JSON without the matching counterpart change must be treated as drift and rejected during review. The gate fails closed if this file is missing, malformed, or names paths that do not exist on disk.",
   "expectedPackets": [
     {
       "packetId": "tuvren.shared.core",
@@ -36,7 +36,7 @@
     },
     {
       "packetId": "tuvren.providers.mcp",
-      "packetPath": "boundaries/providers/contracts/mcp/spec/authority-packet.json",
+      "packetPath": "spec/tools/mcp/authority-packet.json",
       "classification": "portable",
       "inventorySection": "§3 / Epic AS"
     },
@@ -125,7 +125,7 @@
     },
     {
       "packetId": "tuvren.providers.mcp",
-      "sourcePath": "spec/conformance/providers/plans/providers-mcp-client.json",
+      "sourcePath": "spec/conformance/tools/plans/providers-mcp-client.json",
       "sourceFormat": "conformance-plan",
       "rationale": "KRT-AS008: MCP Client Container translation, validation, auth, and transport parity conformance plan",
       "inventorySection": "§3 / Epic AS"
@@ -160,7 +160,7 @@
     },
     {
       "packetId": "tuvren.shared.core",
-      "sourcePath": "boundaries/framework/conformance/plans/capability-orchestration-integration.json",
+      "sourcePath": "spec/conformance/tools/plans/capability-orchestration-integration.json",
       "sourceFormat": "conformance-plan",
       "rationale": "KRT-BC001: cross-class capability-orchestration integration conformance plan; required authority for the capability-orchestration surface under tuvren.shared.core (four execution classes, MCP-as-binding, exposure/invocation policy, per-class observation limits, conceptual invariant)",
       "inventorySection": "§3 / Epic BC"

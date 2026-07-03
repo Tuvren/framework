@@ -18,6 +18,7 @@
         "conformanceEngine",
         "{workspaceRoot}/boundaries/framework/conformance/**/*",
         "{workspaceRoot}/spec/conformance/engine/**/*",
+        "{workspaceRoot}/spec/conformance/tools/**/*",
         "{workspaceRoot}/typescript/conformance-adapter/**/*",
         "{workspaceRoot}/rust/conformance-adapter/**/*"
       ],

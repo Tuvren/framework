@@ -6,7 +6,7 @@
     "capabilities": ["providers.mcp-client"]
   },
   "fixtures": {
-    "secret-isolation": "../fixtures/secret-isolation-fixtures.json"
+    "secret-isolation": "../../providers/fixtures/secret-isolation-fixtures.json"
   },
   "checks": [
     {

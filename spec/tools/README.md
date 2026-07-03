@@ -22,14 +22,13 @@ is also `tuvren.shared.core` authority: its hand-authored JSON Schemas
 live at `spec/core/artifacts/json-schema/` alongside the core artifacts
 until TypeSpec coverage is promoted; they deliberately do not move here.
 
-MCP (`tuvren.providers.mcp`, the tool bus-driver) joins this port at
-87-M5.1c: its authority packet moves cross-port to
-`spec/tools/mcp/authority-packet.json`, and the tools-owned conformance
-plans consolidate at `spec/conformance/tools/`. Until then the packet
-remains at `boundaries/providers/contracts/mcp/spec/authority-packet.json`
-and `@tuvren/mcp-client` remains at
-`boundaries/providers/implementations/typescript/mcp-client` (moves at
-M5.2).
+MCP (`tuvren.providers.mcp`, the tool bus-driver) joined this port at
+87-M5.1c: its authority packet (packetId `tuvren.providers.mcp`,
+unchanged) moved cross-port to `spec/tools/mcp/authority-packet.json`,
+and the tools-owned conformance plans are consolidated at
+`spec/conformance/tools/plans/`. The `@tuvren/mcp-client` implementation
+remains at `boundaries/providers/implementations/typescript/mcp-client`
+until it moves at M5.2.
 
 The deprecated `@tuvren/tool-contracts` shim package (import-dead;
-successor `@tuvren/core/tools`) retires at 87-M5.1b.
+successor `@tuvren/core/tools`) was retired at 87-M5.1b.
