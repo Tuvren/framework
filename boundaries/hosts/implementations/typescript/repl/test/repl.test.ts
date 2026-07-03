@@ -1440,7 +1440,7 @@ describe("repl host scenarios", () => {
       error: {
         code: "invalid_stream_event",
         message:
-          "driver-emitted assistant event sequences must be complete and match the durable assistant message",
+          "runner-emitted assistant event sequences must be complete and match the durable assistant message",
       },
       fatal: true,
       timestamp: 0,
@@ -1452,7 +1452,7 @@ describe("repl host scenarios", () => {
         "approval> resolved: approve\n" +
         'event> proof-extension {"persisted":true}\n' +
         "steering> incorporated\n" +
-        "error> fatal invalid_stream_event driver-emitted assistant event sequences must be complete and match the durable assistant message\n"
+        "error> fatal invalid_stream_event runner-emitted assistant event sequences must be complete and match the durable assistant message\n"
     );
   });
 

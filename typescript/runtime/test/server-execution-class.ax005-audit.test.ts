@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test drivers intentionally match the async framework driver contract.
+// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 
 /**
  * KRT-AX005: Trace and audit signals for Tuvren-server invocations.
@@ -49,7 +49,7 @@ import {
 
 function makeRunner(toolName: string, input: unknown = {}): RuntimeRunner {
   return {
-    id: "ax005-driver",
+    id: "ax005-runner",
     async execute(context) {
       if (!context.messages.some((m) => m.role === "tool")) {
         return {
@@ -78,10 +78,10 @@ async function runWithTool(
   config: Record<string, unknown> = {}
 ) {
   const harness = createFakeKernelHarness();
-  const driver = makeRunner(tool.name);
+  const runner = makeRunner(tool.name);
   const runtime = createTuvrenRuntime({
-    defaultRunnerId: "ax005-driver",
-    driverRegistry: createBaseRunnerRegistry([driver]),
+    defaultRunnerId: "ax005-runner",
+    runnerRegistry: createBaseRunnerRegistry([runner]),
     kernel: harness.kernel,
   });
   const thread = await runtime.createThread({});
@@ -164,8 +164,8 @@ describe("KRT-AX005 — lifecycle audit signals", () => {
       },
     };
 
-    const driver: RuntimeRunner = {
-      id: "ax005-driver",
+    const runner: RuntimeRunner = {
+      id: "ax005-runner",
       async execute(context) {
         if (!context.messages.some((m) => m.role === "tool")) {
           return {
@@ -194,8 +194,8 @@ describe("KRT-AX005 — lifecycle audit signals", () => {
 
     const harness = createFakeKernelHarness();
     const runtime = createTuvrenRuntime({
-      defaultRunnerId: "ax005-driver",
-      driverRegistry: createBaseRunnerRegistry([driver]),
+      defaultRunnerId: "ax005-runner",
+      runnerRegistry: createBaseRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -273,8 +273,8 @@ describe("KRT-AX005 — lifecycle audit signals", () => {
       },
     };
 
-    const driver: RuntimeRunner = {
-      id: "ax005-driver",
+    const runner: RuntimeRunner = {
+      id: "ax005-runner",
       async execute(context) {
         const toolMessages = context.messages.filter((m) => m.role === "tool");
         if (toolMessages.length < 2) {
@@ -303,8 +303,8 @@ describe("KRT-AX005 — lifecycle audit signals", () => {
     };
 
     const runtime = createTuvrenRuntime({
-      defaultRunnerId: "ax005-driver",
-      driverRegistry: createBaseRunnerRegistry([driver]),
+      defaultRunnerId: "ax005-runner",
+      runnerRegistry: createBaseRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test drivers intentionally match the async framework driver contract.
+// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 import { describe, expect, test } from "bun:test";
 import type {
   RuntimeRunner as KrakenRunner,
@@ -37,7 +37,7 @@ import {
 describe("framework-runtime-core", () => {
   test("implicitly links follow-up turns to the previous branch turn", async () => {
     const harness = createFakeKernelHarness();
-    const driver = {
+    const runner = {
       async execute(_context) {
         return {
           messages: [assistantText("Turn complete.")],
@@ -54,7 +54,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -82,7 +82,7 @@ describe("framework-runtime-core", () => {
 
   test("implicitly links the first turn on a forked branch to the source branch head turn", async () => {
     const harness = createFakeKernelHarness();
-    const driver = {
+    const runner = {
       async execute(_context) {
         return {
           messages: [assistantText("Turn complete.")],
@@ -99,7 +99,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -136,7 +136,7 @@ describe("framework-runtime-core", () => {
 
   test("does not require runtime status turnId for implicit parent inference", async () => {
     const harness = createFakeKernelHarness();
-    const driver = {
+    const runner = {
       async execute(_context) {
         return {
           messages: [assistantText("Turn complete.")],
@@ -153,7 +153,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -197,7 +197,7 @@ describe("framework-runtime-core", () => {
 
   test("rejects explicit parent turns that do not match the active branch parent", async () => {
     const harness = createFakeKernelHarness();
-    const driver = {
+    const runner = {
       async execute(_context) {
         return {
           messages: [assistantText("Turn complete.")],
@@ -214,7 +214,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const threadA = await runtime.createThread({});
@@ -248,7 +248,7 @@ describe("framework-runtime-core", () => {
 
   test("rejects branch and thread mismatches before creating a turn", async () => {
     const harness = createFakeKernelHarness();
-    const driver = {
+    const runner = {
       async execute(_context) {
         return {
           messages: [assistantText("This turn should not start.")],
@@ -265,7 +265,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const threadA = await runtime.createThread({});
@@ -298,9 +298,9 @@ describe("framework-runtime-core", () => {
 });
 
 function createRunnerRegistry(
-  drivers: Array<KrakenRunner | KrakenRunnerFactory> = []
+  runners: Array<KrakenRunner | KrakenRunnerFactory> = []
 ) {
-  return createBaseRunnerRegistry(drivers.map(wrapRunnerEntry));
+  return createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
 }
 
 function wrapRunnerEntry(
@@ -324,14 +324,14 @@ function isKrakenRunnerFactory(
   return "create" in entry && typeof entry.create === "function";
 }
 
-function wrapRunner(driver: KrakenRunner): KrakenRunner {
-  const resume = driver.resume;
+function wrapRunner(runner: KrakenRunner): KrakenRunner {
+  const resume = runner.resume;
 
   return {
     async execute(context) {
-      return normalizeRunnerResult(await driver.execute(context));
+      return normalizeRunnerResult(await runner.execute(context));
     },
-    id: driver.id,
+    id: runner.id,
     ...(resume === undefined
       ? {}
       : {

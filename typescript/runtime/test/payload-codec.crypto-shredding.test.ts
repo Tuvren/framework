@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test drivers intentionally match the async framework driver contract.
+// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 
 // KRT-BF005 — Host-Key-Encrypted Untrusted-Edge Payload Envelope (ADR-051).
 //
@@ -59,7 +59,7 @@ function buildRuntime(options: { keys?: Map<string, Uint8Array> }): {
   });
   const framework = createTuvrenRuntime({
     defaultRunnerId: "fake",
-    driverRegistry: createRunnerRegistry([
+    runnerRegistry: createRunnerRegistry([
       createStaticRunner(async () => ({
         messages: [assistantText(PROVIDER_SECRET)],
         resolution: { reason: "done", type: "end_turn" },

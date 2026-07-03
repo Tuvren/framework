@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test drivers intentionally match the async framework driver contract.
+// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 import { describe, expect, test } from "bun:test";
 import type { ToolResultEvent, ToolStartEvent } from "@tuvren/core/events";
 import { isTuvrenStreamEvent } from "@tuvren/core/events";
@@ -80,7 +80,7 @@ async function runToolTurn(toolName: string) {
   const harness = createFakeKernelHarness();
   const runtime = createTuvrenRuntime({
     defaultRunnerId: "fake",
-    driverRegistry: createBaseRunnerRegistry([makeRunner(toolName)]),
+    runnerRegistry: createBaseRunnerRegistry([makeRunner(toolName)]),
     kernel: harness.kernel,
   });
   const thread = await runtime.createThread({});
@@ -183,7 +183,7 @@ describe("Capability attribution — telemetry spans (AW006)", () => {
     const toolName = "attrib-tool";
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createBaseRunnerRegistry([makeRunner(toolName)]),
+      runnerRegistry: createBaseRunnerRegistry([makeRunner(toolName)]),
       kernel: harness.kernel,
       telemetry: sink,
     });

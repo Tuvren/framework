@@ -40,8 +40,8 @@ import {
 export interface ExecutionBinding {
   agent: string;
   branchId: string;
-  driverId?: string;
   handle: ExecutionHandle;
+  runnerId?: string;
   schemaId?: string;
   threadId: string;
   tools?: AgentConfig["tools"];

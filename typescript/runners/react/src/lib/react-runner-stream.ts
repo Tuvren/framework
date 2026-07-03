@@ -295,7 +295,7 @@ function synthesizeAssistantEvents(
         throw new TuvrenRuntimeError(
           "provider responses must not emit tool_result parts",
           {
-            code: "react_driver_invalid_model_response",
+            code: "react_runner_invalid_model_response",
             details: {
               part,
             },

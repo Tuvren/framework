@@ -563,7 +563,7 @@ export const streamAdapterFixtures: TextFixtureSet = {
       data: {
         ready: true,
       },
-      name: "driver.executed",
+      name: "runner.executed",
       timestamp: 12,
       type: "custom",
     },

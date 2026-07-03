@@ -179,21 +179,21 @@ export async function advanceTurnAndBranchHeadFacade(
 }
 
 export function materializeRunnerFacade(
-  driverRegistry: RunnerRegistry,
-  driverId: string
+  runnerRegistry: RunnerRegistry,
+  runnerId: string
 ): KrakenRunner {
-  const driverEntry = driverRegistry.resolve(driverId);
+  const runnerEntry = runnerRegistry.resolve(runnerId);
 
-  if (driverEntry === undefined) {
-    throw new TuvrenRuntimeError(`driver "${driverId}" is not registered`, {
-      code: "unknown_driver",
+  if (runnerEntry === undefined) {
+    throw new TuvrenRuntimeError(`runner "${runnerId}" is not registered`, {
+      code: "unknown_runner",
       details: {
-        driverId,
+        runnerId,
       },
     });
   }
 
-  return materializeRunner(driverEntry);
+  return materializeRunner(runnerEntry);
 }
 
 export function resolveFailureActiveConfigFacade(

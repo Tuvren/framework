@@ -362,7 +362,7 @@ export function doesFinishReasonMatchAssistantContent(
 
 export function createAssistantDeltaValidationError(): TuvrenRuntimeError {
   return new TuvrenRuntimeError(
-    "driver-emitted assistant deltas must match the durable assistant message",
+    "runner-emitted assistant deltas must match the durable assistant message",
     {
       code: "invalid_stream_event",
     }

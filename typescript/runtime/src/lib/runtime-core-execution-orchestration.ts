@@ -213,7 +213,7 @@ interface RuntimeIterationPhaseDependencies {
     loopState: LoopState
   ): TuvrenStreamEvent[];
   executeRunner(
-    driver: KrakenRunner,
+    runner: KrakenRunner,
     context: RunnerExecutionContext
   ): Promise<RunnerExecutionResult>;
   failInvalidPauseResolutionIfNeeded(
@@ -233,7 +233,7 @@ interface RuntimeIterationPhaseDependencies {
     resolution: RuntimeResolution,
     events: TuvrenStreamEvent[]
   ): TuvrenStreamEvent[];
-  materializeRunner(driverId: string): KrakenRunner;
+  materializeRunner(runnerId: string): KrakenRunner;
   now(): number;
   /**
    * Publish through the full runtime event + telemetry path (KRT-BA002).
@@ -406,7 +406,7 @@ export async function executeRuntimeIterationPhaseFacade(
         dependencies.flushBufferedRunnerEventsIfNeeded(...args),
       ensureRunnerAssistantEvents: (...args) =>
         dependencies.ensureRunnerAssistantEvents(...args),
-      materializeRunner: (driverId) => dependencies.materializeRunner(driverId),
+      materializeRunner: (runnerId) => dependencies.materializeRunner(runnerId),
       now: () => dependencies.now(),
       reconcileCheckpointedPauseResolution: (...args) =>
         dependencies.reconcileCheckpointedPauseResolution(...args),

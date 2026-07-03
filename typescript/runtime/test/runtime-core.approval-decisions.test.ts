@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test drivers intentionally match the async framework driver contract.
+// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 import { describe, expect, test } from "bun:test";
 import type { TuvrenMessage } from "@tuvren/core/messages";
 import type {
@@ -42,7 +42,7 @@ describe("framework-runtime-core", () => {
   test("continues the same turn after explicit rejected approval decisions without executing the tool", async () => {
     const harness = createFakeKernelHarness();
     let emailCalls = 0;
-    const driver = {
+    const runner = {
       async execute(context) {
         const toolMessages = context.messages.filter(
           (message) => message.role === "tool"
@@ -80,7 +80,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -151,7 +151,7 @@ describe("framework-runtime-core", () => {
   test("preserves approval commentary on invalid edited approval inputs", async () => {
     const harness = createFakeKernelHarness();
     let emailCalls = 0;
-    const driver = {
+    const runner = {
       async execute(context) {
         const toolMessages = context.messages.filter(
           (message) => message.role === "tool"
@@ -189,7 +189,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -279,7 +279,7 @@ describe("framework-runtime-core", () => {
       subject: "Reviewed status update",
       to: "review@example.com",
     };
-    const driver = {
+    const runner = {
       async execute(context) {
         const toolMessages = context.messages.filter(
           (message) => message.role === "tool"
@@ -317,7 +317,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -433,7 +433,7 @@ describe("framework-runtime-core", () => {
     const slowTool = new Promise<void>((resolve) => {
       releaseSlowTool = resolve;
     });
-    const driver = {
+    const runner = {
       async execute(context) {
         const toolMessages = extractToolMessages(context.messages);
 
@@ -474,7 +474,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -575,7 +575,7 @@ describe("framework-runtime-core", () => {
   test("resumes aroundTool approval gates through the shared executor", async () => {
     const harness = createFakeKernelHarness();
     let searchCalls = 0;
-    const driver = {
+    const runner = {
       async execute(context) {
         const toolMessages = context.messages.filter(
           (message) => message.role === "tool"
@@ -613,7 +613,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -714,7 +714,7 @@ describe("framework-runtime-core", () => {
 
   test("status() returns deep-cloned manifest and approval snapshots", async () => {
     const harness = createFakeKernelHarness();
-    const driver = {
+    const runner = {
       async execute(context) {
         const toolMessages = context.messages.filter(
           (message) => message.role === "tool"
@@ -752,7 +752,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -821,9 +821,9 @@ describe("framework-runtime-core", () => {
 });
 
 function createRunnerRegistry(
-  drivers: Array<KrakenRunner | KrakenRunnerFactory> = []
+  runners: Array<KrakenRunner | KrakenRunnerFactory> = []
 ) {
-  return createBaseRunnerRegistry(drivers.map(wrapRunnerEntry));
+  return createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
 }
 
 function wrapRunnerEntry(
@@ -847,14 +847,14 @@ function isKrakenRunnerFactory(
   return "create" in entry && typeof entry.create === "function";
 }
 
-function wrapRunner(driver: KrakenRunner): KrakenRunner {
-  const resume = driver.resume;
+function wrapRunner(runner: KrakenRunner): KrakenRunner {
+  const resume = runner.resume;
 
   return {
     async execute(context) {
-      return normalizeRunnerResult(await driver.execute(context));
+      return normalizeRunnerResult(await runner.execute(context));
     },
-    id: driver.id,
+    id: runner.id,
     ...(resume === undefined
       ? {}
       : {

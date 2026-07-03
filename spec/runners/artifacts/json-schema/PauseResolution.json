@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://tuvren.dev/schemas/framework/driver-api/PauseResolution.json",
+  "$id": "https://tuvren.dev/schemas/framework/runner-api/PauseResolution.json",
   "type": "object",
   "properties": {
     "type": {
@@ -11,7 +11,7 @@
       "type": "string"
     },
     "approval": {
-      "$ref": "https://tuvren.dev/schemas/framework/driver-api/ApprovalRequest.json"
+      "$ref": "https://tuvren.dev/schemas/framework/runner-api/ApprovalRequest.json"
     }
   },
   "required": ["type", "reason", "approval"],

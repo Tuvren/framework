@@ -61,10 +61,10 @@ export const CAPABILITY_RESULT_STALE = "capability_result_stale" as const;
 /**
  * Stable `TuvrenRuntimeError` code emitted when a turn breaches a framework
  * hard-stop execution bound (`maxIterations`, `maxToolCalls`, or
- * `maxWallClockMs`) above driver discretion. The framework stops the loop,
+ * `maxWallClockMs`) above runner discretion. The framework stops the loop,
  * checkpoints a safe terminal outcome, and finalizes the turn as a `failed`
  * `ExecutionResult` carrying this code with `details: ExecutionBoundExceededDetails`,
- * plus a fatal canonical `error` event with the same code/details. The driver
+ * plus a fatal canonical `error` event with the same code/details. The runner
  * cannot raise or disable a bound. (ADR-043 §3.11, KRT-BD005)
  */
 export const EXECUTION_BOUND_EXCEEDED = "execution_bound_exceeded" as const;

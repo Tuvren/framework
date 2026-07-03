@@ -82,7 +82,7 @@ describe("event-stream contracts", () => {
       messageId: "message-1",
       source: {
         agent: "primary",
-        driver: "react",
+        runner: "react",
         threadId: "thread-main",
       },
       text: "Need approval before continuing.",
@@ -110,7 +110,7 @@ describe("event-stream contracts", () => {
       },
       source: {
         agent: "primary",
-        driver: "react",
+        runner: "react",
         threadId: "thread-main",
       },
       timestamp: 1_717_171_717_171,

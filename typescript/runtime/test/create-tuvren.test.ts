@@ -71,7 +71,7 @@ function makeMockMcpSource(name = "test-server"): McpToolSource & {
   };
 }
 
-function makeMinimalRunnerFactory(id = "test-driver"): KrakenRunnerFactory {
+function makeMinimalRunnerFactory(id = "test-runner"): KrakenRunnerFactory {
   return {
     create() {
       return {
@@ -224,10 +224,10 @@ describe("createTuvren", () => {
     });
   });
 
-  // ── driver option ──────────────────────────────────────────────────────────
+  // ── runner option ──────────────────────────────────────────────────────────
 
-  describe("driver option", () => {
-    test("defaults to the react driver when driver is omitted", async () => {
+  describe("runner option", () => {
+    test("defaults to the react runner when runner is omitted", async () => {
       const instance = await createTuvren({ backend: "memory" });
       expect(instance.runtime).toBeDefined();
       expect(instance.orchestration).toBeDefined();
@@ -237,7 +237,7 @@ describe("createTuvren", () => {
     test("'react' string is accepted", async () => {
       const instance = await createTuvren({
         backend: "memory",
-        driver: "react",
+        runner: "react",
       });
       expect(instance.runtime).toBeDefined();
       await instance[Symbol.asyncDispose]();
@@ -246,7 +246,7 @@ describe("createTuvren", () => {
     test("{ kind: 'react' } object form is accepted", async () => {
       const instance = await createTuvren({
         backend: "memory",
-        driver: { kind: "react" },
+        runner: { kind: "react" },
       });
       expect(instance.runtime).toBeDefined();
       await instance[Symbol.asyncDispose]();
@@ -255,7 +255,7 @@ describe("createTuvren", () => {
     test("{ kind: 'react', options: { providerCallMode: 'generate' } } is accepted", async () => {
       const instance = await createTuvren({
         backend: "memory",
-        driver: { kind: "react", options: { providerCallMode: "generate" } },
+        runner: { kind: "react", options: { providerCallMode: "generate" } },
       });
       expect(instance.runtime).toBeDefined();
       await instance[Symbol.asyncDispose]();
@@ -265,7 +265,7 @@ describe("createTuvren", () => {
       const factory = makeMinimalRunnerFactory("custom");
       const instance = await createTuvren({
         backend: "memory",
-        driver: factory,
+        runner: factory,
       });
       await createThreadAndVerify(instance);
       await instance[Symbol.asyncDispose]();

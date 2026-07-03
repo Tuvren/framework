@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test drivers intentionally match the async framework driver contract.
+// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 import { describe, expect, test } from "bun:test";
 import type { TuvrenModelResponse } from "@tuvren/core/provider";
 import type {
@@ -34,9 +34,9 @@ import {
 } from "./runtime-core-test-helpers.ts";
 
 describe("framework-runtime-core", () => {
-  test("rejects assistant stream events when the driver does not return a durable assistant message", async () => {
+  test("rejects assistant stream events when the runner does not return a durable assistant message", async () => {
     const harness = createFakeKernelHarness();
-    const driver = {
+    const runner = {
       async execute(context) {
         context.runtime.emit({
           messageId: "assistant-ghost",
@@ -71,7 +71,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -103,14 +103,14 @@ describe("framework-runtime-core", () => {
     ]);
   });
 
-  test("rejects assistant stream events without a durable assistant message on soft driver failures", async () => {
+  test("rejects assistant stream events without a durable assistant message on soft runner failures", async () => {
     const harness = createFakeKernelHarness();
-    let driverCalls = 0;
-    const driver = {
+    let runnerCalls = 0;
+    const runner = {
       async execute(context) {
-        driverCalls += 1;
+        runnerCalls += 1;
 
-        if (driverCalls === 1) {
+        if (runnerCalls === 1) {
           context.runtime.emit({
             messageId: "assistant-soft-fail",
             role: "assistant",
@@ -148,7 +148,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -165,7 +165,7 @@ describe("framework-runtime-core", () => {
         event.type === "error"
     );
 
-    expect(driverCalls).toBe(1);
+    expect(runnerCalls).toBe(1);
     expect(handle.status().phase).toBe("failed");
     expect(errorEvent?.error.code).toBe("invalid_stream_event");
     expect(
@@ -183,7 +183,7 @@ describe("framework-runtime-core", () => {
 
   test("rejects assistant stream events that do not match the durable assistant message", async () => {
     const harness = createFakeKernelHarness();
-    const driver = {
+    const runner = {
       async execute(context) {
         context.runtime.emit({
           messageId: "assistant-streamed",
@@ -219,7 +219,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -249,7 +249,7 @@ describe("framework-runtime-core", () => {
 
   test("does not allow durable/live assistant divergence from a no-op aroundModel alone", async () => {
     const harness = createFakeKernelHarness();
-    const driver = {
+    const runner = {
       async execute(context) {
         context.runtime.emit({
           messageId: "assistant-streamed",
@@ -291,7 +291,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -332,7 +332,7 @@ describe("framework-runtime-core", () => {
 
   test("does not allow assistantEventReconciliation divergence without active aroundModel extensions", async () => {
     const harness = createFakeKernelHarness();
-    const driver = {
+    const runner = {
       async execute(context) {
         context.runtime.emit({
           messageId: "assistant-streamed",
@@ -375,7 +375,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -406,7 +406,7 @@ describe("framework-runtime-core", () => {
 
   test("does not allow assistantEventReconciliation without emitted assistant events", async () => {
     const harness = createFakeKernelHarness();
-    const driver = {
+    const runner = {
       async execute() {
         return {
           assistantEventReconciliation: "allow_final_sequence_divergence",
@@ -424,7 +424,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -470,7 +470,7 @@ describe("framework-runtime-core", () => {
           usage: TuvrenModelResponse["usage"];
         }
       | undefined;
-    const driver = {
+    const runner = {
       async execute(context) {
         context.runtime.emit({
           messageId: "assistant-streamed",
@@ -517,7 +517,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -561,9 +561,9 @@ describe("framework-runtime-core", () => {
 });
 
 function createRunnerRegistry(
-  drivers: Array<KrakenRunner | KrakenRunnerFactory> = []
+  runners: Array<KrakenRunner | KrakenRunnerFactory> = []
 ) {
-  return createBaseRunnerRegistry(drivers.map(wrapRunnerEntry));
+  return createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
 }
 
 function wrapRunnerEntry(
@@ -587,14 +587,14 @@ function isKrakenRunnerFactory(
   return "create" in entry && typeof entry.create === "function";
 }
 
-function wrapRunner(driver: KrakenRunner): KrakenRunner {
-  const resume = driver.resume;
+function wrapRunner(runner: KrakenRunner): KrakenRunner {
+  const resume = runner.resume;
 
   return {
     async execute(context) {
-      return normalizeRunnerResult(await driver.execute(context));
+      return normalizeRunnerResult(await runner.execute(context));
     },
-    id: driver.id,
+    id: runner.id,
     ...(resume === undefined
       ? {}
       : {

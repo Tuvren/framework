@@ -180,8 +180,8 @@ export function createRunnerExecutionContext(
   emittedRunnerEvents: TuvrenStreamEvent[]
 ): RunnerExecutionContext {
   // BB001: Apply exposure-time policy filtering before building the readonly
-  // driver snapshot. When a policy engine is configured, evaluate exposure
-  // decisions over all surfaces and filter out denied tools so the driver
+  // runner snapshot. When a policy engine is configured, evaluate exposure
+  // decisions over all surfaces and filter out denied tools so the runner
   // (and the model via the provider bridge) never sees withheld capabilities.
   let registryForRunner = loopState.activeToolRegistry;
   const policyEngine = loopState.activeConfig.capabilityPolicyEngine;
@@ -255,7 +255,7 @@ export function createRunnerExecutionContext(
           clonedEvent = cloneValue(event);
         } catch (error: unknown) {
           throw new TuvrenRuntimeError(
-            "driver-emitted stream events must be cloneable",
+            "runner-emitted stream events must be cloneable",
             {
               code: "invalid_stream_event",
               details: {
@@ -291,11 +291,11 @@ export async function stageRunnerMessages(
 ): Promise<HashString[]> {
   const stagedMessageHashes: HashString[] = [];
 
-  for (const [index, driverMessage] of messages.entries()) {
+  for (const [index, runnerMessage] of messages.entries()) {
     stagedMessageHashes.push(
       await host.stageMessage(
         runId,
-        driverMessage,
+        runnerMessage,
         `message_${iterationCount}_${index}`
       )
     );

@@ -30,7 +30,7 @@
 //     TuvrenModelResponse.usage, segregated from the durable message record; and
 //   * the production AI SDK bridge additionally folds a per-turn cost breakdown
 //     (providerMetadata.aiSdkBridge.rawUsage, whose `cacheRead` reflects the cache
-//     state) onto the assistant message, which the driver persists verbatim.
+//     state) onto the assistant message, which the runner persists verbatim.
 //
 // So the durable record's content-addressed hash is cache-neutral only to the
 // extent cost stays off the message: it IS invariant when cost rides solely on
@@ -76,7 +76,7 @@ const USAGE_CACHE_HIT: ProviderUsage = { inputTokens: 64, outputTokens: 40 };
 
 // Models the per-turn cost bookkeeping the production AI SDK bridge stamps onto
 // the assistant message's providerMetadata (aiSdkBridge.rawUsage) and which the
-// driver persists verbatim. `cacheRead` reflects the cache state; the rest is the
+// runner persists verbatim. `cacheRead` reflects the cache state; the rest is the
 // fixed prompt/output accounting.
 function bridgeCostMetadata(cacheReadTokens: number): Record<string, unknown> {
   return {
@@ -131,7 +131,7 @@ function buildRuntime() {
   const harness = createFakeKernelHarness();
   const runtime = createTuvrenRuntimeCore({
     defaultRunnerId: REACT_RUNNER_ID,
-    driverRegistry: createRunnerRegistry([
+    runnerRegistry: createRunnerRegistry([
       createReActRunner({ providerCallMode: "generate" }),
     ]),
     kernel: harness.kernel,
@@ -233,7 +233,7 @@ describe("KRT-BH004 correctness-neutral provider-side caching", () => {
   test("the produced content stays cache-neutral even when the bridge folds cache-varying cost onto the assistant message", async () => {
     // Model the production bridge: identical produced content, but the per-turn
     // cost breakdown the bridge stamps onto providerMetadata (aiSdkBridge.rawUsage)
-    // carries the cache state, and the driver persists it verbatim. The cold miss
+    // carries the cache state, and the runner persists it verbatim. The cold miss
     // reads nothing from cache; the warm hit reads most of the prompt from cache.
     const miss = createCachingProvider({
       providerMetadata: bridgeCostMetadata(0),

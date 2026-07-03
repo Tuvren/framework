@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/runner-api/RunnerResumeContext.json",
+  "type": "object",
+  "properties": {
+    "approval": {
+      "$ref": "https://tuvren.dev/schemas/framework/runner-api/ApprovalResponse.json"
+    },
+    "resumedFrom": {
+      "$ref": "https://tuvren.dev/schemas/framework/runner-api/HashString.json"
+    }
+  },
+  "required": ["approval"],
+  "allOf": [
+    {
+      "$ref": "https://tuvren.dev/schemas/framework/runner-api/RunnerExecutionContext.json"
+    }
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  }
+}

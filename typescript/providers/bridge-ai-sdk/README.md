@@ -1,7 +1,7 @@
 # @tuvren/provider-bridge-ai-sdk
 
 Bridges a [Vercel AI SDK](https://sdk.vercel.ai) `LanguageModelV3` into a Tuvren
-`TuvrenProvider`, so the runtime's driver can call any AI-SDK-backed model
+`TuvrenProvider`, so the runtime's runner can call any AI-SDK-backed model
 through the neutral provider contract (`generate` / `stream`).
 
 ## Secret Isolation — Edge Confinement (ADR-044)

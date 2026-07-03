@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test drivers intentionally match the async framework driver contract.
+// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 import { describe, expect, test } from "bun:test";
 import type {
   RuntimeRunner as KrakenRunner,
@@ -41,7 +41,7 @@ import {
 describe("framework-runtime-core", () => {
   test("rejects malformed aroundTool approval requests before pause state is published", async () => {
     const harness = createFakeKernelHarness();
-    const driver = {
+    const runner = {
       async execute(_context) {
         return {
           messages: [
@@ -65,7 +65,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -140,7 +140,7 @@ describe("framework-runtime-core", () => {
 
   test("does not hang mixed batches when malformed approvals race immediate tool errors", async () => {
     const harness = createFakeKernelHarness();
-    const driver = {
+    const runner = {
       async execute(_context) {
         return {
           messages: [
@@ -169,7 +169,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -253,7 +253,7 @@ describe("framework-runtime-core", () => {
   test("aborts cooperative sibling tools without checkpointing malformed initial approval batches", async () => {
     const harness = createFakeKernelHarness();
     let searchSideEffectCount = 0;
-    const driver = {
+    const runner = {
       async execute(_context) {
         return {
           messages: [
@@ -282,7 +282,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -394,7 +394,7 @@ describe("framework-runtime-core", () => {
   test("waits for non-cooperative sibling tools to settle before surfacing malformed initial approval failures", async () => {
     const harness = createFakeKernelHarness();
     let slowSideEffectCount = 0;
-    const driver = {
+    const runner = {
       async execute(_context) {
         return {
           messages: [
@@ -423,7 +423,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -521,7 +521,7 @@ describe("framework-runtime-core", () => {
   test("does not checkpoint resumed sibling tool progress when resume approval is malformed", async () => {
     const harness = createFakeKernelHarness();
     let searchCalls = 0;
-    const driver = {
+    const runner = {
       async execute(context) {
         const toolMessages = extractToolMessages(context.messages);
 
@@ -562,7 +562,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -694,7 +694,7 @@ describe("framework-runtime-core", () => {
   test("aborts cooperative resumed sibling tools without checkpointing malformed approvals", async () => {
     const harness = createFakeKernelHarness();
     let searchSideEffectCount = 0;
-    const driver = {
+    const runner = {
       async execute(context) {
         const toolMessages = extractToolMessages(context.messages);
 
@@ -735,7 +735,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -857,9 +857,9 @@ describe("framework-runtime-core", () => {
 });
 
 function createRunnerRegistry(
-  drivers: Array<KrakenRunner | KrakenRunnerFactory> = []
+  runners: Array<KrakenRunner | KrakenRunnerFactory> = []
 ) {
-  return createBaseRunnerRegistry(drivers.map(wrapRunnerEntry));
+  return createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
 }
 
 function wrapRunnerEntry(
@@ -883,14 +883,14 @@ function isKrakenRunnerFactory(
   return "create" in entry && typeof entry.create === "function";
 }
 
-function wrapRunner(driver: KrakenRunner): KrakenRunner {
-  const resume = driver.resume;
+function wrapRunner(runner: KrakenRunner): KrakenRunner {
+  const resume = runner.resume;
 
   return {
     async execute(context) {
-      return normalizeRunnerResult(await driver.execute(context));
+      return normalizeRunnerResult(await runner.execute(context));
     },
-    id: driver.id,
+    id: runner.id,
     ...(resume === undefined
       ? {}
       : {

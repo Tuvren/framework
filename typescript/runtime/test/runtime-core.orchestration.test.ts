@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test drivers intentionally match the async framework driver contract.
+// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 import { describe, expect, test } from "bun:test";
 import type { AgentConfig } from "@tuvren/core/execution";
 import type {
@@ -114,7 +114,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([handoffRunner]),
+      runnerRegistry: createRunnerRegistry([handoffRunner]),
       kernel: harness.kernel,
       resolveAgentConfig: (agentName) => agents[agentName],
     });
@@ -181,7 +181,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([handoffRunner]),
+      runnerRegistry: createRunnerRegistry([handoffRunner]),
       kernel: harness.kernel,
       resolveAgentConfig: (agentName) => agents[agentName],
     });
@@ -259,7 +259,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([handoffRunner]),
+      runnerRegistry: createRunnerRegistry([handoffRunner]),
       kernel: harness.kernel,
       resolveAgentConfig: (agentName) => agents[agentName],
     });
@@ -293,7 +293,7 @@ describe("framework-runtime-core", () => {
       primary: { name: "primary" },
       reviewer: { name: "reviewer" },
     };
-    const driver = {
+    const runner = {
       async execute(context) {
         return {
           messages: [assistantText("Passing this to review.")],
@@ -317,7 +317,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
       resolveAgentConfig: (agentName) => agents[agentName],
     });
@@ -386,7 +386,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([handoffRunner]),
+      runnerRegistry: createRunnerRegistry([handoffRunner]),
       kernel: harness.kernel,
       resolveAgentConfig: (agentName) => agents[agentName],
     });
@@ -424,9 +424,9 @@ describe("framework-runtime-core", () => {
 });
 
 function createRunnerRegistry(
-  drivers: Array<KrakenRunner | KrakenRunnerFactory> = []
+  runners: Array<KrakenRunner | KrakenRunnerFactory> = []
 ) {
-  return createBaseRunnerRegistry(drivers.map(wrapRunnerEntry));
+  return createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
 }
 
 function wrapRunnerEntry(
@@ -450,14 +450,14 @@ function isKrakenRunnerFactory(
   return "create" in entry && typeof entry.create === "function";
 }
 
-function wrapRunner(driver: KrakenRunner): KrakenRunner {
-  const resume = driver.resume;
+function wrapRunner(runner: KrakenRunner): KrakenRunner {
+  const resume = runner.resume;
 
   return {
     async execute(context) {
-      return normalizeRunnerResult(await driver.execute(context));
+      return normalizeRunnerResult(await runner.execute(context));
     },
-    id: driver.id,
+    id: runner.id,
     ...(resume === undefined
       ? {}
       : {

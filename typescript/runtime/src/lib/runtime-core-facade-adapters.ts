@@ -61,10 +61,10 @@ export function materializeRuntimeCoreContextMessages(
 }
 
 export function materializeRuntimeCoreRunner(
-  driverRegistry: Parameters<typeof materializeRunnerFacade>[0],
-  driverId: string
+  runnerRegistry: Parameters<typeof materializeRunnerFacade>[0],
+  runnerId: string
 ): KrakenRunner {
-  return materializeRunnerFacade(driverRegistry, driverId);
+  return materializeRunnerFacade(runnerRegistry, runnerId);
 }
 
 export function resolveRuntimeCoreFailureActiveConfig(

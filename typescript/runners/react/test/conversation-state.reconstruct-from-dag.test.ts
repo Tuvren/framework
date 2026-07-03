@@ -21,7 +21,7 @@
 // ADR-053 makes the durable lineage the unconditional source of truth: the
 // provider request for the next turn must be reconstructable from durable
 // lineage alone, never depending on any provider-held server-side state. This
-// test drives the real ReAct driver through the runtime for two turns against a
+// test drives the real ReAct runner through the runtime for two turns against a
 // deliberately *stateless* provider that records the prompt it is handed. The
 // provider keeps nothing between turns, so the only way the second turn's
 // request can carry the first turn's continuity artifact is by reconstructing it
@@ -88,7 +88,7 @@ function buildRuntime(provider: TuvrenProvider) {
   const harness = createFakeKernelHarness();
   const runtime = createTuvrenRuntimeCore({
     defaultRunnerId: REACT_RUNNER_ID,
-    driverRegistry: createRunnerRegistry([
+    runnerRegistry: createRunnerRegistry([
       createReActRunner({ providerCallMode: "generate" }),
     ]),
     kernel: harness.kernel,
@@ -140,7 +140,7 @@ describe("KRT-BH002 reconstruct-from-DAG", () => {
     expect(JSON.stringify(durableAfterTurn1)).toContain(CONTINUITY);
 
     // Turn 2 — same branch. The runtime rebuilds head-state from the DAG and
-    // hands the ReAct driver/provider the reconstructed history.
+    // hands the ReAct runner/provider the reconstructed history.
     await runTurn(runtime, ids, "second question");
 
     // The provider was called twice; the second call's prompt is what the

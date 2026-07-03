@@ -1,7 +1,7 @@
 import "@typespec/json-schema";
 
-@TypeSpec.JsonSchema.jsonSchema("https://tuvren.dev/schemas/framework/driver-api/")
-namespace Tuvren.Framework.DriverApi;
+@TypeSpec.JsonSchema.jsonSchema("https://tuvren.dev/schemas/framework/runner-api/")
+namespace Tuvren.Framework.RunnerApi;
 
 @minLength(1)
 @pattern(".*\\S.*", "Must contain non-whitespace content.")
@@ -29,13 +29,13 @@ model ErrorEnvelope {
   cause?: ErrorEnvelope;
 }
 
-model DriverManifest {
+model RunnerManifest {
   id: NonEmptyString;
   version?: string;
   capabilities?: Metadata;
 }
 
-model DriverRuntimePortEvent {
+model RunnerRuntimePortEvent {
   type: NonEmptyString;
   timestamp: EpochMs;
   payload?: unknown;
@@ -199,7 +199,7 @@ model ContextManifest {
   turnBoundaries: NonNegativeSafeInt[];
 }
 
-model DriverExecutionContext {
+model RunnerExecutionContext {
   threadId: NonEmptyString;
   branchId: NonEmptyString;
   turnId: NonEmptyString;
@@ -211,12 +211,12 @@ model DriverExecutionContext {
   controls?: Metadata;
 }
 
-model DriverResumeContext extends DriverExecutionContext {
+model RunnerResumeContext extends RunnerExecutionContext {
   approval: ApprovalResponse;
   resumedFrom?: HashString;
 }
 
-model DriverExtensionStateUpdate {
+model RunnerExtensionStateUpdate {
   extensionName: NonEmptyString;
   state: Metadata;
 }
@@ -248,7 +248,7 @@ model FailResolution {
   fatality: "hard" | "soft";
 }
 
-union DriverRuntimeResolution {
+union RunnerRuntimeResolution {
   continueIteration: ContinueIterationResolution,
   endTurn: EndTurnResolution,
   pause: PauseResolution,
@@ -256,27 +256,27 @@ union DriverRuntimeResolution {
   fail: FailResolution,
 }
 
-model DriverExecutionResult {
-  resolution: DriverRuntimeResolution;
+model RunnerExecutionResult {
+  resolution: RunnerRuntimeResolution;
   messages?: TuvrenMessage[];
   partial?: boolean;
   toolExecutionMode?: "parallel" | "sequential";
   assistantEventReconciliation?: "allow_final_sequence_divergence";
-  stateUpdates?: DriverExtensionStateUpdate[];
+  stateUpdates?: RunnerExtensionStateUpdate[];
 }
 
-enum DriverOperationName {
-  initialize: "driver.initialize",
-  execute: "driver.execute",
-  resume: "driver.resume",
-  emitEvent: "driver.emit-event",
-  checkpoint: "driver.checkpoint",
-  cancel: "driver.cancel",
+enum RunnerOperationName {
+  initialize: "runner.initialize",
+  execute: "runner.execute",
+  resume: "runner.resume",
+  emitEvent: "runner.emit-event",
+  checkpoint: "runner.checkpoint",
+  cancel: "runner.cancel",
 }
 
-model DriverOperation {
-  operation: DriverOperationName;
-  manifest?: DriverManifest;
-  context?: DriverExecutionContext | DriverResumeContext;
-  result?: DriverExecutionResult;
+model RunnerOperation {
+  operation: RunnerOperationName;
+  manifest?: RunnerManifest;
+  context?: RunnerExecutionContext | RunnerResumeContext;
+  result?: RunnerExecutionResult;
 }

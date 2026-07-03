@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://tuvren.dev/schemas/framework/driver-api/EndTurnResolution.json",
+  "$id": "https://tuvren.dev/schemas/framework/runner-api/EndTurnResolution.json",
   "type": "object",
   "properties": {
     "type": {

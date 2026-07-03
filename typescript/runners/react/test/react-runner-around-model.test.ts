@@ -58,12 +58,12 @@ describe("runner-react aroundModel", () => {
       },
       name: "cache",
     };
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "generate",
     }).create();
     const emittedEvents: TuvrenStreamEvent[] = [];
 
-    const result = await driver.execute(
+    const result = await runner.execute(
       createRunnerExecutionContext({
         config: {
           extensions: [extension],
@@ -106,11 +106,11 @@ describe("runner-react aroundModel", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "generate",
     }).create();
 
-    await driver.execute(
+    await runner.execute(
       createRunnerExecutionContext({
         config: {
           extensions: [
@@ -176,11 +176,11 @@ describe("runner-react aroundModel", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "generate",
     }).create();
 
-    await driver.execute(
+    await runner.execute(
       createRunnerExecutionContext({
         config: {
           extensions: [
@@ -241,11 +241,11 @@ describe("runner-react aroundModel", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "generate",
     }).create();
 
-    const result = await driver.execute(
+    const result = await runner.execute(
       createRunnerExecutionContext({
         config: {
           extensions: [
@@ -299,11 +299,11 @@ describe("runner-react aroundModel", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "generate",
     }).create();
 
-    const result = await driver.execute(
+    const result = await runner.execute(
       createRunnerExecutionContext({
         config: {
           extensions: [
@@ -370,11 +370,11 @@ describe("runner-react aroundModel", () => {
         } as const;
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "stream",
     }).create();
 
-    const result = await driver.execute(
+    const result = await runner.execute(
       createRunnerExecutionContext({
         config: {
           extensions: [
@@ -427,11 +427,11 @@ describe("runner-react aroundModel", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "generate",
     }).create();
 
-    const result = await driver.execute(
+    const result = await runner.execute(
       createRunnerExecutionContext({
         config: {
           extensions: [
@@ -469,7 +469,7 @@ describe("runner-react aroundModel", () => {
         message: "telemetry write failed",
         phase: "post_next",
       },
-      name: "react_driver.around_model_error",
+      name: "react_runner.around_model_error",
       type: "custom",
     });
     expect(
@@ -518,11 +518,11 @@ describe("runner-react aroundModel", () => {
       },
       name: "retry",
     };
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "generate",
     }).create();
 
-    const result = await driver.execute(
+    const result = await runner.execute(
       createRunnerExecutionContext({
         config: {
           extensions: [extension],
@@ -563,11 +563,11 @@ describe("runner-react aroundModel", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "generate",
     }).create();
 
-    const result = await driver.execute(
+    const result = await runner.execute(
       createRunnerExecutionContext({
         config: {
           extensions: [
@@ -597,7 +597,7 @@ describe("runner-react aroundModel", () => {
       "code" in result.resolution.error
         ? result.resolution.error.code
         : undefined
-    ).toBe("react_driver_invalid_around_model_retry");
+    ).toBe("react_runner_invalid_around_model_retry");
   });
 
   test("fails hard when aroundModel retry returns a stale streamed response instead of the final next() result", async () => {
@@ -620,11 +620,11 @@ describe("runner-react aroundModel", () => {
         } as const;
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "stream",
     }).create();
 
-    const result = await driver.execute(
+    const result = await runner.execute(
       createRunnerExecutionContext({
         config: {
           extensions: [
@@ -663,7 +663,7 @@ describe("runner-react aroundModel", () => {
       "code" in result.resolution.error
         ? result.resolution.error.code
         : undefined
-    ).toBe("react_driver_invalid_around_model_retry");
+    ).toBe("react_runner_invalid_around_model_retry");
   });
 
   test("keeps only the final retry state updates from nested aroundModel executions", async () => {
@@ -681,11 +681,11 @@ describe("runner-react aroundModel", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "generate",
     }).create();
 
-    const result = await driver.execute(
+    const result = await runner.execute(
       createRunnerExecutionContext({
         config: {
           extensions: [

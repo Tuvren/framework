@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test drivers intentionally match the async framework driver contract.
+// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 import { describe, expect, test } from "bun:test";
 import type {
   RuntimeRunner as KrakenRunner,
@@ -36,9 +36,9 @@ import {
 } from "./runtime-core-test-helpers.ts";
 
 describe("framework-runtime-core", () => {
-  test("runs tool batches sequentially when the driver selects sequential mode", async () => {
+  test("runs tool batches sequentially when the runner selects sequential mode", async () => {
     const harness = createFakeKernelHarness();
-    const driver = {
+    const runner = {
       async execute(context) {
         const toolMessages = context.messages.filter(
           (message) => message.role === "tool"
@@ -82,7 +82,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -153,7 +153,7 @@ describe("framework-runtime-core", () => {
   test("stops resolving later sequential tool calls after the first approval gate", async () => {
     const harness = createFakeKernelHarness();
     const approvalChecks: string[] = [];
-    const driver = {
+    const runner = {
       async execute(context) {
         const toolMessages = context.messages.filter(
           (message) => message.role === "tool"
@@ -197,7 +197,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -267,9 +267,9 @@ describe("framework-runtime-core", () => {
 });
 
 function createRunnerRegistry(
-  drivers: Array<KrakenRunner | KrakenRunnerFactory> = []
+  runners: Array<KrakenRunner | KrakenRunnerFactory> = []
 ) {
-  return createBaseRunnerRegistry(drivers.map(wrapRunnerEntry));
+  return createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
 }
 
 function wrapRunnerEntry(
@@ -293,14 +293,14 @@ function isKrakenRunnerFactory(
   return "create" in entry && typeof entry.create === "function";
 }
 
-function wrapRunner(driver: KrakenRunner): KrakenRunner {
-  const resume = driver.resume;
+function wrapRunner(runner: KrakenRunner): KrakenRunner {
+  const resume = runner.resume;
 
   return {
     async execute(context) {
-      return normalizeRunnerResult(await driver.execute(context));
+      return normalizeRunnerResult(await runner.execute(context));
     },
-    id: driver.id,
+    id: runner.id,
     ...(resume === undefined
       ? {}
       : {

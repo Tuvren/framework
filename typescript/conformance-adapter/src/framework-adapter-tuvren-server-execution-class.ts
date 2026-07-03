@@ -39,7 +39,7 @@ import {
   createConformanceIdFactory,
   createConformanceKernelHarness,
   createStaticRunner,
-  DRIVER_ID,
+  RUNNER_ID,
   textSignal,
 } from "./framework-adapter-runtime.ts";
 
@@ -98,15 +98,15 @@ async function runTurn(
   callCount = 1
 ) {
   const harness = createConformanceKernelHarness();
-  const driver =
+  const runner =
     callCount > 1
       ? makeMultiCallRunner(tool.name, callCount)
       : makeSingleCallRunner(tool.name);
 
   const runtime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
-    defaultRunnerId: DRIVER_ID,
-    driverRegistry: createRunnerRegistry([driver]),
+    defaultRunnerId: RUNNER_ID,
+    runnerRegistry: createRunnerRegistry([runner]),
     kernel: harness.kernel,
   });
 
@@ -189,8 +189,8 @@ export async function runTuvrenServerLifecycle(): Promise<AdapterProjection> {
   const inputValidationHarness = createConformanceKernelHarness();
   const inputValidationRuntime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
-    defaultRunnerId: DRIVER_ID,
-    driverRegistry: createRunnerRegistry([invalidRunner]),
+    defaultRunnerId: RUNNER_ID,
+    runnerRegistry: createRunnerRegistry([invalidRunner]),
     kernel: inputValidationHarness.kernel,
   });
   const inputThread = await inputValidationRuntime.createThread({});
@@ -446,7 +446,7 @@ export async function runTuvrenServerCancellation(): Promise<AdapterProjection> 
   });
   let releaseTool: (() => void) | undefined;
 
-  const driver = createStaticRunner(async (context) => {
+  const runner = createStaticRunner(async (context) => {
     await Promise.resolve();
     if (!context.messages.some((m) => m.role === "tool")) {
       return {
@@ -467,8 +467,8 @@ export async function runTuvrenServerCancellation(): Promise<AdapterProjection> 
 
   const runtime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
-    defaultRunnerId: DRIVER_ID,
-    driverRegistry: createRunnerRegistry([driver]),
+    defaultRunnerId: RUNNER_ID,
+    runnerRegistry: createRunnerRegistry([runner]),
     kernel: harness.kernel,
   });
 
@@ -550,7 +550,7 @@ export async function runTuvrenServerTenantIsolation(): Promise<AdapterProjectio
 
   async function runIsolatedTurn(maxCalls: number, callCount: number) {
     const harness = createConformanceKernelHarness();
-    const driver = createStaticRunner(async (context) => {
+    const runner = createStaticRunner(async (context) => {
       await Promise.resolve();
       const toolMessages = context.messages.filter((m) => m.role === "tool");
       if (toolMessages.length < callCount) {
@@ -576,8 +576,8 @@ export async function runTuvrenServerTenantIsolation(): Promise<AdapterProjectio
 
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
-      defaultRunnerId: DRIVER_ID,
-      driverRegistry: createRunnerRegistry([driver]),
+      defaultRunnerId: RUNNER_ID,
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const tool: TuvrenToolDefinition = {

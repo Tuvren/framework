@@ -446,20 +446,20 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
   }
 
   getOrCreateRunner(
-    driverId: string,
-    materialize: (driverId: string) => KrakenRunner
+    runnerId: string,
+    materialize: (runnerId: string) => KrakenRunner
   ): KrakenRunner {
     if (
       this.materializedRunner !== undefined &&
-      this.materializedRunnerId === driverId
+      this.materializedRunnerId === runnerId
     ) {
       return this.materializedRunner;
     }
 
-    const driver = materialize(driverId);
-    this.materializedRunner = driver;
-    this.materializedRunnerId = driverId;
-    return driver;
+    const runner = materialize(runnerId);
+    this.materializedRunner = runner;
+    this.materializedRunnerId = runnerId;
+    return runner;
   }
 
   steer(signal: InputSignal): void {

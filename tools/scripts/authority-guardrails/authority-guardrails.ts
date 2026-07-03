@@ -95,7 +95,7 @@ const FORBIDDEN_VOCABULARY_PATTERNS: readonly RegExp[] = [
   /\bUint8Array\b/u,
   /\bBuffer\b/u,
   /\bVec<u8>\b/u,
-  /\breact_driver_[a-z0-9_]*\b/u,
+  /\breact_runner_[a-z0-9_]*\b/u,
   /\brust_framework_[a-z0-9_]*\b/u,
   /\btypescript_framework_[a-z0-9_]*\b/u,
 ];

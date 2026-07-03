@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://tuvren.dev/schemas/framework/driver-api/NonEmptyString.json",
+  "$id": "https://tuvren.dev/schemas/framework/runner-api/NonEmptyString.json",
   "type": "string",
   "minLength": 1,
   "pattern": ".*\\S.*"

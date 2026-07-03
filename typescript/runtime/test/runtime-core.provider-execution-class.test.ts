@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test drivers intentionally match the async framework driver contract.
+// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 
 /**
  * KRT-AY003 + KRT-AY005: Provider-attribution event recording and
@@ -80,7 +80,7 @@ function makeProviderRunner(
   extraMeta?: Record<string, unknown>
 ): RuntimeRunner {
   return {
-    id: "ay003-driver",
+    id: "ay003-runner",
     async execute(context) {
       if (!context.messages.some((m) => m.role === "tool")) {
         return {
@@ -112,10 +112,10 @@ async function runWithProviderTool(
   extraMeta?: Record<string, unknown>
 ): Promise<Record<string, unknown>[]> {
   const harness = createFakeKernelHarness();
-  const driver = makeProviderRunner(executionClass, extraMeta);
+  const runner = makeProviderRunner(executionClass, extraMeta);
   const runtime = createTuvrenRuntime({
-    defaultRunnerId: "ay003-driver",
-    driverRegistry: createBaseRunnerRegistry([driver]),
+    defaultRunnerId: "ay003-runner",
+    runnerRegistry: createBaseRunnerRegistry([runner]),
     kernel: harness.kernel,
   });
   const thread = await runtime.createThread({});

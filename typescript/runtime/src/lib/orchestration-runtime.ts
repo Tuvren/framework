@@ -221,7 +221,7 @@ class OrchestrationRuntimeImpl
   executeTurn(input: {
     agent: string;
     branchId: string;
-    driverId?: string;
+    runnerId?: string;
     parentTurnId?: string | null;
     schemaId?: string;
     signal: InputSignal;
@@ -234,7 +234,7 @@ class OrchestrationRuntimeImpl
     const handle = this.framework.executeTurn({
       branchId: input.branchId,
       config,
-      driverId: input.driverId,
+      runnerId: input.runnerId,
       parentTurnId: input.parentTurnId,
       schemaId: input.schemaId,
       signal: input.signal,
@@ -245,7 +245,7 @@ class OrchestrationRuntimeImpl
       binding: {
         agent: input.agent,
         branchId: input.branchId,
-        driverId: input.driverId,
+        runnerId: input.runnerId,
         handle,
         schemaId: input.schemaId,
         threadId: input.threadId,
@@ -284,7 +284,7 @@ class OrchestrationRuntimeImpl
     const childHandle = this.framework.executeTurn({
       branchId: childThread.branchId,
       config,
-      driverId: parentBinding.driverId,
+      runnerId: parentBinding.runnerId,
       schemaId: resolvedSchemaId,
       signal: normalizeInputSignal(input.signal, "orchestration child signal"),
       threadId: childThread.threadId,
@@ -294,7 +294,7 @@ class OrchestrationRuntimeImpl
     return {
       agent: input.agent,
       branchId: childThread.branchId,
-      driverId: parentBinding.driverId,
+      runnerId: parentBinding.runnerId,
       handle: childHandle,
       schemaId: resolvedSchemaId,
       threadId: childThread.threadId,

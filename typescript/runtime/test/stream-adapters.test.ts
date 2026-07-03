@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test drivers intentionally match the async framework driver contract.
+// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 import { describe, expect, test } from "bun:test";
 import { EventType } from "@ag-ui/core";
 import type { RuntimeRunner } from "@tuvren/core/runner";
@@ -40,13 +40,13 @@ import {
 describe("stream adapter integration", () => {
   test("fans one completed execution stream into canonical, SSE, and AG-UI consumers", async () => {
     const harness = createFakeKernelHarness();
-    const driver: RuntimeRunner = {
+    const runner: RuntimeRunner = {
       async execute(context) {
         context.runtime.emit({
           data: {
             stage: "executed",
           },
-          name: "driver.executed",
+          name: "runner.executed",
           timestamp: context.runtime.now(),
           type: "custom",
         });
@@ -66,7 +66,7 @@ describe("stream adapter integration", () => {
     };
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -88,7 +88,7 @@ describe("stream adapter integration", () => {
 
     expect(
       canonicalEvents.some(
-        (event) => event.type === "custom" && event.name === "driver.executed"
+        (event) => event.type === "custom" && event.name === "runner.executed"
       )
     ).toBe(true);
     expect(
@@ -104,7 +104,7 @@ describe("stream adapter integration", () => {
     expect(
       aguiEvents.some(
         (event) =>
-          event.type === EventType.CUSTOM && event.name === "driver.executed"
+          event.type === EventType.CUSTOM && event.name === "runner.executed"
       )
     ).toBe(true);
     expect(
@@ -130,7 +130,7 @@ describe("stream adapter integration", () => {
     const harness = createFakeKernelHarness();
     let emailCalls = 0;
     let searchCalls = 0;
-    const driver: RuntimeRunner = {
+    const runner: RuntimeRunner = {
       async execute(context) {
         const toolMessageCount = context.messages.filter(
           (message) => message.role === "tool"
@@ -176,7 +176,7 @@ describe("stream adapter integration", () => {
     };
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const tools: TuvrenToolDefinition[] = [
@@ -304,7 +304,7 @@ describe("stream adapter integration", () => {
 
   test("projects structured output turns through SSE and AG-UI fallbacks", async () => {
     const harness = createFakeKernelHarness();
-    const driver: RuntimeRunner = {
+    const runner: RuntimeRunner = {
       async execute() {
         return {
           messages: [assistantStructured("summary", { status: "ready" })],
@@ -321,7 +321,7 @@ describe("stream adapter integration", () => {
     };
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -358,7 +358,7 @@ describe("stream adapter integration", () => {
 
   test("surfaces steering incorporation through tee branches", async () => {
     const harness = createFakeKernelHarness();
-    const driver: RuntimeRunner = {
+    const runner: RuntimeRunner = {
       async execute(context) {
         const steeringMessage = context.messages.find(
           (message) =>
@@ -393,7 +393,7 @@ describe("stream adapter integration", () => {
     };
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -437,7 +437,7 @@ describe("stream adapter integration", () => {
   test("projects cancelled executions into SSE and AG-UI terminal errors", async () => {
     const harness = createFakeKernelHarness();
     let executeCount = 0;
-    const driver: RuntimeRunner = {
+    const runner: RuntimeRunner = {
       async execute(context) {
         executeCount += 1;
 
@@ -455,7 +455,7 @@ describe("stream adapter integration", () => {
           messages: [assistantText("Interrupted second pass.")],
           partial: true,
           resolution: {
-            error: new Error("driver noticed cancellation"),
+            error: new Error("runner noticed cancellation"),
             fatality: "hard",
             type: "fail",
           },
@@ -468,7 +468,7 @@ describe("stream adapter integration", () => {
     };
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});

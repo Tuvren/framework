@@ -249,7 +249,7 @@ export async function failRuntimeCoreInvalidPauseResolutionIfNeeded(
   const invalidPauseResolution = new TuvrenRuntimeError(
     "shared core only permits approval pauses that originate from requested tool calls",
     {
-      code: "invalid_driver_resolution",
+      code: "invalid_runner_resolution",
       details: {
         resolutionType: resolution.type,
         toolCallCount: requestedToolCallCount,
@@ -284,7 +284,7 @@ export function createRuntimeCoreRunnerExecutionContext(
   emittedRunnerEvents: TuvrenStreamEvent[]
 ): RunnerExecutionContext {
   return createRuntimeRunnerExecutionContextFacade(
-    hosts.driver,
+    hosts.runner,
     handle,
     schemaId,
     loopState,
@@ -301,7 +301,7 @@ export async function stageRuntimeCoreRunnerMessages(
   iterationCount: number
 ): Promise<HashString[]> {
   return await stageRuntimeRunnerMessagesFacade(
-    hosts.driver,
+    hosts.runner,
     runId,
     messages,
     iterationCount
@@ -325,7 +325,7 @@ export async function applyRuntimeCoreRequestedToolBatchIfNeeded(
   }
 ): Promise<LoopOutcome | RuntimeResolution> {
   return await applyRuntimeRequestedToolBatchIfNeededFacade(
-    hosts.driver,
+    hosts.runner,
     input
   );
 }
@@ -343,7 +343,7 @@ export async function completeRuntimeCoreIterationArtifacts(
   appendedMessageHashes: HashString[]
 ): Promise<HashString | undefined> {
   return await completeRuntimeIterationArtifactsFacade(
-    hosts.driver,
+    hosts.runner,
     handle,
     schemaId,
     loopState,
@@ -370,7 +370,7 @@ export async function applyRuntimeCoreAfterIterationResolution(
   manifest: ContextManifest
 ): Promise<RuntimeResolution> {
   return await applyRuntimeAfterIterationResolutionFacade(
-    hosts.driver,
+    hosts.runner,
     handle,
     loopState,
     iterationCount,
@@ -409,7 +409,7 @@ export function createRuntimeCoreToolBatchEnvironment(
   runId: string
 ): ToolBatchEnvironment {
   return createRuntimeToolBatchEnvironmentFacade(
-    hosts.driverSupport,
+    hosts.runnerSupport,
     handle,
     loopState,
     manifest,
@@ -431,7 +431,7 @@ export function createRuntimeCoreRunnerHandoffContextPlan(
   loopState: LoopState
 ): HandoffContextPlan {
   return createRuntimeRunnerHandoffContextPlanFacade(
-    hosts.driverSupport,
+    hosts.runnerSupport,
     input,
     headState,
     loopState
@@ -439,10 +439,10 @@ export function createRuntimeCoreRunnerHandoffContextPlan(
 }
 
 export async function executeRuntimeCoreRunnerCall(
-  driver: KrakenRunner,
+  runner: KrakenRunner,
   context: RunnerExecutionContext
 ) {
-  return await executeRuntimeRunner(driver, context);
+  return await executeRuntimeRunner(runner, context);
 }
 
 export async function completeRuntimeCoreIterationRun(

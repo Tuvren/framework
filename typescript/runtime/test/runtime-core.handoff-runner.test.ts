@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test drivers intentionally match the async framework driver contract.
+// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 import { describe, expect, test } from "bun:test";
 import type { AgentConfig, HandoffSourceContext } from "@tuvren/core/execution";
 import type { TuvrenModelResponse } from "@tuvren/core/provider";
@@ -39,21 +39,21 @@ import {
 } from "./runtime-core-test-helpers.ts";
 
 describe("framework-runtime-core", () => {
-  test("lets drivers build valid handoff plans through RunnerExecutionContext.handoff", async () => {
+  test("lets runners build valid handoff plans through RunnerExecutionContext.handoff", async () => {
     const harness = createFakeKernelHarness();
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([
+      runnerRegistry: createRunnerRegistry([
         {
           async execute(context) {
             if (context.config.name === "primary") {
               return {
                 messages: [
-                  assistantText("Passing this through the driver helper."),
+                  assistantText("Passing this through the runner helper."),
                 ],
                 resolution: {
                   contextPlan: context.handoff.createContextPlan({
-                    reason: "driver_helper_handoff",
+                    reason: "runner_helper_handoff",
                     targetAgent: "reviewer",
                   }),
                   targetAgent: "reviewer",
@@ -84,7 +84,7 @@ describe("framework-runtime-core", () => {
     const handle = runtime.executeTurn({
       branchId: thread.branchId,
       config: { name: "primary" },
-      signal: textSignal("Use the driver handoff helper"),
+      signal: textSignal("Use the runner handoff helper"),
       threadId: thread.threadId,
     });
 
@@ -102,7 +102,7 @@ describe("framework-runtime-core", () => {
     ).toEqual(expect.arrayContaining(["handoff_applied"]));
   });
 
-  test("driver helper handoff plans accept provider-backed agent configs with extra provider state", async () => {
+  test("runner helper handoff plans accept provider-backed agent configs with extra provider state", async () => {
     const harness = createFakeKernelHarness();
     const primaryProvider = {
       extra: true,
@@ -142,17 +142,17 @@ describe("framework-runtime-core", () => {
     };
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([
+      runnerRegistry: createRunnerRegistry([
         {
           async execute(context) {
             if (context.config.name === "primary") {
               return {
                 messages: [
-                  assistantText("Passing this through the driver helper."),
+                  assistantText("Passing this through the runner helper."),
                 ],
                 resolution: {
                   contextPlan: context.handoff.createContextPlan({
-                    reason: "driver_helper_handoff",
+                    reason: "runner_helper_handoff",
                     targetAgent: "reviewer",
                   }),
                   targetAgent: "reviewer",
@@ -184,7 +184,7 @@ describe("framework-runtime-core", () => {
     const handle = runtime.executeTurn({
       branchId: thread.branchId,
       config: agents.primary,
-      signal: textSignal("Use the provider-backed driver handoff helper"),
+      signal: textSignal("Use the provider-backed runner handoff helper"),
       threadId: thread.threadId,
     });
 
@@ -199,18 +199,18 @@ describe("framework-runtime-core", () => {
     ).toBe(true);
   });
 
-  test("driver helper handoff plans use the latest source context at apply time", async () => {
+  test("runner helper handoff plans use the latest source context at apply time", async () => {
     const harness = createFakeKernelHarness();
     let capturedSourceContext: HandoffSourceContext | undefined;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([
+      runnerRegistry: createRunnerRegistry([
         {
           async execute(context) {
             if (context.config.name === "primary") {
               return {
                 messages: [
-                  assistantText("Passing this through the driver helper."),
+                  assistantText("Passing this through the runner helper."),
                 ],
                 resolution: {
                   contextPlan: context.handoff.createContextPlan({
@@ -220,7 +220,7 @@ describe("framework-runtime-core", () => {
                         sourceContext
                       );
                     },
-                    reason: "driver_helper_handoff",
+                    reason: "runner_helper_handoff",
                     targetAgent: "reviewer",
                   }),
                   targetAgent: "reviewer",
@@ -251,7 +251,7 @@ describe("framework-runtime-core", () => {
     const handle = runtime.executeTurn({
       branchId: thread.branchId,
       config: { name: "primary" },
-      signal: textSignal("Use the driver handoff helper"),
+      signal: textSignal("Use the runner handoff helper"),
       threadId: thread.threadId,
     });
 
@@ -259,12 +259,12 @@ describe("framework-runtime-core", () => {
 
     expect(capturedSourceContext?.messages).toEqual([
       {
-        parts: [{ text: "Use the driver handoff helper", type: "text" }],
+        parts: [{ text: "Use the runner handoff helper", type: "text" }],
         role: "user",
       },
       {
         parts: [
-          { text: "Passing this through the driver helper.", type: "text" },
+          { text: "Passing this through the runner helper.", type: "text" },
         ],
         role: "assistant",
       },
@@ -273,11 +273,11 @@ describe("framework-runtime-core", () => {
     expect(capturedSourceContext?.manifest.lastAssistantMessageIndex).toBe(1);
   });
 
-  test("driver helper last_output_only handoffs forward the just-produced assistant output", async () => {
+  test("runner helper last_output_only handoffs forward the just-produced assistant output", async () => {
     const harness = createFakeKernelHarness();
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([
+      runnerRegistry: createRunnerRegistry([
         {
           async execute(context) {
             if (context.config.name === "primary") {
@@ -408,7 +408,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([handoffRunner]),
+      runnerRegistry: createRunnerRegistry([handoffRunner]),
       kernel: harness.kernel,
       resolveAgentConfig: (agentName) => agents[agentName],
     });
@@ -436,9 +436,9 @@ describe("framework-runtime-core", () => {
 });
 
 function createRunnerRegistry(
-  drivers: Array<KrakenRunner | KrakenRunnerFactory> = []
+  runners: Array<KrakenRunner | KrakenRunnerFactory> = []
 ) {
-  return createBaseRunnerRegistry(drivers.map(wrapRunnerEntry));
+  return createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
 }
 
 function wrapRunnerEntry(
@@ -462,14 +462,14 @@ function isKrakenRunnerFactory(
   return "create" in entry && typeof entry.create === "function";
 }
 
-function wrapRunner(driver: KrakenRunner): KrakenRunner {
-  const resume = driver.resume;
+function wrapRunner(runner: KrakenRunner): KrakenRunner {
+  const resume = runner.resume;
 
   return {
     async execute(context) {
-      return normalizeRunnerResult(await driver.execute(context));
+      return normalizeRunnerResult(await runner.execute(context));
     },
-    id: driver.id,
+    id: runner.id,
     ...(resume === undefined
       ? {}
       : {

@@ -2383,7 +2383,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "framework.driver-api",
+      "adapterCapability": "framework.runner-api",
       "claimFingerprint": "7321fba0bdb57563d641452a6a146cee625e2e9d545ea972e33babdb8b1b954f",
       "claimId": "FWK-7321FBA0BDB5",
       "duplicateOf": null,
@@ -2398,7 +2398,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "framework.driver-api",
+      "adapterCapability": "framework.runner-api",
       "claimFingerprint": "fb5fbb7512738abbcc6bbaa6a7a4472629f4fed918d2037e4977e321de314043",
       "claimId": "FWK-FB5FBB751273",
       "duplicateOf": null,
@@ -2408,12 +2408,12 @@
       "sectionHeading": "5.6 Driver Contract",
       "sectionKey": "5.6",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "driver contract",
+      "surface": "runner contract",
       "text": "├─ config: AgentConfig // read-only snapshot"
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "framework.driver-api",
+      "adapterCapability": "framework.runner-api",
       "claimFingerprint": "9b95db8e525087928c083d67806b89ca4d320156cfb7e4f5aa07a7d19a48cf1a",
       "claimId": "FWK-9B95DB8E5250",
       "duplicateOf": null,
@@ -2423,12 +2423,12 @@
       "sectionHeading": "5.6 Driver Contract",
       "sectionKey": "5.6",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "driver contract",
+      "surface": "runner contract",
       "text": "├─ messages: TuvrenMessage[] // read-only snapshot"
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "framework.driver-api",
+      "adapterCapability": "framework.runner-api",
       "claimFingerprint": "b0d69e0f958bdbe954bfce494bf3a50820c7d3d5841ab62dd1d8adb79dcb3613",
       "claimId": "FWK-B0D69E0F958B",
       "duplicateOf": null,
@@ -2438,12 +2438,12 @@
       "sectionHeading": "5.6 Driver Contract",
       "sectionKey": "5.6",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "driver contract",
+      "surface": "runner contract",
       "text": "├─ manifest: ContextManifest // read-only snapshot"
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "framework.driver-api",
+      "adapterCapability": "framework.runner-api",
       "claimFingerprint": "9f2d5a3ec3c9a429a25a3664c2648a5421c9a304dbfcb38ac7418511f6f86cab",
       "claimId": "FWK-9F2D5A3EC3C9",
       "duplicateOf": null,
@@ -2453,12 +2453,12 @@
       "sectionHeading": "5.6 Driver Contract",
       "sectionKey": "5.6",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "driver contract",
+      "surface": "runner contract",
       "text": "├─ toolRegistry: ToolRegistry // read-only driver-facing view"
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "framework.driver-api",
+      "adapterCapability": "framework.runner-api",
       "claimFingerprint": "7b2522fcdcd293902cf64516b378e44327d81a1f5147784050206a3769b68072",
       "claimId": "FWK-7B2522FCDCD2",
       "duplicateOf": null,
@@ -2468,7 +2468,7 @@
       "sectionHeading": "5.6 Driver Contract",
       "sectionKey": "5.6",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "driver contract",
+      "surface": "runner contract",
       "text": "Portable machine artifacts for this seam capture the serializable payload contract only. Binding-level surfaces that contain callables or runtime-native capabilities — such as `AgentConfig`, `ToolRegistry`, `DriverRuntimePort`, `DriverHandoffPort`, `AbortSignal`, and the builder function inside `HandoffContextPlan` — may therefore be represented opaquely in emitted JSON Schema or equivalent packet artifacts while remaining fully typed in language bindings."
     },
     {
@@ -2488,7 +2488,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "framework.driver-api",
+      "adapterCapability": "framework.runner-api",
       "claimFingerprint": "0c65be060497a3ffb64bc016750cf974817b58d381f703be7e2cd05508e582a5",
       "claimId": "FWK-0C65BE060497",
       "duplicateOf": null,
@@ -2498,12 +2498,12 @@
       "sectionHeading": "5.6 Driver Contract",
       "sectionKey": "5.6",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "driver contract",
+      "surface": "runner contract",
       "text": "`resolution` is always required"
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "framework.driver-api",
+      "adapterCapability": "framework.runner-api",
       "claimFingerprint": "b664f883ceb1ce3b9c766801eb8c136a74d17c9d73e93d7086a6e38cef0a5477",
       "claimId": "FWK-B664F883CEB1",
       "duplicateOf": null,
@@ -2513,12 +2513,12 @@
       "sectionHeading": "5.6 Driver Contract",
       "sectionKey": "5.6",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "driver contract",
+      "surface": "runner contract",
       "text": "`messages` are required whenever the iteration produces durable assistant history"
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "framework.driver-api",
+      "adapterCapability": "framework.runner-api",
       "claimFingerprint": "bfa2cd0475d08ec24c8e79a5508b59544059db0ebe27abec61f1bc78a98850c3",
       "claimId": "FWK-BFA2CD0475D0",
       "duplicateOf": null,
@@ -2528,12 +2528,12 @@
       "sectionHeading": "5.6 Driver Contract",
       "sectionKey": "5.6",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "driver contract",
+      "surface": "runner contract",
       "text": "`messages` may contain at most one assistant message per iteration"
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "framework.driver-api",
+      "adapterCapability": "framework.runner-api",
       "claimFingerprint": "ffc7905314fd46e1acf9f88e31077e80fa5415af16f6ebf768e4f6723a771bce",
       "claimId": "FWK-FFC7905314FD",
       "duplicateOf": null,
@@ -2543,12 +2543,12 @@
       "sectionHeading": "5.6 Driver Contract",
       "sectionKey": "5.6",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "driver contract",
+      "surface": "runner contract",
       "text": "`messages` may be absent only for pure control outcomes with no durable assistant-history contribution, or for failures before any durable assistant output was staged"
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "framework.driver-api",
+      "adapterCapability": "framework.runner-api",
       "claimFingerprint": "439134e746d22fdcc8429d12e843a04dacebeb3431c2d4348f0ea4088c3b2935",
       "claimId": "FWK-439134E746D2",
       "duplicateOf": null,
@@ -2558,12 +2558,12 @@
       "sectionHeading": "5.6 Driver Contract",
       "sectionKey": "5.6",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "driver contract",
+      "surface": "runner contract",
       "text": "`partial` is valid only for failed execution results that stage an assistant message"
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "framework.driver-api",
+      "adapterCapability": "framework.runner-api",
       "claimFingerprint": "74731be03a3d7799827881928da6b5523d144a5f36c1f1c490a95a0a8e478e7c",
       "claimId": "FWK-74731BE03A3D",
       "duplicateOf": null,
@@ -2573,12 +2573,12 @@
       "sectionHeading": "5.6 Driver Contract",
       "sectionKey": "5.6",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "driver contract",
+      "surface": "runner contract",
       "text": "`assistantEventReconciliation` is optional and only valid for explicit driver-signaled cases such as `aroundModel` post-stream durable replacement"
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "framework.driver-api",
+      "adapterCapability": "framework.runner-api",
       "claimFingerprint": "98b798bd35c240a7578a2eb11577e2d25eb0da65f4bf3f4a36c6ba22d29f75c0",
       "claimId": "FWK-98B798BD35C2",
       "duplicateOf": null,
@@ -2588,12 +2588,12 @@
       "sectionHeading": "5.6 Driver Contract",
       "sectionKey": "5.6",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "driver contract",
+      "surface": "runner contract",
       "text": "`stateUpdates` carries per-extension manifest updates that must be merged at the same checkpoint that commits the assistant message and updated manifest"
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "framework.driver-api",
+      "adapterCapability": "framework.runner-api",
       "claimFingerprint": "c8ae1fe5d5b6cd12ac0c1267e1a548c553eda9f69b0ac6965d11f9814891c11d",
       "claimId": "FWK-C8AE1FE5D5B6",
       "duplicateOf": null,
@@ -2603,12 +2603,12 @@
       "sectionHeading": "5.6 Driver Contract",
       "sectionKey": "5.6",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "driver contract",
+      "surface": "runner contract",
       "text": "`toolExecutionMode` is required when the driver requests tool calls through assistant messages, and invalid otherwise"
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "framework.driver-api",
+      "adapterCapability": "framework.runner-api",
       "claimFingerprint": "a7792be183d15e0c5bc25968c32f4660d52994c29ef612f31ff2c5dd3bd498a3",
       "claimId": "FWK-A7792BE183D1",
       "duplicateOf": null,
@@ -2618,7 +2618,7 @@
       "sectionHeading": "5.6 Driver Contract",
       "sectionKey": "5.6",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
-      "surface": "driver contract",
+      "surface": "runner contract",
       "text": "failed `partial` results may include interrupted tool-call content; those calls are durable context only, still require `toolExecutionMode` for contract completeness, and are not executed because the resolution is failed"
     },
     {
@@ -2743,7 +2743,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "framework.react-driver",
+      "adapterCapability": "framework.react-runner",
       "claimFingerprint": "607fbc20fd59aae06d573b065e3467a17bceea4df612fbea5c0f462d5f700b35",
       "claimId": "FWK-607FBC20FD59",
       "duplicateOf": null,
@@ -2758,7 +2758,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "framework.react-driver",
+      "adapterCapability": "framework.react-runner",
       "claimFingerprint": "af60c9581babea8a88b3abc4464d5a8062e7213d5d85373ce97b77cc52c27fe1",
       "claimId": "FWK-AF60C9581BAB",
       "duplicateOf": null,
@@ -3088,7 +3088,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "framework.react-driver",
+      "adapterCapability": "framework.react-runner",
       "claimFingerprint": "b48e88c029d46b4ab70647b980a27cd65ac92fbde4b9d978c5670946a1730545",
       "claimId": "FWK-B48E88C029D4",
       "duplicateOf": "FWK-9B95DB8E5250",
@@ -3103,7 +3103,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "framework.react-driver",
+      "adapterCapability": "framework.react-runner",
       "claimFingerprint": "ebcc7f6d9ec15480982c74d1daf6e0695596c6646a0e381519db9258bd1a952f",
       "claimId": "FWK-EBCC7F6D9EC1",
       "duplicateOf": null,
@@ -3118,7 +3118,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "framework.react-driver",
+      "adapterCapability": "framework.react-runner",
       "claimFingerprint": "fae5a77068e714333ed789c8d095b99b3c8edc91b1a69908668751b6ef645011",
       "claimId": "FWK-FAE5A77068E7",
       "duplicateOf": null,
@@ -3133,7 +3133,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "framework.react-driver",
+      "adapterCapability": "framework.react-runner",
       "claimFingerprint": "08deaa2a61a3b2e78ca98e26dfe452cd6e72f2097ad5a19d607cd81bc4930fae",
       "claimId": "FWK-08DEAA2A61A3",
       "duplicateOf": null,
@@ -3148,7 +3148,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "framework.react-driver",
+      "adapterCapability": "framework.react-runner",
       "claimFingerprint": "413c5b22b8ea39daea5aa0cf2fb7985a1bb3b316ec51bfe79b7b08c6827fd667",
       "claimId": "FWK-413C5B22B8EA",
       "duplicateOf": null,
@@ -3178,7 +3178,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "framework.react-driver",
+      "adapterCapability": "framework.react-runner",
       "claimFingerprint": "41d622194b15e765287b1442289e1d5764249ab5525c76046bcc9e305d6a2fda",
       "claimId": "FWK-41D622194B15",
       "duplicateOf": "FWK-EBCC7F6D9EC1",
@@ -3193,7 +3193,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "framework.react-driver",
+      "adapterCapability": "framework.react-runner",
       "claimFingerprint": "1a08ffe9629ba0bf5f91ba0fec936b591a9bf9934afb4b1e5a97f245cf9b4768",
       "claimId": "FWK-1A08FFE9629B",
       "duplicateOf": "FWK-FAE5A77068E7",
@@ -3208,7 +3208,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "framework.react-driver",
+      "adapterCapability": "framework.react-runner",
       "claimFingerprint": "2417799566df6eef74d37e7b15acbbe37d7e005edaa3654ecda743a3e6809b67",
       "claimId": "FWK-2417799566DF",
       "duplicateOf": null,
@@ -3223,7 +3223,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "framework.react-driver",
+      "adapterCapability": "framework.react-runner",
       "claimFingerprint": "f16baf069f4584167c9b5181eba5ea1dbffd72675d2ec8e3d732c28fbc9f7c9f",
       "claimId": "FWK-F16BAF069F45",
       "duplicateOf": null,
@@ -3238,7 +3238,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "framework.react-driver",
+      "adapterCapability": "framework.react-runner",
       "claimFingerprint": "3c496f9731cb760ed4478918fde0834971a8016a3e15f8a9bb7e634a53896b7b",
       "claimId": "FWK-3C496F9731CB",
       "duplicateOf": null,
@@ -3298,7 +3298,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "adapterCapability": "framework.react-driver",
+      "adapterCapability": "framework.react-runner",
       "claimFingerprint": "4fa079668ffc1f818b0432d35e1e2969c70e2df09e8e79114cc9c58de0328c2d",
       "claimId": "FWK-4FA079668FFC",
       "duplicateOf": null,

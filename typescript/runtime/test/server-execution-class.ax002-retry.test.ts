@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test drivers intentionally match the async framework driver contract.
+// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 
 /**
  * KRT-AX002: Idempotent retry and cancellation for server invocations.
@@ -51,7 +51,7 @@ import {
 
 function makeRunner(toolName: string, input: unknown = {}): RuntimeRunner {
   return {
-    id: "ax002-driver",
+    id: "ax002-runner",
     async execute(context) {
       if (!context.messages.some((m) => m.role === "tool")) {
         return {
@@ -78,8 +78,8 @@ function makeRunner(toolName: string, input: unknown = {}): RuntimeRunner {
 async function runWithTool(tool: TuvrenToolDefinition) {
   const harness = createFakeKernelHarness();
   const runtime = createTuvrenRuntime({
-    defaultRunnerId: "ax002-driver",
-    driverRegistry: createBaseRunnerRegistry([makeRunner(tool.name)]),
+    defaultRunnerId: "ax002-runner",
+    runnerRegistry: createBaseRunnerRegistry([makeRunner(tool.name)]),
     kernel: harness.kernel,
   });
   const thread = await runtime.createThread({});
@@ -245,10 +245,10 @@ describe("KRT-AX002 — cancellation", () => {
       },
     };
 
-    const driver = makeRunner(toolName);
+    const runner = makeRunner(toolName);
     const runtime = createTuvrenRuntime({
-      defaultRunnerId: "ax002-driver",
-      driverRegistry: createBaseRunnerRegistry([driver]),
+      defaultRunnerId: "ax002-runner",
+      runnerRegistry: createBaseRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -294,10 +294,10 @@ describe("KRT-AX002 — cancellation", () => {
       },
     };
 
-    const driver = makeRunner(toolName);
+    const runner = makeRunner(toolName);
     const runtime = createTuvrenRuntime({
-      defaultRunnerId: "ax002-driver",
-      driverRegistry: createBaseRunnerRegistry([driver]),
+      defaultRunnerId: "ax002-runner",
+      runnerRegistry: createBaseRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});

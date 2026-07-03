@@ -1,0 +1,90 @@
+{
+  "planId": "tuvren.framework.react-runner.callables",
+  "planVersion": "0.1.0",
+  "packetId": "tuvren.framework.react-runner",
+  "applicability": {
+    "capabilities": ["framework.react-runner"]
+  },
+  "scenarios": {
+    "runner-api-scenarios": "../scenarios/runner-api-scenarios.json"
+  },
+  "checks": [
+    {
+      "checkId": "react-runner-callable.before-iteration",
+      "operation": "runner.execute",
+      "scenario": "runner-api-scenarios",
+      "input": { "scenarioPath": "$.runner-hook-turn" },
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.hooks.beforeIteration",
+          "equals": 2
+        }
+      ],
+      "evidence": ["hooks.beforeIteration"]
+    },
+    {
+      "checkId": "react-runner-callable.around-model",
+      "operation": "runner.execute",
+      "scenario": "runner-api-scenarios",
+      "input": { "scenarioPath": "$.runner-hook-turn" },
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.hooks.aroundModel",
+          "equals": 2
+        }
+      ],
+      "evidence": ["hooks.aroundModel"]
+    },
+    {
+      "checkId": "react-runner-callable.around-tool",
+      "operation": "runner.execute",
+      "scenario": "runner-api-scenarios",
+      "input": { "scenarioPath": "$.runner-hook-turn" },
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.hooks.aroundTool",
+          "equals": 1
+        }
+      ],
+      "evidence": ["hooks.aroundTool"]
+    },
+    {
+      "checkId": "react-runner-callable.after-iteration",
+      "operation": "runner.execute",
+      "scenario": "runner-api-scenarios",
+      "input": { "scenarioPath": "$.runner-hook-turn" },
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.hooks.afterIteration",
+          "equals": 2
+        }
+      ],
+      "evidence": ["hooks.afterIteration"]
+    },
+    {
+      "checkId": "react-runner-callable.checkpoint",
+      "operation": "runner.checkpoint",
+      "scenario": "runner-api-scenarios",
+      "input": { "scenarioPath": "$.runner-checkpoint-turn" },
+      "steps": [
+        {
+          "stepId": "checkpoint",
+          "operation": "runner.checkpoint",
+          "input": { "scenarioPath": "$.runner-checkpoint-turn" }
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "stateField",
+          "field": "$.trace.checkpoint.evidence.checkpoint.manifestPathCount",
+          "equals": 4
+        }
+      ],
+      "evidence": ["trace.checkpoint.evidence.checkpoint.manifestPathCount"]
+    }
+  ]
+}

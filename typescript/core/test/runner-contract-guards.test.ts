@@ -24,11 +24,11 @@ import {
 } from "../src/runner/index.js";
 
 describe("runner-contract-guards", () => {
-  test("accepts explicit driver contracts", async () => {
+  test("accepts explicit runner contracts", async () => {
     const continueIteration = {
       type: "continue_iteration",
     } satisfies { type: "continue_iteration" };
-    const driver = {
+    const runner = {
       execute(_context) {
         return Promise.resolve({
           resolution: continueIteration,
@@ -42,11 +42,11 @@ describe("runner-contract-guards", () => {
       },
     } satisfies RuntimeRunner;
 
-    expect(isRuntimeRunner(driver)).toBe(true);
-    expect(() => assertRuntimeRunner(driver)).not.toThrow();
+    expect(isRuntimeRunner(runner)).toBe(true);
+    expect(() => assertRuntimeRunner(runner)).not.toThrow();
 
     const context = createRunnerExecutionContext();
-    await expect(driver.execute(context)).resolves.toEqual({
+    await expect(runner.execute(context)).resolves.toEqual({
       resolution: { type: "continue_iteration" },
     });
     expect(() =>
@@ -62,11 +62,11 @@ describe("runner-contract-guards", () => {
     ).toBe("reviewer");
   });
 
-  test("accepts driver contracts without a resume method", () => {
+  test("accepts runner contracts without a resume method", () => {
     const continueIteration = {
       type: "continue_iteration",
     } satisfies { type: "continue_iteration" };
-    const driver = {
+    const runner = {
       execute() {
         return Promise.resolve({
           resolution: continueIteration,
@@ -75,8 +75,8 @@ describe("runner-contract-guards", () => {
       id: "react",
     } satisfies RuntimeRunner;
 
-    expect(isRuntimeRunner(driver)).toBe(true);
-    expect(() => assertRuntimeRunner(driver)).not.toThrow();
+    expect(isRuntimeRunner(runner)).toBe(true);
+    expect(() => assertRuntimeRunner(runner)).not.toThrow();
   });
 
   test("accepts toolExecutionMode when assistant messages request tool calls", () => {
@@ -101,7 +101,7 @@ describe("runner-contract-guards", () => {
     ).not.toThrow();
   });
 
-  test("accepts driver state updates for extension-owned manifest namespaces", () => {
+  test("accepts runner state updates for extension-owned manifest namespaces", () => {
     expect(() =>
       assertRunnerExecutionResult({
         resolution: { reason: "done", type: "end_turn" },
@@ -132,7 +132,7 @@ describe("runner-contract-guards", () => {
     ).not.toThrow();
   });
 
-  test("rejects driver results with more than one assistant message", () => {
+  test("rejects runner results with more than one assistant message", () => {
     expect(() =>
       assertRunnerExecutionResult({
         messages: [
@@ -205,7 +205,7 @@ describe("runner-contract-guards", () => {
     ).toThrow("partial is only valid for failed execution results");
   });
 
-  test("rejects driver results that bypass framework-owned tool results", () => {
+  test("rejects runner results that bypass framework-owned tool results", () => {
     expect(() =>
       assertRunnerExecutionResult({
         messages: [
@@ -226,7 +226,7 @@ describe("runner-contract-guards", () => {
     ).toThrow("must not be a tool_result");
   });
 
-  test("rejects superseded driver result fields from the old branch shape", () => {
+  test("rejects superseded runner result fields from the old branch shape", () => {
     expect(() =>
       assertRunnerExecutionResult({
         activeAgent: "primary",
@@ -256,7 +256,7 @@ describe("runner-contract-guards", () => {
         toolExecutionMode: "sequential",
       })
     ).toThrow(
-      "toolExecutionMode is only valid when driver messages request tool calls"
+      "toolExecutionMode is only valid when runner messages request tool calls"
     );
 
     expect(() =>
@@ -300,7 +300,7 @@ describe("runner-contract-guards", () => {
         resolution: { type: "continue_iteration" },
       })
     ).toThrow(
-      "toolExecutionMode is required when driver messages request tool calls"
+      "toolExecutionMode is required when runner messages request tool calls"
     );
   });
 
@@ -453,7 +453,7 @@ describe("runner-contract-guards", () => {
         toolExecutionMode: "parallel",
       })
     ).toThrow(
-      "resolution must continue iteration when driver messages request tool calls"
+      "resolution must continue iteration when runner messages request tool calls"
     );
   });
 
@@ -485,7 +485,7 @@ describe("runner-contract-guards", () => {
           type: "pause",
         },
       })
-    ).toThrow("resolution.pause requires driver messages with tool calls");
+    ).toThrow("resolution.pause requires runner messages with tool calls");
   });
 
   test("rejects stale nested fields on exact-shape resolutions", () => {

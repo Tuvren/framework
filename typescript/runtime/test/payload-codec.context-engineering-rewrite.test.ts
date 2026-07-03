@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test drivers intentionally match the async framework driver contract.
+// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 
 // KRT-BF007 (carried from the BF005 milestone review) — crypto-shredding coverage
 // for the context-engineering rewrite path. The BF005 suite exercises the codec
@@ -53,7 +53,7 @@ function buildEncryptedRuntime(keys: Map<string, Uint8Array>): {
   });
   const framework = createTuvrenRuntime({
     defaultRunnerId: "fake",
-    driverRegistry: createRunnerRegistry([
+    runnerRegistry: createRunnerRegistry([
       createStaticRunner(async () => ({
         messages: [assistantText(PROVIDER_SECRET)],
         resolution: { reason: "done", type: "end_turn" },

@@ -49,7 +49,7 @@ import {
   createConformanceKernelHarness,
   createConformanceRunLivenessKernelHarness,
   createStaticRunner,
-  DRIVER_ID,
+  RUNNER_ID,
   textSignal,
 } from "./framework-adapter-runtime.ts";
 
@@ -201,8 +201,8 @@ export function createFrameworkAdapterRuntimeScenarios(
     const harness = createConformanceKernelHarness();
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
-      defaultRunnerId: DRIVER_ID,
-      driverRegistry: createRunnerRegistry([
+      defaultRunnerId: RUNNER_ID,
+      runnerRegistry: createRunnerRegistry([
         createStaticRunner(() => ({
           messages: [assistantText("completed")],
           resolution: {
@@ -248,11 +248,11 @@ export function createFrameworkAdapterRuntimeScenarios(
     const capture = createTelemetryCapture();
     const harness = createConformanceKernelHarness();
     const scenarioCase = dependencies.readRecordString(scenario, "case");
-    const driver = createOperationalTelemetryRunner(scenarioCase);
+    const runner = createOperationalTelemetryRunner(scenarioCase);
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
-      defaultRunnerId: DRIVER_ID,
-      driverRegistry: createRunnerRegistry([driver]),
+      defaultRunnerId: RUNNER_ID,
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
       now: createDeterministicClock(),
       telemetry: capture.sink,
@@ -343,7 +343,7 @@ export function createFrameworkAdapterRuntimeScenarios(
           },
         };
       },
-      id: DRIVER_ID,
+      id: RUNNER_ID,
     };
   }
 
@@ -385,7 +385,7 @@ export function createFrameworkAdapterRuntimeScenarios(
   ): Promise<AdapterProjection> {
     const harness = createConformanceKernelHarness();
     const livenessHarness = createConformanceRunLivenessKernelHarness(harness);
-    const driver = createStaticRunner(() => ({
+    const runner = createStaticRunner(() => ({
       messages: [assistantText("recovered")],
       resolution: {
         reason: "done",
@@ -394,8 +394,8 @@ export function createFrameworkAdapterRuntimeScenarios(
     }));
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
-      defaultRunnerId: DRIVER_ID,
-      driverRegistry: createRunnerRegistry([driver]),
+      defaultRunnerId: RUNNER_ID,
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: livenessHarness.kernel,
       now: createDeterministicClock(),
       runLiveness: {
@@ -456,7 +456,7 @@ export function createFrameworkAdapterRuntimeScenarios(
   }): Promise<AdapterProjection> {
     const harness = createConformanceKernelHarness();
     let executeCount = 0;
-    const driver = {
+    const runner = {
       async execute(context) {
         executeCount += 1;
 
@@ -472,18 +472,18 @@ export function createFrameworkAdapterRuntimeScenarios(
           messages: [assistantText("interrupted")],
           partial: true,
           resolution: {
-            error: new Error("driver observed cancellation"),
+            error: new Error("runner observed cancellation"),
             fatality: "hard",
             type: "fail",
           },
         };
       },
-      id: DRIVER_ID,
+      id: RUNNER_ID,
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
-      defaultRunnerId: DRIVER_ID,
-      driverRegistry: createRunnerRegistry([driver]),
+      defaultRunnerId: RUNNER_ID,
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -603,7 +603,7 @@ export function createFrameworkAdapterRuntimeScenarios(
     );
     const harness = createConformanceKernelHarness();
     const executedNames: string[] = [];
-    const driver = {
+    const runner = {
       async execute(context) {
         await Promise.resolve();
 
@@ -623,7 +623,7 @@ export function createFrameworkAdapterRuntimeScenarios(
           },
         };
       },
-      id: DRIVER_ID,
+      id: RUNNER_ID,
     } satisfies RuntimeRunner;
     const tools = calls.map(
       (call): TuvrenToolDefinition => ({
@@ -639,8 +639,8 @@ export function createFrameworkAdapterRuntimeScenarios(
     );
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
-      defaultRunnerId: DRIVER_ID,
-      driverRegistry: createRunnerRegistry([driver]),
+      defaultRunnerId: RUNNER_ID,
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -829,8 +829,8 @@ export function createFrameworkAdapterRuntimeScenarios(
     const harness = createConformanceKernelHarness();
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
-      defaultRunnerId: DRIVER_ID,
-      driverRegistry: createRunnerRegistry([
+      defaultRunnerId: RUNNER_ID,
+      runnerRegistry: createRunnerRegistry([
         createStaticRunner(() => ({
           messages: [assistantText("branch base")],
           resolution: {
@@ -884,8 +884,8 @@ export function createFrameworkAdapterRuntimeScenarios(
     const harness = createConformanceKernelHarness();
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
-      defaultRunnerId: DRIVER_ID,
-      driverRegistry: createRunnerRegistry([
+      defaultRunnerId: RUNNER_ID,
+      runnerRegistry: createRunnerRegistry([
         createStaticRunner(() => ({
           messages: [assistantText("should not execute")],
           resolution: {
@@ -943,8 +943,8 @@ export function createFrameworkAdapterRuntimeScenarios(
     const harness = createConformanceKernelHarness();
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
-      defaultRunnerId: DRIVER_ID,
-      driverRegistry: createRunnerRegistry([
+      defaultRunnerId: RUNNER_ID,
+      runnerRegistry: createRunnerRegistry([
         createStaticRunner(() => ({
           messages: [assistantText("Terminal complete.")],
           resolution: { reason: "done", type: "end_turn" },
@@ -991,12 +991,12 @@ export function createFrameworkAdapterRuntimeScenarios(
           resolution: { reason: "done", type: "end_turn" },
         });
       },
-      id: DRIVER_ID,
+      id: RUNNER_ID,
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
-      defaultRunnerId: DRIVER_ID,
-      driverRegistry: createRunnerRegistry([failureRunner]),
+      defaultRunnerId: RUNNER_ID,
+      runnerRegistry: createRunnerRegistry([failureRunner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -1015,19 +1015,19 @@ export function createFrameworkAdapterRuntimeScenarios(
 
   async function runTerminalValueCancelled(): Promise<AdapterProjection> {
     const harness = createConformanceKernelHarness();
-    let driverStarted = false;
+    let runnerStarted = false;
     const cancelRunner = {
       async execute(context) {
-        driverStarted = true;
+        runnerStarted = true;
         await waitForAbort(context.signal);
         return { resolution: { type: "continue_iteration" } };
       },
-      id: DRIVER_ID,
+      id: RUNNER_ID,
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
-      defaultRunnerId: DRIVER_ID,
-      driverRegistry: createRunnerRegistry([cancelRunner]),
+      defaultRunnerId: RUNNER_ID,
+      runnerRegistry: createRunnerRegistry([cancelRunner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -1039,7 +1039,7 @@ export function createFrameworkAdapterRuntimeScenarios(
     });
     const resultPromise = handle.awaitResult();
 
-    while (!driverStarted) {
+    while (!runnerStarted) {
       await new Promise<void>((resolve) => {
         setTimeout(resolve, 5);
       });
@@ -1066,8 +1066,8 @@ export function createFrameworkAdapterRuntimeScenarios(
     const harness = createConformanceKernelHarness();
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
-      defaultRunnerId: DRIVER_ID,
-      driverRegistry: createRunnerRegistry([
+      defaultRunnerId: RUNNER_ID,
+      runnerRegistry: createRunnerRegistry([
         createStaticRunner(() => ({
           messages: [assistantText("Idempotent.")],
           resolution: { reason: "done", type: "end_turn" },
@@ -1136,8 +1136,8 @@ export function createFrameworkAdapterRuntimeScenarios(
   ) {
     return createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
-      defaultRunnerId: DRIVER_ID,
-      driverRegistry: createRunnerRegistry([
+      defaultRunnerId: RUNNER_ID,
+      runnerRegistry: createRunnerRegistry([
         createStaticRunner(() => ({
           messages: [assistantText("conformance")],
           resolution: { reason: "done", type: "end_turn" },
@@ -1222,8 +1222,8 @@ export function createFrameworkAdapterRuntimeScenarios(
     } as typeof harness.kernel;
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
-      defaultRunnerId: DRIVER_ID,
-      driverRegistry: createRunnerRegistry([
+      defaultRunnerId: RUNNER_ID,
+      runnerRegistry: createRunnerRegistry([
         createStaticRunner(() => ({
           messages: [assistantText("conformance")],
           resolution: { reason: "done", type: "end_turn" },

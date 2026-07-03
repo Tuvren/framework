@@ -217,15 +217,15 @@ export function createRunnerHandoffContextPlan(
 }
 
 export async function executeRunner(
-  driver: KrakenRunner,
+  runner: KrakenRunner,
   context: RunnerExecutionContext
 ): Promise<
   | Awaited<ReturnType<KrakenRunner["execute"]>>
   | { resolution: RuntimeResolution }
 > {
   try {
-    const result = await driver.execute(context);
-    assertRunnerExecutionResult(result, "driverResult");
+    const result = await runner.execute(context);
+    assertRunnerExecutionResult(result, "runnerResult");
     return result;
   } catch (error: unknown) {
     return {

@@ -267,11 +267,11 @@
         },
         {
           "equals": 2,
-          "field": "$.context.driverObservedMessageCount",
+          "field": "$.context.runnerObservedMessageCount",
           "kind": "resultField"
         }
       ],
-      "checkId": "runtime-lifecycle-af.context-transform-driver-sees-rewritten-context",
+      "checkId": "runtime-lifecycle-af.context-transform-runner-sees-rewritten-context",
       "input": {
         "scenarioPath": "$.context-transform-append-summary"
       },
@@ -279,7 +279,7 @@
       "scenario": "runtime-api-scenarios",
       "evidence": [
         "context.rewrittenMessageCount",
-        "context.driverObservedMessageCount"
+        "context.runnerObservedMessageCount"
       ]
     },
     {
@@ -543,7 +543,7 @@
         },
         {
           "equals": 0,
-          "field": "$.recovery.driverExecuteCalls",
+          "field": "$.recovery.runnerExecuteCalls",
           "kind": "resultField"
         },
         {
@@ -567,7 +567,7 @@
       "evidence": [
         "result.recovery.sameTurn",
         "result.recovery.phase",
-        "result.recovery.driverExecuteCalls",
+        "result.recovery.runnerExecuteCalls",
         "result.recovery.branchRuntimePhase",
         "result.recovery.staleRunStatus"
       ]

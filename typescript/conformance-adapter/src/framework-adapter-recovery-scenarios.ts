@@ -35,7 +35,7 @@ import {
   createConformanceKernelHarness,
   createConformanceRunLivenessKernelHarness,
   createStaticRunner,
-  DRIVER_ID,
+  RUNNER_ID,
   textSignal,
 } from "./framework-adapter-runtime.ts";
 
@@ -98,8 +98,8 @@ export function createFrameworkAdapterRecoveryScenarios(
     const harness = createConformanceKernelHarness();
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
-      defaultRunnerId: DRIVER_ID,
-      driverRegistry: createRunnerRegistry([
+      defaultRunnerId: RUNNER_ID,
+      runnerRegistry: createRunnerRegistry([
         createStaticRunner(() => ({
           messages: [assistantText("recovery placeholder")],
           resolution: {
@@ -191,7 +191,7 @@ export function createFrameworkAdapterRecoveryScenarios(
     const livenessHarness = createConformanceRunLivenessKernelHarness(harness);
     let executeCalls = 0;
 
-    const driver = {
+    const runner = {
       execute() {
         executeCalls += 1;
         return Promise.resolve({
@@ -210,12 +210,12 @@ export function createFrameworkAdapterRecoveryScenarios(
           },
         });
       },
-      id: DRIVER_ID,
+      id: RUNNER_ID,
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
-      defaultRunnerId: DRIVER_ID,
-      driverRegistry: createRunnerRegistry([driver]),
+      defaultRunnerId: RUNNER_ID,
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: livenessHarness.kernel,
       resolveAgentConfig(agentName) {
         if (agentName === "primary" || agentName === "reviewer") {
@@ -347,7 +347,7 @@ export function createFrameworkAdapterRecoveryScenarios(
         branchRuntimeStatus,
         "activeAgent"
       ),
-      driverExecuteCalls: executeCalls,
+      runnerExecuteCalls: executeCalls,
       freshUserMessageCount: countUserTextMessages(branchMessages, signalText),
       originalUserMessageCount: countUserTextMessages(branchMessages, prompt),
       phase: handle.status().phase,
@@ -446,7 +446,7 @@ export function createFrameworkAdapterRecoveryScenarios(
       },
     };
 
-    const driver: RuntimeRunner = {
+    const runner: RuntimeRunner = {
       execute(context) {
         if (!context.messages.some((message) => message.role === "tool")) {
           return Promise.resolve({
@@ -464,13 +464,13 @@ export function createFrameworkAdapterRecoveryScenarios(
           resolution: { reason: "done", type: "end_turn" },
         });
       },
-      id: DRIVER_ID,
+      id: RUNNER_ID,
     };
 
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
-      defaultRunnerId: DRIVER_ID,
-      driverRegistry: createRunnerRegistry([driver]),
+      defaultRunnerId: RUNNER_ID,
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: livenessHarness.kernel,
       resolveAgentConfig(agentName) {
         return agentName === "primary" ? { name: agentName } : undefined;

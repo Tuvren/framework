@@ -28,9 +28,9 @@ type ExecutionResult =
 ADR-035 semantics for `awaitResult()`:
 
 - `status: "completed"` — the turn ended normally; `finalAssistantMessage` is
-  the last assistant message emitted by the driver, or `undefined` when the
-  final driver iteration produced only tool results.
-- `status: "failed"` — the driver returned an invalid result or the execution
+  the last assistant message emitted by the runner, or `undefined` when the
+  final runner iteration produced only tool results.
+- `status: "failed"` — the runner returned an invalid result or the execution
   encountered an unrecoverable error; the result resolves (does not reject).
 - Cancellation via `cancel()` is the only path that causes `awaitResult()` to
   reject; the rejection carries a `TuvrenRuntimeError` with
@@ -71,7 +71,7 @@ orchestration conformance plan:
 - descendant `source` attribution on subtree streams
 - child final visible result text from `awaitResult()`
 - absence of a canonical injected parent `worker_result`
-- explicit execution-surface inheritance for `driverId`, per-request `tools`,
+- explicit execution-surface inheritance for `runnerId`, per-request `tools`,
   and explicit parent `schemaId`
 - nested descendant attribution through child and ancestor subtree streams
 

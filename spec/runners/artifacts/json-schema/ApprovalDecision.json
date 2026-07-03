@@ -1,10 +1,10 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://tuvren.dev/schemas/framework/driver-api/ApprovalDecision.json",
+  "$id": "https://tuvren.dev/schemas/framework/runner-api/ApprovalDecision.json",
   "type": "object",
   "properties": {
     "callId": {
-      "$ref": "https://tuvren.dev/schemas/framework/driver-api/NonEmptyString.json"
+      "$ref": "https://tuvren.dev/schemas/framework/runner-api/NonEmptyString.json"
     },
     "type": {
       "anyOf": [
@@ -27,7 +27,7 @@
     },
     "editedInput": {},
     "message": {
-      "$ref": "https://tuvren.dev/schemas/framework/driver-api/NonEmptyString.json"
+      "$ref": "https://tuvren.dev/schemas/framework/runner-api/NonEmptyString.json"
     }
   },
   "required": ["callId", "type"],

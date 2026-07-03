@@ -64,12 +64,12 @@ describe("runner-react streamed mapping", () => {
         } as const;
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "stream",
       toolExecutionMode: "parallel",
     }).create();
 
-    const result = await driver.execute(
+    const result = await runner.execute(
       createRunnerExecutionContext({
         config: {
           model: provider,
@@ -151,11 +151,11 @@ describe("runner-react streamed mapping", () => {
         } as const;
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "stream",
     }).create();
 
-    const execution = driver
+    const execution = runner
       .execute(
         createRunnerExecutionContext({
           config: {
@@ -220,11 +220,11 @@ describe("runner-react streamed mapping", () => {
         } as const;
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "stream",
     }).create();
 
-    const result = await driver.execute(
+    const result = await runner.execute(
       createRunnerExecutionContext({
         config: {
           model: provider,
@@ -308,12 +308,12 @@ describe("runner-react streamed mapping", () => {
         } as const;
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "stream",
       toolExecutionMode: "parallel",
     }).create();
 
-    const result = await driver.execute(
+    const result = await runner.execute(
       createRunnerExecutionContext({
         config: {
           model: provider,
@@ -406,12 +406,12 @@ describe("runner-react streamed mapping", () => {
         } as const;
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "stream",
       toolExecutionMode: "parallel",
     }).create();
 
-    const result = await driver.execute(
+    const result = await runner.execute(
       createRunnerExecutionContext({
         config: {
           model: provider,
@@ -495,12 +495,12 @@ describe("runner-react streamed mapping", () => {
         } as const;
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "stream",
       toolExecutionMode: "parallel",
     }).create();
 
-    const result = await driver.execute(
+    const result = await runner.execute(
       createRunnerExecutionContext({
         config: {
           model: provider,
@@ -561,11 +561,11 @@ describe("runner-react streamed mapping", () => {
         yield finish;
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "stream",
     }).create();
 
-    const result = await driver.execute(
+    const result = await runner.execute(
       createRunnerExecutionContext({
         config: {
           model: provider,
@@ -634,12 +634,12 @@ describe("runner-react streamed mapping", () => {
         } as const;
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "stream",
       toolExecutionMode: "parallel",
     }).create();
 
-    const result = await driver.execute(
+    const result = await runner.execute(
       createRunnerExecutionContext({
         config: {
           model: provider,
@@ -692,11 +692,11 @@ describe("runner-react streamed mapping", () => {
         } as const;
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "stream",
     }).create();
 
-    const result = await driver.execute(
+    const result = await runner.execute(
       createRunnerExecutionContext({
         config: {
           model: provider,
@@ -714,7 +714,7 @@ describe("runner-react streamed mapping", () => {
 
     expect(result.resolution.fatality).toBe("hard");
     expect(result.resolution.error).toMatchObject({
-      code: "react_driver_invalid_provider_stream",
+      code: "react_runner_invalid_provider_stream",
     });
     expect(emittedEvents.map((event) => event.type)).toEqual([
       "message.start",
@@ -740,11 +740,11 @@ describe("runner-react streamed mapping", () => {
         } as const;
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "stream",
     }).create();
 
-    const result = await driver.execute(
+    const result = await runner.execute(
       createRunnerExecutionContext({
         config: {
           model: provider,
@@ -762,7 +762,7 @@ describe("runner-react streamed mapping", () => {
 
     expect(result.resolution.fatality).toBe("hard");
     expect(result.resolution.error).toMatchObject({
-      code: "react_driver_invalid_provider_stream",
+      code: "react_runner_invalid_provider_stream",
     });
     expect(emittedEvents.map((event) => event.type)).toEqual([
       "message.start",

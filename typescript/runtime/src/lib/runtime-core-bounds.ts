@@ -19,7 +19,7 @@
  *
  * These helpers resolve and validate the per-runtime {@link ExecutionBounds} and
  * build the stable `execution_bound_exceeded` terminal error. The guard lives
- * above the driver's `LoopPolicy` so a misbehaving or adversarial driver cannot
+ * above the runner's `LoopPolicy` so a misbehaving or adversarial runner cannot
  * raise or disable a bound.
  *
  * Model or tool work whose completion arrives after the framework has stopped

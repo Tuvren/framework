@@ -6,7 +6,7 @@
     "agent": {
       "$ref": "https://tuvren.dev/schemas/framework/event-stream/NonEmptyString.json"
     },
-    "driver": {
+    "runner": {
       "$ref": "https://tuvren.dev/schemas/framework/event-stream/NonEmptyString.json"
     },
     "threadId": {

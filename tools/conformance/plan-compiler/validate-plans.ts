@@ -29,7 +29,7 @@ const OPERATION_SOURCE_BY_PACKET = new Map<string, readonly string[]>([
     "tuvren.framework.event-stream",
     ["boundaries/framework/conformance/plans/event-stream-core.json"],
   ],
-  ["tuvren.framework.react-driver", ["spec/runners/typespec/main.tsp"]],
+  ["tuvren.framework.react-runner", ["spec/runners/typespec/main.tsp"]],
   [
     "tuvren.kernel.protocol",
     [
@@ -52,7 +52,7 @@ const OPERATION_SOURCE_BY_PACKET = new Map<string, readonly string[]>([
   ],
 ]);
 const OPERATION_LITERAL_PATTERN =
-  /"(?:runtime|driver|event-stream|kernel|providers)\.[a-z0-9_.-]+"/gu;
+  /"(?:runtime|runner|event-stream|kernel|providers)\.[a-z0-9_.-]+"/gu;
 
 const planPaths = await findConformancePlans();
 const operationCache = new Map<string, Promise<ReadonlySet<string>>>();

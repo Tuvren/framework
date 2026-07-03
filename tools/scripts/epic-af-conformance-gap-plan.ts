@@ -94,17 +94,17 @@ interface CliOptions {
 
 const SURFACE_PLANS: Readonly<Record<string, SurfacePlan>> = {
   "ReAct and extension hooks": {
-    adapterOperation: "driver.execute",
-    capabilityRequirement: "framework.react-driver",
+    adapterOperation: "runner.execute",
+    capabilityRequirement: "framework.react-runner",
     checkIds: [
-      "react-driver-af.extension.phase-order-before-around-after",
-      "react-driver-af.extension.around-tool-nesting",
-      "react-driver-af.extension.after-iteration-terminal-state-nondurable",
+      "react-runner-af.extension.phase-order-before-around-after",
+      "react-runner-af.extension.around-tool-nesting",
+      "react-runner-af.extension.after-iteration-terminal-state-nondurable",
     ],
     deliveryTicket: "KRT-AF003",
     disposition: "promote",
     evidenceUpdate:
-      "Refresh TypeScript and Rust-framework non-applicable compatibility evidence after react-driver-extended gains AF checks.",
+      "Refresh TypeScript and Rust-framework non-applicable compatibility evidence after react-runner-extended gains AF checks.",
     rationale:
       "Hook ordering and around-hook nesting are portable ReAct behavior; adapter observations must expose traces, not expected sequences.",
     requiredEvidence: [
@@ -165,11 +165,11 @@ const SURFACE_PLANS: Readonly<Record<string, SurfacePlan>> = {
     ],
   },
   "aroundModel live/durable reconciliation": {
-    adapterOperation: "driver.execute",
-    capabilityRequirement: "framework.react-driver",
+    adapterOperation: "runner.execute",
+    capabilityRequirement: "framework.react-runner",
     checkIds: [
-      "react-driver-af.around-model-post-stream-replacement",
-      "react-driver-af.around-model-retry-final-response-durable",
+      "react-runner-af.around-model-post-stream-replacement",
+      "react-runner-af.around-model-retry-final-response-durable",
     ],
     deliveryTicket: "KRT-AF003",
     disposition: "promote",
@@ -193,7 +193,7 @@ const SURFACE_PLANS: Readonly<Record<string, SurfacePlan>> = {
       "runtime-lifecycle-af.cancel-running-stages-partial-status",
       "runtime-lifecycle-af.context-transform-preserves-source-checkpoint",
       "runtime-lifecycle-af.context-transform-creates-new-tree-heads",
-      "runtime-lifecycle-af.context-transform-driver-sees-rewritten-context",
+      "runtime-lifecycle-af.context-transform-runner-sees-rewritten-context",
     ],
     conformancePlan:
       "spec/conformance/engine/plans/runtime-api-lifecycle-extended.json",
@@ -211,7 +211,7 @@ const SURFACE_PLANS: Readonly<Record<string, SurfacePlan>> = {
       "context.rewrittenMessageCount",
       "context.createdNewHead",
       "context.snapshotMessageCounts",
-      "context.driverObservedMessageCount",
+      "context.runnerObservedMessageCount",
     ],
   },
   "handoff and context engineering": {
@@ -292,16 +292,16 @@ const SURFACE_PLANS: Readonly<Record<string, SurfacePlan>> = {
     ],
   },
   "runtime loop policy": {
-    adapterOperation: "driver.execute",
-    capabilityRequirement: "framework.driver-api",
-    checkIds: ["driver-api-af.invalid-loop-policy-tool-call-hard-fail"],
+    adapterOperation: "runner.execute",
+    capabilityRequirement: "framework.runner-api",
+    checkIds: ["runner-api-af.invalid-loop-policy-tool-call-hard-fail"],
     deliveryTicket: "KRT-AF003",
     disposition: "promote",
     evidenceUpdate:
       "Refresh framework compatibility evidence with invalid_loop_policy error envelope.",
     rationale:
-      "Invalid tool-call loop-policy combinations are shared driver-seam behavior.",
-    requiredEvidence: ["driver.resolutionType", "result.error.code"],
+      "Invalid tool-call loop-policy combinations are shared runner-seam behavior.",
+    requiredEvidence: ["runner.resolutionType", "result.error.code"],
   },
   "shared framework type shapes": {
     adapterOperation:

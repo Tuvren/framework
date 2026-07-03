@@ -27,9 +27,9 @@ import { createRunnerExecutionContext } from "./react-runner-test-helpers.ts";
 
 describe("runner-react structured output", () => {
   test("fails hard when config.model is not a concrete provider", async () => {
-    const driver = createReActRunner().create();
+    const runner = createReActRunner().create();
 
-    const result = await driver.execute(
+    const result = await runner.execute(
       createRunnerExecutionContext({
         config: {
           model: "gpt-test",
@@ -49,16 +49,16 @@ describe("runner-react structured output", () => {
       "code" in result.resolution.error
         ? result.resolution.error.code
         : undefined
-    ).toBe("react_driver_missing_provider");
+    ).toBe("react_runner_missing_provider");
   });
 
   test("fails hard when config.model is an object that is not a provider", async () => {
-    const driver = createReActRunner().create();
+    const runner = createReActRunner().create();
     const config: RunnerExecutionContext["config"] = JSON.parse(
       '{"model":{"id":"provider"},"name":"primary"}'
     );
 
-    const result = await driver.execute(
+    const result = await runner.execute(
       createRunnerExecutionContext({
         config,
       })
@@ -75,7 +75,7 @@ describe("runner-react structured output", () => {
       "code" in result.resolution.error
         ? result.resolution.error.code
         : undefined
-    ).toBe("react_driver_missing_provider");
+    ).toBe("react_runner_missing_provider");
   });
 
   test("fails hard when structured output violates the requested schema", async () => {
@@ -97,11 +97,11 @@ describe("runner-react structured output", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "generate",
     }).create();
 
-    const result = await driver.execute(
+    const result = await runner.execute(
       createRunnerExecutionContext({
         config: {
           model: provider,
@@ -152,11 +152,11 @@ describe("runner-react structured output", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "generate",
     }).create();
 
-    const result = await driver.execute(
+    const result = await runner.execute(
       createRunnerExecutionContext({
         config: {
           model: provider,
@@ -213,11 +213,11 @@ describe("runner-react structured output", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "generate",
     }).create();
 
-    const firstResult = await driver.execute(
+    const firstResult = await runner.execute(
       createRunnerExecutionContext({
         config: {
           model: provider,
@@ -237,7 +237,7 @@ describe("runner-react structured output", () => {
         },
       })
     );
-    const secondResult = await driver.execute(
+    const secondResult = await runner.execute(
       createRunnerExecutionContext({
         config: {
           model: provider,
@@ -287,11 +287,11 @@ describe("runner-react structured output", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "generate",
     }).create();
 
-    const result = await driver.execute(
+    const result = await runner.execute(
       createRunnerExecutionContext({
         config: {
           model: provider,
@@ -345,11 +345,11 @@ describe("runner-react structured output", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "generate",
     }).create();
 
-    const result = await driver.execute(
+    const result = await runner.execute(
       createRunnerExecutionContext({
         config: {
           model: provider,
@@ -396,11 +396,11 @@ describe("runner-react structured output", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "generate",
     }).create();
 
-    const result = await driver.execute(
+    const result = await runner.execute(
       createRunnerExecutionContext({
         config: {
           model: provider,

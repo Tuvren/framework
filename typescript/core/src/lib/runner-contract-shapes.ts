@@ -95,6 +95,6 @@ export interface RuntimeRunnerFactory {
 
 export interface RunnerRegistry {
   list(): Array<RuntimeRunner | RuntimeRunnerFactory>;
-  register(driver: RuntimeRunner | RuntimeRunnerFactory): void;
-  resolve(driverId: string): RuntimeRunner | RuntimeRunnerFactory | undefined;
+  register(runner: RuntimeRunner | RuntimeRunnerFactory): void;
+  resolve(runnerId: string): RuntimeRunner | RuntimeRunnerFactory | undefined;
 }

@@ -1,18 +1,18 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://tuvren.dev/schemas/framework/driver-api/TuvrenMessage.json",
+  "$id": "https://tuvren.dev/schemas/framework/runner-api/TuvrenMessage.json",
   "anyOf": [
     {
-      "$ref": "https://tuvren.dev/schemas/framework/driver-api/SystemMessage.json"
+      "$ref": "https://tuvren.dev/schemas/framework/runner-api/SystemMessage.json"
     },
     {
-      "$ref": "https://tuvren.dev/schemas/framework/driver-api/UserMessage.json"
+      "$ref": "https://tuvren.dev/schemas/framework/runner-api/UserMessage.json"
     },
     {
-      "$ref": "https://tuvren.dev/schemas/framework/driver-api/AssistantMessage.json"
+      "$ref": "https://tuvren.dev/schemas/framework/runner-api/AssistantMessage.json"
     },
     {
-      "$ref": "https://tuvren.dev/schemas/framework/driver-api/ToolMessage.json"
+      "$ref": "https://tuvren.dev/schemas/framework/runner-api/ToolMessage.json"
     }
   ]
 }

@@ -243,7 +243,7 @@ export function createLiveTurnWriter(
   ): boolean {
     return (
       event.error.code === "runtime_execution_cancelled" ||
-      event.error.code === "react_driver_execution_cancelled"
+      event.error.code === "react_runner_execution_cancelled"
     );
   }
 

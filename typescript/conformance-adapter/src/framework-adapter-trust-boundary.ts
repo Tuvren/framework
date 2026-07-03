@@ -37,7 +37,7 @@ import {
   createConformanceIdFactory,
   createConformanceKernelHarness,
   createStaticRunner,
-  DRIVER_ID,
+  RUNNER_ID,
   textSignal,
 } from "./framework-adapter-runtime.ts";
 
@@ -116,7 +116,7 @@ export async function runTrustBoundaryApprovalNonBypassable(
   const harness = createConformanceKernelHarness();
   const executedToolNames: string[] = [];
   const gatedToolName = "trust-boundary-gated-tool";
-  const driver = createStaticRunner(async () => {
+  const runner = createStaticRunner(async () => {
     await Promise.resolve();
     return {
       messages: [
@@ -146,8 +146,8 @@ export async function runTrustBoundaryApprovalNonBypassable(
   ];
   const runtime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
-    defaultRunnerId: DRIVER_ID,
-    driverRegistry: createRunnerRegistry([driver]),
+    defaultRunnerId: RUNNER_ID,
+    runnerRegistry: createRunnerRegistry([runner]),
     kernel: harness.kernel,
   });
   const thread = await runtime.createThread({});
@@ -201,7 +201,7 @@ export async function runTrustBoundaryLocalToolInput(
   const harness = createConformanceKernelHarness();
   let toolExecuted = false;
   const toolName = "trust-boundary-strict-tool";
-  const driver = createStaticRunner(async (context) => {
+  const runner = createStaticRunner(async (context) => {
     await Promise.resolve();
 
     if (!hasToolMessage(context.messages)) {
@@ -240,8 +240,8 @@ export async function runTrustBoundaryLocalToolInput(
   ];
   const runtime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
-    defaultRunnerId: DRIVER_ID,
-    driverRegistry: createRunnerRegistry([driver]),
+    defaultRunnerId: RUNNER_ID,
+    runnerRegistry: createRunnerRegistry([runner]),
     kernel: harness.kernel,
   });
   const thread = await runtime.createThread({});

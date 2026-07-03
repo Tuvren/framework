@@ -46,7 +46,7 @@ import {
   createConformanceKernelHarness,
   createRunnerExecutionContext,
   createStaticRunner,
-  DRIVER_ID,
+  RUNNER_ID,
   textSignal,
 } from "./framework-adapter-runtime.ts";
 
@@ -298,7 +298,7 @@ export function createFrameworkAdapterProviderScenarios(
     const toolInputs: unknown[] = [];
     const toolOutputs: unknown[] = [];
     const toolFailures: string[] = [];
-    const driver = createStaticRunner(
+    const runner = createStaticRunner(
       async (context: RunnerExecutionContext) => {
         await Promise.resolve();
 
@@ -321,8 +321,8 @@ export function createFrameworkAdapterProviderScenarios(
     );
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
-      defaultRunnerId: DRIVER_ID,
-      driverRegistry: createRunnerRegistry([driver]),
+      defaultRunnerId: RUNNER_ID,
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -433,8 +433,8 @@ export function createFrameworkAdapterProviderScenarios(
         yield* [];
       },
     };
-    const driver = createReActRunner({ providerCallMode: "generate" }).create();
-    const result = await driver.execute(
+    const runner = createReActRunner({ providerCallMode: "generate" }).create();
+    const result = await runner.execute(
       createRunnerExecutionContext({
         config: {
           model: provider,
@@ -501,14 +501,14 @@ export function createFrameworkAdapterProviderScenarios(
     const harness = createConformanceKernelHarness();
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
-      defaultRunnerId: DRIVER_ID,
-      driverRegistry: createRunnerRegistry([
+      defaultRunnerId: RUNNER_ID,
+      runnerRegistry: createRunnerRegistry([
         createStaticRunner((context) => {
           context.runtime.emit({
             data: {
               messageCount: context.messages.length,
             },
-            name: "driver.executed",
+            name: "runner.executed",
             timestamp: context.runtime.now(),
             type: "custom",
           });
@@ -576,7 +576,7 @@ export function createFrameworkAdapterProviderScenarios(
             sourceTurnNodeHash !== undefined &&
             rewrittenTurnNodeHash !== undefined &&
             sourceTurnNodeHash !== rewrittenTurnNodeHash,
-          driverObservedMessageCount: readRunnerObservedMessageCount(events),
+          runnerObservedMessageCount: readRunnerObservedMessageCount(events),
           finalHeadChanged:
             rewrittenTurnNodeHash !== undefined &&
             finalTurnNodeHash !== undefined &&
@@ -598,7 +598,7 @@ export function createFrameworkAdapterProviderScenarios(
             sourceTurnNodeHash !== undefined &&
             rewrittenTurnNodeHash !== undefined &&
             sourceTurnNodeHash !== rewrittenTurnNodeHash,
-          driverObservedMessageCount: readRunnerObservedMessageCount(events),
+          runnerObservedMessageCount: readRunnerObservedMessageCount(events),
           finalHeadChanged:
             rewrittenTurnNodeHash !== undefined &&
             finalTurnNodeHash !== undefined &&
@@ -658,7 +658,7 @@ export function createFrameworkAdapterProviderScenarios(
         continue;
       }
 
-      if (event.name !== "driver.executed" || !isRecord(event.data)) {
+      if (event.name !== "runner.executed" || !isRecord(event.data)) {
         continue;
       }
 

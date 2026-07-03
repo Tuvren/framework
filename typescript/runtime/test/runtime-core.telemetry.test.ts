@@ -37,7 +37,7 @@ describe("runtime operational telemetry", () => {
   test("emits lineage-keyed events and spans for a completed turn", async () => {
     const capture = createTelemetryCapture();
     const harness = createFakeKernelHarness();
-    const driver = {
+    const runner = {
       execute() {
         return Promise.resolve({
           messages: [assistantText("done")],
@@ -51,7 +51,7 @@ describe("runtime operational telemetry", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
       now: createDeterministicClock(),
       telemetry: capture.sink,
@@ -94,7 +94,7 @@ describe("runtime operational telemetry", () => {
   test("tags every telemetry record with the constructing scope and never leaks another scope (KRT-BE008)", async () => {
     const capture = createTelemetryCapture();
     const harness = createFakeKernelHarness();
-    const driver = {
+    const runner = {
       execute() {
         return Promise.resolve({
           messages: [assistantText("done")],
@@ -108,7 +108,7 @@ describe("runtime operational telemetry", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
       scope: "tenant-a",
       telemetry: capture.sink,
@@ -147,7 +147,7 @@ describe("runtime operational telemetry", () => {
   test("defaults telemetry correlation to the default scope when the host binds none", async () => {
     const capture = createTelemetryCapture();
     const harness = createFakeKernelHarness();
-    const driver = {
+    const runner = {
       execute() {
         return Promise.resolve({
           messages: [assistantText("done")],
@@ -161,7 +161,7 @@ describe("runtime operational telemetry", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
       telemetry: capture.sink,
     });
@@ -198,7 +198,7 @@ describe("runtime operational telemetry", () => {
 
   test("isolates throwing telemetry sinks from runtime execution", async () => {
     const harness = createFakeKernelHarness();
-    const driver = {
+    const runner = {
       execute() {
         return Promise.resolve({
           messages: [assistantText("done")],
@@ -212,7 +212,7 @@ describe("runtime operational telemetry", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
       telemetry: {
         event() {

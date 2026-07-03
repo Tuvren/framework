@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test drivers intentionally match the async framework driver contract.
+// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 
 /**
  * KRT-AX004: Server-side MCP binding and server sandbox endpoint.
@@ -50,7 +50,7 @@ import {
 
 function makeRunner(toolName: string): RuntimeRunner {
   return {
-    id: "ax004-driver",
+    id: "ax004-runner",
     async execute(context) {
       if (!context.messages.some((m) => m.role === "tool")) {
         return {
@@ -133,10 +133,10 @@ describe("KRT-AX004 — MCP binding classification", () => {
     };
 
     const harness = createFakeKernelHarness();
-    const driver = makeRunner(toolName);
+    const runner = makeRunner(toolName);
     const runtime = createTuvrenRuntime({
-      defaultRunnerId: "ax004-driver",
-      driverRegistry: createBaseRunnerRegistry([driver]),
+      defaultRunnerId: "ax004-runner",
+      runnerRegistry: createBaseRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -207,10 +207,10 @@ describe("KRT-AX004 — sandbox endpoint", () => {
     };
 
     const harness = createFakeKernelHarness();
-    const driver = makeRunner(toolName);
+    const runner = makeRunner(toolName);
     const runtime = createTuvrenRuntime({
-      defaultRunnerId: "ax004-driver",
-      driverRegistry: createBaseRunnerRegistry([driver]),
+      defaultRunnerId: "ax004-runner",
+      runnerRegistry: createBaseRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -251,10 +251,10 @@ describe("KRT-AX004 — sandbox endpoint", () => {
     };
 
     const harness = createFakeKernelHarness();
-    const driver = makeRunner(toolName);
+    const runner = makeRunner(toolName);
     const runtime = createTuvrenRuntime({
-      defaultRunnerId: "ax004-driver",
-      driverRegistry: createBaseRunnerRegistry([driver]),
+      defaultRunnerId: "ax004-runner",
+      runnerRegistry: createBaseRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -301,10 +301,10 @@ describe("KRT-AX004 — sandbox endpoint", () => {
     };
 
     const harness = createFakeKernelHarness();
-    const driver = makeRunner(toolName);
+    const runner = makeRunner(toolName);
     const runtime = createTuvrenRuntime({
-      defaultRunnerId: "ax004-driver",
-      driverRegistry: createBaseRunnerRegistry([driver]),
+      defaultRunnerId: "ax004-runner",
+      runnerRegistry: createBaseRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});

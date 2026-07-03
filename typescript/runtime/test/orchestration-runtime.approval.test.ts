@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test drivers intentionally match the async framework driver contract.
+// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 import { describe, expect, test } from "bun:test";
 import {
   createOrchestrationRuntime,
@@ -40,7 +40,7 @@ describe("orchestration-runtime approval", () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([
+      runnerRegistry: createRunnerRegistry([
         createStaticRunner(async (context) => {
           if (context.config.name === "worker") {
             await delay(40);
@@ -148,7 +148,7 @@ describe("orchestration-runtime approval", () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([
+      runnerRegistry: createRunnerRegistry([
         createStaticRunner(async (context) => {
           const toolMessages = context.messages.filter(
             (message) => message.role === "tool"
@@ -231,7 +231,7 @@ describe("orchestration-runtime approval", () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([
+      runnerRegistry: createRunnerRegistry([
         createStaticRunner(async (context) => {
           const toolMessages = context.messages.filter(
             (message) => message.role === "tool"

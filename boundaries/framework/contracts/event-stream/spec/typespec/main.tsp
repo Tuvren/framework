@@ -65,7 +65,7 @@ model ContextManifest {
 
 model EventSource {
   agent: NonEmptyString;
-  driver?: NonEmptyString;
+  runner?: NonEmptyString;
   threadId?: NonEmptyString;
   workerId?: NonEmptyString;
 }

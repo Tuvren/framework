@@ -191,11 +191,11 @@ function createTelemetryEvidence(input: {
     (event): event is Extract<TuvrenStreamEvent, { type: "error" }> =>
       event.type === "error"
   );
-  const driverId =
-    turnStarts[0]?.source?.driver ??
+  const runnerId =
+    turnStarts[0]?.source?.runner ??
     input.projection.canonical.find(
-      (event) => event.source?.driver !== undefined
-    )?.source?.driver ??
+      (event) => event.source?.runner !== undefined
+    )?.source?.runner ??
     null;
   const runIdsFromAgUi = input.projection.agui.flatMap((event) => {
     if (event.type !== "RUN_STARTED") {
@@ -221,7 +221,7 @@ function createTelemetryEvidence(input: {
     "tuvren.runtime.checkpoint.hash": collapseTelemetryValues(
       checkpoints.map((event) => event.turnNodeHash)
     ),
-    "tuvren.runtime.driver.id": driverId,
+    "tuvren.runtime.driver.id": runnerId,
     "tuvren.runtime.error.code": collapseTelemetryValues(
       errors.flatMap((event) => {
         const { error } = event;

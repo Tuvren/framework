@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://tuvren.dev/schemas/framework/driver-api/AssistantMessage.json",
+  "$id": "https://tuvren.dev/schemas/framework/runner-api/AssistantMessage.json",
   "type": "object",
   "properties": {
     "role": {
@@ -10,12 +10,12 @@
     "parts": {
       "type": "array",
       "items": {
-        "$ref": "https://tuvren.dev/schemas/framework/driver-api/ContentPart.json"
+        "$ref": "https://tuvren.dev/schemas/framework/runner-api/ContentPart.json"
       },
       "minItems": 1
     },
     "providerMetadata": {
-      "$ref": "https://tuvren.dev/schemas/framework/driver-api/Metadata.json"
+      "$ref": "https://tuvren.dev/schemas/framework/runner-api/Metadata.json"
     }
   },
   "required": ["role", "parts"],

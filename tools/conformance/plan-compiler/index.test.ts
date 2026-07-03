@@ -23,41 +23,41 @@ import { loadConformancePlan } from "./index.ts";
 describe("resultField required evidence", () => {
   test("adds a result-rooted evidence requirement for resultField assertions", async () => {
     const compiledPlan = await loadConformancePlan(
-      "spec/conformance/runners/plans/driver-api-core.json"
+      "spec/conformance/runners/plans/runner-api-core.json"
     );
     const check = compiledPlan.checks.find(
-      (entry) => entry.check.checkId === "driver-api.execute.resolution"
+      (entry) => entry.check.checkId === "runner-api.execute.resolution"
     );
 
-    expect(check?.requiredEvidence).toContain("result.driver.phase");
+    expect(check?.requiredEvidence).toContain("result.runner.phase");
   });
 
   test("roots whole-result assertions at result", async () => {
     const compiledPlan = await loadMutatedPlan(
-      "spec/conformance/runners/plans/driver-api-core.json",
+      "spec/conformance/runners/plans/runner-api-core.json",
       (plan) => {
         const checks = readArray(plan.checks, "checks");
         const targetCheck = readRecord(
           checks.find(
             (entry) =>
               readRecordString(entry, "checkId") ===
-              "driver-api.execute.resolution"
+              "runner-api.execute.resolution"
           ),
-          "driver-api.execute.resolution check"
+          "runner-api.execute.resolution check"
         );
         const assertions = readArray(targetCheck.assertions, "assertions");
         const targetAssertion = readRecord(
           assertions.find(
             (entry) => readRecordString(entry, "kind") === "resultField"
           ),
-          "driver-api.execute.resolution resultField assertion"
+          "runner-api.execute.resolution resultField assertion"
         );
 
         targetAssertion.field = "$";
       }
     );
     const check = compiledPlan.checks.find(
-      (entry) => entry.check.checkId === "driver-api.execute.resolution"
+      (entry) => entry.check.checkId === "runner-api.execute.resolution"
     );
 
     expect(check?.requiredEvidence).toContain("result");
@@ -65,16 +65,16 @@ describe("resultField required evidence", () => {
 
   test("roots step resultField assertions under trace.step.result", async () => {
     const compiledPlan = await loadMutatedPlan(
-      "spec/conformance/runners/plans/react-driver-callables.json",
+      "spec/conformance/runners/plans/react-runner-callables.json",
       (plan) => {
         const checks = readArray(plan.checks, "checks");
         const targetCheck = readRecord(
           checks.find(
             (entry) =>
               readRecordString(entry, "checkId") ===
-              "react-driver-callable.checkpoint"
+              "react-runner-callable.checkpoint"
           ),
-          "react-driver-callable.checkpoint check"
+          "react-runner-callable.checkpoint check"
         );
         const steps = readArray(targetCheck.steps, "steps");
         const checkpointStep = readRecord(steps[0], "checkpoint step");
@@ -89,7 +89,7 @@ describe("resultField required evidence", () => {
       }
     );
     const check = compiledPlan.checks.find(
-      (entry) => entry.check.checkId === "react-driver-callable.checkpoint"
+      (entry) => entry.check.checkId === "react-runner-callable.checkpoint"
     );
 
     expect(check?.requiredEvidence).toContain(
@@ -100,23 +100,23 @@ describe("resultField required evidence", () => {
   test("rejects resultField assertions without a field", async () => {
     await expect(
       loadMutatedPlan(
-        "spec/conformance/runners/plans/driver-api-core.json",
+        "spec/conformance/runners/plans/runner-api-core.json",
         (plan) => {
           const checks = readArray(plan.checks, "checks");
           const targetCheck = readRecord(
             checks.find(
               (entry) =>
                 readRecordString(entry, "checkId") ===
-                "driver-api.execute.resolution"
+                "runner-api.execute.resolution"
             ),
-            "driver-api.execute.resolution check"
+            "runner-api.execute.resolution check"
           );
           const assertions = readArray(targetCheck.assertions, "assertions");
           const targetAssertion = readRecord(
             assertions.find(
               (entry) => readRecordString(entry, "kind") === "resultField"
             ),
-            "driver-api.execute.resolution resultField assertion"
+            "runner-api.execute.resolution resultField assertion"
           );
 
           targetAssertion.field = undefined;

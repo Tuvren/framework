@@ -1,10 +1,10 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://tuvren.dev/schemas/framework/driver-api/ContextManifestNameCountMap.json",
+  "$id": "https://tuvren.dev/schemas/framework/runner-api/ContextManifestNameCountMap.json",
   "type": "object",
   "properties": {},
   "unevaluatedProperties": {
-    "$ref": "https://tuvren.dev/schemas/framework/driver-api/NonNegativeSafeInt.json"
+    "$ref": "https://tuvren.dev/schemas/framework/runner-api/NonNegativeSafeInt.json"
   },
   "propertyNames": {
     "type": "string",

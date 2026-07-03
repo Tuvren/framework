@@ -51,7 +51,7 @@ export function createReplHost(config: ReplConfig): ReplHost {
   });
   const runtime = createTuvrenRuntimeCore({
     defaultRunnerId: REACT_RUNNER_ID,
-    driverRegistry: createRunnerRegistry([
+    runnerRegistry: createRunnerRegistry([
       createReActRunner({
         providerCallMode: "stream",
       }),
@@ -81,7 +81,7 @@ export async function createReplHostUsingCreateTuvren(
     ...(config.kernelMode === "rust-grpc"
       ? { kernel: createKernel(config) }
       : {}),
-    driver: {
+    runner: {
       kind: "react",
       options: {
         providerCallMode: "stream",
@@ -204,7 +204,7 @@ function createKernel(config: ReplConfig) {
     }
 
     // Epic V keeps the runtime switch below `TuvrenRuntime`: the host swaps
-    // only the `RuntimeKernel` implementation so turn semantics, drivers, and
+    // only the `RuntimeKernel` implementation so turn semantics, runners, and
     // provider orchestration stay identical across local and remote kernels.
     return createGrpcRuntimeKernel({
       baseUrl: config.kernelGrpcBaseUrl,

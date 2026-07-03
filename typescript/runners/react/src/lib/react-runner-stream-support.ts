@@ -245,7 +245,7 @@ export class StreamAccumulator {
             throw new TuvrenProviderError(
               "provider stream finished before structured output completed",
               {
-                code: "react_driver_invalid_provider_stream",
+                code: "react_runner_invalid_provider_stream",
               }
             );
           }
@@ -255,7 +255,7 @@ export class StreamAccumulator {
             throw new TuvrenProviderError(
               "provider stream finished before tool call completed",
               {
-                code: "react_driver_invalid_provider_stream",
+                code: "react_runner_invalid_provider_stream",
                 details: {
                   providerCallId: part.state.providerCallId,
                 },
@@ -716,7 +716,7 @@ export class StreamAccumulator {
     throw new TuvrenRuntimeError(
       "tool call chunks must start before args or done",
       {
-        code: "react_driver_invalid_provider_stream",
+        code: "react_runner_invalid_provider_stream",
         details: {
           providerCallId,
         },
@@ -748,7 +748,7 @@ function finalizeAccumulatedPart(input: {
       return finalizeToolCallPart(input.part, input.partial);
     default:
       throw new TuvrenRuntimeError("unsupported accumulated content part", {
-        code: "react_driver_invalid_model_response",
+        code: "react_runner_invalid_model_response",
       });
   }
 }
@@ -777,7 +777,7 @@ function finalizeReasoningPart(
     throw new TuvrenProviderError(
       "provider stream produced empty reasoning without redacted metadata",
       {
-        code: "react_driver_invalid_provider_stream",
+        code: "react_runner_invalid_provider_stream",
       }
     );
   }
@@ -968,7 +968,7 @@ function parseStructuredValue(value: string): unknown {
   } catch (error: unknown) {
     throw new TuvrenProviderError("provider returned invalid structured JSON", {
       cause: error,
-      code: "react_driver_invalid_provider_stream",
+      code: "react_runner_invalid_provider_stream",
       details: {
         value,
       },
@@ -1071,13 +1071,13 @@ function createExecutionCancelledError(
   signal: AbortSignal | undefined
 ): TuvrenRuntimeError {
   return new TuvrenRuntimeError("execution cancelled", {
-    code: "react_driver_execution_cancelled",
+    code: "react_runner_execution_cancelled",
     details: normalizeUnknownError(signal?.reason),
   });
 }
 
 export function isExecutionCancelledError(error: unknown): boolean {
-  return isRuntimeErrorWithCode(error, "react_driver_execution_cancelled");
+  return isRuntimeErrorWithCode(error, "react_runner_execution_cancelled");
 }
 
 function toProviderError(error: unknown): TuvrenProviderError {
@@ -1087,7 +1087,7 @@ function toProviderError(error: unknown): TuvrenProviderError {
 
   return new TuvrenProviderError("provider stream failed", {
     cause: error,
-    code: "react_driver_provider_failure",
+    code: "react_runner_provider_failure",
     details: normalizeUnknownError(error),
   });
 }

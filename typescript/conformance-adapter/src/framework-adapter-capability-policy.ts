@@ -28,7 +28,7 @@ import {
   collectValues,
   createConformanceKernelHarness,
   createStaticRunner,
-  DRIVER_ID,
+  RUNNER_ID,
   textSignal,
 } from "./framework-adapter-runtime.ts";
 
@@ -272,7 +272,7 @@ export async function runCapabilityPolicyWiredInvocationDenial(): Promise<Adapte
   const harness = createConformanceKernelHarness();
   const engine = createCapabilityPolicyEngine();
 
-  const driver = createStaticRunner(async (ctx) => {
+  const runner = createStaticRunner(async (ctx) => {
     await Promise.resolve();
     if (!ctx.messages.some((m) => m.role === "tool")) {
       return {
@@ -296,8 +296,8 @@ export async function runCapabilityPolicyWiredInvocationDenial(): Promise<Adapte
   });
 
   const runtime = createTuvrenRuntime({
-    defaultRunnerId: DRIVER_ID,
-    driverRegistry: createRunnerRegistry([driver]),
+    defaultRunnerId: RUNNER_ID,
+    runnerRegistry: createRunnerRegistry([runner]),
     kernel: harness.kernel,
   });
 
@@ -355,7 +355,7 @@ export async function runCapabilityPolicyNonretryablePolicy(): Promise<AdapterPr
 
   const harness = createConformanceKernelHarness();
 
-  const driver = createStaticRunner(async (ctx) => {
+  const runner = createStaticRunner(async (ctx) => {
     await Promise.resolve();
     if (!ctx.messages.some((m) => m.role === "tool")) {
       return {
@@ -375,8 +375,8 @@ export async function runCapabilityPolicyNonretryablePolicy(): Promise<AdapterPr
   });
 
   const runtime = createTuvrenRuntime({
-    defaultRunnerId: DRIVER_ID,
-    driverRegistry: createRunnerRegistry([driver]),
+    defaultRunnerId: RUNNER_ID,
+    runnerRegistry: createRunnerRegistry([runner]),
     kernel: harness.kernel,
   });
 
@@ -430,7 +430,7 @@ export async function runCapabilityPolicyWiredRiskApproval(): Promise<AdapterPro
     requireApprovalForRiskClass: "high",
   });
 
-  const driver = createStaticRunner(async (ctx) => {
+  const runner = createStaticRunner(async (ctx) => {
     await Promise.resolve();
     if (!ctx.messages.some((m) => m.role === "tool")) {
       return {
@@ -450,8 +450,8 @@ export async function runCapabilityPolicyWiredRiskApproval(): Promise<AdapterPro
   });
 
   const runtime = createTuvrenRuntime({
-    defaultRunnerId: DRIVER_ID,
-    driverRegistry: createRunnerRegistry([driver]),
+    defaultRunnerId: RUNNER_ID,
+    runnerRegistry: createRunnerRegistry([runner]),
     kernel: harness.kernel,
   });
 

@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/runner-api/RunnerOperationName.json",
+  "type": "string",
+  "enum": [
+    "runner.initialize",
+    "runner.execute",
+    "runner.resume",
+    "runner.emit-event",
+    "runner.checkpoint",
+    "runner.cancel"
+  ]
+}

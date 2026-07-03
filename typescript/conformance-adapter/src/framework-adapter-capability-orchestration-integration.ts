@@ -47,7 +47,7 @@ import {
   createConformanceIdFactory,
   createConformanceKernelHarness,
   createStaticRunner,
-  DRIVER_ID,
+  RUNNER_ID,
   textSignal,
 } from "./framework-adapter-runtime.ts";
 
@@ -156,8 +156,8 @@ export async function runCapabilityOrchestrationIntegration(): Promise<AdapterPr
   const serverHarness = createConformanceKernelHarness();
   const serverRuntime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
-    defaultRunnerId: DRIVER_ID,
-    driverRegistry: createRunnerRegistry([makeSingleCallRunner(SERVER_TOOL)]),
+    defaultRunnerId: RUNNER_ID,
+    runnerRegistry: createRunnerRegistry([makeSingleCallRunner(SERVER_TOOL)]),
     kernel: serverHarness.kernel,
   });
   const serverThread = await serverRuntime.createThread({});
@@ -187,8 +187,8 @@ export async function runCapabilityOrchestrationIntegration(): Promise<AdapterPr
   const pnHarness = createConformanceKernelHarness();
   const pnRuntime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
-    defaultRunnerId: DRIVER_ID,
-    driverRegistry: createRunnerRegistry([
+    defaultRunnerId: RUNNER_ID,
+    runnerRegistry: createRunnerRegistry([
       makeProviderRunner("provider-native", PN_TOOL),
     ]),
     kernel: pnHarness.kernel,
@@ -210,8 +210,8 @@ export async function runCapabilityOrchestrationIntegration(): Promise<AdapterPr
   const pmHarness = createConformanceKernelHarness();
   const pmRuntime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
-    defaultRunnerId: DRIVER_ID,
-    driverRegistry: createRunnerRegistry([
+    defaultRunnerId: RUNNER_ID,
+    runnerRegistry: createRunnerRegistry([
       makeProviderRunner("provider-mediated", PM_TOOL),
     ]),
     kernel: pmHarness.kernel,
@@ -253,8 +253,8 @@ export async function runCapabilityOrchestrationIntegration(): Promise<AdapterPr
   const clientHarness = createConformanceKernelHarness();
   const clientRuntime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
-    defaultRunnerId: DRIVER_ID,
-    driverRegistry: createRunnerRegistry([makeSingleCallRunner(CLIENT_CAP)]),
+    defaultRunnerId: RUNNER_ID,
+    runnerRegistry: createRunnerRegistry([makeSingleCallRunner(CLIENT_CAP)]),
     kernel: clientHarness.kernel,
   });
   const clientThread = await clientRuntime.createThread({});
@@ -316,12 +316,12 @@ export async function runCapabilityOrchestrationIntegration(): Promise<AdapterPr
     (d) => d.surfaceName === WITHHELD_SURFACE
   );
 
-  // Invocation-time: wired turn where driver calls the denied capability
+  // Invocation-time: wired turn where runner calls the denied capability
   const policyHarness = createConformanceKernelHarness();
   const policyRuntime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
-    defaultRunnerId: DRIVER_ID,
-    driverRegistry: createRunnerRegistry([makeSingleCallRunner(DENIED_CAP)]),
+    defaultRunnerId: RUNNER_ID,
+    runnerRegistry: createRunnerRegistry([makeSingleCallRunner(DENIED_CAP)]),
     kernel: policyHarness.kernel,
   });
   const policyThread = await policyRuntime.createThread({});

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test drivers intentionally match the async framework driver contract.
+// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 import { describe, expect, test } from "bun:test";
 import type { TuvrenRuntime } from "@tuvren/core/execution";
 import type { RuntimeRunner as KrakenRunner } from "@tuvren/core/runner";
@@ -45,7 +45,7 @@ describe("orchestration-runtime child lifecycle", () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([
+      runnerRegistry: createRunnerRegistry([
         createStaticRunner((context) => ({
           messages: [assistantText(`Finished ${context.config.name}.`)],
           resolution: {
@@ -86,7 +86,7 @@ describe("orchestration-runtime child lifecycle", () => {
     let executeCalls = 0;
     const framework = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([
+      runnerRegistry: createRunnerRegistry([
         createStaticRunner((context) => {
           executeCalls += 1;
           return {
@@ -126,7 +126,7 @@ describe("orchestration-runtime child lifecycle", () => {
     let executeCalls = 0;
     const framework = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([
+      runnerRegistry: createRunnerRegistry([
         createStaticRunner((context) => {
           executeCalls += 1;
           return {
@@ -166,7 +166,7 @@ describe("orchestration-runtime child lifecycle", () => {
     let executeCalls = 0;
     const framework = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([
+      runnerRegistry: createRunnerRegistry([
         createStaticRunner((context) => {
           executeCalls += 1;
           return {
@@ -216,7 +216,7 @@ describe("orchestration-runtime child lifecycle", () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([
+      runnerRegistry: createRunnerRegistry([
         createStaticRunner(async (context) => {
           await delay(20);
           return {
@@ -358,7 +358,7 @@ describe("orchestration-runtime child lifecycle", () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([
+      runnerRegistry: createRunnerRegistry([
         createStaticRunner(async (context) => {
           if (context.config.name === "worker") {
             await delay(5);
@@ -444,7 +444,7 @@ describe("orchestration-runtime child lifecycle", () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([
+      runnerRegistry: createRunnerRegistry([
         createStaticRunner(async (context) => {
           if (context.config.name === "worker") {
             await delay(5);
@@ -516,7 +516,7 @@ describe("orchestration-runtime child lifecycle", () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([
+      runnerRegistry: createRunnerRegistry([
         createStaticRunner(async (context) => {
           if (context.config.name === "worker") {
             return {
@@ -585,11 +585,11 @@ describe("orchestration-runtime child lifecycle", () => {
     });
   });
 
-  test("awaitResult resolves persisted assistant output even when the child driver does not stream it explicitly", async () => {
+  test("awaitResult resolves persisted assistant output even when the child runner does not stream it explicitly", async () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntime({
       defaultRunnerId: "raw",
-      driverRegistry: createBaseRunnerRegistry([
+      runnerRegistry: createBaseRunnerRegistry([
         {
           async execute(context) {
             if (context.config.name === "worker") {
@@ -654,7 +654,7 @@ describe("orchestration-runtime child lifecycle", () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([
+      runnerRegistry: createRunnerRegistry([
         createStaticRunner(async (context) => {
           if (context.config.name === "worker") {
             return {
@@ -735,7 +735,7 @@ describe("orchestration-runtime child lifecycle", () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([
+      runnerRegistry: createRunnerRegistry([
         createStaticRunner(async (context) => {
           if (context.config.name === "worker") {
             const toolMessages = context.messages.filter(

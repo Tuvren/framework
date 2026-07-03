@@ -113,7 +113,7 @@ export async function runProviderNativeAttribution(): Promise<
   const bridge = createAiSdkProviderBridge({ model: createMockNativeModel() });
   const runtime = createTuvrenRuntime({
     defaultRunnerId: "react",
-    driverRegistry: createRunnerRegistry([
+    runnerRegistry: createRunnerRegistry([
       createReActRunner({ providerCallMode: "generate" }),
     ]),
     kernel,

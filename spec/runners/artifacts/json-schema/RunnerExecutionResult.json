@@ -1,15 +1,15 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://tuvren.dev/schemas/framework/driver-api/DriverExecutionResult.json",
+  "$id": "https://tuvren.dev/schemas/framework/runner-api/RunnerExecutionResult.json",
   "type": "object",
   "properties": {
     "resolution": {
-      "$ref": "https://tuvren.dev/schemas/framework/driver-api/DriverRuntimeResolution.json"
+      "$ref": "https://tuvren.dev/schemas/framework/runner-api/RunnerRuntimeResolution.json"
     },
     "messages": {
       "type": "array",
       "items": {
-        "$ref": "https://tuvren.dev/schemas/framework/driver-api/TuvrenMessage.json"
+        "$ref": "https://tuvren.dev/schemas/framework/runner-api/TuvrenMessage.json"
       }
     },
     "partial": {
@@ -34,7 +34,7 @@
     "stateUpdates": {
       "type": "array",
       "items": {
-        "$ref": "https://tuvren.dev/schemas/framework/driver-api/DriverExtensionStateUpdate.json"
+        "$ref": "https://tuvren.dev/schemas/framework/runner-api/RunnerExtensionStateUpdate.json"
       }
     }
   },

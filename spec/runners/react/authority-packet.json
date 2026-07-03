@@ -1,36 +1,36 @@
 {
-  "packetId": "tuvren.framework.react-driver",
+  "packetId": "tuvren.framework.react-runner",
   "version": "0.1.0",
   "boundary": "framework",
-  "surface": "react-driver",
+  "surface": "react-runner",
   "humanAuthorityRefs": [
     "docs/KrakenFrameworkSpecification.md#56-driver-contract",
     ".constitution/tech-spec/contracts/README.md#46-driver-runtime-contract"
   ],
   "authoritativeSources": [
     {
-      "path": "spec/conformance/runners/plans/react-driver-callables.json",
+      "path": "spec/conformance/runners/plans/react-runner-callables.json",
       "format": "conformance-plan"
     },
     {
-      "path": "spec/conformance/runners/plans/react-driver-extended.json",
+      "path": "spec/conformance/runners/plans/react-runner-extended.json",
       "format": "conformance-plan"
     }
   ],
   "conformancePlans": [
     {
-      "planId": "tuvren.framework.react-driver.callables",
+      "planId": "tuvren.framework.react-runner.callables",
       "planVersion": "0.1.0",
-      "path": "spec/conformance/runners/plans/react-driver-callables.json"
+      "path": "spec/conformance/runners/plans/react-runner-callables.json"
     },
     {
-      "planId": "tuvren.framework.react-driver.extended",
+      "planId": "tuvren.framework.react-runner.extended",
       "planVersion": "0.1.0",
-      "path": "spec/conformance/runners/plans/react-driver-extended.json"
+      "path": "spec/conformance/runners/plans/react-runner-extended.json"
     }
   ],
   "bindingProjections": {
-    "typescript-react-driver": "typescript/runners/react"
+    "typescript-react-runner": "typescript/runners/react"
   },
   "forbiddenAuthoritySources": [
     "typescript/runners/react",
@@ -44,11 +44,11 @@
   "verificationPaths": [
     {
       "kind": "conformance-plan",
-      "target": "spec/conformance/runners/plans/react-driver-callables.json"
+      "target": "spec/conformance/runners/plans/react-runner-callables.json"
     },
     {
       "kind": "conformance-plan",
-      "target": "spec/conformance/runners/plans/react-driver-extended.json"
+      "target": "spec/conformance/runners/plans/react-runner-extended.json"
     }
   ]
 }

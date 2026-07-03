@@ -35,7 +35,7 @@ import type {
 } from "./runtime-contract-shapes.js";
 import { TuvrenValidationError } from "./tuvren-error.js";
 
-const DRIVER_RESULT_KEYS = new Set([
+const RUNNER_RESULT_KEYS = new Set([
   "assistantEventReconciliation",
   "messages",
   "partial",
@@ -101,7 +101,7 @@ export function assertRuntimeRunner(
 ): asserts value is RuntimeRunner {
   if (!isRuntimeRunner(value)) {
     throw new TuvrenValidationError(`${label} must be a valid RuntimeRunner`, {
-      code: "invalid_driver_contract",
+      code: "invalid_runner_contract",
       details: value,
     });
   }
@@ -116,9 +116,9 @@ export function assertRunnerExecutionResult(
     ("partial" in value && typeof value.partial !== "boolean")
   ) {
     throw new TuvrenValidationError(
-      `${label} must include only valid optional driver metadata fields`,
+      `${label} must include only valid optional runner metadata fields`,
       {
-        code: "invalid_driver_result",
+        code: "invalid_runner_result",
         details: value,
       }
     );
@@ -132,7 +132,7 @@ export function assertRunnerExecutionResult(
     throw new TuvrenValidationError(
       `${label}.assistantEventReconciliation must be "allow_final_sequence_divergence" when provided`,
       {
-        code: "invalid_driver_result",
+        code: "invalid_runner_result",
         details: value,
       }
     );
@@ -147,7 +147,7 @@ export function assertRunnerExecutionResult(
     throw new TuvrenValidationError(
       `${label}.toolExecutionMode must be "parallel" or "sequential"`,
       {
-        code: "invalid_driver_result",
+        code: "invalid_runner_result",
         details: value,
       }
     );
@@ -155,7 +155,7 @@ export function assertRunnerExecutionResult(
 
   assertRunnerStateUpdates(value.stateUpdates, `${label}.stateUpdates`);
   assertRunnerMessages(value, label);
-  assertOnlyAllowedKeys(value, DRIVER_RESULT_KEYS, label);
+  assertOnlyAllowedKeys(value, RUNNER_RESULT_KEYS, label);
   assertRunnerRuntimeResolution(value.resolution, `${label}.resolution`);
 
   assertRunnerPartialResult(
@@ -198,7 +198,7 @@ export function assertRunnerRuntimeResolution(
 ): asserts value is RuntimeResolution {
   if (!isRecord(value) || typeof value.type !== "string") {
     throw new TuvrenValidationError(`${label} must be a valid resolution`, {
-      code: "invalid_driver_result",
+      code: "invalid_runner_result",
       details: value,
     });
   }
@@ -232,7 +232,7 @@ export function assertRunnerRuntimeResolution(
           throw new TuvrenValidationError(
             `${label}.targetAgent must match ${label}.contextPlan.targetAgent`,
             {
-              code: "invalid_driver_result",
+              code: "invalid_runner_result",
               details: {
                 contextPlanTargetAgent: value.contextPlan.targetAgent,
                 resolutionTargetAgent: value.targetAgent,
@@ -258,7 +258,7 @@ export function assertRunnerRuntimeResolution(
   }
 
   throw new TuvrenValidationError(`${label} must be a valid resolution`, {
-    code: "invalid_driver_result",
+    code: "invalid_runner_result",
     details: value,
   });
 }
@@ -276,7 +276,7 @@ export function assertRunnerHandoffContextPlan(
     !isRecord(value.sourceContext)
   ) {
     throw new TuvrenValidationError(`${label} must be a valid handoff plan`, {
-      code: "invalid_driver_result",
+      code: "invalid_runner_result",
       details: value,
     });
   }
@@ -290,7 +290,7 @@ export function assertRunnerHandoffContextPlan(
     throw new TuvrenValidationError(
       `${label}.sourceContext.handoffIntent.targetAgent must match ${label}.targetAgent`,
       {
-        code: "invalid_driver_result",
+        code: "invalid_runner_result",
         details: {
           contextPlanTargetAgent: value.targetAgent,
           sourceContextTargetAgent:
@@ -304,7 +304,7 @@ export function assertRunnerHandoffContextPlan(
     throw new TuvrenValidationError(
       `${label}.sourceContext.targetAgent.name must match ${label}.targetAgent`,
       {
-        code: "invalid_driver_result",
+        code: "invalid_runner_result",
         details: {
           contextPlanTargetAgent: value.targetAgent,
           sourceContextTargetAgent: value.sourceContext.targetAgent.name,
@@ -320,14 +320,14 @@ export function assertRunnerHandoffSourceContext(
 ): asserts value is HandoffSourceContext {
   if (!isRecord(value)) {
     throw new TuvrenValidationError(`${label} must be a valid handoff source`, {
-      code: "invalid_driver_result",
+      code: "invalid_runner_result",
       details: value,
     });
   }
 
   if (!Array.isArray(value.messages)) {
     throw new TuvrenValidationError(`${label}.messages must be an array`, {
-      code: "invalid_driver_result",
+      code: "invalid_runner_result",
       details: value,
     });
   }
@@ -347,7 +347,7 @@ export function assertRunnerHandoffSourceContext(
     typeof value.helpers.storeMessages !== "function"
   ) {
     throw new TuvrenValidationError(`${label} must be a valid handoff source`, {
-      code: "invalid_driver_result",
+      code: "invalid_runner_result",
       details: value,
     });
   }
@@ -367,7 +367,7 @@ function safePredicate(check: () => boolean): boolean {
 function assertRunnerMessage(message: TuvrenMessage, label: string): void {
   if (message.role !== "assistant") {
     throw new TuvrenValidationError(`${label} must be an assistant message`, {
-      code: "invalid_driver_result",
+      code: "invalid_runner_result",
       details: message,
     });
   }
@@ -377,7 +377,7 @@ function assertRunnerMessage(message: TuvrenMessage, label: string): void {
       throw new TuvrenValidationError(
         `${label}.parts[${index}] must not be a tool_result`,
         {
-          code: "invalid_driver_result",
+          code: "invalid_runner_result",
           details: part,
         }
       );
@@ -395,7 +395,7 @@ function assertRunnerMessages(
 
   if (!Array.isArray(value.messages)) {
     throw new TuvrenValidationError(`${label}.messages must be an array`, {
-      code: "invalid_driver_result",
+      code: "invalid_runner_result",
       details: value,
     });
   }
@@ -418,7 +418,7 @@ function assertRunnerMessages(
     throw new TuvrenValidationError(
       `${label}.messages must not contain more than one assistant message`,
       {
-        code: "invalid_driver_result",
+        code: "invalid_runner_result",
         details: value,
       }
     );
@@ -458,7 +458,7 @@ function assertRunnerPartialResult(
     throw new TuvrenValidationError(
       `${label}.partial is only valid for failed execution results`,
       {
-        code: "invalid_driver_result",
+        code: "invalid_runner_result",
         details: value,
       }
     );
@@ -468,7 +468,7 @@ function assertRunnerPartialResult(
     throw new TuvrenValidationError(
       `${label}.partial requires a staged assistant message`,
       {
-        code: "invalid_driver_result",
+        code: "invalid_runner_result",
         details: value,
       }
     );
@@ -486,9 +486,9 @@ function assertRunnerToolExecutionMode(
 
   if (requestedToolCalls && value.toolExecutionMode === undefined) {
     throw new TuvrenValidationError(
-      `${label}.toolExecutionMode is required when driver messages request tool calls`,
+      `${label}.toolExecutionMode is required when runner messages request tool calls`,
       {
-        code: "invalid_driver_result",
+        code: "invalid_runner_result",
         details: value,
       }
     );
@@ -496,9 +496,9 @@ function assertRunnerToolExecutionMode(
 
   if (!requestedToolCalls && value.toolExecutionMode !== undefined) {
     throw new TuvrenValidationError(
-      `${label}.toolExecutionMode is only valid when driver messages request tool calls`,
+      `${label}.toolExecutionMode is only valid when runner messages request tool calls`,
       {
-        code: "invalid_driver_result",
+        code: "invalid_runner_result",
         details: value,
       }
     );
@@ -524,9 +524,9 @@ function assertRunnerResolutionCompatibility(
     !failedPartialToolCall
   ) {
     throw new TuvrenValidationError(
-      `${label}.resolution must continue iteration when driver messages request tool calls`,
+      `${label}.resolution must continue iteration when runner messages request tool calls`,
       {
-        code: "invalid_driver_result",
+        code: "invalid_runner_result",
         details: value,
       }
     );
@@ -534,9 +534,9 @@ function assertRunnerResolutionCompatibility(
 
   if (!requestedToolCalls && value.resolution.type === "pause") {
     throw new TuvrenValidationError(
-      `${label}.resolution.pause requires driver messages with tool calls`,
+      `${label}.resolution.pause requires runner messages with tool calls`,
       {
-        code: "invalid_driver_result",
+        code: "invalid_runner_result",
         details: value,
       }
     );
@@ -549,7 +549,7 @@ function assertRunnerResolutionCompatibility(
     throw new TuvrenValidationError(
       `${label}.assistantEventReconciliation requires an assistant message`,
       {
-        code: "invalid_driver_result",
+        code: "invalid_runner_result",
         details: value,
       }
     );
@@ -562,7 +562,7 @@ function assertRunnerAgentConfigSnapshot(
 ): asserts value is AgentConfig {
   if (!isRecord(value) || typeof value.name !== "string") {
     throw new TuvrenValidationError(`${label} must be a valid AgentConfig`, {
-      code: "invalid_driver_result",
+      code: "invalid_runner_result",
       details: value,
     });
   }
@@ -597,7 +597,7 @@ function assertRunnerExtensionSnapshot(value: unknown, label: string): void {
     throw new TuvrenValidationError(
       `${label} must be a valid TuvrenExtension`,
       {
-        code: "invalid_driver_result",
+        code: "invalid_runner_result",
         details: value,
       }
     );
@@ -628,7 +628,7 @@ function assertRunnerContextPolicySnapshot(
 
   if (!isRecord(value) || typeof value.evaluate !== "function") {
     throw new TuvrenValidationError(`${label} must be a valid ContextPolicy`, {
-      code: "invalid_driver_result",
+      code: "invalid_runner_result",
       details: value,
     });
   }
@@ -643,7 +643,7 @@ function assertRunnerLoopPolicySnapshot(value: unknown, label: string): void {
 
   if (!isRecord(value) || typeof value.evaluate !== "function") {
     throw new TuvrenValidationError(`${label} must be a valid LoopPolicy`, {
-      code: "invalid_driver_result",
+      code: "invalid_runner_result",
       details: value,
     });
   }
@@ -665,7 +665,7 @@ function assertRunnerModelSnapshot(value: unknown, label: string): void {
     throw new TuvrenValidationError(
       `${label} must be a string model id or TuvrenProvider`,
       {
-        code: "invalid_driver_result",
+        code: "invalid_runner_result",
         details: value,
       }
     );
@@ -684,7 +684,7 @@ function assertRunnerResponseFormatSnapshot(
     throw new TuvrenValidationError(
       `${label} must be a valid StructuredOutputRequest`,
       {
-        code: "invalid_driver_result",
+        code: "invalid_runner_result",
         details: value,
       }
     );
@@ -694,7 +694,7 @@ function assertRunnerResponseFormatSnapshot(
 
   if (!("schema" in value)) {
     throw new TuvrenValidationError(`${label}.schema is required`, {
-      code: "invalid_driver_result",
+      code: "invalid_runner_result",
       details: value,
     });
   }
@@ -710,7 +710,7 @@ function assertRunnerResponseFormatSnapshot(
     throw new TuvrenValidationError(
       `${label} must be a valid StructuredOutputRequest`,
       {
-        code: "invalid_driver_result",
+        code: "invalid_runner_result",
         details: value,
       }
     );
@@ -724,7 +724,7 @@ function assertRunnerExtensionsSnapshot(value: unknown, label: string): void {
 
   if (!Array.isArray(value)) {
     throw new TuvrenValidationError(`${label} must be an array`, {
-      code: "invalid_driver_result",
+      code: "invalid_runner_result",
       details: value,
     });
   }
@@ -751,7 +751,7 @@ function assertRunnerExtensionHandlers(
       throw new TuvrenValidationError(
         `${label}.${name} must be a function when provided`,
         {
-          code: "invalid_driver_result",
+          code: "invalid_runner_result",
           details: handler,
         }
       );
@@ -769,7 +769,7 @@ function assertRunnerAroundToolSnapshot(value: unknown, label: string): void {
 
   if (!Array.isArray(tools) || typeof handler !== "function") {
     throw new TuvrenValidationError(`${label} must be a valid AroundToolSpec`, {
-      code: "invalid_driver_result",
+      code: "invalid_runner_result",
       details: value,
     });
   }
@@ -779,7 +779,7 @@ function assertRunnerAroundToolSnapshot(value: unknown, label: string): void {
       throw new TuvrenValidationError(
         `${label} must be a valid AroundToolSpec`,
         {
-          code: "invalid_driver_result",
+          code: "invalid_runner_result",
           details: value,
         }
       );
@@ -797,7 +797,7 @@ function assertOptionalStringArray(value: unknown, label: string): void {
     value.some((entry) => typeof entry !== "string")
   ) {
     throw new TuvrenValidationError(`${label} must be an array of strings`, {
-      code: "invalid_driver_result",
+      code: "invalid_runner_result",
       details: value,
     });
   }
@@ -810,7 +810,7 @@ function assertOptionalRecord(value: unknown, label: string): void {
 
   if (!isRecord(value)) {
     throw new TuvrenValidationError(`${label} must be a record`, {
-      code: "invalid_driver_result",
+      code: "invalid_runner_result",
       details: value,
     });
   }
@@ -823,7 +823,7 @@ function assertRunnerStateUpdates(value: unknown, label: string): void {
 
   if (!Array.isArray(value)) {
     throw new TuvrenValidationError(`${label} must be an array`, {
-      code: "invalid_driver_result",
+      code: "invalid_runner_result",
       details: value,
     });
   }
@@ -837,7 +837,7 @@ function assertRunnerStateUpdates(value: unknown, label: string): void {
       throw new TuvrenValidationError(
         `${label}[${index}] must be a valid RunnerExtensionStateUpdate`,
         {
-          code: "invalid_driver_result",
+          code: "invalid_runner_result",
           details: update,
         }
       );
@@ -858,7 +858,7 @@ function assertOptionalString(value: unknown, label: string): void {
 
   if (typeof value !== "string") {
     throw new TuvrenValidationError(`${label} must be a string`, {
-      code: "invalid_driver_result",
+      code: "invalid_runner_result",
       details: value,
     });
   }
@@ -871,7 +871,7 @@ function assertOptionalStringOrFunction(value: unknown, label: string): void {
 
   if (typeof value !== "string" && typeof value !== "function") {
     throw new TuvrenValidationError(`${label} must be a string or function`, {
-      code: "invalid_driver_result",
+      code: "invalid_runner_result",
       details: value,
     });
   }
@@ -888,7 +888,7 @@ function assertFiniteOptionalNumber(
 
   if (typeof value !== "number" || !Number.isFinite(value)) {
     throw new TuvrenValidationError(`${label} ${message}`, {
-      code: "invalid_driver_result",
+      code: "invalid_runner_result",
       details: value,
     });
   }
@@ -906,7 +906,7 @@ function assertPositiveSafeIntegerOptionalNumber(
     throw new TuvrenValidationError(
       `${label} must be a positive safe integer`,
       {
-        code: "invalid_driver_result",
+        code: "invalid_runner_result",
         details: value,
       }
     );
@@ -920,7 +920,7 @@ function assertToolDefinitions(value: unknown, label: string): void {
 
   if (!Array.isArray(value)) {
     throw new TuvrenValidationError(`${label} must be an array`, {
-      code: "invalid_driver_result",
+      code: "invalid_runner_result",
       details: value,
     });
   }
@@ -940,7 +940,7 @@ function assertOnlyAllowedKeys(
       throw new TuvrenValidationError(
         `${label} must not include unsupported field "${key}"`,
         {
-          code: "invalid_driver_result",
+          code: "invalid_runner_result",
           details: value,
         }
       );

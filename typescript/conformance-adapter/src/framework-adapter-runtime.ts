@@ -76,7 +76,7 @@ export interface ScenarioToolCall {
   readonly throwMessage?: string;
 }
 
-export const DRIVER_ID = "typescript-conformance-driver";
+export const RUNNER_ID = "typescript-conformance-runner";
 export const AGENT_NAME = "typescript-conformance-agent";
 
 export function createConformanceKernelHarness(options?: {
@@ -292,7 +292,7 @@ export function createScenarioProvider(
 
       if (response === undefined) {
         return Promise.reject(
-          new Error("driver scenario must provide at least one response")
+          new Error("runner scenario must provide at least one response")
         );
       }
 
@@ -317,7 +317,7 @@ export function createRuntimeWithReactRunner(): ReturnType<
   return createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
     defaultRunnerId: reactRunner.id,
-    driverRegistry: createRunnerRegistry([reactRunner]),
+    runnerRegistry: createRunnerRegistry([reactRunner]),
     kernel: createConformanceKernelHarness().kernel,
   });
 }
@@ -331,7 +331,7 @@ export function createStaticRunner(
     execute(context) {
       return Promise.resolve(execute(context));
     },
-    id: DRIVER_ID,
+    id: RUNNER_ID,
   };
 }
 

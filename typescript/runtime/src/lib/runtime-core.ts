@@ -227,14 +227,13 @@ export const DEFAULT_AGENT_SCHEMA: TurnTreeSchema = {
 export interface RuntimeCoreOptions {
   /**
    * Framework-enforced per-turn execution bounds (ADR-043, KRT-BD006). Applied
-   * above the driver's loop policy; unset fields take the §3.11 safe defaults
+   * above the runner's loop policy; unset fields take the §3.11 safe defaults
    * and every configured bound must be a finite positive integer.
    */
   bounds?: ExecutionBounds;
   createId?: () => string;
   defaultMaxParallelToolCalls?: number;
   defaultRunnerId: string;
-  driverRegistry?: RunnerRegistry;
   enableStateObservability?: boolean;
   handoffContextBuilder?: HandoffContextBuilder;
   kernel: KrakenKernel;
@@ -262,6 +261,7 @@ export interface RuntimeCoreOptions {
     branchId: string
   ) => Promise<string | null> | string | null;
   runLiveness?: RuntimeRunLivenessOptions;
+  runnerRegistry?: RunnerRegistry;
   /**
    * The host-bound Scope this runtime is constructed against (ADR-048). It is
    * correlation context for operational telemetry and transcripts only — never
@@ -277,7 +277,6 @@ interface ResolvedRuntimeCoreOptions {
   createId: () => string;
   defaultMaxParallelToolCalls: number;
   defaultRunnerId: string;
-  driverRegistry: RunnerRegistry;
   enableStateObservability: boolean;
   handoffContextBuilder?: HandoffContextBuilder;
   kernel: KrakenKernel;
@@ -292,6 +291,7 @@ interface ResolvedRuntimeCoreOptions {
     branchId: string
   ) => Promise<string | null> | string | null;
   runLiveness?: ResolvedRuntimeRunLivenessOptions;
+  runnerRegistry: RunnerRegistry;
   scope: Scope;
   telemetry?: TuvrenTelemetrySink;
 }
@@ -314,11 +314,11 @@ export interface RuntimeWarning {
 }
 
 interface ExecutedIterationResult {
-  driverResponse: TuvrenModelResponse;
   iterationRunId: string;
   partial: boolean;
   requestedToolCalls: ToolCallPart[];
   resolution: RuntimeResolution;
+  runnerResponse: TuvrenModelResponse;
   stableHeadTurnNodeHash: HashString;
   toolExecutionMode: ToolExecutionMode;
   toolResults: ToolResultPart[];
@@ -368,7 +368,7 @@ class RuntimeCore implements TuvrenRuntime {
         options.defaultMaxParallelToolCalls ?? DEFAULT_MAX_PARALLEL_TOOL_CALLS,
         "defaultMaxParallelToolCalls"
       ),
-      driverRegistry: options.driverRegistry ?? createRunnerRegistry(),
+      runnerRegistry: options.runnerRegistry ?? createRunnerRegistry(),
       enableStateObservability: options.enableStateObservability ?? true,
       handoffContextBuilder: options.handoffContextBuilder,
       kernel: options.kernel,
@@ -537,7 +537,7 @@ class RuntimeCore implements TuvrenRuntime {
         loopState,
         defaultMaxParallelToolCalls
       ) =>
-        // Clamp the driver/agent/default parallelism to the framework bound so
+        // Clamp the runner/agent/default parallelism to the framework bound so
         // parallel tool execution never exceeds maxConcurrentToolCalls. (BD006)
         Math.min(
           resolveActiveMaxParallelToolCalls(
@@ -795,7 +795,7 @@ class RuntimeCore implements TuvrenRuntime {
     );
     // Execution bounds are per logical turn. A resumed handle continues the same
     // turn, so carry the cumulative tool-call count and the end-to-end wall-clock
-    // deadline forward; otherwise a driver could reset two hard-stop budgets on
+    // deadline forward; otherwise a runner could reset two hard-stop budgets on
     // every approval pause. The per-loop-run abort timer is re-armed against the
     // carried deadline when the resumed loop enters. (ADR-043, BD006)
     const previousBounds = this.boundsTurnStates.get(previousHandle);
@@ -1100,8 +1100,8 @@ class RuntimeCore implements TuvrenRuntime {
             resolution,
             events
           ),
-        materializeRunner: (driverId) =>
-          materializeRuntimeCoreRunner(this.options.driverRegistry, driverId),
+        materializeRunner: (runnerId) =>
+          materializeRuntimeCoreRunner(this.options.runnerRegistry, runnerId),
         now: () => this.now(),
         reconcileCheckpointedPauseResolution: (...args) =>
           reconcileRuntimeCoreCheckpointedPauseResolution(

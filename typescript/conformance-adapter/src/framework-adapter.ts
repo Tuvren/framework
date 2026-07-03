@@ -118,7 +118,7 @@ interface OperationObservation {
 
 type OperationStatus = "completed" | "failed" | "paused";
 
-const driverScenarios = createFrameworkAdapterRunner({
+const runnerScenarios = createFrameworkAdapterRunner({
   errorToEnvelope,
   readApprovalDecisions,
   readFirstToolCallNameOptional,
@@ -257,12 +257,12 @@ export class TypeScriptFrameworkAdapter implements ImplementationAdapter {
     this.capabilities = {
       adapterId: "typescript-framework",
       capabilities: [
-        "framework.driver-api",
+        "framework.runner-api",
         "framework.event-stream",
         "framework.event-stream-sse",
         "framework.orchestration",
         "framework.run-liveness",
-        "framework.react-driver",
+        "framework.react-runner",
         "framework.runtime-api",
         "framework.tool-contracts",
         "providers.framework-owned-approval-boundary",
@@ -379,12 +379,12 @@ export class TypeScriptFrameworkAdapter implements ImplementationAdapter {
         return schemaAuthoringScenarios.runSchemaAuthoringRoute(input);
       case "runtime.schema-authoring.define-tool":
         return schemaAuthoringScenarios.runSchemaAuthoringDefineTool(input);
-      case "driver.execute":
-        return driverScenarios.runRunnerExecute(input);
-      case "driver.resume":
-        return driverScenarios.runRunnerResume(input);
-      case "driver.checkpoint":
-        return driverScenarios.runRunnerCheckpoint(input);
+      case "runner.execute":
+        return runnerScenarios.runRunnerExecute(input);
+      case "runner.resume":
+        return runnerScenarios.runRunnerResume(input);
+      case "runner.checkpoint":
+        return runnerScenarios.runRunnerCheckpoint(input);
       case "event-stream.runtime-agui-projection":
         return eventStreamScenarios.runAgUiProjection(input);
       case "event-stream.runtime-sse-eager-subscription":
@@ -501,7 +501,7 @@ function readFirstErrorEnvelope(
 function errorToEnvelope(error: Error): Record<string, unknown> {
   const errorRecord: Record<string, unknown> = isRecord(error) ? error : {};
   const code =
-    typeof errorRecord.code === "string" ? errorRecord.code : "driver_error";
+    typeof errorRecord.code === "string" ? errorRecord.code : "runner_error";
   const envelope: Record<string, unknown> = {
     code,
     message: error.message,

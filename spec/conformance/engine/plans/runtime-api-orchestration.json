@@ -348,7 +348,7 @@
     {
       "assertions": [
         {
-          "equals": "invalid_driver_result",
+          "equals": "invalid_runner_result",
           "field": "$.orchestration.surfaces.handoffInvalidCompositionError.code",
           "kind": "resultField"
         }
@@ -365,17 +365,17 @@
       "assertions": [
         {
           "equals": true,
-          "field": "$.orchestration.inheritance.driverIdInherited",
+          "field": "$.orchestration.inheritance.runnerIdInherited",
           "kind": "resultField"
         }
       ],
-      "checkId": "runtime-orchestration.inheritance.driver-id",
+      "checkId": "runtime-orchestration.inheritance.runner-id",
       "input": {
         "scenarioPath": "$.orchestration-execution-inheritance"
       },
       "operation": "runtime.orchestration.execution-inheritance",
       "scenario": "runtime-api-scenarios",
-      "evidence": ["result.orchestration.inheritance.driverIdInherited"]
+      "evidence": ["result.orchestration.inheritance.runnerIdInherited"]
     },
     {
       "assertions": [

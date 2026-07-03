@@ -228,8 +228,8 @@ export function shouldSuppressBufferedRunnerEvents(
 
   return (
     typeof code === "string" &&
-    (code === "invalid_driver_result" ||
-      code === "invalid_driver_resolution" ||
+    (code === "invalid_runner_result" ||
+      code === "invalid_runner_resolution" ||
       code === "invalid_stream_event")
   );
 }

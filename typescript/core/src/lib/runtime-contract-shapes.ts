@@ -246,7 +246,7 @@ export interface TuvrenModelResponse {
    * Provider-native and provider-mediated invocation records. These are
    * separate from `parts` so they do not contaminate the model-facing content
    * flow and the framework never routes them through the Tool Execution Gateway.
-   * The driver processes these into pre-staged tool results. (AY002/AY004)
+   * The runner processes these into pre-staged tool results. (AY002/AY004)
    */
   providerToolResults?: ProviderNativeInvocationRecord[];
   usage?: ProviderUsage;
@@ -362,7 +362,7 @@ export type RuntimeResolution =
 
 export interface EventSource {
   agent: string;
-  driver?: string;
+  runner?: string;
   threadId?: string;
   workerId?: string;
 }
@@ -1133,11 +1133,11 @@ export type ExecutionBoundKind =
 
 /**
  * Framework-enforced per-turn execution bounds (ADR-043 §3.11), applied above
- * the driver's own loop policy so a misbehaving or adversarial driver cannot
+ * the runner's own loop policy so a misbehaving or adversarial runner cannot
  * run a turn unbounded. Configured per runtime instance via
  * `createTuvren({ bounds })` / `RuntimeCoreOptions.bounds`. Unset fields take
  * the documented safe defaults; every configured bound must be a finite
- * positive integer. A driver cannot raise or disable a bound.
+ * positive integer. A runner cannot raise or disable a bound.
  */
 export interface ExecutionBounds {
   /** Maximum concurrent tool calls (throttle, not a terminal bound). Default 16. */
@@ -1212,7 +1212,7 @@ export interface OrchestrationRuntime {
   executeTurn(input: {
     agent: string;
     branchId: string;
-    driverId?: string;
+    runnerId?: string;
     parentTurnId?: string | null;
     schemaId?: string;
     signal: InputSignal;
@@ -1325,7 +1325,7 @@ export interface TuvrenRuntime {
     threadId: string;
     branchId: string;
     schemaId?: string;
-    driverId?: string;
+    runnerId?: string;
     config: AgentConfig;
     tools?: TuvrenToolDefinition[];
     parentTurnId?: string | null;

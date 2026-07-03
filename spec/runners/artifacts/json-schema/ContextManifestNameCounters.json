@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://tuvren.dev/schemas/framework/driver-api/ContextManifestNameCounters.json",
+  "$id": "https://tuvren.dev/schemas/framework/runner-api/ContextManifestNameCounters.json",
   "type": "object",
   "properties": {
     "byName": {
-      "$ref": "https://tuvren.dev/schemas/framework/driver-api/ContextManifestNameCountMap.json"
+      "$ref": "https://tuvren.dev/schemas/framework/runner-api/ContextManifestNameCountMap.json"
     },
     "total": {
-      "$ref": "https://tuvren.dev/schemas/framework/driver-api/NonNegativeSafeInt.json"
+      "$ref": "https://tuvren.dev/schemas/framework/runner-api/NonNegativeSafeInt.json"
     }
   },
   "required": ["byName", "total"],

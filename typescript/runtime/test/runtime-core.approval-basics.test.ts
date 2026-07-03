@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test drivers intentionally match the async framework driver contract.
+// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 import { describe, expect, test } from "bun:test";
 import type {
   RuntimeRunner as KrakenRunner,
@@ -40,7 +40,7 @@ describe("framework-runtime-core", () => {
     let afterIterationCount = 0;
     let searchCalls = 0;
     let emailCalls = 0;
-    const driver = {
+    const runner = {
       async execute(context) {
         const toolMessageCount = context.messages.filter(
           (message) => message.role === "tool"
@@ -85,7 +85,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const tools: TuvrenToolDefinition[] = [
@@ -220,7 +220,7 @@ describe("framework-runtime-core", () => {
       return await originalComplete(runId, status, eventHash);
     };
 
-    const driver = {
+    const runner = {
       async execute(context) {
         const toolMessages = context.messages.filter(
           (message) => message.role === "tool"
@@ -258,7 +258,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -318,7 +318,7 @@ describe("framework-runtime-core", () => {
   test("surfaces normalized approval inputs and executes the same normalized payload after resume", async () => {
     const harness = createFakeKernelHarness();
     const executedInputs: unknown[] = [];
-    const driver = {
+    const runner = {
       async execute(context) {
         const toolMessages = context.messages.filter(
           (message) => message.role === "tool"
@@ -376,7 +376,7 @@ describe("framework-runtime-core", () => {
     } satisfies CustomSchema;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -424,7 +424,7 @@ describe("framework-runtime-core", () => {
 
   test("keeps a valid paused snapshot on the exhausted handle after approval resume", async () => {
     const harness = createFakeKernelHarness();
-    const driver = {
+    const runner = {
       async execute(context) {
         const toolMessages = context.messages.filter(
           (message) => message.role === "tool"
@@ -462,7 +462,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -517,9 +517,9 @@ describe("framework-runtime-core", () => {
 });
 
 function createRunnerRegistry(
-  drivers: Array<KrakenRunner | KrakenRunnerFactory> = []
+  runners: Array<KrakenRunner | KrakenRunnerFactory> = []
 ) {
-  return createBaseRunnerRegistry(drivers.map(wrapRunnerEntry));
+  return createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
 }
 
 function wrapRunnerEntry(
@@ -543,14 +543,14 @@ function isKrakenRunnerFactory(
   return "create" in entry && typeof entry.create === "function";
 }
 
-function wrapRunner(driver: KrakenRunner): KrakenRunner {
-  const resume = driver.resume;
+function wrapRunner(runner: KrakenRunner): KrakenRunner {
+  const resume = runner.resume;
 
   return {
     async execute(context) {
-      return normalizeRunnerResult(await driver.execute(context));
+      return normalizeRunnerResult(await runner.execute(context));
     },
-    id: driver.id,
+    id: runner.id,
     ...(resume === undefined
       ? {}
       : {

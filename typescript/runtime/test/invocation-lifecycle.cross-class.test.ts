@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test drivers intentionally match the async framework driver contract.
+// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 
 /**
  * KRT-BA001: Cross-Class Invocation Lifecycle State Machine
@@ -123,12 +123,12 @@ function buildProviderToolMessage(
   };
 }
 
-/** Simple two-turn driver: first turn returns provider tool result, second ends. */
+/** Simple two-turn runner: first turn returns provider tool result, second ends. */
 function makeProviderRunner(
   executionClass: "provider-native" | "provider-mediated"
 ): RuntimeRunner {
   return {
-    id: `driver-${executionClass}`,
+    id: `runner-${executionClass}`,
     async execute(context) {
       if (!context.messages.some((m) => m.role === "tool")) {
         return {
@@ -154,10 +154,10 @@ function makeProviderRunner(
   };
 }
 
-/** Simple tuvren-server driver that calls one defineTool tool. */
+/** Simple tuvren-server runner that calls one defineTool tool. */
 function makeTuvrenServerRunner(toolName: string): RuntimeRunner {
   return {
-    id: "driver-tuvren-server",
+    id: "runner-tuvren-server",
     async execute(context) {
       if (!context.messages.some((m) => m.role === "tool")) {
         return {
@@ -181,10 +181,10 @@ function makeTuvrenServerRunner(toolName: string): RuntimeRunner {
   };
 }
 
-/** Simple tuvren-client driver that calls one client endpoint capability. */
+/** Simple tuvren-client runner that calls one client endpoint capability. */
 function makeTuvrenClientRunner(capabilityId: string): RuntimeRunner {
   return {
-    id: "driver-tuvren-client",
+    id: "runner-tuvren-client",
     async execute(context) {
       if (!context.messages.some((m) => m.role === "tool")) {
         return {
@@ -243,8 +243,8 @@ describe("BA001 invocation lifecycle — tuvren-server", () => {
     const harness = createFakeKernelHarness();
     const toolName = "ba001_server_tool";
     const runtime = createTuvrenRuntime({
-      defaultRunnerId: "driver-tuvren-server",
-      driverRegistry: createRunnerRegistry([makeTuvrenServerRunner(toolName)]),
+      defaultRunnerId: "runner-tuvren-server",
+      runnerRegistry: createRunnerRegistry([makeTuvrenServerRunner(toolName)]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -316,8 +316,8 @@ describe("BA001 invocation lifecycle — tuvren-server", () => {
       deniedCapabilityIds: new Set([toolName]),
     });
     const runtime = createTuvrenRuntime({
-      defaultRunnerId: "driver-tuvren-server",
-      driverRegistry: createRunnerRegistry([makeTuvrenServerRunner(toolName)]),
+      defaultRunnerId: "runner-tuvren-server",
+      runnerRegistry: createRunnerRegistry([makeTuvrenServerRunner(toolName)]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -358,10 +358,10 @@ describe("BA001 invocation lifecycle — tuvren-server", () => {
 describe("BA001 invocation lifecycle — provider-native", () => {
   test("produces tool.start → tool.result with provider-native attribution", async () => {
     const harness = createFakeKernelHarness();
-    const driver = makeProviderRunner("provider-native");
+    const runner = makeProviderRunner("provider-native");
     const runtime = createTuvrenRuntime({
-      defaultRunnerId: "driver-provider-native",
-      driverRegistry: createRunnerRegistry([driver]),
+      defaultRunnerId: "runner-provider-native",
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -414,10 +414,10 @@ describe("BA001 invocation lifecycle — provider-native", () => {
 describe("BA001 invocation lifecycle — provider-mediated", () => {
   test("produces tool.start → tool.result with provider-mediated attribution", async () => {
     const harness = createFakeKernelHarness();
-    const driver = makeProviderRunner("provider-mediated");
+    const runner = makeProviderRunner("provider-mediated");
     const runtime = createTuvrenRuntime({
-      defaultRunnerId: "driver-provider-mediated",
-      driverRegistry: createRunnerRegistry([driver]),
+      defaultRunnerId: "runner-provider-mediated",
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -464,8 +464,8 @@ describe("BA001 invocation lifecycle — tuvren-client", () => {
     const boundary = createClientEndpointBoundary([endpoint]);
 
     const runtime = createTuvrenRuntime({
-      defaultRunnerId: "driver-tuvren-client",
-      driverRegistry: createRunnerRegistry([
+      defaultRunnerId: "runner-tuvren-client",
+      runnerRegistry: createRunnerRegistry([
         makeTuvrenClientRunner(capabilityId),
       ]),
       kernel: harness.kernel,

@@ -84,7 +84,7 @@ describe("runner-react integration streamed runtime", () => {
     } satisfies TuvrenProvider;
     const runtime = createTuvrenRuntimeCore({
       defaultRunnerId: REACT_RUNNER_ID,
-      driverRegistry: createRunnerRegistry([
+      runnerRegistry: createRunnerRegistry([
         createReActRunner({
           providerCallMode: "stream",
           toolExecutionMode: "sequential",
@@ -200,7 +200,7 @@ describe("runner-react integration streamed runtime", () => {
     } satisfies TuvrenProvider;
     const runtime = createTuvrenRuntimeCore({
       defaultRunnerId: REACT_RUNNER_ID,
-      driverRegistry: createRunnerRegistry([
+      runnerRegistry: createRunnerRegistry([
         createReActRunner({
           providerCallMode: "stream",
           toolExecutionMode: "sequential",
@@ -253,7 +253,7 @@ describe("runner-react integration streamed runtime", () => {
     } satisfies TuvrenProvider;
     const runtime = createTuvrenRuntimeCore({
       defaultRunnerId: REACT_RUNNER_ID,
-      driverRegistry: createRunnerRegistry([
+      runnerRegistry: createRunnerRegistry([
         createReActRunner({
           providerCallMode: "stream",
         }),
@@ -279,7 +279,7 @@ describe("runner-react integration streamed runtime", () => {
       events.some(
         (event) =>
           event.type === "error" &&
-          event.error.code === "react_driver_provider_failure"
+          event.error.code === "react_runner_provider_failure"
       )
     ).toBe(true);
     expect(events.some((event) => event.type === "text.delta")).toBe(true);
@@ -317,7 +317,7 @@ describe("runner-react integration streamed runtime", () => {
     } satisfies TuvrenProvider;
     const runtime = createTuvrenRuntimeCore({
       defaultRunnerId: REACT_RUNNER_ID,
-      driverRegistry: createRunnerRegistry([
+      runnerRegistry: createRunnerRegistry([
         createReActRunner({
           providerCallMode: "stream",
         }),
@@ -383,7 +383,7 @@ describe("runner-react integration streamed runtime", () => {
     } satisfies TuvrenProvider;
     const runtime = createTuvrenRuntimeCore({
       defaultRunnerId: REACT_RUNNER_ID,
-      driverRegistry: createRunnerRegistry([
+      runnerRegistry: createRunnerRegistry([
         createReActRunner({
           providerCallMode: "stream",
         }),
@@ -421,7 +421,7 @@ describe("runner-react integration streamed runtime", () => {
       canonicalEvents.some(
         (event) =>
           event.type === "error" &&
-          event.error.code === "react_driver_provider_failure"
+          event.error.code === "react_runner_provider_failure"
       )
     ).toBe(true);
     expect(sseFrames.some((frame) => frame.event === "error")).toBe(true);

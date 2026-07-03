@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test drivers intentionally match the async framework driver contract.
+// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 import { describe, expect, test } from "bun:test";
 import { TuvrenRuntimeError } from "@tuvren/core";
 import type {
@@ -91,7 +91,7 @@ function countUserTextMessages(
 }
 
 describe("framework-runtime-core", () => {
-  test("drops driver output that arrives after lease loss aborts the execution", async () => {
+  test("drops runner output that arrives after lease loss aborts the execution", async () => {
     const harness = createFakeKernelHarness();
     const livenessHarness = createFakeRunLivenessKernelHarness(harness, {
       async onRenewLease() {
@@ -100,7 +100,7 @@ describe("framework-runtime-core", () => {
         });
       },
     });
-    const driver = {
+    const runner = {
       async execute(context) {
         await waitForAbort(context.signal);
         await delay(20);
@@ -119,7 +119,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: livenessHarness.kernel,
       runLiveness: {
         executionOwnerId: "worker-1",
@@ -147,10 +147,10 @@ describe("framework-runtime-core", () => {
     ).toBe(false);
   });
 
-  test("drops driver output after another owner preempts and clears the lease", async () => {
+  test("drops runner output after another owner preempts and clears the lease", async () => {
     const harness = createFakeKernelHarness();
     const livenessHarness = createFakeRunLivenessKernelHarness(harness);
-    const driver = {
+    const runner = {
       async execute(context) {
         await waitForAbort(context.signal);
         await delay(20);
@@ -169,7 +169,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: livenessHarness.kernel,
       runLiveness: {
         executionOwnerId: "worker-1",
@@ -218,7 +218,7 @@ describe("framework-runtime-core", () => {
   test("recovers a stale handoff_context run under the persisted target agent", async () => {
     const harness = createFakeKernelHarness();
     const livenessHarness = createFakeRunLivenessKernelHarness(harness);
-    const driver = {
+    const runner = {
       async execute() {
         return {
           messages: [assistantText("Recovered handoff continued.")],
@@ -235,7 +235,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: livenessHarness.kernel,
       resolveAgentConfig(agentName) {
         if (agentName === "reviewer") {
@@ -315,7 +315,7 @@ describe("framework-runtime-core", () => {
   test("recovers a stale incorporate_steering run without replaying the non-durable steering", async () => {
     const harness = createFakeKernelHarness();
     const livenessHarness = createFakeRunLivenessKernelHarness(harness);
-    const driver = {
+    const runner = {
       async execute(context) {
         expect(
           countUserTextMessages(context.messages, "Continue base request")
@@ -338,7 +338,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: livenessHarness.kernel,
       runLiveness: {
         executionOwnerId: "worker-1",
@@ -396,7 +396,7 @@ describe("framework-runtime-core", () => {
   test("completes a stale finalize_turn_status recovery from durable terminal runtime status", async () => {
     const harness = createFakeKernelHarness();
     const livenessHarness = createFakeRunLivenessKernelHarness(harness);
-    const driver = {
+    const runner = {
       async execute() {
         throw new Error("execute was not expected");
       },
@@ -407,7 +407,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: livenessHarness.kernel,
       runLiveness: {
         executionOwnerId: "worker-1",
@@ -474,9 +474,9 @@ describe("framework-runtime-core", () => {
 });
 
 function createRunnerRegistry(
-  drivers: Array<KrakenRunner | KrakenRunnerFactory> = []
+  runners: Array<KrakenRunner | KrakenRunnerFactory> = []
 ) {
-  return createBaseRunnerRegistry(drivers.map(wrapRunnerEntry));
+  return createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
 }
 
 function wrapRunnerEntry(
@@ -500,14 +500,14 @@ function isKrakenRunnerFactory(
   return "create" in entry && typeof entry.create === "function";
 }
 
-function wrapRunner(driver: KrakenRunner): KrakenRunner {
-  const resume = driver.resume;
+function wrapRunner(runner: KrakenRunner): KrakenRunner {
+  const resume = runner.resume;
 
   return {
     async execute(context) {
-      return normalizeRunnerResult(await driver.execute(context));
+      return normalizeRunnerResult(await runner.execute(context));
     },
-    id: driver.id,
+    id: runner.id,
     ...(resume === undefined
       ? {}
       : {

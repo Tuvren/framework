@@ -36,7 +36,7 @@ import {
   createConformanceIdFactory,
   createConformanceKernelHarness,
   createStaticRunner,
-  DRIVER_ID,
+  RUNNER_ID,
   textSignal,
 } from "./framework-adapter-runtime.ts";
 
@@ -94,8 +94,8 @@ export function createFrameworkAdapterOrchestration(
     const harness = createConformanceKernelHarness();
     const framework = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
-      defaultRunnerId: DRIVER_ID,
-      driverRegistry: createRunnerRegistry([
+      defaultRunnerId: RUNNER_ID,
+      runnerRegistry: createRunnerRegistry([
         createStaticRunner(async (context) => {
           if (context.config.name === "worker") {
             await sleep(5);
@@ -225,8 +225,8 @@ export function createFrameworkAdapterOrchestration(
     const harness = createConformanceKernelHarness();
     const framework = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
-      defaultRunnerId: DRIVER_ID,
-      driverRegistry: createRunnerRegistry([
+      defaultRunnerId: RUNNER_ID,
+      runnerRegistry: createRunnerRegistry([
         createStaticRunner(async (context) => {
           if (context.config.name === "worker") {
             await sleep(5);
@@ -328,7 +328,7 @@ export function createFrameworkAdapterOrchestration(
       async execute(context) {
         if (context.config.name === "worker") {
           return {
-            messages: [assistantText("Default worker driver.")],
+            messages: [assistantText("Default worker runner.")],
             resolution: {
               reason: "done",
               type: "end_turn",
@@ -338,7 +338,7 @@ export function createFrameworkAdapterOrchestration(
 
         await sleep(20);
         return {
-          messages: [assistantText("Default parent driver.")],
+          messages: [assistantText("Default parent runner.")],
           resolution: {
             reason: "done",
             type: "end_turn",
@@ -382,7 +382,7 @@ export function createFrameworkAdapterOrchestration(
 
         await sleep(20);
         return {
-          messages: [assistantText("Special parent driver.")],
+          messages: [assistantText("Special parent runner.")],
           resolution: {
             reason: "done",
             type: "end_turn",
@@ -399,7 +399,7 @@ export function createFrameworkAdapterOrchestration(
     const framework = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: "default",
-      driverRegistry: createRunnerRegistry([defaultRunner, specialRunner]),
+      runnerRegistry: createRunnerRegistry([defaultRunner, specialRunner]),
       kernel: harness.kernel,
     });
     const orchestration = createOrchestrationRuntime({
@@ -413,7 +413,7 @@ export function createFrameworkAdapterOrchestration(
     const handle = orchestration.executeTurn({
       agent: "primary",
       branchId: thread.branchId,
-      driverId: "special",
+      runnerId: "special",
       schemaId: "custom.agent.v1",
       signal: textSignal("root"),
       threadId: thread.threadId,
@@ -455,12 +455,12 @@ export function createFrameworkAdapterOrchestration(
     const inheritance = {
       childResult,
       childThreadId,
-      driverIdInherited: childEvents.some(
+      runnerIdInherited: childEvents.some(
         (event) =>
           dependencies.isRecord(event) &&
           dependencies.readRecordString(event, "type") === "tool.result" &&
           dependencies.isRecord(event.source) &&
-          event.source.driver === "special"
+          event.source.runner === "special"
       ),
       schemaInherited: childThread?.schemaId === "custom.agent.v1",
       toolsInherited: childEvents.some(
@@ -491,8 +491,8 @@ export function createFrameworkAdapterOrchestration(
     const harness = createConformanceKernelHarness();
     const framework = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
-      defaultRunnerId: DRIVER_ID,
-      driverRegistry: createRunnerRegistry([
+      defaultRunnerId: RUNNER_ID,
+      runnerRegistry: createRunnerRegistry([
         createStaticRunner(async (context) => {
           if (context.config.name === "worker") {
             await sleep(20);
@@ -600,8 +600,8 @@ export function createFrameworkAdapterOrchestration(
     };
     const framework = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
-      defaultRunnerId: DRIVER_ID,
-      driverRegistry: createRunnerRegistry([
+      defaultRunnerId: RUNNER_ID,
+      runnerRegistry: createRunnerRegistry([
         createStaticRunner(async (context) => {
           if (context.config.name === "worker") {
             return {
@@ -704,8 +704,8 @@ export function createFrameworkAdapterOrchestration(
     const harness = createConformanceKernelHarness();
     const framework = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
-      defaultRunnerId: DRIVER_ID,
-      driverRegistry: createRunnerRegistry([
+      defaultRunnerId: RUNNER_ID,
+      runnerRegistry: createRunnerRegistry([
         createStaticRunner((context) => ({
           messages: [
             assistantToolCalls([
@@ -765,8 +765,8 @@ export function createFrameworkAdapterOrchestration(
     const harness = createConformanceKernelHarness();
     const framework = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
-      defaultRunnerId: DRIVER_ID,
-      driverRegistry: createRunnerRegistry([
+      defaultRunnerId: RUNNER_ID,
+      runnerRegistry: createRunnerRegistry([
         createStaticRunner((context) => {
           if (context.config.name === "primary") {
             return {

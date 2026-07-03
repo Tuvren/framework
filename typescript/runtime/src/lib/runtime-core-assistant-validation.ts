@@ -107,7 +107,7 @@ export function assertRunnerRuntimeEvent(event: TuvrenStreamEvent): void {
       return;
     default:
       throw new TuvrenRuntimeError(
-        `drivers must not emit shared-core event type "${event.type}" directly`,
+        `runners must not emit shared-core event type "${event.type}" directly`,
         {
           code: "invalid_stream_event",
           details: {
@@ -142,7 +142,7 @@ function validateMissingAssistantMessage(
     return undefined;
   }
   return new TuvrenRuntimeError(
-    "drivers must not emit assistant content events without returning a durable assistant message",
+    "runners must not emit assistant content events without returning a durable assistant message",
     {
       code: "invalid_stream_event",
     }
@@ -270,7 +270,7 @@ function validateAssistantSequenceAgainstMessage(
 
   if (actualEvents.length !== expectedEvents.length) {
     return new TuvrenRuntimeError(
-      "driver-emitted assistant event sequences must be complete and match the durable assistant message",
+      "runner-emitted assistant event sequences must be complete and match the durable assistant message",
       {
         code: "invalid_stream_event",
       }
@@ -285,7 +285,7 @@ function validateAssistantSequenceAgainstMessage(
       !assistantValidationEventsMatch(actualEvent, expectedEvent)
     ) {
       return new TuvrenRuntimeError(
-        "driver-emitted assistant events must match the durable assistant message",
+        "runner-emitted assistant events must match the durable assistant message",
         {
           code: "invalid_stream_event",
         }

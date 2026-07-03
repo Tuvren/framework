@@ -47,12 +47,12 @@ This plan is generated from the Epic AD docs-to-authority coverage matrix. It is
 - Matrix follow-up tickets: `KRT-AF003`
 - Claim IDs: `FWK-607FBC20FD59`, `FWK-AF60C9581BAB`
 - Authority packet: `spec/runners/react/authority-packet.json`
-- Conformance plan: `spec/conformance/runners/plans/react-driver-callables.json; spec/conformance/runners/plans/react-driver-extended.json`
-- Fixture or scenario: `spec/conformance/runners/scenarios/driver-api-scenarios.json`
-- Adapter operation: `driver.execute`
-- Capability requirement: `framework.react-driver`
+- Conformance plan: `spec/conformance/runners/plans/react-runner-callables.json; spec/conformance/runners/plans/react-runner-extended.json`
+- Fixture or scenario: `spec/conformance/runners/scenarios/runner-api-scenarios.json`
+- Adapter operation: `runner.execute`
+- Capability requirement: `framework.react-runner`
 - Required evidence: `aroundModel.finalAssistantText`, `aroundModel.messageStartCount`, `aroundModel.streamedTextDone`, `provider.generate.callCount`
-- Planned check IDs: `react-driver-af.around-model-post-stream-replacement`, `react-driver-af.around-model-retry-final-response-durable`
+- Planned check IDs: `react-runner-af.around-model-post-stream-replacement`, `react-runner-af.around-model-retry-final-response-durable`
 - Evidence update: Refresh framework compatibility evidence with live-event and durable-message reconciliation traces.
 - Rationale: The live-versus-durable aroundModel exception is portable only through explicit reconciliation evidence.
 
@@ -67,8 +67,8 @@ This plan is generated from the Epic AD docs-to-authority coverage matrix. It is
 - Fixture or scenario: `spec/conformance/engine/scenarios/runtime-api-scenarios.json`
 - Adapter operation: `runtime.context-transform; runtime.cancel-execution`
 - Capability requirement: `framework.runtime-api`
-- Required evidence: `cancellation.runtimeStatusPartial`, `cancellation.partialAssistantText`, `context.sourceMessageCount`, `context.rewrittenMessageCount`, `context.createdNewHead`, `context.snapshotMessageCounts`, `context.driverObservedMessageCount`
-- Planned check IDs: `runtime-lifecycle-af.cancel-running-idempotent-fails-once`, `runtime-lifecycle-af.cancel-running-stages-partial-status`, `runtime-lifecycle-af.context-transform-preserves-source-checkpoint`, `runtime-lifecycle-af.context-transform-creates-new-tree-heads`, `runtime-lifecycle-af.context-transform-driver-sees-rewritten-context`
+- Required evidence: `cancellation.runtimeStatusPartial`, `cancellation.partialAssistantText`, `context.sourceMessageCount`, `context.rewrittenMessageCount`, `context.createdNewHead`, `context.snapshotMessageCounts`, `context.runnerObservedMessageCount`
+- Planned check IDs: `runtime-lifecycle-af.cancel-running-idempotent-fails-once`, `runtime-lifecycle-af.cancel-running-stages-partial-status`, `runtime-lifecycle-af.context-transform-preserves-source-checkpoint`, `runtime-lifecycle-af.context-transform-creates-new-tree-heads`, `runtime-lifecycle-af.context-transform-runner-sees-rewritten-context`
 - Evidence update: Refresh framework compatibility evidence with runtime.status.partial and context-engineering tree-head observations; Rust framework remains non-applicable.
 - Rationale: The full TypeScript state layout stays implementation-local, but runtime.status.partial and context-engineering new-tree/source-checkpoint observations are portable runtime-api behavior.
 
@@ -127,13 +127,13 @@ This plan is generated from the Epic AD docs-to-authority coverage matrix. It is
 - Matrix follow-up tickets: `KRT-AF003`
 - Claim IDs: `FWK-08DEAA2A61A3`, `FWK-1A08FFE9629B`, `FWK-2417799566DF`, `FWK-3C496F9731CB`, `FWK-413C5B22B8EA`, `FWK-41D622194B15`, `FWK-4FA079668FFC`, `FWK-B48E88C029D4`, `FWK-EBCC7F6D9EC1`, `FWK-F16BAF069F45`, `FWK-FAE5A77068E7`
 - Authority packet: `spec/runners/react/authority-packet.json`
-- Conformance plan: `spec/conformance/runners/plans/react-driver-callables.json; spec/conformance/runners/plans/react-driver-extended.json`
-- Fixture or scenario: `spec/conformance/runners/scenarios/driver-api-scenarios.json`
-- Adapter operation: `driver.execute`
-- Capability requirement: `framework.react-driver`
+- Conformance plan: `spec/conformance/runners/plans/react-runner-callables.json; spec/conformance/runners/plans/react-runner-extended.json`
+- Fixture or scenario: `spec/conformance/runners/scenarios/runner-api-scenarios.json`
+- Adapter operation: `runner.execute`
+- Capability requirement: `framework.react-runner`
 - Required evidence: `hooks.phaseTrace`, `hooks.aroundToolTrace`, `hooks.terminalMutationAttempted`, `hooks.terminalMutationDurableText`
-- Planned check IDs: `react-driver-af.extension.phase-order-before-around-after`, `react-driver-af.extension.around-tool-nesting`, `react-driver-af.extension.after-iteration-terminal-state-nondurable`
-- Evidence update: Refresh TypeScript and Rust-framework non-applicable compatibility evidence after react-driver-extended gains AF checks.
+- Planned check IDs: `react-runner-af.extension.phase-order-before-around-after`, `react-runner-af.extension.around-tool-nesting`, `react-runner-af.extension.after-iteration-terminal-state-nondurable`
+- Evidence update: Refresh TypeScript and Rust-framework non-applicable compatibility evidence after react-runner-extended gains AF checks.
 - Rationale: Hook ordering and around-hook nesting are portable ReAct behavior; adapter observations must expose traces, not expected sequences.
 
 ### runtime loop policy
@@ -143,14 +143,14 @@ This plan is generated from the Epic AD docs-to-authority coverage matrix. It is
 - Matrix follow-up tickets: `KRT-AF003`
 - Claim IDs: `FWK-7321FBA0BDB5`
 - Authority packet: `spec/core/authority-packet.json`
-- Conformance plan: `spec/conformance/runners/plans/driver-api-core.json; spec/conformance/runners/plans/driver-api-extended.json`
-- Fixture or scenario: `spec/conformance/runners/scenarios/driver-api-scenarios.json`
-- Adapter operation: `driver.execute`
-- Capability requirement: `framework.driver-api`
-- Required evidence: `driver.resolutionType`, `result.error.code`
-- Planned check IDs: `driver-api-af.invalid-loop-policy-tool-call-hard-fail`
+- Conformance plan: `spec/conformance/runners/plans/runner-api-core.json; spec/conformance/runners/plans/runner-api-extended.json`
+- Fixture or scenario: `spec/conformance/runners/scenarios/runner-api-scenarios.json`
+- Adapter operation: `runner.execute`
+- Capability requirement: `framework.runner-api`
+- Required evidence: `runner.resolutionType`, `result.error.code`
+- Planned check IDs: `runner-api-af.invalid-loop-policy-tool-call-hard-fail`
 - Evidence update: Refresh framework compatibility evidence with invalid_loop_policy error envelope.
-- Rationale: Invalid tool-call loop-policy combinations are shared driver-seam behavior.
+- Rationale: Invalid tool-call loop-policy combinations are shared runner-seam behavior.
 
 ### shared framework type shapes
 

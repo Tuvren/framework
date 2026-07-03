@@ -343,7 +343,7 @@ export const frameworkContractFixtures = {
     messageId: "message_1",
     source: {
       agent: "primary",
-      driver: "example",
+      runner: "example",
       threadId: "thread_main",
     },
     text: "Need approval before continuing.",

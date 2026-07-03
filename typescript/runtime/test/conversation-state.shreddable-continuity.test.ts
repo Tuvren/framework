@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test drivers intentionally match the async framework driver contract.
+// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 
 // KRT-BH002 — Shreddable continuity artifacts (ADR-053 + ADR-051).
 //
@@ -85,7 +85,7 @@ function buildRuntime(options: { keys?: Map<string, Uint8Array> }): {
   });
   const framework = createTuvrenRuntime({
     defaultRunnerId: "fake",
-    driverRegistry: createRunnerRegistry([
+    runnerRegistry: createRunnerRegistry([
       createStaticRunner(async () => ({
         messages: [assistantWithContinuity("here is your answer")],
         resolution: { reason: "done", type: "end_turn" },

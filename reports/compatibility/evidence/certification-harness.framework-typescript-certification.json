@@ -2,12 +2,12 @@
   "adapterId": "typescript-framework",
   "boundary": "framework",
   "capabilities": [
-    "framework.driver-api",
     "framework.event-stream",
     "framework.event-stream-sse",
     "framework.orchestration",
-    "framework.react-driver",
+    "framework.react-runner",
     "framework.run-liveness",
+    "framework.runner-api",
     "framework.runtime-api",
     "framework.tool-contracts",
     "providers.framework-owned-approval-boundary",
@@ -946,324 +946,6 @@
       "details": {
         "adapterId": "typescript-framework",
         "planId": "tuvren.framework.capability-policy"
-      },
-      "status": "pass"
-    },
-    {
-      "assertionResults": [
-        {
-          "assertionId": "driver-api.error.envelope.1.errorEnvelope",
-          "status": "pass"
-        },
-        {
-          "assertionId": "driver-api.error.envelope.requiredEvidence.result.error",
-          "status": "pass"
-        },
-        {
-          "assertionId": "driver-api.error.envelope.requiredEvidence.result.error.code",
-          "status": "pass"
-        }
-      ],
-      "checkId": "driver-api.error.envelope",
-      "details": {
-        "adapterId": "typescript-framework",
-        "planId": "tuvren.framework.driver-api.core"
-      },
-      "status": "pass"
-    },
-    {
-      "assertionResults": [
-        {
-          "assertionId": "driver-api.execute.resolution.1.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "driver-api.execute.resolution.requiredEvidence.driver.phase",
-          "status": "pass"
-        },
-        {
-          "assertionId": "driver-api.execute.resolution.requiredEvidence.result.driver.phase",
-          "status": "pass"
-        }
-      ],
-      "checkId": "driver-api.execute.resolution",
-      "details": {
-        "adapterId": "typescript-framework",
-        "planId": "tuvren.framework.driver-api.core"
-      },
-      "status": "pass"
-    },
-    {
-      "assertionResults": [
-        {
-          "assertionId": "driver-api.resume.approval.1.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "driver-api.resume.approval.2.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "driver-api.resume.approval.3.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "driver-api.resume.approval.requiredEvidence.driver.approvalDecisionCallIds",
-          "status": "pass"
-        },
-        {
-          "assertionId": "driver-api.resume.approval.requiredEvidence.driver.pendingToolCallIds",
-          "status": "pass"
-        },
-        {
-          "assertionId": "driver-api.resume.approval.requiredEvidence.driver.resolutionType",
-          "status": "pass"
-        },
-        {
-          "assertionId": "driver-api.resume.approval.requiredEvidence.result.driver.approvalDecisionCallIds",
-          "status": "pass"
-        },
-        {
-          "assertionId": "driver-api.resume.approval.requiredEvidence.result.driver.pendingToolCallIds",
-          "status": "pass"
-        },
-        {
-          "assertionId": "driver-api.resume.approval.requiredEvidence.result.driver.resolutionType",
-          "status": "pass"
-        }
-      ],
-      "checkId": "driver-api.resume.approval",
-      "details": {
-        "adapterId": "typescript-framework",
-        "planId": "tuvren.framework.driver-api.core"
-      },
-      "status": "pass"
-    },
-    {
-      "assertionResults": [
-        {
-          "assertionId": "driver-api.resume.requires-pending-call.1.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "driver-api.resume.requires-pending-call.2.errorEnvelope",
-          "status": "pass"
-        },
-        {
-          "assertionId": "driver-api.resume.requires-pending-call.requiredEvidence.driver.resolutionType",
-          "status": "pass"
-        },
-        {
-          "assertionId": "driver-api.resume.requires-pending-call.requiredEvidence.result.driver.resolutionType",
-          "status": "pass"
-        },
-        {
-          "assertionId": "driver-api.resume.requires-pending-call.requiredEvidence.result.error",
-          "status": "pass"
-        },
-        {
-          "assertionId": "driver-api.resume.requires-pending-call.requiredEvidence.result.error.code",
-          "status": "pass"
-        }
-      ],
-      "checkId": "driver-api.resume.requires-pending-call",
-      "details": {
-        "adapterId": "typescript-framework",
-        "planId": "tuvren.framework.driver-api.core"
-      },
-      "status": "pass"
-    },
-    {
-      "assertionResults": [
-        {
-          "assertionId": "driver-api-af.invalid-loop-policy-tool-call-hard-fail.1.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "driver-api-af.invalid-loop-policy-tool-call-hard-fail.2.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "driver-api-af.invalid-loop-policy-tool-call-hard-fail.3.errorEnvelope",
-          "status": "pass"
-        },
-        {
-          "assertionId": "driver-api-af.invalid-loop-policy-tool-call-hard-fail.requiredEvidence.driver.resolutionType",
-          "status": "pass"
-        },
-        {
-          "assertionId": "driver-api-af.invalid-loop-policy-tool-call-hard-fail.requiredEvidence.result.driver.errorCode",
-          "status": "pass"
-        },
-        {
-          "assertionId": "driver-api-af.invalid-loop-policy-tool-call-hard-fail.requiredEvidence.result.driver.resolutionType",
-          "status": "pass"
-        },
-        {
-          "assertionId": "driver-api-af.invalid-loop-policy-tool-call-hard-fail.requiredEvidence.result.error",
-          "status": "pass"
-        },
-        {
-          "assertionId": "driver-api-af.invalid-loop-policy-tool-call-hard-fail.requiredEvidence.result.error.code",
-          "status": "pass"
-        }
-      ],
-      "checkId": "driver-api-af.invalid-loop-policy-tool-call-hard-fail",
-      "details": {
-        "adapterId": "typescript-framework",
-        "planId": "tuvren.framework.driver-api.extended"
-      },
-      "status": "pass"
-    },
-    {
-      "assertionResults": [
-        {
-          "assertionId": "driver-api-ext.execute.hook-turn-phase-completed.1.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "driver-api-ext.execute.hook-turn-phase-completed.requiredEvidence.result.driver.phase",
-          "status": "pass"
-        }
-      ],
-      "checkId": "driver-api-ext.execute.hook-turn-phase-completed",
-      "details": {
-        "adapterId": "typescript-framework",
-        "planId": "tuvren.framework.driver-api.extended"
-      },
-      "status": "pass"
-    },
-    {
-      "assertionResults": [
-        {
-          "assertionId": "driver-api-ext.execute.hook-turn-phase-string.1.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "driver-api-ext.execute.hook-turn-phase-string.requiredEvidence.result.driver.phase",
-          "status": "pass"
-        }
-      ],
-      "checkId": "driver-api-ext.execute.hook-turn-phase-string",
-      "details": {
-        "adapterId": "typescript-framework",
-        "planId": "tuvren.framework.driver-api.extended"
-      },
-      "status": "pass"
-    },
-    {
-      "assertionResults": [
-        {
-          "assertionId": "driver-api-ext.execute.provider-failure-error-envelope.1.errorEnvelope",
-          "status": "pass"
-        },
-        {
-          "assertionId": "driver-api-ext.execute.provider-failure-error-envelope.requiredEvidence.result.error",
-          "status": "pass"
-        },
-        {
-          "assertionId": "driver-api-ext.execute.provider-failure-error-envelope.requiredEvidence.result.error.code",
-          "status": "pass"
-        }
-      ],
-      "checkId": "driver-api-ext.execute.provider-failure-error-envelope",
-      "details": {
-        "adapterId": "typescript-framework",
-        "planId": "tuvren.framework.driver-api.extended"
-      },
-      "status": "pass"
-    },
-    {
-      "assertionResults": [
-        {
-          "assertionId": "driver-api-ext.resume.approval-decision-call-id-includes-call-search.1.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "driver-api-ext.resume.approval-decision-call-id-includes-call-search.requiredEvidence.result.driver.approvalDecisionCallIds",
-          "status": "pass"
-        }
-      ],
-      "checkId": "driver-api-ext.resume.approval-decision-call-id-includes-call-search",
-      "details": {
-        "adapterId": "typescript-framework",
-        "planId": "tuvren.framework.driver-api.extended"
-      },
-      "status": "pass"
-    },
-    {
-      "assertionResults": [
-        {
-          "assertionId": "driver-api-ext.resume.approval-pending-call-id-list-non-empty.1.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "driver-api-ext.resume.approval-pending-call-id-list-non-empty.requiredEvidence.result.driver.pendingToolCallIds",
-          "status": "pass"
-        }
-      ],
-      "checkId": "driver-api-ext.resume.approval-pending-call-id-list-non-empty",
-      "details": {
-        "adapterId": "typescript-framework",
-        "planId": "tuvren.framework.driver-api.extended"
-      },
-      "status": "pass"
-    },
-    {
-      "assertionResults": [
-        {
-          "assertionId": "driver-api-ext.resume.approval-resolution-end-turn.1.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "driver-api-ext.resume.approval-resolution-end-turn.requiredEvidence.result.driver.resolutionType",
-          "status": "pass"
-        }
-      ],
-      "checkId": "driver-api-ext.resume.approval-resolution-end-turn",
-      "details": {
-        "adapterId": "typescript-framework",
-        "planId": "tuvren.framework.driver-api.extended"
-      },
-      "status": "pass"
-    },
-    {
-      "assertionResults": [
-        {
-          "assertionId": "driver-api-ext.resume.missing-pending-call-error-envelope.1.errorEnvelope",
-          "status": "pass"
-        },
-        {
-          "assertionId": "driver-api-ext.resume.missing-pending-call-error-envelope.requiredEvidence.result.error",
-          "status": "pass"
-        },
-        {
-          "assertionId": "driver-api-ext.resume.missing-pending-call-error-envelope.requiredEvidence.result.error.code",
-          "status": "pass"
-        }
-      ],
-      "checkId": "driver-api-ext.resume.missing-pending-call-error-envelope",
-      "details": {
-        "adapterId": "typescript-framework",
-        "planId": "tuvren.framework.driver-api.extended"
-      },
-      "status": "pass"
-    },
-    {
-      "assertionResults": [
-        {
-          "assertionId": "driver-api-ext.resume.missing-pending-call-resolution-fail.1.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "driver-api-ext.resume.missing-pending-call-resolution-fail.requiredEvidence.result.driver.resolutionType",
-          "status": "pass"
-        }
-      ],
-      "checkId": "driver-api-ext.resume.missing-pending-call-resolution-fail",
-      "details": {
-        "adapterId": "typescript-framework",
-        "planId": "tuvren.framework.driver-api.extended"
       },
       "status": "pass"
     },
@@ -4260,106 +3942,106 @@
     {
       "assertionResults": [
         {
-          "assertionId": "react-driver-callable.after-iteration.1.resultField",
+          "assertionId": "react-runner-callable.after-iteration.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-callable.after-iteration.requiredEvidence.hooks.afterIteration",
+          "assertionId": "react-runner-callable.after-iteration.requiredEvidence.hooks.afterIteration",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-callable.after-iteration.requiredEvidence.result.hooks.afterIteration",
+          "assertionId": "react-runner-callable.after-iteration.requiredEvidence.result.hooks.afterIteration",
           "status": "pass"
         }
       ],
-      "checkId": "react-driver-callable.after-iteration",
+      "checkId": "react-runner-callable.after-iteration",
       "details": {
         "adapterId": "typescript-framework",
-        "planId": "tuvren.framework.react-driver.callables"
+        "planId": "tuvren.framework.react-runner.callables"
       },
       "status": "pass"
     },
     {
       "assertionResults": [
         {
-          "assertionId": "react-driver-callable.around-model.1.resultField",
+          "assertionId": "react-runner-callable.around-model.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-callable.around-model.requiredEvidence.hooks.aroundModel",
+          "assertionId": "react-runner-callable.around-model.requiredEvidence.hooks.aroundModel",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-callable.around-model.requiredEvidence.result.hooks.aroundModel",
+          "assertionId": "react-runner-callable.around-model.requiredEvidence.result.hooks.aroundModel",
           "status": "pass"
         }
       ],
-      "checkId": "react-driver-callable.around-model",
+      "checkId": "react-runner-callable.around-model",
       "details": {
         "adapterId": "typescript-framework",
-        "planId": "tuvren.framework.react-driver.callables"
+        "planId": "tuvren.framework.react-runner.callables"
       },
       "status": "pass"
     },
     {
       "assertionResults": [
         {
-          "assertionId": "react-driver-callable.around-tool.1.resultField",
+          "assertionId": "react-runner-callable.around-tool.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-callable.around-tool.requiredEvidence.hooks.aroundTool",
+          "assertionId": "react-runner-callable.around-tool.requiredEvidence.hooks.aroundTool",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-callable.around-tool.requiredEvidence.result.hooks.aroundTool",
+          "assertionId": "react-runner-callable.around-tool.requiredEvidence.result.hooks.aroundTool",
           "status": "pass"
         }
       ],
-      "checkId": "react-driver-callable.around-tool",
+      "checkId": "react-runner-callable.around-tool",
       "details": {
         "adapterId": "typescript-framework",
-        "planId": "tuvren.framework.react-driver.callables"
+        "planId": "tuvren.framework.react-runner.callables"
       },
       "status": "pass"
     },
     {
       "assertionResults": [
         {
-          "assertionId": "react-driver-callable.before-iteration.1.resultField",
+          "assertionId": "react-runner-callable.before-iteration.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-callable.before-iteration.requiredEvidence.hooks.beforeIteration",
+          "assertionId": "react-runner-callable.before-iteration.requiredEvidence.hooks.beforeIteration",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-callable.before-iteration.requiredEvidence.result.hooks.beforeIteration",
+          "assertionId": "react-runner-callable.before-iteration.requiredEvidence.result.hooks.beforeIteration",
           "status": "pass"
         }
       ],
-      "checkId": "react-driver-callable.before-iteration",
+      "checkId": "react-runner-callable.before-iteration",
       "details": {
         "adapterId": "typescript-framework",
-        "planId": "tuvren.framework.react-driver.callables"
+        "planId": "tuvren.framework.react-runner.callables"
       },
       "status": "pass"
     },
     {
       "assertionResults": [
         {
-          "assertionId": "react-driver-callable.checkpoint.1.stateField",
+          "assertionId": "react-runner-callable.checkpoint.1.stateField",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-callable.checkpoint.requiredEvidence.trace.checkpoint.evidence.checkpoint.manifestPathCount",
+          "assertionId": "react-runner-callable.checkpoint.requiredEvidence.trace.checkpoint.evidence.checkpoint.manifestPathCount",
           "status": "pass"
         }
       ],
-      "checkId": "react-driver-callable.checkpoint",
+      "checkId": "react-runner-callable.checkpoint",
       "details": {
         "adapterId": "typescript-framework",
-        "planId": "tuvren.framework.react-driver.callables",
+        "planId": "tuvren.framework.react-runner.callables",
         "traceStepIds": ["checkpoint"]
       },
       "status": "pass"
@@ -4367,248 +4049,248 @@
     {
       "assertionResults": [
         {
-          "assertionId": "react-driver-af.around-model-post-stream-replacement.1.resultField",
+          "assertionId": "react-runner-af.around-model-post-stream-replacement.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-af.around-model-post-stream-replacement.2.resultField",
+          "assertionId": "react-runner-af.around-model-post-stream-replacement.2.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-af.around-model-post-stream-replacement.3.resultField",
+          "assertionId": "react-runner-af.around-model-post-stream-replacement.3.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-af.around-model-post-stream-replacement.requiredEvidence.aroundModel.finalAssistantText",
+          "assertionId": "react-runner-af.around-model-post-stream-replacement.requiredEvidence.aroundModel.finalAssistantText",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-af.around-model-post-stream-replacement.requiredEvidence.aroundModel.messageStartCount",
+          "assertionId": "react-runner-af.around-model-post-stream-replacement.requiredEvidence.aroundModel.messageStartCount",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-af.around-model-post-stream-replacement.requiredEvidence.aroundModel.streamedTextDone",
+          "assertionId": "react-runner-af.around-model-post-stream-replacement.requiredEvidence.aroundModel.streamedTextDone",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-af.around-model-post-stream-replacement.requiredEvidence.result.aroundModel.finalAssistantText",
+          "assertionId": "react-runner-af.around-model-post-stream-replacement.requiredEvidence.result.aroundModel.finalAssistantText",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-af.around-model-post-stream-replacement.requiredEvidence.result.aroundModel.messageStartCount",
+          "assertionId": "react-runner-af.around-model-post-stream-replacement.requiredEvidence.result.aroundModel.messageStartCount",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-af.around-model-post-stream-replacement.requiredEvidence.result.aroundModel.streamedTextDone",
+          "assertionId": "react-runner-af.around-model-post-stream-replacement.requiredEvidence.result.aroundModel.streamedTextDone",
           "status": "pass"
         }
       ],
-      "checkId": "react-driver-af.around-model-post-stream-replacement",
+      "checkId": "react-runner-af.around-model-post-stream-replacement",
       "details": {
         "adapterId": "typescript-framework",
-        "planId": "tuvren.framework.react-driver.extended"
+        "planId": "tuvren.framework.react-runner.extended"
       },
       "status": "pass"
     },
     {
       "assertionResults": [
         {
-          "assertionId": "react-driver-af.around-model-retry-final-response-durable.1.resultField",
+          "assertionId": "react-runner-af.around-model-retry-final-response-durable.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-af.around-model-retry-final-response-durable.2.resultField",
+          "assertionId": "react-runner-af.around-model-retry-final-response-durable.2.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-af.around-model-retry-final-response-durable.requiredEvidence.aroundModel.finalAssistantText",
+          "assertionId": "react-runner-af.around-model-retry-final-response-durable.requiredEvidence.aroundModel.finalAssistantText",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-af.around-model-retry-final-response-durable.requiredEvidence.provider.generate.callCount",
+          "assertionId": "react-runner-af.around-model-retry-final-response-durable.requiredEvidence.provider.generate.callCount",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-af.around-model-retry-final-response-durable.requiredEvidence.result.aroundModel.finalAssistantText",
+          "assertionId": "react-runner-af.around-model-retry-final-response-durable.requiredEvidence.result.aroundModel.finalAssistantText",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-af.around-model-retry-final-response-durable.requiredEvidence.result.provider.generate.callCount",
+          "assertionId": "react-runner-af.around-model-retry-final-response-durable.requiredEvidence.result.provider.generate.callCount",
           "status": "pass"
         }
       ],
-      "checkId": "react-driver-af.around-model-retry-final-response-durable",
+      "checkId": "react-runner-af.around-model-retry-final-response-durable",
       "details": {
         "adapterId": "typescript-framework",
-        "planId": "tuvren.framework.react-driver.extended"
+        "planId": "tuvren.framework.react-runner.extended"
       },
       "status": "pass"
     },
     {
       "assertionResults": [
         {
-          "assertionId": "react-driver-af.extension.after-iteration-terminal-state-nondurable.1.resultField",
+          "assertionId": "react-runner-af.extension.after-iteration-terminal-state-nondurable.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-af.extension.after-iteration-terminal-state-nondurable.2.resultField",
+          "assertionId": "react-runner-af.extension.after-iteration-terminal-state-nondurable.2.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-af.extension.after-iteration-terminal-state-nondurable.requiredEvidence.hooks.terminalMutationAttempted",
+          "assertionId": "react-runner-af.extension.after-iteration-terminal-state-nondurable.requiredEvidence.hooks.terminalMutationAttempted",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-af.extension.after-iteration-terminal-state-nondurable.requiredEvidence.hooks.terminalMutationDurableText",
+          "assertionId": "react-runner-af.extension.after-iteration-terminal-state-nondurable.requiredEvidence.hooks.terminalMutationDurableText",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-af.extension.after-iteration-terminal-state-nondurable.requiredEvidence.result.hooks.terminalMutationAttempted",
+          "assertionId": "react-runner-af.extension.after-iteration-terminal-state-nondurable.requiredEvidence.result.hooks.terminalMutationAttempted",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-af.extension.after-iteration-terminal-state-nondurable.requiredEvidence.result.hooks.terminalMutationDurableText",
+          "assertionId": "react-runner-af.extension.after-iteration-terminal-state-nondurable.requiredEvidence.result.hooks.terminalMutationDurableText",
           "status": "pass"
         }
       ],
-      "checkId": "react-driver-af.extension.after-iteration-terminal-state-nondurable",
+      "checkId": "react-runner-af.extension.after-iteration-terminal-state-nondurable",
       "details": {
         "adapterId": "typescript-framework",
-        "planId": "tuvren.framework.react-driver.extended"
+        "planId": "tuvren.framework.react-runner.extended"
       },
       "status": "pass"
     },
     {
       "assertionResults": [
         {
-          "assertionId": "react-driver-af.extension.around-tool-nesting.1.resultField",
+          "assertionId": "react-runner-af.extension.around-tool-nesting.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-af.extension.around-tool-nesting.requiredEvidence.hooks.aroundToolTrace",
+          "assertionId": "react-runner-af.extension.around-tool-nesting.requiredEvidence.hooks.aroundToolTrace",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-af.extension.around-tool-nesting.requiredEvidence.result.hooks.aroundToolTrace",
+          "assertionId": "react-runner-af.extension.around-tool-nesting.requiredEvidence.result.hooks.aroundToolTrace",
           "status": "pass"
         }
       ],
-      "checkId": "react-driver-af.extension.around-tool-nesting",
+      "checkId": "react-runner-af.extension.around-tool-nesting",
       "details": {
         "adapterId": "typescript-framework",
-        "planId": "tuvren.framework.react-driver.extended"
+        "planId": "tuvren.framework.react-runner.extended"
       },
       "status": "pass"
     },
     {
       "assertionResults": [
         {
-          "assertionId": "react-driver-af.extension.phase-order-before-around-after.1.resultField",
+          "assertionId": "react-runner-af.extension.phase-order-before-around-after.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-af.extension.phase-order-before-around-after.requiredEvidence.hooks.phaseTrace",
+          "assertionId": "react-runner-af.extension.phase-order-before-around-after.requiredEvidence.hooks.phaseTrace",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-af.extension.phase-order-before-around-after.requiredEvidence.result.hooks.phaseTrace",
+          "assertionId": "react-runner-af.extension.phase-order-before-around-after.requiredEvidence.result.hooks.phaseTrace",
           "status": "pass"
         }
       ],
-      "checkId": "react-driver-af.extension.phase-order-before-around-after",
+      "checkId": "react-runner-af.extension.phase-order-before-around-after",
       "details": {
         "adapterId": "typescript-framework",
-        "planId": "tuvren.framework.react-driver.extended"
+        "planId": "tuvren.framework.react-runner.extended"
       },
       "status": "pass"
     },
     {
       "assertionResults": [
         {
-          "assertionId": "react-driver-ext.after-iteration-twice.1.resultField",
+          "assertionId": "react-runner-ext.after-iteration-twice.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-ext.after-iteration-twice.requiredEvidence.result.hooks.afterIteration",
+          "assertionId": "react-runner-ext.after-iteration-twice.requiredEvidence.result.hooks.afterIteration",
           "status": "pass"
         }
       ],
-      "checkId": "react-driver-ext.after-iteration-twice",
+      "checkId": "react-runner-ext.after-iteration-twice",
       "details": {
         "adapterId": "typescript-framework",
-        "planId": "tuvren.framework.react-driver.extended"
+        "planId": "tuvren.framework.react-runner.extended"
       },
       "status": "pass"
     },
     {
       "assertionResults": [
         {
-          "assertionId": "react-driver-ext.around-model-twice.1.resultField",
+          "assertionId": "react-runner-ext.around-model-twice.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-ext.around-model-twice.requiredEvidence.result.hooks.aroundModel",
+          "assertionId": "react-runner-ext.around-model-twice.requiredEvidence.result.hooks.aroundModel",
           "status": "pass"
         }
       ],
-      "checkId": "react-driver-ext.around-model-twice",
+      "checkId": "react-runner-ext.around-model-twice",
       "details": {
         "adapterId": "typescript-framework",
-        "planId": "tuvren.framework.react-driver.extended"
+        "planId": "tuvren.framework.react-runner.extended"
       },
       "status": "pass"
     },
     {
       "assertionResults": [
         {
-          "assertionId": "react-driver-ext.around-tool-once.1.resultField",
+          "assertionId": "react-runner-ext.around-tool-once.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-ext.around-tool-once.requiredEvidence.result.hooks.aroundTool",
+          "assertionId": "react-runner-ext.around-tool-once.requiredEvidence.result.hooks.aroundTool",
           "status": "pass"
         }
       ],
-      "checkId": "react-driver-ext.around-tool-once",
+      "checkId": "react-runner-ext.around-tool-once",
       "details": {
         "adapterId": "typescript-framework",
-        "planId": "tuvren.framework.react-driver.extended"
+        "planId": "tuvren.framework.react-runner.extended"
       },
       "status": "pass"
     },
     {
       "assertionResults": [
         {
-          "assertionId": "react-driver-ext.before-iteration-twice.1.resultField",
+          "assertionId": "react-runner-ext.before-iteration-twice.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-ext.before-iteration-twice.requiredEvidence.result.hooks.beforeIteration",
+          "assertionId": "react-runner-ext.before-iteration-twice.requiredEvidence.result.hooks.beforeIteration",
           "status": "pass"
         }
       ],
-      "checkId": "react-driver-ext.before-iteration-twice",
+      "checkId": "react-runner-ext.before-iteration-twice",
       "details": {
         "adapterId": "typescript-framework",
-        "planId": "tuvren.framework.react-driver.extended"
+        "planId": "tuvren.framework.react-runner.extended"
       },
       "status": "pass"
     },
     {
       "assertionResults": [
         {
-          "assertionId": "react-driver-ext.checkpoint-manifest-path-count.1.stateField",
+          "assertionId": "react-runner-ext.checkpoint-manifest-path-count.1.stateField",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-ext.checkpoint-manifest-path-count.requiredEvidence.trace.checkpoint.evidence.checkpoint.manifestPathCount",
+          "assertionId": "react-runner-ext.checkpoint-manifest-path-count.requiredEvidence.trace.checkpoint.evidence.checkpoint.manifestPathCount",
           "status": "pass"
         }
       ],
-      "checkId": "react-driver-ext.checkpoint-manifest-path-count",
+      "checkId": "react-runner-ext.checkpoint-manifest-path-count",
       "details": {
         "adapterId": "typescript-framework",
-        "planId": "tuvren.framework.react-driver.extended",
+        "planId": "tuvren.framework.react-runner.extended",
         "traceStepIds": ["checkpoint"]
       },
       "status": "pass"
@@ -4616,72 +4298,390 @@
     {
       "assertionResults": [
         {
-          "assertionId": "react-driver-ext.hook-field-present.after-iteration-present.1.resultField",
+          "assertionId": "react-runner-ext.hook-field-present.after-iteration-present.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-ext.hook-field-present.after-iteration-present.requiredEvidence.result.hooks.afterIteration",
+          "assertionId": "react-runner-ext.hook-field-present.after-iteration-present.requiredEvidence.result.hooks.afterIteration",
           "status": "pass"
         }
       ],
-      "checkId": "react-driver-ext.hook-field-present.after-iteration-present",
+      "checkId": "react-runner-ext.hook-field-present.after-iteration-present",
       "details": {
         "adapterId": "typescript-framework",
-        "planId": "tuvren.framework.react-driver.extended"
+        "planId": "tuvren.framework.react-runner.extended"
       },
       "status": "pass"
     },
     {
       "assertionResults": [
         {
-          "assertionId": "react-driver-ext.hook-field-present.around-model-present.1.resultField",
+          "assertionId": "react-runner-ext.hook-field-present.around-model-present.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-ext.hook-field-present.around-model-present.requiredEvidence.result.hooks.aroundModel",
+          "assertionId": "react-runner-ext.hook-field-present.around-model-present.requiredEvidence.result.hooks.aroundModel",
           "status": "pass"
         }
       ],
-      "checkId": "react-driver-ext.hook-field-present.around-model-present",
+      "checkId": "react-runner-ext.hook-field-present.around-model-present",
       "details": {
         "adapterId": "typescript-framework",
-        "planId": "tuvren.framework.react-driver.extended"
+        "planId": "tuvren.framework.react-runner.extended"
       },
       "status": "pass"
     },
     {
       "assertionResults": [
         {
-          "assertionId": "react-driver-ext.hook-field-present.around-tool-present.1.resultField",
+          "assertionId": "react-runner-ext.hook-field-present.around-tool-present.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-ext.hook-field-present.around-tool-present.requiredEvidence.result.hooks.aroundTool",
+          "assertionId": "react-runner-ext.hook-field-present.around-tool-present.requiredEvidence.result.hooks.aroundTool",
           "status": "pass"
         }
       ],
-      "checkId": "react-driver-ext.hook-field-present.around-tool-present",
+      "checkId": "react-runner-ext.hook-field-present.around-tool-present",
       "details": {
         "adapterId": "typescript-framework",
-        "planId": "tuvren.framework.react-driver.extended"
+        "planId": "tuvren.framework.react-runner.extended"
       },
       "status": "pass"
     },
     {
       "assertionResults": [
         {
-          "assertionId": "react-driver-ext.hook-field-present.before-iteration-present.1.resultField",
+          "assertionId": "react-runner-ext.hook-field-present.before-iteration-present.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "react-driver-ext.hook-field-present.before-iteration-present.requiredEvidence.result.hooks.beforeIteration",
+          "assertionId": "react-runner-ext.hook-field-present.before-iteration-present.requiredEvidence.result.hooks.beforeIteration",
           "status": "pass"
         }
       ],
-      "checkId": "react-driver-ext.hook-field-present.before-iteration-present",
+      "checkId": "react-runner-ext.hook-field-present.before-iteration-present",
       "details": {
         "adapterId": "typescript-framework",
-        "planId": "tuvren.framework.react-driver.extended"
+        "planId": "tuvren.framework.react-runner.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runner-api.error.envelope.1.errorEnvelope",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runner-api.error.envelope.requiredEvidence.result.error",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runner-api.error.envelope.requiredEvidence.result.error.code",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runner-api.error.envelope",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runner-api.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runner-api.execute.resolution.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runner-api.execute.resolution.requiredEvidence.result.runner.phase",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runner-api.execute.resolution.requiredEvidence.runner.phase",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runner-api.execute.resolution",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runner-api.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runner-api.resume.approval.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runner-api.resume.approval.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runner-api.resume.approval.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runner-api.resume.approval.requiredEvidence.result.runner.approvalDecisionCallIds",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runner-api.resume.approval.requiredEvidence.result.runner.pendingToolCallIds",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runner-api.resume.approval.requiredEvidence.result.runner.resolutionType",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runner-api.resume.approval.requiredEvidence.runner.approvalDecisionCallIds",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runner-api.resume.approval.requiredEvidence.runner.pendingToolCallIds",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runner-api.resume.approval.requiredEvidence.runner.resolutionType",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runner-api.resume.approval",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runner-api.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runner-api.resume.requires-pending-call.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runner-api.resume.requires-pending-call.2.errorEnvelope",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runner-api.resume.requires-pending-call.requiredEvidence.result.error",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runner-api.resume.requires-pending-call.requiredEvidence.result.error.code",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runner-api.resume.requires-pending-call.requiredEvidence.result.runner.resolutionType",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runner-api.resume.requires-pending-call.requiredEvidence.runner.resolutionType",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runner-api.resume.requires-pending-call",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runner-api.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runner-api-af.invalid-loop-policy-tool-call-hard-fail.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runner-api-af.invalid-loop-policy-tool-call-hard-fail.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runner-api-af.invalid-loop-policy-tool-call-hard-fail.3.errorEnvelope",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runner-api-af.invalid-loop-policy-tool-call-hard-fail.requiredEvidence.result.error",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runner-api-af.invalid-loop-policy-tool-call-hard-fail.requiredEvidence.result.error.code",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runner-api-af.invalid-loop-policy-tool-call-hard-fail.requiredEvidence.result.runner.errorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runner-api-af.invalid-loop-policy-tool-call-hard-fail.requiredEvidence.result.runner.resolutionType",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runner-api-af.invalid-loop-policy-tool-call-hard-fail.requiredEvidence.runner.resolutionType",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runner-api-af.invalid-loop-policy-tool-call-hard-fail",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runner-api.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runner-api-ext.execute.hook-turn-phase-completed.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runner-api-ext.execute.hook-turn-phase-completed.requiredEvidence.result.runner.phase",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runner-api-ext.execute.hook-turn-phase-completed",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runner-api.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runner-api-ext.execute.hook-turn-phase-string.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runner-api-ext.execute.hook-turn-phase-string.requiredEvidence.result.runner.phase",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runner-api-ext.execute.hook-turn-phase-string",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runner-api.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runner-api-ext.execute.provider-failure-error-envelope.1.errorEnvelope",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runner-api-ext.execute.provider-failure-error-envelope.requiredEvidence.result.error",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runner-api-ext.execute.provider-failure-error-envelope.requiredEvidence.result.error.code",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runner-api-ext.execute.provider-failure-error-envelope",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runner-api.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runner-api-ext.resume.approval-decision-call-id-includes-call-search.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runner-api-ext.resume.approval-decision-call-id-includes-call-search.requiredEvidence.result.runner.approvalDecisionCallIds",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runner-api-ext.resume.approval-decision-call-id-includes-call-search",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runner-api.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runner-api-ext.resume.approval-pending-call-id-list-non-empty.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runner-api-ext.resume.approval-pending-call-id-list-non-empty.requiredEvidence.result.runner.pendingToolCallIds",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runner-api-ext.resume.approval-pending-call-id-list-non-empty",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runner-api.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runner-api-ext.resume.approval-resolution-end-turn.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runner-api-ext.resume.approval-resolution-end-turn.requiredEvidence.result.runner.resolutionType",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runner-api-ext.resume.approval-resolution-end-turn",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runner-api.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runner-api-ext.resume.missing-pending-call-error-envelope.1.errorEnvelope",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runner-api-ext.resume.missing-pending-call-error-envelope.requiredEvidence.result.error",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runner-api-ext.resume.missing-pending-call-error-envelope.requiredEvidence.result.error.code",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runner-api-ext.resume.missing-pending-call-error-envelope",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runner-api.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runner-api-ext.resume.missing-pending-call-resolution-fail.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runner-api-ext.resume.missing-pending-call-resolution-fail.requiredEvidence.result.runner.resolutionType",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runner-api-ext.resume.missing-pending-call-resolution-fail",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runner-api.extended"
       },
       "status": "pass"
     },
@@ -8011,40 +8011,6 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-lifecycle-af.context-transform-driver-sees-rewritten-context.1.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "runtime-lifecycle-af.context-transform-driver-sees-rewritten-context.2.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "runtime-lifecycle-af.context-transform-driver-sees-rewritten-context.requiredEvidence.context.driverObservedMessageCount",
-          "status": "pass"
-        },
-        {
-          "assertionId": "runtime-lifecycle-af.context-transform-driver-sees-rewritten-context.requiredEvidence.context.rewrittenMessageCount",
-          "status": "pass"
-        },
-        {
-          "assertionId": "runtime-lifecycle-af.context-transform-driver-sees-rewritten-context.requiredEvidence.result.context.driverObservedMessageCount",
-          "status": "pass"
-        },
-        {
-          "assertionId": "runtime-lifecycle-af.context-transform-driver-sees-rewritten-context.requiredEvidence.result.context.rewrittenMessageCount",
-          "status": "pass"
-        }
-      ],
-      "checkId": "runtime-lifecycle-af.context-transform-driver-sees-rewritten-context",
-      "details": {
-        "adapterId": "typescript-framework",
-        "planId": "tuvren.framework.runtime-api.lifecycle-extended"
-      },
-      "status": "pass"
-    },
-    {
-      "assertionResults": [
-        {
           "assertionId": "runtime-lifecycle-af.context-transform-preserves-source-checkpoint.1.resultField",
           "status": "pass"
         },
@@ -8070,6 +8036,40 @@
         }
       ],
       "checkId": "runtime-lifecycle-af.context-transform-preserves-source-checkpoint",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.lifecycle-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-lifecycle-af.context-transform-runner-sees-rewritten-context.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-af.context-transform-runner-sees-rewritten-context.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-af.context-transform-runner-sees-rewritten-context.requiredEvidence.context.rewrittenMessageCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-af.context-transform-runner-sees-rewritten-context.requiredEvidence.context.runnerObservedMessageCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-af.context-transform-runner-sees-rewritten-context.requiredEvidence.result.context.rewrittenMessageCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-af.context-transform-runner-sees-rewritten-context.requiredEvidence.result.context.runnerObservedMessageCount",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-lifecycle-af.context-transform-runner-sees-rewritten-context",
       "details": {
         "adapterId": "typescript-framework",
         "planId": "tuvren.framework.runtime-api.lifecycle-extended"
@@ -8375,11 +8375,11 @@
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-ext.stale-recovery.finalize-terminal-status.requiredEvidence.result.recovery.driverExecuteCalls",
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.finalize-terminal-status.requiredEvidence.result.recovery.phase",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-ext.stale-recovery.finalize-terminal-status.requiredEvidence.result.recovery.phase",
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.finalize-terminal-status.requiredEvidence.result.recovery.runnerExecuteCalls",
           "status": "pass"
         },
         {
@@ -8931,15 +8931,15 @@
     {
       "assertionResults": [
         {
-          "assertionId": "runtime-orchestration.inheritance.driver-id.1.resultField",
+          "assertionId": "runtime-orchestration.inheritance.runner-id.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "runtime-orchestration.inheritance.driver-id.requiredEvidence.result.orchestration.inheritance.driverIdInherited",
+          "assertionId": "runtime-orchestration.inheritance.runner-id.requiredEvidence.result.orchestration.inheritance.runnerIdInherited",
           "status": "pass"
         }
       ],
-      "checkId": "runtime-orchestration.inheritance.driver-id",
+      "checkId": "runtime-orchestration.inheritance.runner-id",
       "details": {
         "adapterId": "typescript-framework",
         "planId": "tuvren.framework.runtime-api.orchestration"

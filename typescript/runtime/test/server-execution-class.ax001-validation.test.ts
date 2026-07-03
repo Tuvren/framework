@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test drivers intentionally match the async framework driver contract.
+// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 
 /**
  * KRT-AX001: Tuvren-server invocation lifecycle — input and output validation.
@@ -75,7 +75,7 @@ const STRICT_INPUT_SCHEMA: import("@tuvren/core/tools").TuvrenJsonSchema = {
 
 function makeRunnerWithInput(toolName: string, input: unknown): RuntimeRunner {
   return {
-    id: "ax001-driver",
+    id: "ax001-runner",
     async execute(context) {
       if (!context.messages.some((m) => m.role === "tool")) {
         return {
@@ -99,11 +99,11 @@ function makeRunnerWithInput(toolName: string, input: unknown): RuntimeRunner {
   };
 }
 
-async function runWithTool(tool: TuvrenToolDefinition, driver: RuntimeRunner) {
+async function runWithTool(tool: TuvrenToolDefinition, runner: RuntimeRunner) {
   const harness = createFakeKernelHarness();
   const runtime = createTuvrenRuntime({
-    defaultRunnerId: driver.id,
-    driverRegistry: createBaseRunnerRegistry([driver]),
+    defaultRunnerId: runner.id,
+    runnerRegistry: createBaseRunnerRegistry([runner]),
     kernel: harness.kernel,
   });
   const thread = await runtime.createThread({});
@@ -142,8 +142,8 @@ describe("KRT-AX001 — input validation", () => {
         return { result: 0 };
       },
     };
-    const driver = makeRunnerWithInput(toolName, { wrongField: "bad" });
-    const events = await runWithTool(tool, driver);
+    const runner = makeRunnerWithInput(toolName, { wrongField: "bad" });
+    const events = await runWithTool(tool, runner);
     const toolResult = findToolResult(events);
 
     expect(toolResult).toBeDefined();
@@ -159,8 +159,8 @@ describe("KRT-AX001 — input validation", () => {
         return { result: 0 };
       },
     };
-    const driver = makeRunnerWithInput(toolName, { wrongField: "bad" });
-    const events = await runWithTool(tool, driver);
+    const runner = makeRunnerWithInput(toolName, { wrongField: "bad" });
+    const events = await runWithTool(tool, runner);
     const toolResult = findToolResult(events);
     const output = toolResult?.output as Record<string, unknown> | undefined;
 
@@ -178,8 +178,8 @@ describe("KRT-AX001 — input validation", () => {
         return { result: 0 };
       },
     };
-    const driver = makeRunnerWithInput(toolName, { wrongField: "bad" });
-    await runWithTool(tool, driver);
+    const runner = makeRunnerWithInput(toolName, { wrongField: "bad" });
+    await runWithTool(tool, runner);
 
     expect(executed).toBe(false);
   });
@@ -195,8 +195,8 @@ describe("KRT-AX001 — input validation", () => {
         return { result: (input as { value: number }).value };
       },
     };
-    const driver = makeRunnerWithInput(toolName, { value: 42 });
-    const events = await runWithTool(tool, driver);
+    const runner = makeRunnerWithInput(toolName, { value: 42 });
+    const events = await runWithTool(tool, runner);
     const toolResult = findToolResult(events);
 
     expect(executedWith).toEqual({ value: 42 });
@@ -232,8 +232,8 @@ describe("KRT-AX001 — output validation", () => {
       },
     };
 
-    const driver = makeRunnerWithInput(toolName, {});
-    const events = await runWithTool(tool, driver);
+    const runner = makeRunnerWithInput(toolName, {});
+    const events = await runWithTool(tool, runner);
     const toolResult = findToolResult(events);
 
     expect(toolResult).toBeDefined();
@@ -251,8 +251,8 @@ describe("KRT-AX001 — output validation", () => {
       },
     };
 
-    const driver = makeRunnerWithInput(toolName, {});
-    const events = await runWithTool(tool, driver);
+    const runner = makeRunnerWithInput(toolName, {});
+    const events = await runWithTool(tool, runner);
     const toolResult = findToolResult(events);
     const output = toolResult?.output as Record<string, unknown> | undefined;
 
@@ -270,8 +270,8 @@ describe("KRT-AX001 — output validation", () => {
       },
     };
 
-    const driver = makeRunnerWithInput(toolName, {});
-    const events = await runWithTool(tool, driver);
+    const runner = makeRunnerWithInput(toolName, {});
+    const events = await runWithTool(tool, runner);
     const toolResult = findToolResult(events);
 
     expect(toolResult?.isError).toBeFalsy();
@@ -289,8 +289,8 @@ describe("KRT-AX001 — output validation", () => {
       },
     };
 
-    const driver = makeRunnerWithInput(toolName, {});
-    const events = await runWithTool(tool, driver);
+    const runner = makeRunnerWithInput(toolName, {});
+    const events = await runWithTool(tool, runner);
     const toolResult = findToolResult(events);
 
     expect(toolResult?.isError).toBeFalsy();
@@ -316,8 +316,8 @@ describe("KRT-AX001 — output validation", () => {
       },
     };
 
-    const driver = makeRunnerWithInput(toolName, {});
-    const events = await runWithTool(tool, driver);
+    const runner = makeRunnerWithInput(toolName, {});
+    const events = await runWithTool(tool, runner);
     const toolResult = findToolResult(events);
 
     // The tool explicitly declared an error — outputSchema must not override it

@@ -214,9 +214,9 @@ export function createReadonlyRunnerToolRegistry(
     },
     register(tool) {
       throw new TuvrenRuntimeError(
-        `drivers must not mutate the execution tool registry with "${tool.name}"`,
+        `runners must not mutate the execution tool registry with "${tool.name}"`,
         {
-          code: "invalid_driver_result",
+          code: "invalid_runner_result",
           details: {
             toolName: tool.name,
           },
@@ -256,9 +256,9 @@ export function createRunnerToolDefinitionSnapshot(
     description: tool.description,
     execute() {
       throw new TuvrenRuntimeError(
-        `drivers must not execute tool "${tool.name}" from the read-only tool snapshot`,
+        `runners must not execute tool "${tool.name}" from the read-only tool snapshot`,
         {
-          code: "invalid_driver_result",
+          code: "invalid_runner_result",
           details: {
             toolName: tool.name,
           },

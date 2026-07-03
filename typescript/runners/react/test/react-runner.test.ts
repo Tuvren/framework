@@ -48,11 +48,11 @@ describe("runner-react", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "generate",
     }).create();
 
-    const result = await driver.execute(
+    const result = await runner.execute(
       createRunnerExecutionContext({
         config: {
           extensions: [
@@ -102,11 +102,11 @@ describe("runner-react", () => {
         return this.promptLabel;
       },
     } satisfies TuvrenExtension & { promptLabel: string };
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "generate",
     }).create();
 
-    await driver.execute(
+    await runner.execute(
       createRunnerExecutionContext({
         config: {
           extensions: [extension],
@@ -137,11 +137,11 @@ describe("runner-react", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "generate",
     }).create();
 
-    const result = await driver.execute(
+    const result = await runner.execute(
       createRunnerExecutionContext({
         config: {
           extensions: [
@@ -205,12 +205,12 @@ describe("runner-react", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: () => "generate",
       toolExecutionMode: () => "sequential",
     }).create();
 
-    const result = await driver.execute(
+    const result = await runner.execute(
       createRunnerExecutionContext({
         config: {
           model: provider,
@@ -242,11 +242,11 @@ describe("runner-react", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "generate",
     }).create();
 
-    const result = await driver.execute(
+    const result = await runner.execute(
       createRunnerExecutionContext({
         config: {
           loopPolicy: {
@@ -293,11 +293,11 @@ describe("runner-react", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "generate",
     }).create();
 
-    const result = await driver.execute(
+    const result = await runner.execute(
       createRunnerExecutionContext({
         config: {
           loopPolicy: {
@@ -345,11 +345,11 @@ describe("runner-react", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "generate",
     }).create();
 
-    const result = await driver.execute(
+    const result = await runner.execute(
       createRunnerExecutionContext({
         config: {
           loopPolicy: {
@@ -394,13 +394,13 @@ describe("runner-react", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode() {
         return JSON.parse('"bogus"');
       },
     }).create();
 
-    const result = await driver.execute(
+    const result = await runner.execute(
       createRunnerExecutionContext({
         config: {
           model: provider,
@@ -417,7 +417,7 @@ describe("runner-react", () => {
     }
     expect(result.resolution.fatality).toBe("hard");
     expect(result.resolution.error).toMatchObject({
-      code: "react_driver_invalid_provider_call_mode",
+      code: "react_runner_invalid_provider_call_mode",
     });
   });
 
@@ -443,14 +443,14 @@ describe("runner-react", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "generate",
       toolExecutionMode() {
         return JSON.parse('"bogus"');
       },
     }).create();
 
-    const result = await driver.execute(
+    const result = await runner.execute(
       createRunnerExecutionContext({
         config: {
           model: provider,
@@ -466,7 +466,7 @@ describe("runner-react", () => {
     }
     expect(result.resolution.fatality).toBe("hard");
     expect(result.resolution.error).toMatchObject({
-      code: "react_driver_invalid_tool_execution_mode",
+      code: "react_runner_invalid_tool_execution_mode",
     });
   });
 
@@ -483,11 +483,11 @@ describe("runner-react", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "generate",
     }).create();
 
-    const result = await driver.execute(
+    const result = await runner.execute(
       createRunnerExecutionContext({
         config: {
           loopPolicy: {
@@ -524,11 +524,11 @@ describe("runner-react", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "generate",
     }).create();
 
-    const result = await driver.execute(
+    const result = await runner.execute(
       createRunnerExecutionContext({
         config: {
           loopPolicy: {
@@ -562,11 +562,11 @@ describe("runner-react", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "generate",
     }).create();
 
-    const result = await driver.execute(
+    const result = await runner.execute(
       createRunnerExecutionContext({
         config: {
           model: provider,
@@ -597,11 +597,11 @@ describe("runner-react", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "generate",
     }).create();
 
-    const result = await driver.execute(
+    const result = await runner.execute(
       createRunnerExecutionContext({
         config: {
           model: provider,
@@ -620,7 +620,7 @@ describe("runner-react", () => {
     });
   });
 
-  test("does not call generate when the driver signal is already aborted", async () => {
+  test("does not call generate when the runner signal is already aborted", async () => {
     const controller = new AbortController();
     let generateCalls = 0;
     const provider = {
@@ -636,12 +636,12 @@ describe("runner-react", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "generate",
     }).create();
     controller.abort(new Error("cancelled before provider call"));
 
-    const result = await driver.execute(
+    const result = await runner.execute(
       createRunnerExecutionContext({
         config: {
           model: provider,
@@ -658,11 +658,11 @@ describe("runner-react", () => {
     }
     expect(result.resolution.fatality).toBe("hard");
     expect(result.resolution.error).toMatchObject({
-      code: "react_driver_execution_cancelled",
+      code: "react_runner_execution_cancelled",
     });
   });
 
-  test("stops waiting for generate when the driver signal aborts during the provider call", async () => {
+  test("stops waiting for generate when the runner signal aborts during the provider call", async () => {
     const controller = new AbortController();
     const provider = {
       async generate() {
@@ -678,12 +678,12 @@ describe("runner-react", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "generate",
     }).create();
 
     const result = await Promise.race([
-      driver.execute(
+      runner.execute(
         createRunnerExecutionContext({
           config: {
             model: provider,
@@ -696,7 +696,7 @@ describe("runner-react", () => {
     ]);
 
     if (typeof result === "string") {
-      throw new Error("driver did not stop waiting after abort");
+      throw new Error("runner did not stop waiting after abort");
     }
 
     expect(result.resolution.type).toBe("fail");
@@ -705,7 +705,7 @@ describe("runner-react", () => {
     }
     expect(result.resolution.fatality).toBe("hard");
     expect(result.resolution.error).toMatchObject({
-      code: "react_driver_execution_cancelled",
+      code: "react_runner_execution_cancelled",
     });
   });
 
@@ -714,8 +714,8 @@ describe("runner-react", () => {
   // ---------------------------------------------------------------------------
 
   test("stream path: provider_tool_result chunk produces pre-staged tool message without local execution", async () => {
-    const driverFactory = createReActRunner();
-    const driver = driverFactory.create();
+    const runnerFactory = createReActRunner();
+    const runner = runnerFactory.create();
     const chunks: ProviderStreamChunk[] = [
       {
         name: "code_execution",
@@ -755,10 +755,10 @@ describe("runner-react", () => {
     };
 
     const context = createRunnerExecutionContext({ config });
-    const result = await driver.execute(context);
+    const result = await runner.execute(context);
 
     // Pure stream: no model text output, only the provider_tool_result chunk.
-    // The driver returns just the pre-staged tool message (no preceding assistant
+    // The runner returns just the pre-staged tool message (no preceding assistant
     // content to assemble). The framework can continue from this state.
     expect(result.messages).toHaveLength(1);
     const toolMessage = result.messages?.[0];
@@ -780,8 +780,8 @@ describe("runner-react", () => {
   });
 
   test("stream path: provider-mediated provider_tool_result chunk preserves executionClass in pre-staged result", async () => {
-    const driverFactory = createReActRunner();
-    const driver = driverFactory.create();
+    const runnerFactory = createReActRunner();
+    const runner = runnerFactory.create();
     const chunks: ProviderStreamChunk[] = [
       {
         name: "mcp_tool",
@@ -825,7 +825,7 @@ describe("runner-react", () => {
     };
 
     const context = createRunnerExecutionContext({ config });
-    const result = await driver.execute(context);
+    const result = await runner.execute(context);
 
     expect(result.messages).toHaveLength(1);
     const toolMessage = result.messages?.[0];

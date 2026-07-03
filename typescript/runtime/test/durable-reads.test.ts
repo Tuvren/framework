@@ -53,7 +53,7 @@ function makeCoreOptions(
   kernel: ReturnType<typeof makeKernel>
 ): RuntimeCoreOptions {
   return {
-    defaultRunnerId: "test-driver",
+    defaultRunnerId: "test-runner",
     kernel,
   };
 }

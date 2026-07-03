@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test drivers intentionally match the async framework driver contract.
+// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 import { describe, expect, test } from "bun:test";
 import type { TuvrenExtension } from "@tuvren/core/extensions";
 import type {
@@ -64,7 +64,7 @@ describe("framework-runtime-core", () => {
     };
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([
+      runnerRegistry: createRunnerRegistry([
         {
           async execute() {
             return {
@@ -108,10 +108,10 @@ describe("framework-runtime-core", () => {
 
   test("persists beforeTurn state updates on terminal short-circuits", async () => {
     const harness = createFakeKernelHarness();
-    let driverCalls = 0;
-    const driver = {
+    let runnerCalls = 0;
+    const runner = {
       async execute(_context) {
-        driverCalls += 1;
+        runnerCalls += 1;
         return {
           messages: [assistantText("This should not run.")],
           resolution: {
@@ -127,7 +127,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -156,7 +156,7 @@ describe("framework-runtime-core", () => {
 
     await collectEvents(handle.events());
 
-    expect(driverCalls).toBe(0);
+    expect(runnerCalls).toBe(0);
     expect(handle.status().manifest?.extensions.seeded).toEqual({
       seeded: true,
     });
@@ -164,10 +164,10 @@ describe("framework-runtime-core", () => {
 
   test("persists beforeIteration state updates on terminal verdicts", async () => {
     const harness = createFakeKernelHarness();
-    let driverCalls = 0;
-    const driver = {
+    let runnerCalls = 0;
+    const runner = {
       async execute(_context) {
-        driverCalls += 1;
+        runnerCalls += 1;
         return {
           messages: [assistantText("This should not run.")],
           resolution: {
@@ -183,7 +183,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -212,7 +212,7 @@ describe("framework-runtime-core", () => {
 
     await collectEvents(handle.events());
 
-    expect(driverCalls).toBe(0);
+    expect(runnerCalls).toBe(0);
     expect(handle.status().manifest?.extensions.seeded).toEqual({
       seeded: true,
     });
@@ -220,10 +220,10 @@ describe("framework-runtime-core", () => {
 
   test("times out beforeIteration hooks as soft failures instead of stalling the turn", async () => {
     const harness = createFakeKernelHarness();
-    let driverCalls = 0;
-    const driver = {
+    let runnerCalls = 0;
+    const runner = {
       async execute(_context) {
-        driverCalls += 1;
+        runnerCalls += 1;
         return {
           messages: [assistantText("Runner still completed.")],
           resolution: {
@@ -239,7 +239,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -268,7 +268,7 @@ describe("framework-runtime-core", () => {
         event.type === "error"
     );
 
-    expect(driverCalls).toBe(1);
+    expect(runnerCalls).toBe(1);
     expect(handle.status().phase).toBe("completed");
     expect(errorEvent?.fatal).toBe(false);
     expect(errorEvent?.error.message).toContain(
@@ -279,7 +279,7 @@ describe("framework-runtime-core", () => {
   test("suppresses late hook events after timeout soft-fail conversion", async () => {
     const harness = createFakeKernelHarness();
     let lateEmitAttempts = 0;
-    const driver = {
+    const runner = {
       async execute(_context) {
         return {
           messages: [assistantText("Runner still completed.")],
@@ -296,7 +296,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -340,7 +340,7 @@ describe("framework-runtime-core", () => {
 
   test("surfaces afterTurn cleanup failures as non-fatal error events", async () => {
     const harness = createFakeKernelHarness();
-    const driver = {
+    const runner = {
       async execute(_context) {
         return {
           messages: [assistantText("Finished main execution.")],
@@ -357,7 +357,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -397,9 +397,9 @@ describe("framework-runtime-core", () => {
 });
 
 function createRunnerRegistry(
-  drivers: Array<KrakenRunner | KrakenRunnerFactory> = []
+  runners: Array<KrakenRunner | KrakenRunnerFactory> = []
 ) {
-  return createBaseRunnerRegistry(drivers.map(wrapRunnerEntry));
+  return createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
 }
 
 function wrapRunnerEntry(
@@ -423,14 +423,14 @@ function isKrakenRunnerFactory(
   return "create" in entry && typeof entry.create === "function";
 }
 
-function wrapRunner(driver: KrakenRunner): KrakenRunner {
-  const resume = driver.resume;
+function wrapRunner(runner: KrakenRunner): KrakenRunner {
+  const resume = runner.resume;
 
   return {
     async execute(context) {
-      return normalizeRunnerResult(await driver.execute(context));
+      return normalizeRunnerResult(await runner.execute(context));
     },
-    id: driver.id,
+    id: runner.id,
     ...(resume === undefined
       ? {}
       : {

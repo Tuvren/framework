@@ -48,7 +48,7 @@ import {
   createConformanceIdFactory,
   createConformanceKernelHarness,
   createStaticRunner,
-  DRIVER_ID,
+  RUNNER_ID,
   textSignal,
 } from "./framework-adapter-runtime.ts";
 
@@ -131,7 +131,7 @@ export async function runSecretIsolationRuntimeApi(
 ): Promise<AdapterProjection> {
   const fixture = readSecretFixture(input);
   const harness = createConformanceKernelHarness();
-  const driver = createStaticRunner(async () => {
+  const runner = createStaticRunner(async () => {
     await Promise.resolve();
     return {
       messages: [assistantText("secret-isolation runtime-api turn")],
@@ -140,8 +140,8 @@ export async function runSecretIsolationRuntimeApi(
   });
   const runtime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
-    defaultRunnerId: DRIVER_ID,
-    driverRegistry: createRunnerRegistry([driver]),
+    defaultRunnerId: RUNNER_ID,
+    runnerRegistry: createRunnerRegistry([runner]),
     kernel: harness.kernel,
   });
   const thread = await runtime.createThread({});
@@ -199,7 +199,7 @@ export async function runSecretIsolationRuntimeApi(
 // ---------------------------------------------------------------------------
 // Operation: runtime.secret-isolation.telemetry
 //
-// A driver fails with an error whose raw text embeds a credential-bearing
+// A runner fails with an error whose raw text embeds a credential-bearing
 // connection string. The telemetry error-summary sanitizer (KRT-BD001) strips
 // it, so the captured telemetry attributes and error summaries are secret-free.
 // ---------------------------------------------------------------------------
@@ -210,7 +210,7 @@ export async function runSecretIsolationTelemetry(
   const fixture = readSecretFixture(input);
   const capture = createTelemetryCapture();
   const harness = createConformanceKernelHarness();
-  const driver = createStaticRunner(() => {
+  const runner = createStaticRunner(() => {
     // Raw provider/backend error text carrying a credential — must be sanitized
     // before it reaches any TelemetrySpan error summary.
     throw new Error(
@@ -219,8 +219,8 @@ export async function runSecretIsolationTelemetry(
   });
   const runtime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
-    defaultRunnerId: DRIVER_ID,
-    driverRegistry: createRunnerRegistry([driver]),
+    defaultRunnerId: RUNNER_ID,
+    runnerRegistry: createRunnerRegistry([runner]),
     kernel: harness.kernel,
     telemetry: capture.sink,
   });
@@ -313,7 +313,7 @@ async function captureScopeSurfaces(
 ): Promise<ScopeSurfaceObservation> {
   const capture = createTelemetryCapture();
   const harness = createConformanceKernelHarness();
-  const driver = createStaticRunner(async () => {
+  const runner = createStaticRunner(async () => {
     await Promise.resolve();
     return {
       messages: [assistantText("scope-isolation surfaces turn")],
@@ -322,8 +322,8 @@ async function captureScopeSurfaces(
   });
   const runtime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
-    defaultRunnerId: DRIVER_ID,
-    driverRegistry: createRunnerRegistry([driver]),
+    defaultRunnerId: RUNNER_ID,
+    runnerRegistry: createRunnerRegistry([runner]),
     kernel: harness.kernel,
     scope,
     telemetry: capture.sink,

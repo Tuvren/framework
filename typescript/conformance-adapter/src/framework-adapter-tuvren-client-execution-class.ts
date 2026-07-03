@@ -44,7 +44,7 @@ import {
   createConformanceIdFactory,
   createConformanceKernelHarness,
   createStaticRunner,
-  DRIVER_ID,
+  RUNNER_ID,
   textSignal,
 } from "./framework-adapter-runtime.ts";
 
@@ -158,11 +158,11 @@ async function runTurn(
   clientEndpointBoundary?: import("@tuvren/core/capabilities").ClientEndpointBoundary
 ) {
   const harness = createConformanceKernelHarness();
-  const driver = makeSingleCallRunner(toolName);
+  const runner = makeSingleCallRunner(toolName);
   const runtime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
-    defaultRunnerId: DRIVER_ID,
-    driverRegistry: createRunnerRegistry([driver]),
+    defaultRunnerId: RUNNER_ID,
+    runnerRegistry: createRunnerRegistry([runner]),
     kernel: harness.kernel,
   });
   const thread = await runtime.createThread({});

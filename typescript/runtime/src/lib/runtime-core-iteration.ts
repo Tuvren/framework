@@ -60,11 +60,11 @@ export type IterationPhaseResult =
     };
 
 export interface ExecutedIterationResult {
-  driverResponse: TuvrenModelResponse;
   iterationRunId: string;
   partial: boolean;
   requestedToolCalls: ToolCallPart[];
   resolution: RuntimeResolution;
+  runnerResponse: TuvrenModelResponse;
   stableHeadTurnNodeHash: HashString;
   toolExecutionMode: "parallel" | "sequential";
   toolResults: ToolResultPart[];
@@ -192,7 +192,7 @@ export interface RuntimeCoreIterationHost {
     }
   ): TuvrenStreamEvent[];
   executeRunner(
-    driver: KrakenRunner,
+    runner: KrakenRunner,
     context: RunnerExecutionContext
   ): Promise<RunnerExecutionResult>;
   failInvalidPauseResolutionIfNeeded(
@@ -212,7 +212,7 @@ export interface RuntimeCoreIterationHost {
     resolution: RuntimeResolution,
     events: TuvrenStreamEvent[]
   ): TuvrenStreamEvent[];
-  materializeRunner(driverId: string): KrakenRunner;
+  materializeRunner(runnerId: string): KrakenRunner;
   now(): number;
   /**
    * Publish an event through the full runtime event + telemetry path. Used by
@@ -254,9 +254,9 @@ export function findInvalidRunnerResolution(
     !(partial && resolution.type === "fail")
   ) {
     return new TuvrenRuntimeError(
-      "drivers must not return executable tool calls with a terminal resolution",
+      "runners must not return executable tool calls with a terminal resolution",
       {
-        code: "invalid_driver_resolution",
+        code: "invalid_runner_resolution",
         details: {
           pauseRequiresToolCalls: resolution.type === "pause",
           resolutionType: resolution.type,
@@ -270,7 +270,7 @@ export function findInvalidRunnerResolution(
     return new TuvrenRuntimeError(
       "shared core only permits approval pauses that originate from requested tool calls",
       {
-        code: "invalid_driver_resolution",
+        code: "invalid_runner_resolution",
         details: {
           pauseRequiresToolCalls: true,
           resolutionType: resolution.type,
@@ -301,9 +301,9 @@ export function findInvalidRunnerStateUpdateError(
     }
 
     return new TuvrenRuntimeError(
-      "driver state updates must target extensions active in the current agent config",
+      "runner state updates must target extensions active in the current agent config",
       {
-        code: "invalid_driver_result",
+        code: "invalid_runner_result",
         details: {
           extensionName: update.extensionName,
         },
@@ -382,7 +382,7 @@ export function extractToolCallsFromMessages(
 
 /**
  * Emit tool.start + tool.result events for pre-staged provider tool messages
- * (AY003). Provider-owned results arrive as tool-role messages in driverMessages
+ * (AY003). Provider-owned results arrive as tool-role messages in runnerMessages
  * rather than going through the Tool Execution Gateway. The framework emits
  * attribution events with owner:"provider" so observers see the full invocation
  * lifecycle with correct observation limits (canAudit/canCancel/canRetry = false).
@@ -392,11 +392,11 @@ export function extractToolCallsFromMessages(
  * remain isolated (AY005).
  */
 function emitProviderToolAttributionEvents(
-  driverMessages: TuvrenMessage[],
+  runnerMessages: TuvrenMessage[],
   now: () => number,
   publishEvent: (event: TuvrenStreamEvent) => void
 ): void {
-  for (const message of driverMessages) {
+  for (const message of runnerMessages) {
     if (message.role !== "tool") {
       continue;
     }
@@ -407,7 +407,7 @@ function emitProviderToolAttributionEvents(
         meta === null ||
         (meta as Record<string, unknown>).owner !== "provider"
       ) {
-        // Invariant: isPrestagedProviderToolMessage in driver-contract-guards.ts
+        // Invariant: isPrestagedProviderToolMessage in runner-contract-guards.ts
         // uses parts.every(owner==="provider"), so a mixed tool message (some parts
         // provider-owned, some not) is rejected before reaching here. If that guard
         // is ever relaxed this per-part skip must be revisited to avoid leaving
@@ -473,9 +473,9 @@ export async function executeIterationPhase(
     schemaId: string;
   }
 ): Promise<IterationPhaseResult> {
-  const driver = input.handle.getOrCreateRunner(
+  const runner = input.handle.getOrCreateRunner(
     input.loopState.activeRunnerId,
-    (driverId) => host.materializeRunner(driverId)
+    (runnerId) => host.materializeRunner(runnerId)
   );
   const iterationRunId = host.createId();
 
@@ -497,8 +497,8 @@ export async function executeIterationPhase(
   await host.beginIterationStep(iterationRunId, "iterate");
 
   const emittedRunnerEvents: TuvrenStreamEvent[] = [];
-  const driverResult = await host.executeRunner(
-    driver,
+  const runnerResult = await host.executeRunner(
+    runner,
     host.createRunnerExecutionContext(
       input.handle,
       input.schemaId,
@@ -531,28 +531,28 @@ export async function executeIterationPhase(
     };
   }
 
-  let resolution = driverResult.resolution;
-  const driverMessages = [...(driverResult.messages ?? [])];
+  let resolution = runnerResult.resolution;
+  const runnerMessages = [...(runnerResult.messages ?? [])];
   const cancellationResolution = createCancelledResolution(input.handle);
   const assistantEventValidationError = validateRunnerAssistantEvents(
-    driverMessages,
+    runnerMessages,
     emittedRunnerEvents,
     cancellationResolution ?? resolution,
-    driverResult.assistantEventReconciliation,
+    runnerResult.assistantEventReconciliation,
     input.loopState.activeConfig.extensions ?? []
   );
   const synthesizedAssistantEvents = host.ensureRunnerAssistantEvents(
     input.handle,
-    driverMessages,
+    runnerMessages,
     emittedRunnerEvents,
     input.loopState
   );
-  const requestedToolCalls = extractToolCallsFromMessages(driverMessages);
-  const toolExecutionMode = driverResult.toolExecutionMode ?? "parallel";
+  const requestedToolCalls = extractToolCallsFromMessages(runnerMessages);
+  const toolExecutionMode = runnerResult.toolExecutionMode ?? "parallel";
   const partial =
-    driverResult.partial === true ||
+    runnerResult.partial === true ||
     (cancellationResolution !== undefined &&
-      hasAssistantOutputMessages(driverMessages));
+      hasAssistantOutputMessages(runnerMessages));
   const invalidRunnerError = findInvalidRunnerExecutionError(
     input.loopState.activeConfig.extensions ?? [],
     requestedToolCalls.length,
@@ -560,7 +560,7 @@ export async function executeIterationPhase(
     cancellationResolution,
     partial,
     assistantEventValidationError,
-    driverResult.stateUpdates
+    runnerResult.stateUpdates
   );
 
   if (invalidRunnerError !== undefined) {
@@ -581,7 +581,7 @@ export async function executeIterationPhase(
     };
   }
 
-  applyRunnerStateUpdates(input.loopState, driverResult.stateUpdates);
+  applyRunnerStateUpdates(input.loopState, runnerResult.stateUpdates);
 
   host.flushBufferedRunnerEventsIfNeeded(
     input.handle,
@@ -589,22 +589,22 @@ export async function executeIterationPhase(
     synthesizedAssistantEvents
   );
 
-  const stagedMessages = [...driverMessages];
+  const stagedMessages = [...runnerMessages];
   const stagedMessageHashes = await host.stageRunnerMessages(
     iterationRunId,
-    driverMessages,
+    runnerMessages,
     input.iterationCount
   );
   emitProviderToolAttributionEvents(
-    driverMessages,
+    runnerMessages,
     () => host.now(),
     (event) => host.publishEvent(input.handle, event, input.loopState)
   );
-  const driverResponse = synthesizeResponse(
-    driverMessages,
+  const runnerResponse = synthesizeResponse(
+    runnerMessages,
     resolution,
     emittedRunnerEvents,
-    driverResult.assistantEventReconciliation
+    runnerResult.assistantEventReconciliation
   );
   const toolResults: ToolResultPart[] = [];
 
@@ -663,7 +663,7 @@ export async function executeIterationPhase(
     input.iterationCount,
     iterationRunId,
     resolution,
-    driverResponse,
+    runnerResponse,
     toolResults,
     input.headState.messages,
     stagedMessages,
@@ -692,7 +692,7 @@ export async function executeIterationPhase(
   return {
     kind: "executed",
     result: {
-      driverResponse,
+      runnerResponse,
       iterationRunId,
       partial,
       requestedToolCalls,

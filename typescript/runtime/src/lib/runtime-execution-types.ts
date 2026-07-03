@@ -30,8 +30,8 @@ import type { ToolExecutionMode } from "./tool-execution.js";
 export interface ExecutionSessionRequest {
   branchId: string;
   config: AgentConfig;
-  driverId?: string;
   parentTurnId?: string | null;
+  runnerId?: string;
   schemaId?: string;
   signal: InputSignal;
   threadId: string;

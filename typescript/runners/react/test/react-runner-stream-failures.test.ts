@@ -44,11 +44,11 @@ describe("runner-react streamed failure handling", () => {
         } as const;
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "stream",
     }).create();
 
-    const result = await driver.execute(
+    const result = await runner.execute(
       createRunnerExecutionContext({
         config: {
           model: provider,
@@ -67,7 +67,7 @@ describe("runner-react streamed failure handling", () => {
       "code" in result.resolution.error
         ? result.resolution.error.code
         : undefined
-    ).toBe("react_driver_provider_failure");
+    ).toBe("react_runner_provider_failure");
   });
 
   test("preserves provider error codes from stream error chunks", async () => {
@@ -88,11 +88,11 @@ describe("runner-react streamed failure handling", () => {
         };
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "stream",
     }).create();
 
-    const result = await driver.execute(
+    const result = await runner.execute(
       createRunnerExecutionContext({
         config: {
           model: provider,
@@ -130,11 +130,11 @@ describe("runner-react streamed failure handling", () => {
         } as const;
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "stream",
     }).create();
 
-    const result = await driver.execute(
+    const result = await runner.execute(
       createRunnerExecutionContext({
         config: {
           model: provider,
@@ -173,11 +173,11 @@ describe("runner-react streamed failure handling", () => {
         yield chunk;
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "stream",
     }).create();
 
-    const result = await driver.execute(
+    const result = await runner.execute(
       createRunnerExecutionContext({
         config: {
           model: provider,
@@ -216,12 +216,12 @@ describe("runner-react streamed failure handling", () => {
         await wait(1000);
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "stream",
     }).create();
 
     const result = await Promise.race([
-      driver.execute(
+      runner.execute(
         createRunnerExecutionContext({
           config: {
             model: provider,
@@ -235,7 +235,7 @@ describe("runner-react streamed failure handling", () => {
     ]);
 
     if (typeof result === "string") {
-      throw new Error("driver did not stop waiting after stream abort");
+      throw new Error("runner did not stop waiting after stream abort");
     }
 
     expect(result.resolution.type).toBe("fail");
@@ -312,12 +312,12 @@ describe("runner-react streamed failure handling", () => {
         return stream;
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "stream",
     }).create();
 
     const result = await Promise.race([
-      driver.execute(
+      runner.execute(
         createRunnerExecutionContext({
           config: {
             model: provider,
@@ -331,7 +331,7 @@ describe("runner-react streamed failure handling", () => {
     ]);
 
     if (typeof result === "string") {
-      throw new Error("driver did not stop waiting after stream abort");
+      throw new Error("runner did not stop waiting after stream abort");
     }
 
     expect(returnCalls).toBe(1);
@@ -368,13 +368,13 @@ describe("runner-react streamed failure handling", () => {
         await wait(1000);
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "stream",
       toolExecutionMode: "sequential",
     }).create();
 
     const result = await Promise.race([
-      driver.execute(
+      runner.execute(
         createRunnerExecutionContext({
           config: {
             model: provider,
@@ -388,7 +388,7 @@ describe("runner-react streamed failure handling", () => {
     ]);
 
     if (typeof result === "string") {
-      throw new Error("driver did not stop waiting after stream abort");
+      throw new Error("runner did not stop waiting after stream abort");
     }
 
     expect(() => assertRunnerExecutionResult(result)).not.toThrow();
@@ -441,13 +441,13 @@ describe("runner-react streamed failure handling", () => {
         await wait(1000);
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "stream",
       toolExecutionMode: "sequential",
     }).create();
 
     const result = await Promise.race([
-      driver.execute(
+      runner.execute(
         createRunnerExecutionContext({
           config: {
             model: provider,
@@ -461,7 +461,7 @@ describe("runner-react streamed failure handling", () => {
     ]);
 
     if (typeof result === "string") {
-      throw new Error("driver did not stop waiting after stream abort");
+      throw new Error("runner did not stop waiting after stream abort");
     }
 
     expect(() => assertRunnerExecutionResult(result)).not.toThrow();
@@ -499,12 +499,12 @@ describe("runner-react streamed failure handling", () => {
         await wait(1000);
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "stream",
     }).create();
 
     const result = await Promise.race([
-      driver.execute(
+      runner.execute(
         createRunnerExecutionContext({
           config: {
             model: provider,
@@ -518,7 +518,7 @@ describe("runner-react streamed failure handling", () => {
     ]);
 
     if (typeof result === "string") {
-      throw new Error("driver did not stop waiting after stream abort");
+      throw new Error("runner did not stop waiting after stream abort");
     }
 
     expect(() => assertRunnerExecutionResult(result)).not.toThrow();
@@ -556,12 +556,12 @@ describe("runner-react streamed failure handling", () => {
         await wait(1000);
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "stream",
     }).create();
 
     const result = await Promise.race([
-      driver.execute(
+      runner.execute(
         createRunnerExecutionContext({
           config: {
             model: provider,
@@ -575,7 +575,7 @@ describe("runner-react streamed failure handling", () => {
     ]);
 
     if (typeof result === "string") {
-      throw new Error("driver did not stop waiting after stream abort");
+      throw new Error("runner did not stop waiting after stream abort");
     }
 
     expect(() => assertRunnerExecutionResult(result)).not.toThrow();

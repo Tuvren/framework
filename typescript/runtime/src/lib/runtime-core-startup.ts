@@ -170,7 +170,7 @@ export function createExecutionLoopState(
     activeConfig: initialActiveConfig,
     activeRunnerId:
       resumedPauseContext?.activeRunnerId ??
-      handle.request.driverId ??
+      handle.request.runnerId ??
       host.defaultRunnerId(),
     activeToolRegistry:
       resumedPauseContext?.activeToolRegistry ??

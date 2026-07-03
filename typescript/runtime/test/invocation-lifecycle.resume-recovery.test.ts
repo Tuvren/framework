@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test drivers intentionally match the async framework driver contract.
+// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 
 /**
  * KRT-BA003: Cross-Class Resume and Recovery Semantics
@@ -26,10 +26,10 @@
  *    (tool execution is re-runnable; the approval-pause resume is the primary
  *    resumable path). On abort the turn fails clean — no fabricated results.
  *
- * 2. provider-native / provider-mediated: results are pre-staged in driver
+ * 2. provider-native / provider-mediated: results are pre-staged in runner
  *    messages before they reach the lifecycle observer. Recovery sees either
  *    a committed result (resolved from observed state) or no result (the
- *    driver iteration is re-run). No in-flight provider invocation state
+ *    runner iteration is re-run). No in-flight provider invocation state
  *    exists at the framework level — the framework can only observe, never
  *    fabricate, provider-owned results.
  *
@@ -127,13 +127,13 @@ describe("BA003 recovery semantics — provider-native / provider-mediated", () 
     "provider-native",
     "provider-mediated",
   ] as const) {
-    test(`${executionClass}: result resolves from observed driver output — not fabricated by framework`, async () => {
+    test(`${executionClass}: result resolves from observed runner output — not fabricated by framework`, async () => {
       const harness = createFakeKernelHarness();
       const expectedOutput = { value: 42, executionClass };
       const toolName = `ba003_${executionClass.replace("-", "_")}`;
 
-      const driver: RuntimeRunner = {
-        id: `ba003-driver-${executionClass}`,
+      const runner: RuntimeRunner = {
+        id: `ba003-runner-${executionClass}`,
         async execute(context) {
           if (!context.messages.some((m) => m.role === "tool")) {
             return {
@@ -158,8 +158,8 @@ describe("BA003 recovery semantics — provider-native / provider-mediated", () 
         },
       };
       const runtime = createTuvrenRuntime({
-        defaultRunnerId: `ba003-driver-${executionClass}`,
-        driverRegistry: createRunnerRegistry([driver]),
+        defaultRunnerId: `ba003-runner-${executionClass}`,
+        runnerRegistry: createRunnerRegistry([runner]),
         kernel: harness.kernel,
       });
       const thread = await runtime.createThread({});
@@ -179,7 +179,7 @@ describe("BA003 recovery semantics — provider-native / provider-mediated", () 
       // callId must match across start and result (same invocation record)
       expect(starts[0].callId).toBe(results[0].callId);
 
-      // Result is the exact observed driver output — framework did not fabricate it
+      // Result is the exact observed runner output — framework did not fabricate it
       const output = results[0].output as typeof expectedOutput;
       expect(output.value).toBe(42);
       expect(output.executionClass).toBe(executionClass);
@@ -201,8 +201,8 @@ describe("BA003 recovery semantics — provider-native / provider-mediated", () 
     // the async iterator even when they were enqueued synchronously.
     const harness = createFakeKernelHarness();
 
-    const driver: RuntimeRunner = {
-      id: "ba003-pair-driver",
+    const runner: RuntimeRunner = {
+      id: "ba003-pair-runner",
       async execute(context) {
         if (!context.messages.some((m) => m.role === "tool")) {
           return {
@@ -227,8 +227,8 @@ describe("BA003 recovery semantics — provider-native / provider-mediated", () 
       },
     };
     const runtime = createTuvrenRuntime({
-      defaultRunnerId: "ba003-pair-driver",
-      driverRegistry: createRunnerRegistry([driver]),
+      defaultRunnerId: "ba003-pair-runner",
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -282,8 +282,8 @@ describe("BA003 recovery semantics — tuvren-client", () => {
     };
     const boundary = createClientEndpointBoundary([staleEndpoint]);
 
-    const driver: RuntimeRunner = {
-      id: "ba003-stale-driver",
+    const runner: RuntimeRunner = {
+      id: "ba003-stale-runner",
       async execute(context) {
         if (!context.messages.some((m) => m.role === "tool")) {
           return {
@@ -306,8 +306,8 @@ describe("BA003 recovery semantics — tuvren-client", () => {
       },
     };
     const runtime = createTuvrenRuntime({
-      defaultRunnerId: "ba003-stale-driver",
-      driverRegistry: createRunnerRegistry([driver]),
+      defaultRunnerId: "ba003-stale-runner",
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -361,8 +361,8 @@ describe("BA003 recovery semantics — tuvren-client", () => {
     };
     const boundary = createClientEndpointBoundary([endpoint]);
 
-    const driver: RuntimeRunner = {
-      id: "ba003-unavail-driver",
+    const runner: RuntimeRunner = {
+      id: "ba003-unavail-runner",
       async execute(context) {
         if (!context.messages.some((m) => m.role === "tool")) {
           return {
@@ -385,8 +385,8 @@ describe("BA003 recovery semantics — tuvren-client", () => {
       },
     };
     const runtime = createTuvrenRuntime({
-      defaultRunnerId: "ba003-unavail-driver",
-      driverRegistry: createRunnerRegistry([driver]),
+      defaultRunnerId: "ba003-unavail-runner",
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
 
@@ -448,9 +448,9 @@ describe("BA003 recovery semantics — tuvren-client", () => {
     };
     const boundary = createClientEndpointBoundary([slowEndpoint]);
 
-    let driverSeenToolResult = false;
-    const driver: RuntimeRunner = {
-      id: "ba003-slow-driver",
+    let runnerSeenToolResult = false;
+    const runner: RuntimeRunner = {
+      id: "ba003-slow-runner",
       async execute(context) {
         if (!context.messages.some((m) => m.role === "tool")) {
           return {
@@ -463,7 +463,7 @@ describe("BA003 recovery semantics — tuvren-client", () => {
             toolExecutionMode: "parallel",
           };
         }
-        driverSeenToolResult = true;
+        runnerSeenToolResult = true;
         return {
           messages: [assistantText("done")],
           resolution: { reason: "done", type: "end_turn" },
@@ -474,8 +474,8 @@ describe("BA003 recovery semantics — tuvren-client", () => {
       },
     };
     const runtime = createTuvrenRuntime({
-      defaultRunnerId: "ba003-slow-driver",
-      driverRegistry: createRunnerRegistry([driver]),
+      defaultRunnerId: "ba003-slow-runner",
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -513,9 +513,9 @@ describe("BA003 recovery semantics — tuvren-client", () => {
     // The turn phase must be "failed" (not "completed")
     expect(handle.status().phase).toBe("failed");
 
-    // The driver must NOT have been called with the tool result from the slow dispatch,
-    // because cancel short-circuits the iteration loop before the next driver call.
-    expect(driverSeenToolResult).toBe(false);
+    // The runner must NOT have been called with the tool result from the slow dispatch,
+    // because cancel short-circuits the iteration loop before the next runner call.
+    expect(runnerSeenToolResult).toBe(false);
   });
 });
 
@@ -539,7 +539,7 @@ describe("BA003 no torn invocation record — all classes", () => {
         label: "tuvren-server",
         async run() {
           const harness = createFakeKernelHarness();
-          const driver: RuntimeRunner = {
+          const runner: RuntimeRunner = {
             id: "torn-server",
             async execute(ctx) {
               if (!ctx.messages.some((m) => m.role === "tool")) {
@@ -564,7 +564,7 @@ describe("BA003 no torn invocation record — all classes", () => {
           };
           const rt = createTuvrenRuntime({
             defaultRunnerId: "torn-server",
-            driverRegistry: createRunnerRegistry([driver]),
+            runnerRegistry: createRunnerRegistry([runner]),
             kernel: harness.kernel,
           });
           const th = await rt.createThread({});
@@ -591,7 +591,7 @@ describe("BA003 no torn invocation record — all classes", () => {
         label: "provider-native",
         async run() {
           const harness = createFakeKernelHarness();
-          const driver: RuntimeRunner = {
+          const runner: RuntimeRunner = {
             id: "torn-pn",
             async execute(ctx) {
               if (!ctx.messages.some((m) => m.role === "tool")) {
@@ -615,7 +615,7 @@ describe("BA003 no torn invocation record — all classes", () => {
           };
           const rt = createTuvrenRuntime({
             defaultRunnerId: "torn-pn",
-            driverRegistry: createRunnerRegistry([driver]),
+            runnerRegistry: createRunnerRegistry([runner]),
             kernel: harness.kernel,
           });
           const th = await rt.createThread({});
@@ -653,7 +653,7 @@ describe("BA003 no torn invocation record — all classes", () => {
             },
           };
           const boundary = createClientEndpointBoundary([endpoint]);
-          const driver: RuntimeRunner = {
+          const runner: RuntimeRunner = {
             id: "torn-client",
             async execute(ctx) {
               if (!ctx.messages.some((m) => m.role === "tool")) {
@@ -678,7 +678,7 @@ describe("BA003 no torn invocation record — all classes", () => {
           };
           const rt = createTuvrenRuntime({
             defaultRunnerId: "torn-client",
-            driverRegistry: createRunnerRegistry([driver]),
+            runnerRegistry: createRunnerRegistry([runner]),
             kernel: harness.kernel,
           });
           const th = await rt.createThread({});

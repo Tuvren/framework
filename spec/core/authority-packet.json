@@ -3,7 +3,7 @@
   "version": "1.7.0",
   "boundary": "framework",
   "surface": "core",
-  "description": "Merged shared-primitive authority packet for @tuvren/core. Absorbs tuvren.shared.core-types, tuvren.framework.runtime-api, tuvren.framework.event-stream, tuvren.framework.tool-contracts, and tuvren.framework.driver-api into a single packet with 10 binding sections per ADR-037 (Epic AP), ADR-042 (Epic AV), and ADR-046 (Epic AW: capabilities binding section added, capability JSON schemas authored in artifacts/json-schema/).",
+  "description": "Merged shared-primitive authority packet for @tuvren/core. Absorbs tuvren.shared.core-types, tuvren.framework.runtime-api, tuvren.framework.event-stream, tuvren.framework.tool-contracts, and tuvren.framework.runner-api into a single packet with 10 binding sections per ADR-037 (Epic AP), ADR-042 (Epic AV), and ADR-046 (Epic AW: capabilities binding section added, capability JSON schemas authored in artifacts/json-schema/).",
   "humanAuthorityRefs": [
     "docs/KrakenKernelSpecification.md",
     "docs/KrakenFrameworkSpecification.md",
@@ -15,7 +15,7 @@
     {
       "path": "spec/core/typespec/main.tsp",
       "format": "typespec",
-      "bindingSection": "errors,messages,events,execution,tools,provider,extensions,driver,telemetry"
+      "bindingSection": "errors,messages,events,execution,tools,provider,extensions,runner,telemetry"
     },
     {
       "path": "boundaries/framework/contracts/runtime-api/spec/typespec/main.tsp",
@@ -35,7 +35,7 @@
     {
       "path": "spec/runners/typespec/main.tsp",
       "format": "typespec",
-      "bindingSection": "driver"
+      "bindingSection": "runner"
     },
     {
       "path": "spec/conformance/engine/plans/runtime-api-lifecycle.json",
@@ -70,11 +70,11 @@
       "format": "conformance-plan"
     },
     {
-      "path": "spec/conformance/runners/plans/driver-api-core.json",
+      "path": "spec/conformance/runners/plans/runner-api-core.json",
       "format": "conformance-plan"
     },
     {
-      "path": "spec/conformance/runners/plans/driver-api-extended.json",
+      "path": "spec/conformance/runners/plans/runner-api-extended.json",
       "format": "conformance-plan"
     },
     {
@@ -156,14 +156,14 @@
       "path": "spec/conformance/tools/plans/tool-contracts-extended.json"
     },
     {
-      "planId": "tuvren.framework.driver-api.core",
+      "planId": "tuvren.framework.runner-api.core",
       "planVersion": "0.1.0",
-      "path": "spec/conformance/runners/plans/driver-api-core.json"
+      "path": "spec/conformance/runners/plans/runner-api-core.json"
     },
     {
-      "planId": "tuvren.framework.driver-api.extended",
+      "planId": "tuvren.framework.runner-api.extended",
       "planVersion": "0.1.0",
-      "path": "spec/conformance/runners/plans/driver-api-extended.json"
+      "path": "spec/conformance/runners/plans/runner-api-extended.json"
     },
     {
       "planId": "tuvren.framework.runtime-api.batteries-included",
@@ -220,8 +220,8 @@
     "tools": {
       "description": "TuvrenToolDefinition, approval types, tool execution contracts"
     },
-    "driver": {
-      "description": "RuntimeDriver, DriverExecutionContext, driver contracts"
+    "runner": {
+      "description": "RuntimeRunner, RunnerExecutionContext, runner contracts"
     },
     "provider": {
       "description": "TuvrenProvider, ProviderStreamChunk, model response/prompt types"
@@ -298,11 +298,11 @@
     },
     {
       "kind": "conformance-plan",
-      "target": "spec/conformance/runners/plans/driver-api-core.json"
+      "target": "spec/conformance/runners/plans/runner-api-core.json"
     },
     {
       "kind": "conformance-plan",
-      "target": "spec/conformance/runners/plans/driver-api-extended.json"
+      "target": "spec/conformance/runners/plans/runner-api-extended.json"
     },
     {
       "kind": "conformance-plan",

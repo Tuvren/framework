@@ -25,42 +25,42 @@ import {
 type RunnerEntry = KrakenRunner | KrakenRunnerFactory;
 
 class BasicRunnerRegistry implements RunnerRegistry {
-  private readonly drivers = new Map<string, RunnerEntry>();
+  private readonly runners = new Map<string, RunnerEntry>();
 
   list(): RunnerEntry[] {
-    return [...this.drivers.values()];
+    return [...this.runners.values()];
   }
 
-  register(driver: RunnerEntry): void {
-    const driverId = getRunnerId(driver);
+  register(runner: RunnerEntry): void {
+    const runnerId = getRunnerId(runner);
 
-    if (this.drivers.has(driverId)) {
+    if (this.runners.has(runnerId)) {
       throw new TuvrenRuntimeError(
-        `driver "${driverId}" is already registered`,
+        `runner "${runnerId}" is already registered`,
         {
-          code: "duplicate_driver_registration",
+          code: "duplicate_runner_registration",
           details: {
-            driverId,
+            runnerId,
           },
         }
       );
     }
 
-    this.drivers.set(driverId, driver);
+    this.runners.set(runnerId, runner);
   }
 
-  resolve(driverId: string): RunnerEntry | undefined {
-    return this.drivers.get(driverId);
+  resolve(runnerId: string): RunnerEntry | undefined {
+    return this.runners.get(runnerId);
   }
 }
 
 export function createRunnerRegistry(
-  drivers: RunnerEntry[] = []
+  runners: RunnerEntry[] = []
 ): RunnerRegistry {
   const registry = new BasicRunnerRegistry();
 
-  for (const driver of drivers) {
-    registry.register(driver);
+  for (const runner of runners) {
+    registry.register(runner);
   }
 
   return registry;
@@ -72,19 +72,19 @@ export function materializeRunner(entry: RunnerEntry): KrakenRunner {
       ? entry.create()
       : entry;
 
-  assertKrakenRunner(candidate, "driver");
+  assertKrakenRunner(candidate, "runner");
   return candidate;
 }
 
-function getRunnerId(driver: RunnerEntry): string {
-  if (typeof driver.id === "string" && driver.id.trim().length > 0) {
-    return driver.id;
+function getRunnerId(runner: RunnerEntry): string {
+  if (typeof runner.id === "string" && runner.id.trim().length > 0) {
+    return runner.id;
   }
 
-  throw new TuvrenRuntimeError("drivers must expose a non-empty id", {
-    code: "invalid_driver_registration",
+  throw new TuvrenRuntimeError("runners must expose a non-empty id", {
+    code: "invalid_runner_registration",
     details: {
-      driver,
+      runner,
     },
   });
 }

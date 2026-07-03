@@ -25,7 +25,7 @@ union TuvrenJsonSchema {
   boolean: boolean,
 }
 
-@doc("Stable neutral error envelope shared by runtime, driver, provider, and adapter seams.")
+@doc("Stable neutral error envelope shared by runtime, runner, provider, and adapter seams.")
 model ErrorEnvelope {
   code: NonEmptyString;
   message: string;
@@ -216,7 +216,7 @@ union ExecutionBoundKind {
   maxWallClockMs: "maxWallClockMs",
 }
 
-@doc("Framework-enforced per-turn execution bounds (ADR-043 §3.11), applied above the driver's loop policy. Unset fields take the documented safe defaults; every configured bound must be a finite positive integer. A driver cannot raise or disable a bound.")
+@doc("Framework-enforced per-turn execution bounds (ADR-043 §3.11), applied above the runner's loop policy. Unset fields take the documented safe defaults; every configured bound must be a finite positive integer. A runner cannot raise or disable a bound.")
 model ExecutionBounds {
   @doc("Maximum ReAct iterations per turn. Default 64.")
   @minValue(1)

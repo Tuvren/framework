@@ -44,7 +44,7 @@ import {
   createConformanceIdFactory,
   createConformanceKernelHarness,
   createStaticRunner,
-  DRIVER_ID,
+  RUNNER_ID,
   textSignal,
 } from "./framework-adapter-runtime.ts";
 
@@ -176,7 +176,7 @@ function noopTool(name: string): TuvrenToolDefinition {
 // ---------------------------------------------------------------------------
 // Operation: runtime.execution-bounds.max-iterations
 //
-// A runaway driver that always continues breaches maxIterations. The agent also
+// A runaway runner that always continues breaches maxIterations. The agent also
 // requests a far larger maxIterations to prove the bound clamps it from above.
 // ---------------------------------------------------------------------------
 
@@ -186,8 +186,8 @@ export async function runExecutionBoundsMaxIterations(): Promise<AdapterProjecti
   const runtime = createTuvrenRuntimeCore({
     bounds: { maxIterations: 3 },
     createId: createConformanceIdFactory(),
-    defaultRunnerId: DRIVER_ID,
-    driverRegistry: createRunnerRegistry([runawayTextRunner]),
+    defaultRunnerId: RUNNER_ID,
+    runnerRegistry: createRunnerRegistry([runawayTextRunner]),
     kernel: harness.kernel,
     now: createDeterministicClock(),
     telemetry: capture.sink,
@@ -214,7 +214,7 @@ export async function runExecutionBoundsMaxIterations(): Promise<AdapterProjecti
 export async function runExecutionBoundsMaxToolCalls(): Promise<AdapterProjection> {
   const capture = createBoundsTelemetryCapture();
   const harness = createConformanceKernelHarness();
-  const driver = createStaticRunner(async () => {
+  const runner = createStaticRunner(async () => {
     await Promise.resolve();
     return {
       messages: [
@@ -231,8 +231,8 @@ export async function runExecutionBoundsMaxToolCalls(): Promise<AdapterProjectio
   const runtime = createTuvrenRuntimeCore({
     bounds: { maxIterations: 100, maxToolCalls: 2 },
     createId: createConformanceIdFactory(),
-    defaultRunnerId: DRIVER_ID,
-    driverRegistry: createRunnerRegistry([driver]),
+    defaultRunnerId: RUNNER_ID,
+    runnerRegistry: createRunnerRegistry([runner]),
     kernel: harness.kernel,
     now: createDeterministicClock(),
     telemetry: capture.sink,
@@ -252,7 +252,7 @@ export async function runExecutionBoundsMaxToolCalls(): Promise<AdapterProjectio
 // ---------------------------------------------------------------------------
 // Operation: runtime.execution-bounds.max-wall-clock
 //
-// Deterministic loop-boundary breach: a runaway driver under a clock that
+// Deterministic loop-boundary breach: a runaway runner under a clock that
 // advances past the deadline trips the wall-clock check at an iteration
 // boundary, finalizing cleanly (fatal error event before the failed turn.end)
 // with a bounded-execution telemetry event. The in-flight tool-abort and
@@ -260,7 +260,7 @@ export async function runExecutionBoundsMaxToolCalls(): Promise<AdapterProjectio
 // ---------------------------------------------------------------------------
 
 export async function runExecutionBoundsMaxWallClock(): Promise<AdapterProjection> {
-  // Deterministic loop-boundary breach: a runaway driver under a clock that
+  // Deterministic loop-boundary breach: a runaway runner under a clock that
   // advances past the deadline trips the wall-clock check at an iteration
   // boundary, finalizing cleanly (fatal error event before the failed turn.end).
   const capture = createBoundsTelemetryCapture();
@@ -268,8 +268,8 @@ export async function runExecutionBoundsMaxWallClock(): Promise<AdapterProjectio
   const runtime = createTuvrenRuntimeCore({
     bounds: { maxIterations: 100_000, maxWallClockMs: 50 },
     createId: createConformanceIdFactory(),
-    defaultRunnerId: DRIVER_ID,
-    driverRegistry: createRunnerRegistry([runawayTextRunner]),
+    defaultRunnerId: RUNNER_ID,
+    runnerRegistry: createRunnerRegistry([runawayTextRunner]),
     kernel: harness.kernel,
     now: createDeterministicClock(),
     telemetry: capture.sink,
@@ -292,7 +292,7 @@ export async function runExecutionBoundsMaxWallClock(): Promise<AdapterProjectio
 // Exercises signal delivery and late-completion ignoring through the OWNED tool
 // path. The tool awaits its cooperative cancellation signal; the real wall-clock
 // abort timer fires, the tool observes the abort and completes late, and the
-// turn finalizes as the bounds failure rather than the driver's later end_turn.
+// turn finalizes as the bounds failure rather than the runner's later end_turn.
 // ---------------------------------------------------------------------------
 
 export async function runExecutionBoundsWallClockSignalDelivery(): Promise<AdapterProjection> {
@@ -320,7 +320,7 @@ export async function runExecutionBoundsWallClockSignalDelivery(): Promise<Adapt
     name: "hang",
   };
 
-  const driver = createStaticRunner(async (context) => {
+  const runner = createStaticRunner(async (context) => {
     await Promise.resolve();
     if (context.messages.some((message) => message.role === "tool")) {
       return {
@@ -343,8 +343,8 @@ export async function runExecutionBoundsWallClockSignalDelivery(): Promise<Adapt
     // (the tool hangs indefinitely until aborted).
     bounds: { maxWallClockMs: 150 },
     createId: createConformanceIdFactory(),
-    defaultRunnerId: DRIVER_ID,
-    driverRegistry: createRunnerRegistry([driver]),
+    defaultRunnerId: RUNNER_ID,
+    runnerRegistry: createRunnerRegistry([runner]),
     kernel: harness.kernel,
     telemetry: capture.sink,
   });
@@ -373,7 +373,7 @@ export async function runExecutionBoundsWallClockSignalDelivery(): Promise<Adapt
 // ---------------------------------------------------------------------------
 // Operation: runtime.execution-bounds.concurrency-throttle
 //
-// A driver requesting three parallel tool calls with a high agent parallelism
+// A runner requesting three parallel tool calls with a high agent parallelism
 // is clamped to maxConcurrentToolCalls = 1; the probe tool records the maximum
 // observed concurrency.
 // ---------------------------------------------------------------------------
@@ -398,7 +398,7 @@ export async function runExecutionBoundsConcurrencyThrottle(): Promise<AdapterPr
     name: "probe",
   };
 
-  const driver = createStaticRunner(async (context) => {
+  const runner = createStaticRunner(async (context) => {
     await Promise.resolve();
     if (context.messages.some((message) => message.role === "tool")) {
       return {
@@ -426,8 +426,8 @@ export async function runExecutionBoundsConcurrencyThrottle(): Promise<AdapterPr
     // defaultMaxParallelToolCalls request 10; the bound clamps the effective
     // parallelism to 1.
     defaultMaxParallelToolCalls: 10,
-    defaultRunnerId: DRIVER_ID,
-    driverRegistry: createRunnerRegistry([driver]),
+    defaultRunnerId: RUNNER_ID,
+    runnerRegistry: createRunnerRegistry([runner]),
     kernel: harness.kernel,
   });
   const thread = await runtime.createThread({});
@@ -467,8 +467,8 @@ export async function runExecutionBoundsInvalidConfig(): Promise<AdapterProjecti
       createTuvrenRuntimeCore({
         bounds: { maxIterations: value },
         createId: createConformanceIdFactory(),
-        defaultRunnerId: DRIVER_ID,
-        driverRegistry: createRunnerRegistry([runawayTextRunner]),
+        defaultRunnerId: RUNNER_ID,
+        runnerRegistry: createRunnerRegistry([runawayTextRunner]),
         kernel: harness.kernel,
       });
       return { code: null, rejected: false, value: String(value) };
@@ -491,7 +491,7 @@ export async function runExecutionBoundsInvalidConfig(): Promise<AdapterProjecti
 
 export async function runExecutionBoundsWithinBounds(): Promise<AdapterProjection> {
   const harness = createConformanceKernelHarness();
-  const driver = createStaticRunner(async () => {
+  const runner = createStaticRunner(async () => {
     await Promise.resolve();
     return {
       messages: [assistantText("all done")],
@@ -500,8 +500,8 @@ export async function runExecutionBoundsWithinBounds(): Promise<AdapterProjectio
   });
   const runtime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
-    defaultRunnerId: DRIVER_ID,
-    driverRegistry: createRunnerRegistry([driver]),
+    defaultRunnerId: RUNNER_ID,
+    runnerRegistry: createRunnerRegistry([runner]),
     kernel: harness.kernel,
     now: createDeterministicClock(),
   });

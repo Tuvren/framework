@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test drivers intentionally match the async framework driver contract.
+// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 
 /**
  * KRT-BA004: Lifecycle Telemetry Depth
@@ -106,7 +106,7 @@ describe("BA004 lifecycle telemetry — keyed to runtime lineage", () => {
     const capture = createTelemetryCapture();
     const harness = createFakeKernelHarness();
     const toolName = "ba004_server_tool";
-    const driver: RuntimeRunner = {
+    const runner: RuntimeRunner = {
       id: "ba004-server",
       async execute(ctx) {
         if (!ctx.messages.some((m) => m.role === "tool")) {
@@ -129,7 +129,7 @@ describe("BA004 lifecycle telemetry — keyed to runtime lineage", () => {
     };
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "ba004-server",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
       telemetry: capture.sink,
     });
@@ -172,7 +172,7 @@ describe("BA004 lifecycle telemetry — keyed to runtime lineage", () => {
   test("provider-native tool_call span carries threadId and branchId in lineage", async () => {
     const capture = createTelemetryCapture();
     const harness = createFakeKernelHarness();
-    const driver: RuntimeRunner = {
+    const runner: RuntimeRunner = {
       id: "ba004-pn",
       async execute(ctx) {
         if (!ctx.messages.some((m) => m.role === "tool")) {
@@ -194,7 +194,7 @@ describe("BA004 lifecycle telemetry — keyed to runtime lineage", () => {
     };
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "ba004-pn",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
       telemetry: capture.sink,
     });
@@ -238,7 +238,7 @@ describe("BA004 lifecycle telemetry — no secret material", () => {
     const capture = createTelemetryCapture();
     const harness = createFakeKernelHarness();
     const toolName = "ba004_secret_check_tool";
-    const driver: RuntimeRunner = {
+    const runner: RuntimeRunner = {
       id: "ba004-secret",
       async execute(ctx) {
         if (!ctx.messages.some((m) => m.role === "tool")) {
@@ -267,7 +267,7 @@ describe("BA004 lifecycle telemetry — no secret material", () => {
     };
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "ba004-secret",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
       telemetry: capture.sink,
     });

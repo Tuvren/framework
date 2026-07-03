@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test drivers intentionally match the async framework driver contract.
+// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 import { describe, expect, test } from "bun:test";
 import type { RuntimeRunner as KrakenRunner } from "@tuvren/core/runner";
 import {
@@ -33,7 +33,7 @@ import {
 describe("framework-runtime-core awaitResult", () => {
   test("resolves with status=completed and the final assistant message on a successful turn", async () => {
     const harness = createFakeKernelHarness();
-    const driver = {
+    const runner = {
       async execute(context) {
         context.runtime.emit({
           messageId: "msg-1",
@@ -70,7 +70,7 @@ describe("framework-runtime-core awaitResult", () => {
 
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -95,9 +95,9 @@ describe("framework-runtime-core awaitResult", () => {
     });
   });
 
-  test("resolves (does not reject) with status=failed when the driver returns an error resolution", async () => {
+  test("resolves (does not reject) with status=failed when the runner returns an error resolution", async () => {
     const harness = createFakeKernelHarness();
-    const driver = {
+    const runner = {
       async execute() {
         return {
           messages: JSON.parse('[{"role":"assistant","parts":[123]}]'),
@@ -109,7 +109,7 @@ describe("framework-runtime-core awaitResult", () => {
 
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -132,10 +132,10 @@ describe("framework-runtime-core awaitResult", () => {
 
   test("rejects with TuvrenRuntimeError code=execution_cancelled when the execution is cancelled mid-run", async () => {
     const harness = createFakeKernelHarness();
-    let driverStarted = false;
-    const driver = {
+    let runnerStarted = false;
+    const runner = {
       async execute(context) {
-        driverStarted = true;
+        runnerStarted = true;
         await waitForAbort(context.signal);
 
         return {
@@ -147,7 +147,7 @@ describe("framework-runtime-core awaitResult", () => {
 
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -159,7 +159,7 @@ describe("framework-runtime-core awaitResult", () => {
     });
 
     const resultPromise = handle.awaitResult();
-    await waitFor(() => driverStarted);
+    await waitFor(() => runnerStarted);
     handle.cancel();
 
     await expect(resultPromise).rejects.toMatchObject({
@@ -171,7 +171,7 @@ describe("framework-runtime-core awaitResult", () => {
   test("rejects with execution_cancelled when cancel() is called before awaitResult() starts execution", async () => {
     const harness = createFakeKernelHarness();
     let executeCalls = 0;
-    const driver = {
+    const runner = {
       async execute() {
         executeCalls += 1;
         return {
@@ -184,7 +184,7 @@ describe("framework-runtime-core awaitResult", () => {
 
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -207,7 +207,7 @@ describe("framework-runtime-core awaitResult", () => {
 
   test("returns the same ExecutionResult when awaited multiple times (idempotent)", async () => {
     const harness = createFakeKernelHarness();
-    const driver = {
+    const runner = {
       async execute() {
         return {
           messages: [assistantText("Done.")],
@@ -219,7 +219,7 @@ describe("framework-runtime-core awaitResult", () => {
 
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -243,7 +243,7 @@ describe("framework-runtime-core awaitResult", () => {
 
   test("does not interfere with concurrent events() iteration", async () => {
     const harness = createFakeKernelHarness();
-    const driver = {
+    const runner = {
       async execute(context) {
         context.runtime.emit({
           messageId: "msg-2",
@@ -280,7 +280,7 @@ describe("framework-runtime-core awaitResult", () => {
 
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -302,6 +302,6 @@ describe("framework-runtime-core awaitResult", () => {
   });
 });
 
-function createRunnerRegistry(drivers: KrakenRunner[] = []) {
-  return createBaseRunnerRegistry(drivers);
+function createRunnerRegistry(runners: KrakenRunner[] = []) {
+  return createBaseRunnerRegistry(runners);
 }

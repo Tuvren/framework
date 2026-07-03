@@ -164,7 +164,7 @@ export async function handleExecutionFailure(
   handle.rememberError(projectError(effectiveError));
   const loopState: LoopState = {
     activeConfig: failureActiveConfig,
-    activeRunnerId: handle.request.driverId ?? host.defaultRunnerId(),
+    activeRunnerId: handle.request.runnerId ?? host.defaultRunnerId(),
     activeToolRegistry: createToolRegistry(),
     carriedStateUpdates: [],
     enteredIterationLoop: false,

@@ -97,11 +97,11 @@
       "surface": "approval resume semantics"
     },
     {
-      "adapterOperation": "driver.execute",
-      "capabilityRequirement": "framework.react-driver",
+      "adapterOperation": "runner.execute",
+      "capabilityRequirement": "framework.react-runner",
       "checkIds": [
-        "react-driver-af.around-model-post-stream-replacement",
-        "react-driver-af.around-model-retry-final-response-durable"
+        "react-runner-af.around-model-post-stream-replacement",
+        "react-runner-af.around-model-retry-final-response-durable"
       ],
       "deliveryTicket": "KRT-AF003",
       "disposition": "promote",
@@ -113,14 +113,14 @@
         "aroundModel.streamedTextDone",
         "provider.generate.callCount"
       ],
-      "adapterCapability": "framework.react-driver",
+      "adapterCapability": "framework.react-runner",
       "authorityPacket": "spec/runners/react/authority-packet.json",
       "claimIds": ["FWK-607FBC20FD59", "FWK-AF60C9581BAB"],
       "classifications": ["authority-backed-conformance-covered"],
       "compatibilityEvidence": "reports/compatibility/evidence/certification-harness.framework-typescript-certification.json",
-      "conformancePlan": "spec/conformance/runners/plans/react-driver-callables.json; spec/conformance/runners/plans/react-driver-extended.json",
-      "fixture": "spec/conformance/runners/scenarios/driver-api-scenarios.json",
-      "generatedArtifact": "N/A - react-driver packet is conformance-plan authority without generated schema artifacts",
+      "conformancePlan": "spec/conformance/runners/plans/react-runner-callables.json; spec/conformance/runners/plans/react-runner-extended.json",
+      "fixture": "spec/conformance/runners/scenarios/runner-api-scenarios.json",
+      "generatedArtifact": "N/A - react-runner packet is conformance-plan authority without generated schema artifacts",
       "matrixFollowUpTickets": ["KRT-AF003"],
       "surface": "aroundModel live/durable reconciliation"
     },
@@ -133,7 +133,7 @@
         "runtime-lifecycle-af.cancel-running-stages-partial-status",
         "runtime-lifecycle-af.context-transform-preserves-source-checkpoint",
         "runtime-lifecycle-af.context-transform-creates-new-tree-heads",
-        "runtime-lifecycle-af.context-transform-driver-sees-rewritten-context"
+        "runtime-lifecycle-af.context-transform-runner-sees-rewritten-context"
       ],
       "conformancePlan": "spec/conformance/engine/plans/runtime-api-lifecycle-extended.json",
       "deliveryTicket": "KRT-AF001",
@@ -148,7 +148,7 @@
         "context.rewrittenMessageCount",
         "context.createdNewHead",
         "context.snapshotMessageCounts",
-        "context.driverObservedMessageCount"
+        "context.runnerObservedMessageCount"
       ],
       "adapterCapability": "framework.runtime-api",
       "claimIds": ["FWK-0A368D92CB9D", "FWK-A346B29D8195", "FWK-A9611C7D2C6F"],
@@ -293,16 +293,16 @@
       "surface": "kernel recovery edge states"
     },
     {
-      "adapterOperation": "driver.execute",
-      "capabilityRequirement": "framework.react-driver",
+      "adapterOperation": "runner.execute",
+      "capabilityRequirement": "framework.react-runner",
       "checkIds": [
-        "react-driver-af.extension.phase-order-before-around-after",
-        "react-driver-af.extension.around-tool-nesting",
-        "react-driver-af.extension.after-iteration-terminal-state-nondurable"
+        "react-runner-af.extension.phase-order-before-around-after",
+        "react-runner-af.extension.around-tool-nesting",
+        "react-runner-af.extension.after-iteration-terminal-state-nondurable"
       ],
       "deliveryTicket": "KRT-AF003",
       "disposition": "promote",
-      "evidenceUpdate": "Refresh TypeScript and Rust-framework non-applicable compatibility evidence after react-driver-extended gains AF checks.",
+      "evidenceUpdate": "Refresh TypeScript and Rust-framework non-applicable compatibility evidence after react-runner-extended gains AF checks.",
       "rationale": "Hook ordering and around-hook nesting are portable ReAct behavior; adapter observations must expose traces, not expected sequences.",
       "requiredEvidence": [
         "hooks.phaseTrace",
@@ -310,7 +310,7 @@
         "hooks.terminalMutationAttempted",
         "hooks.terminalMutationDurableText"
       ],
-      "adapterCapability": "framework.react-driver",
+      "adapterCapability": "framework.react-runner",
       "authorityPacket": "spec/runners/react/authority-packet.json",
       "claimIds": [
         "FWK-08DEAA2A61A3",
@@ -327,28 +327,28 @@
       ],
       "classifications": ["authority-backed-conformance-covered"],
       "compatibilityEvidence": "reports/compatibility/evidence/certification-harness.framework-typescript-certification.json",
-      "conformancePlan": "spec/conformance/runners/plans/react-driver-callables.json; spec/conformance/runners/plans/react-driver-extended.json",
-      "fixture": "spec/conformance/runners/scenarios/driver-api-scenarios.json",
-      "generatedArtifact": "N/A - react-driver packet is conformance-plan authority without generated schema artifacts",
+      "conformancePlan": "spec/conformance/runners/plans/react-runner-callables.json; spec/conformance/runners/plans/react-runner-extended.json",
+      "fixture": "spec/conformance/runners/scenarios/runner-api-scenarios.json",
+      "generatedArtifact": "N/A - react-runner packet is conformance-plan authority without generated schema artifacts",
       "matrixFollowUpTickets": ["KRT-AF003"],
       "surface": "ReAct and extension hooks"
     },
     {
-      "adapterOperation": "driver.execute",
-      "capabilityRequirement": "framework.driver-api",
-      "checkIds": ["driver-api-af.invalid-loop-policy-tool-call-hard-fail"],
+      "adapterOperation": "runner.execute",
+      "capabilityRequirement": "framework.runner-api",
+      "checkIds": ["runner-api-af.invalid-loop-policy-tool-call-hard-fail"],
       "deliveryTicket": "KRT-AF003",
       "disposition": "promote",
       "evidenceUpdate": "Refresh framework compatibility evidence with invalid_loop_policy error envelope.",
-      "rationale": "Invalid tool-call loop-policy combinations are shared driver-seam behavior.",
-      "requiredEvidence": ["driver.resolutionType", "result.error.code"],
-      "adapterCapability": "framework.driver-api",
+      "rationale": "Invalid tool-call loop-policy combinations are shared runner-seam behavior.",
+      "requiredEvidence": ["runner.resolutionType", "result.error.code"],
+      "adapterCapability": "framework.runner-api",
       "authorityPacket": "spec/core/authority-packet.json",
       "claimIds": ["FWK-7321FBA0BDB5"],
       "classifications": ["authority-backed-conformance-covered"],
       "compatibilityEvidence": "reports/compatibility/evidence/certification-harness.framework-typescript-certification.json",
-      "conformancePlan": "spec/conformance/runners/plans/driver-api-core.json; spec/conformance/runners/plans/driver-api-extended.json",
-      "fixture": "spec/conformance/runners/scenarios/driver-api-scenarios.json",
+      "conformancePlan": "spec/conformance/runners/plans/runner-api-core.json; spec/conformance/runners/plans/runner-api-extended.json",
+      "fixture": "spec/conformance/runners/scenarios/runner-api-scenarios.json",
       "generatedArtifact": "spec/runners/artifacts/json-schema",
       "matrixFollowUpTickets": ["KRT-AF003"],
       "surface": "runtime loop policy"

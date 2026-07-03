@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://tuvren.dev/schemas/framework/driver-api/FailResolution.json",
+  "$id": "https://tuvren.dev/schemas/framework/runner-api/FailResolution.json",
   "type": "object",
   "properties": {
     "type": {
@@ -8,7 +8,7 @@
       "const": "fail"
     },
     "error": {
-      "$ref": "https://tuvren.dev/schemas/framework/driver-api/ErrorEnvelope.json"
+      "$ref": "https://tuvren.dev/schemas/framework/runner-api/ErrorEnvelope.json"
     },
     "fatality": {
       "anyOf": [

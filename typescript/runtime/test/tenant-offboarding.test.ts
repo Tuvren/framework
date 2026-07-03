@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test drivers intentionally match the async framework driver contract.
+// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 
 // KRT-BF006 — Framework Maintenance Surface + Tenant-Offboarding Flow (ADR-051,
 // architecture flow §4.17).
@@ -71,7 +71,7 @@ function buildTenant(input: {
   const kernel = createRuntimeKernel({ backend });
   const framework = createTuvrenRuntime({
     defaultRunnerId: "fake",
-    driverRegistry: createRunnerRegistry([
+    runnerRegistry: createRunnerRegistry([
       createStaticRunner(async () => ({
         messages: [assistantText(input.providerSecret)],
         resolution: { reason: "done", type: "end_turn" },

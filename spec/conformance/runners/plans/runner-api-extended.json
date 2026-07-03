@@ -1,0 +1,164 @@
+{
+  "applicability": {
+    "capabilities": ["framework.runner-api"]
+  },
+  "checks": [
+    {
+      "assertions": [
+        {
+          "equals": "completed",
+          "field": "$.runner.phase",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "runner-api-ext.execute.hook-turn-phase-completed",
+      "input": {
+        "scenarioPath": "$.runner-hook-turn"
+      },
+      "operation": "runner.execute",
+      "scenario": "runner-api-scenarios",
+      "evidence": ["result.runner.phase"]
+    },
+    {
+      "assertions": [
+        {
+          "field": "$.runner.phase",
+          "kind": "resultField",
+          "matches": "^(running|paused|completed|failed)$"
+        }
+      ],
+      "checkId": "runner-api-ext.execute.hook-turn-phase-string",
+      "input": {
+        "scenarioPath": "$.runner-hook-turn"
+      },
+      "operation": "runner.execute",
+      "scenario": "runner-api-scenarios",
+      "evidence": ["result.runner.phase"]
+    },
+    {
+      "assertions": [
+        {
+          "kind": "errorEnvelope",
+          "path": "$.result.error"
+        }
+      ],
+      "checkId": "runner-api-ext.execute.provider-failure-error-envelope",
+      "evidence": ["result.error.code"],
+      "input": {
+        "scenarioPath": "$.runner-provider-failure"
+      },
+      "operation": "runner.execute",
+      "scenario": "runner-api-scenarios"
+    },
+    {
+      "assertions": [
+        {
+          "equals": "fail",
+          "field": "$.runner.resolutionType",
+          "kind": "resultField"
+        },
+        {
+          "equals": "invalid_loop_policy",
+          "field": "$.runner.errorCode",
+          "kind": "resultField"
+        },
+        {
+          "kind": "errorEnvelope",
+          "path": "$.result.error"
+        }
+      ],
+      "checkId": "runner-api-af.invalid-loop-policy-tool-call-hard-fail",
+      "input": {
+        "scenarioPath": "$.runner-invalid-loop-policy-tool-call"
+      },
+      "operation": "runner.execute",
+      "scenario": "runner-api-scenarios",
+      "evidence": ["runner.resolutionType", "result.error.code"]
+    },
+    {
+      "assertions": [
+        {
+          "equals": "end_turn",
+          "field": "$.runner.resolutionType",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "runner-api-ext.resume.approval-resolution-end-turn",
+      "input": {
+        "scenarioPath": "$.runner-resume-approval"
+      },
+      "operation": "runner.resume",
+      "scenario": "runner-api-scenarios",
+      "evidence": ["result.runner.resolutionType"]
+    },
+    {
+      "assertions": [
+        {
+          "contains": "call-search",
+          "field": "$.runner.pendingToolCallIds",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "runner-api-ext.resume.approval-pending-call-id-list-non-empty",
+      "input": {
+        "scenarioPath": "$.runner-resume-approval"
+      },
+      "operation": "runner.resume",
+      "scenario": "runner-api-scenarios",
+      "evidence": ["result.runner.pendingToolCallIds"]
+    },
+    {
+      "assertions": [
+        {
+          "contains": "call-search",
+          "field": "$.runner.approvalDecisionCallIds",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "runner-api-ext.resume.approval-decision-call-id-includes-call-search",
+      "input": {
+        "scenarioPath": "$.runner-resume-approval"
+      },
+      "operation": "runner.resume",
+      "scenario": "runner-api-scenarios",
+      "evidence": ["result.runner.approvalDecisionCallIds"]
+    },
+    {
+      "assertions": [
+        {
+          "equals": "fail",
+          "field": "$.runner.resolutionType",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "runner-api-ext.resume.missing-pending-call-resolution-fail",
+      "input": {
+        "scenarioPath": "$.runner-resume-missing-pending-call"
+      },
+      "operation": "runner.resume",
+      "scenario": "runner-api-scenarios",
+      "evidence": ["result.runner.resolutionType"]
+    },
+    {
+      "assertions": [
+        {
+          "kind": "errorEnvelope",
+          "path": "$.result.error"
+        }
+      ],
+      "checkId": "runner-api-ext.resume.missing-pending-call-error-envelope",
+      "evidence": ["result.error.code"],
+      "input": {
+        "scenarioPath": "$.runner-resume-missing-pending-call"
+      },
+      "operation": "runner.resume",
+      "scenario": "runner-api-scenarios"
+    }
+  ],
+  "packetId": "tuvren.shared.core",
+  "planId": "tuvren.framework.runner-api.extended",
+  "planVersion": "0.1.0",
+  "scenarios": {
+    "runner-api-scenarios": "../scenarios/runner-api-scenarios.json"
+  }
+}

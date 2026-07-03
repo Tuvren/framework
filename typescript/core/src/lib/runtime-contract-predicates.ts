@@ -27,7 +27,7 @@ import type {
   TuvrenJsonValue,
 } from "./runtime-contract-shapes.js";
 
-const EVENT_SOURCE_KEYS = new Set(["agent", "driver", "threadId", "workerId"]);
+const EVENT_SOURCE_KEYS = new Set(["agent", "runner", "threadId", "workerId"]);
 const PROVIDER_USAGE_KEYS = new Set(["inputTokens", "outputTokens"]);
 const KRAKEN_ERROR_PROJECTION_KEYS = new Set(["message", "code", "details"]);
 const JSON_SCHEMA_TYPE_NAMES = new Set([
@@ -346,9 +346,9 @@ export function isEventSource(value: unknown): value is EventSource {
   }
 
   if (
-    "driver" in value &&
-    value.driver !== undefined &&
-    !isNonEmptyStringProperty(value, "driver")
+    "runner" in value &&
+    value.runner !== undefined &&
+    !isNonEmptyStringProperty(value, "runner")
   ) {
     return false;
   }

@@ -547,7 +547,7 @@ async function resolveExecutableToolCall(
     // BB002: risk-based approval gate. When the policy engine signals that
     // this capability requires explicit approval (e.g. high-risk class), gate
     // execution through the existing pending-approval flow. The framework
-    // owns this decision above driver discretion per §4.21 / ADR-046.
+    // owns this decision above runner discretion per §4.21 / ADR-046.
     if (decision.requiresApproval === true) {
       return {
         pendingToolCall: createPendingToolCall(

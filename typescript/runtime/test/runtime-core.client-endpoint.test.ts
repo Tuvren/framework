@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test drivers intentionally match the async framework driver contract.
+// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 
 /**
  * Integration tests for the Tuvren-client execution class through the full
@@ -144,10 +144,10 @@ function makeClientMcpEndpoint(
   };
 }
 
-/** Build a driver that requests one tool call then ends. */
+/** Build a runner that requests one tool call then ends. */
 function makeOneCallRunner(toolName: string, input: unknown = {}) {
   return {
-    id: "test-driver",
+    id: "test-runner",
     execute(context: RunnerExecutionContext): Promise<RunnerExecutionResult> {
       const hasToolResult = context.messages.some((m) => m.role === "tool");
       if (!hasToolResult) {
@@ -173,11 +173,11 @@ async function runTurnWithClientEndpoint(
   input: unknown = {}
 ) {
   const harness = createFakeKernelHarness();
-  const driver = makeOneCallRunner(toolName, input);
+  const runner = makeOneCallRunner(toolName, input);
   const runtime = createTuvrenRuntime({
     createId: makeId,
-    defaultRunnerId: "test-driver",
-    driverRegistry: createRunnerRegistry([driver]),
+    defaultRunnerId: "test-runner",
+    runnerRegistry: createRunnerRegistry([runner]),
     kernel: harness.kernel,
   });
 
@@ -318,8 +318,8 @@ describe("tuvren-client: unavailability and staleness (KRT-AZ003)", () => {
     const harness = createFakeKernelHarness();
     const runtime = createTuvrenRuntime({
       createId: makeId,
-      defaultRunnerId: "test-driver",
-      driverRegistry: createRunnerRegistry([makeOneCallRunner("detached.cap")]),
+      defaultRunnerId: "test-runner",
+      runnerRegistry: createRunnerRegistry([makeOneCallRunner("detached.cap")]),
       kernel: harness.kernel,
     });
 
@@ -468,17 +468,17 @@ describe("tuvren-client: partial-observability model (KRT-AZ005)", () => {
 
 describe("tuvren-client: boundary preserved through approval pause/resume", () => {
   test("detaching the boundary during a paused approval causes the resumed client dispatch to return capability_binding_unavailable", async () => {
-    // Scenario: driver first requests a server tool with approval:true (pauses
+    // Scenario: runner first requests a server tool with approval:true (pauses
     // the turn). We detach the client endpoint from the boundary. On resume,
-    // the driver requests the client tool. The preserved boundary governs the
+    // the runner requests the client tool. The preserved boundary governs the
     // resumed dispatch, so isAvailable returns false → capability_binding_unavailable.
     const endpoint = makeOkEndpoint("ep1", "resume.cap", { resumed: true });
     const boundary = createClientEndpointBoundary([endpoint]);
 
     const harness = createFakeKernelHarness();
     let callCount = 0;
-    const driver = {
-      id: "test-driver",
+    const runner = {
+      id: "test-runner",
       execute(
         _context: RunnerExecutionContext
       ): Promise<RunnerExecutionResult> {
@@ -514,8 +514,8 @@ describe("tuvren-client: boundary preserved through approval pause/resume", () =
 
     const runtime = createTuvrenRuntime({
       createId: makeId,
-      defaultRunnerId: "test-driver",
-      driverRegistry: createRunnerRegistry([driver]),
+      defaultRunnerId: "test-runner",
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -580,11 +580,11 @@ describe("tuvren-client: tool name collision with regular tools", () => {
     // invalid_runtime_options code used for intra-boundary collisions.
     const endpoint = makeOkEndpoint("ep1", "shared.tool", { ok: true });
     const harness = createFakeKernelHarness();
-    const driver = makeOneCallRunner("shared.tool");
+    const runner = makeOneCallRunner("shared.tool");
     const runtime = createTuvrenRuntime({
       createId: makeId,
-      defaultRunnerId: "test-driver",
-      driverRegistry: createRunnerRegistry([driver]),
+      defaultRunnerId: "test-runner",
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});

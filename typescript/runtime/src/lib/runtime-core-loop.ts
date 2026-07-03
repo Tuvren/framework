@@ -144,7 +144,7 @@ export async function runExecutionLoop(
     const currentIterationCount = handle.status().iterationCount;
 
     // Framework execution-bounds guard (ADR-043, BD006), enforced above the
-    // driver's loop policy. The wall-clock deadline is also enforced by an
+    // runner's loop policy. The wall-clock deadline is also enforced by an
     // out-of-band abort timer; this boundary check is the deterministic backstop.
     if (now() >= host.boundsDeadlineMs(handle)) {
       return boundsFailLoopOutcome(
@@ -155,7 +155,7 @@ export async function runExecutionLoop(
     }
 
     // The iteration hard-stop clamps AgentConfig.maxIterations from above: a
-    // driver cannot bypass it, and reaching it fails the turn (distinct from the
+    // runner cannot bypass it, and reaching it fails the turn (distinct from the
     // graceful lower agent cap below).
     if (currentIterationCount >= bounds.maxIterations) {
       return boundsFailLoopOutcome(
@@ -228,7 +228,7 @@ export async function runExecutionLoop(
     }
 
     // Cumulative tool-call hard-stop bound, checked at the tool-batch boundary
-    // above driver discretion. Per ADR-043/§4.12 this caps the cumulative calls
+    // above runner discretion. Per ADR-043/§4.12 this caps the cumulative calls
     // *executed* across the Turn and is evaluated AFTER each batch completes: a
     // single over-cap batch runs to completion (parallelism-bounded by
     // maxConcurrentToolCalls) and the cap then stops the next batch. The
@@ -453,7 +453,7 @@ async function resolveIterationOutcome(
         pauseReason: result.resolution.reason,
         pausedIteration: {
           iterationCount,
-          response: result.driverResponse,
+          response: result.runnerResponse,
           toolExecutionMode: result.toolExecutionMode,
           toolResults: result.toolResults,
         },

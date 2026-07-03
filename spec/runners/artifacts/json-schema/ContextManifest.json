@@ -1,37 +1,37 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://tuvren.dev/schemas/framework/driver-api/ContextManifest.json",
+  "$id": "https://tuvren.dev/schemas/framework/runner-api/ContextManifest.json",
   "type": "object",
   "properties": {
     "byRole": {
-      "$ref": "https://tuvren.dev/schemas/framework/driver-api/ContextManifestCounters.json"
+      "$ref": "https://tuvren.dev/schemas/framework/runner-api/ContextManifestCounters.json"
     },
     "extensions": {
-      "$ref": "https://tuvren.dev/schemas/framework/driver-api/Metadata.json"
+      "$ref": "https://tuvren.dev/schemas/framework/runner-api/Metadata.json"
     },
     "lastAssistantMessageIndex": {
-      "$ref": "https://tuvren.dev/schemas/framework/driver-api/MessageIndex.json"
+      "$ref": "https://tuvren.dev/schemas/framework/runner-api/MessageIndex.json"
     },
     "lastUserMessageIndex": {
-      "$ref": "https://tuvren.dev/schemas/framework/driver-api/MessageIndex.json"
+      "$ref": "https://tuvren.dev/schemas/framework/runner-api/MessageIndex.json"
     },
     "messageCount": {
-      "$ref": "https://tuvren.dev/schemas/framework/driver-api/NonNegativeSafeInt.json"
+      "$ref": "https://tuvren.dev/schemas/framework/runner-api/NonNegativeSafeInt.json"
     },
     "tokenEstimate": {
       "type": "number",
       "minimum": 0
     },
     "toolCalls": {
-      "$ref": "https://tuvren.dev/schemas/framework/driver-api/ContextManifestNameCounters.json"
+      "$ref": "https://tuvren.dev/schemas/framework/runner-api/ContextManifestNameCounters.json"
     },
     "toolResults": {
-      "$ref": "https://tuvren.dev/schemas/framework/driver-api/ContextManifestNameCounters.json"
+      "$ref": "https://tuvren.dev/schemas/framework/runner-api/ContextManifestNameCounters.json"
     },
     "turnBoundaries": {
       "type": "array",
       "items": {
-        "$ref": "https://tuvren.dev/schemas/framework/driver-api/NonNegativeSafeInt.json"
+        "$ref": "https://tuvren.dev/schemas/framework/runner-api/NonNegativeSafeInt.json"
       }
     }
   },

@@ -168,7 +168,7 @@ async function emitPostNextAroundModelError(
       name: normalizedError.name,
       phase: "post_next",
     },
-    name: "react_driver.around_model_error",
+    name: "react_runner.around_model_error",
     timestamp: context.runtime.now(),
     type: "custom",
   };
@@ -215,7 +215,7 @@ function createPostNextAroundModelFallbackOutcome(
     throw new TuvrenRuntimeError(
       "post-next aroundModel recovery requires a next() outcome",
       {
-        code: "react_driver_invalid_around_model_recovery",
+        code: "react_runner_invalid_around_model_recovery",
       }
     );
   }
@@ -438,7 +438,7 @@ function validateAroundModelRetryDurability(
   throw new TuvrenRuntimeError(
     "aroundModel handlers that call next() multiple times must return the final next() response",
     {
-      code: "react_driver_invalid_around_model_retry",
+      code: "react_runner_invalid_around_model_retry",
       details: {
         finalNextResponse: lastOutcome.response,
         nextCallCount: nextOutcomes.length,

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://tuvren.dev/schemas/framework/driver-api/FilePart.json",
+  "$id": "https://tuvren.dev/schemas/framework/runner-api/FilePart.json",
   "type": "object",
   "properties": {
     "type": {
@@ -23,13 +23,13 @@
       ]
     },
     "mediaType": {
-      "$ref": "https://tuvren.dev/schemas/framework/driver-api/NonEmptyString.json"
+      "$ref": "https://tuvren.dev/schemas/framework/runner-api/NonEmptyString.json"
     },
     "filename": {
       "type": "string"
     },
     "providerMetadata": {
-      "$ref": "https://tuvren.dev/schemas/framework/driver-api/Metadata.json"
+      "$ref": "https://tuvren.dev/schemas/framework/runner-api/Metadata.json"
     }
   },
   "required": ["type", "data", "mediaType"],

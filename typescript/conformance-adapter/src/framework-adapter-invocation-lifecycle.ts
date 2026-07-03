@@ -44,7 +44,7 @@ import {
   createConformanceIdFactory,
   createConformanceKernelHarness,
   createStaticRunner,
-  DRIVER_ID,
+  RUNNER_ID,
   textSignal,
 } from "./framework-adapter-runtime.ts";
 
@@ -206,8 +206,8 @@ export async function runInvocationLifecycleCrossClass(): Promise<AdapterProject
   const serverHarness = createConformanceKernelHarness();
   const serverRuntime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
-    defaultRunnerId: DRIVER_ID,
-    driverRegistry: createRunnerRegistry([makeSingleCallRunner(SERVER_TOOL)]),
+    defaultRunnerId: RUNNER_ID,
+    runnerRegistry: createRunnerRegistry([makeSingleCallRunner(SERVER_TOOL)]),
     kernel: serverHarness.kernel,
   });
   const serverThread = await serverRuntime.createThread({});
@@ -238,8 +238,8 @@ export async function runInvocationLifecycleCrossClass(): Promise<AdapterProject
   const pnHarness = createConformanceKernelHarness();
   const pnRuntime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
-    defaultRunnerId: DRIVER_ID,
-    driverRegistry: createRunnerRegistry([
+    defaultRunnerId: RUNNER_ID,
+    runnerRegistry: createRunnerRegistry([
       makeProviderRunner("provider-native", PN_TOOL),
     ]),
     kernel: pnHarness.kernel,
@@ -262,8 +262,8 @@ export async function runInvocationLifecycleCrossClass(): Promise<AdapterProject
   const pmHarness = createConformanceKernelHarness();
   const pmRuntime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
-    defaultRunnerId: DRIVER_ID,
-    driverRegistry: createRunnerRegistry([
+    defaultRunnerId: RUNNER_ID,
+    runnerRegistry: createRunnerRegistry([
       makeProviderRunner("provider-mediated", PM_TOOL),
     ]),
     kernel: pmHarness.kernel,
@@ -288,8 +288,8 @@ export async function runInvocationLifecycleCrossClass(): Promise<AdapterProject
   const clientHarness = createConformanceKernelHarness();
   const clientRuntime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
-    defaultRunnerId: DRIVER_ID,
-    driverRegistry: createRunnerRegistry([makeSingleCallRunner(CLIENT_CAP)]),
+    defaultRunnerId: RUNNER_ID,
+    runnerRegistry: createRunnerRegistry([makeSingleCallRunner(CLIENT_CAP)]),
     kernel: clientHarness.kernel,
   });
   const clientThread = await clientRuntime.createThread({});
@@ -317,8 +317,8 @@ export async function runInvocationLifecycleCrossClass(): Promise<AdapterProject
   const deniedHarness = createConformanceKernelHarness();
   const deniedRuntime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
-    defaultRunnerId: DRIVER_ID,
-    driverRegistry: createRunnerRegistry([makeSingleCallRunner(DENIED_TOOL)]),
+    defaultRunnerId: RUNNER_ID,
+    runnerRegistry: createRunnerRegistry([makeSingleCallRunner(DENIED_TOOL)]),
     kernel: deniedHarness.kernel,
   });
   const deniedThread = await deniedRuntime.createThread({});
@@ -353,8 +353,8 @@ export async function runInvocationLifecycleCrossClass(): Promise<AdapterProject
   const staleHarness = createConformanceKernelHarness();
   const staleRuntime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
-    defaultRunnerId: DRIVER_ID,
-    driverRegistry: createRunnerRegistry([makeSingleCallRunner(STALE_CAP)]),
+    defaultRunnerId: RUNNER_ID,
+    runnerRegistry: createRunnerRegistry([makeSingleCallRunner(STALE_CAP)]),
     kernel: staleHarness.kernel,
   });
   const staleThread = await staleRuntime.createThread({});
@@ -382,8 +382,8 @@ export async function runInvocationLifecycleCrossClass(): Promise<AdapterProject
   const errorHarness = createConformanceKernelHarness();
   const errorRuntime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
-    defaultRunnerId: DRIVER_ID,
-    driverRegistry: createRunnerRegistry([makeSingleCallRunner(ERROR_TOOL)]),
+    defaultRunnerId: RUNNER_ID,
+    runnerRegistry: createRunnerRegistry([makeSingleCallRunner(ERROR_TOOL)]),
     kernel: errorHarness.kernel,
   });
   const errorThread = await errorRuntime.createThread({});
@@ -421,8 +421,8 @@ export async function runInvocationLifecycleCrossClass(): Promise<AdapterProject
   const unavailHarness = createConformanceKernelHarness();
   const unavailRuntime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
-    defaultRunnerId: DRIVER_ID,
-    driverRegistry: createRunnerRegistry([makeSingleCallRunner(UNAVAIL_CAP)]),
+    defaultRunnerId: RUNNER_ID,
+    runnerRegistry: createRunnerRegistry([makeSingleCallRunner(UNAVAIL_CAP)]),
     kernel: unavailHarness.kernel,
   });
   const unavailThread = await unavailRuntime.createThread({});

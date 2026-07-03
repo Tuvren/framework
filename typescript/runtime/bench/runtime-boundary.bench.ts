@@ -235,7 +235,7 @@ const cases: BenchmarkCase[] = [
   },
   {
     iterations: 500,
-    name: "driver immutable snapshot creation",
+    name: "runner immutable snapshot creation",
     run(iterations) {
       for (let index = 0; index < iterations; index += 1) {
         createFrozenSnapshot({

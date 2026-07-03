@@ -79,13 +79,9 @@ export interface CreateTuvrenOptions {
   /**
    * Framework-enforced per-turn execution bounds (ADR-043, KRT-BD006). Supply
    * at the top level or via `runtimeOptions.bounds`, but not both. Unset fields
-   * take the §3.11 safe defaults; a driver cannot raise or disable a bound.
+   * take the §3.11 safe defaults; a runner cannot raise or disable a bound.
    */
   bounds?: ExecutionBounds;
-  driver?:
-    | RunnerKind
-    | RuntimeRunnerFactory
-    | { kind: "react"; options?: ReActRunnerOptions };
   extensions?: TuvrenExtension[];
   /** Pre-built kernel — when supplied the factory skips kernel construction. */
   kernel?: RuntimeKernel;
@@ -99,9 +95,13 @@ export interface CreateTuvrenOptions {
    */
   payloadCodec?: PayloadCodec;
   provider?: TuvrenProvider;
+  runner?:
+    | RunnerKind
+    | RuntimeRunnerFactory
+    | { kind: "react"; options?: ReActRunnerOptions };
   runtimeOptions?: Omit<
     RuntimeCoreOptions,
-    "defaultRunnerId" | "driverRegistry" | "kernel"
+    "defaultRunnerId" | "runnerRegistry" | "kernel"
   >;
   telemetry?: TuvrenTelemetrySink;
   tools?: Array<McpToolSource | TuvrenToolDefinition>;
@@ -156,8 +156,8 @@ export function createTuvren(
   const { kernel, disposeBackend, purgeScope } =
     resolveKernelAndDispose(options);
 
-  const driver = buildRunner(options.driver);
-  const driverRegistry = createRunnerRegistry([driver]);
+  const runner = buildRunner(options.runner);
+  const runnerRegistry = createRunnerRegistry([runner]);
 
   const mcpSources = collectMcpSources(options.tools);
   const globalTools = collectTools(options.tools);
@@ -174,8 +174,8 @@ export function createTuvren(
   const runtime = createTuvrenRuntime({
     ...options.runtimeOptions,
     bounds: options.bounds ?? options.runtimeOptions?.bounds,
-    defaultRunnerId: driver.id,
-    driverRegistry,
+    defaultRunnerId: runner.id,
+    runnerRegistry,
     kernel,
     payloadCodec: options.payloadCodec ?? options.runtimeOptions?.payloadCodec,
     ...(purgeScope === undefined ? {} : { purgeScope }),
@@ -307,7 +307,7 @@ function buildBackendFromKind(
   }
 }
 
-function buildRunner(spec: CreateTuvrenOptions["driver"]) {
+function buildRunner(spec: CreateTuvrenOptions["runner"]) {
   if (spec === undefined || spec === "react") {
     return createReActRunner();
   }
@@ -322,7 +322,7 @@ function buildRunner(spec: CreateTuvrenOptions["driver"]) {
   }
 
   throw new TuvrenValidationError(
-    `createTuvren: unknown driver kind "${kindSpec.kind}"`,
+    `createTuvren: unknown runner kind "${kindSpec.kind}"`,
     { code: "invalid_createtuvren_options" }
   );
 }

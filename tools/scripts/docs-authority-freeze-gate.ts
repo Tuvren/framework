@@ -182,14 +182,14 @@ interface EvidenceTemplate {
 }
 
 const EVIDENCE = {
-  driverApi: {
-    adapterCapability: "framework.driver-api",
+  runnerApi: {
+    adapterCapability: "framework.runner-api",
     authorityPacket: "spec/core/authority-packet.json",
     compatibilityEvidence:
       "reports/compatibility/evidence/certification-harness.framework-typescript-certification.json",
     conformancePlan:
-      "spec/conformance/runners/plans/driver-api-core.json; spec/conformance/runners/plans/driver-api-extended.json",
-    fixture: "spec/conformance/runners/scenarios/driver-api-scenarios.json",
+      "spec/conformance/runners/plans/runner-api-core.json; spec/conformance/runners/plans/runner-api-extended.json",
+    fixture: "spec/conformance/runners/scenarios/runner-api-scenarios.json",
     generatedArtifact: "spec/runners/artifacts/json-schema",
   },
   eventStream: {
@@ -291,16 +291,16 @@ const EVIDENCE = {
     generatedArtifact:
       "N/A - conversation-state ownership is conformance-plan authority without generated schema artifacts",
   },
-  reactDriver: {
-    adapterCapability: "framework.react-driver",
+  reactRunner: {
+    adapterCapability: "framework.react-runner",
     authorityPacket: "spec/runners/react/authority-packet.json",
     compatibilityEvidence:
       "reports/compatibility/evidence/certification-harness.framework-typescript-certification.json",
     conformancePlan:
-      "spec/conformance/runners/plans/react-driver-callables.json; spec/conformance/runners/plans/react-driver-extended.json",
-    fixture: "spec/conformance/runners/scenarios/driver-api-scenarios.json",
+      "spec/conformance/runners/plans/react-runner-callables.json; spec/conformance/runners/plans/react-runner-extended.json",
+    fixture: "spec/conformance/runners/scenarios/runner-api-scenarios.json",
     generatedArtifact:
-      "N/A - react-driver packet is conformance-plan authority without generated schema artifacts",
+      "N/A - react-runner packet is conformance-plan authority without generated schema artifacts",
   },
   runtimeApi: {
     adapterCapability: "framework.runtime-api",
@@ -394,7 +394,7 @@ const EVIDENCE = {
     generatedArtifact: "spec/core/artifacts/json-schema",
   },
   // KRT-BD008: §4.12 Execution Bounds (ADR-043) — the framework-owned hard-stop
-  // guard above driver LoopPolicy. All §4.12 normative claims are backed by the
+  // guard above runner LoopPolicy. All §4.12 normative claims are backed by the
   // runtime-api execution-bounds checks promoted into
   // `runtime-api-callables-extended.json` (KRT-BD007) and the ExecutionBounds /
   // ExecutionBoundExceededDetails shapes generated from the shared-core packet.
@@ -1293,7 +1293,7 @@ function classifyFrameworkEventStreamSection(
   if (isSection(section, "6.5")) {
     return missingConformanceDecision(
       "aroundModel live/durable reconciliation",
-      EVIDENCE.reactDriver,
+      EVIDENCE.reactRunner,
       "KRT-AF003",
       "aroundModel replacement, retry, and durable/live response reconciliation need AF ReAct and extension-hook promotion before freeze closure."
     );
@@ -1381,15 +1381,15 @@ function classifyFrameworkIntegrationSection(
   }
 
   if (isSection(section, "5.6")) {
-    return authorityDecision("driver contract", EVIDENCE.driverApi);
+    return authorityDecision("runner contract", EVIDENCE.runnerApi);
   }
 
   if (isSection(section, "5.3")) {
     return missingConformanceDecision(
       "runtime loop policy",
-      EVIDENCE.driverApi,
+      EVIDENCE.runnerApi,
       "KRT-AF003",
-      "Loop-policy continuation and invalid-combination semantics are shared driver behavior that AF must promote before freeze closure."
+      "Loop-policy continuation and invalid-combination semantics are shared runner behavior that AF must promote before freeze closure."
     );
   }
 
@@ -1402,7 +1402,7 @@ function classifyFrameworkIntegrationSection(
     ) {
       return missingConformanceDecision(
         "ReAct and extension hooks",
-        EVIDENCE.reactDriver,
+        EVIDENCE.reactRunner,
         "KRT-AF003",
         "Some hook behavior is already packet-backed, but AF must choose which ordering and nesting details become portable."
       );
@@ -1451,7 +1451,7 @@ function classifyFrameworkRuntimeSection(
   ) {
     return missingConformanceDecision(
       "ReAct and extension hooks",
-      EVIDENCE.reactDriver,
+      EVIDENCE.reactRunner,
       "KRT-AF003",
       "Extension hook result, ordering, and persistence semantics need AF promotion before they become portable cross-language authority."
     );

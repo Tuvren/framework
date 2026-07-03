@@ -220,7 +220,7 @@ function buildEmptyPartsResult(
   throw new TuvrenRuntimeError(
     "provider responses must contain assistant output",
     {
-      code: "react_driver_empty_response",
+      code: "react_runner_empty_response",
       details: { response },
     }
   );
@@ -255,7 +255,7 @@ async function executeIteration(
 
   if (response.finishReason === "error" && !cancelled) {
     throw new TuvrenProviderError("provider returned an error finish reason", {
-      code: "react_driver_provider_failure",
+      code: "react_runner_provider_failure",
       details: {
         response,
       },
@@ -269,7 +269,7 @@ async function executeIteration(
     throw new TuvrenRuntimeError(
       "provider responses must not contain tool_result parts",
       {
-        code: "react_driver_invalid_model_response",
+        code: "react_runner_invalid_model_response",
         details: {
           response,
         },
@@ -309,7 +309,7 @@ async function executeIteration(
   // Build the messages array. When provider-native results exist, include the
   // pre-staged tool message so the framework does not dispatch those results
   // to the Tool Execution Gateway. (AY002/AY004)
-  const driverMessages =
+  const runnerMessages =
     prestagedToolMessage === undefined
       ? [assistantMessage]
       : [assistantMessage, prestagedToolMessage];
@@ -322,7 +322,7 @@ async function executeIteration(
             assistantEventReconciliation:
               execution.assistantEventReconciliation,
           }),
-      messages: driverMessages,
+      messages: runnerMessages,
       partial: true,
       resolution: createExecutionCancelledResolution(),
       stateUpdates,
@@ -346,7 +346,7 @@ async function executeIteration(
     requestsTools
   );
 
-  const driverResult: RunnerExecutionResult = requestsTools
+  const runnerResult: RunnerExecutionResult = requestsTools
     ? {
         ...(execution.assistantEventReconciliation === undefined
           ? {}
@@ -354,7 +354,7 @@ async function executeIteration(
               assistantEventReconciliation:
                 execution.assistantEventReconciliation,
             }),
-        messages: driverMessages,
+        messages: runnerMessages,
         resolution: iterationDecisionToResolution(iterationDecision),
         stateUpdates,
         toolExecutionMode: resolveToolExecutionMode(
@@ -370,7 +370,7 @@ async function executeIteration(
               assistantEventReconciliation:
                 execution.assistantEventReconciliation,
             }),
-        messages: driverMessages,
+        messages: runnerMessages,
         resolution: iterationDecisionToResolution(iterationDecision),
         stateUpdates,
       };
@@ -380,7 +380,7 @@ async function executeIteration(
     context.runtime
   );
 
-  return driverResult;
+  return runnerResult;
 }
 
 async function callProvider(
@@ -451,7 +451,7 @@ function createExecutionCancelledResolution(): Extract<
 > {
   return {
     error: new TuvrenRuntimeError("execution cancelled", {
-      code: "react_driver_execution_cancelled",
+      code: "react_runner_execution_cancelled",
     }),
     fatality: "hard",
     type: "fail",
@@ -475,9 +475,9 @@ function validateResumeApprovalContext(context: RunnerResumeContext): void {
 
   if (context.approval.decisions.length === 0) {
     throw new TuvrenRuntimeError(
-      "driver resume requires at least one approval decision",
+      "runner resume requires at least one approval decision",
       {
-        code: "driver_resume_missing_approval_decision",
+        code: "runner_resume_missing_approval_decision",
       }
     );
   }
@@ -485,9 +485,9 @@ function validateResumeApprovalContext(context: RunnerResumeContext): void {
   for (const decision of context.approval.decisions) {
     if (!pendingCallIds.has(decision.callId)) {
       throw new TuvrenRuntimeError(
-        "driver resume approval decision does not match a pending tool call",
+        "runner resume approval decision does not match a pending tool call",
         {
-          code: "driver_resume_unknown_approval_call",
+          code: "runner_resume_unknown_approval_call",
           details: {
             callId: decision.callId,
           },
@@ -503,9 +503,9 @@ function resolveProvider(model: AgentConfig["model"]): TuvrenProvider {
   }
 
   throw new TuvrenValidationError(
-    "ReAct driver execution requires config.model to be a concrete TuvrenProvider",
+    "ReAct runner execution requires config.model to be a concrete TuvrenProvider",
     {
-      code: "react_driver_missing_provider",
+      code: "react_runner_missing_provider",
       details: {
         model,
       },
@@ -551,7 +551,7 @@ function resolveProviderCallMode(
   throw new TuvrenRuntimeError(
     'providerCallMode must resolve to "generate" or "stream"',
     {
-      code: "react_driver_invalid_provider_call_mode",
+      code: "react_runner_invalid_provider_call_mode",
       details: {
         providerCallMode: resolvedMode,
       },
@@ -580,7 +580,7 @@ function resolveToolExecutionMode(
   throw new TuvrenRuntimeError(
     'toolExecutionMode must resolve to "parallel" or "sequential"',
     {
-      code: "react_driver_invalid_tool_execution_mode",
+      code: "react_runner_invalid_tool_execution_mode",
       details: {
         toolExecutionMode: resolvedMode,
       },
@@ -828,7 +828,7 @@ function toNonEmptyParts(
     throw new TuvrenRuntimeError(
       "assistant output must include at least one part",
       {
-        code: "react_driver_empty_response",
+        code: "react_runner_empty_response",
       }
     );
   }

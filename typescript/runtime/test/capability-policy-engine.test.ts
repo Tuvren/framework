@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: test drivers intentionally match async contracts
+// biome-ignore-all lint/suspicious/useAwait: test runners intentionally match async contracts
 import { describe, expect, test } from "bun:test";
 import type {
   Binding,
@@ -210,17 +210,17 @@ describe("CapabilityPolicyEngine — invocation-time decision point", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Framework-owned: policy is above driver discretion
+// Framework-owned: policy is above runner discretion
 // ---------------------------------------------------------------------------
 
 describe("CapabilityPolicyEngine — framework ownership", () => {
-  test("policy engine is independent of driver-supplied context (deterministic)", () => {
+  test("policy engine is independent of runner-supplied context (deterministic)", () => {
     const engine = createCapabilityPolicyEngine({
       deniedSurfaceNames: new Set(["restricted"]),
     });
     const surfaces = [makeSurface("restricted", "cap.restricted")];
 
-    // Called twice with different 'driver' contexts — result must be same
+    // Called twice with different 'runner' contexts — result must be same
     const d1 = engine.evaluateExposure(surfaces, {
       ...defaultContext,
       modelId: "model-a",
@@ -266,7 +266,7 @@ describe("CapabilityPolicyEngine — wired invocation-time denial", () => {
 
   function makeDenialRunner(): RuntimeRunner {
     return {
-      id: "denial-driver",
+      id: "denial-runner",
       async execute(context) {
         if (!context.messages.some((m) => m.role === "tool")) {
           return {
@@ -296,8 +296,8 @@ describe("CapabilityPolicyEngine — wired invocation-time denial", () => {
       deniedCapabilityIds: new Set([deniedToolName]),
     });
     const runtime = createTuvrenRuntime({
-      defaultRunnerId: "denial-driver",
-      driverRegistry: createBaseRunnerRegistry([makeDenialRunner()]),
+      defaultRunnerId: "denial-runner",
+      runnerRegistry: createBaseRunnerRegistry([makeDenialRunner()]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -350,8 +350,8 @@ describe("CapabilityPolicyEngine — wired invocation-time denial", () => {
     });
     const permittedExecuted = { value: false };
 
-    const driver: RuntimeRunner = {
-      id: "mixed-driver",
+    const runner: RuntimeRunner = {
+      id: "mixed-runner",
       async execute(context) {
         if (!context.messages.some((m) => m.role === "tool")) {
           return {
@@ -375,8 +375,8 @@ describe("CapabilityPolicyEngine — wired invocation-time denial", () => {
     };
 
     const runtime = createTuvrenRuntime({
-      defaultRunnerId: "mixed-driver",
-      driverRegistry: createBaseRunnerRegistry([driver]),
+      defaultRunnerId: "mixed-runner",
+      runnerRegistry: createBaseRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -528,7 +528,7 @@ describe("CapabilityPolicyEngine — BB001 data-residency dimension", () => {
 // ---------------------------------------------------------------------------
 
 describe("CapabilityPolicyEngine — BB001 exposure-time wiring", () => {
-  test("exposure-denied surface is not visible to the driver tool registry", async () => {
+  test("exposure-denied surface is not visible to the runner tool registry", async () => {
     const euToolName = "eu-data-tool";
     const usToolName = "us-data-tool";
     const seenToolNames: string[] = [];
@@ -536,10 +536,10 @@ describe("CapabilityPolicyEngine — BB001 exposure-time wiring", () => {
     const harness = createFakeKernelHarness();
     const engine = createCapabilityPolicyEngine();
 
-    const driver: RuntimeRunner = {
-      id: "exposure-wiring-driver",
+    const runner: RuntimeRunner = {
+      id: "exposure-wiring-runner",
       async execute(context) {
-        // Record what tools the driver sees
+        // Record what tools the runner sees
         seenToolNames.push(...context.toolRegistry.list().map((t) => t.name));
         return {
           messages: [assistantText("done")],
@@ -552,8 +552,8 @@ describe("CapabilityPolicyEngine — BB001 exposure-time wiring", () => {
     };
 
     const runtime = createTuvrenRuntime({
-      defaultRunnerId: "exposure-wiring-driver",
-      driverRegistry: createBaseRunnerRegistry([driver]),
+      defaultRunnerId: "exposure-wiring-runner",
+      runnerRegistry: createBaseRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
 
@@ -747,8 +747,8 @@ describe("CapabilityPolicyEngine — BB002 wired risk-approval gate", () => {
       requireApprovalForRiskClass: "high",
     });
 
-    const driver = {
-      id: "risk-approval-driver",
+    const runner = {
+      id: "risk-approval-runner",
       async execute(context: Parameters<RuntimeRunner["execute"]>[0]) {
         if (!context.messages.some((m) => m.role === "tool")) {
           return {
@@ -772,8 +772,8 @@ describe("CapabilityPolicyEngine — BB002 wired risk-approval gate", () => {
     } satisfies RuntimeRunner;
 
     const runtime = createTuvrenRuntime({
-      defaultRunnerId: "risk-approval-driver",
-      driverRegistry: createBaseRunnerRegistry([driver]),
+      defaultRunnerId: "risk-approval-runner",
+      runnerRegistry: createBaseRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
 
@@ -821,8 +821,8 @@ describe("CapabilityPolicyEngine — BB002 wired risk-approval gate", () => {
       requireApprovalForRiskClass: "high",
     });
 
-    const driver = {
-      id: "risk-approval-resume-driver",
+    const runner = {
+      id: "risk-approval-resume-runner",
       async execute(context: Parameters<RuntimeRunner["execute"]>[0]) {
         if (!context.messages.some((m) => m.role === "tool")) {
           return {
@@ -850,8 +850,8 @@ describe("CapabilityPolicyEngine — BB002 wired risk-approval gate", () => {
     } satisfies RuntimeRunner;
 
     const runtime = createTuvrenRuntime({
-      defaultRunnerId: "risk-approval-resume-driver",
-      driverRegistry: createBaseRunnerRegistry([driver]),
+      defaultRunnerId: "risk-approval-resume-runner",
+      runnerRegistry: createBaseRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
 
@@ -1107,8 +1107,8 @@ describe("CapabilityPolicyEngine — BB004 credential-boundary dimension", () =>
     const harness = createFakeKernelHarness();
     const engine = createCapabilityPolicyEngine();
 
-    const driver: RuntimeRunner = {
-      id: "credential-driver",
+    const runner: RuntimeRunner = {
+      id: "credential-runner",
       async execute(context) {
         if (!context.messages.some((m) => m.role === "tool")) {
           return {
@@ -1132,8 +1132,8 @@ describe("CapabilityPolicyEngine — BB004 credential-boundary dimension", () =>
     };
 
     const runtime = createTuvrenRuntime({
-      defaultRunnerId: "credential-driver",
-      driverRegistry: createBaseRunnerRegistry([driver]),
+      defaultRunnerId: "credential-runner",
+      runnerRegistry: createBaseRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
 
@@ -1181,8 +1181,8 @@ describe("CapabilityPolicyEngine — BB004 non-retryable policy", () => {
 
     const harness = createFakeKernelHarness();
 
-    const driver: RuntimeRunner = {
-      id: "retry-driver",
+    const runner: RuntimeRunner = {
+      id: "retry-runner",
       async execute(context) {
         if (!context.messages.some((m) => m.role === "tool")) {
           return {
@@ -1206,8 +1206,8 @@ describe("CapabilityPolicyEngine — BB004 non-retryable policy", () => {
     };
 
     const runtime = createTuvrenRuntime({
-      defaultRunnerId: "retry-driver",
-      driverRegistry: createBaseRunnerRegistry([driver]),
+      defaultRunnerId: "retry-runner",
+      runnerRegistry: createBaseRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
 
@@ -1247,8 +1247,8 @@ describe("CapabilityPolicyEngine — BB004 non-retryable policy", () => {
 
     const harness = createFakeKernelHarness();
 
-    const driver: RuntimeRunner = {
-      id: "normal-retry-driver",
+    const runner: RuntimeRunner = {
+      id: "normal-retry-runner",
       async execute(context) {
         if (!context.messages.some((m) => m.role === "tool")) {
           return {
@@ -1272,8 +1272,8 @@ describe("CapabilityPolicyEngine — BB004 non-retryable policy", () => {
     };
 
     const runtime = createTuvrenRuntime({
-      defaultRunnerId: "normal-retry-driver",
-      driverRegistry: createBaseRunnerRegistry([driver]),
+      defaultRunnerId: "normal-retry-runner",
+      runnerRegistry: createBaseRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
 
@@ -1534,8 +1534,8 @@ describe("CapabilityPolicyEngine — BB005 resume-path policy check", () => {
         }),
       };
 
-    const driver: RuntimeRunner = {
-      id: "resume-deny-driver",
+    const runner: RuntimeRunner = {
+      id: "resume-deny-runner",
       async execute(context) {
         if (!context.messages.some((m) => m.role === "tool")) {
           return {
@@ -1559,8 +1559,8 @@ describe("CapabilityPolicyEngine — BB005 resume-path policy check", () => {
     };
 
     const runtime = createTuvrenRuntime({
-      defaultRunnerId: "resume-deny-driver",
-      driverRegistry: createBaseRunnerRegistry([driver]),
+      defaultRunnerId: "resume-deny-runner",
+      runnerRegistry: createBaseRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
 
@@ -1835,8 +1835,8 @@ describe("CapabilityPolicyEngine — BB+ extension dimension resume-path", () =>
       dimensions: [extensionDimension],
     });
 
-    const driver = {
-      id: "resume-ext-driver",
+    const runner = {
+      id: "resume-ext-runner",
       async execute(context: Parameters<RuntimeRunner["execute"]>[0]) {
         if (!context.messages.some((m) => m.role === "tool")) {
           return {
@@ -1860,8 +1860,8 @@ describe("CapabilityPolicyEngine — BB+ extension dimension resume-path", () =>
     } satisfies RuntimeRunner;
 
     const runtime = createTuvrenRuntime({
-      defaultRunnerId: "resume-ext-driver",
-      driverRegistry: createBaseRunnerRegistry([driver]),
+      defaultRunnerId: "resume-ext-runner",
+      runnerRegistry: createBaseRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test drivers intentionally match the async framework driver contract.
+// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 import { describe, expect, test } from "bun:test";
 import type {
   RuntimeRunner as KrakenRunner,
@@ -35,9 +35,9 @@ import {
 } from "./runtime-core-test-helpers.ts";
 
 describe("framework-runtime-core", () => {
-  test("rejects driver-provided pause resolutions that are not rooted in tool approvals", async () => {
+  test("rejects runner-provided pause resolutions that are not rooted in tool approvals", async () => {
     const harness = createFakeKernelHarness();
-    const driver = {
+    const runner = {
       async execute(_context) {
         return {
           messages: [assistantText("Pause for external review.")],
@@ -46,15 +46,15 @@ describe("framework-runtime-core", () => {
               completedResults: [],
               toolCalls: [
                 {
-                  callId: "driver-review",
+                  callId: "runner-review",
                   decisions: ["approve", "reject"],
                   input: { review: true },
                   message: "Resume after external review.",
-                  name: "driver_review",
+                  name: "runner_review",
                 },
               ],
             },
-            reason: "driver_review_required",
+            reason: "runner_review_required",
             type: "pause",
           },
         };
@@ -66,14 +66,14 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
     const pausedHandle = runtime.executeTurn({
       branchId: thread.branchId,
       config: { name: "primary" },
-      signal: textSignal("Pause for driver review"),
+      signal: textSignal("Pause for runner review"),
       threadId: thread.threadId,
     });
     const events = await collectEvents(pausedHandle.events());
@@ -83,16 +83,16 @@ describe("framework-runtime-core", () => {
     );
 
     expect(pausedHandle.status().phase).toBe("failed");
-    expect(errorEvent?.error.code).toBe("invalid_driver_result");
+    expect(errorEvent?.error.code).toBe("invalid_runner_result");
     expect(await harness.readBranchRuntimeStatus(thread.branchId)).toEqual({
       activeAgent: "primary",
       state: "failed",
     });
   });
 
-  test("fails invalid driver resolutions even when earlier custom events were published live", async () => {
+  test("fails invalid runner resolutions even when earlier custom events were published live", async () => {
     const harness = createFakeKernelHarness();
-    const driver = {
+    const runner = {
       async execute(context) {
         context.runtime.emit({
           data: {
@@ -123,7 +123,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -145,7 +145,7 @@ describe("framework-runtime-core", () => {
       )
     ).toBe(true);
     expect(handle.status().phase).toBe("failed");
-    expect(errorEvent?.error.code).toBe("invalid_driver_result");
+    expect(errorEvent?.error.code).toBe("invalid_runner_result");
     expect(await harness.readBranchMessages(thread.branchId)).toEqual([
       {
         parts: [{ text: "Reject ghost output", type: "text" }],
@@ -171,7 +171,7 @@ describe("framework-runtime-core", () => {
   test("finalizes failed runtime status when afterIteration upgrades a renewed approval pause to hard fail", async () => {
     const harness = createFakeKernelHarness();
     let searchCalls = 0;
-    const driver = {
+    const runner = {
       async execute(context) {
         const toolMessages = context.messages.filter(
           (message) => message.role === "tool"
@@ -213,7 +213,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -348,7 +348,7 @@ describe("framework-runtime-core", () => {
   test("does not checkpoint sibling tool progress when a parallel batch fails on invalid approval", async () => {
     const harness = createFakeKernelHarness();
     let searchCalls = 0;
-    const driver = {
+    const runner = {
       async execute(_context) {
         return {
           messages: [
@@ -377,7 +377,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -477,9 +477,9 @@ describe("framework-runtime-core", () => {
   });
 });
 function createRunnerRegistry(
-  drivers: Array<KrakenRunner | KrakenRunnerFactory> = []
+  runners: Array<KrakenRunner | KrakenRunnerFactory> = []
 ) {
-  return createBaseRunnerRegistry(drivers.map(wrapRunnerEntry));
+  return createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
 }
 
 function wrapRunnerEntry(
@@ -503,14 +503,14 @@ function isKrakenRunnerFactory(
   return "create" in entry && typeof entry.create === "function";
 }
 
-function wrapRunner(driver: KrakenRunner): KrakenRunner {
-  const resume = driver.resume;
+function wrapRunner(runner: KrakenRunner): KrakenRunner {
+  const resume = runner.resume;
 
   return {
     async execute(context) {
-      return normalizeRunnerResult(await driver.execute(context));
+      return normalizeRunnerResult(await runner.execute(context));
     },
-    id: driver.id,
+    id: runner.id,
     ...(resume === undefined
       ? {}
       : {

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test drivers intentionally match the async framework driver contract.
+// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 import { describe, expect, test } from "bun:test";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type {
@@ -40,15 +40,15 @@ import {
 } from "./runtime-core-test-helpers.ts";
 
 describe("framework-runtime-core", () => {
-  test("emits context-engineering observability before the driver runs with rewritten context", async () => {
+  test("emits context-engineering observability before the runner runs with rewritten context", async () => {
     const harness = createFakeKernelHarness();
-    const driver = {
+    const runner = {
       async execute(context) {
         context.runtime.emit({
           data: {
             messageCount: context.messages.length,
           },
-          name: "driver.executed",
+          name: "runner.executed",
           timestamp: context.runtime.now(),
           type: "custom",
         });
@@ -68,7 +68,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -111,17 +111,17 @@ describe("framework-runtime-core", () => {
         { manifest: { messageCount: number }; type: "state.snapshot" }
       > => event.type === "state.snapshot" && event.manifest.messageCount === 2
     );
-    const driverExecutedIndex = events.findIndex(
-      (event) => event.type === "custom" && event.name === "driver.executed"
+    const runnerExecutedIndex = events.findIndex(
+      (event) => event.type === "custom" && event.name === "runner.executed"
     );
 
     expect(rewrittenSnapshotIndex).toBeGreaterThanOrEqual(0);
-    expect(driverExecutedIndex).toBeGreaterThan(rewrittenSnapshotIndex);
+    expect(runnerExecutedIndex).toBeGreaterThan(rewrittenSnapshotIndex);
   });
 
   test("emits state snapshots only for checkpoints that change the manifest", async () => {
     const harness = createFakeKernelHarness();
-    const driver = {
+    const runner = {
       async execute(_context) {
         return {
           messages: [assistantText("Finished.")],
@@ -138,7 +138,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -162,7 +162,7 @@ describe("framework-runtime-core", () => {
 
   test("rejects invalid context-engineering helper messages with a validation error", async () => {
     const harness = createFakeKernelHarness();
-    const driver = {
+    const runner = {
       async execute(_context) {
         return {
           messages: [assistantText("This should not run.")],
@@ -179,7 +179,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -219,7 +219,7 @@ describe("framework-runtime-core", () => {
     const harness = createFakeKernelHarness();
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([
+      runnerRegistry: createRunnerRegistry([
         {
           async execute(_context) {
             return {
@@ -293,7 +293,7 @@ describe("framework-runtime-core", () => {
 
   test("fails invalid context-engineering plans before corrupting the branch head", async () => {
     const harness = createFakeKernelHarness();
-    const driver = {
+    const runner = {
       async execute(_context) {
         return {
           messages: [assistantText("This should not run.")],
@@ -310,7 +310,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -352,7 +352,7 @@ describe("framework-runtime-core", () => {
   test("warns without blocking when extension manifest state exceeds the host budget", async () => {
     const harness = createFakeKernelHarness();
     const warnings: RuntimeWarning[] = [];
-    const driver = {
+    const runner = {
       async execute() {
         return {
           messages: [assistantText("Oversized state persisted.")],
@@ -369,7 +369,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
       manifestExtensionStateWarningBudgetBytes: 32,
       onWarning(warning) {
@@ -415,7 +415,7 @@ describe("framework-runtime-core", () => {
 
   test("rejects a second event stream consumer for one execution handle", async () => {
     const harness = createFakeKernelHarness();
-    const driver = {
+    const runner = {
       async execute(context) {
         context.runtime.emit({
           data: {
@@ -441,7 +441,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -511,9 +511,9 @@ describe("framework-runtime-core", () => {
 });
 
 function createRunnerRegistry(
-  drivers: Array<KrakenRunner | KrakenRunnerFactory> = []
+  runners: Array<KrakenRunner | KrakenRunnerFactory> = []
 ) {
-  return createBaseRunnerRegistry(drivers.map(wrapRunnerEntry));
+  return createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
 }
 
 function wrapRunnerEntry(
@@ -537,14 +537,14 @@ function isKrakenRunnerFactory(
   return "create" in entry && typeof entry.create === "function";
 }
 
-function wrapRunner(driver: KrakenRunner): KrakenRunner {
-  const resume = driver.resume;
+function wrapRunner(runner: KrakenRunner): KrakenRunner {
+  const resume = runner.resume;
 
   return {
     async execute(context) {
-      return normalizeRunnerResult(await driver.execute(context));
+      return normalizeRunnerResult(await runner.execute(context));
     },
-    id: driver.id,
+    id: runner.id,
     ...(resume === undefined
       ? {}
       : {

@@ -85,13 +85,13 @@ import type { PauseContext, ResumeContext } from "./runtime-execution-types.js";
 
 export interface RuntimeCoreFacadeHosts {
   contextOps: RuntimeCoreContextOpsHost;
-  driver: RuntimeCoreRunnerHost;
-  driverSupport: RuntimeCoreRunnerSupportHost;
   events: RuntimeCoreEventsHost;
   expiredRecovery: RuntimeCoreExpiredRecoveryHost;
   finalization: RuntimeCoreFinalizationHost;
   liveness: RuntimeCoreLivenessHost;
   persistence: RuntimeCorePersistenceHost;
+  runner: RuntimeCoreRunnerHost;
+  runnerSupport: RuntimeCoreRunnerSupportHost;
   startup: RuntimeCoreStartupHost;
   stateCommit: RuntimeCoreStateCommitHost;
   status: RuntimeCoreStatusHost;
@@ -351,7 +351,7 @@ export function createRuntimeCoreFacadeHosts(
       syncRunLeaseStateFromStepResult: (...args) =>
         dependencies.syncRunLeaseStateFromStepResult(...args),
     }),
-    driver: buildRuntimeCoreRunnerHost({
+    runner: buildRuntimeCoreRunnerHost({
       completeIterationRun: (...args) =>
         dependencies.completeIterationRun(...args),
       createRunnerAgentConfigSnapshot: (config) =>
@@ -376,7 +376,7 @@ export function createRuntimeCoreFacadeHosts(
       stageMessage: (...args) => dependencies.stageMessage(...args),
       stageRuntimeStatus: (...args) => dependencies.stageRuntimeStatus(...args),
     }),
-    driverSupport: buildRuntimeCoreRunnerSupportHost({
+    runnerSupport: buildRuntimeCoreRunnerSupportHost({
       cloneAgentConfigForRequest: (config) =>
         dependencies.cloneAgentConfigForRequest(config),
       createContextEngineeringHelpers: (messageHashes, messages) =>

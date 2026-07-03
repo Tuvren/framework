@@ -52,7 +52,7 @@ function createScenarioProvider(
 
       if (response === undefined) {
         return Promise.reject(
-          new Error("driver scenario must provide at least one response")
+          new Error("runner scenario must provide at least one response")
         );
       }
 
@@ -99,7 +99,7 @@ async function runBatteriesIncludedLifecycle(
 
   const instance = await createTuvren({
     backend: backendSpec,
-    driver: { kind: "react", options: { providerCallMode: "generate" } },
+    runner: { kind: "react", options: { providerCallMode: "generate" } },
     provider,
   });
 

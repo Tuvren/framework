@@ -23,7 +23,7 @@
   },
   "failed-provider-turn": {
     "operation": "event-stream.failed-provider-turn",
-    "prompt": "Emit a failed event stream from implementation driver logic.",
+    "prompt": "Emit a failed event stream from implementation runner logic.",
     "providerResponses": [
       {
         "finishReason": "error",

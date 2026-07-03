@@ -177,7 +177,7 @@ export function createRuntimeResumedExecutionHandle(
     {
       ...previousHandle.request,
       config: cloneAgentConfigForRequest(pauseContext.activeConfig),
-      driverId: pauseContext.activeRunnerId,
+      runnerId: pauseContext.activeRunnerId,
     },
     previousHandle.turnId,
     previousHandle.schemaId,

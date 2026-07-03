@@ -1,6 +1,6 @@
 {
   "applicability": {
-    "capabilities": ["framework.react-driver"]
+    "capabilities": ["framework.react-runner"]
   },
   "checks": [
     {
@@ -11,12 +11,12 @@
           "kind": "resultField"
         }
       ],
-      "checkId": "react-driver-ext.before-iteration-twice",
+      "checkId": "react-runner-ext.before-iteration-twice",
       "input": {
-        "scenarioPath": "$.driver-hook-turn"
+        "scenarioPath": "$.runner-hook-turn"
       },
-      "operation": "driver.execute",
-      "scenario": "driver-api-scenarios",
+      "operation": "runner.execute",
+      "scenario": "runner-api-scenarios",
       "evidence": ["result.hooks.beforeIteration"]
     },
     {
@@ -27,12 +27,12 @@
           "kind": "resultField"
         }
       ],
-      "checkId": "react-driver-ext.around-model-twice",
+      "checkId": "react-runner-ext.around-model-twice",
       "input": {
-        "scenarioPath": "$.driver-hook-turn"
+        "scenarioPath": "$.runner-hook-turn"
       },
-      "operation": "driver.execute",
-      "scenario": "driver-api-scenarios",
+      "operation": "runner.execute",
+      "scenario": "runner-api-scenarios",
       "evidence": ["result.hooks.aroundModel"]
     },
     {
@@ -43,12 +43,12 @@
           "kind": "resultField"
         }
       ],
-      "checkId": "react-driver-ext.after-iteration-twice",
+      "checkId": "react-runner-ext.after-iteration-twice",
       "input": {
-        "scenarioPath": "$.driver-hook-turn"
+        "scenarioPath": "$.runner-hook-turn"
       },
-      "operation": "driver.execute",
-      "scenario": "driver-api-scenarios",
+      "operation": "runner.execute",
+      "scenario": "runner-api-scenarios",
       "evidence": ["result.hooks.afterIteration"]
     },
     {
@@ -59,12 +59,12 @@
           "kind": "resultField"
         }
       ],
-      "checkId": "react-driver-ext.around-tool-once",
+      "checkId": "react-runner-ext.around-tool-once",
       "input": {
-        "scenarioPath": "$.driver-hook-turn"
+        "scenarioPath": "$.runner-hook-turn"
       },
-      "operation": "driver.execute",
-      "scenario": "driver-api-scenarios",
+      "operation": "runner.execute",
+      "scenario": "runner-api-scenarios",
       "evidence": ["result.hooks.aroundTool"]
     },
     {
@@ -86,12 +86,12 @@
           "kind": "resultField"
         }
       ],
-      "checkId": "react-driver-af.extension.phase-order-before-around-after",
+      "checkId": "react-runner-af.extension.phase-order-before-around-after",
       "input": {
-        "scenarioPath": "$.driver-hook-turn"
+        "scenarioPath": "$.runner-hook-turn"
       },
-      "operation": "driver.execute",
-      "scenario": "driver-api-scenarios",
+      "operation": "runner.execute",
+      "scenario": "runner-api-scenarios",
       "evidence": ["hooks.phaseTrace"]
     },
     {
@@ -102,12 +102,12 @@
           "kind": "resultField"
         }
       ],
-      "checkId": "react-driver-af.extension.around-tool-nesting",
+      "checkId": "react-runner-af.extension.around-tool-nesting",
       "input": {
-        "scenarioPath": "$.driver-hook-turn"
+        "scenarioPath": "$.runner-hook-turn"
       },
-      "operation": "driver.execute",
-      "scenario": "driver-api-scenarios",
+      "operation": "runner.execute",
+      "scenario": "runner-api-scenarios",
       "evidence": ["hooks.aroundToolTrace"]
     },
     {
@@ -118,17 +118,17 @@
           "kind": "resultField"
         },
         {
-          "equals": "driver hook turn completed",
+          "equals": "runner hook turn completed",
           "field": "$.hooks.terminalMutationDurableText",
           "kind": "resultField"
         }
       ],
-      "checkId": "react-driver-af.extension.after-iteration-terminal-state-nondurable",
+      "checkId": "react-runner-af.extension.after-iteration-terminal-state-nondurable",
       "input": {
-        "scenarioPath": "$.driver-hook-turn"
+        "scenarioPath": "$.runner-hook-turn"
       },
-      "operation": "driver.execute",
-      "scenario": "driver-api-scenarios",
+      "operation": "runner.execute",
+      "scenario": "runner-api-scenarios",
       "evidence": [
         "hooks.terminalMutationAttempted",
         "hooks.terminalMutationDurableText"
@@ -152,12 +152,12 @@
           "kind": "resultField"
         }
       ],
-      "checkId": "react-driver-af.around-model-post-stream-replacement",
+      "checkId": "react-runner-af.around-model-post-stream-replacement",
       "input": {
-        "scenarioPath": "$.driver-around-model-post-stream-replacement"
+        "scenarioPath": "$.runner-around-model-post-stream-replacement"
       },
-      "operation": "driver.execute",
-      "scenario": "driver-api-scenarios",
+      "operation": "runner.execute",
+      "scenario": "runner-api-scenarios",
       "evidence": [
         "aroundModel.finalAssistantText",
         "aroundModel.messageStartCount",
@@ -177,12 +177,12 @@
           "kind": "resultField"
         }
       ],
-      "checkId": "react-driver-af.around-model-retry-final-response-durable",
+      "checkId": "react-runner-af.around-model-retry-final-response-durable",
       "input": {
-        "scenarioPath": "$.driver-around-model-retry-final-response"
+        "scenarioPath": "$.runner-around-model-retry-final-response"
       },
-      "operation": "driver.execute",
-      "scenario": "driver-api-scenarios",
+      "operation": "runner.execute",
+      "scenario": "runner-api-scenarios",
       "evidence": [
         "aroundModel.finalAssistantText",
         "provider.generate.callCount"
@@ -195,12 +195,12 @@
           "kind": "resultField"
         }
       ],
-      "checkId": "react-driver-ext.hook-field-present.before-iteration-present",
+      "checkId": "react-runner-ext.hook-field-present.before-iteration-present",
       "input": {
-        "scenarioPath": "$.driver-hook-turn"
+        "scenarioPath": "$.runner-hook-turn"
       },
-      "operation": "driver.execute",
-      "scenario": "driver-api-scenarios",
+      "operation": "runner.execute",
+      "scenario": "runner-api-scenarios",
       "evidence": ["result.hooks.beforeIteration"]
     },
     {
@@ -210,12 +210,12 @@
           "kind": "resultField"
         }
       ],
-      "checkId": "react-driver-ext.hook-field-present.after-iteration-present",
+      "checkId": "react-runner-ext.hook-field-present.after-iteration-present",
       "input": {
-        "scenarioPath": "$.driver-hook-turn"
+        "scenarioPath": "$.runner-hook-turn"
       },
-      "operation": "driver.execute",
-      "scenario": "driver-api-scenarios",
+      "operation": "runner.execute",
+      "scenario": "runner-api-scenarios",
       "evidence": ["result.hooks.afterIteration"]
     },
     {
@@ -225,12 +225,12 @@
           "kind": "resultField"
         }
       ],
-      "checkId": "react-driver-ext.hook-field-present.around-model-present",
+      "checkId": "react-runner-ext.hook-field-present.around-model-present",
       "input": {
-        "scenarioPath": "$.driver-hook-turn"
+        "scenarioPath": "$.runner-hook-turn"
       },
-      "operation": "driver.execute",
-      "scenario": "driver-api-scenarios",
+      "operation": "runner.execute",
+      "scenario": "runner-api-scenarios",
       "evidence": ["result.hooks.aroundModel"]
     },
     {
@@ -240,12 +240,12 @@
           "kind": "resultField"
         }
       ],
-      "checkId": "react-driver-ext.hook-field-present.around-tool-present",
+      "checkId": "react-runner-ext.hook-field-present.around-tool-present",
       "input": {
-        "scenarioPath": "$.driver-hook-turn"
+        "scenarioPath": "$.runner-hook-turn"
       },
-      "operation": "driver.execute",
-      "scenario": "driver-api-scenarios",
+      "operation": "runner.execute",
+      "scenario": "runner-api-scenarios",
       "evidence": ["result.hooks.aroundTool"]
     },
     {
@@ -256,28 +256,28 @@
           "kind": "stateField"
         }
       ],
-      "checkId": "react-driver-ext.checkpoint-manifest-path-count",
+      "checkId": "react-runner-ext.checkpoint-manifest-path-count",
       "evidence": ["trace.checkpoint.evidence.checkpoint.manifestPathCount"],
       "input": {
-        "scenarioPath": "$.driver-checkpoint-turn"
+        "scenarioPath": "$.runner-checkpoint-turn"
       },
-      "operation": "driver.checkpoint",
-      "scenario": "driver-api-scenarios",
+      "operation": "runner.checkpoint",
+      "scenario": "runner-api-scenarios",
       "steps": [
         {
           "input": {
-            "scenarioPath": "$.driver-checkpoint-turn"
+            "scenarioPath": "$.runner-checkpoint-turn"
           },
-          "operation": "driver.checkpoint",
+          "operation": "runner.checkpoint",
           "stepId": "checkpoint"
         }
       ]
     }
   ],
-  "packetId": "tuvren.framework.react-driver",
-  "planId": "tuvren.framework.react-driver.extended",
+  "packetId": "tuvren.framework.react-runner",
+  "planId": "tuvren.framework.react-runner.extended",
   "planVersion": "0.1.0",
   "scenarios": {
-    "driver-api-scenarios": "../scenarios/driver-api-scenarios.json"
+    "runner-api-scenarios": "../scenarios/runner-api-scenarios.json"
   }
 }

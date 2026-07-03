@@ -113,7 +113,7 @@ export async function runProviderMediatedAttribution(): Promise<
   });
   const runtime = createTuvrenRuntime({
     defaultRunnerId: "react",
-    driverRegistry: createRunnerRegistry([
+    runnerRegistry: createRunnerRegistry([
       createReActRunner({ providerCallMode: "generate" }),
     ]),
     kernel,

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test drivers intentionally match the async framework driver contract.
+// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 
 /**
  * KRT-BA002: Observation/Event Taxonomy Depth
@@ -136,7 +136,7 @@ function makeProviderRunner(
   executionClass: "provider-native" | "provider-mediated"
 ): RuntimeRunner {
   return {
-    id: `ba002-driver-${executionClass}`,
+    id: `ba002-runner-${executionClass}`,
     async execute(context) {
       if (!context.messages.some((m) => m.role === "tool")) {
         return {
@@ -163,7 +163,7 @@ function makeProviderRunner(
 
 function makeServerRunner(toolName: string): RuntimeRunner {
   return {
-    id: "ba002-server-driver",
+    id: "ba002-server-runner",
     async execute(context) {
       if (!context.messages.some((m) => m.role === "tool")) {
         return {
@@ -189,7 +189,7 @@ function makeServerRunner(toolName: string): RuntimeRunner {
 
 function makeClientRunner(capabilityId: string): RuntimeRunner {
   return {
-    id: "ba002-client-driver",
+    id: "ba002-client-runner",
     async execute(context) {
       if (!context.messages.some((m) => m.role === "tool")) {
         return {
@@ -248,8 +248,8 @@ describe("BA002 telemetry taxonomy — tuvren-server", () => {
     const harness = createFakeKernelHarness();
     const toolName = "ba002_server_tool";
     const runtime = createTuvrenRuntime({
-      defaultRunnerId: "ba002-server-driver",
-      driverRegistry: createRunnerRegistry([makeServerRunner(toolName)]),
+      defaultRunnerId: "ba002-server-runner",
+      runnerRegistry: createRunnerRegistry([makeServerRunner(toolName)]),
       kernel: harness.kernel,
       telemetry: capture.sink,
     });
@@ -291,8 +291,8 @@ describe("BA002 telemetry taxonomy — tuvren-server", () => {
     const harness = createFakeKernelHarness();
     const toolName = "ba002_audit_tool";
     const runtime = createTuvrenRuntime({
-      defaultRunnerId: "ba002-server-driver",
-      driverRegistry: createRunnerRegistry([makeServerRunner(toolName)]),
+      defaultRunnerId: "ba002-server-runner",
+      runnerRegistry: createRunnerRegistry([makeServerRunner(toolName)]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -332,8 +332,8 @@ describe("BA002 telemetry taxonomy — provider-native", () => {
     const capture = createTelemetryCapture();
     const harness = createFakeKernelHarness();
     const runtime = createTuvrenRuntime({
-      defaultRunnerId: "ba002-driver-provider-native",
-      driverRegistry: createRunnerRegistry([
+      defaultRunnerId: "ba002-runner-provider-native",
+      runnerRegistry: createRunnerRegistry([
         makeProviderRunner("provider-native"),
       ]),
       kernel: harness.kernel,
@@ -376,8 +376,8 @@ describe("BA002 telemetry taxonomy — provider-mediated", () => {
     const capture = createTelemetryCapture();
     const harness = createFakeKernelHarness();
     const runtime = createTuvrenRuntime({
-      defaultRunnerId: "ba002-driver-provider-mediated",
-      driverRegistry: createRunnerRegistry([
+      defaultRunnerId: "ba002-runner-provider-mediated",
+      runnerRegistry: createRunnerRegistry([
         makeProviderRunner("provider-mediated"),
       ]),
       kernel: harness.kernel,
@@ -423,8 +423,8 @@ describe("BA002 telemetry taxonomy — tuvren-client", () => {
     const boundary = createClientEndpointBoundary([endpoint]);
 
     const runtime = createTuvrenRuntime({
-      defaultRunnerId: "ba002-client-driver",
-      driverRegistry: createRunnerRegistry([makeClientRunner(capabilityId)]),
+      defaultRunnerId: "ba002-client-runner",
+      runnerRegistry: createRunnerRegistry([makeClientRunner(capabilityId)]),
       kernel: harness.kernel,
       telemetry: capture.sink,
     });
@@ -472,8 +472,8 @@ describe("BA002 cross-class observation limits", () => {
     ] as const) {
       const harness = createFakeKernelHarness();
       const runtime = createTuvrenRuntime({
-        defaultRunnerId: `ba002-driver-${executionClass}`,
-        driverRegistry: createRunnerRegistry([
+        defaultRunnerId: `ba002-runner-${executionClass}`,
+        runnerRegistry: createRunnerRegistry([
           makeProviderRunner(executionClass),
         ]),
         kernel: harness.kernel,
@@ -507,8 +507,8 @@ describe("BA002 cross-class observation limits", () => {
     const harness = createFakeKernelHarness();
     const toolName = "ba002_obs_tool";
     const runtime = createTuvrenRuntime({
-      defaultRunnerId: "ba002-server-driver",
-      driverRegistry: createRunnerRegistry([makeServerRunner(toolName)]),
+      defaultRunnerId: "ba002-server-runner",
+      runnerRegistry: createRunnerRegistry([makeServerRunner(toolName)]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -545,8 +545,8 @@ describe("BA002 cross-class observation limits", () => {
     const endpoint = makeOkEndpoint("ep-ba002-obs", capabilityId);
     const boundary = createClientEndpointBoundary([endpoint]);
     const runtime = createTuvrenRuntime({
-      defaultRunnerId: "ba002-client-driver",
-      driverRegistry: createRunnerRegistry([makeClientRunner(capabilityId)]),
+      defaultRunnerId: "ba002-client-runner",
+      runnerRegistry: createRunnerRegistry([makeClientRunner(capabilityId)]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});

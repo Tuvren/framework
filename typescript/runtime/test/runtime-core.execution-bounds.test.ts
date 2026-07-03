@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test drivers intentionally match the async framework driver contract.
+// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 import { describe, expect, test } from "bun:test";
 import type { EpochMs } from "@tuvren/core";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
@@ -71,7 +71,7 @@ function createTelemetryCapture(): TelemetryCapture {
   };
 }
 
-/** A driver that never stops — it always requests another iteration. */
+/** A runner that never stops — it always requests another iteration. */
 const runawayTextRunner = {
   async execute() {
     return {
@@ -87,14 +87,14 @@ const runawayTextRunner = {
 
 function createBoundsRuntime(options: {
   bounds?: RuntimeCoreOptions["bounds"];
-  driver: KrakenRunner;
+  runner: KrakenRunner;
   now?: () => EpochMs;
   telemetry?: TuvrenTelemetrySink;
 }) {
   const harness = createFakeKernelHarness();
   const runtime = createTuvrenRuntime({
-    defaultRunnerId: options.driver.id,
-    driverRegistry: createRunnerRegistry([options.driver]),
+    defaultRunnerId: options.runner.id,
+    runnerRegistry: createRunnerRegistry([options.runner]),
     kernel: harness.kernel,
     ...(options.bounds === undefined ? {} : { bounds: options.bounds }),
     ...(options.now === undefined ? {} : { now: options.now }),
@@ -134,7 +134,7 @@ describe("framework execution bounds (KRT-BD006)", () => {
   test("breaching maxIterations fails the turn with execution_bound_exceeded", async () => {
     const { runtime } = createBoundsRuntime({
       bounds: { maxIterations: 3 },
-      driver: runawayTextRunner,
+      runner: runawayTextRunner,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -174,12 +174,12 @@ describe("framework execution bounds (KRT-BD006)", () => {
   test("AgentConfig.maxIterations is clamped by bounds.maxIterations", async () => {
     const { runtime } = createBoundsRuntime({
       bounds: { maxIterations: 2 },
-      driver: runawayTextRunner,
+      runner: runawayTextRunner,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
       branchId: thread.branchId,
-      // A driver/agent asking for far more iterations cannot bypass the bound.
+      // A runner/agent asking for far more iterations cannot bypass the bound.
       config: { name: AGENT, maxIterations: 1000 },
       signal: textSignal("run"),
       threadId: thread.threadId,
@@ -215,7 +215,7 @@ describe("framework execution bounds (KRT-BD006)", () => {
     } satisfies KrakenRunner;
     const { runtime } = createBoundsRuntime({
       bounds: { maxToolCalls: 2, maxIterations: 100 },
-      driver: batchRunner,
+      runner: batchRunner,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -250,7 +250,7 @@ describe("framework execution bounds (KRT-BD006)", () => {
     };
     const { runtime } = createBoundsRuntime({
       bounds: { maxWallClockMs: 100, maxIterations: 100_000 },
-      driver: runawayTextRunner,
+      runner: runawayTextRunner,
       now,
     });
     const thread = await runtime.createThread({});
@@ -268,7 +268,7 @@ describe("framework execution bounds (KRT-BD006)", () => {
 
   test("the real wall-clock timer aborts in-flight work and ignores its late completion", async () => {
     // No mock clock: a small real maxWallClockMs lets the out-of-band abort
-    // timer fire while the driver is awaiting its cooperative cancellation
+    // timer fire while the runner is awaiting its cooperative cancellation
     // signal (standing in for in-flight model/tool work).
     let lateCompletion = false;
     const hangingRunner = {
@@ -289,7 +289,7 @@ describe("framework execution bounds (KRT-BD006)", () => {
     } satisfies KrakenRunner;
     const { runtime } = createBoundsRuntime({
       bounds: { maxWallClockMs: 25 },
-      driver: hangingRunner,
+      runner: hangingRunner,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -312,7 +312,7 @@ describe("framework execution bounds (KRT-BD006)", () => {
     // Execution bounds are per logical turn: a resumed handle continues the same
     // turn, so the end-to-end wall-clock deadline is carried forward rather than
     // reset (runtime-core.ts resumeApprovedExecution / getBoundsTurnState).
-    // Otherwise a driver could reset the hard-stop budget on every approval
+    // Otherwise a runner could reset the hard-stop budget on every approval
     // pause. We pin that here — the deadline is captured on the first run, the
     // turn pauses for human approval, the controllable clock then advances past
     // the original deadline, and the resume MUST fail with maxWallClockMs at the
@@ -353,7 +353,7 @@ describe("framework execution bounds (KRT-BD006)", () => {
 
     const { runtime } = createBoundsRuntime({
       bounds: { maxWallClockMs: 1000, maxIterations: 100 },
-      driver: approvalRunner,
+      runner: approvalRunner,
       now,
     });
 
@@ -403,7 +403,7 @@ describe("framework execution bounds (KRT-BD006)", () => {
     const capture = createTelemetryCapture();
     const { runtime } = createBoundsRuntime({
       bounds: { maxIterations: 2 },
-      driver: runawayTextRunner,
+      runner: runawayTextRunner,
       telemetry: capture.sink,
     });
     const thread = await runtime.createThread({});
@@ -470,7 +470,7 @@ describe("framework execution bounds (KRT-BD006)", () => {
 
     const { runtime } = createBoundsRuntime({
       bounds: { maxConcurrentToolCalls: 1 },
-      driver: parallelRunner,
+      runner: parallelRunner,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -491,10 +491,10 @@ describe("framework execution bounds (KRT-BD006)", () => {
   });
 
   test("rejects invalid bound configuration at construction time", () => {
-    const driver = runawayTextRunner;
+    const runner = runawayTextRunner;
     for (const bad of [0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY]) {
       expect(() =>
-        createBoundsRuntime({ bounds: { maxIterations: bad }, driver })
+        createBoundsRuntime({ bounds: { maxIterations: bad }, runner })
       ).toThrow();
     }
   });
@@ -512,7 +512,7 @@ describe("framework execution bounds (KRT-BD006)", () => {
         throw new Error("resume was not expected");
       },
     } satisfies KrakenRunner;
-    const { runtime } = createBoundsRuntime({ driver: normalRunner });
+    const { runtime } = createBoundsRuntime({ runner: normalRunner });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
       branchId: thread.branchId,

@@ -53,7 +53,7 @@ describe("runner-react integration aroundModel", () => {
     } satisfies TuvrenProvider;
     const runtime = createTuvrenRuntimeCore({
       defaultRunnerId: REACT_RUNNER_ID,
-      driverRegistry: createRunnerRegistry([
+      runnerRegistry: createRunnerRegistry([
         createReActRunner({
           providerCallMode: "generate",
         }),
@@ -118,7 +118,7 @@ describe("runner-react integration aroundModel", () => {
     } satisfies TuvrenProvider;
     const runtime = createTuvrenRuntimeCore({
       defaultRunnerId: REACT_RUNNER_ID,
-      driverRegistry: createRunnerRegistry([
+      runnerRegistry: createRunnerRegistry([
         createReActRunner({
           providerCallMode: "stream",
         }),
@@ -193,11 +193,11 @@ describe("runner-react integration aroundModel", () => {
         yield finish;
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "stream",
     }).create();
 
-    const result = await driver.execute(
+    const result = await runner.execute(
       createRunnerExecutionContext({
         config: {
           extensions: [
@@ -263,7 +263,7 @@ describe("runner-react integration aroundModel", () => {
     } satisfies TuvrenProvider;
     const runtime = createTuvrenRuntimeCore({
       defaultRunnerId: REACT_RUNNER_ID,
-      driverRegistry: createRunnerRegistry([
+      runnerRegistry: createRunnerRegistry([
         createReActRunner({
           providerCallMode: "stream",
         }),
@@ -336,7 +336,7 @@ describe("runner-react integration aroundModel", () => {
     } satisfies TuvrenProvider;
     const runtime = createTuvrenRuntimeCore({
       defaultRunnerId: REACT_RUNNER_ID,
-      driverRegistry: createRunnerRegistry([
+      runnerRegistry: createRunnerRegistry([
         createReActRunner({
           providerCallMode: "stream",
         }),
@@ -373,7 +373,7 @@ describe("runner-react integration aroundModel", () => {
       events.some(
         (event) =>
           event.type === "error" &&
-          event.error.code === "react_driver_invalid_around_model_retry"
+          event.error.code === "react_runner_invalid_around_model_retry"
       )
     ).toBe(true);
     expect(
@@ -410,7 +410,7 @@ describe("runner-react integration aroundModel", () => {
     } satisfies TuvrenProvider;
     const runtime = createTuvrenRuntimeCore({
       defaultRunnerId: REACT_RUNNER_ID,
-      driverRegistry: createRunnerRegistry([
+      runnerRegistry: createRunnerRegistry([
         createReActRunner({
           providerCallMode: "generate",
         }),
@@ -474,7 +474,7 @@ describe("runner-react integration aroundModel", () => {
     } satisfies TuvrenProvider;
     const runtime = createTuvrenRuntimeCore({
       defaultRunnerId: REACT_RUNNER_ID,
-      driverRegistry: createRunnerRegistry([
+      runnerRegistry: createRunnerRegistry([
         createReActRunner({
           providerCallMode: "generate",
         }),

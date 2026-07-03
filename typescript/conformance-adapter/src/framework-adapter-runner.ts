@@ -38,7 +38,7 @@ import {
   createRunnerExecutionContext,
   createScenarioProvider,
   createStaticRunner,
-  DRIVER_ID,
+  RUNNER_ID,
   type ScenarioToolCall,
   textSignal,
 } from "./framework-adapter-runtime.ts";
@@ -92,16 +92,16 @@ export function createFrameworkAdapterRunner(
   async function runRunnerExecute(input: unknown): Promise<AdapterProjection> {
     const scenario = dependencies.readOperationScenario(
       input,
-      "driver.execute"
+      "runner.execute"
     );
     const providerResponses = dependencies.readModelResponseArrayProperty(
       scenario,
       "providerResponses",
-      "driver.execute.providerResponses"
+      "runner.execute.providerResponses"
     );
     const toolName = dependencies.readFirstToolCallNameOptional(
       providerResponses,
-      "driver.execute.providerResponses"
+      "runner.execute.providerResponses"
     );
     const loopPolicy = readLoopPolicyOptional(scenario);
     const caseName = readOptionalString(scenario, "case");
@@ -121,12 +121,12 @@ export function createFrameworkAdapterRunner(
     const prompt = dependencies.readStringProperty(
       scenario,
       "prompt",
-      "driver.execute.prompt"
+      "runner.execute.prompt"
     );
     const toolResult = dependencies.readProperty(
       scenario,
       "toolResult",
-      "driver.execute.toolResult"
+      "runner.execute.toolResult"
     );
     const harness = createConformanceKernelHarness();
     const hooks = createHookCounters();
@@ -141,7 +141,7 @@ export function createFrameworkAdapterRunner(
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: reactRunner.id,
-      driverRegistry: createRunnerRegistry([reactRunner]),
+      runnerRegistry: createRunnerRegistry([reactRunner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -173,7 +173,7 @@ export function createFrameworkAdapterRunner(
 
     return {
       evidence: {
-        driver: {
+        runner: {
           phase: handle.status().phase,
         },
         hooks: {
@@ -199,7 +199,7 @@ export function createFrameworkAdapterRunner(
         },
       },
       result: {
-        driver: {
+        runner: {
           phase: handle.status().phase,
         },
         hooks: {
@@ -235,7 +235,7 @@ export function createFrameworkAdapterRunner(
   ): Promise<AdapterProjection> {
     const chunks = dependencies.readProviderStreamChunks(
       scenario,
-      "driver.execute.streamChunks"
+      "runner.execute.streamChunks"
     );
     const emittedEvents: TuvrenStreamEvent[] = [];
     const provider: TuvrenProvider = {
@@ -252,10 +252,10 @@ export function createFrameworkAdapterRunner(
         }
       },
     };
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "stream",
     }).create();
-    const result = await driver.execute(
+    const result = await runner.execute(
       createRunnerExecutionContext({
         config: {
           extensions: [
@@ -277,7 +277,7 @@ export function createFrameworkAdapterRunner(
       })
     );
 
-    assertRunnerExecutionResult(result, "driver aroundModel replacement");
+    assertRunnerExecutionResult(result, "runner aroundModel replacement");
 
     const projection = {
       aroundModel: {
@@ -285,7 +285,7 @@ export function createFrameworkAdapterRunner(
         messageStartCount: countEventsByType(emittedEvents, "message.start"),
         streamedTextDone: readTextDoneValues(emittedEvents),
       },
-      driver: {
+      runner: {
         resolutionType: result.resolution.type,
       },
     };
@@ -300,10 +300,10 @@ export function createFrameworkAdapterRunner(
     providerResponses: readonly TuvrenModelResponse[]
   ): Promise<AdapterProjection> {
     let generateCalls = 0;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "generate",
     }).create();
-    const result = await driver.execute(
+    const result = await runner.execute(
       createRunnerExecutionContext({
         config: {
           extensions: [
@@ -335,13 +335,13 @@ export function createFrameworkAdapterRunner(
       })
     );
 
-    assertRunnerExecutionResult(result, "driver aroundModel retry");
+    assertRunnerExecutionResult(result, "runner aroundModel retry");
 
     const projection = {
       aroundModel: {
         finalAssistantText: readResultAssistantText(result),
       },
-      driver: {
+      runner: {
         resolutionType: result.resolution.type,
       },
       provider: {
@@ -361,10 +361,10 @@ export function createFrameworkAdapterRunner(
     providerResponses: readonly TuvrenModelResponse[],
     loopPolicy?: LoopPolicy
   ): Promise<AdapterProjection> {
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "generate",
     }).create();
-    const result = await driver.execute(
+    const result = await runner.execute(
       createRunnerExecutionContext({
         config: {
           ...(loopPolicy === undefined ? {} : { loopPolicy }),
@@ -374,7 +374,7 @@ export function createFrameworkAdapterRunner(
       })
     );
 
-    assertRunnerExecutionResult(result, "driver execute result");
+    assertRunnerExecutionResult(result, "runner execute result");
 
     const error =
       result.resolution.type === "fail"
@@ -383,13 +383,13 @@ export function createFrameworkAdapterRunner(
 
     return {
       evidence: {
-        driver: {
+        runner: {
           errorCode: error?.code,
           resolutionType: result.resolution.type,
         },
       },
       result: {
-        driver: {
+        runner: {
           errorCode: error?.code,
           resolutionType: result.resolution.type,
         },
@@ -399,32 +399,32 @@ export function createFrameworkAdapterRunner(
   }
 
   async function runRunnerResume(input: unknown): Promise<AdapterProjection> {
-    const scenario = dependencies.readOperationScenario(input, "driver.resume");
+    const scenario = dependencies.readOperationScenario(input, "runner.resume");
     const pendingToolCalls = dependencies.readPendingToolCalls(
       scenario,
-      "driver.resume.pendingToolCalls"
+      "runner.resume.pendingToolCalls"
     );
     const decisions = dependencies.readApprovalDecisions(
       scenario,
-      "driver.resume.approvalDecisions"
+      "runner.resume.approvalDecisions"
     );
     const providerResponses = dependencies.readModelResponseArrayProperty(
       scenario,
       "providerResponses",
-      "driver.resume.providerResponses"
+      "runner.resume.providerResponses"
     );
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "generate",
     }).create();
 
-    if (driver.resume === undefined) {
-      throw new Error("implementation driver does not expose resume");
+    if (runner.resume === undefined) {
+      throw new Error("implementation runner does not expose resume");
     }
 
     const resumedFrom = "0".repeat(64);
-    assertHashString(resumedFrom, "driver.resume.resumedFrom");
+    assertHashString(resumedFrom, "runner.resume.resumedFrom");
 
-    const result = await driver.resume({
+    const result = await runner.resume({
       ...createRunnerExecutionContext(),
       approval: {
         decisions,
@@ -443,18 +443,18 @@ export function createFrameworkAdapterRunner(
       resumedFrom,
     });
 
-    assertRunnerExecutionResult(result, "driver resume result");
+    assertRunnerExecutionResult(result, "runner resume result");
 
     return {
       evidence: {
-        driver: {
+        runner: {
           approvalDecisionCallIds: decisions.map((decision) => decision.callId),
           pendingToolCallIds: pendingToolCalls.map((call) => call.callId),
           resolutionType: result.resolution.type,
         },
       },
       result: {
-        driver: {
+        runner: {
           approvalDecisionCallIds: decisions.map((decision) => decision.callId),
           pendingToolCallIds: pendingToolCalls.map((call) => call.callId),
           resolutionType: result.resolution.type,
@@ -472,18 +472,18 @@ export function createFrameworkAdapterRunner(
   ): Promise<AdapterProjection> {
     const scenario = dependencies.readOperationScenario(
       input,
-      "driver.checkpoint"
+      "runner.checkpoint"
     );
     const finalText = dependencies.readStringProperty(
       scenario,
       "finalText",
-      "driver.checkpoint.finalText"
+      "runner.checkpoint.finalText"
     );
     const harness = createConformanceKernelHarness();
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
-      defaultRunnerId: DRIVER_ID,
-      driverRegistry: createRunnerRegistry([
+      defaultRunnerId: RUNNER_ID,
+      runnerRegistry: createRunnerRegistry([
         createStaticRunner(() => ({
           messages: [assistantText(finalText)],
           resolution: {
@@ -566,7 +566,7 @@ function readLoopPolicyOptional(
   }
 
   if (!isRecord(loopPolicy)) {
-    throw new Error("driver.execute.loopPolicy must be an object");
+    throw new Error("runner.execute.loopPolicy must be an object");
   }
 
   const decision = readIterationDecision(loopPolicy);
@@ -586,11 +586,11 @@ function readIterationDecision(
   const reason = record.reason;
 
   if (typeof continueDecision !== "boolean") {
-    throw new Error("driver.execute.loopPolicy.continue must be a boolean");
+    throw new Error("runner.execute.loopPolicy.continue must be a boolean");
   }
 
   if (typeof executeTools !== "boolean") {
-    throw new Error("driver.execute.loopPolicy.executeTools must be a boolean");
+    throw new Error("runner.execute.loopPolicy.executeTools must be a boolean");
   }
 
   return {
@@ -670,7 +670,7 @@ function createMeasuredExtension(hooks: HookCounters): TuvrenExtension {
 
       if (
         firstPart?.type === "text" &&
-        firstPart.text === "driver hook turn completed"
+        firstPart.text === "runner hook turn completed"
       ) {
         firstPart.text = "mutated by afterIteration";
         hooks.terminalMutationAttempted = true;
@@ -701,6 +701,6 @@ function createMeasuredExtension(hooks: HookCounters): TuvrenExtension {
       hooks.phaseTrace.push("beforeIteration");
       hooks.beforeIteration += 1;
     },
-    name: "measured-driver-hooks",
+    name: "measured-runner-hooks",
   };
 }

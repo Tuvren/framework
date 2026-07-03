@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://tuvren.dev/schemas/framework/driver-api/DriverRuntimePortEvent.json",
+  "$id": "https://tuvren.dev/schemas/framework/runner-api/RunnerRuntimePortEvent.json",
   "type": "object",
   "properties": {
     "type": {
-      "$ref": "https://tuvren.dev/schemas/framework/driver-api/NonEmptyString.json"
+      "$ref": "https://tuvren.dev/schemas/framework/runner-api/NonEmptyString.json"
     },
     "timestamp": {
-      "$ref": "https://tuvren.dev/schemas/framework/driver-api/EpochMs.json"
+      "$ref": "https://tuvren.dev/schemas/framework/runner-api/EpochMs.json"
     },
     "payload": {}
   },

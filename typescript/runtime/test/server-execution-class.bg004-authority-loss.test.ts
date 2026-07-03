@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test drivers intentionally match the async framework driver contract.
+// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 
 /**
  * KRT-BG004 — No-retry-on-authority-loss + client-result-as-proposal (ADR-052).
@@ -76,12 +76,12 @@ import {
 } from "./runtime-core-test-helpers.ts";
 
 // ---------------------------------------------------------------------------
-// Shared helpers — a driver that issues exactly one tool call, then ends.
+// Shared helpers — a runner that issues exactly one tool call, then ends.
 // ---------------------------------------------------------------------------
 
 function makeRunner(toolName: string): RuntimeRunner {
   return {
-    id: "bg004-driver",
+    id: "bg004-runner",
     async execute(context) {
       if (!context.messages.some((m) => m.role === "tool")) {
         return {
@@ -121,8 +121,8 @@ async function runWithLeaseLoss(
     },
   });
   const runtime = createTuvrenRuntime({
-    defaultRunnerId: "bg004-driver",
-    driverRegistry: createBaseRunnerRegistry([makeRunner(tool.name)]),
+    defaultRunnerId: "bg004-runner",
+    runnerRegistry: createBaseRunnerRegistry([makeRunner(tool.name)]),
     kernel: livenessHarness.kernel,
     runLiveness: {
       executionOwnerId: "worker-1",
@@ -235,8 +235,8 @@ async function runClientDispatchWithLeaseLoss(
     },
   });
   const runtime = createTuvrenRuntime({
-    defaultRunnerId: "bg004-driver",
-    driverRegistry: createBaseRunnerRegistry([makeRunner(capabilityId)]),
+    defaultRunnerId: "bg004-runner",
+    runnerRegistry: createBaseRunnerRegistry([makeRunner(capabilityId)]),
     kernel: livenessHarness.kernel,
     runLiveness: {
       executionOwnerId: "worker-1",

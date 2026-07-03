@@ -79,7 +79,7 @@ export function createPublishedEvent(
     ...event,
     source: event.source ?? {
       agent: loopState.activeConfig.name,
-      driver: loopState.activeRunnerId,
+      runner: loopState.activeRunnerId,
       threadId: handle.request.threadId,
     },
   };
@@ -101,7 +101,7 @@ export function createRunnerPublishedEvent(
       ...event,
       source: {
         agent: loopState.activeConfig.name,
-        driver: loopState.activeRunnerId,
+        runner: loopState.activeRunnerId,
         threadId: handle.request.threadId,
       },
     },

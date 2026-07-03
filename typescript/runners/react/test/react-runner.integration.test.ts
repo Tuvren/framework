@@ -54,7 +54,7 @@ describe("runner-react integration", () => {
     } satisfies TuvrenProvider;
     const runtime = createTuvrenRuntimeCore({
       defaultRunnerId: REACT_RUNNER_ID,
-      driverRegistry: createRunnerRegistry([
+      runnerRegistry: createRunnerRegistry([
         createReActRunner({
           providerCallMode: "stream",
         }),
@@ -137,7 +137,7 @@ describe("runner-react integration", () => {
     } satisfies TuvrenProvider;
     const runtime = createTuvrenRuntimeCore({
       defaultRunnerId: REACT_RUNNER_ID,
-      driverRegistry: createRunnerRegistry([
+      runnerRegistry: createRunnerRegistry([
         createReActRunner({
           providerCallMode: "stream",
         }),
@@ -213,7 +213,7 @@ describe("runner-react integration", () => {
     } satisfies TuvrenProvider;
     const runtime = createTuvrenRuntimeCore({
       defaultRunnerId: REACT_RUNNER_ID,
-      driverRegistry: createRunnerRegistry([
+      runnerRegistry: createRunnerRegistry([
         createReActRunner({
           providerCallMode: "stream",
         }),
@@ -278,7 +278,7 @@ describe("runner-react integration", () => {
     } satisfies TuvrenProvider;
     const runtime = createTuvrenRuntimeCore({
       defaultRunnerId: REACT_RUNNER_ID,
-      driverRegistry: createRunnerRegistry([
+      runnerRegistry: createRunnerRegistry([
         createReActRunner({
           providerCallMode: "generate",
         }),
@@ -350,11 +350,11 @@ describe("runner-react integration", () => {
         } as const;
       },
     } satisfies TuvrenProvider;
-    const driver = createReActRunner({
+    const runner = createReActRunner({
       providerCallMode: "stream",
     }).create();
 
-    const result = await driver.execute(
+    const result = await runner.execute(
       createRunnerExecutionContext({
         config: {
           model: provider,
@@ -373,14 +373,14 @@ describe("runner-react integration", () => {
       "code" in result.resolution.error
         ? result.resolution.error.code
         : undefined
-    ).toBe("react_driver_invalid_provider_stream");
+    ).toBe("react_runner_invalid_provider_stream");
   });
 
   test("executes end to end through runtime-core with a generated terminal response", async () => {
     const harness = createFakeKernelHarness();
     const runtime = createTuvrenRuntimeCore({
       defaultRunnerId: REACT_RUNNER_ID,
-      driverRegistry: createRunnerRegistry([
+      runnerRegistry: createRunnerRegistry([
         createReActRunner({
           providerCallMode: "generate",
         }),
@@ -431,7 +431,7 @@ describe("runner-react integration", () => {
     const fileData = new Uint8Array([1, 2, 3]);
     const runtime = createTuvrenRuntimeCore({
       defaultRunnerId: REACT_RUNNER_ID,
-      driverRegistry: createRunnerRegistry([
+      runnerRegistry: createRunnerRegistry([
         createReActRunner({
           providerCallMode: "generate",
         }),
@@ -675,7 +675,7 @@ describe("runner-react integration", () => {
     } satisfies TuvrenProvider;
     const runtime = createTuvrenRuntimeCore({
       defaultRunnerId: REACT_RUNNER_ID,
-      driverRegistry: createRunnerRegistry([
+      runnerRegistry: createRunnerRegistry([
         createReActRunner({
           providerCallMode: "generate",
           toolExecutionMode: "sequential",
@@ -755,7 +755,7 @@ describe("runner-react integration", () => {
     } satisfies TuvrenProvider;
     const runtime = createTuvrenRuntimeCore({
       defaultRunnerId: REACT_RUNNER_ID,
-      driverRegistry: createRunnerRegistry([
+      runnerRegistry: createRunnerRegistry([
         createReActRunner({
           providerCallMode: "generate",
         }),
@@ -828,7 +828,7 @@ describe("runner-react integration", () => {
     } satisfies TuvrenProvider;
     const runtime = createTuvrenRuntimeCore({
       defaultRunnerId: REACT_RUNNER_ID,
-      driverRegistry: createRunnerRegistry([
+      runnerRegistry: createRunnerRegistry([
         createReActRunner({
           providerCallMode: "stream",
         }),

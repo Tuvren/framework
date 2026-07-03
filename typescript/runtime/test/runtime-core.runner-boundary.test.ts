@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test drivers intentionally match the async framework driver contract.
+// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 import { describe, expect, test } from "bun:test";
 import type { AgentConfig } from "@tuvren/core/execution";
 import type {
@@ -38,7 +38,7 @@ import {
 describe("framework-runtime-core", () => {
   test("rejects malformed initial input signals before staging branch history", async () => {
     const harness = createFakeKernelHarness();
-    const driver = {
+    const runner = {
       async execute(_context) {
         return {
           messages: [assistantText("This should not run.")],
@@ -55,7 +55,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -74,7 +74,7 @@ describe("framework-runtime-core", () => {
   test("does not start a fresh handle when it is canceled before the first stream pull", async () => {
     const harness = createFakeKernelHarness();
     let executeCalls = 0;
-    const driver = {
+    const runner = {
       async execute() {
         executeCalls += 1;
         return {
@@ -89,7 +89,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -110,9 +110,9 @@ describe("framework-runtime-core", () => {
     expect(await harness.readBranchRuntimeStatus(thread.branchId)).toBeNull();
   });
 
-  test("fails malformed driver messages before they can be checkpointed", async () => {
+  test("fails malformed runner messages before they can be checkpointed", async () => {
     const harness = createFakeKernelHarness();
-    const driver = {
+    const runner = {
       async execute(_context) {
         return {
           messages: JSON.parse('[{"role":"assistant","parts":[123]}]'),
@@ -129,14 +129,14 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
       branchId: thread.branchId,
       config: { name: "primary" },
-      signal: textSignal("Reject malformed driver output"),
+      signal: textSignal("Reject malformed runner output"),
       threadId: thread.threadId,
     });
 
@@ -150,15 +150,15 @@ describe("framework-runtime-core", () => {
     expect(errorEvent?.error.code).toBe("invalid_tuvren_message");
     expect(await harness.readBranchMessages(thread.branchId)).toEqual([
       {
-        parts: [{ text: "Reject malformed driver output", type: "text" }],
+        parts: [{ text: "Reject malformed runner output", type: "text" }],
         role: "user",
       },
     ]);
   });
 
-  test("fails invalid driver resolutions at the execution boundary", async () => {
+  test("fails invalid runner resolutions at the execution boundary", async () => {
     const harness = createFakeKernelHarness();
-    const driver = {
+    const runner = {
       async execute(_context) {
         return {
           messages: [assistantText("Invalid resolution payload.")],
@@ -172,14 +172,14 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
       branchId: thread.branchId,
       config: { name: "primary" },
-      signal: textSignal("Reject invalid driver resolution"),
+      signal: textSignal("Reject invalid runner resolution"),
       threadId: thread.threadId,
     });
 
@@ -190,18 +190,18 @@ describe("framework-runtime-core", () => {
     );
 
     expect(handle.status().phase).toBe("failed");
-    expect(errorEvent?.error.code).toBe("invalid_driver_result");
+    expect(errorEvent?.error.code).toBe("invalid_runner_result");
     expect(await harness.readBranchMessages(thread.branchId)).toEqual([
       {
-        parts: [{ text: "Reject invalid driver resolution", type: "text" }],
+        parts: [{ text: "Reject invalid runner resolution", type: "text" }],
         role: "user",
       },
     ]);
   });
 
-  test("rejects malformed driver handoff plans at the execution boundary", async () => {
+  test("rejects malformed runner handoff plans at the execution boundary", async () => {
     const harness = createFakeKernelHarness();
-    const driver = {
+    const runner = {
       async execute() {
         return JSON.parse(
           '{"activeAgent":"primary","messages":[{"role":"assistant","parts":[{"type":"text","text":"Bad handoff"}]}],"resolution":{"type":"handoff","targetAgent":"reviewer","contextPlan":{"targetAgent":"reviewer"}}}'
@@ -214,7 +214,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -232,7 +232,7 @@ describe("framework-runtime-core", () => {
     );
 
     expect(handle.status().phase).toBe("failed");
-    expect(errorEvent?.error.code).toBe("invalid_driver_result");
+    expect(errorEvent?.error.code).toBe("invalid_runner_result");
     expect(await harness.readBranchMessages(thread.branchId)).toEqual([
       {
         parts: [{ text: "Reject malformed handoff", type: "text" }],
@@ -241,9 +241,9 @@ describe("framework-runtime-core", () => {
     ]);
   });
 
-  test("rejects driver messages that bypass the shared tool-result path", async () => {
+  test("rejects runner messages that bypass the shared tool-result path", async () => {
     const harness = createFakeKernelHarness();
-    const driver = {
+    const runner = {
       async execute() {
         return {
           messages: [
@@ -272,14 +272,14 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
       branchId: thread.branchId,
       config: { name: "primary" },
-      signal: textSignal("Reject driver tool result"),
+      signal: textSignal("Reject runner tool result"),
       threadId: thread.threadId,
     });
 
@@ -290,18 +290,18 @@ describe("framework-runtime-core", () => {
     );
 
     expect(handle.status().phase).toBe("failed");
-    expect(errorEvent?.error.code).toBe("invalid_driver_result");
+    expect(errorEvent?.error.code).toBe("invalid_runner_result");
     expect(await harness.readBranchMessages(thread.branchId)).toEqual([
       {
-        parts: [{ text: "Reject driver tool result", type: "text" }],
+        parts: [{ text: "Reject runner tool result", type: "text" }],
         role: "user",
       },
     ]);
   });
 
-  test("rejects removed driver response fields at the runtime boundary", async () => {
+  test("rejects removed runner response fields at the runtime boundary", async () => {
     const harness = createFakeKernelHarness();
-    const driver = {
+    const runner = {
       async execute() {
         return {
           messages: [assistantText("Plain assistant output.")],
@@ -329,14 +329,14 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
       branchId: thread.branchId,
       config: { name: "primary" },
-      signal: textSignal("Reject contradictory driver response"),
+      signal: textSignal("Reject contradictory runner response"),
       threadId: thread.threadId,
     });
 
@@ -347,18 +347,18 @@ describe("framework-runtime-core", () => {
     );
 
     expect(handle.status().phase).toBe("failed");
-    expect(errorEvent?.error.code).toBe("invalid_driver_result");
+    expect(errorEvent?.error.code).toBe("invalid_runner_result");
     expect(await harness.readBranchMessages(thread.branchId)).toEqual([
       {
-        parts: [{ text: "Reject contradictory driver response", type: "text" }],
+        parts: [{ text: "Reject contradictory runner response", type: "text" }],
         role: "user",
       },
     ]);
   });
 
-  test("rejects driver handoff resolutions whose target disagrees with the context plan", async () => {
+  test("rejects runner handoff resolutions whose target disagrees with the context plan", async () => {
     const harness = createFakeKernelHarness();
-    const driver = {
+    const runner = {
       async execute(context) {
         return {
           messages: [assistantText("Mismatched handoff target.")],
@@ -379,7 +379,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
       resolveAgentConfig: (agentName) =>
         ({
@@ -403,7 +403,7 @@ describe("framework-runtime-core", () => {
     );
 
     expect(handle.status().phase).toBe("failed");
-    expect(errorEvent?.error.code).toBe("invalid_driver_result");
+    expect(errorEvent?.error.code).toBe("invalid_runner_result");
     expect(await harness.readBranchMessages(thread.branchId)).toEqual([
       {
         parts: [{ text: "Reject handoff target mismatch", type: "text" }],
@@ -419,7 +419,7 @@ describe("framework-runtime-core", () => {
       primary: { name: "primary" },
       reviewer: { name: "reviewer" },
     };
-    const driver = {
+    const runner = {
       async execute(context) {
         return {
           resolution: {
@@ -474,7 +474,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
       resolveAgentConfig: (agentName) => agents[agentName],
     });
@@ -493,7 +493,7 @@ describe("framework-runtime-core", () => {
     );
 
     expect(handle.status().phase).toBe("failed");
-    expect(errorEvent?.error.code).toBe("invalid_driver_result");
+    expect(errorEvent?.error.code).toBe("invalid_runner_result");
     expect(await harness.readBranchMessages(thread.branchId)).toEqual([
       {
         parts: [{ text: "Reject raw handoff mismatch", type: "text" }],
@@ -502,9 +502,9 @@ describe("framework-runtime-core", () => {
     ]);
   });
 
-  test("rejects terminal driver resolutions that still contain executable tool calls before persistence", async () => {
+  test("rejects terminal runner resolutions that still contain executable tool calls before persistence", async () => {
     const harness = createFakeKernelHarness();
-    const driver = {
+    const runner = {
       async execute() {
         return {
           messages: [
@@ -529,7 +529,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -547,7 +547,7 @@ describe("framework-runtime-core", () => {
     );
 
     expect(handle.status().phase).toBe("failed");
-    expect(errorEvent?.error.code).toBe("invalid_driver_result");
+    expect(errorEvent?.error.code).toBe("invalid_runner_result");
     expect(await harness.readBranchMessages(thread.branchId)).toEqual([
       {
         parts: [{ text: "Reject terminal tool call", type: "text" }],
@@ -556,9 +556,9 @@ describe("framework-runtime-core", () => {
     ]);
   });
 
-  test("rejects driver state updates for extensions that are not active in the current turn", async () => {
+  test("rejects runner state updates for extensions that are not active in the current turn", async () => {
     const harness = createFakeKernelHarness();
-    const driver = {
+    const runner = {
       async execute() {
         return {
           messages: [assistantText("ghost state")],
@@ -581,7 +581,7 @@ describe("framework-runtime-core", () => {
     } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      driverRegistry: createRunnerRegistry([driver]),
+      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -603,7 +603,7 @@ describe("framework-runtime-core", () => {
     );
 
     expect(handle.status().phase).toBe("failed");
-    expect(errorEvent?.error.code).toBe("invalid_driver_result");
+    expect(errorEvent?.error.code).toBe("invalid_runner_result");
     expect(manifest.extensions).toEqual({});
     expect(await harness.readBranchMessages(thread.branchId)).toEqual([
       {
@@ -615,9 +615,9 @@ describe("framework-runtime-core", () => {
 });
 
 function createRunnerRegistry(
-  drivers: Array<KrakenRunner | KrakenRunnerFactory> = []
+  runners: Array<KrakenRunner | KrakenRunnerFactory> = []
 ) {
-  return createBaseRunnerRegistry(drivers.map(wrapRunnerEntry));
+  return createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
 }
 
 function wrapRunnerEntry(
@@ -641,14 +641,14 @@ function isKrakenRunnerFactory(
   return "create" in entry && typeof entry.create === "function";
 }
 
-function wrapRunner(driver: KrakenRunner): KrakenRunner {
-  const resume = driver.resume;
+function wrapRunner(runner: KrakenRunner): KrakenRunner {
+  const resume = runner.resume;
 
   return {
     async execute(context) {
-      return normalizeRunnerResult(await driver.execute(context));
+      return normalizeRunnerResult(await runner.execute(context));
     },
-    id: driver.id,
+    id: runner.id,
     ...(resume === undefined
       ? {}
       : {

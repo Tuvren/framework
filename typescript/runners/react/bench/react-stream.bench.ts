@@ -107,7 +107,7 @@ const cases: BenchmarkCase[] = [
 await main();
 
 async function main(): Promise<void> {
-  process.stdout.write("react driver stream benchmark\n");
+  process.stdout.write("react runner stream benchmark\n");
 
   for (const benchmarkCase of cases) {
     const result = await measure(benchmarkCase);

@@ -28,7 +28,7 @@ import {
   createConformanceIdFactory,
   createConformanceKernelHarness,
   createStaticRunner,
-  DRIVER_ID,
+  RUNNER_ID,
   textSignal,
 } from "./framework-adapter-runtime.ts";
 
@@ -47,7 +47,7 @@ export async function runCapabilityOrchestrationFoundation(
   const harness = createConformanceKernelHarness();
   let toolCallCount = 0;
 
-  const driver = createStaticRunner(async (context) => {
+  const runner = createStaticRunner(async (context) => {
     await Promise.resolve();
     if (!context.messages.some((m) => m.role === "tool")) {
       return {
@@ -72,8 +72,8 @@ export async function runCapabilityOrchestrationFoundation(
 
   const runtime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
-    defaultRunnerId: DRIVER_ID,
-    driverRegistry: createRunnerRegistry([driver]),
+    defaultRunnerId: RUNNER_ID,
+    runnerRegistry: createRunnerRegistry([runner]),
     kernel: harness.kernel,
   });
 
@@ -231,7 +231,7 @@ export async function runCapabilityOrchestrationPolicyDecisions(): Promise<Adapt
   const harness = createConformanceKernelHarness();
   let deniedToolExecuted = false;
 
-  const driver = createStaticRunner(async (ctx) => {
+  const runner = createStaticRunner(async (ctx) => {
     await Promise.resolve();
     if (!ctx.messages.some((m) => m.role === "tool")) {
       return {
@@ -256,8 +256,8 @@ export async function runCapabilityOrchestrationPolicyDecisions(): Promise<Adapt
 
   const runtime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
-    defaultRunnerId: DRIVER_ID,
-    driverRegistry: createRunnerRegistry([driver]),
+    defaultRunnerId: RUNNER_ID,
+    runnerRegistry: createRunnerRegistry([runner]),
     kernel: harness.kernel,
   });
 
