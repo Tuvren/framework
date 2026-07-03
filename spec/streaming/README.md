@@ -35,9 +35,9 @@ plans: `event-stream-core`, `event-stream-extended`,
 The TypeScript package implementation for `@tuvren/event-stream` still
 lives at `boundaries/framework/contracts/event-stream/implementations/`
 (a shim retiring at 87-M8.1c) and the SSE decoder implementation lives
-at `boundaries/framework/implementations/typescript/stream-sse`
-(migrating as a streaming implementation at 87-M8.1b); both are binding
-projections of the packets above, not authority.
+at `typescript/streaming/sse` (moved to the idiomatic TypeScript tree at
+87-M8.1b); both are binding projections of the packets above, not
+authority.
 
 This is a pointer, not an oracle: cross-language semantic truth lives in
 the referenced authority packets, generated artifacts, and conformance

@@ -39,10 +39,10 @@
       "path": "./typescript/kernel/backends/sqlite"
     },
     {
-      "path": "./boundaries/framework/implementations/typescript/stream-agui"
+      "path": "./typescript/streaming/agui"
     },
     {
-      "path": "./boundaries/framework/implementations/typescript/stream-core"
+      "path": "./typescript/streaming/core"
     },
     {
       "path": "./typescript/kernel/runtime"
@@ -51,7 +51,7 @@
       "path": "./typescript/core"
     },
     {
-      "path": "./boundaries/framework/implementations/typescript/stream-sse"
+      "path": "./typescript/streaming/sse"
     },
     {
       "path": "./typescript/runtime"

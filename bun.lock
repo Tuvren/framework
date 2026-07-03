@@ -49,43 +49,6 @@
         "@tuvren/core-types": "workspace:*",
       },
     },
-    "boundaries/framework/implementations/typescript/stream-agui": {
-      "name": "@tuvren/stream-agui",
-      "version": "0.0.0",
-      "dependencies": {
-        "@ag-ui/core": "0.0.52",
-        "@tuvren/stream-core": "workspace:*",
-      },
-      "devDependencies": {
-        "@tuvren/framework-testkit": "workspace:*",
-      },
-      "peerDependencies": {
-        "@tuvren/core": "workspace:*",
-      },
-    },
-    "boundaries/framework/implementations/typescript/stream-core": {
-      "name": "@tuvren/stream-core",
-      "version": "0.0.0",
-      "devDependencies": {
-        "@tuvren/framework-testkit": "workspace:*",
-      },
-      "peerDependencies": {
-        "@tuvren/core": "workspace:*",
-      },
-    },
-    "boundaries/framework/implementations/typescript/stream-sse": {
-      "name": "@tuvren/stream-sse",
-      "version": "0.0.0",
-      "dependencies": {
-        "@tuvren/stream-core": "workspace:*",
-      },
-      "devDependencies": {
-        "@tuvren/framework-testkit": "workspace:*",
-      },
-      "peerDependencies": {
-        "@tuvren/core": "workspace:*",
-      },
-    },
     "boundaries/framework/implementations/typescript/telemetry-otel": {
       "name": "@tuvren/telemetry-otel",
       "version": "0.0.0",
@@ -338,6 +301,43 @@
         "@standard-schema/spec",
         "zod",
       ],
+    },
+    "typescript/streaming/agui": {
+      "name": "@tuvren/stream-agui",
+      "version": "0.0.0",
+      "dependencies": {
+        "@ag-ui/core": "0.0.52",
+        "@tuvren/stream-core": "workspace:*",
+      },
+      "devDependencies": {
+        "@tuvren/framework-testkit": "workspace:*",
+      },
+      "peerDependencies": {
+        "@tuvren/core": "workspace:*",
+      },
+    },
+    "typescript/streaming/core": {
+      "name": "@tuvren/stream-core",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@tuvren/framework-testkit": "workspace:*",
+      },
+      "peerDependencies": {
+        "@tuvren/core": "workspace:*",
+      },
+    },
+    "typescript/streaming/sse": {
+      "name": "@tuvren/stream-sse",
+      "version": "0.0.0",
+      "dependencies": {
+        "@tuvren/stream-core": "workspace:*",
+      },
+      "devDependencies": {
+        "@tuvren/framework-testkit": "workspace:*",
+      },
+      "peerDependencies": {
+        "@tuvren/core": "workspace:*",
+      },
     },
     "typescript/testkit": {
       "name": "@tuvren/framework-testkit",
@@ -964,11 +964,11 @@
 
     "@tuvren/sdk": ["@tuvren/sdk@workspace:typescript/sdk"],
 
-    "@tuvren/stream-agui": ["@tuvren/stream-agui@workspace:boundaries/framework/implementations/typescript/stream-agui"],
+    "@tuvren/stream-agui": ["@tuvren/stream-agui@workspace:typescript/streaming/agui"],
 
-    "@tuvren/stream-core": ["@tuvren/stream-core@workspace:boundaries/framework/implementations/typescript/stream-core"],
+    "@tuvren/stream-core": ["@tuvren/stream-core@workspace:typescript/streaming/core"],
 
-    "@tuvren/stream-sse": ["@tuvren/stream-sse@workspace:boundaries/framework/implementations/typescript/stream-sse"],
+    "@tuvren/stream-sse": ["@tuvren/stream-sse@workspace:typescript/streaming/sse"],
 
     "@tuvren/telemetry-otel": ["@tuvren/telemetry-otel@workspace:boundaries/framework/implementations/typescript/telemetry-otel"],
 

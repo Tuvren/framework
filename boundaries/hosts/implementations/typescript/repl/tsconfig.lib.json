@@ -14,13 +14,13 @@
       "path": "../../../../../typescript/runtime/tsconfig.lib.json"
     },
     {
-      "path": "../../../../framework/implementations/typescript/stream-core/tsconfig.lib.json"
+      "path": "../../../../../typescript/streaming/core/tsconfig.lib.json"
     },
     {
-      "path": "../../../../framework/implementations/typescript/stream-sse/tsconfig.lib.json"
+      "path": "../../../../../typescript/streaming/sse/tsconfig.lib.json"
     },
     {
-      "path": "../../../../framework/implementations/typescript/stream-agui/tsconfig.lib.json"
+      "path": "../../../../../typescript/streaming/agui/tsconfig.lib.json"
     },
     {
       "path": "../../../../../typescript/kernel/backends/memory/tsconfig.lib.json"

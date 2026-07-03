@@ -14,6 +14,7 @@
     "typescript/kernel/backends/*",
     "typescript/providers/*",
     "typescript/runners/*",
+    "typescript/streaming/*",
     "typescript/tools/*"
   ],
   "scripts": {

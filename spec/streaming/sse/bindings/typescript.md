@@ -9,7 +9,7 @@ part of the cross-language contract.
 ## Binding root
 
 - Package: `@tuvren/stream-sse`
-- Implementation root: `boundaries/framework/implementations/typescript/stream-sse`
+- Implementation root: `typescript/streaming/sse`
 - Bundler: `tsup` per the existing package convention
 
 ## Projection rules

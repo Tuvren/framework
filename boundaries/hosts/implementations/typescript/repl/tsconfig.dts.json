@@ -18,13 +18,13 @@
       ],
       "@tuvren/runtime": ["../../../../../typescript/runtime/dist/index.d.ts"],
       "@tuvren/stream-agui": [
-        "../../../../framework/implementations/typescript/stream-agui/dist/index.d.ts"
+        "../../../../../typescript/streaming/agui/dist/index.d.ts"
       ],
       "@tuvren/stream-core": [
-        "../../../../framework/implementations/typescript/stream-core/dist/index.d.ts"
+        "../../../../../typescript/streaming/core/dist/index.d.ts"
       ],
       "@tuvren/stream-sse": [
-        "../../../../framework/implementations/typescript/stream-sse/dist/index.d.ts"
+        "../../../../../typescript/streaming/sse/dist/index.d.ts"
       ]
     },
     "rootDir": "./src",

@@ -36,7 +36,7 @@
     }
   ],
   "bindingProjections": {
-    "typescript": "boundaries/framework/implementations/typescript/stream-sse"
+    "typescript": "typescript/streaming/sse"
   },
   "bindingAppendices": [
     {
@@ -45,7 +45,7 @@
     }
   ],
   "forbiddenAuthoritySources": [
-    "boundaries/framework/implementations/typescript/stream-sse",
+    "typescript/streaming/sse",
     "typescript/certification",
     "typescript/conformance-adapter",
     "rust/certification",

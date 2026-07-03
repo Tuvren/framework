@@ -49,13 +49,13 @@
       "@tuvren/repl-host": ["./src/index.ts"],
       "@tuvren/runtime": ["../../../../../typescript/runtime/src/index.ts"],
       "@tuvren/stream-agui": [
-        "../../../../framework/implementations/typescript/stream-agui/src/index.ts"
+        "../../../../../typescript/streaming/agui/src/index.ts"
       ],
       "@tuvren/stream-core": [
-        "../../../../framework/implementations/typescript/stream-core/src/index.ts"
+        "../../../../../typescript/streaming/core/src/index.ts"
       ],
       "@tuvren/stream-sse": [
-        "../../../../framework/implementations/typescript/stream-sse/src/index.ts"
+        "../../../../../typescript/streaming/sse/src/index.ts"
       ]
     },
     "types": ["bun", "node"]
@@ -69,9 +69,9 @@
     "../../../../../typescript/kernel/backends/sqlite/src/**/*.ts",
     "../../../../../typescript/runners/react/src/**/*.ts",
     "../../../../../typescript/runtime/src/**/*.ts",
-    "../../../../framework/implementations/typescript/stream-core/src/**/*.ts",
-    "../../../../framework/implementations/typescript/stream-sse/src/**/*.ts",
-    "../../../../framework/implementations/typescript/stream-agui/src/**/*.ts",
+    "../../../../../typescript/streaming/core/src/**/*.ts",
+    "../../../../../typescript/streaming/sse/src/**/*.ts",
+    "../../../../../typescript/streaming/agui/src/**/*.ts",
     "../../../../../typescript/providers/bridge-ai-sdk/src/**/*.ts"
   ]
 }

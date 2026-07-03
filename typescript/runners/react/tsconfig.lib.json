@@ -14,13 +14,13 @@
       "path": "../../core-types/tsconfig.lib.json"
     },
     {
-      "path": "../../../boundaries/framework/implementations/typescript/stream-sse/tsconfig.lib.json"
+      "path": "../../streaming/sse/tsconfig.lib.json"
     },
     {
-      "path": "../../../boundaries/framework/implementations/typescript/stream-core/tsconfig.lib.json"
+      "path": "../../streaming/core/tsconfig.lib.json"
     },
     {
-      "path": "../../../boundaries/framework/implementations/typescript/stream-agui/tsconfig.lib.json"
+      "path": "../../streaming/agui/tsconfig.lib.json"
     },
     {
       "path": "../../providers/provider-api/tsconfig.lib.json"

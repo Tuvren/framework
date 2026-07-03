@@ -89,17 +89,17 @@ const PORTABLE_PACKAGE_SURFACES: readonly PortablePackageSurface[] = [
   {
     classification: "Bun-and-Node validated",
     packageName: "@tuvren/stream-core",
-    packageRoot: "boundaries/framework/implementations/typescript/stream-core",
+    packageRoot: "typescript/streaming/core",
   },
   {
     classification: "Bun-and-Node validated",
     packageName: "@tuvren/stream-sse",
-    packageRoot: "boundaries/framework/implementations/typescript/stream-sse",
+    packageRoot: "typescript/streaming/sse",
   },
   {
     classification: "Bun-and-Node validated",
     packageName: "@tuvren/stream-agui",
-    packageRoot: "boundaries/framework/implementations/typescript/stream-agui",
+    packageRoot: "typescript/streaming/agui",
   },
   {
     classification: "Bun-and-Node validated",
