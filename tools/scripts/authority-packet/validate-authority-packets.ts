@@ -95,9 +95,14 @@ async function main(): Promise<void> {
 }
 
 export async function validateAuthorityPackets(): Promise<ValidationFailure[]> {
-  const manifestPaths = existsSync(SPEC_ROOT)
-    ? (await findAuthorityPacketManifests(SPEC_ROOT)).sort()
-    : [];
+  // No existsSync guard on the root: a missing spec/ (sparse checkout,
+  // wrong cwd) must fail this gate loudly, never pass it vacuously.
+  const manifestPaths = (await findAuthorityPacketManifests(SPEC_ROOT)).sort();
+  if (manifestPaths.length === 0) {
+    throw new Error(
+      `authority-packet gate found zero packets under ${SPEC_ROOT} — refusing to report a vacuous pass`
+    );
+  }
   const schema = readJsonSchema(
     JSON.parse(await readFile(SCHEMA_PATH, "utf8")) as unknown,
     SCHEMA_PATH

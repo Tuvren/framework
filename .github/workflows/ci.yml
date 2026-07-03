@@ -127,7 +127,11 @@ jobs:
         # version in local dev at pin time; binary-cached on cache.nixos.org).
         # A floating `nixpkgs#devenv` would let CI's devenv CLI drift with no
         # repo change — devenv.lock pins the project's inputs, not the CLI.
-        run: nix profile install github:NixOS/nixpkgs/1c0fc59a961424afd95e00966e6b6021b65ef605#devenv
+        # The version grep makes the pin self-verifying: bump the hash and
+        # the expected version together or this step fails.
+        run: |
+          nix profile install github:NixOS/nixpkgs/1c0fc59a961424afd95e00966e6b6021b65ef605#devenv
+          devenv version | grep -F "devenv 2.1.2"
 
       # No direnv daemon in CI, so we enter the devenv shell directly rather
       # than relying on .envrc's `use devenv` hook (that hook is a local
@@ -174,7 +178,11 @@ jobs:
         # version in local dev at pin time; binary-cached on cache.nixos.org).
         # A floating `nixpkgs#devenv` would let CI's devenv CLI drift with no
         # repo change — devenv.lock pins the project's inputs, not the CLI.
-        run: nix profile install github:NixOS/nixpkgs/1c0fc59a961424afd95e00966e6b6021b65ef605#devenv
+        # The version grep makes the pin self-verifying: bump the hash and
+        # the expected version together or this step fails.
+        run: |
+          nix profile install github:NixOS/nixpkgs/1c0fc59a961424afd95e00966e6b6021b65ef605#devenv
+          devenv version | grep -F "devenv 2.1.2"
 
       - name: bazel build //... (all targets, incl. TS shim launchers)
         run: devenv shell -- bazel build //...

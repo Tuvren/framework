@@ -107,7 +107,9 @@ for (const [name, reason] of EXCLUDED_TEST_PROJECTS) {
     continue;
   }
   const commands = targetCommandStrings(project.project.targets.test);
-  if (!commands.some((command) => command.includes("cargo"))) {
+  // Token match, not substring: "cargo" must appear as a standalone command
+  // word so e.g. a wrapper named cargo-shim.ts cannot satisfy the check.
+  if (!commands.some((command) => /(^|\s)cargo(\s|$)/.test(command))) {
     problems.push(
       `exclusion for ${name} (${project.path}) claims "${reason}" but its test command no longer invokes cargo: "${commands.join("; ")}"`
     );

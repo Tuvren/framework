@@ -423,7 +423,7 @@ function renderTelemetryMarkdown(registry: ResolvedTelemetryRegistry): string {
     )
     .join("\n");
 
-  return `# Tuvren Runtime Semantic Conventions
+  return `# Tuvren Semantic Conventions
 
 Generated from \`spec/telemetry/semconv/tuvren-runtime.yaml\` via \`weaver\`.
 

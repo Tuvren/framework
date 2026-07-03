@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import { existsSync } from "node:fs";
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import process from "node:process";
@@ -590,9 +589,14 @@ async function readImplementedCheckEvidence(): Promise<
 > {
   const checks = new Map<string, Set<string>>();
 
-  const planPaths = existsSync(SPEC_ROOT)
-    ? await findConformancePlanPaths(SPEC_ROOT)
-    : [];
+  // No existsSync guard on the root: a missing spec/ (sparse checkout,
+  // wrong cwd) must fail this gate loudly, never pass it vacuously.
+  const planPaths = await findConformancePlanPaths(SPEC_ROOT);
+  if (planPaths.length === 0) {
+    throw new Error(
+      `epic-af gap plan found zero conformance plans under ${SPEC_ROOT} — refusing to report a vacuous pass`
+    );
+  }
 
   for (const planPath of planPaths) {
     const plan = JSON.parse(await readFile(planPath, "utf8")) as unknown;

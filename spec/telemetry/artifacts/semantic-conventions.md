@@ -1,4 +1,4 @@
-# Tuvren Runtime Semantic Conventions
+# Tuvren Semantic Conventions
 
 Generated from `spec/telemetry/semconv/tuvren-runtime.yaml` via `weaver`.
 

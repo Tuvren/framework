@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import { existsSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
 import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -169,7 +168,15 @@ export async function loadConformancePlan(
 }
 
 export async function findConformancePlans(): Promise<string[]> {
-  const paths = existsSync(SPEC_ROOT) ? await findPlanFiles(SPEC_ROOT) : [];
+  // No existsSync guard on the root: a missing spec/ (sparse checkout,
+  // wrong cwd) must fail loudly, never yield an empty plan set that lets
+  // downstream validation pass vacuously.
+  const paths = await findPlanFiles(SPEC_ROOT);
+  if (paths.length === 0) {
+    throw new Error(
+      `found zero conformance plans under ${SPEC_ROOT} — refusing to report a vacuous pass`
+    );
+  }
   return paths.map((path) => relative(REPO_ROOT, path)).sort();
 }
 

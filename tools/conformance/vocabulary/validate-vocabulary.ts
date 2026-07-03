@@ -74,9 +74,14 @@ async function main(): Promise<void> {
 }
 
 async function validateVocabularies(): Promise<ValidationFailure[]> {
-  const manifestPaths = existsSync(SPEC_ROOT)
-    ? (await findAuthorityPacketManifests(SPEC_ROOT)).sort()
-    : [];
+  // No existsSync guard on the root: a missing spec/ (sparse checkout,
+  // wrong cwd) must fail this gate loudly, never pass it vacuously.
+  const manifestPaths = (await findAuthorityPacketManifests(SPEC_ROOT)).sort();
+  if (manifestPaths.length === 0) {
+    throw new Error(
+      `vocabulary gate found zero authority packets under ${SPEC_ROOT} — refusing to report a vacuous pass`
+    );
+  }
   const failures: ValidationFailure[] = [];
 
   for (const manifestPath of manifestPaths) {

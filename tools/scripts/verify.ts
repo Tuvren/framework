@@ -43,17 +43,28 @@ if (codegenProjectsMatches.length !== 1) {
 const CODEGEN_PROJECTS = codegenProjectsMatches[0][1];
 // The regex captures one whitespace-free token, so a quoted/space-separated
 // list or a flag reorder would capture garbage. Validate every captured
-// name against the real project index so the loud-failure guarantee holds.
+// name against the real project index so the loud-failure guarantee holds —
+// and require each to still DECLARE a codegen target, because run-many
+// exits 0 for projects without the target (the exact 87-M4.2c silent-no-op
+// this derivation exists to prevent: existing-but-targetless is just as
+// silent as nonexistent).
 {
-  const knownProjects = new Set(
-    loadNxProjectFiles(process.cwd()).map((file) => file.name)
+  const projectsByName = new Map(
+    loadNxProjectFiles(process.cwd()).map((file) => [file.name, file])
   );
-  const unknown = CODEGEN_PROJECTS.split(",").filter(
-    (name) => !knownProjects.has(name)
-  );
+  const names = CODEGEN_PROJECTS.split(",");
+  const unknown = names.filter((name) => !projectsByName.has(name));
   if (unknown.length > 0) {
     throw new Error(
       `verify: codegen project list captured from package.json contains unknown Nx projects (${unknown.join(", ")}) — the script shape changed; fix the parse or the script`
+    );
+  }
+  const targetless = names.filter(
+    (name) => projectsByName.get(name)?.project.targets?.codegen === undefined
+  );
+  if (targetless.length > 0) {
+    throw new Error(
+      `verify: codegen project(s) ${targetless.join(", ")} no longer declare a codegen target — run-many would silently regenerate nothing for them (87-M4.2c class); update package.json's codegen script`
     );
   }
 }

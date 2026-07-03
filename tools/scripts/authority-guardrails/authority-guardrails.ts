@@ -151,9 +151,14 @@ async function main(): Promise<void> {
 }
 
 async function loadAuthorityPackets(): Promise<AuthorityPacketManifest[]> {
-  const manifestPaths = existsSync(SPEC_ROOT)
-    ? await findFiles(SPEC_ROOT, "authority-packet.json")
-    : [];
+  // No existsSync guard on the root: a missing spec/ (sparse checkout,
+  // wrong cwd) must fail this gate loudly, never pass it vacuously.
+  const manifestPaths = await findFiles(SPEC_ROOT, "authority-packet.json");
+  if (manifestPaths.length === 0) {
+    throw new Error(
+      `authority guardrails found zero packets under ${SPEC_ROOT} — refusing to report a vacuous pass`
+    );
+  }
   const manifests: AuthorityPacketManifest[] = [];
 
   for (const manifestPath of manifestPaths) {
@@ -1523,11 +1528,13 @@ async function findSourceFiles(directory: string): Promise<string[]> {
 }
 
 async function findConformanceSourceRoots(): Promise<string[]> {
+  // Both language roots always exist post-cutover; a missing one is a
+  // broken checkout and must throw, not silently narrow the scan.
   const roots = (
     await Promise.all(
-      [TYPESCRIPT_ROOT, RUST_ROOT]
-        .filter((root) => existsSync(root))
-        .map((root) => collectConformanceSourceRoots(root))
+      [TYPESCRIPT_ROOT, RUST_ROOT].map((root) =>
+        collectConformanceSourceRoots(root)
+      )
     )
   ).flat();
   return roots
