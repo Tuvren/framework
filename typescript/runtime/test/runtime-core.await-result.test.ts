@@ -16,9 +16,9 @@
 
 // biome-ignore-all lint/suspicious/useAwait: Test drivers intentionally match the async framework driver contract.
 import { describe, expect, test } from "bun:test";
-import type { RuntimeDriver as KrakenDriver } from "@tuvren/core/driver";
+import type { RuntimeRunner as KrakenRunner } from "@tuvren/core/runner";
 import {
-  createDriverRegistry as createBaseDriverRegistry,
+  createRunnerRegistry as createBaseRunnerRegistry,
   createTuvrenRuntime,
 } from "../src/index.ts";
 import { createFakeKernelHarness } from "./fake-kernel.ts";
@@ -66,11 +66,11 @@ describe("framework-runtime-core awaitResult", () => {
         };
       },
       id: "fake",
-    } satisfies KrakenDriver;
+    } satisfies KrakenRunner;
 
     const runtime = createTuvrenRuntime({
-      defaultDriverId: "fake",
-      driverRegistry: createDriverRegistry([driver]),
+      defaultRunnerId: "fake",
+      driverRegistry: createRunnerRegistry([driver]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -105,11 +105,11 @@ describe("framework-runtime-core awaitResult", () => {
         };
       },
       id: "fake",
-    } satisfies KrakenDriver;
+    } satisfies KrakenRunner;
 
     const runtime = createTuvrenRuntime({
-      defaultDriverId: "fake",
-      driverRegistry: createDriverRegistry([driver]),
+      defaultRunnerId: "fake",
+      driverRegistry: createRunnerRegistry([driver]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -143,11 +143,11 @@ describe("framework-runtime-core awaitResult", () => {
         };
       },
       id: "fake",
-    } satisfies KrakenDriver;
+    } satisfies KrakenRunner;
 
     const runtime = createTuvrenRuntime({
-      defaultDriverId: "fake",
-      driverRegistry: createDriverRegistry([driver]),
+      defaultRunnerId: "fake",
+      driverRegistry: createRunnerRegistry([driver]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -180,11 +180,11 @@ describe("framework-runtime-core awaitResult", () => {
         };
       },
       id: "fake",
-    } satisfies KrakenDriver;
+    } satisfies KrakenRunner;
 
     const runtime = createTuvrenRuntime({
-      defaultDriverId: "fake",
-      driverRegistry: createDriverRegistry([driver]),
+      defaultRunnerId: "fake",
+      driverRegistry: createRunnerRegistry([driver]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -215,11 +215,11 @@ describe("framework-runtime-core awaitResult", () => {
         };
       },
       id: "fake",
-    } satisfies KrakenDriver;
+    } satisfies KrakenRunner;
 
     const runtime = createTuvrenRuntime({
-      defaultDriverId: "fake",
-      driverRegistry: createDriverRegistry([driver]),
+      defaultRunnerId: "fake",
+      driverRegistry: createRunnerRegistry([driver]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -276,11 +276,11 @@ describe("framework-runtime-core awaitResult", () => {
         };
       },
       id: "fake",
-    } satisfies KrakenDriver;
+    } satisfies KrakenRunner;
 
     const runtime = createTuvrenRuntime({
-      defaultDriverId: "fake",
-      driverRegistry: createDriverRegistry([driver]),
+      defaultRunnerId: "fake",
+      driverRegistry: createRunnerRegistry([driver]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -302,6 +302,6 @@ describe("framework-runtime-core awaitResult", () => {
   });
 });
 
-function createDriverRegistry(drivers: KrakenDriver[] = []) {
-  return createBaseDriverRegistry(drivers);
+function createRunnerRegistry(drivers: KrakenRunner[] = []) {
+  return createBaseRunnerRegistry(drivers);
 }

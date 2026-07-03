@@ -22,9 +22,9 @@ import {
 } from "../src/index.ts";
 import { createFakeKernelHarness } from "./fake-kernel.ts";
 import {
-  createDriverRegistry,
-  createStaticDriver,
-} from "./orchestration-runtime-driver-helpers.ts";
+  createRunnerRegistry,
+  createStaticRunner,
+} from "./orchestration-runtime-runner-helpers.ts";
 import {
   assistantText,
   assistantToolCalls,
@@ -39,9 +39,9 @@ describe("orchestration-runtime approval", () => {
   test("keeps existing subtree events flowing while the parent is paused", async () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntime({
-      defaultDriverId: "fake",
-      driverRegistry: createDriverRegistry([
-        createStaticDriver(async (context) => {
+      defaultRunnerId: "fake",
+      driverRegistry: createRunnerRegistry([
+        createStaticRunner(async (context) => {
           if (context.config.name === "worker") {
             await delay(40);
             return {
@@ -147,9 +147,9 @@ describe("orchestration-runtime approval", () => {
   test("rejects spawning fresh children while the parent is paused", async () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntime({
-      defaultDriverId: "fake",
-      driverRegistry: createDriverRegistry([
-        createStaticDriver(async (context) => {
+      defaultRunnerId: "fake",
+      driverRegistry: createRunnerRegistry([
+        createStaticRunner(async (context) => {
           const toolMessages = context.messages.filter(
             (message) => message.role === "tool"
           );
@@ -230,9 +230,9 @@ describe("orchestration-runtime approval", () => {
   test("resolveApproval returns a fresh child handle and awaitResult resolves through the resumed child", async () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntime({
-      defaultDriverId: "fake",
-      driverRegistry: createDriverRegistry([
-        createStaticDriver(async (context) => {
+      defaultRunnerId: "fake",
+      driverRegistry: createRunnerRegistry([
+        createStaticRunner(async (context) => {
           const toolMessages = context.messages.filter(
             (message) => message.role === "tool"
           );

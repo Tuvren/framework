@@ -47,7 +47,6 @@ import {
   runCapabilityPolicyWiredInvocationDenial,
   runCapabilityPolicyWiredRiskApproval,
 } from "./framework-adapter-capability-policy.ts";
-import { createFrameworkAdapterDriver } from "./framework-adapter-driver.ts";
 import { createFrameworkAdapterEventStream } from "./framework-adapter-event-stream.ts";
 import { createFrameworkAdapterEventStreamSse } from "./framework-adapter-event-stream-sse.ts";
 import {
@@ -62,6 +61,7 @@ import {
 import { runInvocationLifecycleCrossClass } from "./framework-adapter-invocation-lifecycle.ts";
 import { createFrameworkAdapterOrchestration } from "./framework-adapter-orchestration.ts";
 import { createFrameworkAdapterProvingHost } from "./framework-adapter-proving-host.ts";
+import { createFrameworkAdapterRunner } from "./framework-adapter-runner.ts";
 import type {
   AdapterProjection,
   ScenarioToolCall,
@@ -118,7 +118,7 @@ interface OperationObservation {
 
 type OperationStatus = "completed" | "failed" | "paused";
 
-const driverScenarios = createFrameworkAdapterDriver({
+const driverScenarios = createFrameworkAdapterRunner({
   errorToEnvelope,
   readApprovalDecisions,
   readFirstToolCallNameOptional,
@@ -380,11 +380,11 @@ export class TypeScriptFrameworkAdapter implements ImplementationAdapter {
       case "runtime.schema-authoring.define-tool":
         return schemaAuthoringScenarios.runSchemaAuthoringDefineTool(input);
       case "driver.execute":
-        return driverScenarios.runDriverExecute(input);
+        return driverScenarios.runRunnerExecute(input);
       case "driver.resume":
-        return driverScenarios.runDriverResume(input);
+        return driverScenarios.runRunnerResume(input);
       case "driver.checkpoint":
-        return driverScenarios.runDriverCheckpoint(input);
+        return driverScenarios.runRunnerCheckpoint(input);
       case "event-stream.runtime-agui-projection":
         return eventStreamScenarios.runAgUiProjection(input);
       case "event-stream.runtime-sse-eager-subscription":

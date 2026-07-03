@@ -40,7 +40,7 @@ export class FinalizationFailure extends Error {
 
 export interface RuntimeCoreFinalizationHost {
   createId(): string;
-  defaultDriverId(): string;
+  defaultRunnerId(): string;
   finalizeRejectedPausedToolCancellation(
     handle: RuntimeExecutionHandle,
     loopState: LoopState,
@@ -103,7 +103,7 @@ export function publishPauseOutcome(
     {
       ...loopState,
       activeConfig: pauseContext.activeConfig,
-      activeDriverId: pauseContext.activeDriverId,
+      activeRunnerId: pauseContext.activeRunnerId,
     }
   );
   host.publishEvent(
@@ -164,7 +164,7 @@ export async function handleExecutionFailure(
   handle.rememberError(projectError(effectiveError));
   const loopState: LoopState = {
     activeConfig: failureActiveConfig,
-    activeDriverId: handle.request.driverId ?? host.defaultDriverId(),
+    activeRunnerId: handle.request.driverId ?? host.defaultRunnerId(),
     activeToolRegistry: createToolRegistry(),
     carriedStateUpdates: [],
     enteredIterationLoop: false,
@@ -313,7 +313,7 @@ export async function finalizePausedCancellation(
 ): Promise<void> {
   const loopState: LoopState = {
     activeConfig: pauseContext.activeConfig,
-    activeDriverId: pauseContext.activeDriverId,
+    activeRunnerId: pauseContext.activeRunnerId,
     activeToolRegistry: pauseContext.activeToolRegistry,
     carriedStateUpdates: [...pauseContext.carriedStateUpdates],
     clientEndpointBoundary: pauseContext.clientEndpointBoundary,

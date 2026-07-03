@@ -32,7 +32,7 @@ import type {
 import {
   createBindingResolver,
   createClientEndpointBoundary,
-  createDriverRegistry,
+  createRunnerRegistry,
   createTuvrenRuntime as createTuvrenRuntimeCore,
 } from "@tuvren/runtime";
 import type { AdapterProjection } from "./framework-adapter-runtime.ts";
@@ -43,7 +43,7 @@ import {
   collectValues,
   createConformanceIdFactory,
   createConformanceKernelHarness,
-  createStaticDriver,
+  createStaticRunner,
   DRIVER_ID,
   textSignal,
 } from "./framework-adapter-runtime.ts";
@@ -52,8 +52,8 @@ import {
 // Shared helpers
 // ---------------------------------------------------------------------------
 
-function makeSingleCallDriver(toolName: string) {
-  return createStaticDriver(async (context) => {
+function makeSingleCallRunner(toolName: string) {
+  return createStaticRunner(async (context) => {
     await Promise.resolve();
     if (!context.messages.some((m) => m.role === "tool")) {
       return {
@@ -158,11 +158,11 @@ async function runTurn(
   clientEndpointBoundary?: import("@tuvren/core/capabilities").ClientEndpointBoundary
 ) {
   const harness = createConformanceKernelHarness();
-  const driver = makeSingleCallDriver(toolName);
+  const driver = makeSingleCallRunner(toolName);
   const runtime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
-    defaultDriverId: DRIVER_ID,
-    driverRegistry: createDriverRegistry([driver]),
+    defaultRunnerId: DRIVER_ID,
+    driverRegistry: createRunnerRegistry([driver]),
     kernel: harness.kernel,
   });
   const thread = await runtime.createThread({});

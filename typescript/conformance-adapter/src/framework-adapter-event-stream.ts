@@ -24,7 +24,7 @@ import {
   type AdapterProjection,
   AGENT_NAME,
   collectValues,
-  createRuntimeWithReactDriver,
+  createRuntimeWithReactRunner,
   createScenarioProvider,
   textSignal,
 } from "./framework-adapter-runtime.ts";
@@ -192,7 +192,7 @@ export function createFrameworkAdapterEventStream(
       "toolResult",
       `${label}.toolResult`
     );
-    const runtime = createRuntimeWithReactDriver();
+    const runtime = createRuntimeWithReactRunner();
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
       branchId: thread.branchId,
@@ -231,7 +231,7 @@ export function createFrameworkAdapterEventStream(
       "providerResponses",
       `${label}.providerResponses`
     );
-    const runtime = createRuntimeWithReactDriver();
+    const runtime = createRuntimeWithReactRunner();
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
       branchId: thread.branchId,
@@ -264,7 +264,7 @@ export function createFrameworkAdapterEventStream(
       providerResponses,
       `${label}.providerResponses`
     );
-    const runtime = createRuntimeWithReactDriver();
+    const runtime = createRuntimeWithReactRunner();
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
       branchId: thread.branchId,
@@ -316,7 +316,7 @@ export function createFrameworkAdapterEventStream(
       scenario,
       `${label}.approvalDecisions`
     );
-    const runtime = createRuntimeWithReactDriver();
+    const runtime = createRuntimeWithReactRunner();
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
       branchId: thread.branchId,

@@ -38,7 +38,7 @@ import {
   createToolRegistry,
 } from "./tool-registry.js";
 
-const readonlyDriverToolRegistryCache = new WeakMap<
+const readonlyRunnerToolRegistryCache = new WeakMap<
   ToolRegistry,
   ToolRegistry
 >();
@@ -183,10 +183,10 @@ export function normalizeRunLivenessOptions(value: RuntimeRunLivenessOptions): {
   };
 }
 
-export function createReadonlyDriverToolRegistry(
+export function createReadonlyRunnerToolRegistry(
   registry: ToolRegistry
 ): ToolRegistry {
-  const cachedRegistry = readonlyDriverToolRegistryCache.get(registry);
+  const cachedRegistry = readonlyRunnerToolRegistryCache.get(registry);
 
   if (cachedRegistry !== undefined) {
     return cachedRegistry;
@@ -195,7 +195,7 @@ export function createReadonlyDriverToolRegistry(
   const toolSnapshots = registry
     .list()
     .map((tool) =>
-      createFrozenSnapshot(createDriverToolDefinitionSnapshot(tool))
+      createFrozenSnapshot(createRunnerToolDefinitionSnapshot(tool))
     );
   const toolsByName = new Map(toolSnapshots.map((tool) => [tool.name, tool]));
   const renderedDefinitions = registry
@@ -227,11 +227,11 @@ export function createReadonlyDriverToolRegistry(
       return renderedDefinitions.map((tool) => cloneValue(tool));
     },
   } satisfies ToolRegistry);
-  readonlyDriverToolRegistryCache.set(registry, readonlyRegistry);
+  readonlyRunnerToolRegistryCache.set(registry, readonlyRegistry);
   return readonlyRegistry;
 }
 
-export function createDriverAgentConfigSnapshot(
+export function createRunnerAgentConfigSnapshot(
   config: AgentConfig
 ): AgentConfig {
   return createFrozenSnapshot({
@@ -239,16 +239,16 @@ export function createDriverAgentConfigSnapshot(
     extensions: config.extensions?.map((extension) => ({
       ...extension,
       tools: extension.tools?.map((tool) =>
-        createDriverToolDefinitionSnapshot(tool)
+        createRunnerToolDefinitionSnapshot(tool)
       ),
     })),
     tools: config.tools?.map((tool) =>
-      createDriverToolDefinitionSnapshot(tool)
+      createRunnerToolDefinitionSnapshot(tool)
     ),
   });
 }
 
-export function createDriverToolDefinitionSnapshot(
+export function createRunnerToolDefinitionSnapshot(
   tool: TuvrenToolDefinition
 ): TuvrenToolDefinition {
   return {

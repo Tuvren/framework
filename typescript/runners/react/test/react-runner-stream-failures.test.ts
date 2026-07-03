@@ -18,15 +18,15 @@
 
 import { describe, expect, test } from "bun:test";
 import { TuvrenProviderError } from "@tuvren/core";
-import { assertDriverExecutionResult } from "@tuvren/core/driver";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type {
   ProviderStreamChunk,
   TuvrenProvider,
 } from "@tuvren/core/provider";
+import { assertRunnerExecutionResult } from "@tuvren/core/runner";
 import { createReActRunner } from "../src/index.ts";
 import {
-  createDriverExecutionContext,
+  createRunnerExecutionContext,
   wait,
 } from "./react-runner-test-helpers.ts";
 
@@ -49,7 +49,7 @@ describe("runner-react streamed failure handling", () => {
     }).create();
 
     const result = await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config: {
           model: provider,
           name: "primary",
@@ -93,7 +93,7 @@ describe("runner-react streamed failure handling", () => {
     }).create();
 
     const result = await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config: {
           model: provider,
           name: "primary",
@@ -135,7 +135,7 @@ describe("runner-react streamed failure handling", () => {
     }).create();
 
     const result = await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config: {
           model: provider,
           name: "primary",
@@ -178,7 +178,7 @@ describe("runner-react streamed failure handling", () => {
     }).create();
 
     const result = await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config: {
           model: provider,
           name: "primary",
@@ -222,7 +222,7 @@ describe("runner-react streamed failure handling", () => {
 
     const result = await Promise.race([
       driver.execute(
-        createDriverExecutionContext({
+        createRunnerExecutionContext({
           config: {
             model: provider,
             name: "primary",
@@ -318,7 +318,7 @@ describe("runner-react streamed failure handling", () => {
 
     const result = await Promise.race([
       driver.execute(
-        createDriverExecutionContext({
+        createRunnerExecutionContext({
           config: {
             model: provider,
             name: "primary",
@@ -375,7 +375,7 @@ describe("runner-react streamed failure handling", () => {
 
     const result = await Promise.race([
       driver.execute(
-        createDriverExecutionContext({
+        createRunnerExecutionContext({
           config: {
             model: provider,
             name: "primary",
@@ -391,7 +391,7 @@ describe("runner-react streamed failure handling", () => {
       throw new Error("driver did not stop waiting after stream abort");
     }
 
-    expect(() => assertDriverExecutionResult(result)).not.toThrow();
+    expect(() => assertRunnerExecutionResult(result)).not.toThrow();
     expect(result.partial).toBe(true);
     expect(result.toolExecutionMode).toBe("sequential");
     expect(result.resolution.type).toBe("fail");
@@ -448,7 +448,7 @@ describe("runner-react streamed failure handling", () => {
 
     const result = await Promise.race([
       driver.execute(
-        createDriverExecutionContext({
+        createRunnerExecutionContext({
           config: {
             model: provider,
             name: "primary",
@@ -464,7 +464,7 @@ describe("runner-react streamed failure handling", () => {
       throw new Error("driver did not stop waiting after stream abort");
     }
 
-    expect(() => assertDriverExecutionResult(result)).not.toThrow();
+    expect(() => assertRunnerExecutionResult(result)).not.toThrow();
     expect(result.partial).toBe(false);
     expect(result.messages).toBeUndefined();
     expect(result.resolution.type).toBe("fail");
@@ -505,7 +505,7 @@ describe("runner-react streamed failure handling", () => {
 
     const result = await Promise.race([
       driver.execute(
-        createDriverExecutionContext({
+        createRunnerExecutionContext({
           config: {
             model: provider,
             name: "primary",
@@ -521,7 +521,7 @@ describe("runner-react streamed failure handling", () => {
       throw new Error("driver did not stop waiting after stream abort");
     }
 
-    expect(() => assertDriverExecutionResult(result)).not.toThrow();
+    expect(() => assertRunnerExecutionResult(result)).not.toThrow();
     expect(result.partial).toBe(true);
     expect(emittedEvents.map((event) => event.type)).toEqual([
       "message.start",
@@ -562,7 +562,7 @@ describe("runner-react streamed failure handling", () => {
 
     const result = await Promise.race([
       driver.execute(
-        createDriverExecutionContext({
+        createRunnerExecutionContext({
           config: {
             model: provider,
             name: "primary",
@@ -578,7 +578,7 @@ describe("runner-react streamed failure handling", () => {
       throw new Error("driver did not stop waiting after stream abort");
     }
 
-    expect(() => assertDriverExecutionResult(result)).not.toThrow();
+    expect(() => assertRunnerExecutionResult(result)).not.toThrow();
     expect(result.partial).toBe(false);
     expect(result.messages).toBeUndefined();
     expect(result.resolution.type).toBe("fail");

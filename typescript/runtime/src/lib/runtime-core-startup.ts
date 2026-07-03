@@ -75,7 +75,7 @@ export interface RuntimeCoreStartupHost {
     config: LoopState["activeConfig"]
   ): import("@tuvren/core/capabilities").ClientEndpointBoundary | undefined;
   createId(): string;
-  defaultDriverId(): string;
+  defaultRunnerId(): string;
   emitStateObservability(
     handle: RuntimeExecutionHandle,
     loopState: LoopState,
@@ -168,10 +168,10 @@ export function createExecutionLoopState(
 
   return {
     activeConfig: initialActiveConfig,
-    activeDriverId:
-      resumedPauseContext?.activeDriverId ??
+    activeRunnerId:
+      resumedPauseContext?.activeRunnerId ??
       handle.request.driverId ??
-      host.defaultDriverId(),
+      host.defaultRunnerId(),
     activeToolRegistry:
       resumedPauseContext?.activeToolRegistry ??
       host.createActiveToolRegistry(

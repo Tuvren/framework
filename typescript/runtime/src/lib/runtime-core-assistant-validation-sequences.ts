@@ -129,7 +129,7 @@ export function validateStandaloneAssistantSequence(
   return undefined;
 }
 
-export function validateFailedDriverAssistantEvents(
+export function validateFailedRunnerAssistantEvents(
   assistantEvents: TuvrenStreamEvent[]
 ): TuvrenRuntimeError | undefined {
   let state: StandaloneAssistantValidationState | undefined;

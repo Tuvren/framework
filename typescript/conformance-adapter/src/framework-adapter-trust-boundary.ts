@@ -25,7 +25,7 @@
 
 import type { TuvrenToolDefinition } from "@tuvren/core/tools";
 import {
-  createDriverRegistry,
+  createRunnerRegistry,
   createTuvrenRuntime as createTuvrenRuntimeCore,
 } from "@tuvren/runtime";
 import type { AdapterProjection } from "./framework-adapter-runtime.ts";
@@ -36,7 +36,7 @@ import {
   collectValues,
   createConformanceIdFactory,
   createConformanceKernelHarness,
-  createStaticDriver,
+  createStaticRunner,
   DRIVER_ID,
   textSignal,
 } from "./framework-adapter-runtime.ts";
@@ -116,7 +116,7 @@ export async function runTrustBoundaryApprovalNonBypassable(
   const harness = createConformanceKernelHarness();
   const executedToolNames: string[] = [];
   const gatedToolName = "trust-boundary-gated-tool";
-  const driver = createStaticDriver(async () => {
+  const driver = createStaticRunner(async () => {
     await Promise.resolve();
     return {
       messages: [
@@ -146,8 +146,8 @@ export async function runTrustBoundaryApprovalNonBypassable(
   ];
   const runtime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
-    defaultDriverId: DRIVER_ID,
-    driverRegistry: createDriverRegistry([driver]),
+    defaultRunnerId: DRIVER_ID,
+    driverRegistry: createRunnerRegistry([driver]),
     kernel: harness.kernel,
   });
   const thread = await runtime.createThread({});
@@ -201,7 +201,7 @@ export async function runTrustBoundaryLocalToolInput(
   const harness = createConformanceKernelHarness();
   let toolExecuted = false;
   const toolName = "trust-boundary-strict-tool";
-  const driver = createStaticDriver(async (context) => {
+  const driver = createStaticRunner(async (context) => {
     await Promise.resolve();
 
     if (!hasToolMessage(context.messages)) {
@@ -240,8 +240,8 @@ export async function runTrustBoundaryLocalToolInput(
   ];
   const runtime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
-    defaultDriverId: DRIVER_ID,
-    driverRegistry: createDriverRegistry([driver]),
+    defaultRunnerId: DRIVER_ID,
+    driverRegistry: createRunnerRegistry([driver]),
     kernel: harness.kernel,
   });
   const thread = await runtime.createThread({});

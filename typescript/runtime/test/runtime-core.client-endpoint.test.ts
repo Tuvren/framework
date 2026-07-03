@@ -34,16 +34,16 @@ import type {
   ClientInvocationEnvelope,
   ClientReportedResult,
 } from "@tuvren/core/capabilities";
-import type {
-  DriverExecutionContext,
-  DriverExecutionResult,
-} from "@tuvren/core/driver";
 import {
   CAPABILITY_BINDING_UNAVAILABLE,
   CAPABILITY_RESULT_STALE,
 } from "@tuvren/core/errors";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
-import { createDriverRegistry, createTuvrenRuntime } from "../src/index.ts";
+import type {
+  RunnerExecutionContext,
+  RunnerExecutionResult,
+} from "@tuvren/core/runner";
+import { createRunnerRegistry, createTuvrenRuntime } from "../src/index.ts";
 import { createClientEndpointBoundary } from "../src/lib/client-endpoint-boundary.ts";
 import { createFakeKernelHarness } from "./fake-kernel.ts";
 import {
@@ -145,10 +145,10 @@ function makeClientMcpEndpoint(
 }
 
 /** Build a driver that requests one tool call then ends. */
-function makeOneCallDriver(toolName: string, input: unknown = {}) {
+function makeOneCallRunner(toolName: string, input: unknown = {}) {
   return {
     id: "test-driver",
-    execute(context: DriverExecutionContext): Promise<DriverExecutionResult> {
+    execute(context: RunnerExecutionContext): Promise<RunnerExecutionResult> {
       const hasToolResult = context.messages.some((m) => m.role === "tool");
       if (!hasToolResult) {
         return Promise.resolve({
@@ -173,11 +173,11 @@ async function runTurnWithClientEndpoint(
   input: unknown = {}
 ) {
   const harness = createFakeKernelHarness();
-  const driver = makeOneCallDriver(toolName, input);
+  const driver = makeOneCallRunner(toolName, input);
   const runtime = createTuvrenRuntime({
     createId: makeId,
-    defaultDriverId: "test-driver",
-    driverRegistry: createDriverRegistry([driver]),
+    defaultRunnerId: "test-driver",
+    driverRegistry: createRunnerRegistry([driver]),
     kernel: harness.kernel,
   });
 
@@ -318,8 +318,8 @@ describe("tuvren-client: unavailability and staleness (KRT-AZ003)", () => {
     const harness = createFakeKernelHarness();
     const runtime = createTuvrenRuntime({
       createId: makeId,
-      defaultDriverId: "test-driver",
-      driverRegistry: createDriverRegistry([makeOneCallDriver("detached.cap")]),
+      defaultRunnerId: "test-driver",
+      driverRegistry: createRunnerRegistry([makeOneCallRunner("detached.cap")]),
       kernel: harness.kernel,
     });
 
@@ -480,8 +480,8 @@ describe("tuvren-client: boundary preserved through approval pause/resume", () =
     const driver = {
       id: "test-driver",
       execute(
-        _context: DriverExecutionContext
-      ): Promise<DriverExecutionResult> {
+        _context: RunnerExecutionContext
+      ): Promise<RunnerExecutionResult> {
         callCount += 1;
         if (callCount === 1) {
           return Promise.resolve({
@@ -514,8 +514,8 @@ describe("tuvren-client: boundary preserved through approval pause/resume", () =
 
     const runtime = createTuvrenRuntime({
       createId: makeId,
-      defaultDriverId: "test-driver",
-      driverRegistry: createDriverRegistry([driver]),
+      defaultRunnerId: "test-driver",
+      driverRegistry: createRunnerRegistry([driver]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -580,11 +580,11 @@ describe("tuvren-client: tool name collision with regular tools", () => {
     // invalid_runtime_options code used for intra-boundary collisions.
     const endpoint = makeOkEndpoint("ep1", "shared.tool", { ok: true });
     const harness = createFakeKernelHarness();
-    const driver = makeOneCallDriver("shared.tool");
+    const driver = makeOneCallRunner("shared.tool");
     const runtime = createTuvrenRuntime({
       createId: makeId,
-      defaultDriverId: "test-driver",
-      driverRegistry: createDriverRegistry([driver]),
+      defaultRunnerId: "test-driver",
+      driverRegistry: createRunnerRegistry([driver]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});

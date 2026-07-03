@@ -47,7 +47,7 @@ export interface PausedIterationState {
 
 export interface PauseContext {
   activeConfig: AgentConfig;
-  activeDriverId: string;
+  activeRunnerId: string;
   activeToolRegistry: ToolRegistry;
   approval: ApprovalRequest;
   carriedStateUpdates: ExtensionStateUpdate[];

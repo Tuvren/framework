@@ -21,7 +21,6 @@ import { createPostgresBackend } from "@tuvren/backend-postgres";
 import type { SqliteBackendOptions } from "@tuvren/backend-sqlite";
 import { createSqliteBackend } from "@tuvren/backend-sqlite";
 import { TuvrenValidationError } from "@tuvren/core";
-import type { RuntimeDriverFactory } from "@tuvren/core/driver";
 import type {
   AgentConfig,
   ExecutionBounds,
@@ -31,6 +30,7 @@ import type {
 import type { TuvrenExtension } from "@tuvren/core/extensions";
 import type { PayloadCodec } from "@tuvren/core/lifecycle";
 import type { TuvrenProvider } from "@tuvren/core/provider";
+import type { RuntimeRunnerFactory } from "@tuvren/core/runner";
 import type { TuvrenTelemetrySink } from "@tuvren/core/telemetry";
 import type { TuvrenToolDefinition } from "@tuvren/core/tools";
 import type { RuntimeBackend, RuntimeKernel } from "@tuvren/kernel-protocol";
@@ -38,8 +38,8 @@ import { createRuntimeKernel } from "@tuvren/kernel-runtime";
 import type { McpToolSource } from "@tuvren/mcp-client";
 import type { ReActRunnerOptions } from "@tuvren/runner-react";
 import { createReActRunner } from "@tuvren/runner-react";
-import { createDriverRegistry } from "./driver-registry.js";
 import { createOrchestrationRuntime } from "./orchestration-runtime.js";
+import { createRunnerRegistry } from "./runner-registry.js";
 import {
   createTuvrenRuntime,
   type RuntimeCoreOptions,
@@ -53,7 +53,7 @@ export type { SqliteBackendOptions } from "@tuvren/backend-sqlite";
 export type { ReActRunnerOptions } from "@tuvren/runner-react";
 
 export type BackendKind = "memory" | "sqlite" | "postgres";
-export type DriverKind = "react";
+export type RunnerKind = "react";
 
 /**
  * Structural interface for an MCP tool source. Defined here so hosts can
@@ -83,8 +83,8 @@ export interface CreateTuvrenOptions {
    */
   bounds?: ExecutionBounds;
   driver?:
-    | DriverKind
-    | RuntimeDriverFactory
+    | RunnerKind
+    | RuntimeRunnerFactory
     | { kind: "react"; options?: ReActRunnerOptions };
   extensions?: TuvrenExtension[];
   /** Pre-built kernel — when supplied the factory skips kernel construction. */
@@ -101,7 +101,7 @@ export interface CreateTuvrenOptions {
   provider?: TuvrenProvider;
   runtimeOptions?: Omit<
     RuntimeCoreOptions,
-    "defaultDriverId" | "driverRegistry" | "kernel"
+    "defaultRunnerId" | "driverRegistry" | "kernel"
   >;
   telemetry?: TuvrenTelemetrySink;
   tools?: Array<McpToolSource | TuvrenToolDefinition>;
@@ -156,8 +156,8 @@ export function createTuvren(
   const { kernel, disposeBackend, purgeScope } =
     resolveKernelAndDispose(options);
 
-  const driver = buildDriver(options.driver);
-  const driverRegistry = createDriverRegistry([driver]);
+  const driver = buildRunner(options.driver);
+  const driverRegistry = createRunnerRegistry([driver]);
 
   const mcpSources = collectMcpSources(options.tools);
   const globalTools = collectTools(options.tools);
@@ -174,7 +174,7 @@ export function createTuvren(
   const runtime = createTuvrenRuntime({
     ...options.runtimeOptions,
     bounds: options.bounds ?? options.runtimeOptions?.bounds,
-    defaultDriverId: driver.id,
+    defaultRunnerId: driver.id,
     driverRegistry,
     kernel,
     payloadCodec: options.payloadCodec ?? options.runtimeOptions?.payloadCodec,
@@ -307,12 +307,12 @@ function buildBackendFromKind(
   }
 }
 
-function buildDriver(spec: CreateTuvrenOptions["driver"]) {
+function buildRunner(spec: CreateTuvrenOptions["driver"]) {
   if (spec === undefined || spec === "react") {
     return createReActRunner();
   }
 
-  if (isRuntimeDriverFactory(spec)) {
+  if (isRuntimeRunnerFactory(spec)) {
     return spec;
   }
 
@@ -373,7 +373,7 @@ function isRuntimeBackend(value: unknown): value is RuntimeBackend {
   );
 }
 
-function isRuntimeDriverFactory(value: unknown): value is RuntimeDriverFactory {
+function isRuntimeRunnerFactory(value: unknown): value is RuntimeRunnerFactory {
   return (
     typeof value === "object" &&
     value !== null &&

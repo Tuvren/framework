@@ -15,7 +15,6 @@
  */
 
 import type { HashString } from "@tuvren/core";
-import type { RuntimeDriver as KrakenDriver } from "@tuvren/core/driver";
 import type {
   AgentConfig,
   ContextEngineeringHelpers,
@@ -23,10 +22,11 @@ import type {
   HandoffSourceContext,
 } from "@tuvren/core/execution";
 import type { TuvrenMessage } from "@tuvren/core/messages";
+import type { RuntimeRunner as KrakenRunner } from "@tuvren/core/runner";
 import type { FacadeOpsDependencies } from "./runtime-core-facade-ops.js";
 import {
   materializeContextMessagesFacade,
-  materializeDriverFacade,
+  materializeRunnerFacade,
   resolveFailureActiveConfigFacade,
   resolveHandoffSourceContextFacade,
 } from "./runtime-core-facade-ops.js";
@@ -60,11 +60,11 @@ export function materializeRuntimeCoreContextMessages(
   return materializeContextMessagesFacade(hashes, helpers);
 }
 
-export function materializeRuntimeCoreDriver(
-  driverRegistry: Parameters<typeof materializeDriverFacade>[0],
+export function materializeRuntimeCoreRunner(
+  driverRegistry: Parameters<typeof materializeRunnerFacade>[0],
   driverId: string
-): KrakenDriver {
-  return materializeDriverFacade(driverRegistry, driverId);
+): KrakenRunner {
+  return materializeRunnerFacade(driverRegistry, driverId);
 }
 
 export function resolveRuntimeCoreFailureActiveConfig(

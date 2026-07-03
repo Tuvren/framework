@@ -1,6 +1,6 @@
 # TypeScript Binding Appendix
 
-`@tuvren/core/driver` is the TypeScript binding projection for the neutral
+`@tuvren/core/runner` is the TypeScript binding projection for the neutral
 execution-model contract (the `driver` binding section of `tuvren.shared.core`
 per ADR-037; the deprecated `@tuvren/driver-api` re-export shim was retired at
 87-M6.1c). Concrete driver factories, callable hooks,

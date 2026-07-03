@@ -16,23 +16,23 @@
 
 import { TuvrenRuntimeError } from "@tuvren/core";
 import {
-  assertRuntimeDriver as assertKrakenDriver,
-  type DriverRegistry,
-  type RuntimeDriver as KrakenDriver,
-  type RuntimeDriverFactory as KrakenDriverFactory,
-} from "@tuvren/core/driver";
+  assertRuntimeRunner as assertKrakenRunner,
+  type RuntimeRunner as KrakenRunner,
+  type RuntimeRunnerFactory as KrakenRunnerFactory,
+  type RunnerRegistry,
+} from "@tuvren/core/runner";
 
-type DriverEntry = KrakenDriver | KrakenDriverFactory;
+type RunnerEntry = KrakenRunner | KrakenRunnerFactory;
 
-class BasicDriverRegistry implements DriverRegistry {
-  private readonly drivers = new Map<string, DriverEntry>();
+class BasicRunnerRegistry implements RunnerRegistry {
+  private readonly drivers = new Map<string, RunnerEntry>();
 
-  list(): DriverEntry[] {
+  list(): RunnerEntry[] {
     return [...this.drivers.values()];
   }
 
-  register(driver: DriverEntry): void {
-    const driverId = getDriverId(driver);
+  register(driver: RunnerEntry): void {
+    const driverId = getRunnerId(driver);
 
     if (this.drivers.has(driverId)) {
       throw new TuvrenRuntimeError(
@@ -49,15 +49,15 @@ class BasicDriverRegistry implements DriverRegistry {
     this.drivers.set(driverId, driver);
   }
 
-  resolve(driverId: string): DriverEntry | undefined {
+  resolve(driverId: string): RunnerEntry | undefined {
     return this.drivers.get(driverId);
   }
 }
 
-export function createDriverRegistry(
-  drivers: DriverEntry[] = []
-): DriverRegistry {
-  const registry = new BasicDriverRegistry();
+export function createRunnerRegistry(
+  drivers: RunnerEntry[] = []
+): RunnerRegistry {
+  const registry = new BasicRunnerRegistry();
 
   for (const driver of drivers) {
     registry.register(driver);
@@ -66,17 +66,17 @@ export function createDriverRegistry(
   return registry;
 }
 
-export function materializeDriver(entry: DriverEntry): KrakenDriver {
+export function materializeRunner(entry: RunnerEntry): KrakenRunner {
   const candidate =
     "create" in entry && typeof entry.create === "function"
       ? entry.create()
       : entry;
 
-  assertKrakenDriver(candidate, "driver");
+  assertKrakenRunner(candidate, "driver");
   return candidate;
 }
 
-function getDriverId(driver: DriverEntry): string {
+function getRunnerId(driver: RunnerEntry): string {
   if (typeof driver.id === "string" && driver.id.trim().length > 0) {
     return driver.id;
   }

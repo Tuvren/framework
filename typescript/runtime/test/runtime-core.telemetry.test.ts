@@ -15,13 +15,13 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import type { RuntimeDriver as KrakenDriver } from "@tuvren/core/driver";
+import type { RuntimeRunner as KrakenRunner } from "@tuvren/core/runner";
 import type {
   TelemetryEvent,
   TelemetrySpan,
   TuvrenTelemetrySink,
 } from "@tuvren/core/telemetry";
-import { createDriverRegistry, createTuvrenRuntime } from "../src/index.ts";
+import { createRunnerRegistry, createTuvrenRuntime } from "../src/index.ts";
 import {
   filterTelemetryAttributes,
   sanitizeTelemetryErrorSummary,
@@ -48,10 +48,10 @@ describe("runtime operational telemetry", () => {
       resume() {
         return Promise.reject(new Error("resume was not expected"));
       },
-    } satisfies KrakenDriver;
+    } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
-      defaultDriverId: "fake",
-      driverRegistry: createDriverRegistry([driver]),
+      defaultRunnerId: "fake",
+      driverRegistry: createRunnerRegistry([driver]),
       kernel: harness.kernel,
       now: createDeterministicClock(),
       telemetry: capture.sink,
@@ -105,10 +105,10 @@ describe("runtime operational telemetry", () => {
       resume() {
         return Promise.reject(new Error("resume was not expected"));
       },
-    } satisfies KrakenDriver;
+    } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
-      defaultDriverId: "fake",
-      driverRegistry: createDriverRegistry([driver]),
+      defaultRunnerId: "fake",
+      driverRegistry: createRunnerRegistry([driver]),
       kernel: harness.kernel,
       scope: "tenant-a",
       telemetry: capture.sink,
@@ -158,10 +158,10 @@ describe("runtime operational telemetry", () => {
       resume() {
         return Promise.reject(new Error("resume was not expected"));
       },
-    } satisfies KrakenDriver;
+    } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
-      defaultDriverId: "fake",
-      driverRegistry: createDriverRegistry([driver]),
+      defaultRunnerId: "fake",
+      driverRegistry: createRunnerRegistry([driver]),
       kernel: harness.kernel,
       telemetry: capture.sink,
     });
@@ -189,7 +189,7 @@ describe("runtime operational telemetry", () => {
     const harness = createFakeKernelHarness();
     expect(() =>
       createTuvrenRuntime({
-        defaultDriverId: "fake",
+        defaultRunnerId: "fake",
         kernel: harness.kernel,
         scope: "",
       })
@@ -209,10 +209,10 @@ describe("runtime operational telemetry", () => {
       resume() {
         return Promise.reject(new Error("resume was not expected"));
       },
-    } satisfies KrakenDriver;
+    } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
-      defaultDriverId: "fake",
-      driverRegistry: createDriverRegistry([driver]),
+      defaultRunnerId: "fake",
+      driverRegistry: createRunnerRegistry([driver]),
       kernel: harness.kernel,
       telemetry: {
         event() {

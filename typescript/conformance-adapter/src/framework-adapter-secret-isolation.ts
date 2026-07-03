@@ -34,7 +34,7 @@ import {
   type ReplTranscriptHeader,
 } from "@tuvren/repl-host";
 import {
-  createDriverRegistry,
+  createRunnerRegistry,
   createTuvrenRuntime as createTuvrenRuntimeCore,
 } from "@tuvren/runtime";
 import type {
@@ -47,7 +47,7 @@ import {
   collectValues,
   createConformanceIdFactory,
   createConformanceKernelHarness,
-  createStaticDriver,
+  createStaticRunner,
   DRIVER_ID,
   textSignal,
 } from "./framework-adapter-runtime.ts";
@@ -131,7 +131,7 @@ export async function runSecretIsolationRuntimeApi(
 ): Promise<AdapterProjection> {
   const fixture = readSecretFixture(input);
   const harness = createConformanceKernelHarness();
-  const driver = createStaticDriver(async () => {
+  const driver = createStaticRunner(async () => {
     await Promise.resolve();
     return {
       messages: [assistantText("secret-isolation runtime-api turn")],
@@ -140,8 +140,8 @@ export async function runSecretIsolationRuntimeApi(
   });
   const runtime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
-    defaultDriverId: DRIVER_ID,
-    driverRegistry: createDriverRegistry([driver]),
+    defaultRunnerId: DRIVER_ID,
+    driverRegistry: createRunnerRegistry([driver]),
     kernel: harness.kernel,
   });
   const thread = await runtime.createThread({});
@@ -210,7 +210,7 @@ export async function runSecretIsolationTelemetry(
   const fixture = readSecretFixture(input);
   const capture = createTelemetryCapture();
   const harness = createConformanceKernelHarness();
-  const driver = createStaticDriver(() => {
+  const driver = createStaticRunner(() => {
     // Raw provider/backend error text carrying a credential — must be sanitized
     // before it reaches any TelemetrySpan error summary.
     throw new Error(
@@ -219,8 +219,8 @@ export async function runSecretIsolationTelemetry(
   });
   const runtime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
-    defaultDriverId: DRIVER_ID,
-    driverRegistry: createDriverRegistry([driver]),
+    defaultRunnerId: DRIVER_ID,
+    driverRegistry: createRunnerRegistry([driver]),
     kernel: harness.kernel,
     telemetry: capture.sink,
   });
@@ -313,7 +313,7 @@ async function captureScopeSurfaces(
 ): Promise<ScopeSurfaceObservation> {
   const capture = createTelemetryCapture();
   const harness = createConformanceKernelHarness();
-  const driver = createStaticDriver(async () => {
+  const driver = createStaticRunner(async () => {
     await Promise.resolve();
     return {
       messages: [assistantText("scope-isolation surfaces turn")],
@@ -322,8 +322,8 @@ async function captureScopeSurfaces(
   });
   const runtime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
-    defaultDriverId: DRIVER_ID,
-    driverRegistry: createDriverRegistry([driver]),
+    defaultRunnerId: DRIVER_ID,
+    driverRegistry: createRunnerRegistry([driver]),
     kernel: harness.kernel,
     scope,
     telemetry: capture.sink,

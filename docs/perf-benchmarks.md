@@ -47,7 +47,7 @@ mcp-client/src/index.ts`, then compare `nx affected` selection and cold
 wall-clock against the full typecheck lane.
 
 - Projects selected by the 1-file edit: **6 of 28** typecheck-capable projects
-  (`providers-mcp-client` + its dependents `providers-bridge-ai-sdk`,
+  (`mcp-client` + its dependents `providers-bridge-ai-sdk`,
   `providers-typescript-certification`, `framework-runtime-core`,
   `framework-runtime`, `host-repl`).
 - Cold wall-clock:

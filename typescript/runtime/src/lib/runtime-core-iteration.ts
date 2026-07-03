@@ -16,11 +16,6 @@
 
 import { type HashString, TuvrenRuntimeError } from "@tuvren/core";
 import type { CapabilityInvocationAttribution } from "@tuvren/core/capabilities";
-import type {
-  DriverExecutionContext,
-  DriverExecutionResult,
-  RuntimeDriver as KrakenDriver,
-} from "@tuvren/core/driver";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type {
   AgentConfig,
@@ -34,16 +29,21 @@ import type {
   TuvrenMessage,
 } from "@tuvren/core/messages";
 import type { TuvrenModelResponse } from "@tuvren/core/provider";
+import type {
+  RuntimeRunner as KrakenRunner,
+  RunnerExecutionContext,
+  RunnerExecutionResult,
+} from "@tuvren/core/runner";
 import type { ToolRegistry } from "@tuvren/core/tools";
 import { observationForClass } from "./capability-attribution.js";
 import { updateContextManifest } from "./context-manifest.js";
 import type { ExtensionStateUpdate } from "./extension-runtime.js";
-import { validateDriverAssistantEvents } from "./runtime-core-assistant-validation.js";
+import { validateRunnerAssistantEvents } from "./runtime-core-assistant-validation.js";
 import {
   createCancelledResolution,
   hasAssistantOutputMessages,
   type LoopOutcome,
-  shouldDiscardDriverProgressAfterLeaseLoss,
+  shouldDiscardRunnerProgressAfterLeaseLoss,
 } from "./runtime-core-recovery.js";
 import { synthesizeResponse } from "./runtime-core-response.js";
 import { cloneValue } from "./runtime-core-shared.js";
@@ -76,7 +76,7 @@ export interface RuntimeCoreIterationHost {
     handle: RuntimeExecutionHandle,
     loopState: {
       activeConfig: AgentConfig;
-      activeDriverId: string;
+      activeRunnerId: string;
       activeToolRegistry: ToolRegistry;
       carriedStateUpdates: ExtensionStateUpdate[];
       enteredIterationLoop: boolean;
@@ -104,7 +104,7 @@ export interface RuntimeCoreIterationHost {
     iterationCount: number;
     loopState: {
       activeConfig: AgentConfig;
-      activeDriverId: string;
+      activeRunnerId: string;
       activeToolRegistry: ToolRegistry;
       carriedStateUpdates: ExtensionStateUpdate[];
       enteredIterationLoop: boolean;
@@ -123,7 +123,7 @@ export interface RuntimeCoreIterationHost {
     schemaId: string,
     loopState: {
       activeConfig: AgentConfig;
-      activeDriverId: string;
+      activeRunnerId: string;
       activeToolRegistry: ToolRegistry;
       carriedStateUpdates: ExtensionStateUpdate[];
       enteredIterationLoop: boolean;
@@ -143,12 +143,13 @@ export interface RuntimeCoreIterationHost {
     manifest: ContextManifest,
     appendedMessageHashes: HashString[]
   ): Promise<HashString | undefined>;
-  createDriverExecutionContext(
+  createId(): string;
+  createRunnerExecutionContext(
     handle: RuntimeExecutionHandle,
     schemaId: string,
     loopState: {
       activeConfig: AgentConfig;
-      activeDriverId: string;
+      activeRunnerId: string;
       activeToolRegistry: ToolRegistry;
       carriedStateUpdates: ExtensionStateUpdate[];
       enteredIterationLoop: boolean;
@@ -163,9 +164,8 @@ export interface RuntimeCoreIterationHost {
       };
     },
     iterationCount: number,
-    emittedDriverEvents: TuvrenStreamEvent[]
-  ): DriverExecutionContext;
-  createId(): string;
+    emittedRunnerEvents: TuvrenStreamEvent[]
+  ): RunnerExecutionContext;
   createTrackedRun(
     handle: RuntimeExecutionHandle,
     runId: string,
@@ -179,22 +179,22 @@ export interface RuntimeCoreIterationHost {
       sideEffects: boolean;
     }>
   ): Promise<void>;
-  ensureDriverAssistantEvents(
+  ensureRunnerAssistantEvents(
     handle: RuntimeExecutionHandle,
     messages: TuvrenMessage[],
     emittedEvents: TuvrenStreamEvent[],
     loopState: {
       activeConfig: AgentConfig;
-      activeDriverId: string;
+      activeRunnerId: string;
       activeToolRegistry: ToolRegistry;
       carriedStateUpdates: ExtensionStateUpdate[];
       enteredIterationLoop: boolean;
     }
   ): TuvrenStreamEvent[];
-  executeDriver(
-    driver: KrakenDriver,
-    context: DriverExecutionContext
-  ): Promise<DriverExecutionResult>;
+  executeRunner(
+    driver: KrakenRunner,
+    context: RunnerExecutionContext
+  ): Promise<RunnerExecutionResult>;
   failInvalidPauseResolutionIfNeeded(
     handle: RuntimeExecutionHandle,
     iterationRunId: string,
@@ -207,12 +207,12 @@ export interface RuntimeCoreIterationHost {
     runId: string,
     stableHeadTurnNodeHash: HashString
   ): Promise<void>;
-  flushBufferedDriverEventsIfNeeded(
+  flushBufferedRunnerEventsIfNeeded(
     handle: RuntimeExecutionHandle,
     resolution: RuntimeResolution,
     events: TuvrenStreamEvent[]
   ): TuvrenStreamEvent[];
-  materializeDriver(driverId: string): KrakenDriver;
+  materializeRunner(driverId: string): KrakenRunner;
   now(): number;
   /**
    * Publish an event through the full runtime event + telemetry path. Used by
@@ -224,7 +224,7 @@ export interface RuntimeCoreIterationHost {
     event: TuvrenStreamEvent,
     loopState: {
       activeConfig: AgentConfig;
-      activeDriverId: string;
+      activeRunnerId: string;
       activeToolRegistry: ToolRegistry;
       carriedStateUpdates: ExtensionStateUpdate[];
       enteredIterationLoop: boolean;
@@ -236,14 +236,14 @@ export interface RuntimeCoreIterationHost {
     turnId: string,
     resolution: RuntimeResolution
   ): Promise<RuntimeResolution>;
-  stageDriverMessages(
+  stageRunnerMessages(
     runId: string,
     messages: TuvrenMessage[],
     iterationCount: number
   ): Promise<HashString[]>;
 }
 
-export function findInvalidDriverResolution(
+export function findInvalidRunnerResolution(
   requestedToolCallCount: number,
   resolution: RuntimeResolution,
   partial: boolean
@@ -283,9 +283,9 @@ export function findInvalidDriverResolution(
   return undefined;
 }
 
-export function findInvalidDriverStateUpdateError(
+export function findInvalidRunnerStateUpdateError(
   activeExtensions: TuvrenExtension[],
-  stateUpdates: DriverExecutionResult["stateUpdates"]
+  stateUpdates: RunnerExecutionResult["stateUpdates"]
 ): TuvrenRuntimeError | undefined {
   if (stateUpdates === undefined || stateUpdates.length === 0) {
     return undefined;
@@ -314,11 +314,11 @@ export function findInvalidDriverStateUpdateError(
   return undefined;
 }
 
-export function applyDriverStateUpdates(
+export function applyRunnerStateUpdates(
   loopState: {
     carriedStateUpdates: ExtensionStateUpdate[];
   },
-  stateUpdates: DriverExecutionResult["stateUpdates"]
+  stateUpdates: RunnerExecutionResult["stateUpdates"]
 ): void {
   if (stateUpdates === undefined) {
     return;
@@ -332,24 +332,24 @@ export function applyDriverStateUpdates(
   );
 }
 
-export function findInvalidDriverExecutionError(
+export function findInvalidRunnerExecutionError(
   activeExtensions: TuvrenExtension[],
   requestedToolCallCount: number,
   resolution: RuntimeResolution,
   cancellationResolution: RuntimeResolution | undefined,
   partial: boolean,
   assistantEventValidationError: TuvrenRuntimeError | undefined,
-  stateUpdates: DriverExecutionResult["stateUpdates"]
+  stateUpdates: RunnerExecutionResult["stateUpdates"]
 ): TuvrenRuntimeError | undefined {
   if (cancellationResolution === undefined) {
-    const invalidDriverResolutionError = findInvalidDriverResolution(
+    const invalidRunnerResolutionError = findInvalidRunnerResolution(
       requestedToolCallCount,
       resolution,
       partial
     );
 
-    if (invalidDriverResolutionError !== undefined) {
-      return invalidDriverResolutionError;
+    if (invalidRunnerResolutionError !== undefined) {
+      return invalidRunnerResolutionError;
     }
   }
 
@@ -357,7 +357,7 @@ export function findInvalidDriverExecutionError(
     return assistantEventValidationError;
   }
 
-  return findInvalidDriverStateUpdateError(activeExtensions, stateUpdates);
+  return findInvalidRunnerStateUpdateError(activeExtensions, stateUpdates);
 }
 
 export function extractToolCallsFromMessages(
@@ -465,7 +465,7 @@ export async function executeIterationPhase(
     iterationCount: number;
     loopState: {
       activeConfig: AgentConfig;
-      activeDriverId: string;
+      activeRunnerId: string;
       activeToolRegistry: ToolRegistry;
       carriedStateUpdates: ExtensionStateUpdate[];
       enteredIterationLoop: boolean;
@@ -473,9 +473,9 @@ export async function executeIterationPhase(
     schemaId: string;
   }
 ): Promise<IterationPhaseResult> {
-  const driver = input.handle.getOrCreateDriver(
-    input.loopState.activeDriverId,
-    (driverId) => host.materializeDriver(driverId)
+  const driver = input.handle.getOrCreateRunner(
+    input.loopState.activeRunnerId,
+    (driverId) => host.materializeRunner(driverId)
   );
   const iterationRunId = host.createId();
 
@@ -496,19 +496,19 @@ export async function executeIterationPhase(
   );
   await host.beginIterationStep(iterationRunId, "iterate");
 
-  const emittedDriverEvents: TuvrenStreamEvent[] = [];
-  const driverResult = await host.executeDriver(
+  const emittedRunnerEvents: TuvrenStreamEvent[] = [];
+  const driverResult = await host.executeRunner(
     driver,
-    host.createDriverExecutionContext(
+    host.createRunnerExecutionContext(
       input.handle,
       input.schemaId,
       input.loopState,
       input.headState,
       input.iterationCount,
-      emittedDriverEvents
+      emittedRunnerEvents
     )
   );
-  if (shouldDiscardDriverProgressAfterLeaseLoss(input.handle)) {
+  if (shouldDiscardRunnerProgressAfterLeaseLoss(input.handle)) {
     const leaseLostResolution = createCancelledResolution(input.handle);
 
     if (leaseLostResolution === undefined) {
@@ -534,17 +534,17 @@ export async function executeIterationPhase(
   let resolution = driverResult.resolution;
   const driverMessages = [...(driverResult.messages ?? [])];
   const cancellationResolution = createCancelledResolution(input.handle);
-  const assistantEventValidationError = validateDriverAssistantEvents(
+  const assistantEventValidationError = validateRunnerAssistantEvents(
     driverMessages,
-    emittedDriverEvents,
+    emittedRunnerEvents,
     cancellationResolution ?? resolution,
     driverResult.assistantEventReconciliation,
     input.loopState.activeConfig.extensions ?? []
   );
-  const synthesizedAssistantEvents = host.ensureDriverAssistantEvents(
+  const synthesizedAssistantEvents = host.ensureRunnerAssistantEvents(
     input.handle,
     driverMessages,
-    emittedDriverEvents,
+    emittedRunnerEvents,
     input.loopState
   );
   const requestedToolCalls = extractToolCallsFromMessages(driverMessages);
@@ -553,7 +553,7 @@ export async function executeIterationPhase(
     driverResult.partial === true ||
     (cancellationResolution !== undefined &&
       hasAssistantOutputMessages(driverMessages));
-  const invalidDriverError = findInvalidDriverExecutionError(
+  const invalidRunnerError = findInvalidRunnerExecutionError(
     input.loopState.activeConfig.extensions ?? [],
     requestedToolCalls.length,
     resolution,
@@ -563,7 +563,7 @@ export async function executeIterationPhase(
     driverResult.stateUpdates
   );
 
-  if (invalidDriverError !== undefined) {
+  if (invalidRunnerError !== undefined) {
     await host.failTrackedRunWithoutBranchAdvance(
       input.handle,
       iterationRunId,
@@ -573,7 +573,7 @@ export async function executeIterationPhase(
       kind: "outcome",
       outcome: {
         resolution: {
-          error: invalidDriverError,
+          error: invalidRunnerError,
           fatality: "hard",
           type: "fail",
         },
@@ -581,16 +581,16 @@ export async function executeIterationPhase(
     };
   }
 
-  applyDriverStateUpdates(input.loopState, driverResult.stateUpdates);
+  applyRunnerStateUpdates(input.loopState, driverResult.stateUpdates);
 
-  host.flushBufferedDriverEventsIfNeeded(
+  host.flushBufferedRunnerEventsIfNeeded(
     input.handle,
     resolution,
     synthesizedAssistantEvents
   );
 
   const stagedMessages = [...driverMessages];
-  const stagedMessageHashes = await host.stageDriverMessages(
+  const stagedMessageHashes = await host.stageRunnerMessages(
     iterationRunId,
     driverMessages,
     input.iterationCount
@@ -603,7 +603,7 @@ export async function executeIterationPhase(
   const driverResponse = synthesizeResponse(
     driverMessages,
     resolution,
-    emittedDriverEvents,
+    emittedRunnerEvents,
     driverResult.assistantEventReconciliation
   );
   const toolResults: ToolResultPart[] = [];

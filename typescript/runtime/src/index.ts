@@ -193,11 +193,10 @@ export {
 export type {
   BackendKind,
   CreateTuvrenOptions,
-  DriverKind,
+  RunnerKind,
   TuvrenInstance,
 } from "./lib/create-tuvren.js";
 export { createTuvren } from "./lib/create-tuvren.js";
-export { createDriverRegistry } from "./lib/driver-registry.js";
 export type { ExtensionStateUpdate } from "./lib/extension-runtime.js";
 export {
   buildSharedExports,
@@ -222,6 +221,7 @@ export {
 } from "./lib/handoff-builders.js";
 export type { OrchestrationRuntimeOptions } from "./lib/orchestration-runtime.js";
 export { createOrchestrationRuntime } from "./lib/orchestration-runtime.js";
+export { createRunnerRegistry } from "./lib/runner-registry.js";
 export type {
   RuntimeCoreOptions,
   RuntimeRunLivenessOptions,

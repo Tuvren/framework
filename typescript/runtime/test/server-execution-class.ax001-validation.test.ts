@@ -38,14 +38,14 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import type { RuntimeDriver } from "@tuvren/core/driver";
 import {
   TOOL_INPUT_VALIDATION_FAILED,
   TOOL_RESULT_VALIDATION_FAILED,
 } from "@tuvren/core/errors";
+import type { RuntimeRunner } from "@tuvren/core/runner";
 import type { TuvrenToolDefinition } from "@tuvren/core/tools";
 import {
-  createDriverRegistry as createBaseDriverRegistry,
+  createRunnerRegistry as createBaseRunnerRegistry,
   createTuvrenRuntime,
 } from "../src/index.ts";
 import { createFakeKernelHarness } from "./fake-kernel.ts";
@@ -73,7 +73,7 @@ const STRICT_INPUT_SCHEMA: import("@tuvren/core/tools").TuvrenJsonSchema = {
 // Shared helpers
 // ---------------------------------------------------------------------------
 
-function makeDriverWithInput(toolName: string, input: unknown): RuntimeDriver {
+function makeRunnerWithInput(toolName: string, input: unknown): RuntimeRunner {
   return {
     id: "ax001-driver",
     async execute(context) {
@@ -99,11 +99,11 @@ function makeDriverWithInput(toolName: string, input: unknown): RuntimeDriver {
   };
 }
 
-async function runWithTool(tool: TuvrenToolDefinition, driver: RuntimeDriver) {
+async function runWithTool(tool: TuvrenToolDefinition, driver: RuntimeRunner) {
   const harness = createFakeKernelHarness();
   const runtime = createTuvrenRuntime({
-    defaultDriverId: driver.id,
-    driverRegistry: createBaseDriverRegistry([driver]),
+    defaultRunnerId: driver.id,
+    driverRegistry: createBaseRunnerRegistry([driver]),
     kernel: harness.kernel,
   });
   const thread = await runtime.createThread({});
@@ -142,7 +142,7 @@ describe("KRT-AX001 — input validation", () => {
         return { result: 0 };
       },
     };
-    const driver = makeDriverWithInput(toolName, { wrongField: "bad" });
+    const driver = makeRunnerWithInput(toolName, { wrongField: "bad" });
     const events = await runWithTool(tool, driver);
     const toolResult = findToolResult(events);
 
@@ -159,7 +159,7 @@ describe("KRT-AX001 — input validation", () => {
         return { result: 0 };
       },
     };
-    const driver = makeDriverWithInput(toolName, { wrongField: "bad" });
+    const driver = makeRunnerWithInput(toolName, { wrongField: "bad" });
     const events = await runWithTool(tool, driver);
     const toolResult = findToolResult(events);
     const output = toolResult?.output as Record<string, unknown> | undefined;
@@ -178,7 +178,7 @@ describe("KRT-AX001 — input validation", () => {
         return { result: 0 };
       },
     };
-    const driver = makeDriverWithInput(toolName, { wrongField: "bad" });
+    const driver = makeRunnerWithInput(toolName, { wrongField: "bad" });
     await runWithTool(tool, driver);
 
     expect(executed).toBe(false);
@@ -195,7 +195,7 @@ describe("KRT-AX001 — input validation", () => {
         return { result: (input as { value: number }).value };
       },
     };
-    const driver = makeDriverWithInput(toolName, { value: 42 });
+    const driver = makeRunnerWithInput(toolName, { value: 42 });
     const events = await runWithTool(tool, driver);
     const toolResult = findToolResult(events);
 
@@ -232,7 +232,7 @@ describe("KRT-AX001 — output validation", () => {
       },
     };
 
-    const driver = makeDriverWithInput(toolName, {});
+    const driver = makeRunnerWithInput(toolName, {});
     const events = await runWithTool(tool, driver);
     const toolResult = findToolResult(events);
 
@@ -251,7 +251,7 @@ describe("KRT-AX001 — output validation", () => {
       },
     };
 
-    const driver = makeDriverWithInput(toolName, {});
+    const driver = makeRunnerWithInput(toolName, {});
     const events = await runWithTool(tool, driver);
     const toolResult = findToolResult(events);
     const output = toolResult?.output as Record<string, unknown> | undefined;
@@ -270,7 +270,7 @@ describe("KRT-AX001 — output validation", () => {
       },
     };
 
-    const driver = makeDriverWithInput(toolName, {});
+    const driver = makeRunnerWithInput(toolName, {});
     const events = await runWithTool(tool, driver);
     const toolResult = findToolResult(events);
 
@@ -289,7 +289,7 @@ describe("KRT-AX001 — output validation", () => {
       },
     };
 
-    const driver = makeDriverWithInput(toolName, {});
+    const driver = makeRunnerWithInput(toolName, {});
     const events = await runWithTool(tool, driver);
     const toolResult = findToolResult(events);
 
@@ -316,7 +316,7 @@ describe("KRT-AX001 — output validation", () => {
       },
     };
 
-    const driver = makeDriverWithInput(toolName, {});
+    const driver = makeRunnerWithInput(toolName, {});
     const events = await runWithTool(tool, driver);
     const toolResult = findToolResult(events);
 

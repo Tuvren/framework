@@ -32,7 +32,7 @@ import type {
 } from "@tuvren/core/telemetry";
 import type { TuvrenToolDefinition } from "@tuvren/core/tools";
 import {
-  createDriverRegistry,
+  createRunnerRegistry,
   createTuvrenRuntime as createTuvrenRuntimeCore,
 } from "@tuvren/runtime";
 import type { AdapterProjection } from "./framework-adapter-runtime.ts";
@@ -43,7 +43,7 @@ import {
   collectValues,
   createConformanceIdFactory,
   createConformanceKernelHarness,
-  createStaticDriver,
+  createStaticRunner,
   DRIVER_ID,
   textSignal,
 } from "./framework-adapter-runtime.ts";
@@ -156,7 +156,7 @@ function summarizeBoundsTurn(
   };
 }
 
-const runawayTextDriver = createStaticDriver(async () => {
+const runawayTextRunner = createStaticRunner(async () => {
   await Promise.resolve();
   return {
     messages: [assistantText("keep going")],
@@ -186,8 +186,8 @@ export async function runExecutionBoundsMaxIterations(): Promise<AdapterProjecti
   const runtime = createTuvrenRuntimeCore({
     bounds: { maxIterations: 3 },
     createId: createConformanceIdFactory(),
-    defaultDriverId: DRIVER_ID,
-    driverRegistry: createDriverRegistry([runawayTextDriver]),
+    defaultRunnerId: DRIVER_ID,
+    driverRegistry: createRunnerRegistry([runawayTextRunner]),
     kernel: harness.kernel,
     now: createDeterministicClock(),
     telemetry: capture.sink,
@@ -214,7 +214,7 @@ export async function runExecutionBoundsMaxIterations(): Promise<AdapterProjecti
 export async function runExecutionBoundsMaxToolCalls(): Promise<AdapterProjection> {
   const capture = createBoundsTelemetryCapture();
   const harness = createConformanceKernelHarness();
-  const driver = createStaticDriver(async () => {
+  const driver = createStaticRunner(async () => {
     await Promise.resolve();
     return {
       messages: [
@@ -231,8 +231,8 @@ export async function runExecutionBoundsMaxToolCalls(): Promise<AdapterProjectio
   const runtime = createTuvrenRuntimeCore({
     bounds: { maxIterations: 100, maxToolCalls: 2 },
     createId: createConformanceIdFactory(),
-    defaultDriverId: DRIVER_ID,
-    driverRegistry: createDriverRegistry([driver]),
+    defaultRunnerId: DRIVER_ID,
+    driverRegistry: createRunnerRegistry([driver]),
     kernel: harness.kernel,
     now: createDeterministicClock(),
     telemetry: capture.sink,
@@ -268,8 +268,8 @@ export async function runExecutionBoundsMaxWallClock(): Promise<AdapterProjectio
   const runtime = createTuvrenRuntimeCore({
     bounds: { maxIterations: 100_000, maxWallClockMs: 50 },
     createId: createConformanceIdFactory(),
-    defaultDriverId: DRIVER_ID,
-    driverRegistry: createDriverRegistry([runawayTextDriver]),
+    defaultRunnerId: DRIVER_ID,
+    driverRegistry: createRunnerRegistry([runawayTextRunner]),
     kernel: harness.kernel,
     now: createDeterministicClock(),
     telemetry: capture.sink,
@@ -320,7 +320,7 @@ export async function runExecutionBoundsWallClockSignalDelivery(): Promise<Adapt
     name: "hang",
   };
 
-  const driver = createStaticDriver(async (context) => {
+  const driver = createStaticRunner(async (context) => {
     await Promise.resolve();
     if (context.messages.some((message) => message.role === "tool")) {
       return {
@@ -343,8 +343,8 @@ export async function runExecutionBoundsWallClockSignalDelivery(): Promise<Adapt
     // (the tool hangs indefinitely until aborted).
     bounds: { maxWallClockMs: 150 },
     createId: createConformanceIdFactory(),
-    defaultDriverId: DRIVER_ID,
-    driverRegistry: createDriverRegistry([driver]),
+    defaultRunnerId: DRIVER_ID,
+    driverRegistry: createRunnerRegistry([driver]),
     kernel: harness.kernel,
     telemetry: capture.sink,
   });
@@ -398,7 +398,7 @@ export async function runExecutionBoundsConcurrencyThrottle(): Promise<AdapterPr
     name: "probe",
   };
 
-  const driver = createStaticDriver(async (context) => {
+  const driver = createStaticRunner(async (context) => {
     await Promise.resolve();
     if (context.messages.some((message) => message.role === "tool")) {
       return {
@@ -426,8 +426,8 @@ export async function runExecutionBoundsConcurrencyThrottle(): Promise<AdapterPr
     // defaultMaxParallelToolCalls request 10; the bound clamps the effective
     // parallelism to 1.
     defaultMaxParallelToolCalls: 10,
-    defaultDriverId: DRIVER_ID,
-    driverRegistry: createDriverRegistry([driver]),
+    defaultRunnerId: DRIVER_ID,
+    driverRegistry: createRunnerRegistry([driver]),
     kernel: harness.kernel,
   });
   const thread = await runtime.createThread({});
@@ -467,8 +467,8 @@ export async function runExecutionBoundsInvalidConfig(): Promise<AdapterProjecti
       createTuvrenRuntimeCore({
         bounds: { maxIterations: value },
         createId: createConformanceIdFactory(),
-        defaultDriverId: DRIVER_ID,
-        driverRegistry: createDriverRegistry([runawayTextDriver]),
+        defaultRunnerId: DRIVER_ID,
+        driverRegistry: createRunnerRegistry([runawayTextRunner]),
         kernel: harness.kernel,
       });
       return { code: null, rejected: false, value: String(value) };
@@ -491,7 +491,7 @@ export async function runExecutionBoundsInvalidConfig(): Promise<AdapterProjecti
 
 export async function runExecutionBoundsWithinBounds(): Promise<AdapterProjection> {
   const harness = createConformanceKernelHarness();
-  const driver = createStaticDriver(async () => {
+  const driver = createStaticRunner(async () => {
     await Promise.resolve();
     return {
       messages: [assistantText("all done")],
@@ -500,8 +500,8 @@ export async function runExecutionBoundsWithinBounds(): Promise<AdapterProjectio
   });
   const runtime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
-    defaultDriverId: DRIVER_ID,
-    driverRegistry: createDriverRegistry([driver]),
+    defaultRunnerId: DRIVER_ID,
+    driverRegistry: createRunnerRegistry([driver]),
     kernel: harness.kernel,
     now: createDeterministicClock(),
   });

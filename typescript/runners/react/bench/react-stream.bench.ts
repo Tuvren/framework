@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import type { DriverRuntimePort } from "@tuvren/core/driver";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import { assertTuvrenStreamEvent } from "@tuvren/core/events";
+import type { RunnerRuntimePort } from "@tuvren/core/runner";
 import type {
   ProviderStreamChunk,
   TuvrenModelResponse,
@@ -144,7 +144,7 @@ async function measure(benchmarkCase: BenchmarkCase): Promise<BenchmarkResult> {
   };
 }
 
-function createRuntimePort(): DriverRuntimePort {
+function createRuntimePort(): RunnerRuntimePort {
   const events: TuvrenStreamEvent[] = [];
 
   return {

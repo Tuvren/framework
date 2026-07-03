@@ -17,7 +17,7 @@
 import { describe, expect, test } from "bun:test";
 import { createMemoryBackend } from "@tuvren/backend-memory";
 import { TuvrenValidationError } from "@tuvren/core";
-import type { RuntimeDriverFactory as KrakenDriverFactory } from "@tuvren/core/driver";
+import type { RuntimeRunnerFactory as KrakenRunnerFactory } from "@tuvren/core/runner";
 import type { TuvrenToolDefinition } from "@tuvren/core/tools";
 import type { RuntimeBackend } from "@tuvren/kernel-protocol";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
@@ -71,7 +71,7 @@ function makeMockMcpSource(name = "test-server"): McpToolSource & {
   };
 }
 
-function makeMinimalDriverFactory(id = "test-driver"): KrakenDriverFactory {
+function makeMinimalRunnerFactory(id = "test-driver"): KrakenRunnerFactory {
   return {
     create() {
       return {
@@ -261,8 +261,8 @@ describe("createTuvren", () => {
       await instance[Symbol.asyncDispose]();
     });
 
-    test("explicit RuntimeDriverFactory is accepted", async () => {
-      const factory = makeMinimalDriverFactory("custom");
+    test("explicit RuntimeRunnerFactory is accepted", async () => {
+      const factory = makeMinimalRunnerFactory("custom");
       const instance = await createTuvren({
         backend: "memory",
         driver: factory,

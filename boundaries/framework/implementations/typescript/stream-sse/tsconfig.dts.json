@@ -23,8 +23,8 @@
       "@tuvren/core/tools": [
         "../../../../../typescript/core/dist/tools/index.d.ts"
       ],
-      "@tuvren/core/driver": [
-        "../../../../../typescript/core/dist/driver/index.d.ts"
+      "@tuvren/core/runner": [
+        "../../../../../typescript/core/dist/runner/index.d.ts"
       ],
       "@tuvren/core/provider": [
         "../../../../../typescript/core/dist/provider/index.d.ts"

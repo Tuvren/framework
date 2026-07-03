@@ -16,10 +16,6 @@
 
 import type { HashString } from "@tuvren/core";
 import { TuvrenRuntimeError } from "@tuvren/core";
-import type {
-  DriverExecutionContext,
-  RuntimeDriver as KrakenDriver,
-} from "@tuvren/core/driver";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type {
   ContextEngineeringPlan,
@@ -35,9 +31,12 @@ import type {
   TuvrenMessage,
 } from "@tuvren/core/messages";
 import type { TuvrenModelResponse } from "@tuvren/core/provider";
+import type {
+  RuntimeRunner as KrakenRunner,
+  RunnerExecutionContext,
+} from "@tuvren/core/runner";
 import type { ApprovalResponse } from "@tuvren/core/tools";
 import type { ExtensionStateUpdate } from "./extension-runtime.js";
-import { executeDriver as executeRuntimeDriver } from "./runtime-core-driver-support.js";
 import {
   applyRuntimeAfterIterationResolutionFacade,
   applyRuntimeContextEngineeringPlanFacade,
@@ -45,14 +44,14 @@ import {
   commitRuntimePendingExtensionStateUpdatesFacade,
   completeRuntimeIterationArtifactsFacade,
   completeRuntimeIterationRunFacade,
-  createRuntimeDriverExecutionContextFacade,
-  createRuntimeDriverHandoffContextPlanFacade,
   createRuntimeIterationTreeFacade,
+  createRuntimeRunnerExecutionContextFacade,
+  createRuntimeRunnerHandoffContextPlanFacade,
   createRuntimeToolBatchEnvironmentFacade,
   incorporateRuntimeInputFacade,
   incorporateRuntimeSteeringFacade,
   resumeRuntimePausedToolExecutionFacade,
-  stageRuntimeDriverMessagesFacade,
+  stageRuntimeRunnerMessagesFacade,
 } from "./runtime-core-execution-orchestration.js";
 import type { RuntimeCoreFacadeHosts } from "./runtime-core-facade-hosts.js";
 import {
@@ -66,6 +65,7 @@ import type {
   ExpiredExecutionRecovery,
   LoopOutcome,
 } from "./runtime-core-recovery.js";
+import { executeRunner as executeRuntimeRunner } from "./runtime-core-runner-support.js";
 import {
   createExecutionLoopState as createRuntimeExecutionLoopState,
   createExecutionTurnIfNeeded as createRuntimeExecutionTurnIfNeeded,
@@ -274,33 +274,33 @@ export async function failRuntimeCoreInvalidPauseResolutionIfNeeded(
   };
 }
 
-export function createRuntimeCoreDriverExecutionContext(
+export function createRuntimeCoreRunnerExecutionContext(
   hosts: RuntimeCoreFacadeHosts,
   handle: RuntimeExecutionHandle,
   schemaId: string,
   loopState: LoopState,
   headState: HeadState,
   iterationCount: number,
-  emittedDriverEvents: TuvrenStreamEvent[]
-): DriverExecutionContext {
-  return createRuntimeDriverExecutionContextFacade(
+  emittedRunnerEvents: TuvrenStreamEvent[]
+): RunnerExecutionContext {
+  return createRuntimeRunnerExecutionContextFacade(
     hosts.driver,
     handle,
     schemaId,
     loopState,
     headState,
     iterationCount,
-    emittedDriverEvents
+    emittedRunnerEvents
   );
 }
 
-export async function stageRuntimeCoreDriverMessages(
+export async function stageRuntimeCoreRunnerMessages(
   hosts: RuntimeCoreFacadeHosts,
   runId: string,
   messages: TuvrenMessage[],
   iterationCount: number
 ): Promise<HashString[]> {
-  return await stageRuntimeDriverMessagesFacade(
+  return await stageRuntimeRunnerMessagesFacade(
     hosts.driver,
     runId,
     messages,
@@ -418,7 +418,7 @@ export function createRuntimeCoreToolBatchEnvironment(
   );
 }
 
-export function createRuntimeCoreDriverHandoffContextPlan(
+export function createRuntimeCoreRunnerHandoffContextPlan(
   hosts: RuntimeCoreFacadeHosts,
   input: {
     builder?: HandoffContextBuilder;
@@ -430,7 +430,7 @@ export function createRuntimeCoreDriverHandoffContextPlan(
   headState: HeadState,
   loopState: LoopState
 ): HandoffContextPlan {
-  return createRuntimeDriverHandoffContextPlanFacade(
+  return createRuntimeRunnerHandoffContextPlanFacade(
     hosts.driverSupport,
     input,
     headState,
@@ -438,11 +438,11 @@ export function createRuntimeCoreDriverHandoffContextPlan(
   );
 }
 
-export async function executeRuntimeCoreDriverCall(
-  driver: KrakenDriver,
-  context: DriverExecutionContext
+export async function executeRuntimeCoreRunnerCall(
+  driver: KrakenRunner,
+  context: RunnerExecutionContext
 ) {
-  return await executeRuntimeDriver(driver, context);
+  return await executeRuntimeRunner(driver, context);
 }
 
 export async function completeRuntimeCoreIterationRun(

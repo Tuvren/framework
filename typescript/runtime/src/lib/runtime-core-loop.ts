@@ -55,7 +55,7 @@ export interface HeadState {
 
 export interface LoopState {
   activeConfig: AgentConfig;
-  activeDriverId: string;
+  activeRunnerId: string;
   activeToolRegistry: ToolRegistry;
   carriedStateUpdates: ExtensionStateUpdate[];
   /** Boundary for tuvren-client execution class dispatch. (KRT-AZ001) */
@@ -445,7 +445,7 @@ async function resolveIterationOutcome(
     return {
       pauseContext: {
         activeConfig: loopState.activeConfig,
-        activeDriverId: loopState.activeDriverId,
+        activeRunnerId: loopState.activeRunnerId,
         activeToolRegistry: loopState.activeToolRegistry,
         approval: result.resolution.approval,
         carriedStateUpdates: [...loopState.carriedStateUpdates],

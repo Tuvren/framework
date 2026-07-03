@@ -122,8 +122,8 @@
         "@copilotkit/aimock": "1.15.1",
       },
     },
-    "typescript/conformance-runner": {
-      "name": "@tuvren/framework-typescript-conformance-runner",
+    "typescript/certification": {
+      "name": "@tuvren/framework-typescript-certification",
       "version": "0.0.0",
       "dependencies": {
         "@ag-ui/core": "0.0.52",
@@ -188,8 +188,8 @@
         "@tuvren/core": "workspace:*",
       },
     },
-    "typescript/kernel/conformance-runner": {
-      "name": "@tuvren/kernel-typescript-conformance-runner",
+    "typescript/kernel/certification": {
+      "name": "@tuvren/kernel-typescript-certification",
       "version": "0.0.0",
       "dependencies": {
         "@tuvren/backend-memory": "workspace:*",
@@ -252,8 +252,8 @@
         "@tuvren/core": "workspace:*",
       },
     },
-    "typescript/providers/conformance-runner": {
-      "name": "@tuvren/providers-typescript-conformance-runner",
+    "typescript/providers/certification": {
+      "name": "@tuvren/providers-typescript-certification",
       "version": "0.0.0",
       "dependencies": {
         "@ai-sdk/provider": "3.0.8",
@@ -934,7 +934,7 @@
 
     "@tuvren/framework-testkit": ["@tuvren/framework-testkit@workspace:typescript/testkit"],
 
-    "@tuvren/framework-typescript-conformance-runner": ["@tuvren/framework-typescript-conformance-runner@workspace:typescript/conformance-runner"],
+    "@tuvren/framework-typescript-certification": ["@tuvren/framework-typescript-certification@workspace:typescript/certification"],
 
     "@tuvren/kernel-protocol": ["@tuvren/kernel-protocol@workspace:typescript/kernel/protocol"],
 
@@ -942,7 +942,7 @@
 
     "@tuvren/kernel-testkit": ["@tuvren/kernel-testkit@workspace:typescript/kernel/testkit"],
 
-    "@tuvren/kernel-typescript-conformance-runner": ["@tuvren/kernel-typescript-conformance-runner@workspace:typescript/kernel/conformance-runner"],
+    "@tuvren/kernel-typescript-certification": ["@tuvren/kernel-typescript-certification@workspace:typescript/kernel/certification"],
 
     "@tuvren/mcp-client": ["@tuvren/mcp-client@workspace:typescript/tools/mcp-client"],
 
@@ -952,7 +952,7 @@
 
     "@tuvren/provider-testkit": ["@tuvren/provider-testkit@workspace:typescript/providers/testkit"],
 
-    "@tuvren/providers-typescript-conformance-runner": ["@tuvren/providers-typescript-conformance-runner@workspace:typescript/providers/conformance-runner"],
+    "@tuvren/providers-typescript-certification": ["@tuvren/providers-typescript-certification@workspace:typescript/providers/certification"],
 
     "@tuvren/repl-host": ["@tuvren/repl-host@workspace:boundaries/hosts/implementations/typescript/repl"],
 

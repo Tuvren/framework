@@ -13,7 +13,7 @@
       "@tuvren/core/events": ["../core/dist/events/index.d.ts"],
       "@tuvren/core/execution": ["../core/dist/execution/index.d.ts"],
       "@tuvren/core/tools": ["../core/dist/tools/index.d.ts"],
-      "@tuvren/core/driver": ["../core/dist/driver/index.d.ts"],
+      "@tuvren/core/runner": ["../core/dist/runner/index.d.ts"],
       "@tuvren/core/provider": ["../core/dist/provider/index.d.ts"],
       "@tuvren/core/extensions": ["../core/dist/extensions/index.d.ts"],
       "@tuvren/core/telemetry": ["../core/dist/telemetry/index.d.ts"],

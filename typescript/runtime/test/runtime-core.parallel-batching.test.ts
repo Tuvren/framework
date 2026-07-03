@@ -17,12 +17,12 @@
 // biome-ignore-all lint/suspicious/useAwait: Test drivers intentionally match the async framework driver contract.
 import { describe, expect, test } from "bun:test";
 import type {
-  DriverExecutionResult,
-  RuntimeDriver as KrakenDriver,
-  RuntimeDriverFactory as KrakenDriverFactory,
-} from "@tuvren/core/driver";
+  RuntimeRunner as KrakenRunner,
+  RuntimeRunnerFactory as KrakenRunnerFactory,
+  RunnerExecutionResult,
+} from "@tuvren/core/runner";
 import {
-  createDriverRegistry as createBaseDriverRegistry,
+  createRunnerRegistry as createBaseRunnerRegistry,
   createTuvrenRuntime,
 } from "../src/index.ts";
 import { createFakeKernelHarness } from "./fake-kernel.ts";
@@ -83,10 +83,10 @@ describe("framework-runtime-core", () => {
       async resume() {
         throw new Error("resume was not expected");
       },
-    } satisfies KrakenDriver;
+    } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
-      defaultDriverId: "fake",
-      driverRegistry: createDriverRegistry([driver]),
+      defaultRunnerId: "fake",
+      driverRegistry: createRunnerRegistry([driver]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -196,11 +196,11 @@ describe("framework-runtime-core", () => {
       async resume() {
         throw new Error("resume was not expected");
       },
-    } satisfies KrakenDriver;
+    } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
-      defaultDriverId: "fake",
+      defaultRunnerId: "fake",
       defaultMaxParallelToolCalls: 1,
-      driverRegistry: createDriverRegistry([driver]),
+      driverRegistry: createRunnerRegistry([driver]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -310,10 +310,10 @@ describe("framework-runtime-core", () => {
       async resume() {
         throw new Error("resume was not expected");
       },
-    } satisfies KrakenDriver;
+    } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
-      defaultDriverId: "fake",
-      driverRegistry: createDriverRegistry([driver]),
+      defaultRunnerId: "fake",
+      driverRegistry: createRunnerRegistry([driver]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -437,10 +437,10 @@ describe("framework-runtime-core", () => {
       async resume() {
         throw new Error("resume was not expected");
       },
-    } satisfies KrakenDriver;
+    } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
-      defaultDriverId: "fake",
-      driverRegistry: createDriverRegistry([driver]),
+      defaultRunnerId: "fake",
+      driverRegistry: createRunnerRegistry([driver]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -565,10 +565,10 @@ describe("framework-runtime-core", () => {
       async resume() {
         throw new Error("resume was not expected");
       },
-    } satisfies KrakenDriver;
+    } satisfies KrakenRunner;
     const runtime = createTuvrenRuntime({
-      defaultDriverId: "fake",
-      driverRegistry: createDriverRegistry([driver]),
+      defaultRunnerId: "fake",
+      driverRegistry: createRunnerRegistry([driver]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -642,54 +642,54 @@ describe("framework-runtime-core", () => {
   });
 });
 
-function createDriverRegistry(
-  drivers: Array<KrakenDriver | KrakenDriverFactory> = []
+function createRunnerRegistry(
+  drivers: Array<KrakenRunner | KrakenRunnerFactory> = []
 ) {
-  return createBaseDriverRegistry(drivers.map(wrapDriverEntry));
+  return createBaseRunnerRegistry(drivers.map(wrapRunnerEntry));
 }
 
-function wrapDriverEntry(
-  entry: KrakenDriver | KrakenDriverFactory
-): KrakenDriver | KrakenDriverFactory {
-  if (isKrakenDriverFactory(entry)) {
+function wrapRunnerEntry(
+  entry: KrakenRunner | KrakenRunnerFactory
+): KrakenRunner | KrakenRunnerFactory {
+  if (isKrakenRunnerFactory(entry)) {
     return {
       create() {
-        return wrapDriver(entry.create());
+        return wrapRunner(entry.create());
       },
       id: entry.id,
     };
   }
 
-  return wrapDriver(entry);
+  return wrapRunner(entry);
 }
 
-function isKrakenDriverFactory(
-  entry: KrakenDriver | KrakenDriverFactory
-): entry is KrakenDriverFactory {
+function isKrakenRunnerFactory(
+  entry: KrakenRunner | KrakenRunnerFactory
+): entry is KrakenRunnerFactory {
   return "create" in entry && typeof entry.create === "function";
 }
 
-function wrapDriver(driver: KrakenDriver): KrakenDriver {
+function wrapRunner(driver: KrakenRunner): KrakenRunner {
   const resume = driver.resume;
 
   return {
     async execute(context) {
-      return normalizeDriverResult(await driver.execute(context));
+      return normalizeRunnerResult(await driver.execute(context));
     },
     id: driver.id,
     ...(resume === undefined
       ? {}
       : {
           async resume(context) {
-            return normalizeDriverResult(await resume(context));
+            return normalizeRunnerResult(await resume(context));
           },
         }),
   };
 }
 
-function normalizeDriverResult(
-  result: DriverExecutionResult
-): DriverExecutionResult {
+function normalizeRunnerResult(
+  result: RunnerExecutionResult
+): RunnerExecutionResult {
   if (
     result.toolExecutionMode !== undefined ||
     !requestsToolExecution(result)
@@ -703,7 +703,7 @@ function normalizeDriverResult(
   };
 }
 
-function requestsToolExecution(result: DriverExecutionResult): boolean {
+function requestsToolExecution(result: RunnerExecutionResult): boolean {
   return (result.messages ?? []).some(
     (message) =>
       message.role === "assistant" &&

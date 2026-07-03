@@ -16,16 +16,16 @@
 
 // biome-ignore-all lint/suspicious/useAwait: Test drivers intentionally match the async framework driver contract.
 import { describe, expect, test } from "bun:test";
-import type { RuntimeDriver } from "@tuvren/core/driver";
 import type { ToolResultEvent, ToolStartEvent } from "@tuvren/core/events";
 import { isTuvrenStreamEvent } from "@tuvren/core/events";
+import type { RuntimeRunner } from "@tuvren/core/runner";
 import type {
   TelemetrySpan,
   TuvrenTelemetrySink,
 } from "@tuvren/core/telemetry";
 import type { TuvrenToolDefinition } from "@tuvren/core/tools";
 import {
-  createDriverRegistry as createBaseDriverRegistry,
+  createRunnerRegistry as createBaseRunnerRegistry,
   createTuvrenRuntime,
 } from "../src/index.ts";
 import { createFakeKernelHarness } from "./fake-kernel.ts";
@@ -40,7 +40,7 @@ import {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeDriver(toolName: string): RuntimeDriver {
+function makeRunner(toolName: string): RuntimeRunner {
   return {
     id: "fake",
     async execute(context) {
@@ -79,8 +79,8 @@ function makeTool(name: string): TuvrenToolDefinition {
 async function runToolTurn(toolName: string) {
   const harness = createFakeKernelHarness();
   const runtime = createTuvrenRuntime({
-    defaultDriverId: "fake",
-    driverRegistry: createBaseDriverRegistry([makeDriver(toolName)]),
+    defaultRunnerId: "fake",
+    driverRegistry: createBaseRunnerRegistry([makeRunner(toolName)]),
     kernel: harness.kernel,
   });
   const thread = await runtime.createThread({});
@@ -182,8 +182,8 @@ describe("Capability attribution — telemetry spans (AW006)", () => {
     const harness = createFakeKernelHarness();
     const toolName = "attrib-tool";
     const runtime = createTuvrenRuntime({
-      defaultDriverId: "fake",
-      driverRegistry: createBaseDriverRegistry([makeDriver(toolName)]),
+      defaultRunnerId: "fake",
+      driverRegistry: createBaseRunnerRegistry([makeRunner(toolName)]),
       kernel: harness.kernel,
       telemetry: sink,
     });

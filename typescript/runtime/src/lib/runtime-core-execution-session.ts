@@ -177,7 +177,7 @@ export function createRuntimeResumedExecutionHandle(
     {
       ...previousHandle.request,
       config: cloneAgentConfigForRequest(pauseContext.activeConfig),
-      driverId: pauseContext.activeDriverId,
+      driverId: pauseContext.activeRunnerId,
     },
     previousHandle.turnId,
     previousHandle.schemaId,
@@ -188,7 +188,7 @@ export function createRuntimeResumedExecutionHandle(
       pausedTurnNodeHash: pauseContext.pausedTurnNodeHash,
     }
   );
-  handle.reuseDriverCache(previousHandle);
+  handle.reuseRunnerCache(previousHandle);
   previousHandle.moveSteeringQueueTo(handle);
   handle.primeResumedCancellation(pauseContext);
   handle.replaceStatus({

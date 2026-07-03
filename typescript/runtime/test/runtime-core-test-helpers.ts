@@ -16,7 +16,6 @@
 
 import type { KernelRecord } from "@tuvren/core";
 import { TuvrenRuntimeError } from "@tuvren/core";
-import type { RuntimeDriver as KrakenDriver } from "@tuvren/core/driver";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type {
   AgentConfig,
@@ -31,6 +30,7 @@ import type {
 import { assertContextManifest } from "@tuvren/core/execution";
 import type { TuvrenMessage } from "@tuvren/core/messages";
 import { assertTuvrenMessage } from "@tuvren/core/messages";
+import type { RuntimeRunner as KrakenRunner } from "@tuvren/core/runner";
 import {
   decodeDeterministicKernelRecord,
   encodeDeterministicKernelRecord,
@@ -327,7 +327,7 @@ function toNonEmptyArray<T>(values: T[]): [T, ...T[]] | undefined {
 }
 
 export function buildHandoffPlan(
-  context: Parameters<KrakenDriver["execute"]>[0],
+  context: Parameters<KrakenRunner["execute"]>[0],
   sourceAgent: AgentConfig,
   targetAgent: AgentConfig,
   builder: HandoffContextPlan["builder"]

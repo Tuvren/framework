@@ -16,18 +16,18 @@
 
 // biome-ignore-all lint/suspicious/useAwait: Test drivers intentionally match the async framework driver contract.
 import { describe, expect, test } from "bun:test";
-import type { RuntimeDriver as KrakenDriver } from "@tuvren/core/driver";
 import type { TuvrenRuntime } from "@tuvren/core/execution";
+import type { RuntimeRunner as KrakenRunner } from "@tuvren/core/runner";
 import {
-  createDriverRegistry as createBaseDriverRegistry,
+  createRunnerRegistry as createBaseRunnerRegistry,
   createOrchestrationRuntime,
   createTuvrenRuntime,
 } from "../src/index.ts";
 import { createFakeKernelHarness } from "./fake-kernel.ts";
 import {
-  createDriverRegistry,
-  createStaticDriver,
-} from "./orchestration-runtime-driver-helpers.ts";
+  createRunnerRegistry,
+  createStaticRunner,
+} from "./orchestration-runtime-runner-helpers.ts";
 import {
   assistantText,
   assistantToolCalls,
@@ -44,9 +44,9 @@ describe("orchestration-runtime child lifecycle", () => {
   test("requires the parent handle to start execution before spawning children", async () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntime({
-      defaultDriverId: "fake",
-      driverRegistry: createDriverRegistry([
-        createStaticDriver((context) => ({
+      defaultRunnerId: "fake",
+      driverRegistry: createRunnerRegistry([
+        createStaticRunner((context) => ({
           messages: [assistantText(`Finished ${context.config.name}.`)],
           resolution: {
             reason: "done",
@@ -85,9 +85,9 @@ describe("orchestration-runtime child lifecycle", () => {
     const harness = createFakeKernelHarness();
     let executeCalls = 0;
     const framework = createTuvrenRuntime({
-      defaultDriverId: "fake",
-      driverRegistry: createDriverRegistry([
-        createStaticDriver((context) => {
+      defaultRunnerId: "fake",
+      driverRegistry: createRunnerRegistry([
+        createStaticRunner((context) => {
           executeCalls += 1;
           return {
             messages: [assistantText(`Finished ${context.config.name}.`)],
@@ -125,9 +125,9 @@ describe("orchestration-runtime child lifecycle", () => {
     const harness = createFakeKernelHarness();
     let executeCalls = 0;
     const framework = createTuvrenRuntime({
-      defaultDriverId: "fake",
-      driverRegistry: createDriverRegistry([
-        createStaticDriver((context) => {
+      defaultRunnerId: "fake",
+      driverRegistry: createRunnerRegistry([
+        createStaticRunner((context) => {
           executeCalls += 1;
           return {
             messages: [assistantText(`Finished ${context.config.name}.`)],
@@ -165,9 +165,9 @@ describe("orchestration-runtime child lifecycle", () => {
     const harness = createFakeKernelHarness();
     let executeCalls = 0;
     const framework = createTuvrenRuntime({
-      defaultDriverId: "fake",
-      driverRegistry: createDriverRegistry([
-        createStaticDriver((context) => {
+      defaultRunnerId: "fake",
+      driverRegistry: createRunnerRegistry([
+        createStaticRunner((context) => {
           executeCalls += 1;
           return {
             messages: [assistantText(`Finished ${context.config.name}.`)],
@@ -215,9 +215,9 @@ describe("orchestration-runtime child lifecycle", () => {
   test("awaitResult does not satisfy the parent stream-start precondition for spawn", async () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntime({
-      defaultDriverId: "fake",
-      driverRegistry: createDriverRegistry([
-        createStaticDriver(async (context) => {
+      defaultRunnerId: "fake",
+      driverRegistry: createRunnerRegistry([
+        createStaticRunner(async (context) => {
           await delay(20);
           return {
             messages: [assistantText(`Finished ${context.config.name}.`)],
@@ -357,9 +357,9 @@ describe("orchestration-runtime child lifecycle", () => {
   test("bridges descendant events through allEvents and does not inject worker_result into parent history", async () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntime({
-      defaultDriverId: "fake",
-      driverRegistry: createDriverRegistry([
-        createStaticDriver(async (context) => {
+      defaultRunnerId: "fake",
+      driverRegistry: createRunnerRegistry([
+        createStaticRunner(async (context) => {
           if (context.config.name === "worker") {
             await delay(5);
             return {
@@ -443,9 +443,9 @@ describe("orchestration-runtime child lifecycle", () => {
   test("keeps child allEvents available when the parent subtree stream is already active", async () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntime({
-      defaultDriverId: "fake",
-      driverRegistry: createDriverRegistry([
-        createStaticDriver(async (context) => {
+      defaultRunnerId: "fake",
+      driverRegistry: createRunnerRegistry([
+        createStaticRunner(async (context) => {
           if (context.config.name === "worker") {
             await delay(5);
             return {
@@ -515,9 +515,9 @@ describe("orchestration-runtime child lifecycle", () => {
   test("awaitResult preserves structured part metadata in the final visible result surface", async () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntime({
-      defaultDriverId: "fake",
-      driverRegistry: createDriverRegistry([
-        createStaticDriver(async (context) => {
+      defaultRunnerId: "fake",
+      driverRegistry: createRunnerRegistry([
+        createStaticRunner(async (context) => {
           if (context.config.name === "worker") {
             return {
               messages: [
@@ -588,8 +588,8 @@ describe("orchestration-runtime child lifecycle", () => {
   test("awaitResult resolves persisted assistant output even when the child driver does not stream it explicitly", async () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntime({
-      defaultDriverId: "raw",
-      driverRegistry: createBaseDriverRegistry([
+      defaultRunnerId: "raw",
+      driverRegistry: createBaseRunnerRegistry([
         {
           async execute(context) {
             if (context.config.name === "worker") {
@@ -612,7 +612,7 @@ describe("orchestration-runtime child lifecycle", () => {
             };
           },
           id: "raw",
-        } satisfies KrakenDriver,
+        } satisfies KrakenRunner,
       ]),
       kernel: harness.kernel,
     });
@@ -653,9 +653,9 @@ describe("orchestration-runtime child lifecycle", () => {
   test("awaitResult preserves file parts in the final visible result surface", async () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntime({
-      defaultDriverId: "fake",
-      driverRegistry: createDriverRegistry([
-        createStaticDriver(async (context) => {
+      defaultRunnerId: "fake",
+      driverRegistry: createRunnerRegistry([
+        createStaticRunner(async (context) => {
           if (context.config.name === "worker") {
             return {
               messages: [
@@ -734,9 +734,9 @@ describe("orchestration-runtime child lifecycle", () => {
   test("awaitResult captures tool call parts in finalAssistantMessage for tool-only completions", async () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntime({
-      defaultDriverId: "fake",
-      driverRegistry: createDriverRegistry([
-        createStaticDriver(async (context) => {
+      defaultRunnerId: "fake",
+      driverRegistry: createRunnerRegistry([
+        createStaticRunner(async (context) => {
           if (context.config.name === "worker") {
             const toolMessages = context.messages.filter(
               (message) => message.role === "tool"

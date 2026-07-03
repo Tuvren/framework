@@ -26,7 +26,7 @@ export default defineConfig({
     "src/events/index.ts",
     "src/execution/index.ts",
     "src/tools/index.ts",
-    "src/driver/index.ts",
+    "src/runner/index.ts",
     "src/provider/index.ts",
     "src/extensions/index.ts",
     "src/telemetry/index.ts",

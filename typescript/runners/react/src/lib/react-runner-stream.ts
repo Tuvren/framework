@@ -17,9 +17,9 @@
 import { randomUUID } from "node:crypto";
 import type { EpochMs } from "@tuvren/core";
 import { TuvrenRuntimeError } from "@tuvren/core";
-import type { DriverRuntimePort } from "@tuvren/core/driver";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type { TuvrenMessage } from "@tuvren/core/messages";
+import type { RunnerRuntimePort } from "@tuvren/core/runner";
 import type {
   TuvrenModelResponse,
   TuvrenPrompt,
@@ -83,7 +83,7 @@ export async function executeStreamCall(input: {
   now: () => EpochMs;
   prompt: TuvrenPrompt;
   provider: TuvrenProvider;
-  runtime: DriverRuntimePort;
+  runtime: RunnerRuntimePort;
   signal?: AbortSignal;
 }): Promise<BufferedAssistantSequence> {
   throwIfAborted(input.signal);
@@ -186,7 +186,7 @@ export function createBufferedAssistantSequence(
 
 export async function flushBufferedAssistantSequences(
   sequences: readonly BufferedAssistantSequence[],
-  runtime: DriverRuntimePort
+  runtime: RunnerRuntimePort
 ): Promise<void> {
   for (const sequence of sequences) {
     await publishBufferedAssistantSequence(sequence, runtime);
@@ -319,7 +319,7 @@ function synthesizeAssistantEvents(
 
 async function publishBufferedAssistantSequence(
   sequence: BufferedAssistantSequence,
-  runtime: DriverRuntimePort
+  runtime: RunnerRuntimePort
 ): Promise<void> {
   if (sequence.published) {
     return;
@@ -335,7 +335,7 @@ async function publishBufferedAssistantSequence(
 async function appendAndEmit(
   events: TuvrenStreamEvent[],
   event: TuvrenStreamEvent,
-  runtime: DriverRuntimePort
+  runtime: RunnerRuntimePort
 ): Promise<void> {
   events.push(event);
   await runtime.emit(event);
@@ -344,7 +344,7 @@ async function appendAndEmit(
 async function appendAllAndEmit(
   events: TuvrenStreamEvent[],
   emittedEvents: readonly TuvrenStreamEvent[],
-  runtime: DriverRuntimePort
+  runtime: RunnerRuntimePort
 ): Promise<void> {
   for (const event of emittedEvents) {
     await appendAndEmit(events, event, runtime);

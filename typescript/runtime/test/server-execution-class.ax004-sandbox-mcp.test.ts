@@ -28,10 +28,10 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import type { RuntimeDriver } from "@tuvren/core/driver";
+import type { RuntimeRunner } from "@tuvren/core/runner";
 import type { TuvrenToolDefinition } from "@tuvren/core/tools";
 import {
-  createDriverRegistry as createBaseDriverRegistry,
+  createRunnerRegistry as createBaseRunnerRegistry,
   createBindingResolver,
   createTuvrenRuntime,
 } from "../src/index.ts";
@@ -48,7 +48,7 @@ import {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeDriver(toolName: string): RuntimeDriver {
+function makeRunner(toolName: string): RuntimeRunner {
   return {
     id: "ax004-driver",
     async execute(context) {
@@ -133,10 +133,10 @@ describe("KRT-AX004 — MCP binding classification", () => {
     };
 
     const harness = createFakeKernelHarness();
-    const driver = makeDriver(toolName);
+    const driver = makeRunner(toolName);
     const runtime = createTuvrenRuntime({
-      defaultDriverId: "ax004-driver",
-      driverRegistry: createBaseDriverRegistry([driver]),
+      defaultRunnerId: "ax004-driver",
+      driverRegistry: createBaseRunnerRegistry([driver]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -207,10 +207,10 @@ describe("KRT-AX004 — sandbox endpoint", () => {
     };
 
     const harness = createFakeKernelHarness();
-    const driver = makeDriver(toolName);
+    const driver = makeRunner(toolName);
     const runtime = createTuvrenRuntime({
-      defaultDriverId: "ax004-driver",
-      driverRegistry: createBaseDriverRegistry([driver]),
+      defaultRunnerId: "ax004-driver",
+      driverRegistry: createBaseRunnerRegistry([driver]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -251,10 +251,10 @@ describe("KRT-AX004 — sandbox endpoint", () => {
     };
 
     const harness = createFakeKernelHarness();
-    const driver = makeDriver(toolName);
+    const driver = makeRunner(toolName);
     const runtime = createTuvrenRuntime({
-      defaultDriverId: "ax004-driver",
-      driverRegistry: createBaseDriverRegistry([driver]),
+      defaultRunnerId: "ax004-driver",
+      driverRegistry: createBaseRunnerRegistry([driver]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -301,10 +301,10 @@ describe("KRT-AX004 — sandbox endpoint", () => {
     };
 
     const harness = createFakeKernelHarness();
-    const driver = makeDriver(toolName);
+    const driver = makeRunner(toolName);
     const runtime = createTuvrenRuntime({
-      defaultDriverId: "ax004-driver",
-      driverRegistry: createBaseDriverRegistry([driver]),
+      defaultRunnerId: "ax004-driver",
+      driverRegistry: createBaseRunnerRegistry([driver]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});

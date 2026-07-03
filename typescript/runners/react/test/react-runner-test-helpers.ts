@@ -14,18 +14,18 @@
  * limitations under the License.
  */
 
-import type { DriverExecutionContext } from "@tuvren/core/driver";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type { ContextManifest, InputSignal } from "@tuvren/core/execution";
+import type { RunnerExecutionContext } from "@tuvren/core/runner";
 import type { ToolRegistry, TuvrenToolDefinition } from "@tuvren/core/tools";
 
-export function createDriverExecutionContext(input?: {
-  config?: DriverExecutionContext["config"];
+export function createRunnerExecutionContext(input?: {
+  config?: RunnerExecutionContext["config"];
   emittedEvents?: TuvrenStreamEvent[];
   manifest?: ContextManifest;
   signal?: AbortSignal;
   toolDefinitions?: TuvrenToolDefinition[];
-}): DriverExecutionContext {
+}): RunnerExecutionContext {
   const emittedEvents = input?.emittedEvents ?? [];
   const toolDefinitions = input?.toolDefinitions ?? [];
 

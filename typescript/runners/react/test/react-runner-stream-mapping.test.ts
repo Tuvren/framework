@@ -24,7 +24,7 @@ import type {
 } from "@tuvren/core/provider";
 import { createReActRunner } from "../src/index.ts";
 import {
-  createDriverExecutionContext,
+  createRunnerExecutionContext,
   waitFor,
 } from "./react-runner-test-helpers.ts";
 
@@ -70,7 +70,7 @@ describe("runner-react streamed mapping", () => {
     }).create();
 
     const result = await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config: {
           model: provider,
           name: "primary",
@@ -157,7 +157,7 @@ describe("runner-react streamed mapping", () => {
 
     const execution = driver
       .execute(
-        createDriverExecutionContext({
+        createRunnerExecutionContext({
           config: {
             model: provider,
             name: "primary",
@@ -225,7 +225,7 @@ describe("runner-react streamed mapping", () => {
     }).create();
 
     const result = await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config: {
           model: provider,
           name: "primary",
@@ -314,7 +314,7 @@ describe("runner-react streamed mapping", () => {
     }).create();
 
     const result = await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config: {
           model: provider,
           name: "primary",
@@ -412,7 +412,7 @@ describe("runner-react streamed mapping", () => {
     }).create();
 
     const result = await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config: {
           model: provider,
           name: "primary",
@@ -501,7 +501,7 @@ describe("runner-react streamed mapping", () => {
     }).create();
 
     const result = await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config: {
           model: provider,
           name: "primary",
@@ -566,7 +566,7 @@ describe("runner-react streamed mapping", () => {
     }).create();
 
     const result = await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config: {
           model: provider,
           name: "primary",
@@ -640,7 +640,7 @@ describe("runner-react streamed mapping", () => {
     }).create();
 
     const result = await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config: {
           model: provider,
           name: "primary",
@@ -697,7 +697,7 @@ describe("runner-react streamed mapping", () => {
     }).create();
 
     const result = await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config: {
           model: provider,
           name: "primary",
@@ -745,7 +745,7 @@ describe("runner-react streamed mapping", () => {
     }).create();
 
     const result = await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config: {
           model: provider,
           name: "primary",

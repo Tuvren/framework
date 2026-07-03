@@ -29,10 +29,10 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import type { RuntimeDriver } from "@tuvren/core/driver";
+import type { RuntimeRunner } from "@tuvren/core/runner";
 import type { TuvrenToolDefinition } from "@tuvren/core/tools";
 import {
-  createDriverRegistry as createBaseDriverRegistry,
+  createRunnerRegistry as createBaseRunnerRegistry,
   createTuvrenRuntime,
 } from "../src/index.ts";
 import { createFakeKernelHarness } from "./fake-kernel.ts";
@@ -49,7 +49,7 @@ import {
 // Shared helpers
 // ---------------------------------------------------------------------------
 
-function makeDriver(toolName: string, input: unknown = {}): RuntimeDriver {
+function makeRunner(toolName: string, input: unknown = {}): RuntimeRunner {
   return {
     id: "ax002-driver",
     async execute(context) {
@@ -78,8 +78,8 @@ function makeDriver(toolName: string, input: unknown = {}): RuntimeDriver {
 async function runWithTool(tool: TuvrenToolDefinition) {
   const harness = createFakeKernelHarness();
   const runtime = createTuvrenRuntime({
-    defaultDriverId: "ax002-driver",
-    driverRegistry: createBaseDriverRegistry([makeDriver(tool.name)]),
+    defaultRunnerId: "ax002-driver",
+    driverRegistry: createBaseRunnerRegistry([makeRunner(tool.name)]),
     kernel: harness.kernel,
   });
   const thread = await runtime.createThread({});
@@ -245,10 +245,10 @@ describe("KRT-AX002 — cancellation", () => {
       },
     };
 
-    const driver = makeDriver(toolName);
+    const driver = makeRunner(toolName);
     const runtime = createTuvrenRuntime({
-      defaultDriverId: "ax002-driver",
-      driverRegistry: createBaseDriverRegistry([driver]),
+      defaultRunnerId: "ax002-driver",
+      driverRegistry: createBaseRunnerRegistry([driver]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -294,10 +294,10 @@ describe("KRT-AX002 — cancellation", () => {
       },
     };
 
-    const driver = makeDriver(toolName);
+    const driver = makeRunner(toolName);
     const runtime = createTuvrenRuntime({
-      defaultDriverId: "ax002-driver",
-      driverRegistry: createBaseDriverRegistry([driver]),
+      defaultRunnerId: "ax002-driver",
+      driverRegistry: createBaseRunnerRegistry([driver]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});

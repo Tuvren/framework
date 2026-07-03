@@ -28,7 +28,7 @@ import type {
 import { createContextManifest as createRuntimeContextManifest } from "../../../runtime/src/lib/context-manifest.ts";
 import { createReActRunner } from "../src/index.ts";
 import {
-  createDriverExecutionContext,
+  createRunnerExecutionContext,
   createSearchTool,
   toRecord,
 } from "./react-runner-test-helpers.ts";
@@ -64,7 +64,7 @@ describe("runner-react aroundModel", () => {
     const emittedEvents: TuvrenStreamEvent[] = [];
 
     const result = await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config: {
           extensions: [extension],
           model: provider,
@@ -111,7 +111,7 @@ describe("runner-react aroundModel", () => {
     }).create();
 
     await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config: {
           extensions: [
             {
@@ -181,7 +181,7 @@ describe("runner-react aroundModel", () => {
     }).create();
 
     await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config: {
           extensions: [
             {
@@ -246,7 +246,7 @@ describe("runner-react aroundModel", () => {
     }).create();
 
     const result = await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config: {
           extensions: [
             {
@@ -304,7 +304,7 @@ describe("runner-react aroundModel", () => {
     }).create();
 
     const result = await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config: {
           extensions: [
             {
@@ -375,7 +375,7 @@ describe("runner-react aroundModel", () => {
     }).create();
 
     const result = await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config: {
           extensions: [
             {
@@ -432,7 +432,7 @@ describe("runner-react aroundModel", () => {
     }).create();
 
     const result = await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config: {
           extensions: [
             {
@@ -523,7 +523,7 @@ describe("runner-react aroundModel", () => {
     }).create();
 
     const result = await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config: {
           extensions: [extension],
           model: provider,
@@ -568,7 +568,7 @@ describe("runner-react aroundModel", () => {
     }).create();
 
     const result = await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config: {
           extensions: [
             {
@@ -625,7 +625,7 @@ describe("runner-react aroundModel", () => {
     }).create();
 
     const result = await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config: {
           extensions: [
             {
@@ -686,7 +686,7 @@ describe("runner-react aroundModel", () => {
     }).create();
 
     const result = await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config: {
           extensions: [
             {

@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-import {
-  assertDriverExecutionResult,
-  type DriverExecutionContext,
-  type RuntimeDriver as KrakenDriver,
-} from "@tuvren/core/driver";
 import type {
   ContextManifest,
   HandoffContextBuilder,
   HandoffContextPlan,
   RuntimeResolution,
 } from "@tuvren/core/execution";
+import {
+  assertRunnerExecutionResult,
+  type RuntimeRunner as KrakenRunner,
+  type RunnerExecutionContext,
+} from "@tuvren/core/runner";
 import { TUVREN_SANDBOX_ENDPOINT_ID_PREFIX } from "./binding-resolver.js";
 import { buildCapabilityMetadataFromTools } from "./capability-policy-engine.js";
 import type { HeadState, LoopState } from "./runtime-core-loop.js";
@@ -34,7 +34,7 @@ import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
 import { createServerRateLimiter } from "./server-rate-limiter.js";
 import type { ToolBatchEnvironment } from "./tool-execution.js";
 
-export interface RuntimeCoreDriverSupportHost {
+export interface RuntimeCoreRunnerSupportHost {
   cloneAgentConfigForRequest(
     config: LoopState["activeConfig"]
   ): LoopState["activeConfig"];
@@ -88,7 +88,7 @@ export interface RuntimeCoreDriverSupportHost {
 }
 
 export function createToolBatchEnvironment(
-  host: RuntimeCoreDriverSupportHost,
+  host: RuntimeCoreRunnerSupportHost,
   handle: RuntimeExecutionHandle,
   loopState: LoopState,
   manifest: ContextManifest,
@@ -171,8 +171,8 @@ export function createToolBatchEnvironment(
   };
 }
 
-export function createDriverHandoffContextPlan(
-  host: RuntimeCoreDriverSupportHost,
+export function createRunnerHandoffContextPlan(
+  host: RuntimeCoreRunnerSupportHost,
   input: {
     builder?: HandoffContextBuilder;
     mode?: string;
@@ -216,16 +216,16 @@ export function createDriverHandoffContextPlan(
   } satisfies HandoffContextPlan;
 }
 
-export async function executeDriver(
-  driver: KrakenDriver,
-  context: DriverExecutionContext
+export async function executeRunner(
+  driver: KrakenRunner,
+  context: RunnerExecutionContext
 ): Promise<
-  | Awaited<ReturnType<KrakenDriver["execute"]>>
+  | Awaited<ReturnType<KrakenRunner["execute"]>>
   | { resolution: RuntimeResolution }
 > {
   try {
     const result = await driver.execute(context);
-    assertDriverExecutionResult(result, "driverResult");
+    assertRunnerExecutionResult(result, "driverResult");
     return result;
   } catch (error: unknown) {
     return {

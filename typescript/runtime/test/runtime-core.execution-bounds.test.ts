@@ -17,19 +17,19 @@
 // biome-ignore-all lint/suspicious/useAwait: Test drivers intentionally match the async framework driver contract.
 import { describe, expect, test } from "bun:test";
 import type { EpochMs } from "@tuvren/core";
-import type { RuntimeDriver as KrakenDriver } from "@tuvren/core/driver";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type {
   ExecutionBoundExceededDetails,
   ExecutionResult,
 } from "@tuvren/core/execution";
+import type { RuntimeRunner as KrakenRunner } from "@tuvren/core/runner";
 import type {
   TelemetryEvent,
   TuvrenTelemetrySink,
 } from "@tuvren/core/telemetry";
 import {
   createCapabilityPolicyEngine,
-  createDriverRegistry,
+  createRunnerRegistry,
   createTuvrenRuntime,
   type RuntimeCoreOptions,
 } from "../src/index.ts";
@@ -72,7 +72,7 @@ function createTelemetryCapture(): TelemetryCapture {
 }
 
 /** A driver that never stops — it always requests another iteration. */
-const runawayTextDriver = {
+const runawayTextRunner = {
   async execute() {
     return {
       messages: [assistantText("keep going")],
@@ -83,18 +83,18 @@ const runawayTextDriver = {
   async resume() {
     throw new Error("resume was not expected");
   },
-} satisfies KrakenDriver;
+} satisfies KrakenRunner;
 
 function createBoundsRuntime(options: {
   bounds?: RuntimeCoreOptions["bounds"];
-  driver: KrakenDriver;
+  driver: KrakenRunner;
   now?: () => EpochMs;
   telemetry?: TuvrenTelemetrySink;
 }) {
   const harness = createFakeKernelHarness();
   const runtime = createTuvrenRuntime({
-    defaultDriverId: options.driver.id,
-    driverRegistry: createDriverRegistry([options.driver]),
+    defaultRunnerId: options.driver.id,
+    driverRegistry: createRunnerRegistry([options.driver]),
     kernel: harness.kernel,
     ...(options.bounds === undefined ? {} : { bounds: options.bounds }),
     ...(options.now === undefined ? {} : { now: options.now }),
@@ -134,7 +134,7 @@ describe("framework execution bounds (KRT-BD006)", () => {
   test("breaching maxIterations fails the turn with execution_bound_exceeded", async () => {
     const { runtime } = createBoundsRuntime({
       bounds: { maxIterations: 3 },
-      driver: runawayTextDriver,
+      driver: runawayTextRunner,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -174,7 +174,7 @@ describe("framework execution bounds (KRT-BD006)", () => {
   test("AgentConfig.maxIterations is clamped by bounds.maxIterations", async () => {
     const { runtime } = createBoundsRuntime({
       bounds: { maxIterations: 2 },
-      driver: runawayTextDriver,
+      driver: runawayTextRunner,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -194,7 +194,7 @@ describe("framework execution bounds (KRT-BD006)", () => {
   test("breaching maxToolCalls fails the turn with execution_bound_exceeded", async () => {
     // A single batch of three tool calls exceeds the cumulative cap of two,
     // tripping the bound at the tool-batch boundary.
-    const batchDriver = {
+    const batchRunner = {
       async execute() {
         return {
           messages: [
@@ -212,10 +212,10 @@ describe("framework execution bounds (KRT-BD006)", () => {
       async resume() {
         throw new Error("resume was not expected");
       },
-    } satisfies KrakenDriver;
+    } satisfies KrakenRunner;
     const { runtime } = createBoundsRuntime({
       bounds: { maxToolCalls: 2, maxIterations: 100 },
-      driver: batchDriver,
+      driver: batchRunner,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -250,7 +250,7 @@ describe("framework execution bounds (KRT-BD006)", () => {
     };
     const { runtime } = createBoundsRuntime({
       bounds: { maxWallClockMs: 100, maxIterations: 100_000 },
-      driver: runawayTextDriver,
+      driver: runawayTextRunner,
       now,
     });
     const thread = await runtime.createThread({});
@@ -271,7 +271,7 @@ describe("framework execution bounds (KRT-BD006)", () => {
     // timer fire while the driver is awaiting its cooperative cancellation
     // signal (standing in for in-flight model/tool work).
     let lateCompletion = false;
-    const hangingDriver = {
+    const hangingRunner = {
       async execute(context) {
         await waitForAbort(context.signal);
         // The interrupted work completes only AFTER the bounded abort. Its
@@ -286,10 +286,10 @@ describe("framework execution bounds (KRT-BD006)", () => {
       async resume() {
         throw new Error("resume was not expected");
       },
-    } satisfies KrakenDriver;
+    } satisfies KrakenRunner;
     const { runtime } = createBoundsRuntime({
       bounds: { maxWallClockMs: 25 },
-      driver: hangingDriver,
+      driver: hangingRunner,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -327,7 +327,7 @@ describe("framework execution bounds (KRT-BD006)", () => {
     const engine = createCapabilityPolicyEngine({
       requireApprovalForRiskClass: "high",
     });
-    const approvalDriver = {
+    const approvalRunner = {
       async execute(context) {
         if (!context.messages.some((m) => m.role === "tool")) {
           return {
@@ -349,11 +349,11 @@ describe("framework execution bounds (KRT-BD006)", () => {
       async resume() {
         throw new Error("resume was not expected");
       },
-    } satisfies KrakenDriver;
+    } satisfies KrakenRunner;
 
     const { runtime } = createBoundsRuntime({
       bounds: { maxWallClockMs: 1000, maxIterations: 100 },
-      driver: approvalDriver,
+      driver: approvalRunner,
       now,
     });
 
@@ -403,7 +403,7 @@ describe("framework execution bounds (KRT-BD006)", () => {
     const capture = createTelemetryCapture();
     const { runtime } = createBoundsRuntime({
       bounds: { maxIterations: 2 },
-      driver: runawayTextDriver,
+      driver: runawayTextRunner,
       telemetry: capture.sink,
     });
     const thread = await runtime.createThread({});
@@ -441,7 +441,7 @@ describe("framework execution bounds (KRT-BD006)", () => {
       inputSchema: { type: "object" },
       name: "probe",
     };
-    const parallelDriver = {
+    const parallelRunner = {
       async execute(context) {
         const done = context.messages.some((m) => m.role === "tool");
         if (done) {
@@ -466,11 +466,11 @@ describe("framework execution bounds (KRT-BD006)", () => {
       async resume() {
         throw new Error("resume was not expected");
       },
-    } satisfies KrakenDriver;
+    } satisfies KrakenRunner;
 
     const { runtime } = createBoundsRuntime({
       bounds: { maxConcurrentToolCalls: 1 },
-      driver: parallelDriver,
+      driver: parallelRunner,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -491,7 +491,7 @@ describe("framework execution bounds (KRT-BD006)", () => {
   });
 
   test("rejects invalid bound configuration at construction time", () => {
-    const driver = runawayTextDriver;
+    const driver = runawayTextRunner;
     for (const bad of [0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY]) {
       expect(() =>
         createBoundsRuntime({ bounds: { maxIterations: bad }, driver })
@@ -500,7 +500,7 @@ describe("framework execution bounds (KRT-BD006)", () => {
   });
 
   test("a within-bounds turn completes normally under default bounds", async () => {
-    const normalDriver = {
+    const normalRunner = {
       async execute() {
         return {
           messages: [assistantText("all done")],
@@ -511,8 +511,8 @@ describe("framework execution bounds (KRT-BD006)", () => {
       async resume() {
         throw new Error("resume was not expected");
       },
-    } satisfies KrakenDriver;
-    const { runtime } = createBoundsRuntime({ driver: normalDriver });
+    } satisfies KrakenRunner;
+    const { runtime } = createBoundsRuntime({ driver: normalRunner });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
       branchId: thread.branchId,

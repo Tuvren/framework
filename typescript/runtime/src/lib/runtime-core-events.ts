@@ -23,14 +23,14 @@ import type {
 } from "@tuvren/core/execution";
 import type { TuvrenMessage } from "@tuvren/core/messages";
 import {
-  assertDriverRuntimeEvent,
+  assertRunnerRuntimeEvent,
   isAssistantContentStreamEvent,
   serializeAssistantDeltaValue,
 } from "./runtime-core-assistant-validation.js";
 import type { LoopState } from "./runtime-core-loop.js";
 import {
   inferFinishReason,
-  shouldSuppressBufferedDriverEvents,
+  shouldSuppressBufferedRunnerEvents,
 } from "./runtime-core-recovery.js";
 import { cloneValue, projectError } from "./runtime-core-shared.js";
 import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
@@ -79,7 +79,7 @@ export function createPublishedEvent(
     ...event,
     source: event.source ?? {
       agent: loopState.activeConfig.name,
-      driver: loopState.activeDriverId,
+      driver: loopState.activeRunnerId,
       threadId: handle.request.threadId,
     },
   };
@@ -87,13 +87,13 @@ export function createPublishedEvent(
   return publishedEvent;
 }
 
-export function createDriverPublishedEvent(
+export function createRunnerPublishedEvent(
   host: RuntimeCoreEventsHost,
   handle: RuntimeExecutionHandle,
   event: TuvrenStreamEvent,
   loopState: LoopState
 ): TuvrenStreamEvent {
-  assertDriverRuntimeEvent(event);
+  assertRunnerRuntimeEvent(event);
   return createPublishedEvent(
     host,
     handle,
@@ -101,7 +101,7 @@ export function createDriverPublishedEvent(
       ...event,
       source: {
         agent: loopState.activeConfig.name,
-        driver: loopState.activeDriverId,
+        driver: loopState.activeRunnerId,
         threadId: handle.request.threadId,
       },
     },
@@ -109,7 +109,7 @@ export function createDriverPublishedEvent(
   );
 }
 
-export function flushBufferedDriverEvents(
+export function flushBufferedRunnerEvents(
   handle: RuntimeExecutionHandle,
   events: TuvrenStreamEvent[]
 ): void {
@@ -118,20 +118,20 @@ export function flushBufferedDriverEvents(
   }
 }
 
-export function flushBufferedDriverEventsIfNeeded(
+export function flushBufferedRunnerEventsIfNeeded(
   handle: RuntimeExecutionHandle,
   resolution: RuntimeResolution,
   events: TuvrenStreamEvent[]
 ): TuvrenStreamEvent[] {
-  if (shouldSuppressBufferedDriverEvents(resolution)) {
+  if (shouldSuppressBufferedRunnerEvents(resolution)) {
     return [];
   }
 
-  flushBufferedDriverEvents(handle, events);
+  flushBufferedRunnerEvents(handle, events);
   return events;
 }
 
-export function ensureDriverAssistantEvents(
+export function ensureRunnerAssistantEvents(
   host: RuntimeCoreEventsHost,
   handle: RuntimeExecutionHandle,
   messages: TuvrenMessage[],

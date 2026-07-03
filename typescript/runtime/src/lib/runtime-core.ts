@@ -24,10 +24,6 @@ import {
   type Scope,
   TuvrenRuntimeError,
 } from "@tuvren/core";
-import type {
-  DriverExecutionContext,
-  DriverRegistry,
-} from "@tuvren/core/driver";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type {
   AgentConfig,
@@ -53,6 +49,10 @@ import type {
   TuvrenMessage,
 } from "@tuvren/core/messages";
 import type { TuvrenModelResponse } from "@tuvren/core/provider";
+import type {
+  RunnerExecutionContext,
+  RunnerRegistry,
+} from "@tuvren/core/runner";
 import type { TuvrenTelemetrySink } from "@tuvren/core/telemetry";
 import type { ApprovalResponse } from "@tuvren/core/tools";
 import type {
@@ -60,7 +60,6 @@ import type {
   TurnTreeSchema,
 } from "@tuvren/kernel-protocol";
 import { IDENTITY_PAYLOAD_CODEC } from "@tuvren/sdk";
-import { createDriverRegistry } from "./driver-registry.js";
 import {
   getTurnHistory,
   getTurnState,
@@ -69,6 +68,7 @@ import {
   readBranchMessages,
 } from "./durable-reads.js";
 import type { PayloadCodecBinding } from "./payload-codec-seam.js";
+import { createRunnerRegistry } from "./runner-registry.js";
 import {
   createBoundExceededError,
   getBoundExceededDetails,
@@ -87,7 +87,7 @@ import {
 } from "./runtime-core-execution-session.js";
 import {
   materializeRuntimeCoreContextMessages,
-  materializeRuntimeCoreDriver,
+  materializeRuntimeCoreRunner,
   resolveRuntimeCoreFailureActiveConfig,
   resolveRuntimeCoreHandoffSourceContext,
 } from "./runtime-core-facade-adapters.js";
@@ -99,13 +99,13 @@ import {
   completeRuntimeCoreExecution,
   completeRuntimeCoreIterationArtifacts,
   completeRuntimeCoreIterationRun,
-  createRuntimeCoreDriverExecutionContext,
-  createRuntimeCoreDriverHandoffContextPlan,
   createRuntimeCoreExecutionLoopState,
   createRuntimeCoreExecutionTurnIfNeeded,
   createRuntimeCoreIterationTree,
+  createRuntimeCoreRunnerExecutionContext,
+  createRuntimeCoreRunnerHandoffContextPlan,
   createRuntimeCoreToolBatchEnvironment,
-  executeRuntimeCoreDriverCall,
+  executeRuntimeCoreRunnerCall,
   failRuntimeCoreInvalidPauseResolutionIfNeeded,
   finishRuntimeCoreResumedExecutionStart,
   handleRuntimeCoreExecutionFailure,
@@ -117,7 +117,7 @@ import {
   publishRuntimeCoreTurnStart,
   resolveRuntimeCoreExecutionBranchHead,
   resumeRuntimeCorePausedToolExecution,
-  stageRuntimeCoreDriverMessages,
+  stageRuntimeCoreRunnerMessages,
 } from "./runtime-core-facade-execution.js";
 import {
   createRuntimeCoreFacadeHosts,
@@ -133,8 +133,8 @@ import {
 } from "./runtime-core-facade-ops.js";
 import {
   cloneAgentConfigForRequest,
-  createDriverAgentConfigSnapshot,
-  createReadonlyDriverToolRegistry,
+  createReadonlyRunnerToolRegistry,
+  createRunnerAgentConfigSnapshot,
   normalizeManifestExtensionStateWarningBudget,
   normalizeMaxParallelToolCalls,
   normalizeRunLivenessOptions,
@@ -144,7 +144,7 @@ import { finalizePausedCancellation as finalizeRuntimePausedCancellation } from 
 import type { ActiveRunLease } from "./runtime-core-liveness.js";
 import type { HeadState, LoopState } from "./runtime-core-loop.js";
 import {
-  createRuntimeDriverStreamEvent,
+  createRuntimeRunnerStreamEvent,
   emitRuntimeCheckpointEvents,
   emitRuntimeWarning,
   ensureRuntimeAssistantEvents,
@@ -232,9 +232,9 @@ export interface RuntimeCoreOptions {
    */
   bounds?: ExecutionBounds;
   createId?: () => string;
-  defaultDriverId: string;
   defaultMaxParallelToolCalls?: number;
-  driverRegistry?: DriverRegistry;
+  defaultRunnerId: string;
+  driverRegistry?: RunnerRegistry;
   enableStateObservability?: boolean;
   handoffContextBuilder?: HandoffContextBuilder;
   kernel: KrakenKernel;
@@ -275,9 +275,9 @@ export interface RuntimeCoreOptions {
 interface ResolvedRuntimeCoreOptions {
   bounds: ResolvedExecutionBounds;
   createId: () => string;
-  defaultDriverId: string;
   defaultMaxParallelToolCalls: number;
-  driverRegistry: DriverRegistry;
+  defaultRunnerId: string;
+  driverRegistry: RunnerRegistry;
   enableStateObservability: boolean;
   handoffContextBuilder?: HandoffContextBuilder;
   kernel: KrakenKernel;
@@ -363,12 +363,12 @@ class RuntimeCore implements TuvrenRuntime {
     this.options = {
       bounds: normalizeExecutionBounds(options.bounds),
       createId: options.createId ?? randomUUID,
-      defaultDriverId: options.defaultDriverId,
+      defaultRunnerId: options.defaultRunnerId,
       defaultMaxParallelToolCalls: normalizeMaxParallelToolCalls(
         options.defaultMaxParallelToolCalls ?? DEFAULT_MAX_PARALLEL_TOOL_CALLS,
         "defaultMaxParallelToolCalls"
       ),
-      driverRegistry: options.driverRegistry ?? createDriverRegistry(),
+      driverRegistry: options.driverRegistry ?? createRunnerRegistry(),
       enableStateObservability: options.enableStateObservability ?? true,
       handoffContextBuilder: options.handoffContextBuilder,
       kernel: options.kernel,
@@ -444,11 +444,11 @@ class RuntimeCore implements TuvrenRuntime {
           messageHashes,
           messages
         ),
-      createDriverAgentConfigSnapshot,
-      createDriverHandoffContextPlan: (...args) =>
-        createRuntimeCoreDriverHandoffContextPlan(this.hosts, ...args),
-      createDriverPublishedEvent: (handle, event, loopState) =>
-        createRuntimeDriverStreamEvent(
+      createRunnerAgentConfigSnapshot,
+      createRunnerHandoffContextPlan: (...args) =>
+        createRuntimeCoreRunnerHandoffContextPlan(this.hosts, ...args),
+      createRunnerPublishedEvent: (handle, event, loopState) =>
+        createRuntimeRunnerStreamEvent(
           this.hosts.events,
           handle,
           event,
@@ -457,12 +457,12 @@ class RuntimeCore implements TuvrenRuntime {
       createId: () => this.createId(),
       createIterationTree: (...args) =>
         createRuntimeCoreIterationTree(this.hosts, ...args),
-      createReadonlyDriverToolRegistry,
+      createReadonlyRunnerToolRegistry,
       createToolBatchEnvironment: (...args) =>
         createRuntimeCoreToolBatchEnvironment(this.hosts, ...args),
       createTrackedRun: (...args) =>
         createRuntimeCoreTrackedRun(this.hosts.liveness, ...args),
-      defaultDriverId: this.options.defaultDriverId,
+      defaultRunnerId: this.options.defaultRunnerId,
       defaultMaxParallelToolCalls: this.options.defaultMaxParallelToolCalls,
       emitStateObservability: (
         handle,
@@ -1042,12 +1042,12 @@ class RuntimeCore implements TuvrenRuntime {
         },
         completeIterationArtifacts: (...args) =>
           completeRuntimeCoreIterationArtifacts(this.hosts, ...args),
-        createDriverExecutionContext: (...args) =>
-          this.createDriverExecutionContext(...args),
+        createRunnerExecutionContext: (...args) =>
+          this.createRunnerExecutionContext(...args),
         createId: () => this.createId(),
         createTrackedRun: (...args) =>
           createRuntimeCoreTrackedRun(this.hosts.liveness, ...args),
-        ensureDriverAssistantEvents: (
+        ensureRunnerAssistantEvents: (
           handle,
           messages,
           emittedEvents,
@@ -1060,11 +1060,11 @@ class RuntimeCore implements TuvrenRuntime {
             emittedEvents,
             loopState
           ),
-        executeDriver: async (...args) => {
+        executeRunner: async (...args) => {
           const startMs = this.now();
 
           try {
-            const result = await executeRuntimeCoreDriverCall(...args);
+            const result = await executeRuntimeCoreRunnerCall(...args);
             this.telemetry.span({
               handle,
               kind: "model_call",
@@ -1094,22 +1094,22 @@ class RuntimeCore implements TuvrenRuntime {
             this.hosts.turnProgress,
             ...args
           ),
-        flushBufferedDriverEventsIfNeeded: (handle, resolution, events) =>
+        flushBufferedRunnerEventsIfNeeded: (handle, resolution, events) =>
           flushRuntimeBufferedEventsIfResolutionAllows(
             handle,
             resolution,
             events
           ),
-        materializeDriver: (driverId) =>
-          materializeRuntimeCoreDriver(this.options.driverRegistry, driverId),
+        materializeRunner: (driverId) =>
+          materializeRuntimeCoreRunner(this.options.driverRegistry, driverId),
         now: () => this.now(),
         reconcileCheckpointedPauseResolution: (...args) =>
           reconcileRuntimeCoreCheckpointedPauseResolution(
             this.hosts.turnProgress,
             ...args
           ),
-        stageDriverMessages: (...args) =>
-          stageRuntimeCoreDriverMessages(this.hosts, ...args),
+        stageRunnerMessages: (...args) =>
+          stageRuntimeCoreRunnerMessages(this.hosts, ...args),
         publishEvent: (h, event, ls) => this.publishRuntimeEvent(h, event, ls),
       },
       handle,
@@ -1120,22 +1120,22 @@ class RuntimeCore implements TuvrenRuntime {
     );
   }
 
-  private createDriverExecutionContext(
+  private createRunnerExecutionContext(
     handle: RuntimeExecutionHandle,
     schemaId: string,
     loopState: LoopState,
     headState: HeadState,
     iterationCount: number,
-    emittedDriverEvents: TuvrenStreamEvent[]
-  ): DriverExecutionContext {
-    return createRuntimeCoreDriverExecutionContext(
+    emittedRunnerEvents: TuvrenStreamEvent[]
+  ): RunnerExecutionContext {
+    return createRuntimeCoreRunnerExecutionContext(
       this.hosts,
       handle,
       schemaId,
       loopState,
       headState,
       iterationCount,
-      emittedDriverEvents
+      emittedRunnerEvents
     );
   }
 

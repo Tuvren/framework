@@ -36,8 +36,6 @@ import type { ExtensionStateUpdate } from "./extension-runtime.js";
 import type { PayloadCodecBinding } from "./payload-codec-seam.js";
 import type { HelperBundle } from "./runtime-core-context.js";
 import type { RuntimeCoreContextOpsHost } from "./runtime-core-context-ops.js";
-import type { RuntimeCoreDriverHost } from "./runtime-core-driver.js";
-import type { RuntimeCoreDriverSupportHost } from "./runtime-core-driver-support.js";
 import type { RuntimeCoreEventsHost } from "./runtime-core-events.js";
 import type { RuntimeCoreExpiredRecoveryHost } from "./runtime-core-expired-recovery.js";
 import {
@@ -49,18 +47,18 @@ import {
 import type { RuntimeCoreFinalizationHost } from "./runtime-core-finalization.js";
 import {
   buildRuntimeCoreContextOpsHost,
-  buildRuntimeCoreDriverSupportHost,
   buildRuntimeCoreEventsHost,
   buildRuntimeCoreExpiredRecoveryHost,
   buildRuntimeCoreFinalizationHost,
   buildRuntimeCoreLivenessHost,
   buildRuntimeCorePersistenceHost,
+  buildRuntimeCoreRunnerSupportHost,
   buildRuntimeCoreStartupHost,
   buildRuntimeCoreStateCommitHost,
   buildRuntimeCoreTurnProgressHost,
 } from "./runtime-core-hosts.js";
 import {
-  buildRuntimeCoreDriverHost,
+  buildRuntimeCoreRunnerHost,
   buildRuntimeCoreStatusHost,
   buildRuntimeCoreToolResumeHost,
 } from "./runtime-core-hosts-execution.js";
@@ -74,6 +72,8 @@ import type {
   DurableRuntimeStatus,
   LoopOutcome,
 } from "./runtime-core-recovery.js";
+import type { RuntimeCoreRunnerHost } from "./runtime-core-runner.js";
+import type { RuntimeCoreRunnerSupportHost } from "./runtime-core-runner-support.js";
 import { createFrozenSnapshot } from "./runtime-core-shared.js";
 import type { RuntimeCoreStartupHost } from "./runtime-core-startup.js";
 import type { RuntimeCoreStateCommitHost } from "./runtime-core-state-commit.js";
@@ -85,8 +85,8 @@ import type { PauseContext, ResumeContext } from "./runtime-execution-types.js";
 
 export interface RuntimeCoreFacadeHosts {
   contextOps: RuntimeCoreContextOpsHost;
-  driver: RuntimeCoreDriverHost;
-  driverSupport: RuntimeCoreDriverSupportHost;
+  driver: RuntimeCoreRunnerHost;
+  driverSupport: RuntimeCoreRunnerSupportHost;
   events: RuntimeCoreEventsHost;
   expiredRecovery: RuntimeCoreExpiredRecoveryHost;
   finalization: RuntimeCoreFinalizationHost;
@@ -141,7 +141,7 @@ interface RuntimeCoreFacadeHostDependencies {
     loopState: LoopState,
     enteredIterationLoop: boolean
   ): Promise<void>;
-  completeIterationRun: RuntimeCoreDriverHost["completeIterationRun"];
+  completeIterationRun: RuntimeCoreRunnerHost["completeIterationRun"];
   completeTrackedRun(
     handle: RuntimeExecutionHandle,
     runId: string,
@@ -152,15 +152,15 @@ interface RuntimeCoreFacadeHostDependencies {
     messageHashes: HashString[],
     messages: TuvrenMessage[]
   ): HelperBundle;
-  createDriverAgentConfigSnapshot(
+  createId(): string;
+  createIterationTree: RuntimeCoreRunnerHost["createIterationTree"];
+  createReadonlyRunnerToolRegistry(registry: ToolRegistry): ToolRegistry;
+  createRunnerAgentConfigSnapshot(
     config: LoopState["activeConfig"]
   ): LoopState["activeConfig"];
-  createDriverHandoffContextPlan: RuntimeCoreDriverHost["createDriverHandoffContextPlan"];
-  createDriverPublishedEvent: RuntimeCoreDriverHost["createDriverPublishedEvent"];
-  createId(): string;
-  createIterationTree: RuntimeCoreDriverHost["createIterationTree"];
-  createReadonlyDriverToolRegistry(registry: ToolRegistry): ToolRegistry;
-  createToolBatchEnvironment: RuntimeCoreDriverHost["createToolBatchEnvironment"];
+  createRunnerHandoffContextPlan: RuntimeCoreRunnerHost["createRunnerHandoffContextPlan"];
+  createRunnerPublishedEvent: RuntimeCoreRunnerHost["createRunnerPublishedEvent"];
+  createToolBatchEnvironment: RuntimeCoreRunnerHost["createToolBatchEnvironment"];
   createTrackedRun(
     handle: RuntimeExecutionHandle,
     runId: string,
@@ -174,8 +174,8 @@ interface RuntimeCoreFacadeHostDependencies {
       sideEffects: boolean;
     }>
   ): Promise<void>;
-  defaultDriverId: string;
   defaultMaxParallelToolCalls: number;
+  defaultRunnerId: string;
   emitStateObservability(
     handle: RuntimeExecutionHandle,
     loopState: LoopState,
@@ -287,13 +287,13 @@ interface RuntimeCoreFacadeHostDependencies {
         renewBeforeMs: number;
       }
     | undefined;
-  stageManifest: RuntimeCoreDriverHost["stageManifest"];
+  stageManifest: RuntimeCoreRunnerHost["stageManifest"];
   stageMessage(
     runId: string,
     message: TuvrenMessage,
     taskId?: string
   ): Promise<HashString>;
-  stageRuntimeStatus: RuntimeCoreDriverHost["stageRuntimeStatus"];
+  stageRuntimeStatus: RuntimeCoreRunnerHost["stageRuntimeStatus"];
   stageTurnLineage(
     runId: string,
     turnId: string,
@@ -351,19 +351,19 @@ export function createRuntimeCoreFacadeHosts(
       syncRunLeaseStateFromStepResult: (...args) =>
         dependencies.syncRunLeaseStateFromStepResult(...args),
     }),
-    driver: buildRuntimeCoreDriverHost({
+    driver: buildRuntimeCoreRunnerHost({
       completeIterationRun: (...args) =>
         dependencies.completeIterationRun(...args),
-      createDriverAgentConfigSnapshot: (config) =>
-        dependencies.createDriverAgentConfigSnapshot(config),
-      createDriverHandoffContextPlan: (...args) =>
-        dependencies.createDriverHandoffContextPlan(...args),
-      createDriverPublishedEvent: (...args) =>
-        dependencies.createDriverPublishedEvent(...args),
+      createRunnerAgentConfigSnapshot: (config) =>
+        dependencies.createRunnerAgentConfigSnapshot(config),
+      createRunnerHandoffContextPlan: (...args) =>
+        dependencies.createRunnerHandoffContextPlan(...args),
+      createRunnerPublishedEvent: (...args) =>
+        dependencies.createRunnerPublishedEvent(...args),
       createIterationTree: (...args) =>
         dependencies.createIterationTree(...args),
-      createReadonlyDriverToolRegistry: (registry) =>
-        dependencies.createReadonlyDriverToolRegistry(registry),
+      createReadonlyRunnerToolRegistry: (registry) =>
+        dependencies.createReadonlyRunnerToolRegistry(registry),
       createToolBatchEnvironment: (...args) =>
         dependencies.createToolBatchEnvironment(...args),
       failTrackedRunWithoutBranchAdvance: (...args) =>
@@ -376,7 +376,7 @@ export function createRuntimeCoreFacadeHosts(
       stageMessage: (...args) => dependencies.stageMessage(...args),
       stageRuntimeStatus: (...args) => dependencies.stageRuntimeStatus(...args),
     }),
-    driverSupport: buildRuntimeCoreDriverSupportHost({
+    driverSupport: buildRuntimeCoreRunnerSupportHost({
       cloneAgentConfigForRequest: (config) =>
         dependencies.cloneAgentConfigForRequest(config),
       createContextEngineeringHelpers: (messageHashes, messages) =>
@@ -444,7 +444,7 @@ export function createRuntimeCoreFacadeHosts(
     }),
     finalization: buildRuntimeCoreFinalizationHost({
       createId: () => dependencies.createId(),
-      defaultDriverId: dependencies.defaultDriverId,
+      defaultRunnerId: dependencies.defaultRunnerId,
       finalizeRejectedPausedToolCancellation: (...args) =>
         dependencies.finalizeRejectedPausedToolCancellation(...args),
       finalizeTurnStatus: (...args) => dependencies.finalizeTurnStatus(...args),
@@ -498,7 +498,7 @@ export function createRuntimeCoreFacadeHosts(
       createActiveToolRegistry,
       createClientEndpointBoundaryFromConfig,
       createId: () => dependencies.createId(),
-      defaultDriverId: dependencies.defaultDriverId,
+      defaultRunnerId: dependencies.defaultRunnerId,
       emitStateObservability: (...args) =>
         dependencies.emitStateObservability(...args),
       kernel: dependencies.kernel,

@@ -40,9 +40,9 @@ import { createRuntimeKernel } from "@tuvren/kernel-runtime";
 import { createAesGcmPayloadCodec, type PayloadKeyring } from "@tuvren/sdk";
 import { createTuvren, createTuvrenRuntime } from "../src/index.ts";
 import {
-  createDriverRegistry,
-  createStaticDriver,
-} from "./orchestration-runtime-driver-helpers.ts";
+  createRunnerRegistry,
+  createStaticRunner,
+} from "./orchestration-runtime-runner-helpers.ts";
 import { assistantText, textSignal } from "./runtime-core-test-helpers.ts";
 
 const SCOPE_A = "tenant.A";
@@ -70,9 +70,9 @@ function buildTenant(input: {
   });
   const kernel = createRuntimeKernel({ backend });
   const framework = createTuvrenRuntime({
-    defaultDriverId: "fake",
-    driverRegistry: createDriverRegistry([
-      createStaticDriver(async () => ({
+    defaultRunnerId: "fake",
+    driverRegistry: createRunnerRegistry([
+      createStaticRunner(async () => ({
         messages: [assistantText(input.providerSecret)],
         resolution: { reason: "done", type: "end_turn" },
       })),

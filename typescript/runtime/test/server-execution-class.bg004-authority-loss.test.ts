@@ -49,15 +49,15 @@ import type {
   ClientInvocationEnvelope,
   ClientReportedResult,
 } from "@tuvren/core/capabilities";
-import type { RuntimeDriver } from "@tuvren/core/driver";
 import { CAPABILITY_RESULT_STALE } from "@tuvren/core/errors";
 import type { ToolResultPart } from "@tuvren/core/messages";
+import type { RuntimeRunner } from "@tuvren/core/runner";
 import type {
   ToolExecutionContext,
   TuvrenToolDefinition,
 } from "@tuvren/core/tools";
 import {
-  createDriverRegistry as createBaseDriverRegistry,
+  createRunnerRegistry as createBaseRunnerRegistry,
   createTuvrenRuntime,
 } from "../src/index.ts";
 import { createClientEndpointBoundary } from "../src/lib/client-endpoint-boundary.ts";
@@ -79,7 +79,7 @@ import {
 // Shared helpers — a driver that issues exactly one tool call, then ends.
 // ---------------------------------------------------------------------------
 
-function makeDriver(toolName: string): RuntimeDriver {
+function makeRunner(toolName: string): RuntimeRunner {
   return {
     id: "bg004-driver",
     async execute(context) {
@@ -121,8 +121,8 @@ async function runWithLeaseLoss(
     },
   });
   const runtime = createTuvrenRuntime({
-    defaultDriverId: "bg004-driver",
-    driverRegistry: createBaseDriverRegistry([makeDriver(tool.name)]),
+    defaultRunnerId: "bg004-driver",
+    driverRegistry: createBaseRunnerRegistry([makeRunner(tool.name)]),
     kernel: livenessHarness.kernel,
     runLiveness: {
       executionOwnerId: "worker-1",
@@ -235,8 +235,8 @@ async function runClientDispatchWithLeaseLoss(
     },
   });
   const runtime = createTuvrenRuntime({
-    defaultDriverId: "bg004-driver",
-    driverRegistry: createBaseDriverRegistry([makeDriver(capabilityId)]),
+    defaultRunnerId: "bg004-driver",
+    driverRegistry: createBaseRunnerRegistry([makeRunner(capabilityId)]),
     kernel: livenessHarness.kernel,
     runLiveness: {
       executionOwnerId: "worker-1",

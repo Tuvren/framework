@@ -15,11 +15,11 @@
  */
 
 import { type HashString, TuvrenRuntimeError } from "@tuvren/core";
-import type { DriverAssistantEventReconciliation } from "@tuvren/core/driver";
 import type { TurnEndEvent, TuvrenStreamEvent } from "@tuvren/core/events";
 import type { RuntimeResolution } from "@tuvren/core/execution";
 import type { TuvrenMessage } from "@tuvren/core/messages";
 import type { TuvrenModelResponse } from "@tuvren/core/provider";
+import type { RunnerAssistantEventReconciliation } from "@tuvren/core/runner";
 import type { ApprovalRequest, ApprovalResponse } from "@tuvren/core/tools";
 import type {
   RuntimeKernel as KrakenKernel,
@@ -93,7 +93,7 @@ export function synthesizeResponse(
   messages: TuvrenMessage[],
   resolution: RuntimeResolution,
   emittedEvents: TuvrenStreamEvent[],
-  assistantEventReconciliation: DriverAssistantEventReconciliation | undefined
+  assistantEventReconciliation: RunnerAssistantEventReconciliation | undefined
 ): TuvrenModelResponse {
   const assistantMessage = messages.find(
     (message): message is Extract<TuvrenMessage, { role: "assistant" }> =>

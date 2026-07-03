@@ -15,15 +15,15 @@
  */
 
 import { assertHashString } from "@tuvren/core";
-import { assertDriverExecutionResult } from "@tuvren/core/driver";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type { IterationDecision, LoopPolicy } from "@tuvren/core/execution";
 import type { TuvrenExtension } from "@tuvren/core/extensions";
 import type { TuvrenModelResponse } from "@tuvren/core/provider";
+import { assertRunnerExecutionResult } from "@tuvren/core/runner";
 import type { ApprovalDecision } from "@tuvren/core/tools";
 import type { ProviderStreamChunk, TuvrenProvider } from "@tuvren/provider-api";
 import {
-  createDriverRegistry,
+  createRunnerRegistry,
   createTuvrenRuntime as createTuvrenRuntimeCore,
 } from "@tuvren/runtime";
 import { createReActRunner } from "../../runners/react/src/index.ts";
@@ -35,15 +35,15 @@ import {
   collectValues,
   createConformanceIdFactory,
   createConformanceKernelHarness,
-  createDriverExecutionContext,
+  createRunnerExecutionContext,
   createScenarioProvider,
-  createStaticDriver,
+  createStaticRunner,
   DRIVER_ID,
   type ScenarioToolCall,
   textSignal,
 } from "./framework-adapter-runtime.ts";
 
-export interface FrameworkAdapterDriverDependencies {
+export interface FrameworkAdapterRunnerDependencies {
   errorToEnvelope(error: unknown): Record<string, unknown>;
   readApprovalDecisions(
     scenario: Record<string, unknown>,
@@ -82,14 +82,14 @@ export interface FrameworkAdapterDriverDependencies {
   ): string;
 }
 
-export function createFrameworkAdapterDriver(
-  dependencies: FrameworkAdapterDriverDependencies
+export function createFrameworkAdapterRunner(
+  dependencies: FrameworkAdapterRunnerDependencies
 ): {
-  runDriverCheckpoint(input: unknown): Promise<AdapterProjection>;
-  runDriverExecute(input: unknown): Promise<AdapterProjection>;
-  runDriverResume(input: unknown): Promise<AdapterProjection>;
+  runRunnerCheckpoint(input: unknown): Promise<AdapterProjection>;
+  runRunnerExecute(input: unknown): Promise<AdapterProjection>;
+  runRunnerResume(input: unknown): Promise<AdapterProjection>;
 } {
-  async function runDriverExecute(input: unknown): Promise<AdapterProjection> {
+  async function runRunnerExecute(input: unknown): Promise<AdapterProjection> {
     const scenario = dependencies.readOperationScenario(
       input,
       "driver.execute"
@@ -115,7 +115,7 @@ export function createFrameworkAdapterDriver(
     }
 
     if (toolName === undefined || loopPolicy !== undefined) {
-      return runDirectDriverExecute(providerResponses, loopPolicy);
+      return runDirectRunnerExecute(providerResponses, loopPolicy);
     }
 
     const prompt = dependencies.readStringProperty(
@@ -135,13 +135,13 @@ export function createFrameworkAdapterDriver(
     const provider = createScenarioProvider(providerResponses, () => {
       generateCalls += 1;
     });
-    const reactDriver = createReActRunner({
+    const reactRunner = createReActRunner({
       providerCallMode: "generate",
     }).create();
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
-      defaultDriverId: reactDriver.id,
-      driverRegistry: createDriverRegistry([reactDriver]),
+      defaultRunnerId: reactRunner.id,
+      driverRegistry: createRunnerRegistry([reactRunner]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -256,7 +256,7 @@ export function createFrameworkAdapterDriver(
       providerCallMode: "stream",
     }).create();
     const result = await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config: {
           extensions: [
             {
@@ -277,7 +277,7 @@ export function createFrameworkAdapterDriver(
       })
     );
 
-    assertDriverExecutionResult(result, "driver aroundModel replacement");
+    assertRunnerExecutionResult(result, "driver aroundModel replacement");
 
     const projection = {
       aroundModel: {
@@ -304,7 +304,7 @@ export function createFrameworkAdapterDriver(
       providerCallMode: "generate",
     }).create();
     const result = await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config: {
           extensions: [
             {
@@ -335,7 +335,7 @@ export function createFrameworkAdapterDriver(
       })
     );
 
-    assertDriverExecutionResult(result, "driver aroundModel retry");
+    assertRunnerExecutionResult(result, "driver aroundModel retry");
 
     const projection = {
       aroundModel: {
@@ -357,7 +357,7 @@ export function createFrameworkAdapterDriver(
     };
   }
 
-  async function runDirectDriverExecute(
+  async function runDirectRunnerExecute(
     providerResponses: readonly TuvrenModelResponse[],
     loopPolicy?: LoopPolicy
   ): Promise<AdapterProjection> {
@@ -365,7 +365,7 @@ export function createFrameworkAdapterDriver(
       providerCallMode: "generate",
     }).create();
     const result = await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config: {
           ...(loopPolicy === undefined ? {} : { loopPolicy }),
           model: createScenarioProvider(providerResponses, () => undefined),
@@ -374,7 +374,7 @@ export function createFrameworkAdapterDriver(
       })
     );
 
-    assertDriverExecutionResult(result, "driver execute result");
+    assertRunnerExecutionResult(result, "driver execute result");
 
     const error =
       result.resolution.type === "fail"
@@ -398,7 +398,7 @@ export function createFrameworkAdapterDriver(
     };
   }
 
-  async function runDriverResume(input: unknown): Promise<AdapterProjection> {
+  async function runRunnerResume(input: unknown): Promise<AdapterProjection> {
     const scenario = dependencies.readOperationScenario(input, "driver.resume");
     const pendingToolCalls = dependencies.readPendingToolCalls(
       scenario,
@@ -425,7 +425,7 @@ export function createFrameworkAdapterDriver(
     assertHashString(resumedFrom, "driver.resume.resumedFrom");
 
     const result = await driver.resume({
-      ...createDriverExecutionContext(),
+      ...createRunnerExecutionContext(),
       approval: {
         decisions,
       },
@@ -443,7 +443,7 @@ export function createFrameworkAdapterDriver(
       resumedFrom,
     });
 
-    assertDriverExecutionResult(result, "driver resume result");
+    assertRunnerExecutionResult(result, "driver resume result");
 
     return {
       evidence: {
@@ -467,7 +467,7 @@ export function createFrameworkAdapterDriver(
     };
   }
 
-  async function runDriverCheckpoint(
+  async function runRunnerCheckpoint(
     input: unknown
   ): Promise<AdapterProjection> {
     const scenario = dependencies.readOperationScenario(
@@ -482,9 +482,9 @@ export function createFrameworkAdapterDriver(
     const harness = createConformanceKernelHarness();
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
-      defaultDriverId: DRIVER_ID,
-      driverRegistry: createDriverRegistry([
-        createStaticDriver(() => ({
+      defaultRunnerId: DRIVER_ID,
+      driverRegistry: createRunnerRegistry([
+        createStaticRunner(() => ({
           messages: [assistantText(finalText)],
           resolution: {
             reason: "done",
@@ -519,9 +519,9 @@ export function createFrameworkAdapterDriver(
   }
 
   return {
-    runDriverCheckpoint,
-    runDriverExecute,
-    runDriverResume,
+    runRunnerCheckpoint,
+    runRunnerExecute,
+    runRunnerResume,
   };
 }
 

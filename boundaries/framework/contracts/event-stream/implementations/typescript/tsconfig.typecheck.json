@@ -9,8 +9,8 @@
       "@tuvren/core-types": [
         "../../../../../../typescript/core-types/src/index.ts"
       ],
-      "@tuvren/core/driver": [
-        "../../../../../../typescript/core/src/driver/index.ts"
+      "@tuvren/core/runner": [
+        "../../../../../../typescript/core/src/runner/index.ts"
       ],
       "@tuvren/core/errors": [
         "../../../../../../typescript/core/src/errors/index.ts"

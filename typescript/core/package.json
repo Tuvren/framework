@@ -34,10 +34,10 @@
       "import": "./dist/tools/index.js",
       "default": "./dist/tools/index.js"
     },
-    "./driver": {
-      "types": "./dist/driver/index.d.ts",
-      "import": "./dist/driver/index.js",
-      "default": "./dist/driver/index.js"
+    "./runner": {
+      "types": "./dist/runner/index.d.ts",
+      "import": "./dist/runner/index.js",
+      "default": "./dist/runner/index.js"
     },
     "./provider": {
       "types": "./dist/provider/index.d.ts",

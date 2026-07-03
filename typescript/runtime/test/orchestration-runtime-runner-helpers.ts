@@ -17,61 +17,61 @@
 // biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity lint/suspicious/useAwait: Shared driver test doubles intentionally centralize event emission and async contract stubs.
 
 import type {
-  DriverExecutionContext,
-  DriverExecutionResult,
-  RuntimeDriver as KrakenDriver,
-  RuntimeDriverFactory as KrakenDriverFactory,
-} from "@tuvren/core/driver";
-import { createDriverRegistry as createBaseDriverRegistry } from "../src/index.ts";
+  RuntimeRunner as KrakenRunner,
+  RuntimeRunnerFactory as KrakenRunnerFactory,
+  RunnerExecutionContext,
+  RunnerExecutionResult,
+} from "@tuvren/core/runner";
+import { createRunnerRegistry as createBaseRunnerRegistry } from "../src/index.ts";
 
-export function createDriverRegistry(
-  drivers: Array<KrakenDriver | KrakenDriverFactory> = []
+export function createRunnerRegistry(
+  drivers: Array<KrakenRunner | KrakenRunnerFactory> = []
 ) {
-  return createBaseDriverRegistry(drivers.map(wrapDriverEntry));
+  return createBaseRunnerRegistry(drivers.map(wrapRunnerEntry));
 }
 
-function wrapDriverEntry(
-  entry: KrakenDriver | KrakenDriverFactory
-): KrakenDriver | KrakenDriverFactory {
-  if (isKrakenDriverFactory(entry)) {
+function wrapRunnerEntry(
+  entry: KrakenRunner | KrakenRunnerFactory
+): KrakenRunner | KrakenRunnerFactory {
+  if (isKrakenRunnerFactory(entry)) {
     return {
       create() {
-        return wrapDriver(entry.create());
+        return wrapRunner(entry.create());
       },
       id: entry.id,
     };
   }
 
-  return wrapDriver(entry);
+  return wrapRunner(entry);
 }
 
-function isKrakenDriverFactory(
-  entry: KrakenDriver | KrakenDriverFactory
-): entry is KrakenDriverFactory {
+function isKrakenRunnerFactory(
+  entry: KrakenRunner | KrakenRunnerFactory
+): entry is KrakenRunnerFactory {
   return "create" in entry && typeof entry.create === "function";
 }
 
-function wrapDriver(driver: KrakenDriver): KrakenDriver {
+function wrapRunner(driver: KrakenRunner): KrakenRunner {
   const resume = driver.resume;
 
   return {
     async execute(context) {
-      return normalizeDriverResult(await driver.execute(context));
+      return normalizeRunnerResult(await driver.execute(context));
     },
     id: driver.id,
     ...(resume === undefined
       ? {}
       : {
           async resume(context) {
-            return normalizeDriverResult(await resume(context));
+            return normalizeRunnerResult(await resume(context));
           },
         }),
   };
 }
 
-function normalizeDriverResult(
-  result: DriverExecutionResult
-): DriverExecutionResult {
+function normalizeRunnerResult(
+  result: RunnerExecutionResult
+): RunnerExecutionResult {
   if (
     result.toolExecutionMode !== undefined ||
     !requestsToolExecution(result)
@@ -85,7 +85,7 @@ function normalizeDriverResult(
   };
 }
 
-function requestsToolExecution(result: DriverExecutionResult): boolean {
+function requestsToolExecution(result: RunnerExecutionResult): boolean {
   return (result.messages ?? []).some(
     (message) =>
       message.role === "assistant" &&
@@ -93,12 +93,12 @@ function requestsToolExecution(result: DriverExecutionResult): boolean {
   );
 }
 
-export function createStaticDriver(
+export function createStaticRunner(
   execute: (
-    context: DriverExecutionContext
-  ) => DriverExecutionResult | Promise<DriverExecutionResult>,
+    context: RunnerExecutionContext
+  ) => RunnerExecutionResult | Promise<RunnerExecutionResult>,
   id = "fake"
-): KrakenDriver {
+): KrakenRunner {
   let emittedMessageSequence = 0;
 
   return {
@@ -136,7 +136,7 @@ export function createStaticDriver(
               break;
             case "structured":
               context.runtime.emit({
-                delta: serializeDriverDeltaValue(part.data),
+                delta: serializeRunnerDeltaValue(part.data),
                 messageId,
                 timestamp: context.runtime.now(),
                 type: "structured.delta",
@@ -159,7 +159,7 @@ export function createStaticDriver(
               });
               context.runtime.emit({
                 callId: part.callId,
-                delta: serializeDriverDeltaValue(part.input),
+                delta: serializeRunnerDeltaValue(part.input),
                 timestamp: context.runtime.now(),
                 type: "tool_call.args_delta",
               });
@@ -225,7 +225,7 @@ export function createStaticDriver(
   };
 }
 
-function serializeDriverDeltaValue(value: unknown): string {
+function serializeRunnerDeltaValue(value: unknown): string {
   if (typeof value === "string") {
     return value;
   }

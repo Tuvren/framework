@@ -11,7 +11,7 @@
       "@tuvren/runner-react": ["../runners/react/src/index.ts"],
       "@tuvren/core": ["../core/src/index.ts"],
       "@tuvren/core-types": ["../core-types/src/index.ts"],
-      "@tuvren/core/driver": ["../core/src/driver/index.ts"],
+      "@tuvren/core/runner": ["../core/src/runner/index.ts"],
       "@tuvren/core/errors": ["../core/src/errors/index.ts"],
       "@tuvren/core/events": ["../core/src/events/index.ts"],
       "@tuvren/core/execution": ["../core/src/execution/index.ts"],

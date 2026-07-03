@@ -17,7 +17,7 @@
 // biome-ignore-all lint/suspicious/useAwait: adapter operations must return Promise<AdapterProjection> per adapter contract
 import {
   createCapabilityPolicyEngine,
-  createDriverRegistry,
+  createRunnerRegistry,
   createTuvrenRuntime,
 } from "@tuvren/runtime";
 import {
@@ -27,7 +27,7 @@ import {
   assistantToolCalls,
   collectValues,
   createConformanceKernelHarness,
-  createStaticDriver,
+  createStaticRunner,
   DRIVER_ID,
   textSignal,
 } from "./framework-adapter-runtime.ts";
@@ -272,7 +272,7 @@ export async function runCapabilityPolicyWiredInvocationDenial(): Promise<Adapte
   const harness = createConformanceKernelHarness();
   const engine = createCapabilityPolicyEngine();
 
-  const driver = createStaticDriver(async (ctx) => {
+  const driver = createStaticRunner(async (ctx) => {
     await Promise.resolve();
     if (!ctx.messages.some((m) => m.role === "tool")) {
       return {
@@ -296,8 +296,8 @@ export async function runCapabilityPolicyWiredInvocationDenial(): Promise<Adapte
   });
 
   const runtime = createTuvrenRuntime({
-    defaultDriverId: DRIVER_ID,
-    driverRegistry: createDriverRegistry([driver]),
+    defaultRunnerId: DRIVER_ID,
+    driverRegistry: createRunnerRegistry([driver]),
     kernel: harness.kernel,
   });
 
@@ -355,7 +355,7 @@ export async function runCapabilityPolicyNonretryablePolicy(): Promise<AdapterPr
 
   const harness = createConformanceKernelHarness();
 
-  const driver = createStaticDriver(async (ctx) => {
+  const driver = createStaticRunner(async (ctx) => {
     await Promise.resolve();
     if (!ctx.messages.some((m) => m.role === "tool")) {
       return {
@@ -375,8 +375,8 @@ export async function runCapabilityPolicyNonretryablePolicy(): Promise<AdapterPr
   });
 
   const runtime = createTuvrenRuntime({
-    defaultDriverId: DRIVER_ID,
-    driverRegistry: createDriverRegistry([driver]),
+    defaultRunnerId: DRIVER_ID,
+    driverRegistry: createRunnerRegistry([driver]),
     kernel: harness.kernel,
   });
 
@@ -430,7 +430,7 @@ export async function runCapabilityPolicyWiredRiskApproval(): Promise<AdapterPro
     requireApprovalForRiskClass: "high",
   });
 
-  const driver = createStaticDriver(async (ctx) => {
+  const driver = createStaticRunner(async (ctx) => {
     await Promise.resolve();
     if (!ctx.messages.some((m) => m.role === "tool")) {
       return {
@@ -450,8 +450,8 @@ export async function runCapabilityPolicyWiredRiskApproval(): Promise<AdapterPro
   });
 
   const runtime = createTuvrenRuntime({
-    defaultDriverId: DRIVER_ID,
-    driverRegistry: createDriverRegistry([driver]),
+    defaultRunnerId: DRIVER_ID,
+    driverRegistry: createRunnerRegistry([driver]),
     kernel: harness.kernel,
   });
 

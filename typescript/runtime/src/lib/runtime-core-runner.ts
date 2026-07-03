@@ -15,7 +15,6 @@
  */
 
 import { type HashString, TuvrenRuntimeError } from "@tuvren/core";
-import type { DriverExecutionContext } from "@tuvren/core/driver";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type {
   ContextManifest,
@@ -29,6 +28,7 @@ import type {
   TuvrenMessage,
 } from "@tuvren/core/messages";
 import type { TuvrenModelResponse } from "@tuvren/core/provider";
+import type { RunnerExecutionContext } from "@tuvren/core/runner";
 import type { ToolRegistry } from "@tuvren/core/tools";
 import { isClientEndpointTool } from "./binding-resolver.js";
 import { buildCapabilityMetadataFromTools } from "./capability-policy-engine.js";
@@ -84,7 +84,7 @@ function createFilteredToolRegistry(
   };
 }
 
-export interface RuntimeCoreDriverHost {
+export interface RuntimeCoreRunnerHost {
   completeIterationRun(
     handle: RuntimeExecutionHandle,
     runId: string,
@@ -94,10 +94,19 @@ export interface RuntimeCoreDriverHost {
     loopState: LoopState,
     nextTreeHash: HashString | undefined
   ): Promise<HashString | undefined>;
-  createDriverAgentConfigSnapshot(
+  createIterationTree(
+    schemaId: string,
+    baseTurnTreeHash: HashString,
+    baseMessageHashes: HashString[],
+    appendedMessageHashes: HashString[],
+    manifestHash: HashString,
+    runtimeStatusHash?: HashString
+  ): Promise<HashString>;
+  createReadonlyRunnerToolRegistry(registry: ToolRegistry): ToolRegistry;
+  createRunnerAgentConfigSnapshot(
     config: LoopState["activeConfig"]
   ): LoopState["activeConfig"];
-  createDriverHandoffContextPlan(
+  createRunnerHandoffContextPlan(
     input: {
       builder?: HandoffContextBuilder;
       mode?: string;
@@ -108,20 +117,11 @@ export interface RuntimeCoreDriverHost {
     headState: HeadState,
     loopState: LoopState
   ): HandoffContextPlan;
-  createDriverPublishedEvent(
+  createRunnerPublishedEvent(
     handle: RuntimeExecutionHandle,
     event: TuvrenStreamEvent,
     loopState: LoopState
   ): TuvrenStreamEvent;
-  createIterationTree(
-    schemaId: string,
-    baseTurnTreeHash: HashString,
-    baseMessageHashes: HashString[],
-    appendedMessageHashes: HashString[],
-    manifestHash: HashString,
-    runtimeStatusHash?: HashString
-  ): Promise<HashString>;
-  createReadonlyDriverToolRegistry(registry: ToolRegistry): ToolRegistry;
   createToolBatchEnvironment(
     handle: RuntimeExecutionHandle,
     loopState: LoopState,
@@ -170,20 +170,20 @@ export interface RuntimeCoreDriverHost {
   ): Promise<HashString>;
 }
 
-export function createDriverExecutionContext(
-  host: RuntimeCoreDriverHost,
+export function createRunnerExecutionContext(
+  host: RuntimeCoreRunnerHost,
   handle: RuntimeExecutionHandle,
   schemaId: string,
   loopState: LoopState,
   headState: HeadState,
   iterationCount: number,
-  emittedDriverEvents: TuvrenStreamEvent[]
-): DriverExecutionContext {
+  emittedRunnerEvents: TuvrenStreamEvent[]
+): RunnerExecutionContext {
   // BB001: Apply exposure-time policy filtering before building the readonly
   // driver snapshot. When a policy engine is configured, evaluate exposure
   // decisions over all surfaces and filter out denied tools so the driver
   // (and the model via the provider bridge) never sees withheld capabilities.
-  let registryForDriver = loopState.activeToolRegistry;
+  let registryForRunner = loopState.activeToolRegistry;
   const policyEngine = loopState.activeConfig.capabilityPolicyEngine;
   if (policyEngine !== undefined) {
     const allTools = loopState.activeToolRegistry.list();
@@ -227,7 +227,7 @@ export function createDriverExecutionContext(
     );
     if (exposedNames.size < allTools.length) {
       const filteredTools = allTools.filter((t) => exposedNames.has(t.name));
-      registryForDriver = createFilteredToolRegistry(
+      registryForRunner = createFilteredToolRegistry(
         loopState.activeToolRegistry,
         filteredTools
       );
@@ -235,14 +235,14 @@ export function createDriverExecutionContext(
   }
 
   const toolRegistrySnapshot =
-    host.createReadonlyDriverToolRegistry(registryForDriver);
+    host.createReadonlyRunnerToolRegistry(registryForRunner);
 
   return {
     branchId: handle.request.branchId,
-    config: host.createDriverAgentConfigSnapshot(loopState.activeConfig),
+    config: host.createRunnerAgentConfigSnapshot(loopState.activeConfig),
     handoff: {
       createContextPlan: (input) =>
-        host.createDriverHandoffContextPlan(input, headState, loopState),
+        host.createRunnerHandoffContextPlan(input, headState, loopState),
     },
     iterationCount,
     manifest: createFrozenSnapshot(headState.manifest),
@@ -265,12 +265,12 @@ export function createDriverExecutionContext(
           );
         }
 
-        const publishedEvent = host.createDriverPublishedEvent(
+        const publishedEvent = host.createRunnerPublishedEvent(
           handle,
           clonedEvent,
           loopState
         );
-        emittedDriverEvents.push(publishedEvent);
+        emittedRunnerEvents.push(publishedEvent);
         handle.publish(publishedEvent);
       },
       now: () => host.now(),
@@ -283,8 +283,8 @@ export function createDriverExecutionContext(
   };
 }
 
-export async function stageDriverMessages(
-  host: RuntimeCoreDriverHost,
+export async function stageRunnerMessages(
+  host: RuntimeCoreRunnerHost,
   runId: string,
   messages: TuvrenMessage[],
   iterationCount: number
@@ -305,7 +305,7 @@ export async function stageDriverMessages(
 }
 
 export async function applyRequestedToolBatchIfNeeded(
-  host: RuntimeCoreDriverHost,
+  host: RuntimeCoreRunnerHost,
   input: {
     handle: RuntimeExecutionHandle;
     headState: HeadState;
@@ -356,7 +356,7 @@ export async function applyRequestedToolBatchIfNeeded(
 }
 
 async function executeRequestedToolBatch(
-  host: RuntimeCoreDriverHost,
+  host: RuntimeCoreRunnerHost,
   input: {
     handle: RuntimeExecutionHandle;
     headState: HeadState;
@@ -398,7 +398,7 @@ async function executeRequestedToolBatch(
 }
 
 export async function completeIterationArtifacts(
-  host: RuntimeCoreDriverHost,
+  host: RuntimeCoreRunnerHost,
   handle: RuntimeExecutionHandle,
   schemaId: string,
   loopState: LoopState,
@@ -449,7 +449,7 @@ export async function completeIterationArtifacts(
 }
 
 export async function applyAfterIterationResolution(
-  host: RuntimeCoreDriverHost,
+  host: RuntimeCoreRunnerHost,
   handle: RuntimeExecutionHandle,
   loopState: LoopState,
   iterationCount: number,

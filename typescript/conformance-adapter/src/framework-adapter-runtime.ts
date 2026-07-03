@@ -16,15 +16,15 @@
 
 import { createMemoryBackend } from "@tuvren/backend-memory";
 import { type HashString as CoreHashString, isHashString } from "@tuvren/core";
-import type {
-  DriverExecutionContext,
-  DriverExecutionResult,
-  RuntimeDriver,
-} from "@tuvren/core/driver";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type { ContextManifest, InputSignal } from "@tuvren/core/execution";
 import type { ToolCallPart, TuvrenMessage } from "@tuvren/core/messages";
 import type { TuvrenModelResponse } from "@tuvren/core/provider";
+import type {
+  RunnerExecutionContext,
+  RunnerExecutionResult,
+  RuntimeRunner,
+} from "@tuvren/core/runner";
 import type { ToolRegistry, TuvrenToolDefinition } from "@tuvren/core/tools";
 import {
   decodeDeterministicKernelRecord,
@@ -36,7 +36,7 @@ import {
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
 import type { TuvrenProvider } from "@tuvren/provider-api";
 import {
-  createDriverRegistry,
+  createRunnerRegistry,
   createTuvrenRuntime as createTuvrenRuntimeCore,
 } from "@tuvren/runtime";
 import { decodeStoredRun } from "../../kernel/runtime/src/lib/runtime-kernel-storage.ts";
@@ -307,26 +307,26 @@ export function createScenarioProvider(
   };
 }
 
-export function createRuntimeWithReactDriver(): ReturnType<
+export function createRuntimeWithReactRunner(): ReturnType<
   typeof createTuvrenRuntimeCore
 > {
-  const reactDriver = createReActRunner({
+  const reactRunner = createReActRunner({
     providerCallMode: "generate",
   }).create();
 
   return createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
-    defaultDriverId: reactDriver.id,
-    driverRegistry: createDriverRegistry([reactDriver]),
+    defaultRunnerId: reactRunner.id,
+    driverRegistry: createRunnerRegistry([reactRunner]),
     kernel: createConformanceKernelHarness().kernel,
   });
 }
 
-export function createStaticDriver(
+export function createStaticRunner(
   execute: (
-    context: DriverExecutionContext
-  ) => DriverExecutionResult | Promise<DriverExecutionResult>
-): RuntimeDriver {
+    context: RunnerExecutionContext
+  ) => RunnerExecutionResult | Promise<RunnerExecutionResult>
+): RuntimeRunner {
   return {
     execute(context) {
       return Promise.resolve(execute(context));
@@ -335,14 +335,14 @@ export function createStaticDriver(
   };
 }
 
-export function createDriverExecutionContext(input?: {
-  config?: DriverExecutionContext["config"];
+export function createRunnerExecutionContext(input?: {
+  config?: RunnerExecutionContext["config"];
   emittedEvents?: TuvrenStreamEvent[];
   manifest?: ContextManifest;
   messages?: readonly TuvrenMessage[];
   signal?: AbortSignal;
   toolDefinitions?: TuvrenToolDefinition[];
-}): DriverExecutionContext {
+}): RunnerExecutionContext {
   const emittedEvents = input?.emittedEvents ?? [];
   const toolDefinitions = input?.toolDefinitions ?? [];
 

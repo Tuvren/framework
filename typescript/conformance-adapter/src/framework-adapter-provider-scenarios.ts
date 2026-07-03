@@ -15,19 +15,19 @@
  */
 
 import { assertHashString } from "@tuvren/core";
-import {
-  assertDriverExecutionResult,
-  type DriverExecutionContext,
-} from "@tuvren/core/driver";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type {
   StructuredOutputRequest,
   TuvrenModelResponse,
   TuvrenPrompt,
 } from "@tuvren/core/provider";
+import {
+  assertRunnerExecutionResult,
+  type RunnerExecutionContext,
+} from "@tuvren/core/runner";
 import type { ProviderStreamChunk, TuvrenProvider } from "@tuvren/provider-api";
 import {
-  createDriverRegistry,
+  createRunnerRegistry,
   createTuvrenRuntime as createTuvrenRuntimeCore,
 } from "@tuvren/runtime";
 import { createReActRunner } from "../../runners/react/src/index.ts";
@@ -44,8 +44,8 @@ import {
   createClock,
   createConformanceIdFactory,
   createConformanceKernelHarness,
-  createDriverExecutionContext,
-  createStaticDriver,
+  createRunnerExecutionContext,
+  createStaticRunner,
   DRIVER_ID,
   textSignal,
 } from "./framework-adapter-runtime.ts";
@@ -298,8 +298,8 @@ export function createFrameworkAdapterProviderScenarios(
     const toolInputs: unknown[] = [];
     const toolOutputs: unknown[] = [];
     const toolFailures: string[] = [];
-    const driver = createStaticDriver(
-      async (context: DriverExecutionContext) => {
+    const driver = createStaticRunner(
+      async (context: RunnerExecutionContext) => {
         await Promise.resolve();
 
         if (!context.messages.some((message) => message.role === "tool")) {
@@ -321,8 +321,8 @@ export function createFrameworkAdapterProviderScenarios(
     );
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
-      defaultDriverId: DRIVER_ID,
-      driverRegistry: createDriverRegistry([driver]),
+      defaultRunnerId: DRIVER_ID,
+      driverRegistry: createRunnerRegistry([driver]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -435,7 +435,7 @@ export function createFrameworkAdapterProviderScenarios(
     };
     const driver = createReActRunner({ providerCallMode: "generate" }).create();
     const result = await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config: {
           model: provider,
           name: AGENT_NAME,
@@ -444,7 +444,7 @@ export function createFrameworkAdapterProviderScenarios(
       })
     );
 
-    assertDriverExecutionResult(result, "structured validation result");
+    assertRunnerExecutionResult(result, "structured validation result");
 
     return {
       evidence: {
@@ -501,9 +501,9 @@ export function createFrameworkAdapterProviderScenarios(
     const harness = createConformanceKernelHarness();
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
-      defaultDriverId: DRIVER_ID,
-      driverRegistry: createDriverRegistry([
-        createStaticDriver((context) => {
+      defaultRunnerId: DRIVER_ID,
+      driverRegistry: createRunnerRegistry([
+        createStaticRunner((context) => {
           context.runtime.emit({
             data: {
               messageCount: context.messages.length,
@@ -576,7 +576,7 @@ export function createFrameworkAdapterProviderScenarios(
             sourceTurnNodeHash !== undefined &&
             rewrittenTurnNodeHash !== undefined &&
             sourceTurnNodeHash !== rewrittenTurnNodeHash,
-          driverObservedMessageCount: readDriverObservedMessageCount(events),
+          driverObservedMessageCount: readRunnerObservedMessageCount(events),
           finalHeadChanged:
             rewrittenTurnNodeHash !== undefined &&
             finalTurnNodeHash !== undefined &&
@@ -598,7 +598,7 @@ export function createFrameworkAdapterProviderScenarios(
             sourceTurnNodeHash !== undefined &&
             rewrittenTurnNodeHash !== undefined &&
             sourceTurnNodeHash !== rewrittenTurnNodeHash,
-          driverObservedMessageCount: readDriverObservedMessageCount(events),
+          driverObservedMessageCount: readRunnerObservedMessageCount(events),
           finalHeadChanged:
             rewrittenTurnNodeHash !== undefined &&
             finalTurnNodeHash !== undefined &&
@@ -650,7 +650,7 @@ export function createFrameworkAdapterProviderScenarios(
     return hashes;
   }
 
-  function readDriverObservedMessageCount(
+  function readRunnerObservedMessageCount(
     events: readonly unknown[]
   ): number | undefined {
     for (const event of events) {

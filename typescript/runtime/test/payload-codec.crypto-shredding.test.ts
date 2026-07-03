@@ -37,9 +37,9 @@ import {
 } from "@tuvren/sdk";
 import { createTuvrenRuntime } from "../src/index.ts";
 import {
-  createDriverRegistry,
-  createStaticDriver,
-} from "./orchestration-runtime-driver-helpers.ts";
+  createRunnerRegistry,
+  createStaticRunner,
+} from "./orchestration-runtime-runner-helpers.ts";
 import { assistantText, textSignal } from "./runtime-core-test-helpers.ts";
 
 const SCOPE = "tenant.crypto-shredding";
@@ -58,9 +58,9 @@ function buildRuntime(options: { keys?: Map<string, Uint8Array> }): {
     backend: createMemoryBackend({ scope: SCOPE }),
   });
   const framework = createTuvrenRuntime({
-    defaultDriverId: "fake",
-    driverRegistry: createDriverRegistry([
-      createStaticDriver(async () => ({
+    defaultRunnerId: "fake",
+    driverRegistry: createRunnerRegistry([
+      createStaticRunner(async () => ({
         messages: [assistantText(PROVIDER_SECRET)],
         resolution: { reason: "done", type: "end_turn" },
       })),

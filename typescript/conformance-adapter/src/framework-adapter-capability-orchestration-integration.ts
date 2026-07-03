@@ -35,7 +35,7 @@ import {
   createBindingResolver,
   createCapabilityPolicyEngine,
   createClientEndpointBoundary,
-  createDriverRegistry,
+  createRunnerRegistry,
   createTuvrenRuntime as createTuvrenRuntimeCore,
 } from "@tuvren/runtime";
 import type { AdapterProjection } from "./framework-adapter-runtime.ts";
@@ -46,7 +46,7 @@ import {
   collectValues,
   createConformanceIdFactory,
   createConformanceKernelHarness,
-  createStaticDriver,
+  createStaticRunner,
   DRIVER_ID,
   textSignal,
 } from "./framework-adapter-runtime.ts";
@@ -96,8 +96,8 @@ function buildProviderMsg(
   };
 }
 
-function makeSingleCallDriver(toolName: string) {
-  return createStaticDriver(async (ctx) => {
+function makeSingleCallRunner(toolName: string) {
+  return createStaticRunner(async (ctx) => {
     await Promise.resolve();
     if (!ctx.messages.some((m) => m.role === "tool")) {
       return {
@@ -117,11 +117,11 @@ function makeSingleCallDriver(toolName: string) {
   });
 }
 
-function makeProviderDriver(
+function makeProviderRunner(
   executionClass: "provider-native" | "provider-mediated",
   toolName: string
 ) {
-  return createStaticDriver(async (ctx) => {
+  return createStaticRunner(async (ctx) => {
     await Promise.resolve();
     if (!ctx.messages.some((m) => m.role === "tool")) {
       return {
@@ -156,8 +156,8 @@ export async function runCapabilityOrchestrationIntegration(): Promise<AdapterPr
   const serverHarness = createConformanceKernelHarness();
   const serverRuntime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
-    defaultDriverId: DRIVER_ID,
-    driverRegistry: createDriverRegistry([makeSingleCallDriver(SERVER_TOOL)]),
+    defaultRunnerId: DRIVER_ID,
+    driverRegistry: createRunnerRegistry([makeSingleCallRunner(SERVER_TOOL)]),
     kernel: serverHarness.kernel,
   });
   const serverThread = await serverRuntime.createThread({});
@@ -187,9 +187,9 @@ export async function runCapabilityOrchestrationIntegration(): Promise<AdapterPr
   const pnHarness = createConformanceKernelHarness();
   const pnRuntime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
-    defaultDriverId: DRIVER_ID,
-    driverRegistry: createDriverRegistry([
-      makeProviderDriver("provider-native", PN_TOOL),
+    defaultRunnerId: DRIVER_ID,
+    driverRegistry: createRunnerRegistry([
+      makeProviderRunner("provider-native", PN_TOOL),
     ]),
     kernel: pnHarness.kernel,
   });
@@ -210,9 +210,9 @@ export async function runCapabilityOrchestrationIntegration(): Promise<AdapterPr
   const pmHarness = createConformanceKernelHarness();
   const pmRuntime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
-    defaultDriverId: DRIVER_ID,
-    driverRegistry: createDriverRegistry([
-      makeProviderDriver("provider-mediated", PM_TOOL),
+    defaultRunnerId: DRIVER_ID,
+    driverRegistry: createRunnerRegistry([
+      makeProviderRunner("provider-mediated", PM_TOOL),
     ]),
     kernel: pmHarness.kernel,
   });
@@ -253,8 +253,8 @@ export async function runCapabilityOrchestrationIntegration(): Promise<AdapterPr
   const clientHarness = createConformanceKernelHarness();
   const clientRuntime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
-    defaultDriverId: DRIVER_ID,
-    driverRegistry: createDriverRegistry([makeSingleCallDriver(CLIENT_CAP)]),
+    defaultRunnerId: DRIVER_ID,
+    driverRegistry: createRunnerRegistry([makeSingleCallRunner(CLIENT_CAP)]),
     kernel: clientHarness.kernel,
   });
   const clientThread = await clientRuntime.createThread({});
@@ -320,8 +320,8 @@ export async function runCapabilityOrchestrationIntegration(): Promise<AdapterPr
   const policyHarness = createConformanceKernelHarness();
   const policyRuntime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
-    defaultDriverId: DRIVER_ID,
-    driverRegistry: createDriverRegistry([makeSingleCallDriver(DENIED_CAP)]),
+    defaultRunnerId: DRIVER_ID,
+    driverRegistry: createRunnerRegistry([makeSingleCallRunner(DENIED_CAP)]),
     kernel: policyHarness.kernel,
   });
   const policyThread = await policyRuntime.createThread({});

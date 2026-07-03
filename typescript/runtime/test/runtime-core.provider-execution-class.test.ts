@@ -31,10 +31,10 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import type { RuntimeDriver } from "@tuvren/core/driver";
 import type { TuvrenMessage } from "@tuvren/core/messages";
+import type { RuntimeRunner } from "@tuvren/core/runner";
 import {
-  createDriverRegistry as createBaseDriverRegistry,
+  createRunnerRegistry as createBaseRunnerRegistry,
   createTuvrenRuntime,
 } from "../src/index.ts";
 import { createFakeKernelHarness } from "./fake-kernel.ts";
@@ -75,10 +75,10 @@ function buildProviderToolMessage(opts: {
   };
 }
 
-function makeProviderDriver(
+function makeProviderRunner(
   executionClass: "provider-native" | "provider-mediated",
   extraMeta?: Record<string, unknown>
-): RuntimeDriver {
+): RuntimeRunner {
   return {
     id: "ay003-driver",
     async execute(context) {
@@ -112,10 +112,10 @@ async function runWithProviderTool(
   extraMeta?: Record<string, unknown>
 ): Promise<Record<string, unknown>[]> {
   const harness = createFakeKernelHarness();
-  const driver = makeProviderDriver(executionClass, extraMeta);
+  const driver = makeProviderRunner(executionClass, extraMeta);
   const runtime = createTuvrenRuntime({
-    defaultDriverId: "ay003-driver",
-    driverRegistry: createBaseDriverRegistry([driver]),
+    defaultRunnerId: "ay003-driver",
+    driverRegistry: createBaseRunnerRegistry([driver]),
     kernel: harness.kernel,
   });
   const thread = await runtime.createThread({});

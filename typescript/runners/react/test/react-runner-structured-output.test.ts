@@ -17,20 +17,20 @@
 // biome-ignore-all lint/suspicious/useAwait: Mock async provider interfaces intentionally preserve promise-based signatures in these validation tests.
 
 import { describe, expect, test } from "bun:test";
-import type { DriverExecutionContext } from "@tuvren/core/driver";
 import type {
   TuvrenModelResponse,
   TuvrenProvider,
 } from "@tuvren/core/provider";
+import type { RunnerExecutionContext } from "@tuvren/core/runner";
 import { createReActRunner } from "../src/index.ts";
-import { createDriverExecutionContext } from "./react-runner-test-helpers.ts";
+import { createRunnerExecutionContext } from "./react-runner-test-helpers.ts";
 
 describe("runner-react structured output", () => {
   test("fails hard when config.model is not a concrete provider", async () => {
     const driver = createReActRunner().create();
 
     const result = await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config: {
           model: "gpt-test",
           name: "primary",
@@ -54,12 +54,12 @@ describe("runner-react structured output", () => {
 
   test("fails hard when config.model is an object that is not a provider", async () => {
     const driver = createReActRunner().create();
-    const config: DriverExecutionContext["config"] = JSON.parse(
+    const config: RunnerExecutionContext["config"] = JSON.parse(
       '{"model":{"id":"provider"},"name":"primary"}'
     );
 
     const result = await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config,
       })
     );
@@ -102,7 +102,7 @@ describe("runner-react structured output", () => {
     }).create();
 
     const result = await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config: {
           model: provider,
           name: "primary",
@@ -157,7 +157,7 @@ describe("runner-react structured output", () => {
     }).create();
 
     const result = await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config: {
           model: provider,
           name: "primary",
@@ -218,7 +218,7 @@ describe("runner-react structured output", () => {
     }).create();
 
     const firstResult = await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config: {
           model: provider,
           name: "primary",
@@ -238,7 +238,7 @@ describe("runner-react structured output", () => {
       })
     );
     const secondResult = await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config: {
           model: provider,
           name: "primary",
@@ -292,7 +292,7 @@ describe("runner-react structured output", () => {
     }).create();
 
     const result = await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config: {
           model: provider,
           name: "primary",
@@ -350,7 +350,7 @@ describe("runner-react structured output", () => {
     }).create();
 
     const result = await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config: {
           model: provider,
           name: "primary",
@@ -401,7 +401,7 @@ describe("runner-react structured output", () => {
     }).create();
 
     const result = await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config: {
           model: provider,
           name: "primary",

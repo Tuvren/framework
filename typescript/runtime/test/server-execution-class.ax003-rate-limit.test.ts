@@ -28,11 +28,11 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import type { RuntimeDriver } from "@tuvren/core/driver";
 import { TOOL_INVOCATION_RATE_LIMITED } from "@tuvren/core/errors";
+import type { RuntimeRunner } from "@tuvren/core/runner";
 import type { TuvrenToolDefinition } from "@tuvren/core/tools";
 import {
-  createDriverRegistry as createBaseDriverRegistry,
+  createRunnerRegistry as createBaseRunnerRegistry,
   createTuvrenRuntime,
 } from "../src/index.ts";
 import { createFakeKernelHarness } from "./fake-kernel.ts";
@@ -47,10 +47,10 @@ import {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeMultiCallDriver(
+function makeMultiCallRunner(
   toolName: string,
   callCount: number
-): RuntimeDriver {
+): RuntimeRunner {
   return {
     id: "ax003-driver",
     async execute(context) {
@@ -99,10 +99,10 @@ async function runTurnWithRateLimit(
   totalCallsToRequest: number
 ) {
   const harness = createFakeKernelHarness();
-  const driver = makeMultiCallDriver(toolName, totalCallsToRequest);
+  const driver = makeMultiCallRunner(toolName, totalCallsToRequest);
   const runtime = createTuvrenRuntime({
-    defaultDriverId: "ax003-driver",
-    driverRegistry: createBaseDriverRegistry([driver]),
+    defaultRunnerId: "ax003-driver",
+    driverRegistry: createBaseRunnerRegistry([driver]),
     kernel: harness.kernel,
   });
   const thread = await runtime.createThread({});
@@ -193,20 +193,20 @@ describe("KRT-AX003 — tenant isolation", () => {
     const harness1 = createFakeKernelHarness();
     const harness2 = createFakeKernelHarness();
 
-    const driver1 = makeMultiCallDriver(toolName, 2);
-    const driver2 = makeMultiCallDriver(toolName, 1);
+    const driver1 = makeMultiCallRunner(toolName, 2);
+    const driver2 = makeMultiCallRunner(toolName, 1);
 
     // Runtime 1: budget 1, requests 2 → second call rate-limited
     const runtime1 = createTuvrenRuntime({
-      defaultDriverId: "ax003-driver",
-      driverRegistry: createBaseDriverRegistry([driver1]),
+      defaultRunnerId: "ax003-driver",
+      driverRegistry: createBaseRunnerRegistry([driver1]),
       kernel: harness1.kernel,
     });
 
     // Runtime 2: budget 5 (no depletion from runtime 1)
     const runtime2 = createTuvrenRuntime({
-      defaultDriverId: "ax003-driver",
-      driverRegistry: createBaseDriverRegistry([driver2]),
+      defaultRunnerId: "ax003-driver",
+      driverRegistry: createBaseRunnerRegistry([driver2]),
       kernel: harness2.kernel,
     });
 

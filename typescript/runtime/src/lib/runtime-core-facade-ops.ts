@@ -20,18 +20,18 @@ import {
   TuvrenRuntimeError,
 } from "@tuvren/core";
 import type {
-  DriverRegistry,
-  RuntimeDriver as KrakenDriver,
-} from "@tuvren/core/driver";
-import type {
   AgentConfig,
   ContextEngineeringHelpers,
   HandoffContextPlan,
   HandoffSourceContext,
 } from "@tuvren/core/execution";
+import type {
+  RuntimeRunner as KrakenRunner,
+  RunnerRegistry,
+} from "@tuvren/core/runner";
 import type { RuntimeKernel as KrakenKernel } from "@tuvren/kernel-protocol";
-import { materializeDriver } from "./driver-registry.js";
 import type { PayloadCodecBinding } from "./payload-codec-seam.js";
+import { materializeRunner } from "./runner-registry.js";
 import {
   DEFAULT_AGENT_SCHEMA,
   DEFAULT_AGENT_SCHEMA_ID,
@@ -178,10 +178,10 @@ export async function advanceTurnAndBranchHeadFacade(
   await kernel.branch.setHead(handle.request.branchId, turnNodeHash);
 }
 
-export function materializeDriverFacade(
-  driverRegistry: DriverRegistry,
+export function materializeRunnerFacade(
+  driverRegistry: RunnerRegistry,
   driverId: string
-): KrakenDriver {
+): KrakenRunner {
   const driverEntry = driverRegistry.resolve(driverId);
 
   if (driverEntry === undefined) {
@@ -193,7 +193,7 @@ export function materializeDriverFacade(
     });
   }
 
-  return materializeDriver(driverEntry);
+  return materializeRunner(driverEntry);
 }
 
 export function resolveFailureActiveConfigFacade(

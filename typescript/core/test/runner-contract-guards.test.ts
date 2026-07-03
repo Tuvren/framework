@@ -16,14 +16,14 @@
 
 import { describe, expect, test } from "bun:test";
 import {
-  assertDriverExecutionResult,
-  assertRuntimeDriver,
-  type DriverExecutionContext,
-  isRuntimeDriver,
-  type RuntimeDriver,
-} from "../src/driver/index.js";
+  assertRunnerExecutionResult,
+  assertRuntimeRunner,
+  isRuntimeRunner,
+  type RunnerExecutionContext,
+  type RuntimeRunner,
+} from "../src/runner/index.js";
 
-describe("driver-contract-guards", () => {
+describe("runner-contract-guards", () => {
   test("accepts explicit driver contracts", async () => {
     const continueIteration = {
       type: "continue_iteration",
@@ -40,17 +40,17 @@ describe("driver-contract-guards", () => {
           resolution: continueIteration,
         });
       },
-    } satisfies RuntimeDriver;
+    } satisfies RuntimeRunner;
 
-    expect(isRuntimeDriver(driver)).toBe(true);
-    expect(() => assertRuntimeDriver(driver)).not.toThrow();
+    expect(isRuntimeRunner(driver)).toBe(true);
+    expect(() => assertRuntimeRunner(driver)).not.toThrow();
 
-    const context = createDriverExecutionContext();
+    const context = createRunnerExecutionContext();
     await expect(driver.execute(context)).resolves.toEqual({
       resolution: { type: "continue_iteration" },
     });
     expect(() =>
-      assertDriverExecutionResult({
+      assertRunnerExecutionResult({
         resolution: { type: "continue_iteration" },
       })
     ).not.toThrow();
@@ -73,15 +73,15 @@ describe("driver-contract-guards", () => {
         });
       },
       id: "react",
-    } satisfies RuntimeDriver;
+    } satisfies RuntimeRunner;
 
-    expect(isRuntimeDriver(driver)).toBe(true);
-    expect(() => assertRuntimeDriver(driver)).not.toThrow();
+    expect(isRuntimeRunner(driver)).toBe(true);
+    expect(() => assertRuntimeRunner(driver)).not.toThrow();
   });
 
   test("accepts toolExecutionMode when assistant messages request tool calls", () => {
     expect(() =>
-      assertDriverExecutionResult({
+      assertRunnerExecutionResult({
         messages: [
           {
             parts: [
@@ -103,7 +103,7 @@ describe("driver-contract-guards", () => {
 
   test("accepts driver state updates for extension-owned manifest namespaces", () => {
     expect(() =>
-      assertDriverExecutionResult({
+      assertRunnerExecutionResult({
         resolution: { reason: "done", type: "end_turn" },
         stateUpdates: [
           {
@@ -119,7 +119,7 @@ describe("driver-contract-guards", () => {
 
   test("accepts explicit assistant event reconciliation when an assistant message is returned", () => {
     expect(() =>
-      assertDriverExecutionResult({
+      assertRunnerExecutionResult({
         assistantEventReconciliation: "allow_final_sequence_divergence",
         messages: [
           {
@@ -134,7 +134,7 @@ describe("driver-contract-guards", () => {
 
   test("rejects driver results with more than one assistant message", () => {
     expect(() =>
-      assertDriverExecutionResult({
+      assertRunnerExecutionResult({
         messages: [
           {
             parts: [{ text: "first", type: "text" }],
@@ -152,7 +152,7 @@ describe("driver-contract-guards", () => {
 
   test("permits failed partial execution results when assistant output is staged", () => {
     expect(() =>
-      assertDriverExecutionResult({
+      assertRunnerExecutionResult({
         messages: [
           {
             parts: [{ text: "Interrupted output", type: "text" }],
@@ -171,7 +171,7 @@ describe("driver-contract-guards", () => {
 
   test("permits failed partial execution results with interrupted tool calls", () => {
     expect(() =>
-      assertDriverExecutionResult({
+      assertRunnerExecutionResult({
         messages: [
           {
             parts: [
@@ -198,7 +198,7 @@ describe("driver-contract-guards", () => {
 
   test("rejects partial execution results that are not failed assistant output", () => {
     expect(() =>
-      assertDriverExecutionResult({
+      assertRunnerExecutionResult({
         partial: true,
         resolution: { reason: "done", type: "end_turn" },
       })
@@ -207,7 +207,7 @@ describe("driver-contract-guards", () => {
 
   test("rejects driver results that bypass framework-owned tool results", () => {
     expect(() =>
-      assertDriverExecutionResult({
+      assertRunnerExecutionResult({
         messages: [
           {
             parts: [
@@ -228,14 +228,14 @@ describe("driver-contract-guards", () => {
 
   test("rejects superseded driver result fields from the old branch shape", () => {
     expect(() =>
-      assertDriverExecutionResult({
+      assertRunnerExecutionResult({
         activeAgent: "primary",
         resolution: { type: "continue_iteration" },
       })
     ).toThrow('must not include unsupported field "activeAgent"');
 
     expect(() =>
-      assertDriverExecutionResult({
+      assertRunnerExecutionResult({
         messages: [
           {
             parts: [{ text: "Visible output", type: "text" }],
@@ -251,7 +251,7 @@ describe("driver-contract-guards", () => {
     ).toThrow('must not include unsupported field "response"');
 
     expect(() =>
-      assertDriverExecutionResult({
+      assertRunnerExecutionResult({
         resolution: { type: "continue_iteration" },
         toolExecutionMode: "sequential",
       })
@@ -260,7 +260,7 @@ describe("driver-contract-guards", () => {
     );
 
     expect(() =>
-      assertDriverExecutionResult({
+      assertRunnerExecutionResult({
         resolution: { reason: "done", type: "end_turn" },
         stateUpdates: [
           {
@@ -269,10 +269,10 @@ describe("driver-contract-guards", () => {
           },
         ],
       })
-    ).toThrow("must be a valid DriverExtensionStateUpdate");
+    ).toThrow("must be a valid RunnerExtensionStateUpdate");
 
     expect(() =>
-      assertDriverExecutionResult({
+      assertRunnerExecutionResult({
         assistantEventReconciliation: "bad-value",
         resolution: { reason: "done", type: "end_turn" },
       })
@@ -283,7 +283,7 @@ describe("driver-contract-guards", () => {
 
   test("requires toolExecutionMode when assistant messages request tool calls", () => {
     expect(() =>
-      assertDriverExecutionResult({
+      assertRunnerExecutionResult({
         messages: [
           {
             parts: [
@@ -306,7 +306,7 @@ describe("driver-contract-guards", () => {
 
   test("requires an assistant message when assistant event reconciliation is set", () => {
     expect(() =>
-      assertDriverExecutionResult({
+      assertRunnerExecutionResult({
         assistantEventReconciliation: "allow_final_sequence_divergence",
         resolution: { reason: "done", type: "end_turn" },
       })
@@ -314,10 +314,10 @@ describe("driver-contract-guards", () => {
   });
 
   test("rejects handoff resolutions whose targetAgent contradicts the context plan", () => {
-    const context = createDriverExecutionContext();
+    const context = createRunnerExecutionContext();
 
     expect(() =>
-      assertDriverExecutionResult({
+      assertRunnerExecutionResult({
         resolution: {
           contextPlan: context.handoff.createContextPlan({
             reason: "handoff",
@@ -331,10 +331,10 @@ describe("driver-contract-guards", () => {
   });
 
   test("rejects raw handoff plans whose sourceContext target disagrees with the plan target", () => {
-    const context = createDriverExecutionContext();
+    const context = createRunnerExecutionContext();
 
     expect(() =>
-      assertDriverExecutionResult({
+      assertRunnerExecutionResult({
         resolution: {
           contextPlan: {
             ...context.handoff.createContextPlan({
@@ -361,10 +361,10 @@ describe("driver-contract-guards", () => {
   });
 
   test("rejects raw handoff plans whose sourceContext agents are not valid AgentConfig snapshots", () => {
-    const context = createDriverExecutionContext();
+    const context = createRunnerExecutionContext();
 
     expect(() =>
-      assertDriverExecutionResult({
+      assertRunnerExecutionResult({
         resolution: {
           contextPlan: {
             ...context.handoff.createContextPlan({
@@ -390,7 +390,7 @@ describe("driver-contract-guards", () => {
   });
 
   test("accepts handoff source agent models backed by provider objects with extra fields", () => {
-    const context = createDriverExecutionContext();
+    const context = createRunnerExecutionContext();
     const provider = {
       extra: true,
       generate() {
@@ -407,7 +407,7 @@ describe("driver-contract-guards", () => {
     });
 
     expect(() =>
-      assertDriverExecutionResult({
+      assertRunnerExecutionResult({
         resolution: {
           contextPlan: {
             ...basePlan,
@@ -432,7 +432,7 @@ describe("driver-contract-guards", () => {
 
   test("rejects terminal resolutions paired with assistant tool calls", () => {
     expect(() =>
-      assertDriverExecutionResult({
+      assertRunnerExecutionResult({
         messages: [
           {
             parts: [
@@ -459,7 +459,7 @@ describe("driver-contract-guards", () => {
 
   test("rejects pause resolutions that are not rooted in assistant tool calls", () => {
     expect(() =>
-      assertDriverExecutionResult({
+      assertRunnerExecutionResult({
         messages: [
           {
             parts: [
@@ -490,7 +490,7 @@ describe("driver-contract-guards", () => {
 
   test("rejects stale nested fields on exact-shape resolutions", () => {
     expect(() =>
-      assertDriverExecutionResult({
+      assertRunnerExecutionResult({
         resolution: {
           reason: "stale",
           type: "continue_iteration",
@@ -500,7 +500,7 @@ describe("driver-contract-guards", () => {
   });
 });
 
-function createDriverExecutionContext(): DriverExecutionContext {
+function createRunnerExecutionContext(): RunnerExecutionContext {
   return {
     branchId: "branch-1",
     config: { name: "primary" },

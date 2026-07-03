@@ -19,14 +19,6 @@ import {
   TuvrenRuntimeError,
   TuvrenValidationError,
 } from "@tuvren/core";
-import type {
-  DriverExecutionContext,
-  DriverExecutionResult,
-  DriverResumeContext,
-  DriverToolExecutionMode,
-  RuntimeDriver,
-  RuntimeDriverFactory,
-} from "@tuvren/core/driver";
 import type { AgentConfig, IterationDecision } from "@tuvren/core/execution";
 import type { AroundModelContext } from "@tuvren/core/extensions";
 import type {
@@ -40,6 +32,14 @@ import type {
   TuvrenPrompt,
   TuvrenProvider,
 } from "@tuvren/core/provider";
+import type {
+  RunnerExecutionContext,
+  RunnerExecutionResult,
+  RunnerResumeContext,
+  RunnerToolExecutionMode,
+  RuntimeRunner,
+  RuntimeRunnerFactory,
+} from "@tuvren/core/runner";
 import { assertTuvrenModelResponse } from "@tuvren/provider-api";
 import Ajv from "ajv";
 import Ajv2019 from "ajv/dist/2019.js";
@@ -95,12 +95,12 @@ export type ReActRunnerProviderCallModeResolver =
     }) => ReActRunnerProviderCallMode);
 
 export type ReActRunnerToolExecutionModeResolver =
-  | DriverToolExecutionMode
+  | RunnerToolExecutionMode
   | ((input: {
       config: Readonly<AgentConfig>;
       iterationCount: number;
       response: TuvrenModelResponse;
-    }) => DriverToolExecutionMode);
+    }) => RunnerToolExecutionMode);
 
 export interface ReActRunnerOptions {
   providerCallMode?: ReActRunnerProviderCallModeResolver;
@@ -112,7 +112,7 @@ interface ResolvedReActRunnerOptions {
   toolExecutionMode: ReActRunnerToolExecutionModeResolver;
 }
 
-class ReActRunner implements RuntimeDriver {
+class ReActRunner implements RuntimeRunner {
   readonly id = REACT_RUNNER_ID;
   private readonly options: ResolvedReActRunnerOptions;
 
@@ -121,8 +121,8 @@ class ReActRunner implements RuntimeDriver {
   }
 
   async execute(
-    context: DriverExecutionContext
-  ): Promise<DriverExecutionResult> {
+    context: RunnerExecutionContext
+  ): Promise<RunnerExecutionResult> {
     try {
       return await executeIteration(context, this.options);
     } catch (error: unknown) {
@@ -136,7 +136,7 @@ class ReActRunner implements RuntimeDriver {
     }
   }
 
-  async resume(context: DriverResumeContext): Promise<DriverExecutionResult> {
+  async resume(context: RunnerResumeContext): Promise<RunnerExecutionResult> {
     try {
       validateResumeApprovalContext(context);
       // Resume uses the same ReAct iteration engine as execute after validating
@@ -156,7 +156,7 @@ class ReActRunner implements RuntimeDriver {
 
 export function createReActRunner(
   options?: ReActRunnerOptions
-): RuntimeDriverFactory {
+): RuntimeRunnerFactory {
   const resolvedOptions: ResolvedReActRunnerOptions = {
     providerCallMode: options?.providerCallMode ?? "stream",
     toolExecutionMode: options?.toolExecutionMode ?? "parallel",
@@ -171,11 +171,11 @@ export function createReActRunner(
 }
 
 function buildEmptyPartsResult(
-  context: DriverExecutionContext,
+  context: RunnerExecutionContext,
   response: TuvrenModelResponse,
   execution: ModelExecutionOutcome,
   cancelled: boolean
-): DriverExecutionResult {
+): RunnerExecutionResult {
   if (cancelled) {
     return {
       partial: false,
@@ -227,9 +227,9 @@ function buildEmptyPartsResult(
 }
 
 async function executeIteration(
-  context: DriverExecutionContext,
+  context: RunnerExecutionContext,
   options: ResolvedReActRunnerOptions
-): Promise<DriverExecutionResult> {
+): Promise<RunnerExecutionResult> {
   const promptState = preparePromptState({
     config: context.config,
     iterationCount: context.iterationCount,
@@ -346,7 +346,7 @@ async function executeIteration(
     requestsTools
   );
 
-  const driverResult: DriverExecutionResult = requestsTools
+  const driverResult: RunnerExecutionResult = requestsTools
     ? {
         ...(execution.assistantEventReconciliation === undefined
           ? {}
@@ -385,7 +385,7 @@ async function executeIteration(
 
 async function callProvider(
   aroundContext: AroundModelContext,
-  context: DriverExecutionContext,
+  context: RunnerExecutionContext,
   options: ResolvedReActRunnerOptions
 ): Promise<ModelExecutionOutcome> {
   const provider = resolveProvider(context.config.model);
@@ -422,7 +422,7 @@ async function callProvider(
 }
 
 function createAroundModelContext(
-  context: DriverExecutionContext,
+  context: RunnerExecutionContext,
   promptState: ReturnType<typeof preparePromptState>
 ): AroundModelContext {
   return createAroundModelContextSnapshot({
@@ -446,7 +446,7 @@ function createAroundModelContext(
 }
 
 function createExecutionCancelledResolution(): Extract<
-  DriverExecutionResult["resolution"],
+  RunnerExecutionResult["resolution"],
   { type: "fail" }
 > {
   return {
@@ -458,7 +458,7 @@ function createExecutionCancelledResolution(): Extract<
   };
 }
 
-function validateResumeApprovalContext(context: DriverResumeContext): void {
+function validateResumeApprovalContext(context: RunnerResumeContext): void {
   const pendingCallIds = new Set<string>();
 
   for (const message of context.messages) {
@@ -532,7 +532,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function resolveProviderCallMode(
   resolver: ReActRunnerProviderCallModeResolver,
-  context: DriverExecutionContext,
+  context: RunnerExecutionContext,
   provider: TuvrenProvider
 ): ReActRunnerProviderCallMode {
   const resolvedMode: unknown =
@@ -561,9 +561,9 @@ function resolveProviderCallMode(
 
 function resolveToolExecutionMode(
   resolver: ReActRunnerToolExecutionModeResolver,
-  context: DriverExecutionContext,
+  context: RunnerExecutionContext,
   response: TuvrenModelResponse
-): DriverToolExecutionMode {
+): RunnerToolExecutionMode {
   const resolvedMode: unknown =
     typeof resolver === "function"
       ? resolver({
@@ -591,7 +591,7 @@ function resolveToolExecutionMode(
 function resolveIterationDecision(
   config: Readonly<AgentConfig>,
   response: TuvrenModelResponse,
-  manifest: DriverExecutionContext["manifest"],
+  manifest: RunnerExecutionContext["manifest"],
   iterationCount: number,
   requestsTools: boolean
 ): IterationDecision {
@@ -656,7 +656,7 @@ function defaultIterationDecision(
 
 function iterationDecisionToResolution(
   decision: IterationDecision
-): DriverExecutionResult["resolution"] {
+): RunnerExecutionResult["resolution"] {
   if (decision.continue) {
     return {
       type: "continue_iteration",

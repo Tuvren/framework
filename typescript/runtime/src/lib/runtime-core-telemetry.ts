@@ -451,7 +451,7 @@ function baseAttributes(
 ): Record<string, TelemetryAttributeValue> {
   return {
     "tuvren.runtime.branch.id": handle.request.branchId,
-    "tuvren.runtime.driver.id": loopState.activeDriverId,
+    "tuvren.runtime.driver.id": loopState.activeRunnerId,
     ...(handle.getActiveRunId() === undefined
       ? {}
       : { "tuvren.runtime.run.id": handle.getActiveRunId() as string }),

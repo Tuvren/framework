@@ -41,7 +41,6 @@ import {
 } from "./payload-codec-seam.js";
 import type { HelperBundle } from "./runtime-core-context.js";
 import type { RuntimeCoreContextOpsHost } from "./runtime-core-context-ops.js";
-import type { RuntimeCoreDriverSupportHost } from "./runtime-core-driver-support.js";
 import type { RuntimeCoreEventsHost } from "./runtime-core-events.js";
 import type { RuntimeCoreExpiredRecoveryHost } from "./runtime-core-expired-recovery.js";
 import type { RuntimeCoreFinalizationHost } from "./runtime-core-finalization.js";
@@ -52,6 +51,7 @@ import type {
 import type { HeadState, LoopState } from "./runtime-core-loop.js";
 import type { RuntimeCorePersistenceHost } from "./runtime-core-persistence.js";
 import type { DurableRuntimeStatus } from "./runtime-core-recovery.js";
+import type { RuntimeCoreRunnerSupportHost } from "./runtime-core-runner-support.js";
 import type { RuntimeCoreStartupHost } from "./runtime-core-startup.js";
 import type { RuntimeCoreStateCommitHost } from "./runtime-core-state-commit.js";
 import type { RuntimeCoreTurnProgressHost } from "./runtime-core-turn-progress.js";
@@ -232,7 +232,7 @@ interface TurnProgressHostDependencies {
 
 interface FinalizationHostDependencies {
   createId(): string;
-  defaultDriverId: string;
+  defaultRunnerId: string;
   finalizeRejectedPausedToolCancellation(
     handle: RuntimeExecutionHandle,
     loopState: LoopState,
@@ -316,7 +316,7 @@ interface StartupHostDependencies {
     config: LoopState["activeConfig"]
   ): import("@tuvren/core/capabilities").ClientEndpointBoundary | undefined;
   createId(): string;
-  defaultDriverId: string;
+  defaultRunnerId: string;
   emitStateObservability(
     handle: RuntimeExecutionHandle,
     loopState: LoopState,
@@ -437,7 +437,7 @@ interface StateCommitHostDependencies {
   ): void;
 }
 
-interface DriverSupportHostDependencies {
+interface RunnerSupportHostDependencies {
   cloneAgentConfigForRequest(config: LoopState["activeConfig"]): AgentConfig;
   createContextEngineeringHelpers(
     messageHashes: HeadState["messageHashes"],
@@ -686,7 +686,7 @@ export function buildRuntimeCoreFinalizationHost(
 ): RuntimeCoreFinalizationHost {
   return {
     createId: () => dependencies.createId(),
-    defaultDriverId: () => dependencies.defaultDriverId,
+    defaultRunnerId: () => dependencies.defaultRunnerId,
     finalizeRejectedPausedToolCancellation: (...args) =>
       dependencies.finalizeRejectedPausedToolCancellation(...args),
     finalizeTurnStatus: (...args) => dependencies.finalizeTurnStatus(...args),
@@ -728,7 +728,7 @@ export function buildRuntimeCoreStartupHost(
     createClientEndpointBoundaryFromConfig: (config) =>
       dependencies.createClientEndpointBoundaryFromConfig(config),
     createId: () => dependencies.createId(),
-    defaultDriverId: () => dependencies.defaultDriverId,
+    defaultRunnerId: () => dependencies.defaultRunnerId,
     emitStateObservability: (...args) =>
       Promise.resolve(dependencies.emitStateObservability(...args)),
     loadHeadState: (branchId) => dependencies.loadHeadState(branchId),
@@ -841,9 +841,9 @@ export function buildRuntimeCoreStateCommitHost(
   };
 }
 
-export function buildRuntimeCoreDriverSupportHost(
-  dependencies: DriverSupportHostDependencies
-): RuntimeCoreDriverSupportHost {
+export function buildRuntimeCoreRunnerSupportHost(
+  dependencies: RunnerSupportHostDependencies
+): RuntimeCoreRunnerSupportHost {
   return {
     cloneAgentConfigForRequest: (config) =>
       dependencies.cloneAgentConfigForRequest(config),

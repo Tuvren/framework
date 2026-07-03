@@ -50,16 +50,16 @@ import type {
   ClientInvocationEnvelope,
   ClientReportedResult,
 } from "@tuvren/core/capabilities";
-import type { RuntimeDriver } from "@tuvren/core/driver";
 import {
   CAPABILITY_BINDING_UNAVAILABLE,
   CAPABILITY_RESULT_STALE,
 } from "@tuvren/core/errors";
 import type { ToolResultEvent, ToolStartEvent } from "@tuvren/core/events";
 import type { TuvrenMessage } from "@tuvren/core/messages";
+import type { RuntimeRunner } from "@tuvren/core/runner";
 import {
   createClientEndpointBoundary,
-  createDriverRegistry,
+  createRunnerRegistry,
   createTuvrenRuntime,
 } from "../src/index.ts";
 import { createFakeKernelHarness } from "./fake-kernel.ts";
@@ -132,7 +132,7 @@ describe("BA003 recovery semantics — provider-native / provider-mediated", () 
       const expectedOutput = { value: 42, executionClass };
       const toolName = `ba003_${executionClass.replace("-", "_")}`;
 
-      const driver: RuntimeDriver = {
+      const driver: RuntimeRunner = {
         id: `ba003-driver-${executionClass}`,
         async execute(context) {
           if (!context.messages.some((m) => m.role === "tool")) {
@@ -158,8 +158,8 @@ describe("BA003 recovery semantics — provider-native / provider-mediated", () 
         },
       };
       const runtime = createTuvrenRuntime({
-        defaultDriverId: `ba003-driver-${executionClass}`,
-        driverRegistry: createDriverRegistry([driver]),
+        defaultRunnerId: `ba003-driver-${executionClass}`,
+        driverRegistry: createRunnerRegistry([driver]),
         kernel: harness.kernel,
       });
       const thread = await runtime.createThread({});
@@ -201,7 +201,7 @@ describe("BA003 recovery semantics — provider-native / provider-mediated", () 
     // the async iterator even when they were enqueued synchronously.
     const harness = createFakeKernelHarness();
 
-    const driver: RuntimeDriver = {
+    const driver: RuntimeRunner = {
       id: "ba003-pair-driver",
       async execute(context) {
         if (!context.messages.some((m) => m.role === "tool")) {
@@ -227,8 +227,8 @@ describe("BA003 recovery semantics — provider-native / provider-mediated", () 
       },
     };
     const runtime = createTuvrenRuntime({
-      defaultDriverId: "ba003-pair-driver",
-      driverRegistry: createDriverRegistry([driver]),
+      defaultRunnerId: "ba003-pair-driver",
+      driverRegistry: createRunnerRegistry([driver]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -282,7 +282,7 @@ describe("BA003 recovery semantics — tuvren-client", () => {
     };
     const boundary = createClientEndpointBoundary([staleEndpoint]);
 
-    const driver: RuntimeDriver = {
+    const driver: RuntimeRunner = {
       id: "ba003-stale-driver",
       async execute(context) {
         if (!context.messages.some((m) => m.role === "tool")) {
@@ -306,8 +306,8 @@ describe("BA003 recovery semantics — tuvren-client", () => {
       },
     };
     const runtime = createTuvrenRuntime({
-      defaultDriverId: "ba003-stale-driver",
-      driverRegistry: createDriverRegistry([driver]),
+      defaultRunnerId: "ba003-stale-driver",
+      driverRegistry: createRunnerRegistry([driver]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -361,7 +361,7 @@ describe("BA003 recovery semantics — tuvren-client", () => {
     };
     const boundary = createClientEndpointBoundary([endpoint]);
 
-    const driver: RuntimeDriver = {
+    const driver: RuntimeRunner = {
       id: "ba003-unavail-driver",
       async execute(context) {
         if (!context.messages.some((m) => m.role === "tool")) {
@@ -385,8 +385,8 @@ describe("BA003 recovery semantics — tuvren-client", () => {
       },
     };
     const runtime = createTuvrenRuntime({
-      defaultDriverId: "ba003-unavail-driver",
-      driverRegistry: createDriverRegistry([driver]),
+      defaultRunnerId: "ba003-unavail-driver",
+      driverRegistry: createRunnerRegistry([driver]),
       kernel: harness.kernel,
     });
 
@@ -449,7 +449,7 @@ describe("BA003 recovery semantics — tuvren-client", () => {
     const boundary = createClientEndpointBoundary([slowEndpoint]);
 
     let driverSeenToolResult = false;
-    const driver: RuntimeDriver = {
+    const driver: RuntimeRunner = {
       id: "ba003-slow-driver",
       async execute(context) {
         if (!context.messages.some((m) => m.role === "tool")) {
@@ -474,8 +474,8 @@ describe("BA003 recovery semantics — tuvren-client", () => {
       },
     };
     const runtime = createTuvrenRuntime({
-      defaultDriverId: "ba003-slow-driver",
-      driverRegistry: createDriverRegistry([driver]),
+      defaultRunnerId: "ba003-slow-driver",
+      driverRegistry: createRunnerRegistry([driver]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -539,7 +539,7 @@ describe("BA003 no torn invocation record — all classes", () => {
         label: "tuvren-server",
         async run() {
           const harness = createFakeKernelHarness();
-          const driver: RuntimeDriver = {
+          const driver: RuntimeRunner = {
             id: "torn-server",
             async execute(ctx) {
               if (!ctx.messages.some((m) => m.role === "tool")) {
@@ -563,8 +563,8 @@ describe("BA003 no torn invocation record — all classes", () => {
             },
           };
           const rt = createTuvrenRuntime({
-            defaultDriverId: "torn-server",
-            driverRegistry: createDriverRegistry([driver]),
+            defaultRunnerId: "torn-server",
+            driverRegistry: createRunnerRegistry([driver]),
             kernel: harness.kernel,
           });
           const th = await rt.createThread({});
@@ -591,7 +591,7 @@ describe("BA003 no torn invocation record — all classes", () => {
         label: "provider-native",
         async run() {
           const harness = createFakeKernelHarness();
-          const driver: RuntimeDriver = {
+          const driver: RuntimeRunner = {
             id: "torn-pn",
             async execute(ctx) {
               if (!ctx.messages.some((m) => m.role === "tool")) {
@@ -614,8 +614,8 @@ describe("BA003 no torn invocation record — all classes", () => {
             },
           };
           const rt = createTuvrenRuntime({
-            defaultDriverId: "torn-pn",
-            driverRegistry: createDriverRegistry([driver]),
+            defaultRunnerId: "torn-pn",
+            driverRegistry: createRunnerRegistry([driver]),
             kernel: harness.kernel,
           });
           const th = await rt.createThread({});
@@ -653,7 +653,7 @@ describe("BA003 no torn invocation record — all classes", () => {
             },
           };
           const boundary = createClientEndpointBoundary([endpoint]);
-          const driver: RuntimeDriver = {
+          const driver: RuntimeRunner = {
             id: "torn-client",
             async execute(ctx) {
               if (!ctx.messages.some((m) => m.role === "tool")) {
@@ -677,8 +677,8 @@ describe("BA003 no torn invocation record — all classes", () => {
             },
           };
           const rt = createTuvrenRuntime({
-            defaultDriverId: "torn-client",
-            driverRegistry: createDriverRegistry([driver]),
+            defaultRunnerId: "torn-client",
+            driverRegistry: createRunnerRegistry([driver]),
             kernel: harness.kernel,
           });
           const th = await rt.createThread({});

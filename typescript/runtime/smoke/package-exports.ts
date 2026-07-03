@@ -16,9 +16,9 @@
 
 import { describe, expect, test } from "bun:test";
 import {
-  createDriverRegistry,
   createGrpcRuntimeKernel,
   createOrchestrationRuntime,
+  createRunnerRegistry,
   createRuntimeKernel,
   NoopTelemetrySink,
   TUVREN_RUNTIME_TELEMETRY_ATTRIBUTE_KEYS,
@@ -28,7 +28,7 @@ import {
 
 describe("runtime package exports", () => {
   test("expose the curated host-facing runtime helpers", () => {
-    expect(typeof createDriverRegistry).toBe("function");
+    expect(typeof createRunnerRegistry).toBe("function");
     expect(typeof createGrpcRuntimeKernel).toBe("function");
     expect(typeof createOrchestrationRuntime).toBe("function");
     expect(typeof createRuntimeKernel).toBe("function");

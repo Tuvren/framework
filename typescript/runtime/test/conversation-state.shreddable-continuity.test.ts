@@ -44,9 +44,9 @@ import {
 } from "@tuvren/sdk";
 import { createTuvrenRuntime } from "../src/index.ts";
 import {
-  createDriverRegistry,
-  createStaticDriver,
-} from "./orchestration-runtime-driver-helpers.ts";
+  createRunnerRegistry,
+  createStaticRunner,
+} from "./orchestration-runtime-runner-helpers.ts";
 import { textSignal } from "./runtime-core-test-helpers.ts";
 
 const SCOPE = "tenant.conversation-state-continuity";
@@ -84,9 +84,9 @@ function buildRuntime(options: { keys?: Map<string, Uint8Array> }): {
     backend: createMemoryBackend({ scope: SCOPE }),
   });
   const framework = createTuvrenRuntime({
-    defaultDriverId: "fake",
-    driverRegistry: createDriverRegistry([
-      createStaticDriver(async () => ({
+    defaultRunnerId: "fake",
+    driverRegistry: createRunnerRegistry([
+      createStaticRunner(async () => ({
         messages: [assistantWithContinuity("here is your answer")],
         resolution: { reason: "done", type: "end_turn" },
       })),

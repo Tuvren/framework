@@ -367,7 +367,7 @@ export interface EventSource {
   workerId?: string;
 }
 
-export type DriverAttributedEventSource = EventSource;
+export type RunnerAttributedEventSource = EventSource;
 
 export interface TuvrenErrorProjection {
   code?: string;

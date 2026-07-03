@@ -16,12 +16,12 @@
 
 import { isDeepStrictEqual } from "node:util";
 import { TuvrenRuntimeError } from "@tuvren/core";
-import type { DriverAssistantEventReconciliation } from "@tuvren/core/driver";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type { RuntimeResolution } from "@tuvren/core/execution";
 import type { TuvrenExtension } from "@tuvren/core/extensions";
 import type { ContentPart, TuvrenMessage } from "@tuvren/core/messages";
 import type { TuvrenModelResponse } from "@tuvren/core/provider";
+import type { RunnerAssistantEventReconciliation } from "@tuvren/core/runner";
 import {
   assistantSequenceRequestsTools,
   assistantValidationEventsMatch,
@@ -29,7 +29,7 @@ import {
   doesFinishReasonMatchAssistantContent,
   splitAssistantEventSequences,
   synthesizeAssistantValidationEvents,
-  validateFailedDriverAssistantEvents,
+  validateFailedRunnerAssistantEvents,
   validateStandaloneAssistantSequence,
 } from "./runtime-core-assistant-validation-sequences.js";
 import { inferFinishReason } from "./runtime-core-recovery.js";
@@ -89,7 +89,7 @@ export function isAssistantValidationEvent(
   }
 }
 
-export function assertDriverRuntimeEvent(event: TuvrenStreamEvent): void {
+export function assertRunnerRuntimeEvent(event: TuvrenStreamEvent): void {
   switch (event.type) {
     case "custom":
     case "message.start":
@@ -128,7 +128,7 @@ function validateMissingAssistantMessage(
   resolution: RuntimeResolution
 ): TuvrenRuntimeError | undefined {
   if (resolution.type === "fail" && resolution.fatality === "hard") {
-    return validateFailedDriverAssistantEvents(assistantEvents);
+    return validateFailedRunnerAssistantEvents(assistantEvents);
   }
   // A pure provider-native/mediated stream emits message.start + message.done
   // (the stream protocol requires both) but produces no model text — only
@@ -149,11 +149,11 @@ function validateMissingAssistantMessage(
   );
 }
 
-export function validateDriverAssistantEvents(
+export function validateRunnerAssistantEvents(
   messages: TuvrenMessage[],
   emittedEvents: TuvrenStreamEvent[],
   resolution: RuntimeResolution,
-  assistantEventReconciliation: DriverAssistantEventReconciliation | undefined,
+  assistantEventReconciliation: RunnerAssistantEventReconciliation | undefined,
   activeExtensions: TuvrenExtension[]
 ): TuvrenRuntimeError | undefined {
   const assistantEvents = emittedEvents.filter((event) =>
@@ -293,7 +293,7 @@ function validateAssistantSequenceAgainstMessage(
     }
   }
 
-  const deltaValidationError = validateDriverAssistantDeltas(
+  const deltaValidationError = validateRunnerAssistantDeltas(
     assistantMessage,
     finalAssistantSequence
   );
@@ -305,7 +305,7 @@ function validateAssistantSequenceAgainstMessage(
   return undefined;
 }
 
-function validateDriverAssistantDeltas(
+function validateRunnerAssistantDeltas(
   message: Extract<TuvrenMessage, { role: "assistant" }>,
   assistantEvents: TuvrenStreamEvent[]
 ): TuvrenRuntimeError | undefined {
@@ -335,7 +335,7 @@ function validateDriverAssistantDeltas(
       return boundaryValidation.error;
     }
 
-    const validationError = validateDriverAssistantDeltaEvent(
+    const validationError = validateRunnerAssistantDeltaEvent(
       message.parts,
       event,
       state
@@ -452,7 +452,7 @@ function getAssistantEventMessageId(
   }
 }
 
-function validateDriverAssistantDeltaEvent(
+function validateRunnerAssistantDeltaEvent(
   parts: Extract<TuvrenMessage, { role: "assistant" }>["parts"],
   event: TuvrenStreamEvent,
   state: AssistantDeltaValidationState

@@ -15,11 +15,11 @@
  */
 
 import type {
-  DriverAssistantEventReconciliation,
-  DriverExecutionResult,
-  DriverToolExecutionMode,
-  RuntimeDriver,
-} from "./driver-contract-shapes.js";
+  RunnerAssistantEventReconciliation,
+  RunnerExecutionResult,
+  RunnerToolExecutionMode,
+  RuntimeRunner,
+} from "./runner-contract-shapes.js";
 import {
   assertApprovalRequest,
   assertContextManifest,
@@ -81,7 +81,7 @@ const STRUCTURED_OUTPUT_REQUEST_KEYS = new Set(["name", "schema", "strict"]);
 const CONTEXT_POLICY_KEYS = new Set(["evaluate"]);
 const LOOP_POLICY_KEYS = new Set(["evaluate"]);
 
-export function isRuntimeDriver(value: unknown): value is RuntimeDriver {
+export function isRuntimeRunner(value: unknown): value is RuntimeRunner {
   return safePredicate(
     () =>
       value !== null &&
@@ -95,22 +95,22 @@ export function isRuntimeDriver(value: unknown): value is RuntimeDriver {
   );
 }
 
-export function assertRuntimeDriver(
+export function assertRuntimeRunner(
   value: unknown,
   label = "value"
-): asserts value is RuntimeDriver {
-  if (!isRuntimeDriver(value)) {
-    throw new TuvrenValidationError(`${label} must be a valid RuntimeDriver`, {
+): asserts value is RuntimeRunner {
+  if (!isRuntimeRunner(value)) {
+    throw new TuvrenValidationError(`${label} must be a valid RuntimeRunner`, {
       code: "invalid_driver_contract",
       details: value,
     });
   }
 }
 
-export function assertDriverExecutionResult(
+export function assertRunnerExecutionResult(
   value: unknown,
   label = "value"
-): asserts value is DriverExecutionResult {
+): asserts value is RunnerExecutionResult {
   if (
     !isRecord(value) ||
     ("partial" in value && typeof value.partial !== "boolean")
@@ -153,12 +153,12 @@ export function assertDriverExecutionResult(
     );
   }
 
-  assertDriverStateUpdates(value.stateUpdates, `${label}.stateUpdates`);
-  assertDriverMessages(value, label);
+  assertRunnerStateUpdates(value.stateUpdates, `${label}.stateUpdates`);
+  assertRunnerMessages(value, label);
   assertOnlyAllowedKeys(value, DRIVER_RESULT_KEYS, label);
-  assertDriverRuntimeResolution(value.resolution, `${label}.resolution`);
+  assertRunnerRuntimeResolution(value.resolution, `${label}.resolution`);
 
-  assertDriverPartialResult(
+  assertRunnerPartialResult(
     {
       messages: Array.isArray(value.messages) ? value.messages : undefined,
       partial: value.partial === true,
@@ -171,14 +171,14 @@ export function assertDriverExecutionResult(
     value.toolExecutionMode === "sequential"
       ? value.toolExecutionMode
       : undefined;
-  assertDriverToolExecutionMode(
+  assertRunnerToolExecutionMode(
     {
       messages: Array.isArray(value.messages) ? value.messages : undefined,
       toolExecutionMode,
     },
     `${label}`
   );
-  assertDriverResolutionCompatibility(
+  assertRunnerResolutionCompatibility(
     {
       assistantEventReconciliation:
         value.assistantEventReconciliation === "allow_final_sequence_divergence"
@@ -192,7 +192,7 @@ export function assertDriverExecutionResult(
   );
 }
 
-export function assertDriverRuntimeResolution(
+export function assertRunnerRuntimeResolution(
   value: unknown,
   label = "value"
 ): asserts value is RuntimeResolution {
@@ -222,7 +222,7 @@ export function assertDriverRuntimeResolution(
       break;
     case "handoff":
       if (typeof value.targetAgent === "string") {
-        assertDriverHandoffContextPlan(
+        assertRunnerHandoffContextPlan(
           value.contextPlan,
           `${label}.contextPlan`
         );
@@ -263,7 +263,7 @@ export function assertDriverRuntimeResolution(
   });
 }
 
-export function assertDriverHandoffContextPlan(
+export function assertRunnerHandoffContextPlan(
   value: unknown,
   label = "value"
 ): asserts value is HandoffContextPlan {
@@ -281,7 +281,7 @@ export function assertDriverHandoffContextPlan(
     });
   }
 
-  assertDriverHandoffSourceContext(
+  assertRunnerHandoffSourceContext(
     value.sourceContext,
     `${label}.sourceContext`
   );
@@ -314,7 +314,7 @@ export function assertDriverHandoffContextPlan(
   }
 }
 
-export function assertDriverHandoffSourceContext(
+export function assertRunnerHandoffSourceContext(
   value: unknown,
   label = "value"
 ): asserts value is HandoffSourceContext {
@@ -352,8 +352,8 @@ export function assertDriverHandoffSourceContext(
     });
   }
 
-  assertDriverAgentConfigSnapshot(value.sourceAgent, `${label}.sourceAgent`);
-  assertDriverAgentConfigSnapshot(value.targetAgent, `${label}.targetAgent`);
+  assertRunnerAgentConfigSnapshot(value.sourceAgent, `${label}.sourceAgent`);
+  assertRunnerAgentConfigSnapshot(value.targetAgent, `${label}.targetAgent`);
 }
 
 function safePredicate(check: () => boolean): boolean {
@@ -364,7 +364,7 @@ function safePredicate(check: () => boolean): boolean {
   }
 }
 
-function assertDriverMessage(message: TuvrenMessage, label: string): void {
+function assertRunnerMessage(message: TuvrenMessage, label: string): void {
   if (message.role !== "assistant") {
     throw new TuvrenValidationError(`${label} must be an assistant message`, {
       code: "invalid_driver_result",
@@ -385,7 +385,7 @@ function assertDriverMessage(message: TuvrenMessage, label: string): void {
   }
 }
 
-function assertDriverMessages(
+function assertRunnerMessages(
   value: Record<string, unknown>,
   label: string
 ): void {
@@ -410,7 +410,7 @@ function assertDriverMessages(
     if (isPrestagedProviderToolMessage(message as TuvrenMessage)) {
       continue;
     }
-    assertDriverMessage(message, `${label}.messages[${index}]`);
+    assertRunnerMessage(message, `${label}.messages[${index}]`);
     assistantCount++;
   }
 
@@ -442,7 +442,7 @@ function isPrestagedProviderToolMessage(message: TuvrenMessage): boolean {
   });
 }
 
-function assertDriverPartialResult(
+function assertRunnerPartialResult(
   value: {
     messages?: TuvrenMessage[];
     partial: boolean;
@@ -475,10 +475,10 @@ function assertDriverPartialResult(
   }
 }
 
-function assertDriverToolExecutionMode(
+function assertRunnerToolExecutionMode(
   value: {
     messages?: TuvrenMessage[];
-    toolExecutionMode?: DriverToolExecutionMode;
+    toolExecutionMode?: RunnerToolExecutionMode;
   },
   label: string
 ): void {
@@ -505,9 +505,9 @@ function assertDriverToolExecutionMode(
   }
 }
 
-function assertDriverResolutionCompatibility(
+function assertRunnerResolutionCompatibility(
   value: {
-    assistantEventReconciliation?: DriverAssistantEventReconciliation;
+    assistantEventReconciliation?: RunnerAssistantEventReconciliation;
     messages?: TuvrenMessage[];
     partial: boolean;
     resolution: RuntimeResolution;
@@ -556,7 +556,7 @@ function assertDriverResolutionCompatibility(
   }
 }
 
-function assertDriverAgentConfigSnapshot(
+function assertRunnerAgentConfigSnapshot(
   value: unknown,
   label: string
 ): asserts value is AgentConfig {
@@ -568,11 +568,11 @@ function assertDriverAgentConfigSnapshot(
   }
 
   assertOnlyAllowedKeys(value, AGENT_CONFIG_KEYS, label);
-  assertDriverContextPolicySnapshot(
+  assertRunnerContextPolicySnapshot(
     value.contextPolicy,
     `${label}.contextPolicy`
   );
-  assertDriverLoopPolicySnapshot(value.loopPolicy, `${label}.loopPolicy`);
+  assertRunnerLoopPolicySnapshot(value.loopPolicy, `${label}.loopPolicy`);
   assertFiniteOptionalNumber(
     value.maxIterations,
     `${label}.maxIterations`,
@@ -582,17 +582,17 @@ function assertDriverAgentConfigSnapshot(
     value.maxParallelToolCalls,
     `${label}.maxParallelToolCalls`
   );
-  assertDriverModelSnapshot(value.model, `${label}.model`);
-  assertDriverResponseFormatSnapshot(
+  assertRunnerModelSnapshot(value.model, `${label}.model`);
+  assertRunnerResponseFormatSnapshot(
     value.responseFormat,
     `${label}.responseFormat`
   );
   assertOptionalString(value.systemPrompt, `${label}.systemPrompt`);
   assertToolDefinitions(value.tools, `${label}.tools`);
-  assertDriverExtensionsSnapshot(value.extensions, `${label}.extensions`);
+  assertRunnerExtensionsSnapshot(value.extensions, `${label}.extensions`);
 }
 
-function assertDriverExtensionSnapshot(value: unknown, label: string): void {
+function assertRunnerExtensionSnapshot(value: unknown, label: string): void {
   if (!isRecord(value) || typeof value.name !== "string") {
     throw new TuvrenValidationError(
       `${label} must be a valid TuvrenExtension`,
@@ -605,8 +605,8 @@ function assertDriverExtensionSnapshot(value: unknown, label: string): void {
 
   assertOnlyAllowedKeys(value, EXTENSION_KEYS, label);
 
-  assertDriverExtensionHandlers(value, label);
-  assertDriverAroundToolSnapshot(value.aroundTool, `${label}.aroundTool`);
+  assertRunnerExtensionHandlers(value, label);
+  assertRunnerAroundToolSnapshot(value.aroundTool, `${label}.aroundTool`);
   assertOptionalStringArray(value.exports, `${label}.exports`);
   assertOptionalRecord(value.state, `${label}.state`);
   assertOptionalStringOrFunction(value.systemPrompt, `${label}.systemPrompt`);
@@ -618,7 +618,7 @@ function assertDriverExtensionSnapshot(value: unknown, label: string): void {
   assertToolDefinitions(value.tools, `${label}.tools`);
 }
 
-function assertDriverContextPolicySnapshot(
+function assertRunnerContextPolicySnapshot(
   value: unknown,
   label: string
 ): void {
@@ -636,7 +636,7 @@ function assertDriverContextPolicySnapshot(
   assertOnlyAllowedKeys(value, CONTEXT_POLICY_KEYS, label);
 }
 
-function assertDriverLoopPolicySnapshot(value: unknown, label: string): void {
+function assertRunnerLoopPolicySnapshot(value: unknown, label: string): void {
   if (value === undefined) {
     return;
   }
@@ -651,7 +651,7 @@ function assertDriverLoopPolicySnapshot(value: unknown, label: string): void {
   assertOnlyAllowedKeys(value, LOOP_POLICY_KEYS, label);
 }
 
-function assertDriverModelSnapshot(value: unknown, label: string): void {
+function assertRunnerModelSnapshot(value: unknown, label: string): void {
   if (value === undefined || typeof value === "string") {
     return;
   }
@@ -672,7 +672,7 @@ function assertDriverModelSnapshot(value: unknown, label: string): void {
   }
 }
 
-function assertDriverResponseFormatSnapshot(
+function assertRunnerResponseFormatSnapshot(
   value: unknown,
   label: string
 ): void {
@@ -717,7 +717,7 @@ function assertDriverResponseFormatSnapshot(
   }
 }
 
-function assertDriverExtensionsSnapshot(value: unknown, label: string): void {
+function assertRunnerExtensionsSnapshot(value: unknown, label: string): void {
   if (value === undefined) {
     return;
   }
@@ -730,11 +730,11 @@ function assertDriverExtensionsSnapshot(value: unknown, label: string): void {
   }
 
   for (const [index, extension] of value.entries()) {
-    assertDriverExtensionSnapshot(extension, `${label}[${index}]`);
+    assertRunnerExtensionSnapshot(extension, `${label}[${index}]`);
   }
 }
 
-function assertDriverExtensionHandlers(
+function assertRunnerExtensionHandlers(
   value: Record<string, unknown>,
   label: string
 ): void {
@@ -759,7 +759,7 @@ function assertDriverExtensionHandlers(
   }
 }
 
-function assertDriverAroundToolSnapshot(value: unknown, label: string): void {
+function assertRunnerAroundToolSnapshot(value: unknown, label: string): void {
   if (value === undefined || typeof value === "function") {
     return;
   }
@@ -816,7 +816,7 @@ function assertOptionalRecord(value: unknown, label: string): void {
   }
 }
 
-function assertDriverStateUpdates(value: unknown, label: string): void {
+function assertRunnerStateUpdates(value: unknown, label: string): void {
   if (value === undefined) {
     return;
   }
@@ -835,7 +835,7 @@ function assertDriverStateUpdates(value: unknown, label: string): void {
       !isRecord(update.state)
     ) {
       throw new TuvrenValidationError(
-        `${label}[${index}] must be a valid DriverExtensionStateUpdate`,
+        `${label}[${index}] must be a valid RunnerExtensionStateUpdate`,
         {
           code: "invalid_driver_result",
           details: update,

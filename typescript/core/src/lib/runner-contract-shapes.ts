@@ -28,12 +28,12 @@ import type {
   TuvrenStreamEvent,
 } from "./runtime-contract-shapes.js";
 
-export interface DriverRuntimePort {
+export interface RunnerRuntimePort {
   emit(event: TuvrenStreamEvent): Promise<void> | void;
   now(): EpochMs;
 }
 
-export interface DriverHandoffPort {
+export interface RunnerHandoffPort {
   createContextPlan(input: {
     builder?: HandoffContextBuilder;
     mode?: HandoffContextMode;
@@ -43,14 +43,14 @@ export interface DriverHandoffPort {
   }): HandoffContextPlan;
 }
 
-export interface DriverExecutionContext {
+export interface RunnerExecutionContext {
   branchId: string;
   config: Readonly<AgentConfig>;
-  handoff: DriverHandoffPort;
+  handoff: RunnerHandoffPort;
   iterationCount: number;
   manifest: Readonly<ContextManifest>;
   messages: readonly TuvrenMessage[];
-  runtime: DriverRuntimePort;
+  runtime: RunnerRuntimePort;
   schemaId: string;
   signal?: AbortSignal;
   threadId: string;
@@ -58,43 +58,43 @@ export interface DriverExecutionContext {
   turnId: string;
 }
 
-export interface DriverResumeContext extends DriverExecutionContext {
+export interface RunnerResumeContext extends RunnerExecutionContext {
   approval: ApprovalResponse;
   resumedFrom?: HashString;
 }
 
-export type DriverToolExecutionMode = "parallel" | "sequential";
+export type RunnerToolExecutionMode = "parallel" | "sequential";
 
-export type DriverAssistantEventReconciliation =
+export type RunnerAssistantEventReconciliation =
   "allow_final_sequence_divergence";
 
-export interface DriverExtensionStateUpdate {
+export interface RunnerExtensionStateUpdate {
   extensionName: string;
   state: Record<string, unknown>;
 }
 
-export interface DriverExecutionResult {
-  assistantEventReconciliation?: DriverAssistantEventReconciliation;
+export interface RunnerExecutionResult {
+  assistantEventReconciliation?: RunnerAssistantEventReconciliation;
   messages?: TuvrenMessage[];
   partial?: boolean;
   resolution: RuntimeResolution;
-  stateUpdates?: DriverExtensionStateUpdate[];
-  toolExecutionMode?: DriverToolExecutionMode;
+  stateUpdates?: RunnerExtensionStateUpdate[];
+  toolExecutionMode?: RunnerToolExecutionMode;
 }
 
-export interface RuntimeDriver {
-  execute(context: DriverExecutionContext): Promise<DriverExecutionResult>;
+export interface RuntimeRunner {
+  execute(context: RunnerExecutionContext): Promise<RunnerExecutionResult>;
   readonly id: string;
-  resume?(context: DriverResumeContext): Promise<DriverExecutionResult>;
+  resume?(context: RunnerResumeContext): Promise<RunnerExecutionResult>;
 }
 
-export interface RuntimeDriverFactory {
-  create(): RuntimeDriver;
+export interface RuntimeRunnerFactory {
+  create(): RuntimeRunner;
   readonly id: string;
 }
 
-export interface DriverRegistry {
-  list(): Array<RuntimeDriver | RuntimeDriverFactory>;
-  register(driver: RuntimeDriver | RuntimeDriverFactory): void;
-  resolve(driverId: string): RuntimeDriver | RuntimeDriverFactory | undefined;
+export interface RunnerRegistry {
+  list(): Array<RuntimeRunner | RuntimeRunnerFactory>;
+  register(driver: RuntimeRunner | RuntimeRunnerFactory): void;
+  resolve(driverId: string): RuntimeRunner | RuntimeRunnerFactory | undefined;
 }

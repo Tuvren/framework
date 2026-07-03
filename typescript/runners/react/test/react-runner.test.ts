@@ -25,7 +25,7 @@ import type {
 } from "@tuvren/core/provider";
 import { createReActRunner } from "../src/index.ts";
 import {
-  createDriverExecutionContext,
+  createRunnerExecutionContext,
   createSearchTool,
   wait,
 } from "./react-runner-test-helpers.ts";
@@ -53,7 +53,7 @@ describe("runner-react", () => {
     }).create();
 
     const result = await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config: {
           extensions: [
             {
@@ -107,7 +107,7 @@ describe("runner-react", () => {
     }).create();
 
     await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config: {
           extensions: [extension],
           model: provider,
@@ -142,7 +142,7 @@ describe("runner-react", () => {
     }).create();
 
     const result = await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config: {
           extensions: [
             {
@@ -211,7 +211,7 @@ describe("runner-react", () => {
     }).create();
 
     const result = await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config: {
           model: provider,
           name: "primary",
@@ -247,7 +247,7 @@ describe("runner-react", () => {
     }).create();
 
     const result = await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config: {
           loopPolicy: {
             evaluate(response) {
@@ -298,7 +298,7 @@ describe("runner-react", () => {
     }).create();
 
     const result = await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config: {
           loopPolicy: {
             evaluate() {
@@ -350,7 +350,7 @@ describe("runner-react", () => {
     }).create();
 
     const result = await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config: {
           loopPolicy: {
             evaluate() {
@@ -401,7 +401,7 @@ describe("runner-react", () => {
     }).create();
 
     const result = await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config: {
           model: provider,
           name: "primary",
@@ -451,7 +451,7 @@ describe("runner-react", () => {
     }).create();
 
     const result = await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config: {
           model: provider,
           name: "primary",
@@ -488,7 +488,7 @@ describe("runner-react", () => {
     }).create();
 
     const result = await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config: {
           loopPolicy: {
             evaluate() {
@@ -529,7 +529,7 @@ describe("runner-react", () => {
     }).create();
 
     const result = await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config: {
           loopPolicy: {
             evaluate() {
@@ -567,7 +567,7 @@ describe("runner-react", () => {
     }).create();
 
     const result = await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config: {
           model: provider,
           name: "primary",
@@ -602,7 +602,7 @@ describe("runner-react", () => {
     }).create();
 
     const result = await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config: {
           model: provider,
           name: "primary",
@@ -642,7 +642,7 @@ describe("runner-react", () => {
     controller.abort(new Error("cancelled before provider call"));
 
     const result = await driver.execute(
-      createDriverExecutionContext({
+      createRunnerExecutionContext({
         config: {
           model: provider,
           name: "primary",
@@ -684,7 +684,7 @@ describe("runner-react", () => {
 
     const result = await Promise.race([
       driver.execute(
-        createDriverExecutionContext({
+        createRunnerExecutionContext({
           config: {
             model: provider,
             name: "primary",
@@ -754,7 +754,7 @@ describe("runner-react", () => {
       ],
     };
 
-    const context = createDriverExecutionContext({ config });
+    const context = createRunnerExecutionContext({ config });
     const result = await driver.execute(context);
 
     // Pure stream: no model text output, only the provider_tool_result chunk.
@@ -824,7 +824,7 @@ describe("runner-react", () => {
       ],
     };
 
-    const context = createDriverExecutionContext({ config });
+    const context = createRunnerExecutionContext({ config });
     const result = await driver.execute(context);
 
     expect(result.messages).toHaveLength(1);

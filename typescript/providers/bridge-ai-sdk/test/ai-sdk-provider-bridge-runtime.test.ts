@@ -18,7 +18,7 @@ import { describe, expect, test } from "bun:test";
 import type { ProviderV3 } from "@ai-sdk/provider";
 import { createReActRunner } from "@tuvren/runner-react";
 import {
-  createDriverRegistry,
+  createRunnerRegistry,
   createTuvrenRuntime as createTuvrenRuntimeCore,
 } from "@tuvren/runtime";
 import { createFakeKernelHarness } from "../../../runtime/test/fake-kernel.ts";
@@ -119,8 +119,8 @@ describe("provider-bridge-ai-sdk runtime", () => {
       }),
     });
     const runtime = createTuvrenRuntimeCore({
-      defaultDriverId: "react",
-      driverRegistry: createDriverRegistry([createReActRunner()]),
+      defaultRunnerId: "react",
+      driverRegistry: createRunnerRegistry([createReActRunner()]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -199,8 +199,8 @@ describe("provider-bridge-ai-sdk runtime", () => {
       }),
     });
     const runtime = createTuvrenRuntimeCore({
-      defaultDriverId: "react",
-      driverRegistry: createDriverRegistry([createReActRunner()]),
+      defaultRunnerId: "react",
+      driverRegistry: createRunnerRegistry([createReActRunner()]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -275,8 +275,8 @@ describe("provider-bridge-ai-sdk runtime", () => {
       }),
     });
     const runtime = createTuvrenRuntimeCore({
-      defaultDriverId: "react",
-      driverRegistry: createDriverRegistry([createReActRunner()]),
+      defaultRunnerId: "react",
+      driverRegistry: createRunnerRegistry([createReActRunner()]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});

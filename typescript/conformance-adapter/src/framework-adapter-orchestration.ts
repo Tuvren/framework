@@ -15,15 +15,15 @@
  */
 
 import { TuvrenRuntimeError } from "@tuvren/core";
-import type { RuntimeDriver } from "@tuvren/core/driver";
 import type {
   AgentConfig,
   OrchestrationHandle,
   OrchestrationResult,
 } from "@tuvren/core/execution";
+import type { RuntimeRunner } from "@tuvren/core/runner";
 import {
-  createDriverRegistry,
   createOrchestrationRuntime,
+  createRunnerRegistry,
   createTuvrenRuntime as createTuvrenRuntimeCore,
   DEFAULT_AGENT_SCHEMA,
 } from "@tuvren/runtime";
@@ -35,7 +35,7 @@ import {
   collectValues,
   createConformanceIdFactory,
   createConformanceKernelHarness,
-  createStaticDriver,
+  createStaticRunner,
   DRIVER_ID,
   textSignal,
 } from "./framework-adapter-runtime.ts";
@@ -94,9 +94,9 @@ export function createFrameworkAdapterOrchestration(
     const harness = createConformanceKernelHarness();
     const framework = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
-      defaultDriverId: DRIVER_ID,
-      driverRegistry: createDriverRegistry([
-        createStaticDriver(async (context) => {
+      defaultRunnerId: DRIVER_ID,
+      driverRegistry: createRunnerRegistry([
+        createStaticRunner(async (context) => {
           if (context.config.name === "worker") {
             await sleep(5);
             return {
@@ -225,9 +225,9 @@ export function createFrameworkAdapterOrchestration(
     const harness = createConformanceKernelHarness();
     const framework = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
-      defaultDriverId: DRIVER_ID,
-      driverRegistry: createDriverRegistry([
-        createStaticDriver(async (context) => {
+      defaultRunnerId: DRIVER_ID,
+      driverRegistry: createRunnerRegistry([
+        createStaticRunner(async (context) => {
           if (context.config.name === "worker") {
             await sleep(5);
             return {
@@ -324,7 +324,7 @@ export function createFrameworkAdapterOrchestration(
       "childToolStatus",
       "runtime.orchestration.execution-inheritance.childToolStatus"
     );
-    const defaultDriver = {
+    const defaultRunner = {
       async execute(context) {
         if (context.config.name === "worker") {
           return {
@@ -346,8 +346,8 @@ export function createFrameworkAdapterOrchestration(
         };
       },
       id: "default",
-    } satisfies RuntimeDriver;
-    const specialDriver = {
+    } satisfies RuntimeRunner;
+    const specialRunner = {
       async execute(context) {
         if (context.config.name === "worker") {
           const toolMessages = context.messages.filter(
@@ -390,7 +390,7 @@ export function createFrameworkAdapterOrchestration(
         };
       },
       id: "special",
-    } satisfies RuntimeDriver;
+    } satisfies RuntimeRunner;
     const harness = createConformanceKernelHarness();
     await harness.kernel.schema.register({
       ...structuredClone(DEFAULT_AGENT_SCHEMA),
@@ -398,8 +398,8 @@ export function createFrameworkAdapterOrchestration(
     });
     const framework = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
-      defaultDriverId: "default",
-      driverRegistry: createDriverRegistry([defaultDriver, specialDriver]),
+      defaultRunnerId: "default",
+      driverRegistry: createRunnerRegistry([defaultRunner, specialRunner]),
       kernel: harness.kernel,
     });
     const orchestration = createOrchestrationRuntime({
@@ -491,9 +491,9 @@ export function createFrameworkAdapterOrchestration(
     const harness = createConformanceKernelHarness();
     const framework = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
-      defaultDriverId: DRIVER_ID,
-      driverRegistry: createDriverRegistry([
-        createStaticDriver(async (context) => {
+      defaultRunnerId: DRIVER_ID,
+      driverRegistry: createRunnerRegistry([
+        createStaticRunner(async (context) => {
           if (context.config.name === "worker") {
             await sleep(20);
             return {
@@ -600,9 +600,9 @@ export function createFrameworkAdapterOrchestration(
     };
     const framework = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
-      defaultDriverId: DRIVER_ID,
-      driverRegistry: createDriverRegistry([
-        createStaticDriver(async (context) => {
+      defaultRunnerId: DRIVER_ID,
+      driverRegistry: createRunnerRegistry([
+        createStaticRunner(async (context) => {
           if (context.config.name === "worker") {
             return {
               messages: [assistantText("Passing this to reviewer.")],
@@ -704,9 +704,9 @@ export function createFrameworkAdapterOrchestration(
     const harness = createConformanceKernelHarness();
     const framework = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
-      defaultDriverId: DRIVER_ID,
-      driverRegistry: createDriverRegistry([
-        createStaticDriver((context) => ({
+      defaultRunnerId: DRIVER_ID,
+      driverRegistry: createRunnerRegistry([
+        createStaticRunner((context) => ({
           messages: [
             assistantToolCalls([
               {
@@ -765,9 +765,9 @@ export function createFrameworkAdapterOrchestration(
     const harness = createConformanceKernelHarness();
     const framework = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
-      defaultDriverId: DRIVER_ID,
-      driverRegistry: createDriverRegistry([
-        createStaticDriver((context) => {
+      defaultRunnerId: DRIVER_ID,
+      driverRegistry: createRunnerRegistry([
+        createStaticRunner((context) => {
           if (context.config.name === "primary") {
             return {
               messages: [assistantText("Passing this to reviewer.")],

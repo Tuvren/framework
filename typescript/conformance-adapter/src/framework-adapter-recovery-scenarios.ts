@@ -19,10 +19,10 @@ import type {
   ClientInvocationEnvelope,
   ClientReportedResult,
 } from "@tuvren/core/capabilities";
-import type { RuntimeDriver } from "@tuvren/core/driver";
+import type { RuntimeRunner } from "@tuvren/core/runner";
 import { encodeDeterministicKernelRecord } from "@tuvren/kernel-protocol";
 import {
-  createDriverRegistry,
+  createRunnerRegistry,
   createTuvrenRuntime as createTuvrenRuntimeCore,
   DEFAULT_AGENT_SCHEMA,
 } from "@tuvren/runtime";
@@ -34,7 +34,7 @@ import {
   createConformanceIdFactory,
   createConformanceKernelHarness,
   createConformanceRunLivenessKernelHarness,
-  createStaticDriver,
+  createStaticRunner,
   DRIVER_ID,
   textSignal,
 } from "./framework-adapter-runtime.ts";
@@ -98,9 +98,9 @@ export function createFrameworkAdapterRecoveryScenarios(
     const harness = createConformanceKernelHarness();
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
-      defaultDriverId: DRIVER_ID,
-      driverRegistry: createDriverRegistry([
-        createStaticDriver(() => ({
+      defaultRunnerId: DRIVER_ID,
+      driverRegistry: createRunnerRegistry([
+        createStaticRunner(() => ({
           messages: [assistantText("recovery placeholder")],
           resolution: {
             reason: "done",
@@ -211,11 +211,11 @@ export function createFrameworkAdapterRecoveryScenarios(
         });
       },
       id: DRIVER_ID,
-    } satisfies RuntimeDriver;
+    } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
-      defaultDriverId: DRIVER_ID,
-      driverRegistry: createDriverRegistry([driver]),
+      defaultRunnerId: DRIVER_ID,
+      driverRegistry: createRunnerRegistry([driver]),
       kernel: livenessHarness.kernel,
       resolveAgentConfig(agentName) {
         if (agentName === "primary" || agentName === "reviewer") {
@@ -446,7 +446,7 @@ export function createFrameworkAdapterRecoveryScenarios(
       },
     };
 
-    const driver: RuntimeDriver = {
+    const driver: RuntimeRunner = {
       execute(context) {
         if (!context.messages.some((message) => message.role === "tool")) {
           return Promise.resolve({
@@ -469,8 +469,8 @@ export function createFrameworkAdapterRecoveryScenarios(
 
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
-      defaultDriverId: DRIVER_ID,
-      driverRegistry: createDriverRegistry([driver]),
+      defaultRunnerId: DRIVER_ID,
+      driverRegistry: createRunnerRegistry([driver]),
       kernel: livenessHarness.kernel,
       resolveAgentConfig(agentName) {
         return agentName === "primary" ? { name: agentName } : undefined;

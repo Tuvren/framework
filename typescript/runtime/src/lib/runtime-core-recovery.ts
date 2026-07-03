@@ -115,7 +115,7 @@ export function createCancelledResolution(
   };
 }
 
-export function shouldDiscardDriverProgressAfterLeaseLoss(
+export function shouldDiscardRunnerProgressAfterLeaseLoss(
   handle: RuntimeExecutionHandle
 ): boolean {
   const resolution = createCancelledResolution(handle);
@@ -213,7 +213,7 @@ export function classifyStaleRecoveryRace(
   }
 }
 
-export function shouldSuppressBufferedDriverEvents(
+export function shouldSuppressBufferedRunnerEvents(
   resolution: RuntimeResolution
 ): boolean {
   if (resolution.type !== "fail" || resolution.fatality !== "hard") {

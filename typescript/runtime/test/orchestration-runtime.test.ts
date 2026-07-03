@@ -23,9 +23,9 @@ import {
 } from "../src/index.ts";
 import { createFakeKernelHarness } from "./fake-kernel.ts";
 import {
-  createDriverRegistry,
-  createStaticDriver,
-} from "./orchestration-runtime-driver-helpers.ts";
+  createRunnerRegistry,
+  createStaticRunner,
+} from "./orchestration-runtime-runner-helpers.ts";
 import {
   assistantText,
   collectEvents,
@@ -43,9 +43,9 @@ describe("orchestration-runtime", () => {
   test("supports recursive child spawning", async () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntime({
-      defaultDriverId: "fake",
-      driverRegistry: createDriverRegistry([
-        createStaticDriver(async (context) => {
+      defaultRunnerId: "fake",
+      driverRegistry: createRunnerRegistry([
+        createStaticRunner(async (context) => {
           if (context.config.name === "worker") {
             await delay(20);
             return {
@@ -140,9 +140,9 @@ describe("orchestration-runtime", () => {
   test("resolves awaitResult with status=failed when child execution fails", async () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntime({
-      defaultDriverId: "fake",
-      driverRegistry: createDriverRegistry([
-        createStaticDriver(async (context) => {
+      defaultRunnerId: "fake",
+      driverRegistry: createRunnerRegistry([
+        createStaticRunner(async (context) => {
           if (context.config.name === "worker") {
             throw new Error("worker exploded");
           }
@@ -191,7 +191,7 @@ describe("orchestration-runtime", () => {
 
   test("inherits the caller driverId and explicit tools when spawning a child", async () => {
     const harness = createFakeKernelHarness();
-    const defaultDriver = createStaticDriver(async (context) => {
+    const defaultRunner = createStaticRunner(async (context) => {
       if (context.config.name === "worker") {
         return {
           messages: [assistantText("Default worker driver.")],
@@ -211,7 +211,7 @@ describe("orchestration-runtime", () => {
         },
       };
     }, "default");
-    const specialDriver = createStaticDriver(async (context) => {
+    const specialRunner = createStaticRunner(async (context) => {
       if (context.config.name === "worker") {
         const toolMessages = context.messages.filter(
           (message) => message.role === "tool"
@@ -256,8 +256,8 @@ describe("orchestration-runtime", () => {
       };
     }, "special");
     const framework = createTuvrenRuntime({
-      defaultDriverId: "default",
-      driverRegistry: createDriverRegistry([defaultDriver, specialDriver]),
+      defaultRunnerId: "default",
+      driverRegistry: createRunnerRegistry([defaultRunner, specialRunner]),
       kernel: harness.kernel,
     });
     const orchestration = createOrchestrationRuntime({
@@ -462,9 +462,9 @@ describe("orchestration-runtime", () => {
       name: "orchestration-mutable-receiver",
     };
     const framework = createTuvrenRuntime({
-      defaultDriverId: "fake",
-      driverRegistry: createDriverRegistry([
-        createStaticDriver(async () => ({
+      defaultRunnerId: "fake",
+      driverRegistry: createRunnerRegistry([
+        createStaticRunner(async () => ({
           messages: [assistantText("Hook receiver stayed mutable.")],
           resolution: {
             reason: "done",
@@ -517,9 +517,9 @@ describe("orchestration-runtime", () => {
       worker: { name: "worker" },
     };
     const framework = createTuvrenRuntime({
-      defaultDriverId: "fake",
-      driverRegistry: createDriverRegistry([
-        createStaticDriver(async (context) => {
+      defaultRunnerId: "fake",
+      driverRegistry: createRunnerRegistry([
+        createStaticRunner(async (context) => {
           if (context.config.name === "worker") {
             return {
               messages: [assistantText("Passing this to reviewer.")],
@@ -768,9 +768,9 @@ describe("orchestration-runtime", () => {
   test("snapshots orchestration agent configs at runtime creation", async () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntime({
-      defaultDriverId: "fake",
-      driverRegistry: createDriverRegistry([
-        createStaticDriver(async (context) => {
+      defaultRunnerId: "fake",
+      driverRegistry: createRunnerRegistry([
+        createStaticRunner(async (context) => {
           if (context.config.name === "worker") {
             const toolMessages = context.messages.filter(
               (message) => message.role === "tool"
@@ -895,9 +895,9 @@ describe("orchestration-runtime", () => {
   test("awaitResult aggregates childResults for parent-plus-two-children orchestration", async () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntime({
-      defaultDriverId: "fake",
-      driverRegistry: createDriverRegistry([
-        createStaticDriver(async (context) => {
+      defaultRunnerId: "fake",
+      driverRegistry: createRunnerRegistry([
+        createStaticRunner(async (context) => {
           if (context.config.name === "worker-alpha") {
             await delay(5);
             return {

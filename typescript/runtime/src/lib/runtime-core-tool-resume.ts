@@ -294,7 +294,7 @@ export async function resumePausedToolExecution(
     return {
       pauseContext: {
         activeConfig: loopState.activeConfig,
-        activeDriverId: loopState.activeDriverId,
+        activeRunnerId: loopState.activeRunnerId,
         activeToolRegistry: loopState.activeToolRegistry,
         approval: resolution.approval,
         carriedStateUpdates: [...loopState.carriedStateUpdates],

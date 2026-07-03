@@ -15,25 +15,24 @@
  */
 
 // biome-ignore-all lint/performance/noBarrelFile: This package subpath is the intentional focused contract surface.
-
-export {
-  assertDriverExecutionResult,
-  assertDriverHandoffContextPlan,
-  assertDriverHandoffSourceContext,
-  assertDriverRuntimeResolution,
-  assertRuntimeDriver,
-  isRuntimeDriver,
-} from "./driver-contract-guards.js";
 export type {
-  DriverAssistantEventReconciliation,
-  DriverExecutionContext,
-  DriverExecutionResult,
-  DriverExtensionStateUpdate,
-  DriverHandoffPort,
-  DriverRegistry,
-  DriverResumeContext,
-  DriverRuntimePort,
-  DriverToolExecutionMode,
-  RuntimeDriver,
-  RuntimeDriverFactory,
-} from "./driver-contract-shapes.js";
+  RunnerAssistantEventReconciliation,
+  RunnerExecutionContext,
+  RunnerExecutionResult,
+  RunnerExtensionStateUpdate,
+  RunnerHandoffPort,
+  RunnerRegistry,
+  RunnerResumeContext,
+  RunnerRuntimePort,
+  RunnerToolExecutionMode,
+  RuntimeRunner,
+  RuntimeRunnerFactory,
+} from "../lib/runner-contract-shapes.js";
+export {
+  assertRunnerExecutionResult,
+  assertRunnerHandoffContextPlan,
+  assertRunnerHandoffSourceContext,
+  assertRunnerRuntimeResolution,
+  assertRuntimeRunner,
+  isRuntimeRunner,
+} from "../lib/runner-contracts.js";

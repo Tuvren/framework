@@ -21,33 +21,33 @@ import type {
 } from "@tuvren/core/execution";
 import type { ToolRegistry } from "@tuvren/core/tools";
 import type { PathValue, RunCompletionStatus } from "@tuvren/kernel-protocol";
-import type { RuntimeCoreDriverHost } from "./runtime-core-driver.js";
 import type { HeadState, LoopState } from "./runtime-core-loop.js";
+import type { RuntimeCoreRunnerHost } from "./runtime-core-runner.js";
 import type { RuntimeCoreStatusHost } from "./runtime-core-status.js";
 import type { RuntimeCoreToolResumeHost } from "./runtime-core-tool-resume.js";
 import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
 
-interface DriverHostDependencies {
-  completeIterationRun: RuntimeCoreDriverHost["completeIterationRun"];
-  createDriverAgentConfigSnapshot(
+interface RunnerHostDependencies {
+  completeIterationRun: RuntimeCoreRunnerHost["completeIterationRun"];
+  createIterationTree: RuntimeCoreRunnerHost["createIterationTree"];
+  createReadonlyRunnerToolRegistry(registry: ToolRegistry): ToolRegistry;
+  createRunnerAgentConfigSnapshot(
     config: LoopState["activeConfig"]
   ): LoopState["activeConfig"];
-  createDriverHandoffContextPlan: RuntimeCoreDriverHost["createDriverHandoffContextPlan"];
-  createDriverPublishedEvent: RuntimeCoreDriverHost["createDriverPublishedEvent"];
-  createIterationTree: RuntimeCoreDriverHost["createIterationTree"];
-  createReadonlyDriverToolRegistry(registry: ToolRegistry): ToolRegistry;
-  createToolBatchEnvironment: RuntimeCoreDriverHost["createToolBatchEnvironment"];
+  createRunnerHandoffContextPlan: RuntimeCoreRunnerHost["createRunnerHandoffContextPlan"];
+  createRunnerPublishedEvent: RuntimeCoreRunnerHost["createRunnerPublishedEvent"];
+  createToolBatchEnvironment: RuntimeCoreRunnerHost["createToolBatchEnvironment"];
   failTrackedRunWithoutBranchAdvance(
     handle: RuntimeExecutionHandle,
     runId: string,
     stableHeadTurnNodeHash: HashString
   ): Promise<void>;
   now(): EpochMs;
-  publishCustomEvent: RuntimeCoreDriverHost["publishCustomEvent"];
-  publishProjectedError: RuntimeCoreDriverHost["publishProjectedError"];
-  stageManifest: RuntimeCoreDriverHost["stageManifest"];
-  stageMessage: RuntimeCoreDriverHost["stageMessage"];
-  stageRuntimeStatus: RuntimeCoreDriverHost["stageRuntimeStatus"];
+  publishCustomEvent: RuntimeCoreRunnerHost["publishCustomEvent"];
+  publishProjectedError: RuntimeCoreRunnerHost["publishProjectedError"];
+  stageManifest: RuntimeCoreRunnerHost["stageManifest"];
+  stageMessage: RuntimeCoreRunnerHost["stageMessage"];
+  stageRuntimeStatus: RuntimeCoreRunnerHost["stageRuntimeStatus"];
 }
 
 interface ToolResumeHostDependencies {
@@ -124,21 +124,21 @@ interface StatusHostDependencies {
   ): Promise<HashString>;
 }
 
-export function buildRuntimeCoreDriverHost(
-  dependencies: DriverHostDependencies
-): RuntimeCoreDriverHost {
+export function buildRuntimeCoreRunnerHost(
+  dependencies: RunnerHostDependencies
+): RuntimeCoreRunnerHost {
   return {
     completeIterationRun: (...args) =>
       dependencies.completeIterationRun(...args),
-    createDriverAgentConfigSnapshot: (config) =>
-      dependencies.createDriverAgentConfigSnapshot(config),
-    createDriverHandoffContextPlan: (...args) =>
-      dependencies.createDriverHandoffContextPlan(...args),
-    createDriverPublishedEvent: (...args) =>
-      dependencies.createDriverPublishedEvent(...args),
+    createRunnerAgentConfigSnapshot: (config) =>
+      dependencies.createRunnerAgentConfigSnapshot(config),
+    createRunnerHandoffContextPlan: (...args) =>
+      dependencies.createRunnerHandoffContextPlan(...args),
+    createRunnerPublishedEvent: (...args) =>
+      dependencies.createRunnerPublishedEvent(...args),
     createIterationTree: (...args) => dependencies.createIterationTree(...args),
-    createReadonlyDriverToolRegistry: (registry) =>
-      dependencies.createReadonlyDriverToolRegistry(registry),
+    createReadonlyRunnerToolRegistry: (registry) =>
+      dependencies.createReadonlyRunnerToolRegistry(registry),
     createToolBatchEnvironment: (...args) =>
       dependencies.createToolBatchEnvironment(...args),
     failTrackedRunWithoutBranchAdvance: (...args) =>

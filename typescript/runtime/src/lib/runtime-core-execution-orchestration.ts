@@ -19,11 +19,6 @@ import {
   type HashString,
   TuvrenRuntimeError,
 } from "@tuvren/core";
-import type {
-  DriverExecutionContext,
-  DriverExecutionResult,
-  RuntimeDriver as KrakenDriver,
-} from "@tuvren/core/driver";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type {
   AgentConfig,
@@ -40,6 +35,11 @@ import type {
   TuvrenMessage,
 } from "@tuvren/core/messages";
 import type { TuvrenModelResponse } from "@tuvren/core/provider";
+import type {
+  RuntimeRunner as KrakenRunner,
+  RunnerExecutionContext,
+  RunnerExecutionResult,
+} from "@tuvren/core/runner";
 import type { ToolRegistry } from "@tuvren/core/tools";
 import type { ExtensionStateUpdate } from "./extension-runtime.js";
 import type { ResolvedExecutionBounds } from "./runtime-core-bounds.js";
@@ -48,19 +48,6 @@ import {
   applyHandoff as applyRuntimeHandoff,
   type RuntimeCoreContextOpsHost,
 } from "./runtime-core-context-ops.js";
-import {
-  applyAfterIterationResolution as applyRuntimeAfterIterationResolution,
-  applyRequestedToolBatchIfNeeded as applyRuntimeRequestedToolBatchIfNeeded,
-  completeIterationArtifacts as completeRuntimeIterationArtifacts,
-  createDriverExecutionContext as createRuntimeDriverExecutionContext,
-  type RuntimeCoreDriverHost,
-  stageDriverMessages as stageRuntimeDriverMessages,
-} from "./runtime-core-driver.js";
-import {
-  createDriverHandoffContextPlan as createRuntimeDriverHandoffContextPlan,
-  createToolBatchEnvironment as createRuntimeToolBatchEnvironment,
-  type RuntimeCoreDriverSupportHost,
-} from "./runtime-core-driver-support.js";
 import type { IterationPhaseResult } from "./runtime-core-iteration.js";
 import { executeIterationPhase as executeRuntimeIterationPhase } from "./runtime-core-iteration.js";
 import {
@@ -69,6 +56,19 @@ import {
   runExecutionLoop as runRuntimeExecutionLoop,
 } from "./runtime-core-loop.js";
 import type { LoopOutcome } from "./runtime-core-recovery.js";
+import {
+  applyAfterIterationResolution as applyRuntimeAfterIterationResolution,
+  applyRequestedToolBatchIfNeeded as applyRuntimeRequestedToolBatchIfNeeded,
+  completeIterationArtifacts as completeRuntimeIterationArtifacts,
+  createRunnerExecutionContext as createRuntimeRunnerExecutionContext,
+  type RuntimeCoreRunnerHost,
+  stageRunnerMessages as stageRuntimeRunnerMessages,
+} from "./runtime-core-runner.js";
+import {
+  createRunnerHandoffContextPlan as createRuntimeRunnerHandoffContextPlan,
+  createToolBatchEnvironment as createRuntimeToolBatchEnvironment,
+  type RuntimeCoreRunnerSupportHost,
+} from "./runtime-core-runner-support.js";
 import {
   commitPendingExtensionStateUpdates as commitRuntimePendingExtensionStateUpdates,
   incorporateInput as incorporateRuntimeInput,
@@ -184,15 +184,15 @@ interface RuntimeIterationPhaseDependencies {
     manifest: ContextManifest,
     appendedMessageHashes: HashString[]
   ): Promise<HashString | undefined>;
-  createDriverExecutionContext(
+  createId(): string;
+  createRunnerExecutionContext(
     handle: RuntimeExecutionHandle,
     schemaId: string,
     loopState: LoopState,
     headState: HeadState,
     iterationCount: number,
-    emittedDriverEvents: TuvrenStreamEvent[]
-  ): DriverExecutionContext;
-  createId(): string;
+    emittedRunnerEvents: TuvrenStreamEvent[]
+  ): RunnerExecutionContext;
   createTrackedRun(
     handle: RuntimeExecutionHandle,
     runId: string,
@@ -206,16 +206,16 @@ interface RuntimeIterationPhaseDependencies {
       sideEffects: boolean;
     }>
   ): Promise<void>;
-  ensureDriverAssistantEvents(
+  ensureRunnerAssistantEvents(
     handle: RuntimeExecutionHandle,
     messages: TuvrenMessage[],
     emittedEvents: TuvrenStreamEvent[],
     loopState: LoopState
   ): TuvrenStreamEvent[];
-  executeDriver(
-    driver: KrakenDriver,
-    context: DriverExecutionContext
-  ): Promise<DriverExecutionResult>;
+  executeRunner(
+    driver: KrakenRunner,
+    context: RunnerExecutionContext
+  ): Promise<RunnerExecutionResult>;
   failInvalidPauseResolutionIfNeeded(
     handle: RuntimeExecutionHandle,
     iterationRunId: string,
@@ -228,12 +228,12 @@ interface RuntimeIterationPhaseDependencies {
     runId: string,
     stableHeadTurnNodeHash: HashString
   ): Promise<void>;
-  flushBufferedDriverEventsIfNeeded(
+  flushBufferedRunnerEventsIfNeeded(
     handle: RuntimeExecutionHandle,
     resolution: RuntimeResolution,
     events: TuvrenStreamEvent[]
   ): TuvrenStreamEvent[];
-  materializeDriver(driverId: string): KrakenDriver;
+  materializeRunner(driverId: string): KrakenRunner;
   now(): number;
   /**
    * Publish through the full runtime event + telemetry path (KRT-BA002).
@@ -252,7 +252,7 @@ interface RuntimeIterationPhaseDependencies {
     turnId: string,
     resolution: RuntimeResolution
   ): Promise<RuntimeResolution>;
-  stageDriverMessages(
+  stageRunnerMessages(
     runId: string,
     messages: TuvrenMessage[],
     iterationCount: number
@@ -379,39 +379,39 @@ export async function executeRuntimeIterationPhaseFacade(
           manifest,
           appendedMessageHashes
         ),
-      createDriverExecutionContext: (
+      createRunnerExecutionContext: (
         activeHandle,
         activeSchemaId,
         activeLoopState,
         activeHeadState,
         activeIterationCount,
-        emittedDriverEvents
+        emittedRunnerEvents
       ) =>
-        dependencies.createDriverExecutionContext(
+        dependencies.createRunnerExecutionContext(
           activeHandle,
           activeSchemaId,
           activeLoopState as LoopState,
           activeHeadState as HeadState,
           activeIterationCount,
-          emittedDriverEvents
+          emittedRunnerEvents
         ),
       createId: () => dependencies.createId(),
       createTrackedRun: (...args) => dependencies.createTrackedRun(...args),
-      executeDriver: (...args) => dependencies.executeDriver(...args),
+      executeRunner: (...args) => dependencies.executeRunner(...args),
       failInvalidPauseResolutionIfNeeded: (...args) =>
         dependencies.failInvalidPauseResolutionIfNeeded(...args),
       failTrackedRunWithoutBranchAdvance: (...args) =>
         dependencies.failTrackedRunWithoutBranchAdvance(...args),
-      flushBufferedDriverEventsIfNeeded: (...args) =>
-        dependencies.flushBufferedDriverEventsIfNeeded(...args),
-      ensureDriverAssistantEvents: (...args) =>
-        dependencies.ensureDriverAssistantEvents(...args),
-      materializeDriver: (driverId) => dependencies.materializeDriver(driverId),
+      flushBufferedRunnerEventsIfNeeded: (...args) =>
+        dependencies.flushBufferedRunnerEventsIfNeeded(...args),
+      ensureRunnerAssistantEvents: (...args) =>
+        dependencies.ensureRunnerAssistantEvents(...args),
+      materializeRunner: (driverId) => dependencies.materializeRunner(driverId),
       now: () => dependencies.now(),
       reconcileCheckpointedPauseResolution: (...args) =>
         dependencies.reconcileCheckpointedPauseResolution(...args),
-      stageDriverMessages: (...args) =>
-        dependencies.stageDriverMessages(...args),
+      stageRunnerMessages: (...args) =>
+        dependencies.stageRunnerMessages(...args),
       publishEvent: (...args) => dependencies.publishEvent(...args),
     },
     {
@@ -424,33 +424,33 @@ export async function executeRuntimeIterationPhaseFacade(
   );
 }
 
-export function createRuntimeDriverExecutionContextFacade(
-  host: RuntimeCoreDriverHost,
+export function createRuntimeRunnerExecutionContextFacade(
+  host: RuntimeCoreRunnerHost,
   handle: RuntimeExecutionHandle,
   schemaId: string,
   loopState: LoopState,
   headState: HeadState,
   iterationCount: number,
-  emittedDriverEvents: TuvrenStreamEvent[]
-): DriverExecutionContext {
-  return createRuntimeDriverExecutionContext(
+  emittedRunnerEvents: TuvrenStreamEvent[]
+): RunnerExecutionContext {
+  return createRuntimeRunnerExecutionContext(
     host,
     handle,
     schemaId,
     loopState,
     headState,
     iterationCount,
-    emittedDriverEvents
+    emittedRunnerEvents
   );
 }
 
-export async function stageRuntimeDriverMessagesFacade(
-  host: RuntimeCoreDriverHost,
+export async function stageRuntimeRunnerMessagesFacade(
+  host: RuntimeCoreRunnerHost,
   runId: string,
   messages: TuvrenMessage[],
   iterationCount: number
 ): Promise<HashString[]> {
-  return await stageRuntimeDriverMessages(
+  return await stageRuntimeRunnerMessages(
     host,
     runId,
     messages,
@@ -459,7 +459,7 @@ export async function stageRuntimeDriverMessagesFacade(
 }
 
 export async function applyRuntimeRequestedToolBatchIfNeededFacade(
-  host: RuntimeCoreDriverHost,
+  host: RuntimeCoreRunnerHost,
   input: {
     handle: RuntimeExecutionHandle;
     headState: HeadState;
@@ -478,7 +478,7 @@ export async function applyRuntimeRequestedToolBatchIfNeededFacade(
 }
 
 export async function completeRuntimeIterationArtifactsFacade(
-  host: RuntimeCoreDriverHost,
+  host: RuntimeCoreRunnerHost,
   handle: RuntimeExecutionHandle,
   schemaId: string,
   loopState: LoopState,
@@ -504,7 +504,7 @@ export async function completeRuntimeIterationArtifactsFacade(
 }
 
 export async function applyRuntimeAfterIterationResolutionFacade(
-  host: RuntimeCoreDriverHost,
+  host: RuntimeCoreRunnerHost,
   handle: RuntimeExecutionHandle,
   loopState: LoopState,
   iterationCount: number,
@@ -548,7 +548,7 @@ export async function resumeRuntimePausedToolExecutionFacade(
 }
 
 export function createRuntimeToolBatchEnvironmentFacade(
-  host: RuntimeCoreDriverSupportHost,
+  host: RuntimeCoreRunnerSupportHost,
   handle: RuntimeExecutionHandle,
   loopState: LoopState,
   manifest: ContextManifest,
@@ -565,8 +565,8 @@ export function createRuntimeToolBatchEnvironmentFacade(
   );
 }
 
-export function createRuntimeDriverHandoffContextPlanFacade(
-  host: RuntimeCoreDriverSupportHost,
+export function createRuntimeRunnerHandoffContextPlanFacade(
+  host: RuntimeCoreRunnerSupportHost,
   input: {
     builder?: HandoffContextBuilder;
     mode?: string;
@@ -577,7 +577,7 @@ export function createRuntimeDriverHandoffContextPlanFacade(
   headState: HeadState,
   loopState: LoopState
 ): HandoffContextPlan {
-  return createRuntimeDriverHandoffContextPlan(
+  return createRuntimeRunnerHandoffContextPlan(
     host,
     input,
     headState,

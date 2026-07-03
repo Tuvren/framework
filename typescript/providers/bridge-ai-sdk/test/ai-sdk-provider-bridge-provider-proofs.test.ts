@@ -35,7 +35,7 @@
 import { describe, expect, test } from "bun:test";
 import { createReActRunner } from "@tuvren/runner-react";
 import {
-  createDriverRegistry,
+  createRunnerRegistry,
   createTuvrenRuntime as createTuvrenRuntimeCore,
 } from "@tuvren/runtime";
 import { createFakeKernelHarness } from "../../../runtime/test/fake-kernel.ts";
@@ -88,8 +88,8 @@ describe("KRT-AY006 — provider-native execution class proof (generate path)", 
       }),
     });
     const runtime = createTuvrenRuntimeCore({
-      defaultDriverId: "react",
-      driverRegistry: createDriverRegistry([
+      defaultRunnerId: "react",
+      driverRegistry: createRunnerRegistry([
         createReActRunner({ providerCallMode: "generate" }),
       ]),
       kernel: harness.kernel,
@@ -172,8 +172,8 @@ describe("KRT-AY006 — provider-native execution class proof (generate path)", 
       }),
     });
     const runtime = createTuvrenRuntimeCore({
-      defaultDriverId: "react",
-      driverRegistry: createDriverRegistry([
+      defaultRunnerId: "react",
+      driverRegistry: createRunnerRegistry([
         createReActRunner({ providerCallMode: "generate" }),
       ]),
       kernel: harness.kernel,
@@ -234,8 +234,8 @@ describe("KRT-AY006 — provider-native execution class proof (generate path)", 
       }),
     });
     const runtime = createTuvrenRuntimeCore({
-      defaultDriverId: "react",
-      driverRegistry: createDriverRegistry([
+      defaultRunnerId: "react",
+      driverRegistry: createRunnerRegistry([
         createReActRunner({ providerCallMode: "generate" }),
       ]),
       kernel: harness.kernel,
@@ -300,8 +300,8 @@ describe("KRT-AY006 — provider-native execution class proof (stream path)", ()
       }),
     });
     const runtime = createTuvrenRuntimeCore({
-      defaultDriverId: "react",
-      driverRegistry: createDriverRegistry([createReActRunner()]),
+      defaultRunnerId: "react",
+      driverRegistry: createRunnerRegistry([createReActRunner()]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -374,8 +374,8 @@ describe("KRT-AY006 — provider-mediated execution class proof (generate path)"
       }),
     });
     const runtime = createTuvrenRuntimeCore({
-      defaultDriverId: "react",
-      driverRegistry: createDriverRegistry([
+      defaultRunnerId: "react",
+      driverRegistry: createRunnerRegistry([
         createReActRunner({ providerCallMode: "generate" }),
       ]),
       kernel: harness.kernel,
@@ -459,8 +459,8 @@ describe("KRT-AY006 — provider-mediated execution class proof (generate path)"
       }),
     });
     const runtime = createTuvrenRuntimeCore({
-      defaultDriverId: "react",
-      driverRegistry: createDriverRegistry([
+      defaultRunnerId: "react",
+      driverRegistry: createRunnerRegistry([
         createReActRunner({ providerCallMode: "generate" }),
       ]),
       kernel: harness.kernel,
@@ -521,8 +521,8 @@ describe("KRT-AY006 — provider-mediated execution class proof (generate path)"
       }),
     });
     const runtime = createTuvrenRuntimeCore({
-      defaultDriverId: "react",
-      driverRegistry: createDriverRegistry([
+      defaultRunnerId: "react",
+      driverRegistry: createRunnerRegistry([
         createReActRunner({ providerCallMode: "generate" }),
       ]),
       kernel: harness.kernel,
@@ -590,8 +590,8 @@ describe("KRT-AY006 — provider-mediated execution class proof (stream path)", 
       }),
     });
     const runtime = createTuvrenRuntimeCore({
-      defaultDriverId: "react",
-      driverRegistry: createDriverRegistry([createReActRunner()]),
+      defaultRunnerId: "react",
+      driverRegistry: createRunnerRegistry([createReActRunner()]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});

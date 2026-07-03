@@ -36,13 +36,13 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import type { RuntimeDriver } from "@tuvren/core/driver";
 import type { TuvrenMessage } from "@tuvren/core/messages";
+import type { RuntimeRunner } from "@tuvren/core/runner";
 import type {
   TelemetrySpan,
   TuvrenTelemetrySink,
 } from "@tuvren/core/telemetry";
-import { createDriverRegistry, createTuvrenRuntime } from "../src/index.ts";
+import { createRunnerRegistry, createTuvrenRuntime } from "../src/index.ts";
 import { TUVREN_RUNTIME_TELEMETRY_ATTRIBUTE_KEYS } from "../src/lib/generated/tuvren-runtime-telemetry.ts";
 import { createFakeKernelHarness } from "./fake-kernel.ts";
 import {
@@ -106,7 +106,7 @@ describe("BA004 lifecycle telemetry — keyed to runtime lineage", () => {
     const capture = createTelemetryCapture();
     const harness = createFakeKernelHarness();
     const toolName = "ba004_server_tool";
-    const driver: RuntimeDriver = {
+    const driver: RuntimeRunner = {
       id: "ba004-server",
       async execute(ctx) {
         if (!ctx.messages.some((m) => m.role === "tool")) {
@@ -128,8 +128,8 @@ describe("BA004 lifecycle telemetry — keyed to runtime lineage", () => {
       },
     };
     const runtime = createTuvrenRuntime({
-      defaultDriverId: "ba004-server",
-      driverRegistry: createDriverRegistry([driver]),
+      defaultRunnerId: "ba004-server",
+      driverRegistry: createRunnerRegistry([driver]),
       kernel: harness.kernel,
       telemetry: capture.sink,
     });
@@ -172,7 +172,7 @@ describe("BA004 lifecycle telemetry — keyed to runtime lineage", () => {
   test("provider-native tool_call span carries threadId and branchId in lineage", async () => {
     const capture = createTelemetryCapture();
     const harness = createFakeKernelHarness();
-    const driver: RuntimeDriver = {
+    const driver: RuntimeRunner = {
       id: "ba004-pn",
       async execute(ctx) {
         if (!ctx.messages.some((m) => m.role === "tool")) {
@@ -193,8 +193,8 @@ describe("BA004 lifecycle telemetry — keyed to runtime lineage", () => {
       },
     };
     const runtime = createTuvrenRuntime({
-      defaultDriverId: "ba004-pn",
-      driverRegistry: createDriverRegistry([driver]),
+      defaultRunnerId: "ba004-pn",
+      driverRegistry: createRunnerRegistry([driver]),
       kernel: harness.kernel,
       telemetry: capture.sink,
     });
@@ -238,7 +238,7 @@ describe("BA004 lifecycle telemetry — no secret material", () => {
     const capture = createTelemetryCapture();
     const harness = createFakeKernelHarness();
     const toolName = "ba004_secret_check_tool";
-    const driver: RuntimeDriver = {
+    const driver: RuntimeRunner = {
       id: "ba004-secret",
       async execute(ctx) {
         if (!ctx.messages.some((m) => m.role === "tool")) {
@@ -266,8 +266,8 @@ describe("BA004 lifecycle telemetry — no secret material", () => {
       },
     };
     const runtime = createTuvrenRuntime({
-      defaultDriverId: "ba004-secret",
-      driverRegistry: createDriverRegistry([driver]),
+      defaultRunnerId: "ba004-secret",
+      driverRegistry: createRunnerRegistry([driver]),
       kernel: harness.kernel,
       telemetry: capture.sink,
     });

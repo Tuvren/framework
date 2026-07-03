@@ -16,11 +16,6 @@
 
 import { isDeepStrictEqual } from "node:util";
 import { TuvrenRuntimeError } from "@tuvren/core";
-import type {
-  DriverAssistantEventReconciliation,
-  DriverExecutionContext,
-  DriverExtensionStateUpdate,
-} from "@tuvren/core/driver";
 import type { CustomEvent } from "@tuvren/core/events";
 import type {
   AroundModelContext,
@@ -28,6 +23,11 @@ import type {
   TuvrenExtension,
 } from "@tuvren/core/extensions";
 import type { TuvrenModelResponse, TuvrenPrompt } from "@tuvren/core/provider";
+import type {
+  RunnerAssistantEventReconciliation,
+  RunnerExecutionContext,
+  RunnerExtensionStateUpdate,
+} from "@tuvren/core/runner";
 import {
   createAroundModelContextSnapshot,
   createExtensionStateSnapshot,
@@ -41,19 +41,19 @@ import {
 } from "./react-runner-stream.js";
 
 export interface ModelExecutionOutcome {
-  assistantEventReconciliation?: DriverAssistantEventReconciliation;
+  assistantEventReconciliation?: RunnerAssistantEventReconciliation;
   assistantSequences: BufferedAssistantSequence[];
   cancelled?: boolean;
   response: TuvrenModelResponse;
   responseFormat?: TuvrenPrompt["responseFormat"];
-  stateUpdates: DriverExtensionStateUpdate[];
+  stateUpdates: RunnerExtensionStateUpdate[];
 }
 
 export async function runAroundModelChain(input: {
   callProvider(
     aroundContext: AroundModelContext
   ): Promise<ModelExecutionOutcome>;
-  context: DriverExecutionContext;
+  context: RunnerExecutionContext;
   initialContext: AroundModelContext;
   normalizeExecutionError(error: unknown): Error;
 }): Promise<ModelExecutionOutcome> {
@@ -155,7 +155,7 @@ export async function runAroundModelChain(input: {
 }
 
 async function emitPostNextAroundModelError(
-  context: DriverExecutionContext,
+  context: RunnerExecutionContext,
   extensionName: string,
   error: unknown,
   normalizeExecutionError: (error: unknown) => Error
@@ -184,7 +184,7 @@ function collectAroundModelStateUpdates(
   extensionName: string,
   result: NormalizedAroundModelResult,
   nextOutcomes: ModelExecutionOutcome[]
-): DriverExtensionStateUpdate[] {
+): RunnerExtensionStateUpdate[] {
   const lastOutcome = nextOutcomes.at(-1);
   const updates =
     lastOutcome === undefined
@@ -451,7 +451,7 @@ function validateAroundModelRetryDurability(
 function resolveAssistantEventReconciliation(
   result: NormalizedAroundModelResult,
   nextOutcomes: ModelExecutionOutcome[]
-): DriverAssistantEventReconciliation | undefined {
+): RunnerAssistantEventReconciliation | undefined {
   if (nextOutcomes.length === 0) {
     return undefined;
   }

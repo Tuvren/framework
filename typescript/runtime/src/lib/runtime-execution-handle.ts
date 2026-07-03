@@ -15,7 +15,6 @@
  */
 
 import { TuvrenRuntimeError } from "@tuvren/core";
-import type { RuntimeDriver as KrakenDriver } from "@tuvren/core/driver";
 import type {
   TuvrenErrorProjection,
   TuvrenStreamEvent,
@@ -27,6 +26,7 @@ import type {
   InputSignal,
 } from "@tuvren/core/execution";
 import type { ContentPart, TuvrenMessage } from "@tuvren/core/messages";
+import type { RuntimeRunner as KrakenRunner } from "@tuvren/core/runner";
 import type { ApprovalResponse } from "@tuvren/core/tools";
 import { assertApprovalResponseForRequest } from "@tuvren/core/tools";
 import { isBoundExceededError } from "./runtime-core-bounds.js";
@@ -60,8 +60,8 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
   private readonly eventsQueue: AsyncEventQueue<TuvrenStreamEvent>;
   private eventStreamClaimed = false;
   private lastErrorProjection?: TuvrenErrorProjection;
-  private materializedDriver?: KrakenDriver;
-  private materializedDriverId?: string;
+  private materializedRunner?: KrakenRunner;
+  private materializedRunnerId?: string;
   private pendingPausedCancellation?: Promise<void>;
   private pauseContext?: PauseContext;
   private replacementHandle?: RuntimeExecutionHandle;
@@ -445,20 +445,20 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
     return this.lastErrorProjection;
   }
 
-  getOrCreateDriver(
+  getOrCreateRunner(
     driverId: string,
-    materialize: (driverId: string) => KrakenDriver
-  ): KrakenDriver {
+    materialize: (driverId: string) => KrakenRunner
+  ): KrakenRunner {
     if (
-      this.materializedDriver !== undefined &&
-      this.materializedDriverId === driverId
+      this.materializedRunner !== undefined &&
+      this.materializedRunnerId === driverId
     ) {
-      return this.materializedDriver;
+      return this.materializedRunner;
     }
 
     const driver = materialize(driverId);
-    this.materializedDriver = driver;
-    this.materializedDriverId = driverId;
+    this.materializedRunner = driver;
+    this.materializedRunnerId = driverId;
     return driver;
   }
 
@@ -514,9 +514,9 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
     }
   }
 
-  reuseDriverCache(previousHandle: RuntimeExecutionHandle): void {
-    this.materializedDriver = previousHandle.materializedDriver;
-    this.materializedDriverId = previousHandle.materializedDriverId;
+  reuseRunnerCache(previousHandle: RuntimeExecutionHandle): void {
+    this.materializedRunner = previousHandle.materializedRunner;
+    this.materializedRunnerId = previousHandle.materializedRunnerId;
   }
 
   private claimEventStream(): void {

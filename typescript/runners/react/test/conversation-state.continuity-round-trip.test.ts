@@ -52,7 +52,7 @@ import type {
   TuvrenPrompt,
   TuvrenProvider,
 } from "@tuvren/core/provider";
-import { createDriverRegistry } from "../../../runtime/src/lib/driver-registry.ts";
+import { createRunnerRegistry } from "../../../runtime/src/lib/runner-registry.ts";
 import { createTuvrenRuntime as createTuvrenRuntimeCore } from "../../../runtime/src/lib/runtime-core.ts";
 import { createFakeKernelHarness } from "../../../runtime/test/fake-kernel.ts";
 import { createReActRunner, REACT_RUNNER_ID } from "../src/index.ts";
@@ -107,8 +107,8 @@ function createRecordingProvider(): {
 function buildRuntime(provider: TuvrenProvider) {
   const harness = createFakeKernelHarness();
   const runtime = createTuvrenRuntimeCore({
-    defaultDriverId: REACT_RUNNER_ID,
-    driverRegistry: createDriverRegistry([
+    defaultRunnerId: REACT_RUNNER_ID,
+    driverRegistry: createRunnerRegistry([
       createReActRunner({ providerCallMode: "generate" }),
     ]),
     kernel: harness.kernel,
