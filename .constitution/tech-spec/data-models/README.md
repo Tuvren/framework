@@ -134,7 +134,7 @@
 
 #### Run Liveness Extension Gate
 
-- **Purpose:** Define the required implementation delta before Tuvren Runtime can claim durable recovery of stale `running` Runs.
+- **Purpose:** Define the required implementation delta before Tuvren can claim durable recovery of stale `running` Runs.
 - **Storage Shape:** Leased Run ownership extends `StoredRun` with backend-neutral fields equivalent to `executionOwnerId`, `leaseExpiresAtMs`, `fencingToken`, and `preemptionReason`. These fields are nullable/absent for non-leased base Runs and mandatory for any implementation claiming `kernel.run-liveness` capability.
 - **Constraints / Invariants:**
   - Lease renewal is compare-and-swap by current owner and fencing token.
@@ -181,7 +181,7 @@ erDiagram
 
 ### 3.4 Backend Adapter Model
 
-- **Purpose:** Define what it means for a backend package to be an official Tuvren Runtime backend.
+- **Purpose:** Define what it means for a backend package to be an official Tuvren backend.
 - **Storage Shape:** Each backend package is a concrete implementation of the kernel storage contract. Physical schema is backend-specific.
 - **Constraints / Invariants:**
   - Every official backend implements the full kernel contract.
