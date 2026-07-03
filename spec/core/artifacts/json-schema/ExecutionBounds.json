@@ -31,5 +31,5 @@
   "unevaluatedProperties": {
     "not": {}
   },
-  "description": "Framework-enforced per-turn execution bounds (ADR-043 §3.11), applied above the driver's loop policy. Unset fields take the documented safe defaults; every configured bound must be a finite positive integer. A driver cannot raise or disable a bound."
+  "description": "Framework-enforced per-turn execution bounds (ADR-043 §3.11), applied above the runner's loop policy. Unset fields take the documented safe defaults; every configured bound must be a finite positive integer. A runner cannot raise or disable a bound."
 }

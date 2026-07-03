@@ -18,5 +18,5 @@
   "unevaluatedProperties": {
     "not": {}
   },
-  "description": "Stable neutral error envelope shared by runtime, driver, provider, and adapter seams."
+  "description": "Stable neutral error envelope shared by runtime, runner, provider, and adapter seams."
 }
