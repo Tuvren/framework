@@ -23,13 +23,13 @@
   ],
   "bindingProjections": {
     "typescript": "boundaries/providers/implementations/typescript/mcp-client",
-    "typescript-provider-testkit": "boundaries/providers/implementations/typescript/testkit"
+    "typescript-provider-testkit": "typescript/providers/testkit"
   },
   "forbiddenAuthoritySources": [
     "boundaries/providers/implementations/typescript/mcp-client",
-    "boundaries/providers/implementations/typescript/testkit",
-    "boundaries/providers/implementations/typescript/conformance-runner",
-    "boundaries/providers/implementations/typescript/conformance-adapter",
+    "typescript/providers/testkit",
+    "typescript/providers/conformance-runner",
+    "typescript/providers/conformance-adapter",
     "docs",
     ".constitution"
   ],

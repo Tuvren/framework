@@ -77,8 +77,8 @@
     }
   ],
   "bindingProjections": {
-    "typescript": "boundaries/providers/contracts/provider-api/implementations/typescript",
-    "typescript-ai-sdk-bridge": "boundaries/providers/implementations/typescript/bridge-ai-sdk"
+    "typescript": "typescript/providers/provider-api",
+    "typescript-ai-sdk-bridge": "typescript/providers/bridge-ai-sdk"
   },
   "bindingAppendices": [
     {
@@ -87,10 +87,10 @@
     }
   ],
   "forbiddenAuthoritySources": [
-    "boundaries/providers/contracts/provider-api/implementations/typescript",
-    "boundaries/providers/implementations/typescript/bridge-ai-sdk",
-    "boundaries/providers/implementations/typescript/conformance-runner",
-    "boundaries/providers/implementations/typescript/conformance-adapter",
+    "typescript/providers/provider-api",
+    "typescript/providers/bridge-ai-sdk",
+    "typescript/providers/conformance-runner",
+    "typescript/providers/conformance-adapter",
     "docs",
     ".constitution"
   ],

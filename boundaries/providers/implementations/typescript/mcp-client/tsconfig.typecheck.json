@@ -14,7 +14,9 @@
       ],
       "@tuvren/sdk": ["../../../../../typescript/sdk/src/index.ts"],
       "@tuvren/mcp-client": ["./src/index.ts"],
-      "@tuvren/provider-testkit": ["../testkit/src/index.ts"]
+      "@tuvren/provider-testkit": [
+        "../../../../../typescript/providers/testkit/src/index.ts"
+      ]
     },
     "types": ["bun", "node"]
   },
@@ -22,7 +24,7 @@
     "src/**/*.ts",
     "test/**/*.ts",
     "smoke/**/*.ts",
-    "../testkit/src/**/*.ts",
+    "../../../../../typescript/providers/testkit/src/**/*.ts",
     "../../../../../typescript/core/src/**/*.ts",
     "../../../../../typescript/sdk/src/**/*.ts"
   ]

@@ -12,7 +12,8 @@
     "boundaries/framework/implementations/typescript/drivers/*",
     "typescript/*",
     "typescript/kernel/*",
-    "typescript/kernel/backends/*"
+    "typescript/kernel/backends/*",
+    "typescript/providers/*"
   ],
   "scripts": {
     "lint": "bunx --bun @biomejs/biome check .",

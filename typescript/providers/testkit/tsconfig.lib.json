@@ -1,0 +1,33 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "paths": {
+      "@tuvren/core": ["../../core/dist/index.d.ts"],
+      "@tuvren/core-types": ["../../core-types/dist/index.d.ts"],
+      "@tuvren/core/driver": ["../../core/dist/driver/index.d.ts"],
+      "@tuvren/core/errors": ["../../core/dist/errors/index.d.ts"],
+      "@tuvren/core/events": ["../../core/dist/events/index.d.ts"],
+      "@tuvren/core/execution": ["../../core/dist/execution/index.d.ts"],
+      "@tuvren/core/extensions": ["../../core/dist/extensions/index.d.ts"],
+      "@tuvren/core/messages": ["../../core/dist/messages/index.d.ts"],
+      "@tuvren/core/provider": ["../../core/dist/provider/index.d.ts"],
+      "@tuvren/core/tools": ["../../core/dist/tools/index.d.ts"],
+      "@tuvren/provider-api": ["../provider-api/dist/index.d.ts"],
+      "@tuvren/runtime-api": [
+        "../../../boundaries/framework/contracts/runtime-api/implementations/typescript/dist/index.d.ts"
+      ],
+      "@tuvren/runtime-api/provider": [
+        "../../../boundaries/framework/contracts/runtime-api/implementations/typescript/dist/provider.d.ts"
+      ]
+    },
+    "types": ["node"]
+  },
+  "include": ["src/**/*.ts"],
+  "references": [
+    {
+      "path": "../provider-api/tsconfig.lib.json"
+    }
+  ]
+}

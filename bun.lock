@@ -156,46 +156,6 @@
         "@copilotkit/aimock": "1.15.1",
       },
     },
-    "boundaries/providers/contracts/provider-api/implementations/typescript": {
-      "name": "@tuvren/provider-api",
-      "version": "0.0.0",
-      "dependencies": {
-        "@tuvren/core": "workspace:*",
-        "@tuvren/runtime-api": "workspace:*",
-      },
-    },
-    "boundaries/providers/implementations/typescript/bridge-ai-sdk": {
-      "name": "@tuvren/provider-bridge-ai-sdk",
-      "version": "0.0.0",
-      "dependencies": {
-        "@ai-sdk/provider": "3.0.8",
-        "@tuvren/provider-api": "workspace:*",
-        "ai": "6.0.142",
-        "ajv": "8.18.0",
-      },
-      "devDependencies": {
-        "@tuvren/driver-react": "workspace:*",
-        "@tuvren/provider-testkit": "workspace:*",
-        "@tuvren/runtime": "workspace:*",
-        "@types/json-schema": "^7.0.15",
-      },
-      "peerDependencies": {
-        "@tuvren/core": "workspace:*",
-      },
-    },
-    "boundaries/providers/implementations/typescript/conformance-runner": {
-      "name": "@tuvren/providers-typescript-conformance-runner",
-      "version": "0.0.0",
-      "dependencies": {
-        "@ai-sdk/provider": "3.0.8",
-        "@tuvren/backend-memory": "workspace:*",
-        "@tuvren/core-types": "workspace:*",
-        "@tuvren/kernel-runtime": "workspace:*",
-        "@tuvren/provider-bridge-ai-sdk": "workspace:*",
-        "@tuvren/provider-testkit": "workspace:*",
-        "@tuvren/runtime": "workspace:*",
-      },
-    },
     "boundaries/providers/implementations/typescript/mcp-client": {
       "name": "@tuvren/mcp-client",
       "version": "0.0.0",
@@ -207,18 +167,6 @@
       "peerDependencies": {
         "@tuvren/core": "workspace:*",
         "@tuvren/sdk": "workspace:*",
-      },
-    },
-    "boundaries/providers/implementations/typescript/testkit": {
-      "name": "@tuvren/provider-testkit",
-      "version": "0.0.0",
-      "dependencies": {
-        "@modelcontextprotocol/sdk": "1.29.0",
-        "@modelcontextprotocol/server-everything": "2026.1.26",
-        "@tuvren/core": "workspace:*",
-        "@tuvren/provider-api": "workspace:*",
-        "ajv": "8.18.0",
-        "zod": "4.4.3",
       },
     },
     "typescript/conformance-runner": {
@@ -330,6 +278,58 @@
         "@tuvren/core-types": "workspace:*",
         "@tuvren/kernel-protocol": "workspace:*",
         "ajv": "8.18.0",
+      },
+    },
+    "typescript/providers/bridge-ai-sdk": {
+      "name": "@tuvren/provider-bridge-ai-sdk",
+      "version": "0.0.0",
+      "dependencies": {
+        "@ai-sdk/provider": "3.0.8",
+        "@tuvren/provider-api": "workspace:*",
+        "ai": "6.0.142",
+        "ajv": "8.18.0",
+      },
+      "devDependencies": {
+        "@tuvren/driver-react": "workspace:*",
+        "@tuvren/provider-testkit": "workspace:*",
+        "@tuvren/runtime": "workspace:*",
+        "@types/json-schema": "^7.0.15",
+      },
+      "peerDependencies": {
+        "@tuvren/core": "workspace:*",
+      },
+    },
+    "typescript/providers/conformance-runner": {
+      "name": "@tuvren/providers-typescript-conformance-runner",
+      "version": "0.0.0",
+      "dependencies": {
+        "@ai-sdk/provider": "3.0.8",
+        "@tuvren/backend-memory": "workspace:*",
+        "@tuvren/core-types": "workspace:*",
+        "@tuvren/kernel-runtime": "workspace:*",
+        "@tuvren/provider-bridge-ai-sdk": "workspace:*",
+        "@tuvren/provider-testkit": "workspace:*",
+        "@tuvren/runtime": "workspace:*",
+      },
+    },
+    "typescript/providers/provider-api": {
+      "name": "@tuvren/provider-api",
+      "version": "0.0.0",
+      "dependencies": {
+        "@tuvren/core": "workspace:*",
+        "@tuvren/runtime-api": "workspace:*",
+      },
+    },
+    "typescript/providers/testkit": {
+      "name": "@tuvren/provider-testkit",
+      "version": "0.0.0",
+      "dependencies": {
+        "@modelcontextprotocol/sdk": "1.29.0",
+        "@modelcontextprotocol/server-everything": "2026.1.26",
+        "@tuvren/core": "workspace:*",
+        "@tuvren/provider-api": "workspace:*",
+        "ajv": "8.18.0",
+        "zod": "4.4.3",
       },
     },
     "typescript/runtime": {
@@ -968,13 +968,13 @@
 
     "@tuvren/mcp-client": ["@tuvren/mcp-client@workspace:boundaries/providers/implementations/typescript/mcp-client"],
 
-    "@tuvren/provider-api": ["@tuvren/provider-api@workspace:boundaries/providers/contracts/provider-api/implementations/typescript"],
+    "@tuvren/provider-api": ["@tuvren/provider-api@workspace:typescript/providers/provider-api"],
 
-    "@tuvren/provider-bridge-ai-sdk": ["@tuvren/provider-bridge-ai-sdk@workspace:boundaries/providers/implementations/typescript/bridge-ai-sdk"],
+    "@tuvren/provider-bridge-ai-sdk": ["@tuvren/provider-bridge-ai-sdk@workspace:typescript/providers/bridge-ai-sdk"],
 
-    "@tuvren/provider-testkit": ["@tuvren/provider-testkit@workspace:boundaries/providers/implementations/typescript/testkit"],
+    "@tuvren/provider-testkit": ["@tuvren/provider-testkit@workspace:typescript/providers/testkit"],
 
-    "@tuvren/providers-typescript-conformance-runner": ["@tuvren/providers-typescript-conformance-runner@workspace:boundaries/providers/implementations/typescript/conformance-runner"],
+    "@tuvren/providers-typescript-conformance-runner": ["@tuvren/providers-typescript-conformance-runner@workspace:typescript/providers/conformance-runner"],
 
     "@tuvren/repl-host": ["@tuvren/repl-host@workspace:boundaries/hosts/implementations/typescript/repl"],
 

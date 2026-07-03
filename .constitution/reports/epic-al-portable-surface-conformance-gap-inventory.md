@@ -112,7 +112,7 @@ not silently grow into a portability obligation.
 ### 4.2 TypeScript AI SDK bridge implementation (`@tuvren/provider-bridge-ai-sdk`)
 
 - Classification: `exception:ai-sdk-bridge`
-- Implementation root: `boundaries/providers/implementations/typescript/bridge-ai-sdk`
+- Implementation root: `typescript/providers/bridge-ai-sdk`
 - Why allowed: The portable contract is `tuvren.providers.provider-api`. The AI SDK
   bridge is the TypeScript-line projection of that contract onto `LanguageModelV3`
   / `ProviderV3`. Tasks.md §1 names it explicitly as an implementation-specific

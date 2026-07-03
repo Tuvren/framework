@@ -1,0 +1,59 @@
+{
+  "name": "providers-testkit",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "root": "typescript/providers/testkit",
+  "sourceRoot": "typescript/providers/testkit/src",
+  "projectType": "library",
+  "tags": ["boundary:providers", "layer:testkit"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["^build"],
+      "options": {
+        "cwd": "typescript/providers/testkit",
+        "command": "bunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false"
+      }
+    },
+    "conformance": {
+      "executor": "nx:run-commands",
+      "inputs": [
+        "default",
+        "^production",
+        "{workspaceRoot}/spec/conformance/providers/**/*"
+      ],
+      "options": {
+        "cwd": "typescript/providers/testkit",
+        "command": "bun test ./test/provider-conformance.test.ts"
+      }
+    },
+    "exports-smoke": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "options": {
+        "cwd": "typescript/providers/testkit",
+        "command": "bun test ./smoke/package-exports.ts"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bunx --bun @biomejs/biome check typescript/providers/testkit spec/conformance/providers"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "typescript/providers/testkit",
+        "command": "bun test"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bun tools/scripts/typecheck-project.ts typescript/providers/testkit"
+      }
+    }
+  }
+}

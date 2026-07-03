@@ -1,0 +1,69 @@
+{
+  "name": "provider-api",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "root": "typescript/providers/provider-api",
+  "sourceRoot": "typescript/providers/provider-api/src",
+  "projectType": "library",
+  "tags": ["boundary:providers", "layer:contract"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["^build"],
+      "options": {
+        "cwd": "typescript/providers/provider-api",
+        "command": "bunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false"
+      }
+    },
+    "codegen": {
+      "executor": "nx:run-commands",
+      "outputs": [
+        "{workspaceRoot}/spec/providers/artifacts/json-schema",
+        "{workspaceRoot}/spec/providers/artifacts/openapi"
+      ],
+      "options": {
+        "cwd": "boundaries/providers/contracts/provider-api",
+        "command": "bunx --bun tsp compile ./spec/typespec --pretty false && bunx --bun @biomejs/biome check --write ./artifacts"
+      },
+      "inputs": [
+        "default",
+        "^production",
+        "{workspaceRoot}/spec/providers/**/*",
+        "{workspaceRoot}/spec/providers/artifacts/**/*"
+      ]
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "typescript/providers/provider-api",
+        "command": "bun test"
+      },
+      "inputs": [
+        "default",
+        "^production",
+        "{workspaceRoot}/spec/providers/artifacts/**/*"
+      ]
+    },
+    "exports-smoke": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "options": {
+        "cwd": "typescript/providers/provider-api",
+        "command": "bun test ./smoke/package-exports.ts"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bunx --bun @biomejs/biome check typescript/providers/provider-api"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bun tools/scripts/typecheck-project.ts typescript/providers/provider-api"
+      }
+    }
+  }
+}

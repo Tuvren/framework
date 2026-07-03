@@ -52,13 +52,12 @@ const PORTABLE_PACKAGE_SURFACES: readonly PortablePackageSurface[] = [
   {
     classification: "Bun-and-Node validated",
     packageName: "@tuvren/provider-api",
-    packageRoot:
-      "boundaries/providers/contracts/provider-api/implementations/typescript",
+    packageRoot: "typescript/providers/provider-api",
   },
   {
     classification: "Bun-and-Node validated",
     packageName: "@tuvren/provider-testkit",
-    packageRoot: "boundaries/providers/implementations/typescript/testkit",
+    packageRoot: "typescript/providers/testkit",
   },
   {
     classification: "Bun-and-Node validated",
@@ -124,8 +123,7 @@ const PORTABLE_PACKAGE_SURFACES: readonly PortablePackageSurface[] = [
   {
     classification: "Bun-and-Node validated",
     packageName: "@tuvren/provider-bridge-ai-sdk",
-    packageRoot:
-      "boundaries/providers/implementations/typescript/bridge-ai-sdk",
+    packageRoot: "typescript/providers/bridge-ai-sdk",
   },
   {
     classification: "Bun-and-Node validated",

@@ -14,7 +14,7 @@
         "../../../../../typescript/kernel/backends/sqlite/dist/index.d.ts"
       ],
       "@tuvren/provider-bridge-ai-sdk": [
-        "../../../../providers/implementations/typescript/bridge-ai-sdk/dist/index.d.ts"
+        "../../../../../typescript/providers/bridge-ai-sdk/dist/index.d.ts"
       ],
       "@tuvren/runtime": ["../../../../../typescript/runtime/dist/index.d.ts"],
       "@tuvren/stream-agui": [

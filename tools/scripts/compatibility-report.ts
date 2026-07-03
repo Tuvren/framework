@@ -343,12 +343,12 @@ const CONFORMANCE_RUNNERS: readonly ConformanceRunner[] = [
   },
   {
     adapterManifestPath:
-      "boundaries/providers/implementations/typescript/conformance-adapter/adapter.json",
+      "typescript/providers/conformance-adapter/adapter.json",
     command: [
       "bun",
       "tools/conformance/runner/run.ts",
       "--adapter",
-      "boundaries/providers/implementations/typescript/conformance-adapter/adapter.json",
+      "typescript/providers/conformance-adapter/adapter.json",
     ],
     implementationId: "typescript-providers",
     language: "typescript",

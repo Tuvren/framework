@@ -32,7 +32,7 @@
       "path": "../../../../../typescript/kernel/backends/sqlite/tsconfig.lib.json"
     },
     {
-      "path": "../../../../providers/implementations/typescript/bridge-ai-sdk/tsconfig.lib.json"
+      "path": "../../../../../typescript/providers/bridge-ai-sdk/tsconfig.lib.json"
     }
   ]
 }

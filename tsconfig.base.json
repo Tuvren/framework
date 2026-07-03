@@ -49,10 +49,10 @@
         "./boundaries/framework/contracts/driver-api/implementations/typescript/src/index.ts"
       ],
       "@tuvren/provider-api": [
-        "./boundaries/providers/contracts/provider-api/implementations/typescript/src/index.ts"
+        "./typescript/providers/provider-api/src/index.ts"
       ],
       "@tuvren/provider-testkit": [
-        "./boundaries/providers/implementations/typescript/testkit/src/index.ts"
+        "./typescript/providers/testkit/src/index.ts"
       ],
       "@tuvren/mcp-client": [
         "./boundaries/providers/implementations/typescript/mcp-client/src/index.ts"

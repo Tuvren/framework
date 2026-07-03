@@ -1,0 +1,29 @@
+{
+  "adapterId": "typescript-providers",
+  "implementationId": "typescript-providers",
+  "language": "typescript",
+  "boundary": "providers",
+  "protocol": {
+    "name": "tuvren.conformance-adapter",
+    "version": "0.1.0",
+    "transport": "json-rpc-2.0-stdio"
+  },
+  "command": ["bun", "typescript/providers/conformance-adapter/src/host.ts"],
+  "capabilities": [
+    "providers.provider-api",
+    "providers.ai-sdk-bridge",
+    "providers.framework-owned-approval-boundary",
+    "providers.framework-owned-tool-execution",
+    "providers.mcp-client",
+    "providers.rejects-native-strict-structured-output",
+    "providers.provider-native-execution-class",
+    "providers.provider-mediated-execution-class",
+    "providers.conversation-state-ownership"
+  ],
+  "authorityPackets": [
+    "spec/providers/authority-packet.json",
+    "boundaries/providers/contracts/mcp/spec/authority-packet.json"
+  ],
+  "suiteId": "tuvren.providers.provider-api",
+  "suiteVersion": "0.1.0"
+}

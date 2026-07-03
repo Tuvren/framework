@@ -44,7 +44,7 @@
         "../../../../framework/implementations/typescript/drivers/react/src/index.ts"
       ],
       "@tuvren/provider-bridge-ai-sdk": [
-        "../../../../providers/implementations/typescript/bridge-ai-sdk/src/index.ts"
+        "../../../../../typescript/providers/bridge-ai-sdk/src/index.ts"
       ],
       "@tuvren/repl-host": ["./src/index.ts"],
       "@tuvren/runtime": ["../../../../../typescript/runtime/src/index.ts"],
@@ -72,6 +72,6 @@
     "../../../../framework/implementations/typescript/stream-core/src/**/*.ts",
     "../../../../framework/implementations/typescript/stream-sse/src/**/*.ts",
     "../../../../framework/implementations/typescript/stream-agui/src/**/*.ts",
-    "../../../../providers/implementations/typescript/bridge-ai-sdk/src/**/*.ts"
+    "../../../../../typescript/providers/bridge-ai-sdk/src/**/*.ts"
   ]
 }

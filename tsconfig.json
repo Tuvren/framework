@@ -27,7 +27,7 @@
       "path": "./boundaries/framework/contracts/event-stream/implementations/typescript"
     },
     {
-      "path": "./boundaries/providers/contracts/provider-api/implementations/typescript"
+      "path": "./typescript/providers/provider-api"
     },
     {
       "path": "./boundaries/framework/contracts/runtime-api/implementations/typescript"
@@ -39,7 +39,7 @@
       "path": "./typescript/kernel/backends/postgres"
     },
     {
-      "path": "./boundaries/providers/implementations/typescript/bridge-ai-sdk"
+      "path": "./typescript/providers/bridge-ai-sdk"
     },
     {
       "path": "./typescript/kernel/backends/sqlite"
@@ -66,7 +66,7 @@
       "path": "./typescript/testkit"
     },
     {
-      "path": "./boundaries/providers/implementations/typescript/testkit"
+      "path": "./typescript/providers/testkit"
     },
     {
       "path": "./boundaries/hosts/implementations/typescript/repl"
