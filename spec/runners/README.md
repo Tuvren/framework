@@ -32,9 +32,9 @@ this port deliberately retain their driver-era names as of 87-M6.1b; the
 driver→runner identity rename lands at 87-M6.4. Do not rename any
 identity or file based on this README.
 
-The ReAct execution-model implementation has not moved yet: it remains
-at `boundaries/framework/implementations/typescript/drivers/react` until
-it relocates at 87-M6.2.
+The ReAct execution-model implementation lives at
+`typescript/runners/react` (`@tuvren/runner-react`, migrated as a runner
+at 87-M6.2).
 
 This is a pointer, not an oracle: cross-language semantic truth lives in
 the referenced authority packets, generated artifacts, and conformance

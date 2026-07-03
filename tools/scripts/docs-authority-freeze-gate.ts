@@ -1417,7 +1417,7 @@ function classifyFrameworkIntegrationSection(
   if (isSectionMajor(section, "5")) {
     return implementationLocalDecision(
       "framework integration contracts",
-      "typescript/runtime/test/runtime-core.foundation.test.ts; boundaries/framework/implementations/typescript/drivers/react/test/react-driver.test.ts",
+      "typescript/runtime/test/runtime-core.foundation.test.ts; typescript/runners/react/test/react-runner.test.ts",
       "The local TypeScript contract implementations are not cross-language authority until selected by an authority packet and shared plan."
     );
   }
