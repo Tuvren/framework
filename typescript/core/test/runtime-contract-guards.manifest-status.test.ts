@@ -14,11 +14,15 @@
  * limitations under the License.
  */
 
-import { describe, expect, test } from "bun:test";
-import { isExecutionStatus } from "../src/index.ts";
-import { frameworkContractFixtures } from "./runtime-api-fixtures.js";
+// Ported from the retired @tuvren/runtime-api shim (epic 87, M9.2). The shim
+// re-exported this vocabulary from @tuvren/core/execution without adding
+// behavior; only the import sources changed below.
 
-describe("runtime-api manifest and status contracts", () => {
+import { describe, expect, test } from "bun:test";
+import { isExecutionStatus } from "@tuvren/core/execution";
+import { frameworkContractFixtures } from "./runtime-contract-guards-fixtures.js";
+
+describe("runtime-contract-guards manifest and status contracts", () => {
   test("accepts manifests with multiple user messages in a single turn", () => {
     expect(
       isExecutionStatus({

@@ -33,14 +33,6 @@
         "zod": "4.4.3",
       },
     },
-    "boundaries/framework/contracts/runtime-api/implementations/typescript": {
-      "name": "@tuvren/runtime-api",
-      "version": "0.0.0",
-      "dependencies": {
-        "@tuvren/core": "workspace:*",
-        "@tuvren/core-types": "workspace:*",
-      },
-    },
     "boundaries/hosts/implementations/typescript/repl": {
       "name": "@tuvren/repl-host",
       "version": "0.0.0",
@@ -211,7 +203,6 @@
       "version": "0.0.0",
       "dependencies": {
         "@tuvren/core": "workspace:*",
-        "@tuvren/runtime-api": "workspace:*",
       },
     },
     "typescript/providers/testkit": {
@@ -952,8 +943,6 @@
     "@tuvren/runner-react": ["@tuvren/runner-react@workspace:typescript/runners/react"],
 
     "@tuvren/runtime": ["@tuvren/runtime@workspace:typescript/runtime"],
-
-    "@tuvren/runtime-api": ["@tuvren/runtime-api@workspace:boundaries/framework/contracts/runtime-api/implementations/typescript"],
 
     "@tuvren/sdk": ["@tuvren/sdk@workspace:typescript/sdk"],
 

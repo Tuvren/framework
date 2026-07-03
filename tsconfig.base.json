@@ -21,24 +21,6 @@
       "@tuvren/sdk": ["./typescript/sdk/src/index.ts"],
       "@tuvren/core-types": ["./typescript/core-types/src/index.ts"],
       "@tuvren/kernel-protocol": ["./typescript/kernel/protocol/src/index.ts"],
-      "@tuvren/runtime-api": [
-        "./boundaries/framework/contracts/runtime-api/implementations/typescript/src/index.ts"
-      ],
-      "@tuvren/runtime-api/events": [
-        "./boundaries/framework/contracts/runtime-api/implementations/typescript/src/events.ts"
-      ],
-      "@tuvren/runtime-api/execution": [
-        "./boundaries/framework/contracts/runtime-api/implementations/typescript/src/execution.ts"
-      ],
-      "@tuvren/runtime-api/orchestration": [
-        "./boundaries/framework/contracts/runtime-api/implementations/typescript/src/orchestration.ts"
-      ],
-      "@tuvren/runtime-api/provider": [
-        "./boundaries/framework/contracts/runtime-api/implementations/typescript/src/provider.ts"
-      ],
-      "@tuvren/runtime-api/tools": [
-        "./boundaries/framework/contracts/runtime-api/implementations/typescript/src/tools.ts"
-      ],
       "@tuvren/provider-api": [
         "./typescript/providers/provider-api/src/index.ts"
       ],

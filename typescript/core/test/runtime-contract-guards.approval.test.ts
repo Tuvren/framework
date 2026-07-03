@@ -14,19 +14,23 @@
  * limitations under the License.
  */
 
+// Ported from the retired @tuvren/runtime-api shim (epic 87, M9.2). The shim
+// re-exported this vocabulary from @tuvren/core/{tools,messages,events}
+// without adding behavior; only the import sources changed below.
+
 import { describe, expect, test } from "bun:test";
+import { isTuvrenStreamEvent } from "@tuvren/core/events";
+import { isTuvrenMessage } from "@tuvren/core/messages";
 import {
   assertApprovalResponse,
   assertApprovalResponseForRequest,
   isApprovalRequest,
   isApprovalResponse,
   isApprovalResponseForRequest,
-  isTuvrenMessage,
-  isTuvrenStreamEvent,
-} from "../src/index.ts";
-import { frameworkContractFixtures } from "./runtime-api-fixtures.js";
+} from "@tuvren/core/tools";
+import { frameworkContractFixtures } from "./runtime-contract-guards-fixtures.js";
 
-describe("runtime-api approval contracts", () => {
+describe("runtime-contract-guards approval contracts", () => {
   test("rejects approval requests with incomplete tool results", () => {
     expect(
       isApprovalRequest({

@@ -14,22 +14,13 @@
       "@tuvren/core/messages": ["../../core/dist/messages/index.d.ts"],
       "@tuvren/core/provider": ["../../core/dist/provider/index.d.ts"],
       "@tuvren/core/tools": ["../../core/dist/tools/index.d.ts"],
-      "@tuvren/provider-api": ["./src/index.ts"],
-      "@tuvren/runtime-api": [
-        "../../../boundaries/framework/contracts/runtime-api/implementations/typescript/dist/index.d.ts"
-      ],
-      "@tuvren/runtime-api/provider": [
-        "../../../boundaries/framework/contracts/runtime-api/implementations/typescript/dist/provider.d.ts"
-      ]
+      "@tuvren/provider-api": ["./src/index.ts"]
     }
   },
   "include": ["src/**/*.ts"],
   "references": [
     {
       "path": "../../core/tsconfig.lib.json"
-    },
-    {
-      "path": "../../../boundaries/framework/contracts/runtime-api/implementations/typescript/tsconfig.lib.json"
     }
   ]
 }

@@ -14,10 +14,14 @@
  * limitations under the License.
  */
 
-import { describe, expect, test } from "bun:test";
-import { isTuvrenToolDefinition } from "../src/index.ts";
+// Ported from the retired @tuvren/runtime-api shim (epic 87, M9.2). The shim
+// re-exported this vocabulary from @tuvren/core/tools without adding
+// behavior; only the import source changed below.
 
-describe("runtime-api tool definition contracts", () => {
+import { describe, expect, test } from "bun:test";
+import { isTuvrenToolDefinition } from "@tuvren/core/tools";
+
+describe("runtime-contract-guards tool definition contracts", () => {
   test("rejects tool definitions with invalid schemas", () => {
     expect(
       isTuvrenToolDefinition({

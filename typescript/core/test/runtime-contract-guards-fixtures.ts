@@ -15,6 +15,11 @@
  * limitations under the License.
  */
 
+// Ported from the retired @tuvren/runtime-api shim (epic 87, M9.2). The shim
+// was a pure re-export barrel over these @tuvren/core subpaths; this fixture
+// module already imported @tuvren/core directly (never the shim itself), so
+// the move is byte-identical except for this provenance note.
+
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type {
   AgentConfig,

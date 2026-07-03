@@ -24,21 +24,6 @@
       "@tuvren/framework-testkit": ["../../testkit/src/index.ts"],
       "@tuvren/kernel-runtime": ["../../kernel/runtime/src/index.ts"],
       "@tuvren/provider-api": ["../../providers/provider-api/src/index.ts"],
-      "@tuvren/runtime-api": [
-        "../../../boundaries/framework/contracts/runtime-api/implementations/typescript/src/index.ts"
-      ],
-      "@tuvren/runtime-api/events": [
-        "../../../boundaries/framework/contracts/runtime-api/implementations/typescript/src/events.ts"
-      ],
-      "@tuvren/runtime-api/execution": [
-        "../../../boundaries/framework/contracts/runtime-api/implementations/typescript/src/execution.ts"
-      ],
-      "@tuvren/runtime-api/provider": [
-        "../../../boundaries/framework/contracts/runtime-api/implementations/typescript/src/provider.ts"
-      ],
-      "@tuvren/runtime-api/tools": [
-        "../../../boundaries/framework/contracts/runtime-api/implementations/typescript/src/tools.ts"
-      ],
       "@tuvren/stream-agui": ["../../streaming/agui/src/index.ts"],
       "@tuvren/stream-core": ["../../streaming/core/src/index.ts"],
       "@tuvren/stream-sse": ["../../streaming/sse/src/index.ts"]
@@ -49,7 +34,6 @@
     "bench/**/*.ts",
     "src/**/*.ts",
     "test/**/*.ts",
-    "../../../boundaries/framework/contracts/runtime-api/implementations/typescript/src/**/*.ts",
     "../../providers/provider-api/src/**/*.ts",
     "../../core-types/src/**/*.ts",
     "../../testkit/src/**/*.ts",

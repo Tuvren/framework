@@ -14,14 +14,16 @@
  * limitations under the License.
  */
 
-import { describe, expect, test } from "bun:test";
-import {
-  isProviderStreamChunk,
-  isTuvrenMessage,
-  isTuvrenStreamEvent,
-} from "../src/index.ts";
+// Ported from the retired @tuvren/runtime-api shim (epic 87, M9.2). The shim
+// re-exported this vocabulary from @tuvren/core/{provider,messages,events}
+// without adding behavior; only the import sources changed below.
 
-describe("runtime-api validation contracts", () => {
+import { describe, expect, test } from "bun:test";
+import { isTuvrenStreamEvent } from "@tuvren/core/events";
+import { isTuvrenMessage } from "@tuvren/core/messages";
+import { isProviderStreamChunk } from "@tuvren/core/provider";
+
+describe("runtime-contract-guards validation contracts", () => {
   test("rejects provider chunks with mixed-variant payload fields", () => {
     expect(
       isProviderStreamChunk({

@@ -22,25 +22,7 @@
       "@tuvren/runtime": ["../../runtime/src/index.ts"],
       "@tuvren/provider-api": ["../provider-api/src/index.ts"],
       "@tuvren/provider-bridge-ai-sdk": ["../bridge-ai-sdk/src/index.ts"],
-      "@tuvren/provider-testkit": ["../testkit/src/index.ts"],
-      "@tuvren/runtime-api": [
-        "../../../boundaries/framework/contracts/runtime-api/implementations/typescript/src/index.ts"
-      ],
-      "@tuvren/runtime-api/events": [
-        "../../../boundaries/framework/contracts/runtime-api/implementations/typescript/src/events.ts"
-      ],
-      "@tuvren/runtime-api/execution": [
-        "../../../boundaries/framework/contracts/runtime-api/implementations/typescript/src/execution.ts"
-      ],
-      "@tuvren/runtime-api/orchestration": [
-        "../../../boundaries/framework/contracts/runtime-api/implementations/typescript/src/orchestration.ts"
-      ],
-      "@tuvren/runtime-api/provider": [
-        "../../../boundaries/framework/contracts/runtime-api/implementations/typescript/src/provider.ts"
-      ],
-      "@tuvren/runtime-api/tools": [
-        "../../../boundaries/framework/contracts/runtime-api/implementations/typescript/src/tools.ts"
-      ]
+      "@tuvren/provider-testkit": ["../testkit/src/index.ts"]
     },
     "rootDir": "../../..",
     "types": ["bun"]

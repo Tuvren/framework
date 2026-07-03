@@ -291,7 +291,7 @@ describe("KRT-AO004 getTurnHistory", () => {
     );
 
     // The root node has no previous — only one turn node to walk.
-    const snapshots: import("@tuvren/runtime-api").TurnSnapshot[] = [];
+    const snapshots: import("@tuvren/core/execution").TurnSnapshot[] = [];
     for await (const snap of getTurnHistory(
       kernel,
       { threadId: thread.threadId, branchId: thread.branchId },
@@ -313,7 +313,7 @@ describe("KRT-AO004 getTurnHistory", () => {
       "b1"
     );
 
-    const snapshots: import("@tuvren/runtime-api").TurnSnapshot[] = [];
+    const snapshots: import("@tuvren/core/execution").TurnSnapshot[] = [];
     for await (const snap of getTurnHistory(
       kernel,
       { threadId: thread.threadId, branchId: thread.branchId },
@@ -442,7 +442,7 @@ describe("TuvrenRuntime durable-read surface wiring", () => {
 
   test("getTurnHistory is accessible on the assembled runtime", async () => {
     const thread = await runtime.createThread({});
-    const snapshots: import("@tuvren/runtime-api").TurnSnapshot[] = [];
+    const snapshots: import("@tuvren/core/execution").TurnSnapshot[] = [];
     for await (const snap of runtime.getTurnHistory({
       threadId: thread.threadId,
       branchId: thread.branchId,

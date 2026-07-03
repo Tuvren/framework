@@ -14,9 +14,6 @@
       "path": "../sdk/tsconfig.lib.json"
     },
     {
-      "path": "../../boundaries/framework/contracts/runtime-api/implementations/typescript/tsconfig.lib.json"
-    },
-    {
       "path": "../kernel/runtime/tsconfig.lib.json"
     },
     {

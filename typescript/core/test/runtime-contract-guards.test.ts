@@ -14,47 +14,54 @@
  * limitations under the License.
  */
 
+// Ported from the retired @tuvren/runtime-api shim's `runtime-api.test.ts`
+// (epic 87, M9.2). Only the tests that exercise real @tuvren/core guard
+// behavior are ported; two classes of test were deliberately NOT ported
+// (recorded in MIGRATION_INVENTORY.md, not authored here as new coverage):
+//   - "exposes narrow runtime-api subpaths without changing contract
+//     behavior" and "accepts file.done stream events through the focused
+//     events surface" (subpath variant) asserted that the shim's OWN
+//     `./events`, `./execution`, `./orchestration`, `./provider`, `./tools`
+//     subpath barrels behaved identically to its root barrel — that is
+//     shim-internal structural coverage that dies with the shim, not
+//     coverage of @tuvren/core. The file.done assertion itself (a real
+//     assertTuvrenStreamEvent behavior) is preserved below as a plain test.
+//   - "exposes the orchestration contract surface through canonical
+//     fixtures" and "exposes a host-facing type surface that composes with
+//     the shared fixtures" exercised the local hand-written mock
+//     (`frameworkContractFixtures.orchestrationRuntime` / `.runtime`), which
+//     implements TuvrenRuntime/OrchestrationRuntime by hand for the test
+//     harness — the assertions verify the mock does what its own code says,
+//     not any real @tuvren/core logic, so they carry no product coverage.
+
 import { describe, expect, test } from "bun:test";
 import {
-  assertTuvrenStreamEvent as assertKrakenStreamEventFromSubpath,
-  type TuvrenStreamEvent as KrakenStreamEventFromSubpath,
-} from "../src/events.ts";
+  assertTuvrenStreamEvent,
+  isTuvrenStreamEvent,
+} from "@tuvren/core/events";
 import {
-  assertExecutionStatus as assertExecutionStatusFromSubpath,
-  type ExecutionStatus as ExecutionStatusFromSubpath,
-} from "../src/execution.ts";
-import {
-  type AgentConfig,
-  assertApprovalRequest,
   assertContextManifest,
   assertExecutionStatus,
+  isExecutionStatus,
+} from "@tuvren/core/execution";
+import { assertTuvrenMessage, isTuvrenMessage } from "@tuvren/core/messages";
+import {
   assertProviderStreamChunk,
-  assertTuvrenMessage,
   assertTuvrenModelResponse,
-  assertTuvrenStreamEvent,
+  isProviderStreamChunk,
+} from "@tuvren/core/provider";
+import {
+  assertApprovalRequest,
   assertTuvrenToolDefinition,
   isApprovalRequest,
-  isExecutionStatus,
-  isProviderStreamChunk,
-  isTuvrenMessage,
-  isTuvrenStreamEvent,
   isTuvrenToolDefinition,
-} from "../src/index.ts";
-import type { OrchestrationHandle as OrchestrationHandleFromSubpath } from "../src/orchestration.ts";
-import {
-  assertProviderStreamChunk as assertProviderStreamChunkFromSubpath,
-  type ProviderStreamChunk as ProviderStreamChunkFromSubpath,
-} from "../src/provider.ts";
-import {
-  type ApprovalRequest as ApprovalRequestFromSubpath,
-  assertApprovalRequest as assertApprovalRequestFromSubpath,
-} from "../src/tools.ts";
+} from "@tuvren/core/tools";
 import {
   frameworkContractFixtures,
   invalidFrameworkContractFixtures,
-} from "./runtime-api-fixtures.js";
+} from "./runtime-contract-guards-fixtures.js";
 
-describe("runtime-api contracts", () => {
+describe("runtime-contract-guards contracts", () => {
   test("accepts the canonical framework fixtures", () => {
     expect(isTuvrenMessage(frameworkContractFixtures.assistantMessage)).toBe(
       true
@@ -109,59 +116,7 @@ describe("runtime-api contracts", () => {
     ).not.toThrow();
   });
 
-  test("exposes narrow runtime-api subpaths without changing contract behavior", () => {
-    const approvalRequest = {
-      completedResults: [],
-      toolCalls: [
-        {
-          callId: "call-1",
-          decisions: ["approve", "reject"],
-          input: { query: "status" },
-          message: "Approve this search?",
-          name: "search",
-        },
-      ],
-    } satisfies ApprovalRequestFromSubpath;
-    const streamEvent = {
-      messageId: "message-1",
-      text: "done",
-      timestamp: 1,
-      type: "text.done",
-    } satisfies KrakenStreamEventFromSubpath;
-    const providerChunk = {
-      finishReason: "stop",
-      type: "finish",
-    } satisfies ProviderStreamChunkFromSubpath;
-    const executionStatus = {
-      activeAgent: "primary",
-      iterationCount: 0,
-      phase: "running",
-    } satisfies ExecutionStatusFromSubpath;
-    const orchestrationHandle =
-      frameworkContractFixtures.orchestrationRuntime.executeTurn({
-        agent: "primary",
-        branchId: "branch_subpath",
-        signal: {
-          parts: [{ text: "Subpath orchestration", type: "text" }],
-        },
-        threadId: "thread_subpath",
-      }) satisfies OrchestrationHandleFromSubpath;
-
-    expect(() =>
-      assertApprovalRequestFromSubpath(approvalRequest)
-    ).not.toThrow();
-    expect(() => assertKrakenStreamEventFromSubpath(streamEvent)).not.toThrow();
-    expect(() =>
-      assertProviderStreamChunkFromSubpath(providerChunk)
-    ).not.toThrow();
-    expect(() =>
-      assertExecutionStatusFromSubpath(executionStatus)
-    ).not.toThrow();
-    expect(typeof orchestrationHandle.spawn).toBe("function");
-    expect(typeof orchestrationHandle.awaitResult).toBe("function");
-  });
-
-  test("accepts file.done stream events through the focused events surface", () => {
+  test("accepts file.done stream events", () => {
     const streamEvent = {
       data: new Uint8Array([1, 2, 3]),
       filename: "report.csv",
@@ -169,37 +124,9 @@ describe("runtime-api contracts", () => {
       messageId: "message-1",
       timestamp: 1,
       type: "file.done",
-    } satisfies KrakenStreamEventFromSubpath;
+    } as const;
 
-    expect(() => assertKrakenStreamEventFromSubpath(streamEvent)).not.toThrow();
-  });
-
-  test("exposes the orchestration contract surface through canonical fixtures", async () => {
-    const handle = frameworkContractFixtures.orchestrationRuntime.executeTurn({
-      agent: "primary",
-      branchId: "branch_main",
-      signal: {
-        parts: [{ text: "Start orchestration", type: "text" }],
-      },
-      threadId: "thread_main",
-    });
-    const resumedHandle = handle.resolveApproval({ decisions: [] });
-    const childHandle = handle.spawn({
-      agent: "worker",
-      signal: {
-        parts: [
-          {
-            data: { task: "summarize" },
-            name: "task",
-            type: "structured",
-          },
-        ],
-      },
-    });
-
-    expect(resumedHandle).not.toBe(handle);
-    expect((await childHandle.awaitResult()).status).toBe("completed");
-    expect((await resumedHandle.awaitResult()).status).toBe("completed");
+    expect(() => assertTuvrenStreamEvent(streamEvent)).not.toThrow();
   });
 
   test("rejects malformed contract values", () => {
@@ -257,14 +184,5 @@ describe("runtime-api contracts", () => {
         type: "tool_call_done",
       })
     ).toBe(false);
-  });
-
-  test("exposes a host-facing type surface that composes with the shared fixtures", () => {
-    const runtime = frameworkContractFixtures.runtime;
-    const config = frameworkContractFixtures.agentConfig satisfies AgentConfig;
-
-    expect(typeof runtime.executeTurn).toBe("function");
-    expect(config.name).toBe("primary");
-    expect(config.tools?.[0]?.name).toBe("search");
   });
 });

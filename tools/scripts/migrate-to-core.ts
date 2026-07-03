@@ -33,7 +33,6 @@ const EXCLUDE_DIR_NAMES = new Set([
 const EXCLUDE_SRC_PREFIXES = [
   "typescript/core/src",
   "typescript/core-types/src",
-  "boundaries/framework/contracts/runtime-api/implementations/typescript/src",
   "boundaries/framework/contracts/event-stream/implementations/typescript/src",
   "boundaries/framework/contracts/driver-api/implementations/typescript/src",
   // The codemod script itself

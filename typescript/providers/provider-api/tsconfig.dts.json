@@ -17,12 +17,6 @@
       "@tuvren/core/runner": ["../../core/dist/runner/index.d.ts"],
       "@tuvren/core/provider": ["../../core/dist/provider/index.d.ts"],
       "@tuvren/core/extensions": ["../../core/dist/extensions/index.d.ts"],
-      "@tuvren/runtime-api": [
-        "../../../boundaries/framework/contracts/runtime-api/implementations/typescript/dist/index.d.ts"
-      ],
-      "@tuvren/runtime-api/provider": [
-        "../../../boundaries/framework/contracts/runtime-api/implementations/typescript/dist/provider.d.ts"
-      ],
       "@tuvren/provider-api": ["./src/index.ts"]
     },
     "rootDir": "./src",

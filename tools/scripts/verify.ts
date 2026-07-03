@@ -83,7 +83,10 @@ export const WORKSPACE_TEST_PROJECTS: readonly string[] = [
   "backend-sqlite",
   "mcp-client",
   "provider-api",
-  "framework-runtime-api",
+  // framework-runtime-api (@tuvren/runtime-api) is gone entirely (deprecated
+  // shim retired at M9.2, successor @tuvren/core/{execution,events,messages,
+  // provider,tools}). Its dead test-lane entry had already been caught by
+  // the M3.1 coverage gate before the retirement.
   // Keep the kernel testkit in the repo-global test lane so boundary-owned
   // fixture drift cannot hide behind the narrower certification coverage.
   "kernel-testkit",
@@ -117,7 +120,6 @@ export const WORKSPACE_BUILD_PROJECTS: readonly string[] = [
   "provider-api",
   "providers-testkit",
   "providers-bridge-ai-sdk",
-  "framework-runtime-api",
   "framework-testkit",
   "framework-runtime",
   "runner-react",
@@ -133,7 +135,9 @@ export const WORKSPACE_EXPORT_SMOKE_PROJECTS: readonly string[] = [
   "kernel-testkit",
   // framework-event-stream (@tuvren/event-stream) is gone entirely
   // (deprecated shim retired at M8.1c, successor @tuvren/core/events).
-  "framework-runtime-api",
+  // framework-runtime-api (@tuvren/runtime-api) is gone entirely (deprecated
+  // shim retired at M9.2, successor @tuvren/core/{execution,events,messages,
+  // provider,tools}).
   "framework-runtime",
   "provider-api",
   "providers-testkit",

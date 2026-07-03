@@ -48,11 +48,20 @@ callables-extended,orchestration,batteries-included}.json` plan family,
 packet-owned by `tuvren.shared.core`) — this port only points at them, it
 does not restate or duplicate them.
 
-The TypeScript package implementation for `@tuvren/runtime-api` still
-lives at `boundaries/framework/contracts/runtime-api/implementations/typescript/`
-as of this milestone; it is a binding projection of the packet above, not
-authority, and its physical move to `typescript/host/...` is 87-M9.2
-scope, not this one.
+**87-M9.2 correction:** the TypeScript package implementation,
+`@tuvren/runtime-api` at `boundaries/framework/contracts/runtime-api/implementations/typescript/`,
+was **retired**, not moved to `typescript/host/...` as this milestone's
+earlier note anticipated. Measurement at M9.2 found the package was a pure
+re-export barrel over `@tuvren/core/{execution,events,messages,provider,
+tools}` with zero original definitions — the same shape as the retired
+`@tuvren/driver-api` (87-M6.1c) and `@tuvren/event-stream` (87-M8.1c)
+shims — so the M6.1c/M8.1c retirement pattern applies instead of a
+physical move: its 7 live type-position consumer imports were rewired to
+the matching `@tuvren/core/*` subpaths, its unique behavioral test
+coverage (guard functions with no other dedicated coverage) was ported to
+`typescript/core/test/runtime-contract-guards*.test.ts`, and the package
+tree plus this contract root were removed. See
+`MIGRATION_INVENTORY.md`'s M9.2 addendum for the full accounting.
 
 The reference host shell, `@tuvren/repl-host`, still lives at
 `boundaries/hosts/implementations/typescript/repl/` — it moves at 87-M9.3.

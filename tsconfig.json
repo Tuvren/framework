@@ -24,9 +24,6 @@
       "path": "./typescript/providers/provider-api"
     },
     {
-      "path": "./boundaries/framework/contracts/runtime-api/implementations/typescript"
-    },
-    {
       "path": "./typescript/kernel/backends/postgres"
     },
     {

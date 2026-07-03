@@ -16,12 +16,6 @@
       "@tuvren/core/provider": ["../../core/src/provider/index.ts"],
       "@tuvren/core/tools": ["../../core/src/tools/index.ts"],
       "@tuvren/framework-testkit": ["../../testkit/src/index.ts"],
-      "@tuvren/runtime-api": [
-        "../../../boundaries/framework/contracts/runtime-api/implementations/typescript/src/index.ts"
-      ],
-      "@tuvren/runtime-api/events": [
-        "../../../boundaries/framework/contracts/runtime-api/implementations/typescript/src/events.ts"
-      ],
       "@tuvren/stream-core": ["./src/index.ts"]
     },
     "types": ["bun"]
@@ -31,7 +25,6 @@
     "test/**/*.ts",
     "smoke/**/*.ts",
     "../../testkit/src/**/*.ts",
-    "../../../boundaries/framework/contracts/runtime-api/implementations/typescript/src/**/*.ts",
     "../../core-types/src/**/*.ts"
   ]
 }

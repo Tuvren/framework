@@ -70,12 +70,12 @@ export interface FrameworkAdapterRuntimeScenarioDependencies {
     record: Record<string, unknown>,
     property: string,
     path: string
-  ): import("@tuvren/runtime-api").TuvrenModelResponse[];
+  ): import("@tuvren/core/provider").TuvrenModelResponse[];
   readModelResponseProperty(
     record: Record<string, unknown>,
     property: string,
     path: string
-  ): import("@tuvren/runtime-api").TuvrenModelResponse;
+  ): import("@tuvren/core/provider").TuvrenModelResponse;
   readOperationScenario(
     input: unknown,
     operation: string
@@ -84,7 +84,7 @@ export interface FrameworkAdapterRuntimeScenarioDependencies {
     record: Record<string, unknown>,
     property: string,
     path: string
-  ): import("@tuvren/runtime-api").TuvrenPrompt;
+  ): import("@tuvren/core/provider").TuvrenPrompt;
   readProperty(
     record: Record<string, unknown>,
     property: string,
@@ -104,7 +104,7 @@ export interface FrameworkAdapterRuntimeScenarioDependencies {
     record: Record<string, unknown>,
     property: string,
     path: string
-  ): import("@tuvren/runtime-api").StructuredOutputRequest;
+  ): import("@tuvren/core/provider").StructuredOutputRequest;
   readScenarioToolCall(
     record: Record<string, unknown>,
     path: string
