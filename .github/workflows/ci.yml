@@ -51,11 +51,10 @@
 #   1. DeterminateSystems/nix-installer-action installs Nix itself.
 #   2. `nix profile install nixpkgs#devenv` installs the devenv CLI once Nix
 #      is present, avoiding a second marketplace Action just for devenv.
-# The nix-installer-action version is pinned by major only; this authoring
-# session has no network access to confirm the current marketplace release
-# tag, so treat the pin as a best-effort placeholder to be confirmed on the
-# first live run (see the "could not verify locally" list this task's
-# report calls out, and MIGRATION_INVENTORY.md's M10.2 addendum).
+# Both actions are pinned by major version, confirmed current against the
+# GitHub releases API at authoring time (87-M10.2): checkout@v7,
+# nix-installer-action@v22. Provisioning itself validated green on this
+# workflow's first live run (28674899850).
 #
 # ── .bazelignore ─────────────────────────────────────────────────────────—
 # `.bazelignore` (repo root) excludes `.devenv`. Measured while authoring
@@ -121,6 +120,19 @@ jobs:
           devenv shell -- bash -c '
             set -euo pipefail
             bun install --frozen-lockfile
+            # Cold-start bootstrap (measured on this workflow first live
+            # run, 28674899850): the kernel-interop generated bindings at
+            # typescript/runtime/src/lib/generated/kernel-interop are
+            # gitignored by design, and verify runs its authority-packet
+            # and guardrails freshness gates BEFORE its own interop-codegen
+            # phase — so a fresh checkout fails those gates on the missing
+            # artifact. The root package.json codegen script cannot serve
+            # as the bootstrap either: it runs the very validators that fail
+            # cold before it generates anything. Generating the one missing
+            # artifact family directly is the minimal honest bootstrap; the
+            # verify-phase-ordering question is recorded as a follow-up in
+            # MIGRATION_INVENTORY.md (M10.2 addendum).
+            bun run nx run kernel-interop-grpc:codegen
             bun run services:up
             bun run verify
           '
