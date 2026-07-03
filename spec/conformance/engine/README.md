@@ -12,11 +12,11 @@ Layout follows the kernel precedent (`spec/conformance/kernel/`):
 - `scenarios/` — `runtime-api-scenarios.json`
 
 Three of the plans (`callables-extended`, `lifecycle-extended`,
-`orchestration`) were originally scaffolded by
-`tools/scripts/conformance/generate-framework-plans.ts`, but that script
-has drifted behind the committed content (measured at 87-M3.4 — see the
-warning in its header). The committed JSON is authority; do not
-regenerate over it.
+`orchestration`) were originally scaffolded by a generator script
+(`tools/scripts/conformance/generate-framework-plans.ts`) that drifted
+behind the committed content (measured at 87-M3.4) and was retired at
+87-M6.1a. The committed JSON is authority; there is no regeneration
+path — amendments are made directly to these files.
 
 Naming note: "engine" matches the migration ledger's destination label.
 M9 finalizes the `runtime-api` authority disposition (host port) and may

@@ -15,11 +15,11 @@
  */
 
 // ⚠️ STALE SCAFFOLD — DO NOT RUN TO "REGENERATE" AUTHORITY (measured 87-M4.1,
-// same class as generate-framework-plans.ts). The committed plan JSON is
-// authority; running this script regresses 6 assertion `kind` fields of
-// provider-api-bridge-extended.json from the committed "resultField" to
-// "evidenceField". Back-port the committed content or retire the script —
-// that decision belongs to the providers plan-family owner (M4-carry).
+// same class as the framework scaffold retired at 87-M6.1a). The committed
+// plan JSON is authority; running this script regresses 6 assertion `kind`
+// fields of provider-api-bridge-extended.json from the committed
+// "resultField" to "evidenceField". Back-port the committed content or
+// retire the script — carried to 87-M10.1 (the M4-carry was never resolved).
 import { writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
