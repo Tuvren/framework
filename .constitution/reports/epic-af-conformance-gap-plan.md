@@ -46,9 +46,9 @@ This plan is generated from the Epic AD docs-to-authority coverage matrix. It is
 - Delivery ticket: `KRT-AF003`
 - Matrix follow-up tickets: `KRT-AF003`
 - Claim IDs: `FWK-607FBC20FD59`, `FWK-AF60C9581BAB`
-- Authority packet: `boundaries/framework/contracts/react-driver/spec/authority-packet.json`
-- Conformance plan: `boundaries/framework/conformance/plans/react-driver-callables.json; boundaries/framework/conformance/plans/react-driver-extended.json`
-- Fixture or scenario: `boundaries/framework/conformance/scenarios/driver-api-scenarios.json`
+- Authority packet: `spec/runners/react/authority-packet.json`
+- Conformance plan: `spec/conformance/runners/plans/react-driver-callables.json; spec/conformance/runners/plans/react-driver-extended.json`
+- Fixture or scenario: `spec/conformance/runners/scenarios/driver-api-scenarios.json`
 - Adapter operation: `driver.execute`
 - Capability requirement: `framework.react-driver`
 - Required evidence: `aroundModel.finalAssistantText`, `aroundModel.messageStartCount`, `aroundModel.streamedTextDone`, `provider.generate.callCount`
@@ -126,9 +126,9 @@ This plan is generated from the Epic AD docs-to-authority coverage matrix. It is
 - Delivery ticket: `KRT-AF003`
 - Matrix follow-up tickets: `KRT-AF003`
 - Claim IDs: `FWK-08DEAA2A61A3`, `FWK-1A08FFE9629B`, `FWK-2417799566DF`, `FWK-3C496F9731CB`, `FWK-413C5B22B8EA`, `FWK-41D622194B15`, `FWK-4FA079668FFC`, `FWK-B48E88C029D4`, `FWK-EBCC7F6D9EC1`, `FWK-F16BAF069F45`, `FWK-FAE5A77068E7`
-- Authority packet: `boundaries/framework/contracts/react-driver/spec/authority-packet.json`
-- Conformance plan: `boundaries/framework/conformance/plans/react-driver-callables.json; boundaries/framework/conformance/plans/react-driver-extended.json`
-- Fixture or scenario: `boundaries/framework/conformance/scenarios/driver-api-scenarios.json`
+- Authority packet: `spec/runners/react/authority-packet.json`
+- Conformance plan: `spec/conformance/runners/plans/react-driver-callables.json; spec/conformance/runners/plans/react-driver-extended.json`
+- Fixture or scenario: `spec/conformance/runners/scenarios/driver-api-scenarios.json`
 - Adapter operation: `driver.execute`
 - Capability requirement: `framework.react-driver`
 - Required evidence: `hooks.phaseTrace`, `hooks.aroundToolTrace`, `hooks.terminalMutationAttempted`, `hooks.terminalMutationDurableText`
@@ -143,8 +143,8 @@ This plan is generated from the Epic AD docs-to-authority coverage matrix. It is
 - Matrix follow-up tickets: `KRT-AF003`
 - Claim IDs: `FWK-7321FBA0BDB5`
 - Authority packet: `spec/core/authority-packet.json`
-- Conformance plan: `boundaries/framework/conformance/plans/driver-api-core.json; boundaries/framework/conformance/plans/driver-api-extended.json`
-- Fixture or scenario: `boundaries/framework/conformance/scenarios/driver-api-scenarios.json`
+- Conformance plan: `spec/conformance/runners/plans/driver-api-core.json; spec/conformance/runners/plans/driver-api-extended.json`
+- Fixture or scenario: `spec/conformance/runners/scenarios/driver-api-scenarios.json`
 - Adapter operation: `driver.execute`
 - Capability requirement: `framework.driver-api`
 - Required evidence: `driver.resolutionType`, `result.error.code`

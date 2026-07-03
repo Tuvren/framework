@@ -188,11 +188,9 @@ const EVIDENCE = {
     compatibilityEvidence:
       "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
     conformancePlan:
-      "boundaries/framework/conformance/plans/driver-api-core.json; boundaries/framework/conformance/plans/driver-api-extended.json",
-    fixture:
-      "boundaries/framework/conformance/scenarios/driver-api-scenarios.json",
-    generatedArtifact:
-      "boundaries/framework/contracts/driver-api/artifacts/json-schema",
+      "spec/conformance/runners/plans/driver-api-core.json; spec/conformance/runners/plans/driver-api-extended.json",
+    fixture: "spec/conformance/runners/scenarios/driver-api-scenarios.json",
+    generatedArtifact: "spec/runners/artifacts/json-schema",
   },
   eventStream: {
     adapterCapability: "framework.event-stream",
@@ -295,14 +293,12 @@ const EVIDENCE = {
   },
   reactDriver: {
     adapterCapability: "framework.react-driver",
-    authorityPacket:
-      "boundaries/framework/contracts/react-driver/spec/authority-packet.json",
+    authorityPacket: "spec/runners/react/authority-packet.json",
     compatibilityEvidence:
       "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
     conformancePlan:
-      "boundaries/framework/conformance/plans/react-driver-callables.json; boundaries/framework/conformance/plans/react-driver-extended.json",
-    fixture:
-      "boundaries/framework/conformance/scenarios/driver-api-scenarios.json",
+      "spec/conformance/runners/plans/react-driver-callables.json; spec/conformance/runners/plans/react-driver-extended.json",
+    fixture: "spec/conformance/runners/scenarios/driver-api-scenarios.json",
     generatedArtifact:
       "N/A - react-driver packet is conformance-plan authority without generated schema artifacts",
   },

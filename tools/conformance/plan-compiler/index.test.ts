@@ -23,7 +23,7 @@ import { loadConformancePlan } from "./index.ts";
 describe("resultField required evidence", () => {
   test("adds a result-rooted evidence requirement for resultField assertions", async () => {
     const compiledPlan = await loadConformancePlan(
-      "boundaries/framework/conformance/plans/driver-api-core.json"
+      "spec/conformance/runners/plans/driver-api-core.json"
     );
     const check = compiledPlan.checks.find(
       (entry) => entry.check.checkId === "driver-api.execute.resolution"
@@ -34,7 +34,7 @@ describe("resultField required evidence", () => {
 
   test("roots whole-result assertions at result", async () => {
     const compiledPlan = await loadMutatedPlan(
-      "boundaries/framework/conformance/plans/driver-api-core.json",
+      "spec/conformance/runners/plans/driver-api-core.json",
       (plan) => {
         const checks = readArray(plan.checks, "checks");
         const targetCheck = readRecord(
@@ -65,7 +65,7 @@ describe("resultField required evidence", () => {
 
   test("roots step resultField assertions under trace.step.result", async () => {
     const compiledPlan = await loadMutatedPlan(
-      "boundaries/framework/conformance/plans/react-driver-callables.json",
+      "spec/conformance/runners/plans/react-driver-callables.json",
       (plan) => {
         const checks = readArray(plan.checks, "checks");
         const targetCheck = readRecord(
@@ -100,7 +100,7 @@ describe("resultField required evidence", () => {
   test("rejects resultField assertions without a field", async () => {
     await expect(
       loadMutatedPlan(
-        "boundaries/framework/conformance/plans/driver-api-core.json",
+        "spec/conformance/runners/plans/driver-api-core.json",
         (plan) => {
           const checks = readArray(plan.checks, "checks");
           const targetCheck = readRecord(

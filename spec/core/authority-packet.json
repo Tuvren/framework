@@ -33,7 +33,7 @@
       "bindingSection": "tools"
     },
     {
-      "path": "boundaries/framework/contracts/driver-api/spec/typespec/main.tsp",
+      "path": "spec/runners/typespec/main.tsp",
       "format": "typespec",
       "bindingSection": "driver"
     },
@@ -70,11 +70,11 @@
       "format": "conformance-plan"
     },
     {
-      "path": "boundaries/framework/conformance/plans/driver-api-core.json",
+      "path": "spec/conformance/runners/plans/driver-api-core.json",
       "format": "conformance-plan"
     },
     {
-      "path": "boundaries/framework/conformance/plans/driver-api-extended.json",
+      "path": "spec/conformance/runners/plans/driver-api-extended.json",
       "format": "conformance-plan"
     },
     {
@@ -158,12 +158,12 @@
     {
       "planId": "tuvren.framework.driver-api.core",
       "planVersion": "0.1.0",
-      "path": "boundaries/framework/conformance/plans/driver-api-core.json"
+      "path": "spec/conformance/runners/plans/driver-api-core.json"
     },
     {
       "planId": "tuvren.framework.driver-api.extended",
       "planVersion": "0.1.0",
-      "path": "boundaries/framework/conformance/plans/driver-api-extended.json"
+      "path": "spec/conformance/runners/plans/driver-api-extended.json"
     },
     {
       "planId": "tuvren.framework.runtime-api.batteries-included",
@@ -299,11 +299,11 @@
     },
     {
       "kind": "conformance-plan",
-      "target": "boundaries/framework/conformance/plans/driver-api-core.json"
+      "target": "spec/conformance/runners/plans/driver-api-core.json"
     },
     {
       "kind": "conformance-plan",
-      "target": "boundaries/framework/conformance/plans/driver-api-extended.json"
+      "target": "spec/conformance/runners/plans/driver-api-extended.json"
     },
     {
       "kind": "conformance-plan",

@@ -16,7 +16,7 @@
   "authorityPackets": [
     "spec/core/authority-packet.json",
     "boundaries/framework/contracts/event-stream-sse/spec/authority-packet.json",
-    "boundaries/framework/contracts/react-driver/spec/authority-packet.json"
+    "spec/runners/react/authority-packet.json"
   ],
   "suiteId": "tuvren.framework.runtime-api.batteries-included",
   "suiteVersion": "0.1.0"
