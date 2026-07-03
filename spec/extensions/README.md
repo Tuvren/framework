@@ -25,9 +25,9 @@ documents them:
   extension-state cloning/merging, shared-exports visibility,
   system-prompt collection).
 - **Host proof shim** —
-  `boundaries/hosts/implementations/typescript/repl/src/lib/proof-extension.ts`
-  (moves to the host tree at M9): a minimal working `TuvrenExtension`
-  proving the seam end-to-end in the reference shell.
+  `typescript/host/repl/src/lib/proof-extension.ts` (arrived at the host
+  tree, 87-M9.3): a minimal working `TuvrenExtension` proving the seam
+  end-to-end in the reference shell.
 
 ## Authority and conformance disposition (ratified at 87-M7 close)
 

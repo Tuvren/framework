@@ -7,8 +7,8 @@
     "better-sqlite3"
   ],
   "workspaces": [
-    "boundaries/*/implementations/*/*",
     "typescript/*",
+    "typescript/host/*",
     "typescript/kernel/*",
     "typescript/kernel/backends/*",
     "typescript/providers/*",

@@ -40,11 +40,11 @@ interface ReplHostInteropModule {
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const REPL_HOST_DIST_PATH = resolve(
   REPO_ROOT,
-  "boundaries/hosts/implementations/typescript/repl/dist/index.js"
+  "typescript/host/repl/dist/index.js"
 );
 const REPL_HOST_CLI_PATH = resolve(
   REPO_ROOT,
-  "boundaries/hosts/implementations/typescript/repl/dist/cli.js"
+  "typescript/host/repl/dist/cli.js"
 );
 const WAIT_TIMEOUT_MS = 30_000;
 

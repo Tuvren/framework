@@ -45,9 +45,7 @@
       "@tuvren/kernel-testkit": ["./typescript/kernel/testkit/src/index.ts"],
       "@tuvren/framework-testkit": ["./typescript/testkit/src/index.ts"],
       "@tuvren/runtime": ["./typescript/runtime/src/index.ts"],
-      "@tuvren/repl-host": [
-        "./boundaries/hosts/implementations/typescript/repl/src/index.ts"
-      ]
+      "@tuvren/repl-host": ["./typescript/host/repl/src/index.ts"]
     },
     "strict": true,
     "composite": true,

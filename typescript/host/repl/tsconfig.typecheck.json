@@ -1,0 +1,66 @@
+{
+  "extends": "./tsconfig.lib.json",
+  "compilerOptions": {
+    "composite": false,
+    "rootDir": "../../../",
+    "allowImportingTsExtensions": true,
+    "paths": {
+      "@tuvren/backend-memory": [
+        "../../../typescript/kernel/backends/memory/src/index.ts"
+      ],
+      "@tuvren/backend-postgres": [
+        "../../../typescript/kernel/backends/postgres/src/index.ts"
+      ],
+      "@tuvren/backend-sqlite": [
+        "../../../typescript/kernel/backends/sqlite/src/index.ts"
+      ],
+      "@tuvren/core": ["../../../typescript/core/src/index.ts"],
+      "@tuvren/core/runner": ["../../../typescript/core/src/runner/index.ts"],
+      "@tuvren/core/errors": ["../../../typescript/core/src/errors/index.ts"],
+      "@tuvren/core/events": ["../../../typescript/core/src/events/index.ts"],
+      "@tuvren/core/execution": [
+        "../../../typescript/core/src/execution/index.ts"
+      ],
+      "@tuvren/core/extensions": [
+        "../../../typescript/core/src/extensions/index.ts"
+      ],
+      "@tuvren/core/messages": [
+        "../../../typescript/core/src/messages/index.ts"
+      ],
+      "@tuvren/core/provider": [
+        "../../../typescript/core/src/provider/index.ts"
+      ],
+      "@tuvren/core/tools": ["../../../typescript/core/src/tools/index.ts"],
+      "@tuvren/runner-react": [
+        "../../../typescript/runners/react/src/index.ts"
+      ],
+      "@tuvren/provider-bridge-ai-sdk": [
+        "../../../typescript/providers/bridge-ai-sdk/src/index.ts"
+      ],
+      "@tuvren/repl-host": ["./src/index.ts"],
+      "@tuvren/runtime": ["../../../typescript/runtime/src/index.ts"],
+      "@tuvren/stream-agui": [
+        "../../../typescript/streaming/agui/src/index.ts"
+      ],
+      "@tuvren/stream-core": [
+        "../../../typescript/streaming/core/src/index.ts"
+      ],
+      "@tuvren/stream-sse": ["../../../typescript/streaming/sse/src/index.ts"]
+    },
+    "types": ["bun", "node"]
+  },
+  "include": [
+    "src/**/*.ts",
+    "test/**/*.ts",
+    "smoke/**/*.ts",
+    "../../../typescript/kernel/backends/memory/src/**/*.ts",
+    "../../../typescript/kernel/backends/postgres/src/**/*.ts",
+    "../../../typescript/kernel/backends/sqlite/src/**/*.ts",
+    "../../../typescript/runners/react/src/**/*.ts",
+    "../../../typescript/runtime/src/**/*.ts",
+    "../../../typescript/streaming/core/src/**/*.ts",
+    "../../../typescript/streaming/sse/src/**/*.ts",
+    "../../../typescript/streaming/agui/src/**/*.ts",
+    "../../../typescript/providers/bridge-ai-sdk/src/**/*.ts"
+  ]
+}

@@ -22,10 +22,7 @@ import { fileURLToPath } from "node:url";
 import type { AdapterProjection } from "./framework-adapter-runtime.ts";
 
 const REPO_ROOT = resolve(fileURLToPath(new URL("../../..", import.meta.url)));
-const REPL_CLI_PATH = resolve(
-  REPO_ROOT,
-  "boundaries/hosts/implementations/typescript/repl/dist/cli.js"
-);
+const REPL_CLI_PATH = resolve(REPO_ROOT, "typescript/host/repl/dist/cli.js");
 
 export function createFrameworkAdapterProvingHost(): {
   runHeadlessTranscriptReplay(input: unknown): Promise<AdapterProjection>;

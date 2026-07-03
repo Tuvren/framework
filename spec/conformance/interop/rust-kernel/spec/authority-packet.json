@@ -18,11 +18,11 @@
     }
   ],
   "bindingProjections": {
-    "typescript-host": "boundaries/hosts/implementations/typescript/repl",
+    "typescript-host": "typescript/host/repl",
     "typescript-runtime": "typescript/runtime"
   },
   "forbiddenAuthoritySources": [
-    "boundaries/hosts/implementations/typescript/repl",
+    "typescript/host/repl",
     "typescript/runtime",
     "rust/kernel-grpc-service",
     "rust/kernel",

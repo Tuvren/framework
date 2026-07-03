@@ -8,10 +8,11 @@ lived directly under `boundaries/framework/contracts/`.
 This is the **host port — singular**, the neutral runtime-facing surface a
 host developer programs against (`TuvrenRuntime`, execution operations,
 messages, approval, orchestration handles, and the client-endpoint
-attachment contract). It is not the same tree as `boundaries/hosts/`
-(plural) — that directory holds concrete first-party host *implementations*
-(the reference REPL shell today); this port holds the neutral contract
-those implementations bind against.
+attachment contract). It is not the same tree as `typescript/host/`
+(the arrived home of the formerly-plural `boundaries/hosts/`) — that
+directory holds concrete first-party host *implementations* (the
+reference REPL shell today); this port holds the neutral contract those
+implementations bind against.
 
 - `typespec/` — the reviewed TypeSpec source (`main.tsp`, namespace
   `Tuvren.Framework.RuntimeApi`) for the neutral runtime-operation and
@@ -63,8 +64,9 @@ coverage (guard functions with no other dedicated coverage) was ported to
 tree plus this contract root were removed. See
 `MIGRATION_INVENTORY.md`'s M9.2 addendum for the full accounting.
 
-The reference host shell, `@tuvren/repl-host`, still lives at
-`boundaries/hosts/implementations/typescript/repl/` — it moves at 87-M9.3.
+The reference host shell, `@tuvren/repl-host`, now lives at
+`typescript/host/repl/` (moved at 87-M9.3; Nx project name `host-repl`
+and npm name `@tuvren/repl-host` unchanged).
 
 This is a pointer, not an oracle: cross-language semantic truth lives in
 the referenced authority packet, generated artifacts, and conformance

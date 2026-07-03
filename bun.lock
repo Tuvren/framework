@@ -33,7 +33,28 @@
         "zod": "4.4.3",
       },
     },
-    "boundaries/hosts/implementations/typescript/repl": {
+    "typescript/certification": {
+      "name": "@tuvren/framework-typescript-certification",
+      "version": "0.0.0",
+      "dependencies": {
+        "@ag-ui/core": "0.0.52",
+        "@tuvren/stream-agui": "workspace:*",
+        "@tuvren/stream-core": "workspace:*",
+        "@tuvren/stream-sse": "workspace:*",
+      },
+    },
+    "typescript/core": {
+      "name": "@tuvren/core",
+      "version": "0.0.0",
+    },
+    "typescript/core-types": {
+      "name": "@tuvren/core-types",
+      "version": "0.0.0",
+      "dependencies": {
+        "@tuvren/core": "workspace:*",
+      },
+    },
+    "typescript/host/repl": {
       "name": "@tuvren/repl-host",
       "version": "0.0.0",
       "dependencies": {
@@ -54,27 +75,6 @@
       },
       "devDependencies": {
         "@copilotkit/aimock": "1.15.1",
-      },
-    },
-    "typescript/certification": {
-      "name": "@tuvren/framework-typescript-certification",
-      "version": "0.0.0",
-      "dependencies": {
-        "@ag-ui/core": "0.0.52",
-        "@tuvren/stream-agui": "workspace:*",
-        "@tuvren/stream-core": "workspace:*",
-        "@tuvren/stream-sse": "workspace:*",
-      },
-    },
-    "typescript/core": {
-      "name": "@tuvren/core",
-      "version": "0.0.0",
-    },
-    "typescript/core-types": {
-      "name": "@tuvren/core-types",
-      "version": "0.0.0",
-      "dependencies": {
-        "@tuvren/core": "workspace:*",
       },
     },
     "typescript/kernel/backends/memory": {
@@ -938,7 +938,7 @@
 
     "@tuvren/providers-typescript-certification": ["@tuvren/providers-typescript-certification@workspace:typescript/providers/certification"],
 
-    "@tuvren/repl-host": ["@tuvren/repl-host@workspace:boundaries/hosts/implementations/typescript/repl"],
+    "@tuvren/repl-host": ["@tuvren/repl-host@workspace:typescript/host/repl"],
 
     "@tuvren/runner-react": ["@tuvren/runner-react@workspace:typescript/runners/react"],
 
