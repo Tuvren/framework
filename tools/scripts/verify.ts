@@ -98,6 +98,7 @@ export const WORKSPACE_TEST_PROJECTS: readonly string[] = [
   "framework-stream-sse",
   "framework-stream-agui",
   "framework-telemetry-otel",
+  "telemetry-semconv",
   // framework-runtime-core is gone entirely (deprecated shim retired at
   // M3.2c, successor @tuvren/runtime). Its dead test-lane entry had already
   // been caught by the M3.1 coverage gate before the retirement.
@@ -124,6 +125,7 @@ export const WORKSPACE_BUILD_PROJECTS: readonly string[] = [
   "framework-stream-sse",
   "framework-stream-agui",
   "framework-telemetry-otel",
+  "telemetry-semconv",
   "host-repl",
 ];
 
@@ -142,6 +144,7 @@ export const WORKSPACE_EXPORT_SMOKE_PROJECTS: readonly string[] = [
   "framework-stream-sse",
   "framework-stream-agui",
   "framework-telemetry-otel",
+  "telemetry-semconv",
   "host-repl",
 ];
 

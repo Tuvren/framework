@@ -41,19 +41,6 @@
         "@tuvren/core-types": "workspace:*",
       },
     },
-    "boundaries/framework/implementations/typescript/telemetry-otel": {
-      "name": "@tuvren/telemetry-otel",
-      "version": "0.0.0",
-      "dependencies": {
-        "@opentelemetry/api": "1.9.1",
-      },
-      "devDependencies": {
-        "@opentelemetry/sdk-trace-base": "2.7.1",
-      },
-      "peerDependencies": {
-        "@tuvren/core": "workspace:*",
-      },
-    },
     "boundaries/hosts/implementations/typescript/repl": {
       "name": "@tuvren/repl-host",
       "version": "0.0.0",
@@ -269,6 +256,7 @@
         "@tuvren/kernel-runtime": "workspace:*",
         "@tuvren/mcp-client": "workspace:*",
         "@tuvren/runner-react": "workspace:*",
+        "@tuvren/telemetry-semconv": "workspace:*",
         "ajv": "8.18.0",
       },
       "devDependencies": {
@@ -329,6 +317,23 @@
       "peerDependencies": {
         "@tuvren/core": "workspace:*",
       },
+    },
+    "typescript/telemetry/otel": {
+      "name": "@tuvren/telemetry-otel",
+      "version": "0.0.0",
+      "dependencies": {
+        "@opentelemetry/api": "1.9.1",
+      },
+      "devDependencies": {
+        "@opentelemetry/sdk-trace-base": "2.7.1",
+      },
+      "peerDependencies": {
+        "@tuvren/core": "workspace:*",
+      },
+    },
+    "typescript/telemetry/semconv": {
+      "name": "@tuvren/telemetry-semconv",
+      "version": "0.0.0",
     },
     "typescript/testkit": {
       "name": "@tuvren/framework-testkit",
@@ -958,7 +963,9 @@
 
     "@tuvren/stream-sse": ["@tuvren/stream-sse@workspace:typescript/streaming/sse"],
 
-    "@tuvren/telemetry-otel": ["@tuvren/telemetry-otel@workspace:boundaries/framework/implementations/typescript/telemetry-otel"],
+    "@tuvren/telemetry-otel": ["@tuvren/telemetry-otel@workspace:typescript/telemetry/otel"],
+
+    "@tuvren/telemetry-semconv": ["@tuvren/telemetry-semconv@workspace:typescript/telemetry/semconv"],
 
     "@tybys/wasm-util": ["@tybys/wasm-util@0.9.0", "", { "dependencies": { "tslib": "^2.4.0" } }, "sha512-6+7nlbMVX/PVDCwaIQ8nTOPveOcFLSt8GcXdx8hD0bt39uWxYT88uXzqTd4fTvqta7oeUJqudepapKNt2DYJFw=="],
 

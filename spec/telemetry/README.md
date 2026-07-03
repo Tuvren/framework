@@ -13,16 +13,19 @@ top-level `telemetry/` tree):
   `semantic-conventions.md`.
 - `project.json` — the Nx project `telemetry-spec`, driving the Weaver-based
   codegen that also emits the generated per-language helpers at
-  `typescript/runtime/src/lib/generated/tuvren-runtime-telemetry.ts` and
-  `rust/kernel/src/generated/tuvren_runtime_telemetry.rs`.
+  `typescript/telemetry/semconv/src/lib/generated/tuvren-runtime-telemetry.ts`
+  and `rust/kernel/src/generated/tuvren_runtime_telemetry.rs`.
 
-Engine-facing seam surface (measured at 87-M3.4, still current):
+Engine-facing seam surface (measured at 87-M3.4, current as of 87-M8.2b):
 
 - `@tuvren/core/telemetry` vocabulary — neutral authority:
   `spec/core/authority-packet.json` + `spec/core/typespec/main.tsp`.
-- The generated semconv binding
-  `typescript/runtime/src/lib/generated/tuvren-runtime-telemetry.ts`
-  (emitted by the `telemetry-spec:codegen` target).
+- The generated semconv binding now lives in its own leaf package,
+  `@tuvren/telemetry-semconv` at `typescript/telemetry/semconv`
+  (`src/lib/generated/tuvren-runtime-telemetry.ts`, emitted by the
+  `telemetry-spec:codegen` target). `@tuvren/runtime` depends on the package
+  and keeps re-exporting the same symbols from its public entrypoint for
+  backward compatibility.
 
 Conformance plans live at `spec/conformance/telemetry/plans/`
 (`framework-operational-telemetry`, `invocation-lifecycle-observation`),
@@ -31,10 +34,9 @@ scenarios at `spec/conformance/telemetry/scenarios/`. The shared
 `boundaries/framework/conformance/schemas/` (no single port owner, per
 87-M8.4).
 
-Still deferred to a later milestone (87-M8.2b): the OTel sink
-implementation package `@tuvren/telemetry-otel`
-(`boundaries/framework/implementations/typescript/telemetry-otel`), which
-moves to an idiomatic `typescript/telemetry/...` subpath.
+87-M8.2b closed the deferred OTel sink move: the implementation package
+`@tuvren/telemetry-otel` now lives at `typescript/telemetry/otel` (Nx project
+name `framework-telemetry-otel` unchanged).
 
 This directory is a pointer, not an oracle: cross-language semantic truth
 lives in the referenced authority packet, generated artifacts, and

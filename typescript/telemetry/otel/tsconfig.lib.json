@@ -1,5 +1,5 @@
 {
-  "extends": "../../../../../tsconfig.base.json",
+  "extends": "../../../tsconfig.base.json",
   "compilerOptions": {
     "types": ["node"],
     "rootDir": "./src",
@@ -8,7 +8,7 @@
   "include": ["src/**/*.ts"],
   "references": [
     {
-      "path": "../../../../../typescript/core/tsconfig.lib.json"
+      "path": "../../core/tsconfig.lib.json"
     }
   ]
 }

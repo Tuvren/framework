@@ -39,6 +39,9 @@
     },
     {
       "path": "../runners/react/tsconfig.lib.json"
+    },
+    {
+      "path": "../telemetry/semconv/tsconfig.lib.json"
     }
   ]
 }

@@ -15,7 +15,7 @@
  */
 
 import type { TelemetryAttributeValue } from "@tuvren/core/telemetry";
-import { TUVREN_RUNTIME_TELEMETRY_ATTRIBUTE_KEYS } from "./generated/tuvren-runtime-telemetry.js";
+import { TUVREN_RUNTIME_TELEMETRY_ATTRIBUTE_KEYS } from "@tuvren/telemetry-semconv";
 
 const SECRET_KEY_PATTERN =
   /(?:authorization|api[-_.]?key|bearer|client[-_.]?secret|credential|password|private[-_.]?key|secret|token)/iu;

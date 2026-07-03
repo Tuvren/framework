@@ -42,8 +42,8 @@ import type {
   TelemetrySpan,
   TuvrenTelemetrySink,
 } from "@tuvren/core/telemetry";
+import { TUVREN_RUNTIME_TELEMETRY_ATTRIBUTE_KEYS } from "@tuvren/telemetry-semconv";
 import { createRunnerRegistry, createTuvrenRuntime } from "../src/index.ts";
-import { TUVREN_RUNTIME_TELEMETRY_ATTRIBUTE_KEYS } from "../src/lib/generated/tuvren-runtime-telemetry.ts";
 import { createFakeKernelHarness } from "./fake-kernel.ts";
 import {
   assistantText,

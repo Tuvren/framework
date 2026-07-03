@@ -49,8 +49,9 @@
       "@tuvren/stream-core": ["./typescript/streaming/core/src/index.ts"],
       "@tuvren/stream-sse": ["./typescript/streaming/sse/src/index.ts"],
       "@tuvren/stream-agui": ["./typescript/streaming/agui/src/index.ts"],
-      "@tuvren/telemetry-otel": [
-        "./boundaries/framework/implementations/typescript/telemetry-otel/src/index.ts"
+      "@tuvren/telemetry-otel": ["./typescript/telemetry/otel/src/index.ts"],
+      "@tuvren/telemetry-semconv": [
+        "./typescript/telemetry/semconv/src/index.ts"
       ],
       "@tuvren/backend-memory": [
         "./typescript/kernel/backends/memory/src/index.ts"

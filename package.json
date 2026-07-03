@@ -15,6 +15,7 @@
     "typescript/providers/*",
     "typescript/runners/*",
     "typescript/streaming/*",
+    "typescript/telemetry/*",
     "typescript/tools/*"
   ],
   "scripts": {

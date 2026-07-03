@@ -23,10 +23,11 @@
     "@tuvren/backend-memory": "workspace:*",
     "@tuvren/backend-postgres": "workspace:*",
     "@tuvren/backend-sqlite": "workspace:*",
-    "@tuvren/runner-react": "workspace:*",
     "@tuvren/kernel-protocol": "workspace:*",
     "@tuvren/kernel-runtime": "workspace:*",
     "@tuvren/mcp-client": "workspace:*",
+    "@tuvren/runner-react": "workspace:*",
+    "@tuvren/telemetry-semconv": "workspace:*",
     "ajv": "8.18.0"
   },
   "peerDependencies": {

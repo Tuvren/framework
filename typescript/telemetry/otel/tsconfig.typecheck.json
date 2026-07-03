@@ -2,13 +2,11 @@
   "extends": "./tsconfig.lib.json",
   "compilerOptions": {
     "composite": false,
-    "rootDir": "../../../../../",
+    "rootDir": "../../..",
     "allowImportingTsExtensions": true,
     "paths": {
-      "@tuvren/core": ["../../../../../typescript/core/src/index.ts"],
-      "@tuvren/core/telemetry": [
-        "../../../../../typescript/core/src/telemetry/index.ts"
-      ],
+      "@tuvren/core": ["../../core/src/index.ts"],
+      "@tuvren/core/telemetry": ["../../core/src/telemetry/index.ts"],
       "@tuvren/telemetry-otel": ["./src/index.ts"]
     },
     "types": ["bun"]

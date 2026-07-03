@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.lib.json",
+  "compilerOptions": {
+    "composite": false,
+    "rootDir": "../../..",
+    "allowImportingTsExtensions": true,
+    "paths": {
+      "@tuvren/telemetry-semconv": ["./src/index.ts"]
+    },
+    "types": ["bun"]
+  },
+  "include": ["src/**/*.ts", "test/**/*.ts", "smoke/**/*.ts"]
+}
