@@ -11,9 +11,6 @@
       "path": "../../../../contracts/runtime-api/implementations/typescript/tsconfig.lib.json"
     },
     {
-      "path": "../../../../contracts/driver-api/implementations/typescript/tsconfig.lib.json"
-    },
-    {
       "path": "../../../../../../typescript/core-types/tsconfig.lib.json"
     },
     {

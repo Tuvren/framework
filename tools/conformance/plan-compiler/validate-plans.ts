@@ -26,17 +26,10 @@ const OPERATION_SOURCE_BY_PACKET = new Map<string, readonly string[]>([
     ["boundaries/framework/contracts/runtime-api/spec/typespec/main.tsp"],
   ],
   [
-    "tuvren.framework.driver-api",
-    ["spec/runners/typespec/main.tsp"],
-  ],
-  [
     "tuvren.framework.event-stream",
     ["boundaries/framework/conformance/plans/event-stream-core.json"],
   ],
-  [
-    "tuvren.framework.react-driver",
-    ["spec/runners/typespec/main.tsp"],
-  ],
+  ["tuvren.framework.react-driver", ["spec/runners/typespec/main.tsp"]],
   [
     "tuvren.kernel.protocol",
     [

@@ -67,12 +67,6 @@ const PORTABLE_PACKAGE_SURFACES: readonly PortablePackageSurface[] = [
   },
   {
     classification: "Bun-and-Node validated",
-    packageName: "@tuvren/driver-api",
-    packageRoot:
-      "boundaries/framework/contracts/driver-api/implementations/typescript",
-  },
-  {
-    classification: "Bun-and-Node validated",
     packageName: "@tuvren/event-stream",
     packageRoot:
       "boundaries/framework/contracts/event-stream/implementations/typescript",

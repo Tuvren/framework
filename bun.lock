@@ -33,15 +33,6 @@
         "zod": "4.4.3",
       },
     },
-    "boundaries/framework/contracts/driver-api/implementations/typescript": {
-      "name": "@tuvren/driver-api",
-      "version": "0.0.0",
-      "dependencies": {
-        "@tuvren/core": "workspace:*",
-        "@tuvren/core-types": "workspace:*",
-        "@tuvren/runtime-api": "workspace:*",
-      },
-    },
     "boundaries/framework/contracts/event-stream/implementations/typescript": {
       "name": "@tuvren/event-stream",
       "version": "0.0.0",
@@ -938,8 +929,6 @@
     "@tuvren/core": ["@tuvren/core@workspace:typescript/core"],
 
     "@tuvren/core-types": ["@tuvren/core-types@workspace:typescript/core-types"],
-
-    "@tuvren/driver-api": ["@tuvren/driver-api@workspace:boundaries/framework/contracts/driver-api/implementations/typescript"],
 
     "@tuvren/driver-react": ["@tuvren/driver-react@workspace:boundaries/framework/implementations/typescript/drivers/react"],
 

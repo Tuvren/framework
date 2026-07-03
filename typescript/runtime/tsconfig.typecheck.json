@@ -23,9 +23,6 @@
       "@tuvren/core/provider": ["../core/src/provider/index.ts"],
       "@tuvren/core/tools": ["../core/src/tools/index.ts"],
       "@tuvren/sdk": ["../sdk/src/index.ts"],
-      "@tuvren/driver-api": [
-        "../../boundaries/framework/contracts/driver-api/implementations/typescript/src/index.ts"
-      ],
       "@tuvren/framework-testkit": ["../testkit/src/index.ts"],
       "@tuvren/kernel-protocol": ["../kernel/protocol/src/index.ts"],
       "@tuvren/kernel-runtime": ["../kernel/runtime/src/index.ts"],
@@ -68,7 +65,6 @@
     "test/**/*.ts",
     "../testkit/src/**/*.ts",
     "../../boundaries/framework/contracts/runtime-api/implementations/typescript/src/**/*.ts",
-    "../../boundaries/framework/contracts/driver-api/implementations/typescript/src/**/*.ts",
     "../kernel/protocol/src/**/*.ts",
     "../kernel/backends/memory/src/**/*.ts",
     "../kernel/backends/sqlite/src/**/*.ts",

@@ -251,7 +251,6 @@
     "typescript/core-types",
     "boundaries/framework/contracts/runtime-api/implementations/typescript",
     "boundaries/framework/contracts/event-stream/implementations/typescript",
-    "boundaries/framework/contracts/driver-api/implementations/typescript",
     "typescript/runtime",
     "typescript/conformance-runner",
     "typescript/conformance-adapter",

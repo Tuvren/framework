@@ -50,9 +50,6 @@
       "@tuvren/runtime-api/tools": [
         "../../../../contracts/runtime-api/implementations/typescript/dist/tools.d.ts"
       ],
-      "@tuvren/driver-api": [
-        "../../../../contracts/driver-api/implementations/typescript/dist/index.d.ts"
-      ],
       "@tuvren/provider-api": [
         "../../../../../../typescript/providers/provider-api/dist/index.d.ts"
       ],

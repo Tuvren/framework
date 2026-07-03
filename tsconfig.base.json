@@ -42,9 +42,6 @@
       "@tuvren/event-stream": [
         "./boundaries/framework/contracts/event-stream/implementations/typescript/src/index.ts"
       ],
-      "@tuvren/driver-api": [
-        "./boundaries/framework/contracts/driver-api/implementations/typescript/src/index.ts"
-      ],
       "@tuvren/provider-api": [
         "./typescript/providers/provider-api/src/index.ts"
       ],

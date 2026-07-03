@@ -34,9 +34,6 @@
         "../../../../../../typescript/core/src/tools/index.ts"
       ],
       "@tuvren/sdk": ["../../../../../../typescript/sdk/src/index.ts"],
-      "@tuvren/driver-api": [
-        "../../../../contracts/driver-api/implementations/typescript/src/index.ts"
-      ],
       "@tuvren/backend-memory": [
         "../../../../../../typescript/kernel/backends/memory/src/index.ts"
       ],
@@ -79,7 +76,6 @@
     "src/**/*.ts",
     "test/**/*.ts",
     "../../../../contracts/runtime-api/implementations/typescript/src/**/*.ts",
-    "../../../../contracts/driver-api/implementations/typescript/src/**/*.ts",
     "../../../../../../typescript/providers/provider-api/src/**/*.ts",
     "../../../../../../typescript/core-types/src/**/*.ts",
     "../../../../../../typescript/testkit/src/**/*.ts",

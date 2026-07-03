@@ -30,9 +30,6 @@
       "path": "./boundaries/framework/contracts/runtime-api/implementations/typescript"
     },
     {
-      "path": "./boundaries/framework/contracts/driver-api/implementations/typescript"
-    },
-    {
       "path": "./typescript/kernel/backends/postgres"
     },
     {
