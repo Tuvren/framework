@@ -30,9 +30,8 @@ Engine-facing seam surface (measured at 87-M3.4, current as of 87-M8.2b):
 Conformance plans live at `spec/conformance/telemetry/plans/`
 (`framework-operational-telemetry`, `invocation-lifecycle-observation`),
 scenarios at `spec/conformance/telemetry/scenarios/`. The shared
-`schemas/fixture-set.schema.json` stays at
-`boundaries/framework/conformance/schemas/` (no single port owner, per
-87-M8.4).
+`fixture-set.schema.json` lives at `spec/conformance/schemas/` (shared
+asset, no single port owner — moved there at 87-M8.4).
 
 87-M8.2b closed the deferred OTel sink move: the implementation package
 `@tuvren/telemetry-otel` now lives at `typescript/telemetry/otel` (Nx project

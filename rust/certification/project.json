@@ -19,7 +19,7 @@
         "default",
         "^production",
         "conformanceEngine",
-        "{workspaceRoot}/boundaries/framework/conformance/**/*",
+        "{workspaceRoot}/spec/conformance/schemas/**/*",
         "{workspaceRoot}/spec/conformance/engine/**/*",
         "{workspaceRoot}/spec/conformance/runners/**/*",
         "{workspaceRoot}/spec/conformance/streaming/**/*",

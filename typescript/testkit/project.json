@@ -26,7 +26,7 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": ".",
-        "command": "bunx --bun @biomejs/biome check typescript/testkit boundaries/framework/conformance"
+        "command": "bunx --bun @biomejs/biome check typescript/testkit spec/conformance/schemas"
       }
     },
     "test": {
